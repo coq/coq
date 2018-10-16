@@ -22,6 +22,7 @@ open Genarg
 open Genredexpr
 open Tok (* necessary for camlp5 *)
 open Names
+open Attributes
 
 open Pcoq
 open Pcoq.Prim
@@ -498,11 +499,11 @@ VERNAC ARGUMENT EXTEND ltac_production_item PRINTED BY { pr_ltac_production_item
 END
 
 VERNAC COMMAND EXTEND VernacTacticNotation
-| [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
+| #[ deprecation; locality; ]
+  [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
   { VtSideff [], VtNow } ->
   {
     let n = Option.default 0 n in
-    let deprecation, locality = Attributes.(parse Notations.(deprecation ++ locality) atts) in
     Tacentries.add_tactic_notation (Locality.make_module_locality locality) n ?deprecation r e;
   }
 END
@@ -545,12 +546,11 @@ PRINTED BY { pr_tacdef_body }
 END
 
 VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
-| [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => {
+| #[ deprecation; locality; ] [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => {
     VtSideff (List.map (function
       | TacticDefinition ({CAst.v=r},_) -> r
       | TacticRedefinition (qid,_) -> qualid_basename qid) l), VtLater
   } -> {
-         let deprecation, locality = Attributes.(parse Notations.(deprecation ++ locality) atts) in
          Tacentries.register_ltac (Locality.make_module_locality locality) ?deprecation l;
   }
 END

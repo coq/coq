@@ -309,9 +309,52 @@ let print_rule_classifier fmt r = match r.vernac_class with
   else
     fprintf fmt "Some @[(fun %a-> %a)@]" print_binders r.vernac_toks print_code f
 
+(* let print_atts fmt = function *)
+(*   | None -> fprintf fmt "@[let () = Attributes.unsupported_attributes atts in@] " *)
+(*   | Some atts -> *)
+(*     let rec print_left fmt = function *)
+(*       | [] -> assert false *)
+(*       | [x,_] -> fprintf fmt "%s" x *)
+(*       | (x,_) :: rem -> fprintf fmt "(%s, %a)" x print_left rem *)
+(*     in *)
+(*     let rec print_right fmt = function *)
+(*       | [] -> assert false *)
+(*       | [_,y] -> fprintf fmt "%s" y *)
+(*       | (_,y) :: rem -> fprintf fmt "(%s ++ %a)" y print_right rem *)
+(*     in *)
+(*     let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in *)
+(*     fprintf fmt "@[let %a = Attributes.parse %s(%a) atts in@] " *)
+(*       print_left atts nota print_right atts *)
+
+let print_atts_left fmt = function
+  | None -> fprintf fmt "()"
+  | Some atts ->
+    let rec aux fmt = function
+      | [] -> assert false
+      | [x,_] -> fprintf fmt "%s" x
+      | (x,_) :: rem -> fprintf fmt "(%s, %a)" x aux rem
+    in
+    aux fmt atts
+
+let print_atts_right fmt = function
+  | None -> fprintf fmt "(Attributes.unsupported_attributes atts)"
+  | Some atts ->
+    let rec aux fmt = function
+      | [] -> assert false
+      | [_,y] -> fprintf fmt "%s" y
+      | (_,y) :: rem -> fprintf fmt "(%s ++ %a)" y aux rem
+    in
+    let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in
+    fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
+
+let print_body_fun fmt r =
+  fprintf fmt "let coqpp_body %a%a ~st = let () = %a in st in "
+    print_binders r.vernac_toks print_atts_left r.vernac_atts print_code r.vernac_body
+
 let print_body fmt r =
-  fprintf fmt "@[(fun %a~atts@ ~st@ -> let () = %a in st)@]"
-    print_binders r.vernac_toks print_code r.vernac_body
+  fprintf fmt "@[(%afun %a~atts@ ~st@ -> coqpp_body %a%a ~st)@]"
+    print_body_fun r print_binders r.vernac_toks
+    print_binders r.vernac_toks print_atts_right r.vernac_atts
 
 let rec print_sig fmt = function
 | [] -> fprintf fmt "@[Vernacentries.TyNil@]"

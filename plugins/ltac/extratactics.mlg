@@ -321,15 +321,15 @@ let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
 }
 
 VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY { classify_hint }
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
-  { add_rewrite_hint ~poly:(only_polymorphism atts) bl o None l }
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
+| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  { add_rewrite_hint ~poly:polymorphic bl o None l }
+| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
     ":" preident_list(bl) ] ->
-  { add_rewrite_hint ~poly:(only_polymorphism atts) bl o (Some t) l }
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  { add_rewrite_hint ~poly:(only_polymorphism atts) ["core"] o None l }
-| [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  { add_rewrite_hint ~poly:(only_polymorphism atts) ["core"] o (Some t) l }
+  { add_rewrite_hint ~poly:polymorphic bl o (Some t) l }
+| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
+  { add_rewrite_hint ~poly:polymorphic ["core"] o None l }
+| #[ polymorphic; ] [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
+  { add_rewrite_hint ~poly:polymorphic ["core"] o (Some t) l }
 END
 
 (**********************************************************************)
@@ -411,39 +411,39 @@ let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 END*)
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c s false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c s false inv_clear_tac }
 
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
+| #[ polymorphic; ] [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c Sorts.InProp false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
-| [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c s false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c s false inv_tac }
 
-| [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
+| #[ polymorphic; ] [ "Derive" "Inversion" ident(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c Sorts.InProp false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.InProp false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
-| [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c s true dinv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
-| [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
+| #[ polymorphic; ] [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort_family(s) ]
   => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:(only_polymorphism atts) na c s true dinv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c s true dinv_clear_tac }
 END
 
 (**********************************************************************)
