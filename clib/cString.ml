@@ -18,6 +18,7 @@ sig
   val explode : string -> string list
   val implode : string list -> string
   val strip : string -> string
+  [@@ocaml.deprecated "Use [trim]"]
   val drop_simple_quotes : string -> string
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
@@ -25,6 +26,7 @@ sig
   val conjugate_verb_to_be : int -> string
   val ordinal : int -> string
   val split : char -> string -> string list
+  [@@ocaml.deprecated "Use [split_on_char]"]
   val is_sub : string -> string -> int -> bool
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
@@ -55,26 +57,9 @@ let explode s =
 
 let implode sl = String.concat "" sl
 
-let is_blank = function
-  | ' ' | '\r' | '\t' | '\n' -> true
-  | _ -> false
-
 let is_empty s = String.length s = 0
 
-let strip s =
-  let n = String.length s in
-  let rec lstrip_rec i =
-    if i < n && is_blank s.[i] then
-      lstrip_rec (i+1)
-    else i
-  in
-  let rec rstrip_rec i =
-    if i >= 0 && is_blank s.[i] then
-      rstrip_rec (i-1)
-    else i
-  in
-  let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
-  String.sub s a (b-a+1)
+let strip = String.trim
 
 let drop_simple_quotes s =
   let n = String.length s in
@@ -139,17 +124,7 @@ let ordinal n =
 
 (* string parsing *)
 
-let split c s =
-  let len = String.length s in
-  let rec split n =
-    try
-      let pos = String.index_from s n c in
-      let dir = String.sub s n (pos-n) in
-      dir :: split (succ pos)
-    with
-      | Not_found -> [String.sub s n (len-n)]
-  in
-  if Int.equal len 0 then [] else split 0
+let split = String.split_on_char
 
 module Self =
 struct

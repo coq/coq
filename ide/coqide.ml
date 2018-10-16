@@ -769,7 +769,7 @@ let coqtop_arguments sn =
   let box = dialog#action_area in
   let ok = GButton.button ~stock:`OK ~packing:box#add () in
   let ok_cb () =
-    let nargs = CString.split ' ' entry#text in
+    let nargs = String.split_on_char ' ' entry#text in
     if nargs <> args then
       let failed = Coq.filter_coq_opts nargs in
       match failed with

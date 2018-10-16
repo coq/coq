@@ -31,7 +31,8 @@ sig
   (** [implode [s1; ...; sn]] returns [s1 ^ ... ^ sn] *)
 
   val strip : string -> string
-  (** Remove the surrounding blank characters from a string *)
+  (** Alias for [String.trim] *)
+  [@@ocaml.deprecated "Use [trim]"]
 
   val drop_simple_quotes : string -> string
   (** Remove the eventual first surrounding simple quotes of a string. *)
@@ -52,7 +53,8 @@ sig
   (** Generate the ordinal number in English. *)
 
   val split : char -> string -> string list
-  (** [split c s] splits [s] into sequences separated by [c], excluded. *)
+  (** [split c s] alias of [String.split_on_char] *)
+  [@@ocaml.deprecated "Use [split_on_char]"]
 
   val is_sub : string -> string -> int -> bool
   (** [is_sub p s off] tests whether [s] contains [p] at offset [off]. *)
