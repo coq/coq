@@ -14,10 +14,19 @@ open Genarg
 
 module Store : Store.S
 
+type intern_variable_status = {
+  intern_ids : Id.Set.t;
+  notation_variable_status :
+    (bool ref * Notation_term.subscopes option ref *
+       Notation_term.notation_var_internalization_type)
+      Id.Map.t
+}
+
 type glob_sign = {
   ltacvars : Id.Set.t;
   genv : Environ.env;
   extra : Store.t;
+  intern_sign : intern_variable_status;
 }
 
 val empty_glob_sign : Environ.env -> glob_sign

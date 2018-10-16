@@ -21,6 +21,7 @@ type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
   genv : Environ.env;
   extra : Genintern.Store.t;
+  intern_sign : Genintern.intern_variable_status;
 }
 
 val make_empty_glob_sign : unit -> glob_sign

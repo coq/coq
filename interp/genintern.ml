@@ -14,16 +14,31 @@ open Genarg
 
 module Store = Store.Make ()
 
+type intern_variable_status = {
+  intern_ids : Id.Set.t;
+  notation_variable_status :
+    (bool ref * Notation_term.subscopes option ref *
+       Notation_term.notation_var_internalization_type)
+      Id.Map.t
+}
+
 type glob_sign = {
   ltacvars : Id.Set.t;
   genv : Environ.env;
   extra : Store.t;
+  intern_sign : intern_variable_status;
+}
+
+let empty_intern_sign = {
+  intern_ids = Id.Set.empty;
+  notation_variable_status = Id.Map.empty;
 }
 
 let empty_glob_sign env = {
   ltacvars = Id.Set.empty;
   genv = env;
   extra = Store.empty;
+  intern_sign = empty_intern_sign;
 }
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute

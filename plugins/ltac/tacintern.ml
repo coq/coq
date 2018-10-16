@@ -44,6 +44,7 @@ type glob_sign = Genintern.glob_sign = {
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   genv : Environ.env;
   extra : Genintern.Store.t;
+  intern_sign : Genintern.intern_variable_status;
 }
 
 let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
@@ -209,7 +210,7 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra} c =
+let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let ltacvars = {
@@ -218,7 +219,7 @@ let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra} c =
     ltac_extra = extra;
   } in
   let c' =
-    warn (Constrintern.intern_gen scope ~pattern_mode ~ltacvars env Evd.(from_env env)) c
+    warn (Constrintern.intern_core scope ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign) c
   in
   (c',if !strict_check then None else Some c)
 
