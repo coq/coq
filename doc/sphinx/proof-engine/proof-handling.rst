@@ -632,16 +632,15 @@ How to enable diffs
 ```````````````````
 
 .. opt:: Diffs %( "on" %| "off" %| "removed" %)
+   :name: Diffs
 
-  .. This ref doesn't work: :opt:`Set Diffs %( "on" %| "off" %| "removed" %)`
-
-  The “on” option highlights added tokens in green, while the “removed” option
-  additionally reprints items with removed tokens in red.  Unchanged tokens in
-  modified items are shown with pale green or red.  (Colors are user-configurable.)
+   The “on” option highlights added tokens in green, while the “removed” option
+   additionally reprints items with removed tokens in red.  Unchanged tokens in
+   modified items are shown with pale green or red.  (Colors are user-configurable.)
 
 For coqtop, showing diffs can be enabled when starting coqtop with the
-``-diffs on|off|removed`` command-line option or with the ``Set Diffs``
-command within Coq.  You will need to provide the ``-color on|auto`` command-line option when
+``-diffs on|off|removed`` command-line option or by setting the :opt:`Diffs` option
+within Coq.  You will need to provide the ``-color on|auto`` command-line option when
 you start coqtop in either case.
 
 Colors for coqtop can be configured by setting the ``COQ_COLORS`` environment

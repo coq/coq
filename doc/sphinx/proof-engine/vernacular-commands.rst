@@ -461,6 +461,7 @@ Requests to the environment
 .. note::
 
    .. table:: Search Blacklist @string
+      :name: Search Blacklist
 
       Specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
       :cmd:`SearchHead`, :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
