@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Run in a proper install dune env.
+case $1 in
+checker)
+  ocamldebug `ocamlfind query -recursive -i-format coq.checker_printers` -I +threads -I dev _build/default/checker/main.bc
+  ;;
+*)
+  ocamldebug `ocamlfind query -recursive -i-format coq.top_printers` -I +threads -I dev _build/default/topbin/coqtop_byte_bin.bc
+  ;;
+esac

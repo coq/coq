@@ -1,0 +1,6 @@
+source core_dune.dbg
+
+load_printer ltac_plugin.cma
+load_printer top_printers.cma
+
+source top_printers.dbg
