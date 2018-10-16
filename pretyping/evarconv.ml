@@ -1318,6 +1318,7 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
       let rec aux = function
       | [] -> user_err Pp.(str "Unsolvable existential variables.")
       | a::l ->
+          (* In case of variables, most recent ones come first *)
           try
             let conv_algo = evar_conv_x ts in
             let evd = check_evar_instance evd evk a conv_algo in
@@ -1328,9 +1329,9 @@ let rec solve_unconstrained_evars_with_candidates ts evd =
           with
           | IllTypedInstance _ -> aux l
           | e when Pretype_errors.precatchable_exception e -> aux l in
-      (* List.rev is there to favor most dependent solutions *)
-      (* and favor progress when used with the refine tactics *)
-      let evd = aux (List.rev l) in
+      (* Expected invariant: most dependent solutions come first *)
+      (* so as to favor progress when used with the refine tactics *)
+      let evd = aux l in
       solve_unconstrained_evars_with_candidates ts evd
 
 let solve_unconstrained_impossible_cases env evd =

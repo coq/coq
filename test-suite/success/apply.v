@@ -559,3 +559,26 @@ split.
 - (* clear b:True *) match goal with H:_ |- _ => clear H end.
   (* use a:0=0 *) match goal with H:_ |- _ => exact H end.
 Qed.
+
+(* Test choice of most dependent solution *)
+Goal forall n, n = 0 -> exists p, p = n /\ p = 0.
+intros. eexists ?[p]. split. rewrite H.
+reflexivity. (* Compatibility tells [?p:=n] rather than [?p:=0] *)
+exact H. (* this checks that the goal is [n=0], not [0=0] *)
+Qed.
+
+(* Check insensitivity to alphabetic order of names*)
+(* In both cases, the last name is conventionally chosen *)
+(* Before 8.9, the name coming first in alphabetic order *)
+(* was chosen. *)
+Goal forall m n, m = n -> n = 0 -> exists p, p = n /\ p = 0.
+intros. eexists ?[p]. split. rewrite H.
+reflexivity.
+exact H0.
+Qed.
+
+Goal forall n m, n = m -> m = 0 -> exists p, p = m /\ p = 0.
+intros. eexists ?[p]. split. rewrite H.
+reflexivity.
+exact H0.
+Qed.
