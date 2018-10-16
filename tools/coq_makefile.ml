@@ -59,7 +59,7 @@ let usage_coq_makefile () =
 \n _-extra-phony foo bar \"\"_ is a regular way to add the target \"bar\" as\
 \n as a dependencies of an already defined target \"foo\".\
 \n[-I dir]: look for Objective Caml dependencies in \"dir\"\
-\n[-R physicalpath logicalpath]: look for Coq dependencies resursively\
+\n[-R physicalpath logicalpath]: look for Coq dependencies recursively\
 \n  starting from \"physicalpath\". The logical path associated to the\
 \n  physical path is \"logicalpath\".\
 \n[-Q physicalpath logicalpath]: look for Coq dependencies starting from\
