@@ -147,18 +147,10 @@ let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 (** Operations on kernel names *)
 
 let constant_of_delta_kn kn =
-  let resolver,resolver_param = Safe_typing.delta_of_senv (safe_env ())
-  in
-  (* TODO : are resolver and resolver_param orthogonal ?
-     the effect of resolver is lost if resolver_param isn't
-     trivial at that spot. *)
-  Mod_subst.constant_of_deltas_kn resolver_param resolver kn
+  Safe_typing.constant_of_delta_kn_senv (safe_env ()) kn
 
 let mind_of_delta_kn kn =
-  let resolver,resolver_param = Safe_typing.delta_of_senv (safe_env ())
-  in
-  (* TODO idem *)
-  Mod_subst.mind_of_deltas_kn resolver_param resolver kn
+  Safe_typing.mind_of_delta_kn_senv (safe_env ()) kn
 
 (** Operations on libraries *)
 
@@ -235,13 +227,7 @@ let universes_of_global env r =
 let universes_of_global gr = 
   universes_of_global (env ()) gr
 
-let is_polymorphic r =
-  let env = env() in 
-  match r with
-  | VarRef id -> false
-  | ConstRef c -> Environ.polymorphic_constant c env
-  | IndRef ind -> Environ.polymorphic_ind ind env
-  | ConstructRef cstr -> Environ.polymorphic_ind (inductive_of_constructor cstr) env
+let is_polymorphic r = Environ.is_polymorphic (env()) r
 
 let is_template_polymorphic r = 
   let env = env() in 

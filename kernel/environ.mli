@@ -315,7 +315,7 @@ val apply_to_hyp : named_context_val -> variable ->
 
 val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
 
-
+val is_polymorphic : env -> Names.GlobRef.t -> bool
 
 open Retroknowledge
 (** functions manipulating the retroknowledge 

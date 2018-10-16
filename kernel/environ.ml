@@ -680,6 +680,16 @@ let remove_hyps ids check_context check_value ctxt =
   in
   fst (remove_hyps ctxt)
 
+(* A general request *)
+
+let is_polymorphic env r =
+  let open Names.GlobRef in
+  match r with
+  | VarRef _id -> false
+  | ConstRef c -> polymorphic_constant c env
+  | IndRef ind -> polymorphic_ind ind env
+  | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
+
 (*spiwack: the following functions assemble the pieces of the retroknowledge
    note that the "consistent" register function is available in the module
    Safetyping, Environ only synchronizes the proactive and the reactive parts*)
