@@ -356,8 +356,10 @@ let nf_open_term sigma0 ise c =
 
 let unif_end env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
+  let tcs = Evd.get_typeclass_evars ise in
   let s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
+  let ise1 = Evd.set_typeclass_evars ise1 (Evar.Set.filter (fun ev -> Evd.is_undefined ise1 ev) tcs) in
   let ise1 = Evd.set_universe_context ise1 uc in
   let ise2 = Typeclasses.resolve_typeclasses ~fail:true env ise1 in
   if not (ok ise) then raise NoProgress else

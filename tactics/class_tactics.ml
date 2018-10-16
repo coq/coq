@@ -494,15 +494,15 @@ let top_sort evm undefs =
   let tosee = ref undefs in
   let rec visit ev evi =
     let evs = Evarutil.undefined_evars_of_evar_info evm evi in
-      tosee := Evar.Map.remove ev !tosee;
+      tosee := Evar.Set.remove ev !tosee;
       Evar.Set.iter (fun ev ->
-        if Evar.Map.mem ev !tosee then
-          visit ev (Evar.Map.find ev !tosee)) evs;
+        if Evar.Set.mem ev !tosee then
+          visit ev (Evd.find evm ev)) evs;
       l' := ev :: !l';
   in
-    while not (Evar.Map.is_empty !tosee) do
-      let ev, evi = Evar.Map.min_binding !tosee in
-        visit ev evi
+    while not (Evar.Set.is_empty !tosee) do
+      let ev = Evar.Set.choose !tosee in
+        visit ev (Evd.find evm ev)
     done;
     List.rev !l'
 
@@ -512,15 +512,9 @@ let top_sort evm undefs =
 *)
 
 let evars_to_goals p evm =
-  let goals = ref Evar.Map.empty in
-  let fold ev evi evm =
-    let evm, goal = p evm ev evi in
-    let () = if goal then goals := Evar.Map.add ev evi !goals in
-    evm
-  in
-  let evm = Evd.fold_undefined fold evm evm in
-  if Evar.Map.is_empty !goals then None
-  else Some (!goals, evm)
+  let goals, nongoals = Evar.Set.partition (p evm) (Evd.get_typeclass_evars evm) in
+  if Evar.Set.is_empty goals then None
+  else Some (goals, nongoals)
 
 (** Making local hints  *)
 let make_resolve_hyp env sigma st flags only_classes pri decl =
@@ -640,11 +634,6 @@ module Search = struct
     if unique || is_Prop env evd concl then
       occur_existential evd concl
     else true
-
-  let mark_unresolvables sigma goals =
-    List.fold_left
-      (fun sigma gl -> Evd.set_resolvable_evar sigma gl false)
-      sigma goals
 
   (** The general hint application tactic.
       tac1 + tac2 .... The choice of OR or ORELSE is determined
@@ -776,7 +765,7 @@ module Search = struct
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
                else
-	         let sigma' = mark_unresolvables sigma goals in
+                 let sigma' = make_unresolvables (fun x -> List.mem_f Evar.equal x goals) sigma in
                  with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state goals)) >>=
                       fun s -> result s i (Some (Option.default 0 k + j)))
           end
@@ -938,14 +927,15 @@ module Search = struct
   let run_on_evars env evm p tac =
     match evars_to_goals p evm with
     | None -> None (* This happens only because there's no evar having p *)
-    | Some (goals, evm') ->
+    | Some (goals, nongoals) ->
        let goals =
          if !typeclasses_dependency_order then
-           top_sort evm' goals
-         else List.map (fun (ev, _) -> ev) (Evar.Map.bindings goals)
+           top_sort evm goals
+         else Evar.Set.elements goals
        in
+       let evm = Evd.set_typeclass_evars evm Evar.Set.empty in
        let fgoals = Evd.save_future_goals evm in
-       let _, pv = Proofview.init evm' [] in
+       let _, pv = Proofview.init evm [] in
        let pv = Proofview.unshelve goals pv in
        try
          let (), pv', (unsafe, shelved, gaveup), _ =
@@ -964,7 +954,13 @@ module Search = struct
                       acc && okev) evm' true);
            let fgoals = Evd.shelve_on_future_goals shelved fgoals in
            let evm' = Evd.restore_future_goals evm' fgoals in
+           let nongoals' =
+             Evar.Set.fold (fun ev acc -> match Evarutil.advance evm' ev with
+                 | Some ev' -> Evar.Set.add ev acc
+                 | None -> acc) nongoals (Evd.get_typeclass_evars evm')
+           in
            let evm' = evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm in
+           let evm' = Evd.set_typeclass_evars evm' nongoals' in
            Some evm'
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
@@ -1016,7 +1012,7 @@ let deps_of_constraints cstrs evm p =
 let evar_dependencies pred evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      if Evd.is_resolvable_evar evm ev && pred evm ev evi then
+      if Evd.is_typeclass_evar evm ev && pred evm ev evi then
         let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
         in Intpart.union_set evars p
       else ())
@@ -1032,8 +1028,7 @@ let split_evars pred evm =
 
 let is_inference_forced p evd ev =
   try
-    let evi = Evd.find_undefined evd ev in
-    if Evd.is_resolvable_evar evd ev && snd (p ev evi)
+    if Evar.Set.mem ev (Evd.get_typeclass_evars evd) && p ev
     then
       let (loc, k) = evar_source ev evd in
       match k with
@@ -1065,55 +1060,32 @@ let error_unresolvable env comp evd =
   Pretype_errors.unsatisfiable_constraints env evd ev comp
 
 (** Check if an evar is concerned by the current resolution attempt,
-    (and in particular is in the current component), and also update
-    its evar_info.
-    Invariant : this should only be applied to undefined evars,
-    and return undefined evar_info *)
+    (and in particular is in the current component).
+    Invariant : this should only be applied to undefined evars. *)
 
-let select_and_update_evars p oevd in_comp evd ev evi =
-  assert (evi.evar_body == Evar_empty);
+let select_and_update_evars p oevd in_comp evd ev =
   try
-    let _ = Evd.find_undefined oevd ev in
-    if Evd.is_resolvable_evar oevd ev then
-      Evd.set_resolvable_evar evd ev false,
-      (in_comp ev && p evd ev evi)
-    else evd, false
-  with Not_found ->
-    Evd.set_resolvable_evar evd ev false, p evd ev evi
+    if Evd.is_typeclass_evar oevd ev then
+      (in_comp ev && p evd ev (Evd.find evd ev))
+    else false
+  with Not_found -> false
 
 (** Do we still have unresolved evars that should be resolved ? *)
 
 let has_undefined p oevd evd =
-  let check ev evi = snd (p oevd ev evi) in
+  let check ev evi = p oevd ev in
   Evar.Map.exists check (Evd.undefined_map evd)
-
-(** Revert the resolvability status of evars after resolution,
-    potentially unprotecting some evars that were set unresolvable
-    just for this call to resolution. *)
-
-let revert_resolvability oevd evd =
-  let fold ev _evi evd =
-    try
-      if not (Evd.is_resolvable_evar evd ev) then
-        let _evi' = Evd.find_undefined oevd ev in
-        if Evd.is_resolvable_evar oevd ev then
-          Evd.set_resolvable_evar evd ev true
-        else evd
-      else evd
-    with Not_found -> evd
-  in
-  Evd.fold_undefined fold evd evd
 
 exception Unresolved
 
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 let resolve_all_evars debug depth unique env p oevd do_split fail =
-  let split = if do_split then split_evars p oevd else [Evar.Set.empty] in
-  let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true
-  in
+  let tcs = Evd.get_typeclass_evars oevd in
+  let split = if do_split then split_evars p oevd else [tcs] in
+  let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true in
   let rec docomp evd = function
-    | [] -> revert_resolvability oevd evd
+    | [] -> evd
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try
@@ -1131,7 +1103,9 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
 
 let initial_select_evars filter =
   fun evd ev evi ->
-    filter ev (snd evi.Evd.evar_source) &&
+    filter ev (Lazy.from_val (snd evi.Evd.evar_source)) &&
+    (** Typeclass evars can contain evars whose conclusion is not
+        yet determined to be a class or not. *)
     Typeclasses.is_class_evar evd evi
 
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
@@ -1223,5 +1197,6 @@ let autoapply c i =
     unify_e_resolve false flags gl
                                  ((c,cty,Univ.ContextSet.empty),0,ce) <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
-      let sigma = Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals sigma in
+      let sigma = Typeclasses.make_unresolvables
+          (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma in
       Proofview.Unsafe.tclEVARS sigma) end

@@ -386,7 +386,7 @@ let run_tactic env tac pr =
     (* Check that retrieved given up is empty *)
     if not (List.is_empty retrieved_given_up) then
       CErrors.anomaly Pp.(str "Evars generated outside of proof engine (e.g. V82, clear, ...) are not supposed to be explicitly given up.");
-    let sigma = List.fold_left Proofview.Unsafe.mark_as_goal sigma retrieved in
+    let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT retrieved
   in

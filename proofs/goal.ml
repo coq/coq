@@ -64,8 +64,7 @@ module V82 = struct
 		Evd.evar_source = (Loc.tag Evar_kinds.GoalEvar);
                 Evd.evar_candidates = None }
     in
-    let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
-    let evars = Evd.set_resolvable_evar evars evk false in
+    let (evars, evk) = Evarutil.new_pure_evar_full evars ~typeclass_candidate:false evi in
     let evars = Evd.restore_future_goals evars prev_future_goals in
     let ctxt = Environ.named_context_of_val hyps in
     let inst = Array.map_of_list (NamedDecl.get_id %> EConstr.mkVar) ctxt in

@@ -67,11 +67,8 @@ let dependent_init =
   let rec aux = function
   | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
   | TCons (env, sigma, typ, t) ->
-    let (sigma, econstr) = Evarutil.new_evar env sigma ~src typ in
+    let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~typeclass_candidate:false typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
-    (* Goals are created with a store which marks them as unresolvable
-       for type classes. *)
-    let sigma = Evd.set_resolvable_evar sigma gl false in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
     entry, { solution = sol; comb = with_empty_state gl :: comb; shelf = [] }
@@ -743,23 +740,28 @@ let unshelve l p =
   let l = undefined p.solution l in
   { p with comb = p.comb@l }
 
-let mark_in_evm ~goal evd content =
-  let info = Evd.find evd content in
-  let info =
+let mark_in_evm ~goal evd evars =
+  let evd =
     if goal then
-      { info with Evd.evar_source = match info.Evd.evar_source with
-            (* Two kinds for goal evars:
-               - GoalEvar (morally not dependent)
-               - VarInstance (morally dependent of some name).
-               This is a heuristic for naming these evars. *)
-  | loc, (Evar_kinds.QuestionMark { Evar_kinds.qm_name=Names.Name id} |
-                    Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
-            | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-            | loc,_ -> loc,Evar_kinds.GoalEvar }
-    else info
+      let mark evd content =
+        let info = Evd.find evd content in
+        let info =
+          { info with Evd.evar_source = match info.Evd.evar_source with
+                (* Two kinds for goal evars:
+                   - GoalEvar (morally not dependent)
+                   - VarInstance (morally dependent of some name).
+                   This is a heuristic for naming these evars. *)
+                | loc, (Evar_kinds.QuestionMark { Evar_kinds.qm_name=Names.Name id} |
+                        Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
+                | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+                | loc,_ -> loc,Evar_kinds.GoalEvar }
+        in Evd.add evd content info
+      in CList.fold_left mark evd evars
+    else evd
   in
-  let evd = Evd.add evd content info in
-  Evd.set_resolvable_evar evd content false
+  let tcs = Evd.get_typeclass_evars evd in
+  let evset = Evar.Set.of_list evars in
+  Evd.set_typeclass_evars evd (Evar.Set.diff tcs evset)
 
 let with_shelf tac =
   let open Proof in
@@ -776,7 +778,7 @@ let with_shelf tac =
   let sigma = Evd.restore_future_goals sigma fgoals in
   (* Ensure we mark and return only unsolved goals *)
   let gls' = undefined_evars sigma (CList.rev_append gls' gls) in
-  let sigma = CList.fold_left (mark_in_evm ~goal:false) sigma gls' in
+  let sigma = mark_in_evm ~goal:false sigma gls' in
   let npv = { npv with shelf; solution = sigma } in
   Pv.set npv >> tclUNIT (gls', ans)
 
@@ -1030,7 +1032,7 @@ module Unsafe = struct
   let reset_future_goals p =
     { p with solution = Evd.reset_future_goals p.solution }
 
-  let mark_as_goal evd content =
+  let mark_as_goals evd content =
     mark_in_evm ~goal:true evd content
 
   let advance = Evarutil.advance
@@ -1038,7 +1040,7 @@ module Unsafe = struct
   let undefined = undefined
 
   let mark_as_unresolvable p gl =
-    { p with solution = mark_in_evm ~goal:false p.solution gl }
+    { p with solution = mark_in_evm ~goal:false p.solution [gl] }
 
 end
 

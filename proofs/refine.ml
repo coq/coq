@@ -105,7 +105,7 @@ let generic_refine ~typecheck f gl =
         | Some id -> Evd.rename evk id sigma
   in
   (** Mark goals *)
-  let sigma = CList.fold_left Proofview.Unsafe.mark_as_goal sigma comb in
+  let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++
                             Termops.Internal.print_constr_env env sigma c)) in
