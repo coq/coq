@@ -284,16 +284,6 @@ let assoc_defined id env = match Environ.lookup_named id env with
 
 open Declarations
 
-let constant_value_in env (kn,u) =
-  let cb = lookup_constant kn env in
-  match cb.const_body with
-  | Def l_body ->
-      let b = Mod_subst.force_constr l_body in
-      (* subst_instance_constr u b *)
-      (b,u)
-  | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-  | Undef _ -> raise (NotEvaluableConst NoBody)
-
 let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
   try
     Some (KeyTable.find tab ref)
@@ -313,7 +303,7 @@ let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
           | LocalDef (_, t, _) -> lift n t, Instance.empty
           end
         | VarKey id -> assoc_defined id cache.i_env, Instance.empty
-	| ConstKey cst -> constant_value_in cache.i_env cst
+        | ConstKey (cst, u) -> constant_value_in cache.i_env (cst, Instance.empty), u
     in
     let v = cache.i_repr infos tab (body, u) in
     KeyTable.add tab ref v;
@@ -552,9 +542,9 @@ let mk_clos (e : fconstr fusubs) t =
   match kind t with
   | Rel i -> clos_rel (fst e) i
     | Var x -> { norm = Red; term = FFlex (VarKey x) }
-  | Const (c,u) -> { norm = Red; term = FFlex (ConstKey (c, Univ.subst_instance_instance (snd e) u)) }
+  | Const (c,u) -> { norm = Red; term = FFlex (ConstKey (c, subst_instance_instance (snd e) u)) }
   | Meta _ -> { norm = Norm; term = FAtom t }
-  | Sort (Sorts.Type u) ->  { norm = Norm; term = FAtom (mkSort (Sorts.Type (Univ.subst_instance_universe (snd e) u))) }
+  | Sort (Sorts.Type u) ->  { norm = Norm; term = FAtom (mkSort (Sorts.Type (subst_instance_universe (snd e) u))) }
   | Sort _ -> { norm = Norm; term = FAtom t }
   | Ind (i, u) -> { norm = Norm; term = FInd (i, subst_if_not_empty (snd e) u) }
   | Construct (c, u) -> { norm = Cstr; term = FConstruct (c, subst_if_not_empty (snd e) u) }
@@ -587,9 +577,9 @@ let rec to_constr lfts v =
         mkCase (ci, p, to_constr lfts c, ve)
       else
         let subs = comp_subs lfts env in
-        mkCase (ci, subst_constr subs p,
+        mkCase (ci, subst_constr (subs, snd env) p,
             to_constr lfts c,
-            Array.map (fun b -> subst_constr subs b) ve)
+            Array.map (fun b -> subst_constr (subs, snd env) b) ve)
     | FFix ((op,(lna,tys,bds)) as fx, e) ->
       if is_subs_id (fst e) && is_lift_id lfts && Instance.is_empty (snd e) then
         mkFix fx
@@ -597,8 +587,8 @@ let rec to_constr lfts v =
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
         let subs_bd = comp_subs (el_liftn n lfts) (fstapp (subs_liftn n) e) in
-        let tys = Array.Fun1.map subst_constr subs_ty tys in
-        let bds = Array.Fun1.map subst_constr subs_bd bds in
+        let tys = Array.Fun1.map subst_constr (subs_ty, snd e) tys in
+        let bds = Array.Fun1.map subst_constr (subs_bd, snd e) bds in
         mkFix (op, (lna, tys, bds))
     | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
       if is_subs_id (fst e) && is_lift_id lfts && Instance.is_empty (snd e) then
@@ -607,8 +597,8 @@ let rec to_constr lfts v =
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
         let subs_bd = comp_subs (el_liftn n lfts) (fstapp (subs_liftn n) e) in
-        let tys = Array.Fun1.map subst_constr subs_ty tys in
-        let bds = Array.Fun1.map subst_constr subs_bd bds in
+        let tys = Array.Fun1.map subst_constr (subs_ty, snd e) tys in
+        let bds = Array.Fun1.map subst_constr (subs_bd, snd e) bds in
         mkCoFix (op, (lna, tys, bds))
     | FApp (f,ve) ->
         mkApp (to_constr lfts f,
@@ -621,8 +611,8 @@ let rec to_constr lfts v =
         Term.compose_lam (List.rev tys) f
       else
         let subs = comp_subs lfts e in
-        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs) c) tys in
-        let f = subst_constr (subs_liftn len subs) f in
+        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs, snd e) c) tys in
+        let f = subst_constr (subs_liftn len subs, snd e) f in
         Term.compose_lam (List.rev tys) f
     | FProd (n,t,c)   ->
         mkProd (n, to_constr lfts t,
@@ -631,26 +621,28 @@ let rec to_constr lfts v =
       let subs = comp_subs (el_lift lfts) (fstapp subs_lift e) in
         mkLetIn (n, to_constr lfts b,
                     to_constr lfts t,
-                    subst_constr subs f)
+                    subst_constr (subs, snd e) f)
     | FEvar ((ev,args),env) ->
       let subs = comp_subs lfts env in
-        mkEvar(ev,Array.map (fun a -> subst_constr subs a) args)
+        mkEvar(ev,Array.map (fun a -> subst_constr (subs, snd env) a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts) a
     | FCLOS (t,env) ->
       if is_subs_id (fst env) && is_lift_id lfts && Instance.is_empty (snd env) then t
       else
         let subs = comp_subs lfts env in
-        subst_constr subs t
+        subst_constr (subs, snd env) t
     | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
 
-and subst_constr subst c = match Constr.kind c with
+and subst_constr (subst, inst) c = match Constr.kind c with
 | Rel i ->
   begin match expand_rel i subst with
   | Inl (k, lazy v) -> Vars.lift k v
   | Inr (m, _) -> mkRel m
   end
+| Const _ | Ind _ | Construct _ | Sort (Sorts.Type _) ->
+  subst_instance_constr inst c
 | _ ->
-  Constr.map_with_binders Esubst.subs_lift subst_constr subst c
+  Constr.map_with_binders (fstapp Esubst.subs_lift) subst_constr (subst, inst) c
 
 and comp_subs el s =
   Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el (fst s)
