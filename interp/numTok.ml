@@ -62,6 +62,13 @@ struct
     compare s "0" = 0
 end
 
+(* Helper function *)
+let div2_with_rest =
+  let two = Z.of_int 2 in
+  fun n ->
+    let res, rem = Z.div_rem n two in
+    res, Z.equal rem Z.one
+
 type sign = SPlus | SMinus
 
 type 'a exp = EDec of 'a | EBin of 'a
@@ -84,31 +91,31 @@ struct
     (* nasty code to remove when switching to zarith
        since zarith's of_string handles hexadecimal *)
     match UnsignedNat.classify n with
-    | CDec -> Bigint.of_string (to_string (sign,n))
+    | CDec -> Z.of_string (to_string (sign,n))
     | CHex ->
        let int_of_char c = match c with
          | 'a'..'f' -> 10 + int_of_char c - int_of_char 'a'
          | _ -> int_of_char c - int_of_char '0' in
-       let c16 = Bigint.of_int 16 in
+       let c16 = Z.of_int 16 in
        let s = UnsignedNat.to_string n in
-       let n = ref Bigint.zero in
+       let n = ref Z.zero in
        let len = String.length s in
        for d = 2 to len - 1 do
-         n := Bigint.(add (mult !n c16) (of_int (int_of_char s.[d])))
+         n := Z.(add (mul !n c16) (of_int (int_of_char s.[d])))
        done;
-       match sign with SPlus -> !n | SMinus -> Bigint.neg !n
+       match sign with SPlus -> !n | SMinus -> Z.neg !n
   let to_bigint n = bigint_of_string n
   let string_of_nonneg_bigint c n =
     (* nasty code to remove when switching to zarith
        since zarith's format handles hexadecimal *)
     match c with
-    | CDec -> Bigint.to_string n
+    | CDec -> Z.to_string n
     | CHex ->
        let div16 n =
-         let n, r0 = Bigint.div2_with_rest n in
-         let n, r1 = Bigint.div2_with_rest n in
-         let n, r2 = Bigint.div2_with_rest n in
-         let n, r3 = Bigint.div2_with_rest n in
+         let n, r0 = div2_with_rest n in
+         let n, r1 = div2_with_rest n in
+         let n, r2 = div2_with_rest n in
+         let n, r3 = div2_with_rest n in
          let r = match r3, r2, r1, r0 with
            | false, false, false, false -> "0"
            | false, false, false,  true -> "1"
@@ -129,14 +136,14 @@ struct
          n, r in
        let n = ref n in
        let l = ref [] in
-       while Bigint.is_strictly_pos !n do
+       while Int.equal 1 (Z.sign !n) do
          let n', r = div16 !n in
          n := n';
          l := r :: !l
        done;
        "0x" ^ String.concat "" (List.rev !l)
   let of_bigint c n =
-    let sign, n = if Bigint.is_strictly_neg n then (SMinus, Bigint.neg n) else (SPlus, n) in
+    let sign, n = if Int.equal (-1) (Z.sign n) then (SMinus, Z.neg n) else (SPlus, n) in
     (sign, string_of_nonneg_bigint c n)
 end
 
@@ -339,13 +346,13 @@ struct
     let frac = UnsignedNat.to_string frac in
     let i = SignedNat.to_bigint (s, int ^ frac) in
     let e =
-      let e = if exp = "" then Bigint.zero else match exp.[1] with
-      | '+' -> Bigint.of_string (UnsignedNat.to_string (string_del_head 2 exp))
-      | '-' -> Bigint.(neg (of_string (UnsignedNat.to_string (string_del_head 2 exp))))
-      | _ -> Bigint.of_string (UnsignedNat.to_string (string_del_head 1 exp)) in
+      let e = if exp = "" then Z.zero else match exp.[1] with
+      | '+' -> Z.of_string (UnsignedNat.to_string (string_del_head 2 exp))
+      | '-' -> Z.(neg (of_string (UnsignedNat.to_string (string_del_head 2 exp))))
+      | _ -> Z.of_string (UnsignedNat.to_string (string_del_head 1 exp)) in
       let l = String.length frac in
       let l = match c with CDec -> l | CHex -> 4 * l in
-      Bigint.(sub e (of_int l)) in
+      Z.(sub e (of_int l)) in
     (i, match c with CDec -> EDec e | CHex -> EBin e)
 
   let of_bigint_and_exponent i e =

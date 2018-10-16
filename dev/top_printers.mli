@@ -53,7 +53,6 @@ val ppglob_constr : 'a Glob_term.glob_constr_g -> unit
 val pppattern : Pattern.constr_pattern -> unit
 val ppfconstr : CClosure.fconstr -> unit
 
-val ppbigint : Bigint.bigint -> unit
 val ppnumtokunsigned : NumTok.Unsigned.t -> unit
 val ppnumtokunsignednat : NumTok.UnsignedNat.t -> unit
 

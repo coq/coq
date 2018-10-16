@@ -389,6 +389,7 @@ IF "%RUNSETUP%"=="Y" (
     -P libfontconfig1 ^
     -P gtk-update-icon-cache ^
     -P libtool,automake ^
+    -P libgmp-devel ^
     -P intltool ^
     -P bison,flex ^
     %EXTRAPACKAGES% ^

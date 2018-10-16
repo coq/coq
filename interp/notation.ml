@@ -388,7 +388,7 @@ module InnerPrimToken = struct
 
   type interpreter =
     | RawNumInterp of (?loc:Loc.t -> rawnum -> glob_constr)
-    | BigNumInterp of (?loc:Loc.t -> Bigint.bigint -> glob_constr)
+    | BigNumInterp of (?loc:Loc.t -> Z.t -> glob_constr)
     | StringInterp of (?loc:Loc.t -> string -> glob_constr)
 
   let interp_eq f f' = match f,f' with
@@ -410,7 +410,7 @@ module InnerPrimToken = struct
 
   type uninterpreter =
     | RawNumUninterp of (any_glob_constr -> rawnum option)
-    | BigNumUninterp of (any_glob_constr -> Bigint.bigint option)
+    | BigNumUninterp of (any_glob_constr -> Z.t option)
     | StringUninterp of (any_glob_constr -> string option)
 
   let uninterp_eq f f' = match f,f' with
@@ -614,11 +614,10 @@ end
 
 (** Conversion from bigint to int63 *)
 let rec int63_of_pos_bigint i =
-  let open Bigint in
-  if equal i zero then Uint63.of_int 0
+  if Z.(equal i zero) then Uint63.of_int 0
   else
-    let (quo,rem) = div2_with_rest i in
-    if rem then Uint63.add (Uint63.of_int 1)
+    let quo, remi = Z.div_rem i (Z.of_int 2) in
+    if Z.(equal remi one) then Uint63.add (Uint63.of_int 1)
       (Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo))
     else Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo)
 
@@ -800,24 +799,24 @@ let rawnum_of_coqint c =
 (** First, [positive] from/to bigint *)
 
 let rec pos_of_bigint posty n =
-  match Bigint.div2_with_rest n with
-  | (q, false) ->
+  match Z.div_rem n (Z.of_int 2) with
+  | (q, rem) when rem = Z.zero ->
       let c = mkConstruct (posty, 2) in (* xO *)
       mkApp (c, [| pos_of_bigint posty q |])
-  | (q, true) when not (Bigint.equal q Bigint.zero) ->
+  | (q, _) when not (Z.equal q Z.zero) ->
       let c = mkConstruct (posty, 1) in (* xI *)
       mkApp (c, [| pos_of_bigint posty q |])
-  | (q, true) ->
+  | (q, _) ->
       mkConstruct (posty, 3) (* xH *)
 
 let rec bigint_of_pos c = match Constr.kind c with
-  | Construct ((_, 3), _) -> (* xH *) Bigint.one
+  | Construct ((_, 3), _) -> (* xH *) Z.one
   | App (c, [| d |]) ->
       begin match Constr.kind c with
       | Construct ((_, n), _) ->
           begin match n with
-          | 1 -> (* xI *) Bigint.add_1 (Bigint.mult_2 (bigint_of_pos d))
-          | 2 -> (* xO *) Bigint.mult_2 (bigint_of_pos d)
+          | 1 -> (* xI *) Z.add Z.one (Z.mul Z.(of_int 2) (bigint_of_pos d))
+          | 2 -> (* xO *) Z.mul Z.(of_int 2) (bigint_of_pos d)
           | n -> assert false (* no other constructor of type positive *)
           end
       | x -> raise NotAValidPrimToken
@@ -827,24 +826,24 @@ let rec bigint_of_pos c = match Constr.kind c with
 (** Now, [Z] from/to bigint *)
 
 let z_of_bigint { z_ty; pos_ty } n =
-  if Bigint.equal n Bigint.zero then
+  if Z.(equal n zero) then
     mkConstruct (z_ty, 1) (* Z0 *)
   else
     let (s, n) =
-      if Bigint.is_pos_or_zero n then (2, n) (* Zpos *)
-      else (3, Bigint.neg n) (* Zneg *)
+      if Z.(leq zero n) then (2, n) (* Zpos *)
+      else (3, Z.neg n) (* Zneg *)
     in
     let c = mkConstruct (z_ty, s) in
     mkApp (c, [| pos_of_bigint pos_ty n |])
 
 let bigint_of_z z = match Constr.kind z with
-  | Construct ((_, 1), _) -> (* Z0 *) Bigint.zero
+  | Construct ((_, 1), _) -> (* Z0 *) Z.zero
   | App (c, [| d |]) ->
       begin match Constr.kind c with
       | Construct ((_, n), _) ->
           begin match n with
           | 2 -> (* Zpos *) bigint_of_pos d
-          | 3 -> (* Zneg *) Bigint.neg (bigint_of_pos d)
+          | 3 -> (* Zneg *) Z.neg (bigint_of_pos d)
           | n -> assert false (* no other constructor of type Z *)
           end
       | _ -> raise NotAValidPrimToken
@@ -861,20 +860,19 @@ let error_negative ?loc =
   CErrors.user_err ?loc ~hdr:"interp_int63" (Pp.str "int63 are only non-negative numbers.")
 
 let error_overflow ?loc n =
-  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Bigint.to_string n))
+  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Z.to_string n))
 
 let interp_int63 ?loc n =
-  let open Bigint in
-  if is_pos_or_zero n
+  if Z.(leq zero n)
   then
-    if less_than n (pow two 63)
+    if Z.(lt n (pow (of_int 2) 63))
     then int63_of_pos_bigint ?loc n
     else error_overflow ?loc n
   else error_negative ?loc
 
 let bigint_of_int63 c =
   match Constr.kind c with
-  | Int i -> Bigint.of_string (Uint63.to_string i)
+  | Int i -> Z.of_string (Uint63.to_string i)
   | _ -> raise NotAValidPrimToken
 
 let interp o ?loc n =

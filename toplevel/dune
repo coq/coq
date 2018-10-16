@@ -3,8 +3,9 @@
  (public_name coq.toplevel)
  (synopsis "Coq's Interactive Shell [terminal-based]")
  (wrapped false)
+ ; num still here due to some plugins using it
  (libraries num coq.stm))
-; Coqlevel provides the `Num` library to plugins, we could also use
+; Interp provides the `zarith` library to plugins, we could also use
 ; -linkall in the plugins file, to be discussed.
 
 (coq.pp (modules g_toplevel))

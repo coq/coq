@@ -2,6 +2,6 @@
  (name nsatz_plugin)
  (public_name coq.plugins.nsatz)
  (synopsis "Coq's nsatz solver plugin")
- (libraries num coq.plugins.ltac))
+ (libraries coq.plugins.ltac))
 
 (coq.pp (modules g_nsatz))

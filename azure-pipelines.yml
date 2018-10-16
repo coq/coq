@@ -22,7 +22,7 @@ jobs:
       powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
       SET CYGROOT=C:\cygwin64
       SET CYGCACHE=%CYGROOT%\var\cache\setup
-      setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib -P python3
+      setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib,mingw64-x86_64-gmp -P python3
 
       SET TARGET_ARCH=x86_64-w64-mingw32
       SET CD_MFMT=%cd:\=/%
@@ -64,7 +64,7 @@ jobs:
       set -e
       brew update
       (cd $(brew --repository)/Library/Taps/homebrew/homebrew-core/ && git fetch --shallow-since=${HBCORE_DATE} && git checkout ${HBCORE_REF})
-      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme || true
+      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme gmp || true
       # || true: workaround #12657, see also #12672 and commit message for this line
       pip3 install macpack
     displayName: 'Install system dependencies'
@@ -80,7 +80,7 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.9.1
       opam list
     displayName: 'Install OCaml dependencies'
     env:

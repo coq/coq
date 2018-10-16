@@ -48,21 +48,21 @@ let interp_float ?loc n =
            | None -> "" | Some f -> NumTok.UnsignedNat.to_string f in
          let e = match e with
            | None -> "0" | Some e -> NumTok.SignedNat.to_string e in
-         Bigint.of_string (i ^ f),
+         Z.of_string (i ^ f),
          (try int_of_string e with Failure _ -> 0) - String.length f in
        let m', e' =
          let m', e' = Float64.frshiftexp f in
          let m' = Float64.normfr_mantissa m' in
          let e' = Uint63.to_int_min e' 4096 - Float64.eshift - 53 in
-         Bigint.of_string (Uint63.to_string m'),
+         Z.of_string (Uint63.to_string m'),
          e' in
-       let c2, c5 = Bigint.(of_int 2, of_int 5) in
+       let c2, c5 = Z.(of_int 2, of_int 5) in
        (* check m*5^e <> m'*2^e' *)
        let check m e m' e' =
-         not (Bigint.(equal (mult m (pow c5 e)) (mult m' (pow c2 e')))) in
+         not (Z.(equal (mul m (pow c5 e)) (mul m' (pow c2 e')))) in
        (* check m*5^e*2^e' <> m' *)
        let check' m e e' m' =
-         not (Bigint.(equal (mult (mult m (pow c5 e)) (pow c2 e')) m')) in
+         not (Z.(equal (mul (mul m (pow c5 e)) (pow c2 e')) m')) in
        (* we now have to check m*10^e <> m'*2^e' *)
        if e >= 0 then
          if e <= e' then check m e m' (e' - e)
