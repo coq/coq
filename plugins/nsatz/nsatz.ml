@@ -13,30 +13,20 @@ open Util
 open Constr
 open Tactics
 
-open Num
 open Utile
 
 (***********************************************************************
  Operations on coefficients
 *)
 
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  num_of_big_int(Ratio.numerator_ratio r'),
-  num_of_big_int(Ratio.denominator_ratio r')
-
 module BigInt = struct
-  open Big_int
+  open Big_int_Z
 
   type t = big_int
   let of_int = big_int_of_int
   let coef0 = of_int 0
-  let of_num = Num.big_int_of_num
-  let to_num = Num.num_of_big_int
+  let of_num = Q.to_bigint
+  let to_num = Q.of_bigint
   let equal = eq_big_int
   let lt = lt_big_int
   let le = le_big_int
@@ -113,7 +103,7 @@ type vname = string
 
 type term =
   | Zero
-  | Const of Num.num
+  | Const of Q.t
   | Var of vname
   | Opp of term
   | Add of term * term
@@ -122,7 +112,7 @@ type term =
   | Pow of term * int
 
 let const n =
-  if eq_num n num_0 then Zero else Const n
+  if Q.(equal zero) n then Zero else Const n
 let pow(p,i) = if Int.equal i 1 then p else Pow(p,i)
 let add = function
     (Zero,q) -> q
@@ -131,8 +121,8 @@ let add = function
 let mul = function
     (Zero,_) -> Zero
   | (_,Zero) -> Zero
-  | (p,Const n) when eq_num n num_1 -> p
-  | (Const n,q) when eq_num n num_1 -> q
+  | (p,Const n) when Q.(equal one) n -> p
+  | (Const n,q) when Q.(equal one) n -> q
   | (p,q) -> Mul(p,q)
 
 let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n))
@@ -167,62 +157,64 @@ let mkt_app name l =  mkApp (Lazy.force name, Array.of_list l)
 let tlp () = mkt_app tlist [mkt_app tpexpr [Lazy.force tz]]
 let tllp () = mkt_app tlist [tlp()]
 
-let rec mkt_pos n =
-  if n =/ num_1 then Lazy.force pxH
-  else if mod_num n num_2 =/ num_0 then
-    mkt_app pxO [mkt_pos (quo_num n num_2)]
+let mkt_pos n =
+  let rec mkt_pos n =
+  if Z.(equal one) n then Lazy.force pxH
+  else if Z.is_even n then
+    mkt_app pxO [mkt_pos Z.(n asr 1)]
   else
-    mkt_app pxI [mkt_pos (quo_num n num_2)]
+    mkt_app pxI [mkt_pos Z.(n asr 1)]
+  in mkt_pos (Q.to_bigint n)
 
 let mkt_n n =
-  if Num.eq_num n num_0
+  if Q.(equal zero) n
   then Lazy.force nN0
   else mkt_app nNpos [mkt_pos n]
 
 let mkt_z z  =
-  if z =/ num_0 then  Lazy.force z0
-  else if z >/ num_0 then
+  if Q.(equal zero) z then  Lazy.force z0
+  else if Q.(lt zero) z then
     mkt_app zpos [mkt_pos z]
   else
-    mkt_app zneg [mkt_pos ((Int 0) -/ z)]
+    mkt_app zneg [mkt_pos (Q.neg z)]
 
 let rec mkt_term t  =  match t with
-| Zero -> mkt_term (Const num_0)
-| Const r -> let (n,d) = numdom r in
-  mkt_app  ttconst [Lazy.force tz; mkt_z n]
-| Var v -> mkt_app ttvar [Lazy.force tz; mkt_pos (num_of_string v)]
+| Zero -> mkt_term (Const Q.zero)
+| Const r -> let n = r |> Q.num |> Q.of_bigint in
+  mkt_app ttconst [Lazy.force tz; mkt_z n]
+| Var v -> mkt_app ttvar [Lazy.force tz; mkt_pos (Q.of_string v)]
 | Opp t1 -> mkt_app  ttopp [Lazy.force tz; mkt_term t1]
 | Add (t1,t2) -> mkt_app  ttadd [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Sub (t1,t2) -> mkt_app  ttsub [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Mul (t1,t2) -> mkt_app  ttmul [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Pow (t1,n) ->  if Int.equal n 0 then
-    mkt_app ttconst [Lazy.force tz; mkt_z num_1]
+    mkt_app ttconst [Lazy.force tz; mkt_z Q.one]
 else
-    mkt_app ttpow [Lazy.force tz; mkt_term t1; mkt_n (num_of_int n)]
+    mkt_app ttpow [Lazy.force tz; mkt_term t1; mkt_n (Q.of_int n)]
 
 let rec parse_pos p =
   match Constr.kind p with
 | App (a,[|p2|]) ->
-    if Constr.equal a (Lazy.force pxO) then num_2 */ (parse_pos p2)
-    else num_1 +/ (num_2 */ (parse_pos p2))
-| _ -> num_1
+    if Constr.equal a (Lazy.force pxO) then Q.(mul (of_int 2)) (parse_pos p2)
+    else Q.(add one) Q.(mul (of_int 2) (parse_pos p2))
+| _ -> Q.one
 
 let parse_z z =
   match Constr.kind z with
 | App (a,[|p2|]) ->
-    if Constr.equal a (Lazy.force zpos) then parse_pos p2 else (num_0 -/ (parse_pos p2))
-| _ -> num_0
+    if Constr.equal a (Lazy.force zpos) then parse_pos p2 else Q.neg (parse_pos p2)
+| _ -> Q.zero
 
 let parse_n z =
   match Constr.kind z with
 | App (a,[|p2|]) ->
     parse_pos p2
-| _ -> num_0
+| _ -> Q.zero
 
 let rec parse_term p =
   match Constr.kind p with
 | App (a,[|_;p2|]) ->
-    if Constr.equal a (Lazy.force ttvar) then Var (string_of_num (parse_pos p2))
+    if Constr.equal a (Lazy.force ttvar) then Var (Q.to_string (parse_pos p2))
     else if Constr.equal a (Lazy.force ttconst) then Const (parse_z p2)
     else if Constr.equal a (Lazy.force ttopp) then Opp (parse_term p2)
     else Zero
@@ -231,7 +223,7 @@ let rec parse_term p =
     else if Constr.equal a (Lazy.force ttsub) then Sub (parse_term p2, parse_term p3)
     else if Constr.equal a (Lazy.force ttmul) then Mul (parse_term p2, parse_term p3)
     else if Constr.equal a (Lazy.force ttpow) then
-      Pow (parse_term p2, int_of_num (parse_n p3))
+      Pow (parse_term p2, Q.to_int (parse_n p3))
     else Zero
 | _ -> Zero
 
@@ -278,7 +270,7 @@ let term_pol_sparse nvars np t=
     match t with
     | Zero -> zeroP
     | Const r ->
-        if Num.eq_num r num_0
+        if Q.(equal zero) r
         then zeroP
         else polconst d (Poly.Pint (Coef.of_num r))
     | Var v ->
@@ -316,7 +308,7 @@ let pol_sparse_to_term n2 p =
   let p = PIdeal.repr p in
   let rec aux p =
     match p with
-      [] -> const (num_of_string "0")
+      [] -> const Q.zero
     | (a,m)::p1 ->
       let m = Ideal.Monomial.repr m in
       let n = (Array.length m)-1 in
@@ -443,8 +435,9 @@ let expand_pol lb lp =
 let theoremedeszeros_termes lp =
   let nvars = List.fold_left set_nvars_term 0 lp in
   match lp with
-  | Const (Int sugarparam)::Const (Int nparam)::lp ->
-      ((match sugarparam with
+  | Const sugarparam :: Const nparam :: lp ->
+    let nparam = Q.to_int nparam in
+      ((match Q.to_int sugarparam with
       |0 -> sinfo "computation without sugar";
           lexico:=false;
       |1 -> sinfo "computation with sugar";

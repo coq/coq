@@ -30,7 +30,7 @@ module type Coef = sig
   val pgcd : t -> t -> t
 
   val hash : t -> int
-  val of_num : Num.num -> t
+  val of_num : Q.t -> t
   val to_string : t -> string
 end
 
@@ -39,7 +39,7 @@ module type S = sig
   type variable = int
   type t = Pint of coef | Prec of variable * t array
 
-  val of_num : Num.num -> t
+  val of_num : Q.t -> t
   val x : variable -> t
   val monome : variable -> int -> t
   val is_constantP : t -> bool
@@ -106,7 +106,7 @@ end
 module Make (C:Coef) = struct
 
 type coef = C.t
-let coef_of_int i = C.of_num (Num.Int i)
+let coef_of_int i = C.of_num (Q.of_int i)
 let coef0 = coef_of_int 0
 let coef1 = coef_of_int 1
 
@@ -125,8 +125,8 @@ type t =
 
 (* constant polynomials *)
 let of_num x = Pint (C.of_num x)
-let cf0 = of_num (Num.Int 0)
-let cf1 = of_num (Num.Int 1)
+let cf0 = of_num Q.zero
+let cf1 = of_num Q.one
 
 (* nth variable *)
 let x n = Prec (n,[|cf0;cf1|])
