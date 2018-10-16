@@ -177,6 +177,9 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 ###########################################################################
 camldevfiles: $(MERLINFILES) META.coq
 
+# prevent submake dependency
+META.coq.in $(MERLININFILES): ;
+
 .merlin: .merlin.in
 	cp -a "$<" "$@"
 
