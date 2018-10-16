@@ -282,8 +282,6 @@ let assoc_defined id env = match Environ.lookup_named id env with
 | LocalDef (_, c, _) -> c
 | _ -> raise Not_found
 
-open Declarations
-
 let ref_value_cache ({i_cache = cache;_} as infos) tab ref =
   try
     Some (KeyTable.find tab ref)
