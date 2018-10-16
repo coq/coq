@@ -24,6 +24,13 @@ Tactics
   Simplex-based proof engine. In case of regression, 'Unset Simplex'
   to get the venerable Fourier-based engine.
 
+Standard library
+
+- For users running Coq without the standard library ("-noinit" or "-nois"),
+  sytnax for literal nats is now available with `Require Import
+  Coq.Init.NatNumeralNotation.` without needing the rest of the prelude. Note
+  that this does still import `Coq.Init.Datatypes`, where `nat` is defined.
+
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================

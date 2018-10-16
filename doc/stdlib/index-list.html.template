@@ -18,6 +18,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Logic.v
     theories/Init/Logic_Type.v
     theories/Init/Nat.v
+    theories/Init/NatNumeralNotation.v
     theories/Init/Decimal.v
     theories/Init/Peano.v
     theories/Init/Specif.v
