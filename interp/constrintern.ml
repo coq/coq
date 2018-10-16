@@ -737,7 +737,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
           try
             let gc = intern nenv c in
-            Id.Map.add id (gc, Some c) map
+            Id.Map.add id (gc, None) map
           with Nametab.GlobalizationError _ -> map
         in
         let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
