@@ -537,14 +537,14 @@ let destFLambda clos_fun t =
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
-let subst_if_not_empty subst u = if Univ.Instance.is_empty u then u else Univ.subst_instance_instance subst u
+let subst_if_not_empty subst u = if Univ.Instance.is_empty subst then u else Univ.subst_instance_instance subst u
 let mk_clos (e : fconstr fusubs) t =
   match kind t with
   | Rel i -> clos_rel (fst e) i
     | Var x -> { norm = Red; term = FFlex (VarKey x) }
-  | Const (c,u) -> { norm = Red; term = FFlex (ConstKey (c, subst_instance_instance (snd e) u)) }
+  | Const (c,u) -> { norm = Red; term = FFlex (ConstKey (c, subst_if_not_empty (snd e) u)) }
   | Meta _ -> { norm = Norm; term = FAtom t }
-  | Sort (Sorts.Type u) ->  { norm = Norm; term = FAtom (mkSort (Sorts.Type (subst_instance_universe (snd e) u))) }
+  | Sort (Sorts.Type u) ->  { norm = Norm; term = FAtom (mkSort (Sorts.Type (if Instance.is_empty (snd e) then u else subst_instance_universe (snd e) u))) }
   | Sort _ -> { norm = Norm; term = FAtom t }
   | Ind (i, u) -> { norm = Norm; term = FInd (i, subst_if_not_empty (snd e) u) }
   | Construct (c, u) -> { norm = Cstr; term = FConstruct (c, subst_if_not_empty (snd e) u) }
