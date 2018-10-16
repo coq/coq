@@ -252,11 +252,9 @@ let coq_fast_Zred_factor4 = gen_constant "plugins.omega.fast_Zred_factor4"
 let coq_fast_Zred_factor5 = gen_constant "plugins.omega.fast_Zred_factor5"
 let coq_fast_Zred_factor6 = gen_constant "plugins.omega.fast_Zred_factor6"
 let coq_fast_Zmult_plus_distr_l = gen_constant "plugins.omega.fast_Zmult_plus_distr_l"
-let coq_fast_Zmult_opp_comm =  gen_constant "plugins.omega.fast_Zmult_opp_comm"
 let coq_fast_Zopp_plus_distr =   gen_constant "plugins.omega.fast_Zopp_plus_distr"
 let coq_fast_Zopp_mult_distr_r = gen_constant "plugins.omega.fast_Zopp_mult_distr_r"
 let coq_fast_Zopp_eq_mult_neg_1 =  gen_constant "plugins.omega.fast_Zopp_eq_mult_neg_1"
-let coq_fast_Zopp_involutive = gen_constant "plugins.omega.fast_Zopp_involutive"
 let coq_Zegal_left = gen_constant "plugins.omega.Zegal_left"
 let coq_Zne_left = gen_constant "plugins.omega.Zne_left"
 let coq_Zlt_left = gen_constant "plugins.omega.Zlt_left"
@@ -487,12 +485,7 @@ let recognize_number sigma t =
 type constr_path =
   | P_APP of int
   (* Abstraction and product *)
-  | P_BODY
   | P_TYPE
-  (* Case *)
-  | P_BRANCH of int
-  | P_ARITY
-  | P_ARG
 
 let context sigma operation path (t : constr) =
   let rec loop i p0 t =
@@ -502,25 +495,10 @@ let context sigma operation path (t : constr) =
       | ((P_APP n :: p),  App (f,v)) ->
 	  let v' = Array.copy v in
 	  v'.(pred n) <- loop i p v'.(pred n); mkApp (f, v')
-      | ((P_BRANCH n :: p), Case (ci,q,c,v)) ->
-	  (* avant, y avait mkApp... anyway, BRANCH seems nowhere used *)
-	  let v' = Array.copy v in
-	  v'.(n) <- loop i p v'.(n); (mkCase (ci,q,c,v'))
-      | ((P_ARITY :: p),  App (f,l)) ->
-	  mkApp (loop i p f,l)
-      | ((P_ARG :: p),  App (f,v)) ->
-	  let v' = Array.copy v in
-	  v'.(0) <- loop i p v'.(0); mkApp (f,v')
       | (p, Fix ((_,n as ln),(tys,lna,v))) ->
 	  let l = Array.length v in
 	  let v' = Array.copy v in
 	  v'.(n)<- loop (Pervasives.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
-      | ((P_BODY :: p), Prod (n,t,c)) ->
-	  (mkProd (n,t,loop (succ i) p c))
-      | ((P_BODY :: p), Lambda (n,t,c)) ->
-	  (mkLambda (n,t,loop (succ i) p c))
-      | ((P_BODY :: p), LetIn (n,b,t,c)) ->
-	  (mkLetIn (n,b,t,loop (succ i) p c))
       | ((P_TYPE :: p), Prod (n,t,c)) ->
 	  (mkProd (n,loop i p t,c))
       | ((P_TYPE :: p), Lambda (n,t,c)) ->
@@ -537,13 +515,7 @@ let occurrence sigma path (t : constr) =
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
     | ((P_APP n :: p),  App (f,v)) -> loop p v.(pred n)
-    | ((P_BRANCH n :: p), Case (_,_,_,v)) -> loop p v.(n)
-    | ((P_ARITY :: p),  App (f,_)) -> loop p f
-    | ((P_ARG :: p),  App (f,v)) -> loop p v.(0)
     | (p, Fix((_,n) ,(_,_,v))) -> loop p v.(n)
-    | ((P_BODY :: p), Prod (n,t,c)) -> loop p c
-    | ((P_BODY :: p), Lambda (n,t,c)) -> loop p c
-    | ((P_BODY :: p), LetIn (n,b,t,c)) -> loop p c
     | ((P_TYPE :: p), Prod (n,term,c)) -> loop p term
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
