@@ -1294,24 +1294,30 @@ let preferred_orientation evd evk1 evk2 =
   else if is_obligation_evar evd evk2 then false
   else true
 
-(** Precondition evk1 is not frozen, evk2 might be. *)
 let solve_evar_evar_aux force f unify flags env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env evd in
+  let frozen_ev1 = Evar.Set.mem evk1 flags.frozen_evars in
   let frozen_ev2 = Evar.Set.mem evk2 flags.frozen_evars in
   if preferred_orientation evd evk1 evk2 then
-    try solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
-    with CannotProject (evd,ev2) when not frozen_ev2 ->
-    try solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
-    with CannotProject (evd,ev1) ->
-    add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
-  else
-    try if not frozen_ev2 then
+    try if not frozen_ev1 then
+        solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
+      else raise (CannotProject (evd,ev2))
+    with CannotProject (evd,ev2) ->
+      try if not frozen_ev2 then
           solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
         else raise (CannotProject (evd,ev1))
+      with CannotProject (evd,ev1) ->
+        add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
+  else
+    try if not frozen_ev2 then
+        solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 ev2
+      else raise (CannotProject (evd,ev1))
     with CannotProject (evd,ev1) ->
-    try solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
+    try if not frozen_ev1 then
+        solve_evar_evar_l2r force f unify flags env evd aliases (opp_problem pbty) ev2 ev1
+      else raise (CannotProject (evd,ev2))
     with CannotProject (evd,ev2) ->
-    add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
+      add_conv_oriented_pb ~tail:true (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 (** Precondition: evk1 is not frozen *)
 let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
@@ -1361,7 +1367,7 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
   let eq_constr c1 c2 = match EConstr.eq_constr_universes env !evdref c1 c2 with
   | None -> false
   | Some cstr ->
-    try ignore (Evd.add_universe_constraints !evdref cstr); true
+    try evdref := Evd.add_universe_constraints !evdref cstr; true
     with UniversesDiffer -> false
   in
   if Array.equal eq_constr argsv1 argsv2 then !evdref else
@@ -1373,15 +1379,22 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
   let candidates = filter_candidates evd evk untypedfilter NoUpdate in
   let filter = closure_of_filter evd evk untypedfilter in
   let evd',ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
-  if Evar.equal (fst ev1) evk && can_drop then (* No refinement *) evd' else
+  let frozen = Evar.Set.mem evk flags.frozen_evars in
+  if Evar.equal (fst ev1) evk && (frozen || can_drop) then
+    (* No refinement needed *) evd'
+  else
     (* either progress, or not allowed to drop, e.g. to preserve possibly *)
     (* informative equations such as ?e[x:=?y]=?e[x:=?y'] where we don't know *)
     (* if e can depend on x until ?y is not resolved, or, conversely, we *)
     (* don't know if ?y has to be unified with ?y, until e is resolved *)
-  let argsv2 = restrict_instance evd' evk filter argsv2 in
-  let ev2 = (fst ev1,argsv2) in
-  (* Leave a unification problem *)
-  add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd'
+  if frozen then
+    (* We cannot prune a frozen evar *)
+    add_conv_oriented_pb (pbty,env,mkEvar (evk, argsv1),mkEvar (evk,argsv2)) evd
+  else
+    let argsv2 = restrict_instance evd' evk filter argsv2 in
+    let ev2 = (fst ev1,argsv2) in
+    (* Leave a unification problem *)
+    add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd'
 
 (* If the evar can be instantiated by a finite set of candidates known
    in advance, we check which of them apply *)

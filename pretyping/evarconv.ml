@@ -1545,7 +1545,6 @@ let is_beyond_capabilities = function
   | CannotSolveConstraint (pb,ProblemBeyondCapabilities) -> true
   | _ -> false
 
-(* TODO frozen *)
 let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   let t1 = apprec_nohdbeta flags env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta flags env evd (whd_head_evar evd t2) in
@@ -1558,7 +1557,8 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
                                 Termops.Internal.print_constr_env env evd t2 ++ cut ())) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match EConstr.kind evd term1, EConstr.kind evd term2 with
-  | Evar (evk1,args1), (Rel _|Var _) when app_empty
+  | Evar (evk1,args1 as ev1), (Rel _|Var _) when app_empty
+      && not (is_frozen flags ev1)
       && List.for_all (fun a -> EConstr.eq_constr evd a term2 || isEvar evd a)
         (remove_instance_local_defs evd evk1 args1) ->
       (* The typical kind of constraint coming from pattern-matching return
@@ -1568,8 +1568,9 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
-  | (Rel _|Var _), Evar (evk2,args2) when app_empty
-      && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
+  | (Rel _|Var _), Evar (evk2,args2 as ev2) when app_empty
+    && not (is_frozen flags ev2)
+    && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
         (remove_instance_local_defs evd evk2 args2) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
@@ -1589,28 +1590,29 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
       Success (solve_refl ~can_drop:true f flags env evd
                  (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 when app_empty ->
+    (* solve_evar_evar handles the cases ev1 and/or ev2 are frozen *)
       Success (solve_evar_evar ~force:true
                  (evar_define evar_unify flags ~choose:true)
                  evar_unify flags env evd
                  (position_problem true pbty) ev1 ev2)
-  | Evar ev1,_ when Array.length l1 <= Array.length l2 ->
+  | Evar ev1,_ when not (is_frozen flags ev1) && Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification flags env evd (ev1,l1) appr2);
          (fun evd ->
            second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2)]
-  | _,Evar ev2 when Array.length l2 <= Array.length l1 ->
+  | _,Evar ev2 when not (is_frozen flags ev2) && Array.length l2 <= Array.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification flags env evd (ev2,l2) appr1);
          (fun evd ->
            second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1)]
-  | Evar ev1,_ ->
+  | Evar ev1,_ when not (is_frozen flags ev1) ->
       (* Try second-order pattern-matching *)
       second_order_matching_with_args flags env evd with_ho pbty ev1 l1 t2
-  | _,Evar ev2 ->
+  | _,Evar ev2 when not (is_frozen flags ev2) ->
       (* Try second-order pattern-matching *)
       second_order_matching_with_args flags env evd with_ho pbty ev2 l2 t1
   | _ ->
