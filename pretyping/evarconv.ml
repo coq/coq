@@ -1199,9 +1199,10 @@ let default_occurrences_selection ?(frozen_evars=Evar.Set.empty) ts n =
   (default_occurrence_test ~frozen_evars ts,
    List.init n (fun _ -> default_occurrence_selection))
 
-let apply_on_subterm env evdref fixedref f test c t =
-  let test = test env !evdref c in
-  let prc env = Termops.Internal.print_constr_env env !evdref in
+let apply_on_subterm env evd fixedref f test c t =
+  let test = test env evd c in
+  let prc env evd = Termops.Internal.print_constr_env env evd in
+  let evdref = ref evd in
   let rec applyrec (env,(k,c) as acc) t =
     if Evar.Set.exists (fun fixed -> occur_evar !evdref fixed t) !fixedref then
       match EConstr.kind !evdref t with
@@ -1211,20 +1212,21 @@ let apply_on_subterm env evdref fixedref f test c t =
               applyrec acc t
     else
     (if !debug_ho_unification then
-     Feedback.msg_debug Pp.(str"Testing " ++ prc env c ++ str" against " ++ prc env t);
+     Feedback.msg_debug Pp.(str"Testing " ++ prc env !evdref c ++ str" against " ++ prc env !evdref t);
      let b, evd =
         try test env !evdref k c t
         with e when CErrors.noncritical e -> assert false in
-     if b then (evdref := evd;
-                if !debug_ho_unification then Feedback.msg_debug (Pp.str "succeeded");
-                f k t)
+     if b then (if !debug_ho_unification then Feedback.msg_debug (Pp.str "succeeded");
+                let evd', t' = f !evdref k t in
+                evdref := evd'; t')
      else (
        if !debug_ho_unification then Feedback.msg_debug (Pp.str "failed");
        map_constr_with_binders_left_to_right !evdref
         (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
         applyrec acc t))
   in
-  applyrec (env,(0,c)) t
+  let t' = applyrec (env,(0,c)) t in
+  !evdref, t'
 
 let filter_possible_projections evd c ty ctxt args =
   (* Since args in the types will be replaced by holes, we count the
@@ -1334,98 +1336,96 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   (** Ensure that any progress made by Typing.e_solve_evars will not contradict
       the solution we are trying to build here by adding the problem as a constraint. *)
   let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkEvar (evk,args),rhs) evd in
-  let evdref = ref evd in
-  let prc env c = Termops.Internal.print_constr_env env !evdref c in
+  let prc env evd c = Termops.Internal.print_constr_env env evd c in
   let rec make_subst = function
-  | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
+    | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
       begin match occs with
-      | AtOccurrences loc when not (Locusops.is_all_occurrences loc) ->
-      user_err Pp.(str "Cannot force abstraction on identity instance.")
-      | _ ->
-        make_subst (ctxt',l,occsl)
+        | AtOccurrences loc when not (Locusops.is_all_occurrences loc) ->
+          user_err Pp.(str "Cannot force abstraction on identity instance.")
+        | _ ->
+          make_subst (ctxt',l,occsl)
       end
-  | decl'::ctxt', c::l, occs::occsl ->
+    | decl'::ctxt', c::l, occs::occsl ->
       let id = NamedDecl.get_id decl' in
       let t = NamedDecl.get_type decl' in
       let evs = ref [] in
       let c = nf_evar evd c in
       (* ty is in env_rhs now *)
       let ty = replace_vars argsubst t in
-      let filter' = filter_possible_projections !evdref c (nf_evar evd ty) ctxt args in
+      let filter' = filter_possible_projections evd c (nf_evar evd ty) ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
-  | _, _, [] -> []
-  | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.") in
+    | _, _, [] -> []
+    | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
+  in
   let fixed = ref Evar.Set.empty in
-  let rec set_holes env_rhs evdref rhs = function
+  let rec set_holes env_rhs evd rhs = function
   | (id,idty,c,cty,evsref,filter,occs)::subst ->
-     let c = nf_evar !evdref c in
+     let c = nf_evar evd c in
      if !debug_ho_unification then
        Feedback.msg_debug Pp.(str"set holes for: " ++
-                                prc env_rhs (mkVar id) ++ spc () ++
-                                prc env_rhs c ++ str" in " ++
-                                prc env_rhs rhs);
+                                prc env_rhs evd (mkVar id) ++ spc () ++
+                                prc env_rhs evd c ++ str" in " ++
+                                prc env_rhs evd rhs);
      let occ = ref 1 in
-     let set_var k inst =
+     let set_var evd k inst =
        let oc = !occ in
        if !debug_ho_unification then
        (Feedback.msg_debug Pp.(str"Found one occurrence");
-        Feedback.msg_debug Pp.(str"cty: " ++ prc env_rhs c));
+        Feedback.msg_debug Pp.(str"cty: " ++ prc env_rhs evd c));
        incr occ;
        match occs with
        | AtOccurrences occs ->
-          if Locusops.is_selected oc occs then mkVar id
-          else inst
+          if Locusops.is_selected oc occs then evd, mkVar id
+          else evd, inst
        | Unspecified prefer_abstraction ->
-          let evty = set_holes env_rhs evdref cty subst in
-          let evty = nf_evar !evdref evty in
+          let evd, evty = set_holes env_rhs evd cty subst in
+          let evty = nf_evar evd evty in
           if !debug_ho_unification then
-            Feedback.msg_debug Pp.(str"abstracting one occurrence " ++ prc env_rhs inst ++
-                                   str" of type: " ++ prc env_evar evty ++
-                                   str " for " ++ prc env_rhs c);
+            Feedback.msg_debug Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
+                                   str" of type: " ++ prc env_evar evd evty ++
+                                   str " for " ++ prc env_rhs evd c);
           let instance = Filter.filter_list filter instance in
           (** Allow any type lower than the variable's type as the
               abstracted subterm might have a smaller type, which could be
               crucial to make the surrounding context typecheck. *)
           let evd, evty =
-            if isArity !evdref evty then
+            if isArity evd evty then
               refresh_universes ~status:Evd.univ_flexible (Some true)
-                env_evar_unf !evdref evty
-            else !evdref, evty in
+                env_evar_unf evd evty
+            else evd, evty in
           let (evd, ev) = new_evar_instance sign evd evty ~filter instance in
-          let evk = fst (destEvar !evdref ev) in
-          evdref := evd;
+          let evk = fst (destEvar evd ev) in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
           fixed := Evar.Set.add evk !fixed;
-          ev
+          evd, ev
      in
-     let rhs' = apply_on_subterm env_rhs evdref fixed set_var test c rhs in
+     let evd, rhs' = apply_on_subterm env_rhs evd fixed set_var test c rhs in
      if !debug_ho_unification then
-       Feedback.msg_debug Pp.(str"abstracted: " ++ prc env_rhs rhs');
-     let () = check_selected_occs env_rhs !evdref c !occ occs in
+       Feedback.msg_debug Pp.(str"abstracted: " ++ prc env_rhs evd rhs');
+     let () = check_selected_occs env_rhs evd c !occ occs in
      let env_rhs' = push_named (NamedDecl.LocalAssum (id,idty)) env_rhs in
-     set_holes env_rhs' evdref rhs' subst
-  | [] -> rhs in
+     set_holes env_rhs' evd rhs' subst
+  | [] -> evd, rhs in
 
   let subst = make_subst (ctxt,Array.to_list args,argoccs) in
 
-  let rhs' = set_holes env_rhs evdref rhs subst in
-  let evd = !evdref in
+  let evd, rhs' = set_holes env_rhs evd rhs subst in
   let rhs' = nf_evar evd rhs' in
   (** Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
   if !debug_ho_unification then
-    (Feedback.msg_debug Pp.(str"solve_evars on: " ++ prc env_evar rhs');
+    (Feedback.msg_debug Pp.(str"solve_evars on: " ++ prc env_evar evd rhs');
      Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) evd));
   let evd,rhs' =
     try !solve_evars env_evar evd rhs'
     with e when Pretype_errors.precatchable_exception e ->
       (* Could not revert all subterms *)
-      raise (TypingFailed !evdref) in
+      raise (TypingFailed evd) in
   let rhs' = nf_evar evd rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
   if !debug_ho_unification then
-    (Feedback.msg_debug Pp.(str"after solve_evars: " ++ prc env_evar rhs');
+    (Feedback.msg_debug Pp.(str"after solve_evars: " ++ prc env_evar evd rhs');
      Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) evd));
 
   let rec abstract_free_holes evd = function
@@ -1433,8 +1433,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      let c = nf_evar evd c in
      if !debug_ho_unification then
        Feedback.msg_debug Pp.(str"abstracting: " ++
-                                prc env_rhs (mkVar id) ++ spc () ++
-                                prc env_rhs c);
+                                prc env_rhs evd (mkVar id) ++ spc () ++
+                                prc env_rhs evd c);
      let rec force_instantiation evd = function
      | (evk,evty,inst,abstract)::evs ->
        let evk = Option.default evk (Evarutil.advance evd evk) in
@@ -1467,7 +1467,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                let env = Evd.evar_env evi in
                Feedback.msg_debug Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
-                 prc env (match evar_body evi with Evar_defined c -> c
+                 prc env evd (match evar_body evi with Evar_defined c -> c
                    | Evar_empty -> assert false)));
             evd)
        in force_instantiation evd evs
@@ -1482,26 +1482,24 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
             let evi = Evd.find evd evk in
             let evenv = evar_env evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
-            Feedback.msg_debug Pp.(str"evar was defined already as: " ++ prc evenv body)
+            Feedback.msg_debug Pp.(str"evar was defined already as: " ++ prc evenv evd body)
           end;
         evd)
      else
        try
          let evi = Evd.find_undefined evd evk in
          let evenv = evar_env evi in
-         let evdref = ref evd in
-         let rhs' = nf_evar !evdref rhs' in
+         let rhs' = nf_evar evd rhs' in
            if !debug_ho_unification then
              Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++
-                                      prc evenv rhs');
+                                      prc evenv evd rhs');
          (** solve_evars is not commuting with nf_evar, because restricting
              an evar might provide a more specific type. *)
           let evd, _ = !solve_evars evenv evd rhs' in
-          evdref := evd;
           if !debug_ho_unification then
-            Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv (nf_evar !evdref rhs'));
+            Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv evd (nf_evar evd rhs'));
           let flags = default_flags_of TransparentState.full in
-            Evarsolve.instantiate_evar evar_unify flags !evdref evk rhs'
+            Evarsolve.instantiate_evar evar_unify flags evd evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)
   in
   let evd = abstract_free_holes evd subst in
