@@ -60,6 +60,12 @@ sig
   val height : 'a t -> int
   (** An indication of the logarithmic size of a map *)
 
+  val filter_range : (key -> int) -> 'a t -> 'a t
+  (** [find_range in_range m] Given a comparison function [in_range x],
+      that tests if [x] is below, above, or inside a given range
+      [filter_range] returns the submap of [m] whose keys are in
+      range. Note that [in_range] has to define a continouous range. *)
+
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t

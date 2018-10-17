@@ -35,6 +35,7 @@ sig
   val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val height : 'a t -> int
+  val filter_range : (key -> int) -> 'a t -> 'a t
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t
@@ -62,6 +63,7 @@ sig
   val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val height : 'a map -> int
+  val filter_range : (M.t -> int) -> 'a map -> 'a map
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a map -> 'a map
@@ -85,8 +87,11 @@ struct
       if this happens, we can still implement a less clever version of [domain].
   *)
 
-  type 'a map = 'a Map.Make(M).t
-  type set = Set.Make(M).t
+  module F = Map.Make(M)
+  type 'a map = 'a F.t
+
+  module S = Set.Make(M)
+  type set = S.t
 
   type 'a _map =
   | MEmpty
@@ -163,6 +168,23 @@ struct
   let height s = match map_prj s with
   | MEmpty -> 0
   | MNode (_, _, _, _, h) -> h
+
+  (* Filter based on a range *)
+  let filter_range in_range m =
+    let rec aux m = function
+      | MEmpty -> m
+      | MNode (l, k, v, r, _) ->
+        let vr = in_range k in
+        (* the range is below the current value *)
+        if vr < 0 then aux m (map_prj l)
+        (* the range is above the current value *)
+        else if vr > 0 then aux m (map_prj r)
+        (* The current value is in the range *)
+        else
+          let m = aux m (map_prj l) in
+          let m = aux m (map_prj r) in
+          F.add k v m
+    in aux F.empty (map_prj m)
 
   module Smart =
   struct
