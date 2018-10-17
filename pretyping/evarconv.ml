@@ -1201,7 +1201,7 @@ let default_occurrences_selection ?(frozen_evars=Evar.Set.empty) ts n =
 
 let apply_on_subterm env evdref fixedref f test c t =
   let test = test env !evdref c in
-  let prc env = print_constr_env env !evdref in
+  let prc env = Termops.Internal.print_constr_env env !evdref in
   let rec applyrec (env,(k,c) as acc) t =
     if Evar.Set.exists (fun fixed -> occur_evar !evdref fixed t) !fixedref then
       match EConstr.kind !evdref t with
@@ -1323,8 +1323,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   if !debug_ho_unification then
-    (Feedback.msg_debug Pp.(str"env rhs: " ++ print_env env_rhs);
-     Feedback.msg_debug Pp.(str"env evars: " ++ print_env env_evar));
+    (Feedback.msg_debug Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs);
+     Feedback.msg_debug Pp.(str"env evars: " ++ Termops.Internal.print_env env_evar));
   let args = Array.map (nf_evar evd) args in
   let vars = List.map NamedDecl.get_id ctxt in
   let argsubst = List.map2 (fun id c -> (id, c)) vars (Array.to_list args) in
@@ -1335,7 +1335,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       the solution we are trying to build here by adding the problem as a constraint. *)
   let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkEvar (evk,args),rhs) evd in
   let evdref = ref evd in
-  let prc env c = print_constr_env env !evdref c in
+  let prc env c = Termops.Internal.print_constr_env env !evdref c in
   let rec make_subst = function
   | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
       begin match occs with
