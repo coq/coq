@@ -1,5 +1,5 @@
 (library
  (name ground_plugin)
- (public_name coq.plugins.ground)
+ (public_name coq.plugins.firstorder)
  (synopsis "Coq's first order logic solver plugin")
  (libraries coq.plugins.ltac))
