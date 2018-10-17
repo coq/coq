@@ -556,9 +556,9 @@ let rec pretype ~program_mode k0 resolve_tc (tycon : type_constraint) (env : Glo
 	  | GFix (vn,i) -> i
 	  | GCoFix i -> i
         in
-        begin match conv !!env sigma ftys.(fixi) t with
-          | None -> sigma
-          | Some sigma -> sigma
+        begin match Evarconv.unify_delay !!env sigma ftys.(fixi) t with
+          | exception Evarconv.UnableToUnify _ -> sigma
+          | sigma -> sigma
         end
       | None -> sigma
     in
@@ -667,11 +667,11 @@ let rec pretype ~program_mode k0 resolve_tc (tycon : type_constraint) (env : Glo
             match candargs with
             | [] -> sigma, [], j_val hj
             | arg :: args ->
-              begin match conv !!env sigma (j_val hj) arg with
-                | Some sigma ->
-                  sigma, args, nf_evar sigma (j_val hj)
-                | None ->
+              begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
+                | exception Evarconv.UnableToUnify _ ->
                   sigma, [], j_val hj
+                | sigma ->
+                  sigma, args, nf_evar sigma (j_val hj)
               end
           in
             let sigma, ujval = adjust_evar_source sigma na ujval in
@@ -1057,9 +1057,9 @@ and pretype_type ~program_mode k0 resolve_tc valcon (env : GlobEnv.t) sigma c = 
 	match valcon with
         | None -> sigma, tj
 	| Some v ->
-          begin match cumul !!env sigma v tj.utj_val with
-            | Some sigma -> sigma, tj
-            | None ->
+          begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
+            | sigma -> sigma, tj
+            | exception Evarconv.UnableToUnify _ ->
 	      error_unexpected_type
                 ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v
           end

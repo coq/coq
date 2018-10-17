@@ -636,7 +636,7 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   let evd = 
     if unsafe then Some (Tacmach.New.project gl)
     else
-      try Some (Evarconv.the_conv_x (Proofview.Goal.env gl) t1 t2 (Tacmach.New.project gl))
+      try Some (Evarconv.unify_delay (Proofview.Goal.env gl) (Tacmach.New.project gl) t1 t2)
       with Evarconv.UnableToUnify _ -> None
   in
   match evd with
@@ -1194,9 +1194,8 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       (* is the default value typable with the expected type *)
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
-        let sigma = Evarconv.the_conv_x_leq env dflt_typ p_i sigma in
-        let sigma =
-          Evarconv.solve_unif_constraints_with_heuristics env sigma in
+        let sigma = Evarconv.unify_leq_delay env sigma dflt_typ p_i in
+        let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
         sigma, dflt
       with Evarconv.UnableToUnify _ ->
 	user_err Pp.(str "Cannot solve a unification problem.")
@@ -1211,11 +1210,11 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       match evopt with
 	| Some w ->
           let w_type = unsafe_type_of env sigma w in
-          begin match Evarconv.cumul env sigma w_type a with
-            | Some sigma ->
+          begin match Evarconv.unify_leq_delay env sigma w_type a with
+            | sigma ->
               let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
               sigma, applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
-            | None ->
+            | exception Evarconv.UnableToUnify _ ->
               user_err Pp.(str "Cannot solve a unification problem.")
           end
 	| None ->

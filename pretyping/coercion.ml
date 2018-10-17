@@ -64,9 +64,9 @@ let apply_coercion_args env sigma check isproj argl funj =
       | Prod (_,c1,c2) ->
         let sigma =
           if check then
-            begin match cumul env sigma (Retyping.get_type_of env sigma h) c1 with
-              | None -> raise NoCoercion
-              | Some sigma -> sigma
+            begin match Evarconv.unify_leq_delay env sigma (Retyping.get_type_of env sigma h) c1 with
+              | exception Evarconv.UnableToUnify _ -> raise NoCoercion
+              | sigma -> sigma
             end
           else sigma
         in
@@ -157,7 +157,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
   let rec coerce_unify env x y =
     let x = hnf env !evdref x and y = hnf env !evdref y in
       try
-	evdref := the_conv_x_leq env x y !evdref;
+        evdref := Evarconv.unify_leq_delay env !evdref x y;
 	None
       with UnableToUnify _ -> coerce' env x y
   and coerce' env x y : (EConstr.constr -> EConstr.constr) option =
@@ -172,7 +172,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
       let rec aux tele typ typ' i co =
 	if i < len then
 	  let hdx = l.(i) and hdy = l'.(i) in
-	    try evdref := the_conv_x_leq env hdx hdy !evdref;
+            try evdref := unify_leq_delay env !evdref hdx hdy;
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
@@ -180,8 +180,8 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
               let () =
-		try evdref := the_conv_x_leq env eqT eqT' !evdref
-		with UnableToUnify _ -> raise NoSubtacCoercion
+                try evdref := unify_leq_delay env !evdref eqT eqT'
+                with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
 		if Reductionops.is_arity env !evdref eqT then raise NoSubtacCoercion;
@@ -483,14 +483,14 @@ let inh_coerce_to_fail flags env evd rigidonly v t c1 =
 	  | None -> evd, None, t
       with Not_found -> raise NoCoercion
     in
-      try (unify_leq flags env evd t' c1, v')
+      try (unify_leq_delay ~flags env evd t' c1, v')
       with UnableToUnify _ -> raise NoCoercion
 
 let default_flags_of env =
   default_flags_of TransparentState.full
 
 let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigidonly v t c1 =
-  try (unify_leq flags env evd t c1, v)
+  try (unify_leq_delay ~flags env evd t c1, v)
   with UnableToUnify (best_failed_evd,e) ->
     try inh_coerce_to_fail flags env evd rigidonly v t c1
     with NoCoercion ->

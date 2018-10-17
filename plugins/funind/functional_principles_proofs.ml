@@ -238,7 +238,9 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       raise NoChange;
     end
   in
-  let eq_constr c1 c2 = Option.has_some (Evarconv.conv env sigma c1 c2) in
+  let eq_constr c1 c2 =
+    try ignore(Evarconv.unify_delay env sigma c1 c2); true
+    with Evarconv.UnableToUnify _ -> false in
   if not (noccurn sigma 1 end_of_type)
   then nochange "dependent"; (* if end_of_type depends on this term we don't touch it  *)
     if not (isApp sigma t) then nochange "not an equality";

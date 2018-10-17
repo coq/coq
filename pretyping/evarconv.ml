@@ -1720,6 +1720,40 @@ let solve_unif_constraints_with_heuristics env
 
 exception UnableToUnify of evar_map * unification_error
 
+let unify_delay ?flags env evd t1 t2 =
+  let flags =
+    match flags with
+    | None -> default_flags_of (default_transparent_state env)
+    | Some flags -> flags
+  in
+  match evar_conv_x flags env evd CONV t1 t2 with
+  | Success evd' -> evd'
+  | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
+
+let unify_leq_delay ?flags env evd t1 t2 =
+  let flags =
+    match flags with
+    | None -> default_flags_of (default_transparent_state env)
+    | Some flags -> flags
+  in
+  match evar_conv_x flags env evd CUMUL t1 t2 with
+  | Success evd' -> evd'
+  | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
+
+let unify ?flags ?(with_ho=true) env evd cv_pb ty1 ty2 =
+  let flags =
+    match flags with
+    | None -> default_flags_of (default_transparent_state env)
+    | Some flags -> flags
+  in
+  let res = evar_conv_x flags env evd cv_pb ty1 ty2 in
+  match res with
+  | Success evd ->
+     solve_unif_constraints_with_heuristics ~flags ~with_ho env evd
+  | UnifFailure (evd, reason) ->
+     raise (PretypeError (env, evd, CannotUnify (ty1, ty2, Some reason)))
+
+(* deprecated *)
 let the_conv_x env ?(ts=default_transparent_state env) t1 t2 evd =
   let flags = default_flags_of ts in
   match evar_conv_x flags env evd CONV  t1 t2 with
@@ -1731,33 +1765,3 @@ let the_conv_x_leq env ?(ts=default_transparent_state env) t1 t2 evd =
   match evar_conv_x flags env evd CUMUL t1 t2 with
   | Success evd' -> evd'
   | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
-
-let make_opt = function
-  | Success evd -> Some evd
-  | UnifFailure _ -> None
-
-let conv env ?(ts=default_transparent_state env) evd t1 t2 =
-  let flags = default_flags_of ts in
-  make_opt(evar_conv_x flags env evd CONV t1 t2)
-
-let cumul env ?(ts=default_transparent_state env) evd t1 t2 =
-  let flags = default_flags_of ts in
-  make_opt(evar_conv_x flags env evd CUMUL t1 t2)
-
-let unify flags env evd t1 t2 =
-  match evar_conv_x flags env evd CONV t1 t2 with
-  | Success evd' -> evd'
-  | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
-
-let unify_leq flags env evd t1 t2 =
-  match evar_conv_x flags env evd CUMUL t1 t2 with
-  | Success evd' -> evd'
-  | UnifFailure (evd',e) -> raise (UnableToUnify (evd',e))
-
-let unify_with_heuristics flags ~with_ho env evd cv_pb ty1 ty2 =
-  let res = evar_conv_x flags env evd cv_pb ty1 ty2 in
-  match res with
-  | Success evd ->
-     solve_unif_constraints_with_heuristics ~flags ~with_ho env evd
-  | UnifFailure (evd, reason) ->
-     raise (PretypeError (env, evd, CannotUnify (ty1, ty2, Some reason)))

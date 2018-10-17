@@ -230,8 +230,9 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
       let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
-        Evarconv.the_conv_x_leq env ~ts:flags.core_unify_flags.modulo_delta
-                                cl.cl_concl concl sigma'
+        Evarconv.(unify_leq_delay
+                    ~flags:(default_flags_of flags.core_unify_flags.modulo_delta)
+                              env sigma' cl.cl_concl concl)
       in (sigma', term) end
 
 let unify_resolve_refine poly flags gl clenv =

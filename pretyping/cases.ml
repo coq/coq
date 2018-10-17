@@ -321,9 +321,9 @@ let inh_coerce_to_ind env sigma0 loc ty tyi =
      constructor and renounce if not able to give more information *)
   (* devrait être indifférent d'exiger leq ou pas puisque pour
      un inductif cela doit être égal *)
-  match cumul env sigma expected_typ ty with
-  | Some sigma -> sigma
-  | None -> sigma0
+  match Evarconv.unify_leq_delay env sigma expected_typ ty with
+  | sigma -> sigma
+  | exception Evarconv.UnableToUnify _ -> sigma0
 
 let binding_vars_of_inductive sigma = function
   | NotInd _ -> []
@@ -431,9 +431,9 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
             let sigma, current =
               if List.is_empty deps && isEvar sigma typ then
 	      (* Don't insert coercions if dependent; only solve evars *)
-                match cumul !!(pb.env) sigma indt typ with
-                | None -> sigma, current
-                | Some sigma -> sigma, current
+                match Evarconv.unify_leq_delay !!(pb.env) sigma indt typ with
+                | exception Evarconv.UnableToUnify _ -> sigma, current
+                | sigma -> sigma, current
 	      else
                 let sigma, j = Coercion.inh_conv_coerce_to ~program_mode true !!(pb.env) sigma (make_judge current typ) indt in
                 sigma, j.uj_val
@@ -1767,9 +1767,9 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
         let sigma, t = abstract_tycon ?loc tycon_env sigma subst tycon extenv t in
         let sigma, tt = Typing.type_of !!extenv sigma t in
         (sigma, t, tt) in
-  match cumul !!env sigma tt (mkSort s) with
-  | None -> anomaly (Pp.str "Build_tycon: should be a type.");
-  | Some sigma ->
+  match unify_leq_delay !!env sigma tt (mkSort s) with
+  | exception Evarconv.UnableToUnify _ -> anomaly (Pp.str "Build_tycon: should be a type.");
+  | sigma ->
     sigma, { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
@@ -2190,15 +2190,15 @@ let constr_of_pat env sigma arsign pat avoid =
                 let sigma, sign, i, avoid =
 		  try
                     let env = EConstr.push_rel_context sign env in
-                    let sigma = the_conv_x_leq (EConstr.push_rel_context sign env)
-                      (lift (succ m) ty) (lift 1 apptype) sigma in
+                    let sigma = unify_leq_delay (EConstr.push_rel_context sign env) sigma
+                      (lift (succ m) ty) (lift 1 apptype) in
                     let sigma, eq_t = mk_eq sigma (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)
 		    in
 		    let neq = eq_id avoid id in
                       sigma, LocalDef (Name neq, mkRel 0, eq_t) :: sign, 2, Id.Set.add neq avoid
-                  with Reduction.NotConvertible -> sigma, sign, 1, avoid
+                  with Evarconv.UnableToUnify _ -> sigma, sign, 1, avoid
 		in
 		  (* Mark the equality as a hole *)
                   sigma, pat', sign, lift i app, lift i apptype, realargs, n + i, avoid

@@ -30,34 +30,50 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
 (** {6 Main unification algorithm for type inference. } *)
 
-(** returns exception NotUnifiable with best known evar_map if not unifiable *)
+(** There are two variants for unification: one that delays constraints outside its capabilities
+    ([unify_delay]) and another that tries to solve such remaining constraints using
+    heuristics ([unify]). *)
+
+(** Theses functions allow to pass arbitrary flags to the unifier and can delay constraints.
+    In case of success, the two terms are hence unifiable only if the remaining constraints
+    can be solved or [check_problems_are_solved] is true.
+
+    @raises UnableToUnify in case the two terms do not unify *)
+
+val unify_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+val unify_leq_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+
+(** returns exception UnableToUnify with best known evar_map if not unifiable *)
 val the_conv_x     : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
+[@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
 val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
+[@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
 
-(** Allows to pass arbitrary flags to the unifier *)
-val unify : unify_flags -> env -> evar_map -> constr -> constr -> evar_map
-val unify_leq : unify_flags -> env -> evar_map -> constr -> constr -> evar_map
+(** This function also calls [solve_unif_constraints_with_heuristics] to resolve any remaining
+    constraints. In case of success the two terms are unified without condition.
 
-(** @raises a PretypeError if it cannot unify *)
-val unify_with_heuristics : unify_flags -> with_ho:bool ->
-                            env -> evar_map -> conv_pb -> constr -> constr -> evar_map
+    The with_ho option tells if higher-order unification should be tried to resolve the
+    constraints.
 
-(** The same function resolving evars by side-effect and
-   catching the exception *)
-val conv : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
-val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
-
+    @raises a PretypeError if it cannot unify *)
+val unify : ?flags:unify_flags -> ?with_ho:bool ->
+  env -> evar_map -> conv_pb -> constr -> constr -> evar_map
 
 (** {6 Unification heuristics. } *)
 
 (** Try heuristics to solve pending unification problems and to solve
-    evars with candidates *)
+   evars with candidates.
+
+   The with_ho option tells if higher-order unification should be tried
+   to resolve the constraints.
+
+    @raises a PretypeError if it fails to resolve some problem *)
 
 val solve_unif_constraints_with_heuristics :
   env -> ?flags:unify_flags -> ?with_ho:bool -> evar_map -> evar_map
 
-(** Check all pending unification problems are solved and raise an
-    error otherwise *)
+(** Check all pending unification problems are solved and raise a
+    PretypeError otherwise *)
 
 val check_problems_are_solved : env -> evar_map -> unit
 
