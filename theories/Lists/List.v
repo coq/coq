@@ -2256,7 +2256,7 @@ Section Exists_Forall.
     element in [x0 :: xs], then [P] is true for
     every element in [xs].
   *)
-  Local Definition Forall_tail
+  Local Definition Forall_inv_tail
     :  forall (P : A -> Prop) (x0 : A) (xs : list A), Forall P (x0 :: xs) -> Forall P xs
     := fun P x0 xs H
          => let H0
