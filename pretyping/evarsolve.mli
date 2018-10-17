@@ -18,12 +18,22 @@ val of_alias : alias -> EConstr.t
 
 type unify_flags = {
   modulo_betaiota : bool;
+  (* Enable beta-iota reductions during unification *)
   open_ts : Names.transparent_state;
+  (* Enable delta reduction according to open_ts for open terms *)
   closed_ts : Names.transparent_state;
+  (* Enable delta reduction according to closed_ts for closed terms (when calling conversion) *)
   subterm_ts : Names.transparent_state;
+  (* Enable delta reduction according to subterm_ts for selection of subterms during higher-order
+     unifications. *)
   frozen_evars : Evar.Set.t;
+  (* Frozen evars are treated like rigid variables during unification: they can not be instantiated. *)
   allow_K_at_toplevel : bool;
-  with_cs : bool}
+  (* During higher-order unifications, allow to produce K-redexes: i.e. to produce
+     an abstraction for an unused argument *)
+  with_cs : bool
+  (* Enable canonical structure resolution during unification *)
+}
 
 type unification_result =
   | Success of evar_map
