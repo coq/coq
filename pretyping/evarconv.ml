@@ -768,7 +768,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              Feedback.msg_notice (v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ())) in
   match (flex_kind_of_term flags env evd term1 sk1,
          flex_kind_of_term flags env evd term2 sk2) with
-    | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
+    | Flexible (sp1,al1), Flexible (sp2,al2) ->
         (* sk1[?ev1] =? sk2[?ev2] *)
         let f1 i = first_order env i term1 term2 sk1 sk2
 	and f2 i =
