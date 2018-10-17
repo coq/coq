@@ -1,0 +1,10 @@
+(library
+ (name ltac2)
+ (public_name coq.plugins.ltac2)
+ (modules_without_implementation tac2expr tac2qexpr tac2types)
+ (libraries coq.plugins.firstorder))
+
+(rule
+ (targets g_ltac2.ml)
+ (deps (:pp-file g_ltac2.ml4) )
+ (action (run coqp5 -loc loc -impl %{pp-file} -o %{targets})))

@@ -805,7 +805,7 @@ let pr_frame = function
 
 let () = register_handler begin function
 | Tac2interp.LtacError (kn, args) ->
-  let t_exn = KerName.make2 Tac2env.coq_prefix (Label.make "exn") in
+  let t_exn = KerName.make Tac2env.coq_prefix (Label.make "exn") in
   let v = Tac2ffi.of_open (kn, args) in
   let t = GTypRef (Other t_exn, []) in
   let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
@@ -897,7 +897,7 @@ let register_prim_alg name params def =
   let def = { typdef_local = false; typdef_expr = def } in
   ignore (Lib.add_leaf id (inTypDef def))
 
-let coq_def n = KerName.make2 Tac2env.coq_prefix (Label.make n)
+let coq_def n = KerName.make Tac2env.coq_prefix (Label.make n)
 
 let def_unit = {
   typdef_local = false;

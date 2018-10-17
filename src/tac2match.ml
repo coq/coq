@@ -181,7 +181,7 @@ module PatternMatching (E:StaticEnvironment) = struct
     pattern_match_term pat (NamedDecl.get_type decl) >>= fun ctx ->
     return (id, ctx)
 
-  let hyp_match_body_and_type bodypat typepat hyps =
+  let _hyp_match_body_and_type bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
           pattern_match_term bodypat body >>= fun ctx_body ->

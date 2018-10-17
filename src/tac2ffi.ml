@@ -229,7 +229,7 @@ let internal_err =
   let coq_prefix =
     MPfile (DirPath.make (List.map Id.of_string ["Init"; "Ltac2"]))
   in
-  KerName.make2 coq_prefix (Label.of_id (Id.of_string "Internal"))
+  KerName.make coq_prefix (Label.of_id (Id.of_string "Internal"))
 
 (** FIXME: handle backtrace in Ltac2 exceptions *)
 let of_exn c = match fst c with
