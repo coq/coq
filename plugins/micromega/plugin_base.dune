@@ -5,3 +5,11 @@
  (modules (:standard \ csdpcert))
  (synopsis "Coq's micromega plugin")
  (libraries num coq.plugins.ltac))
+
+(executable
+ (name csdpcert)
+ (public_name csdpcert)
+ (package coq)
+ (modules csdpcert)
+ (flags :standard -open Micromega_plugin)
+ (libraries coq.plugins.micromega))
