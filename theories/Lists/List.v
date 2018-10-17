@@ -2278,19 +2278,15 @@ Section Exists_Forall.
          Exists P xs ->
          Exists Q xs
     := fun P Q H xs H0
-         => let H1
-              :  exists x, In x xs /\ P x
-              := proj1 (Exists_exists P xs) H0 in
-            let H2
-              :  exists x, In x xs /\ Q x
-              := match H1 with
-                   | ex_intro _ x H2
-                     => ex_intro
-                          (fun x => In x xs /\ Q x)
-                          x
-                          (conj
-                            (proj1 H2)
-                            (H x (proj2 H2)))
+         => let H1 := proj1 (Exists_exists P xs) H0 in
+            let H2 := match H1 with
+                        | ex_intro _ x H2
+                          => ex_intro
+                               (fun x => In x xs /\ Q x)
+                               x
+                               (conj
+                                 (proj1 H2)
+                                 (H x (proj2 H2)))
                    end in
             (proj2 (Exists_exists Q xs)) H2.
 
