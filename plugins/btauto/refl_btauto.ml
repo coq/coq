@@ -10,8 +10,6 @@
 
 open Constr
 
-let contrib_name = "btauto"
-
 let bt_lib_constr n = lazy (UnivGen.constr_of_global @@ Coqlib.lib_ref n)
 
 let decomp_term sigma (c : Constr.t) =
@@ -23,7 +21,6 @@ let (===) = Constr.equal
 
 
 module CoqList = struct
-  let typ  =  bt_lib_constr "core.list.type"
   let _nil =  bt_lib_constr "core.list.nil"
   let _cons = bt_lib_constr "core.list.cons"
 
@@ -32,12 +29,10 @@ module CoqList = struct
   let rec of_list ty = function
     | [] -> nil ty
     | t::q -> cons ty t (of_list ty q)
-  let type_of_list ty = lapp typ [|ty|]
 
 end
 
 module CoqPositive = struct
-  let typ = bt_lib_constr "num.pos.type"
   let _xH = bt_lib_constr "num.pos.xH"
   let _xO = bt_lib_constr "num.pos.xO"
   let _xI = bt_lib_constr "num.pos.xI"

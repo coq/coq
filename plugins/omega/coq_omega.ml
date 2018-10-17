@@ -42,7 +42,6 @@ let elim_id id = simplest_elim (mkVar id)
 
 let resolve_id id = apply (mkVar id)
 
-let display_time_flag = ref false
 let display_system_flag = ref false
 let display_action_flag = ref false
 let old_style_flag = ref false
@@ -114,10 +113,6 @@ let new_identifier =
   let cpt = intref 0 in
   (fun () -> let s = "Omega" ^ string_of_int !cpt in incr cpt; Id.of_string s)
 
-let new_identifier_state =
-  let cpt = intref 0 in
-  (fun () -> let s = make_ident "State" (Some !cpt) in incr cpt; s)
-
 let new_identifier_var =
   let cpt = intref 0 in
   (fun () -> let s = "Zvar" ^ string_of_int !cpt in incr cpt; Id.of_string s)
@@ -153,7 +148,6 @@ let mk_then tacs = tclTHENLIST tacs
 let exists_tac c = constructor_tac false (Some 1) 1 (ImplicitBindings [c])
 
 let generalize_tac t = generalize t
-let elim t = simplest_elim t
 let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
 let pf_nf gl c = pf_apply Tacred.simpl gl c
 
@@ -165,10 +159,9 @@ let rev_assoc k =
   in
   loop
 
-let tag_hypothesis,tag_of_hyp, hyp_of_tag, clear_tags =
+let tag_hypothesis, hyp_of_tag, clear_tags =
   let l = ref ([]:(Id.t * int) list) in
   (fun h id -> l := (h,id):: !l),
-  (fun h -> try Id.List.assoc h !l with Not_found -> failwith "tag_hypothesis"),
   (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis"),
   (fun () -> l := [])
 
@@ -259,11 +252,9 @@ let coq_fast_Zred_factor4 = gen_constant "plugins.omega.fast_Zred_factor4"
 let coq_fast_Zred_factor5 = gen_constant "plugins.omega.fast_Zred_factor5"
 let coq_fast_Zred_factor6 = gen_constant "plugins.omega.fast_Zred_factor6"
 let coq_fast_Zmult_plus_distr_l = gen_constant "plugins.omega.fast_Zmult_plus_distr_l"
-let coq_fast_Zmult_opp_comm =  gen_constant "plugins.omega.fast_Zmult_opp_comm"
 let coq_fast_Zopp_plus_distr =   gen_constant "plugins.omega.fast_Zopp_plus_distr"
 let coq_fast_Zopp_mult_distr_r = gen_constant "plugins.omega.fast_Zopp_mult_distr_r"
 let coq_fast_Zopp_eq_mult_neg_1 =  gen_constant "plugins.omega.fast_Zopp_eq_mult_neg_1"
-let coq_fast_Zopp_involutive = gen_constant "plugins.omega.fast_Zopp_involutive"
 let coq_Zegal_left = gen_constant "plugins.omega.Zegal_left"
 let coq_Zne_left = gen_constant "plugins.omega.Zne_left"
 let coq_Zlt_left = gen_constant "plugins.omega.Zlt_left"
@@ -363,23 +354,18 @@ let sp_Zpred =     lazy (evaluable_ref_of_constr "Z.pred" coq_Zpred)
 let sp_Zminus = lazy (evaluable_ref_of_constr "Z.sub" coq_Zminus)
 let sp_Zle = lazy (evaluable_ref_of_constr "Z.le" coq_Zle)
 let sp_Zgt = lazy (evaluable_ref_of_constr "Z.gt" coq_Zgt)
-let sp_Zge = lazy (evaluable_ref_of_constr "Z.ge" coq_Zge)
-let sp_Zlt = lazy (evaluable_ref_of_constr "Z.lt" coq_Zlt)
 let sp_not = lazy (evaluable_ref_of_constr "not" coq_not)
 
-let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
 let mk_gen_eq ty t1 t2 = mkApp (Lazy.force coq_eq, [| ty; t1; t2 |])
 let mk_eq t1 t2 = mk_gen_eq (Lazy.force coq_Z) t1 t2
-let mk_le t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
 let mk_gt t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
 let mk_inv t = mkApp (Lazy.force coq_Zopp, [| t |])
 let mk_and t1 t2 =  mkApp (Lazy.force coq_and, [| t1; t2 |])
 let mk_or t1 t2 =  mkApp (Lazy.force coq_or, [| t1; t2 |])
 let mk_not t = mkApp (Lazy.force coq_not, [| t |])
-let mk_eq_rel t1 t2 = mk_gen_eq (Lazy.force coq_comparison) t1 t2
 let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
 let mk_integer n =
@@ -402,10 +388,6 @@ type omega_constant =
   | And | Or | False | True | Not | Iff
   | Le | Lt | Ge | Gt
   | Other of string
-
-type omega_proposition =
-  | Keq of constr * constr * constr
-  | Kn
 
 type result =
   | Kvar of Id.t
@@ -503,12 +485,7 @@ let recognize_number sigma t =
 type constr_path =
   | P_APP of int
   (* Abstraction and product *)
-  | P_BODY
   | P_TYPE
-  (* Case *)
-  | P_BRANCH of int
-  | P_ARITY
-  | P_ARG
 
 let context sigma operation path (t : constr) =
   let rec loop i p0 t =
@@ -518,25 +495,10 @@ let context sigma operation path (t : constr) =
       | ((P_APP n :: p),  App (f,v)) ->
 	  let v' = Array.copy v in
 	  v'.(pred n) <- loop i p v'.(pred n); mkApp (f, v')
-      | ((P_BRANCH n :: p), Case (ci,q,c,v)) ->
-	  (* avant, y avait mkApp... anyway, BRANCH seems nowhere used *)
-	  let v' = Array.copy v in
-	  v'.(n) <- loop i p v'.(n); (mkCase (ci,q,c,v'))
-      | ((P_ARITY :: p),  App (f,l)) ->
-	  mkApp (loop i p f,l)
-      | ((P_ARG :: p),  App (f,v)) ->
-	  let v' = Array.copy v in
-	  v'.(0) <- loop i p v'.(0); mkApp (f,v')
       | (p, Fix ((_,n as ln),(tys,lna,v))) ->
 	  let l = Array.length v in
 	  let v' = Array.copy v in
 	  v'.(n)<- loop (Pervasives.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
-      | ((P_BODY :: p), Prod (n,t,c)) ->
-	  (mkProd (n,t,loop (succ i) p c))
-      | ((P_BODY :: p), Lambda (n,t,c)) ->
-	  (mkLambda (n,t,loop (succ i) p c))
-      | ((P_BODY :: p), LetIn (n,b,t,c)) ->
-	  (mkLetIn (n,b,t,loop (succ i) p c))
       | ((P_TYPE :: p), Prod (n,t,c)) ->
 	  (mkProd (n,loop i p t,c))
       | ((P_TYPE :: p), Lambda (n,t,c)) ->
@@ -553,13 +515,7 @@ let occurrence sigma path (t : constr) =
     | (p, Cast (c,_,_)) -> loop p c
     | ([], _) -> t
     | ((P_APP n :: p),  App (f,v)) -> loop p v.(pred n)
-    | ((P_BRANCH n :: p), Case (_,_,_,v)) -> loop p v.(n)
-    | ((P_ARITY :: p),  App (f,_)) -> loop p f
-    | ((P_ARG :: p),  App (f,v)) -> loop p v.(0)
     | (p, Fix((_,n) ,(_,_,v))) -> loop p v.(n)
-    | ((P_BODY :: p), Prod (n,t,c)) -> loop p c
-    | ((P_BODY :: p), Lambda (n,t,c)) -> loop p c
-    | ((P_BODY :: p), LetIn (n,b,t,c)) -> loop p c
     | ((P_TYPE :: p), Prod (n,term,c)) -> loop p term
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
@@ -584,7 +540,6 @@ let focused_simpl path = focused_simpl path
 
 type oformula =
   | Oplus of oformula * oformula
-  | Oinv of  oformula
   | Otimes of oformula * oformula
   | Oatom of Id.t
   | Oz of bigint
@@ -594,7 +549,6 @@ let rec oprint = function
   | Oplus(t1,t2) ->
       print_string "("; oprint t1; print_string "+";
       oprint t2; print_string ")"
-  | Oinv t -> print_string "~"; oprint t
   | Otimes (t1,t2) ->
       print_string "("; oprint t1; print_string "*";
       oprint t2; print_string ")"
@@ -605,7 +559,6 @@ let rec oprint = function
 let rec weight = function
   | Oatom c -> intern_id c
   | Oz _ -> -1
-  | Oinv c -> weight c
   | Otimes(c,_) -> weight c
   | Oplus _ -> failwith "weight"
   | Oufo _ -> -1
@@ -613,7 +566,6 @@ let rec weight = function
 let rec val_of = function
   | Oatom c -> mkVar c
   | Oz c -> mk_integer c
-  | Oinv c -> mkApp (Lazy.force coq_Zopp, [| val_of c |])
   | Otimes (t1,t2) -> mkApp (Lazy.force coq_Zmult, [| val_of t1; val_of t2 |])
   | Oplus(t1,t2) -> mkApp (Lazy.force coq_Zplus, [| val_of t1; val_of t2 |])
   | Oufo c -> c
@@ -908,10 +860,6 @@ let rec scalar p n = function
       clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2]]
         (Lazy.force coq_fast_Zmult_plus_distr_l) ::
       (tac1 @ tac2), Oplus(t1',t2')
-  | Oinv t ->
-      [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
-	 (Lazy.force coq_fast_Zmult_opp_comm);
-       focused_simpl (P_APP 2 :: p)], Otimes(t,Oz(neg n))
   | Otimes(t1,Oz x) ->
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2]]
          (Lazy.force coq_fast_Zmult_assoc_reverse);
@@ -963,8 +911,6 @@ let rec negate p = function
         (Lazy.force coq_fast_Zopp_plus_distr) ::
       (tac1 @ tac2),
       Oplus(t1',t2')
-  | Oinv t ->
-      [clever_rewrite p [[P_APP 1;P_APP 1]] (Lazy.force coq_fast_Zopp_involutive)], t
   | Otimes(t1,Oz x) ->
       [clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2]]
          (Lazy.force coq_fast_Zopp_mult_distr_r);

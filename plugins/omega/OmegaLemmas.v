@@ -229,17 +229,11 @@ Definition fast_Zmult_comm (x y : Z) (P : Z -> Prop)
 Definition fast_Zopp_plus_distr (x y : Z) (P : Z -> Prop)
   (H : P (- x + - y)) := eq_ind_r P H (Z.opp_add_distr x y).
 
-Definition fast_Zopp_involutive (x : Z) (P : Z -> Prop) (H : P x) :=
-  eq_ind_r P H (Z.opp_involutive x).
-
 Definition fast_Zopp_mult_distr_r (x y : Z) (P : Z -> Prop)
   (H : P (x * - y)) := eq_ind_r P H (Zopp_mult_distr_r x y).
 
 Definition fast_Zmult_plus_distr_l (n m p : Z) (P : Z -> Prop)
   (H : P (n * p + m * p)) := eq_ind_r P H (Z.mul_add_distr_r n m p).
-Definition fast_Zmult_opp_comm (x y : Z) (P : Z -> Prop)
-  (H : P (x * - y)) := eq_ind_r P H (Z.mul_opp_comm x y).
-
 Definition fast_Zmult_assoc_reverse (n m p : Z) (P : Z -> Prop)
   (H : P (n * (m * p))) := eq_ind_r P H (Zmult_assoc_reverse n m p).
 
@@ -305,11 +299,9 @@ Register fast_Zred_factor5 as plugins.omega.fast_Zred_factor5.
 Register fast_Zred_factor6 as plugins.omega.fast_Zred_factor6.
 
 Register fast_Zmult_plus_distr_l as plugins.omega.fast_Zmult_plus_distr_l.
-Register fast_Zmult_opp_comm as plugins.omega.fast_Zmult_opp_comm.
 Register fast_Zopp_plus_distr as plugins.omega.fast_Zopp_plus_distr.
 Register fast_Zopp_mult_distr_r as plugins.omega.fast_Zopp_mult_distr_r.
 Register fast_Zopp_eq_mult_neg_1 as plugins.omega.fast_Zopp_eq_mult_neg_1.
-Register fast_Zopp_involutive as plugins.omega.fast_Zopp_involutive.
 
 Register new_var as plugins.omega.new_var.
 Register intro_Z as plugins.omega.intro_Z.
