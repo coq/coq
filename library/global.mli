@@ -143,6 +143,7 @@ val type_of_global_in_context : Environ.env ->
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : GlobRef.t -> Univ.AUContext.t
+[@@ocaml.deprecated "Use [Environ.universes_of_global]"]
 
 (** {6 Retroknowledge } *)
 

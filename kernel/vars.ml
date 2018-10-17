@@ -312,3 +312,17 @@ let subst_instance_constr subst c =
 let subst_instance_context s ctx = 
   if Univ.Instance.is_empty s then ctx
   else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
+
+let universes_of_constr c =
+  let open Univ in
+  let rec aux s c =
+    match kind c with
+    | Const (_c, u) ->
+       LSet.fold LSet.add (Instance.levels u) s
+    | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
+       LSet.fold LSet.add (Instance.levels u) s
+    | Sort u when not (Sorts.is_small u) ->
+      let u = Sorts.univ_of_sort u in
+      LSet.fold LSet.add (Universe.levels u) s
+    | _ -> Constr.fold aux s c
+  in aux LSet.empty c

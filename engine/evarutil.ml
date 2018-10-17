@@ -549,7 +549,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
             if Id.Set.mem id' ids then
               raise (ClearDependencyError (id',err,Some (Globnames.global_of_constr c)))
           in
-          Id.Set.iter check (Environ.vars_of_global env c)
+          Id.Set.iter check (Environ.vars_of_global env (fst @@ destRef c))
         in
         c
 

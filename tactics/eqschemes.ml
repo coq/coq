@@ -785,7 +785,7 @@ let build_congr env (eq,refl,ctx) ind =
   let varH = fresh env (Id.of_string "H") in
   let varf = fresh env (Id.of_string "f") in
   let ci = make_case_info (Global.env()) ind RegularStyle in
-  let uni, ctx = UnivGen.extend_context (UnivGen.new_global_univ ()) ctx in
+  let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
   let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c = 
   my_it_mkLambda_or_LetIn paramsctxt

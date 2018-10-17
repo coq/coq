@@ -13,6 +13,7 @@
     primitives when needed. *)
 
 open Names
+open Univ
 
 exception UniversesDiffer
 
@@ -91,6 +92,16 @@ val universe_of_name : t -> Id.t -> Univ.Level.t
 
 (** {5 Unification} *)
 
+(** [restrict_universe_context (univs,csts) keep] restricts [univs] to
+   the universes in [keep]. The constraints [csts] are adjusted so
+   that transitive constraints between remaining universes (those in
+   [keep] and those not in [univs]) are preserved. *)
+val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t
+
+(** [restrict uctx ctx] restricts the local universes of [uctx] to
+   [ctx] extended by local named universes and side effect universes
+   (from [demote_seff_univs]). Transitive constraints between retained
+   universes are preserved. *)
 val restrict : t -> Univ.LSet.t -> t
 
 val demote_seff_univs : Safe_typing.private_constants Entries.definition_entry -> t -> t

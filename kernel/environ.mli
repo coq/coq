@@ -267,6 +267,8 @@ val push_constraints_to_env : 'a Univ.constrained -> env -> env
 val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
 
+val universes_of_global : env -> GlobRef.t -> AUContext.t
+
 (** {6 Sets of referred section variables }
    [global_vars_set env c] returns the list of [id]'s occurring either
    directly as [Var id] in [c] or indirectly as a section variable
@@ -274,8 +276,7 @@ val set_typing_flags : typing_flags -> env -> env
 
 val global_vars_set : env -> constr -> Id.Set.t
 
-(** the constr must be a global reference *)
-val vars_of_global : env -> constr -> Id.Set.t
+val vars_of_global : env -> GlobRef.t -> Id.Set.t
 
 (** closure of the input id set w.r.t. dependency *)
 val really_needed : env -> Id.Set.t -> Id.Set.t

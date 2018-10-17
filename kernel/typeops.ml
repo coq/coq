@@ -432,21 +432,8 @@ and execute_array env = Array.map (execute env)
 
 (* Derived functions *)
 
-let universe_levels_of_constr _env c =
-  let rec aux s c =
-    match kind c with
-    | Const (_c, u) ->
-       LSet.fold LSet.add (Instance.levels u) s
-    | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
-       LSet.fold LSet.add (Instance.levels u) s
-    | Sort u when not (Sorts.is_small u) ->
-      let u = Sorts.univ_of_sort u in
-      LSet.fold LSet.add (Universe.levels u) s
-    | _ -> Constr.fold aux s c
-  in aux LSet.empty c
-
 let check_wellformed_universes env c =
-  let univs = universe_levels_of_constr env c in
+  let univs = universes_of_constr c in
   try UGraph.check_declared_universes (universes env) univs
   with UGraph.UndeclaredLevel u ->
     error_undeclared_universe env u

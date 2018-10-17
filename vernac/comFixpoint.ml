@@ -266,7 +266,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) ind
     let env = Global.env() in
     let indexes = search_guard env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
-    let vars = Univops.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
+    let vars = Vars.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
     let evd = Evd.from_ctx ctx in
@@ -299,7 +299,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) n
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let vars = Univops.universes_of_constr (List.hd fixdecls) in
+    let vars = Vars.universes_of_constr (List.hd fixdecls) in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let evd = Evd.from_ctx ctx in

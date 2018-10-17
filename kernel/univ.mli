@@ -433,6 +433,9 @@ end
 type 'a in_universe_context = 'a * UContext.t
 type 'a in_universe_context_set = 'a * ContextSet.t
 
+val extend_in_context_set : 'a in_universe_context_set -> ContextSet.t ->
+  'a in_universe_context_set
+
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
 

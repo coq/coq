@@ -320,7 +320,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	    hints @ (path', info, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in
-  let term = UnivGen.constr_of_global_univ (glob, inst) in
+  let term = Constr.mkRef (glob, inst) in
     (*FIXME subclasses should now get substituted for each particular instance of
       the polymorphic superclass *)
     aux pri term ty [glob]

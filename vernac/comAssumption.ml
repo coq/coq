@@ -162,7 +162,7 @@ let do_assumptions kind nl l =
   let nf_evar c = EConstr.to_constr sigma c in
   let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
       let t = nf_evar t in
-      let uvars = Univ.LSet.union uvars (Univops.universes_of_constr t) in
+      let uvars = Univ.LSet.union uvars (Vars.universes_of_constr t) in
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
@@ -173,7 +173,7 @@ let do_assumptions kind nl l =
       let t = replace_vars subst t in
       let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
-          (fun {CAst.v=id} (c,u) -> (id, UnivGen.constr_of_global_univ (c,u)))
+          (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
       in
       subst'@subst, status' && status, next_uctx uctx)

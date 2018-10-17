@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
 open Ltac_plugin
 open Pp
 open Util
@@ -150,8 +151,8 @@ let ic_unsafe c = (*FIXME remove *)
 
 let decl_constant na univs c =
   let open Constr in
-  let vars = Univops.universes_of_constr c in
-  let univs = Univops.restrict_universe_context univs vars in
+  let vars = CVars.universes_of_constr c in
+  let univs = UState.restrict_universe_context univs vars in
   let univs = Monomorphic_const_entry univs in
   mkConst(declare_constant (Id.of_string na) 
             (DefinitionEntry (definition_entry ~opaque:true ~univs c),

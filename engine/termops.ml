@@ -912,9 +912,9 @@ let occur_in_global env id constr =
 
 let occur_var env sigma id c =
   let rec occur_rec c =
-    match EConstr.kind sigma c with
-    | Var _ | Const _ | Ind _ | Construct _ -> occur_in_global env id (EConstr.to_constr sigma c)
-    | _ -> EConstr.iter sigma occur_rec c
+    match EConstr.destRef sigma c with
+    | gr, _ -> occur_in_global env id gr
+    | exception DestKO -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
 
@@ -961,9 +961,7 @@ let collect_vars sigma c =
   | _ -> EConstr.fold sigma aux vars c in
   aux Id.Set.empty c
 
-let vars_of_global_reference env gr =
-  let c, _ = Global.constr_of_global_in_context env gr in
-  vars_of_global env c
+let vars_of_global_reference = vars_of_global
 
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
@@ -1458,12 +1456,9 @@ let clear_named_body id env =
 
 let global_vars_set env sigma constr =
   let rec filtrec acc c =
-    let acc = match EConstr.kind sigma c with
-    | Var _ | Const _ | Ind _ | Construct _ ->
-      Id.Set.union (vars_of_global env (EConstr.to_constr sigma c)) acc
-    | _ -> acc
-    in
-    EConstr.fold sigma filtrec acc c
+    match EConstr.destRef sigma c with
+    | gr, _ -> Id.Set.union (vars_of_global env gr) acc
+    | exception DestKO -> EConstr.fold sigma filtrec acc c
   in
   filtrec Id.Set.empty constr
 

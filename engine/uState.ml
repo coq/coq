@@ -406,12 +406,25 @@ let check_univ_decl ~poly uctx decl =
       (Univ.ContextSet.constraints uctx.uctx_local);
   ctx
 
+let restrict_universe_context (univs, csts) keep =
+  let open Univ in
+  let removed = LSet.diff univs keep in
+  if LSet.is_empty removed then univs, csts
+  else
+  let allunivs = Constraint.fold (fun (u,_,v) all -> LSet.add u (LSet.add v all)) csts univs in
+  let g = UGraph.empty_universes in
+  let g = LSet.fold UGraph.add_universe_unconstrained allunivs g in
+  let g = UGraph.merge_constraints csts g in
+  let allkept = LSet.diff allunivs removed in
+  let csts = UGraph.constraints_for ~kept:allkept g in
+  (LSet.inter univs keep, csts)
+
 let restrict ctx vars =
   let vars = Univ.LSet.union vars ctx.uctx_seff_univs in
   let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
       (fst ctx.uctx_names) vars
   in
-  let uctx' = Univops.restrict_universe_context ctx.uctx_local vars in
+  let uctx' = restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
 let demote_seff_univs entry uctx =

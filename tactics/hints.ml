@@ -787,7 +787,7 @@ let secvars_of_constr env sigma c =
   secvars_of_idset (Termops.global_vars_set env sigma c)
 
 let secvars_of_global env gr =
-  secvars_of_idset (vars_of_global_reference env gr)
+  secvars_of_idset (vars_of_global env gr)
 
 let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in

@@ -122,6 +122,8 @@ val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> t -> t
 
+val mkRef : GlobRef.t * EInstance.t -> t
+
 val applist : t * t list -> t
 
 val mkProd_or_LetIn : rel_declaration -> t -> t
@@ -179,6 +181,8 @@ val destCase : Evd.evar_map -> t -> case_info * t * t * t array
 val destProj : Evd.evar_map -> t -> Projection.t * t
 val destFix : Evd.evar_map -> t -> (t, t) pfixpoint
 val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
+
+val destRef : Evd.evar_map -> t -> GlobRef.t * EInstance.t
 
 val decompose_app : Evd.evar_map -> t -> t * t list
 

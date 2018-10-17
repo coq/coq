@@ -74,6 +74,12 @@ let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
 let mkArrow t1 t2 = of_kind (Prod (Anonymous, t1, t2))
 
+let mkRef (gr,u) = let open GlobRef in match gr with
+  | ConstRef c -> mkConstU (c,u)
+  | IndRef ind -> mkIndU (ind,u)
+  | ConstructRef c -> mkConstructU (c,u)
+  | VarRef x -> mkVar x
+
 let applist (f, arg) = mkApp (f, Array.of_list arg)
 
 let isRel sigma c = match kind sigma c with Rel _ -> true | _ -> false
@@ -165,6 +171,13 @@ let destCase sigma c = match kind sigma c with
 let destProj sigma c = match kind sigma c with
 | Proj (p, c) -> (p, c)
 | _ -> raise DestKO
+
+let destRef sigma c = let open GlobRef in match kind sigma c with
+  | Var x -> VarRef x, EInstance.empty
+  | Const (c,u) -> ConstRef c, u
+  | Ind (ind,u) -> IndRef ind, u
+  | Construct (c,u) -> ConstructRef c, u
+  | _ -> raise DestKO
 
 let decompose_app sigma c =
   match kind sigma c with

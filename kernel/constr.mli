@@ -128,6 +128,9 @@ val mkConstruct : constructor -> constr
 val mkConstructU : pconstructor -> constr
 val mkConstructUi : pinductive * int -> constr
 
+(** Make a constant, inductive, constructor or variable. *)
+val mkRef : GlobRef.t Univ.puniverses -> constr
+
 (** Constructs a destructor of inductive type.
     
     [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac] 
@@ -339,6 +342,8 @@ val destProj : constr -> Projection.t * constr
 val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
+
+val destRef : constr -> GlobRef.t Univ.puniverses
 
 (** {6 Equality} *)
 
