@@ -441,7 +441,7 @@ $(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(COQTOP_BYTE)
 			 $(LINKCMO) $(BYTEFLAGS) $(COQTOP_BYTE) -o $@
 
 # For coqc
-COQCCMO:=clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
+COQCCMO:=config/config.cma clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
 
 $(COQC): $(call bestobj, $(COQCCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -502,7 +502,7 @@ $(OCAMLLIBDEPBYTE): tools/ocamllibdep.cmo
 
 # The full coqdep (unused by this build, but distributed by make install)
 
-COQDEPCMO:=clib/clib.cma lib/lib.cma tools/coqdep_lexer.cmo	\
+COQDEPCMO:=config/config.cma clib/clib.cma lib/lib.cma tools/coqdep_lexer.cmo	\
   tools/coqdep_common.cmo tools/coqdep.cmo
 
 $(COQDEP): $(call bestobj, $(COQDEPCMO))
@@ -513,7 +513,7 @@ $(COQDEPBYTE): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(call ocamlbyte, $(SYSMOD))
 
-COQMAKEFILECMO:=clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
+COQMAKEFILECMO:=config/config.cma clib/clib.cma lib/lib.cma tools/coq_makefile.cmo
 
 $(COQMAKEFILE): $(call bestobj,$(COQMAKEFILECMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -539,7 +539,7 @@ $(COQWCBYTE): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(call ocamlbyte, -package str)
 
-COQDOCCMO:=clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
+COQDOCCMO:=config/config.cma clib/clib.cma lib/lib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 $(COQDOC): $(call bestobj, $(COQDOCCMO))
@@ -550,7 +550,7 @@ $(COQDOCBYTE): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(call ocamlbyte, -package str,unix)
 
-COQWORKMGRCMO:=clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo
+COQWORKMGRCMO:=config/config.cma clib/clib.cma lib/lib.cma stm/spawned.cmo stm/coqworkmgrApi.cmo tools/coqworkmgr.cmo
 
 $(COQWORKMGR): $(call bestobj, $(COQWORKMGRCMO))
 	$(SHOW)'OCAMLBEST -o $@'
@@ -563,7 +563,7 @@ $(COQWORKMGRBYTE): $(COQWORKMGRCMO)
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqidetop
 
-FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo ide/fake_ide.cmo
+FAKEIDECMO:=config/config.cma clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo ide/fake_ide.cmo
 
 $(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
 	$(SHOW)'OCAMLBEST -o $@'

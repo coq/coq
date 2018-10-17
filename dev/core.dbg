@@ -1,6 +1,7 @@
-source camlp5.dbg
 load_printer threads.cma
 load_printer str.cma
+load_printer gramlib.cma
+load_printer config.cma
 load_printer clib.cma
 load_printer dynlink.cma
 load_printer lib.cma
@@ -16,4 +17,3 @@ load_printer tactics.cma
 load_printer vernac.cma
 load_printer stm.cma
 load_printer toplevel.cma
-load_printer ltac_plugin.cmo

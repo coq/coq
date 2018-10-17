@@ -25,6 +25,8 @@ package "config" (
 
   directory   = "config"
 
+  archive(byte)    = "config.cma"
+  archive(native)  = "config.cmxa"
 )
 
 package "clib" (

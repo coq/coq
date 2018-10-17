@@ -43,7 +43,7 @@ IDESRCDIRS:= $(CORESRCDIRS) ide ide/protocol
 
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
-IDEDEPS:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
+IDEDEPS:=config/config.cma clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
 IDECMA:=ide/ide.cma
 IDETOPEXE=bin/coqidetop$(EXE)
 IDETOP=bin/coqidetop.opt$(EXE)
