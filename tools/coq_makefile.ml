@@ -46,7 +46,7 @@ let usage_coq_makefile () =
 \n\
 \n[file.v]: Coq file to be compiled\
 \n[file.ml[i4]?]: Objective Caml file to be compiled\
-\n[file.ml{lib,pack}]: ocamlbuild file that describes a Objective Caml\
+\n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
 \n[any] : subdirectory that should be \"made\" and has a Makefile itself\
 \n  to do so. Very fragile and discouraged.\
