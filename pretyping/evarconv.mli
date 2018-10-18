@@ -35,6 +35,9 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
     heuristics ([unify]). *)
 
 (** Theses functions allow to pass arbitrary flags to the unifier and can delay constraints.
+    In case the flags are not specified, they default to
+    [default_flags_of full_transparent_state] currently.
+
     In case of success, the two terms are hence unifiable only if the remaining constraints
     can be solved or [check_problems_are_solved] is true.
 
@@ -47,6 +50,12 @@ val unify_leq_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr 
 val the_conv_x     : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
 [@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
 val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
+[@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
+(** The same function resolving evars by side-effect and
+   catching the exception *)
+val conv : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+[@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
+val cumul : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
 [@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
 
 (** This function also calls [solve_unif_constraints_with_heuristics] to resolve any remaining
