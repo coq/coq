@@ -191,12 +191,12 @@ Type@{UnivBinders.57} -> Type@{i}
 axbar is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant UnivBinders.axbar
-axfoo' : Type@{UnivBinders.59} -> Type@{axbar'.i}
+axfoo' : Type@{axbar'.u0} -> Type@{axbar'.i}
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant UnivBinders.axfoo'
-axbar' : Type@{UnivBinders.59} -> Type@{axbar'.i}
+axbar' : Type@{axbar'.u0} -> Type@{axbar'.i}
 
 axbar' is not universe polymorphic
 Argument scope is [type_scope]
