@@ -2271,24 +2271,15 @@ Section Exists_Forall.
     [P] is true, then there exists an element in
     [xs] for which [Q] is true.
   *)
-  Definition Exists_impl
-    :  forall (P Q : A -> Prop),
-       (forall x : A, P x -> Q x) ->
-       forall xs : list A,
-         Exists P xs ->
-         Exists Q xs
-    := fun P Q H xs H0
-         => let H1 := proj1 (Exists_exists P xs) H0 in
-            let H2 := match H1 with
-                        | ex_intro _ x H2
-                          => ex_intro
-                               (fun x => In x xs /\ Q x)
-                               x
-                               (conj
-                                 (proj1 H2)
-                                 (H x (proj2 H2)))
-                   end in
-            (proj2 (Exists_exists Q xs)) H2.
+  Fixpoint Exists_impl (P Q : A -> Prop)
+           (F : forall x : A, P x -> Q x)
+           xs (e : Exists P xs) : Exists Q xs
+    := match e with
+       | Exists_cons_hd _ x xs p
+         => Exists_cons_hd _ x xs (F x p)
+       | Exists_cons_tl x rec
+         => Exists_cons_tl x (Exists_impl Q F rec)
+       end.
 
   Lemma Forall_Exists_neg (P:A->Prop)(l:list A) :
    Forall (fun x => ~ P x) l <-> ~(Exists P l).
