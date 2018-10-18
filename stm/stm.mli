@@ -297,3 +297,17 @@ val stm_debug : bool ref
 type document
 val backup : unit -> document
 val restore : document -> unit
+
+(** Experimental Hooks for UI experiment plugins, not for general use! *)
+
+type document_edit_notifiers =
+  { add_hook  : Vernacexpr.vernac_control CAst.t -> Stateid.t -> unit
+  (** User adds a sentence to the document (after parsing) *)
+  ; edit_hook : Stateid.t -> unit
+  (** User edits a sentence in the document *)
+  ; exec_hook : Stateid.t -> unit
+  (** User requests checking of a sentence in the document. *)
+  }
+
+(** Set the document edit notifiers. *)
+val document_edit_hook : document_edit_notifiers Hook.t
