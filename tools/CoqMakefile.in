@@ -21,6 +21,7 @@ VFILES            := $(COQMF_VFILES)
 MLIFILES          := $(COQMF_MLIFILES)
 MLFILES           := $(COQMF_MLFILES)
 ML4FILES          := $(COQMF_ML4FILES)
+MLGFILES          := $(COQMF_MLGFILES)
 MLPACKFILES       := $(COQMF_MLPACKFILES)
 MLLIBFILES        := $(COQMF_MLLIBFILES)
 CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
@@ -87,6 +88,7 @@ COQTOP   ?= "$(COQBIN)coqtop"
 COQCHK   ?= "$(COQBIN)coqchk"
 COQDEP   ?= "$(COQBIN)coqdep"
 COQDOC   ?= "$(COQBIN)coqdoc"
+COQPP    ?= "$(COQBIN)coqpp"
 COQMKFILE ?= "$(COQBIN)coq_makefile"
 
 # Timing scripts
@@ -241,6 +243,7 @@ VDFILE := .coqdeps
 
 ALLSRCFILES := \
 	$(ML4FILES) \
+	$(MLGFILES) \
 	$(MLFILES) \
 	$(MLPACKFILES) \
 	$(MLLIBFILES) \
@@ -262,6 +265,7 @@ TEXFILES = $(VFILES:.v=.tex)
 GTEXFILES = $(VFILES:.v=.g.tex)
 CMOFILES = \
 	$(ML4FILES:.ml4=.cmo) \
+	$(MLGFILES:.mlg=.cmo) \
 	$(MLFILES:.ml=.cmo) \
 	$(MLPACKFILES:.mlpack=.cmo)
 CMXFILES = $(CMOFILES:.cmo=.cmx)
@@ -277,7 +281,7 @@ CMXSFILES = \
 	$(MLPACKFILES:.mlpack=.cmxs) \
 	$(CMXAFILES:.cmxa=.cmxs) \
 	$(if $(MLPACKFILES)$(CMXAFILES),,\
-		$(ML4FILES:.ml4=.cmxs) $(MLFILES:.ml=.cmxs))
+		$(ML4FILES:.ml4=.cmxs) $(MLGFILES:.mlg=.cmxs) $(MLFILES:.ml=.cmxs))
 
 # files that are packed into a plugin (no extension)
 PACKEDFILES = \
@@ -555,6 +559,7 @@ clean::
 	$(HIDE)rm -f $(CMXSFILES)
 	$(HIDE)rm -f $(CMOFILES:.cmo=.o)
 	$(HIDE)rm -f $(CMXAFILES:.cmxa=.a)
+	$(HIDE)rm -f $(MLGFILES:.mlg=.ml)
 	$(HIDE)rm -f $(ALLDFILES)
 	$(HIDE)rm -f $(NATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
@@ -602,11 +607,17 @@ $(ML4FILES:.ml4=.cmx): %.cmx: %.ml4
 	$(SHOW)'CAMLOPT -pp -c $(FOR_PACK) $<'
 	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(PP) $(FOR_PACK) -impl $<
 
-$(MLFILES:.ml=.cmo): %.cmo: %.ml
+$(MLGFILES:.mlg=.ml): %.ml: %.mlg
+	$(SHOW)'COQPP $<'
+	$(HIDE)$(COQPP) $<
+
+# Stupid hack around a deficient syntax: we cannot concatenate two expansions
+$(filter %.cmo, $(MLFILES:.ml=.cmo) $(MLGFILES:.mlg=.cmo)): %.cmo: %.ml
 	$(SHOW)'CAMLC -c $<'
 	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $<
 
-$(MLFILES:.ml=.cmx): %.cmx: %.ml
+# Same hack
+$(filter %.cmx, $(MLFILES:.ml=.cmx) $(MLGFILES:.mlg=.cmx)): %.cmx: %.ml
 	$(SHOW)'CAMLOPT -c $(FOR_PACK) $<'
 	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(FOR_PACK) $<
 
@@ -647,7 +658,7 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -pack -o $@ $^
 
 # This rule is for _CoqProject with no .mllib nor .mlpack
-$(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs)): %.cmxs: %.cmx
+$(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
 	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) \
 		-shared -o $@ $<
@@ -715,6 +726,10 @@ $(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli
 $(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4
 	$(SHOW)'CAMLDEP -pp $<'
 	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl "$<" $(redir_if_ok)
+
+$(addsuffix .d,$(MLGFILES)): %.mlg.d: %.ml
+	$(SHOW)'CAMLDEP $<'
+	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) "$<" $(redir_if_ok)
 
 $(addsuffix .d,$(MLFILES)): %.ml.d: %.ml
 	$(SHOW)'CAMLDEP $<'
