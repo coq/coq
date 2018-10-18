@@ -1,4 +1,4 @@
-(* coq-prog-args: ("-top" "unidecls") *)
+(* -*- coq-prog-args: ("-top" "unidecls"); -*- *)
 Set Printing Universes.
 
 Module decls.
