@@ -33,7 +33,6 @@ open Globnames
 open Goptions
 open Nameops
 open Termops
-open Nametab
 open Smartlocate
 open Vernacexpr
 open Ind_tables
@@ -369,7 +368,7 @@ requested
               | InSet -> recs ^ "_nodep"
               | InType -> recs ^ "t_nodep")
         ) in
-        let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
+        let newid = add_suffix (Nametab.basename_of_global (IndRef ind)) suffix in
         let newref = CAst.make newid in
           ((newref,isdep,ind,z)::l1),l2
       in

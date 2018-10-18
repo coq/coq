@@ -25,7 +25,6 @@ open Termops
 open Namegen
 open Libnames
 open Globnames
-open Nametab
 open Mod_subst
 open Decl_kinds
 open Context.Named.Declaration
@@ -58,7 +57,7 @@ let add_name_opt na b t (nenv, env) =
 (* Tools for printing of Cases                                              *)
 
 let encode_inductive r =
-  let indsp = global_inductive r in
+  let indsp = Nametab.global_inductive r in
   let constr_lengths = constructors_nrealargs indsp in
   (indsp,constr_lengths)
 
@@ -97,7 +96,7 @@ module PrintingInductiveMake =
     let compare = ind_ord
     let encode = Test.encode
     let subst subst obj = subst_ind subst obj
-    let printer ind = pr_global_env Id.Set.empty (IndRef ind)
+    let printer ind = Nametab.pr_global_env Id.Set.empty (IndRef ind)
     let key = ["Printing";Test.field]
     let title = Test.title
     let member_message x = Test.member_message (printer x)

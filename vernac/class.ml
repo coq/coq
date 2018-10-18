@@ -21,7 +21,6 @@ open Environ
 open Classops
 open Declare
 open Globnames
-open Nametab
 open Decl_kinds
 
 let strength_min l = if List.mem `LOCAL l then `LOCAL else `GLOBAL
@@ -310,7 +309,7 @@ let add_coercion_hook poly local ref =
   | Global -> false
   in
   let () = try_add_new_coercion ref ~local poly in
-  let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
+  let msg = Nametab.pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
 let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)

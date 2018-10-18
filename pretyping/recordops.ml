@@ -20,7 +20,6 @@ open Util
 open Pp
 open Names
 open Globnames
-open Nametab
 open Constr
 open Libobject
 open Mod_subst
@@ -330,7 +329,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 let error_not_structure ref description =
   user_err ~hdr:"object_declare"
     (str"Could not declare a canonical structure " ++
-       (Id.print (basename_of_global ref) ++ str"." ++ spc() ++
+       (Id.print (Nametab.basename_of_global ref) ++ str"." ++ spc() ++
           description))
 
 let check_and_decompose_canonical_structure ref =

@@ -19,7 +19,6 @@ open Util
 open Names
 open Libnames
 open Globnames
-open Nametab
 open Smartlocate
 open Constrexpr
 open Termops
@@ -98,7 +97,7 @@ let intern_global_reference ist qid =
     ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid)
   else
     try ArgArg (qid.CAst.loc,locate_global_with_alias qid)
-    with Not_found -> error_global_not_found qid
+    with Not_found -> Nametab.error_global_not_found qid
 
 let intern_ltac_variable ist qid =
   if qualid_is_ident qid && find_var (qualid_basename qid) ist then
@@ -150,7 +149,7 @@ let intern_isolated_tactic_reference strict ist qid =
   try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist qid))
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found qid
+  Nametab.error_global_not_found qid
 
 (* Internalize an applied tactic reference *)
 
@@ -169,7 +168,7 @@ let intern_applied_tactic_reference ist qid =
   try intern_applied_global_tactic_reference qid
   with Not_found ->
   (* Reference not found *)
-  error_global_not_found qid
+  Nametab.error_global_not_found qid
 
 (* Intern a reference parsed in a non-tactic entry *)
 
@@ -190,7 +189,7 @@ let intern_non_tactic_reference strict ist qid =
     TacGeneric ipat
   else
     (* Reference not found *)
-    error_global_not_found qid
+    Nametab.error_global_not_found qid
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x
@@ -302,7 +301,7 @@ let intern_evaluable_global_reference ist qid =
   try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true qid)
   with Not_found ->
   if qualid_is_ident qid && not !strict_check then EvalVarRef (qualid_basename qid)
-  else error_global_not_found qid
+  else Nametab.error_global_not_found qid
 
 let intern_evaluable_reference_or_by_notation ist = function
   | {v=AN r} -> intern_evaluable_global_reference ist r
@@ -377,7 +376,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
          subterm matched when a pattern *)
       let r = match r with
       | {v=AN r} -> r
-      | {loc} -> (qualid_of_path ?loc (path_of_global (smart_global r))) in
+      | {loc} -> (qualid_of_path ?loc (Nametab.path_of_global (smart_global r))) in
       let sign = {
         Constrintern.ltac_vars = ist.ltacvars;
         ltac_bound = Id.Set.empty;
