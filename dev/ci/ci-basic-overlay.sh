@@ -238,7 +238,7 @@
 ########################################################################
 # plugin_tutorial
 ########################################################################
-: "${plugin_tutorial_CI_REF:=master}"
+: "${plugin_tutorial_CI_REF:=14b2976cdf67db788b79d9421ce1e89bd15c7313}"
 : "${plugin_tutorial_CI_GITURL:=https://github.com/ybertot/plugin_tutorials}"
 : "${plugin_tutorial_CI_ARCHIVEURL:=${plugin_tutorial_CI_GITURL}/archive}"
 
