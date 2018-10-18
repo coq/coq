@@ -118,6 +118,12 @@ val locate_extended_all : qualid -> extended_global_reference list
 val locate_extended_all_dir : qualid -> global_dir_reference list
 val locate_extended_all_modtype : qualid -> ModPath.t list
 
+(** Experimental completion support, API is _unstable_ *)
+val completion_canditates : qualid -> extended_global_reference list
+(** [completion_canditates qualid] will return the list of global
+    references that have [qualid] as a prefix. UI usually will want to
+    compose this with [shortest_qualid_of_global] *)
+
 (** Mapping a full path to a global reference *)
 
 val global_of_path : full_path -> GlobRef.t
@@ -211,6 +217,7 @@ module type NAMETREE = sig
   val user_name : qualid -> t -> user_name
   val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
+  val match_prefixes : qualid -> t -> elt list
 end
 
 module Make (U : UserName) (E : EqualityType) :

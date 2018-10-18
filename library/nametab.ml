@@ -74,6 +74,8 @@ module type NAMETREE = sig
   val user_name : qualid -> t -> user_name
   val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
+  (** Matches a prefix of [qualid], useful for completion *)
+  val match_prefixes : qualid -> t -> elt list
 end
 
 module Make (U : UserName) (E : EqualityType) : NAMETREE
@@ -259,9 +261,19 @@ let find_prefixes qid tab =
     search_prefixes (Id.Map.find id tab) (DirPath.repr dir)
   with Not_found -> []
 
+let match_prefixes =
+  let cprefix x y = CString.(compare x (sub y 0 (min (length x) (length y)))) in
+  fun qid tab ->
+    try
+      let (dir,id) = repr_qualid qid in
+      let id_prefix = cprefix Id.(to_string id) in
+      let matches = Id.Map.filter_range (fun x -> id_prefix Id.(to_string x)) tab in
+      let matches = Id.Map.mapi (fun _key tab -> search_prefixes tab (DirPath.repr dir)) matches in
+      (* Coq's flatten is "magical", so this is not so bad perf-wise *)
+      CList.flatten @@ Id.Map.(fold (fun _ r l -> r :: l) matches [])
+    with Not_found -> []
+
 end
-
-
 
 (* Global name tables *************************************************)
 
@@ -446,6 +458,10 @@ let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
 let locate_extended_all_dir qid = DirTab.find_prefixes qid !the_dirtab
 
 let locate_extended_all_modtype qid = MPTab.find_prefixes qid !the_modtypetab
+
+(* Completion *)
+let completion_canditates qualid =
+  ExtRefTab.match_prefixes qualid !the_ccitab
 
 (* Derived functions *)
 
