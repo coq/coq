@@ -473,36 +473,33 @@ type universe_source =
 type universe_name_decl = universe_source * (Id.t * Nametab.universe_id) list
 
 let check_exists sp =
-  let depth = sections_depth () in
-  let sp = Libnames.make_path (pop_dirpath_n depth (dirpath sp)) (basename sp) in
   if Nametab.exists_universe sp then
     alreadydeclared (str "Universe " ++ Id.print (basename sp) ++ str " already exists")
   else ()
 
-let qualify_univ i sp src id =
-  let open Libnames in
+let qualify_univ i dp src id =
   match src with
   | BoundUniv | UnqualifiedUniv ->
-    let sp = dirpath sp in
-    i, make_path sp id
+    i,  Libnames.make_path dp id
   | QualifiedUniv l ->
-    let sp = dirpath sp in
-    let sp = DirPath.repr sp in
-    Nametab.map_visibility succ i, make_path (DirPath.make (l::sp)) id
+    let dp = DirPath.repr dp in
+    Nametab.map_visibility succ i, Libnames.make_path (DirPath.make (l::dp)) id
 
-let do_univ_name ~check i sp src (id,univ) =
-  let i, sp = qualify_univ i sp src id in
+let do_univ_name ~check i dp src (id,univ) =
+  let i, sp = qualify_univ i dp src id in
   if check then check_exists sp;
   Nametab.push_universe i sp univ
 
 let cache_univ_names ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:true (Nametab.Until 1) sp src) univs
+  let depth = sections_depth () in
+  let dp = pop_dirpath_n depth (dirpath sp) in
+  List.iter (do_univ_name ~check:true (Nametab.Until 1) dp src) univs
 
 let load_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Until i) sp src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Until i) (dirpath sp) src) univs
 
 let open_univ_names i ((sp, _), (src, univs)) =
-  List.iter (do_univ_name ~check:false (Nametab.Exactly i) sp src) univs
+  List.iter (do_univ_name ~check:false (Nametab.Exactly i) (dirpath sp) src) univs
 
 let discharge_univ_names = function
   | _, (BoundUniv, _) -> None

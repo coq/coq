@@ -46,12 +46,12 @@ Universe secfoo.
 Section Foo'.
   Fail Universe secfoo.
   Universe secfoo2.
-  Check Type@{Foo'.secfoo2}.
+  Fail Check Type@{Foo'.secfoo2}.
+  Check Type@{secfoo2}.
   Constraint secfoo2 < a.
 End Foo'.
 
 Check Type@{secfoo2}.
-Fail Check Type@{Foo'.secfoo2}.
 Fail Check eq_refl : Type@{secfoo2} = Type@{a}.
 
 (** Below, u and v are global, fixed universes *)
