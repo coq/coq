@@ -187,7 +187,7 @@ val unfold_projection : 'a infos -> Projection.t -> stack_member option
    [create_clos_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
-val inject : constr puniverses -> fconstr
+val inject : constr -> fconstr
 
 (** mk_atom: prevents a term from being evaluated *)
 val mk_atom : constr -> fconstr

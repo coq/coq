@@ -117,12 +117,12 @@ let whd_betaiota env t =
     | App (c, _) ->
       begin match kind c with
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | LetIn _ -> t
-      | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
+      | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
       end
-    | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
+    | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
 
 let nf_betaiota env t =
-  norm_val (create_clos_infos betaiota env) (create_tab ()) (inject (t, Univ.Instance.empty))
+  norm_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
 
 let whd_betaiotazeta env x =
   match kind x with
@@ -133,10 +133,10 @@ let whd_betaiotazeta env x =
       | Ind _ | Construct _ | Evar _ | Meta _ | Const _ -> x
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject (x, Univ.Instance.empty))
+         whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
       end
     | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ ->
-        whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject (x, Univ.Instance.empty))
+        whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
 
 let whd_all env t =
   match kind t with
@@ -147,10 +147,10 @@ let whd_all env t =
       | Ind _ | Construct _ | Evar _ | Meta _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos all env) (create_tab ()) (inject (t, Univ.Instance.empty))
+         whd_val (create_clos_infos all env) (create_tab ()) (inject t)
       end
     | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos all env) (create_tab ()) (inject (t, Univ.Instance.empty))
+        whd_val (create_clos_infos all env) (create_tab ()) (inject t)
 
 let whd_allnolet env t =
   match kind t with
@@ -161,10 +161,10 @@ let whd_allnolet env t =
       | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos allnolet env) (create_tab ()) (inject (t, Univ.Instance.empty))
+         whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
       end
     | Rel _ | Cast _ | Case _ | Proj _ | Const _ | Var _ ->
-        whd_val (create_clos_infos allnolet env) (create_tab ()) (inject (t, Univ.Instance.empty))
+        whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -637,7 +637,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  ccnv cv_pb l2r infos el_id el_id (inject (t1, Univ.Instance.empty)) (inject (t2, Univ.Instance.empty)) univs
+  ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
 
 
 let check_eq univs u u' = 

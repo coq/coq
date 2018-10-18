@@ -170,14 +170,14 @@ let infer_arity_constructor is_arity env variances arcn =
   let infer_typ typ (env,variances) =
     match typ with
     | Context.Rel.Declaration.LocalAssum (_, typ') ->
-      (Environ.push_rel typ env, infer_term CUMUL env variances (typ', Instance.empty))
+      (Environ.push_rel typ env, infer_term CUMUL env variances typ')
     | Context.Rel.Declaration.LocalDef _ -> assert false
   in
   let typs, codom = Reduction.dest_prod env arcn in
   let env, variances = Context.Rel.fold_outside infer_typ typs ~init:(env, variances) in
   (* If we have Inductive foo@{i j} : ... -> Type@{i} := C : ... -> foo Type@{j}
      i is irrelevant, j is invariant. *)
-  if not is_arity then infer_term CUMUL env variances (codom, Instance.empty) else variances
+  if not is_arity then infer_term CUMUL env variances codom else variances
 
 let infer_inductive env mie =
   let open Entries in

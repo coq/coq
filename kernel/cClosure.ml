@@ -1052,7 +1052,8 @@ let whd_val info tab v =
 let norm_val info tab v =
   with_stats (lazy (kl info tab v))
 
-let inject (c, u) = mk_clos (subs_id 0, u) c
+let inject c = mk_clos (subs_id 0, Instance.empty) c
+let inject_with_univ (c, u) = mk_clos (subs_id 0, u) c
 
 let whd_stack infos tab m stk = match m.norm with
 | Whnf | Norm ->
@@ -1069,7 +1070,7 @@ type clos_infos = fconstr infos
 
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
   let share = (Environ.typing_flags env).Declarations.share_reduction in
-  create ~share ~repr:(fun _ _ c -> inject c) flgs env evars
+  create ~share ~repr:(fun _ _ c -> inject_with_univ c) flgs env evars
 
 let create_tab () = KeyTable.create 17
 
