@@ -788,7 +788,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           else UnifFailure (i,NotSameHead)
         and f3 i = miller true (sp1,al1) appr1 appr2 i
         and f4 i = miller false (sp2,al2) appr2 appr1 i
-        and f5 i = consume true appr1 appr2 i in
+        and f5 i =
+          (** We ensure failure of consuming the stacks does not
+             propagate an error about unification of the stacks while
+             the heads themselves cannot be unified, so we return
+             NotSameHead. *)
+          match consume true appr1 appr2 i with
+          | Success _ as x -> x
+          | UnifFailure _ -> quick_fail i
+        in
         ise_try evd [f1; f2; f3; f4; f5]
 
     | Flexible ev1, MaybeFlexible v2 ->
