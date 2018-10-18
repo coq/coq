@@ -76,9 +76,10 @@ let search_guard ?loc env possible_indexes fixdefs =
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix
      with reraise ->
-       let (e, info) = CErrors.push reraise in
+       let info = Exninfo.info reraise in
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
-       iraise (e, info));
+       let reraise = Exninfo.attach reraise info in
+       Util.reraise reraise);
     indexes
   else
     (* we now search recursively among all combinations *)
@@ -261,8 +262,7 @@ let apply_heuristics env sigma fail_evar =
   try solve_unif_constraints_with_heuristics
         ~ts:(Typeclasses.classes_transparent_state ()) env sigma
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    if fail_evar then iraise e else sigma
+    if fail_evar then Util.reraise e else sigma
 
 let check_typeclasses_instances_are_solved env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
@@ -607,9 +607,10 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
 	  let cofix = (i, fixdecls) in
             (try check_cofix !!env (i, nf_fix sigma fixdecls)
              with reraise ->
-               let (e, info) = CErrors.push reraise in
+               let info = Exninfo.info reraise in
                let info = Option.cata (Loc.add_loc info) info loc in
-               iraise (e, info));
+               let reraise = Exninfo.attach reraise info in
+               Util.reraise reraise);
 	    make_judge (mkCoFix cofix) ftys.(i)
       in
       inh_conv_coerce_to_tycon ?loc env sigma fixj tycon
@@ -733,10 +734,12 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
       try
         judge_of_product !!env name j j'
       with TypeError _ as e ->
-        let (e, info) = CErrors.push e in
+        let info = Exninfo.info e in
         let info = Option.cata (Loc.add_loc info) info loc in
-        iraise (e, info) in
-      inh_conv_coerce_to_tycon ?loc env sigma resj tycon
+        let e = Exninfo.attach e info in
+        reraise e
+    in
+    inh_conv_coerce_to_tycon ?loc env sigma resj tycon
 
   | GLetIn(name,c1,t,c2) ->
     let sigma, tycon1 =

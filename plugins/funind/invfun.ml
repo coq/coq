@@ -52,11 +52,11 @@ let do_observe_tac s tac g =
     let v = tac g in
     msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with reraise ->
-    let reraise = CErrors.push reraise in
-    let e = ExplainErr.process_vernac_interp_error reraise in
+    let info = Exninfo.info reraise in
+    let e = ExplainErr.process_vernac_interp_error (reraise, info) in
     observe (hov 0 (str "observation "++ s++str " raised exception " ++
-	     CErrors.iprint e ++ str " on goal" ++ fnl() ++ goal ));
-    iraise reraise;;
+             CErrors.print (fst e) ++ str " on goal" ++ fnl() ++ goal ));
+    Util.reraise reraise
 
 let observe_tac s tac g =
   if do_observe ()

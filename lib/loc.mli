@@ -61,8 +61,8 @@ val add_loc : Exninfo.info -> t -> Exninfo.info
 val get_loc : Exninfo.info -> t option
 (** Retrieving the optional location of an exception *)
 
-val raise : ?loc:t -> exn -> 'a
-(** [raise loc e] is the same as [Pervasives.raise (add_loc e loc)]. *)
+val attach : ?loc:t -> exn -> exn
+(** [attach loc e] add the location info for [e] *)
 
 (** {5 Objects with location information } *)
 

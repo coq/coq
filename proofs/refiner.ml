@@ -206,14 +206,15 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   tclIDTAC goal;;
 
 
-let catch_failerror (e, info) =
+let catch_failerror e =
   if catchable_exception e then Control.check_for_interrupt ()
   else match e with
   | FailError (0,_) ->
-      Control.check_for_interrupt ()
+    Control.check_for_interrupt ()
   | FailError (lvl,s) ->
-    iraise (FailError (lvl - 1, s), info)
-  | e -> iraise (e, info)
+    raise (FailError (lvl - 1, s))
+  | e ->
+    raise e
   (** FIXME: do we need to add a [Errors.push] here? *)
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
@@ -222,7 +223,8 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with (* Breakpoint *)
     | e when CErrors.noncritical e ->
-      let e = CErrors.push e in catch_failerror e; t2 g
+      catch_failerror e;
+      t2 g
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress,
    then applies t2 *)
@@ -235,7 +237,8 @@ let tclORELSE_THEN t1 t2then t2else gls =
   match
     try Some(tclPROGRESS t1 gls)
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in catch_failerror e; None
+      catch_failerror e;
+      None
   with
     | None -> t2else gls
     | Some sgl ->
@@ -260,17 +263,20 @@ let ite_gen tcal tac_if continue tac_else gl=
       success:=true;result in
   let tac_else0 e gl=
     if !success then
-      iraise e
+      raise e
     else
       try
         tac_else gl
       with
-        e' when CErrors.noncritical e' -> iraise e in
+        e' when CErrors.noncritical e' ->
+        raise e
+ in
   try
     tcal tac_if0 continue gl
   with (* Breakpoint *)
   | e when CErrors.noncritical e ->
-    let e = CErrors.push e in catch_failerror e; tac_else0 e gl
+    catch_failerror e;
+    tac_else0 e gl
 
 (* Try the first tactic and, if it succeeds, continue with
    the second one, and if it fails, use the third one *)

@@ -495,6 +495,5 @@ let funind_purify f x =
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
   try f x
   with e ->
-    let e = CErrors.push e in
     Vernacstate.unfreeze_interp_state st;
-    Exninfo.iraise e
+    Util.reraise e

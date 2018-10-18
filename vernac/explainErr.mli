@@ -13,11 +13,11 @@ exception EvaluatedError of Pp.t * exn option
 
 (** Pre-explain a vernac interpretation error *)
 
-val process_vernac_interp_error : ?allow_uncaught:bool -> Util.iexn -> Util.iexn
+val process_vernac_interp_error : ?allow_uncaught:bool -> exn * Exninfo.info -> exn * Exninfo.info
 
 (** General explain function. Should not be used directly now,
     see instead function [Errors.print] and variants *)
 
 val explain_exn_default : exn -> Pp.t
 
-val register_additional_error_info : (Util.iexn -> (Pp.t option Loc.located) option) -> unit
+val register_additional_error_info : (exn * Exninfo.info -> (Pp.t option Loc.located) option) -> unit

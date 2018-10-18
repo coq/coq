@@ -103,10 +103,9 @@ let call opn converted_args ~atts ~st =
     hunk ~atts ~st
   with
     | reraise ->
-        let reraise = CErrors.push reraise in
-        if !Flags.debug then
-          Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
-        iraise reraise
+      if !Flags.debug then
+        Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
+      Util.reraise reraise
 
 (** VERNAC EXTEND registering *)
 

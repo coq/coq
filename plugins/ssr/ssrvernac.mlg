@@ -416,7 +416,11 @@ let interp_search_arg arg =
         let env = Global.env () in
         let _, p = Constrintern.intern_constr_pattern env (Evd.from_env env) p in
         Search.GlobSearchSubPattern p
-      with e -> let e = CErrors.push e in iraise (ExplainErr.process_vernac_interp_error e)) arg in
+      with e ->
+      let info = Exninfo.info e in
+      let e, info = ExplainErr.process_vernac_interp_error (e,info) in
+      let e = Exninfo.attach e info in
+      Util.reraise e) arg in
   let hpat, a1 = match arg with
   | (_, Search.GlobSearchSubPattern (Pattern.PMeta _)) :: a' -> all_true, a'
   | (true, Search.GlobSearchSubPattern p) :: a' ->

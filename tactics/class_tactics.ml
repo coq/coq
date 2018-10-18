@@ -240,10 +240,11 @@ let unify_resolve_refine poly flags gl clenv =
     (fun ie ->
       match fst ie with
       | Evarconv.UnableToUnify _ ->
-         Tacticals.New.tclZEROMSG (str "Unable to unify")
+        Tacticals.New.tclZEROMSG (str "Unable to unify")
       | e when CErrors.noncritical e ->
-         Tacticals.New.tclZEROMSG (str "Unexpected error")
-      | _ -> iraise ie)
+        Tacticals.New.tclZEROMSG (str "Unexpected error")
+      | _ ->
+        reraise (fst ie))
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
@@ -676,7 +677,7 @@ module Search = struct
               Printer.pr_econstr_env env evd y
             | ReachedLimitEx -> str "Proof-search reached its limit."
             | NoApplicableEx -> str "Proof-search failed."
-            | e -> CErrors.iprint ie
+            | e -> CErrors.print (fst ie)
           in
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
         else ()
@@ -772,7 +773,8 @@ module Search = struct
              (fun e' ->
 	      if CErrors.noncritical (fst e') then
                 (pr_error e'; aux (merge_exceptions e e') tl)
-              else iraise e')
+              else
+                reraise (fst e'))
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->

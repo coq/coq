@@ -118,7 +118,8 @@ let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
       let (e, info) = e in
       let msg = str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "." in
       let err = CErrors.make_anomaly msg in
-      Util.iraise (err, info)
+      let err = Exninfo.attach err info in
+      Util.reraise err
   in
   let e' =
     try Some (CList.find_map (fun f -> f e) !additional_error_info)

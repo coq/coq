@@ -242,9 +242,8 @@ let extern_state magic filename val_0 =
       marshal_out channel val_0;
       close_out channel
     with reraise ->
-      let reraise = CErrors.push reraise in
       let () = try_remove filename in
-      iraise reraise
+      Util.reraise reraise
   with Sys_error s ->
     CErrors.user_err ~hdr:"System.extern_state" (str "System error: " ++ str s)
 

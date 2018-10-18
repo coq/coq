@@ -16,9 +16,6 @@ type 'a t
 type info
 (** All information *)
 
-type iexn = exn * info
-(** Information-wearing exceptions *)
-
 val make : unit -> 'a t
 (** Create a new piece of information. *)
 
@@ -34,8 +31,5 @@ val get : info -> 'a t -> 'a option
 val info : exn -> info
 (** Retrieve the information of the last exception raised. *)
 
-val iraise : iexn -> 'a
-(** Raise the given enriched exception. *)
-
-val raise : ?info:info -> exn -> 'a
-(** Raise the given exception with additional information. *)
+val attach : exn -> info -> exn
+(** Attach information to the given exception. *)

@@ -73,7 +73,7 @@ module NonLogical : sig
   val raise : ?info:Exninfo.info -> exn -> 'a t
 
   (** [try ... with ...] but restricted to {!Exception}. *)
-  val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
+  val catch : 'a t -> (exn * Exninfo.info -> 'a t) -> 'a t
   val timeout : int -> 'a t -> 'a t
 
   (** Construct a monadified side-effect. Exceptions raised by the argument are
@@ -190,17 +190,17 @@ module Logical (P:Param) : sig
   val local : P.e -> 'a t -> 'a t
   val update : (P.u -> P.u) -> unit t
 
-  val zero : Exninfo.iexn -> 'a t
-  val plus : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t
-  val split : 'a t -> ('a, 'a t, Exninfo.iexn) list_view t
+  val zero : exn * Exninfo.info -> 'a t
+  val plus : 'a t -> (exn * Exninfo.info -> 'a t) -> 'a t
+  val split : 'a t -> ('a, 'a t, exn * Exninfo.info) list_view t
   val once : 'a t -> 'a t
-  val break : (Exninfo.iexn -> Exninfo.iexn option) -> 'a t -> 'a t
+  val break : (exn * Exninfo.info -> (exn * Exninfo.info) option) -> 'a t -> 'a t
 
   val lift : 'a NonLogical.t -> 'a t
 
-  type 'a reified = ('a, Exninfo.iexn) BackState.reified
+  type 'a reified = ('a, exn * Exninfo.info) BackState.reified
 
-  val repr : 'a reified -> ('a, 'a reified, Exninfo.iexn) list_view NonLogical.t
+  val repr : 'a reified -> ('a, 'a reified, exn * Exninfo.info) list_view NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
 
@@ -213,8 +213,8 @@ module Logical (P:Param) : sig
       sstate : P.s;
     }
 
-    val make : ('a, state, state, Exninfo.iexn) BackState.t -> 'a t
-    val repr : 'a t -> ('a, state, state, Exninfo.iexn) BackState.t
+    val make : ('a, state, state, exn * Exninfo.info) BackState.t -> 'a t
+    val repr : 'a t -> ('a, state, state, exn * Exninfo.info) BackState.t
 
   end
 

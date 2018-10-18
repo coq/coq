@@ -1131,10 +1131,8 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     if !debug_unification then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
-    let e = CErrors.push e in
     if !debug_unification then Feedback.msg_debug (str "Leaving unification with failure");
-    iraise e
-
+    Util.reraise e
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
 

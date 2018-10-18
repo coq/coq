@@ -239,10 +239,10 @@ let do_observe_tac s tac g =
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let info = Exninfo.info reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue true (fst (ExplainErr.process_vernac_interp_error reraise));
-    iraise reraise
+    then print_debug_queue true (fst (ExplainErr.process_vernac_interp_error (reraise,info)));
+    Util.reraise reraise
 
 let observe_tac s tac g =
   if do_observe ()

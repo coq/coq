@@ -10,10 +10,6 @@
 
 open Pp
 
-(** Aliases *)
-
-let push = Backtrace.add_backtrace
-
 (* Errors *)
 
 exception Anomaly of string option * Pp.t (* System errors *)
@@ -29,7 +25,7 @@ let make_anomaly ?label pp =
   Anomaly (label, pp)
 
 let anomaly ?loc ?label pp =
-  Loc.raise ?loc (Anomaly (label, pp))
+  raise Loc.(attach ?loc (Anomaly (label, pp)))
 
 let is_anomaly = function
 | Anomaly _ -> true
@@ -39,9 +35,11 @@ exception UserError of string option * Pp.t (* User errors *)
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
-let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
+let user_err ?loc ?hdr strm =
+  raise Loc.(attach ?loc (UserError (hdr, strm)))
 
-let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
+let invalid_arg ?loc s =
+  raise Loc.(attach ?loc (Invalid_argument s))
 
 exception AlreadyDeclared of Pp.t (* for already declared Schemes *)
 let alreadydeclared pps = raise (AlreadyDeclared(pps))
@@ -81,13 +79,10 @@ let raw_anomaly e = match e with
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e) ++ str "."
   | _ -> str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 
-let print_backtrace e = match Backtrace.get_backtrace e with
-| None -> mt ()
-| Some bt ->
-  let bt = Backtrace.repr bt in
-  let pr_frame f = str (Backtrace.print_frame f) in
-  let bt = prlist_with_sep fnl pr_frame bt in
-  fnl () ++ hov 0 bt
+let print_backtrace () =
+  if !Flags.debug
+  then fnl () ++ str (Printexc.get_backtrace ())
+  else mt ()
 
 let print_anomaly askreport e =
   if askreport then
@@ -97,16 +92,13 @@ let print_anomaly askreport e =
     hov 0 (raw_anomaly e)
 
 (** The standard exception printer *)
-let print ?(info = Exninfo.null) e =
-  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace info
-
-let iprint (e, info) = print ~info e
+let print e =
+  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace ()
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
-let print_no_report e = print_gen (print_anomaly false) !handle_stack e
-let iprint_no_report (e, info) =
-  print_gen (print_anomaly false) !handle_stack e ++ print_backtrace info
+let print_no_report e =
+  print_gen (print_anomaly false) !handle_stack e ++ print_backtrace ()
 
 (** Predefined handlers **)
 

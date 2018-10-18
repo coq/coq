@@ -1362,9 +1362,8 @@ let with_lib_stk_protection f x =
   let fs = Lib.freeze ~marshallable:false in
   try let a = f x in Lib.unfreeze fs; a
   with reraise ->
-    let reraise = CErrors.push reraise in
     let () = Lib.unfreeze fs in
-    iraise reraise
+    Util.reraise reraise
 
 let with_syntax_protection f x =
   with_lib_stk_protection

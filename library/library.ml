@@ -721,11 +721,10 @@ let save_library_to ?todo dir f otab =
       if not (Nativelib.compile_library dir ast fn) then
 	user_err Pp.(str "Could not compile the library to native code.")
    with reraise ->
-    let reraise = CErrors.push reraise in
     let () = Feedback.msg_warning (str "Removed file " ++ str f') in
     let () = close_out ch in
     let () = Sys.remove f' in
-    iraise reraise
+    Util.reraise reraise
 
 let save_library_raw f sum lib univs proofs =
   let f' = f^"o" in

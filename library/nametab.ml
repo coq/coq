@@ -52,7 +52,7 @@ let eq_global_dir_reference = GlobDirRef.equal
 exception GlobalizationError of qualid
 
 let error_global_not_found qid =
-  Loc.raise ?loc:qid.CAst.loc (GlobalizationError qid)
+  raise Loc.(attach ?loc:qid.CAst.loc (GlobalizationError qid))
 
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object

@@ -75,15 +75,18 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       let new_proof = Proof_global.give_me_the_proof_opt () in
       { state with doc = ndoc; sid = nsid; proof = new_proof; }
     with reraise ->
+      let bt = Printexc.get_raw_backtrace () in
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
       if interactive then ignore(Stm.edit_at ~doc:state.doc state.sid);
-      let (reraise, info) = CErrors.push reraise in
+      let info = Exninfo.info reraise in
       let info = begin
         match Loc.get_loc info with
         | None   -> Option.cata (Loc.add_loc info) info loc
         | Some _ -> info
-      end in iraise (reraise, info)
+      end in
+      let reraise = Exninfo.attach reraise info in
+      Printexc.raise_with_backtrace reraise bt
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 let load_vernac_core ~echo ~check ~interactive ~state file =
@@ -132,11 +135,10 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
     input_cleanup ();
     !rstate, !rids, Pcoq.Parsable.comment_state in_pa
   with any ->   (* whatever the exception *)
-    let (e, info) = CErrors.push any in
     input_cleanup ();
-    match e with
+    match any with
     | Stm.End_of_input -> !rstate, !rids, Pcoq.Parsable.comment_state in_pa
-    | reraise -> iraise (e, info)
+    | reraise -> Util.reraise any
 
 let process_expr ~state loc_ast =
   checknav_deep loc_ast;

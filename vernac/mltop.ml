@@ -117,13 +117,13 @@ let ml_load s =
       (try t.load_obj s; s
        with
        | e when CErrors.noncritical e ->
-        let e = CErrors.push e in
-        match fst e with
-        | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
-        | exc ->
-            let msg = report_on_load_obj_error exc in
-            user_err ~hdr:"Mltop.load_object" (str"Cannot link ml-object " ++
-                  str s ++ str" to Coq code (" ++ msg ++ str ")."))
+         match e with
+         | (UserError _ | Failure _ | Not_found as u) ->
+           reraise u
+         | exc ->
+           let msg = report_on_load_obj_error exc in
+           user_err ~hdr:"Mltop.load_object" (str"Cannot link ml-object " ++
+                                              str s ++ str" to Coq code (" ++ msg ++ str ")."))
     | WithoutTop ->
         try
           Dynlink.loadfile s; s

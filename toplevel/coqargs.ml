@@ -551,7 +551,7 @@ let parse_args init_opts arglist : coq_cmdopts * string list =
     |"-test-mode" -> Flags.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-boot" -> Flags.boot := true; { oval with load_rcfile = false; }
-    |"-bt" -> Backtrace.record_backtrace true; oval
+    |"-bt" -> Printexc.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> { oval with print_config = true }
     |"-debug" -> Coqinit.set_debug (); oval

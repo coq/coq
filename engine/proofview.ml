@@ -228,14 +228,15 @@ let apply env t sp =
   let ans = Proof.repr (Proof.run t false (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
-  | Nil (e, info) -> iraise (TacticFailure e, info)
+  | Nil (e, info) ->
+    let e = TacticFailure e in
+    let e = Exninfo.attach e info in
+    Util.reraise e
   | Cons ((r, (state, _), status, info), _) ->
     let (status, gaveup) = status in
     let status = (status, state.shelf, gaveup) in
     let state = { state with shelf = [] } in
     r, state, status, Trace.to_tree info
-
-
 
 (** {7 Monadic primitives} *)
 
@@ -327,12 +328,12 @@ let tclEXACTLY_ONCE e t =
 
 (** [tclCASE t] wraps the {!Proofview_monad.Logical.split} primitive. *)
 type 'a case =
-| Fail of iexn
-| Next of 'a * (iexn -> 'a tactic)
+| Fail of exn * Exninfo.info
+| Next of 'a * (exn * Exninfo.info -> 'a tactic)
 let tclCASE t =
   let open Logic_monad in
   let map = function
-  | Nil e -> Fail e
+  | Nil e -> Fail (fst e, snd e)
   | Cons (x, t) -> Next (x, t)
   in
   Proof.map map (Proof.split t)
@@ -1108,7 +1109,7 @@ module Goal = struct
         let (gl, sigma) = nf_gmake env sigma goal in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
-        let (e, info) = CErrors.push e in
+        let info = Exninfo.info e in
         tclZERO ~info e
     end
     end
@@ -1133,7 +1134,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
-        let (e, info) = CErrors.push e in
+        let info = Exninfo.info e in
         tclZERO ~info e
     end
     end
@@ -1146,7 +1147,7 @@ module Goal = struct
        tclEVARMAP >>= fun sigma ->
        try f (gmake env sigma goal)
        with e when catchable_exception e ->
-         let (e, info) = CErrors.push e in
+         let info = Exninfo.info e in
          tclZERO ~info e
       end
     | _ ->
@@ -1237,7 +1238,7 @@ module V82 = struct
       InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"<unknown>")) >>
       Pv.set { ps with solution = evd; comb = sgs; }
     with e when catchable_exception e ->
-      let (e, info) = CErrors.push e in
+      let info = Exninfo.info e in
       tclZERO ~info e
 
 
@@ -1278,8 +1279,9 @@ module V82 = struct
       let (_,final,_,_) = apply (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }
     with Logic_monad.TacticFailure e as src ->
-      let (_, info) = CErrors.push src in
-      iraise (e, info)
+      let info = Exninfo.info src in
+      let e = Exninfo.attach e info in
+      reraise e
 
   let put_status = Status.put
 
@@ -1288,7 +1290,8 @@ module V82 = struct
   let wrap_exceptions f =
     try f ()
     with e when catchable_exception e ->
-      let (e, info) = CErrors.push e in tclZERO ~info e
+      let info = Exninfo.info e in
+      tclZERO ~info e
 
 end
 

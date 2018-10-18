@@ -25,9 +25,9 @@ let mk_univ_hook f = f
 let call_univ_hook ?univ_hook ?fix_exn uctx trans l c =
   try Option.iter (fun hook -> hook uctx trans l c) univ_hook
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    let e = Option.cata (fun fix -> fix e) e fix_exn in
-    iraise e
+    let e, info = Option.cata (fun fix -> fix e) (e, Exninfo.info e) fix_exn in
+    let e = Exninfo.attach e info in
+    reraise e
 
 module NamedDecl = Context.Named.Declaration
 
@@ -834,7 +834,6 @@ let solve_by_tac ?loc name evi t poly ctx =
     Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
   with
   | Refiner.FailError (_, s) as exn ->
-    let _ = CErrors.push exn in
     user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
   | Proof.OpenProof _ ->
@@ -906,8 +905,8 @@ let obligation_terminator ?univ_hook name num guard auto pf =
             ignore (auto (Some name) None deps)
         end
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
+      let info = Exninfo.info e in
+      pperror (CErrors.print (fst (ExplainErr.process_vernac_interp_error (e,info))))
   end
   | Proved (_, _, _ ) ->
     CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")
@@ -943,8 +942,8 @@ in
   let () =
     try ignore (update_obls prg obls (pred rem))
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
+      let info = Exninfo.info e in
+      pperror (CErrors.print (fst (ExplainErr.process_vernac_interp_error (e,info))))
   in
   if pred rem > 0 then begin
     let deps = dependencies obls num in
@@ -991,9 +990,10 @@ and obligation (user_num, name, typ) tac =
 
 and solve_obligation_by_tac prg obls i tac =
   let obl = obls.(i) in
-    match obl.obl_body with
-    | Some _ -> None
-    | None ->
+  match obl.obl_body with
+  | Some _ -> None
+  | None ->
+    try
       if List.is_empty (deps_remaining obls obl.obl_deps) then
         let obl = subst_deps_obl obls obl in
         let tac =

@@ -372,9 +372,8 @@ let dump_universes_gen prl g s =
     close ();
     str "Universes written to file \"" ++ str s ++ str "\"."
   with reraise ->
-    let reraise = CErrors.push reraise in
     close ();
-    iraise reraise
+    Util.reraise reraise
 
 let universe_subgraph ?loc g univ =
   let open Univ in
@@ -2339,10 +2338,10 @@ let vernac_timeout f =
 
 let restore_timeout () = current_timeout := None
 
-let locate_if_not_already ?loc (e, info) =
+let locate_if_not_already ?loc info =
   match Loc.get_loc info with
-  | None   -> (e, Option.cata (Loc.add_loc info) info loc)
-  | Some l -> (e, info)
+  | None   -> Option.cata (Loc.add_loc info) info loc
+  | Some l -> info
 
 exception HasNotFailed
 exception HasFailed of Pp.t
@@ -2360,19 +2359,18 @@ let with_fail st b f =
       with
       | HasNotFailed as e -> raise e
       | e ->
-        let e = CErrors.push e in
-        raise (HasFailed (CErrors.iprint
-                            (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
+        let info = Exninfo.info e in
+        raise (HasFailed (CErrors.print
+                            (fst (ExplainErr.process_vernac_interp_error ~allow_uncaught:false (e,info)))))
     with e when CErrors.noncritical e ->
       (* Restore the previous state XXX Careful here with the cache! *)
       Vernacstate.invalidate_cache ();
       Vernacstate.unfreeze_interp_state st;
-      let (e, _) = CErrors.push e in
       match e with
       | HasNotFailed ->
-          user_err ~hdr:"Fail" (str "The command has not failed!")
+        user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if not !Flags.quiet || !Flags.test_mode then Feedback.msg_info
+        if not !Flags.quiet || !Flags.test_mode then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end
@@ -2417,16 +2415,17 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
             Flags.program_mode := orig_program_mode;
           end
         with
-        | reraise when
-              (match reraise with
+        | reraise
+          when (match reraise with
               | Timeout -> true
               | e -> CErrors.noncritical e)
           ->
-            let e = CErrors.push reraise in
-            let e = locate_if_not_already ?loc e in
-            let () = restore_timeout () in
-            Flags.program_mode := orig_program_mode;
-            iraise e
+          let info = Exninfo.info reraise in
+          let info = locate_if_not_already ?loc info in
+          let e = Exninfo.attach reraise info in
+          let () = restore_timeout () in
+          Flags.program_mode := orig_program_mode;
+          Util.reraise e
   in
   if verbosely
   then Flags.verbosely control c
@@ -2439,6 +2438,5 @@ let interp ?verbosely ?proof ~st cmd =
     interp ?verbosely ?proof ~st cmd;
     Vernacstate.freeze_interp_state ~marshallable:false
   with exn ->
-    let exn = CErrors.push exn in
     Vernacstate.invalidate_cache ();
-    iraise exn
+    reraise exn

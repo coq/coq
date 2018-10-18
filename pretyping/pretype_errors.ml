@@ -68,10 +68,10 @@ let precatchable_exception = function
   | _ -> false
 
 let raise_pretype_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PretypeError(env,sigma,te))
+  raise (Loc.attach ?loc (PretypeError(env,sigma,te)))
 
 let raise_type_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PretypeError(env,sigma,TypingError te))
+  raise (Loc.attach ?loc (PretypeError(env,sigma,TypingError te)))
 
 let error_actual_type ?loc env sigma {uj_val=c;uj_type=actty} expty reason =
   let j = {uj_val=c;uj_type=actty} in
@@ -123,11 +123,11 @@ let error_occur_check env sigma ev c =
   raise (PretypeError (env, sigma, UnifOccurCheck (ev,c)))
 
 let error_unsolvable_implicit ?loc env sigma evk explain =
-  Loc.raise ?loc
-    (PretypeError (env, sigma, UnsolvableImplicit (evk, explain)))
+  raise Loc.(attach ?loc
+    (PretypeError (env, sigma, UnsolvableImplicit (evk, explain))))
 
 let error_cannot_unify ?loc env sigma ?reason (m,n) =
-  Loc.raise ?loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
+  raise Loc.(attach ?loc (PretypeError (env, sigma,CannotUnify (m,n,reason))))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
   raise (PretypeError (env, sigma,CannotUnifyLocal (m,n,sn)))
@@ -177,7 +177,7 @@ let unsatisfiable_constraints env evd ev comp =
   | Some ev ->
     let loc, kind = Evd.evar_source ev evd in
     let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
-    Loc.raise ?loc (PretypeError (env,evd,err))
+    raise Loc.(attach ?loc (PretypeError (env,evd,err)))
 
 let unsatisfiable_exception exn =
   match exn with

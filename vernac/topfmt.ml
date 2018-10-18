@@ -379,10 +379,10 @@ let pr_phase ?loc () =
      None
 
 let print_err_exn any =
-  let (e, info) = CErrors.push any in
+  let info = Exninfo.info any in
   let loc = Loc.get_loc info in
   let pre_hdr = pr_phase ?loc () in
-  let msg = CErrors.iprint (e, info) ++ fnl () in
+  let msg = CErrors.print any ++ fnl () in
   std_logger ?pre_hdr Feedback.Error msg
 
 let with_output_to_file fname func input =
@@ -400,12 +400,11 @@ let with_output_to_file fname func input =
     close_out channel;
     output
   with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
     std_ft := Util.pi1 old_fmt;
     err_ft := Util.pi2 old_fmt;
     deep_ft := Util.pi3 old_fmt;
     close_out channel;
-    Exninfo.iraise reraise
+    Util.reraise reraise
 
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)

@@ -14,7 +14,7 @@ open Pp
 let ( / ) s1 s2 = s1 ^ "/" ^ s2
 
 let set_debug () =
-  let () = Backtrace.record_backtrace true in
+  let () = Printexc.record_backtrace true in
   Flags.debug := true
 
 (* Loading of the ressource file.
@@ -47,9 +47,8 @@ let load_rcfile ~rcfile ~state =
 			 " found. Skipping rcfile loading."))
 	*)
     with reraise ->
-      let reraise = CErrors.push reraise in
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
-      iraise reraise
+      Util.reraise reraise
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml =

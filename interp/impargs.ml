@@ -77,9 +77,8 @@ let with_implicit_protection f x =
     implicit_args := oflags;
     rslt
   with reraise ->
-    let reraise = CErrors.push reraise in
     let () = implicit_args := oflags in
-    iraise reraise
+    Util.reraise reraise
 
 let set_maximality imps b =
   (* Force maximal insertion on ending implicits (compatibility) *)

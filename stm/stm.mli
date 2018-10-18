@@ -273,7 +273,7 @@ val register_proof_block_delimiter :
 
 val state_computed_hook : (doc:doc -> Stateid.t -> in_cache:bool -> unit) Hook.t
 val unreachable_state_hook :
-  (doc:doc -> Stateid.t -> Exninfo.iexn -> unit) Hook.t
+  (doc:doc -> Stateid.t -> exn * Exninfo.info -> unit) Hook.t
 
 (* ready means that master has it at hand *)
 val state_ready_hook : (doc:doc -> Stateid.t -> unit) Hook.t

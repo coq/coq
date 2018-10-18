@@ -1281,8 +1281,7 @@ let report_anomaly e =
   let msg = Pp.(str "Conversion test raised an anomaly:" ++
                 spc () ++ CErrors.print e) in
   let e = UserError (None,msg) in
-  let e = CErrors.push e in
-  iraise e
+  Util.reraise e
 
 let f_conv ?l2r ?reds env ?evars x y =
   let inj = EConstr.Unsafe.to_constr in

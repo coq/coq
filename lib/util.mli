@@ -113,12 +113,6 @@ type 'a delayed = unit -> 'a
 
 val delayed_force : 'a delayed -> 'a
 
-(** {6 Enriched exceptions} *)
-
-type iexn = Exninfo.iexn
-
-val iraise : iexn -> 'a
-
 (** {6 Misc. } *)
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
@@ -148,3 +142,5 @@ val set_temporary_memory : unit -> ('a -> 'a) * (unit -> 'a)
 (** A trick which can typically be used to store on the fly the
    computation of values in the "when" clause of a "match" then
    retrieve the evaluated result in the r.h.s of the clause *)
+
+external reraise : exn -> 'a = "%reraise"

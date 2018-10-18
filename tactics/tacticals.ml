@@ -285,7 +285,7 @@ module New = struct
 
   let catch_failerror e =
     try
-      Refiner.catch_failerror e;
+      Refiner.catch_failerror (fst e);
       tclUNIT ()
     with e when CErrors.noncritical e -> tclZERO e
 

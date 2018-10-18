@@ -90,7 +90,7 @@ end with type 'a Entry.e = 'a Extend.entry = struct
       CLexer.drop_lexer_state ();
       let loc' = Loc.get_loc (Exninfo.info e) in
       let loc = match loc' with None -> loc | Some loc -> loc in
-      Loc.raise ~loc e
+      reraise Loc.(attach ~loc e)
 
   let comment_state (p,state) =
     CLexer.get_comment_state !state
@@ -589,9 +589,8 @@ let with_grammar_rule_protection f x =
   let fs = freeze ~marshallable:false in
   try let a = f x in unfreeze fs; a
   with reraise ->
-    let reraise = CErrors.push reraise in
     let () = unfreeze fs in
-    iraise reraise
+    Util.reraise reraise
 
 (** Registering grammar of generic arguments *)
 

@@ -38,9 +38,8 @@ let unix_timeout n f x e =
     restore_timeout ();
     res
   with e ->
-    let e = Backtrace.add_backtrace e in
     restore_timeout ();
-    Exninfo.iraise e
+    Util.reraise e
 
 let windows_timeout n f x e =
   let killed = ref false in
@@ -76,8 +75,7 @@ let windows_timeout n f x e =
     else raise e
   | e ->
     let () = killed := true in
-    let e = Backtrace.add_backtrace e in
-    Exninfo.iraise e
+    Util.reraise e
 
 type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
 

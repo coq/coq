@@ -1963,6 +1963,5 @@ let with_notation_protection f x =
   let fs = freeze ~marshallable:false in
   try let a = f x in unfreeze fs; a
   with reraise ->
-    let reraise = CErrors.push reraise in
     let () = unfreeze fs in
-    iraise reraise
+    Util.reraise reraise

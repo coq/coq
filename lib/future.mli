@@ -38,8 +38,8 @@ module UUIDSet : Set.S with type elt = UUID.t
 exception NotReady of string
 
 type 'a computation
-type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn ]
-type fix_exn = Exninfo.iexn -> Exninfo.iexn
+type 'a value = [ `Val of 'a | `Exn of exn * Exninfo.info ]
+type fix_exn = exn * Exninfo.info -> exn * Exninfo.info
 
 (* Build a computation, no snapshot of the global state is taken.  If you need
    to grab a copy of the state start with from_here () and then chain.
@@ -70,7 +70,7 @@ val fix_exn_of : 'a computation -> fix_exn
 (* Run remotely, returns the function to assign.
    If not blocking (the default) it raises NotReady if forced before the
    delegate assigns it. *)
-type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of exn * Exninfo.info | `Comp of 'a computation]
 val create_delegate :
   ?blocking:bool -> name:string ->
   fix_exn -> 'a computation * ('a assignment -> unit)

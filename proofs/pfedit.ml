@@ -151,9 +151,8 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
     | _ ->
       CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
   with reraise ->
-    let reraise = CErrors.push reraise in
     Proof_global.discard_current ();
-    iraise reraise
+    Util.reraise reraise
 
 let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
@@ -184,8 +183,9 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
       (* Catch the inner error of the monad tactic *)
-      let (_, info) = CErrors.push src in
-      iraise (e, info)
+      let info = Exninfo.info src in
+      let e = Exninfo.attach e info in
+      reraise e
   in
   (* Plug back the retrieved sigma *)
   let Proof.{ goals; stack; shelf; given_up; sigma; entry } = Proof.data prf in

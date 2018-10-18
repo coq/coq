@@ -264,13 +264,12 @@ let read_sentence ~state input =
   (* XXX: careful with ignoring the state Eugene!*)
   try G_toplevel.parse_toplevel input
   with reraise ->
-    let reraise = CErrors.push reraise in
     discard_to_dot ();
     (* The caller of read_sentence does the error printing now, this
        should be re-enabled once we rely on the feedback error
        printer again *)
     (* TopErr.print_toplevel_parse_error reraise top_buffer; *)
-    Exninfo.iraise reraise
+    Util.reraise reraise
 
 let extract_default_loc loc doc_id sid : Loc.t option =
   match loc with
@@ -361,9 +360,9 @@ let top_goal_print ~doc c oldp newp =
     end
   with
   | exn ->
-    let (e, info) = CErrors.push exn in
+    let info = Exninfo.info exn in
     let loc = Loc.get_loc info in
-    let msg = CErrors.iprint (e, info) in
+    let msg = CErrors.print exn in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
 
 (* Careful to keep this loop tail-rec *)
@@ -403,9 +402,9 @@ let rec vernac_loop ~state =
      however this is not yet ready so we rely on the exception for
      now. *)
   | any ->
-    let (e, info) = CErrors.push any in
+    let info = Exninfo.info any in
     let loc = Loc.get_loc info in
-    let msg = CErrors.iprint (e, info) in
+    let msg = CErrors.print any in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
     vernac_loop ~state
 

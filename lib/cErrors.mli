@@ -11,11 +11,6 @@
 (** This modules implements basic manipulations of errors for use
     throughout Coq's code. *)
 
-(** {6 Error handling} *)
-
-val push : exn -> Exninfo.iexn
-(** Alias for [Backtrace.add_backtrace]. *)
-
 (** {6 Generic errors.}
 
  [Anomaly] is used for system errors and [UserError] for the
@@ -75,13 +70,11 @@ exception Unhandled
 val register_handler : (exn -> Pp.t) -> unit
 
 (** The standard exception printer *)
-val print : ?info:Exninfo.info -> exn -> Pp.t
-val iprint : Exninfo.iexn -> Pp.t
+val print : exn -> Pp.t
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
 val print_no_report : exn -> Pp.t
-val iprint_no_report : Exninfo.iexn -> Pp.t
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled

@@ -165,10 +165,6 @@ end
 
 let map_union = Union.map
 
-type iexn = Exninfo.iexn
-
-let iraise = Exninfo.iraise
-
 let open_utf8_file_in fname =
   let is_bom s =
     Int.equal (Char.code (Bytes.get s 0)) 0xEF &&
@@ -188,3 +184,5 @@ let set_temporary_memory () =
   let a = ref None in
   (fun x -> assert (!a = None); a := Some x; x),
   (fun () -> match !a with Some x -> x | None -> assert false)
+
+external reraise : exn -> 'a = "%reraise"

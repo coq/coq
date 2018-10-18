@@ -32,7 +32,7 @@ let _ = CErrors.register_handler (function
   | NotHere name -> !not_here_msg name
   | _ -> raise CErrors.Unhandled)
 
-type fix_exn = Exninfo.iexn -> Exninfo.iexn
+type fix_exn = exn * Exninfo.info -> exn * Exninfo.info
 let id x = prerr_endline "Future: no fix_exn.\nYou have probably created a Future.computation from a value without passing the ~fix_exn argument.  You probably want to chain with an already existing future instead."; x
 
 module UUID = struct
@@ -49,7 +49,7 @@ end
 module UUIDMap = Map.Make(UUID)
 module UUIDSet = Set.Make(UUID)
 
-type 'a assignment = [ `Val of 'a | `Exn of Exninfo.iexn | `Comp of 'a computation]
+type 'a assignment = [ `Val of 'a | `Exn of exn * Exninfo.info | `Comp of 'a computation]
 
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
@@ -57,7 +57,7 @@ and 'a comp =
   | Delegated of (unit -> unit)
   | Closure of (unit -> 'a)
   | Val of 'a
-  | Exn of Exninfo.iexn  (* Invariant: this exception is always "fixed" as in fix_exn *)
+  | Exn of exn * Exninfo.info (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 and 'a comput =
   | Ongoing of string * (UUID.t * fix_exn * 'a comp ref) CEphemeron.key
@@ -77,7 +77,7 @@ let get x =
       with CEphemeron.InvalidKey ->
         name, UUID.invalid, id, ref (Exn (NotHere name, Exninfo.null))
 
-type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
+type 'a value = [ `Val of 'a | `Exn of exn * Exninfo.info  ]
 
 let is_over kx = let _, _, _, x = get kx in match !x with
   | Val _ | Exn _ -> true
@@ -108,7 +108,7 @@ let create_delegate ?(blocking=true) ~name fix_exn =
     assert (match !c with Delegated _ -> true | _ -> false);
     begin match v with
     | `Val v -> c := Val v
-    | `Exn e -> c := Exn (fix_exn e)
+    | `Exn e -> c := let e,i = fix_exn e in Exn (e,i)
     | `Comp f -> let _, _, _, comp = get f in c := !comp end;
     signal () in
   let wait, signal =
@@ -132,15 +132,15 @@ let rec compute ck : 'a value =
         let data = f () in
         c := Val data; `Val data
       with e ->
-        let e = CErrors.push e in
-        let e = fix_exn e in
+        let info = Exninfo.info e in
+        let e,i = fix_exn (e,info) in
         match e with
-        | (NotReady _, _) -> `Exn e
-        | _ -> c := Exn e; `Exn e
+        | NotReady _ -> `Exn (e,i)
+        | _ -> c := Exn (e,i); `Exn (e,i)
 
 let force x = match compute x with
   | `Val v -> v
-  | `Exn e -> Exninfo.iraise e
+  | `Exn (e,i) -> let e = Exninfo.attach e i in raise e
 
 let chain ck f =
   let name, uuid, fix_exn, c = get ck in

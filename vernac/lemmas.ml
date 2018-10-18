@@ -39,9 +39,9 @@ let mk_hook hook = hook
 let call_hook ?hook ?fix_exn l c =
   try Option.iter (fun hook -> hook l c) hook
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    let e = Option.cata (fun fix -> fix e) e fix_exn in
-    iraise e
+    let e, info = Option.cata (fun fix -> fix e) (e, Exninfo.info e) fix_exn in
+    let e = Exninfo.attach e info in
+    reraise e
 
 (* Support for mutually proved theorems *)
 
@@ -205,8 +205,9 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
     definition_message id;
     call_hook ?hook locality r
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    iraise (fix_exn e)
+    let e, info = fix_exn (e, Exninfo.info e) in
+    let e = Exninfo.attach e info in
+    reraise e
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 

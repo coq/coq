@@ -224,20 +224,20 @@ module SearchProblem = struct
 (*   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl) *)
 
   let filter_tactics glls l =
-(*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
+    (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+    (*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+    (*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
     let rec aux = function
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
-	  try
-	    let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
-(* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-	      (lgls, cost, pptac) :: aux tacl
-	  with e when CErrors.noncritical e ->
-            let e = CErrors.push e in
-            Refiner.catch_failerror e; aux tacl
+        try
+          let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
+          (*        let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+          (*          msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
+          (lgls, cost, pptac) :: aux tacl
+        with e when CErrors.noncritical e ->
+          Refiner.catch_failerror e;
+          aux tacl
     in aux l
 
   (* Ordering of states is lexicographic on depth (greatest first) then

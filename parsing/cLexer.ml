@@ -106,8 +106,7 @@ module Error = struct
 end
 open Error
 
-let err loc str = Loc.raise ~loc (Error.E str)
-
+let err loc str = raise Loc.(attach ~loc (Error.E str))
 let bad_token str = raise (Error.E (Bad_token str))
 
 (* Update a loc without allocating an intermediate pair *)

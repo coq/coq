@@ -109,9 +109,9 @@ let call_process_error_once =
     match Exninfo.get info processed with
     | Some _ -> ei
     | None ->
-        let e, info = ExplainErr.process_vernac_interp_error ei in
-        let info = Exninfo.add info processed () in
-        e, info
+      let e, info = ExplainErr.process_vernac_interp_error ei in
+      let info = Exninfo.add info processed () in
+      e, info
 
 end
 
@@ -204,7 +204,7 @@ let summary_pstate = Evarutil.meta_counter_summary_tag,
 
 type cached_state =
   | Empty
-  | Error of Exninfo.iexn
+  | Error of exn * Exninfo.info
   | Valid of Vernacstate.t
 
 type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
@@ -779,13 +779,13 @@ module State : sig
     ?redefine:bool -> ?cache:bool ->
     ?feedback_processed:bool -> (unit -> unit) -> Stateid.t -> unit
 
-  val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
+  val fix_exn_ref : (exn * Exninfo.info -> exn * Exninfo.info) ref
 
   val install_cached : Stateid.t -> unit
   val is_cached : ?cache:bool -> Stateid.t -> bool
   val is_cached_and_valid : ?cache:bool -> Stateid.t -> bool
 
-  val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
+  val exn_on : Stateid.t -> valid:Stateid.t -> exn * Exninfo.info -> exn * Exninfo.info
 
   (* to send states across worker/master *)
   val get_cached : Stateid.t -> Vernacstate.t
@@ -844,7 +844,7 @@ end = struct (* {{{ *)
   let cache_state ~marshallable id =
     VCS.set_state id (Valid (Vernacstate.freeze_interp_state ~marshallable))
 
-  let freeze_invalid id iexn = VCS.set_state id (Error iexn)
+  let freeze_invalid id iexn = VCS.set_state id (Error (fst iexn, snd iexn))
 
   let is_cached ?(cache=false) id only_valid =
     if Stateid.equal id !cur_id then
@@ -868,8 +868,9 @@ end = struct (* {{{ *)
        Vernacstate.unfreeze_interp_state s;
        cur_id := id
 
-    | { state = Error ie } ->
-       Exninfo.iraise ie
+    | { state = Error (ie,info) } ->
+       let e = Exninfo.attach ie info in
+       Util.reraise e
 
     | _ ->
         (* coqc has a 1 slot cache and only for valid states *)
@@ -921,7 +922,7 @@ end = struct (* {{{ *)
     | None ->
         let loc = Loc.get_loc info in
         let (e, info) = Hooks.(call_process_error_once (e, info)) in
-        execution_error ?loc id (iprint (e, info));
+        execution_error ?loc id (print e);
         (e, Stateid.add info ~valid id)
 
   let same_env { Vernacstate.system = s1 } { Vernacstate.system = s2 } =
@@ -956,19 +957,21 @@ end = struct (* {{{ *)
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ())
     with e ->
-      let (e, info) = CErrors.push e in
+      let bt = Printexc.get_raw_backtrace () in
+      let info = Exninfo.info e in
       let good_id = !cur_id in
       cur_id := Stateid.dummy;
       VCS.reached id;
-      let ie =
+      let e, info =
         match Stateid.get info, safe_id with
         | None, None -> (exn_on id ~valid:good_id (e, info))
         | None, Some good_id -> (exn_on id ~valid:good_id (e, info))
         | Some _, None -> (e, info)
         | Some (_,at), Some id -> (e, Stateid.add info ~valid:id at) in
-      if cache then freeze_invalid id ie;
-      Hooks.(call unreachable_state ~doc id ie);
-      Exninfo.iraise ie
+      if cache then freeze_invalid id (e,info);
+      Hooks.(call unreachable_state ~doc id (e,info));
+      let e = Exninfo.attach e info in
+      Printexc.raise_with_backtrace e bt
 
   let init_state = ref None
 
@@ -988,10 +991,9 @@ end = struct (* {{{ *)
       unfreeze st;
       res
     with e ->
-      let e = CErrors.push e in
       Vernacstate.invalidate_cache ();
       unfreeze st;
-      Exninfo.iraise e
+      Util.reraise e
 
 end (* }}} *)
 
@@ -1114,8 +1116,11 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
         stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
         try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (CAst.make ?loc expr)
         with e ->
-          let e = CErrors.push e in
-          Exninfo.iraise Hooks.(call_process_error_once e)
+          let bt = Printexc.get_raw_backtrace () in
+          let info = Exninfo.info e in
+          let e, info = Hooks.(call_process_error_once (e,info)) in
+          let e = Exninfo.attach e info in
+          Printexc.raise_with_backtrace e bt
   in aux_interp st expr
 
 (****************************** CRUFT *****************************************)
@@ -1577,13 +1582,13 @@ end = struct (* {{{ *)
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
-        let (e, info) = CErrors.push e in
+        let info = Exninfo.info e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
         let e_error_at, e_safe_id = match Stateid.get info with
           | Some (safe, err) -> err, safe
           | None -> Stateid.dummy, Stateid.dummy in
-        let e_msg = iprint (e, info) in
+        let e_msg = print e in
         stm_pperr_endline Pp.(fun () -> str "failed with the following exception: " ++ fnl () ++ e_msg);
         let e_safe_states = List.filter State.is_cached_and_valid my_states in
         RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
@@ -1723,12 +1728,12 @@ end = struct (* {{{ *)
       `OK proof
       end
     with e ->
-      let (e, info) = CErrors.push e in
+      let info = Exninfo.info e in
       (try match Stateid.get info with
       | None ->
         msg_warning Pp.(
             str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-            spc () ++ iprint (e, info))
+            spc () ++ print e)
       | Some (_, cur) ->
           match VCS.visit cur with
           | { step = `Cmd { cast = { loc } } }
@@ -1739,11 +1744,11 @@ end = struct (* {{{ *)
               msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
-                spc () ++ iprint (e, info))
+                spc () ++ print e)
           | _ ->
               msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                spc () ++ iprint (e, info))
+                spc () ++ print e)
     with e ->
       msg_warning Pp.(str"unable to print error message: " ++
                       str (Printexc.to_string e)));
@@ -2120,8 +2125,7 @@ end = struct (* {{{ *)
       ignore(stm_vernac_interp r_for st { r_what with verbose = true });
       feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      let msg = iprint e     in
+      let msg = print e in
       feedback ~id:r_for (Message (Error, None, msg))
 
   let name_of_task { t_what } = string_of_ppcmds (pr_ast t_what)
@@ -2305,7 +2309,7 @@ let wall_clock_last_fork = ref 0.0
 
 let known_state ~doc ?(redefine_qed=false) ~cache id =
 
-  let error_absorbing_tactic id blockname exn =
+  let error_absorbing_tactic id blockname (exn,info,bt) =
     (* We keep the static/dynamic part of block detection separate, since
        the static part could be performed earlier.  As of today there is
        no advantage in doing so since no UI can exploit such piece of info *)
@@ -2317,13 +2321,17 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           Some (decl, name)
       | _ -> None) boxes in
     assert(List.length valid_boxes < 2);
-    if valid_boxes = [] then Exninfo.iraise exn
+    if valid_boxes = [] then
+      let exn = Exninfo.attach exn info in
+      Printexc.raise_with_backtrace exn bt
     else
       let decl, name = List.hd valid_boxes in
       try
         let _, dynamic_check = List.assoc name !proof_block_delimiters in
         match dynamic_check dummy_doc decl with
-        | `Leaks -> Exninfo.iraise exn
+        | `Leaks ->
+          let exn = Exninfo.attach exn info in
+          Util.reraise exn
         | `ValidBlock { base_state; goals_to_admit; recovery_command } -> begin
            let tac =
              Proofview.Goal.enter begin fun gl ->
@@ -2363,8 +2371,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
     else
       try f ()
       with e when CErrors.noncritical e ->
-        let ie = CErrors.push e in
-        error_absorbing_tactic id blockname ie in
+        let bt = Printexc.get_raw_backtrace () in
+        let info = Exninfo.info e in
+        error_absorbing_tactic id blockname (e,info,bt) in
   (* Absorb errors from f x *)
   let resilient_command f x =
     if not !cur_opt.async_proofs_cmd_error_resilience ||
@@ -2454,9 +2463,11 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                let st = Vernacstate.freeze_interp_state ~marshallable:false in
                ignore(stm_vernac_interp id st x);
             with e when CErrors.noncritical e ->
-              let (e, info) = CErrors.push e in
+              let info = Exninfo.info e in
               let info = Stateid.add info ~valid:prev id in
-              Exninfo.iraise (e, info));
+              let e = Exninfo.attach e info in
+              Util.reraise e
+           );
             wall_clock_last_fork := Unix.gettimeofday ()
           ), true, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
@@ -2716,14 +2727,13 @@ let observe ~doc id =
     VCS.print ();
     doc
   with e ->
-    let e = CErrors.push e in
     VCS.print ();
     VCS.restore vcs;
-    Exninfo.iraise e
+    raise e
 
 let finish ~doc =
   let head = VCS.current_branch () in
-  let doc =observe ~doc (VCS.get_branch_pos head) in
+  let doc = observe ~doc (VCS.get_branch_pos head) in
   VCS.print ();
   (* EJGA: Setting here the proof state looks really wrong, and it
      hides true bugs cf bug #5363. Also, what happens with observe? *)
@@ -2799,8 +2809,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
     (u,a,true), p
   with e ->
-    let e = CErrors.push e in
-    msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
+    msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ print e);
     exit 1
 
 let merge_proof_branch ~valid ?id qast keep brname =
@@ -2826,14 +2835,17 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       Exninfo.iraise (State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null))
+    let e, info = State.exn_on ~valid Stateid.dummy (Proof_global.NoCurrentProof, Exninfo.null) in
+    let e = Exninfo.attach e info in
+    Util.reraise e
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure (e, info) vcs =
   VCS.restore vcs;
   VCS.print ();
-  Exninfo.iraise (e, info)
+  let e = Exninfo.attach e info in
+  Util.reraise e
 
 let snapshot_vio ~doc ldir long_f_dot_vo =
   let doc = finish ~doc in
@@ -2909,7 +2921,9 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
            |> Pp.str
            |> (fun s -> (UserError (None, s), Exninfo.null))
            |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
-           |> Exninfo.iraise
+           |> (fun (e,info) ->
+               let e = Exninfo.attach e info in
+               Util.reraise e)
          else
 
           let id = VCS.new_node ~id:newtip () in
@@ -2989,7 +3003,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
             |> Pp.str
             |> (fun s -> (UserError (None, s), Exninfo.null))
             |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
-            |> Exninfo.iraise
+            |> fst |> Util.reraise
           else
             let id = VCS.new_node ~id:newtip () in
           let head_id = VCS.get_branch_pos head in
@@ -3037,8 +3051,9 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
     VCS.print ();
     rc
   with e ->
-    let e = CErrors.push e in
-    handle_failure e vcs
+    let info = Exninfo.info e in
+    let e = handle_failure (e,info) vcs in
+    Util.reraise e
 
 let get_ast ~doc id =
   match VCS.visit id with
@@ -3082,13 +3097,9 @@ let parse_sentence ~doc sid pa =
        str "This is usually due to use of Stm.observe to evaluate a state different than the tip. " ++
        str "All is good if not parsing changes occur between the two states, however if they do, a problem might occur.");
   Flags.with_option Flags.we_are_parsing (fun () ->
-      try
-        match Pcoq.Entry.parse Pvernac.main_entry pa with
-        | None            -> raise End_of_input
-        | Some (loc, cmd) -> CAst.make ~loc cmd
-      with e when CErrors.noncritical e ->
-        let (e, info) = CErrors.push e in
-        Exninfo.iraise (e, info))
+      match Pcoq.Entry.parse Pvernac.main_entry pa with
+      | None            -> raise End_of_input
+      | Some (loc, cmd) -> CAst.make ~loc cmd)
     ()
 
 (* You may need to know the len + indentation of previous command to compute
@@ -3163,11 +3174,8 @@ let query ~doc ~at ~route s =
       done;
     with
     | End_of_input -> ()
-    | exn ->
-      let iexn = CErrors.push exn in
-      Exninfo.iraise iexn
-    )
-  s
+    | exn -> Util.reraise exn
+    ) s
 
 let edit_at ~doc id =
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
@@ -3279,7 +3287,7 @@ let edit_at ~doc id =
     VCS.print ();
     doc, rc
   with e ->
-    let (e, info) = CErrors.push e in
+    let info = Exninfo.info e in
     match Stateid.get info with
     | None ->
         VCS.print ();
@@ -3289,7 +3297,8 @@ let edit_at ~doc id =
         stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
         VCS.print ();
-        Exninfo.iraise (e, info)
+        let e = Exninfo.attach e info in
+        Util.reraise e
 
 let get_current_state ~doc = VCS.cur_tip ()
 let get_ldir ~doc = VCS.get_ldir ()

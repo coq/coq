@@ -849,9 +849,8 @@ let protect_summaries f =
   try f fs
   with reraise ->
     (* Something wrong: undo the whole process *)
-    let reraise = CErrors.push reraise in
     let () = Summary.unfreeze_summaries fs in
-    iraise reraise
+    Util.reraise reraise
 
 let start_module interp export id args res =
   protect_summaries (RawModOps.start_module interp export id args res)

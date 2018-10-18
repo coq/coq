@@ -91,10 +91,10 @@ let location : t Exninfo.t = Exninfo.make ()
 let add_loc e loc = Exninfo.add e location loc
 let get_loc e = Exninfo.get e location
 
-let raise ?loc e =
+let attach ?loc e =
   match loc with
-  | None     -> raise e
+  | None     -> e
   | Some loc ->
     let info = Exninfo.add Exninfo.null location loc in
-    Exninfo.iraise (e, info)
+    Exninfo.attach e info
 

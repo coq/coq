@@ -57,26 +57,12 @@ let rec find_and_remove_assoc (i : int) = function
     if rem == ans then (r, l)
     else (r, (j, v) :: ans)
 
-let iraise e =
+let attach exn info =
   let () = Mutex.lock lock in
   let id = Thread.id (Thread.self ()) in
-  let () = current := (id, e) :: remove_assoc id !current in
+  let () = current := (id, (exn,info)) :: remove_assoc id !current in
   let () = Mutex.unlock lock in
-  raise (fst e)
-
-let raise ?info e = match info with
-| None ->
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := remove_assoc id !current in
-  let () = Mutex.unlock lock in
-  raise e
-| Some i ->
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := (id, (e, i)) :: remove_assoc id !current in
-  let () = Mutex.unlock lock in
-  raise e
+  exn
 
 let find_and_remove () =
   let () = Mutex.lock lock in

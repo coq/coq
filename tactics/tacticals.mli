@@ -153,7 +153,7 @@ module New : sig
 
   (** [catch_failerror e] fails and decreases the level if [e] is an
       Ltac error with level more than 0. Otherwise succeeds. *)
-  val catch_failerror : Util.iexn -> unit tactic
+  val catch_failerror : exn * Exninfo.info -> unit tactic
 
   val tclIDTAC : unit tactic
   val tclTHEN : unit tactic -> unit tactic -> unit tactic

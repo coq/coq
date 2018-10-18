@@ -84,17 +84,19 @@ struct
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  let raise ?info = fun e -> (); fun () -> Exninfo.raise ?info (Exception e)
+  let raise ?info = fun e -> (); fun () ->
+      let e = Exception e in
+      let e = Option.cata (Exninfo.attach e) e info in
+      Util.reraise e
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   let catch = fun s h -> ();
     fun () -> try s ()
       with Exception e as src ->
-        let (src, info) = CErrors.push src in
+        let info = Exninfo.info src in
         h (e, info) ()
 
-  let read_line = fun () -> try Pervasives.read_line () with e ->
-    let (e, info) = CErrors.push e in raise ~info e ()
+  let read_line = fun () -> Pervasives.read_line ()
 
   let print_char = fun c -> (); fun () -> print_char c
 
@@ -104,8 +106,9 @@ struct
   let make f = (); fun () ->
     try f ()
     with e when CErrors.noncritical e ->
-      let (e, info) = CErrors.push e in
-      Util.iraise (Exception e, info)
+      let info = Exninfo.info e in
+      let e = Exninfo.attach (Exception e) info in
+      Util.reraise (Exception e)
 
   (** Use the current logger. The buffer is also flushed. *)
   let print_debug   s = make (fun _ -> Feedback.msg_info s)
@@ -115,8 +118,9 @@ struct
 
   let run = fun x ->
     try x () with Exception e as src ->
-      let (src, info) = CErrors.push src in
-      Util.iraise (e, info)
+      let info = Exninfo.info src in
+      let e = Exninfo.attach e info in
+      Util.reraise e
 end
 
 (** {6 Logical layer} *)
@@ -321,7 +325,7 @@ struct
 
   type state = Unsafe.state
 
-  type iexn = Exninfo.iexn
+  type iexn = exn * Exninfo.info
 
   type 'a reified = ('a, iexn) BackState.reified
 

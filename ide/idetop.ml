@@ -375,7 +375,7 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc -> Some (Loc.unloc loc)
     | _        -> None in
-  let mk_msg () = CErrors.print ~info e in
+  let mk_msg () = CErrors.print e in
   match e with
   | e ->
       match Stateid.get info with
@@ -455,7 +455,9 @@ let print_xml =
   fun oc xml ->
     Mutex.lock m;
     try Xml_printer.print oc xml; Mutex.unlock m
-    with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
+    with e ->
+      Mutex.unlock m;
+      reraise e
 
 let slave_feeder fmt xml_oc msg =
   let xml = Xmlprotocol.(of_feedback fmt msg) in

@@ -1078,9 +1078,10 @@ let tclDO n tac =
     try tac gl
     with 
     | CErrors.UserError (l, s) as e ->
-        let _, info = CErrors.push e in
+        let info = Exninfo.info e in
         let e' = CErrors.UserError (l, prefix i ++ s) in
-        Util.iraise (e', info)
+        let e' = Exninfo.attach e' info in
+        Util.reraise e'
     | Gramlib.Ploc.Exc(loc, CErrors.UserError (l, s))  ->
         raise (Gramlib.Ploc.Exc(loc, CErrors.UserError (l, prefix i ++ s))) in
   let rec loop i gl =

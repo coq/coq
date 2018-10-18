@@ -681,8 +681,8 @@ let abstract_eval_call : type a. _ -> a call -> a value = fun handler c ->
     | PrintAst x   -> mkGood (handler.print_ast x)
     | Annotate x   -> mkGood (handler.annotate x)
   with any ->
-    let any = CErrors.push any in
-    Fail (handler.handle_exn any)
+    let info = Exninfo.info any in
+    Fail (handler.handle_exn (any,info))
 
 (** brain dead code, edit if protocol messages are added/removed *)
 let of_answer : type a. a call -> a value -> xml = function

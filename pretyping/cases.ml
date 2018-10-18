@@ -54,7 +54,7 @@ type pattern_matching_error =
 exception PatternMatchingError of env * evar_map * pattern_matching_error
 
 let raise_pattern_matching_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PatternMatchingError(env,sigma,te))
+  raise Loc.(attach ?loc (PatternMatchingError(env,sigma,te)))
 
 let error_bad_pattern ?loc env sigma cstr ind =
   raise_pattern_matching_error ?loc
@@ -72,12 +72,11 @@ let error_wrong_numarg_inductive ?loc env c n =
 
 let list_try_compile f l =
   let rec aux errors = function
-  | [] -> if errors = [] then anomaly (str "try_find_f.") else iraise (List.last errors)
+  | [] -> if errors = [] then anomaly (str "try_find_f.") else reraise (List.last errors)
   | h::t ->
-      try f h
-      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
-	    let e = CErrors.push e in
-	    aux (e::errors) t in
+    try f h
+    with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
+      aux (e::errors) t in
   aux [] l
 
 let force_name =

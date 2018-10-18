@@ -28,16 +28,16 @@ let error_not_a_module_loc kind loc qid =
     | ModType -> Modops.ModuleTypingError (Modops.NotAModuleType s)
     | ModAny -> ModuleInternalizationError (NotAModuleNorModtype s)
   in
-  Loc.raise ?loc e
+  raise Loc.(attach ?loc e)
 
 let error_application_to_not_path loc me =
-  Loc.raise ?loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me))
+  raise Loc.(attach ?loc (Modops.ModuleTypingError (Modops.ApplicationToNotPath me)))
 
 let error_incorrect_with_in_module loc =
-  Loc.raise ?loc (ModuleInternalizationError IncorrectWithInModule)
+  raise Loc.(attach ?loc (ModuleInternalizationError IncorrectWithInModule))
 
 let error_application_to_module_type loc =
-  Loc.raise ?loc (ModuleInternalizationError IncorrectModuleApplication)
+  raise Loc.(attach ?loc (ModuleInternalizationError IncorrectModuleApplication))
 
 (** Searching for a module name in the Nametab.
 
