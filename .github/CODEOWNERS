@@ -53,6 +53,10 @@
 /dev/doc/         @Zimmi48
 # Secondary maintainer @maximedenes
 
+/dev/doc/MERGING.md @coq/pushers
+# This ensures that all members of the @coq/pushers
+# team are notified when the merging doc changes.
+
 /dev/doc/changes.md    @ghost
 # Trick to avoid getting review requests
 # each time someone modifies the dev changelog
