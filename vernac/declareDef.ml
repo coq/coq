@@ -43,9 +43,11 @@ let declare_definition ident (local, p, k) ce pl imps hook =
   | Discharge | Local | Global ->
       let local = get_locality ident ~kind:"definition" local in
       let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
-      ConstRef kn in
+      let gr = ConstRef kn in
+      let () = Declare.declare_univ_binders gr pl in
+      gr
+  in
   let () = maybe_declare_manual_implicits false gr imps in
-  let () = Declare.declare_univ_binders gr pl in
   let () = definition_message ident in
   Lemmas.call_hook fix_exn hook local gr; gr
 

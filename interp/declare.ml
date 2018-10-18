@@ -525,7 +525,7 @@ let declare_univ_binders gr pl =
     let l = match gr with
       | ConstRef c -> Label.to_id @@ Constant.label c
       | IndRef (c, _) -> Label.to_id @@ MutInd.label c
-      | VarRef id -> id
+      | VarRef id -> anomaly ~label:"declare_univ_binders" Pp.(str "declare_univ_binders on variable " ++ Id.print id ++ str".")
       | ConstructRef _ ->
         anomaly ~label:"declare_univ_binders"
           Pp.(str "declare_univ_binders on an constructor reference")

@@ -79,8 +79,9 @@ mono
 The command has indeed failed with message:
 Universe u already exists.
 Monomorphic bobmorane = 
-let tt := Type@{tt.v} in let ff := Type@{ff.v} in tt -> ff
-     : Type@{max(tt.u,ff.u)}
+let tt := Type@{UnivBinders.32} in
+let ff := Type@{UnivBinders.34} in tt -> ff
+     : Type@{max(UnivBinders.31,UnivBinders.33)}
 
 bobmorane is not universe polymorphic
 The command has indeed failed with message:

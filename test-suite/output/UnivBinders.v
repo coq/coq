@@ -73,19 +73,10 @@ Module SecLet.
     (* Fail Let foo@{} := Type@{u}. (* doesn't parse: Let foo@{...} doesn't exist *) *)
     Unset Strict Universe Declaration.
     Let tt : Type@{u} := Type@{v}. (* names disappear in the ether *)
-    Let ff : Type@{u}. Proof. exact Type@{v}. Qed. (* if Set Universe Polymorphism: universes are named ff.u and ff.v. Otherwise names disappear into space *)
+    Let ff : Type@{u}. Proof. exact Type@{v}. Qed. (* names disappear into space *)
     Definition bobmorane := tt -> ff.
   End foo.
-  Print bobmorane. (*
-                     bobmorane@{UnivBinders.15 UnivBinders.16 ff.u ff.v} =
-                     let tt := Type@{UnivBinders.16} in let ff := Type@{ff.v} in tt -> ff
-                     : Type@{max(UnivBinders.15,ff.u)}
-                     (* UnivBinders.15 UnivBinders.16 ff.u ff.v |= UnivBinders.16 < UnivBinders.15
-                     ff.v < ff.u
-                    *)
-
-                    bobmorane is universe polymorphic
-                    *)
+  Print bobmorane.
 End SecLet.
 
 (* fun x x => foo is nonsense with local binders *)

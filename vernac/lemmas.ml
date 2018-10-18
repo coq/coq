@@ -197,10 +197,11 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
-          ConstRef kn
+          let gr = ConstRef kn in
+          Declare.declare_univ_binders gr (UState.universe_binders uctx);
+          gr
     in
     definition_message id;
-    Declare.declare_univ_binders r (UState.universe_binders uctx);
     call_hook (fun exn -> exn) hook locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
