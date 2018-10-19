@@ -77,17 +77,14 @@ let fresh_global_instance ?loc ?names env gr =
   let u, ctx = fresh_global_instance ?loc ?names env gr in
   mkRef (gr, u), ctx
 
-let constr_of_global gr =
-  let c, ctx = fresh_global_instance (Global.env ()) gr in
-    if not (Univ.ContextSet.is_empty ctx) then
-      if Univ.LSet.is_empty (Univ.ContextSet.levels ctx) then
-        (* Should be an error as we might forget constraints, allow for now
-           to make firstorder work with "using" clauses *)
-        c
-      else CErrors.user_err ~hdr:"constr_of_global"
-          Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
-              str " would forget universes.")
-    else c
+let constr_of_monomorphic_global gr =
+  if not (Global.is_polymorphic gr) then
+    fst (fresh_global_instance (Global.env ()) gr)
+  else CErrors.user_err ~hdr:"constr_of_global"
+      Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
+          str " would forget universes.")
+
+let constr_of_global gr = constr_of_monomorphic_global gr
 
 let constr_of_global_univ = mkRef
 

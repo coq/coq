@@ -74,11 +74,16 @@ val extend_context : 'a in_universe_context_set -> ContextSet.t ->
 [@@ocaml.deprecated "Use [Univ.extend_in_context_set]"]
 
 (** Create a fresh global in the global environment, without side effects.
-    BEWARE: this raises an ANOMALY on polymorphic constants/inductives:
+    BEWARE: this raises an error on polymorphic constants/inductives:
     the constraints should be properly added to an evd.
     See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
-    the proper way to get a fresh copy of a global reference. *)
+    the proper way to get a fresh copy of a polymorphic global reference. *)
+val constr_of_monomorphic_global : GlobRef.t -> constr
+
 val constr_of_global : GlobRef.t -> constr
+[@@ocaml.deprecated "constr_of_global will crash on polymorphic constants,\
+                     use [constr_of_monomorphic_global] if the reference is guaranteed to\
+                     be monomorphic, [Evarutil.new_global] or [Tacmach.New.pf_constr_of_global] otherwise"]
 
 (** Returns the type of the global reference, by creating a fresh instance of polymorphic
     references and computing their instantiated universe context. (side-effect on the

@@ -34,7 +34,7 @@ val pf_hyps_types         : goal sigma -> (Id.t * types) list
 val pf_nth_hyp_id         : goal sigma -> int -> Id.t
 val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> Id.t list
-val pf_global             : goal sigma -> Id.t -> constr
+val pf_global             : goal sigma -> Id.t -> evar_map * constr
 val pf_unsafe_type_of            : goal sigma -> constr -> types
 val pf_type_of            : goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : goal sigma -> constr -> types
