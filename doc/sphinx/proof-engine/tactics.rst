@@ -3745,32 +3745,6 @@ Setting implicit automation tactics
 
       Combines in a single line ``Proof with`` and ``Proof using``, see :ref:`proof-editing-mode`
 
-   .. cmd:: Declare Implicit Tactic @tactic
-
-      This command declares a tactic to be used to solve implicit arguments
-      that Coq does not know how to solve by unification. It is used every
-      time the term argument of a tactic has one of its holes not fully
-      resolved.
-
-      .. deprecated:: 8.9
-
-         This command is deprecated. Use :ref:`typeclasses <typeclasses>` or
-         :ref:`tactics-in-terms <tactics-in-terms>` instead.
-
-      .. example::
-
-         .. coqtop:: all
-
-            Parameter quo : nat -> forall n:nat, n<>0 -> nat.
-            Notation "x // y" := (quo x y _) (at level 40).
-            Declare Implicit Tactic assumption.
-            Goal forall n m, m<>0 -> { q:nat & { r | q * m + r = n } }.
-            intros.
-            exists (n // m).
-
-         The tactic ``exists (n // m)`` did not fail. The hole was solved
-         by ``assumption`` so that it behaved as ``exists (quo n m H)``.
-
 .. _decisionprocedures:
 
 Decision procedures

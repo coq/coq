@@ -227,36 +227,3 @@ let refine_by_tactic env sigma ty tac =
       this hack will work in most cases. *)
   let ans = Safe_typing.inline_private_constants_in_constr env ans neff in
   ans, sigma
-
-(**********************************************************************)
-(* Support for resolution of evars in tactic interpretation, including
-   resolution by application of tactics *)
-
-let implicit_tactic = Summary.ref None ~name:"implicit-tactic"
-
-let declare_implicit_tactic tac = implicit_tactic := Some tac
-
-let clear_implicit_tactic () = implicit_tactic := None
-
-let apply_implicit_tactic tac = (); fun env sigma evk ->
-  let evi = Evd.find_undefined sigma evk in
-  match snd (evar_source evk sigma) with
-  | (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
-      when
-	Context.Named.equal Constr.equal (Environ.named_context_of_val evi.evar_hyps)
-	(Environ.named_context env) ->
-      let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (CErrors.UserError (None,Pp.str"Proof is not complete."))) []) in
-      (try
-        let c = Evarutil.nf_evars_universes sigma (EConstr.Unsafe.to_constr evi.evar_concl) in
-        let c = EConstr.of_constr c in
-        if Evarutil.has_undefined_evars sigma c then raise Exit;
-        let (ans, _, ctx) =
-	  build_by_tactic env (Evd.evar_universe_context sigma) c tac in
-        let sigma = Evd.set_universe_context sigma ctx in
-        sigma, EConstr.of_constr ans
-       with e when Logic.catchable_exception e -> raise Exit)
-  | _ -> raise Exit
-
-let solve_by_implicit_tactic () = match !implicit_tactic with
-| None -> None
-| Some tac -> Some (apply_implicit_tactic tac)

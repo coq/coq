@@ -543,7 +543,6 @@ let interp_gen kind ist pattern_mode flags env sigma c =
 let constr_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = true;
   expand_evars = true }
 
@@ -558,21 +557,18 @@ let interp_type = interp_constr_gen IsType
 let open_constr_use_classes_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 
 let open_constr_no_classes_flags () = {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true }
 
 let pure_open_constr_flags = {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = None;
   fail_evar = false;
   expand_evars = false }
 
@@ -987,7 +983,7 @@ let rec read_match_rule lfun ist env sigma = function
   | [] -> []
 
 (* Fully evaluate an untyped constr *)
-let type_uconstr ?(flags = {(constr_flags ()) with use_hook = None })
+let type_uconstr ?(flags = (constr_flags ()))
   ?(expected_type = WithoutTypeConstraint) ist c =
   begin fun env sigma ->
   let { closure; term } = c in

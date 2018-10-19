@@ -48,7 +48,6 @@ let with_delayed_uconstr ist c tac =
   let flags = {
     Pretyping.use_typeclasses = false;
     solve_unification_constraints = true;
-    use_hook = Pfedit.solve_by_implicit_tactic ();
     fail_evar = false;
     expand_evars = true
  } in
@@ -343,7 +342,6 @@ open Vars
 let constr_flags () = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = Pfedit.use_unification_heuristics ();
-  Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true }
 
@@ -570,44 +568,6 @@ VERNAC COMMAND EXTEND AddStepr CLASSIFIED AS SIDEFF
 | [ "Declare" "Right" "Step" constr(t) ] ->
     { add_transitivity_lemma false t }
 END
-
-{
-
-let cache_implicit_tactic (_,tac) = match tac with
-  | Some tac -> Pfedit.declare_implicit_tactic (Tacinterp.eval_tactic tac)
-  | None -> Pfedit.clear_implicit_tactic ()
-
-let subst_implicit_tactic (subst,tac) =
-  Option.map (Tacsubst.subst_tactic subst) tac
-
-let inImplicitTactic : glob_tactic_expr option -> obj =
-  declare_object {(default_object "IMPLICIT-TACTIC") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_implicit_tactic o);
-       cache_function = cache_implicit_tactic;
-       subst_function = subst_implicit_tactic;
-       classify_function = (fun o -> Dispose)}
-
-let warn_deprecated_implicit_tactic =
-  CWarnings.create ~name:"deprecated-implicit-tactic" ~category:"deprecated"
-    (fun () -> strbrk "Implicit tactics are deprecated")
-
-let declare_implicit_tactic tac =
-  let () = warn_deprecated_implicit_tactic () in
-  Lib.add_anonymous_leaf (inImplicitTactic (Some (Tacintern.glob_tactic tac)))
-
-let clear_implicit_tactic () =
-  let () = warn_deprecated_implicit_tactic () in
-  Lib.add_anonymous_leaf (inImplicitTactic None)
-
-}
-
-VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF
-| [ "Declare" "Implicit" "Tactic" tactic(tac) ] -> { declare_implicit_tactic tac }
-| [ "Clear" "Implicit" "Tactic" ] -> { clear_implicit_tactic () }
-END
-
-
-
 
 (**********************************************************************)
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as

@@ -116,13 +116,3 @@ val refine_by_tactic : env -> Evd.evar_map -> EConstr.types -> unit Proofview.ta
     evars solved by side-effects are NOT purged, so that unexpected failures may
     occur. Ideally all code using this function should be rewritten in the
     monad. *)
-
-(** Declare the default tactic to fill implicit arguments *)
-
-val declare_implicit_tactic : unit Proofview.tactic -> unit
-
-(** To remove the default tactic *)
-val clear_implicit_tactic : unit -> unit
-
-(* Raise Exit if cannot solve *)
-val solve_by_implicit_tactic : unit -> Pretyping.inference_hook option

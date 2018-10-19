@@ -1152,7 +1152,6 @@ let rec intros_move = function
 let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
-  Pretyping.use_hook = Pfedit.solve_by_implicit_tactic ();
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true }
 
