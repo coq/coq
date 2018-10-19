@@ -788,8 +788,9 @@ module Search = struct
          | (ReachedLimitEx,ie) -> Proofview.tclZERO ~info:ie ReachedLimitEx
          | (_,ie) -> Proofview.tclZERO ~info:ie NoApplicableEx
     in
-    if backtrack then aux (NoApplicableEx,Exninfo.null) poss
-    else tclONCE (aux (NoApplicableEx,Exninfo.null) poss)
+    let bt = Printexc.get_raw_backtrace () in
+    if backtrack then aux (NoApplicableEx,(Exninfo.null, bt)) poss
+    else tclONCE (aux (NoApplicableEx,(Exninfo.null, bt)) poss)
 
   let hints_tac hints info kont : unit Proofview.tactic =
     Proofview.Goal.enter

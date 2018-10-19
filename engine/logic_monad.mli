@@ -180,6 +180,8 @@ module Logical (P:Param) : sig
 
   include Monad.S
 
+  type exn_data = exn * (Exninfo.info * Printexc.raw_backtrace)
+
   val ignore : 'a t -> unit t
 
   val set : P.s -> unit t
@@ -190,17 +192,17 @@ module Logical (P:Param) : sig
   val local : P.e -> 'a t -> 'a t
   val update : (P.u -> P.u) -> unit t
 
-  val zero : exn * Exninfo.info -> 'a t
-  val plus : 'a t -> (exn * Exninfo.info -> 'a t) -> 'a t
-  val split : 'a t -> ('a, 'a t, exn * Exninfo.info) list_view t
+  val zero : exn_data -> 'a t
+  val plus : 'a t -> (exn_data -> 'a t) -> 'a t
+  val split : 'a t -> ('a, 'a t, exn_data) list_view t
   val once : 'a t -> 'a t
-  val break : (exn * Exninfo.info -> (exn * Exninfo.info) option) -> 'a t -> 'a t
+  val break : (exn_data -> exn_data option) -> 'a t -> 'a t
 
   val lift : 'a NonLogical.t -> 'a t
 
-  type 'a reified = ('a, exn * Exninfo.info) BackState.reified
+  type 'a reified = ('a, exn_data) BackState.reified
 
-  val repr : 'a reified -> ('a, 'a reified, exn * Exninfo.info) list_view NonLogical.t
+  val repr : 'a reified -> ('a, 'a reified, exn_data) list_view NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
 
@@ -213,8 +215,8 @@ module Logical (P:Param) : sig
       sstate : P.s;
     }
 
-    val make : ('a, state, state, exn * Exninfo.info) BackState.t -> 'a t
-    val repr : 'a t -> ('a, state, state, exn * Exninfo.info) BackState.t
+    val make : ('a, state, state, exn_data) BackState.t -> 'a t
+    val repr : 'a t -> ('a, state, state, exn_data) BackState.t
 
   end
 

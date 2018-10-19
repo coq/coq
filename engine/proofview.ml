@@ -228,10 +228,10 @@ let apply env t sp =
   let ans = Proof.repr (Proof.run t false (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
-  | Nil (e, info) ->
+  | Nil (e, (info, bt)) ->
     let e = TacticFailure e in
     let e = Exninfo.attach e info in
-    Util.reraise e
+    Printexc.raise_with_backtrace e bt
   | Cons ((r, (state, _), status, info), _) ->
     let (status, gaveup) = status in
     let status = (status, state.shelf, gaveup) in
@@ -263,11 +263,11 @@ module Monad = Proof
 
 (** [tclZERO e] fails with exception [e]. It has no success. *)
 let tclZERO ?info e =
-  let info = match info with
-  | None -> Exninfo.null
-  | Some info -> info
+  let info, bt = match info with
+    | None -> Exninfo.null, Printexc.get_raw_backtrace ()
+    | Some (info,bt) -> info,bt
   in
-  Proof.zero (e, info)
+  Proof.zero (e, (info, bt))
 
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
@@ -318,22 +318,25 @@ end
 let tclEXACTLY_ONCE e t =
   let open Logic_monad in
   let open Proof in
+  let bt = Printexc.get_raw_backtrace () in
   split t >>= function
     | Nil (e, info) -> tclZERO ~info e
     | Cons (x,k) ->
-        Proof.split (k (e, Exninfo.null)) >>= function
+        Proof.split (k (e, (Exninfo.null, bt))) >>= function
           | Nil _ -> tclUNIT x
-          | _ -> tclZERO MoreThanOneSuccess
+          | _ -> tclZERO ~info:(Exninfo.null, bt) MoreThanOneSuccess
 
+
+type exn_data = exn * (Exninfo.info * Printexc.raw_backtrace)
 
 (** [tclCASE t] wraps the {!Proofview_monad.Logical.split} primitive. *)
 type 'a case =
-| Fail of exn * Exninfo.info
-| Next of 'a * (exn * Exninfo.info -> 'a tactic)
+| Fail of exn_data
+| Next of 'a * (exn_data -> 'a tactic)
 let tclCASE t =
   let open Logic_monad in
   let map = function
-  | Nil e -> Fail (fst e, snd e)
+  | Nil e -> Fail e
   | Cons (x, t) -> Next (x, t)
   in
   Proof.map map (Proof.split t)
@@ -953,10 +956,11 @@ let tclTIMEOUT n t =
         | Logic_monad.Cons (r, _) -> return (Util.Inl r)
       end
       begin let open Logic_monad.NonLogical in function (e, info) ->
+        let bt = Printexc.get_raw_backtrace () in
         match e with
-        | Logic_monad.Timeout -> return (Util.Inr (Timeout, info))
+        | Logic_monad.Timeout -> return (Util.Inr (Timeout, (info, bt)))
         | Logic_monad.TacticFailure e ->
-          return (Util.Inr (e, info))
+          return (Util.Inr (e, (info, bt)))
         | e -> Logic_monad.NonLogical.raise ~info e
       end
   end >>= function
@@ -1109,7 +1113,8 @@ module Goal = struct
         let (gl, sigma) = nf_gmake env sigma goal in
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
-        let info = Exninfo.info e in
+        let bt = Printexc.get_raw_backtrace () in
+        let info = Exninfo.info e, bt in
         tclZERO ~info e
     end
     end
@@ -1134,7 +1139,8 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
-        let info = Exninfo.info e in
+        let bt = Printexc.get_raw_backtrace () in
+        let info = Exninfo.info e, bt in
         tclZERO ~info e
     end
     end
@@ -1147,7 +1153,8 @@ module Goal = struct
        tclEVARMAP >>= fun sigma ->
        try f (gmake env sigma goal)
        with e when catchable_exception e ->
-         let info = Exninfo.info e in
+         let bt = Printexc.get_raw_backtrace () in
+         let info = Exninfo.info e,bt in
          tclZERO ~info e
       end
     | _ ->
@@ -1238,9 +1245,9 @@ module V82 = struct
       InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"<unknown>")) >>
       Pv.set { ps with solution = evd; comb = sgs; }
     with e when catchable_exception e ->
-      let info = Exninfo.info e in
+      let bt = Printexc.get_raw_backtrace () in
+      let info = Exninfo.info e,bt in
       tclZERO ~info e
-
 
   (* normalises the evars in the goals, and stores the result in
      solution. *)
@@ -1290,7 +1297,8 @@ module V82 = struct
   let wrap_exceptions f =
     try f ()
     with e when catchable_exception e ->
-      let info = Exninfo.info e in
+      let bt = Printexc.get_raw_backtrace () in
+      let info = Exninfo.info e,bt in
       tclZERO ~info e
 
 end

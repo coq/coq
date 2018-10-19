@@ -109,7 +109,9 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
 let matching_error =
   CErrors.UserError (Some "tactic matching" , Pp.str "No matching clauses for match.")
 
-let imatching_error = (matching_error, Exninfo.null)
+let imatching_error =
+  let bt = Printexc.get_raw_backtrace () in
+  (matching_error, (Exninfo.null,bt))
 
 (** A functor is introduced to share the environment and the
     evar_map. They do not change and it would be a pity to introduce

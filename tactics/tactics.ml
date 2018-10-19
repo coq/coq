@@ -1687,9 +1687,10 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
             Some (try_red_apply red_thm (exn0, info))
           | _ -> None)
       with Redelimination ->
+        let bt = Printexc.get_raw_backtrace () in
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
-        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
+        let info = Option.cata (fun loc -> Loc.add_loc (fst info) loc) (fst info) loc, bt in
         let tac =
           if with_destruct then
             descend_in_conjunctions Id.Set.empty
@@ -1841,7 +1842,8 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
             tac id
           ])
     with e when with_destruct && CErrors.noncritical e ->
-      let info = Exninfo.info e in
+      let bt = Printexc.get_raw_backtrace () in
+      let info = Exninfo.info e, bt in
       (descend_in_conjunctions (Id.Set.singleton targetid)
          (fun b id -> aux (id::idstoclear) b (mkVar id))
          (e, info) c)

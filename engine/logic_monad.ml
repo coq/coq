@@ -325,16 +325,16 @@ struct
 
   type state = Unsafe.state
 
-  type iexn = exn * Exninfo.info
+  type exn_data = exn * (Exninfo.info * Printexc.raw_backtrace)
 
-  type 'a reified = ('a, iexn) BackState.reified
+  type 'a reified = ('a, exn_data) BackState.reified
 
   (** Inherited from Backstate *)
 
   open BackState
 
   include Monad.Make(struct
-    type 'a t = ('a, state, state, iexn) BackState.t
+    type 'a t = ('a, state, state, exn_data) BackState.t
     let return = BackState.return
     let (>>=) = BackState.(>>=)
     let (>>) = BackState.(>>)

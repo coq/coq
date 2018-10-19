@@ -143,23 +143,26 @@ let extract_trace ist = match TacStore.get ist.extra f_trace with
 
 let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
-let catching_error call_trace fail (e, info) =
+let catching_error call_trace fail (e, (info,bt)) =
   let inner_trace =
     Option.default [] (Exninfo.get info ltac_trace_info)
   in
-  if List.is_empty call_trace && List.is_empty inner_trace then fail (e, info)
+  if List.is_empty call_trace && List.is_empty inner_trace then fail (e, (info,bt))
   else begin
     assert (CErrors.noncritical e); (* preserved invariant *)
     let new_trace = inner_trace @ call_trace in
-    let located_exc = (e, Exninfo.add info ltac_trace_info new_trace) in
+    let located_exc = (e, (Exninfo.add info ltac_trace_info new_trace,bt)) in
     fail located_exc
   end
 
 let catch_error call_trace f x =
   try f x
   with e when CErrors.noncritical e ->
+    let bt = Printexc.get_raw_backtrace () in
     let info = Exninfo.info e in
-    catching_error call_trace (fun (e,info) -> let e = Exninfo.attach e info in reraise e) (e,info)
+    catching_error call_trace (fun (e,(info,bt)) ->
+        let e = Exninfo.attach e info in
+        Printexc.raise_with_backtrace e bt) (e,(info,bt))
 
 let catch_error_tac call_trace tac =
   Proofview.tclORELSE

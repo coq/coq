@@ -276,12 +276,13 @@ module New = struct
     tclZERO (Refiner.FailError (lvl,lazy msg))
 
   let tclZEROMSG ?loc msg =
+    let bt = Printexc.get_raw_backtrace () in
     let err = UserError (None, msg) in
     let info = match loc with
     | None -> Exninfo.null
     | Some loc -> Loc.add_loc Exninfo.null loc
     in
-    tclZERO ~info err
+    tclZERO ~info:(info,bt) err
 
   let catch_failerror e =
     try
