@@ -476,7 +476,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
 type required_module = full_path * string list
-type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+type rawnum = Constrexpr.sign * Constrexpr.raw_natural_number
 
 type prim_token_uid = string
 
@@ -499,13 +499,14 @@ module InnerPrimToken = struct
     | StringInterp f, StringInterp f' -> f == f'
     | _ -> false
 
-  let ofNumeral n s =
-    if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
+  let ofNumeral s n = match s with
+    | SPlus -> Bigint.of_string n
+    | SMinus -> Bigint.neg (Bigint.of_string n)
 
   let do_interp ?loc interp primtok =
     match primtok, interp with
-    | Numeral (n,s), RawNumInterp interp -> interp ?loc (n,s)
-    | Numeral (n,s), BigNumInterp interp -> interp ?loc (ofNumeral n s)
+    | Numeral (s,n), RawNumInterp interp -> interp ?loc (s,n)
+    | Numeral (s,n), BigNumInterp interp -> interp ?loc (ofNumeral s n)
     | String s, StringInterp interp -> interp ?loc s
     | _ -> raise Not_found
 
@@ -521,15 +522,15 @@ module InnerPrimToken = struct
     | _ -> false
 
   let mkNumeral n =
-    if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
-    else Numeral (Bigint.to_string (Bigint.neg n), false)
+    if Bigint.is_pos_or_zero n then Numeral (SPlus,Bigint.to_string n)
+    else Numeral (SMinus,Bigint.to_string (Bigint.neg n))
 
   let mkString = function
     | None -> None
     | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
   let do_uninterp uninterp g = match uninterp with
-    | RawNumUninterp u -> Option.map (fun (n,s) -> Numeral (n,s)) (u g)
+    | RawNumUninterp u -> Option.map (fun (s,n) -> Numeral (s,n)) (u g)
     | BigNumUninterp u -> Option.map mkNumeral (u g)
     | StringUninterp u -> mkString (u g)
 
@@ -766,9 +767,10 @@ let coquint_of_rawnum uint str =
   in
   do_chars str (String.length str - 1) nil
 
-let coqint_of_rawnum inds (str,sign) =
+let coqint_of_rawnum inds (sign,str) =
   let uint = coquint_of_rawnum inds.uint str in
-  mkApp (mkConstruct (inds.int, if sign then 1 else 2), [|uint|])
+  let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
+  mkApp (mkConstruct (inds.int, pos_neg), [|uint|])
 
 let rawnum_of_coquint c =
   let rec of_uint_loop c buf =
@@ -794,8 +796,8 @@ let rawnum_of_coqint c =
   match Constr.kind c with
   | App (c,[|c'|]) ->
      (match Constr.kind c with
-      | Construct ((_,1), _) (* Pos *) -> (rawnum_of_coquint c', true)
-      | Construct ((_,2), _) (* Neg *) -> (rawnum_of_coquint c', false)
+      | Construct ((_,1), _) (* Pos *) -> (SPlus, rawnum_of_coquint c')
+      | Construct ((_,2), _) (* Neg *) -> (SMinus, rawnum_of_coquint c')
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
@@ -885,21 +887,22 @@ let bigint_of_int63 c =
   | _ -> raise NotAValidPrimToken
 
 let big2raw n =
-  if Bigint.is_pos_or_zero n then (Bigint.to_string n, true)
-  else (Bigint.to_string (Bigint.neg n), false)
+  if Bigint.is_pos_or_zero n then (SPlus, Bigint.to_string n)
+  else (SMinus, Bigint.to_string (Bigint.neg n))
 
-let raw2big (n,s) =
-  if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
+let raw2big (s,n) = match s with
+  | SPlus -> Bigint.of_string n
+  | SMinus -> Bigint.neg (Bigint.of_string n)
 
 let interp o ?loc n =
-  begin match o.warning with
-  | Warning threshold when snd n && rawnum_compare (fst n) threshold >= 0 ->
+  begin match o.warning, n with
+  | Warning threshold, (SPlus, n) when rawnum_compare n threshold >= 0 ->
      warn_large_num o.ty_name
   | _ -> ()
   end;
   let c = match fst o.to_kind with
     | Int int_ty -> coqint_of_rawnum int_ty n
-    | UInt uint_ty when snd n -> coquint_of_rawnum uint_ty (fst n)
+    | UInt uint_ty when fst n == SPlus -> coquint_of_rawnum uint_ty (snd n)
     | UInt _ (* n <= 0 *) -> no_such_prim_token "number" ?loc o.ty_name
     | Z z_pos_ty -> z_of_bigint z_pos_ty (raw2big n)
     | Int63 -> interp_int63 ?loc (raw2big n)
@@ -909,7 +912,7 @@ let interp o ?loc n =
   let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   match o.warning, snd o.to_kind with
-  | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
+  | Abstract threshold, Direct when rawnum_compare (snd n) threshold >= 0 ->
      warn_abstract_large_num (o.ty_name,o.to_ty);
      glob_of_constr "numeral" ?loc env sigma (mkApp (to_ty,[|c|]))
   | _ ->
@@ -922,7 +925,7 @@ let uninterp o n =
   PrimTokenNotation.uninterp
     begin function
       | (Int _, c) -> rawnum_of_coqint c
-      | (UInt _, c) -> (rawnum_of_coquint c, true)
+      | (UInt _, c) -> (SPlus, rawnum_of_coquint c)
       | (Z _, c) -> big2raw (bigint_of_z c)
       | (Int63, c) -> big2raw (bigint_of_int63 c)
     end o n
@@ -1249,8 +1252,8 @@ let find_notation ntn sc =
   (n.not_interp, n.not_location)
 
 let notation_of_prim_token = function
-  | Numeral (n,true) -> InConstrEntrySomeLevel, n
-  | Numeral (n,false) -> InConstrEntrySomeLevel, "- "^n
+  | Numeral (SPlus,n) -> InConstrEntrySomeLevel, n
+  | Numeral (SMinus,n) -> InConstrEntrySomeLevel, "- "^n
   | String _ -> raise Not_found
 
 let find_prim_token check_allowed ?loc p sc =
