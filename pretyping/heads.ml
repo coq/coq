@@ -26,9 +26,8 @@ open Context.Named.Declaration
    the evaluation of [phi(0)] and the head of [h] is declared unknown). *)
 
 type rigid_head_kind =
-| RigidParameter of Constant.t (* a Const without body *)
-| RigidVar of variable (* a Var without body *)
-| RigidType (* an inductive, a product or a sort *)
+| RigidParameter of Constant.t (* a Const without body. Module substitution may instantiate it with something else. *)
+| RigidOther (* a Var without body, inductive, product, sort, projection *)
 
 type head_approximation =
 | RigidHead of rigid_head_kind
@@ -77,7 +76,7 @@ let kind_of_head env t =
                str "."))
   | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead
-  | Sort _ | Ind _ | Prod _ -> RigidHead RigidType
+  | Sort _ | Ind _ | Prod _ -> RigidHead RigidOther
   | Cast (c,_,_) -> aux k l c b
   | Lambda (_,_,c) ->
     begin match l with
@@ -89,9 +88,7 @@ let kind_of_head env t =
   | LetIn _ -> assert false
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b
-  | Proj (p,c) ->
-      (try on_subterm k (c :: l) b (constant_head (Projection.constant p))
-       with Not_found -> assert false)
+  | Proj (p,c) -> RigidHead RigidOther
 
   | Case (_,_,c,_) -> aux k [] c true
   | Fix ((i,j),_) ->
@@ -124,22 +121,16 @@ let kind_of_head env t =
 (* FIXME: maybe change interface here *)
 let compute_head = function
 | EvalConstRef cst ->
-   let env = Global.env() in
-   let cb = Environ.lookup_constant cst env in
-   let is_Def = function Declarations.Def _ -> true | _ -> false in
-   let body =
-     if not (Recordops.is_primitive_projection cst) && is_Def cb.Declarations.const_body
-     then Global.body_of_constant cst else None
-   in
-     (match body with
-     | None -> RigidHead (RigidParameter cst)
-     | Some (c, _) -> kind_of_head env c)
+  let env = Global.env() in
+  let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
+  (match body with
+   | None -> RigidHead (RigidParameter cst)
+   | Some c -> kind_of_head env c)
 | EvalVarRef id ->
     (match Global.lookup_named id with
      | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
            kind_of_head (Global.env()) c
-     | _ ->
-           RigidHead (RigidVar id))
+     | _ -> RigidHead RigidOther)
 
 let is_rigid env t =
   match kind_of_head env t with
