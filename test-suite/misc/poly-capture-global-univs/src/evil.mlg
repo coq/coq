@@ -1,0 +1,10 @@
+{
+open Stdarg
+open EvilImpl
+}
+
+DECLARE PLUGIN "evil_plugin"
+
+VERNAC COMMAND EXTEND VernacEvil CLASSIFIED AS SIDEFF
+| [ "Evil" ident(x) ident(y) ] -> { evil x y }
+END
