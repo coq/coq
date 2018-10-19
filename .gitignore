@@ -68,6 +68,7 @@ time-of-build-after.log
 .csdp.cache
 test-suite/.lia.cache
 test-suite/.nra.cache
+test-suite/.nia.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
@@ -165,8 +166,6 @@ checker/esubst.mli
 user-contrib
 .*.sw*
 .#*
-test-suite/.lia.cache
-test-suite/.nra.cache
 
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
