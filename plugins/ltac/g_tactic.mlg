@@ -147,7 +147,8 @@ let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
     end
   | _ -> ElimOnConstr clbind
 
-let mkNumeral n = Numeral (string_of_int (abs n), 0<=n)
+let mkNumeral n =
+  Numeral ((if 0<=n then SPlus else SMinus),string_of_int (abs n))
 
 let mkTacCase with_evar = function
   | [(clear,ElimOnConstr cl),(None,None),None],None ->

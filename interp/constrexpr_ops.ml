@@ -54,9 +54,10 @@ let names_of_local_binders bl =
    numbers of leading zeros) are considered different here. *)
 
 let prim_token_eq t1 t2 = match t1, t2 with
-| Numeral (n1,s1), Numeral (n2,s2) -> String.equal n1 n2 && s1 == s2
+| Numeral (SPlus,n1), Numeral (SPlus,n2)
+| Numeral (SMinus,n1), Numeral (SMinus,n2) -> NumTok.equal n1 n2
 | String s1, String s2 -> String.equal s1 s2
-| _ -> false
+| (Numeral ((SPlus|SMinus),_) | String _), _ -> false
 
 let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | ExplByPos (i1, id1), ExplByPos (i2, id2) ->

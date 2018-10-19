@@ -77,7 +77,7 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 type notation_location = (DirPath.t * DirPath.t) * string
 type required_module = full_path * string list
-type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+type rawnum = Constrexpr.sign * Constrexpr.raw_natural_number
 
 (** The unique id string below will be used to refer to a particular
     registered interpreter/uninterpreter of numeral or string notation.

@@ -1513,11 +1513,11 @@ let rec subst_pat_iterator y t = DAst.(map (function
   | RCPatOr pl -> RCPatOr (List.map (subst_pat_iterator y t) pl)))
 
 let is_non_zero c = match c with
-| { CAst.v = CPrim (Numeral (p, true)) } -> not (is_zero p)
+| { CAst.v = CPrim (Numeral (SPlus, p)) } -> not (is_zero p)
 | _ -> false
 
 let is_non_zero_pat c = match c with
-| { CAst.v = CPatPrim (Numeral (p, true)) } -> not (is_zero p)
+| { CAst.v = CPatPrim (Numeral (SPlus, p)) } -> not (is_zero p)
 | _ -> false
 
 let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
@@ -1628,8 +1628,8 @@ let drop_notations_pattern looked_for genv =
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
     | CPatNotation ((InConstrEntrySomeLevel,"- _"),([a],[]),[]) when is_non_zero_pat a ->
-      let p = match a.CAst.v with CPatPrim (Numeral (p, _)) -> p | _ -> assert false in
-      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (p,false)) scopes in
+      let p = match a.CAst.v with CPatPrim (Numeral (_, p)) -> p | _ -> assert false in
+      let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (SMinus,p)) scopes in
       rcp_of_glob scopes pat
     | CPatNotation ((InConstrEntrySomeLevel,"( _ )"),([a],[]),[]) ->
       in_pat top scopes a
@@ -1944,8 +1944,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         GLetIn (na.CAst.v, inc1, int,
           intern (push_name_env ntnvars (impls_term_list inc1) env na) c2)
     | CNotation ((InConstrEntrySomeLevel,"- _"), ([a],[],[],[])) when is_non_zero a ->
-      let p = match a.CAst.v with CPrim (Numeral (p, _)) -> p | _ -> assert false in
-       intern env (CAst.make ?loc @@ CPrim (Numeral (p,false)))
+      let p = match a.CAst.v with CPrim (Numeral (_, p)) -> p | _ -> assert false in
+       intern env (CAst.make ?loc @@ CPrim (Numeral (SMinus,p)))
     | CNotation ((InConstrEntrySomeLevel,"( _ )"),([a],[],[],[])) -> intern env a
     | CNotation (ntn,args) ->
         intern_notation intern env ntnvars loc ntn args

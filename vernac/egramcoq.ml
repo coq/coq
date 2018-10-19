@@ -403,8 +403,8 @@ match e with
 | TTClosedBinderList _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (v,true)))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (v,true)))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (SPlus,v)))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (SPlus,v)))
   end
 | TTReference ->
   begin match forpat with

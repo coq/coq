@@ -53,11 +53,11 @@ type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
     sign flag. Note that this representation is not unique, due to possible
     multiple leading zeros, and -0 = +0 *)
 
-type sign = bool
+type sign = SPlus | SMinus
 type raw_natural_number = string
 
 type prim_token =
-  | Numeral of raw_natural_number * sign
+  | Numeral of sign * raw_natural_number
   | String of string
 
 type instance_expr = Glob_term.glob_level list

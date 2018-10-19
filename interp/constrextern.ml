@@ -332,15 +332,15 @@ let is_zero s =
 let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match snd ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral (p,true))] when not (is_zero p) ->
+    | "- _", [Some (Numeral (SPlus,p))] when not (is_zero p) ->
         assert (bl=[]);
         mknot (loc,ntn,([mknot (loc,(InConstrEntrySomeLevel,"( _ )"),l,[])]),[])
     | _ ->
 	match decompose_notation_key ntn, l with
         | (InConstrEntrySomeLevel,[Terminal "-"; Terminal x]), [] when is_number x ->
-	   mkprim (loc, Numeral (x,false))
+           mkprim (loc, Numeral (SMinus,x))
         | (InConstrEntrySomeLevel,[Terminal x]), [] when is_number x ->
-	   mkprim (loc, Numeral (x,true))
+           mkprim (loc, Numeral (SPlus,x))
         | _ -> mknot (loc,ntn,l,bl)
 
 let make_notation loc ntn (terms,termlists,binders,binderlists as subst) =
@@ -969,7 +969,7 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
       CCast (sub_extern true scopes vars c,
              map_cast_type (extern_typ scopes vars) c')
   | GInt i ->
-     CPrim(Numeral (Uint63.to_string i,true))
+     CPrim(Numeral (SPlus, Uint63.to_string i))
 
   in insert_coercion coercion (CAst.make ?loc c)
 
