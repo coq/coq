@@ -358,10 +358,6 @@ let inInductive : mutual_inductive_entry -> obj =
 
 let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
   let id = Label.to_id label in
-  let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
-  Recordops.declare_primitive_projection p;
-  (* ^ needs to happen before declaring the constant, otherwise
-     Heads gets confused. *)
   let univs = match univs with
     | Monomorphic_ind_entry _ ->
       (** Global constraints already defined through the inductive *)
@@ -378,7 +374,10 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
       Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
   in
   let entry = definition_entry ~types ~univs term in
-  ignore(declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent))
+  let cst = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
+  let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
+  Recordops.declare_primitive_projection p cst
+
 
 let declare_projections univs mind =
   let env = Global.env () in
