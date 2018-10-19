@@ -398,8 +398,7 @@ struct
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
         Constant.equal c1 c2 && Univ.Instance.equal u1 u2
-      | Cst_proj p1, Cst_proj p2 ->
-        Constant.equal (Projection.constant p1) (Projection.constant p2)
+      | Cst_proj p1, Cst_proj p2 -> Projection.repr_equal p1 p2
       | _, _ -> false
     in
     let rec equal_rec sk1 sk2 =

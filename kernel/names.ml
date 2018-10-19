@@ -872,6 +872,8 @@ struct
 
   let equal (c, b) (c', b') = Repr.equal c c' && b == b'
 
+  let repr_equal p p' = Repr.equal (repr p) (repr p')
+
   let hash (c, b) = (if b then 0 else 1) + Repr.hash c
 
   module SyntacticOrd = struct
