@@ -18,8 +18,6 @@ type 'a t = 'a Store.field
 
 type info = Store.t
 
-type iexn = exn * info
-
 let make = Store.field
 let add = Store.set
 let get = Store.get
@@ -29,7 +27,7 @@ exception Unique
 
 let dummy = (Unique, Store.empty)
 
-let current : (int * iexn) list ref = ref []
+let current : (int * (exn * info)) list ref = ref []
 (** List associating to each thread id the latest exception raised by an
     instrumented raise (i.e. {!raise} from this module). It is shared between
     threads, so we must take care of this when modifying it.
@@ -90,3 +88,8 @@ let info e =
     (* Mismatch: the raised exception is not the one stored, either because the
        previous raise was not instrumented, or because something went wrong. *)
     Store.empty
+
+type iexn = exn * info
+
+external reraise : exn -> 'a = "%reraise"
+let iraise (e,i) = let e = attach e i in reraise e

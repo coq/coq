@@ -186,3 +186,5 @@ let set_temporary_memory () =
   (fun () -> match !a with Some x -> x | None -> assert false)
 
 external reraise : exn -> 'a = "%reraise"
+
+let iraise = Exninfo.iraise [@ocaml.warning "-3"]

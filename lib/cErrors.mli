@@ -86,3 +86,9 @@ val noncritical : exn -> bool
 (** Check whether an exception is handled by some toplevel printer. The
     [Anomaly] exception is never handled. *)
 val handled : exn -> bool
+
+(** Deprecated exception stuff  *)
+val iprint : exn * Exninfo.info -> Pp.t
+[@@ocaml.deprecated "[iprint] is deprecated, use [print exn]"]
+
+val push : exn -> exn * Exninfo.info

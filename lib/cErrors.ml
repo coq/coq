@@ -129,3 +129,7 @@ let handled e =
   let bottom _ = raise Bottom in
   try let _ = print_gen bottom !handle_stack e in true
   with Bottom -> false
+
+(** Deprecated stuff *)
+let iprint (e,_) = print e
+let push e = e, Exninfo.info e

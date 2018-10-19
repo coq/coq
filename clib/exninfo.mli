@@ -33,3 +33,10 @@ val info : exn -> info
 
 val attach : exn -> info -> exn
 (** Attach information to the given exception. *)
+
+(** Deprecated stuff *)
+type iexn = exn * info
+[@@ocaml.deprecated "pairs of exn * info are deprecated and only needed in very specific exception manipulation cases"]
+
+val iraise : exn * info -> 'a
+[@@ocaml.deprecated "Use regular [raise] or [reraise] plus [attach]"]

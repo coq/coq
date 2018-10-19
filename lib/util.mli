@@ -144,3 +144,6 @@ val set_temporary_memory : unit -> ('a -> 'a) * (unit -> 'a)
    retrieve the evaluated result in the r.h.s of the clause *)
 
 external reraise : exn -> 'a = "%reraise"
+
+val iraise : exn * Exninfo.info -> 'a
+[@@ocaml.deprecated "Use regular [raise] or [reraise] plus [attach]"]
