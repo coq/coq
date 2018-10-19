@@ -115,7 +115,6 @@ let interp_ml_tactic { mltac_name = s; mltac_index = i } =
 
 (* Summary and Object declaration *)
 
-open Nametab
 open Libobject
 
 type ltac_entry = {
@@ -153,19 +152,19 @@ let tac_deprecation kn =
 
 let load_md i ((sp, kn), (local, id, b, t, deprecation)) = match id with
 | None ->
-  let () = if not local then push_tactic (Until i) sp kn in
+  let () = if not local then push_tactic (Nametab.Until i) sp kn in
   add ~deprecation kn b t
 | Some kn0 -> replace kn0 kn t
 
 let open_md i ((sp, kn), (local, id, b, t, deprecation)) = match id with
 | None ->
-  let () = if not local then push_tactic (Exactly i) sp kn in
+  let () = if not local then push_tactic (Nametab.Exactly i) sp kn in
   add ~deprecation kn b t
 | Some kn0 -> replace kn0 kn t
 
 let cache_md ((sp, kn), (local, id ,b, t, deprecation)) = match id with
 | None ->
-  let () = push_tactic (Until 1) sp kn in
+  let () = push_tactic (Nametab.Until 1) sp kn in
   add ~deprecation kn b t
 | Some kn0 -> replace kn0 kn t
 

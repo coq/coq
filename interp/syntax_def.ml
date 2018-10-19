@@ -15,7 +15,6 @@ open Names
 open Libnames
 open Libobject
 open Lib
-open Nametab
 open Notation_term
 
 (* Syntactic definitions. *)
@@ -38,7 +37,7 @@ let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef ref ->
-      let (dir,id) = repr_qualid (shortest_qualid_of_global Id.Set.empty ref) in
+      let (dir,id) = repr_qualid (Nametab.shortest_qualid_of_global Id.Set.empty ref) in
       DirPath.is_empty dir && Id.equal id (basename sp)
   | _ ->
       false
@@ -83,11 +82,11 @@ let out_pat (ids,ac) = (List.map (fun (id,((_,sc),typ)) -> (id,sc)) ids,ac)
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()
 
-let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Id.Set.empty kn)
+let pr_syndef kn = pr_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn)
 
 let pr_compat_warning (kn, def, v) =
   let pp_def = match def with
-    | [], NRef r -> spc () ++ str "is" ++ spc () ++ pr_global_env Id.Set.empty r
+    | [], NRef r -> spc () ++ str "is" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r
     | _ -> strbrk " is a compatibility notation"
   in
   pr_syndef kn ++ pp_def

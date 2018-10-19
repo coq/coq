@@ -18,7 +18,6 @@ open Environ
 open Pattern
 open Libnames
 open Globnames
-open Nametab
 
 module NamedDecl = Context.Named.Declaration
 
@@ -192,7 +191,7 @@ let rec head_filter pat ref env sigma typ =
   | _ -> false
 
 let full_name_of_reference ref =
-  let (dir,id) = repr_path (path_of_global ref) in
+  let (dir,id) = repr_path (Nametab.path_of_global ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (** Whether a reference is blacklisted *)
@@ -204,14 +203,14 @@ let blacklist_filter_aux () =
   List.for_all is_not_bl l
 
 let module_filter (mods, outside) ref env typ =
-  let sp = path_of_global ref in
+  let sp = Nametab.path_of_global ref in
   let sl = dirpath sp in
   let is_outside md = not (is_dirpath_prefix_of md sl) in
   let is_inside md = is_dirpath_prefix_of md sl in
   if outside then List.for_all is_outside mods
   else List.is_empty mods || List.exists is_inside mods
 
-let name_of_reference ref = Id.to_string (basename_of_global ref)
+let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 
 let search_about_filter query gr env typ = match query with
 | GlobSearchSubPattern pat ->

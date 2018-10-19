@@ -26,7 +26,6 @@ open Notation_ops
 open Glob_term
 open Glob_ops
 open Pattern
-open Nametab
 open Notation
 open Detyping
 open Decl_kinds
@@ -213,7 +212,7 @@ let is_record indsp =
   with Not_found -> false
 
 let encode_record r =
-  let indsp = global_inductive r in
+  let indsp = Nametab.global_inductive r in
   if not (is_record indsp) then
     user_err ?loc:r.CAst.loc ~hdr:"encode_record"
       (str "This type is not a structure type.");
@@ -279,7 +278,7 @@ let extern_evar n l = CEvar (n,l)
     may be inaccurate *)
 
 let default_extern_reference ?loc vars r =
-  shortest_qualid_of_global ?loc vars r
+  Nametab.shortest_qualid_of_global ?loc vars r
 
 let my_extern_reference = ref default_extern_reference
 
@@ -481,7 +480,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
                  (make_pat_notation ?loc ntn (l,ll) l2') key)
       end
     | SynDefRule kn ->
-      let qid = shortest_qualid_of_syndef ?loc vars kn in
+      let qid = Nametab.shortest_qualid_of_syndef ?loc vars kn in
       let l1 =
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
@@ -1136,7 +1135,7 @@ and extern_notation (custom,scopes as allscopes) vars t = function
                 List.map (fun (c,(subentry,(scopt,scl))) ->
                   extern true (subentry,(scopt,scl@snd scopes)) vars c, None)
 		  terms in
-              let a = CRef (shortest_qualid_of_syndef ?loc vars kn,None) in
+              let a = CRef (Nametab.shortest_qualid_of_syndef ?loc vars kn,None) in
 	      CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l) in
  	if List.is_empty args then e
 	else
