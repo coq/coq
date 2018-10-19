@@ -406,7 +406,7 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE) $(GRAMMARCMA)
 coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 
 # Special rule for coqtop, we imitate `ocamlopt` can delete the target

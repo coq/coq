@@ -135,7 +135,6 @@ coqpp/coqpp_parse.mli
 g_*.ml
 
 lib/coqProject_file.ml
-parsing/cLexer.ml
 plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml
 plugins/ltac/extraargs.ml
