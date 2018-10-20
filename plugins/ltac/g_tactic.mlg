@@ -72,7 +72,7 @@ let test_lpar_idnum_coloneq =
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
-              | IDENT _ | INT _ ->
+              | IDENT _ | NUMERAL _ ->
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())

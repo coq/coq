@@ -305,7 +305,7 @@ GRAMMAR EXTEND Gram
   atomic_constr:
     [ [ g=global; i=instance -> { CAst.make ~loc @@ CRef (g,i) }
       | s=sort   -> { CAst.make ~loc @@  CSort s }
-      | n=INT    -> { CAst.make ~loc @@ CPrim (Numeral (SPlus,n)) }
+      | n=NUMERAL-> { CAst.make ~loc @@ CPrim (Numeral (SPlus,n)) }
       | s=string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id=ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id, None) }
@@ -424,7 +424,7 @@ GRAMMAR EXTEND Gram
             | _ -> p
           in
 	  CAst.make ~loc @@ CPatCast (p, ty) }
-      | n = INT    -> { CAst.make ~loc @@ CPatPrim (Numeral (SPlus,n)) }
+      | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   impl_ident_tail:

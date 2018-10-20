@@ -225,7 +225,7 @@ function
 | "IDENT", s -> fprintf fmt "Tok.PIDENT (%a)" print_pat s
 | "PATTERNIDENT", s -> fprintf fmt "Tok.PPATTERNIDENT (%a)" print_pat s
 | "FIELD", s -> fprintf fmt "Tok.PFIELD (%a)" print_pat s
-| "INT", s -> fprintf fmt "Tok.PINT (%a)" print_pat s
+| "NUMERAL", s -> fprintf fmt "Tok.PNUMERAL (%a)" print_pat s
 | "STRING", s -> fprintf fmt "Tok.PSTRING (%a)" print_pat s
 | "LEFTQMARK", None -> fprintf fmt "Tok.PLEFTQMARK"
 | "BULLET", s -> fprintf fmt "Tok.PBULLET (%a)" print_pat s

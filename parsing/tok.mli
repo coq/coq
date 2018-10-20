@@ -15,7 +15,7 @@ type 'c p =
   | PPATTERNIDENT : string option -> string p
   | PIDENT : string option -> string p
   | PFIELD : string option -> string p
-  | PINT : string option -> string p
+  | PNUMERAL : string option -> string p
   | PSTRING : string option -> string p
   | PLEFTQMARK : unit p
   | PBULLET : string option -> string p
@@ -29,7 +29,7 @@ type t =
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
-  | INT of string
+  | NUMERAL of string
   | STRING of string
   | LEFTQMARK
   | BULLET of string

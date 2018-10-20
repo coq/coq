@@ -110,13 +110,13 @@ GRAMMAR EXTEND Gram
     [ [ s = string -> { CAst.make ~loc s } ] ]
   ;
   integer:
-    [ [ i = INT      -> { my_int_of_string loc i }
-      | "-"; i = INT -> { - my_int_of_string loc i } ] ]
+    [ [ i = NUMERAL      -> { my_int_of_string loc i }
+      | "-"; i = NUMERAL -> { - my_int_of_string loc i } ] ]
   ;
   natural:
-    [ [ i = INT -> { my_int_of_string loc i } ] ]
+    [ [ i = NUMERAL -> { my_int_of_string loc i } ] ]
   ;
   bigint: (* Negative numbers are dealt with elsewhere *)
-    [ [ i = INT -> { i } ] ]
+    [ [ i = NUMERAL -> { i } ] ]
   ;
 END
