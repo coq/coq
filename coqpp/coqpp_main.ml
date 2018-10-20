@@ -225,7 +225,8 @@ function
 | "IDENT", s -> fprintf fmt "Tok.PIDENT (%a)" print_pat s
 | "PATTERNIDENT", s -> fprintf fmt "Tok.PPATTERNIDENT (%a)" print_pat s
 | "FIELD", s -> fprintf fmt "Tok.PFIELD (%a)" print_pat s
-| "NUMERAL", s -> fprintf fmt "Tok.PNUMERAL (%a)" print_pat s
+| "NUMERAL", None -> fprintf fmt "Tok.PNUMERAL None"
+| "NUMERAL", Some s -> fprintf fmt "Tok.PNUMERAL (Some (NumTok.int %a))" print_string s
 | "STRING", s -> fprintf fmt "Tok.PSTRING (%a)" print_pat s
 | "LEFTQMARK", None -> fprintf fmt "Tok.PLEFTQMARK"
 | "BULLET", s -> fprintf fmt "Tok.PBULLET (%a)" print_pat s
@@ -463,7 +464,10 @@ end =
 struct
 
 let terminal s =
-  let c = Printf.sprintf "Extend.Atoken (CLexer.terminal \"%s\")" s in
+  let p =
+    if s <> "" && s.[0] >= '0' && s.[0] <= '9' then "CLexer.terminal_numeral"
+    else "CLexer.terminal" in
+  let c = Printf.sprintf "Extend.Atoken (%s \"%s\")" p s in
   SymbQuote c
 
 let rec parse_symb self = function

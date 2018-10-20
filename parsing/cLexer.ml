@@ -318,10 +318,6 @@ let rec ident_tail loc len s = match Stream.peek s with
           warn_unrecognized_unicode ~loc (u,id); len
       | _ -> len
 
-let rec number len s = match Stream.peek s with
-  | Some ('0'..'9' as c) -> Stream.junk s; number (store len c) s
-  | _ -> len
-
 let warn_comment_terminator_in_string =
   CWarnings.create ~name:"comment-terminator-in-string" ~category:"parsing"
          (fun () ->
@@ -706,15 +702,11 @@ let rec next_token ~diff_mode loc s =
       let id = get_buff len in
       comment_stop bp;
       (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
-  | Some ('0'..'9' as c) ->
-      Stream.junk s;
-      let len =
-        try number (store 0 c) s with
-          Stream.Failure -> raise (Stream.Error "")
-      in
+  | Some ('0'..'9') ->
+      let n = NumTok.parse s in
       let ep = Stream.count s in
       comment_stop bp;
-      (NUMERAL (get_buff len), set_loc_pos loc bp ep)
+      (NUMERAL n, set_loc_pos loc bp ep)
   | Some '\"' ->
       Stream.junk s;
       let (loc, len) =
@@ -796,8 +788,8 @@ let token_text : type c. c Tok.p -> string = function
   | PKEYWORD t -> "'" ^ t ^ "'"
   | PIDENT None -> "identifier"
   | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PNUMERAL None -> "integer"
-  | PNUMERAL (Some s) -> "'" ^ s ^ "'"
+  | PNUMERAL None -> "numeral"
+  | PNUMERAL (Some n) -> "'" ^ NumTok.to_string n ^ "'"
   | PSTRING None -> "string"
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
   | PLEFTQMARK -> "LEFTQMARK"
@@ -846,12 +838,6 @@ module LexerDiff = MakeLexer (struct let mode = true end)
 let is_ident_not_keyword s =
   is_ident s && not (is_keyword s)
 
-let is_number s =
-  let rec aux i =
-    Int.equal (String.length s) i ||
-    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
-  in aux 0
-
 let strip s =
   let len =
     let rec loop i len =
@@ -875,5 +861,9 @@ let terminal s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
   if is_ident_not_keyword s then PIDENT (Some s)
-  else if is_number s then PNUMERAL (Some s)
   else PKEYWORD s
+
+(* Precondition: the input is a numeral (c.f. [NumTok.t]) *)
+let terminal_numeral s = match NumTok.of_string s with
+  | Some n -> PNUMERAL (Some n)
+  | None -> failwith "numeral token expected."

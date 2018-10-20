@@ -15,7 +15,7 @@ type 'c p =
   | PPATTERNIDENT : string option -> string p
   | PIDENT : string option -> string p
   | PFIELD : string option -> string p
-  | PNUMERAL : string option -> string p
+  | PNUMERAL : NumTok.t option -> NumTok.t p
   | PSTRING : string option -> string p
   | PLEFTQMARK : unit p
   | PBULLET : string option -> string p
@@ -29,7 +29,7 @@ type t =
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
-  | NUMERAL of string
+  | NUMERAL of NumTok.t
   | STRING of string
   | LEFTQMARK
   | BULLET of string

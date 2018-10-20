@@ -16,6 +16,8 @@
     We represent numbers in base 10 as lists of decimal digits,
     in big-endian order (most significant digit comes first). *)
 
+Require Import Datatypes.
+
 (** Unsigned integers are just lists of digits.
     For instance, ten is (D1 (D0 Nil)) *)
 
@@ -42,6 +44,15 @@ Notation zero := (D0 Nil).
 
 Variant int := Pos (d:uint) | Neg (d:uint).
 
+(** For decimal numbers, we use two constructors [Decimal] and
+    [DecimalExp], depending on whether or not they are given with an
+    exponent (e.g., 1.02e+01). [i] is the integral part while [f] is
+    the fractional part (beware that leading zeroes do matter). *)
+
+Variant decimal :=
+ | Decimal (i:int) (f:uint)
+ | DecimalExp (i:int) (f:uint) (e:int).
+
 Declare Scope dec_uint_scope.
 Delimit Scope dec_uint_scope with uint.
 Bind Scope dec_uint_scope with uint.
@@ -52,6 +63,14 @@ Bind Scope dec_int_scope with int.
 
 Register uint as num.uint.type.
 Register int as num.int.type.
+Register decimal as num.decimal.type.
+
+Fixpoint nb_digits d :=
+  match d with
+  | Nil => O
+  | D0 d | D1 d | D2 d | D3 d | D4 d | D5 d | D6 d | D7 d | D8 d | D9 d =>
+    S (nb_digits d)
+  end.
 
 (** This representation favors simplicity over canonicity.
     For normalizing numbers, we need to remove head zero digits,
@@ -114,6 +133,28 @@ Fixpoint revapp (d d' : uint) :=
   end.
 
 Definition rev d := revapp d Nil.
+
+Definition app d d' := revapp (rev d) d'.
+
+Definition app_int d1 d2 :=
+  match d1 with Pos d1 => Pos (app d1 d2) | Neg d1 => Neg (app d1 d2) end.
+
+(** [nztail] removes all trailing zero digits and return both the
+    result and the number of removed digits. *)
+
+Definition nztail d :=
+  let fix aux d_rev :=
+    match d_rev with
+    | D0 d_rev => let (r, n) := aux d_rev in pair r (S n)
+    | _ => pair d_rev O
+    end in
+  let (r, n) := aux (rev d) in pair (rev r) n.
+
+Definition nztail_int d :=
+  match d with
+  | Pos d => let (r, n) := nztail d in pair (Pos r) n
+  | Neg d => let (r, n) := nztail d in pair (Neg r) n
+  end.
 
 Module Little.
 

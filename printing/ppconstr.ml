@@ -235,8 +235,8 @@ let tag_var = tag Tag.variable
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
   let pr_prim_token = function
-    | Numeral (SPlus,n) -> str n
-    | Numeral (SMinus,n) -> str ("-"^n)
+    | Numeral (SPlus,n) -> str (NumTok.to_string n)
+    | Numeral (SMinus,n) -> str ("-"^NumTok.to_string n)
     | String s -> qs s
 
   let pr_evar pr id l =

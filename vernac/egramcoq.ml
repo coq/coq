@@ -245,7 +245,7 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTName : ('self, lname) entry
 | TTReference : ('self, qualid) entry
-| TTBigint : ('self, Constrexpr.raw_numeral) entry
+| TTBigint : ('self, string) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
@@ -403,8 +403,8 @@ match e with
 | TTClosedBinderList _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
 | TTBigint ->
   begin match forpat with
-  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (SPlus,v)))
-  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (SPlus,v)))
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (SPlus,NumTok.int v)))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (SPlus,NumTok.int v)))
   end
 | TTReference ->
   begin match forpat with

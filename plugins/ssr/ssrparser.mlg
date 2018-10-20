@@ -360,7 +360,7 @@ let interp_index ist gl idx =
         | Some c ->
           let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
           begin match Notation.uninterp_prim_token rc with
-          | _, Constrexpr.Numeral (b,s) ->
+          | _, Constrexpr.Numeral (b,{NumTok.int = s; frac = ""; exp = ""}) ->
              let n = int_of_string s in (match b with SPlus -> n | SMinus -> -n)
           | _ -> raise Not_found
           end
