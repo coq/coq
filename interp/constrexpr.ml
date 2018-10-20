@@ -54,10 +54,10 @@ type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
     multiple leading zeros, and -0 = +0 *)
 
 type sign = SPlus | SMinus
-type raw_natural_number = string
+type raw_numeral = string
 
 type prim_token =
-  | Numeral of sign * raw_natural_number
+  | Numeral of sign * raw_numeral
   | String of string
 
 type instance_expr = Glob_term.glob_level list

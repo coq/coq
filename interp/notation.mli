@@ -77,7 +77,7 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 type notation_location = (DirPath.t * DirPath.t) * string
 type required_module = full_path * string list
-type rawnum = Constrexpr.sign * Constrexpr.raw_natural_number
+type rawnum = Constrexpr.sign * Constrexpr.raw_numeral
 
 (** The unique id string below will be used to refer to a particular
     registered interpreter/uninterpreter of numeral or string notation.
@@ -112,8 +112,8 @@ exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_t
 
 type numnot_option =
   | Nop
-  | Warning of raw_natural_number
-  | Abstract of raw_natural_number
+  | Warning of raw_numeral
+  | Abstract of raw_numeral
 
 type int_ty =
   { uint : Names.inductive;
