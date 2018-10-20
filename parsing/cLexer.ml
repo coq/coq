@@ -714,7 +714,7 @@ let rec next_token ~diff_mode loc s =
       in
       let ep = Stream.count s in
       comment_stop bp;
-      (INT (get_buff len), set_loc_pos loc bp ep)
+      (NUMERAL (get_buff len), set_loc_pos loc bp ep)
   | Some '\"' ->
       Stream.junk s;
       let (loc, len) =
@@ -796,8 +796,8 @@ let token_text : type c. c Tok.p -> string = function
   | PKEYWORD t -> "'" ^ t ^ "'"
   | PIDENT None -> "identifier"
   | PIDENT (Some t) -> "'" ^ t ^ "'"
-  | PINT None -> "integer"
-  | PINT (Some s) -> "'" ^ s ^ "'"
+  | PNUMERAL None -> "integer"
+  | PNUMERAL (Some s) -> "'" ^ s ^ "'"
   | PSTRING None -> "string"
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
   | PLEFTQMARK -> "LEFTQMARK"
@@ -875,5 +875,5 @@ let terminal s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
   if is_ident_not_keyword s then PIDENT (Some s)
-  else if is_number s then PINT (Some s)
+  else if is_number s then PNUMERAL (Some s)
   else PKEYWORD s
