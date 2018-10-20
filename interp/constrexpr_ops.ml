@@ -50,8 +50,8 @@ let names_of_local_binders bl =
 (**********************************************************************)
 (* Functions on constr_expr *)
 
-(* Note: redundant Numeral representations such as -0 and +0 (or different
-   numbers of leading zeros) are considered different here. *)
+(* Note: redundant Numeral representations, such as -0 and +0 (and others),
+   are considered different here. *)
 
 let prim_token_eq t1 t2 = match t1, t2 with
 | Numeral (SPlus,n1), Numeral (SPlus,n2)

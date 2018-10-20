@@ -1489,6 +1489,7 @@ let is_zero s =
   let rec aux i =
     Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
   in aux 0
+let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
 
 let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
 

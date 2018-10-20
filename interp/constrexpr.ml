@@ -48,13 +48,23 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
-(** Representation of integer literals that appear in Coq scripts.
-    We now use raw strings of digits in base 10 (big-endian), and a separate
-    sign flag. Note that this representation is not unique, due to possible
-    multiple leading zeros, and -0 = +0 *)
+(** Representation of decimal literals that appear in Coq scripts.
+   We now use raw strings following the format defined by
+   [NumTok.t] and a separate sign flag.
+
+   Note that this representation is not unique, due to possible
+   multiple leading or trailing zeros, and -0 = +0, for instances.
+   The reason to keep the numeral exactly as it was parsed is that
+   specific notations can be declared for specific numerals
+   (e.g. [Notation "0" := False], or [Notation "00" := (nil,nil)], or
+   [Notation "2e1" := ...]). Those notations, which override the
+   generic interpretation as numeral, use the same representation of
+   numeral using the Numeral constructor. So the latter should be able
+   to record the form of the numeral which exactly matches the
+   notation. *)
 
 type sign = SPlus | SMinus
-type raw_numeral = string
+type raw_numeral = NumTok.t
 
 type prim_token =
   | Numeral of sign * raw_numeral

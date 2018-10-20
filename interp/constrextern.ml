@@ -318,16 +318,11 @@ let drop_implicits_in_patt cst nb_expl args =
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
-let is_number s =
-  let rec aux i =
-    Int.equal (String.length s) i ||
-    match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
-  in aux 0
-
 let is_zero s =
   let rec aux i =
     Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
   in aux 0
+let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
 
 let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match snd ntn,List.map destprim l with
@@ -337,10 +332,14 @@ let make_notation_gen loc ntn mknot mkprim destprim l bl =
         mknot (loc,ntn,([mknot (loc,(InConstrEntrySomeLevel,"( _ )"),l,[])]),[])
     | _ ->
 	match decompose_notation_key ntn, l with
-        | (InConstrEntrySomeLevel,[Terminal "-"; Terminal x]), [] when is_number x ->
-           mkprim (loc, Numeral (SMinus,x))
-        | (InConstrEntrySomeLevel,[Terminal x]), [] when is_number x ->
-           mkprim (loc, Numeral (SPlus,x))
+        | (InConstrEntrySomeLevel,[Terminal "-"; Terminal x]), [] ->
+           begin match NumTok.of_string x with
+           | Some n -> mkprim (loc, Numeral (SMinus,n))
+           | None -> mknot (loc,ntn,l,bl) end
+        | (InConstrEntrySomeLevel,[Terminal x]), [] ->
+           begin match NumTok.of_string x with
+           | Some n -> mkprim (loc, Numeral (SPlus,n))
+           | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 
 let make_notation loc ntn (terms,termlists,binders,binderlists as subst) =
@@ -969,7 +968,7 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
       CCast (sub_extern true scopes vars c,
              map_cast_type (extern_typ scopes vars) c')
   | GInt i ->
-     CPrim(Numeral (SPlus, Uint63.to_string i))
+     CPrim(Numeral (SPlus, NumTok.int (Uint63.to_string i)))
 
   in insert_coercion coercion (CAst.make ?loc c)
 

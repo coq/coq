@@ -56,17 +56,24 @@ let locate_z () =
     }, mkRefC q_z)
   else None
 
-let locate_int () =
+let locate_decimal () =
   let int = "num.int.type" in
   let uint = "num.uint.type" in
-  if Coqlib.has_ref int && Coqlib.has_ref uint
+  let dec = "num.decimal.type" in
+  if Coqlib.has_ref int && Coqlib.has_ref uint && Coqlib.has_ref dec
   then
     let q_int = qualid_of_ref int in
     let q_uint = qualid_of_ref uint in
-    Some ({
+    let q_dec = qualid_of_ref dec in
+    let int_ty = {
         int = unsafe_locate_ind q_int;
         uint = unsafe_locate_ind q_uint;
-    }, mkRefC q_int, mkRefC q_uint)
+      } in
+    let dec_ty = {
+        int = int_ty;
+        decimal = unsafe_locate_ind q_dec;
+      } in
+    Some (int_ty, mkRefC q_int, mkRefC q_uint, dec_ty, mkRefC q_dec)
   else None
 
 let locate_int63 () =
@@ -86,16 +93,16 @@ let type_error_to f ty =
   CErrors.user_err
     (pr_qualid f ++ str " should go from Decimal.int to " ++
      pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).")
+     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
-     str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).")
+     str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).")
 
 let vernac_numeral_notation env sigma local ty f g scope opts =
-  let int_ty = locate_int () in
+  let dec_ty = locate_decimal () in
   let z_pos_ty = locate_z () in
   let int63_ty = locate_int63 () in
   let tyc = Smartlocate.global_inductive_with_alias ty in
@@ -110,11 +117,13 @@ let vernac_numeral_notation env sigma local ty f g scope opts =
   let constructors = get_constructors tyc in
   (* Check the type of f *)
   let to_kind =
-    match int_ty with
-    | Some (int_ty, cint, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
-    | Some (int_ty, cint, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint) when has_type env sigma f (arrow cuint cty) -> UInt int_ty.uint, Direct
-    | Some (int_ty, _, cuint) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty.uint, Option
+    match dec_ty with
+    | Some (int_ty, cint, _, _, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
+    | Some (int_ty, cint, _, _, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma f (arrow cuint cty) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty.uint, Option
+    | Some (_, _, _, dec_ty, cdec) when has_type env sigma f (arrow cdec cty) -> Decimal dec_ty, Direct
+    | Some (_, _, _, dec_ty, cdec) when has_type env sigma f (arrow cdec (opt cty)) -> Decimal dec_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ cty) -> Z z_pos_ty, Direct
@@ -127,11 +136,13 @@ let vernac_numeral_notation env sigma local ty f g scope opts =
   in
   (* Check the type of g *)
   let of_kind =
-    match int_ty with
-    | Some (int_ty, cint, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
-    | Some (int_ty, cint, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint) when has_type env sigma g (arrow cty cuint) -> UInt int_ty.uint, Direct
-    | Some (int_ty, _, cuint) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty.uint, Option
+    match dec_ty with
+    | Some (int_ty, cint, _, _, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
+    | Some (int_ty, cint, _, _, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma g (arrow cty cuint) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint, _, _) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty.uint, Option
+    | Some (_, _, _, dec_ty, cdec) when has_type env sigma g (arrow cty cdec) -> Decimal dec_ty, Direct
+    | Some (_, _, _, dec_ty, cdec) when has_type env sigma g (arrow cty (opt cdec)) -> Decimal dec_ty, Option
     | _ ->
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty cZ) -> Z z_pos_ty, Direct
