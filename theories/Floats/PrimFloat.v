@@ -11,6 +11,8 @@ Declare Scope float_scope.
 Delimit Scope float_scope with float.
 Bind Scope float_scope with float.
 
+Declare ML Module "float_syntax_plugin".
+
 Primitive opp := #float64_opp.
 Notation "- x" := (opp x) : float_scope.
 
