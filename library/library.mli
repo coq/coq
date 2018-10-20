@@ -39,13 +39,7 @@ type seg_proofs = Constr.constr Future.computation array
 val import_module : bool -> qualid list -> unit
 
 (** End the compilation of a library and save it to a ".vo" file *)
-val save_library_to :
-  ?todo:(((Future.UUID.t,'document) Stateid.request * bool) list * 'counters) ->
-  DirPath.t -> string -> Opaqueproof.opaquetab -> unit
-
-val load_library_todo :
-  string -> string * seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
-val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
+val save_library_to : DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
 (** {6 Interrogate the status of libraries } *)
 

@@ -59,7 +59,7 @@ type library_t = {
   library_opaques : seg_proofs;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
-  library_extra_univs : Univ.ContextSet.t }
+}
 
 module LibraryOrdered =
   struct
@@ -90,7 +90,6 @@ let register_loaded_library m =
 
 (* Map from library names to table of opaque terms *)
 let opaque_tables = ref LibraryMap.empty
-let opaque_univ_tables = ref LibraryMap.empty
 
 let access_opaque_table dp i =
   let t =
@@ -100,16 +99,8 @@ let access_opaque_table dp i =
   assert (i < Array.length t);
   t.(i)
 
-let access_opaque_univ_table dp i =
-  try
-    let t = LibraryMap.find dp !opaque_univ_tables in
-    assert (i < Array.length t);
-    Some t.(i)
-  with Not_found -> None
-
 let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_opaque_univ_table
+  Opaqueproof.set_indirect_opaque_accessor access_opaque_table
 
 let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in
@@ -121,11 +112,11 @@ let check_one_lib admit senv (dir,m) =
     if LibrarySet.mem dir admit then
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
-       Safe_checking.unsafe_import senv md m.library_extra_univs dig)
+       Safe_checking.unsafe_import senv md dig)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
-       Safe_checking.import senv md m.library_extra_univs dig)
+       Safe_checking.import senv md dig)
   in
     register_loaded_library m; senv
 
@@ -284,8 +275,7 @@ let mk_library sd md f table digest cst = {
   library_compiled = md.md_compiled;
   library_opaques = table;
   library_deps = sd.md_deps;
-  library_digest = digest;
-  library_extra_univs = cst }
+  library_digest = digest }
 
 let name_clash_message dir mdir f =
   str ("The file " ^ f ^ " contains library") ++ spc () ++
@@ -306,14 +296,11 @@ let marshal_in_segment f ch =
 
 let intern_from_file (dir, f) =
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
-  let (sd,md,table,opaque_csts,digest) =
+  let (sd,md,table,digest) =
     try
       let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
-      let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
-      let (discharging:'a option), _, _ = marshal_in_segment f ch in
-      let (tasks:'a option), _, _ = marshal_in_segment f ch in
       let (table:seg_proofs), pos, checksum =
         marshal_in_segment f ch in
       (* Verification of the final checksum *)
@@ -325,36 +312,17 @@ let intern_from_file (dir, f) =
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);
-      if tasks <> None || discharging <> None then
-        user_err ~hdr:"intern_from_file"
-          (str "The file "++str f++str " contains unfinished tasks");
-      if opaque_csts <> None then begin
-       chk_pp (str " (was a vio file) ");
-      Option.iter (fun (_,_,b) -> if not b then
-        user_err ~hdr:"intern_from_file"
-          (str "The file "++str f++str " is still a .vio"))
-        opaque_csts;
-      Validate.validate !Flags.debug Values.v_univopaques opaque_csts;
-      end;
       (* Verification of the unmarshalled values *)
       Validate.validate !Flags.debug Values.v_libsum sd;
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
-      let digest =
-        if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)
-        else (Safe_typing.Dvo_or_vi digest) in
-      sd,md,table,opaque_csts,digest
+      let digest = Safe_typing.Dvo_or_vi digest in
+      sd,md,table,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
-  Option.iter (fun (opaque_csts,_,_) ->
-    opaque_univ_tables :=
-      LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
-    opaque_csts;
-  let extra_cst =
-    Option.default Univ.ContextSet.empty
-      (Option.map (fun (_,cs,_) -> cs) opaque_csts) in
+  let extra_cst = Univ.ContextSet.empty in
   mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =

@@ -20,7 +20,7 @@ module GlobalSafeEnv : sig
 
   val safe_env : unit -> Safe_typing.safe_environment
   val set_safe_env : Safe_typing.safe_environment -> unit
-  val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
+  val join_safe_environment : unit -> unit
   val is_joined_environment : unit -> bool
   val global_env_summary_tag : Safe_typing.safe_environment Summary.Dyn.tag
 
@@ -28,8 +28,8 @@ end = struct
 
 let global_env = ref Safe_typing.empty_environment
 
-let join_safe_environment ?except () =
-  global_env := Safe_typing.join_safe_environment ?except !global_env
+let join_safe_environment () =
+  global_env := Safe_typing.join_safe_environment !global_env
 
 let is_joined_environment () =
   Safe_typing.is_joined_environment !global_env
@@ -57,8 +57,7 @@ end
 let global_env_summary_tag = GlobalSafeEnv.global_env_summary_tag
 
 let safe_env = GlobalSafeEnv.safe_env
-let join_safe_environment ?except () =
-  GlobalSafeEnv.join_safe_environment ?except ()
+let join_safe_environment () = GlobalSafeEnv.join_safe_environment ()
 let is_joined_environment = GlobalSafeEnv.is_joined_environment
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
@@ -144,9 +143,8 @@ let mind_of_delta_kn kn =
 (** Operations on libraries *)
 
 let start_library dir = globalize (Safe_typing.start_library dir)
-let export ?except s = Safe_typing.export ?except (safe_env ()) s
-let import c u d = globalize (Safe_typing.import c u d)
-
+let export s = Safe_typing.export (safe_env ()) s
+let import c d = globalize (Safe_typing.import c d)
 
 (** Function to get an environment from the constants part of the global
     environment and a given context. *)

@@ -74,7 +74,6 @@ let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
 
 let ensure_v v = ensure ".v" v v
 let ensure_vo v vo = ensure ".vo" v vo
-let ensure_vio v vio = ensure ".vio" v vio
 
 let ensure_exists f =
   if not (Sys.file_exists f) then
@@ -130,55 +129,6 @@ let compile opts ~echo ~f_in ~f_out =
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
 
-  | BuildVio ->
-      Flags.record_aux_file := false;
-      Dumpglob.noglob ();
-
-      let long_f_dot_v = ensure_v f_in in
-      ensure_exists long_f_dot_v;
-
-      let long_f_dot_vio =
-        match f_out with
-        | None -> long_f_dot_v ^ "io"
-        | Some f -> ensure_vio long_f_dot_v f in
-
-      (* We need to disable error resiliency, otherwise some errors
-         will be ignored in batch mode. c.f. #6707
-
-         This is not necessary in the vo case as it fully checks the
-         document anyways. *)
-      let stm_options = let open Stm.AsyncOpts in
-        { stm_options with
-          async_proofs_mode = APon;
-          async_proofs_n_workers = 0;
-          async_proofs_cmd_error_resilience = false;
-          async_proofs_tac_error_resilience = `None;
-        } in
-
-      let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
-          Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_vio;
-                iload_path; require_libs; stm_options;
-              } in
-
-      let state = { doc; sid; proof = None; time = opts.time } in
-      let state = load_init_vernaculars opts ~state in
-      let ldir = Stm.get_ldir ~doc:state.doc in
-      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
-      let doc = Stm.finish ~doc:state.doc in
-      check_pending_proofs ();
-      let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
-      Stm.reset_task_queue ()
-
-  | Vio2Vo ->
-      let open Filename in
-      Flags.record_aux_file := false;
-      Dumpglob.noglob ();
-      let f = if check_suffix f_in ".vio" then chop_extension f_in else f_in in
-      let lfdv, sum, lib, univs, disch, tasks, proofs = Library.load_library_todo f in
-      let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
-      Library.save_library_raw lfdv sum lib univs proofs
-
 let compile opts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
   compile opts ~echo ~f_in ~f_out;
@@ -195,31 +145,3 @@ let compile_file opts (f_in, echo) =
 let compile_files opts =
   let compile_list = List.rev opts.compile_list in
   List.iter (compile_file opts) compile_list
-
-(******************************************************************************)
-(* VIO Dispatching                                                            *)
-(******************************************************************************)
-let check_vio_tasks opts =
-  let rc =
-    List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
-      true (List.rev opts.vio_tasks) in
-  if not rc then fatal_error Pp.(str "VIO Task Check failed")
-
-(* vio files *)
-let schedule_vio opts =
-  if opts.vio_checking then
-    Vio_checking.schedule_vio_checking opts.vio_files_j opts.vio_files
-  else
-    Vio_checking.schedule_vio_compilation opts.vio_files_j opts.vio_files
-
-let do_vio opts =
-  (* We must initialize the loadpath here as the vio scheduling
-     process happens outside of the STM *)
-  if opts.vio_files <> [] || opts.vio_tasks <> [] then
-    let iload_path = build_load_path opts in
-    List.iter Mltop.add_coq_path iload_path;
-
-  (* Vio compile pass *)
-  if opts.vio_files <> [] then schedule_vio opts;
-  (* Vio task pass *)
-  if opts.vio_tasks <> [] then check_vio_tasks opts

@@ -315,7 +315,6 @@ type interactive_top = TopLogical of DirPath.t | TopPhysical of string
 (* The main document type associated to a VCS *)
 type stm_doc_type =
   | VoDoc       of string
-  | VioDoc      of string
   | Interactive of interactive_top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
@@ -344,7 +343,6 @@ module VCS : sig
   val get_ldir : unit -> Names.DirPath.t
 
   val is_interactive : unit -> [`Yes | `No | `Shallow]
-  val is_vio_doc : unit -> bool
 
   val current_branch : unit -> Branch.t
   val checkout : Branch.t -> unit
@@ -545,11 +543,6 @@ end = struct (* {{{ *)
     match !doc_type with
     | Interactive _ -> `Yes
     | _ -> `No
-
-  let is_vio_doc () =
-    match !doc_type with
-    | VioDoc _ -> true
-    | _ -> false
 
   let current_branch () = current_branch !vcs
 
@@ -1261,15 +1254,6 @@ let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
   hints := Aux_file.load_aux_file_for file
 
-let get_hint_ctx loc =
-  let s = Aux_file.get ?loc !hints "context_used" in
-  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
-  let ids = List.map (fun id -> CAst.make id) ids in
-  match ids with
-  | [] -> SsEmpty
-  | x :: xs ->
-    List.fold_left (fun a x -> SsUnion (SsSingl x,a)) (SsSingl x) xs
-
 let get_hint_bp_time proof_name =
   try float_of_string (Aux_file.get !hints proof_name)
   with Not_found -> 1.0
@@ -1639,18 +1623,7 @@ and Slaves : sig
   (* initialize the whole machinery (optional) *)
   val init : unit -> unit
 
-  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
-  val dump_snapshot : unit -> Future.UUID.t tasks
-  val check_task : string -> int tasks -> int -> bool
-  val info_tasks : 'a tasks -> (string * float * int) list
-  val finish_task :
-    string ->
-    Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-    int tasks -> int -> Library.seg_univ
-
   val cancel_worker : WorkerPool.worker_id -> unit
-
-  val reset_task_queue : unit -> unit
 
   val set_perspective : Stateid.t list -> unit
 
@@ -1664,120 +1637,6 @@ end = struct (* {{{ *)
       queue := Some (TaskQueue.create !cur_opt.async_proofs_n_workers)
     else
       queue := Some (TaskQueue.create 0)
-
-  let check_task_aux extra name l i =
-    let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
-    Flags.if_verbose msg_info
-      Pp.(str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
-    VCS.restore document;
-    let start =
-      let rec aux cur =
-        try aux (VCS.visit cur).next
-        with VCS.Expired -> cur in
-      aux stop in
-    try
-      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:`No stop;
-      if drop then
-        let _proof = Proof_global.return_proof ~allow_partial:true () in
-        `OK_ADMITTED
-      else begin
-      (* The original terminator, a hook, has not been saved in the .vio*)
-      Proof_global.set_terminator (Lemmas.standard_proof_terminator []);
-
-      let opaque = Proof_global.Opaque in
-      let proof =
-        Proof_global.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
-      (* We jump at the beginning since the kernel handles side effects by also
-       * looking at the ones that happen to be present in the current env *)
-      Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:`No start;
-      (* STATE SPEC:
-       * - start: First non-expired state! [This looks very fishy]
-       * - end  : start + qed
-       * => takes nothing from the itermediate states.
-       *)
-      (* STATE We use the state resulting from reaching start. *)
-      let st = Vernacstate.freeze_interp_state `No in
-      ignore(stm_vernac_interp stop ~proof st
-        { verbose = false; loc; indentation = 0; strlen = 0;
-          expr = VernacExpr ([], VernacEndProof (Proved (opaque,None))) });
-      `OK proof
-      end
-    with e ->
-      let (e, info) = CErrors.push e in
-      (try match Stateid.get info with
-      | None ->
-        msg_warning Pp.(
-            str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-            spc () ++ iprint (e, info))
-      | Some (_, cur) ->
-          match VCS.visit cur with
-          | { step = `Cmd { cast = { loc } } }
-          | { step = `Fork (( { loc }, _, _, _), _) }
-          | { step = `Qed ( { qast = { loc } }, _) }
-          | { step = `Sideff (ReplayCommand { loc }, _) } ->
-              let start, stop = Option.cata Loc.unloc (0,0) loc in
-              msg_warning Pp.(
-                str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                str ": chars " ++ int start ++ str "-" ++ int stop ++
-                spc () ++ iprint (e, info))
-          | _ ->
-              msg_warning Pp.(
-                str"File " ++ str name ++ str ": proof of " ++ str r_name ++
-                spc () ++ iprint (e, info))
-    with e ->
-      msg_warning Pp.(str"unable to print error message: " ++
-                      str (Printexc.to_string e)));
-      if drop then `ERROR_ADMITTED else `ERROR
-
-  let finish_task name (u,cst,_) d p l i =
-    let { Stateid.uuid = bucket }, drop = List.nth l i in
-    let bucket_name =
-      if bucket < 0 then (assert drop; ", no bucket")
-      else Printf.sprintf ", bucket %d" bucket in
-    match check_task_aux bucket_name name l i with
-    | `ERROR -> exit 1
-    | `ERROR_ADMITTED -> u, cst, false
-    | `OK_ADMITTED -> u, cst, false
-    | `OK (po,_) ->
-        let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
-        let con =
-          Nametab.locate_constant
-            (Libnames.qualid_of_ident po.Proof_global.id) in
-        let c = Global.lookup_constant con in
-        let o = match c.Declarations.const_body with
-          | Declarations.OpaqueDef o -> o
-          | _ -> assert false in
-        let uc =
-          Option.get
-            (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
-        (** We only manipulate monomorphic terms here. *)
-        let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
-        let pr =
-          Future.from_val (map (Option.get (Global.body_of_constant_body c))) in
-        let uc =
-          Future.chain uc Univ.hcons_universe_context_set in
-        let pr = Future.chain pr discharge in
-        let pr = Future.chain pr Constr.hcons in
-        Future.sink pr;
-        let extra = Future.join uc in
-        u.(bucket) <- uc;
-        p.(bucket) <- pr;
-        u, Univ.ContextSet.union cst extra, false
-
-  let check_task name l i =
-    match check_task_aux "" name l i with
-    | `OK _ | `OK_ADMITTED -> true
-    | `ERROR | `ERROR_ADMITTED -> false
-
-  let info_tasks l =
-    CList.map_i (fun i ({ Stateid.loc; name }, _) ->
-      let time1 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_build_time")
-        with Not_found -> 0.0 in
-      let time2 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_check_time")
-        with Not_found -> 0.0 in
-      name, max (time1 +. time2) 0.0001,i) 0 l
 
   let set_perspective idl =
     ProofTask.set_perspective idl;
@@ -1800,18 +1659,7 @@ end = struct (* {{{ *)
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
-      if VCS.is_vio_doc () then begin
-        let f,assign =
-         Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
-        let t_uuid = Future.uuid f in
-        let task = ProofTask.(BuildProof {
-          t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
-          t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
-          t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
-        TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
-        f, cancel_switch
-      end else
-        ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
+      ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
     else
       let f, t_assign = Future.create_delegate ~name:pname (State.exn_on id ~valid) in
       let t_uuid = Future.uuid f in
@@ -1826,22 +1674,6 @@ end = struct (* {{{ *)
   let wait_all_done () = TaskQueue.join (Option.get !queue)
 
   let cancel_worker n = TaskQueue.cancel_worker (Option.get !queue) n
-
-  (* For external users this name is nicer than request *)
-  type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
-  let dump_snapshot () =
-    let tasks = TaskQueue.snapshot (Option.get !queue) in
-    let reqs =
-      CList.map_filter
-        ProofTask.(fun x ->
-             match request_of_task Fresh x with
-             | Some (ReqBuildProof (r, b, _)) -> Some(r, b)
-             | _ -> None)
-        tasks in
-    stm_prerr_endline (fun () -> Printf.sprintf "dumping %d tasks\n" (List.length reqs));
-    reqs
-
-  let reset_task_queue () = TaskQueue.clear (Option.get !queue)
 
 end (* }}} *)
 
@@ -2143,11 +1975,10 @@ let async_policy () =
   else if VCS.is_interactive () = `Yes then
     (async_proofs_is_master !cur_opt || !cur_opt.async_proofs_mode = APonLazy)
   else
-    (VCS.is_vio_doc () || !cur_opt.async_proofs_mode <> APoff)
+    !cur_opt.async_proofs_mode <> APoff
 
 let delegate name =
      get_hint_bp_time name >= !cur_opt.async_proofs_delegation_threshold
-  || VCS.is_vio_doc ()
 
 let collect_proof keep cur hd brkind id =
  stm_prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
@@ -2155,7 +1986,6 @@ let collect_proof keep cur hd brkind id =
  let name = function
    | [] -> no_name
    | id :: _ -> Names.Id.to_string id in
- let loc = (snd cur).loc in
  let is_defined_expr = function
    | VernacEndProof (Proved (Proof_global.Transparent,_)) -> true
    | _ -> false in
@@ -2171,21 +2001,6 @@ let collect_proof keep cur hd brkind id =
                       && (not (Vernacprop.has_Fail v.expr)) -> Some v
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
- let proof_no_using = function
-   | VernacProof(t,None) -> t
-   | _ -> assert false
- in
- let proof_no_using = function
-   | Some (_, v) -> proof_no_using (Vernacprop.under_control v.expr), v
-   | _ -> assert false in
- let has_proof_no_using = function
-   | VernacProof(_,None) -> true
-   | _ -> false
- in
- let has_proof_no_using = function
-   | Some (_, v) -> has_proof_no_using (Vernacprop.under_control v.expr)
-                    && (not (Vernacprop.has_Fail v.expr))
-   | _ -> false in
  let too_complex_to_delegate = function
    | VernacDeclareModule _
    | VernacDefineModule _
@@ -2214,18 +2029,6 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `ASync (parent last,accn,name,delegate name)
-    | `Fork((_, hd', GuaranteesOpacity, ids), _) when
-       has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
-       VCS.is_vio_doc () ->
-        assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
-        (try
-          let name, hint = name ids, get_hint_ctx loc  in
-          let t, v = proof_no_using last in
-          v.expr <- VernacExpr([], VernacProof(t, Some hint));
-          `ASync (parent last,accn,name,delegate name)
-        with Not_found ->
-          let name = name ids in
-          `MaybeASync (parent last, accn, name, delegate name))
     | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
@@ -2590,7 +2393,7 @@ type stm_init_options = {
 (*
 let doc_type_module_name (std : stm_doc_type) =
   match std with
-  | VoDoc mn | VioDoc mn | Vio2Vo mn -> mn
+  | VoDoc mn -> mn
   | Interactive mn -> Names.DirPath.to_string mn
 *)
 
@@ -2653,13 +2456,6 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
       Declaremods.start_library dp
 
     | VoDoc f ->
-      let ldir = dirpath_of_file f in
-      check_coq_overwriting ldir;
-      let () = Flags.verbosely Declaremods.start_library ldir in
-      VCS.set_ldir ldir;
-      set_compilation_hints f
-
-    | VioDoc f ->
       let ldir = dirpath_of_file f in
       check_coq_overwriting ldir;
       let () = Flags.verbosely Declaremods.start_library ldir in
@@ -2738,34 +2534,6 @@ let join ~doc =
   VCS.print ();
   doc
 
-let dump_snapshot () = Slaves.dump_snapshot (), RemoteCounter.snapshot ()
-
-type tasks = int Slaves.tasks * RemoteCounter.remote_counters_status
-let check_task name (tasks,rcbackup) i =
-  RemoteCounter.restore rcbackup;
-  let vcs = VCS.backup () in
-  try
-    let rc = stm_purify (Slaves.check_task name tasks) i in
-    VCS.restore vcs;
-    rc
-  with e when CErrors.noncritical e -> VCS.restore vcs; false
-let info_tasks (tasks,_) = Slaves.info_tasks tasks
-
-let finish_tasks name u d p (t,rcbackup as tasks) =
-  RemoteCounter.restore rcbackup;
-  let finish_task u (_,_,i) =
-    let vcs = VCS.backup () in
-    let u = stm_purify (Slaves.finish_task name u d p t) i in
-    VCS.restore vcs;
-    u in
-  try
-    let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
-    (u,a,true), p
-  with e ->
-    let e = CErrors.push e in
-    msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
-    exit 1
-
 let merge_proof_branch ~valid ?id qast keep brname =
   let brinfo = VCS.get_branch brname in
   let qed fproof = { qast; keep; brname; brinfo; fproof } in
@@ -2805,16 +2573,6 @@ let handle_failure (e, info) vcs =
       VCS.restore vcs;
       VCS.print ();
       Exninfo.iraise (e, info)
-
-let snapshot_vio ~doc ldir long_f_dot_vo =
-  let doc = finish ~doc in
-  if List.length (VCS.branches ()) > 1 then
-    CErrors.user_err ~hdr:"stm" (str"Cannot dump a vio with open proofs");
-  Library.save_library_to ~todo:(dump_snapshot ()) ldir long_f_dot_vo
-    (Global.opaque_tables ());
-  doc
-
-let reset_task_queue = Slaves.reset_task_queue
 
 (* Document building *)
 let process_back_meta_command ~newtip ~head oid aast w =
@@ -2864,8 +2622,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       | VtQuery, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
-            if VCS.is_vio_doc () &&
-               VCS.((get_branch head).kind = `Master) &&
+            if VCS.((get_branch head).kind = `Master) &&
                may_pierce_opaque (Vernacprop.under_control x.expr)
             then `SkipQueue
             else `MainQueue in
@@ -3295,6 +3052,5 @@ let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 type document = VCS.vcs
 let backup () = VCS.backup ()
 let restore d = VCS.restore d
-
 
 (* vim:set foldmethod=marker: *)

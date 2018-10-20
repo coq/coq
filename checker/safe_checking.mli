@@ -12,5 +12,5 @@
 open Safe_typing
 (*i*)
 
-val import : safe_environment -> compiled_library -> Univ.ContextSet.t -> vodigest -> safe_environment
-val unsafe_import : safe_environment -> compiled_library -> Univ.ContextSet.t -> vodigest -> safe_environment
+val import : safe_environment -> compiled_library -> vodigest -> safe_environment
+val unsafe_import : safe_environment -> compiled_library -> vodigest -> safe_environment

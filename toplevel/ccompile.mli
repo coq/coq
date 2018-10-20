@@ -14,6 +14,3 @@ val load_init_vernaculars : Coqargs.coq_cmdopts -> state:Vernac.State.t-> Vernac
 
 (** [compile_files opts] compile files specified in [opts] *)
 val compile_files : Coqargs.coq_cmdopts -> unit
-
-(** [do_vio opts] process [.vio] files in [opts] *)
-val do_vio : Coqargs.coq_cmdopts -> unit

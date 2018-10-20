@@ -47,7 +47,6 @@ type interactive_top = TopLogical of DirPath.t | TopPhysical of string
    to aux files. *)
 type stm_doc_type =
   | VoDoc       of string       (* file path *)
-  | VioDoc      of string       (* file path *)
   | Interactive of interactive_top    (* module path *)
 
 (** Coq initalization options:
@@ -149,25 +148,6 @@ val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : doc:doc -> doc
-
-(* Saves on the disk a .vio corresponding to the current status:
-   - if the worker pool is empty, all tasks are saved
-   - if the worker proof is not empty, then it waits until all workers
-     are done with their current jobs and then dumps (or fails if one
-     of the completed tasks is a failure) *)
-val snapshot_vio : doc:doc -> DirPath.t -> string -> doc
-
-(* Empties the task queue, can be used only if the worker pool is empty (E.g.
- * after having built a .vio in batch mode *)
-val reset_task_queue : unit -> unit
-
-(* A .vio contains tasks to be completed *)
-type tasks
-val check_task : string -> tasks -> int -> bool
-val info_tasks : tasks -> (string * float * int) list
-val finish_tasks : string ->
-  Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-    tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t

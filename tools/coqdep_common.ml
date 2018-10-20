@@ -483,9 +483,6 @@ let coq_dependencies () =
        let glob = if !option_noglob then "" else " "^ename^".glob" in
        printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
        traite_fichier_Coq !suffixe true (name ^ ".v");
-       printf "\n";
-       printf "%s.vio: %s.v" ename ename;
-       traite_fichier_Coq ".vio" true (name ^ ".v");
        printf "\n%!")
     (List.rev !vAccu)
 
@@ -505,15 +502,15 @@ let add_caml_known phys_dir _ f =
     | _ -> ()
 
 let add_coqlib_known recur phys_dir log_dir f =
-  match get_extension f [".vo"; ".vio"] with
-    | (basename, (".vo" | ".vio")) ->
+  match get_extension f [".vo"] with
+    | (basename, (".vo")) ->
         let name = log_dir@[basename] in
         let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 let add_known recur phys_dir log_dir f =
-  match get_extension f [".v"; ".vo"; ".vio"] with
+  match get_extension f [".v"; ".vo"] with
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
@@ -522,7 +519,7 @@ let add_known recur phys_dir log_dir f =
           let paths = List.tl (suffixes name) in
           let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
           List.iter iter paths
-    | (basename, (".vo" | ".vio")) when not(!option_boot) ->
+    | (basename, (".vo")) when not(!option_boot) ->
         let name = log_dir@[basename] in
 	let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths

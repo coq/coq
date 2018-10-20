@@ -355,7 +355,9 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
         if allow_deferred then
           let initunivs = UState.const_univ_entry ~poly initial_euctx in
           let ctx = constrain_variables universes in
-          (* For vi2vo compilation proofs are computed now but we need to
+          (* FIXME, not true anymore:
+
+             For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
              the body.  So we keep the two sets distinct. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in

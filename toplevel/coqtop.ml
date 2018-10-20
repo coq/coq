@@ -220,8 +220,7 @@ let init_toplevel init_opts custom_init arglist =
       (* The condition for starting the interactive mode is a bit
          convoluted, we should really refactor batch/compilation_mode
          more. *)
-      if (not opts.batch_mode
-          || CList.(is_empty opts.compile_list && is_empty opts.vio_files && is_empty opts.vio_tasks))
+      if (not opts.batch_mode || CList.(is_empty opts.compile_list))
       (* Interactive *)
       then begin
         let iload_path = build_load_path opts in
@@ -238,9 +237,7 @@ let init_toplevel init_opts custom_init arglist =
       (* Non interactive: we perform a sequence of compilation steps *)
       end else begin
         Ccompile.compile_files opts;
-        (* Careful this will modify the load-path and state so after
-           this point some stuff may not be safe anymore. *)
-        Ccompile.do_vio opts;
+
         (* Allow the user to output an arbitrary state *)
         outputstate opts;
         None, opts

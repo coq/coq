@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
+type compilation_mode = BuildVo
 type color = [`ON | `AUTO | `OFF]
 
 val default_toplevel : Names.DirPath.t
@@ -34,11 +34,6 @@ type coq_cmdopts = {
   compilation_output_name : string option;
 
   load_vernacular_list : (string * bool) list;
-
-  vio_checking: bool;
-  vio_tasks   : (int list * string) list;
-  vio_files   : string list;
-  vio_files_j : int;
 
   color : color;
 
