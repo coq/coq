@@ -245,7 +245,7 @@ type prod_info = production_level * production_position
 type (_, _) entry =
 | TTName : ('self, lname) entry
 | TTReference : ('self, qualid) entry
-| TTBigint : ('self, Constrexpr.raw_natural_number) entry
+| TTBigint : ('self, Constrexpr.raw_numeral) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
