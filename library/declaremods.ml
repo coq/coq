@@ -900,7 +900,7 @@ type library_objects = Lib.lib_objects * Lib.lib_objects
 
 (** For the native compiler, we cache the library values *)
 
-let register_library dir cenv (objs:library_objects) digest univ =
+let register_library dir cenv (objs:library_objects) digest =
   let mp = MPfile dir in
   let () =
     try
@@ -908,7 +908,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
       ignore(Global.lookup_module mp);
     with Not_found ->
       (* If not, let's do it now ... *)
-      let mp' = Global.import cenv univ digest in
+      let mp' = Global.import cenv digest in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.");
   in
@@ -928,10 +928,10 @@ let append_end_library_hook f =
   let old_f = !end_library_hook in
   end_library_hook := fun () -> old_f(); f ()
 
-let end_library ?except dir =
+let end_library dir =
   !end_library_hook();
   let oname = Lib.end_compilation_checks dir in
-  let mp,cenv,ast = Global.export ?except dir in
+  let mp,cenv,ast = Global.export dir in
   let prefix, lib_stack = Lib.end_compilation oname in
   assert (ModPath.equal mp (MPfile dir));
   let substitute, keep, _ = Lib.classify_segment lib_stack in

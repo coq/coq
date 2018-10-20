@@ -283,15 +283,13 @@ let push_context_set poly ctx = add_constraints (Now (poly,ctx))
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
-let join_safe_environment ?(except=Future.UUIDSet.empty) e =
-  Modops.join_structure except (Environ.opaque_tables e.env) e.revstruct;
+let join_safe_environment e =
+  Modops.join_structure (Environ.opaque_tables e.env) e.revstruct;
   List.fold_left
-    (fun e fc ->
-       if Future.UUIDSet.mem (Future.uuid fc) except then e
-       else add_constraints (Now (false, Future.join fc)) e)
+    (fun e fc -> add_constraints (Now (false, Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
-let is_joined_environment e = List.is_empty e.future_cst 
+let is_joined_environment e = List.is_empty e.future_cst
 
 (** {6 Various checks } *)
 
@@ -817,9 +815,9 @@ let start_library dir senv =
     modvariant = LIBRARY;
     required = senv.required }
 
-let export ?except senv dir =
+let export senv dir =
   let senv =
-    try join_safe_environment ?except senv
+    try join_safe_environment senv
     with e ->
       let e = CErrors.push e in
       CErrors.user_err ~hdr:"export" (CErrors.iprint e)
@@ -852,9 +850,7 @@ let export ?except senv dir =
   in
   mp, lib, ast
 
-(* cst are the constraints that were computed by the vi2vo step and hence are
- * not part of the mb.mod_constraints field (but morally should be) *)
-let import lib cst vodigest senv =
+let import lib vodigest senv =
   check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
@@ -862,10 +858,7 @@ let import lib cst vodigest senv =
      (Pp.strbrk "Cannot load a library with the same name as the current one.");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
-  let env = Environ.push_context_set ~strict:true
-				     (Univ.ContextSet.union mb.mod_constraints cst)
-				     senv.env
-  in
+  let env = Environ.push_context_set ~strict:true mb.mod_constraints senv.env in
   mp,
   { senv with
     env =

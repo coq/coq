@@ -98,7 +98,6 @@ type library_t = {
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
-  library_extra_univs : Univ.ContextSet.t;
 }
 
 type library_summary = {
@@ -360,13 +359,9 @@ type 'a table_status =
 
 let opaque_tables =
   ref (LibraryMap.empty : (Constr.constr table_status) LibraryMap.t)
-let univ_tables =
-  ref (LibraryMap.empty : (Univ.ContextSet.t table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
-let add_univ_table dp st =
-  univ_tables := LibraryMap.add dp st !univ_tables
 
 let access_table what tables dp i =
   let t = match LibraryMap.find dp !tables with
@@ -391,15 +386,8 @@ let access_opaque_table dp i =
   let what = "opaque proofs" in
   access_table what opaque_tables dp i
 
-let access_univ_table dp i =
-  try
-    let what = "universe contexts of opaque proofs" in
-    Some (access_table what univ_tables dp i)
-  with Not_found -> None
-
 let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_univ_table
+  Opaqueproof.set_indirect_opaque_accessor access_opaque_table
 
 (************************************************************************)
 (* Internalise libraries *)
@@ -411,14 +399,13 @@ type seg_univ = (* true = vivo, false = vi *)
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Constr.constr Future.computation array
 
-let mk_library sd md digests univs =
+let mk_library sd md digests =
   {
     library_name     = sd.md_name;
     library_data     = md;
     library_deps     = sd.md_deps;
     library_imports  = sd.md_imports;
     library_digests  = digests;
-    library_extra_univs = univs;
   }
 
 let mk_summary m = {
@@ -431,22 +418,12 @@ let intern_from_file f =
   let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
   let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch in
-  let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
-  let _ = System.skip_in_segment f ch in
-  let _ = System.skip_in_segment f ch in
   let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch in
   close_in ch;
   register_library_filename lsd.md_name f;
   add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
-  match univs with
-  | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
-  | Some (utab,uall,true) ->
-      add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
-  | Some (utab,_,false) ->
-      add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+  mk_library lsd lmd (Dvo_or_vi digest_lmd)
 
 module DPMap = Map.Make(DirPath)
 
@@ -513,8 +490,7 @@ let register_library m =
     m.library_name
     l.md_compiled
     l.md_objects
-    m.library_digests
-    m.library_extra_univs;
+    m.library_digests;
   register_loaded_library (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
@@ -633,23 +609,6 @@ let start_library fo =
   Declaremods.start_library ldir;
   ldir
 
-let load_library_todo f =
-  let longf = Loadpath.locate_file (f^".v") in
-  let f = longf^"io" in
-  let ch = raw_intern_library f in
-  let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in
-  let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
-  let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in
-  let (s3 : seg_discharge option), _, _ = System.marshal_in_segment f ch in
-  let tasks, _, _ = System.marshal_in_segment f ch in
-  let (s5 : seg_proofs), _, _ = System.marshal_in_segment f ch in
-  close_in ch;
-  if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if s3 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if pi3 (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
-  longf, s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
-
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
@@ -679,37 +638,10 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to ?todo dir f otab =
-  let except = match todo with
-    | None ->
-        (* XXX *)
-        (* assert(!Flags.compilation_mode = Flags.BuildVo); *)
-        assert(Filename.check_suffix f ".vo");
-        Future.UUIDSet.empty
-    | Some (l,_) ->
-        assert(Filename.check_suffix f ".vio");
-        List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
-          Future.UUIDSet.empty l in
-  let cenv, seg, ast = Declaremods.end_library ~except dir in
+let save_library_to dir f otab =
+  let cenv, seg, ast = Declaremods.end_library dir in
   let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
-  let tasks, utab, dtab =
-    match todo with
-    | None -> None, None, None
-    | Some (tasks, rcbackup) ->
-        let tasks =
-          List.map Stateid.(fun (r,b) ->
-            try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
-            with Not_found -> assert b; { r with uuid = -1 }, b)
-          tasks in
-        Some (tasks,rcbackup),
-        Some (univ_table,Univ.ContextSet.empty,false),
-        Some disch_table in
-  let except =
-    Future.UUIDSet.fold (fun uuid acc ->
-      try Int.Set.add (Future.UUIDMap.find uuid f2t_map) acc
-      with Not_found -> acc)
-      except Int.Set.empty in
-  let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
+  let is_done_or_todo i x = Future.is_val x in
   Array.iteri (fun i x ->
     if not(is_done_or_todo i x) then CErrors.user_err ~hdr:"library"
       Pp.(str"Proof object "++int i++str" is not checked nor to be checked"))
@@ -732,9 +664,6 @@ let save_library_to ?todo dir f otab =
     (* Writing vo payload *)
     System.marshal_out_segment f' ch (sd           : seg_sum);
     System.marshal_out_segment f' ch (md           : seg_lib);
-    System.marshal_out_segment f' ch (utab         : seg_univ option);
-    System.marshal_out_segment f' ch (dtab         : seg_discharge option);
-    System.marshal_out_segment f' ch (tasks        : 'tasks option);
     System.marshal_out_segment f' ch (opaque_table : seg_proofs);
     close_out ch;
     (* Writing native code files *)
@@ -748,17 +677,6 @@ let save_library_to ?todo dir f otab =
     let () = close_out ch in
     let () = Sys.remove f' in
     iraise reraise
-
-let save_library_raw f sum lib univs proofs =
-  let f' = f^"o" in
-  let ch = raw_extern_library f' in
-  System.marshal_out_segment f' ch (sum        : seg_sum);
-  System.marshal_out_segment f' ch (lib        : seg_lib);
-  System.marshal_out_segment f' ch (Some univs : seg_univ option);
-  System.marshal_out_segment f' ch (None       : seg_discharge option);
-  System.marshal_out_segment f' ch (None       : 'tasks option);
-  System.marshal_out_segment f' ch (proofs     : seg_proofs);
-  close_out ch
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)

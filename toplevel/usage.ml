@@ -50,12 +50,6 @@ let print_usage_channel co command =
 \n  -compile f.v           compile Coq file f.v (implies -batch)\
 \n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
 \n  -o f.vo                use f.vo as the output file name\
-\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
-\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
-\n                         into fi.vo\
-\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
-\n                         proofs in each fi.vio\
-\n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
 \n  -v, --version          print Coq version and exit\

@@ -39,16 +39,10 @@ let empty_opaquetab = {
 (* hooks *)
 let default_get_opaque dp _ =
   CErrors.user_err Pp.(pr_sequence str ["Cannot access opaque proofs in library"; DirPath.to_string dp])
-let default_get_univ dp _ =
-  CErrors.user_err (Pp.pr_sequence Pp.str [
-    "Cannot access universe constraints of opaque proofs in library ";
-    DirPath.to_string dp])
 
 let get_opaque = ref default_get_opaque
-let get_univ = ref default_get_univ
 
 let set_indirect_opaque_accessor f = (get_opaque := f)
-let set_indirect_univ_accessor f = (get_univ := f)
 (* /hooks *)
 
 let create cu = Direct ([],cu)
@@ -117,16 +111,14 @@ let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then snd (Future.force (snd (Int.Map.find i prfs)))
-      else match !get_univ dp i with
-        | None -> Univ.ContextSet.empty
-        | Some u -> Future.force u
+      else Univ.ContextSet.empty
 
 let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Some(Future.chain cu snd)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
-      else !get_univ dp i
+      else None
 
 let get_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Future.chain cu fst

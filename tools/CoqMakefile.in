@@ -388,32 +388,6 @@ bytefiles: $(CMOFILES) $(CMAFILES)
 optfiles: $(if $(DO_NATDYNLINK),$(CMXSFILES))
 .PHONY: optfiles
 
-# FIXME, see Ralf's bugreport
-quick: $(VOFILES:.vo=.vio)
-.PHONY: quick
-
-vio2vo:
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) \
-		-schedule-vio2vo $(J) $(VOFILES:%.vo=%.vio)
-.PHONY: vio2vo
-
-quick2vo:
-	$(HIDE)make -j $(J) quick
-	$(HIDE)VIOFILES=$$(for vofile in $(VOFILES); do \
-	  viofile="$$(echo "$$vofile" | sed "s/\.vo$$/.vio/")"; \
-	  if [ "$$vofile" -ot "$$viofile" -o ! -e "$$vofile" ]; then printf "$$viofile "; fi; \
-	done); \
-	echo "VIO2VO: $$VIOFILES"; \
-	if [ -n "$$VIOFILES" ]; then \
-	  $(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) -schedule-vio2vo $(J) $$VIOFILES; \
-	fi
-.PHONY: quick2vo
-
-checkproofs:
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) \
-		-schedule-vio-checking $(J) $(VOFILES:%.vo=%.vio)
-.PHONY: checkproofs
-
 validate: $(VOFILES)
 	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $^
 .PHONY: validate
@@ -559,7 +533,6 @@ clean::
 	$(HIDE)rm -f $(NATIVEFILES)
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
-	$(HIDE)rm -f $(VOFILES:.vo=.vio)
 	$(HIDE)rm -f $(BEAUTYFILES) $(VFILES:=.old)
 	$(HIDE)rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex
 	$(HIDE)rm -f $(VFILES:.v=.glob)
@@ -665,10 +638,6 @@ $(VOFILES): %.vo: %.v
 # FIXME ?merge with .vo / .vio ?
 $(GLOBFILES): %.glob: %.v
 	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
-
-$(VFILES:.v=.vio): %.vio: %.v
-	$(SHOW)COQC -quick $<
-	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<

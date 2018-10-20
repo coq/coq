@@ -78,6 +78,3 @@ val dump : opaquetab ->
 
 val set_indirect_opaque_accessor :
   (DirPath.t -> int -> constr Future.computation) -> unit
-val set_indirect_univ_accessor :
-  (DirPath.t -> int -> Univ.ContextSet.t Future.computation option) -> unit
-

@@ -107,11 +107,9 @@ val body_of_constant_body : Declarations.constant_body -> (Constr.constr * Univ.
 (** {6 Compiled libraries } *)
 
 val start_library : DirPath.t -> ModPath.t
-val export : ?except:Future.UUIDSet.t -> DirPath.t ->
+val export : DirPath.t ->
   ModPath.t * Safe_typing.compiled_library * Safe_typing.native_library
-val import :
-  Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
-  ModPath.t
+val import : Safe_typing.compiled_library -> Safe_typing.vodigest -> ModPath.t
 
 (** {6 Misc } *)
 
@@ -120,7 +118,7 @@ val import :
 
 val env_of_context : Environ.named_context_val -> Environ.env
 
-val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
+val join_safe_environment : unit -> unit
 val is_joined_environment : unit -> bool
 
 val is_polymorphic : GlobRef.t -> bool

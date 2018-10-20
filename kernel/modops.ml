@@ -615,21 +615,21 @@ let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
 
 (** {6 Stm machinery } *)
-let join_constant_body except otab cb =
+let join_constant_body otab cb =
   match cb.const_body with
   | OpaqueDef o ->
       (match Opaqueproof.uuid_opaque otab o with
-      | Some uuid when not(Future.UUIDSet.mem uuid except) ->
-          Opaqueproof.join_opaque otab o
+      | Some _ ->
+        Opaqueproof.join_opaque otab o
       | _ -> ())
   | _ -> ()
 
-let join_structure except otab s =
+let join_structure otab s =
   let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
     Option.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
   and join_field (_l,body) = match body with
-    |SFBconst sb -> join_constant_body except otab sb
+    |SFBconst sb -> join_constant_body otab sb
     |SFBmind _ -> ()
     |SFBmodule m ->
       implem_iter join_signature join_expression m.mod_expr;

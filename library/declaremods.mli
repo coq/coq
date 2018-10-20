@@ -91,16 +91,15 @@ type library_objects
 
 val register_library :
   library_name ->
-  Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.ContextSet.t -> unit
+  Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest -> unit
 
 val get_library_native_symbols : library_name -> Nativecode.symbols
 
 val start_library : library_name -> unit
 
 val end_library :
-  ?except:Future.UUIDSet.t -> library_name ->
-    Safe_typing.compiled_library * library_objects * Safe_typing.native_library
+  library_name ->
+  Safe_typing.compiled_library * library_objects * Safe_typing.native_library
 
 (** append a function to be executed at end_library *)
 val append_end_library_hook : (unit -> unit) -> unit
