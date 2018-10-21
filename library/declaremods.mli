@@ -92,7 +92,7 @@ type library_objects
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.ContextSet.t -> unit
+  Univ.ContextSet.t -> Opaqueproof.disk_data -> unit
 
 val get_library_native_symbols : library_name -> Nativecode.symbols
 

@@ -13,6 +13,58 @@ open Univ
 open Constr
 open Mod_subst
 
+(************************************************************************)
+(** {6 Tables of opaque proof terms} *)
+
+(** We now store opaque proof terms apart from the rest of the environment.
+    See the [Indirect] contructor in [Lazyconstr.lazy_constr]. This way,
+    we can quickly load a first half of a .vo file without these opaque
+    terms, and access them only when a specific command (e.g. Print or
+    Print Assumptions) needs it. *)
+
+(** Delayed / available tables of opaque terms *)
+
+type disk_data =
+  Constr.t Future.computation array Delayed.t *
+  Univ.ContextSet.t Future.computation array option
+
+module LibraryOrdered = DirPath
+module LibraryMap = Map.Make(LibraryOrdered)
+
+module DiskData = struct
+
+  type t = disk_data LibraryMap.t
+  let empty = LibraryMap.empty
+
+  let add dp d map = LibraryMap.add dp d map
+
+  let proof_table : Constr.t Future.computation array LibraryMap.t ref = ref LibraryMap.empty
+  (* let univs_table : Univ.ContextSet.t Future.computation array option LibraryMap.t ref = ref LibraryMap.empty *)
+
+  (* Resistant to Marshall / workers *)
+  let fetch_gen what memo proj dp map =
+    try LibraryMap.find dp !memo
+    with Not_found ->
+      let pp_dp = DirPath.print dp in
+      let delayed_data = proj @@ LibraryMap.find dp map in
+      try
+        Flags.if_verbose Feedback.(msg_info ?loc:None) Pp.(str"Fetching opaque proofs from disk for " ++ pp_dp);
+        let fetch_data = Delayed.fetch delayed_data in
+        memo := LibraryMap.add dp fetch_data !memo;
+        fetch_data
+      with Delayed.Faulty f ->
+        CErrors.user_err ~hdr:"Library.access_table"
+          Pp.(str "The file " ++ str f ++ str " (bound to " ++ pp_dp ++
+              str ") is inaccessible or corrupted,\ncannot load some " ++ str what ++ str " in it." ++ fnl ())
+
+  let fetch_proof dp map = fetch_gen "opaque proofs" proof_table fst dp map
+  (* let fetch_univs dp map = fetch_gen "universe contexts of opaque proofs" univs_table snd dp map *)
+  let fetch_univs dp map = snd @@ LibraryMap.find dp map
+
+end
+
+(** Work lists for cooking *)
+
 type work_list = (Instance.t * Id.t array) Cmap.t * 
   (Instance.t * Id.t array) Mindmap.t
 
@@ -35,21 +87,6 @@ let empty_opaquetab = {
   opaque_len = 0;
   opaque_dir = DirPath.initial;
 }
-
-(* hooks *)
-let default_get_opaque dp _ =
-  CErrors.user_err Pp.(pr_sequence str ["Cannot access opaque proofs in library"; DirPath.to_string dp])
-let default_get_univ dp _ =
-  CErrors.user_err (Pp.pr_sequence Pp.str [
-    "Cannot access universe constraints of opaque proofs in library ";
-    DirPath.to_string dp])
-
-let get_opaque = ref default_get_opaque
-let get_univ = ref default_get_univ
-
-let set_indirect_opaque_accessor f = (get_opaque := f)
-let set_indirect_univ_accessor f = (get_univ := f)
-(* /hooks *)
 
 let create cu = Direct ([],cu)
 
@@ -95,32 +132,41 @@ let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
         let fp = snd (Int.Map.find i prfs) in
         join except fp
 
-let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
+let get_opaque tables dp i =
+  let t = DiskData.fetch_proof dp tables in
+  assert (i < Array.length t);
+  t.(i)
+
+let get_univs tables dp i =
+  let t = DiskData.fetch_univs dp tables in
+  Option.map (fun t -> assert (i < Array.length t); t.(i)) t
+
+let force_proof tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
         then Future.chain (snd (Int.Map.find i prfs)) fst
-        else !get_opaque dp i in
+        else get_opaque tbl dp i in
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
+let force_constraints tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then snd (Future.force (snd (Int.Map.find i prfs)))
-      else match !get_univ dp i with
+      else match get_univs tbl dp i with
         | None -> Univ.ContextSet.empty
         | Some u -> Future.force u
 
-let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
+let get_constraints tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Some(Future.chain cu snd)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
-      else !get_univ dp i
+      else get_univs tbl dp i
 
 module FMap = Future.UUIDMap
 

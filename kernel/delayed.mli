@@ -8,9 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*i*)
-open Safe_typing
-(*i*)
+exception Faulty of string
 
-val import : safe_environment -> compiled_library -> Univ.ContextSet.t -> vodigest -> Opaqueproof.disk_data -> safe_environment
-val unsafe_import : safe_environment -> compiled_library -> Univ.ContextSet.t -> vodigest -> Opaqueproof.disk_data -> safe_environment
+type 'a t
+val in_delayed : string -> in_channel -> 'a t * Digest.t
+val fetch : 'a t -> 'a

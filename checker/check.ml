@@ -59,7 +59,9 @@ type library_t = {
   library_opaques : seg_proofs option;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
-  library_extra_univs : Univ.ContextSet.t }
+  library_extra_univs : Univ.ContextSet.t;
+  library_opaque_disk : Opaqueproof.disk_data;
+}
 
 module LibraryOrdered =
   struct
@@ -88,29 +90,6 @@ let library_full_filename dir = (find_library dir).library_filename
 let register_loaded_library m =
   libraries_table := LibraryMap.add m.library_name m !libraries_table
 
-(* Map from library names to table of opaque terms *)
-let opaque_tables = ref LibraryMap.empty
-let opaque_univ_tables = ref LibraryMap.empty
-
-let access_opaque_table dp i =
-  let t =
-    try LibraryMap.find dp !opaque_tables
-    with Not_found -> assert false
-  in
-  assert (i < Array.length t);
-  t.(i)
-
-let access_opaque_univ_table dp i =
-  try
-    let t = LibraryMap.find dp !opaque_univ_tables in
-    assert (i < Array.length t);
-    Some t.(i)
-  with Not_found -> None
-
-let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_opaque_univ_table
-
 let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in
   let dig = m.library_digest in
@@ -121,11 +100,11 @@ let check_one_lib admit senv (dir,m) =
     if LibrarySet.mem dir admit then
       (Flags.if_verbose Feedback.msg_notice
          (str "Admitting library: " ++ pr_dirpath dir);
-       Safe_checking.unsafe_import senv md m.library_extra_univs dig)
+       Safe_checking.unsafe_import senv md m.library_extra_univs dig m.library_opaque_disk)
     else
       (Flags.if_verbose Feedback.msg_notice
          (str "Checking library: " ++ pr_dirpath dir);
-       Safe_checking.import senv md m.library_extra_univs dig)
+       Safe_checking.import senv md m.library_extra_univs dig m.library_opaque_disk)
   in
     register_loaded_library m; senv
 
@@ -278,14 +257,16 @@ type library_disk = {
   md_objects : library_objects;
 }
 
-let mk_library sd md f table digest cst = {
+let mk_library sd md f table digest cst dd = {
   library_name = sd.md_name;
   library_filename = f;
   library_compiled = md.md_compiled;
   library_opaques = table;
   library_deps = sd.md_deps;
   library_digest = digest;
-  library_extra_univs = cst }
+  library_extra_univs = cst;
+  library_opaque_disk = dd;
+ }
 
 let name_clash_message dir mdir f =
   str ("The file " ^ f ^ " contains library") ++ spc () ++
@@ -371,15 +352,12 @@ let intern_from_file ~intern_mode (dir, f) =
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
-  Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
-  Option.iter (fun (opaque_csts,_,_) ->
-    opaque_univ_tables :=
-      LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
-    opaque_csts;
   let extra_cst =
     Option.default Univ.ContextSet.empty
       (Option.map (fun (_,cs,_) -> cs) opaque_csts) in
-  mk_library sd md f table digest extra_cst
+  (* XXX: FIXME *)
+  let empty_disk_data = Obj.magic 0 in
+  mk_library sd md f table digest extra_cst (empty_disk_data, None)
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph

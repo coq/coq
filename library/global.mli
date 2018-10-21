@@ -99,6 +99,7 @@ val constant_of_delta_kn : KerName.t -> Constant.t
 val mind_of_delta_kn : KerName.t -> MutInd.t
 
 val opaque_tables : unit -> Opaqueproof.opaquetab
+val opaque_disk_data : unit -> Opaqueproof.DiskData.t
 
 val body_of_constant : Constant.t -> (Constr.constr * Univ.AUContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
@@ -116,7 +117,7 @@ val export : ?except:Future.UUIDSet.t -> output_native_objects:bool -> DirPath.t
   ModPath.t * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
   Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
-  ModPath.t
+  Opaqueproof.disk_data -> ModPath.t
 
 (** {6 Misc } *)
 

@@ -192,7 +192,7 @@ val export :
 
 (* Constraints are non empty iff the file is a vi2vo *)
 val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
-  ModPath.t safe_transformer
+  Opaqueproof.disk_data -> ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
 

@@ -1830,7 +1830,7 @@ end = struct (* {{{ *)
           | _ -> assert false in
         let uc =
           Option.get
-            (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
+            (Opaqueproof.get_constraints Global.(opaque_disk_data ()) (Global.opaque_tables ()) o) in
         (* We only manipulate monomorphic terms here. *)
         let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
         let pr =

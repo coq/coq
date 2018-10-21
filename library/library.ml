@@ -28,51 +28,6 @@ let raw_intern_library f =
     (System.raw_intern_state Coq_config.vo_magic_number) f
 
 (************************************************************************)
-(** Serialized objects loaded on-the-fly *)
-
-exception Faulty of string
-
-module Delayed :
-sig
-
-type 'a delayed
-val in_delayed : string -> in_channel -> 'a delayed * Digest.t
-val fetch_delayed : 'a delayed -> 'a
-
-end =
-struct
-
-type 'a delayed = {
-  del_file : string;
-  del_off : int;
-  del_digest : Digest.t;
-}
-
-let in_delayed f ch =
-  let pos = pos_in ch in
-  let _, digest = System.skip_in_segment f ch in
-  ({ del_file = f; del_digest = digest; del_off = pos; }, digest)
-
-(** Fetching a table of opaque terms at position [pos] in file [f],
-    expecting to find first a copy of [digest]. *)
-
-let fetch_delayed del =
-  let { del_digest = digest; del_file = f; del_off = pos; } = del in
-  try
-    let ch = raw_intern_library f in
-    let () = seek_in ch pos in
-    let obj, _, digest' = System.marshal_in_segment f ch in
-    let () = close_in ch in
-    if not (String.equal digest digest') then raise (Faulty f);
-    obj
-  with e when CErrors.noncritical e -> raise (Faulty f)
-
-end
-
-open Delayed
-
-
-(************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
@@ -94,11 +49,12 @@ type summary_disk = {
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_data : library_disk delayed;
+  library_data : library_disk Delayed.t;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
+  library_opaque_disk : Opaqueproof.disk_data;
 }
 
 type library_summary = {
@@ -344,64 +300,6 @@ let try_locate_absolute_library dir =
     | LibNotFound -> error_lib_not_found (qualid_of_dirpath dir)
 
 (************************************************************************)
-(** {6 Tables of opaque proof terms} *)
-
-(** We now store opaque proof terms apart from the rest of the environment.
-    See the [Indirect] contructor in [Lazyconstr.lazy_constr]. This way,
-    we can quickly load a first half of a .vo file without these opaque
-    terms, and access them only when a specific command (e.g. Print or
-    Print Assumptions) needs it. *)
-
-(** Delayed / available tables of opaque terms *)
-
-type 'a table_status =
-  | ToFetch of 'a Future.computation array delayed
-  | Fetched of 'a Future.computation array
-
-let opaque_tables =
-  ref (LibraryMap.empty : (Constr.constr table_status) LibraryMap.t)
-let univ_tables =
-  ref (LibraryMap.empty : (Univ.ContextSet.t table_status) LibraryMap.t)
-
-let add_opaque_table dp st =
-  opaque_tables := LibraryMap.add dp st !opaque_tables
-let add_univ_table dp st =
-  univ_tables := LibraryMap.add dp st !univ_tables
-
-let access_table what tables dp i =
-  let t = match LibraryMap.find dp !tables with
-    | Fetched t -> t
-    | ToFetch f ->
-      let dir_path = Names.DirPath.to_string dp in
-      Flags.if_verbose Feedback.msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
-      let t =
-        try fetch_delayed f
-        with Faulty f ->
-          user_err ~hdr:"Library.access_table"
-            (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
-             str ") is inaccessible or corrupted,\ncannot load some " ++
-             str what ++ str " in it.\n")
-      in
-      tables := LibraryMap.add dp (Fetched t) !tables;
-      t
-  in
-  assert (i < Array.length t); t.(i)
-
-let access_opaque_table dp i =
-  let what = "opaque proofs" in
-  access_table what opaque_tables dp i
-
-let access_univ_table dp i =
-  try
-    let what = "universe contexts of opaque proofs" in
-    Some (access_table what univ_tables dp i)
-  with Not_found -> None
-
-let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_univ_table
-
-(************************************************************************)
 (* Internalise libraries *)
 
 type seg_sum = summary_disk
@@ -411,7 +309,7 @@ type seg_univ = (* true = vivo, false = vi *)
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Constr.constr Future.computation array
 
-let mk_library sd md digests univs =
+let mk_library sd md digests univs library_opaque_disk =
   {
     library_name     = sd.md_name;
     library_data     = md;
@@ -419,6 +317,7 @@ let mk_library sd md digests univs =
     library_imports  = sd.md_imports;
     library_digests  = digests;
     library_extra_univs = univs;
+    library_opaque_disk;
   }
 
 let mk_summary m = {
@@ -430,23 +329,21 @@ let mk_summary m = {
 let intern_from_file f =
   let ch = raw_intern_library f in
   let (lsd : seg_sum), _, digest_lsd = System.marshal_in_segment f ch in
-  let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch in
+  let ((lmd : seg_lib Delayed.t), digest_lmd) = Delayed.in_delayed f ch in
   let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
   let _ = System.skip_in_segment f ch in
-  let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch in
+  let ((del_opaque : seg_proofs Delayed.t),_) = Delayed.in_delayed f ch in
   close_in ch;
   register_library_filename lsd.md_name f;
-  add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
   match univs with
-  | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+  | None ->
+    mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty (del_opaque, None)
   | Some (utab,uall,true) ->
-      add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
+    mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall (del_opaque, Some utab)
   | Some (utab,_,false) ->
-      add_univ_table lsd.md_name (Fetched utab);
-      mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+    mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty (del_opaque, Some utab)
 
 module DPMap = Map.Make(DirPath)
 
@@ -508,13 +405,14 @@ let native_name_from_filename f =
 *)
 
 let register_library m =
-  let l = fetch_delayed m.library_data in
+  let l = Delayed.fetch m.library_data in
   Declaremods.register_library
     m.library_name
     l.md_compiled
     l.md_objects
     m.library_digests
-    m.library_extra_univs;
+    m.library_extra_univs
+    m.library_opaque_disk;
   register_loaded_library (mk_summary m)
 
 (* Follow the semantics of Anticipate object:

@@ -465,7 +465,7 @@ let globalize_constant_universes env cb =
     (match cb.const_body with
      | (Undef _ | Def _ | Primitive _) -> []
      | OpaqueDef lc ->
-       match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
+       match Opaqueproof.get_constraints env.Environ.opaque_disk_data (Environ.opaque_tables env) lc with
        | None -> []
        | Some fc ->
             match Future.peek_val fc with
@@ -1139,7 +1139,7 @@ let export ?except ~output_native_objects senv dir =
 
 (* cst are the constraints that were computed by the vi2vo step and hence are
  * not part of the mb.mod_constraints field (but morally should be) *)
-let import lib cst vodigest senv =
+let import lib cst vodigest dd senv =
   check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
@@ -1151,6 +1151,7 @@ let import lib cst vodigest senv =
 				     (Univ.ContextSet.union mb.mod_constraints cst)
 				     senv.env
   in
+  let env = Environ.add_opaque_disk_data env lib.comp_name dd in
   mp,
   { senv with
     env =

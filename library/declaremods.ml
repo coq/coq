@@ -900,7 +900,7 @@ type library_objects = Lib.lib_objects * Lib.lib_objects
 
 (** For the native compiler, we cache the library values *)
 
-let register_library dir cenv (objs:library_objects) digest univ =
+let register_library dir cenv (objs:library_objects) digest univ disk_data =
   let mp = MPfile dir in
   let () =
     try
@@ -908,7 +908,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
       ignore(Global.lookup_module mp);
     with Not_found ->
       (* If not, let's do it now ... *)
-      let mp' = Global.import cenv univ digest in
+      let mp' = Global.import cenv univ digest disk_data in
       if not (ModPath.equal mp mp') then
         anomaly (Pp.str "Unexpected disk module name.");
   in
@@ -936,8 +936,6 @@ let end_library ?except ~output_native_objects dir =
   assert (ModPath.equal mp (MPfile dir));
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
-
-
 
 (** {6 Implementation of Import and Export commands} *)
 

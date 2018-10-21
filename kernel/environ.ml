@@ -95,6 +95,7 @@ type env = {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
+  opaque_disk_data : Opaqueproof.DiskData.t
 }
 
 let empty_named_context_val = {
@@ -123,8 +124,9 @@ let empty_env = {
   };
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
-  indirect_pterms = Opaqueproof.empty_opaquetab }
-
+  indirect_pterms = Opaqueproof.empty_opaquetab
+; opaque_disk_data = Opaqueproof.DiskData.empty
+}
 
 (* Rel context *)
 
@@ -485,13 +487,14 @@ let constant_value_and_type env (kn, u) =
 
 let body_of_constant_body env cb =
   let otab = opaque_tables env in
+  let odisk = env.opaque_disk_data in
   match cb.const_body with
   | Undef _ | Primitive _ ->
      None
   | Def c ->
      Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
-     Some (Opaqueproof.force_proof otab o, Declareops.constant_polymorphic_context cb)
+     Some (Opaqueproof.force_proof odisk otab o, Declareops.constant_polymorphic_context cb)
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
@@ -745,6 +748,10 @@ let remove_hyps ids check_context check_value ctxt =
       else push_named_context_val_val d' v' rctxt', true
   in
   fst (remove_hyps ctxt)
+
+(* Lazy loading of disk data *)
+let add_opaque_disk_data env mp dd =
+  { env with opaque_disk_data = Opaqueproof.DiskData.add mp dd env.opaque_disk_data }
 
 (* A general request *)
 

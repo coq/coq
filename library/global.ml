@@ -131,9 +131,9 @@ let lookup_modtype kn = lookup_modtype kn (env())
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 let opaque_tables () = Environ.opaque_tables (env ())
+let opaque_disk_data () = (env ()).Environ.opaque_disk_data
 
 let body_of_constant_body ce = body_of_constant_body (env ()) ce
-
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 
 (** Operations on kernel names *)
@@ -149,8 +149,7 @@ let mind_of_delta_kn kn =
 let start_library dir = globalize (Safe_typing.start_library dir)
 let export ?except ~output_native_objects s =
   Safe_typing.export ?except ~output_native_objects (safe_env ()) s
-let import c u d = globalize (Safe_typing.import c u d)
-
+let import c u d dd = globalize (Safe_typing.import c u d dd)
 
 (** Function to get an environment from the constants part of the global
     environment and a given context. *)
