@@ -144,8 +144,9 @@ list of assertion commands is given in :ref:`Assertions`. The command
    the proof is a subset of the declared one.
 
    The set of declared variables is closed under type dependency. For
-   example if ``T`` is variable and a is a variable of type ``T``, the commands
-   ``Proof using a`` and ``Proof using T a`` are actually equivalent.
+   example, if ``T`` is a variable and ``a`` is a variable of type
+   ``T``, then the commands ``Proof using a`` and ``Proof using T a``
+   are equivalent.
 
    .. cmdv:: Proof using {+ @ident } with @tactic
 
