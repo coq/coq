@@ -571,16 +571,16 @@ let rec to_constr lfts v =
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
     | FCaseT (ci,p,c,ve,env) ->
-      if is_subs_id (fst env) && is_lift_id lfts && Instance.is_empty (snd env) then
-        mkCase (ci, p, to_constr lfts c, ve)
+      if is_subs_id (fst env) && is_lift_id lfts then
+        subst_instance_constr (snd env) (mkCase (ci, p, to_constr lfts c, ve))
       else
         let subs = comp_subs lfts env in
         mkCase (ci, subst_constr (subs, snd env) p,
             to_constr lfts c,
             Array.map (fun b -> subst_constr (subs, snd env) b) ve)
     | FFix ((op,(lna,tys,bds)) as fx, e) ->
-      if is_subs_id (fst e) && is_lift_id lfts && Instance.is_empty (snd e) then
-        mkFix fx
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (snd e) (mkFix fx)
       else
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
@@ -589,8 +589,8 @@ let rec to_constr lfts v =
         let bds = Array.Fun1.map subst_constr (subs_bd, snd e) bds in
         mkFix (op, (lna, tys, bds))
     | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
-      if is_subs_id (fst e) && is_lift_id lfts && Instance.is_empty (snd e) then
-        mkCoFix cfx
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (snd e) (mkCoFix cfx)
       else
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
@@ -605,8 +605,8 @@ let rec to_constr lfts v =
         mkProj (p,to_constr lfts c)
 
     | FLambda (len, tys, f, e) ->
-      if is_subs_id (fst e) && is_lift_id lfts && Instance.is_empty (snd e) then
-        Term.compose_lam (List.rev tys) f
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (snd e) (Term.compose_lam (List.rev tys) f)
       else
         let subs = comp_subs lfts e in
         let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs, snd e) c) tys in
@@ -625,7 +625,8 @@ let rec to_constr lfts v =
         mkEvar(ev,Array.map (fun a -> subst_constr (subs, snd env) a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts) a
     | FCLOS (t,env) ->
-      if is_subs_id (fst env) && is_lift_id lfts && Instance.is_empty (snd env) then t
+      if is_subs_id (fst env) && is_lift_id lfts then
+        subst_instance_constr (snd env) t
       else
         let subs = comp_subs lfts env in
         subst_constr (subs, snd env) t
