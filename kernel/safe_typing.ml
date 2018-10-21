@@ -213,7 +213,7 @@ let get_opaque_body env cbo =
   | Def _ -> `Nothing
   | OpaqueDef opaque ->
       `Opaque
-        (Opaqueproof.force_proof (Environ.opaque_tables env) opaque,
+        (Opaqueproof.force_proof env.Environ.opaque_disk_data (Environ.opaque_tables env) opaque,
          Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
 
 type private_constants = Term_typing.side_effects
@@ -850,7 +850,7 @@ let export senv dir =
   in
   mp, lib, ast
 
-let import lib vodigest senv =
+let import lib vodigest dd senv =
   check_required senv.required lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   if DirPath.equal (ModPath.dp senv.modpath) lib.comp_name then
@@ -859,6 +859,7 @@ let import lib vodigest senv =
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true mb.mod_constraints senv.env in
+  let env = Environ.add_opaque_disk_data env lib.comp_name dd in
   mp,
   { senv with
     env =

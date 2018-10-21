@@ -35,11 +35,21 @@ val create : proofterm -> opaque
   used so far *)
 val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
-(** From a [opaque] back to a [constr]. This might use the
-    indirect opaque accessor configured below. *)
-val force_proof : opaquetab -> opaque -> constr
+(** From a [opaque] back to a [constr]. The table is lazy and may be
+   updated. *)
+type disk_data = Constr.t Future.computation array Delayed.t
+
+module DiskData : sig
+  type t
+  val empty : t
+  val add : DirPath.t -> disk_data -> t -> t
+end
+
+(* val mk_fetch : Constr.t Future.computation array Delayed.t -> opaque_disk_data *)
+val force_proof : DiskData.t -> opaquetab -> opaque -> constr
+val get_proof : DiskData.t -> opaquetab -> opaque -> constr Future.computation
+
 val force_constraints : opaquetab -> opaque -> Univ.ContextSet.t
-val get_proof : opaquetab -> opaque -> constr Future.computation
 val get_constraints :
   opaquetab -> opaque -> Univ.ContextSet.t Future.computation option
 
@@ -68,13 +78,3 @@ val dump : opaquetab ->
   Univ.ContextSet.t Future.computation array *
   cooking_info list array *
   int Future.UUIDMap.t
-
-(** When stored indirectly, opaque terms are indexed by their library
-    dirpath and an integer index. The following two functions activate
-    this indirect storage, by telling how to store and retrieve terms.
-    Default creator always returns [None], preventing the creation of
-    any indirect link, and default accessor always raises an error.
-*)
-
-val set_indirect_opaque_accessor :
-  (DirPath.t -> int -> constr Future.computation) -> unit

@@ -721,7 +721,7 @@ let print_full_pure_context env sigma =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
                 str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
-                str "Proof " ++ pr_lconstr_env env sigma (Opaqueproof.force_proof (Global.opaque_tables ()) lc)
+                str "Proof " ++ pr_lconstr_env env sigma (Opaqueproof.force_proof Global.(opaque_disk_data ()) (Global.opaque_tables ()) lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
                 str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++

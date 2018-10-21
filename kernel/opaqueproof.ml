@@ -13,6 +13,51 @@ open Univ
 open Constr
 open Mod_subst
 
+(************************************************************************)
+(** {6 Tables of opaque proof terms} *)
+
+(** We now store opaque proof terms apart from the rest of the environment.
+    See the [Indirect] contructor in [Lazyconstr.lazy_constr]. This way,
+    we can quickly load a first half of a .vo file without these opaque
+    terms, and access them only when a specific command (e.g. Print or
+    Print Assumptions) needs it. *)
+
+(** Delayed / available tables of opaque terms *)
+
+type disk_data = Constr.t Future.computation array Delayed.t
+
+module LibraryOrdered = DirPath
+module LibraryMap = Map.Make(LibraryOrdered)
+
+module DiskData = struct
+
+  type t = disk_data LibraryMap.t
+  let empty = LibraryMap.empty
+
+  let add dp d map = LibraryMap.add dp d map
+
+  let memo_table : Constr.t Future.computation array LibraryMap.t ref = ref LibraryMap.empty
+
+  (* Resistant to Marshall / workers *)
+  let fetch dp map =
+    try LibraryMap.find dp !memo_table
+    with Not_found ->
+      let pp_dp = DirPath.print dp in
+      let delayed_data = LibraryMap.find dp map in
+      try
+        Flags.if_verbose Feedback.(msg_info ?loc:None) Pp.(str"Fetching opaque tables from disk for " ++ pp_dp);
+        let fetch_data = Delayed.fetch delayed_data in
+        memo_table := LibraryMap.add dp fetch_data !memo_table;
+        fetch_data
+      with Delayed.Faulty f ->
+        CErrors.user_err ~hdr:"Library.access_table"
+          Pp.(str "The file " ++ str f ++ str " (bound to " ++ pp_dp ++
+              str ") is inaccessible or corrupted,\ncannot load some opaque tables in it." ++ fnl ())
+
+end
+
+(** Work lists for cooking *)
+
 type work_list = (Instance.t * Id.t array) Cmap.t * 
   (Instance.t * Id.t array) Mindmap.t
 
@@ -35,15 +80,6 @@ let empty_opaquetab = {
   opaque_len = 0;
   opaque_dir = DirPath.initial;
 }
-
-(* hooks *)
-let default_get_opaque dp _ =
-  CErrors.user_err Pp.(pr_sequence str ["Cannot access opaque proofs in library"; DirPath.to_string dp])
-
-let get_opaque = ref default_get_opaque
-
-let set_indirect_opaque_accessor f = (get_opaque := f)
-(* /hooks *)
 
 let create cu = Direct ([],cu)
 
@@ -95,14 +131,22 @@ let uuid_opaque { opaque_val = prfs; opaque_dir = odp; _ } = function
       then Some (Future.uuid (snd (Int.Map.find i prfs)))
       else None
 
-let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
+let access_table tables dp i =
+  let t = DiskData.fetch dp tables in
+  assert (i < Array.length t);
+  t.(i)
+
+let get_opaque otbl dp i =
+  access_table otbl dp i
+
+let force_proof tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
         then Future.chain (snd (Int.Map.find i prfs)) fst
-        else !get_opaque dp i in
+        else get_opaque tbl dp i in
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
@@ -120,16 +164,16 @@ let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
       then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
       else None
 
-let get_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
+let get_proof tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Future.chain cu fst
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
         then Future.chain (snd (Int.Map.find i prfs)) fst
-        else !get_opaque dp i in
+        else get_opaque tbl dp i in
       Future.chain pt (fun c ->
-        force_constr (List.fold_right subst_substituted l (from_val c)))
- 
+          force_constr (List.fold_right subst_substituted l (from_val c)))
+
 module FMap = Future.UUIDMap
 
 let a_constr = Future.from_val (mkRel 1)

@@ -73,6 +73,7 @@ type env = private {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
+  opaque_disk_data : Opaqueproof.DiskData.t;
 }
 
 val oracle : env -> Conv_oracle.oracle
@@ -283,6 +284,9 @@ val really_needed : env -> Id.Set.t -> Id.Set.t
 
 (** like [really_needed] but computes a well ordered named context *)
 val keep_hyps : env -> Id.Set.t -> Constr.named_context
+
+(** Lazy loading of opaque proof data *)
+val add_opaque_disk_data : env -> DirPath.t -> Opaqueproof.disk_data -> env
 
 (** {5 Unsafe judgments. }
     We introduce here the pre-type of judgments, which is

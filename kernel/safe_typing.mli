@@ -181,7 +181,8 @@ val export :
   safe_environment -> DirPath.t ->
     ModPath.t * compiled_library * native_library
 
-val import : compiled_library -> vodigest -> ModPath.t safe_transformer
+val import : compiled_library -> vodigest ->
+  Opaqueproof.disk_data -> ModPath.t safe_transformer
 
 (** {6 Safe typing judgments } *)
 

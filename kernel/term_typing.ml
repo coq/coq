@@ -384,7 +384,7 @@ let build_constant_declaration _kn env result =
         | OpaqueDef lc ->
             let vars =
               global_vars_set env
-                (Opaqueproof.force_proof (opaque_tables env) lc) in
+                (Opaqueproof.force_proof (env.opaque_disk_data) (opaque_tables env) lc) in
             (* we force so that cst are added to the env immediately after *)
             ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
             if !Flags.record_aux_file then record_aux env ids_typ vars;
@@ -555,7 +555,7 @@ let translate_local_def env _id centry =
     | OpaqueDef lc ->
        let ids_typ = global_vars_set env typ in
        let ids_def = global_vars_set env
-         (Opaqueproof.force_proof (opaque_tables env) lc) in
+           (Opaqueproof.force_proof env.opaque_disk_data (opaque_tables env) lc) in
        record_aux env ids_typ ids_def
   end;
   let () = match decl.cook_universes with
@@ -565,7 +565,7 @@ let translate_local_def env _id centry =
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c
   | OpaqueDef o ->
-    let p = Opaqueproof.force_proof (Environ.opaque_tables env) o in
+    let p = Opaqueproof.force_proof env.opaque_disk_data (Environ.opaque_tables env) o in
     let cst = Opaqueproof.force_constraints (Environ.opaque_tables env) o in
     (** Let definitions are ensured to have no extra constraints coming from
         the body by virtue of the typing of [Entries.section_def_entry]. *)

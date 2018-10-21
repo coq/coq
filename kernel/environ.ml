@@ -94,6 +94,7 @@ type env = {
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
   indirect_pterms : Opaqueproof.opaquetab;
+  opaque_disk_data : Opaqueproof.DiskData.t
 }
 
 let empty_named_context_val = {
@@ -120,8 +121,9 @@ let empty_env = {
     env_engagement = PredicativeSet };
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
-  indirect_pterms = Opaqueproof.empty_opaquetab }
-
+  indirect_pterms = Opaqueproof.empty_opaquetab
+; opaque_disk_data = Opaqueproof.DiskData.empty;
+ }
 
 (* Rel context *)
 
@@ -683,6 +685,10 @@ let remove_hyps ids check_context check_value ctxt =
       else push_named_context_val_val d' v' rctxt', true
   in
   fst (remove_hyps ctxt)
+
+(* Lazy loading of disk data *)
+let add_opaque_disk_data env mp dd =
+  { env with opaque_disk_data = Opaqueproof.DiskData.add mp dd env.opaque_disk_data }
 
 (* A general request *)
 

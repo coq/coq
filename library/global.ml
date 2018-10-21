@@ -126,6 +126,7 @@ let lookup_modtype kn = lookup_modtype kn (env())
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 let opaque_tables () = Environ.opaque_tables (env ())
+let opaque_disk_data () = (env ()).Environ.opaque_disk_data
 
 let instantiate cb c =
   let open Declarations in
@@ -136,10 +137,11 @@ let instantiate cb c =
 let body_of_constant_body cb =
   let open Declarations in
   let otab = opaque_tables () in
+  let odata = opaque_disk_data () in
   match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (instantiate cb (Mod_subst.force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
+  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof odata otab o))
 
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 
@@ -155,7 +157,7 @@ let mind_of_delta_kn kn =
 
 let start_library dir = globalize (Safe_typing.start_library dir)
 let export s = Safe_typing.export (safe_env ()) s
-let import c d = globalize (Safe_typing.import c d)
+let import c d dd = globalize (Safe_typing.import c d dd)
 
 (** Function to get an environment from the constants part of the global
     environment and a given context. *)
