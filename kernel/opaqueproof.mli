@@ -46,12 +46,8 @@ module DiskData : sig
 end
 
 (* val mk_fetch : Constr.t Future.computation array Delayed.t -> opaque_disk_data *)
-val force_proof : DiskData.t -> opaquetab -> opaque -> constr
-val get_proof : DiskData.t -> opaquetab -> opaque -> constr Future.computation
-
-val force_constraints : opaquetab -> opaque -> Univ.ContextSet.t
-val get_constraints :
-  opaquetab -> opaque -> Univ.ContextSet.t Future.computation option
+val force_cst : DiskData.t -> opaquetab -> opaque -> constr * Univ.ContextSet.t
+val get_cst : DiskData.t -> opaquetab -> opaque -> (constr * Univ.ContextSet.t) Future.computation
 
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque

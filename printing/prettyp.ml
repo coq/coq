@@ -558,10 +558,11 @@ let print_constant with_values sep sp udecl =
   let univs =
     let open Univ in
     let otab = Global.opaque_tables () in
+    let odata = Global.opaque_disk_data () in
     match cb.const_body with
     | Undef _ | Def _ -> cb.const_universes
     | OpaqueDef o ->
-      let body_uctxs = Opaqueproof.force_constraints otab o in
+      let _, body_uctxs = Opaqueproof.force_cst odata otab o in
       match cb.const_universes with
       | Monomorphic_const ctx ->
         Monomorphic_const (ContextSet.union body_uctxs ctx)
@@ -721,7 +722,7 @@ let print_full_pure_context env sigma =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
                 str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
-                str "Proof " ++ pr_lconstr_env env sigma (Opaqueproof.force_proof Global.(opaque_disk_data ()) (Global.opaque_tables ()) lc)
+                str "Proof " ++ pr_lconstr_env env sigma (fst @@ Opaqueproof.force_cst Global.(opaque_disk_data ()) (Global.opaque_tables ()) lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
                 str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++

@@ -212,9 +212,7 @@ let get_opaque_body env cbo =
   | Undef _ -> assert false
   | Def _ -> `Nothing
   | OpaqueDef opaque ->
-      `Opaque
-        (Opaqueproof.force_proof env.Environ.opaque_disk_data (Environ.opaque_tables env) opaque,
-         Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
+      `Opaque Opaqueproof.(force_cst env.Environ.opaque_disk_data (Environ.opaque_tables env) opaque)
 
 type private_constants = Term_typing.side_effects
 
@@ -410,15 +408,13 @@ let globalize_constant_universes env cb =
     (match cb.const_body with
      | (Undef _ | Def _) -> []
      | OpaqueDef lc ->
-       match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
-       | None -> []
-       | Some fc ->
-            match Future.peek_val fc with
-             | None -> [Later fc]
-             | Some c -> [Now (false, c)])
+       let fc = Opaqueproof.get_cst (env.Environ.opaque_disk_data) (Environ.opaque_tables env) lc in
+       match Future.peek_val fc with
+       | None -> [Later Future.(chain fc snd)]
+       | Some c -> [Now (false, snd c)])
   | Polymorphic_const _ ->
     [Now (true, Univ.ContextSet.empty)]
-      
+
 let globalize_mind_universes mb =
   match mb.mind_universes with
   | Monomorphic_ind ctx ->

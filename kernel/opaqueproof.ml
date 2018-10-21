@@ -139,40 +139,25 @@ let access_table tables dp i =
 let get_opaque otbl dp i =
   access_table otbl dp i
 
-let force_proof tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
+let force_cst tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
-      fst(Future.force cu)
+    Future.force cu
   | Indirect (l,dp,i) ->
-      let pt =
-        if DirPath.equal dp odp
-        then Future.chain (snd (Int.Map.find i prfs)) fst
-        else get_opaque tbl dp i in
-      let c = Future.force pt in
-      force_constr (List.fold_right subst_substituted l (from_val c))
-
-let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> snd(Future.force cu)
-  | Indirect (_,dp,i) ->
+    let pt, u =
       if DirPath.equal dp odp
-      then snd (Future.force (snd (Int.Map.find i prfs)))
-      else Univ.ContextSet.empty
+      then Future.force (snd (Int.Map.find i prfs))
+      else Future.force (get_opaque tbl dp i), Univ.ContextSet.empty in
+    force_constr (List.fold_right subst_substituted l (from_val pt)), u
 
-let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> Some(Future.chain cu snd)
-  | Indirect (_,dp,i) ->
-      if DirPath.equal dp odp
-      then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
-      else None
-
-let get_proof tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> Future.chain cu fst
+let get_cst tbl { opaque_val = prfs; opaque_dir = odp; _ } = function
+  | Direct (_,cu) -> cu
   | Indirect (l,dp,i) ->
-      let pt =
-        if DirPath.equal dp odp
-        then Future.chain (snd (Int.Map.find i prfs)) fst
-        else get_opaque tbl dp i in
-      Future.chain pt (fun c ->
-          force_constr (List.fold_right subst_substituted l (from_val c)))
+    let pt =
+      if DirPath.equal dp odp
+      then snd (Int.Map.find i prfs)
+      else Future.chain (get_opaque tbl dp i) (fun c -> c, Univ.ContextSet.empty) in
+    Future.chain pt (fun (c, u) ->
+        force_constr (List.fold_right subst_substituted l (from_val c)), u)
 
 module FMap = Future.UUIDMap
 

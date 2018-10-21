@@ -382,13 +382,11 @@ let build_constant_declaration _kn env result =
         | Undef _ -> Id.Set.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
-            let vars =
-              global_vars_set env
-                (Opaqueproof.force_proof (env.opaque_disk_data) (opaque_tables env) lc) in
-            (* we force so that cst are added to the env immediately after *)
-            ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
-            if !Flags.record_aux_file then record_aux env ids_typ vars;
-            vars
+          (* we force so that cst are added to the env immediately after *)
+          let l_pf, _ctx = Opaqueproof.force_cst (env.opaque_disk_data) (opaque_tables env) lc in
+          let vars = global_vars_set env l_pf in
+          if !Flags.record_aux_file then record_aux env ids_typ vars;
+          vars
         in
         keep_hyps env (Id.Set.union ids_typ ids_def), def
     | None ->
@@ -553,9 +551,9 @@ let translate_local_def env _id centry =
     | Undef _ -> ()
     | Def _ -> ()
     | OpaqueDef lc ->
+       let l_pf, _ctx = Opaqueproof.force_cst env.opaque_disk_data (opaque_tables env) lc in
        let ids_typ = global_vars_set env typ in
-       let ids_def = global_vars_set env
-           (Opaqueproof.force_proof env.opaque_disk_data (opaque_tables env) lc) in
+       let ids_def = global_vars_set env l_pf in
        record_aux env ids_typ ids_def
   end;
   let () = match decl.cook_universes with
@@ -565,8 +563,7 @@ let translate_local_def env _id centry =
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c
   | OpaqueDef o ->
-    let p = Opaqueproof.force_proof env.opaque_disk_data (Environ.opaque_tables env) o in
-    let cst = Opaqueproof.force_constraints (Environ.opaque_tables env) o in
+    let p, cst = Opaqueproof.force_cst env.opaque_disk_data (Environ.opaque_tables env) o in
     (** Let definitions are ensured to have no extra constraints coming from
         the body by virtue of the typing of [Entries.section_def_entry]. *)
     let () = assert (Univ.ContextSet.is_empty cst) in

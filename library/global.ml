@@ -141,7 +141,7 @@ let body_of_constant_body cb =
   match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (instantiate cb (Mod_subst.force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof odata otab o))
+  | OpaqueDef o -> Some (instantiate cb (fst (Opaqueproof.force_cst odata otab o)))
 
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 
