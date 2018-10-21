@@ -385,7 +385,7 @@ let share_prefix s1 s2 =
   | _ -> false
 
 let _ =
-  let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
+  Feedback.(add_feeder "console" (console_feedback_listener Format.err_formatter));
   let prog, args =
     let args = Array.to_list Sys.argv in
     let prog = List.hd args in

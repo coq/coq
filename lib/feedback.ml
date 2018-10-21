@@ -45,15 +45,27 @@ type feedback = {
 }
 
 (** Feeders *)
-let feeders : (int, feedback -> unit) Hashtbl.t = Hashtbl.create 7
+let feeders : (string, feedback -> unit) Hashtbl.t = Hashtbl.create 7
 
-let add_feeder =
-  let f_id = ref 0 in fun f ->
-  incr f_id;
-  Hashtbl.add feeders !f_id f;
-  !f_id
-
+let add_feeder fid f = Hashtbl.add feeders fid f
 let del_feeder fid = Hashtbl.remove feeders fid
+
+let mask_feeder fid fb f x =
+  let fb_backup = Hashtbl.find feeders fid in
+  let restore () =
+    Hashtbl.remove feeders fid;
+    Hashtbl.add feeders fid fb_backup
+  in
+  try
+    Hashtbl.remove feeders fid;
+    Hashtbl.add feeders fid fb;
+    let res = f x in
+    restore ();
+    res
+  with exn ->
+    let iexn = Backtrace.add_backtrace exn in
+    restore ();
+    Util.iraise iexn
 
 let default_route = 0
 let span_id    = ref Stateid.dummy

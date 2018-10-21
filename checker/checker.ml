@@ -377,7 +377,7 @@ let init_with_argv argv =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-    let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
+    Feedback.(add_feeder "console" (console_feedback_listener Format.err_formatter));
     try
       parse_args argv;
       if !Flags.debug then Printexc.record_backtrace true;

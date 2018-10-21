@@ -60,11 +60,16 @@ type feedback = {
  * during interpretation are attached to it.
  *)
 
-(** [add_feeder f] adds a feeder listiner [f], returning its id *)
-val add_feeder : (feedback -> unit) -> int
+(** [add_feeder fid f] adds a feeder listener [f] *)
+val add_feeder : string -> (feedback -> unit) -> unit
 
 (** [del_feeder fid] removes the feeder with id [fid] *)
-val del_feeder : int -> unit
+val del_feeder : string -> unit
+
+(** [mask_feeders fid fb f x] will temporary redirect the output of
+   feeder [fid] when executing [f x] to [bf], correctly resetting the
+   feeder state on error and success.] *)
+val mask_feeder : string -> (feedback -> unit) -> ('a -> 'b) -> 'a -> 'b
 
 (** [feedback ?did ?sid ?route fb] produces feedback [fb], with
     [route] and [did, sid] set appropiatedly, if absent, it will use

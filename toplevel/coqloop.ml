@@ -430,7 +430,7 @@ let loop ~opts ~state =
   let open Coqargs in
   print_emacs := opts.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
-  let tl_feed = Feedback.add_feeder (coqloop_feed Topfmt.InteractiveLoop) in
+  Feedback.add_feeder "console" (coqloop_feed Topfmt.InteractiveLoop);
   if Dumpglob.dump () then begin
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()
@@ -441,4 +441,4 @@ let loop ~opts ~state =
   Mltop.ocaml_toploop();
   (* We delete the feeder after the OCaml toploop has ended so users
      of Drop can see the feedback. *)
-  Feedback.del_feeder tl_feed
+  Feedback.del_feeder "console"

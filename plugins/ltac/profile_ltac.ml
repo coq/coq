@@ -384,7 +384,7 @@ module SM = Map.Make(DData)
 let data = ref SM.empty
 
 let _ =
-  Feedback.(add_feeder (function
+  Feedback.(add_feeder "ltac_profile" (function
     | { doc_id = d;
         span_id = s;
         contents = Custom (_, "ltacprof_results", xml) } ->

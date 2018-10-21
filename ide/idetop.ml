@@ -494,7 +494,7 @@ let loop ~opts:_ ~state =
   (* SEXP parser make *)
   let xml_ic        = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
-  ignore (Feedback.add_feeder (slave_feeder (!msg_format ()) xml_oc));
+  Feedback.add_feeder "idetop" (slave_feeder (!msg_format ()) xml_oc);
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
