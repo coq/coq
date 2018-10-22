@@ -12,7 +12,6 @@
 module CVars = Vars
 open Names
 open EConstr
-open Nametab
 open CErrors
 open Util
 open Typeclasses_errors
@@ -67,7 +66,7 @@ let intern_info {hint_priority;hint_pattern} =
 
 (** TODO: add subinstances *)
 let existing_instance glob g info =
-  let c = global g in
+  let c = Nametab.global g in
   let info = Option.default Hints.empty_hint_info info in
   let info = intern_info info in
   let instance, _ = Global.type_of_global_in_context (Global.env ()) c in

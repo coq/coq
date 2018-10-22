@@ -15,7 +15,6 @@ open Names
 open Constr
 open Libnames
 open Globnames
-open Nametab
 open Libobject
 open Mod_subst
 
@@ -228,14 +227,14 @@ let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp ->
-    string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (ConstRef sp))
   | CL_PROJ sp ->
     let sp = Projection.Repr.constant sp in
-    string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (shortest_qualid_of_global Id.Set.empty (IndRef sp))
+      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (shortest_qualid_of_global Id.Set.empty (VarRef sp))
+      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (VarRef sp))
 
 let pr_class x = str (string_of_class x)
 
@@ -520,7 +519,7 @@ module CoercionPrinting =
     let compare = GlobRef.Ordered.compare
     let encode = coercion_of_reference
     let subst = subst_coe_typ
-    let printer x = pr_global_env Id.Set.empty x
+    let printer x = Nametab.pr_global_env Id.Set.empty x
     let key = ["Printing";"Coercion"]
     let title = "Explicitly printed coercions: "
     let member_message x b =

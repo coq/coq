@@ -22,7 +22,6 @@ open Nameops
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
-open Nametab
 open Impargs
 open Reductionops
 open Indtypes
@@ -575,6 +574,6 @@ let do_mutual_inductive ~template udecl indl cum poly prv ~uniform finite =
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) ~local:false poly) coes;
+  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
   if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()

@@ -60,14 +60,7 @@ let open_constant i ((sp,kn), obj) =
   if obj.cst_locl then ()
   else
     let con = Global.constant_of_delta_kn kn in
-    Nametab.push (Nametab.Exactly i) sp (ConstRef con);
-    match (Global.lookup_constant con).const_body with
-    | (Def _ | Undef _) -> ()
-    | OpaqueDef lc ->
-        match Opaqueproof.get_constraints (Global.opaque_tables ()) lc with
-        | Some f when Future.is_val f ->
-	   Global.push_context_set false (Future.force f)
-        | _ -> ()
+    Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let exists_name id =
   variable_exists id || Global.exists_objlabel (Label.of_id id)

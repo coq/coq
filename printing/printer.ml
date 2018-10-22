@@ -15,7 +15,6 @@ open Names
 open Constr
 open Environ
 open Globnames
-open Nametab
 open Evd
 open Refiner
 open Constrextern
@@ -242,7 +241,7 @@ let pr_abstract_cumulativity_info sigma cumi =
 (**********************************************************************)
 (* Global references *)
 
-let pr_global_env = pr_global_env
+let pr_global_env = Nametab.pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
 let pr_universe_instance evd inst =

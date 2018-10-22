@@ -50,7 +50,6 @@ TAGS
 bin/
 _build_ci
 _build
-myocamlbuild_config.ml
 config/Makefile
 config/coq_config.ml
 config/coq_config.py
@@ -69,6 +68,7 @@ time-of-build-after.log
 .csdp.cache
 test-suite/.lia.cache
 test-suite/.nra.cache
+test-suite/.nia.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
 test-suite/misc/universes/universes.txt
@@ -136,7 +136,6 @@ coqpp/coqpp_parse.mli
 g_*.ml
 
 lib/coqProject_file.ml
-parsing/cLexer.ml
 plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml
 plugins/ltac/extraargs.ml
@@ -167,8 +166,6 @@ checker/esubst.mli
 user-contrib
 .*.sw*
 .#*
-test-suite/.lia.cache
-test-suite/.nra.cache
 
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml

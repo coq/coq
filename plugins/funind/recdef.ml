@@ -51,7 +51,7 @@ open Context.Rel.Declaration
 (* Ugly things which should not be here *)
 
 [@@@ocaml.warning "-3"]
-let coq_constant m s = EConstr.of_constr @@ constr_of_global @@
+let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global @@
   Coqlib.find_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
@@ -63,7 +63,7 @@ let pr_leconstr_rd =
 
 let coq_init_constant s =
   EConstr.of_constr (
-    constr_of_global @@
+    UnivGen.constr_of_monomorphic_global @@
     Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
 [@@@ocaml.warning "+3"]
 
@@ -97,7 +97,7 @@ let type_of_const sigma t =
       Typeops.type_of_constant_in (Global.env()) (sp, u)
     |_ -> assert false
 
-let constant sl s = constr_of_global (find_reference sl s)
+let constant sl s = UnivGen.constr_of_monomorphic_global (find_reference sl s)
 
 let const_of_ref = function
     ConstRef kn -> kn
@@ -1241,7 +1241,7 @@ let get_current_subgoals_types () =
 
 exception EmptySubgoals
 let build_and_l sigma l =
-  let and_constr =  UnivGen.constr_of_global @@ Coqlib.lib_ref "core.and.type" in
+  let and_constr =  UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.and.type" in
   let conj_constr = Coqlib.build_coq_conj () in
   let mk_and p1 p2 =
     mkApp(EConstr.of_constr and_constr,[|p1;p2|]) in

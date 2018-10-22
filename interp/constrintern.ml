@@ -28,7 +28,6 @@ open Constrexpr
 open Constrexpr_ops
 open Notation_term
 open Notation_ops
-open Nametab
 open Notation
 open Inductiveops
 open Decl_kinds
@@ -633,7 +632,7 @@ let terms_of_binders bl =
     | PatVar (Name id)   -> CRef (qualid_of_ident id, None)
     | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
-       let qid = qualid_of_path ?loc (path_of_global (ConstructRef c)) in
+       let qid = qualid_of_path ?loc (Nametab.path_of_global (ConstructRef c)) in
        let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous,None) in
        let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
        CAppExpl ((None,qid,None),params @ List.map term_of_pat l)) pt in
@@ -721,7 +720,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           try
             let gc = intern nenv c in
             Id.Map.add id (gc, Some c) map
-          with GlobalizationError _ -> map
+          with Nametab.GlobalizationError _ -> map
         in
         let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
@@ -986,7 +985,7 @@ let intern_extended_global_of_qualid qid =
 let intern_reference qid =
   let r =
     try intern_extended_global_of_qualid qid
-    with Not_found -> error_global_not_found qid
+    with Not_found -> Nametab.error_global_not_found qid
   in
   Smartlocate.global_of_extended_global r
 
@@ -1058,11 +1057,11 @@ let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args qi
         (* Extra allowance for non globalizing functions *)
         if !interning_grammar || env.unb then
           (gvar (loc,qualid_basename qid) us, [], [], []), args
-        else error_global_not_found qid
+        else Nametab.error_global_not_found qid
   else
     let r,projapp,args2 =
       try intern_qualid qid intern env ntnvars us args
-      with Not_found -> error_global_not_found qid
+      with Not_found -> Nametab.error_global_not_found qid
     in
     let x, imp, scopes, l = find_appl_head_data r in
     (x,imp,scopes,l), args2
@@ -1312,7 +1311,7 @@ let sort_fields ~complete loc fields completer =
         (* the reference constructor of the record *)
         let base_constructor =
           let global_record_id = ConstructRef record.Recordops.s_CONST in
-          try shortest_qualid_of_global ?loc Id.Set.empty global_record_id
+          try Nametab.shortest_qualid_of_global ?loc Id.Set.empty global_record_id
           with Not_found ->
             anomaly (str "Environment corruption for records.") in
         let () = check_duplicate loc fields in
@@ -1493,7 +1492,7 @@ let drop_notations_pattern looked_for genv =
   in
   let rec drop_syndef top scopes qid pats =
     try
-      match locate_extended qid with
+      match Nametab.locate_extended qid with
       | SynDef sp ->
 	let (vars,a) = Syntax_def.search_syntactic_definition sp in
 	(match a with
@@ -1550,7 +1549,7 @@ let drop_notations_pattern looked_for genv =
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
      | CPatCstr (qid, Some expl_pl, pl) ->
-      let g = try locate qid
+      let g = try Nametab.locate qid
 	      with Not_found ->
               raise (InternalizationError (loc,NotAConstructor qid)) in
       if expl_pl == [] then

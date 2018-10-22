@@ -26,11 +26,11 @@ let step_count = ref 0
 
 let node_count = ref 0
 
-let li_False = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.False.type"))
-let li_and   = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.and.type"))
-let li_or    = lazy (destInd (UnivGen.constr_of_global @@ Coqlib.lib_ref "core.or.type"))
+let li_False = lazy (destInd (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.False.type"))
+let li_and   = lazy (destInd (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.and.type"))
+let li_or    = lazy (destInd (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.or.type"))
 
-let gen_constant n = lazy (UnivGen.constr_of_global (Coqlib.lib_ref n))
+let gen_constant n = lazy (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n))
 
 let l_xI = gen_constant "num.pos.xI"
 let l_xO = gen_constant "num.pos.xO"

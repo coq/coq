@@ -29,7 +29,6 @@ open Inductive
 open Inductiveops
 open Environ
 open Reductionops
-open Nametab
 open Context.Rel.Declaration
 
 type dep_flag = bool
@@ -618,6 +617,6 @@ let lookup_eliminator ind_sp s =
     user_err ~hdr:"default_elim"
       (strbrk "Cannot find the elimination combinator " ++
        Id.print id ++ strbrk ", the elimination of the inductive definition " ++
-       pr_global_env Id.Set.empty (IndRef ind_sp) ++
+       Nametab.pr_global_env Id.Set.empty (IndRef ind_sp) ++
        strbrk " on sort " ++ Termops.pr_sort_family s ++
        strbrk " is probably not allowed.")
