@@ -109,7 +109,6 @@ let change_vars =
       | GCast(b,c) ->
 	  GCast(change_vars mapping b,
                 Glob_ops.map_cast_type (change_vars mapping) c)
-      | GProj(p,c) -> GProj(p, change_vars mapping c)
       ) rt
   and change_vars_br mapping ({CAst.loc;v=(idl,patl,res)} as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
@@ -294,7 +293,6 @@ let rec alpha_rt excluded rt =
 	GApp(alpha_rt excluded f,
 	     List.map (alpha_rt excluded) args
 	    )
-    | GProj(p,c) -> GProj(p, alpha_rt excluded c)
   in
   new_rt
 
@@ -346,7 +344,6 @@ let is_free_in id =
     | GHole _ -> false
     | GCast (b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
     | GCast (b,CastCoerce) -> is_free_in b
-    | GProj (_,c) -> is_free_in c
     ) x
   and is_free_in_br {CAst.v=(ids,_,rt)} =
     (not (Id.List.mem id ids)) && is_free_in rt
@@ -440,8 +437,6 @@ let replace_var_by_term x_id term =
       | GCast(b,c) ->
 	  GCast(replace_var_by_pattern b,
                 Glob_ops.map_cast_type replace_var_by_pattern c)
-      | GProj(p,c) ->
-        GProj(p,replace_var_by_pattern c)
     ) x
   and replace_var_by_pattern_br ({CAst.loc;v=(idl,patl,res)} as br) =
     if List.exists (fun id -> Id.compare id x_id == 0) idl
@@ -545,7 +540,6 @@ let expand_as =
       | GCases(sty,po,el,brl) ->
 	  GCases(sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
-      | GProj(p,c) -> GProj(p, expand_as map c)
     )
   and expand_as_br map {CAst.loc; v=(idl,cpl,rt)} =
     CAst.make ?loc (idl,cpl, expand_as (List.fold_left add_as map cpl) rt)

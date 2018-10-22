@@ -464,9 +464,6 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
 	 one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
-  | GProj(p,c) ->
-    PProj(p, pat_of_raw metas vars c)
-
   | GRec (GFix (ln,n), ids, decls, tl, cl) ->
     if Array.exists (function (Some n, GStructRec) -> false | _ -> true) ln then
       err ?loc (Pp.str "\"struct\" annotation is expected.")

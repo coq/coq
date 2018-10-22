@@ -89,11 +89,9 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   glob_sort_eq s1 s2
 | NCast (t1, c1), NCast (t2, c2) ->
   (eq_notation_constr vars) t1 t2 && cast_type_eq (eq_notation_constr vars) c1 c2
-| NProj (p1, c1), NProj (p2, c2) ->
-  Projection.equal p1 p2 && eq_notation_constr vars c1 c2
 | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
   | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-  | NRec _ | NSort _ | NCast _ | NProj _), _ -> false
+  | NRec _ | NSort _ | NCast _ ), _ -> false
 
 (**********************************************************************)
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
@@ -220,7 +218,6 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef x -> GRef (x,None)
-  | NProj (p,c) -> GProj (p, f e c)
 
 let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
@@ -440,7 +437,6 @@ let notation_constr_and_vars_of_glob_constr recvars a =
      if arg != None then has_ltac := true;
      NHole (w, naming, arg)
   | GRef (r,_) -> NRef r
-  | GProj (p, c) -> NProj (p, aux c)
   | GEvar _ | GPatVar _ ->
       user_err Pp.(str "Existential variables not allowed in notations.")
   ) x
@@ -639,12 +635,6 @@ let rec subst_notation_constr subst bound raw =
       let r1' = subst_notation_constr subst bound r1 in
       let k' = smartmap_cast_type (subst_notation_constr subst bound) k in
       if r1' == r1 && k' == k then raw else NCast(r1',k')
-
-  | NProj (p, c) ->
-    let p' = subst_proj subst p in
-    let c' = subst_notation_constr subst bound c in
-    if p' == p && c' == c then raw else NProj(p', c')
-
 
 let subst_interpretation subst (metas,pat) =
   let bound = List.fold_left (fun accu (id, _) -> Id.Set.add id accu) Id.Set.empty metas in
@@ -1218,12 +1208,9 @@ let rec match_ inner u alp metas sigma a1 a2 =
           match_names metas (alp,sigma) (Name id') na in
       match_in u alp metas sigma (mkGApp a1 (DAst.make @@ GVar id')) b2
 
-  | GProj(p1, t1), NProj(p2, t2) when Projection.equal p1 p2 ->
-    match_in u alp metas sigma t1 t2
-
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
-     | GCast _ | GProj _ ), _ -> raise No_match
+     | GCast _ ), _ -> raise No_match
 
 and match_in u = match_ true u
 
