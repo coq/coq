@@ -280,17 +280,26 @@ let get_strategy { var_opacity; cst_opacity } = function
       with Not_found -> default_level)
   | RelKey _ -> Expand
 
+let dep_order l2r k1 k2 = match k1, k2 with
+| RelKey _, RelKey _ -> l2r
+| RelKey _, (VarKey _ | ConstKey _) -> true
+| VarKey _, RelKey _ -> false
+| VarKey _, VarKey _ -> l2r
+| VarKey _, ConstKey _ -> true
+| ConstKey _, (RelKey _ | VarKey _) -> false
+| ConstKey _, ConstKey _ -> l2r
+
 let oracle_order infos l2r k1 k2 =
   let o = Closure.oracle_of_infos infos in
   match get_strategy o k1, get_strategy o k2 with
-  | Expand, Expand -> l2r
+  | Expand, Expand -> dep_order l2r k1 k2
   | Expand, (Opaque | Level _) -> true
   | (Opaque | Level _), Expand -> false
-  | Opaque, Opaque -> l2r
+  | Opaque, Opaque -> dep_order l2r k1 k2
   | Level _, Opaque -> true
   | Opaque, Level _ -> false
   | Level n1, Level n2 ->
-     if Int.equal n1 n2 then l2r
+     if Int.equal n1 n2 then dep_order l2r k1 k2
      else n1 < n2
 
 let eq_table_key univ =

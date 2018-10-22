@@ -83,18 +83,27 @@ let fold_strategy f { var_opacity; cst_opacity; _ } accu =
 
 let get_transp_state { var_trstate; cst_trstate; _ } = (var_trstate, cst_trstate)
 
+let dep_order l2r k1 k2 = match k1, k2 with
+| RelKey _, RelKey _ -> l2r
+| RelKey _, (VarKey _ | ConstKey _) -> true
+| VarKey _, RelKey _ -> false
+| VarKey _, VarKey _ -> l2r
+| VarKey _, ConstKey _ -> true
+| ConstKey _, (RelKey _ | VarKey _) -> false
+| ConstKey _, ConstKey _ -> l2r
+
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, use the recommended default. *)
 let oracle_order f o l2r k1 k2 =
   match get_strategy o f k1, get_strategy o f k2 with
-  | Expand, Expand -> l2r
+  | Expand, Expand -> dep_order l2r k1 k2
   | Expand, (Opaque | Level _) -> true
   | (Opaque | Level _), Expand -> false
-  | Opaque, Opaque -> l2r
+  | Opaque, Opaque -> dep_order l2r k1 k2
   | Level _, Opaque -> true
   | Opaque, Level _ -> false
   | Level n1, Level n2 ->
-     if Int.equal n1 n2 then l2r
+     if Int.equal n1 n2 then dep_order l2r k1 k2
      else n1 < n2
 
 let get_strategy o = get_strategy o (fun x -> x)
