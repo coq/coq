@@ -13,7 +13,7 @@
     Adapted to Coq V8 by the Coq Development Team *)
 
 Require Import Bool BinPos BinNat PeanoNat Nnat.
-Declare ML Module "ascii_syntax_plugin".
+Module Export AsciiSyntax. Declare ML Module "ascii_syntax_plugin". End AsciiSyntax.
 
 (** * Definition of ascii characters *)
 

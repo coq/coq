@@ -15,7 +15,7 @@
 Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
-Declare ML Module "string_syntax_plugin".
+Module Export StringSyntax. Declare ML Module "string_syntax_plugin". End StringSyntax.
 
 (** *** Definition of strings *)
 
