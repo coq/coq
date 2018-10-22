@@ -23,7 +23,7 @@ Inductive ascii : Set := Ascii (_ _ _ _ _ _ _ _ : bool).
 Register Ascii as plugins.syntax.Ascii.
 
 Declare Scope char_scope.
-Declare ML Module "ascii_syntax_plugin".
+Module Export AsciiSyntax. Declare ML Module "ascii_syntax_plugin". End AsciiSyntax.
 Delimit Scope char_scope with char.
 Bind Scope char_scope with ascii.
 

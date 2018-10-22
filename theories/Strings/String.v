@@ -25,7 +25,7 @@ Inductive string : Set :=
   | String : ascii -> string -> string.
 
 Declare Scope string_scope.
-Declare ML Module "string_syntax_plugin".
+Module Export StringSyntax. Declare ML Module "string_syntax_plugin". End StringSyntax.
 Delimit Scope string_scope with string.
 Bind Scope string_scope with string.
 Local Open Scope string_scope.
