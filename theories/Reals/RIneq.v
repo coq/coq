@@ -1774,6 +1774,28 @@ Proof.
   now rewrite <- INR_IPR, SuccNat2Pos.id_succ.
 Qed.
 
+Lemma IZR_NEG : forall p, IZR (Zneg p) = Ropp (IZR (Zpos p)).
+Proof.
+  reflexivity.
+Qed.
+
+(** The three following lemmas map the default form of numerical
+    constants to their representation in terms of the axioms of
+    [R]. This can be a useful intermediate representation for reifying
+    to another axiomatics of the reals. It is however generally more
+    convenient to keep constants represented under an [IZR z] form when
+    working within [R]. *)
+
+Lemma IZR_POS_xO : forall p, IZR (Zpos (xO p)) = (1+1) * (IZR (Zpos p)).
+Proof.
+  intro. unfold IZR, IPR. destruct p; simpl; trivial. rewrite Rmult_1_r. trivial.
+Qed.
+
+Lemma IZR_POS_xI : forall p, IZR (Zpos (xI p)) = 1 + (1+1) * IZR (Zpos p).
+Proof.
+  intro. unfold IZR, IPR. destruct p; simpl; trivial. rewrite Rmult_1_r. trivial.
+Qed.
+
 Lemma plus_IZR_NEG_POS :
   forall p q:positive, IZR (Zpos p + Zneg q) = IZR (Zpos p) + IZR (Zneg q).
 Proof.
