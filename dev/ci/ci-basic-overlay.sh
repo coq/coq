@@ -214,8 +214,7 @@
 ########################################################################
 # Elpi
 ########################################################################
-# Latest commit on coq-master as of Sep 2, 2018
-: "${Elpi_CI_REF:=12efa57c37145dcfe331e6350b5d5cc145b13807}"
+: "${Elpi_CI_REF:=coq-v8.9}"
 : "${Elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${Elpi_CI_ARCHIVEURL:=${Elpi_CI_GITURL}/archive}"
 
