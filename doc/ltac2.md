@@ -17,7 +17,7 @@ Following the need of users that start developing huge projects relying
 critically on Ltac, we believe that we should offer a proper modern language
 that features at least the following:
 
-- at least informal, predictible semantics
+- at least informal, predictable semantics
 - a typing system
 - standard programming facilities (i.e. datatypes)
 
@@ -388,7 +388,7 @@ represent several goals, including none. Thus, there is no such thing as
 
 It is natural to do the same in Ltac2, but we must provide a way to get access
 to a given goal. This is the role of the `enter` primitive, that applies a
-tactic to each currently focussed goal in turn.
+tactic to each currently focused goal in turn.
 
 ```
 val enter : (unit -> unit) -> unit
@@ -634,7 +634,7 @@ bindings, so that there will be a syntax error if one of the bound variables
 starts with an uppercase character.
 
 The semantics of this construction is otherwise the same as the corresponding
-one from Ltac1, except that it requires the goal to be focussed.
+one from Ltac1, except that it requires the goal to be focused.
 
 ## Match over goals
 
