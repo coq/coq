@@ -533,10 +533,10 @@ Convertibility
 Let us write :math:`E[Γ] ⊢ t \triangleright u` for the contextual closure of the
 relation :math:`t` reduces to :math:`u` in the global environment
 :math:`E` and local context :math:`Γ` with one of the previous
-reductions β, ι, δ or ζ.
+reductions β, δ, ι or ζ.
 
 We say that two terms :math:`t_1` and :math:`t_2` are
-*βιδζη-convertible*, or simply *convertible*, or *equivalent*, in the
+*βδιζη-convertible*, or simply *convertible*, or *equivalent*, in the
 global environment :math:`E` and local context :math:`Γ` iff there
 exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangleright
 … \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and
