@@ -44,6 +44,7 @@ type lambda =
                   (* prefix, inductive name, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
+  | Lfloat        of Float64.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
   | Lind          of prefix * pinductive
@@ -123,7 +124,7 @@ let get_const_prefix env c =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Luint _
-  | Llazy | Lforce | Lmeta _ | Lint _ -> lam
+  | Llazy | Lforce | Lmeta _ | Lint _ | Lfloat _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -331,7 +332,7 @@ and reduce_lapp substf lids body substa largs =
 
 let is_value lc =
   match lc with
-  | Lval _ | Lint _ | Luint _ -> true
+  | Lval _ | Lint _ | Luint _ | Lfloat _ -> true
   | _ -> false
 
 let get_value lc =
@@ -339,6 +340,7 @@ let get_value lc =
   | Lval v -> v
   | Lint tag -> Nativevalues.mk_int tag
   | Luint i -> Nativevalues.mk_uint i
+  | Lfloat f -> Nativevalues.mk_float f
   | _ -> raise Not_found
 
 let make_args start _end =
@@ -364,7 +366,12 @@ let makeblock env ind tag nparams arity args =
   if Int.equal arity 0 then Lint tag
   else
   if Array.for_all is_value args then
-    let args = Array.map get_value args in
+    let dummy_val = Obj.magic 0 in
+    let args =
+      (* Don't simplify this to Array.map, cf. the related comment in
+         function eval_to_patch, file kernel/csymtable.ml *)
+      let a = Array.make (Array.length args) dummy_val in
+      Array.iteri (fun i v -> a.(i) <- get_value v) args; a in
     Lval (Nativevalues.mk_block tag args)
   else
     let prefix = get_mind_prefix env (fst ind) in
@@ -580,7 +587,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Int i -> Luint i
 
-  | Float _ -> assert false  (* native computed for primitive float not yet implemented *)
+  | Float f -> Lfloat f
 
 and lambda_of_app cache env sigma f args =
   match kind f with

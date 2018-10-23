@@ -208,6 +208,7 @@ let rec nf_val env sigma v typ =
       mkLambda(name,dom,body)
   | Vconst n -> construct_of_constr_const env sigma n typ
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
+  | Vfloat64 f -> f |> Float64.of_float |> mkFloat
   | Vblock b ->
       let capp,ctyp = construct_of_constr_block env sigma (block_tag b) typ in
       let args = nf_bargs env sigma b ctyp in

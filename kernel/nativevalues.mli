@@ -102,6 +102,9 @@ val mk_int : int -> t
 val mk_uint : Uint63.t -> t
 [@@ocaml.inline always]
 
+val mk_float : Float64.t -> t
+[@@ocaml.inline always]
+
 val napply : t -> t array -> t
 (* Functions over accumulators *)
 
@@ -130,6 +133,7 @@ type kind_of_value =
   | Vfun of (t -> t)
   | Vconst of int
   | Vint64 of int64
+  | Vfloat64 of float
   | Vblock of block
 
 val kind_of_value : t -> kind_of_value
@@ -140,7 +144,9 @@ val str_decode : string -> 'a
 (** Support for machine integers *)
 
 val val_to_int : t -> int
+
 val is_int : t -> bool
+[@@ocaml.inline always]
 
 (* function with check *)
 val head0 : t -> t -> t
@@ -247,3 +253,70 @@ val no_check_le      : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_compare : t -> t -> t
+
+(** Support for machine floating point values *)
+
+val is_float : t -> bool
+[@@ocaml.inline always]
+
+val fopp : t -> t -> t
+val fabs : t -> t -> t
+val fcompare : t -> t -> t -> t
+val fclassify : t -> t -> t
+val fadd : t -> t -> t -> t
+val fsub : t -> t -> t -> t
+val fmul : t -> t -> t -> t
+val fdiv : t -> t -> t -> t
+val fsqrt : t -> t -> t
+val float_of_int : t -> t -> t
+val normfr_mantissa : t -> t -> t
+val frshiftexp : t -> t -> t
+val ldshiftexp : t -> t -> t -> t
+val next_up : t -> t -> t
+val next_down : t -> t -> t
+
+(* Function without check *)
+val no_check_fopp : t -> t
+[@@ocaml.inline always]
+
+val no_check_fabs : t -> t
+[@@ocaml.inline always]
+
+val no_check_fcompare : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fclassify : t -> t
+[@@ocaml.inline always]
+
+val no_check_fadd : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fsub : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fmul : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fdiv : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fsqrt : t -> t
+[@@ocaml.inline always]
+
+val no_check_float_of_int : t -> t
+[@@ocaml.inline always]
+
+val no_check_normfr_mantissa : t -> t
+[@@ocaml.inline always]
+
+val no_check_frshiftexp : t -> t
+[@@ocaml.inline always]
+
+val no_check_ldshiftexp : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_next_up : t -> t
+[@@ocaml.inline always]
+
+val no_check_next_down : t -> t
+[@@ocaml.inline always]

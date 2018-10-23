@@ -38,6 +38,7 @@ type lambda =
                   (* prefix, inductive name, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
+  | Lfloat        of Float64.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
   | Lind          of prefix * pinductive
