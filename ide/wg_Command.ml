@@ -152,9 +152,9 @@ object(self)
   method show =
     frame#show;
     let cur_page = notebook#get_nth_page notebook#current_page in
-    let _, _, e =
-      List.find (fun (p,_,_) -> p#get_oid == cur_page#get_oid) views in
-    e#misc#grab_focus ()
+    match List.find (fun (p,_,_) -> p#get_oid == cur_page#get_oid) views with
+    | (_, _, e) -> e#misc#grab_focus ()
+    | exception Not_found -> ()
 
   method hide =
     frame#hide
