@@ -713,7 +713,7 @@ let mkDestructEq :
     observe_tclTHENLIST (str "mkDestructEq")
      [Proofview.V82.of_tactic (generalize new_hyps);
       (fun g2 ->
-        let changefun patvars sigma =
+        let changefun patvars env sigma =
           pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2)
         in
 	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
