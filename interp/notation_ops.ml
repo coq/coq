@@ -892,7 +892,9 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     | GVar id' ->
        (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
        sigma
-    | _ -> anomaly (str "A term which can be a binder has to be a variable.")
+    | t ->
+       (* The term is a non-variable pattern *)
+       raise No_match
   with Not_found ->
     (* The matching against a term allowing to find the instance has not been found yet *)
     (* If it will be a different name, we shall unfortunately fail *)
