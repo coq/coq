@@ -1,0 +1,10 @@
+(install
+ (section man)
+ (package coq)
+ (files coqc.1 coqtop.1 coqtop.byte.1 coqtop.opt.1 coqchk.1 coqdep.1 coqdoc.1 coq_makefile.1 coq-tex.1 coqwc.1))
+
+(install
+ (section man)
+ (package coqide)
+ (files coqide.1))
+
