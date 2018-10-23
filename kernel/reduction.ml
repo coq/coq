@@ -288,32 +288,6 @@ let conv_table_key infos k1 k2 cuniv =
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
-let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
-  let rec cmp_rec pstk1 pstk2 cuniv =
-    match (pstk1,pstk2) with
-      | (z1::s1, z2::s2) ->
-          let cu1 = cmp_rec s1 s2 cuniv in
-          (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) -> 
-	       Array.fold_right2 f a1 a2 cu1
-            | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
-              if not (Projection.Repr.equal c1 c2) then
-		raise NotConvertible
-	      else cu1
-            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
-                let cu2 = f fx1 fx2 cu1 in
-                cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
-                if not (fmind ci1.ci_ind ci2.ci_ind) then
-		  raise NotConvertible;
-		let cu2 = f (l1,p1) (l2,p2) cu1 in
-                Array.fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
-            | _ -> assert false)
-      | _ -> cuniv in
-  if compare_stack_shape stk1 stk2 then
-    cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
-  else raise NotConvertible
-
 type conv_tab = {
   cnv_inf : clos_infos;
   lft_tab : clos_tab;
@@ -611,10 +585,31 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | FProd _ | FEvar _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
-  compare_stacks
-    (fun (l1,t1) (l2,t2) cuniv -> ccnv CONV l2r infos l1 l2 t1 t2 cuniv)
-    (eq_ind)
-    lft1 stk1 lft2 stk2 cuniv
+  let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
+  let rec cmp_rec pstk1 pstk2 cuniv =
+    match (pstk1,pstk2) with
+      | (z1::s1, z2::s2) ->
+          let cu1 = cmp_rec s1 s2 cuniv in
+          (match (z1,z2) with
+            | (Zlapp a1,Zlapp a2) ->
+               Array.fold_right2 f a1 a2 cu1
+            | (Zlproj (c1,_l1),Zlproj (c2,_l2)) ->
+              if not (Projection.Repr.equal c1 c2) then
+                raise NotConvertible
+              else cu1
+            | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
+                let cu2 = f fx1 fx2 cu1 in
+                cmp_rec a1 a2 cu2
+            | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
+                if not (eq_ind ci1.ci_ind ci2.ci_ind) then
+                  raise NotConvertible;
+                let cu2 = f (l1,p1) (l2,p2) cu1 in
+                Array.fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
+            | _ -> assert false)
+      | _ -> cuniv in
+  if compare_stack_shape stk1 stk2 then
+    cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
+  else raise NotConvertible
 
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
   let lv1 = Array.length v1 in
