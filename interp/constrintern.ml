@@ -122,6 +122,7 @@ type internalization_error =
   | BadPatternsNumber of int * int
   | NotAProjection of qualid
   | NotAProjectionOf of qualid * qualid
+  | ProjectionsOfDifferentRecords of qualid * qualid
 
 exception InternalizationError of internalization_error Loc.located
 
@@ -153,6 +154,10 @@ let explain_field_not_a_projection field_id =
 let explain_field_not_a_projection_of field_id inductive_id =
   pr_qualid field_id ++ str ": Not a projection of inductive " ++ pr_qualid inductive_id
 
+let explain_projections_of_diff_records inductive1_id inductive2_id =
+  str "This record contains fields of both " ++ pr_qualid inductive1_id ++
+  str " and " ++ pr_qualid inductive2_id
+
 let explain_internalization_error e =
   let pp = match e with
   | VariableCapture (id,id') -> explain_variable_capture id id'
@@ -162,7 +167,10 @@ let explain_internalization_error e =
   | NonLinearPattern id -> explain_non_linear_pattern id
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
   | NotAProjection field_id -> explain_field_not_a_projection field_id
-  | NotAProjectionOf (field_id, inductive_id) -> explain_field_not_a_projection_of field_id inductive_id
+  | NotAProjectionOf (field_id, inductive_id) ->
+    explain_field_not_a_projection_of field_id inductive_id
+  | ProjectionsOfDifferentRecords (inductive1_id, inductive2_id) ->
+    explain_projections_of_diff_records inductive1_id inductive2_id
   in pp ++ str "."
 
 let error_bad_inductive_type ?loc =
@@ -1376,7 +1384,7 @@ let sort_fields ~complete loc fields completer =
                with Not_found ->
                  user_err ?loc ~hdr:"intern"
                                (str "The field \"" ++ pr_qualid field_ref ++ str "\" does not exist.") in
-               let _ = try Recordops.find_projection field_glob_ref
+               let this_field_record = try Recordops.find_projection field_glob_ref
                  with Not_found ->
                    let inductive_ref = inductive_of_record loc record in
                    raise (InternalizationError(loc, NotAProjectionOf (field_ref, inductive_ref)))
@@ -1385,8 +1393,9 @@ let sort_fields ~complete loc fields completer =
                  let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
-                   user_err ?loc 
-                     (str "This record contains fields of different records.")
+                   let ind1 = inductive_of_record loc record in
+                   let ind2 = inductive_of_record loc this_field_record in
+                   raise (InternalizationError(loc, ProjectionsOfDifferentRecords (ind1, ind2)))
                in
                index_fields fields remaining_projs ((field_index, field_value) :: acc)
             | [] ->

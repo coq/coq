@@ -3,7 +3,7 @@ unit: Not a projection.
 The command has indeed failed with message:
 unit: Not a projection.
 The command has indeed failed with message:
-This record contains fields of different records.
+This record contains fields of both t and t'.
 The command has indeed failed with message:
 unit: Not a projection.
 The command has indeed failed with message:

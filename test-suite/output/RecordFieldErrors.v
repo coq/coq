@@ -16,7 +16,7 @@ Fail Check {| unit := tt;
 
 Fail Check {| foo := tt;
               bar := tt |}.
-(* This record contains fields of different records. *)
+(* This record contains fields of both t and t'. *)
 
 Fail Check {| unit := tt;
               unit := tt |}.
