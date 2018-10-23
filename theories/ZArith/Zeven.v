@@ -141,8 +141,8 @@ Notation Zodd_bool_pred := Z.odd_pred (only parsing).
 (** * Definition of [Z.quot2], [Z.div2] and properties wrt [Zeven]
   and [Zodd] *)
 
-Notation Zdiv2 := Z.div2 (compat "8.6").
-Notation Zquot2 := Z.quot2 (compat "8.6").
+Notation Zdiv2 := Z.div2 (compat "8.7").
+Notation Zquot2 := Z.quot2 (compat "8.7").
 
 (** Properties of [Z.div2] *)
 
