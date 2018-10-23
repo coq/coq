@@ -104,9 +104,15 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${Coquelicot_CI_REF:=0c2e3034a24dc7d5c6110f8de626904a559c148e}"
+# The URL for downloading a tgz snapshot of the master branch is
+# https://scm.gforge.inria.fr/anonscm/gitweb?p=coquelicot/coquelicot.git;a=snapshot;h=refs/heads/master;sf=tgz
+# See https://gforge.inria.fr/scm/browser.php?group_id=3599
+# Since this URL doesn't fit to our standard mechanism and since Coquelicot doesn't seem to change frequently,
+# we use a fixed version, which has a download path which does fit to our standard mechanism.
+# ATTENTION: The archive URL might depend on the version!
+: "${Coquelicot_CI_REF:=coquelicot-3.0.2}"
 : "${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
+: "${Coquelicot_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37523}"
 
 ########################################################################
 # CompCert
@@ -256,3 +262,27 @@
 : "${quickchick_CI_REF:=fae47245b75f049c462601d88e4df2e063841a3b}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
+
+########################################################################
+# plugin_tutorial
+########################################################################
+# Latest commit on master as of Sep 27, 2018
+: "${plugin_tutorial_CI_REF:=b303b75c18734accc9cd7efe82307b0424426e3f}"
+: "${plugin_tutorial_CI_GITURL:=https://github.com/ybertot/plugin_tutorials}"
+: "${plugin_tutorial_CI_ARCHIVEURL:=${plugin_tutorial_CI_GITURL}/archive}"
+
+########################################################################
+# menhirlib
+########################################################################
+# Latest commit on master as of Sep 27, 2018
+: "${menhirlib_CI_REF:=9e4b304bdbcc1f8d433e005a46eb10480e7ae880}"
+: "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
+: "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
+
+########################################################################
+# aac-tactics
+########################################################################
+# Latest commit on master as of Oct 8, 2018
+: "${aactactis_CI_REF:=c10636221af6324dfeea89830699dbb7488dfdde}"
+: "${aactactis_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
+: "${aactactis_CI_ARCHIVEURL:=${aactactis_CI_GITURL}/archive}"

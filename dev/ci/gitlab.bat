@@ -43,9 +43,23 @@ if exist %DESTCOQ%\ rd /s /q %DESTCOQ%
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
-  -addon="bignums ltac2 equations" -make=N ^
+  -addon=bignums ^
+  -addon=equations ^
+  -addon=ltac2 ^
+  -addon=mtac2 ^
+  -addon=mathcomp ^
+  -addon=menhir ^
+  -addon=menhirlib ^
+  -addon=compcert ^
+  -addon=extlib ^
+  -addon=quickchick ^
+  -addon=coquelicot ^
+  -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit
 
+REM addons with build issues
+REM -addon=vst ^
+REM -addon=aactactics ^
 
 ECHO "Start Artifact Creation"
 TIME /T
