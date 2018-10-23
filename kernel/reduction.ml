@@ -68,7 +68,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * fconstr * fconstr array
+  | Zlcase of case_info * lift * constr * constr array * fconstr subs
 and lft_constr_stack = lft_constr_stack_elt list
 
 let rec zlapp v = function
@@ -102,7 +102,7 @@ let pure_stack lfts stk =
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
             | (ZcaseT(ci,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,mk_clos e p,Array.map (mk_clos e) br)::pstk))
+                (l,Zlcase(ci,l,p,br,e)::pstk))
   in
   snd (pure_rec lfts stk)
 
@@ -600,11 +600,11 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 let cu2 = f fx1 fx2 cu1 in
                 cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
+            | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
                 if not (eq_ind ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
-                let cu2 = f (l1,p1) (l2,p2) cu1 in
-                Array.fold_right2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2 cu2
+                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
+                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
             | _ -> assert false)
       | _ -> cuniv in
   if compare_stack_shape stk1 stk2 then
@@ -623,6 +623,10 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
         fold (n+1) cuniv in
     fold 0 cuniv
   else raise NotConvertible
+
+and convert_branches l2r infos _ci e1 e2 lft1 lft2 br1 br2 cuniv =
+  let fold c1 c2 cuniv = ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv in
+  Array.fold_right2 fold br1 br2 cuniv
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
