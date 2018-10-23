@@ -15,11 +15,10 @@ Require Export Coq.Compat.Coq89.
     [Require].  So we make all of the relevant notations accessible in
     compatibility mode. *)
 Require Coq.Strings.Ascii Coq.Strings.String.
+Export String.StringSyntax Ascii.AsciiSyntax.
 Require Coq.ZArith.BinIntDef Coq.PArith.BinPosDef Coq.NArith.BinNatDef.
 Require Coq.Reals.Rdefinitions.
 Require Coq.Numbers.Cyclic.Int31.Int31.
-Declare ML Module "string_syntax_plugin".
-Declare ML Module "ascii_syntax_plugin".
 Declare ML Module "r_syntax_plugin".
 Declare ML Module "int31_syntax_plugin".
 Numeral Notation BinNums.Z BinIntDef.Z.of_int BinIntDef.Z.to_int : Z_scope.
