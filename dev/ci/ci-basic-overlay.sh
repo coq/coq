@@ -81,8 +81,7 @@
 ########################################################################
 # Ltac2
 ########################################################################
-# Latest commit on master as of Sep 2, 2018
-: "${ltac2_CI_REF:=da4c15c519fad0190040dda163c5df805fff0e73}"
+: "${ltac2_CI_REF:=v8.9}"
 : "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
 : "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
 
@@ -206,8 +205,8 @@
 ########################################################################
 # Equations
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${Equations_CI_REF:=2191d090540ea5aeb068315057b0df9b1310b56a}"
+# Latest commit on master as of Sep 26, 2018
+: "${Equations_CI_REF:=477cb9d8aac85e03dad3f992f99646e14d803a0c}"
 : "${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${Equations_CI_ARCHIVEURL:=${Equations_CI_GITURL}/archive}"
 
