@@ -241,6 +241,8 @@ Standard Library
 - There are now conversions between `string` and `positive`, `Z`,
   `nat`, and `N` in binary, octal, and hex.
 
+- Added `ByteVector` type that can convert to and from [string].
+
 Display diffs between proof steps
 
 - `coqtop` and `coqide` can now highlight the differences between proof steps
