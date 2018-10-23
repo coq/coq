@@ -32,6 +32,12 @@ Macros:
 - The RAW_TYPED AS and GLOB_TYPED AS stanzas of the ARGUMENT EXTEND macro are
   deprecated. Use TYPED AS instead.
 
+- coqpp (.mlg) based VERNAC EXTEND accesses attributes through a `#[ x
+  = att ]` syntax, where `att : 'a Attributes.attribute` and `x` will
+  be bound with type `'a` in the expression, unlike the old system
+  where `atts : Vernacexpr.vernac_flags` was bound in the expression
+  and had to be manually parsed.
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API
