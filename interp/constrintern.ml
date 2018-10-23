@@ -976,10 +976,6 @@ let split_by_type_pat ?loc ids subst =
   assert (terms = [] && termlists = []);
   subst
 
-let make_subst ids l =
-  let fold accu (id, scopes) a = Id.Map.add id (a, scopes) accu in
-  List.fold_left2 fold Id.Map.empty ids l
-
 let intern_notation intern env ntnvars loc ntn fullargs =
   (* Adjust to parsing of { } *)
   let ntn,fullargs = contract_curly_brackets ntn fullargs in
@@ -1113,8 +1109,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       if List.length args < nids then error_not_enough_arguments ?loc;
       let args1,args2 = List.chop nids args in
       check_no_explicitation args1;
-      let terms = make_subst ids (List.map fst args1) in
-      let subst = (terms, Id.Map.empty, Id.Map.empty, Id.Map.empty) in
+      let subst = split_by_type ids (List.map fst args1,[],[],[]) in
       let infos = (Id.Map.empty, env) in
       let c = instantiate_notation_constr loc intern intern_cases_pattern_as_binder ntnvars subst infos c in
       let loc = c.loc in
@@ -1624,8 +1619,8 @@ let drop_notations_pattern looked_for genv =
               let nvars = List.length vars in
               if List.length pats < nvars then error_not_enough_arguments ?loc:qid.loc;
               let pats1,pats2 = List.chop nvars pats in
-              let subst = make_subst vars pats1 in
-              let idspl1 = List.map (in_not false qid.loc scopes (subst, Id.Map.empty) []) args in
+              let subst = split_by_type_pat vars (pats1,[]) in
+              let idspl1 = List.map (in_not false qid.loc scopes subst []) args in
               let (_,argscs) = find_remaining_scopes pats1 pats2 g in
               Some (g, idspl1, List.map2 (in_pat_sc scopes) argscs pats2)
         | _ -> raise Not_found

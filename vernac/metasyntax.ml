@@ -1073,12 +1073,12 @@ let make_internalization_vars recvars mainvars typs =
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
-let make_interpretation_type isrec isonlybinding = function
+let make_interpretation_type isrec isonlybinding default_if_binding = function
   (* Parsed as constr list *)
   | ETConstr (_,None,_) when isrec -> NtnTypeConstrList
-  (* Parsed as constr, but interpreted as a binder: default is to parse it as an ident only *)
+  (* Parsed as constr, but interpreted as a binder *)
   | ETConstr (_,Some bk,_) -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
-  | ETConstr (_,None,_) when isonlybinding -> NtnTypeBinder (NtnBinderParsedAsConstr AsIdent)
+  | ETConstr (_,None,_) when isonlybinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
   (* Parsed as constr, interpreted as constr *)
   | ETConstr (_,None,_) -> NtnTypeConstr
   (* Others *)
@@ -1096,7 +1096,9 @@ let subentry_of_constr_prod_entry = function
   | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeLevel
   | _ -> InConstrEntrySomeLevel
 
-let make_interpretation_vars recvars allvars typs =
+let make_interpretation_vars
+  (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsIdent)
+   recvars allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1113,7 +1115,7 @@ let make_interpretation_vars recvars allvars typs =
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let typ = Id.List.assoc x typs in
     ((subentry_of_constr_prod_entry typ,sc),
-     make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
+     make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ | Break _ -> true | _ -> false) l then
@@ -1792,8 +1794,8 @@ let try_interp_name_alias = function
   | _ -> raise Not_found
 
 let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
-  let vars,reversibility,pat =
-    try [], APrioriReversible, NRef (try_interp_name_alias (vars,c))
+  let acvars,pat,reversibility =
+    try Id.Map.empty, NRef (try_interp_name_alias (vars,c)), APrioriReversible
     with Not_found ->
       let fold accu id = Id.Map.add id NtnInternTypeAny accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
@@ -1801,10 +1803,11 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
         ninterp_var_type = i_vars;
         ninterp_rec_vars = Id.Map.empty;
       } in
-      let nvars, pat, reversibility = interp_notation_constr env nenv c in
-      let map id = let (_,sc) = Id.Map.find id nvars in (id, sc) in
-      List.map map vars, reversibility, pat
+      interp_notation_constr env nenv c
   in
+  let in_pat id = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,0))) in
+  let interp = make_interpretation_vars ~default_if_binding:AsIdentOrPattern [] acvars (List.map in_pat vars) in
+  let vars = List.map (fun x -> (x, Id.Map.find x interp)) vars in
   let onlyparsing = onlyparsing || fst (printability None false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
 
