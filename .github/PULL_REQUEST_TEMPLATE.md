@@ -16,4 +16,4 @@ Fixes / closes #????
 <!-- If this is a feature pull request / breaks compatibility: -->
 <!-- (Otherwise, remove these lines.) -->
 - [ ] Corresponding documentation was added / updated (including any warning and error messages added / removed / modified).
-- [ ] Entry added in CHANGES.
+- [ ] Entry added in CHANGES.md.
