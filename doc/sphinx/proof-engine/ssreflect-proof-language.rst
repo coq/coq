@@ -916,11 +916,8 @@ but also folds ``x`` in the goal.
      .. coqtop:: reset
 
         From Coq Require Import ssreflect.
-        Set Implicit Arguments.
-        Unset Strict Implicit.
-        Unset Printing Implicit Defensive.
 
-     .. coqtop:: all undo
+     .. coqtop:: all
 
         Lemma test x t (Hx : x = 3) : x + t = 4.
         set z := 3 in Hx.
@@ -928,6 +925,10 @@ but also folds ``x`` in the goal.
 If the localization also mentions the goal, then the result is the following one:
 
   .. example::
+
+     .. coqtop:: reset
+
+        From Coq Require Import ssreflect.
 
      .. coqtop:: all
 
@@ -2485,8 +2486,7 @@ destruction of existential assumptions like in the tactic:
   .. coqtop:: all
 
      Lemma test : True.
-     have [x Px]: exists x : nat, x > 0.
-     Focus 2.
+     have [x Px]: exists x : nat, x > 0; last first.
 
 An alternative use of the ``have`` tactic is to provide the explicit proof
 term for the intermediate lemma, using tactics of the form:
@@ -2564,8 +2564,7 @@ copying the goal itself.
   .. coqtop:: all
 
      Lemma test : True.
-     have suff H : 2 + 2 = 3.
-     Focus 2.
+     have suff H : 2 + 2 = 3; last first.
 
   Note that H is introduced in the second goal.
 
@@ -2852,8 +2851,7 @@ pattern will be used to process its instance.
   .. coqtop:: all
 
      Lemma simple n (ngt0 : 0 < n ) : P n.
-     gen have ltnV, /andP[nge0 neq0] : n ngt0 / (0 <= n) && (n != 0).
-     Focus 2.
+     gen have ltnV, /andP[nge0 neq0] : n ngt0 / (0 <= n) && (n != 0); last first.
 
 
 .. _advanced_generalization_ssr:
@@ -3556,6 +3554,7 @@ corresponding new goals will be generated.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
+     Set Warnings "-notation-overridden".
 
   .. coqtop:: all
 
@@ -3756,9 +3755,10 @@ which the function is supplied:
    :name: congr
 
 This tactic:
-+ checks that the goal is a Leibniz equality
-+ matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints.
-+ generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
+
+   + checks that the goal is a Leibniz equality;
+   + matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints;
+   + generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
 
 The goal can be a non dependent product ``P -> Q``. In that case, the
 system asserts the equation ``P = Q``, uses it to solve the goal, and
@@ -4918,7 +4918,7 @@ which produces the converse implication. In both cases, the two
 first Prop arguments are implicit.
 
 If ``term`` is an instance of the ``reflect`` predicate, then ``A`` will be one
-of the defined view hints for the ``reflec``t predicate, which are by
+of the defined view hints for the ``reflect`` predicate, which are by
 default the ones present in the file ``ssrbool.v``. These hints are not
 only used for choosing the appropriate direction of the translation,
 but they also allow complex transformation, involving negations.
@@ -4933,9 +4933,9 @@ but they also allow complex transformation, involving negations.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: in
+  .. coqtop:: all
 
-     Lemma introN : forall (P : Prop) (b : bool), reflect P b -> ~ P -> ~~b.
+     Check introN.
 
   .. coqtop:: all
 
@@ -4945,12 +4945,11 @@ but they also allow complex transformation, involving negations.
   In fact this last script does not
   exactly use the hint ``introN``, but the more general hint:
 
-  .. coqtop:: in
+  .. coqtop:: all
 
-     Lemma introNTF : forall (P : Prop) (b c : bool),
-       reflect P b -> (if c then ~ P else P) -> ~~ b = c.
+     Check introNTF.
 
-  The lemma ` `introN`` is an instantiation of introNF using c := true.
+  The lemma ``introN`` is an instantiation of ``introNF`` using ``c := true``.
 
 Note that views, being part of :token:`i_pattern`, can be used to interpret
 assertions too. For example the following script asserts ``a && b`` but
