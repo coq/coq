@@ -120,7 +120,7 @@ G. Dowek, allowed hierarchical developments of mathematical theories.
 This high-level language was called the *Mathematical Vernacular*.
 Furthermore, an interactive *Theorem Prover* permitted the incremental
 construction of proof trees in a top-down manner, subgoaling recursively
-and backtracking from dead-alleys. The theorem prover executed tactics
+and backtracking from dead-ends. The theorem prover executed tactics
 written in CAML, in the LCF fashion. A basic set of tactics was
 predefined, which the user could extend by his own specific tactics.
 This system (Version 4.10) was released in 1989. Then, the system was
