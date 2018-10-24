@@ -4935,9 +4935,9 @@ but they also allow complex transformation, involving negations.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: in
+  .. coqtop:: all
 
-     Lemma introN : forall (P : Prop) (b : bool), reflect P b -> ~ P -> ~~b.
+     Check introN.
 
   .. coqtop:: all
 
@@ -4947,12 +4947,11 @@ but they also allow complex transformation, involving negations.
   In fact this last script does not
   exactly use the hint ``introN``, but the more general hint:
 
-  .. coqtop:: in
+  .. coqtop:: all
 
-     Lemma introNTF : forall (P : Prop) (b c : bool),
-       reflect P b -> (if c then ~ P else P) -> ~~ b = c.
+     Check introNTF.
 
-  The lemma ` `introN`` is an instantiation of introNF using c := true.
+  The lemma ``introN`` is an instantiation of ``introNF`` using ``c := true``.
 
 Note that views, being part of :token:`i_pattern`, can be used to interpret
 assertions too. For example the following script asserts ``a && b`` but
