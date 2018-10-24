@@ -89,7 +89,8 @@ let typecheck_arity env params inds =
         env_ar')
       env
       inds in
-  env_arities
+  let env_ar_par = push_rel_context params env_arities in
+  env_arities, env_ar_par
 
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
@@ -252,7 +253,7 @@ let check_inductive env kn mib =
     user_err Pp.(str "number the right number of parameters");
   (* mind_packets *)
   (*  - check arities *)
-  let env_ar = typecheck_arity env0 params mib.mind_packets in
+  let env_ar, env_ar_par = typecheck_arity env0 params mib.mind_packets in
   (*  - check constructor types *)
   Array.iter (typecheck_one_inductive env_ar params) mib.mind_packets;
   (* check the inferred subtyping relation *)
@@ -263,8 +264,8 @@ let check_inductive env kn mib =
       check_subtyping acumi params env_ar mib.mind_packets
   in
   (* check mind_nparams_rec: positivity condition *)
-  let packets = Array.map (fun p -> (p.mind_typename, Array.to_list p.mind_consnames, p.mind_user_lc, (p.mind_arity_ctxt,()))) mib.mind_packets in
-  let _ = Indtypes.check_positivity ~chkpos:true kn env_ar mib.mind_params_ctxt mib.mind_finite packets in
+  let packets = Array.map (fun p -> (p.mind_typename, Array.to_list p.mind_consnames, p.mind_user_lc, (p.mind_arity_ctxt,p.mind_arity))) mib.mind_packets in
+  let _ = Indtypes.check_positivity ~chkpos:true kn env_ar_par mib.mind_params_ctxt mib.mind_finite packets in
   (* check mind_equiv... *)
   (* Now we can add the inductive *)
   add_mind kn mib env
