@@ -4920,7 +4920,7 @@ which produces the converse implication. In both cases, the two
 first Prop arguments are implicit.
 
 If ``term`` is an instance of the ``reflect`` predicate, then ``A`` will be one
-of the defined view hints for the ``reflec``t predicate, which are by
+of the defined view hints for the ``reflect`` predicate, which are by
 default the ones present in the file ``ssrbool.v``. These hints are not
 only used for choosing the appropriate direction of the translation,
 but they also allow complex transformation, involving negations.
