@@ -3756,9 +3756,10 @@ which the function is supplied:
    :name: congr
 
 This tactic:
-+ checks that the goal is a Leibniz equality
-+ matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints.
-+ generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
+
+   + checks that the goal is a Leibniz equality;
+   + matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints;
+   + generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
 
 The goal can be a non dependent product ``P -> Q``. In that case, the
 system asserts the equation ``P = Q``, uses it to solve the goal, and
