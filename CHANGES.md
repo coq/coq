@@ -24,6 +24,10 @@ Tactics
   Simplex-based proof engine. In case of regression, 'Unset Simplex'
   to get the venerable Fourier-based engine.
 
+Standard Library
+
+- Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about
+  the upper bound of number represented by a vector.
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================
