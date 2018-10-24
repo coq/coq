@@ -2486,8 +2486,7 @@ destruction of existential assumptions like in the tactic:
   .. coqtop:: all
 
      Lemma test : True.
-     have [x Px]: exists x : nat, x > 0.
-     Focus 2.
+     have [x Px]: exists x : nat, x > 0; last first.
 
 An alternative use of the ``have`` tactic is to provide the explicit proof
 term for the intermediate lemma, using tactics of the form:
@@ -2565,8 +2564,7 @@ copying the goal itself.
   .. coqtop:: all
 
      Lemma test : True.
-     have suff H : 2 + 2 = 3.
-     Focus 2.
+     have suff H : 2 + 2 = 3; last first.
 
   Note that H is introduced in the second goal.
 
@@ -2853,8 +2851,7 @@ pattern will be used to process its instance.
   .. coqtop:: all
 
      Lemma simple n (ngt0 : 0 < n ) : P n.
-     gen have ltnV, /andP[nge0 neq0] : n ngt0 / (0 <= n) && (n != 0).
-     Focus 2.
+     gen have ltnV, /andP[nge0 neq0] : n ngt0 / (0 <= n) && (n != 0); last first.
 
 
 .. _advanced_generalization_ssr:
