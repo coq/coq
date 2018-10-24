@@ -916,11 +916,8 @@ but also folds ``x`` in the goal.
      .. coqtop:: reset
 
         From Coq Require Import ssreflect.
-        Set Implicit Arguments.
-        Unset Strict Implicit.
-        Unset Printing Implicit Defensive.
 
-     .. coqtop:: all undo
+     .. coqtop:: all
 
         Lemma test x t (Hx : x = 3) : x + t = 4.
         set z := 3 in Hx.
@@ -928,6 +925,10 @@ but also folds ``x`` in the goal.
 If the localization also mentions the goal, then the result is the following one:
 
   .. example::
+
+     .. coqtop:: reset
+
+        From Coq Require Import ssreflect.
 
      .. coqtop:: all
 
