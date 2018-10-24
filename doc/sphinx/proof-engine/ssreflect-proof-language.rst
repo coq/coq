@@ -3554,6 +3554,7 @@ corresponding new goals will be generated.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
+     Set Warnings "-notation-overridden".
 
   .. coqtop:: all
 
