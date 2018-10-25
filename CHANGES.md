@@ -52,6 +52,9 @@ Vernacular commands
 - `Combined Scheme` can now work when inductive schemes are generated in sort
   `Type`. It used to be limited to sort `Prop`.
 
+- Binders for an `Instance` now act more like binders for a `Theorem`.
+  Names may not be repeated, and may not overlap with section variable names.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

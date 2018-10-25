@@ -368,10 +368,7 @@ let rec_tac_initializer finite guard thms snl =
        | _ -> assert false
 
 let start_proof_with_initialization kind sigma decl recguard thms snl hook =
-  let intro_tac (_, (_, (ids, _))) =
-    Tacticals.New.tclMAP (function
-    | Name id -> Tactics.intro_mustbe_force id
-    | Anonymous -> Tactics.intro) (List.rev ids) in
+  let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
       let rec_tac = rec_tac_initializer finite guard thms snl in

@@ -1062,6 +1062,12 @@ let intros_replacing ids =
       (Tacticals.New.tclMAP (fun (id,pos) -> intro_move (Some id) pos) posl)
   end
 
+(* The standard for implementing Automatic Introduction *)
+let auto_intros_tac ids =
+  Tacticals.New.tclMAP (function
+      | Name id -> intro_mustbe_force id
+      | Anonymous -> intro) (List.rev ids)
+
 (* User-level introduction tactics *)
 
 let lookup_hypothesis_as_renamed env sigma ccl = function
