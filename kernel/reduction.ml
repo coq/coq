@@ -288,6 +288,14 @@ let conv_table_key infos k1 k2 cuniv =
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
+exception IrregularPatternShape
+
+let rec skip_pattern n c =
+  if Int.equal n 0 then c
+  else match kind c with
+  | Lambda (_, _, c) -> skip_pattern (pred n) c
+  | _ -> raise IrregularPatternShape
+
 type conv_tab = {
   cnv_inf : clos_infos;
   lft_tab : clos_tab;
@@ -624,9 +632,21 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-and convert_branches l2r infos _ci e1 e2 lft1 lft2 br1 br2 cuniv =
-  let fold c1 c2 cuniv = ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv in
-  Array.fold_right2 fold br1 br2 cuniv
+and convert_branches l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
+  (** Skip comparison of the pattern types. We know that the two terms are
+      living in a common type, thus this check is useless. *)
+  let fold n c1 c2 cuniv = match skip_pattern n c1, skip_pattern n c2 with
+  | (c1, c2) ->
+    let lft1 = el_liftn n lft1 in
+    let lft2 = el_liftn n lft2 in
+    let e1 = subs_liftn n e1 in
+    let e2 = subs_liftn n e2 in
+    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
+  | exception IrregularPatternShape ->
+    (** Might happen due to a shape invariant that is not enforced *)
+    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
+  in
+  Array.fold_right3 fold ci.ci_cstr_nargs br1 br2 cuniv
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in

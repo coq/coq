@@ -58,6 +58,8 @@ sig
   val fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   val fold_right2 :
     ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
+  val fold_right3 :
+    ('a -> 'b -> 'c -> 'd -> 'd) -> 'a array -> 'b array -> 'c array -> 'd -> 'd
   val fold_left2 :
     ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left3 :
