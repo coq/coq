@@ -90,19 +90,17 @@ FAIL = >&2 echo 'FAILED    $@'
 # Testing subsystems
 #######################################################################
 
-# Apart so that it can be easily skipped with overriding
+# These targets can be skipped by doing `make TARGET= test-suite`
 COMPLEXITY := $(if $(bogomips),complexity)
-
 BUGS := bugs/opened bugs/closed
-
 INTERACTIVE := interactive
-
+UNIT_TESTS := unit-tests
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc ssr
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools unit-tests
+SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 PREREQUISITELOG = prerequisite/admit.v.log			\
   prerequisite/make_local.v.log prerequisite/make_notation.v.log \
@@ -118,6 +116,10 @@ PREREQUISITELOG = prerequisite/admit.v.log			\
 
 all: run
 	$(MAKE) report
+
+# do nothing
+.PHONY: noop
+noop: ;
 
 run: $(SUBSYSTEMS)
 bugs: $(BUGS)

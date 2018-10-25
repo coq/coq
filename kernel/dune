@@ -18,3 +18,4 @@
 ; warnings.
 (env
  (dev (flags :standard -w +a-4-44-50)))
+ ; (ocaml408 (flags :standard -w +a-3-4-44-50)))

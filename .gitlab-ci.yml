@@ -9,7 +9,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2018-12-05-V1"
+  CACHEKEY: "bionic_coq-V2018-12-14-V1"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -366,6 +366,57 @@ test-suite:egde:dune:dev:
     when: on_failure
     paths:
       - _build/default/test-suite/logs
+
+test-suite:edge+trunk+make:
+  stage: test
+  dependencies: []
+  script:
+    - opam switch create 4.08.0 --empty
+    - eval $(opam env)
+    - opam repo add ocaml-pr https://github.com/ocaml/ocaml-pr-repository.git
+    - opam update
+    - opam install ocaml-variants=4.08.0 num
+    - eval $(opam env)
+    # We avoid problems with warnings:
+    - ./configure -profile devel -warn-error no
+    - make -j "$NJOBS" world
+    - make -j "$NJOBS" test-suite UNIT_TESTS=
+  variables:
+    OPAM_SWITCH: edge
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: always
+    paths:
+      - test-suite/logs
+    expire_in: 1 week
+  allow_failure: true
+
+test-suite:edge+trunk+dune:
+  stage: test
+  dependencies: []
+  script:
+    - opam switch create 4.08.0 --empty
+    - eval $(opam env)
+    - opam repo add ocaml-pr https://github.com/ocaml/ocaml-pr-repository.git
+    - opam update
+    - opam install ocaml-variants=4.08.0 num
+    - opam pin add dune --dev # ounit lablgtk conf-gtksourceview
+    - opam install dune
+    - eval $(opam env)
+    # We use the release profile to avoid problems with warnings
+    - make -f Makefile.dune trunk
+    - export COQ_UNIT_TEST=noop
+    - dune runtest --profile=ocaml408
+  variables:
+    OPAM_SWITCH: edge
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: always
+    paths:
+      - _build/log
+      - _build/default/test-suite/logs
+    expire_in: 1 week
+  allow_failure: true
 
 validate:base:
   <<: *validate-template
