@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-10-22-V1"
+# CACHEKEY: "bionic_coq-V2018-10-23-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -37,7 +37,7 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.2.1 ounit.2.0.8 odoc.1.3.0" \
+ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.4.0 ounit.2.0.8 odoc.1.3.0" \
     CI_OPAM="menhir.20180530 elpi.1.1.0 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
@@ -56,7 +56,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 ENV COMPILER_EDGE="4.07.0" \
     CAMLP5_VER_EDGE="7.06" \
     COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
-    BASE_OPAM_EDGE="dune-release.0.3.0"
+    BASE_OPAM_EDGE="dune-release.1.1.0"
 
 RUN opam switch create $COMPILER_EDGE && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE
