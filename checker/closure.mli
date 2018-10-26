@@ -61,10 +61,6 @@ val betadeltaiotanolet : reds
 
 type table_key = Constant.t puniverses tableKey
 
-type 'a infos
-val ref_value_cache: 'a infos -> table_key -> 'a option
-val create: ('a infos -> constr -> 'a) -> reds -> env -> 'a infos
-
 (************************************************************************)
 (*s Lazy reduction. *)
 
