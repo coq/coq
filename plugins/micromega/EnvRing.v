@@ -594,7 +594,7 @@ Qed.
  Lemma pow_pos_add x i j : x^(j + i) == x^i * x^j.
  Proof.
   rewrite Pos.add_comm.
-  apply (pow_pos_add Rsth Reqe.(Rmul_ext) ARth.(ARmul_assoc)).
+  apply (pow_pos_add Rsth (Rmul_ext Reqe) (ARmul_assoc ARth)).
  Qed.
 
  Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c ?=! c').
@@ -1085,7 +1085,7 @@ Section POWER.
    - simpl. rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
    - simpl. rewrite IHpe. Esimpl.
    - simpl. rewrite Ppow_N_ok by reflexivity.
-     rewrite pow_th.(rpow_pow_N). destruct n0; simpl; Esimpl.
+     rewrite (rpow_pow_N pow_th). destruct n0; simpl; Esimpl.
      induction p;simpl; now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
   Qed.
 

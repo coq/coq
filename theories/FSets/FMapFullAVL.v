@@ -466,39 +466,39 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Implicit Types e : elt.
 
  Definition empty : t elt := Bbst (empty_bst elt) (empty_avl elt).
- Definition is_empty m : bool := is_empty m.(this).
+ Definition is_empty m : bool := is_empty (this m).
  Definition add x e m : t elt :=
-  Bbst (add_bst x e m.(is_bst)) (add_avl x e m.(is_avl)).
+  Bbst (add_bst x e (is_bst m)) (add_avl x e (is_avl m)).
  Definition remove x m : t elt :=
-  Bbst (remove_bst x m.(is_bst)) (remove_avl x m.(is_avl)).
- Definition mem x m : bool := mem x m.(this).
- Definition find x m : option elt := find x m.(this).
+  Bbst (remove_bst x (is_bst m)) (remove_avl x (is_avl m)).
+ Definition mem x m : bool := mem x (this m).
+ Definition find x m : option elt := find x (this m).
  Definition map f m : t elt' :=
-  Bbst (map_bst f m.(is_bst)) (map_avl f m.(is_avl)).
+  Bbst (map_bst f (is_bst m)) (map_avl f (is_avl m)).
  Definition mapi (f:key->elt->elt') m : t elt' :=
-  Bbst (mapi_bst f m.(is_bst)) (mapi_avl f m.(is_avl)).
+  Bbst (mapi_bst f (is_bst m)) (mapi_avl f (is_avl m)).
  Definition map2 f m (m':t elt') : t elt'' :=
-  Bbst (map2_bst f m.(is_bst) m'.(is_bst)) (map2_avl f m.(is_avl) m'.(is_avl)).
- Definition elements m : list (key*elt) := elements m.(this).
- Definition cardinal m := cardinal m.(this).
- Definition fold (A:Type) (f:key->elt->A->A) m i := fold (A:=A) f m.(this) i.
- Definition equal cmp m m' : bool := equal cmp m.(this) m'.(this).
+  Bbst (map2_bst f (is_bst m) (is_bst m')) (map2_avl f (is_avl m) (is_avl m')).
+ Definition elements m : list (key*elt) := elements (this m).
+ Definition cardinal m := cardinal (this m).
+ Definition fold (A:Type) (f:key->elt->A->A) m i := fold (A:=A) f (this m) i.
+ Definition equal cmp m m' : bool := equal cmp (this m) (this m').
 
- Definition MapsTo x e m : Prop := MapsTo x e m.(this).
- Definition In x m : Prop := In0 x m.(this).
- Definition Empty m : Prop := Empty m.(this).
+ Definition MapsTo x e m : Prop := MapsTo x e (this m).
+ Definition In x m : Prop := In0 x (this m).
+ Definition Empty m : Prop := Empty (this m).
 
  Definition eq_key : (key*elt) -> (key*elt) -> Prop := @PX.eqk elt.
  Definition eq_key_elt : (key*elt) -> (key*elt) -> Prop := @PX.eqke elt.
  Definition lt_key : (key*elt) -> (key*elt) -> Prop := @PX.ltk elt.
 
  Lemma MapsTo_1 : forall m x y e, E.eq x y -> MapsTo x e m -> MapsTo y e m.
- Proof. intros m; exact (@MapsTo_1 _ m.(this)). Qed.
+ Proof. intros m; exact (@MapsTo_1 _ (this m)). Qed.
 
  Lemma mem_1 : forall m x, In x m -> mem x m = true.
  Proof.
  unfold In, mem; intros m x; rewrite In_alt; simpl; apply mem_1; auto.
- apply m.(is_bst).
+ apply (is_bst m).
  Qed.
 
  Lemma mem_2 : forall m x, mem x m = true -> In x m.
@@ -510,9 +510,9 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof. exact (@empty_1 elt). Qed.
 
  Lemma is_empty_1 : forall m, Empty m -> is_empty m = true.
- Proof. intros m; exact (@is_empty_1 _ m.(this)). Qed.
+ Proof. intros m; exact (@is_empty_1 _ (this m)). Qed.
  Lemma is_empty_2 : forall m, is_empty m = true -> Empty m.
- Proof. intros m; exact (@is_empty_2 _ m.(this)). Qed.
+ Proof. intros m; exact (@is_empty_2 _ (this m)). Qed.
 
  Lemma add_1 : forall m x y e, E.eq x y -> MapsTo y e (add x e m).
  Proof. intros m x y e; exact (@add_1 elt _ x y e). Qed.
@@ -524,22 +524,22 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma remove_1 : forall m x y, E.eq x y -> ~ In y (remove x m).
  Proof.
  unfold In, remove; intros m x y; rewrite In_alt; simpl; apply remove_1; auto.
- apply m.(is_bst).
+ apply (is_bst m).
  Qed.
  Lemma remove_2 : forall m x y e, ~ E.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
- Proof. intros m x y e; exact (@remove_2 elt _ x y e m.(is_bst)). Qed.
+ Proof. intros m x y e; exact (@remove_2 elt _ x y e (is_bst m)). Qed.
  Lemma remove_3 : forall m x y e, MapsTo y e (remove x m) -> MapsTo y e m.
- Proof. intros m x y e; exact (@remove_3 elt _ x y e m.(is_bst)). Qed.
+ Proof. intros m x y e; exact (@remove_3 elt _ x y e (is_bst m)). Qed.
 
 
  Lemma find_1 : forall m x e, MapsTo x e m -> find x m = Some e.
- Proof. intros m x e; exact (@find_1 elt _ x e m.(is_bst)). Qed.
+ Proof. intros m x e; exact (@find_1 elt _ x e (is_bst m)). Qed.
  Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
- Proof. intros m; exact (@find_2 elt m.(this)). Qed.
+ Proof. intros m; exact (@find_2 elt (this m)). Qed.
 
  Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
- Proof. intros m; exact (@fold_1 elt m.(this) m.(is_bst)). Qed.
+ Proof. intros m; exact (@fold_1 elt (this m) (is_bst m)). Qed.
 
  Lemma elements_1 : forall m x e,
    MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
@@ -554,13 +554,13 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
 
  Lemma elements_3 : forall m, sort lt_key (elements m).
- Proof. intros m; exact (@elements_sort elt m.(this) m.(is_bst)). Qed.
+ Proof. intros m; exact (@elements_sort elt (this m) (is_bst m)). Qed.
 
  Lemma elements_3w : forall m, NoDupA eq_key (elements m).
- Proof. intros m; exact (@elements_nodup elt m.(this) m.(is_bst)). Qed.
+ Proof. intros m; exact (@elements_nodup elt (this m) (is_bst m)). Qed.
 
  Lemma cardinal_1 : forall m, cardinal m = length (elements m).
- Proof. intro m; exact (@elements_cardinal elt m.(this)). Qed.
+ Proof. intro m; exact (@elements_cardinal elt (this m)). Qed.
 
  Definition Equal m m' := forall y, find y m = find y m'.
  Definition Equiv (eq_elt:elt->elt->Prop) m m' :=
@@ -596,7 +596,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'),
         MapsTo x e m -> MapsTo x (f e) (map f m).
- Proof. intros elt elt' m x e f; exact (@map_1 elt elt' f m.(this) x e). Qed.
+ Proof. intros elt elt' m x e f; exact (@map_1 elt elt' f (this m) x e). Qed.
 
  Lemma map_2 : forall (elt elt':Type)(m:t elt)(x:key)(f:elt->elt'), In x (map f m) -> In x m.
  Proof.
@@ -607,7 +607,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m ->
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
- Proof. intros elt elt' m x e f; exact (@mapi_1 elt elt' f m.(this) x e). Qed.
+ Proof. intros elt elt' m x e f; exact (@mapi_1 elt elt' f (this m) x e). Qed.
  Lemma mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
  Proof.
@@ -621,8 +621,8 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof.
  unfold find, map2, In; intros elt elt' elt'' m m' x f.
  do 2 rewrite In_alt; intros; simpl; apply map2_1; auto.
- apply m.(is_bst).
- apply m'.(is_bst).
+ apply (is_bst m).
+ apply (is_bst m').
  Qed.
 
  Lemma map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
@@ -631,8 +631,8 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof.
  unfold In, map2; intros elt elt' elt'' m m' x f.
  do 3 rewrite In_alt; intros; simpl in *; eapply map2_2; eauto.
- apply m.(is_bst).
- apply m'.(is_bst).
+ apply (is_bst m).
+ apply (is_bst m').
  Qed.
 
 End IntMake.
@@ -655,7 +655,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    match D.compare e e' with EQ _ => true | _ => false end.
 
   Definition elements (m:t) :=
-    LO.MapS.Build_slist (Raw.Proofs.elements_sort m.(is_bst)).
+    LO.MapS.Build_slist (Raw.Proofs.elements_sort (is_bst m)).
 
   (** * As comparison function, we propose here a non-structural
     version faithful to the code of Ocaml's Map library, instead of
@@ -750,7 +750,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   (* Proofs about [eq] and [lt] *)
 
   Definition selements (m1 : t) :=
-   LO.MapS.Build_slist (elements_sort m1.(is_bst)).
+   LO.MapS.Build_slist (elements_sort (is_bst m1)).
 
   Definition seq (m1 m2 : t) := LO.eq (selements m1) (selements m2).
   Definition slt (m1 m2 : t) := LO.lt (selements m1) (selements m2).

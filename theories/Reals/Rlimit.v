@@ -136,7 +136,7 @@ Definition limit_in (X X':Metric_Space) (f:Base X -> Base X')
     eps > 0 ->
     exists alp : R,
       alp > 0 /\
-      (forall x:Base X, D x /\ X.(dist) x x0 < alp -> X'.(dist) (f x) l < eps).
+      (forall x:Base X, D x /\ (dist X) x x0 < alp -> (dist X') (f x) l < eps).
 
 (*******************************)
 (** **  R is a metric space    *)
@@ -165,9 +165,9 @@ Lemma tech_limit :
 Proof.
   intros f D l x0 H H0.
   case (Rabs_pos (f x0 - l)); intros H1.
-  absurd (R_met.(@dist) (f x0) l < R_met.(@dist) (f x0) l).
+  absurd ((@dist R_met) (f x0) l < (@dist R_met) (f x0) l).
   apply Rlt_irrefl.
-  case (H0 (R_met.(@dist) (f x0) l)); auto.
+  case (H0 ((@dist R_met) (f x0) l)); auto.
   intros alpha1 [H2 H3]; apply H3; auto; split; auto.
   case (dist_refl R_met x0 x0); intros Hr1 Hr2; rewrite Hr2; auto.
   case (dist_refl R_met (f x0) l); intros Hr1 Hr2; symmetry; auto.

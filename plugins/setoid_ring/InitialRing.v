@@ -51,9 +51,9 @@ Section ZMORPHISM.
   Notation "x == y" := (req x y).
   Variable Rsth : Setoid_Theory R req.
      Add Parametric Relation : R req
-       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
-       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
-       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+       reflexivity  proved by (@Equivalence_Reflexive _ _ Rsth)
+       symmetry     proved by (@Equivalence_Symmetric _ _ Rsth)
+       transitivity proved by (@Equivalence_Transitive _ _ Rsth)
       as R_setoid3.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
@@ -267,9 +267,9 @@ Section NMORPHISM.
   Notation "x + y" := (radd x y).  Notation "x * y " := (rmul x y).
  Variable Rsth : Setoid_Theory R req.
      Add Parametric Relation : R req
-       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
-       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
-       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+       reflexivity  proved by (@Equivalence_Reflexive _ _ Rsth)
+       symmetry     proved by (@Equivalence_Symmetric _ _ Rsth)
+       transitivity proved by (@Equivalence_Transitive _ _ Rsth)
        as R_setoid4.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable SReqe : sring_eq_ext radd rmul req.
@@ -392,9 +392,9 @@ Section NWORDMORPHISM.
   Notation "x == y" := (req x y).
   Variable Rsth : Setoid_Theory R req.
      Add Parametric Relation : R req
-       reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
-       symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
-       transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+       reflexivity  proved by (@Equivalence_Reflexive _ _ Rsth)
+       symmetry     proved by (@Equivalence_Symmetric _ _ Rsth)
+       transitivity proved by (@Equivalence_Transitive _ _ Rsth)
       as R_setoid5.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
@@ -581,9 +581,9 @@ Section GEN_DIV.
 
   (* Useful tactics *)
   Add Parametric Relation : R req
-    reflexivity  proved by Rsth.(@Equivalence_Reflexive _ _)
-    symmetry     proved by Rsth.(@Equivalence_Symmetric _ _)
-    transitivity proved by Rsth.(@Equivalence_Transitive _ _)
+    reflexivity  proved by (@Equivalence_Reflexive _ _ Rsth)
+    symmetry     proved by (@Equivalence_Symmetric _ _ Rsth)
+    transitivity proved by (@Equivalence_Transitive _ _ Rsth)
    as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd with signature (req ==> req ==> req) as radd_ext.
@@ -614,7 +614,7 @@ Section GEN_DIV.
  Proof.
   constructor.
   intros a b;unfold triv_div.
-  assert (X:= morph.(morph_eq) a b);destruct (ceqb a b).
+  assert (X:= morph_eq morph a b);destruct (ceqb a b).
   Esimpl.
   rewrite X; trivial.
   rsimpl.

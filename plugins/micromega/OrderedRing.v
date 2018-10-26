@@ -87,40 +87,40 @@ Notation "x < y" := (rlt x y).
 
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
+  reflexivity proved by (@Equivalence_Reflexive _ _ (SORsetoid sor))
+  symmetry proved by (@Equivalence_Symmetric _ _ (SORsetoid sor))
+  transitivity proved by (@Equivalence_Transitive _ _ (SORsetoid sor))
 as sor_setoid.
 
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
 Proof.
-exact sor.(SORplus_wd).
+exact (SORplus_wd sor).
 Qed.
 Add Morphism rtimes with signature req ==> req ==> req as rtimes_morph.
 Proof.
-exact sor.(SORtimes_wd).
+exact (SORtimes_wd sor).
 Qed.
 Add Morphism ropp with signature req ==> req as ropp_morph.
 Proof.
-exact sor.(SORopp_wd).
+exact (SORopp_wd sor).
 Qed.
 Add Morphism rle with signature req ==> req ==> iff as rle_morph.
 Proof.
-exact sor.(SORle_wd).
+exact (SORle_wd sor).
 Qed.
 Add Morphism rlt with signature req ==> req ==> iff as rlt_morph.
 Proof.
-exact sor.(SORlt_wd).
+exact (SORlt_wd sor).
 Qed.
 
-Add Ring SOR : sor.(SORrt).
+Add Ring SOR : (SORrt sor).
 
 Add Morphism rminus with signature req ==> req ==> req as rminus_morph.
 Proof.
 intros x1 x2 H1 y1 y2 H2.
-rewrite (sor.(SORrt).(Rsub_def) x1 y1).
-rewrite (sor.(SORrt).(Rsub_def) x2 y2).
+rewrite ((Rsub_def (SORrt sor)) x1 y1).
+rewrite ((Rsub_def (SORrt sor)) x2 y2).
 rewrite H1; now rewrite H2.
 Qed.
 
@@ -180,22 +180,22 @@ Qed.
 (* Relations *)
 
 Theorem Rle_refl : forall n : R, n <= n.
-Proof sor.(SORle_refl).
+Proof (SORle_refl sor).
 
 Theorem Rle_antisymm : forall n m : R, n <= m -> m <= n -> n == m.
-Proof sor.(SORle_antisymm).
+Proof (SORle_antisymm sor).
 
 Theorem Rle_trans : forall n m p : R, n <= m -> m <= p -> n <= p.
-Proof sor.(SORle_trans).
+Proof (SORle_trans sor).
 
 Theorem Rlt_trichotomy : forall n m : R,  n < m \/ n == m \/ m < n.
-Proof sor.(SORlt_trichotomy).
+Proof (SORlt_trichotomy sor).
 
 Theorem Rlt_le_neq : forall n m : R, n < m <-> n <= m /\ n ~= m.
-Proof sor.(SORlt_le_neq).
+Proof (SORlt_le_neq sor).
 
 Theorem Rneq_0_1 : 0 ~= 1.
-Proof sor.(SORneq_0_1).
+Proof (SORneq_0_1 sor).
 
 Theorem Req_em : forall n m : R, n == m \/ n ~= m.
 Proof.
@@ -274,8 +274,8 @@ Qed.
 Theorem Rplus_le_mono_l : forall n m p : R, n <= m <-> p + n <= p + m.
 Proof.
 intros n m p; split.
-apply sor.(SORplus_le_mono_l).
-intro H. apply (sor.(SORplus_le_mono_l) (p + n) (p + m) (- p)) in H.
+apply (SORplus_le_mono_l sor).
+intro H. apply ((SORplus_le_mono_l sor) (p + n) (p + m) (- p)) in H.
 setoid_replace (- p + (p + n)) with n in H by ring.
 setoid_replace (- p + (p + m)) with m in H by ring. assumption.
 Qed.
@@ -375,7 +375,7 @@ Qed.
 (* Times and order *)
 
 Theorem Rtimes_pos_pos : forall n m : R, 0 < n -> 0 < m -> 0 < n * m.
-Proof sor.(SORtimes_pos_pos).
+Proof (SORtimes_pos_pos sor).
 
 Theorem Rtimes_nonneg_nonneg : forall n m : R, 0 <= n -> 0 <= m -> 0 <= n * m.
 Proof.

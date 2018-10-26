@@ -43,48 +43,48 @@ Notation "x < y" := (rlt x y).
 
 Lemma req_refl : forall x, req x x.
 Proof.
-  destruct sor.(SORsetoid) as (Equivalence_Reflexive,_,_).
+  destruct (SORsetoid sor) as (Equivalence_Reflexive,_,_).
   apply Equivalence_Reflexive.
 Qed.
 
 Lemma req_sym : forall x y, req x y -> req y x.
 Proof.
-  destruct sor.(SORsetoid) as (_,Equivalence_Symmetric,_).
+  destruct (SORsetoid sor) as (_,Equivalence_Symmetric,_).
   apply Equivalence_Symmetric.
 Qed.
 
 Lemma req_trans : forall x y z, req x y -> req y z -> req x z.
 Proof.
-  destruct sor.(SORsetoid) as (_,_,Equivalence_Transitive).
+  destruct (SORsetoid sor) as (_,_,Equivalence_Transitive).
   apply Equivalence_Transitive.
 Qed.
 
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
+  reflexivity proved by (@Equivalence_Reflexive _ _ (SORsetoid sor))
+  symmetry proved by (@Equivalence_Symmetric _ _ (SORsetoid sor))
+  transitivity proved by (@Equivalence_Transitive _ _ (SORsetoid sor))
 as sor_setoid.
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
 Proof.
-exact sor.(SORplus_wd).
+exact (SORplus_wd sor).
 Qed.
 Add Morphism rtimes with signature req ==> req ==> req as rtimes_morph.
 Proof.
-exact sor.(SORtimes_wd).
+exact (SORtimes_wd sor).
 Qed.
 Add Morphism ropp with signature req ==> req as ropp_morph.
 Proof.
-exact sor.(SORopp_wd).
+exact (SORopp_wd sor).
 Qed.
 Add Morphism rle with signature req ==> req ==> iff as rle_morph.
 Proof.
-exact sor.(SORle_wd).
+exact (SORle_wd sor).
 Qed.
 Add Morphism rlt with signature req ==> req ==> iff as rlt_morph.
 Proof.
-exact sor.(SORlt_wd).
+exact (SORlt_wd sor).
 Qed.
 Add Morphism rminus with signature req ==> req ==> req as rminus_morph.
 Proof.
@@ -115,7 +115,7 @@ Lemma Zring_morph :
              0%Z 1%Z Z.add Z.mul Z.sub Z.opp
              Zeq_bool gen_order_phi_Z.
 Proof.
-exact (gen_phiZ_morph sor.(SORsetoid) ring_ops_wd sor.(SORrt)).
+exact (gen_phiZ_morph (SORsetoid sor) ring_ops_wd (SORrt sor)).
 Qed.
 
 Lemma phi_pos1_pos : forall x : positive, 0 < phi_pos1 x.
@@ -127,8 +127,8 @@ Qed.
 
 Lemma phi_pos1_succ : forall x : positive, phi_pos1 (Pos.succ x) == 1 + phi_pos1 x.
 Proof.
-exact (ARgen_phiPOS_Psucc sor.(SORsetoid) ring_ops_wd
-        (Rth_ARth sor.(SORsetoid) ring_ops_wd sor.(SORrt))).
+exact (ARgen_phiPOS_Psucc (SORsetoid sor) ring_ops_wd
+        (Rth_ARth (SORsetoid sor) ring_ops_wd (SORrt sor))).
 Qed.
 
 Lemma clt_pos_morph : forall x y : positive, (x < y)%positive -> phi_pos1 x < phi_pos1 y.
@@ -142,7 +142,7 @@ Qed.
 Lemma clt_morph : forall x y : Z, (x < y)%Z -> [x] < [y].
 Proof.
 intros x y H.
-do 2 rewrite (same_genZ sor.(SORsetoid) ring_ops_wd sor.(SORrt));
+do 2 rewrite (same_genZ (SORsetoid sor) ring_ops_wd (SORrt sor));
 destruct x; destruct y; simpl in *; try discriminate.
 apply phi_pos1_pos.
 now apply clt_pos_morph.
@@ -157,7 +157,7 @@ Lemma Zcleb_morph : forall x y : Z, Z.leb x y = true -> [x] <= [y].
 Proof.
 unfold Z.leb; intros x y H.
 case_eq (x ?= y)%Z; intro H1; rewrite H1 in H.
-le_equal. apply Zring_morph.(morph_eq). unfold Zeq_bool; now rewrite H1.
+le_equal. apply (morph_eq Zring_morph). unfold Zeq_bool; now rewrite H1.
 le_less. now apply clt_morph.
 discriminate.
 Qed.
@@ -172,5 +172,3 @@ apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
 Qed.
 
 End InitialMorphism.
-
-

@@ -96,7 +96,7 @@ Admitted.
 Polymorphic Definition is_unique (A : Type) (x : A) := forall x' : A, x' = x.
 
 Polymorphic Definition InitialObject obj {C : SpecializedCategory obj} (o : C) :=
-    forall o', { m : C.(Morphism) o o' | is_unique m }.
+    forall o', { m : Morphism C o o' | is_unique m }.
 
 Polymorphic Definition SmallCat := ComputableCategory _ SUnderlyingCategory.
 
@@ -136,7 +136,7 @@ Section GraphObj.
 
   Definition UnderlyingGraph_ObjectOf x :=
     match x with
-      | GraphIndexSource => { sd : objC * objC & C.(Morphism) (fst sd) (snd sd) }
+      | GraphIndexSource => { sd : objC * objC & Morphism C (fst sd) (snd sd) }
       | GraphIndexTarget => objC
     end.
 

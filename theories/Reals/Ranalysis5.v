@@ -82,7 +82,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
  elim (Hyp eps eps_pos) ; intros delta Hyp2.
  assert (Pos_cond : Rmin delta (Rmin (ub - a) (a - lb)) > 0).
   clear-a lb ub a_encad delta.
-  apply Rmin_pos ; [exact (delta.(cond_pos)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition.
+  apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition.
  exists (mkposreal (Rmin delta (Rmin (ub - a) (a - lb))) Pos_cond).
  intros h h_neq h_encad.
  replace (g (a + h) - g a) with (f (a + h) - f a).
@@ -120,7 +120,7 @@ assert (forall x l, lb < x < ub -> (derivable_pt_abs f x l <-> derivable_pt_abs 
  elim (Hyp eps eps_pos) ; intros delta Hyp2.
  assert (Pos_cond : Rmin delta (Rmin (ub - a) (a - lb)) > 0).
   clear-a lb ub a_encad delta.
-  apply Rmin_pos ; [exact (delta.(cond_pos)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition.
+  apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition.
  exists (mkposreal (Rmin delta (Rmin (ub - a) (a - lb))) Pos_cond).
  intros h h_neq h_encad.
  replace (f (a + h) - f a) with (g (a + h) - g a).
@@ -696,7 +696,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
        intros deltatemp' Htemp'.
         exists deltatemp'.
         split.
-         exact deltatemp'.(cond_pos).
+         exact (cond_pos deltatemp').
          intros htemp cond.
           apply (Htemp' htemp).
           exact (proj1 cond).
@@ -721,7 +721,7 @@ intros f g lb ub x Prf g_cont_pur lb_lt_ub x_encad Prg_incr f_eq_g df_neq.
        assert (mydelta_pos : mydelta > 0).
         unfold mydelta, Rmin.
         case (Rle_dec delta alpha).
-        intro ; exact (delta.(cond_pos)).
+        intro ; exact ((cond_pos delta)).
         intro ; exact alpha_pos.
        elim (g_cont mydelta mydelta_pos).
        intros delta' new_g_cont.
