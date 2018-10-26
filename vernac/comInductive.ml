@@ -102,10 +102,6 @@ let mk_mltype_data sigma env assums arity indname =
   let is_ml_type = is_sort env sigma arity in
   (is_ml_type,indname,assums)
 
-let prepare_param = function
-  | LocalAssum (na,t) -> Name.get_id na, LocalAssumEntry t
-  | LocalDef (na,b,_) -> Name.get_id na, LocalDefEntry b
-
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
     This is really a hack to stay compatible with the semantics of template polymorphic
@@ -463,7 +459,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   in
   (* Build the mutual inductive entry *)
   let mind_ent =
-    { mind_entry_params = List.map prepare_param ctx_params;
+    { mind_entry_params = ctx_params;
       mind_entry_record = None;
       mind_entry_finite = finite;
       mind_entry_inds = entries;

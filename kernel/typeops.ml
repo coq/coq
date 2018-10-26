@@ -515,25 +515,19 @@ let infer_v env cv =
 
 (* Typing of several terms. *)
 
-let infer_local_decl env id = function
-  | Entries.LocalDefEntry c ->
-      let () = check_wellformed_universes env c in
-      let t = execute env c in
-      RelDecl.LocalDef (Name id, c, t)
-  | Entries.LocalAssumEntry c ->
-      let () = check_wellformed_universes env c in
-      let t = execute env c in
-      RelDecl.LocalAssum (Name id, check_assumption env c t)
-
-let infer_local_decls env decls =
-  let rec inferec env = function
-  | (id, d) :: l ->
-      let (env, l) = inferec env l in
-      let d = infer_local_decl env id d in
-        (push_rel d env, Context.Rel.add d l)
-  | [] -> (env, Context.Rel.empty)
-  in
-  inferec env decls
+let check_context env rels =
+  let open Context.Rel.Declaration in
+  Context.Rel.fold_outside (fun d env ->
+    match d with
+      | LocalAssum (_,ty) ->
+        let _ = infer_type env ty in
+        push_rel d env
+      | LocalDef (_,bd,ty) ->
+        let j1 = infer env bd in
+        let _ = infer_type env ty in
+        conv_leq false env j1.uj_type ty;
+        push_rel d env)
+    rels ~init:env
 
 let judge_of_prop = make_judge mkProp type1
 let judge_of_set = make_judge mkSet type1
