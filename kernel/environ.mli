@@ -156,6 +156,9 @@ val fold_named_context :
   (env -> Constr.named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
 val set_universes : env -> UGraph.t -> env
+(** This is used to update universes during a proof for the sake of
+   evar map-unaware functions, eg [Typing] calling
+   [Typeops.check_hyps_inclusion]. *)
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
