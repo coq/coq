@@ -370,7 +370,10 @@ let explain_ltac_call_trace last trace loc =
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-              let sigma, env = Pfedit.get_current_context () in
+              (* XXX: This hooks into the ExplainErr extension API
+                 so it is tricky to provide the right env for now. *)
+              let env = Global.env () in
+              let sigma = Evd.from_env env in
               Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())
