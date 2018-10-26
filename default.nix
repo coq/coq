@@ -47,7 +47,7 @@ stdenv.mkDerivation rec {
     python2 time # coq-makefile timing tools
     dune
   ]
-  ++ (with ocamlPackages; [ ocaml findlib camlp5_strict num ])
+  ++ (with ocamlPackages; [ ocaml findlib camlp5 num ])
   ++ optional buildIde ocamlPackages.lablgtk
   ++ optionals buildDoc [
     # Sphinx doc dependencies
