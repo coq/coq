@@ -89,3 +89,4 @@ val constr_of_global : GlobRef.t -> constr
     references and computing their instantiated universe context. (side-effect on the
     universe counter, use with care). *)
 val type_of_global : GlobRef.t -> types in_universe_context_set
+[@@ocaml.deprecated "use [Typeops.type_of_global]"]

@@ -1314,7 +1314,7 @@ let rebuild_arguments_scope sigma (req,r,n,l,_) =
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
       let env = Global.env () in (*FIXME?*)
-      let typ = EConstr.of_constr @@ fst (Global.type_of_global_in_context env r) in
+      let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
       let scs,cls = compute_arguments_scope_full sigma typ in
       (req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
@@ -1322,7 +1322,7 @@ let rebuild_arguments_scope sigma (req,r,n,l,_) =
          for the extra parameters of the section. Discard the classes
          of the manually given scopes to avoid further re-computations. *)
       let env = Global.env () in (*FIXME?*)
-      let typ = EConstr.of_constr @@ fst (Global.type_of_global_in_context env r) in
+      let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
       let l',cls = compute_arguments_scope_full sigma typ in
       let l1 = List.firstn n l' in
       let cls1 = List.firstn n cls in
@@ -1369,7 +1369,7 @@ let find_arguments_scope r =
 
 let declare_ref_arguments_scope sigma ref =
   let env = Global.env () in (* FIXME? *)
-  let typ = EConstr.of_constr @@ fst @@ Global.type_of_global_in_context env ref in
+  let typ = EConstr.of_constr @@ fst @@ Typeops.type_of_global_in_context env ref in
   let (scs,cls as o) = compute_arguments_scope_full sigma typ in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 

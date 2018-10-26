@@ -129,17 +129,11 @@ val is_type_in_type : GlobRef.t -> bool
 
 val constr_of_global_in_context : Environ.env ->
   GlobRef.t -> Constr.types * Univ.AUContext.t
-(** Returns the type of the constant in its local universe
-    context. The type should not be used without pushing it's universe
-    context in the environmnent of usage. For non-universe-polymorphic
-    constants, it does not matter. *)
+  [@@ocaml.deprecated "alias of [Typeops.constr_of_global_in_context]"]
 
 val type_of_global_in_context : Environ.env -> 
   GlobRef.t -> Constr.types * Univ.AUContext.t
-(** Returns the type of the constant in its local universe
-    context. The type should not be used without pushing it's universe
-    context in the environmnent of usage. For non-universe-polymorphic
-    constants, it does not matter. *)
+  [@@ocaml.deprecated "alias of [Typeops.type_of_global]"]
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : GlobRef.t -> Univ.AUContext.t

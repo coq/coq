@@ -167,48 +167,8 @@ let env_of_context hyps =
 
 open Globnames
 
-(** Build a fresh instance for a given context, its associated substitution and 
-    the instantiated constraints. *)
-
-let constr_of_global_in_context env r =
-  let open Constr in
-  match r with
-  | VarRef id -> mkVar id, Univ.AUContext.empty
-  | ConstRef c ->
-    let cb = Environ.lookup_constant c env in
-    let univs = Declareops.constant_polymorphic_context cb in
-    mkConstU (c, Univ.make_abstract_instance univs), univs
-  | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkIndU (ind, Univ.make_abstract_instance univs), univs
-  | ConstructRef cstr ->
-    let (mib,oib as specif) =
-      Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
-    in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkConstructU (cstr, Univ.make_abstract_instance univs), univs
-
-let type_of_global_in_context env r = 
-  match r with
-  | VarRef id -> Environ.named_type id env, Univ.AUContext.empty
-  | ConstRef c -> 
-    let cb = Environ.lookup_constant c env in 
-    let univs = Declareops.constant_polymorphic_context cb in
-    cb.Declarations.const_type, univs
-  | IndRef ind ->
-    let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    let inst = Univ.make_abstract_instance univs in
-    let env = Environ.push_context ~strict:false (Univ.AUContext.repr univs) env in
-    Inductive.type_of_inductive env (specif, inst), univs
-  | ConstructRef cstr ->
-    let (mib,oib as specif) =
-      Inductive.lookup_mind_specif env (inductive_of_constructor cstr) 
-    in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    let inst = Univ.make_abstract_instance univs in
-    Inductive.type_of_constructor (cstr,inst) specif, univs
+let constr_of_global_in_context = Typeops.constr_of_global_in_context
+let type_of_global_in_context = Typeops.type_of_global_in_context
 
 let universes_of_global gr = 
   universes_of_global (env ()) gr
