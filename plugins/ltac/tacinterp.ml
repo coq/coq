@@ -544,12 +544,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let (_, dummy_proofview) = Proofview.init sigma [] in
 
   (* Again this is called at times with no open proof! *)
-  let name, poly =
-    try
-      let Proof.{ name; poly } = Proof.data Proof_global.(give_me_the_proof ()) in
-      name, poly
-    with | Proof_global.NoCurrentProof -> Id.of_string "tacinterp", false
-  in
+  let name, poly = Id.of_string "tacinterp", false in
   let (trace,_,_,_) = Proofview.apply ~name ~poly env (push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist) dummy_proofview in
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) term
@@ -2063,14 +2058,7 @@ let _ =
     let tac = interp_tactic ist tac in
     (* XXX: This depends on the global state which is bad; the hooking
        mechanism should be modified. *)
-    let name, poly =
-      try
-        let (_, poly, _) = Proof_global.get_current_persistence () in
-        let name = Proof_global.get_current_proof_name () in
-        name, poly
-      with | Proof_global.NoCurrentProof ->
-        Id.of_string "ltac_gen", false
-    in
+    let name, poly = Id.of_string "ltac_gen", false in
     let (c, sigma) = Pfedit.refine_by_tactic ~name ~poly env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in

@@ -27,7 +27,8 @@ let init_size=5
 let cc_verbose=ref false
 
 let print_constr t =
-  let sigma, env = Pfedit.get_current_context () in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   Printer.pr_econstr_env env sigma t
 
 let debug x =

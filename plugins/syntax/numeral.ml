@@ -77,8 +77,7 @@ let locate_int63 () =
     Some (mkRefC q_int63)
   else None
 
-let has_type f ty =
-  let (sigma, env) = Pfedit.get_current_context () in
+let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
@@ -109,6 +108,11 @@ let vernac_numeral_notation local ty f g scope opts =
   in
   let opt r = app (mkRefC (q_option ())) r in
   let constructors = get_constructors tyc in
+  (* Before, this was taking the state from the proof, I do believe
+     this was wrong *)
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let has_type = has_type env sigma in
   (* Check the type of f *)
   let to_kind =
     match int_ty with

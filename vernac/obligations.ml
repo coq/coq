@@ -952,7 +952,7 @@ let obligation_hook prg obl num auto ctx' _ gr =
       ignore (auto (Some prg.prg_name) None deps)
   end
 
-let rec solve_obligation ?ontop prg num tac =
+let rec solve_obligation ~ontop prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
@@ -978,14 +978,14 @@ let rec solve_obligation ?ontop prg num tac =
   let pstate = Option.cata (fun tac -> Proof_global.set_endline_tactic tac pstate) pstate tac in
   pstate
 
-and obligation ?ontop (user_num, name, typ) tac =
+and obligation ~ontop (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
     if num >= 0 && num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
-          | None -> solve_obligation ?ontop prg num tac
+          | None -> solve_obligation ~ontop prg num tac
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
 
@@ -1185,7 +1185,7 @@ let admit_obligations n =
     let prg = get_prog_err n in
     admit_prog prg
 
-let next_obligation ?ontop n tac =
+let next_obligation ~ontop n tac =
   let prg = match n with
   | None -> get_any_prog_err ()
   | Some _ -> get_prog_err n
@@ -1196,7 +1196,7 @@ let next_obligation ?ontop n tac =
   | Some i -> i
   | None -> anomaly (Pp.str "Could not find a solvable obligation.")
   in
-  solve_obligation ?ontop prg i tac
+  solve_obligation ~ontop prg i tac
 
 let check_program_libraries () =
   Coqlib.check_required_library Coqlib.datatypes_module_name;

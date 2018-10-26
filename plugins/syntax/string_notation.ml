@@ -33,7 +33,7 @@ let q_list () = qualid_of_ref "core.list.type"
 let q_byte () = qualid_of_ref "core.byte.type"
 
 let has_type f ty =
-  let (sigma, env) = Pfedit.get_current_context () in
+  let sigma, env = let env = Global.env () in Evd.from_env env, env in
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false

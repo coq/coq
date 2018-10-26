@@ -374,20 +374,21 @@ let () = declare_int_option {
   optwrite = fun n -> print_info_trace := n;
 }
 
-let vernac_solve n info tcom b =
+let vernac_solve ~pstate n info tcom b =
   let open Goal_select in
-  let status = Proof_global.with_current_proof (fun etac p ->
-    let with_end_tac = if b then Some etac else None in
-    let global = match n with SelectAll | SelectList _ -> true | _ -> false in
-    let info = Option.append info !print_info_trace in
-    let (p,status) =
-      Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
-    in
-    (* in case a strict subtree was completed,
-       go back to the top of the prooftree *)
-    let p = Proof.maximal_unfocus Vernacentries.command_focus p in
-    p,status) in
-    if not status then Feedback.feedback Feedback.AddedAxiom
+  let pstate, status = Proof_global.with_current_proof (fun etac p ->
+      let with_end_tac = if b then Some etac else None in
+      let global = match n with SelectAll | SelectList _ -> true | _ -> false in
+      let info = Option.append info !print_info_trace in
+      let (p,status) =
+        Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
+      in
+      (* in case a strict subtree was completed,
+         go back to the top of the prooftree *)
+      let p = Proof.maximal_unfocus Vernacentries.command_focus p in
+      p,status) pstate in
+  if not status then Feedback.feedback Feedback.AddedAxiom;
+  Some pstate
 
 let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
 
@@ -434,12 +435,12 @@ let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 }
 
 VERNAC { tactic_mode } EXTEND VernacSolve
-| [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+| ![ proof ] [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
-    vernac_solve g n t def
+    Vernacentries.vernac_require_open_proof vernac_solve g n t def
   }
-| [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+| ![ proof ] [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     {
       let anon_abstracting_tac = is_anonymous_abstract t in
       let solving_tac = is_explicit_terminator t in
@@ -449,7 +450,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve
       VtLater
     } -> {
       let t = rm_abstract t in
-      vernac_solve Goal_select.SelectAll n t def
+      Vernacentries.vernac_require_open_proof vernac_solve Goal_select.SelectAll n t def
     }
 END
 

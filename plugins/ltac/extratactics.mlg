@@ -812,9 +812,9 @@ END
 
 TACTIC EXTEND transparent_abstract
 | [ "transparent_abstract" tactic3(t) ] -> { Proofview.Goal.enter begin fun gl ->
-      Abstract.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end }
+    Abstract.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end; }
 | [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> { Proofview.Goal.enter begin fun gl ->
-      Abstract.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end }
+    Abstract.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end; }
 END
 
 (* ********************************************************************* *)
@@ -912,9 +912,9 @@ END
    the semantics of the LCF-style tactics, hence with the classic tactic
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
-| [ "Grab" "Existential" "Variables" ]
+| ![ proof ] [ "Grab" "Existential" "Variables" ]
   => { classify_as_proofstep }
-  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) }
+  -> { fun ~pstate -> Option.map (Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p)) pstate }
 END
 
 (* Shelves all the goals under focus. *)
@@ -944,9 +944,9 @@ END
 
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
-| [ "Unshelve" ]
+| ![ proof ] [ "Unshelve" ]
   => { classify_as_proofstep }
-  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) }
+  -> { fun ~pstate -> Option.map (Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p)) pstate  }
 END
 
 (* Gives up on the goals under focus: the goals are considered solved,
@@ -1097,8 +1097,8 @@ END
 
 
 VERNAC COMMAND EXTEND OptimizeProof
-| [ "Optimize" "Proof" ] => { classify_as_proofstep } ->
-  { Proof_global.compact_the_proof () }
+| ![ proof ] [ "Optimize" "Proof" ] => { classify_as_proofstep } ->
+  { fun ~pstate -> Option.map Proof_global.compact_the_proof pstate }
 | [ "Optimize" "Heap" ] => { classify_as_proofstep } ->
   { Gc.compact () }
 END
