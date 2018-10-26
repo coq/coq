@@ -68,6 +68,27 @@ Note that you must invoke the `#rectypes;;` toplevel flag in order to
 use Coq libraries. The provided `.ocamlinit` file does this
 automatically.
 
+## ocamldebug
+
+You can use `ocamldebug` with Dune; after a build, do:
+
+```
+dune exec dev/dune-dbg
+(ocd) source dune_db
+```
+
+or
+
+```
+dune exec dev/dune-dbg checker
+(ocd) source checker_dune_db
+```
+
+for the checker. Unfortunately, dependency handling here is not fully
+refined, so you need to build enough of Coq once to use this target
+[it will then correctly compute the deps and rebuild if you call the
+script again] This will be fixed in the future.
+
 ## Compositionality, developer and release modes.
 
 By default [in "developer mode"], Dune will compose all the packages

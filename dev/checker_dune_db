@@ -1,0 +1,5 @@
+source checker_dune.dbg
+
+load_printer checker_printers.cma
+
+source checker_printers.dbg
