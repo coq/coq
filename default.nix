@@ -33,6 +33,7 @@
 , shell ? false
   # We don't use lib.inNixShell because that would also apply
   # when in a nix-shell of some package depending on this one.
+, coq-version ? "8.10-git"
 }:
 
 with pkgs;
@@ -101,7 +102,20 @@ stdenv.mkDerivation rec {
 
   installCheckTarget = [ "check" ];
 
-  passthru = { inherit ocamlPackages; };
+  passthru = {
+    inherit coq-version ocamlPackages;
+    dontFilter = true; # Useful to use mkCoqPackages from <nixpkgs>
+  };
+
+  setupHook = writeText "setupHook.sh" "
+    addCoqPath () {
+      if test -d \"$1/lib/coq/${coq-version}/user-contrib\"; then
+        export COQPATH=\"$COQPATH\${COQPATH:+:}$1/lib/coq/${coq-version}/user-contrib/\"
+      fi
+    }
+
+    addEnvHooks \"$targetOffset\" addCoqPath
+  ";
 
   meta = {
     description = "Coq proof assistant";
@@ -113,6 +127,7 @@ stdenv.mkDerivation rec {
     '';
     homepage = http://coq.inria.fr;
     license = licenses.lgpl21;
+    platforms = platforms.unix;
   };
 
 }
