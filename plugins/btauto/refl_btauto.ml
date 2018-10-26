@@ -195,7 +195,7 @@ module Btauto = struct
         let assign = List.combine env var in
         let map_msg (key, v) =
           let b = if v then str "true" else str "false" in
-          let sigma, env = Pfedit.get_current_context () in
+          let sigma, env = Tacmach.project gl, Tacmach.pf_env gl in
           let term = Printer.pr_constr_env env sigma key in
           term ++ spc () ++ str ":=" ++ spc () ++ b
         in

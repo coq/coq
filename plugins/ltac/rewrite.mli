@@ -88,7 +88,7 @@ val add_setoid :
   rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
   Id.t -> unit
 
-val add_morphism_infer : rewrite_attributes -> constr_expr -> Id.t -> unit
+val add_morphism_infer : ?ontop:Proof_global.t -> rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t option
 
 val add_morphism :
   rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> unit

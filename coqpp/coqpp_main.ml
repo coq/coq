@@ -347,9 +347,18 @@ let print_atts_right fmt = function
     let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
 
+let print_body_wrapper fmt r =
+  match r.vernac_state with
+  | Some "proof" ->
+    fprintf fmt "let proof = (%a) ~pstate:st.Vernacstate.proof in { st with Vernacstate.proof }" print_code r.vernac_body
+  | None ->
+    fprintf fmt "let () = %a in st" print_code r.vernac_body
+  | Some x ->
+    fatal ("unsupported state specifier: " ^ x)
+
 let print_body_fun fmt r =
-  fprintf fmt "let coqpp_body %a%a ~st = let () = %a in st in "
-    print_binders r.vernac_toks print_atts_left r.vernac_atts print_code r.vernac_body
+  fprintf fmt "let coqpp_body %a%a ~st = @[%a@] in "
+    print_binders r.vernac_toks print_atts_left r.vernac_atts print_body_wrapper r
 
 let print_body fmt r =
   fprintf fmt "@[(%afun %a~atts@ ~st@ -> coqpp_body %a%a ~st)@]"

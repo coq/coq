@@ -255,5 +255,3 @@ val find_contradiction : UF.t ->
   (Names.Id.t * (int * int)) list ->
   (Names.Id.t * (int * int))
 *)
-
-

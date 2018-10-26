@@ -59,7 +59,9 @@ let locate_int () =
     int = locate_ind q_int }
 
 let has_type f ty =
-  let (sigma, env) = Pfedit.get_current_context () in
+  (* This shouldn't take the context from the proof *)
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false

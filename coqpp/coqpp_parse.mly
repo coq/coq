@@ -65,7 +65,7 @@ let parse_user_entry s sep =
 %token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
 %token RAW_PRINTED GLOB_PRINTED
 %token COMMAND CLASSIFIED PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
-%token HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
+%token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
 %token EOF
@@ -209,13 +209,14 @@ vernac_rules:
 ;
 
 vernac_rule:
-| PIPE vernac_attributes_opt LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
+| PIPE vernac_attributes_opt vernac_state_opt LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
   { {
       vernac_atts = $2;
-      vernac_toks = $4;
-      vernac_depr = $6;
-      vernac_class= $7;
-      vernac_body = $9;
+      vernac_state= $3;
+      vernac_toks = $5;
+      vernac_depr = $7;
+      vernac_class= $8;
+      vernac_body = $10;
   } }
 ;
 
@@ -234,6 +235,14 @@ vernac_attribute:
 | qualid_or_ident EQUAL qualid_or_ident { ($1, $3) }
 | qualid_or_ident { ($1, $1) }
 ;
+
+vernac_state_opt:
+| { None }
+| BANGBRACKET vernac_state RBRACKET { Some $2 }
+;
+
+vernac_state:
+| qualid_or_ident { $1 }
 
 rule_deprecation:
 | { false }

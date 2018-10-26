@@ -15,6 +15,8 @@ open Tacexpr
 
 let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()
 
+let get_current_context () = let env = Global.env () in Evd.from_env env, env
+
 let prtac x =
   Pptactic.pr_glob_tactic (Global.env()) x
 let prmatchpatt env sigma hyp =
@@ -22,7 +24,7 @@ let prmatchpatt env sigma hyp =
 let prmatchrl rl =
   Pptactic.pr_match_rule false (Pptactic.pr_glob_tactic (Global.env()))
     (fun (_,p) ->
-       let sigma, env = Pfedit.get_current_context () in
+       let sigma, env = get_current_context () in
        Printer.pr_constr_pattern_env env sigma p) rl
 
 (* This module intends to be a beginning of debugger for tactic expressions.
@@ -372,7 +374,7 @@ let explain_ltac_call_trace last trace loc =
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-              let sigma, env = Pfedit.get_current_context () in
+              let sigma, env = get_current_context () in
               Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
             (List.rev (Id.Map.bindings vars)) ++ str ")"
         else mt())

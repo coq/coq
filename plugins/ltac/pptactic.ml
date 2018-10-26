@@ -1303,13 +1303,12 @@ let lift_top f a = Genprint.TopPrinterBasic (fun () -> f a)
 let register_basic_print0 wit f g h =
   Genprint.register_print0 wit (lift f) (lift g) (lift_top h)
 
-
 let pr_glob_constr_pptac c =
-  let _, env = Pfedit.get_current_context () in
+  let env = Global.env () in
   pr_glob_constr_env env c
 
 let pr_lglob_constr_pptac c =
-  let _, env = Pfedit.get_current_context () in
+  let env = Global.env () in
   pr_lglob_constr_env env c
 
 let () =
