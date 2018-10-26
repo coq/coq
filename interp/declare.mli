@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Libnames
 open Constr
 open Entries
 open Decl_kinds
@@ -29,7 +28,7 @@ type section_variable_entry =
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
-val declare_variable : variable -> variable_declaration -> object_name
+val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
 (** Declaration of global constructions 
    i.e. Definition/Theorem/Axiom/Parameter/... *)
@@ -69,7 +68,7 @@ val set_declare_scheme :
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block and a boolean indicating if it is a primitive record. *)
-val declare_mind : mutual_inductive_entry -> object_name * bool
+val declare_mind : mutual_inductive_entry -> Libobject.object_name * bool
 
 (** Declaration messages *)
 

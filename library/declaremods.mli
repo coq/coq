@@ -130,7 +130,7 @@ val declare_include :
     (together with their section path). *)
 
 val iter_all_segments :
-  (Libnames.object_name -> Libobject.obj -> unit) -> unit
+  (Libobject.object_name -> Libobject.obj -> unit) -> unit
 
 
 val debug_print_modtab : unit -> Pp.t

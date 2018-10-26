@@ -25,7 +25,7 @@ type node =
   | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
   | OpenedSection of Libnames.object_prefix * Summary.frozen
 
-type library_segment = (Libnames.object_name * node) list
+type library_segment = (Libobject.object_name * node) list
 
 type lib_objects = (Id.t * Libobject.obj) list
 
@@ -53,13 +53,13 @@ val segment_of_objects :
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : Id.t -> Libobject.obj -> Libnames.object_name
+val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
-val pull_to_head : Libnames.object_name -> unit
+val pull_to_head : Libobject.object_name -> unit
 
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
-val add_leaves : Id.t -> Libobject.obj list -> Libnames.object_name
+val add_leaves : Id.t -> Libobject.obj list -> Libobject.object_name
 
 (** {6 ... } *)
 
@@ -70,7 +70,7 @@ val contents : unit -> library_segment
 (** The function [contents_after] returns the current library segment,
   starting from a given section path. *)
 
-val contents_after : Libnames.object_name -> library_segment
+val contents_after : Libobject.object_name -> library_segment
 
 (** {6 Functions relative to current path } *)
 
@@ -113,20 +113,20 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libnames.object_name * Libnames.object_prefix *
+  Libobject.object_name * Libnames.object_prefix *
     Summary.frozen * library_segment
 
 val end_modtype :
   unit ->
-  Libnames.object_name * Libnames.object_prefix *
+  Libobject.object_name * Libnames.object_prefix *
     Summary.frozen * library_segment
 
 (** {6 Compilation units } *)
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation_checks : DirPath.t -> Libnames.object_name
+val end_compilation_checks : DirPath.t -> Libobject.object_name
 val end_compilation :
-  Libnames.object_name-> Libnames.object_prefix * library_segment
+  Libobject.object_name-> Libnames.object_prefix * library_segment
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

@@ -66,6 +66,13 @@ open Mod_subst
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
+(** Both names are passed to objects: a "semantic" [kernel_name], which
+   can be substituted and a "syntactic" [full_path] which can be printed
+*)
+
+type object_name = full_path * Names.KerName.t
+val make_oname : object_prefix -> Names.Id.t -> object_name
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
