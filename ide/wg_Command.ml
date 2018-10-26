@@ -98,7 +98,7 @@ object(self)
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let result = Wg_MessageView.message_view () in
     router#register_route route_id result;
-    r_bin#add (result :> GObj.widget);
+    r_bin#add_with_viewport (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;
     let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
