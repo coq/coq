@@ -385,7 +385,7 @@ let init_gc () =
              Gc.space_overhead = 120}
 
 (** Main init routine *)
-let init_toplevel custom_init arglist =
+let init_toplevel init_opts custom_init arglist =
   (* Coq's init process, phase 1:
      OCaml parameters, basic structures, and IO
    *)
@@ -401,7 +401,7 @@ let init_toplevel custom_init arglist =
    *)
   let res = begin
     try
-      let opts,extras = parse_args arglist in
+      let opts,extras = parse_args init_opts arglist in
       memory_stat := opts.memory_stat;
 
       (* If we have been spawned by the Spawn module, this has to be done
@@ -488,20 +488,25 @@ let init_toplevel custom_init arglist =
   Feedback.del_feeder init_feeder;
   res
 
-type custom_toplevel = {
-  init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list;
-  run : opts:coq_cmdopts -> state:Vernac.State.t -> unit;
-}
+type custom_toplevel =
+  { init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list
+  ; run : opts:coq_cmdopts -> state:Vernac.State.t -> unit
+  ; opts : Coqargs.coq_cmdopts
+  }
 
 let coqtop_init ~opts extra =
   init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
   opts, extra
 
-let coqtop_toplevel = { init = coqtop_init; run = Coqloop.loop; }
+let coqtop_toplevel =
+  { init = coqtop_init
+  ; run = Coqloop.loop
+  ; opts = Coqargs.default_opts
+  }
 
 let start_coq custom =
-  match init_toplevel custom.init (List.tl (Array.to_list Sys.argv)) with
+  match init_toplevel custom.opts custom.init (List.tl (Array.to_list Sys.argv)) with
   (* Batch mode *)
   | Some state, opts when not opts.batch_mode ->
     custom.run ~opts ~state;

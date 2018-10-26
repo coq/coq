@@ -90,7 +90,7 @@ type coq_cmdopts = {
 
 let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
 
-let init_args = {
+let default_opts = {
 
   load_init   = true;
   load_rcfile = true;
@@ -137,6 +137,8 @@ let init_args = {
 
   print_emacs = false;
 
+  (* Quiet / verbosity options should be here *)
+
   inputstate  = None;
   outputstate = None;
 }
@@ -161,6 +163,7 @@ let add_compat_require opts v =
   | Flags.Current -> add_vo_require opts "Coq.Compat.Coq89" None (Some false)
 
 let set_batch_mode opts =
+  (* XXX: This should be in the argument record *)
   Flags.quiet := true;
   System.trust_file_cache := true;
   { opts with batch_mode = true }
@@ -320,7 +323,7 @@ let usage batch =
   else Usage.print_usage_coqtop ()
 
 (* Main parsing routine *)
-let parse_args arglist : coq_cmdopts * string list =
+let parse_args init_opts arglist : coq_cmdopts * string list =
   let args = ref arglist in
   let extras = ref [] in
   let rec parse oval = match !args with
@@ -595,5 +598,5 @@ let parse_args arglist : coq_cmdopts * string list =
     parse noval
   in
   try
-    parse init_args
+    parse init_opts
   with any -> fatal_error any

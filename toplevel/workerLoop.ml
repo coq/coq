@@ -23,6 +23,7 @@ let arg_init init ~opts extra_args =
 let start ~init ~loop =
   let open Coqtop in
   let custom = {
+    opts = Coqargs.default_opts;
     init = arg_init init;
     run = (fun ~opts:_ ~state:_ -> loop ());
   } in
