@@ -453,7 +453,6 @@ let init_toplevel custom_init arglist =
         prerr_endline "See -help for the list of supported options";
         exit 1
       end;
-      Flags.if_verbose print_header ();
       Mltop.init_known_plugins ();
       Global.set_engagement opts.impredicative_set;
 
@@ -519,6 +518,8 @@ type custom_toplevel = {
 let coqtop_init ~opts extra =
   init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
+  if CList.is_empty extra then
+    Flags.if_verbose print_header ();
   opts, extra
 
 let coqtop_toplevel = { init = coqtop_init; run = Coqloop.loop; }
