@@ -1,4 +1,5 @@
 source core.dbg
+load_printer ltac_plugin.cmo
 load_printer top_printers.cmo
 install_printer Top_printers.ppid
 install_printer Top_printers.ppsp

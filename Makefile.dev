@@ -20,10 +20,7 @@
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/checker_printers.cmo
 
 devel: printers
-printers: $(CORECMA) $(DEBUGPRINTERS) dev/camlp5.dbg
-
-dev/camlp5.dbg:
-	echo "load_printer gramlib.cma" > $@
+printers: $(CORECMA) $(DEBUGPRINTERS)
 
 ############
 # revision
