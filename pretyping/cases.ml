@@ -296,8 +296,7 @@ let inductive_template env sigma tmloc ind =
             let ty = EConstr.of_constr ty in
 	    let ty' = substl subst ty in
             let sigma, e =
-                Evarutil.new_evar env ~src:(hole_source n)
-                sigma ty'
+              Evarutil.new_evar env ~src:(hole_source n) ~typeclass_candidate:false sigma ty'
             in
             (sigma, e::subst,e::evarl,n+1)
 	| LocalDef (na,b,ty) ->
@@ -1698,7 +1697,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context !!env) in
-        let sigma, ev' = Evarutil.new_evar ~src !!env sigma ty in
+        let sigma, ev' = Evarutil.new_evar ~src ~typeclass_candidate:false !!env sigma ty in
         begin match solve_simple_eqn (evar_conv_x full_transparent_state) !!env sigma (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
@@ -1734,7 +1733,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
           (named_context !!extenv) in
       let filter = Filter.make (rel_filter @ named_filter) in
       let candidates = List.rev (u :: List.map mkRel vl) in
-      let sigma, ev = Evarutil.new_evar !!extenv ~src ~filter ~candidates sigma ty in
+      let sigma, ev = Evarutil.new_evar !!extenv ~src ~filter ~candidates ~typeclass_candidate:false sigma ty in
       let () = evdref := sigma in
       lift k ev
   in

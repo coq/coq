@@ -89,8 +89,8 @@ let goalevars evars = fst evars
 let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
-  let s = Typeclasses.set_resolvable Evd.Store.empty false in
-  let (evd', t) = Evarutil.new_evar ~store:s env evd t in
+  (** We handle the typeclass resolution of constraints ourselves *)
+  let (evd', t) = Evarutil.new_evar env evd ~typeclass_candidate:false t in
   let ev, _ = destEvar evd' t in
     (evd', Evar.Set.add ev cstrs), t
 
@@ -631,9 +631,6 @@ let solve_remaining_by env sigma holes by =
 
 let no_constraints cstrs = 
   fun ev _ -> not (Evar.Set.mem ev cstrs)
-
-let all_constraints cstrs = 
-  fun ev _ -> Evar.Set.mem ev cstrs
 
 let poly_inverse sort =
   if sort then PropGlobal.inverse else TypeGlobal.inverse
@@ -1453,10 +1450,11 @@ let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
   res
 
 let solve_constraints env (evars,cstrs) =
-  let filter = all_constraints cstrs in
-    Typeclasses.resolve_typeclasses env ~filter ~split:false ~fail:true 
-      (Typeclasses.mark_resolvables ~filter evars)
-      
+  let oldtcs = Evd.get_typeclass_evars evars in
+  let evars' = Evd.set_typeclass_evars evars cstrs in
+  let evars' = Typeclasses.resolve_typeclasses env ~filter:all_evars ~split:false ~fail:true evars' in
+  Evd.set_typeclass_evars evars' oldtcs
+
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 

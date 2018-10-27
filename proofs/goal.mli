@@ -39,16 +39,12 @@ module V82 : sig
   (* Access to ".evar_concl" *)
   val concl : Evd.evar_map -> goal -> EConstr.constr
 
-  (* Access to ".evar_extra" *)
-  val extra : Evd.evar_map -> goal -> Evd.Store.t
-
-  (* Old style mk_goal primitive, returns a new goal with corresponding 
+  (* Old style mk_goal primitive, returns a new goal with corresponding
        hypotheses and conclusion, together with a term which is precisely
        the evar corresponding to the goal, and an updated evar_map. *)
   val mk_goal : Evd.evar_map -> 
                          Environ.named_context_val ->
                          EConstr.constr ->
-                         Evd.Store.t ->
                          goal * EConstr.constr * Evd.evar_map
 
   (* Instantiates a goal with an open term *)

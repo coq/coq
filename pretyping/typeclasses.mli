@@ -93,7 +93,7 @@ val instance_constructor : typeclass EConstr.puniverses -> EConstr.t list ->
   EConstr.t option * EConstr.t
 
 (** Filter which evars to consider for resolution. *)
-type evar_filter = Evar.t -> Evar_kinds.t -> bool
+type evar_filter = Evar.t -> Evar_kinds.t Lazy.t -> bool
 val all_evars : evar_filter
 val all_goals : evar_filter
 val no_goals : evar_filter
@@ -107,16 +107,12 @@ val no_goals_or_obligations : evar_filter
     An unresolvable evar is an evar the type-class engine will NOT try to solve
 *)
 
-val set_resolvable : Evd.Store.t -> bool -> Evd.Store.t
-val is_resolvable : evar_info -> bool
-val mark_unresolvable : evar_info -> evar_info
-val mark_unresolvables : ?filter:evar_filter -> evar_map -> evar_map
-val mark_resolvables   : ?filter:evar_filter -> evar_map -> evar_map
-val mark_resolvable : evar_info -> evar_info
+val make_unresolvables : (Evar.t -> bool) -> evar_map -> evar_map
+
 val is_class_evar : evar_map -> evar_info -> bool
 val is_class_type : evar_map -> EConstr.types -> bool
 
-val resolve_typeclasses : ?fast_path:bool -> ?filter:evar_filter -> ?unique:bool ->
+val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 

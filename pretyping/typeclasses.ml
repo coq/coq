@@ -166,6 +166,21 @@ let rec is_class_type evd c =
 let is_class_evar evd evi =
   is_class_type evd evi.Evd.evar_concl
 
+let is_class_constr sigma c =
+  try let gr, u = Termops.global_of_constr sigma c in
+    GlobRef.Map.mem gr !classes
+  with Not_found -> false
+
+let rec is_maybe_class_type evd c =
+  let c, _ = Termops.decompose_app_vect evd c in
+    match EConstr.kind evd c with
+    | Prod (_, _, t) -> is_maybe_class_type evd t
+    | Cast (t, _, _) -> is_maybe_class_type evd t
+    | Evar _ -> true
+    | _ -> is_class_constr evd c
+
+let () = Hook.set Evd.is_maybe_typeclass_hook (fun evd c -> is_maybe_class_type evd (EConstr.of_constr c))
+
 (*
  * classes persistent object
  *)
@@ -481,63 +496,29 @@ let instances r =
 let is_class gr = 
   GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
 
-(* To embed a boolean for resolvability status.
-   This is essentially a hack to mark which evars correspond to
-   goals and do not need to be resolved when we have nested [resolve_all_evars]
-   calls (e.g. when doing apply in an External hint in typeclass_instances).
-   Would be solved by having real evars-as-goals.
-
-   Nota: we will only check the resolvability status of undefined evars.
- *)
-
-let resolvable = Proofview.Unsafe.typeclass_resolvable
-
-let set_resolvable s b =
-  if b then Store.remove s resolvable
-  else Store.set s resolvable ()
-
-let is_resolvable evi =
-  assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.is_empty (Store.get evi.evar_extra resolvable)
-
-let mark_resolvability_undef b evi =
-  if is_resolvable evi == (b : bool) then evi
-  else
-    let t = set_resolvable evi.evar_extra b in
-    { evi with evar_extra = t }
-
-let mark_resolvability b evi =
-  assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  mark_resolvability_undef b evi
-
-let mark_unresolvable evi = mark_resolvability false evi
-let mark_resolvable evi = mark_resolvability true evi
-
 open Evar_kinds
-type evar_filter = Evar.t -> Evar_kinds.t -> bool
+type evar_filter = Evar.t -> Evar_kinds.t Lazy.t -> bool
+
+let make_unresolvables filter evd =
+  let tcs = Evd.get_typeclass_evars evd in
+  Evd.set_typeclass_evars evd (Evar.Set.filter (fun x -> not (filter x)) tcs)
 
 let all_evars _ _ = true
-let all_goals _ = function VarInstance _ | GoalEvar -> true | _ -> false
+let all_goals _ source =
+  match Lazy.force source with
+  | VarInstance _ | GoalEvar -> true
+  | _ -> false
+
 let no_goals ev evi = not (all_goals ev evi)
-let no_goals_or_obligations _ = function
+let no_goals_or_obligations _ source =
+  match Lazy.force source with
   | VarInstance _ | GoalEvar | QuestionMark _ -> false
   | _ -> true
 
-let mark_resolvability filter b sigma =
-  let map ev evi =
-    if filter ev (snd evi.evar_source) then mark_resolvability_undef b evi
-    else evi
-  in
-  Evd.raw_map_undefined map sigma
-
-let mark_unresolvables ?(filter=all_evars) sigma = mark_resolvability filter false sigma
-let mark_resolvables ?(filter=all_evars) sigma = mark_resolvability filter true sigma
-
 let has_typeclasses filter evd =
-  let check ev evi =
-    filter ev (snd evi.evar_source) && is_resolvable evi && is_class_evar evd evi
-  in
-  Evar.Map.exists check (Evd.undefined_map evd)
+  let tcs = get_typeclass_evars evd in
+  let check ev = filter ev (lazy (snd (Evd.find evd ev).evar_source)) in
+  Evar.Set.exists check tcs
 
 let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
 
@@ -548,7 +529,7 @@ let solve_all_instances env evd filter unique split fail =
 (* let solve_classeskey = CProfile.declare_profile "solve_typeclasses" *)
 (* let solve_problem = CProfile.profile5 solve_classeskey solve_problem *)
 
-let resolve_typeclasses ?(fast_path = true) ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
+let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
-  if fast_path && not (has_typeclasses filter evd) then evd
+  if not (has_typeclasses filter evd) then evd
   else solve_all_instances env evd filter unique split fail

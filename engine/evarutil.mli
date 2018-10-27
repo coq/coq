@@ -27,8 +27,9 @@ val mk_new_meta : unit -> constr
 
 val new_evar_from_context :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
+  ?typeclass_candidate:bool ->
   ?principal:bool ->
   named_context_val -> evar_map  -> types -> evar_map * EConstr.t
 
@@ -40,19 +41,21 @@ type naming_mode =
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
+  ?typeclass_candidate:bool ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?candidates:constr list -> ?store:Store.t ->
+  ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
+  ?typeclass_candidate:bool ->
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
 
-val new_pure_evar_full : evar_map -> evar_info -> evar_map * Evar.t
+val new_pure_evar_full : evar_map -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
@@ -77,7 +80,8 @@ val new_global : evar_map -> GlobRef.t -> evar_map * constr
    as a telescope) is [sign] *)
 val new_evar_instance :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t -> ?candidates:constr list ->
-  ?store:Store.t -> ?naming:intro_pattern_naming_expr ->
+  ?naming:intro_pattern_naming_expr ->
+  ?typeclass_candidate:bool ->
   ?principal:bool ->
  named_context_val -> evar_map -> types ->
   constr list -> evar_map * constr

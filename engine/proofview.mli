@@ -456,9 +456,9 @@ module Unsafe : sig
   (** Clears the future goals store in the proof view. *)
   val reset_future_goals : proofview -> proofview
 
-  (** Give an evar the status of a goal (changes its source location
-      and makes it unresolvable for type classes. *)
-  val mark_as_goal : Evd.evar_map -> Evar.t -> Evd.evar_map
+  (** Give the evars the status of a goal (changes their source location
+      and makes them unresolvable for type classes. *)
+  val mark_as_goals : Evd.evar_map -> Evar.t list -> Evd.evar_map
 
   (** Make an evar unresolvable for type classes. *)
   val mark_as_unresolvable : proofview -> Evar.t -> proofview
@@ -474,8 +474,6 @@ module Unsafe : sig
       defined *)
   val undefined : Evd.evar_map -> Proofview_monad.goal_with_state list ->
     Proofview_monad.goal_with_state list
-
-  val typeclass_resolvable : unit Evd.Store.field
 
 end
 
@@ -507,7 +505,6 @@ module Goal : sig
   val hyps : t -> named_context
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map
-  val extra : t -> Evd.Store.t
   val state : t -> Proofview_monad.StateStore.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal

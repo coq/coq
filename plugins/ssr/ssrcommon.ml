@@ -1365,7 +1365,7 @@ let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
 
 (** This tactic creates a partial proof realizing the introduction rule, but
     does not check anything. *)
-let unsafe_intro env store decl b =
+let unsafe_intro env decl b =
   let open Context.Named.Declaration in
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = Environ.named_context_val env in
@@ -1374,7 +1374,7 @@ let unsafe_intro env store decl b =
     let ninst = EConstr.mkRel 1 :: inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
     let sigma, ev =
-      Evarutil.new_evar_instance nctx sigma nb ~principal:true ~store ninst in
+      Evarutil.new_evar_instance nctx sigma nb ~principal:true ninst in
     sigma, EConstr.mkNamedLambda_or_LetIn decl ev
   end
 
@@ -1418,7 +1418,7 @@ let-in even after reduction, it fails. In case of success, the original name
 and final id are passed to the continuation [k] which gets evaluated. *)
 let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   let open Context in
-  let env, sigma, extra, g = Goal.(env gl, sigma gl, extra gl, concl gl) in
+  let env, sigma, g = Goal.(env gl, sigma gl, concl gl) in
   let decl, t, no_red = decompose_assum env sigma g in
   let original_name = Rel.Declaration.get_name decl in
   let already_used = Tacmach.New.pf_ids_of_hyps gl in
@@ -1433,7 +1433,7 @@ let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   in
   if List.mem id already_used then
     errorstrm Pp.(Id.print id ++ str" already used");
-  unsafe_intro env extra (set_decl_id id decl) t <*>
+  unsafe_intro env (set_decl_id id decl) t <*>
   (if no_red then tclUNIT () else tclFULL_BETAIOTA) <*>
   k ~orig_name:original_name ~new_name:id
 end

@@ -226,7 +226,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (EConstr.of_constr c,ty) in
     let eqclause =
       if metas then eqclause
-      else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
+      else fst (clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd))
     in
     let (equiv, args) = EConstr.decompose_app sigma (Clenv.clenv_type eqclause) in
     let rec split_last_two = function

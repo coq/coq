@@ -773,12 +773,13 @@ let pr_constraints printenv env sigma evars cstrs =
 
 let explain_unsatisfiable_constraints env sigma constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs sigma in
+  let tcs = Evd.get_typeclass_evars sigma in
   let undef = Evd.undefined_map sigma in
   (** Only keep evars that are subject to resolution and members of the given
      component. *)
-  let is_kept evk evi = match comp with
-  | None -> Typeclasses.is_resolvable evi
-  | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
+  let is_kept evk _ = match comp with
+  | None -> Evar.Set.mem evk tcs
+  | Some comp -> Evar.Set.mem evk tcs && Evar.Set.mem evk comp
   in
   let undef = 
     let m = Evar.Map.filter is_kept undef in

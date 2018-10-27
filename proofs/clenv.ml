@@ -324,21 +324,21 @@ let adjust_meta_source evd mv = function
 *)
 
 let clenv_pose_metas_as_evars clenv dep_mvs =
-  let rec fold clenv = function
-  | [] -> clenv
+  let rec fold clenv evs = function
+  | [] -> clenv, evs
   | mv::mvs ->
       let ty = clenv_meta_type clenv mv in
       (* Postpone the evar-ization if dependent on another meta *)
       (* This assumes no cycle in the dependencies - is it correct ? *)
-      if occur_meta clenv.evd ty then fold clenv (mvs@[mv])
+      if occur_meta clenv.evd ty then fold clenv evs (mvs@[mv])
       else
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
         let evd = clenv.evd in
 	let (evd, evar) = new_evar (cl_env clenv) evd ~src ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
-	fold clenv mvs in
-  fold clenv dep_mvs
+        fold clenv (fst (destEvar evd evar) :: evs) mvs in
+  fold clenv [] dep_mvs
 
 (******************************************************************)
 
@@ -608,8 +608,7 @@ let make_evar_clause env sigma ?len t =
     else match EConstr.kind sigma t with
     | Cast (t, _, _) -> clrec (sigma, holes) n t
     | Prod (na, t1, t2) ->
-      let store = Typeclasses.set_resolvable Evd.Store.empty false in
-      let (sigma, ev) = new_evar ~store env sigma t1 in
+      let (sigma, ev) = new_evar env sigma ~typeclass_candidate:false t1 in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;

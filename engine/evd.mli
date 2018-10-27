@@ -83,10 +83,6 @@ type evar_body =
   | Evar_empty
   | Evar_defined of econstr
 
-
-module Store : Store.S
-(** Datatype used to store additional information in evar maps. *)
-
 type evar_info = {
   evar_concl : econstr;
   (** Type of the evar. *)
@@ -102,8 +98,6 @@ type evar_info = {
   (** Information about the evar. *)
   evar_candidates : econstr list option;
   (** List of possible solutions when known that it is a finite list *)
-  evar_extra : Store.t
-  (** Extra store, used for clever hacks. *)
 }
 
 val make_evar : named_context_val -> etypes -> evar_info
@@ -145,7 +139,7 @@ val has_undefined : evar_map -> bool
     there are uninstantiated evars in [sigma]. *)
 
 val new_evar : evar_map ->
-  ?name:Id.t -> evar_info -> evar_map * Evar.t
+  ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 (** Creates a fresh evar mapping to the given information. *)
 
 val add : evar_map -> Evar.t -> evar_info -> evar_map
@@ -182,13 +176,17 @@ val raw_map_undefined : (Evar.t -> evar_info -> evar_info) -> evar_map -> evar_m
 (** Same as {!raw_map}, but restricted to undefined evars. For efficiency
     reasons. *)
 
-val define : Evar.t-> econstr -> evar_map -> evar_map
+val define : Evar.t -> econstr -> evar_map -> evar_map
 (** Set the body of an evar to the given constr. It is expected that:
     {ul
       {- The evar is already present in the evarmap.}
       {- The evar is not defined in the evarmap yet.}
       {- All the evars present in the constr should be present in the evar map.}
     } *)
+
+val define_with_evar : Evar.t -> econstr -> evar_map -> evar_map
+(** Same as [define ev body evd], except the body must be an existential variable [ev'].
+    This additionally makes [ev'] inherit the [obligation] and [typeclass] flags of [ev]. *)
 
 val cmap : (econstr -> econstr) -> evar_map -> evar_map
 (** Map the function on all terms in the evar map. *)
@@ -209,6 +207,8 @@ val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
 val drop_all_defined : evar_map -> evar_map
+
+val is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t
 
 (** {6 Instantiating partial terms} *)
 
@@ -247,8 +247,26 @@ val restrict : Evar.t-> Filter.t -> ?candidates:econstr list ->
     possibly limiting the instances to a set of candidates (candidates
     are filtered according to the filter) *)
 
-val is_restricted_evar : evar_info -> Evar.t option
+val is_restricted_evar : evar_map -> Evar.t -> Evar.t option
 (** Tell if an evar comes from restriction of another evar, and if yes, which *)
+
+val set_typeclass_evars : evar_map -> Evar.Set.t -> evar_map
+(** Mark the given set of evars as available for resolution.
+
+    Precondition: they should indeed refer to undefined typeclass evars.
+ *)
+
+val get_typeclass_evars : evar_map -> Evar.Set.t
+(** The set of undefined typeclass evars *)
+
+val is_typeclass_evar : evar_map -> Evar.t -> bool
+(** Is the evar declared resolvable for typeclass resolution *)
+
+val set_obligation_evar : evar_map -> Evar.t -> evar_map
+(** Declare an evar as an obligation *)
+
+val is_obligation_evar : evar_map -> Evar.t -> bool
+(** Is the evar declared as an obligation *)
 
 val downcast : Evar.t-> etypes -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
@@ -356,6 +374,9 @@ val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
   code tends to drop them nonetheless, so you should keep cautious.
 
 *)
+
+module Store : Store.S
+(** Datatype used to store additional information in evar maps. *)
 
 val get_extra_data : evar_map -> Store.t
 val set_extra_data : Store.t -> evar_map -> evar_map
