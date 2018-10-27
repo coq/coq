@@ -12,7 +12,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20170413"
+let protocol_version = "20181023"
 
 type msg_format = Richpp of int | Ppcmds
 let msg_format = ref (Richpp 72)
@@ -942,17 +942,19 @@ let of_edit_or_state_id id = ["object","state"], of_stateid id
 let of_feedback msg =
   let content = of_feedback_content msg.contents in
   let obj, id = of_edit_or_state_id msg.span_id in
+  let phase = of_option of_string msg.phase in
   let route = string_of_int msg.route in
-  Element ("feedback", obj @ ["route",route], [id;content])
+  Element ("feedback", obj @ ["route",route], [id;phase;content])
 
 let of_feedback msg_fmt =
   msg_format := msg_fmt; of_feedback
 
 let to_feedback xml = match xml with
-  | Element ("feedback", ["object","state";"route",route], [id;content]) -> {
+  | Element ("feedback", ["object","state";"route",route], [id;phase;content]) -> {
       doc_id = 0;
       span_id = to_stateid id;
       route = int_of_string route;
+      phase = to_option to_string phase;
       contents = to_feedback_content content }
   | x -> raise (Marshal_error("feedback",x))
 

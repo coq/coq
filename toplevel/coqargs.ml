@@ -11,7 +11,7 @@
 let warning s = Flags.(with_option warn Feedback.msg_warning (Pp.strbrk s))
 
 let fatal_error exn =
-  Topfmt.print_err_exn Topfmt.ParsingCommandLine exn;
+  Topfmt.print_err_exn ~phase:"parsing command line arguments" exn;
   let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
   exit exit_code
 

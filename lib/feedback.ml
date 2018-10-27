@@ -41,6 +41,7 @@ type feedback = {
   doc_id   : doc_id;            (* The document being concerned *)
   span_id  : Stateid.t;
   route    : route_id;
+  phase    : string option;
   contents : feedback_content;
 }
 
@@ -59,19 +60,31 @@ let default_route = 0
 let span_id    = ref Stateid.dummy
 let doc_id     = ref 0
 let feedback_route = ref default_route
+let default_phase = ref None
 
 let set_id_for_feedback ?(route=default_route) d i =
   doc_id := d;
   span_id := i;
   feedback_route := route
 
+let in_phase ~phase f x =
+  let op = !default_phase in
+  try
+    let res = f x in
+    default_phase := op; res
+  with exn ->
+    let iexn = Backtrace.add_backtrace exn in
+    default_phase := op;
+    Util.iraise iexn
+
 let warn_no_listeners = ref true
-let feedback ?did ?id ?route what =
+let feedback ?did ?id ?route ?phase what =
   let m = {
      contents = what;
      route    = Option.default !feedback_route route;
      doc_id   = Option.default !doc_id did;
      span_id  = Option.default !span_id id;
+     phase    = Option.append phase !default_phase;
   } in
   if !warn_no_listeners && Hashtbl.length feeders = 0 then
     Format.eprintf "Warning, feedback message received but no listener to handle it!@\n%!";

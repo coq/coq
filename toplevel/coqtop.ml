@@ -30,15 +30,6 @@ let print_header () =
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-(* Feedback received in the init stage, this is different as the STM
-   will not be generally be initialized, thus stateid, etc... may be
-   bogus. For now we just print to the console too *)
-let coqtop_init_feed = Coqloop.coqloop_feed Topfmt.Initialization
-
-let coqtop_doc_feed = Coqloop.coqloop_feed Topfmt.LoadingPrelude
-
-let coqtop_rcfile_feed = Coqloop.coqloop_feed Topfmt.LoadingRcFile
-
 let memory_stat = ref false
 let print_memory_stat () =
   begin (* -m|--memory from the command-line *)
@@ -86,16 +77,11 @@ let load_vernacular opts ~state =
       else load_vernac s
     ) state (List.rev opts.load_vernacular_list)
 
-let load_init_vernaculars cur_feeder opts ~state =
+let load_init_vernaculars opts ~state =
   let state =
-    if opts.load_rcfile then begin
-        Feedback.del_feeder !cur_feeder;
-        let rc_feeder = Feedback.add_feeder coqtop_rcfile_feed in
-        let state  = Coqinit.load_rcfile ~rcfile:opts.rcfile ~state in
-        Feedback.del_feeder rc_feeder;
-        cur_feeder := Feedback.add_feeder coqtop_init_feed;
-        state
-      end
+    if opts.load_rcfile then
+      Feedback.in_phase ~phase:"loading init file" (fun () ->
+        Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
     else begin
       Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
       state
@@ -140,7 +126,7 @@ let fatal_error msg =
   exit 1
 
 let fatal_error_exn exn =
-  Topfmt.print_err_exn Topfmt.Initialization exn;
+  Topfmt.print_err_exn exn;
   flush_all ();
   let exit_code =
     if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1
@@ -186,7 +172,7 @@ let ensure_exists f =
     fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
 
 (* Compile a vernac file *)
-let compile cur_feeder opts ~echo ~f_in ~f_out =
+let compile opts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
     let pfs = Proof_global.get_all_proof_names () in
@@ -210,18 +196,14 @@ let compile cur_feeder opts ~echo ~f_in ~f_out =
         | None -> long_f_dot_v ^ "o"
         | Some f -> ensure_vo long_f_dot_v f in
 
-      Feedback.del_feeder !cur_feeder;
-      let doc_feeder = Feedback.add_feeder coqtop_doc_feed in
-      let doc, sid =
-        Stm.(new_doc
-          { doc_type = VoDoc long_f_dot_vo;
-            iload_path; require_libs; stm_options;
-          }) in
-      Feedback.del_feeder doc_feeder;
-      cur_feeder := Feedback.add_feeder coqtop_init_feed;
+      let doc, sid = Feedback.in_phase ~phase:"loading default libraries"
+          Stm.new_doc
+          Stm.{ doc_type = VoDoc long_f_dot_vo;
+                iload_path; require_libs; stm_options;
+              } in
 
       let state = { doc; sid; proof = None; time = opts.time } in
-      let state = load_init_vernaculars cur_feeder opts ~state in
+      let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
@@ -262,18 +244,14 @@ let compile cur_feeder opts ~echo ~f_in ~f_out =
           async_proofs_tac_error_resilience = `None;
         } in
 
-      Feedback.del_feeder !cur_feeder;
-      let doc_feeder = Feedback.add_feeder coqtop_doc_feed in
-      let doc, sid =
-        Stm.(new_doc
-          { doc_type = VioDoc long_f_dot_vio;
-            iload_path; require_libs; stm_options;
-          }) in
-      Feedback.del_feeder doc_feeder;
-      cur_feeder := Feedback.add_feeder coqtop_init_feed;
+      let doc, sid = Feedback.in_phase ~phase:"loading default libraries"
+          Stm.new_doc
+          Stm.{ doc_type = VioDoc long_f_dot_vio;
+                iload_path; require_libs; stm_options;
+              } in
 
       let state = { doc; sid; proof = None; time = opts.time } in
-      let state = load_init_vernaculars cur_feeder opts ~state in
+      let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
@@ -290,18 +268,18 @@ let compile cur_feeder opts ~echo ~f_in ~f_out =
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv sum lib univs proofs
 
-let compile cur_feeder opts ~echo ~f_in ~f_out =
+let compile opts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
-  compile cur_feeder opts ~echo ~f_in ~f_out;
+  compile opts ~echo ~f_in ~f_out;
   CoqworkmgrApi.giveback 1
 
 let compile_file cur_feeder opts (f_in, echo) =
   let f_out = opts.compilation_output_name in
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
-      (fun f_in -> compile cur_feeder opts ~echo ~f_in ~f_out) f_in
+      (fun f_in -> compile opts ~echo ~f_in ~f_out) f_in
   else
-    compile cur_feeder opts ~echo ~f_in ~f_out
+    compile opts ~echo ~f_in ~f_out
 
 let compile_files cur_feeder opts =
   let compile_list = List.rev opts.compile_list in
@@ -414,7 +392,7 @@ let init_toplevel custom_init arglist =
   CProfile.init_profile ();
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-  let init_feeder = ref (Feedback.add_feeder coqtop_init_feed) in
+  let init_feeder = ref (Feedback.add_feeder Coqloop.coqloop_feed) in
   Lib.init();
 
   (* Coq's init process, phase 2:
@@ -483,17 +461,13 @@ let init_toplevel custom_init arglist =
         let require_libs = require_libs opts in
         let stm_options = opts.stm_flags in
         let open Vernac.State in
-        Feedback.del_feeder !init_feeder;
-        let doc_feeder = Feedback.add_feeder coqtop_doc_feed in
-        let doc, sid =
-          Stm.(new_doc
-                 { doc_type = Interactive opts.toplevel_name;
-                   iload_path; require_libs; stm_options;
-                 }) in
-        Feedback.del_feeder doc_feeder;
-        init_feeder := Feedback.add_feeder coqtop_init_feed;
+        let doc, sid = Feedback.in_phase ~phase:"loading default libraries"
+            Stm.new_doc
+            Stm.{ doc_type = Interactive opts.toplevel_name;
+                  iload_path; require_libs; stm_options;
+                } in
         let state = { doc; sid; proof = None; time = opts.time } in
-        Some (load_init_vernaculars init_feeder opts ~state), opts
+        Some (load_init_vernaculars opts ~state), opts
       (* Non interactive: we perform a sequence of compilation steps *)
       end else begin
         compile_files init_feeder opts;

@@ -151,9 +151,10 @@ let print_highlight_location ib loc =
 let valid_buffer_loc ib loc =
   let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
 (* Toplevel error explanation. *)
-let error_info_for_buffer ?loc phase buf =
+let error_info_for_buffer ?loc ?phase buf =
+  let phase = Option.cata str (mt ()) phase in
   match loc with
-  | None -> Topfmt.pr_phase ?loc phase
+  | None -> None
   | Some loc ->
       let fname = loc.Loc.fname in
         (* We are in the toplevel *)
@@ -161,17 +162,15 @@ let error_info_for_buffer ?loc phase buf =
       | Loc.ToplevelInput ->
         let nloc = adjust_loc_buf buf loc in
         if valid_buffer_loc buf loc then
-          match Topfmt.pr_phase ~loc:nloc phase with
-          | None -> None
-          | Some hd -> Some (hd ++ fnl () ++ print_highlight_location buf nloc)
+          Some (phase ++ fnl () ++ print_highlight_location buf nloc)
         (* in the toplevel, but not a valid buffer *)
-        else Topfmt.pr_phase ~loc phase
+        else Some phase
       (* we are in batch mode, don't adjust location *)
-      | Loc.InFile _ -> Topfmt.pr_phase ~loc phase
+      | Loc.InFile _ -> Some phase
 
 (* Actual printing routine *)
-let print_error_for_buffer ?loc phase lvl msg buf =
-  let pre_hdr = error_info_for_buffer ?loc phase buf in
+let print_error_for_buffer ?loc ?phase lvl msg buf =
+  let pre_hdr = error_info_for_buffer ?loc ?phase buf in
   if !print_emacs
   then Topfmt.emacs_logger ?pre_hdr lvl msg
   else Topfmt.std_logger   ?pre_hdr lvl msg
@@ -281,7 +280,8 @@ let extract_default_loc loc doc_id sid : Loc.t option =
     with _ -> loc
 
 (** Coqloop Console feedback handler *)
-let coqloop_feed phase (fb : Feedback.feedback) = let open Feedback in
+let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
+  let phase = fb.phase in
   match fb.contents with
   | Processed   -> ()
   | Incomplete  -> ()
@@ -300,9 +300,9 @@ let coqloop_feed phase (fb : Feedback.feedback) = let open Feedback in
   (* TopErr.print_error_for_buffer ?loc lvl msg top_buffer *)
   | Message (Warning,loc,msg) ->
     let loc = extract_default_loc loc fb.doc_id fb.span_id in
-    TopErr.print_error_for_buffer ?loc phase Warning msg top_buffer
+    TopErr.print_error_for_buffer ?loc ?phase Warning msg top_buffer
   | Message (lvl,loc,msg) ->
-    TopErr.print_error_for_buffer ?loc phase lvl msg top_buffer
+    TopErr.print_error_for_buffer ?loc ?phase lvl msg top_buffer
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -362,7 +362,7 @@ let top_goal_print ~doc c oldp newp =
     let (e, info) = CErrors.push exn in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
-    TopErr.print_error_for_buffer ?loc Topfmt.InteractiveLoop Feedback.Error msg top_buffer
+    TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
 
 (* Careful to keep this loop tail-rec *)
 let rec vernac_loop ~state =
@@ -404,7 +404,7 @@ let rec vernac_loop ~state =
     let (e, info) = CErrors.push any in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
-    TopErr.print_error_for_buffer ?loc Topfmt.InteractiveLoop Feedback.Error msg top_buffer;
+    TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
     vernac_loop ~state
 
 let rec loop ~state =
@@ -430,7 +430,7 @@ let loop ~opts ~state =
   let open Coqargs in
   print_emacs := opts.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
-  let tl_feed = Feedback.add_feeder (coqloop_feed Topfmt.InteractiveLoop) in
+  let tl_feed = Feedback.add_feeder coqloop_feed in
   if Dumpglob.dump () then begin
     Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
     Dumpglob.noglob ()

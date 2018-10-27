@@ -51,6 +51,7 @@ type feedback = {
   doc_id   : doc_id;            (* The document being concerned *)
   span_id  : Stateid.t;         (* The document part concerned *)
   route    : route_id;          (* Extra routing info *)
+  phase    : string option;     (* Component that generates the feedback *)
   contents : feedback_content;  (* The payload *)
 }
 
@@ -69,11 +70,13 @@ val del_feeder : int -> unit
 (** [feedback ?did ?sid ?route fb] produces feedback [fb], with
     [route] and [did, sid] set appropiatedly, if absent, it will use
     the defaults set by [set_id_for_feedback] *)
-val feedback : ?did:doc_id -> ?id:Stateid.t -> ?route:route_id -> feedback_content -> unit
+val feedback : ?did:doc_id -> ?id:Stateid.t -> ?route:route_id -> ?phase:string -> feedback_content -> unit
 
 (** [set_id_for_feedback route id] Set the defaults for feedback *)
 val set_id_for_feedback : ?route:route_id -> doc_id -> Stateid.t -> unit
 
+(** [in_phase ~phase f x] Executes [f x] setting feedback phase to [phase] *)
+val in_phase : phase:string -> ('a -> 'b) -> 'a -> 'b
 (** {6 output functions}
 
 [msg_notice] do not put any decoration on output by default. If
