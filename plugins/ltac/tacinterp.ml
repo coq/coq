@@ -591,7 +591,7 @@ let interp_typed_pattern ist env sigma (_,c,_) =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   (** FIXME: it is necessary to be unsafe here because of the way we handle
       evars in the pretyper. Sometimes they get solved eagerly. *)
-  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
+  pattern_of_constr env sigma c
 
 (* Interprets a constr expression *)
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
@@ -636,7 +636,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma (occs, a) =
       try Inl (coerce_to_evaluable_ref env sigma x)
       with CannotCoerceTo _ ->
         let c = coerce_to_closed_constr env x in
-        Inr (pattern_of_constr env sigma (EConstr.to_constr sigma c)) in
+        Inr (pattern_of_constr env sigma c) in
     (try try_interp_ltac_var coerce_eval_ref_or_constr ist (Some (env,sigma)) (make ?loc id)
      with Not_found ->
        Nametab.error_global_not_found (qualid_of_ident ?loc id))
