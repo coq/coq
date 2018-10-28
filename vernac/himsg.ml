@@ -391,11 +391,10 @@ let explain_unexpected_type env sigma actual_type expected_type =
   str "where" ++ spc () ++ prexp ++ str " was expected."
 
 let explain_not_product env sigma c =
-  let c = EConstr.to_constr sigma c in
-  let pr = pr_lconstr_env env sigma c in
+  let pr = pr_econstr_env env sigma c in
   str "The type of this term is a product" ++ spc () ++
   str "while it is expected to be" ++
-  (if Constr.is_Type c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
+  (if EConstr.isType sigma c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
