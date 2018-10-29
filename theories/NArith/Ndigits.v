@@ -546,8 +546,10 @@ Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
     | Vector.cons _ true n bv => N.succ_double (Bv2N n bv)
   end.
 
+Arguments Bv2N {n} bv, n bv.
+
 Definition ByteV2N {n : nat} : ByteVector n -> N :=
-  Bv2N (n * 8) ∘ to_Bvector.
+  Bv2N ∘ to_Bvector.
 
 Lemma Bv2N_N2Bv : forall n, Bv2N _ (N2Bv n) = n.
 Proof.
@@ -584,7 +586,7 @@ destruct a ; compute ; split ; intros x ; now inversion x.
 Qed.
 
 Lemma Bv2N_upper_bound (n : nat) (bv : Bvector n) :
-    (Bv2N n bv < N.shiftl_nat 1 n)%N.
+    (Bv2N bv < N.shiftl_nat 1 n)%N.
 Proof with simpl; auto.
   induction bv...
   - constructor.

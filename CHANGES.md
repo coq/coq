@@ -28,6 +28,7 @@ Standard Library
 
 - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about
   the upper bound of number represented by a vector.
+  Allowed implicit vector length argument in `Ndigits.Bv2N`.
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================
