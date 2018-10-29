@@ -11,16 +11,16 @@
  (name checklib)
  (public_name coq.checklib)
  (synopsis "Coq's Standalone Proof Checker")
- (modules :standard \ main votour)
+ (modules :standard \ coqchk votour)
  (modules_without_implementation cic)
  (wrapped true)
  (libraries coq.lib))
 
 (executable
- (name main)
+ (name coqchk)
  (public_name coqchk)
  (package coq)
- (modules main)
+ (modules coqchk)
  (flags :standard -open Checklib)
  (libraries coq.checklib))
 
