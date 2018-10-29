@@ -1,6 +1,10 @@
 version: '{branch}~{build}'
 clone_depth: 10
 
+cache:
+  - C:\cygwin64 -> dev\ci\appveyor.bat
+  - C:\cygwin64\home\appveyor\.opam -> dev\ci\appveyor.sh
+
 platform:
 - x64
 
