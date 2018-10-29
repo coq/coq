@@ -1,7 +1,7 @@
 -Q theories Evil
 -I src
 
-src/evil.ml4
+src/evil.mlg
 src/evilImpl.ml
 src/evilImpl.mli
 src/evil_plugin.mlpack

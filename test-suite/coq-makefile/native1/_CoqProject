@@ -4,7 +4,7 @@
 -arg -native-compiler
 
 src/test_plugin.mlpack
-src/test.ml4
+src/test.mlg
 src/test.mli
 src/test_aux.ml
 src/test_aux.mli

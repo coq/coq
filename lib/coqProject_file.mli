@@ -23,6 +23,7 @@ type project = {
   v_files : string sourced list;
   mli_files : string sourced list;
   ml4_files : string sourced list;
+  mlg_files : string sourced list;
   ml_files : string sourced list;
   mllib_files : string sourced list;
   mlpack_files : string sourced list;

@@ -145,9 +145,9 @@ let mllibAccu = ref ([] : (string * dir) list)
 let mlpackAccu = ref ([] : (string * dir) list)
 
 let add_caml_known phys_dir f =
-  let basename,suff = get_extension f [".ml";".ml4";".mlpack"] in
+  let basename,suff = get_extension f [".ml";".ml4";".mlg";".mlpack"] in
   match suff with
-    | ".ml"|".ml4" -> add_ml_known basename (Some phys_dir) suff
+    | ".ml"|".ml4"|".mlg" -> add_ml_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
     | _ -> ()
 
