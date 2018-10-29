@@ -211,6 +211,12 @@ val constant_value_and_type : env -> Constant.t puniverses ->
     polymorphic *)
 val constant_context : env -> Constant.t -> Univ.AUContext.t
 
+(** Returns the body of the constant if it has any, and the polymorphic context
+    it lives in. For monomorphic constant, the latter is empty, and for
+    polymorphic constants, the term contains De Bruijn universe variables that
+    need to be instantiated. *)
+val body_of_constant_body : env -> constant_body -> (Constr.constr * Univ.AUContext.t) option
+
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
    application. *)
@@ -320,6 +326,8 @@ val apply_to_hyp : named_context_val -> variable ->
 val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
+val is_template_polymorphic : env -> GlobRef.t -> bool
+val is_type_in_type : env -> GlobRef.t -> bool
 
 open Retroknowledge
 (** functions manipulating the retroknowledge 

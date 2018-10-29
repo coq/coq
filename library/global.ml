@@ -128,19 +128,7 @@ let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 let opaque_tables () = Environ.opaque_tables (env ())
 
-let instantiate cb c =
-  let open Declarations in
-  match cb.const_universes with
-  | Monomorphic_const _ -> c, Univ.AUContext.empty
-  | Polymorphic_const ctx -> c, ctx
-
-let body_of_constant_body cb =
-  let open Declarations in
-  let otab = opaque_tables () in
-  match cb.const_body with
-  | Undef _ -> None
-  | Def c -> Some (instantiate cb (Mod_subst.force_constr c))
-  | OpaqueDef o -> Some (instantiate cb (Opaqueproof.force_proof otab o))
+let body_of_constant_body ce = body_of_constant_body (env ()) ce
 
 let body_of_constant cst = body_of_constant_body (lookup_constant cst)
 
@@ -165,8 +153,6 @@ let import c u d = globalize (Safe_typing.import c u d)
 let env_of_context hyps =
   reset_with_named_context hyps (env())
 
-open Globnames
-
 let constr_of_global_in_context = Typeops.constr_of_global_in_context
 let type_of_global_in_context = Typeops.type_of_global_in_context
 
@@ -175,21 +161,9 @@ let universes_of_global gr =
 
 let is_polymorphic r = Environ.is_polymorphic (env()) r
 
-let is_template_polymorphic r = 
-  let env = env() in 
-  match r with
-  | VarRef id -> false
-  | ConstRef c -> false
-  | IndRef ind -> Environ.template_polymorphic_ind ind env
-  | ConstructRef cstr -> Environ.template_polymorphic_ind (inductive_of_constructor cstr) env
+let is_template_polymorphic r = is_template_polymorphic (env ()) r
 
-let is_type_in_type r =
-  let env = env() in
-  match r with
-  | VarRef id -> false
-  | ConstRef c -> Environ.type_in_type_constant c env
-  | IndRef ind -> Environ.type_in_type_ind ind env
-  | ConstructRef cstr -> Environ.type_in_type_ind (inductive_of_constructor cstr) env
+let is_type_in_type r = is_type_in_type (env ()) r
 
 let current_modpath () =
   Safe_typing.current_modpath (safe_env ())
@@ -209,10 +183,3 @@ let register_inline c = globalize0 (Safe_typing.register_inline c)
 
 let set_strategy k l =
   GlobalSafeEnv.set_safe_env (Safe_typing.set_strategy (safe_env ()) k l)
-
-let set_reduction_sharing b =
-  let env = safe_env () in
-  let flags = Environ.typing_flags (Safe_typing.env_of_safe_env env) in
-  let flags = { flags with Declarations.share_reduction = b } in
-  let env = Safe_typing.set_typing_flags flags env in
-  GlobalSafeEnv.set_safe_env env

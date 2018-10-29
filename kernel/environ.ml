@@ -440,6 +440,16 @@ let constant_value_and_type env (kn, u) =
 	| Undef _ -> None
       in b', cb.const_type, Univ.Constraint.empty
 
+let body_of_constant_body env cb =
+  let otab = opaque_tables env in
+  match cb.const_body with
+  | Undef _ ->
+     None
+  | Def c ->
+     Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
+  | OpaqueDef o ->
+     Some (Opaqueproof.force_proof otab o, Declareops.constant_polymorphic_context cb)
+
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
    application. *)
@@ -693,6 +703,22 @@ let is_polymorphic env r =
   | ConstRef c -> polymorphic_constant c env
   | IndRef ind -> polymorphic_ind ind env
   | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
+
+let is_template_polymorphic env r =
+  let open Names.GlobRef in
+  match r with
+  | VarRef _id -> false
+  | ConstRef _c -> false
+  | IndRef ind -> template_polymorphic_ind ind env
+  | ConstructRef cstr -> template_polymorphic_ind (inductive_of_constructor cstr) env
+
+let is_type_in_type env r =
+  let open Names.GlobRef in
+  match r with
+  | VarRef _id -> false
+  | ConstRef c -> type_in_type_constant c env
+  | IndRef ind -> type_in_type_ind ind env
+  | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
 (*spiwack: the following functions assemble the pieces of the retroknowledge
    note that the "consistent" register function is available in the module
