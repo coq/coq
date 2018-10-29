@@ -22,7 +22,7 @@ lineb='(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)'
 modified=0
 kept=0
 
-for i in `find . -name \*.mli -o -name \*.ml -o -name \*.ml4 -o -name \*.mll -o -name \*.mly -o -name \*.mlp -o -name \*.v`; do
+for i in `find . -name \*.mli -o -name \*.ml -o -name \*.mlg -o -name \*.mll -o -name \*.mly -o -name \*.mlp -o -name \*.v`; do
   headline=`head -n 1 $i`
   if `echo $headline | grep "(\* -\*- .* \*)" > /dev/null`; then
       # Has emacs header
