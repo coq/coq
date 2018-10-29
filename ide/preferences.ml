@@ -347,11 +347,15 @@ let modifier_for_display =
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
-let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
-let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
-let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
-let _ = attach_modifiers modifier_for_display "<Actions>/View/"
-let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/"
+let attach_modifiers_callback () =
+  (* Tell to propagate changes done in preference menu to accel map *)
+  (* To be done after the preferences are loaded *)
+  let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
+  let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
+  let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/" in
+  let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
+  let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
+  ()
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
@@ -665,6 +669,7 @@ let load_pref () =
     in
     Util.String.Map.iter iter m in
   (* Load file for bindings *)
+  attach_modifiers_callback ()
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
   ()
 
