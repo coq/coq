@@ -1078,7 +1078,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       push_trace(None,call) ist >>= fun trace ->
       Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
         (catch_error_tac trace begin
-      Proofview.Goal.enter begin fun gl -> Tactics.tclABSTRACT
+      Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
         (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
       end end)
   | TacThen (t1,t) ->
