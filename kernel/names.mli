@@ -608,6 +608,9 @@ module Projection : sig
   val hcons : t -> t
   (** Hashconsing of projections. *)
 
+  val repr_equal : t -> t -> bool
+  (** Ignoring the unfolding boolean. *)
+
   val compare : t -> t -> int
 
   val map : (MutInd.t -> MutInd.t) -> t -> t
