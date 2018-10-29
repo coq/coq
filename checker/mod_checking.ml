@@ -20,7 +20,13 @@ let check_constant_declaration env kn cb =
     | Monomorphic_const ctx -> false, push_context_set ~strict:true ctx env
     | Polymorphic_const auctx ->
       let ctx = Univ.AUContext.repr auctx in
-      true, push_context ~strict:false ctx env
+      let env = push_context ~strict:false ctx env in
+      true, env
+  in
+  let env' = match cb.const_private_poly_univs, (cb.const_body, poly) with
+    | None, _ -> env'
+    | Some local, (OpaqueDef _, true) -> push_subgraph local env'
+    | Some _, _ -> assert false
   in
   let ty = cb.const_type in
   let _ = infer_type env' ty in

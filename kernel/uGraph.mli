@@ -79,6 +79,9 @@ val constraints_of_universes : t -> Constraint.t * LSet.t list
     eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
 val constraints_for : kept:LSet.t -> t -> Constraint.t
 
+val domain : t -> LSet.t
+(** Known universes *)
+
 val check_subtype : AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
     [ctx1]. *)

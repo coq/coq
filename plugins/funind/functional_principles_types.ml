@@ -322,7 +322,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
     (* 	end; *)
 
       let open Proof_global in
-      let { id; entries; persistence } = fst @@ close_proof ~keep_body_ucst_separate:false (fun x -> x) in
+      let { id; entries; persistence } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) in
       match entries with
       | [entry] ->
         discard_current ();

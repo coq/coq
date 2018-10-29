@@ -211,16 +211,21 @@ let pr_universe_ctx sigma ?variance c =
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (Univ.AUContext.is_empty c) then
+let pr_abstract_universe_ctx sigma ?variance c ~priv =
+  let open Univ in
+  let priv = Option.default Univ.ContextSet.empty priv in
+  if !Detyping.print_universes && not (Univ.AUContext.is_empty c && Univ.ContextSet.is_empty priv) then
+    let local = if ContextSet.is_empty priv then mt() else
+        str "local: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) priv
+    in
     fnl()++pr_in_comment (fun c -> v 0
-      (Univ.pr_abstract_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+      (Univ.pr_abstract_universe_context (Termops.pr_evd_level sigma) ?variance c) ++ v 0 local) c
   else
     mt()
 
-let pr_constant_universes sigma = function
+let pr_constant_universes sigma ~priv = function
   | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
-  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx
+  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx ~priv
 
 let pr_cumulativity_info sigma cumi =
   if !Detyping.print_universes 

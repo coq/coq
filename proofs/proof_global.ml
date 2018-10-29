@@ -318,10 +318,23 @@ let get_open_goals () =
 
 type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
 
-let close_proof ~keep_body_ucst_separate ?feedback_id ~now
+let private_poly_univs =
+  let b = ref true in
+  let _ = Goptions.(declare_bool_option {
+      optdepr = false;
+      optname = "use private polymorphic universes for Qed constants";
+      optkey = ["Private";"Polymorphic";"Universes"];
+      optread = (fun () -> !b);
+      optwrite = ((:=) b);
+    })
+  in
+  fun () -> !b
+
+let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =
   let { pid; section_vars; strength; proof; terminator; universe_decl } =
     cur_pstate () in
+  let opaque = match opaque with Opaque -> true | Transparent -> false in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let initial_euctx = Proof.initial_euctx proof in
@@ -358,6 +371,16 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
           let ctx_body = UState.restrict ctx used_univs in
           let univs = UState.check_mono_univ_decl ctx_body universe_decl in
           (initunivs, typ), ((body, univs), eff)
+        else if poly && opaque && private_poly_univs () then
+          let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+          let universes = UState.restrict universes used_univs in
+          let typus = UState.restrict universes used_univs_typ in
+          let udecl = UState.check_univ_decl ~poly typus universe_decl in
+          let ubody = Univ.ContextSet.diff
+              (UState.context_set universes)
+              (UState.context_set typus)
+          in
+          (udecl, typ), ((body, ubody), eff)
         else
           (* Since the proof is computed now, we can simply have 1 set of
              constraints in which we merge the ones for the body and the ones
@@ -394,7 +417,7 @@ let close_proof ~keep_body_ucst_separate ?feedback_id ~now
       const_entry_feedback = feedback_id;
       const_entry_type  = Some typ;
       const_entry_inline_code = false;
-      const_entry_opaque = true;
+      const_entry_opaque = opaque;
       const_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl initial_goals in
@@ -425,10 +448,10 @@ let return_proof ?(allow_partial=false) () =
     List.map (fun (c, _) -> (EConstr.to_constr evd c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
-let close_future_proof ~feedback_id proof =
-  close_proof ~keep_body_ucst_separate:true ~feedback_id ~now:false proof
-let close_proof ~keep_body_ucst_separate fix_exn =
-  close_proof ~keep_body_ucst_separate ~now:true
+let close_future_proof ~opaque ~feedback_id proof =
+  close_proof ~opaque ~keep_body_ucst_separate:true ~feedback_id ~now:false proof
+let close_proof ~opaque ~keep_body_ucst_separate fix_exn =
+  close_proof ~opaque ~keep_body_ucst_separate ~now:true
     (Future.from_val ~fix_exn (return_proof ()))
 
 (** Gets the current terminator without checking that the proof has

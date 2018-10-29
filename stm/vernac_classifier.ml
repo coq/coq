@@ -26,7 +26,7 @@ let string_of_vernac_type = function
   | VtUnknown -> "Unknown"
   | VtStartProof _ -> "StartProof"
   | VtSideff _ -> "Sideff"
-  | VtQed VtKeep -> "Qed(keep)"
+  | VtQed (VtKeep _) -> "Qed(keep)"
   | VtQed VtKeepAsAxiom -> "Qed(admitted)"
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep { parallel; proof_block_detection } ->
@@ -66,7 +66,8 @@ let classify_vernac e =
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater
     | VernacEndProof Admitted -> VtQed VtKeepAsAxiom, VtLater
-    | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
+    | VernacEndProof (Proved (opaque,_)) -> VtQed (VtKeep opaque), VtLater
+    | VernacExactProof _ -> VtQed (VtKeep Proof_global.Opaque), VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
     | VernacCheckMayEval _ -> VtQuery, VtLater

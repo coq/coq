@@ -380,6 +380,18 @@ let add_universes_set strict ctx g =
 let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set strict ctx) env
 
+let push_subgraph (levels,csts) env =
+  let add_subgraph g =
+    let newg = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g) levels g in
+    let newg = UGraph.merge_constraints csts newg in
+    (if not (Univ.Constraint.is_empty csts) then
+       let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in
+       (if not (UGraph.check_constraints restricted g) then
+          CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints.")));
+    newg
+  in
+  map_universes add_subgraph env
+
 let set_engagement c env = (* Unsafe *)
   { env with env_stratification =
     { env.env_stratification with env_engagement = c } }

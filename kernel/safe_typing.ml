@@ -599,7 +599,7 @@ let inline_side_effects env body side_eff =
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const _auctx ->
+      | Polymorphic_const _ ->
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)

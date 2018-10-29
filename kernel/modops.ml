@@ -338,7 +338,8 @@ let strengthen_const mp_from l cb resolver =
       | Polymorphic_const ctx -> Univ.make_abstract_instance ctx
     in
       { cb with
-	const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
+        const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
+        const_private_poly_univs = None;
 	const_body_code = Some (Cemitcodes.from_val (Cbytegen.compile_alias con)) }
 
 let rec strengthen_mod mp_from mp_to mb =

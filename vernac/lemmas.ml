@@ -311,7 +311,7 @@ let universe_proof_terminator compute_guard hook =
       | Transparent -> false, true
       | Opaque      -> true, false
     in
-    let const = {const with const_entry_opaque = is_opaque} in
+    assert (is_opaque == const.const_entry_opaque);
     let id = match idopt with
       | None -> id
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
@@ -498,13 +498,13 @@ let save_proof ?proof = function
             Admitted(id,k,(sec_vars, (typ, ctx), None), universes)
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
-  | Vernacexpr.Proved (is_opaque,idopt) ->
+  | Vernacexpr.Proved (opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
         | None ->
-            Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x)
+            Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)
         | Some proof -> proof
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
       if Option.is_empty proof then Proof_global.discard_current ();
-      Proof_global.(apply_terminator terminator (Proved (is_opaque,idopt,proof_obj)))
+      Proof_global.(apply_terminator terminator (Proved (opaque,idopt,proof_obj)))

@@ -27,6 +27,12 @@
    considered safe to delegate to a worker.
 
 *)
+
+type vernac_qed_type =
+  | VtKeep of Proof_global.opacity_flag (** Defined/Qed *)
+  | VtKeepAsAxiom (** Admitted *)
+  | VtDrop (** Abort *)
+
 type vernac_type =
   (* Start of a proof *)
   | VtStartProof of vernac_start
@@ -48,7 +54,6 @@ type vernac_type =
   (* To be removed *)
   | VtMeta
   | VtUnknown
-and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Names.Id.t list
 and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =

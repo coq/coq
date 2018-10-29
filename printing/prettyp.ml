@@ -96,8 +96,9 @@ let print_ref reduce ref udecl =
     then Printer.pr_universe_instance sigma inst
     else mt ()
   in
+  let priv = None in (* We deliberately don't print private univs in About. *)
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
-           Printer.pr_abstract_universe_ctx sigma ?variance univs)
+           Printer.pr_abstract_universe_ctx sigma ?variance univs ~priv)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -580,11 +581,11 @@ let print_constant with_values sep sp udecl =
 	str"*** [ " ++
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-        Printer.pr_constant_universes sigma univs
+        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs
     | Some (c, ctx) ->
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_constant_universes sigma univs)
+        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs)
 
 let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++

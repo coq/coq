@@ -88,6 +88,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Cooking.cook_body = Undef nl;
         cook_type = t;
         cook_universes = univs;
+        cook_private_univs = None;
         cook_inline = false;
         cook_context = ctx;
       }
@@ -130,6 +131,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = Monomorphic_const univs;
+        cook_private_univs = None;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -145,24 +147,25 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         let body, ctx', _ = handle env body side_eff in
         body, Univ.ContextSet.union ctx ctx'
       in
-      let env, usubst, univs = match c.const_entry_universes with
+      let env, usubst, univs, private_univs = match c.const_entry_universes with
       | Monomorphic_const_entry univs ->
         let ctx = Univ.ContextSet.union univs ctx in
         let env = push_context_set ~strict:true ctx env in
-        env, Univ.empty_level_subst, Monomorphic_const ctx
+        env, Univ.empty_level_subst, Monomorphic_const ctx, None
       | Polymorphic_const_entry (nas, uctx) ->
-        (** Ensure not to generate internal constraints in polymorphic mode.
-            The only way for this to happen would be that either the body
-            contained deferred universes, or that it contains monomorphic
-            side-effects. The first property is ruled out by upper layers,
-            and the second one is ensured by the fact we currently
-            unconditionally export side-effects from polymorphic definitions,
-            i.e. [trust] is always [Pure]. *)
-        let () = assert (Univ.ContextSet.is_empty ctx) in
+        (** [ctx] must contain local universes, such that it has no impact
+            on the rest of the graph (up to transitivity). *)
         let env = push_context ~strict:false uctx env in
         let sbst, auctx = Univ.abstract_universes nas uctx in
         let sbst = Univ.make_instance_subst sbst in
-        env, sbst, Polymorphic_const auctx
+        let env, local =
+          if opaque then
+            push_subgraph ctx env, Some (on_snd (Univ.subst_univs_level_constraints sbst) ctx)
+          else
+          if Univ.ContextSet.is_empty ctx then env, None
+          else CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
+        in
+        env, sbst, Polymorphic_const auctx, local
       in
       let j = infer env body in
       let typ = match typ with
@@ -183,6 +186,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = univs;
+        cook_private_univs = private_univs;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -277,6 +281,7 @@ let build_constant_declaration _kn env result =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
+    const_private_poly_univs = result.cook_private_univs;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
