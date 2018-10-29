@@ -483,6 +483,8 @@ let is_typeclass_evar evd evk =
   let flags = evd.evar_flags in
   Evar.Set.mem evk flags.typeclass_evars
 
+let get_obligation_evars evd = evd.evar_flags.obligation_evars
+
 let set_obligation_evar evd evk =
   let flags = evd.evar_flags in
   let evar_flags = { flags with obligation_evars = Evar.Set.add evk flags.obligation_evars } in

@@ -178,7 +178,8 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let sigma, h_e_term = Evarutil.new_evar env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
             Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
-        }) wf_proof in
+          }) wf_proof in
+    let sigma = Evd.set_obligation_evar sigma (fst (destEvar sigma h_e_term)) in
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
   let sigma, def = Typing.solve_evars env sigma def in

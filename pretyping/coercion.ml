@@ -104,6 +104,7 @@ let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env ev
       Evar_kinds.qm_name=na;
   }) in
   let evd, v = Evarutil.new_evar env !evdref ~src c in
+  let evd = Evd.set_obligation_evar evd (fst (destEvar evd v)) in
   evdref := evd;
   v
 

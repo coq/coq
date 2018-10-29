@@ -371,12 +371,18 @@ let pr_evar_map_gen with_univs pr_evars sigma =
     else
       str "TYPECLASSES:" ++ brk (0, 1) ++
       prlist_with_sep spc Evar.print (Evar.Set.elements evars) ++ fnl ()
+  and obligations =
+    let evars = Evd.get_obligation_evars sigma in
+    if Evar.Set.is_empty evars then mt ()
+    else
+      str "OBLIGATIONS:" ++ brk (0, 1) ++
+      prlist_with_sep spc Evar.print (Evar.Set.elements evars) ++ fnl ()
   and metas =
     if List.is_empty (Evd.meta_list sigma) then mt ()
     else
       str "METAS:" ++ brk (0, 1) ++ pr_meta_map sigma
   in
-  evs ++ svs ++ cstrs ++ typeclasses ++ metas
+  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ metas
 
 let pr_evar_list sigma l =
   let open Evd in

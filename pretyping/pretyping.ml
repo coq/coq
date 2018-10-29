@@ -457,6 +457,15 @@ let pretype_sort ?loc sigma = function
 let new_type_evar env sigma loc =
   new_type_evar env sigma ~src:(Loc.tag ?loc Evar_kinds.InternalHole)
 
+let mark_obligation_evar sigma k evc =
+  if Flags.is_program_mode () then
+    match k with
+    | Evar_kinds.QuestionMark _
+    | Evar_kinds.ImplicitArg (_, _, false) ->
+      Evd.set_obligation_evar sigma (fst (destEvar sigma evc))
+    | _ -> sigma
+  else sigma
+
 (* [pretype tycon env sigma lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [sigma] and *)
 (* the type constraint tycon *)
@@ -510,15 +519,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
         | Some ty -> sigma, ty
         | None -> new_type_evar env sigma loc in
       let sigma, uj_val = new_evar env sigma ~src:(loc,k) ~naming ty in
-      let sigma =
-        if Flags.is_program_mode () then
-          match k with
-          | Evar_kinds.QuestionMark _
-          | Evar_kinds.ImplicitArg (_, _, false) ->
-            Evd.set_obligation_evar sigma (fst (destEvar sigma uj_val))
-          | _ -> sigma
-        else sigma
-      in
+      let sigma = mark_obligation_evar sigma k uj_val in
       sigma, { uj_val; uj_type = ty }
 
   | GHole (k, _naming, Some arg) ->
@@ -1039,6 +1040,7 @@ and pretype_type k0 resolve_tc valcon (env : GlobEnv.t) sigma c = match DAst.get
        | None ->
          let sigma, s = new_sort_variable univ_flexible_alg sigma in
          let sigma, utj_val = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
+         let sigma = mark_obligation_evar sigma knd utj_val in
          sigma, { utj_val; utj_type = s})
   | _ ->
       let sigma, j = pretype k0 resolve_tc empty_tycon env sigma c in
