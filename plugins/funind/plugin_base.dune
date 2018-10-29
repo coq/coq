@@ -2,4 +2,5 @@
  (name recdef_plugin)
  (public_name coq.plugins.recdef)
  (synopsis "Coq's functional induction plugin")
+ (flags :standard -open Gramlib)
  (libraries coq.plugins.extraction))

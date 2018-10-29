@@ -3,6 +3,7 @@
  (public_name coq.toplevel)
  (synopsis "Coq's Interactive Shell [terminal-based]")
  (wrapped false)
+ (flags :standard -open Gramlib)
  (libraries num coq.stm))
 ; Coqlevel provides the `Num` library to plugins, we could also use
 ; -linkall in the plugins file, to be discussed.

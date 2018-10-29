@@ -3,6 +3,7 @@
  (synopsis "Coq's Vernacular Language")
  (public_name coq.vernac)
  (wrapped false)
+ (flags :standard -open Gramlib)
  (libraries tactics parsing))
 
 (rule

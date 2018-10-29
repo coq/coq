@@ -3,4 +3,5 @@
  (public_name coq.plugins.ssreflect)
  (synopsis "Coq's ssreflect plugin")
  (modules_without_implementation ssrast)
+ (flags :standard -open Gramlib)
  (libraries coq.plugins.ssrmatching))
