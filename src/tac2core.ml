@@ -864,7 +864,6 @@ let constr_flags () =
   {
     use_typeclasses = true;
     solve_unification_constraints = true;
-    use_hook = Pfedit.solve_by_implicit_tactic ();
     fail_evar = true;
     expand_evars = true
   }
@@ -874,7 +873,6 @@ let open_constr_no_classes_flags () =
   {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = Pfedit.solve_by_implicit_tactic ();
   fail_evar = false;
   expand_evars = true
   }
