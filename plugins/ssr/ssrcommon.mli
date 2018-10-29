@@ -212,8 +212,7 @@ val pf_abs_prod :
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
 
 val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
-val mkSsrRef : string -> GlobRef.t
-val mkSsrConst : 
+val mkSsrConst :
            string ->
            env -> evar_map -> evar_map * EConstr.t
 val pf_mkSsrConst :

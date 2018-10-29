@@ -730,13 +730,10 @@ let pf_abs_prod name gl c cl = pf_mkprod gl c ~name (Termops.subst_term (project
 (** look up a name in the ssreflect internals module *)
 let ssrdirpath = DirPath.make [Id.of_string "ssreflect"]
 let ssrqid name = Libnames.make_qualid ssrdirpath (Id.of_string name) 
-let ssrtopqid name = Libnames.qualid_of_ident (Id.of_string name) 
-let locate_reference qid =
-  Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
 let mkSsrRef name =
-  try locate_reference (ssrqid name) with Not_found ->
-  try locate_reference (ssrtopqid name) with Not_found ->
-  CErrors.user_err (Pp.str "Small scale reflection library not loaded")
+  let qn = Format.sprintf "plugins.ssreflect.%s" name in
+  if Coqlib.has_ref qn then Coqlib.lib_ref qn else
+  CErrors.user_err Pp.(str "Small scale reflection library not loaded (" ++ str name ++ str ")")
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst name env sigma =
   EConstr.fresh_global env sigma (mkSsrRef name)

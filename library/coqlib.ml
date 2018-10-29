@@ -227,8 +227,7 @@ type coq_eq_data = {
 
 (* Leibniz equality on Type *)
 
-let build_eqdata_gen lib str =
-  let _ = check_required_library lib in {
+let build_eqdata_gen str = {
   eq    = lib_ref ("core." ^ str ^ ".type");
   ind   = lib_ref ("core." ^ str ^ ".ind");
   refl  = lib_ref ("core." ^ str ^ ".refl");
@@ -237,9 +236,9 @@ let build_eqdata_gen lib str =
   congr = lib_ref ("core." ^ str ^ ".congr");
   }
 
-let build_coq_eq_data       () = build_eqdata_gen logic_module_name "eq"
-let build_coq_jmeq_data     () = build_eqdata_gen jmeq_module_name  "JMeq"
-let build_coq_identity_data () = build_eqdata_gen datatypes_module_name "identity"
+let build_coq_eq_data       () = build_eqdata_gen "eq"
+let build_coq_jmeq_data     () = build_eqdata_gen "JMeq"
+let build_coq_identity_data () = build_eqdata_gen "identity"
 
 (* Inversion data... *)
 
