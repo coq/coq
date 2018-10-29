@@ -898,19 +898,19 @@ let configure ?(apply=(fun () -> ())) parent =
   in
   let project_file_name = pstring "Default name for project file" project_file_name in
   let modifier_for_tactics =
-    pmodifiers "Modifiers for Tactics Menu" modifier_for_tactics
+    pmodifiers "Global change of modifiers for Tactics Menu" modifier_for_tactics
   in
   let modifier_for_templates =
-    pmodifiers "Modifiers for Templates Menu" modifier_for_templates
+    pmodifiers "Global change of modifiers for Templates Menu" modifier_for_templates
   in
   let modifier_for_navigation =
-    pmodifiers "Modifiers for Navigation Menu" modifier_for_navigation
+    pmodifiers "Global change of modifiers for Navigation Menu" modifier_for_navigation
   in
   let modifier_for_display =
-    pmodifiers "Modifiers for View Menu" modifier_for_display
+    pmodifiers "Global change of modifiers for View Menu" modifier_for_display
   in
   let modifier_for_queries =
-    pmodifiers "Modifiers for Queries Menu" modifier_for_queries
+    pmodifiers "Global change of modifiers for Queries Menu" modifier_for_queries
   in
   let modifiers_valid =
     pmodifiers ~all:true "Allowed modifiers" modifiers_valid
