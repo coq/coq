@@ -193,12 +193,4 @@ loaded by subsequent jobs.
 the `CACHEKEY` variable in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
 and [`Dockerfile`](docker/bionic_coq/Dockerfile)
 
-The Docker building job reuses the uploaded image if it is available,
-but if you wish to save more time you can skip the job by setting
-`SKIP_DOCKER` to `true`.
-
-This means you will need to change its value when the Docker image
-needs to be updated. You can do so for a single pipeline by starting
-it through the web interface.
-
 See also [`docker/README.md`](docker/README.md).
