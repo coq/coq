@@ -577,25 +577,33 @@ let add_global_univ uctx u =
                                      uctx_universes = univs }
 
 let make_flexible_variable ctx ~algebraic u =
-  let {uctx_local = cstrs; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} = ctx in
-  let uvars' = Univ.LMap.add u None uvars in
-  let avars' = 
-    if algebraic then
-      let uu = Univ.Universe.make u in
-      let substu_not_alg u' v =
-        Option.cata (fun vu -> Univ.Universe.equal uu vu && not (Univ.LSet.mem u' avars)) false v
-      in
-      let has_upper_constraint () =
-        Univ.Constraint.exists
-          (fun (l,d,r) -> d == Univ.Lt && Univ.Level.equal l u)
-          (Univ.ContextSet.constraints cstrs)
-      in
-        if not (Univ.LMap.exists substu_not_alg uvars || has_upper_constraint ())
-        then Univ.LSet.add u avars else avars 
-    else avars 
-  in
-  {ctx with uctx_univ_variables = uvars'; 
-      uctx_univ_algebraic = avars'}
+  let open Univ in
+  let {uctx_local = cstrs; uctx_univ_variables = uvars;
+       uctx_univ_algebraic = avars; uctx_universes=g; } = ctx in
+  assert (try LMap.find u uvars == None with Not_found -> true);
+  match UGraph.choose (fun v -> not (Level.equal u v) && (algebraic || not (LSet.mem v avars))) g u with
+  | Some v ->
+    let uvars' = LMap.add u (Some (Universe.make v)) uvars in
+    { ctx with uctx_univ_variables = uvars'; }
+  | None ->
+    let uvars' = LMap.add u None uvars in
+    let avars' =
+      if algebraic then
+        let uu = Universe.make u in
+        let substu_not_alg u' v =
+          Option.cata (fun vu -> Universe.equal uu vu && not (LSet.mem u' avars)) false v
+        in
+        let has_upper_constraint () =
+          Constraint.exists
+            (fun (l,d,r) -> d == Lt && Level.equal l u)
+            (ContextSet.constraints cstrs)
+        in
+        if not (LMap.exists substu_not_alg uvars || has_upper_constraint ())
+        then LSet.add u avars else avars
+      else avars
+    in
+    {ctx with uctx_univ_variables = uvars';
+              uctx_univ_algebraic = avars'}
 
 let make_nonalgebraic_variable ctx u =
   { ctx with uctx_univ_algebraic = Univ.LSet.remove u ctx.uctx_univ_algebraic }
