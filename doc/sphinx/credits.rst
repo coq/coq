@@ -1404,3 +1404,137 @@ The contacts of the Coq Consortium are Yves Bertot and Maxime Dénès.
 | Santiago de Chile, March 2018,
 | Matthieu Sozeau for the |Coq| development team
 |
+
+Credits: version 8.9
+--------------------
+
+|Coq| version 8.9 contains the result of refinements and stabilization
+of features and deprecations or removals of deprecated features,
+cleanups of the internals of the system and API along with a few new
+features. This release includes many user-visible changes, including
+deprecations that are documented in ``CHANGES.md``.
+
+TODO:
+We only list the most important ones:
+or
+The main user visible changes are:
+
+- Kernel: mutually defined records are now supported, by P.M. Pédrot.
+
+- Notations: support for autonomous grammars of terms called "custom
+  entries", by H. Herbelin (see chapter "Syntax extensions" of the
+  reference manual).
+
+- Notations: deprecated notations will be removed in the next version of
+  |Coq|, see the``CHANGES.md`` file for a script to ease porting,
+  by J. Gross.
+
+- Tactics: Introduction tactics `intro`/`intros` on a goal that is an
+  existential variable now force a refinement of the goal into a
+  dependent product rather than failing.
+
+- Decision procedures: deprecation of tactics `fourier` and `romega` in
+  favor of `lra` and `lia` respectively.
+
+- Proof language: focusing bracket `{` now supports named goal selectors,
+  e.g. `[x]: {` will focus on a goal (existential variable) named `x`.
+
+- Ltac: Support for `fix`/`cofix` added in Ltac `match` and `lazymatch`.
+
+- SSReflect: delayed clear switches have a simpler semantics and empty
+  clear switches are allowed before view applications of variable views.
+
+- Vernacular:
+
+  - Experimental support for attributes on commands by V. Laporte, as in
+    `#[local] Lemma foo : bar.`
+    Tactics and tactic notations now support the `deprecated` attribute.
+
+  - Removed deprecated commands `Arguments Scope` and `Implicit
+    Arguments` in favor of `Arguments`.
+
+  - New option `Uniform Inductive Parameters` by J. Hugunin to avoid
+    repeating uniform parameters in constructor declarations.
+
+  - New commands `Set Hint Variables/Constants Opaque/Transparent`
+    commands for controlling the opacity flag of variables and constants
+    in hint databases.
+
+  - Added the `Numeral Notation` command for registering decimal numeral
+    notations for custom types.
+
+  - Multiple sections with the same name are allowed.
+
+- Library: additions and changes in the `VectorDef`, `Ascii` and `String`
+  library. Syntax notations are available only using `Import` of
+  libraries and not merely `Require` (see `CHANGES.md` for details).
+
+- Toplevels: `coqtop` and `coqide` can now display diffs between proof
+  steps in color, using the `Set Diffs` option, by J. Fehrle.
+
+- Documentation: we integrated a large number of fixes to the new Sphinx
+  documentation.
+
+- Tools: removed the `gallina` utility and the homebrewed `Emacs` mode.
+
+- Packaging: Michael Soegtrop maintains a compilation chain for Windows
+  allowing to build Coq with optional packages, including MTac2, LTac2 and
+  Equations for this release.
+
+Version 8.9 also comes with a bunch of smaller-scale changes and
+improvements regarding the different components of the system.  Most
+important ones are documented in the ``CHANGES.md`` file.
+
+On the implementation side, the ``dev/doc/changes.md`` file documents
+the numerous changes to the implementation and improvements of
+interfaces. The file provides guidelines on porting a plugin to the new
+version and a plugin development tutorial kept in sync with Coq was
+introduced by Yves Bertot http://github.com/ybertot/plugin_tutorials.
+The new ``dev/doc/critical-bugs`` file documents the known critical bugs
+of |Coq| and affected releases.
+
+The efficiency of the whole system has seen improvements thanks to
+contributions from Gaëtan Gilbert, Pierre-Marie Pédrot, and Maxime Dénès.
+
+Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop, Théo Zimmermann worked on maintaining and improving the
+continuous integration system.
+
+The OPAM repository for |Coq| packages has been maintained by Guillaume
+Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
+users. A list of packages is available at https://coq.inria.fr/opam/www.
+
+The 53 contributors for this version are Léo Andrès, Rin Arakaki,
+Benjamin Barenblat, Langston Barrett, Siddharth Bhat, Martin Bodin,
+Simon Boulier, Timothy Bourke, Joachim Breitner, Tej Chajed, Arthur
+Charguéraud, Pierre Courtieu, Maxime Dénès, Andres Erbsen, Jim Fehrle,
+Julien Forest, Emilio Jesus Gallego Arias, Gaëtan Gilbert, Matěj
+Grabovský, Jason Gross, Samuel Gruetter, Armaël Guéneau, Hugo Herbelin,
+Jasper Hugunin, Ralf Jung, Sam Pablo Kuper, Ambroise Lafont, Leonidas
+Lampropoulos, Vincent Laporte, Peter LeFanu Lumsdaine, Pierre Letouzey,
+Nick Lewycky, Yishuai Li, Sven M. Hallberg, Assia Mahboubi, Cyprien
+Mangin, Guillaume Melquiond, Perry E. Metzger, Clément Pit-Claudel,
+Pierre-Marie Pédrot, Daniel R. Grayson, Kazuhiko Sakaguchi, Michael
+Soegtrop, Matthieu Sozeau, Paul Steckler, Enrico Tassi, Laurent Théry,
+Anton Trunov, whitequark, Théo Winterhalter, Zeimer, Beta Ziliani, Théo
+Zimmermann.
+
+Many power users helped to improve the design of the new features via
+the issue and pull request system, the |Coq| development mailing list or
+the coq-club@inria.fr mailing list. It would be impossible to mention
+exhaustively the names of everybody who to some extent influenced the
+development.
+
+Version 8.9 is the fourth release of |Coq| developed on a time-based
+development cycle. Its development spanned 7 months from the release of
+|Coq| 8.8. The development moved to a decentralized merging process
+during this cycle. Guillaume Melquiond was in charge of the release
+process and is the maintainer of this release. This release is the
+result of ~2,000 commits and ~500 PRs merged, closing 75+ issues.
+
+The |Coq| development team welcomed Vincent Laporte, a new |Coq|
+engineer working with Maxime Dénès in the |Coq| consortium.
+
+| Paris, October 2018,
+| Matthieu Sozeau for the |Coq| development team
+|
