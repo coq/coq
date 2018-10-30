@@ -171,6 +171,7 @@ val clos_whd_flags : CClosure.RedFlags.reds -> reduction_function
 val nf_beta : reduction_function
 val nf_betaiota : reduction_function
 val nf_betaiotazeta : reduction_function
+val nf_zeta : reduction_function
 val nf_all : reduction_function
 val nf_evar : evar_map -> constr -> constr
 

@@ -103,21 +103,6 @@ let const_of_ref = function
     ConstRef kn -> kn
   | _ -> anomaly (Pp.str "ConstRef expected.")
 
-
-let nf_zeta env =
-  Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
-    env (Evd.from_env env)
-
-
-let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
-  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env
-    (Evd.from_env Environ.empty_env)
-
-
-
-
-
-
 (* Generic values *)
 let pf_get_new_ids idl g =
   let ids = pf_ids_of_hyps g in
@@ -747,7 +732,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     with 
       | UserError(Some "Refiner.thensn_tac3",_) 
       | UserError(Some "Refiner.tclFAIL_s",_) ->
-        (observe_tac (str "is computable " ++ Printer.pr_leconstr_env (pf_env g) sigma new_info.info) (next_step continuation_tac {new_info with info = nf_betaiotazeta new_info.info} )
+        (observe_tac (str "is computable " ++ Printer.pr_leconstr_env (pf_env g) sigma new_info.info) (next_step continuation_tac {new_info with info = Reductionops.nf_betaiotazeta (pf_env g) sigma new_info.info} )
 	))
     g
     
@@ -1537,13 +1522,13 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let evd, ty = interp_type_evars env evd ~impls:rec_impls eq in
   let evd = Evd.minimize_universes evd in
-  let equation_lemma_type = nf_betaiotazeta (Evarutil.nf_evar evd ty) in
+  let equation_lemma_type = Reductionops.nf_betaiotazeta env evd (Evarutil.nf_evar evd ty) in
   let function_type = EConstr.to_constr ~abort_on_undefined_evars:false evd function_type in
   let equation_lemma_type = EConstr.Unsafe.to_constr equation_lemma_type in
  (* Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
   let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> LocalAssum (x,y)) res_vars) env in
-  let eq' = nf_zeta env_eq' (EConstr.of_constr eq') in
+  let eq' = Reductionops.nf_zeta env_eq' evd (EConstr.of_constr eq') in
   let eq' = EConstr.Unsafe.to_constr eq' in
   let res =
 (*     Pp.msgnl (str "res_var :=" ++ Printer.pr_lconstr_env (push_rel_context (List.map (function (x,t) -> (x,None,t)) res_vars) env) eq'); *)
