@@ -1173,7 +1173,7 @@ let isGlobalRef sigma c =
   | Const _ | Ind _ | Construct _ | Var _ -> true
   | _ -> false
 
-let is_template_polymorphic env sigma f =
+let is_template_polymorphic_ind env sigma f =
   match EConstr.kind sigma f with
   | Ind (ind, u) ->
     if not (EConstr.EInstance.is_empty u) then false

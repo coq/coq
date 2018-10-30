@@ -130,7 +130,7 @@ let retype ?(polyprop=true) sigma =
          subst1 b (type_of (push_rel (LocalDef (name,b,c1)) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
-    | App(f,args) when is_template_polymorphic env sigma f ->
+    | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         strip_outer_cast sigma (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
@@ -156,7 +156,7 @@ let retype ?(polyprop=true) sigma =
       let dom = sort_of env t in
       let rang = sort_of (push_rel (LocalAssum (name,t)) env) c2 in
       Typeops.sort_of_product env dom rang
-    | App(f,args) when is_template_polymorphic env sigma f ->
+    | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
       let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
@@ -190,14 +190,14 @@ let get_sort_family_of ?(truncation_style=false) ?(polyprop=true) env sigma t =
 	let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
-    | App(f,args) when is_template_polymorphic env sigma f ->
+    | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         if truncation_style then InType else
 	let t = type_of_global_reference_knowing_parameters env f args in
         Sorts.family (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
 	Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
-    | Ind _ when truncation_style && is_template_polymorphic env sigma t -> InType
+    | Ind _ when truncation_style && Termops.is_template_polymorphic_ind env sigma t -> InType
     | _ -> 
       Sorts.family (decomp_sort env sigma (type_of env t))
   in sort_family_of env t
