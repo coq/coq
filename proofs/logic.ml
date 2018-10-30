@@ -590,5 +590,5 @@ let prim_refiner r sigma goal =
         check_meta_variables env sigma c;
 	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
-	let sigma = Goal.V82.partial_solution sigma goal (EConstr.of_constr oterm) in
+        let sigma = Goal.V82.partial_solution env sigma goal (EConstr.of_constr oterm) in
 	  (sgl, sigma)

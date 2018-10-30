@@ -72,18 +72,18 @@ module V82 = struct
     (evk, ev, evars)
 
   (* Instantiates a goal with an open term *)
-  let partial_solution sigma evk c =
+  let partial_solution env sigma evk c =
     (* Check that the goal itself does not appear in the refined term *)
     let _ =
       if not (Evarutil.occur_evar_upto sigma evk c) then ()
-      else Pretype_errors.error_occur_check Environ.empty_env sigma evk c
+      else Pretype_errors.error_occur_check env sigma evk c
     in
     Evd.define evk c sigma
 
   (* Instantiates a goal with an open term, using name of goal for evk' *)
-  let partial_solution_to sigma evk evk' c =
+  let partial_solution_to env sigma evk evk' c =
     let id = Evd.evar_ident evk sigma in
-    let sigma = partial_solution sigma evk c in
+    let sigma = partial_solution env sigma evk c in
     match id with
     | None -> sigma
     | Some id -> Evd.rename evk' id sigma
