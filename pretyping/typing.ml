@@ -218,9 +218,6 @@ let judge_of_cast env sigma cj k tj =
     sigma, { uj_val = mkCast (cj.uj_val, k, expected_type);
              uj_type = expected_type }
 
-let enrich_env env sigma =
-  set_universes env @@ Evd.universes sigma
-
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
@@ -423,7 +420,6 @@ and execute_recdef env sigma (names,lar,vdef) =
 and execute_array env = Array.fold_left_map (execute env)
 
 let check env sigma c t =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   match Evarconv.cumul env sigma j.uj_type t with
   | None ->
@@ -433,14 +429,12 @@ let check env sigma c t =
 (* Type of a constr *)
 
 let unsafe_type_of env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   j.uj_type
 
 (* Sort of a type *)
 
 let sort_of env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   let sigma, a = type_judgment env sigma j in
   sigma, a.utj_type
@@ -448,7 +442,6 @@ let sort_of env sigma c =
 (* Try to solve the existential variables by typing *)
 
 let type_of ?(refresh=false) env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   (* side-effect on evdref *)
     if refresh then
@@ -456,7 +449,6 @@ let type_of ?(refresh=false) env sigma c =
     else sigma, j.uj_type
 
 let solve_evars env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   (* side-effect on evdref *)
   sigma, nf_evar sigma j.uj_val

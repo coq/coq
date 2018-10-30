@@ -350,9 +350,6 @@ let map_universes f env =
     { env with env_stratification =
 	 { s with env_universes = f s.env_universes } }
 
-let set_universes env u =
-  { env with env_stratification = { env.env_stratification with env_universes = u } }
-
 let add_constraints c env =
   if Univ.Constraint.is_empty c then env
   else map_universes (UGraph.merge_constraints c) env
