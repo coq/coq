@@ -1135,8 +1135,8 @@ let fold_commands cl env sigma c =
 let cbv_norm_flags flags env sigma t =
   cbv_norm (create_cbv_infos flags env sigma) t
 
-let cbv_beta = cbv_norm_flags beta empty_env
-let cbv_betaiota = cbv_norm_flags betaiota empty_env
+let cbv_beta = cbv_norm_flags beta
+let cbv_betaiota = cbv_norm_flags betaiota
 let cbv_betadeltaiota env sigma =  cbv_norm_flags all env sigma
 
 let compute = cbv_betadeltaiota

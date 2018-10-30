@@ -69,8 +69,8 @@ val pattern_occs : (occurrences * constr) list -> e_reduction_function
 
 (** Call by value strategy (uses Closures) *)
 val cbv_norm_flags : CClosure.RedFlags.reds ->  reduction_function
-  val cbv_beta : local_reduction_function
-  val cbv_betaiota : local_reduction_function
+  val cbv_beta : reduction_function
+  val cbv_betaiota : reduction_function
   val cbv_betadeltaiota :  reduction_function
   val compute :  reduction_function  (** = [cbv_betadeltaiota] *)
 
