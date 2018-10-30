@@ -33,3 +33,11 @@ fi
 ```
 
 (`CI_PULL_REQUEST` and `CI_BRANCH` are set in [`ci-common.sh`](../ci-common.sh))
+
+### Branching conventions
+
+We suggest you use the convention of identical branch names for the
+Coq branch and the CI project branch used in the overlay. For example,
+if your Coq PR is coming from the branch `more_efficient_tc`, and that
+breaks `ltac2`, we suggest you create a `ltac2` overlay with a branch
+named `more_efficient_tc`.

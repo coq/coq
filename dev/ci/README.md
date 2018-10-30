@@ -26,7 +26,8 @@ our CI. This means that:
 
 On the condition that:
 
-- At the time of the submission, your development works with Coq master branch.
+- At the time of the submission, your development works with Coq's
+  `master` branch.
 
 - Your development is publicly available in a git repository and we can easily
   send patches to you (e.g. through pull / merge requests).
@@ -60,6 +61,19 @@ performance benchmark. Currently this is done by providing an OPAM package
 in https://github.com/coq/opam-coq-archive and opening an issue at
 https://github.com/coq/coq-bench/issues.
 
+### Recommended branching policy.
+
+It is sometimes the case that you will need to maintain a branch of
+your development for particular Coq versions. This is in fact very
+likely if your development includes a Coq ML plugin.
+
+We thus recommend a branching convention that mirrors Coq's branching
+policy. Then, you would have a `master` branch that follows Coq's
+`master`, a `v8.8` branch that works with Coq's `v8.8` branch and so
+on.
+
+This convention will be supported by tools in the future to make some
+developer commands work more seamlessly.
 
 Information for developers
 --------------------------
