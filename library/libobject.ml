@@ -65,7 +65,7 @@ type dynamic_object_declaration = {
 let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 
 let cache_tab =
-  (Hashtbl.create 17 : (string,dynamic_object_declaration) Hashtbl.t)
+  (Hashtbl.create 223 : (string,dynamic_object_declaration) Hashtbl.t)
 
 let declare_object_full odecl =
   let na = odecl.object_name in
