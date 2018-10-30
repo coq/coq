@@ -781,7 +781,7 @@ let () = define1 "progress" closure begin fun f ->
 end
 
 let () = define2 "abstract" (option ident) closure begin fun id f ->
-  Tactics.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
+  Abstract.tclABSTRACT id (Proofview.tclIGNORE (thaw f)) >>= fun () ->
   return v_unit
 end
 
