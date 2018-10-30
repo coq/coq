@@ -481,6 +481,9 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
                  (make_pat_notation ?loc ntn (l,ll) l2') key)
       end
     | SynDefRule kn ->
+      match availability_of_entry_coercion custom InConstrEntrySomeLevel with
+      | None -> raise No_match
+      | Some coercion ->
       let qid = shortest_qualid_of_syndef ?loc vars kn in
       let l1 =
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
@@ -494,7 +497,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 	    |None -> raise No_match
       in
       assert (List.is_empty substlist);
-      mkPat ?loc qid (List.rev_append l1 l2')
+      insert_pat_coercion ?loc coercion (mkPat ?loc qid (List.rev_append l1 l2'))
 and extern_notation_pattern allscopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
@@ -1132,12 +1135,15 @@ and extern_notation (custom,scopes as allscopes) vars t = function
                       binderlists in
                   insert_coercion coercion (insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key))
           | SynDefRule kn ->
+             match availability_of_entry_coercion custom InConstrEntrySomeLevel with
+             | None -> raise No_match
+             | Some coercion ->
 	      let l =
                 List.map (fun (c,(subentry,(scopt,scl))) ->
                   extern true (subentry,(scopt,scl@snd scopes)) vars c, None)
 		  terms in
               let a = CRef (shortest_qualid_of_syndef ?loc vars kn,None) in
-	      CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l) in
+              insert_coercion coercion (CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l)) in
  	if List.is_empty args then e
 	else
           let args = fill_arg_scopes args argsscopes allscopes in
