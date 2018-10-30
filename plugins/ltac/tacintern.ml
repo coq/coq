@@ -46,7 +46,6 @@ type glob_sign = Genintern.glob_sign = {
   extra : Genintern.Store.t;
 }
 
-let fully_empty_glob_sign = Genintern.empty_glob_sign Environ.empty_env
 let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
 
 (* We have identifier <| global_reference <| constr *)

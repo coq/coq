@@ -23,10 +23,8 @@ type glob_sign = Genintern.glob_sign = {
   extra : Genintern.Store.t;
 }
 
-val fully_empty_glob_sign : glob_sign
-
 val make_empty_glob_sign : unit -> glob_sign
- (** same as [fully_empty_glob_sign], but with [Global.env()] as
+ (** build an empty [glob_sign] using [Global.env()] as
      environment *)
 
 (** Main globalization functions *)

@@ -353,7 +353,7 @@ let extend_atomic_tactic name entries =
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
-      | Some def -> Tacintern.intern_tactic_or_tacarg Tacintern.fully_empty_glob_sign def
+      | Some def -> Tacintern.intern_tactic_or_tacarg (Genintern.empty_glob_sign Environ.empty_env) def
     in
     try Some (hd, List.map empty_value rem) with NonEmptyArgument -> None
   in
