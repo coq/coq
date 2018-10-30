@@ -433,15 +433,15 @@ let lz_coq_prod =
 
 let lz_setoid_relation =
   let sdir = ["Classes"; "RelationClasses"] in
-  let last_srel = ref (Environ.empty_env, None) in
+  let last_srel = ref None in
   fun env -> match !last_srel with
-  | env', srel when env' == env -> srel
+  | Some (env', srel) when env' == env -> srel
   | _ ->
     let srel =
        try Some (UnivGen.constr_of_global @@
                  Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with _ -> None in
-    last_srel := (env, srel); srel
+    last_srel := Some (env, srel); srel
 
 let ssr_is_setoid env =
   match lz_setoid_relation env with
