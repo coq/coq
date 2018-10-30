@@ -4100,12 +4100,15 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
 let guess_elim isrec dep s hyp0 gl =
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
-  let evd, elimc =
-    if isrec && not (is_nonrec mind) then find_ind_eliminator mind s gl
+  let env = Tacmach.New.pf_env gl in
+  let sigma = Tacmach.New.project gl in
+  let sigma, elimc =
+    if isrec && not (is_nonrec mind)
+    then
+      let gr = lookup_eliminator mind s in
+      Evd.fresh_global env sigma gr
     else
-      let env = Tacmach.New.pf_env gl in
-      let sigma = Tacmach.New.project gl in
-      let u = EInstance.kind (Tacmach.New.project gl) u in
+      let u = EInstance.kind sigma u in
       if dep then
         let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind = EConstr.of_constr ind in
@@ -4115,8 +4118,8 @@ let guess_elim isrec dep s hyp0 gl =
         let ind = EConstr.of_constr ind in
         (sigma, ind)
   in
-  let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
-    evd, ((elimc, NoBindings), elimt), mkIndU (mind, u)
+  let elimt = Typing.unsafe_type_of env sigma elimc in
+    sigma, ((elimc, NoBindings), elimt), mkIndU (mind, u)
 
 let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
