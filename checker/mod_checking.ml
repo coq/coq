@@ -75,7 +75,9 @@ let rec check_module env mp mb =
     let mtb1 = mk_mtb mp sign mb.mod_delta
     and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
     let env = Modops.add_module_type mp mtb1 env in
-    let _ = Subtyping.check_subtypes env mtb1 mtb2 in ()
+    let cu = check_subtypes env mtb1 mtb2 in
+    if not (Environ.check_constraints cu env) then
+      CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
 
 and check_module_type env mty =
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string mty.mod_mp));
@@ -106,7 +108,9 @@ and check_mexpr env mse mp_mse res = match mse with
       let sign = check_mexpr env f mp_mse res in
       let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
       let mtb = Modops.module_type_of_module (lookup_module mp env) in
-      let _ = check_subtypes env mtb farg_b in (* Should we stop inferring constraints? *)
+      let cu = check_subtypes env mtb farg_b in
+      if not (Environ.check_constraints cu env) then
+        CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
       Modops.subst_signature (Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver) fbody_b
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
