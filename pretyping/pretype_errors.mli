@@ -150,9 +150,7 @@ val error_unexpected_type :
 val error_not_product :
   ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
-(** {6 Error in conversion from AST to glob_constr } *)
-
-val error_var_not_found : ?loc:Loc.t -> Id.t -> 'b
+val error_var_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
 
 (** {6 Typeclass errors } *)
 

@@ -83,7 +83,8 @@ let intern_hyp ist ({loc;v=id} as locid) =
   else if find_ident id ist then
     make id
   else
-    Pretype_errors.error_var_not_found ?loc id
+    CErrors.user_err ?loc Pp.(str "Hypothesis" ++ spc () ++ Id.print id ++ spc() ++
+                              str "was not found in the current environment.")
 
 let intern_or_var f ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)
