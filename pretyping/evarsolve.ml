@@ -65,10 +65,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 	    | UnivRigid ->
 	       if not onlyalg then refresh_sort status ~direction s
 	       else t
-	    | UnivFlexible alg ->
-	       if onlyalg && alg then
-	         (evdref := Evd.make_flexible_variable !evdref ~algebraic:false l; t)
-	       else t))
+            | UnivFlexible alg -> t))
       | Set when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",
           only refreshing when we want higher universes. *)
