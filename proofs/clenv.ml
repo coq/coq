@@ -603,12 +603,20 @@ let make_evar_clause env sigma ?len t =
   in
   (** FIXME: do the renaming online *)
   let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
-  let rec clrec (sigma, holes) n t =
+  let rec clrec (sigma, holes) inst n t =
     if n = 0 then (sigma, holes, t)
     else match EConstr.kind sigma t with
-    | Cast (t, _, _) -> clrec (sigma, holes) n t
+    | Cast (t, _, _) -> clrec (sigma, holes) inst n t
     | Prod (na, t1, t2) ->
-      let (sigma, ev) = new_evar env sigma ~typeclass_candidate:false t1 in
+      (** Share the evar instances as we are living in the same context *)
+      let inst, ctx, args, subst = match inst with
+      | None ->
+        (** Dummy type *)
+        let ctx, _, args, subst = push_rel_context_to_named_context env sigma mkProp in
+        Some (ctx, args, subst), ctx, args, subst
+      | Some (ctx, args, subst) -> inst, ctx, args, subst
+      in
+      let (sigma, ev) = new_evar_instance ~typeclass_candidate:false ctx sigma (csubst_subst subst t1) args in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {
         hole_evar = ev;
@@ -618,11 +626,11 @@ let make_evar_clause env sigma ?len t =
         hole_name = na;
       } in
       let t2 = if dep then subst1 ev t2 else t2 in
-      clrec (sigma, hole :: holes) (pred n) t2
-    | LetIn (na, b, _, t) -> clrec (sigma, holes) n (subst1 b t)
+      clrec (sigma, hole :: holes) inst (pred n) t2
+    | LetIn (na, b, _, t) -> clrec (sigma, holes) inst n (subst1 b t)
     | _ -> (sigma, holes, t)
   in
-  let (sigma, holes, t) = clrec (sigma, []) bound t in
+  let (sigma, holes, t) = clrec (sigma, []) None bound t in
   let holes = List.rev holes in
   let clause = { cl_concl = t; cl_holes = holes } in
   (sigma, clause)
