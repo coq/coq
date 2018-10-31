@@ -21,6 +21,7 @@ open Notation_term
 open Glob_term
 open Glob_ops
 open Context.Named.Declaration
+open Classops
 
 (*i*)
 
@@ -205,6 +206,43 @@ let push_uninterp_scopes = List.fold_right push_uninterp_scope
 let make_current_uninterp_scopes (tmp_scope,scopes) =
   Option.fold_right push_uninterp_scope tmp_scope
     (push_uninterp_scopes scopes !uninterp_scope_stack)
+(**********************************************************************)
+(* Mapping classes to scopes *)
+
+type scope_class = cl_typ
+
+let scope_class_compare : scope_class -> scope_class -> int =
+  cl_typ_ord
+
+let compute_scope_class sigma t =
+  let (cl,_,_) = find_class_type sigma t in
+  cl
+
+module ScopeClassOrd =
+struct
+  type t = scope_class
+  let compare = scope_class_compare
+end
+
+module ScopeClassMap = Map.Make(ScopeClassOrd)
+
+let initial_scope_class_map : scope_name ScopeClassMap.t =
+  ScopeClassMap.empty
+
+let scope_class_map = ref initial_scope_class_map
+
+let declare_scope_class sc cl =
+  scope_class_map := ScopeClassMap.add cl sc !scope_class_map
+
+let find_scope_class cl =
+  ScopeClassMap.find cl !scope_class_map
+
+let find_scope_class_opt = function
+  | None -> None
+  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
+
+let current_type_scope_name () =
+   find_scope_class_opt (Some CL_SORT)
 
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
@@ -1287,43 +1325,6 @@ let exists_notation_interpretation_in_scope scopt ntn =
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 
 (**********************************************************************)
-(* Mapping classes to scopes *)
-
-open Classops
-
-type scope_class = cl_typ
-
-let scope_class_compare : scope_class -> scope_class -> int =
-  cl_typ_ord
-
-let compute_scope_class sigma t =
-  let (cl,_,_) = find_class_type sigma t in
-  cl
-
-module ScopeClassOrd =
-struct
-  type t = scope_class
-  let compare = scope_class_compare
-end
-
-module ScopeClassMap = Map.Make(ScopeClassOrd)
-
-let initial_scope_class_map : scope_name ScopeClassMap.t =
-  ScopeClassMap.empty
-
-let scope_class_map = ref initial_scope_class_map
-
-let declare_scope_class sc cl =
-  scope_class_map := ScopeClassMap.add cl sc !scope_class_map
-
-let find_scope_class cl =
-  ScopeClassMap.find cl !scope_class_map
-
-let find_scope_class_opt = function
-  | None -> None
-  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
-
-(**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
 let rec compute_arguments_classes sigma t =
@@ -1342,9 +1343,6 @@ let compute_arguments_scope sigma t = fst (compute_arguments_scope_full sigma t)
 
 let compute_type_scope sigma t =
   find_scope_class_opt (try Some (compute_scope_class sigma t) with Not_found -> None)
-
-let current_type_scope_name () =
-   find_scope_class_opt (Some CL_SORT)
 
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
