@@ -20,10 +20,10 @@ open Pp
 open CErrors
 open Util
 
-type univ_declaration_hook = UState.t -> Decl_kinds.locality -> GlobRef.t -> unit
+type univ_declaration_hook = UState.t -> (Id.t * constr) list -> Decl_kinds.locality -> GlobRef.t -> unit
 let mk_univ_hook f = f
-let call_univ_hook fix_exn hook uctx l c =
-  try hook uctx l c
+let call_univ_hook fix_exn hook uctx trans l c =
+  try hook uctx trans l c
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
@@ -415,16 +415,6 @@ let replace_appvars subst =
 	with Not_found -> Constr.map aux c
       else Constr.map aux c
   in Constr.map aux
-       
-let subst_prog expand obls ints prg =
-  let subst = obl_substitution expand obls ints in
-    if get_hide_obligations () then
-      (replace_appvars subst prg.prg_body,
-       replace_appvars subst ((* Termops.refresh_universes *) prg.prg_type))
-    else 
-      let subst' = List.map (fun (n, (_, b)) -> n, b) subst in
-	(Vars.replace_vars subst' prg.prg_body,
-	 Vars.replace_vars subst' ((* Termops.refresh_universes *) prg.prg_type))
 
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
@@ -471,19 +461,30 @@ let rec intset_to = function
     -1 -> Int.Set.empty
   | n -> Int.Set.add n (intset_to (pred n))
 
-let subst_body expand prg =
+let subst_prog subst prg =
+  if get_hide_obligations () then
+    (replace_appvars subst prg.prg_body,
+     replace_appvars subst ((* Termops.refresh_universes *) prg.prg_type))
+  else
+    let subst' = List.map (fun (n, (_, b)) -> n, b) subst in
+    (Vars.replace_vars subst' prg.prg_body,
+     Vars.replace_vars subst' ((* Termops.refresh_universes *) prg.prg_type))
+
+let obligation_substitution expand prg =
   let obls, _ = prg.prg_obligations in
   let ints = intset_to (pred (Array.length obls)) in
-    subst_prog expand obls ints prg
+  obl_substitution expand obls ints
 
 let declare_definition prg =
-  let body, typ = subst_body true prg in
+  let varsubst = obligation_substitution true prg in
+  let body, typ = subst_prog varsubst prg in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst (fun x -> None)
     (UState.subst prg.prg_ctx) in
   let opaque = prg.prg_opaque in
   let fix_exn = Hook.get get_fix_exn () in
   let typ = nf typ in
   let body = nf body in
+  let obls = List.map (fun (id, (_, c)) -> (id, nf c)) varsubst in
   let uvars = Univ.LSet.union
       (Vars.universes_of_constr typ)
       (Vars.universes_of_constr body) in
@@ -494,7 +495,7 @@ let declare_definition prg =
   let ubinders = UState.universe_binders uctx in
   DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits
-    (Lemmas.mk_hook (fun l r -> call_univ_hook fix_exn prg.prg_hook uctx l r ; ()))
+    (Lemmas.mk_hook (fun l r -> call_univ_hook fix_exn prg.prg_hook uctx obls l r ; ()))
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -522,19 +523,26 @@ let mk_proof c = ((c, Univ.ContextSet.empty), Safe_typing.empty_private_constant
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
-  let fixdefs, fixtypes, fiximps =
-    List.split3
-      (List.map (fun x -> 
-	let subs, typ = (subst_body true x) in
-        let env = Global.env () in
-        let sigma = Evd.from_ctx x.prg_ctx in
-        let term = snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs)) in
-        let typ = snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ)) in
-        let term = EConstr.to_constr sigma term in
-        let typ = EConstr.to_constr sigma typ in
-	  x.prg_reduce term, x.prg_reduce typ, x.prg_implicits) l)
+  let defobl x =
+    let oblsubst = obligation_substitution true x in
+    let subs, typ = subst_prog oblsubst x in
+    let env = Global.env () in
+    let sigma = Evd.from_ctx x.prg_ctx in
+    let term = snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs)) in
+    let typ = snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ)) in
+    let term = EConstr.to_constr sigma term in
+    let typ = EConstr.to_constr sigma typ in
+    let def = (x.prg_reduce term, x.prg_reduce typ, x.prg_implicits) in
+    let oblsubst = List.map (fun (id, (_, c)) -> id, c) oblsubst in
+    def, oblsubst
+  in
+  let defs, obls =
+    List.fold_right (fun x (defs, obls) ->
+        let xdef, xobls = defobl x in
+        (xdef :: defs, xobls @ obls)) l ([], [])
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
+  let fixdefs, fixtypes, fiximps = List.split3 defs in
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
@@ -568,7 +576,7 @@ let declare_mutual_definition l =
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
-    call_univ_hook fix_exn first.prg_hook first.prg_ctx local gr;
+    call_univ_hook fix_exn first.prg_hook first.prg_ctx obls local gr;
     List.iter progmap_remove l; gr
 
 let decompose_lam_prod c ty =
@@ -1105,7 +1113,7 @@ let show_term n =
 
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=mk_univ_hook (fun _ _ _ -> ())) ?(opaque = false) obls =
+    ?(reduce=reduce) ?(hook=mk_univ_hook (fun _ _ _ _ -> ())) ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
   let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce hook in
@@ -1125,7 +1133,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?(hook=mk_univ_hook (fun _ _ _ -> ())) ?(opaque = false) notations fixkind =
+    ?(hook=mk_univ_hook (fun _ _ _ _ -> ())) ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter

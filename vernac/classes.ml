@@ -149,7 +149,7 @@ let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imp
 let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl len term termtype =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
   if program_mode then
-    let hook _ vis gr =
+    let hook _ _ vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
       Impargs.declare_manual_implicits false gr ~enriching:false [imps];
       let pri = intern_info pri in
