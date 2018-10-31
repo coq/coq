@@ -6,5 +6,5 @@
 
 (rule
  (targets g_ltac2.ml)
- (deps (:pp-file g_ltac2.ml4) )
- (action (run coqp5 -loc loc -impl %{pp-file} -o %{targets})))
+ (deps (:mlg-file g_ltac2.mlg))
+ (action (run coqpp %{mlg-file})))

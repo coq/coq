@@ -30,7 +30,7 @@ src/tac2tactics.ml
 src/tac2tactics.mli
 src/tac2stdlib.ml
 src/tac2stdlib.mli
-src/g_ltac2.ml4
+src/g_ltac2.mlg
 src/ltac2_plugin.mlpack
 
 theories/Init.v
