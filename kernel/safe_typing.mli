@@ -218,4 +218,4 @@ val register :
 val register_inline : Constant.t -> safe_transformer0
 
 val set_strategy :
-  safe_environment -> Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_environment
+  Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0
