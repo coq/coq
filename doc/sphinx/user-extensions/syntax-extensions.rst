@@ -692,6 +692,8 @@ side. E.g.:
    Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
      (at level 10, f ident, a1, an at level 9).
 
+.. _custom-entries:
+
 Custom entries
 ~~~~~~~~~~~~~~
 
@@ -1372,11 +1374,11 @@ Abbreviations
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
-
 Numeral notations
 -----------------
 
 .. cmd:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope.
+   :name: Numeral Notation
 
   This command allows the user to customize the way numeral literals
   are parsed and printed.
