@@ -11,8 +11,8 @@
 #load "str.cma"
 open Printf
 
-let coq_version = "8.9+alpha"
-let coq_macos_version = "8.8.90" (** "[...] should be a string comprised of
+let coq_version = "8.9+beta1"
+let coq_macos_version = "8.8.91" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 8891
 let state_magic = 58891
