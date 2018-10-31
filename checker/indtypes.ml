@@ -525,10 +525,11 @@ let check_positivity env_ar mind params nrecp inds =
     Array.mapi (fun j t -> (Mrec(mind,j),t)) (Rtree.mk_rec_calls ntypes) in
   let lra_ind = List.rev (Array.to_list rc) in
   let lparams = rel_context_length params in
+  let ra_env =
+    List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
+  let env_ar_par = push_rel_context params env_ar in
   let check_one i mip =
-    let ra_env =
-      List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
-    let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
+    let ienv = (env_ar_par, 1+lparams, ntypes, ra_env) in
       check_positivity_one ienv params nrecp (mind,i) mip.mind_nf_lc
   in
   let irecargs = Array.mapi check_one inds in
