@@ -7,8 +7,9 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
+open Safe_typing
 
 val memory_stat : bool ref
 val output_context : bool ref
 
-val stats : unit -> unit
+val stats : safe_environment -> unit

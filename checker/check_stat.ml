@@ -65,6 +65,6 @@ let print_context env = () (* FIXME
       str "* " ++ hov 0 (pr_ax csts)));
   end *)
 
-let stats () =
-  print_context (Global.env());
+let stats senv =
+  print_context senv;
   print_memory_stat ()

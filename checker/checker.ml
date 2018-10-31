@@ -138,7 +138,11 @@ let set_debug () = Flags.debug := true
 
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set () = impredicative_set := Declarations.ImpredicativeSet
-let engage () = Global.set_engagement (!impredicative_set)
+let engage = Safe_typing.set_engagement (!impredicative_set)
+
+let disable_compilers senv =
+  let senv = Safe_typing.set_VM false senv in
+  Safe_typing.set_native_compiler false senv
 
 
 let admit_list = ref ([] : object_file list)
@@ -157,8 +161,8 @@ let add_compile s =
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
 
-let compile_files () =
-  Check.recheck_library
+let compile_files senv =
+  Check.recheck_library senv
     ~norec:(List.rev !norec_list)
     ~admit:(List.rev !admit_list)
     ~check:(List.rev !compile_list)
@@ -362,35 +366,34 @@ let parse_args argv =
   parse (List.tl (Array.to_list argv))
 
 
-(* To prevent from doing the initialization twice *)
-let initialized = ref false
-
 (* XXX: At some point we need to either port the checker to use the
    feedback system or to remove its use completely. *)
 let init_with_argv argv =
-  if not !initialized then begin
-    initialized := true;
-    Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-    let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
-    try
-      parse_args argv;
-      if !Flags.debug then Printexc.record_backtrace true;
-      Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
-      Flags.if_verbose print_header ();
-      init_load_path ();
-      engage ();
-    with e ->
-      fatal_error (str "Error during initialization :" ++ (explain_exn e)) (is_anomaly e)
-  end
+  Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
+  try
+    parse_args argv;
+    if !Flags.debug then Printexc.record_backtrace true;
+    Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
+    Flags.if_verbose print_header ();
+    init_load_path ();
+    let senv = Safe_typing.empty_environment in
+    disable_compilers (engage senv)
+  with e ->
+    fatal_error (str "Error during initialization :" ++ (explain_exn e)) (is_anomaly e)
 
 let init() = init_with_argv Sys.argv
 
-let run () =
+let run senv =
   try
-    compile_files ();
-    flush_all()
+    let senv = compile_files senv in
+    flush_all(); senv
   with e ->
     if !Flags.debug then Printexc.print_backtrace stderr;
     fatal_error (explain_exn e) (is_anomaly e)
 
-let start () = init(); run(); Check_stat.stats(); exit 0
+let start () =
+  let senv = init() in
+  let senv = run senv in
+  Check_stat.stats senv;
+  exit 0

@@ -111,21 +111,23 @@ let () =
   Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
   Opaqueproof.set_indirect_univ_accessor access_opaque_univ_table
 
-let check_one_lib admit (dir,m) =
+let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in
   let dig = m.library_digest in
   (* Look up if the library is to be admitted correct. We could
      also check if it carries a validation certificate (yet to
      be implemented). *)
-  if LibrarySet.mem dir admit then
-    (Flags.if_verbose Feedback.msg_notice
-      (str "Admitting library: " ++ pr_dirpath dir);
-      Safe_checking.unsafe_import md m.library_extra_univs dig)
-  else
-    (Flags.if_verbose Feedback.msg_notice
-      (str "Checking library: " ++ pr_dirpath dir);
-      Safe_checking.import md m.library_extra_univs dig);
-  register_loaded_library m
+  let senv =
+    if LibrarySet.mem dir admit then
+      (Flags.if_verbose Feedback.msg_notice
+         (str "Admitting library: " ++ pr_dirpath dir);
+       Safe_checking.unsafe_import senv md m.library_extra_univs dig)
+    else
+      (Flags.if_verbose Feedback.msg_notice
+         (str "Checking library: " ++ pr_dirpath dir);
+       Safe_checking.import senv md m.library_extra_univs dig)
+  in
+    register_loaded_library m; senv
 
 (*************************************************************************)
 (*s Load path. Mapping from physical to logical paths etc.*)
@@ -423,7 +425,7 @@ and fold_deps_list seen ff modl needed =
 let fold_deps_list ff modl acc =
   snd (fold_deps_list LibrarySet.empty ff modl (LibrarySet.empty,acc))
 
-let recheck_library ~norec ~admit ~check =
+let recheck_library senv ~norec ~admit ~check =
   let ml = List.map try_locate_qualified_library check in
   let nrl = List.map try_locate_qualified_library norec in
   let al =  List.map try_locate_qualified_library admit in
@@ -441,5 +443,6 @@ let recheck_library ~norec ~admit ~check =
   Flags.if_verbose Feedback.msg_notice (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
-  List.iter (check_one_lib nochk) needed;
-  Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked")
+  let senv = List.fold_left (check_one_lib nochk) senv needed in
+  Flags.if_verbose Feedback.msg_notice (str"Modules were successfully checked");
+  senv
