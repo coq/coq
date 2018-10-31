@@ -185,7 +185,7 @@ let consistency_checks exists dir dirinfo =
         user_err ~hdr:"consistency_checks"
           (DirPath.print dir ++ str " should already exist!")
     in
-    assert (eq_global_dir_reference globref dirinfo)
+    assert (Nametab.GlobDirRef.equal globref dirinfo)
   else
     if Nametab.exists_dir dir then
       user_err ~hdr:"consistency_checks"
@@ -198,7 +198,7 @@ let compute_visibility exists i =
 
 let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
   let prefix = { obj_dir ; obj_mp; obj_sec = DirPath.empty } in
-  let dirinfo = DirModule prefix in
+  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
   consistency_checks exists obj_dir dirinfo;
   Nametab.push_dir (compute_visibility exists i) obj_dir dirinfo;
   ModSubstObjs.set obj_mp sobjs;
@@ -605,7 +605,7 @@ let start_module interp_modast export id args res fs =
   let () = Global.push_context_set true cst in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
-  Nametab.push_dir (Nametab.Until 1) (prefix.obj_dir) (DirOpenModule prefix);
+  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix));
   mp
 
 let end_module () =
@@ -723,7 +723,7 @@ let start_modtype interp_modast id args mtys fs =
   let () = Global.push_context_set true cst in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
-  Nametab.push_dir (Nametab.Until 1) (prefix.obj_dir) (DirOpenModtype prefix);
+  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix));
   mp
 
 let end_modtype () =

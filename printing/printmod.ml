@@ -223,7 +223,7 @@ let print_kn locals kn =
 let nametab_register_dir obj_mp =
   let id = mk_fake_top () in
   let obj_dir = DirPath.make [id] in
-  Nametab.push_dir (Nametab.Until 1) obj_dir (DirModule { obj_dir; obj_mp; obj_sec = DirPath.empty })
+  Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirModule { obj_dir; obj_mp; obj_sec = DirPath.empty }))
 
 (** Nota: the [global_reference] we register in the nametab below
     might differ from internal ones, since we cannot recreate here
@@ -402,6 +402,7 @@ let rec printable_body dir =
   let dir = pop_dirpath dir in
     DirPath.is_empty dir ||
     try
+      let open Nametab.GlobDirRef in
       match Nametab.locate_dir (qualid_of_dirpath dir) with
 	  DirOpenModtype _ -> false
 	| DirModule _ | DirOpenModule _ -> printable_body dir

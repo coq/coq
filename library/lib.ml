@@ -551,7 +551,7 @@ let open_section id =
   let fs = Summary.freeze_summaries ~marshallable:`No in
   add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_dir (Nametab.Until 1) obj_dir (DirOpenSection prefix);
+  Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
   lib_state := { !lib_state with path_prefix = prefix };
   add_section ()
 

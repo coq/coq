@@ -168,24 +168,10 @@ type object_prefix = {
   obj_sec : DirPath.t;
 }
 
-(* to this type are mapped DirPath.t's in the nametab *)
-type global_dir_reference =
-  | DirOpenModule of object_prefix
-  | DirOpenModtype of object_prefix
-  | DirOpenSection of object_prefix
-  | DirModule of object_prefix
-
 let eq_op op1 op2 =
   DirPath.equal op1.obj_dir op2.obj_dir &&
   DirPath.equal op1.obj_sec op2.obj_sec &&
   ModPath.equal op1.obj_mp  op2.obj_mp
-
-let eq_global_dir_reference r1 r2 = match r1, r2 with
-| DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
-| DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
-| DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
-| DirModule op1, DirModule op2 -> eq_op op1 op2
-| _ -> false
 
 (* Default paths *)
 let default_library = Names.DirPath.initial (* = ["Top"] *)

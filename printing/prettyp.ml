@@ -326,7 +326,7 @@ type locatable = Locatable : 'a locatable_info -> locatable
 
 type logical_name =
   | Term of GlobRef.t
-  | Dir of global_dir_reference
+  | Dir of Nametab.GlobDirRef.t
   | Syntactic of KerName.t
   | ModuleType of ModPath.t
   | Other : 'a * 'a locatable_info -> logical_name
@@ -367,7 +367,7 @@ let pr_located_qualid = function
   | Syntactic kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_syndef kn)
   | Dir dir ->
-      let s,dir = match dir with
+      let s,dir = let open Nametab.GlobDirRef in match dir with
         | DirOpenModule { obj_dir ; _ } -> "Open Module", obj_dir
         | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
         | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
@@ -416,7 +416,7 @@ let locate_term qid =
 
 let locate_module qid =
   let all = Nametab.locate_extended_all_dir qid in
-  let map dir = match dir with
+  let map dir = let open Nametab.GlobDirRef in match dir with
   | DirModule { obj_mp ; _ } -> Some (Dir dir, Nametab.shortest_qualid_of_module obj_mp)
   | DirOpenModule _ -> Some (Dir dir, qid)
   | _ -> None
@@ -429,7 +429,7 @@ let locate_modtype qid =
   let modtypes = List.map map all in
   (** Don't forget the opened module types: they are not part of the same name tab. *)
   let all = Nametab.locate_extended_all_dir qid in
-  let map dir = match dir with
+  let map dir = let open Nametab.GlobDirRef in match dir with
   | DirOpenModtype _ -> Some (Dir dir, qid)
   | _ -> None
   in
@@ -788,7 +788,7 @@ let print_any_name env sigma na udecl =
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp udecl
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
-  | Dir (DirModule { obj_dir; obj_mp; _ } ) -> print_module (printable_body obj_dir) obj_mp
+  | Dir (Nametab.GlobDirRef.DirModule { obj_dir; obj_mp; _ } ) -> print_module (printable_body obj_dir) obj_mp
   | Dir _ -> mt ()
   | ModuleType mp -> print_modtype mp
   | Other (obj, info) -> info.print obj

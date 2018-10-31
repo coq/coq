@@ -110,16 +110,6 @@ type object_prefix = {
 
 val eq_op : object_prefix -> object_prefix -> bool
 
-(** to this type are mapped [DirPath.t]'s in the nametab *)
-type global_dir_reference =
-  | DirOpenModule of object_prefix
-  | DirOpenModtype of object_prefix
-  | DirOpenSection of object_prefix
-  | DirModule of object_prefix
-
-val eq_global_dir_reference : 
-  global_dir_reference -> global_dir_reference -> bool
-
 (** {6 ... } *)
 
 (** some preset paths *)

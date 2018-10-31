@@ -57,6 +57,22 @@ open Globnames
 
 *)
 
+(** to this type are mapped [DirPath.t]'s in the nametab *)
+module GlobDirRef : sig
+  type t =
+    | DirOpenModule of object_prefix
+    | DirOpenModtype of object_prefix
+    | DirOpenSection of object_prefix
+    | DirModule of object_prefix
+  val equal : t -> t -> bool
+end
+
+type global_dir_reference = GlobDirRef.t
+[@@ocaml.deprecated "Use [GlobDirRef.t]"]
+
+val eq_global_dir_reference :
+  GlobDirRef.t -> GlobDirRef.t -> bool
+[@@ocaml.deprecated "Use [GlobDirRef.equal]"]
 
 exception GlobalizationError of qualid
 
@@ -79,7 +95,7 @@ val map_visibility : (int -> int) -> visibility -> visibility
 
 val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
-val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
+val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
 type universe_id = DirPath.t * int
@@ -98,7 +114,7 @@ val locate_extended : qualid -> extended_global_reference
 val locate_constant : qualid -> Constant.t
 val locate_syndef : qualid -> syndef_name
 val locate_modtype : qualid -> ModPath.t
-val locate_dir : qualid -> global_dir_reference
+val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> universe_id
@@ -115,7 +131,7 @@ val global_inductive : qualid -> inductive
 
 val locate_all : qualid -> GlobRef.t list
 val locate_extended_all : qualid -> extended_global_reference list
-val locate_extended_all_dir : qualid -> global_dir_reference list
+val locate_extended_all_dir : qualid -> GlobDirRef.t list
 val locate_extended_all_modtype : qualid -> ModPath.t list
 
 (** Mapping a full path to a global reference *)
