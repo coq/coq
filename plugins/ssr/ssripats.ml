@@ -216,7 +216,7 @@ let rec ipat_tac1 ipat : unit tactic =
       Ssrview.tclIPAT_VIEWS ~views:l ~clear_if_id
         ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
 
-  | IPatDispatch(false,[[]]) ->
+  | IPatDispatch(true,[[]]) ->
       tclUNIT ()
   | IPatDispatch(_,ipatss) ->
       tclDISPATCH (List.map ipat_tac ipatss)
@@ -277,7 +277,7 @@ let split_at_first_case ipats =
     loop [] ipats
 
 let ssr_exception is_on = function
-  | Some (IPatCase l) when is_on -> Some (IPatDispatch(false, l))
+  | Some (IPatCase l) when is_on -> Some (IPatDispatch(true, l))
   | x -> x
 
 let option_to_list = function None -> [] | Some x -> [x]
