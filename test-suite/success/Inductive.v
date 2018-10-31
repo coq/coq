@@ -1,7 +1,5 @@
 (* Test des definitions inductives imbriquees *)
 
-Require Import List.
-
 Inductive X : Set :=
     cons1 : list X -> X.
 
