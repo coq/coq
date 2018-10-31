@@ -686,7 +686,7 @@ let interp_may_eval f ist env sigma = function
   | ConstrContext ({loc;v=s},c) ->
       (try
 	let (sigma,ic) = f ist env sigma c in
-	let ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
+        let ctxt = try_interp_ltac_var coerce_to_constr_context ist (Some (env, sigma)) (make ?loc s) in
 	let ctxt = EConstr.Unsafe.to_constr ctxt in
         let ic = EConstr.Unsafe.to_constr ic in
 	let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
