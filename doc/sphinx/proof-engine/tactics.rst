@@ -2225,6 +2225,7 @@ and an explanation of the underlying technique.
    :n:`inversion @ident using @ident`.
 
 .. tacv:: inversion_sigma
+   :name: inversion_sigma
 
    This tactic turns equalities of dependent pairs (e.g.,
    :g:`existT P x p = existT P y q`, frequently left over by inversion on
@@ -2368,7 +2369,7 @@ and an explanation of the underlying technique.
       assumption.
       Qed.
 
-.. tacn:: fix ident num
+.. tacn:: fix @ident @num
    :name: fix
 
    This tactic is a primitive tactic to start a proof by induction. In
