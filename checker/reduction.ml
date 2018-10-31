@@ -192,10 +192,7 @@ let convert_constructors
   | Monomorphic_ind _ | Polymorphic_ind _ -> convert_universes univs u1 u2
   | Cumulative_ind cumi ->
     let num_cnstr_args =
-      let nparamsctxt =
-        mind.mind_nparams + mind.mind_packets.(ind).mind_nrealargs
-      in
-      nparamsctxt + mind.mind_packets.(ind).mind_consnrealargs.(cns - 1)
+      mind.mind_nparams + mind.mind_packets.(ind).mind_consnrealargs.(cns - 1)
     in
     if not (num_cnstr_args = sv1 && num_cnstr_args = sv2) then
       convert_universes univs u1 u2
