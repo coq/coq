@@ -83,6 +83,7 @@ val refine           : constr -> tactic
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.t
 val pr_glls   : goal list sigma -> Pp.t
+[@@ocaml.deprecated "Please move to \"new\" proof engine"]
 
 (** Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig

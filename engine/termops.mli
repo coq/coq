@@ -304,11 +304,11 @@ val pr_existential_key : evar_map -> Evar.t -> Pp.t
 
 val pr_evar_suggested_name : Evar.t -> evar_map -> Id.t
 
-val pr_evar_info : evar_info -> Pp.t
+val pr_evar_info : env -> evar_map -> evar_info -> Pp.t
 val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.t
-val pr_evar_map : ?with_univs:bool -> int option -> evar_map -> Pp.t
+val pr_evar_map : ?with_univs:bool -> int option -> env -> evar_map -> Pp.t
 val pr_evar_map_filter : ?with_univs:bool -> (Evar.t -> evar_info -> bool) ->
-  evar_map -> Pp.t
+  env -> evar_map -> Pp.t
 val pr_metaset : Metaset.t -> Pp.t
 val pr_evar_universe_context : UState.t -> Pp.t
 val pr_evd_level : evar_map -> Univ.Level.t -> Pp.t
