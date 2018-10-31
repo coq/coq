@@ -1340,7 +1340,16 @@ Coq will use the following rules for printing priorities:
   have a delimiter are considered, giving priority to the most
   recently defined (or imported) ones. The corresponding delimiter is
   inserted, making the corresponding scope the most recent explicitly
-  open scope for all subterms of the current term.
+  open scope for all subterms of the current term. As an exception to
+  the insertion of the corresponding delimiter, when an expression is
+  statically known to be in a position expecting a type and the
+  notation is from scope ``type_scope``, and the latter is closed, the
+  delimiter is not inserted. This is because expressions statically
+  known to be in a position expecting a type are by default
+  interpreted with `type_scope` temporarily activated. Expressions
+  statically known to be in a position expecting a type typically
+  include being on the right-hand side of `:`, `<:`, `<<:` and after
+  the comma in a `forall` expression.
 
 - As a refinement of the previous rule, in the case of applied global
   references, notations in a non-opened scope with delimiter

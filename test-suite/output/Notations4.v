@@ -136,3 +136,31 @@ Notation "f ( x )" := (f x) (at level 10, format "f ( x )") : app_scope.
 Check fun x => pred x.
 
 End G.
+
+(* Checking arbitration between in the presence of a notation in type scope *)
+
+Module H.
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
+Check forall a, a = 0.
+
+Close Scope type_scope.
+Check ((forall a, a = 0) -> True)%type.
+Open Scope type_scope.
+
+Notation "#" := (forall a, a = 0).
+Check #.
+Check # -> True.
+
+Close Scope type_scope.
+Check (# -> True)%type.
+Open Scope type_scope.
+
+Declare Scope my_scope.
+Notation "##" := (forall a, a = 0) : my_scope.
+Open Scope my_scope.
+Check ##.
+
+End H.
