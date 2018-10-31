@@ -716,20 +716,20 @@ let rec flatten_application c = match DAst.get c with
 (* one with no delimiter if possible)                                 *)
 
 let extern_possible_prim_token (custom,scopes) r =
-  try
-    let (sc,n) = uninterp_prim_token r in
-    match availability_of_entry_coercion custom InConstrEntrySomeLevel with
-    | None -> raise No_match
-    | Some coercion ->
-    match availability_of_prim_token n sc scopes with
-    | None -> None
-    | Some key -> Some (insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key))
-  with No_match ->
-    None
+   let (sc,n) = uninterp_prim_token r in
+   match availability_of_entry_coercion custom InConstrEntrySomeLevel with
+   | None -> raise No_match
+   | Some coercion ->
+   match availability_of_prim_token n sc scopes with
+   | None -> raise No_match
+   | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
-let extern_optimal_prim_token scopes r r' =
-  let c = extern_possible_prim_token scopes r in
-  let c' = if r==r' then None else extern_possible_prim_token scopes r' in
+let extern_possible extern r =
+  try Some (extern r) with No_match -> None
+
+let extern_optimal extern r r' =
+  let c = extern_possible extern r in
+  let c' = if r==r' then None else extern_possible extern r' in
   match c,c' with
   | Some n, (Some ({ CAst.v = CDelimiters _}) | None) | _, Some n -> n
   | _ -> raise No_match
@@ -769,12 +769,14 @@ let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_optimal_prim_token scopes r r'
+    extern_optimal (extern_possible_prim_token scopes) r r'
   with No_match ->
   try
     let r'' = flatten_application r' in
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_notation scopes vars r'' (uninterp_notations r'')
+    extern_optimal
+      (fun r -> extern_notation scopes vars r (uninterp_notations r))
+      r r''
   with No_match ->
   let loc = r'.CAst.loc in
   match DAst.get r' with
