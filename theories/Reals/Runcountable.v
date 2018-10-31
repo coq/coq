@@ -13,43 +13,9 @@ Require Import Coq.Reals.Rdefinitions.
 Require Import Coq.Reals.Raxioms.
 Require Import Rfunctions.
 Require Import Coq.Reals.RIneq.
+Require Import Coq.Logic.FinFun.
 Require Import Coq.Logic.ConstructiveEpsilon.
 
-(* Well-order for decidable nat -> Prop. They have minimums.
-   This should probably go into Coq.Logic.ConstructiveEpsilon,
-   but this module does not have le_lt_trans or le_lt_or_eq
-   at the moment. *)
-
-Fixpoint linear_search_smallest (P : nat -> Prop) (dec : forall k : nat, {P k} + {~P k})
-      (start : nat) (pr : before_witness P start) :
-  forall k : nat, start <= k < proj1_sig (linear_search P dec start pr) -> ~P k.
-Proof.
-  (* Recursion on pr, which is the distance between start and linear_search *)
-  intros. destruct (dec start) eqn:Pstart.
-  - (* P start, k cannot exist *)
-    intros. assert (proj1_sig (linear_search P dec start pr) = start).
-    { unfold linear_search. destruct pr; rewrite -> Pstart; reflexivity. }
-    rewrite -> H0 in H. destruct H. apply (le_lt_trans start k) in H1.
-    apply lt_irrefl in H1. contradiction. assumption.
-  - (* ~P start, step once in the search and use induction hypothesis *)
-    destruct pr. contradiction. destruct H. apply le_lt_or_eq in H. destruct H.
-    apply (linear_search_smallest P dec (S start) pr). split. assumption.
-    simpl in H0. rewrite -> Pstart in H0. assumption. subst. assumption.
-Defined.
-
-Definition epsilon_smallest (P : nat -> Prop) :
-  (forall k : nat, {P k} + {~P k})
-  -> (exists n : nat, P n)
-  -> { n : nat | P n /\ forall k : nat, k < n -> ~P k }.
-Proof.
-  intros. pose (wit := (let (n, p) := H0 in O_witness P n (stop P n p))).
-  destruct (linear_search P H 0 wit) as [n pr] eqn:ls. exists n. split. assumption. intros.
-  apply (linear_search_smallest P H 0 wit). split. apply le_0_n.
-  rewrite -> ls. assumption.
-Qed.
-
-
-(* Now the proof that R is uncountable. *)
 
 Definition enumeration (A : Type) (u : nat -> A) (v : A -> nat) : Prop :=
   (forall x : A, u (v x) = x) /\ (forall n : nat, v (u n) = n).
@@ -408,9 +374,9 @@ Proof.
   - intro abs. subst. apply Rlt_irrefl in H7. contradiction.
 Qed.
 
-Theorem R_uncountable : forall (u : nat -> R) (v : R -> nat), ~enumeration R u v.
+Theorem R_uncountable : forall u : nat -> R, ~Bijective u.
 Proof.
-  intros u v H.
+  intros u [v [H3 H4]]. pose proof (conj H4 H3) as H.
   assert (forall n : nat, n + v (fst (proj1_sig (tearing_sequences u v H 1)))
                    <= v (fst (proj1_sig (tearing_sequences u v H (S n))))).
   { induction n. simpl. apply le_refl.
