@@ -1240,9 +1240,9 @@ let check_evar_instance evd evk1 body conv_algo =
 
 let update_evar_info ev1 ev2 evd =
   (* We update the source of obligation evars during evar-evar unifications. *)
-  let loc, evs2 = evar_source ev2 evd in
-  let evi = Evd.find evd ev1 in
-  Evd.add evd ev1 {evi with evar_source = loc, evs2}
+  let loc, evs1 = evar_source ev1 evd in
+  let evi = Evd.find evd ev2 in
+  Evd.add evd ev2 {evi with evar_source = loc, evs1}
 
 let solve_evar_evar_l2r force f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
