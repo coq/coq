@@ -22,11 +22,16 @@ module NamedDecl = Context.Named.Declaration
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
+(* let make_oname (dirpath,(mp,dir)) id = *)
+let make_oname Nametab.{ obj_dir; obj_mp } id =
+  Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
+
+(* let make_oname (dirpath,(mp,dir)) id = *)
 type node =
   | Leaf of obj
-  | CompilingLibrary of object_prefix
-  | OpenedModule of is_type * export * object_prefix * Summary.frozen
-  | OpenedSection of object_prefix * Summary.frozen
+  | CompilingLibrary of Nametab.object_prefix
+  | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
+  | OpenedSection of Nametab.object_prefix * Summary.frozen
 
 type library_entry = object_name * node
 
@@ -89,7 +94,7 @@ let segment_of_objects prefix =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let initial_prefix = {
+let initial_prefix = Nametab.{
   obj_dir = default_library;
   obj_mp  = ModPath.initial;
   obj_sec = DirPath.empty;
@@ -98,7 +103,7 @@ let initial_prefix = {
 type lib_state = {
   comp_name   : DirPath.t option;
   lib_stk     : library_segment;
-  path_prefix : object_prefix;
+  path_prefix : Nametab.object_prefix;
 }
 
 let initial_lib_state = {
@@ -115,9 +120,9 @@ let library_dp () =
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
 
-let cwd () = !lib_state.path_prefix.obj_dir
-let current_mp () = !lib_state.path_prefix.obj_mp
-let current_sections () = !lib_state.path_prefix.obj_sec
+let cwd () = !lib_state.path_prefix.Nametab.obj_dir
+let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
+let current_sections () = !lib_state.path_prefix.Nametab.obj_sec
 
 let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
 let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
@@ -138,7 +143,7 @@ let make_kn id =
   let mp = current_mp () in
   Names.KerName.make mp (Names.Label.of_id id)
 
-let make_oname id = Libobject.make_oname !lib_state.path_prefix id
+let make_foname id = make_oname !lib_state.path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function
@@ -153,9 +158,9 @@ let recalc_path_prefix () =
 let pop_path_prefix () =
   let op = !lib_state.path_prefix in
   lib_state := { !lib_state
-                 with path_prefix = { op with obj_dir = pop_dirpath op.obj_dir;
-                                              obj_sec = pop_dirpath op.obj_sec;
-                                    } }
+                 with path_prefix = Nametab.{ op with obj_dir = pop_dirpath op.obj_dir;
+                                                      obj_sec = pop_dirpath op.obj_sec;
+                                            } }
 
 let find_entry_p p =
   let rec find = function
@@ -214,24 +219,24 @@ let anonymous_id =
   fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
 
 let add_anonymous_entry node =
-  add_entry (make_oname (anonymous_id ())) node
+  add_entry (make_foname (anonymous_id ())) node
 
 let add_leaf id obj =
   if ModPath.equal (current_mp ()) ModPath.initial then
     user_err Pp.(str "No session module started (use -top dir)");
-  let oname = make_oname id in
+  let oname = make_foname id in
   cache_object (oname,obj);
   add_entry oname (Leaf obj);
   oname
 
 let add_discharged_leaf id obj =
-  let oname = make_oname id in
+  let oname = make_foname id in
   let newobj = rebuild_object obj in
   cache_object (oname,newobj);
   add_entry oname (Leaf newobj)
 
 let add_leaves id objs =
-  let oname = make_oname id in
+  let oname = make_foname id in
   let add_obj obj =
     add_entry oname (Leaf obj);
     load_object 1 (oname,obj)
@@ -241,7 +246,7 @@ let add_leaves id objs =
 
 let add_anonymous_leaf ?(cache_first = true) obj =
   let id = anonymous_id () in
-  let oname = make_oname id in
+  let oname = make_foname id in
   if cache_first then begin
     cache_object (oname,obj);
     add_entry oname (Leaf obj)
@@ -269,15 +274,15 @@ let current_mod_id () =
 
 
 let start_mod is_type export id mp fs =
-  let dir = add_dirpath_suffix (!lib_state.path_prefix.obj_dir) id in
-  let prefix = { obj_dir = dir; obj_mp = mp; obj_sec = Names.DirPath.empty } in
+  let dir = add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id in
+  let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; obj_sec = Names.DirPath.empty } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
     else Nametab.exists_module dir
   in
   if exists then
     user_err ~hdr:"open_module" (Id.print id ++ str " already exists");
-  add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
+  add_entry (make_foname id) (OpenedModule (is_type,export,prefix,fs));
   lib_state := { !lib_state with path_prefix = prefix} ;
   prefix
 
@@ -318,9 +323,9 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 let start_compilation s mp =
   if !lib_state.comp_name != None then
     user_err Pp.(str "compilation unit is already started");
-  if not (Names.DirPath.is_empty (!lib_state.path_prefix.obj_sec)) then
+  if not (Names.DirPath.is_empty (!lib_state.path_prefix.Nametab.obj_sec)) then
     user_err Pp.(str "some sections are already opened");
-  let prefix = Libnames.{ obj_dir = s; obj_mp = mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir = s; obj_mp = mp; obj_sec = DirPath.empty } in
   add_anonymous_entry (CompilingLibrary prefix);
   lib_state := { !lib_state with comp_name = Some s;
                                  path_prefix = prefix }
@@ -544,12 +549,12 @@ let is_in_section ref =
 (* Sections. *)
 let open_section id =
   let opp = !lib_state.path_prefix in
-  let obj_dir = add_dirpath_suffix opp.obj_dir id in
-  let prefix = { obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
+  let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
+  let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
   if Nametab.exists_section obj_dir then
     user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
-  add_entry (make_oname id) (OpenedSection (prefix, fs));
+  add_entry (make_foname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
   lib_state := { !lib_state with path_prefix = prefix };
@@ -611,7 +616,7 @@ let init () =
 (* Misc *)
 
 let mp_of_global = function
-  | VarRef id -> !lib_state.path_prefix.obj_mp
+  | VarRef id -> !lib_state.path_prefix.Nametab.obj_mp
   | ConstRef cst -> Names.Constant.modpath cst
   | IndRef ind -> Names.ind_modpath ind
   | ConstructRef constr -> Names.constr_modpath constr

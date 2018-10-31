@@ -15,6 +15,17 @@ open Names
 open Libnames
 open Globnames
 
+type object_prefix = {
+  obj_dir : DirPath.t;
+  obj_mp  : ModPath.t;
+  obj_sec : DirPath.t;
+}
+
+let eq_op op1 op2 =
+  DirPath.equal op1.obj_dir op2.obj_dir &&
+  DirPath.equal op1.obj_sec op2.obj_sec &&
+  ModPath.equal op1.obj_mp  op2.obj_mp
+
 (* to this type are mapped DirPath.t's in the nametab *)
 module GlobDirRef = struct
   type t =

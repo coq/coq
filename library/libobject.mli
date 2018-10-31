@@ -71,7 +71,6 @@ type 'a substitutivity =
 *)
 
 type object_name = full_path * Names.KerName.t
-val make_oname : object_prefix -> Names.Id.t -> object_name
 
 type 'a object_declaration = {
   object_name : string;

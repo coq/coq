@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Libnames
 open Pp
 
 module Dyn = Dyn.Make ()
@@ -17,10 +16,6 @@ type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
 type object_name = Libnames.full_path * Names.KerName.t
-
-(* let make_oname (dirpath,(mp,dir)) id = *)
-let make_oname { obj_dir; obj_mp } id =
-  Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
 type 'a object_declaration = {
   object_name : string;

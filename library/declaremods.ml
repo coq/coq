@@ -139,7 +139,7 @@ let expand_sobjs (_,aobjs) = expand_aobjs aobjs
      Module M:SIG. ... End M. have the keep list empty.
 *)
 
-type module_objects = object_prefix * Lib.lib_objects * Lib.lib_objects
+type module_objects = Nametab.object_prefix * Lib.lib_objects * Lib.lib_objects
 
 module ModObjs :
  sig
@@ -197,7 +197,7 @@ let compute_visibility exists i =
 (** Iterate some function [iter_objects] on all components of a module *)
 
 let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
-  let prefix = { obj_dir ; obj_mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
   let dirinfo = Nametab.GlobDirRef.DirModule prefix in
   consistency_checks exists obj_dir dirinfo;
   Nametab.push_dir (compute_visibility exists i) obj_dir dirinfo;
@@ -239,19 +239,19 @@ let cache_keep _ = anomaly (Pp.str "This module should not be cached!")
 let load_keep i ((sp,kn),kobjs) =
   (* Invariant : seg isn't empty *)
   let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
-  let prefix = { obj_dir ; obj_mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
   let prefix',sobjs,kobjs0 =
     try ModObjs.get obj_mp
     with Not_found -> assert false (* a substobjs should already be loaded *)
   in
-  assert (eq_op prefix' prefix);
+  assert Nametab.(eq_op prefix' prefix);
   assert (List.is_empty kobjs0);
   ModObjs.set obj_mp (prefix,sobjs,kobjs);
   Lib.load_objects i prefix kobjs
 
 let open_keep i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
-  let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
   Lib.open_objects i prefix kobjs
 
 let in_modkeep : Lib.lib_objects -> obj =
@@ -302,7 +302,7 @@ let (in_modtype : substitutive_objects -> obj),
 let do_include do_load do_open i ((sp,kn),aobjs) =
   let obj_dir = Libnames.dirpath sp in
   let obj_mp = KerName.modpath kn in
-  let prefix = { obj_dir; obj_mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
   let o = expand_aobjs aobjs in
   if do_load then Lib.load_objects i prefix o;
   if do_open then Lib.open_objects i prefix o
@@ -977,7 +977,7 @@ let iter_all_segments f =
     | "INCLUDE" ->
       let objs = expand_aobjs (out_include obj) in
       List.iter (apply_obj prefix) objs
-    | _ -> f (make_oname prefix id) obj
+    | _ -> f (Lib.make_oname prefix id) obj
   in
   let apply_mod_obj _ (prefix,substobjs,keepobjs) =
     List.iter (apply_obj prefix) substobjs;

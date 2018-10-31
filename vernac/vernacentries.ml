@@ -188,7 +188,7 @@ let print_module qid =
     let open Nametab.GlobDirRef in
     let globdir = Nametab.locate_dir qid in
       match globdir with
-          DirModule { obj_dir; obj_mp; _ } ->
+          DirModule Nametab.{ obj_dir; obj_mp; _ } ->
           Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
 	| _ -> raise Not_found
   with
