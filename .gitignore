@@ -139,7 +139,7 @@ plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml
 plugins/ltac/extraargs.ml
 plugins/ltac/profile_ltac_tactics.ml
-ide/coqide_main.ml
+ide/coqide_os_specific.ml
 plugins/ssrmatching/ssrmatching.ml
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
