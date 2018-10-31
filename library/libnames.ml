@@ -162,17 +162,11 @@ let qualid_basename qid =
 let qualid_path qid =
   qid.CAst.v.dirpath
 
-type object_name = full_path * KerName.t
-
 type object_prefix = {
   obj_dir : DirPath.t;
   obj_mp  : ModPath.t;
   obj_sec : DirPath.t;
 }
-
-(* let make_oname (dirpath,(mp,dir)) id = *)
-let make_oname { obj_dir; obj_mp } id =
-  make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
 
 (* to this type are mapped DirPath.t's in the nametab *)
 type global_dir_reference =

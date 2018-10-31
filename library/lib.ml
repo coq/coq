@@ -138,7 +138,7 @@ let make_kn id =
   let mp = current_mp () in
   Names.KerName.make mp (Names.Label.of_id id)
 
-let make_oname id = Libnames.make_oname !lib_state.path_prefix id
+let make_oname id = Libobject.make_oname !lib_state.path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function

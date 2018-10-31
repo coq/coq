@@ -88,12 +88,6 @@ val qualid_is_ident : qualid -> bool
 val qualid_path : qualid -> DirPath.t
 val qualid_basename : qualid -> Id.t
 
-(** Both names are passed to objects: a "semantic" [kernel_name], which
-   can be substituted and a "syntactic" [full_path] which can be printed
-*)
-
-type object_name = full_path * KerName.t
-
 (** Object prefix morally contains the "prefix" naming of an object to
    be stored by [library], where [obj_dir] is the "absolute" path,
    [obj_mp] is the current "module" prefix and [obj_sec] is the
@@ -115,8 +109,6 @@ type object_prefix = {
 }
 
 val eq_op : object_prefix -> object_prefix -> bool
-
-val make_oname : object_prefix -> Id.t -> object_name
 
 (** to this type are mapped [DirPath.t]'s in the nametab *)
 type global_dir_reference =
