@@ -390,7 +390,7 @@ let pretype_id pretype k0 loc env sigma id =
     sigma, { uj_val  = mkVar id; uj_type = NamedDecl.get_type (lookup_named id !!env) }
   with Not_found ->
     (* [id] not found, standard error message *)
-    error_var_not_found ?loc id
+    error_var_not_found ?loc !!env sigma id
 
 (*************************************************************************)
 (* Main pretyping function                                               *)
@@ -436,7 +436,7 @@ let pretype_ref ?loc sigma env ref us =
          (* This may happen if env is a goal env and section variables have
             been cleared - section variables should be different from goal
             variables *)
-         Pretype_errors.error_var_not_found ?loc id)
+         Pretype_errors.error_var_not_found ?loc !!env sigma id)
   | ref ->
     let sigma, c = pretype_global ?loc univ_flexible env sigma ref us in
     let ty = unsafe_type_of !!env sigma c in

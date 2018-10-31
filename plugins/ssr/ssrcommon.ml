@@ -940,7 +940,7 @@ let pf_saturate ?beta ?bi_types gl c ?ty m =
 
 let pf_partial_solution gl t evl =
   let sigma, g = project gl, sig_it gl in
-  let sigma = Goal.V82.partial_solution sigma g t in
+  let sigma = Goal.V82.partial_solution (pf_env gl) sigma g t in
   re_sig (List.map (fun x -> (fst (EConstr.destEvar sigma x))) evl) sigma
 
 let dependent_apply_error =

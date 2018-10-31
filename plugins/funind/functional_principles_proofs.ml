@@ -229,10 +229,6 @@ let isAppConstruct ?(env=Global.env ()) sigma t =
     true
   with Not_found -> false
 
-let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
-  Reductionops.clos_norm_flags CClosure.betaiotazeta  Environ.empty_env @@ Evd.from_env Environ.empty_env
-
-
 exception NoChange
 
 let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
@@ -420,7 +416,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn sigma type_of_hyp then
       let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in
-      let reduced_type_of_hyp = nf_betaiotazeta real_type_of_hyp in
+      let reduced_type_of_hyp = Reductionops.nf_betaiotazeta env sigma real_type_of_hyp in
       (* length of context didn't change ? *)
       let new_context,new_typ_of_hyp =
 	 decompose_prod_n_assum sigma (List.length context) reduced_type_of_hyp
@@ -800,7 +796,7 @@ let build_proof
 			g
 		  | LetIn _ ->
 		      let new_infos =
-			{ dyn_infos with info = nf_betaiotazeta dyn_infos.info }
+                        { dyn_infos with info = Reductionops.nf_betaiotazeta env sigma dyn_infos.info }
 		      in
 
 		      tclTHENLIST
@@ -834,7 +830,7 @@ let build_proof
 	  | LetIn _ ->
 	      let new_infos =
 		{ dyn_infos with
-		    info = nf_betaiotazeta dyn_infos.info
+                    info = Reductionops.nf_betaiotazeta env sigma dyn_infos.info
 		}
 	      in
 
@@ -977,7 +973,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 (*   observe (str "body " ++ pr_lconstr bodies.(num)); *)
   let f_body_with_params_and_other_fun  = substl fnames_with_params bodies.(num) in
 (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
-  let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
+  let eq_rhs = Reductionops.nf_betaiotazeta (Global.env ()) evd (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
   (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
   let (type_ctxt,type_of_f),evd =
     let evd,t = Typing.type_of ~refresh:true (Global.env ()) evd f

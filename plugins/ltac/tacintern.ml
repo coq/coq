@@ -46,7 +46,6 @@ type glob_sign = Genintern.glob_sign = {
   extra : Genintern.Store.t;
 }
 
-let fully_empty_glob_sign = Genintern.empty_glob_sign Environ.empty_env
 let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
 
 (* We have identifier <| global_reference <| constr *)
@@ -83,7 +82,8 @@ let intern_hyp ist ({loc;v=id} as locid) =
   else if find_ident id ist then
     make id
   else
-    Pretype_errors.error_var_not_found ?loc id
+    CErrors.user_err ?loc Pp.(str "Hypothesis" ++ spc () ++ Id.print id ++ spc() ++
+                              str "was not found in the current environment.")
 
 let intern_or_var f ist = function
   | ArgVar locid -> ArgVar (intern_hyp ist locid)

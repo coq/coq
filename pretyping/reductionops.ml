@@ -1251,6 +1251,7 @@ let clos_whd_flags flgs env sigma t =
 let nf_beta = clos_norm_flags CClosure.beta
 let nf_betaiota = clos_norm_flags CClosure.betaiota
 let nf_betaiotazeta = clos_norm_flags CClosure.betaiotazeta
+let nf_zeta = clos_norm_flags CClosure.zeta
 let nf_all env sigma =
   clos_norm_flags CClosure.all env sigma
 

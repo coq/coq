@@ -1048,7 +1048,7 @@ let thin id sigma goal =
   | None -> sigma
   | Some (sigma, hyps, concl) ->
     let (gl,ev,sigma) = Goal.V82.mk_goal sigma hyps concl in
-    let sigma = Goal.V82.partial_solution_to sigma goal gl ev in
+    let sigma = Goal.V82.partial_solution_to env sigma goal gl ev in
     sigma
 
 (*

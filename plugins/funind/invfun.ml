@@ -63,12 +63,6 @@ let observe_tac s tac g =
   then do_observe_tac (str s) tac g
   else tac g
 
-(* [nf_zeta] $\zeta$-normalization of a term *)
-let nf_zeta =
-  Reductionops.clos_norm_flags  (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
-    Environ.empty_env
-    (Evd.from_env Environ.empty_env)
-
 let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 
 (* (\* [id_to_constr id] finds the term associated to [id] in the global environment *\) *)
@@ -219,7 +213,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
     let mib,_ = Global.lookup_inductive graph_ind in
     (* and the principle to use in this lemma in $\zeta$ normal form *)
     let f_principle,princ_type = schemes.(i) in
-    let princ_type =  nf_zeta princ_type in
+    let princ_type = Reductionops.nf_zeta (Global.env ()) evd princ_type in
     let princ_infos = Tactics.compute_elim_sig evd princ_type in
     (* The number of args of the function is then easily computable *)
     let nb_fun_args = nb_prod (project g) (pf_concl g) - 2 in
@@ -397,7 +391,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) decl p ->
 	     let id = Namegen.next_ident_away (Nameops.Name.get_id (RelDecl.get_name decl)) (Id.Set.of_list avoid) in
-	     (nf_zeta p)::bindings,id::avoid)
+             (Reductionops.nf_zeta (pf_env g) (project g) p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
@@ -630,12 +624,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
     *)
     let lemmas =
       Array.map
-	(fun (_,(ctxt,concl)) -> nf_zeta (EConstr.it_mkLambda_or_LetIn concl ctxt))
+        (fun (_,(ctxt,concl)) -> Reductionops.nf_zeta (pf_env g) (project g) (EConstr.it_mkLambda_or_LetIn concl ctxt))
 	lemmas_types_infos
     in
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
-    let graph_principle = nf_zeta (EConstr.of_constr schemes.(i))  in
+    let graph_principle = Reductionops.nf_zeta (pf_env g) (project g) (EConstr.of_constr schemes.(i))  in
     let princ_type = pf_unsafe_type_of g graph_principle in
     let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
@@ -771,7 +765,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let type_of_lemma = EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt in
          let sigma, _ = Typing.type_of (Global.env ()) !evd type_of_lemma in
          evd := sigma;
-	   let type_of_lemma = nf_zeta type_of_lemma in
+           let type_of_lemma = Reductionops.nf_zeta (Global.env ()) !evd type_of_lemma in
 	   observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env (Global.env ()) !evd type_of_lemma);
 	   type_of_lemma,type_info
 	)
@@ -838,7 +832,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let type_of_lemma =
 	   EConstr.it_mkProd_or_LetIn type_of_lemma_concl type_of_lemma_ctxt
 	 in
-	 let type_of_lemma = nf_zeta type_of_lemma in
+         let type_of_lemma = Reductionops.nf_zeta env !evd type_of_lemma in
          observe (str "type_of_lemma := " ++ Printer.pr_leconstr_env env !evd type_of_lemma);
 	 type_of_lemma,type_info
 	)

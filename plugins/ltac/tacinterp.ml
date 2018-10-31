@@ -2024,7 +2024,7 @@ let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
 let interp_redexp env sigma r =
   let ist = default_ist () in
-  let gist = { fully_empty_glob_sign with genv = env; } in
+  let gist = Genintern.empty_glob_sign env in
   interp_red_expr ist env sigma (intern_red_expr gist r)
 
 (***************************************************************************)
