@@ -87,7 +87,8 @@ let print_usage_channel co command =
 \n                         (use environment variable\
 \n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\
 \n                          for full Gc stats dump)\
-\n  -native-compiler       precompile files for the native_compute machinery\
+\n  -bytecode-compiler (yes|no) controls the vm_compute machinery\
+\n  -native-compiler (yes|no|ondemand) controls the native_compute machinery\
 \n  -h, -help, --help      print this list of options\
 \n";
   List.iter (fun (name, text) ->

@@ -41,6 +41,8 @@ type coq_cmdopts = {
   color : color;
 
   impredicative_set : Declarations.set_predicativity;
+  enable_VM : bool;
+  enable_native_compiler : bool;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;

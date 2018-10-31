@@ -456,6 +456,8 @@ let init_toplevel custom_init arglist =
       Flags.if_verbose print_header ();
       Mltop.init_known_plugins ();
       Global.set_engagement opts.impredicative_set;
+      Global.set_VM opts.enable_VM;
+      Global.set_native_compiler opts.enable_native_compiler;
 
       (* Allow the user to load an arbitrary state here *)
       inputstate opts;

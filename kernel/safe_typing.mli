@@ -138,6 +138,8 @@ val add_constraints :
 val set_engagement : Declarations.engagement -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 val set_share_reduction : bool -> safe_transformer0
+val set_VM : bool -> safe_transformer0
+val set_native_compiler : bool -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 

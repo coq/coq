@@ -14,7 +14,8 @@ open Nativelib
 open Reduction
 open Util
 open Nativevalues
-open Nativecode 
+open Nativecode
+open Environ
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
@@ -142,7 +143,7 @@ let warn_no_native_compiler =
                       strbrk " falling back to VM conversion test.")
 
 let native_conv_gen pb sigma env univs t1 t2 =
-  if not Coq_config.native_compiler then begin
+  if not (typing_flags env).Declarations.enable_native_compiler then begin
     warn_no_native_compiler ();
     Vconv.vm_conv_gen pb env univs t1 t2
   end

@@ -189,7 +189,7 @@ let warn_bytecode_compiler_failed =
                       strbrk "falling back to standard conversion")
 
 let vm_conv_gen cv_pb env univs t1 t2 =
-  if not Coq_config.bytecode_compiler then
+  if not (typing_flags env).Declarations.enable_VM then
     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
       full_transparent_state env univs t1 t2
   else

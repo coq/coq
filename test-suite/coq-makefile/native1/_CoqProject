@@ -2,6 +2,7 @@
 -R theories test
 -I src
 -arg -native-compiler
+-arg yes
 
 src/test_plugin.mlpack
 src/test.mlg

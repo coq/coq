@@ -198,6 +198,14 @@ let set_share_reduction b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with share_reduction = b } senv
 
+let set_VM b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with enable_VM = b } senv
+
+let set_native_compiler b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with enable_native_compiler = b } senv
+
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
 let check_engagement env expected_impredicative_set =

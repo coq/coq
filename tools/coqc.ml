@@ -97,7 +97,7 @@ let parse_args () =
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-profile"|"-echo" |"-quiet"
       |"-silent"|"-m"|"-beautify"|"-strict-implicit"
-      |"-impredicative-set"|"-vm"|"-native-compiler"
+      |"-impredicative-set"|"-vm"
       |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       |"-stm-debug"
@@ -111,7 +111,7 @@ let parse_args () =
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"|"-profile-ltac-cutoff"|"-mangle-names"
+      |"-o"|"-profile-ltac-cutoff"|"-mangle-names"|"-bytecode-compiler"|"-native-compiler"
       as o) :: rem ->
 	begin
 	  match rem with
