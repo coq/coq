@@ -529,8 +529,8 @@ exception FoundUnif of (evar_map * UState.t * tpattern)
 (* Note: we don't update env as we descend into the term, as the primitive *)
 (* unification procedure always rejects subterms with bound variables.     *)
 
-let dont_impact_evars_in cl =
-  let evs_in_cl = Evd.evars_of_term cl in
+let dont_impact_evars_in sigma0 cl =
+  let evs_in_cl = Evd.evars_of_term sigma0 cl in
   fun sigma -> Evar.Set.for_all (fun k ->
     try let _ = Evd.find_undefined sigma k in true
     with Not_found -> false) evs_in_cl
@@ -544,7 +544,7 @@ let dont_impact_evars_in cl =
 (*  - w_unify expands let-in (zeta conversion) eagerly, whereas we want to  *)
 (*    match a head let rigidly.                                             *)
 let match_upats_FO upats env sigma0 ise orig_c =
-  let dont_impact_evars = dont_impact_evars_in (EConstr.of_constr orig_c) in
+  let dont_impact_evars = dont_impact_evars_in sigma0 (EConstr.of_constr orig_c) in
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let fpats =
@@ -586,7 +586,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
 
 
 let match_upats_HO ~on_instance upats env sigma0 ise c =
- let dont_impact_evars = dont_impact_evars_in (EConstr.of_constr c) in
+ let dont_impact_evars = dont_impact_evars_in sigma0 (EConstr.of_constr c) in
  let it_did_match = ref false in
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =

@@ -641,7 +641,7 @@ let shelve_goals l =
     [sigma]. *)
 let depends_on sigma src tgt =
   let evi = Evd.find sigma tgt in
-  Evar.Set.mem src (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
+  Evar.Set.mem src (Evd.evars_of_filtered_evar_info sigma (Evarutil.nf_evar_info sigma evi))
 
 let unifiable_delayed g l =
   CList.exists (fun (tgt, lazy evs) -> not (Evar.equal g tgt) && Evar.Set.mem g evs) l
@@ -1251,9 +1251,9 @@ module V82 = struct
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
 
-  let top_evars initial =
+  let top_evars initial { solution=sigma; } =
     let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evars_of_term c)
+      Evar.Set.elements (Evd.evars_of_term sigma c)
     in
     CList.flatten (CList.map evars_of_initial initial)
 

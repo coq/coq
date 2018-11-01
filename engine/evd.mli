@@ -491,16 +491,15 @@ val extract_changed_conv_pbs : evar_map ->
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
 
-(** The following functions return the set of evars immediately
-    contained in the object; need the term to be evar-normal otherwise
-    defined evars are returned too. *)
+(** The following functions return the set of undefined evars
+    contained in the object. *)
 
-val evars_of_term : econstr -> Evar.Set.t
+val evars_of_term : evar_map -> econstr -> Evar.Set.t
   (** including evars in instances of evars *)
 
-val evars_of_named_context : (econstr, etypes) Context.Named.pt -> Evar.Set.t
+val evars_of_named_context : evar_map -> (econstr, etypes) Context.Named.pt -> Evar.Set.t
 
-val evars_of_filtered_evar_info : evar_info -> Evar.Set.t
+val evars_of_filtered_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> (metavariable * clbinding) list

@@ -243,7 +243,7 @@ let out_def = function
   | None -> user_err Pp.(str "Program Fixpoint needs defined bodies.")
 
 let collect_evars_of_term evd c ty =
-  let evars = Evar.Set.union (Evd.evars_of_term c) (Evd.evars_of_term ty) in
+  let evars = Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty) in
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 

@@ -41,8 +41,8 @@ let simple_goal sigma g gs =
   let open Evd in
   let open Evarutil in
   let evi = Evd.find sigma g in
-  Set.is_empty (evars_of_term evi.evar_concl) &&
-  Set.is_empty (evars_of_filtered_evar_info (nf_evar_info sigma evi)) &&
+  Set.is_empty (evars_of_term sigma evi.evar_concl) &&
+  Set.is_empty (evars_of_filtered_evar_info sigma (nf_evar_info sigma evi)) &&
   not (List.exists (Proofview.depends_on sigma g) gs)
 
 let is_focused_goal_simple ~doc id =

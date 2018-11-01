@@ -151,7 +151,7 @@ let evar_dependencies evm oev =
   let one_step deps =
     Evar.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
-      let deps' = evars_of_filtered_evar_info evi in
+      let deps' = evars_of_filtered_evar_info evm evi in
       if Evar.Set.mem oev deps' then
         invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ Pp.string_of_ppcmds @@ Evar.print oev)
       else Evar.Set.union deps' s)

@@ -187,7 +187,7 @@ let compute_evar_dependency_graph sigma =
     in
     match evar_body evi with
     | Evar_empty -> acc
-    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term c) acc
+    | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term sigma c) acc
   in
   Evd.fold fold sigma EvMap.empty
 

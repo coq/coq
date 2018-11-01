@@ -290,7 +290,7 @@ let finalize_view s0 ?(simple_types=true) p =
 Goal.enter_one ~__LOC__ begin fun g ->
   let env = Goal.env g in
   let sigma = Goal.sigma g in
-  let evars_of_p = Evd.evars_of_term p in
+  let evars_of_p = Evd.evars_of_term sigma p in
   let filter x _ = Evar.Set.mem x evars_of_p in
   let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in
   let p = Reductionops.nf_evar sigma p in
@@ -307,7 +307,7 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let und0 = (* Unassigned evars in the initial goal *)
     let sigma0 = Tacmach.project s0 in
     let g0info = Evd.find sigma0 (Tacmach.sig_it s0) in
-    let g0 = Evd.evars_of_filtered_evar_info g0info in
+    let g0 = Evd.evars_of_filtered_evar_info sigma0 g0info in
     List.filter (fun k -> Evar.Set.mem k g0)
       (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in
   let rigid = rigid_of und0 in
