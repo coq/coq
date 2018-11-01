@@ -678,7 +678,7 @@ form*. There are several ways (or strategies) to apply the reduction
 rules. Among them, we have to mention the *head reduction* which will
 play an important role (see Chapter :ref:`tactics`). Any term :math:`t` can be written as
 :math:`λ x_1 :T_1 . … λ x_k :T_k . (t_0~t_1 … t_n )` where :math:`t_0` is not an
-application. We say then that :math:`t~0` is the *head of* :math:`t`. If we assume
+application. We say then that :math:`t_0` is the *head of* :math:`t`. If we assume
 that :math:`t_0` is :math:`λ x:T. u_0` then one step of β-head reduction of :math:`t` is:
 
 .. math::
@@ -771,8 +771,8 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
                 \evenO &:& \even~0\\
-                \evenS &:& \forall n, \odd~n -> \even~(\kw{S}~n)\\
-                \oddS &:& \forall n, \even~n -> \odd~(\kw{S}~n)
+                \evenS &:& \forall n, \odd~n → \even~(\kw{S}~n)\\
+                \oddS &:& \forall n, \even~n → \odd~(\kw{S}~n)
                           \end{array}\right]}
 
    which corresponds to the result of the |Coq| declaration:
