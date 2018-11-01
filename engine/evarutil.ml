@@ -657,7 +657,7 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
 let queue_set q is_dependent set =
   Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
 let queue_term q is_dependent c =
-  queue_set q is_dependent (evars_of_term (EConstr.Unsafe.to_constr c))
+  queue_set q is_dependent (evars_of_term c)
 
 let process_dependent_evar q acc evm is_dependent e =
   let evi = Evd.find evm e in
@@ -675,7 +675,7 @@ let process_dependent_evar q acc evm is_dependent e =
   | Evar_empty ->
       if is_dependent then Evar.Map.add e None acc else acc
   | Evar_defined b ->
-      let subevars = evars_of_term (EConstr.Unsafe.to_constr b) in
+      let subevars = evars_of_term b in
       (* evars appearing in the definition of an evar [e] are marked
          as dependent when [e] is dependent itself: if [e] is a
          non-dependent goal, then, unless they are reach from another
@@ -795,7 +795,7 @@ let filtered_undefined_evars_of_evar_info ?cache sigma evi =
   in
   let accu = match evi.evar_body with
   | Evar_empty -> Evar.Set.empty
-  | Evar_defined b -> evars_of_term (EConstr.Unsafe.to_constr b)
+  | Evar_defined b -> evars_of_term b
   in
   let accu = Evar.Set.union (undefined_evars_of_term sigma evi.evar_concl) accu in
   let ctxt = EConstr.Unsafe.to_named_context (evar_filtered_context evi) in

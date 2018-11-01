@@ -495,7 +495,7 @@ val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
     contained in the object; need the term to be evar-normal otherwise
     defined evars are returned too. *)
 
-val evars_of_term : constr -> Evar.Set.t
+val evars_of_term : econstr -> Evar.Set.t
   (** including evars in instances of evars *)
 
 val evars_of_named_context : (econstr, etypes) Context.Named.pt -> Evar.Set.t

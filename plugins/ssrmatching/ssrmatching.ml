@@ -544,7 +544,7 @@ let dont_impact_evars_in cl =
 (*  - w_unify expands let-in (zeta conversion) eagerly, whereas we want to  *)
 (*    match a head let rigidly.                                             *)
 let match_upats_FO upats env sigma0 ise orig_c =
-  let dont_impact_evars = dont_impact_evars_in orig_c in
+  let dont_impact_evars = dont_impact_evars_in (EConstr.of_constr orig_c) in
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let fpats =
@@ -586,7 +586,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
 
 
 let match_upats_HO ~on_instance upats env sigma0 ise c =
- let dont_impact_evars = dont_impact_evars_in c in
+ let dont_impact_evars = dont_impact_evars_in (EConstr.of_constr c) in
  let it_did_match = ref false in
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =

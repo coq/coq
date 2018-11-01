@@ -88,11 +88,12 @@ let do_definition ~ontop ~program_mode ?hook ident k univdecl bl red_option c ct
     let (c,ctx), sideff = Future.force ce.const_entry_body in
     assert(Safe_typing.empty_private_constants = sideff);
     assert(Univ.ContextSet.is_empty ctx);
-    let typ = match ce.const_entry_type with
-      | Some t -> t
-      | None -> EConstr.to_constr ~abort_on_undefined_evars:false evd (Retyping.get_type_of env evd (EConstr.of_constr c))
-    in
     Obligations.check_evars env evd;
+    let c = EConstr.of_constr c in
+    let typ = match ce.const_entry_type with
+      | Some t -> EConstr.of_constr t
+      | None -> Retyping.get_type_of env evd c
+    in
     let obls, _, c, cty =
       Obligations.eterm_obligations env ident evd 0 c typ
     in

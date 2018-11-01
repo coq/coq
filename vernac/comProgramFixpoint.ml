@@ -230,12 +230,9 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   in
   (* XXX: Capturing sigma here... bad bad *)
   let hook = Lemmas.mk_hook (hook sigma) in
-  (* XXX: Grounding non-ground terms here... bad bad *)
-  let fullcoqc = EConstr.to_constr ~abort_on_undefined_evars:false sigma def in
-  let fullctyp = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   Obligations.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
-    Obligations.eterm_obligations env recname sigma 0 fullcoqc fullctyp
+    Obligations.eterm_obligations env recname sigma 0 def typ
   in
   let ctx = Evd.evar_universe_context sigma in
     ignore(Obligations.add_definition recname ~term:evars_def ~univdecl:decl
@@ -262,17 +259,13 @@ let do_program_recursive local poly fixkind fixl ntns =
   let evd = nf_evar_map_undefined evd in
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
-    let def =
-      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign)
-    and typ =
-      (* Worrying... *)
-      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign)
-    in
+    let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign) in
+    let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       Obligations.eterm_obligations env id evm
-        (List.length rec_sign) def typ
-    in (id, def, typ, imps, evars)
+        (List.length rec_sign) def typ in
+    (id, def, typ, imps, evars)
   in
   let (fixnames,fixrs,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in

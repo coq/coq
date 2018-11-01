@@ -39,7 +39,7 @@ let check_evars env evm =
 
 type oblinfo =
   { ev_name: int * Id.t;
-    ev_hyps: Constr.named_context;
+    ev_hyps: EConstr.named_context;
     ev_status: bool * Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
@@ -50,11 +50,11 @@ type oblinfo =
 (** Substitute evar references in t using de Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n idf t =
+let subst_evar_constr evm evs n idf t =
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
-  let rec substrec (depth, fixrels) c = match Constr.kind c with
+  let rec substrec (depth, fixrels) c = match EConstr.kind evm c with
     | Evar (k, args) ->
 	let { ev_name = (id, idstr) ;
 	      ev_hyps = hyps ; ev_chop = chop } =
@@ -84,18 +84,18 @@ let subst_evar_constr evs n idf t =
 	  in aux hyps args []
 	in
 	  if List.exists
-            (fun x -> match Constr.kind x with
+            (fun x -> match EConstr.kind evm x with
             | Rel n -> Int.List.mem n fixrels
             | _ -> false) args
           then
 	    transparent := Id.Set.add idstr !transparent;
-	  mkApp (idf idstr, Array.of_list args)
+          EConstr.mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
-	Constr.map_with_binders succfix substrec (depth, 1 :: fixrels) c
-    | _ -> Constr.map_with_binders succfix substrec (depth, fixrels) c
+        EConstr.map_with_binders evm succfix substrec (depth, 1 :: fixrels) c
+    | _ -> EConstr.map_with_binders evm succfix substrec (depth, fixrels) c
   in
   let t' = substrec (0, []) t in
-    t', !seen, !transparent
+    EConstr.to_constr evm t', !seen, !transparent
 
 
 (** Substitute variable references in t using de Bruijn indices,
@@ -112,18 +112,18 @@ let subst_vars acc n t =
     to a product : forall H1 : t1, ..., forall Hn : tn, concl.
     Changes evars and hypothesis references to variable references.
 *)
-let etype_of_evar evs hyps concl =
+let etype_of_evar evm evs hyps concl =
   let open Context.Named.Declaration in
   let rec aux acc n = function
       decl :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar (NamedDecl.get_type decl) in
+        let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar (NamedDecl.get_type decl) in
 	let t'' = subst_vars acc 0 t' in
 	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
 	  (match decl with
             | LocalDef (id,c,_) ->
-		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
+                let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
 		let c' = subst_vars acc 0 c' in
                   mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
 		Int.Set.union s'' s',
@@ -131,7 +131,7 @@ let etype_of_evar evs hyps concl =
             | LocalAssum (id,_) ->
                 mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
-	let t', s, trans = subst_evar_constr evs n mkVar concl in
+        let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
 	  subst_vars acc 0 t', s, trans
   in aux [] 0 (List.rev hyps)
 
@@ -209,9 +209,7 @@ let eterm_obligations env name evm fs ?status t ty =
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Evd.evar_filtered_context ev in
          let hyps = trunc_named_context nc_len hyps in
-         let hyps = EConstr.Unsafe.to_named_context hyps in
-         let concl = EConstr.Unsafe.to_constr ev.evar_concl in
-         let evtyp, deps, transp = etype_of_evar l hyps concl in
+         let evtyp, deps, transp = etype_of_evar evm l hyps ev.evar_concl in
 	 let evtyp, hyps, chop =
 	   match chop_product fs evtyp with
 	   | Some t -> t, trunc_named_context fs hyps, fs
@@ -237,9 +235,9 @@ let eterm_obligations env name evm fs ?status t ty =
       evn []
   in
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
-    subst_evar_constr evts 0 mkVar t 
+    subst_evar_constr evm evts 0 EConstr.mkVar t
   in
-  let ty, _, _ = subst_evar_constr evts 0 mkVar ty in
+  let ty, _, _ = subst_evar_constr evm evts 0 EConstr.mkVar ty in
   let evars = 
     List.map (fun (ev, info) ->
       let { ev_name = (_, name); ev_status = force_status, status;
@@ -252,7 +250,7 @@ let eterm_obligations env name evm fs ?status t ty =
       in name, typ, src, (force_status, status), deps, tac) evts
   in
   let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
-  let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
+  let evmap f c = pi1 (subst_evar_constr evm evts 0 f c) in
     Array.of_list (List.rev evars), (evnames, evmap), t', ty
 
 let hide_obligation () =
