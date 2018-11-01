@@ -99,7 +99,7 @@ let check_mutuality env evd isfix fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
-      (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env evd id' (EConstr.of_constr def)) names))
+      (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env evd id' def) names))
       fixl in
   let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
@@ -227,25 +227,28 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   (* Instantiate evars and check all are resolved *)
   let sigma = solve_unif_constraints_with_heuristics env_rec sigma in
   let sigma = Evd.minimize_universes sigma in
-  (* XXX: We still have evars here in Program *)
-  let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr ~abort_on_undefined_evars:false sigma) c) fixdefs in
-  let fixtypes = List.map EConstr.(to_constr sigma) fixtypes in
   let fixctxs = List.map (fun (_,ctx) -> ctx) fixctxs in
 
   (* Build the fix declaration block *)
   (env,rec_sign,decl,sigma), (fixnames,fixdefs,fixtypes), List.combine3 fixctxs fiximps fixannots
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
-  check_evars_are_solved env evd (Evd.from_env env);
   if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env evd isfix (List.combine fixnames fixdefs)
   end
 
+let ground_fixpoint env evd (fixnames,fixdefs,fixtypes) =
+  check_evars_are_solved env evd (Evd.from_env env);
+  let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
+  let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
+  Evd.evar_universe_context evd, (fixnames,fixdefs,fixtypes)
+
 let interp_fixpoint ~cofix l ntns =
   let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l ntns in
   check_recursive true env evd fix;
-  (fix,pl,Evd.evar_universe_context evd,info)
+  let uctx,fix = ground_fixpoint env evd fix in
+  (fix,pl,uctx,info)
 
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
