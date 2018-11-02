@@ -884,8 +884,6 @@ let explain_not_match_error = function
     let status b = if b then str"polymorphic" else str"monomorphic" in
       str "a " ++ status b ++ str" declaration was expected, but a " ++ 
 	status (not b) ++ str" declaration was found"
-  | IncompatibleInstances -> 
-    str"polymorphic universe instances do not match"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
       Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
@@ -894,11 +892,19 @@ let explain_not_match_error = function
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
       str "compared to " ++ spc () ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
-  | IncompatibleConstraints cst ->
-    str " the expected (polymorphic) constraints do not imply " ++
-      let cst = Univ.UContext.constraints (Univ.AUContext.repr cst) in
-      (** FIXME: provide a proper naming for the bound variables *)
-      quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
+  | IncompatibleConstraints { got; expect } ->
+      let open Univ in
+    (** FIXME: provide a proper naming for the bound variables *)
+    let pr_auctx auctx =
+      let uctx = AUContext.repr auctx in
+      Printer.pr_universe_instance_constraints Evd.empty
+        (UContext.instance uctx)
+        (UContext.constraints uctx)
+    in
+    str "incompatible polymorphic binders: got" ++ spc () ++ h 0 (pr_auctx got) ++ spc() ++
+    str "but expected" ++ spc() ++ h 0 (pr_auctx expect) ++
+    (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
+       spc() ++ str "(incompatible constraints)")
 
 let explain_signature_mismatch l spec why =
   str "Signature components for label " ++ Label.print l ++
