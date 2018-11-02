@@ -10,7 +10,7 @@
 
 open Declarations
 open Entries
-open Opaqueproof
+open Cooking
 
 val process_inductive :
   Lib.abstr_info -> work_list -> mutual_inductive_body -> mutual_inductive_entry

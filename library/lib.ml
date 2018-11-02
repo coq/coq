@@ -419,7 +419,7 @@ type secentry =
   | Context of Univ.ContextSet.t
 
 let sectab =
-  Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
+  Summary.ref ([] : (secentry list * Cooking.work_list * abstr_list) list)
     ~name:"section-context"
 
 let add_section () =

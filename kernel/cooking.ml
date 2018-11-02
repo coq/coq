@@ -27,6 +27,13 @@ module RelDecl = Context.Rel.Declaration
 
 (*s Cooking the constants. *)
 
+type work_list = (Instance.t * Id.t array) Cmap.t *
+  (Instance.t * Id.t array) Mindmap.t
+
+type cooking_info = {
+  modlist : work_list;
+  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
+
 type my_global_reference =
   | ConstRef of Constant.t
   | IndRef of inductive
@@ -151,7 +158,7 @@ let abstract_constant_body c (hyps, subst) =
   let c = Vars.subst_vars subst c in
   it_mkLambda_or_LetIn c hyps
 
-type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
+type recipe = { from : constant_body; info : cooking_info }
 type inline = bool
 
 type result = {
@@ -163,19 +170,18 @@ type result = {
   cook_context : Constr.named_context option;
 }
 
-let on_body ml hy f = function
+let on_body f = function
   | Undef _ as x -> x
   | Def cs -> Def (Mod_subst.from_val (f (Mod_subst.force_constr cs)))
   | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
-                 { Opaqueproof.modlist = ml; abstract = hy } o)
+    OpaqueDef (Opaqueproof.map_direct_opaque (on_fst f) o)
 
 let expmod_constr_subst cache modlist subst c =
   let subst = Univ.make_instance_subst subst in
   let c = expmod_constr cache modlist c in
     Vars.subst_univs_level_constr subst c
 
-let cook_constr { Opaqueproof.modlist ; abstract = (vars, subst, _) } c =
+let cook_constr { modlist ; abstract = (vars, subst, _) } c =
   let cache = RefTable.create 13 in
   let expmod = expmod_constr_subst cache modlist subst in
   let hyps = Context.Named.map expmod vars in
@@ -210,7 +216,7 @@ let lift_univs cb subst auctx0 =
       subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
 let cook_constant ~hcons { from = cb; info } =
-  let { Opaqueproof.modlist; abstract } = info in
+  let { modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let usubst, univs = lift_univs cb usubst abs_ctx in
@@ -221,10 +227,7 @@ let cook_constant ~hcons { from = cb; info } =
     let c = abstract_constant_body (expmod c) hyps in
     if hcons then Constr.hcons c else c
   in
-  let body = on_body modlist (hyps0, usubst, abs_ctx)
-    map
-    cb.const_body
-  in
+  let body = on_body map cb.const_body in
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
       List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))

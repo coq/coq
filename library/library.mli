@@ -31,7 +31,7 @@ type seg_sum
 type seg_lib
 type seg_univ = (* cst, all_cst, finished? *)
   Univ.ContextSet.t Future.computation array * Univ.ContextSet.t * bool
-type seg_discharge = Opaqueproof.cooking_info list array
+type seg_discharge = Cooking.cooking_info list array
 type seg_proofs = Constr.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also

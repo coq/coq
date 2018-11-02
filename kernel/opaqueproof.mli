@@ -45,20 +45,7 @@ val get_constraints :
 
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
-
-type work_list = (Univ.Instance.t * Id.t array) Cmap.t * 
-  (Univ.Instance.t * Id.t array) Mindmap.t
-
-type cooking_info = { 
-  modlist : work_list; 
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
-
-(* The type has two caveats:
-   1) cook_constr is defined after
-   2) we have to store the input in the [opaque] in order to be able to
-      discharge it when turning a .vi into a .vo *)
-val discharge_direct_opaque :
-  cook_constr:(constr -> constr) -> cooking_info -> opaque -> opaque
+val map_direct_opaque : (constr * Univ.ContextSet.t -> constr * Univ.ContextSet.t) -> opaque -> opaque
 
 val uuid_opaque : opaquetab -> opaque -> Future.UUID.t option
 val join_opaque : opaquetab -> opaque -> unit
@@ -66,7 +53,6 @@ val join_opaque : opaquetab -> opaque -> unit
 val dump : opaquetab ->
   Constr.t Future.computation array *
   Univ.ContextSet.t Future.computation array *
-  cooking_info list array *
   int Future.UUIDMap.t
 
 (** When stored indirectly, opaque terms are indexed by their library

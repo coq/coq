@@ -13,7 +13,14 @@ open Declarations
 
 (** {6 Cooking the constants. } *)
 
-type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
+type work_list = (Univ.Instance.t * Names.Id.t array) Names.Cmap.t *
+  (Univ.Instance.t * Names.Id.t array) Names.Mindmap.t
+
+type cooking_info = {
+  modlist : work_list;
+  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
+
+type recipe = { from : constant_body; info : cooking_info }
 
 type inline = bool
 
@@ -27,9 +34,8 @@ type result = {
 }
 
 val cook_constant : hcons:bool -> recipe -> result
-val cook_constr : Opaqueproof.cooking_info -> constr -> constr
+val cook_constr : cooking_info -> constr -> constr
 
 (** {6 Utility functions used in module [Discharge]. } *)
 
-val expmod_constr : Opaqueproof.work_list -> constr -> constr
-
+val expmod_constr : work_list -> constr -> constr

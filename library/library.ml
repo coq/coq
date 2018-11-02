@@ -396,7 +396,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t Future.computation array * Univ.ContextSet.t * bool
-type seg_discharge = Opaqueproof.cooking_info list array
+type seg_discharge = Cooking.cooking_info list array
 type seg_proofs = Constr.constr Future.computation array
 
 let mk_library sd md digests =
@@ -615,7 +615,7 @@ let error_recursively_dependent_library dir =
 
 let save_library_to dir f otab =
   let cenv, seg, ast = Declaremods.end_library dir in
-  let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
+  let opaque_table, univ_table, f2t_map = Opaqueproof.dump otab in
   let is_done_or_todo i x = Future.is_val x in
   Array.iteri (fun i x ->
     if not(is_done_or_todo i x) then CErrors.user_err ~hdr:"library"

@@ -93,7 +93,7 @@ let discharge_constant ((sp, kn), obj) =
   let modlist = replacement_context () in
   let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
-  let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
+  let new_decl = GlobalRecipe{ from; info = { modlist; abstract}} in
   Some { obj with cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)

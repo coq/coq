@@ -183,7 +183,7 @@ val add_section_constant : Decl_kinds.polymorphic ->
   Constant.t -> Constr.named_context -> unit
 val add_section_kn : Decl_kinds.polymorphic ->
   MutInd.t -> Constr.named_context -> unit
-val replacement_context : unit -> Opaqueproof.work_list
+val replacement_context : unit -> Cooking.work_list
 
 val is_polymorphic_univ : Univ.Level.t -> bool
 
