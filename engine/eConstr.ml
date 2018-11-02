@@ -99,6 +99,14 @@ let isFix sigma c = match kind sigma c with Fix _ -> true | _ -> false
 let isCoFix sigma c = match kind sigma c with CoFix _ -> true | _ -> false
 let isCase sigma c = match kind sigma c with Case _ -> true | _ -> false
 let isProj sigma c = match kind sigma c with Proj _ -> true | _ -> false
+
+let rec isType sigma c = match kind sigma c with
+  | Sort s -> (match ESorts.kind sigma s with
+      | Sorts.Type _ -> true
+      | _ -> false )
+  | Cast (c,_,_) -> isType sigma c
+  | _ -> false
+
 let isVarId sigma id c =
   match kind sigma c with Var id' -> Id.equal id id' | _ -> false
 let isRelN sigma n c =
