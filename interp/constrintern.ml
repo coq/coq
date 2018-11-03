@@ -737,7 +737,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
           try
             let gc = intern nenv c in
-            Id.Map.add id (gc, Some c) map
+            Id.Map.add id (gc, None) map
           with Nametab.GlobalizationError _ -> map
         in
         let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
@@ -2051,15 +2051,22 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           let (ltacvars, ntnvars) = lvar in
           (* Preventively declare notation variables in ltac as non-bindings *)
           Id.Map.iter (fun x (used_as_binder,_,_) -> used_as_binder := false) ntnvars;
-          let ntnvars = Id.Map.domain ntnvars in
           let extra = ltacvars.ltac_extra in
+          (* We inform ltac that the interning vars and the notation vars are bound *)
+          (* but we could instead rely on the "intern_sign" *)
           let lvars = Id.Set.union ltacvars.ltac_bound ltacvars.ltac_vars in
-          let lvars = Id.Set.union lvars ntnvars in
+          let lvars = Id.Set.union lvars (Id.Map.domain ntnvars) in
           let ltacvars = Id.Set.union lvars env.ids in
+          (* Propagating enough information for mutual interning with tac-in-term *)
+          let intern_sign = {
+            Genintern.intern_ids = env.ids;
+            Genintern.notation_variable_status = ntnvars
+          } in
           let ist = {
             Genintern.genv = globalenv;
             ltacvars;
             extra;
+            intern_sign;
           } in
           let (_, glb) = Genintern.generic_intern ist gen in
           Some glb
@@ -2344,16 +2351,23 @@ let intern_constr_pattern env sigma ?(as_type=false) ?(ltacvars=empty_ltac_sign)
             ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr c
 
+let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
+      { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
+  let tmp_scope = scope_of_type_kind sigma kind in
+  let impls = empty_internalization_env in
+  internalize env {ids; unb = false; tmp_scope; scopes = []; impls}
+    pattern_mode (ltacvars, vl) c
+
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
+  let ids = extract_ids env in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = Id.Map.map (fun typ -> (ref false, ref None, typ)) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
-  let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
-						tmp_scope = None; scopes = []; impls = impls}
+  let c = internalize env {ids; unb = false; tmp_scope = None; scopes = []; impls}
     false (empty_ltac_sign, vl) a in
+  (* Splits variables into those that are binding, bound, or both *)
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a, reversible = notation_constr_of_glob_constr nenv c in
-  (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
   let unused = match reversible with NonInjective ids -> ids | _ -> [] in

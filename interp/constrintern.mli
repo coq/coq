@@ -185,6 +185,13 @@ val interp_notation_constr : env -> ?impls:internalization_env ->
   notation_interp_env -> constr_expr ->
   (bool * subscopes) Id.Map.t * notation_constr * reversibility_status
 
+(** Idem but to glob_constr (weaker check of binders) *)
+
+val intern_core : typing_constraint ->
+  env -> evar_map -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
+  Genintern.intern_variable_status -> constr_expr ->
+  glob_constr
+
 (** Globalization options *)
 val parsing_explicit : bool ref
 
