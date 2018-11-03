@@ -7,6 +7,7 @@ Ind_tables
 Eqschemes
 Elimschemes
 Tactics
+Abstract
 Elim
 Equality
 Contradiction

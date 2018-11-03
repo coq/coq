@@ -2028,7 +2028,7 @@ end = struct (* {{{ *)
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr_env env sigma pt) ++ spc () ++
               str"uc=" ++ Termops.pr_evar_universe_context uc));
-            (if abstract then Tactics.tclABSTRACT None else (fun x -> x))
+            (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
               (V82.tactic (Refiner.tclPUSHEVARUNIVCONTEXT uc) <*>
               Tactics.exact_no_check (EConstr.of_constr pt))
           | None ->
