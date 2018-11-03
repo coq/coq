@@ -34,9 +34,38 @@ let push_info,pop_info,clear_info =
   (fun () -> decr size; status_context#pop ()),
   (fun () -> for _i = 1 to !size do status_context#pop () done; size := 0)
 
+type 'a mlist = Nil | Cons of { hd : 'a ; mutable tl : 'a mlist }
+
+let enqueue a x =
+  let rec aux x = match x with
+    | Nil -> assert false
+    | Cons p ->
+      match p.tl with
+      | Nil -> p.tl <- Cons { hd = a ; tl = Nil }
+      | _ -> aux p.tl in
+  match !x with
+  | Nil -> x := Cons { hd = a ; tl = Nil }
+  | _ -> aux !x
+
+let pop = function
+  | Cons p -> p.tl
+  | Nil -> assert false
+
 let flash_info =
+  let queue = ref Nil in
   let flash_context = status#new_context ~name:"Flash" in
-    (fun ?(delay=5000) s -> flash_context#flash ~delay s)
+  let rec process () = match !queue with
+    | Cons { hd = (delay,text) } ->
+       let msg = flash_context#push text in
+       ignore (Glib.Timeout.add ~ms:delay ~callback:(fun () ->
+                   flash_context#remove msg;
+                   queue := pop !queue;
+                   process (); false))
+    | Nil -> () in
+  fun ?(delay=5000) text ->
+    let processing = !queue <> Nil in
+    enqueue (delay,text) queue;
+    if not processing then process ()
 
 (* Note: Setting the same attribute with two separate tags appears to use
 the first value applied and not the second.  I saw this trying to set the background
