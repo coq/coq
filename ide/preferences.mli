@@ -107,7 +107,7 @@ val user_queries : (string * string) list preference
 val diffs : string preference
 
 val save_pref : unit -> unit
-val load_pref : unit -> unit
+val load_pref : warn:(delay:int -> string -> unit) -> unit
 
 val configure : ?apply:(unit -> unit) -> GWindow.window -> unit
 

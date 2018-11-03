@@ -49,9 +49,7 @@ let catch_gtk_messages () =
 let () = catch_gtk_messages ()
 
 let load_prefs () =
-  try Preferences.load_pref ()
-  with e -> Ideutils.flash_info
-    ("Could not load preferences ("^Printexc.to_string e^").")
+  Preferences.load_pref ~warn:(fun ~delay -> Ideutils.flash_info ~delay)
 
 let () =
   load_prefs ();

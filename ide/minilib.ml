@@ -58,10 +58,16 @@ let coqide_data_dirs () =
   :: List.map coqify (Glib.get_system_data_dirs ())
   @ [Envars.datadir ()]
 
+let coqide_system_config_dirs () =
+  List.map coqify (Glib.get_system_config_dirs ())
+
+let coqide_default_config_dir () =
+  Envars.configdir ()
+
 let coqide_config_dirs () =
-  coqide_config_home ()
-  :: List.map coqify (Glib.get_system_config_dirs ())
-  @ [Envars.configdir ()]
+  coqide_config_home () ::
+  coqide_system_config_dirs () @
+  [coqide_default_config_dir ()]
 
 let is_prefix_of pre s =
   let i = ref 0 in
