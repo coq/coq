@@ -262,6 +262,9 @@ val get_typeclass_evars : evar_map -> Evar.Set.t
 val is_typeclass_evar : evar_map -> Evar.t -> bool
 (** Is the evar declared resolvable for typeclass resolution *)
 
+val get_obligation_evars : evar_map -> Evar.Set.t
+(** The set of obligation evars *)
+
 val set_obligation_evar : evar_map -> Evar.t -> evar_map
 (** Declare an evar as an obligation *)
 
