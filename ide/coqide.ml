@@ -1016,7 +1016,7 @@ let build_ui () =
 
   menu edit_menu [
     item "Edit" ~label:"_Edit";
-    item "Undo" ~accel:"<Ctrl>u" ~stock:`UNDO
+    item "Undo" ~accel:"<Primary>u" ~stock:`UNDO
       ~callback:(cb_on_current_term (fun t -> t.script#undo ()));
     item "Redo" ~stock:`REDO
       ~callback:(cb_on_current_term (fun t -> t.script#redo ()));
@@ -1035,7 +1035,7 @@ let build_ui () =
       ~callback:(cb_on_current_term (fun t -> t.finder#find_backward ()));
     item "External editor" ~label:"External editor" ~stock:`EDIT
       ~callback:(External.editor ~parent:w);
-    item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
+    item "Preferences" ~accel:"<Primary>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
 	  try Preferences.configure ~apply:refresh_notebook_pos w
@@ -1053,19 +1053,19 @@ let build_ui () =
     item "Next tab" ~label:"_Next tab" ~accel:"<Alt>Right"
       ~stock:`GO_FORWARD
       ~callback:(fun _ -> notebook#next_page ());
-    item "Zoom in" ~label:"_Zoom in" ~accel:("<Control>plus")
+    item "Zoom in" ~label:"_Zoom in" ~accel:("<Primary>plus")
         ~stock:`ZOOM_IN ~callback:(fun _ ->
           let ft = Pango.Font.from_string text_font#get in
           Pango.Font.set_size ft (Pango.Font.get_size ft + Pango.scale);
           text_font#set (Pango.Font.to_string ft);
           save_pref ());
-    item "Zoom out" ~label:"_Zoom out" ~accel:("<Control>minus")
+    item "Zoom out" ~label:"_Zoom out" ~accel:("<Primary>minus")
         ~stock:`ZOOM_OUT ~callback:(fun _ ->
           let ft = Pango.Font.from_string text_font#get in
           Pango.Font.set_size ft (Pango.Font.get_size ft - Pango.scale);
           text_font#set (Pango.Font.to_string ft);
           save_pref ());
-    item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
+    item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Primary>0")
         ~stock:`ZOOM_FIT ~callback:(cb_on_current_term MiscMenu.zoom_fit);
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
       ~active:(show_toolbar#get)
