@@ -1247,7 +1247,6 @@ let build_ui () =
   let () = refresh_notebook_pos () in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let () = lower_hbox#pack ~expand:true status#coerce in
-  let () = push_info ("Ready"^ if microPG#get then ", [μPG]" else "")  in
 
   (* Location display *)
   let l = GMisc.label
