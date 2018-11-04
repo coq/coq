@@ -55,14 +55,13 @@ let rec print_symbol ppf =
   | Snterml (e, l) ->
       fprintf ppf "%s%s@ LEVEL@ %a" e.ename (if e.elocal then "*" else "")
         print_str l
-  | Snterm _ | Snext | Sself | Scut | Stoken _ | Stree _ as s ->
+  | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s
 and print_symbol1 ppf =
   function
   | Snterm e -> fprintf ppf "%s%s" e.ename (if e.elocal then "*" else "")
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
-  | Scut -> pp_print_string ppf "/"
   | Stoken ("", s) -> print_str ppf s
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
@@ -410,8 +409,6 @@ let rec parser_of_tree entry nlevn alevn =
   | Node {node = Sself; son = LocAct (act, _); brother = DeadEnd} ->
       (fun (strm__ : _ Stream.t) ->
          let a = entry.estart alevn strm__ in app act a)
-  | Node {node = Scut; son = son; brother = _} ->
-      parser_of_tree entry nlevn alevn son
   | Node {node = Sself; son = LocAct (act, _); brother = bro} ->
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ Stream.t) ->
@@ -651,7 +648,6 @@ and parser_of_symbol entry nlevn =
       (fun (strm__ : _ Stream.t) -> e.estart (level_number e l) strm__)
   | Sself -> (fun (strm__ : _ Stream.t) -> entry.estart 0 strm__)
   | Snext -> (fun (strm__ : _ Stream.t) -> entry.estart nlevn strm__)
-  | Scut -> (fun (strm__ : _ Stream.t) -> Obj.repr ())
   | Stoken tok -> parser_of_token entry tok
 and parser_of_token entry tok =
   let f = entry.egram.glexer.Plexing.tok_match tok in
@@ -869,7 +865,7 @@ let find_entry e s =
     | Slist1sep (s, _, _) -> find_symbol s
     | Sopt s -> find_symbol s
     | Stree t -> find_tree t
-    | Sself | Snext | Scut | Stoken _ -> None
+    | Sself | Snext | Stoken _ -> None
   and find_tree =
     function
       Node {node = s; brother = bro; son = son} ->
@@ -996,7 +992,6 @@ module type S =
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
         ('self, 'b -> 'a, 'r) ty_rule
-    val r_cut : ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
     val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
@@ -1078,7 +1073,6 @@ module GMake (L : GLexerType) =
     let s_rules (t : Obj.t ty_production list) = Gramext.srules (Obj.magic t)
     let r_stop = []
     let r_next r s = r @ [s]
-    let r_cut r = r @ [Scut]
     let production
         (p : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f) : 'a ty_production =
       Obj.magic p

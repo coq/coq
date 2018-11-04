@@ -36,7 +36,6 @@ and 'te g_symbol =
   | Sopt of 'te g_symbol
   | Sself
   | Snext
-  | Scut
   | Stoken of Plexing.pattern
   | Stree of 'te g_tree
 and g_action = Obj.t
@@ -65,7 +64,7 @@ let rec derive_eps =
   | Sopt _ -> true
   | Stree t -> tree_derive_eps t
   | Slist1 _ | Slist1sep (_, _, _) | Snterm _ |
-    Snterml (_, _) | Snext | Sself | Scut | Stoken _ ->
+    Snterml (_, _) | Snext | Sself | Stoken _ ->
       false
 and tree_derive_eps =
   function
@@ -125,9 +124,6 @@ let insert_tree entry_name gsymbols action tree =
         if eq_symbol s s1 then
           let t = Node {node = s1; son = insert sl son; brother = bro} in
           Some t
-        else if s = Scut then
-          try_insert s sl (Node {node = s; son = tree; brother = DeadEnd})
-        else if s1 = Scut then try_insert s1 (s :: sl) tree
         else if is_before s1 s || derive_eps s && not (derive_eps s1) then
           let bro =
             match try_insert s sl bro with
@@ -179,7 +175,7 @@ and token_exists_in_symbol f =
   | Sopt sy -> token_exists_in_symbol f sy
   | Stoken tok -> f tok
   | Stree t -> token_exists_in_tree f t
-  | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> false
+  | Snterm _ | Snterml (_, _) | Snext | Sself -> false
 
 let insert_level entry_name e1 symbols action slev =
   match e1 with
@@ -310,7 +306,7 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | Snext | Sself | Scut | Stoken _ -> ()
+  | Snext | Sself | Stoken _ -> ()
 and tree_check_gram entry =
   function
     Node {node = n; brother = bro; son = son} ->
@@ -344,7 +340,7 @@ let insert_tokens gram symbols =
             Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
         in
         incr r
-    | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> ()
+    | Snterm _ | Snterml (_, _) | Snext | Sself -> ()
   and tinsert =
     function
       Node {node = s; brother = bro; son = son} ->
@@ -468,7 +464,7 @@ let rec decr_keyw_use gram =
   | Slist1sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Sopt s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | Sself | Snext | Scut | Snterm _ | Snterml (_, _) -> ()
+  | Sself | Snext | Snterm _ | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree gram =
   function
     DeadEnd | LocAct (_, _) -> ()
