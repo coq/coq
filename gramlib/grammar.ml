@@ -41,7 +41,6 @@ let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 
 let rec print_symbol ppf =
   function
-    Sfacto s -> print_symbol ppf s
   | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep (s, t, osep) ->
       fprintf ppf "LIST0 %a SEP %a%s" print_symbol1 s print_symbol1 t
@@ -61,7 +60,6 @@ let rec print_symbol ppf =
       print_symbol1 ppf s
 and print_symbol1 ppf =
   function
-    Sfacto s -> print_symbol1 ppf s
   | Snterm e -> fprintf ppf "%s%s" e.ename (if e.elocal then "*" else "")
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
@@ -150,7 +148,6 @@ let rec get_token_list entry rev_tokl last_tok tree =
 
 let rec name_of_symbol_failed entry =
   function
-    Sfacto s -> name_of_symbol_failed entry s
   | Slist0 s -> name_of_symbol_failed entry s
   | Slist0sep (s, _, _) -> name_of_symbol_failed entry s
   | Slist1 s -> name_of_symbol_failed entry s
@@ -538,7 +535,6 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
         let a = ps strm__ in let act = p1 strm__ in app act a
 and parser_of_symbol entry nlevn =
   function
-    Sfacto s -> parser_of_symbol entry nlevn s
   | Slist0 s ->
       let ps = call_and_push (parser_of_symbol entry nlevn s) in
       let rec loop al (strm__ : _ Stream.t) =
@@ -873,7 +869,6 @@ let find_entry e s =
         | x -> x
   and find_symbol =
     function
-      Sfacto s -> find_symbol s
     | Snterm e -> if e.ename = s then Some e else None
     | Snterml (e, _) -> if e.ename = s then Some e else None
     | Slist0 s -> find_symbol s
@@ -991,7 +986,6 @@ module type S =
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
     type 'a ty_production
-    val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
     val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
     val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
     val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
@@ -1081,7 +1075,6 @@ module GMake (L : GLexerType) =
     type ('self, 'a) ty_symbol = te Gramext.g_symbol
     type ('self, 'f, 'r) ty_rule = ('self, Obj.t) ty_symbol list
     type 'a ty_production = ('a, Obj.t, Obj.t) ty_rule * Gramext.g_action
-    let s_facto s = Sfacto s
     let s_nterm e = Snterm e
     let s_nterml e l = Snterml (e, l)
     let s_list0 s = Slist0 s

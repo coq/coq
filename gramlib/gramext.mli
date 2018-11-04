@@ -25,7 +25,6 @@ and 'te g_level =
     lprefix : 'te g_tree }
 and g_assoc = NonA | RightA | LeftA
 and 'te g_symbol =
-    Sfacto of 'te g_symbol
   | Snterm of 'te g_entry
   | Snterml of 'te g_entry * string
   | Slist0 of 'te g_symbol

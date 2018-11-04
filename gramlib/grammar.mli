@@ -112,7 +112,6 @@ module type S =
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
     type 'a ty_production
-    val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
     val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
     val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
     val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
