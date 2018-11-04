@@ -50,7 +50,6 @@ let rec print_symbol ppf =
       fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
         (if osep then " OPT_SEP" else "")
   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Sflag s -> fprintf ppf "FLAG %a" print_symbol1 s
   | Stoken (con, prm) when con <> "" && prm <> "" ->
       fprintf ppf "%s@ %a" con print_str prm
   | Snterml (e, l) ->
@@ -68,7 +67,7 @@ and print_symbol1 ppf =
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
   | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
-    Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Sflag _ | Stoken _ as s ->
+    Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Stoken _ as s ->
       fprintf ppf "(%a)" print_symbol s
 and print_rule ppf symbols =
   fprintf ppf "@[<hov 0>";
@@ -153,7 +152,6 @@ let rec name_of_symbol_failed entry =
   | Slist1 s -> name_of_symbol_failed entry s
   | Slist1sep (s, _, _) -> name_of_symbol_failed entry s
   | Sopt s -> name_of_symbol_failed entry s
-  | Sflag s -> name_of_symbol_failed entry s
   | Stree t -> name_of_tree_failed entry t
   | s -> name_of_symbol entry s
 and name_of_tree_failed entry =
@@ -293,7 +291,7 @@ let tree_failed entry prev_symb_result prev_symb tree =
             let txt1 = name_of_symbol_failed entry sep in
             txt1 ^ " or " ^ txt ^ " expected"
         end
-    | Sopt _ | Sflag _ | Stree _ -> txt ^ " expected"
+    | Sopt _ | Stree _ -> txt ^ " expected"
     | _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
   in
   if !error_verbose then
@@ -641,12 +639,6 @@ and parser_of_symbol entry nlevn =
          match try Some (ps strm__) with Stream.Failure -> None with
            Some a -> Obj.repr (Some a)
          | _ -> Obj.repr None)
-  | Sflag s ->
-      let ps = parser_of_symbol entry nlevn s in
-      (fun (strm__ : _ Stream.t) ->
-         match try Some (ps strm__) with Stream.Failure -> None with
-           Some _ -> Obj.repr true
-         | _ -> Obj.repr false)
   | Stree t ->
       let pt = parser_of_tree entry 1 0 t in
       (fun (strm__ : _ Stream.t) ->
@@ -876,7 +868,6 @@ let find_entry e s =
     | Slist1 s -> find_symbol s
     | Slist1sep (s, _, _) -> find_symbol s
     | Sopt s -> find_symbol s
-    | Sflag s -> find_symbol s
     | Stree t -> find_tree t
     | Sself | Snext | Scut | Stoken _ -> None
   and find_tree =
@@ -997,7 +988,6 @@ module type S =
       ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
         ('self, 'a list) ty_symbol
     val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
-    val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol
@@ -1082,7 +1072,6 @@ module GMake (L : GLexerType) =
     let s_list1 s = Slist1 s
     let s_list1sep s sep b = Slist1sep (s, sep, b)
     let s_opt s = Sopt s
-    let s_flag s = Sflag s
     let s_self = Sself
     let s_next = Snext
     let s_token tok = Stoken tok

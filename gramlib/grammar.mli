@@ -123,7 +123,6 @@ module type S =
       ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
         ('self, 'a list) ty_symbol
     val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
-    val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol

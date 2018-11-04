@@ -34,7 +34,6 @@ and 'te g_symbol =
   | Slist1 of 'te g_symbol
   | Slist1sep of 'te g_symbol * 'te g_symbol * bool
   | Sopt of 'te g_symbol
-  | Sflag of 'te g_symbol
   | Sself
   | Snext
   | Scut
@@ -63,7 +62,7 @@ let rec derive_eps =
   function
     Slist0 _ -> true
   | Slist0sep (_, _, _) -> true
-  | Sopt _ | Sflag _ -> true
+  | Sopt _ -> true
   | Stree t -> tree_derive_eps t
   | Slist1 _ | Slist1sep (_, _, _) | Snterm _ |
     Snterml (_, _) | Snext | Sself | Scut | Stoken _ ->
@@ -85,7 +84,6 @@ let rec eq_symbol s1 s2 =
   | Slist1 s1, Slist1 s2 -> eq_symbol s1 s2
   | Slist1sep (s1, sep1, b1), Slist1sep (s2, sep2, b2) ->
       eq_symbol s1 s2 && eq_symbol sep1 sep2 && b1 = b2
-  | Sflag s1, Sflag s2 -> eq_symbol s1 s2
   | Sopt s1, Sopt s2 -> eq_symbol s1 s2
   | Stree _, Stree _ -> false
   | _ -> s1 = s2
@@ -179,7 +177,6 @@ and token_exists_in_symbol f =
   | Slist1sep (sy, sep, _) ->
       token_exists_in_symbol f sy || token_exists_in_symbol f sep
   | Sopt sy -> token_exists_in_symbol f sy
-  | Sflag sy -> token_exists_in_symbol f sy
   | Stoken tok -> f tok
   | Stree t -> token_exists_in_tree f t
   | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> false
@@ -312,7 +309,6 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
   | Slist0 s -> check_gram entry s
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
-  | Sflag s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
   | Snext | Sself | Scut | Stoken _ -> ()
 and tree_check_gram entry =
@@ -339,7 +335,6 @@ let insert_tokens gram symbols =
     | Slist0sep (s, t, _) -> insert s; insert t
     | Slist1sep (s, t, _) -> insert s; insert t
     | Sopt s -> insert s
-    | Sflag s -> insert s
     | Stree t -> tinsert t
     | Stoken ("ANY", _) -> ()
     | Stoken tok ->
@@ -472,7 +467,6 @@ let rec decr_keyw_use gram =
   | Slist0sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Slist1sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Sopt s -> decr_keyw_use gram s
-  | Sflag s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
   | Sself | Snext | Scut | Snterm _ | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree gram =

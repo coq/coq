@@ -32,7 +32,6 @@ and 'te g_symbol =
   | Slist1 of 'te g_symbol
   | Slist1sep of 'te g_symbol * 'te g_symbol * bool
   | Sopt of 'te g_symbol
-  | Sflag of 'te g_symbol
   | Sself
   | Snext
   | Scut
