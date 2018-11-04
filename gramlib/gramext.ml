@@ -41,7 +41,6 @@ and 'te g_symbol =
   | Scut
   | Stoken of Plexing.pattern
   | Stree of 'te g_tree
-  | Svala of string list * 'te g_symbol
 and g_action = Obj.t
 and 'te g_tree =
     Node of 'te g_node
@@ -68,7 +67,6 @@ let rec derive_eps =
   | Sopt _ | Sflag _ -> true
   | Sfacto s -> derive_eps s
   | Stree t -> tree_derive_eps t
-  | Svala (_, s) -> derive_eps s
   | Slist1 _ | Slist1sep (_, _, _) | Snterm _ |
     Snterml (_, _) | Snext | Sself | Scut | Stoken _ ->
       false
@@ -91,7 +89,6 @@ let rec eq_symbol s1 s2 =
       eq_symbol s1 s2 && eq_symbol sep1 sep2 && b1 = b2
   | Sflag s1, Sflag s2 -> eq_symbol s1 s2
   | Sopt s1, Sopt s2 -> eq_symbol s1 s2
-  | Svala (ls1, s1), Svala (ls2, s2) -> ls1 = ls2 && eq_symbol s1 s2
   | Stree _, Stree _ -> false
   | Sfacto (Stree t1), Sfacto (Stree t2) ->
       (* The only goal of the node 'Sfacto' is to allow tree comparison
@@ -111,16 +108,6 @@ let rec eq_symbol s1 s2 =
   | _ -> s1 = s2
 
 let is_before s1 s2 =
-  let s1 =
-    match s1 with
-      Svala (_, s) -> s
-    | _ -> s1
-  in
-  let s2 =
-    match s2 with
-      Svala (_, s) -> s
-    | _ -> s2
-  in
   match s1, s2 with
     Stoken ("ANY", _), _ -> false
   | _, Stoken ("ANY", _) -> true
@@ -213,7 +200,6 @@ and token_exists_in_symbol f =
   | Sflag sy -> token_exists_in_symbol f sy
   | Stoken tok -> f tok
   | Stree t -> token_exists_in_tree f t
-  | Svala (_, sy) -> token_exists_in_symbol f sy
   | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> false
 
 let insert_level entry_name e1 symbols action slev =
@@ -347,7 +333,6 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
   | Sopt s -> check_gram entry s
   | Sflag s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | Svala (_, s) -> check_gram entry s
   | Snext | Sself | Scut | Stoken _ -> ()
 and tree_check_gram entry =
   function
@@ -376,7 +361,6 @@ let insert_tokens gram symbols =
     | Sopt s -> insert s
     | Sflag s -> insert s
     | Stree t -> tinsert t
-    | Svala (_, s) -> insert s
     | Stoken ("ANY", _) -> ()
     | Stoken tok ->
         gram.glexer.Plexing.tok_using tok;
@@ -511,7 +495,6 @@ let rec decr_keyw_use gram =
   | Sopt s -> decr_keyw_use gram s
   | Sflag s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | Svala (_, s) -> decr_keyw_use gram s
   | Sself | Snext | Scut | Snterm _ | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree gram =
   function

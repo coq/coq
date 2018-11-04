@@ -108,13 +108,6 @@ val from_file : string -> t -> string * int * int * int
 
 (* pervasives *)
 
-type 'a vala =
-    VaAnt of string
-  | VaVal of 'a
-   (** Encloser of many abstract syntax tree nodes types, in "strict" mode.
-       This allow the system of antiquotations of abstract syntax tree
-       quotations to work when using the quotation kit [q_ast.cmo]. *)
-
 val call_with : 'a ref -> 'a -> ('b -> 'c) -> 'b -> 'c
    (** [Ploc.call_with r v f a] sets the reference [r] to the value [v],
        then call [f a], and resets [r] to its initial value. If [f a] raises

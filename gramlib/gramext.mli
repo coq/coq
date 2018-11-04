@@ -39,7 +39,6 @@ and 'te g_symbol =
   | Scut
   | Stoken of Plexing.pattern
   | Stree of 'te g_tree
-  | Svala of string list * 'te g_symbol
 and g_action = Obj.t
 and 'te g_tree =
     Node of 'te g_node
