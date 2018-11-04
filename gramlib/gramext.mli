@@ -26,7 +26,6 @@ and 'te g_level =
 and g_assoc = NonA | RightA | LeftA
 and 'te g_symbol =
     Sfacto of 'te g_symbol
-  | Smeta of string * 'te g_symbol list * Obj.t
   | Snterm of 'te g_entry
   | Snterml of 'te g_entry * string
   | Slist0 of 'te g_symbol

@@ -42,7 +42,6 @@ let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 let rec print_symbol ppf =
   function
     Sfacto s -> print_symbol ppf s
-  | Smeta (n, sl, _) -> print_meta ppf n sl
   | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep (s, t, osep) ->
       fprintf ppf "LIST0 %a SEP %a%s" print_symbol1 s print_symbol1 t
@@ -61,20 +60,6 @@ let rec print_symbol ppf =
         print_str l
   | Snterm _ | Snext | Sself | Scut | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s
-and print_meta ppf n sl =
-  let rec loop i =
-    function
-      [] -> ()
-    | s :: sl ->
-        let j =
-          try String.index_from n i ' ' with Not_found -> String.length n
-        in
-        fprintf ppf "%s %a" (String.sub n i (j - i)) print_symbol1 s;
-        if sl = [] then ()
-        else
-          begin fprintf ppf " "; loop (min (j + 1) (String.length n)) sl end
-  in
-  loop 0 sl
 and print_symbol1 ppf =
   function
     Sfacto s -> print_symbol1 ppf s
@@ -85,7 +70,7 @@ and print_symbol1 ppf =
   | Stoken ("", s) -> print_str ppf s
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
-  | Smeta (_, _, _) | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
+  | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
     Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Sflag _ | Stoken _ |
     Svala (_, _) as s ->
       fprintf ppf "(%a)" print_symbol s
@@ -178,7 +163,6 @@ let rec name_of_symbol_failed entry =
   | Sflag s -> name_of_symbol_failed entry s
   | Stree t -> name_of_tree_failed entry t
   | Svala (_, s) -> name_of_symbol_failed entry s
-  | Smeta (_, s :: _, _) -> name_of_symbol_failed entry s
   | s -> name_of_symbol entry s
 and name_of_tree_failed entry =
   function
@@ -593,12 +577,6 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
 and parser_of_symbol entry nlevn =
   function
     Sfacto s -> parser_of_symbol entry nlevn s
-  | Smeta (_, symbl, act) ->
-      let act = Obj.magic act entry symbl in
-      Obj.magic
-        (List.fold_left
-           (fun act symb -> Obj.magic act (parser_of_symbol entry nlevn symb))
-           act symbl)
   | Slist0 s ->
       let ps = call_and_push (parser_of_symbol entry nlevn s) in
       let rec loop al (strm__ : _ Stream.t) =
@@ -970,7 +948,6 @@ let find_entry e s =
       Sfacto s -> find_symbol s
     | Snterm e -> if e.ename = s then Some e else None
     | Snterml (e, _) -> if e.ename = s then Some e else None
-    | Smeta (_, sl, _) -> find_symbol_list sl
     | Slist0 s -> find_symbol s
     | Slist0sep (s, _, _) -> find_symbol s
     | Slist1 s -> find_symbol s
@@ -980,14 +957,6 @@ let find_entry e s =
     | Stree t -> find_tree t
     | Svala (_, s) -> find_symbol s
     | Sself | Snext | Scut | Stoken _ -> None
-  and find_symbol_list =
-    function
-      s :: sl ->
-        begin match find_symbol s with
-          None -> find_symbol_list sl
-        | x -> x
-        end
-    | [] -> None
   and find_tree =
     function
       Node {node = s; brother = bro; son = son} ->
