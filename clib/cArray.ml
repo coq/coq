@@ -35,6 +35,8 @@ sig
   val fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   val fold_right2 :
     ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
+  val fold_right3 :
+    ('a -> 'b -> 'c -> 'd -> 'd) -> 'a array -> 'b array -> 'c array -> 'd -> 'd
   val fold_left2 :
     ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left3 :
@@ -251,6 +253,16 @@ let fold_left2_i f a v1 v2 =
   in
   if Array.length v2 <> lv1 then invalid_arg "Array.fold_left2_i";
   fold a 0
+
+let fold_right3 f v1 v2 v3 a =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n=0 then a
+    else
+      let k = n-1 in
+      fold (f (uget v1 k) (uget v2 k) (uget v3 k) a) k in
+  if Array.length v2 <> lv1 || Array.length v3 <> lv1 then invalid_arg "Array.fold_right3";
+  fold a lv1
 
 let fold_left3 f a v1 v2 v3 =
   let lv1 = Array.length v1 in
