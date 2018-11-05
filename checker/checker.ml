@@ -395,5 +395,5 @@ let run senv =
 let start () =
   let senv = init() in
   let senv = run senv in
-  Check_stat.stats senv;
+  Check_stat.stats (Safe_typing.env_of_safe_env senv);
   exit 0
