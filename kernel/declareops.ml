@@ -19,6 +19,7 @@ module RelDecl = Context.Rel.Declaration
 
 let safe_flags oracle = {
   check_guarded = true;
+  check_positive = true;
   check_universes = true;
   conv_oracle = oracle;
   share_reduction = true;

@@ -63,6 +63,8 @@ type constant_universes =
 type typing_flags = {
   check_guarded : bool; (** If [false] then fixed points and co-fixed
                             points are assumed to be total. *)
+  check_positive : bool; (** If [false] then inductive types are assumed positive
+                               and co-inductive types are assumed productive. *)
   check_universes : bool; (** If [false] universe constraints are not checked *)
   conv_oracle : Conv_oracle.oracle; (** Unfolding strategies for conversion *)
   share_reduction : bool; (** Use by-need reduction algorithm *)

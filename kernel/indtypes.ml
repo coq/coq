@@ -973,7 +973,7 @@ let check_inductive env kn mie =
   (* First type-check the inductive definition *)
   let (env_ar, env_ar_par, paramsctxt, inds) = typecheck_inductive env mie in
   (* Then check positivity conditions *)
-  let chkpos = (Environ.typing_flags env).check_guarded in
+  let chkpos = (Environ.typing_flags env).check_positive in
   let (nmr,recargs) = check_positivity ~chkpos kn env_ar_par paramsctxt mie.mind_entry_finite inds in
   (* Build the inductive packets *)
     build_inductive env mie.mind_entry_private mie.mind_entry_universes
