@@ -38,10 +38,11 @@ Local Ltac simplif flags :=
       | id: (Coq.Init.Logic.iff _ _) |- _ => elim id; do 2 intro; clear id
       | id: (Coq.Init.Logic.not _) |- _ => red in id
       | id: ?X1 |- _ => is_disj flags X1; elim id; intro; clear id
-      | id0: (forall (_: ?X1), ?X2), id1: ?X1|- _ =>
+      | id0: (forall (_: ?X1), ?X2), id1: ?X3|- _ =>
     (* generalize (id0 id1); intro; clear id0 does not work
        (see Marco Maggiesi's BZ#301)
     so we instead use Assert and exact. *)
+    is_conv X1 X3;
     assert X2; [exact (id0 id1) | clear id0]
       | id: forall (_ : ?X1), ?X2|- _ =>
         is_unit_or_eq flags X1; cut X2;

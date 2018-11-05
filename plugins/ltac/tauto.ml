@@ -267,6 +267,10 @@ let warn_auto_with_star_tac _ _ =
       Proofview.tclUNIT()
     end
 
+let is_conv _ ist =
+  let x1 = assoc_var "X1" ist in
+  let x2 = assoc_var "X2" ist in
+  Tactics.convert x1 x2
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
@@ -289,3 +293,4 @@ let () = register_tauto_tactic reduction_not_iff "reduction_not_iff" []
 let () = register_tauto_tactic (with_flags tauto_uniform_unit_flags) "with_uniform_flags" ["f"]
 let () = register_tauto_tactic (with_flags tauto_power_flags) "with_power_flags" ["f"]
 let () = register_tauto_tactic warn_auto_with_star_tac "warn_auto_with_star" []
+let () = register_tauto_tactic is_conv "is_conv" ["X1"; "X2"]
