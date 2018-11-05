@@ -170,10 +170,9 @@ let declare_one_prenex_implicit locality f =
 }
 
 VERNAC COMMAND EXTEND Ssrpreneximplicits CLASSIFIED AS SIDEFF
-  | [ "Prenex" "Implicits" ne_global_list(fl) ]
+  | #[ locality = Attributes.locality; ] [ "Prenex" "Implicits" ne_global_list(fl) ]
   -> {
-         let open Vernacinterp in
-         let locality = Locality.make_section_locality atts.locality in
+         let locality = Locality.make_section_locality locality in
          List.iter (declare_one_prenex_implicit locality) fl;
      }
 END

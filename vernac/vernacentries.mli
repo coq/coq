@@ -37,18 +37,12 @@ val command_focus : unit Proof.focus_kind
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
 
-val universe_polymorphism_option_name : string list
-
-(** Elaborate a [atts] record out of a list of flags.
-    Also returns whether polymorphism is explicitly (un)set. *)
-val attributes_of_flags : Vernacexpr.vernac_flags -> Vernacinterp.atts -> bool option * Vernacinterp.atts
-
 (** {5 VERNAC EXTEND} *)
 
 type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:Vernacinterp.atts -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
   ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->

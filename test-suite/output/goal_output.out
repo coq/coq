@@ -1,7 +1,11 @@
-Nat.t = nat
+Monomorphic Nat.t = nat
      : Set
-Nat.t = nat
+
+Nat.t is not universe polymorphic
+Monomorphic Nat.t = nat
      : Set
+
+Nat.t is not universe polymorphic
 1 subgoal
   
   ============================

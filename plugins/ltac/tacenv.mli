@@ -12,7 +12,7 @@ open Names
 open Libnames
 open Tacexpr
 open Geninterp
-open Vernacinterp
+open Attributes
 
 (** This module centralizes the various ways of registering tactics. *)
 
@@ -33,7 +33,7 @@ type alias = KerName.t
 type alias_tactic =
   { alias_args: Id.t list;
     alias_body: glob_tactic_expr;
-    alias_deprecation: Vernacinterp.deprecation option;
+    alias_deprecation: deprecation option;
   }
 (** Contents of a tactic notation *)
 

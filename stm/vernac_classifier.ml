@@ -50,7 +50,7 @@ let idents_of_name : Names.Name.t -> Names.Id.t list =
 let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
 
 let options_affecting_stm_scheduling =
-  [ Vernacentries.universe_polymorphism_option_name;
+  [ Attributes.universe_polymorphism_option_name;
     stm_allow_nested_proofs_option_name ]
 
 let classify_vernac e =
@@ -192,16 +192,15 @@ let classify_vernac e =
         try Vernacentries.get_vernac_classifier s l
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
-  let rec static_control_classifier ~poly = function
+  let rec static_control_classifier = function
     | VernacExpr (f, e) ->
-      let _, atts = Vernacentries.attributes_of_flags f Vernacinterp.(mk_atts ~polymorphic:poly ()) in
-      let poly = atts.Vernacinterp.polymorphic in
+      let poly = Attributes.(parse_drop_extra polymorphic_nowarn f) in
       static_classifier ~poly e
-    | VernacTimeout (_,e) -> static_control_classifier ~poly e
+    | VernacTimeout (_,e) -> static_control_classifier e
     | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->
-       static_control_classifier ~poly e
+       static_control_classifier e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
-        (match static_control_classifier ~poly e with
+        (match static_control_classifier e with
         | ( VtQuery | VtProofStep _ | VtSideff _
           | VtProofMode _ | VtMeta), _ as x -> x
         | VtQed _, _ ->
@@ -209,7 +208,7 @@ let classify_vernac e =
             VtNow
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
   in
-  static_control_classifier ~poly:(Flags.is_universe_polymorphism ()) e
+  static_control_classifier e
 
 let classify_as_query = VtQuery, VtLater
 let classify_as_sideeff = VtSideff [], VtLater

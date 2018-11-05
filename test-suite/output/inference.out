@@ -1,9 +1,11 @@
-P = 
+Monomorphic P = 
 fun e : option L => match e with
                     | Some cl => Some cl
                     | None => None
                     end
      : option L -> option L
+
+P is not universe polymorphic
 fun n : nat => let y : T n := A n in ?t ?x : T n
      : forall n : nat, T n
 where

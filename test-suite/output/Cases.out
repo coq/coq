@@ -1,4 +1,4 @@
-t_rect = 
+Monomorphic t_rect = 
 fun (P : t -> Type) (f : let x := t in forall x0 : x, P x0 -> P (k x0)) =>
 fix F (t : t) : P t :=
   match t as t0 return (P t0) with
@@ -7,6 +7,7 @@ fix F (t : t) : P t :=
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
+t_rect is not universe polymorphic
 Argument scopes are [function_scope function_scope _]
      = fun d : TT => match d with
                      | {| f3 := b |} => b
@@ -16,7 +17,7 @@ Argument scopes are [function_scope function_scope _]
                      | {| f3 := b |} => b
                      end
      : TT -> 0 = 0
-proj = 
+Monomorphic proj = 
 fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
 match Nat.eq_dec x y with
 | left eqprf => match eqprf in (_ = z) return (P z) with
@@ -26,8 +27,9 @@ match Nat.eq_dec x y with
 end
      : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
 
+proj is not universe polymorphic
 Argument scopes are [nat_scope nat_scope function_scope _ _]
-foo = 
+Monomorphic foo = 
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with
   | nil => None
@@ -36,17 +38,21 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
   end
      : forall A : Type, list A -> option A
 
+foo is not universe polymorphic
 Argument scopes are [type_scope list_scope]
-uncast = 
+Monomorphic uncast = 
 fun (A : Type) (x : I A) => match x with
                             | x0 <: _ => x0
                             end
      : forall A : Type, I A -> A
 
+uncast is not universe polymorphic
 Argument scopes are [type_scope _]
-foo' = if A 0 then true else false
+Monomorphic foo' = if A 0 then true else false
      : bool
-f = 
+
+foo' is not universe polymorphic
+Monomorphic f = 
 fun H : B =>
 match H with
 | AC x =>
@@ -56,6 +62,8 @@ match H with
      else fun _ : P false => Logic.I) x
 end
      : B -> True
+
+f is not universe polymorphic
 The command has indeed failed with message:
 Non exhaustive pattern-matching: no clause found for pattern 
 gadtTy _ _
@@ -75,17 +83,22 @@ fun '(D n m p q) => n + m + p + q
      : J -> nat
 The command has indeed failed with message:
 The constructor D (in type J) expects 3 arguments.
-lem1 = 
+Monomorphic lem1 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
-lem2 = 
+
+lem1 is not universe polymorphic
+Monomorphic lem2 = 
 fun dd : bool => if dd as aa return (aa = aa) then eq_refl else eq_refl
      : forall k : bool, k = k
 
+lem2 is not universe polymorphic
 Argument scope is [bool_scope]
-lem3 = 
+Monomorphic lem3 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
+
+lem3 is not universe polymorphic
 1 subgoal
   
   x : nat

@@ -101,13 +101,9 @@ let _ =
 
 (* Util *)
 
-let define id internal ctx c t =
+let define ~poly id internal sigma c t =
   let f = declare_constant ~internal in
-  let univs =
-    if Flags.is_universe_polymorphism ()
-    then Polymorphic_const_entry (Evd.to_universe_context ctx)
-    else Monomorphic_const_entry (Evd.universe_context_set ctx)
-  in
+  let univs = Evd.const_univ_entry ~poly sigma in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
@@ -396,11 +392,17 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
     lnamedepindsort (Evd.from_env env0,[],None)
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma ~force_mutual lrecspec in
+  let poly =
+    (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
+       (force_mutual is about the generated schemes) *)
+    let _,_,ind,_ = List.hd lnamedepindsort in
+    Global.is_polymorphic (IndRef ind)
+  in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
     let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-    let cst = define fi UserIndividualRequest sigma proof_output (Some decltype) in
+    let cst = define ~poly fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
   in
   let _ = List.fold_right2 declare listdecl lrecnames [] in
@@ -457,10 +459,10 @@ let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.typ
 let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
-  let evdref = ref (Evd.from_env env) in
-  let defs = List.map (fun cst ->
-    let evd, c = Evd.fresh_constant_instance env !evdref cst in
-    evdref := evd; (c, Typeops.type_of_constant_in env c)) schemes in
+  let sigma = Evd.from_env env in
+  let sigma, defs = List.fold_left_map (fun sigma cst ->
+    let sigma, c = Evd.fresh_constant_instance env sigma cst in
+    sigma, (c, Typeops.type_of_constant_in env c)) sigma schemes in
   let find_inductive ty =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
@@ -478,7 +480,7 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Retyping.get_sort_family_of env !evdref (EConstr.of_constr t)
+      Retyping.get_sort_family_of env sigma (EConstr.of_constr t)
       == Sorts.InProp
     in
     List.for_all inprop defs
@@ -489,10 +491,9 @@ let build_combined_scheme env schemes =
     else (mk_coq_prod, mk_coq_pair)
   in
   (* Number of clauses, including the predicates quantification *)
-  let prods = nb_prod !evdref (EConstr.of_constr t) - (nargs + 1) in
-  let sigma, coqand  = mk_and !evdref in
+  let prods = nb_prod sigma (EConstr.of_constr t) - (nargs + 1) in
+  let sigma, coqand  = mk_and sigma in
   let sigma, coqconj = mk_conj sigma in
-  let () = evdref := sigma in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
     (fun (cst, t) ->
@@ -501,15 +502,15 @@ let build_combined_scheme env schemes =
   let concl_bod, concl_typ =
     fold_left'
       (fun (accb, acct) (cst, x) ->
-	mkApp (EConstr.to_constr !evdref coqconj, [| x; acct; cst; accb |]),
-	mkApp (EConstr.to_constr !evdref coqand, [| x; acct |])) concls
+        mkApp (EConstr.to_constr sigma coqconj, [| x; acct; cst; accb |]),
+        mkApp (EConstr.to_constr sigma coqand, [| x; acct |])) concls
   in
   let ctx, _ =
     list_split_rev_at prods
       (List.rev_map (fun (x, y) -> LocalAssum (x, y)) ctx) in
   let typ = List.fold_left (fun d c -> Term.mkProd_wo_LetIn c d) concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
-  let sigma = Typing.check env !evdref (EConstr.of_constr body) (EConstr.of_constr typ) in
+  let sigma = Typing.check env sigma (EConstr.of_constr body) (EConstr.of_constr typ) in
   (sigma, body, typ)
 
 let do_combined_scheme name schemes =
@@ -523,7 +524,14 @@ let do_combined_scheme name schemes =
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
   let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
-  ignore (define name.v UserIndividualRequest sigma proof_output (Some typ));
+  (* It is possible for the constants to have different universe
+     polymorphism from each other, however that is only when the user
+     manually defined at least one of them (as Scheme would pick the
+     polymorphism of the inductive block). In that case if they want
+     some other polymorphism they can also manually define the
+     combined scheme. *)
+  let poly = Global.is_polymorphic (ConstRef (List.hd csts)) in
+  ignore (define ~poly name.v UserIndividualRequest sigma proof_output (Some typ));
   fixpoint_message None [name.v]
 
 (**********************************************************************)

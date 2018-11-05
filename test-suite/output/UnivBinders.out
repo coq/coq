@@ -1,34 +1,37 @@
-NonCumulative Inductive Empty@{u} : Type@{u} :=  
-NonCumulative Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
+Polymorphic NonCumulative Inductive Empty@{u} : Type@{u} :=  
+Polymorphic NonCumulative Record PWrap (A : Type@{u}) : Type@{u} := pwrap
+  { punwrap : A }
 
 PWrap has primitive projections with eta conversion.
 For PWrap: Argument scope is [type_scope]
 For pwrap: Argument scopes are [type_scope _]
-punwrap@{u} = 
+Polymorphic punwrap@{u} = 
 fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
      : forall A : Type@{u}, PWrap@{u} A -> A
 (* u |=  *)
 
 punwrap is universe polymorphic
 Argument scopes are [type_scope _]
-NonCumulative Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
+Polymorphic NonCumulative Record RWrap (A : Type@{u}) : Type@{u} := rwrap
+  { runwrap : A }
 
 For RWrap: Argument scope is [type_scope]
 For rwrap: Argument scopes are [type_scope _]
-runwrap@{u} = 
+Polymorphic runwrap@{u} = 
 fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
      : forall A : Type@{u}, RWrap@{u} A -> A
 (* u |=  *)
 
 runwrap is universe polymorphic
 Argument scopes are [type_scope _]
-Wrap@{u} = fun A : Type@{u} => A
+Polymorphic Wrap@{u} = 
+fun A : Type@{u} => A
      : Type@{u} -> Type@{u}
 (* u |=  *)
 
 Wrap is universe polymorphic
 Argument scope is [type_scope]
-wrap@{u} = 
+Polymorphic wrap@{u} = 
 fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
      : forall A : Type@{u}, Wrap@{u} A -> A
 (* u |=  *)
@@ -36,13 +39,13 @@ fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
 wrap is universe polymorphic
 Arguments A, Wrap are implicit and maximally inserted
 Argument scopes are [type_scope _]
-bar@{u} = nat
+Polymorphic bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u
          *)
 
 bar is universe polymorphic
-foo@{u UnivBinders.17 v} = 
+Polymorphic foo@{u UnivBinders.17 v} = 
 Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
      : Type@{max(u+1,UnivBinders.17+1,v+1)}
 (* u UnivBinders.17 v |=  *)
@@ -75,25 +78,28 @@ mono
      : Type@{mono.u+1}
 The command has indeed failed with message:
 Universe u already exists.
-bobmorane = 
+Monomorphic bobmorane = 
 let tt := Type@{tt.v} in let ff := Type@{ff.v} in tt -> ff
      : Type@{max(tt.u,ff.u)}
+
+bobmorane is not universe polymorphic
 The command has indeed failed with message:
 Universe u already bound.
-foo@{E M N} = 
+Polymorphic foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
 
 foo is universe polymorphic
-foo@{u UnivBinders.17 v} = 
+Polymorphic foo@{u UnivBinders.17 v} = 
 Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
      : Type@{max(u+1,UnivBinders.17+1,v+1)}
 (* u UnivBinders.17 v |=  *)
 
 foo is universe polymorphic
-NonCumulative Inductive Empty@{E} : Type@{E} :=  
-NonCumulative Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
+Polymorphic NonCumulative Inductive Empty@{E} : Type@{E} :=  
+Polymorphic NonCumulative Record PWrap (A : Type@{E}) : Type@{E} := pwrap
+  { punwrap : A }
 
 PWrap has primitive projections with eta conversion.
 For PWrap: Argument scope is [type_scope]
@@ -119,45 +125,47 @@ Type@{bind_univs.mono.u}
 (* {bind_univs.mono.u} |=  *)
 
 bind_univs.mono is not universe polymorphic
-bind_univs.poly@{u} = Type@{u}
+Polymorphic bind_univs.poly@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
 
 bind_univs.poly is universe polymorphic
-insec@{v} = Type@{u} -> Type@{v}
+Polymorphic insec@{v} = 
+Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* v |=  *)
 
 insec is universe polymorphic
-NonCumulative Inductive insecind@{k} : Type@{k+1} :=
+Polymorphic NonCumulative Inductive insecind@{k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{k}
 
 For inseccstr: Argument scope is [type_scope]
-insec@{u v} = Type@{u} -> Type@{v}
+Polymorphic insec@{u v} = 
+Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
 
 insec is universe polymorphic
-NonCumulative Inductive insecind@{u k} : Type@{k+1} :=
+Polymorphic NonCumulative Inductive insecind@{u k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{u k}
 
 For inseccstr: Argument scope is [type_scope]
-inmod@{u} = Type@{u}
+Polymorphic inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
 
 inmod is universe polymorphic
-SomeMod.inmod@{u} = Type@{u}
+Polymorphic SomeMod.inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
 
 SomeMod.inmod is universe polymorphic
-inmod@{u} = Type@{u}
+Polymorphic inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
 
 inmod is universe polymorphic
-Applied.infunct@{u v} = 
+Polymorphic Applied.infunct@{u v} = 
 inmod@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)

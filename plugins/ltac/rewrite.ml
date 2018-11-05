@@ -43,6 +43,14 @@ module NamedDecl = Context.Named.Declaration
 
 (** Typeclass-based generalized rewriting. *)
 
+type rewrite_attributes = { polymorphic : bool; program : bool; global : bool }
+
+let rewrite_attributes =
+  let open Attributes.Notations in
+  Attributes.(polymorphic ++ program ++ locality) >>= fun ((polymorphic, program), locality) ->
+  let global = not (Locality.make_section_locality locality) in
+  Attributes.Notations.return { polymorphic; program; global }
+
 (** Constants used by the tactic. *)
 
 let classes_dirpath =
@@ -1776,67 +1784,65 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let anew_instance global binders instance fields =
-  let program_mode = Flags.is_program_mode () in
-  let poly = Flags.is_universe_polymorphism () in
-  new_instance ~program_mode poly
+let anew_instance atts binders instance fields =
+  let program_mode = atts.program in
+  new_instance ~program_mode atts.polymorphic
     binders instance (Some (true, CAst.make @@ CRecord (fields)))
-    ~global ~generalize:false ~refine:false Hints.empty_hint_info
+    ~global:atts.global ~generalize:false ~refine:false Hints.empty_hint_info
 
-let declare_instance_refl global binders a aeq n lemma =
+let declare_instance_refl atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
-  in anew_instance global binders instance
+  in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "reflexivity"),lemma)]
 
-let declare_instance_sym global binders a aeq n lemma =
+let declare_instance_sym atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
-  in anew_instance global binders instance
+  in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "symmetry"),lemma)]
 
-let declare_instance_trans global binders a aeq n lemma =
+let declare_instance_trans atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
-  in anew_instance global binders instance
+  in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "transitivity"),lemma)]
 
-let declare_relation ?locality ?(binders=[]) a aeq n refl symm trans =
+let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
-  let global = not (Locality.make_section_locality locality) in
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation"
-  in ignore(anew_instance global binders instance []);
+  in ignore(anew_instance atts binders instance []);
   match (refl,symm,trans) with
       (None, None, None) -> ()
     | (Some lemma1, None, None) ->
-	ignore (declare_instance_refl global binders a aeq n lemma1)
+        ignore (declare_instance_refl atts binders a aeq n lemma1)
     | (None, Some lemma2, None) ->
-	ignore (declare_instance_sym global binders a aeq n lemma2)
+        ignore (declare_instance_sym atts binders a aeq n lemma2)
     | (None, None, Some lemma3) ->
-	ignore (declare_instance_trans global binders a aeq n lemma3)
+        ignore (declare_instance_trans atts binders a aeq n lemma3)
     | (Some lemma1, Some lemma2, None) ->
-	ignore (declare_instance_refl global binders a aeq n lemma1);
-	ignore (declare_instance_sym global binders a aeq n lemma2)
+        ignore (declare_instance_refl atts binders a aeq n lemma1);
+        ignore (declare_instance_sym atts binders a aeq n lemma2)
     | (Some lemma1, None, Some lemma3) ->
-	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
-	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
+        let _lemma_refl = declare_instance_refl atts binders a aeq n lemma1 in
+        let _lemma_trans = declare_instance_trans atts binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder"
 	in ignore(
-	    anew_instance global binders instance
+            anew_instance atts binders instance
               [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
                (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)])
     | (None, Some lemma2, Some lemma3) ->
-	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
-	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
+        let _lemma_sym = declare_instance_sym atts binders a aeq n lemma2 in
+        let _lemma_trans = declare_instance_trans atts binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER"
 	in ignore(
-	    anew_instance global binders instance
+            anew_instance atts binders instance
               [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
                (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) ->
-	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
-	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
-	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
+        let _lemma_refl = declare_instance_refl atts binders a aeq n lemma1 in
+        let _lemma_sym = declare_instance_sym atts binders a aeq n lemma2 in
+        let _lemma_trans = declare_instance_trans atts binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
 	in ignore(
-	  anew_instance global binders instance
+          anew_instance atts binders instance
             [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
              (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
              (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)])
@@ -1935,15 +1941,15 @@ let warn_add_setoid_deprecated =
   CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
       Pp.(str "Add Setoid is deprecated, please use Add Parametric Relation."))
 
-let add_setoid global binders a aeq t n =
+let add_setoid atts binders a aeq t n =
   warn_add_setoid_deprecated ?loc:a.CAst.loc ();
   init_setoid ();
-  let _lemma_refl = declare_instance_refl global binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let _lemma_sym = declare_instance_sym global binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let _lemma_trans = declare_instance_trans global binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
+  let _lemma_refl = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
+  let _lemma_sym = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let _lemma_trans = declare_instance_trans atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
-    anew_instance global binders instance
+    anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
        (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
        (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
@@ -1958,26 +1964,26 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer glob m n =
+let add_morphism_infer atts m n =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
-  let poly = Flags.is_universe_polymorphism () in
+  (* NB: atts.program is ignored, program mode automatically set by vernacentries *)
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
-      let uctx = UState.const_univ_entry ~poly uctx in
+      let uctx = UState.const_univ_entry ~poly:atts.polymorphic uctx in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
                                  (None,(instance,uctx),None),
 				 Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance 
-                        (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info glob (ConstRef cst));
+                        (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info atts.global (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)
     else
-      let kind = Decl_kinds.Global, poly, 
+      let kind = Decl_kinds.Global, atts.polymorphic,
 	Decl_kinds.DefinitionBody Decl_kinds.Instance 
       in
       let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
@@ -1985,7 +1991,7 @@ let add_morphism_infer glob m n =
 	| Globnames.ConstRef cst ->
 	  add_instance (Typeclasses.new_instance 
 			  (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info
-                          glob (ConstRef cst));
+                          atts.global (ConstRef cst));
 	  declare_projection n instance_id (ConstRef cst)
 	| _ -> assert false
       in
@@ -1995,9 +2001,8 @@ let add_morphism_infer glob m n =
 	    Lemmas.start_proof instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) hook;
 	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
-let add_morphism glob binders m s n =
+let add_morphism atts binders m s n =
   init_setoid ();
-  let poly = Flags.is_universe_polymorphism () in
   let instance_id = add_suffix n "_Proper" in
   let instance =
     (((CAst.make @@ Name instance_id),None), Explicit,
@@ -2006,8 +2011,7 @@ let add_morphism glob binders m s n =
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let program_mode = Flags.is_program_mode () in
-  ignore(new_instance ~program_mode ~global:glob poly binders instance
+  ignore(new_instance ~program_mode:atts.program ~global:atts.global atts.polymorphic binders instance
            (Some (true, CAst.make @@ CRecord []))
     ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
 

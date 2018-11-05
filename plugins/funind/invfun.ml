@@ -804,7 +804,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 let (typ,_) = lemmas_types_infos.(i) in 
 	 Lemmas.start_proof
 	   lem_id
-	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),((Decl_kinds.Proof Decl_kinds.Theorem)))
+           (Decl_kinds.Global,false,((Decl_kinds.Proof Decl_kinds.Theorem)))
            !evd
 	   typ
            (Lemmas.mk_hook (fun _ _ -> ()));
@@ -866,7 +866,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	   i*)
 	 let lem_id = mk_complete_id f_id in
 	 Lemmas.start_proof lem_id
-	   (Decl_kinds.Global,Flags.is_universe_polymorphism (),(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
+           (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
 	 (fst lemmas_types_infos.(i))
            (Lemmas.mk_hook (fun _ _ -> ()));
 	 ignore (Pfedit.by

@@ -1,11 +1,13 @@
 Nat.sub : nat -> nat -> nat
 
+Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub but avoid exposing match constructs
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
+Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub when applied to 1 argument
   but avoid exposing match constructs
@@ -13,6 +15,7 @@ Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
+Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub
   when the 1st argument evaluates to a constructor and
@@ -21,6 +24,7 @@ Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
+Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor and when applied to 2 arguments 
@@ -28,6 +32,7 @@ Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
+Nat.sub is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 The reduction tactics unfold Nat.sub when the 1st and
   2nd arguments evaluate to a constructor 
@@ -37,6 +42,7 @@ pf :
 forall D1 C1 : Type,
 (D1 -> C1) -> forall D2 C2 : Type, (D2 -> C2) -> D1 * D2 -> C1 * C2
 
+pf is not universe polymorphic
 Arguments D2, C2 are implicit
 Arguments D1, C1 are implicit and maximally inserted
 Argument scopes are [foo_scope type_scope _ _ _ _ _]
@@ -45,6 +51,7 @@ pf is transparent
 Expands to: Constant Arguments.pf
 fcomp : forall A B C : Type, (B -> C) -> (A -> B) -> A -> C
 
+fcomp is not universe polymorphic
 Arguments A, B, C are implicit and maximally inserted
 Argument scopes are [type_scope type_scope type_scope _ _ _]
 The reduction tactics unfold fcomp when applied to 6 arguments 
@@ -52,17 +59,20 @@ fcomp is transparent
 Expands to: Constant Arguments.fcomp
 volatile : nat -> nat
 
+volatile is not universe polymorphic
 Argument scope is [nat_scope]
 The reduction tactics always unfold volatile
 volatile is transparent
 Expands to: Constant Arguments.volatile
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
+f is not universe polymorphic
 Argument scopes are [_ _ nat_scope _ nat_scope]
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
+f is not universe polymorphic
 Argument scopes are [_ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor 
@@ -70,6 +80,7 @@ f is transparent
 Expands to: Constant Arguments.S1.S2.f
 f : forall T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
+f is not universe polymorphic
 Argument T2 is implicit
 Argument scopes are [type_scope _ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 4th, 5th and
@@ -78,6 +89,7 @@ f is transparent
 Expands to: Constant Arguments.S1.f
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
+f is not universe polymorphic
 Arguments T1, T2 are implicit
 Argument scopes are [type_scope type_scope _ _ nat_scope _ nat_scope]
 The reduction tactics unfold f when the 5th, 6th and
@@ -90,6 +102,7 @@ Expands to: Constant Arguments.f
      : Prop
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
+f is not universe polymorphic
 The reduction tactics unfold f when the 5th, 6th and
   7th arguments evaluate to a constructor 
 f is transparent

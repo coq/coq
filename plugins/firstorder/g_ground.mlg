@@ -20,6 +20,7 @@ open Tacticals.New
 open Tacinterp
 open Stdarg
 open Tacarg
+open Attributes
 open Pcoq.Prim
 
 }
@@ -73,10 +74,9 @@ let (set_default_solver, default_solver, print_default_solver) =
 }
 
 VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
-| [ "Set" "Firstorder" "Solver" tactic(t) ] -> {
-    let open Vernacinterp in
+| #[ locality; ] [ "Set" "Firstorder" "Solver" tactic(t) ] -> {
       set_default_solver
-        (Locality.make_section_locality atts.locality)
+        (Locality.make_section_locality locality)
         (Tacintern.glob_tactic t)
   }
 END

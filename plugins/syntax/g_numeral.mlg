@@ -16,7 +16,6 @@ open Notation
 open Numeral
 open Pp
 open Names
-open Vernacinterp
 open Ltac_plugin
 open Stdarg
 open Pcoq.Prim
@@ -36,7 +35,7 @@ ARGUMENT EXTEND numnotoption
 END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
-  | [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+  | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) numnotoption(o) ] ->
-    { vernac_numeral_notation (Locality.make_module_locality atts.locality) ty f g (Id.to_string sc) o }
+    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
 END

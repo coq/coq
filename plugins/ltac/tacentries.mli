@@ -12,7 +12,7 @@
 
 open Vernacexpr
 open Tacexpr
-open Vernacinterp
+open Attributes
 
 (** {5 Tactic Definitions} *)
 

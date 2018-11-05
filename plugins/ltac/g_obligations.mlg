@@ -131,10 +131,9 @@ VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF
 END
 
 VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
-| [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
-        let open Vernacinterp in
+| #[ locality = Attributes.locality; ] [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
         set_default_tactic
-          (Locality.make_section_locality atts.locality)
+          (Locality.make_section_locality locality)
           (Tacintern.glob_tactic t);
   }
 END

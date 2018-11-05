@@ -11,7 +11,7 @@ End Scope.
 
 Fail Check 0 = true :> nat.
 
-#[polymorphic]
+#[universes(polymorphic)]
 Definition ι T (x: T) := x.
 
 Check ι _ ι.
@@ -24,9 +24,9 @@ Reset f.
 Ltac foo := foo.
 
 Module M.
-  #[local] #[polymorphic] Definition zed := Type.
+  #[local] #[universes(polymorphic)] Definition zed := Type.
 
-  #[local, polymorphic] Definition kats := Type.
+  #[local, universes(polymorphic)] Definition kats := Type.
 End M.
 Check M.zed@{_}.
 Fail Check zed.

@@ -223,13 +223,14 @@ fun S : nat => [[S | S.S]]
      : Set
 exists2 '{{y, z}} : nat * nat, y > z & z > y
      : Prop
-foo = 
+Monomorphic foo = 
 fun l : list nat => match l with
                     | _ :: (_ :: _) as l1 => l1
                     | _ => l
                     end
      : list nat -> list nat
 
+foo is not universe polymorphic
 Argument scope is [list_scope]
 Notation
 "'exists' x .. y , p" := ex (fun x => .. (ex (fun y => p)) ..) : type_scope
