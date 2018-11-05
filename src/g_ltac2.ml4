@@ -831,8 +831,8 @@ let classify_ltac2 = function
 
 VERNAC COMMAND FUNCTIONAL EXTEND VernacDeclareTactic2Definition
 | [ "Ltac2" ltac2_entry(e) ] => [ classify_ltac2 e ] -> [
-    fun ~atts ~st -> let open Vernacinterp in
-    Tac2entries.register_struct ?local:atts.locality e;
+    fun ~atts ~st ->
+    Tac2entries.register_struct ?local:(Attributes.only_locality atts) e;
     st
   ]
 END
