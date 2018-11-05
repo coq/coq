@@ -61,7 +61,8 @@ FIND_SKIP_DIRS:='(' \
   -name 'user-contrib' -o \
   -name 'test-suite' -o \
   -name '.opamcache' -o \
-  -name '.coq-native' \
+  -name '.coq-native' -o \
+  -name 'plugin_tutorial' \
 ')' -prune -o
 
 define find
@@ -191,7 +192,7 @@ META.coq: META.coq.in
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide mlgclean depclean cleanconfig distclean voclean timingclean alienclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean plugin-tutorialclean clean-ide mlgclean depclean cleanconfig distclean voclean timingclean alienclean
 
 clean: objclean cruftclean depclean docclean camldevfilesclean gramlibclean
 
@@ -237,7 +238,7 @@ docclean:
 	rm -f doc/coq.tex
 	rm -rf doc/sphinx/_build
 
-archclean: clean-ide optclean voclean
+archclean: clean-ide optclean voclean plugin-tutorialclean
 	rm -rf _build
 	rm -f $(ALLSTDLIB).*
 
@@ -277,6 +278,9 @@ timingclean:
 	  -o -name "*.v.after-timing" -o -name "*.v.timing.diff" -o -name "time-of-build.log" \
 	  -o -name "time-of-build-before.log" -o -name "time-of-build-after.log" \
 	  -o -name "time-of-build-pretty.log" -o -name "time-of-build-both.log" \) -exec rm -f {} +
+
+plugin-tutorialclean:
+	+$(MAKE) -C $(PLUGINTUTO) clean
 
 # Ensure that every compiled file around has a known source file.
 # This should help preventing weird compilation failures caused by leftover

@@ -1,4 +1,4 @@
-Require Import ArithRing.
+
 
 Inductive pack (A: Type) : Type :=
   packer : A -> pack A.
@@ -18,7 +18,11 @@ Class EvenNat the_even := {half : nat; half_prop : 2 * half = the_even}.
 Instance EvenNat0 : EvenNat 0 := {half := 0; half_prop := eq_refl}.
 
 Lemma even_rec n h : 2 * h = n -> 2 * S h = S (S n).
-Proof. intros H; ring [H]. Qed.
+Proof.
+  intros [].
+  simpl. rewrite <-plus_n_O, <-plus_n_Sm.
+  reflexivity.
+Qed.
 
 Instance EvenNat_rec n (p : EvenNat n) : EvenNat (S (S n)) :=
  {half := S (@half _ p); half_prop := even_rec n (@half _ p) (@half_prop _ p)}.
@@ -51,7 +55,8 @@ Canonical Structure can_ev0 : S_ev 0 :=
 Lemma can_ev_rec n : forall (s : S_ev n), S_ev (S n).
 Proof.
 intros s; exists (S (S (double_of _ s))).
-destruct s as [a P]. simpl. ring [P].
+destruct s as [a P].
+exact (even_rec _ _ P).
 Defined.
 
 Canonical Structure can_ev_rec.

@@ -233,13 +233,6 @@
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
 ########################################################################
-# plugin_tutorial
-########################################################################
-: "${plugin_tutorial_CI_REF:=master}"
-: "${plugin_tutorial_CI_GITURL:=https://github.com/ybertot/plugin_tutorials}"
-: "${plugin_tutorial_CI_ARCHIVEURL:=${plugin_tutorial_CI_GITURL}/archive}"
-
-########################################################################
 # menhirlib
 ########################################################################
 : "${menhirlib_CI_REF:=master}"
