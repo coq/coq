@@ -22,6 +22,8 @@ let safe_flags oracle = {
   check_universes = true;
   conv_oracle = oracle;
   share_reduction = true;
+  enable_VM = true;
+  enable_native_compiler = true;
 }
 
 (** {6 Arities } *)

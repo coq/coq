@@ -154,6 +154,9 @@ val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
 
 val set_share_reduction : bool -> unit
 
+val set_VM : bool -> unit
+val set_native_compiler : bool -> unit
+
 (* Modifies the global state, registering new universes *)
 
 val current_modpath : unit -> ModPath.t

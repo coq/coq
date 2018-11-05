@@ -15,7 +15,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 a127e0c2322c7846914bbca9921309c7 checker/cic.mli
+MD5 b8f0139f14e3370cd0a45d4cf69882ea checker/cic.mli
 
 *)
 
@@ -230,7 +230,7 @@ let v_cst_def =
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
 
 let v_typing_flags =
-  v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool|]
+  v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool|]
 
 let v_const_univs = v_sum "constant_universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 

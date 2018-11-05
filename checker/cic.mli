@@ -221,6 +221,8 @@ type typing_flags = {
   check_universes : bool; (** If [false] universe constraints are not checked *)
   conv_oracle : oracle; (** Unfolding strategies for conversion *)
   share_reduction : bool; (** Use by-need reduction algorithm *)
+  enable_VM : bool; (** If [false], all VM conversions fall back to interpreted ones *)
+  enable_native_compiler : bool; (** If [false], all native conversions fall back to VM ones *)
 }
 
 type constant_body = {

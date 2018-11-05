@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let warning s = Flags.(with_option warn Feedback.msg_warning (Pp.strbrk s))
-
 let fatal_error exn =
   Topfmt.print_err_exn Topfmt.ParsingCommandLine exn;
   let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
@@ -66,6 +64,8 @@ type coq_cmdopts = {
   color : color;
 
   impredicative_set : Declarations.set_predicativity;
+  enable_VM : bool;
+  enable_native_compiler : bool;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;
@@ -116,6 +116,8 @@ let init_args = {
   color = `AUTO;
 
   impredicative_set = Declarations.PredicativeSet;
+  enable_VM = true;
+  enable_native_compiler = Coq_config.native_compiler;
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   diffs_set    = false;
@@ -508,6 +510,26 @@ let parse_args arglist : coq_cmdopts * string list =
 
     |"-o" -> { oval with compilation_output_name = Some (next()) }
 
+    |"-bytecode-compiler" ->
+      { oval with enable_VM = get_bool opt (next ()) }
+
+    |"-native-compiler" ->
+
+      (* We use two boolean flags because the four states make sense, even if
+      only three are accessible to the user at the moment. The selection of the
+      produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
+      a separate flag, and the "ondemand" value removed. Once this is done, use
+      [get_bool] here. *)
+      let (enable,precompile) =
+        match (next ()) with
+        | ("yes" | "on") -> true, true
+        | "ondemand" -> true, false
+        | ("no" | "off") -> false, false
+        | _ -> prerr_endline ("Error: (yes|no|ondemand) expected after option -native-compiler"); exit 1
+      in
+      Flags.output_native_objects := precompile;
+      { oval with enable_native_compiler = enable }
+
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
@@ -542,10 +564,6 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-m"|"--memory" -> { oval with memory_stat = true }
     |"-noinit"|"-nois" -> { oval with load_init = false }
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with glob_opt = true }
-    |"-native-compiler" ->
-      if not Coq_config.native_compiler then
-        warning "Native compilation was disabled at configure time."
-      else Flags.output_native_objects := true; oval
     |"-output-context" -> { oval with output_context = true }
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
     |"-q" -> { oval with load_rcfile = false; }

@@ -24,6 +24,20 @@ Tactics
   Simplex-based proof engine. In case of regression, 'Unset Simplex'
   to get the venerable Fourier-based engine.
 
+Tools
+
+- The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
+  - `no` disables native_compute
+  - `yes` enables native_compute and precompiles `.v` files to native code
+  - `ondemand` enables native_compute but compiles code only when `native_compute` is called
+
+  The default value is `ondemand`.
+
+  Note that this flag now has priority over the configure flag of the same name.
+
+- A new `-bytecode-compiler` flag for `coqc` and `coqtop` controls whether
+  conversion can use the VM. The default value is `yes`.
+
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================
