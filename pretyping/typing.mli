@@ -48,6 +48,8 @@ val check_type_fixpoint : ?loc:Loc.t -> env -> evar_map ->
 
 val judge_of_prop : unsafe_judgment
 val judge_of_set : unsafe_judgment
+val judge_of_apply : env -> evar_map -> unsafe_judgment -> unsafe_judgment array ->
+  evar_map * unsafe_judgment
 val judge_of_abstraction : Environ.env -> Name.t ->
   unsafe_type_judgment -> unsafe_judgment -> unsafe_judgment
 val judge_of_product : Environ.env -> Name.t ->
