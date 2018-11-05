@@ -441,3 +441,60 @@ underscore or by omitting the annotation to a polymorphic definition.
    semantics that the first use declares it. In this mode, the universe
    names are not associated with the definition or proof once it has been
    defined. This is meant mainly for debugging purposes.
+
+.. flag:: Private Polymorphic Universes
+
+   This option, on by default, removes universes which appear only in
+   the body of an opaque polymorphic definition from the definition's
+   universe arguments. As such, no value needs to be provided for
+   these universes when instanciating the definition. Universe
+   constraints are automatically adjusted.
+
+   Consider the following definition:
+
+   .. coqtop:: all
+
+      Lemma foo@{i} : Type@{i}.
+      Proof. exact Type. Qed.
+      Print foo.
+
+   The universe :g:`Top.xxx` for the :g:`Type` in the body cannot be accessed, we
+   only care that one exists for any instantiation of the universes
+   appearing in the type of :g:`foo`. This is guaranteed when the
+   transitive constraint ``Set <= Top.xxx < i`` is verified. Then when
+   using the constant we don't need to put a value for the inner
+   universe:
+
+   .. coqtop:: all
+
+      Check foo@{_}.
+
+   and when not looking at the body we don't mention the private
+   universe:
+
+   .. coqtop:: all
+
+      About foo.
+
+   To recover the same behaviour with regard to universes as
+   :g:`Defined`, the option :flag:`Private Polymorphic Universes` may
+   be unset:
+
+   .. coqtop:: all
+
+      Unset Private Polymorphic Universes.
+
+      Lemma bar : Type. Proof. exact Type. Qed.
+      About bar.
+      Fail Check bar@{_}.
+      Check bar@{_ _}.
+
+   Note that named universes are always public.
+
+   .. coqtop:: all
+
+      Set Private Polymorphic Universes.
+      Unset Strict Universe Declaration.
+
+      Lemma baz : Type@{outer}. Proof. exact Type@{inner}. Qed.
+      About baz.
