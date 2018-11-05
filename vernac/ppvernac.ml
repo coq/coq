@@ -482,6 +482,8 @@ open Pputils
       ++ pr_class_rawexpr t
     | PrintCanonicalConversions ->
       keyword "Print Canonical Structures"
+    | PrintTypingFlags ->
+      keyword "Print Typing Flags"
     | PrintTables ->
       keyword "Print Tables"
     | PrintHintGoal ->

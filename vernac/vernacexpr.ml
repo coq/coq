@@ -24,6 +24,7 @@ type goal_reference =
   | GoalId of Id.t
 
 type printable =
+  | PrintTypingFlags
   | PrintTables
   | PrintFullContext
   | PrintSectionContext of qualid

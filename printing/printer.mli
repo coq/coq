@@ -208,3 +208,4 @@ val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
 
 val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 
+val pr_typing_flags : Declarations.typing_flags -> Pp.t
