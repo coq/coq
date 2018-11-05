@@ -15,6 +15,39 @@ open Names
 open Libnames
 open Globnames
 
+type object_prefix = {
+  obj_dir : DirPath.t;
+  obj_mp  : ModPath.t;
+  obj_sec : DirPath.t;
+}
+
+let eq_op op1 op2 =
+  DirPath.equal op1.obj_dir op2.obj_dir &&
+  DirPath.equal op1.obj_sec op2.obj_sec &&
+  ModPath.equal op1.obj_mp  op2.obj_mp
+
+(* to this type are mapped DirPath.t's in the nametab *)
+module GlobDirRef = struct
+  type t =
+    | DirOpenModule of object_prefix
+    | DirOpenModtype of object_prefix
+    | DirOpenSection of object_prefix
+    | DirModule of object_prefix
+
+  let equal r1 r2 = match r1, r2 with
+    | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
+    | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
+    | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
+    | DirModule op1, DirModule op2 -> eq_op op1 op2
+    | _ -> false
+
+end
+
+type global_dir_reference = GlobDirRef.t
+[@@ocaml.deprecated "Use [GlobDirRef.t]"]
+
+let eq_global_dir_reference = GlobDirRef.equal
+[@@ocaml.deprecated "Use [GlobDirRef.equal]"]
 
 exception GlobalizationError of qualid
 
@@ -307,13 +340,7 @@ struct
     | id :: l -> (id, l)
 end
 
-module GlobDir =
-struct
-  type t = global_dir_reference
-  let equal = eq_global_dir_reference
-end
-
-module DirTab = Make(DirPath')(GlobDir)
+module DirTab = Make(DirPath')(GlobDirRef)
 
 (* If we have a (closed) module M having a submodule N, than N does not
    have the entry in [the_dirtab]. *)
@@ -402,7 +429,7 @@ let push_modtype vis sp kn =
 let push_dir vis dir dir_ref =
   the_dirtab := DirTab.push vis dir dir_ref !the_dirtab;
   match dir_ref with
-  | DirModule { obj_mp; _ } -> the_modrevtab := MPmap.add obj_mp dir !the_modrevtab
+  | GlobDirRef.DirModule { obj_mp; _ } -> the_modrevtab := MPmap.add obj_mp dir !the_modrevtab
   | _ -> ()
 
 (* This is for global universe names *)
@@ -436,17 +463,17 @@ let locate_dir qid = DirTab.locate qid !the_dirtab
 
 let locate_module qid =
   match locate_dir qid with
-    | DirModule { obj_mp ; _} -> obj_mp
+    | GlobDirRef.DirModule { obj_mp ; _} -> obj_mp
     | _ -> raise Not_found
 
 let full_name_module qid =
   match locate_dir qid with
-    | DirModule { obj_dir ; _} -> obj_dir
+    | GlobDirRef.DirModule { obj_dir ; _} -> obj_dir
     | _ -> raise Not_found
 
 let locate_section qid =
   match locate_dir qid with
-    | DirOpenSection { obj_dir; _ } -> obj_dir
+    | GlobDirRef.DirOpenSection { obj_dir; _ } -> obj_dir
     | _ -> raise Not_found
 
 let locate_all qid =

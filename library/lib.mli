@@ -19,11 +19,13 @@ open Names
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
 
+val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
+
 type node =
   | Leaf of Libobject.obj
-  | CompilingLibrary of Libnames.object_prefix
-  | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
-  | OpenedSection of Libnames.object_prefix * Summary.frozen
+  | CompilingLibrary of Nametab.object_prefix
+  | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
+  | OpenedSection of Nametab.object_prefix * Summary.frozen
 
 type library_segment = (Libobject.object_name * node) list
 
@@ -31,10 +33,10 @@ type lib_objects = (Id.t * Libobject.obj) list
 
 (** {6 Object iteration functions. } *)
 
-val open_objects : int -> Libnames.object_prefix -> lib_objects -> unit
-val load_objects : int -> Libnames.object_prefix -> lib_objects -> unit
+val open_objects : int -> Nametab.object_prefix -> lib_objects -> unit
+val load_objects : int -> Nametab.object_prefix -> lib_objects -> unit
 val subst_objects : Mod_subst.substitution -> lib_objects -> lib_objects
-(*val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)
+(*val load_and_subst_objects : int -> Libnames.Nametab.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects*)
 
 (** [classify_segment seg] verifies that there are no OpenedThings,
    clears ClosedSections and FrozenStates and divides Leafs according
@@ -46,7 +48,7 @@ val classify_segment :
 
 (** [segment_of_objects prefix objs] forms a list of Leafs *)
 val segment_of_objects :
-  Libnames.object_prefix -> lib_objects -> library_segment
+  Nametab.object_prefix -> lib_objects -> library_segment
 
 
 (** {6 ... } *)
@@ -105,20 +107,20 @@ val find_opening_node : Id.t -> node
 
 val start_module :
   export -> module_ident -> ModPath.t ->
-  Summary.frozen -> Libnames.object_prefix
+  Summary.frozen -> Nametab.object_prefix
 
 val start_modtype :
   module_ident -> ModPath.t ->
-  Summary.frozen -> Libnames.object_prefix
+  Summary.frozen -> Nametab.object_prefix
 
 val end_module :
   unit ->
-  Libobject.object_name * Libnames.object_prefix *
+  Libobject.object_name * Nametab.object_prefix *
     Summary.frozen * library_segment
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Libnames.object_prefix *
+  Libobject.object_name * Nametab.object_prefix *
     Summary.frozen * library_segment
 
 (** {6 Compilation units } *)
@@ -126,7 +128,7 @@ val end_modtype :
 val start_compilation : DirPath.t -> ModPath.t -> unit
 val end_compilation_checks : DirPath.t -> Libobject.object_name
 val end_compilation :
-  Libobject.object_name-> Libnames.object_prefix * library_segment
+  Libobject.object_name-> Nametab.object_prefix * library_segment
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)

@@ -57,6 +57,44 @@ open Globnames
 
 *)
 
+(** Object prefix morally contains the "prefix" naming of an object to
+   be stored by [library], where [obj_dir] is the "absolute" path,
+   [obj_mp] is the current "module" prefix and [obj_sec] is the
+   "section" prefix.
+
+    Thus, for an object living inside [Module A. Section B.] the
+   prefix would be:
+
+    [ { obj_dir = "A.B"; obj_mp = "A"; obj_sec = "B" } ]
+
+    Note that both [obj_dir] and [obj_sec] are "paths" that is to say,
+   as opposed to [obj_mp] which is a single module name.
+
+ *)
+type object_prefix = {
+  obj_dir : DirPath.t;
+  obj_mp  : ModPath.t;
+  obj_sec : DirPath.t;
+}
+
+val eq_op : object_prefix -> object_prefix -> bool
+
+(** to this type are mapped [DirPath.t]'s in the nametab *)
+module GlobDirRef : sig
+  type t =
+    | DirOpenModule of object_prefix
+    | DirOpenModtype of object_prefix
+    | DirOpenSection of object_prefix
+    | DirModule of object_prefix
+  val equal : t -> t -> bool
+end
+
+type global_dir_reference = GlobDirRef.t
+[@@ocaml.deprecated "Use [GlobDirRef.t]"]
+
+val eq_global_dir_reference :
+  GlobDirRef.t -> GlobDirRef.t -> bool
+[@@ocaml.deprecated "Use [GlobDirRef.equal]"]
 
 exception GlobalizationError of qualid
 
@@ -79,7 +117,7 @@ val map_visibility : (int -> int) -> visibility -> visibility
 
 val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
-val push_dir : visibility -> DirPath.t -> global_dir_reference -> unit
+val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
 type universe_id = DirPath.t * int
@@ -98,7 +136,7 @@ val locate_extended : qualid -> extended_global_reference
 val locate_constant : qualid -> Constant.t
 val locate_syndef : qualid -> syndef_name
 val locate_modtype : qualid -> ModPath.t
-val locate_dir : qualid -> global_dir_reference
+val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> universe_id
@@ -115,7 +153,7 @@ val global_inductive : qualid -> inductive
 
 val locate_all : qualid -> GlobRef.t list
 val locate_extended_all : qualid -> extended_global_reference list
-val locate_extended_all_dir : qualid -> global_dir_reference list
+val locate_extended_all_dir : qualid -> GlobDirRef.t list
 val locate_extended_all_modtype : qualid -> ModPath.t list
 
 (** Experimental completion support, API is _unstable_ *)
