@@ -246,7 +246,7 @@ let get_roles export eff =
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 let is_unsafe_typing_flags () =
   let flags = Environ.typing_flags (Global.env()) in
-  not (flags.check_universes && flags.check_guarded)
+  not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 let define_constant ~side_effect ~name cd =
   let open Proof_global in
