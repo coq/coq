@@ -33,7 +33,7 @@ open Pltac
 let fail_default_value = Locus.ArgArg 0
 
 let arg_of_expr = function
-    TacArg (loc,a) -> a
+    TacArg { CAst.v } -> v
   | e -> Tacexp (e:raw_tactic_expr)
 
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
@@ -162,9 +162,9 @@ GRAMMAR EXTEND Gram
       | g=failkw; n = [ n = int_or_var -> { n } | -> { fail_default_value } ];
 	  l = LIST0 message_token -> { TacFail (g,n,l) }
       | st = simple_tactic -> { st }
-      | a = tactic_arg -> { TacArg(Loc.tag ~loc a) }
+      | a = tactic_arg -> { TacArg(CAst.make ~loc a) }
       | r = reference; la = LIST0 tactic_arg_compat ->
-        { TacArg(Loc.tag ~loc @@ TacCall (Loc.tag ~loc (r,la))) } ]
+        { TacArg(CAst.make ~loc @@ TacCall (CAst.make ~loc (r,la))) } ]
     | "0"
       [ "("; a = tactic_expr; ")" -> { a }
       | "["; ">"; tg = tactic_then_gen; "]" -> {
@@ -173,7 +173,7 @@ GRAMMAR EXTEND Gram
           | Some (t,tl) -> TacExtendTac(Array.of_list tf,t,tl)
           | None -> TacDispatch tf
           end }
-      | a = tactic_atom -> { TacArg (Loc.tag ~loc a) } ] ]
+      | a = tactic_atom -> { TacArg (CAst.make ~loc a) } ] ]
   ;
   failkw:
   [ [ IDENT "fail" -> { TacLocal } | IDENT "gfail" -> { TacGlobal } ] ]
@@ -223,7 +223,7 @@ GRAMMAR EXTEND Gram
   ;
   tactic_atom:
     [ [ n = integer -> { TacGeneric (genarg_of_int n) }
-      | r = reference -> { TacCall (Loc.tag ~loc (r,[])) }
+      | r = reference -> { TacCall (CAst.make ~loc (r,[])) }
       | "()" -> { TacGeneric (genarg_of_unit ()) } ] ]
   ;
   match_key:

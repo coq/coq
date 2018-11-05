@@ -1958,7 +1958,7 @@ let add_setoid atts binders a aeq t n =
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
-  TacArg (Loc.tag @@ (TacCall (Loc.tag (tacqid, []))))
+  TacArg (CAst.make @@ (TacCall (CAst.make (tacqid, []))))
 
 let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->

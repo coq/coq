@@ -529,178 +529,178 @@ GRAMMAR EXTEND Gram
     [ [
       (* Basic tactics *)
         IDENT "intros"; pl = ne_intropatterns ->
-          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (false,pl)) }
+          { TacAtom (CAst.make ~loc @@ TacIntroPattern (false,pl)) }
       | IDENT "intros" ->
-          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (false,[CAst.make ~loc @@IntroForthcoming false])) }
+          { TacAtom (CAst.make ~loc @@ TacIntroPattern (false,[CAst.make ~loc @@IntroForthcoming false])) }
       | IDENT "eintros"; pl = ne_intropatterns ->
-          { TacAtom (Loc.tag ~loc @@ TacIntroPattern (true,pl)) }
+          { TacAtom (CAst.make ~loc @@ TacIntroPattern (true,pl)) }
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (true,false,cl,inhyp)) }
+          inhyp = in_hyp_as -> { TacAtom (CAst.make ~loc @@ TacApply (true,false,cl,inhyp)) }
       | IDENT "eapply"; cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (true,true,cl,inhyp)) }
+          inhyp = in_hyp_as -> { TacAtom (CAst.make ~loc @@ TacApply (true,true,cl,inhyp)) }
       | IDENT "simple"; IDENT "apply";
           cl = LIST1 constr_with_bindings_arg SEP ",";
-          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (false,false,cl,inhyp)) }
+          inhyp = in_hyp_as -> { TacAtom (CAst.make ~loc @@ TacApply (false,false,cl,inhyp)) }
       | IDENT "simple"; IDENT "eapply";
           cl = LIST1 constr_with_bindings_arg SEP",";
-          inhyp = in_hyp_as -> { TacAtom (Loc.tag ~loc @@ TacApply (false,true,cl,inhyp)) }
+          inhyp = in_hyp_as -> { TacAtom (CAst.make ~loc @@ TacApply (false,true,cl,inhyp)) }
       | IDENT "elim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
-          { TacAtom (Loc.tag ~loc @@ TacElim (false,cl,el)) }
+          { TacAtom (CAst.make ~loc @@ TacElim (false,cl,el)) }
       | IDENT "eelim"; cl = constr_with_bindings_arg; el = OPT eliminator ->
-          { TacAtom (Loc.tag ~loc @@ TacElim (true,cl,el)) }
-      | IDENT "case"; icl = induction_clause_list -> { TacAtom (Loc.tag ~loc @@ mkTacCase false icl) }
-      | IDENT "ecase"; icl = induction_clause_list -> { TacAtom (Loc.tag ~loc @@ mkTacCase true icl) }
+          { TacAtom (CAst.make ~loc @@ TacElim (true,cl,el)) }
+      | IDENT "case"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase false icl) }
+      | IDENT "ecase"; icl = induction_clause_list -> { TacAtom (CAst.make ~loc @@ mkTacCase true icl) }
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
-	  { TacAtom (Loc.tag ~loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd)) }
+	  { TacAtom (CAst.make ~loc @@ TacMutualFix (id,n,List.map mk_fix_tac fd)) }
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
-	  { TacAtom (Loc.tag ~loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd)) }
+	  { TacAtom (CAst.make ~loc @@ TacMutualCofix (id,List.map mk_cofix_tac fd)) }
 
       | IDENT "pose"; bl = bindings_with_parameters ->
-	  { let (id,b) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None)) }
+	  { let (id,b) = bl in TacAtom (CAst.make ~loc @@ TacLetTac (false,Names.Name.Name id,b,Locusops.nowhere,true,None)) }
       | IDENT "pose"; b = constr; na = as_name ->
-	  { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None)) }
+	  { TacAtom (CAst.make ~loc @@ TacLetTac (false,na,b,Locusops.nowhere,true,None)) }
       | IDENT "epose"; bl = bindings_with_parameters ->
-	  { let (id,b) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None)) }
+	  { let (id,b) = bl in TacAtom (CAst.make ~loc @@ TacLetTac (true,Names.Name id,b,Locusops.nowhere,true,None)) }
       | IDENT "epose"; b = constr; na = as_name ->
-	  { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None)) }
+	  { TacAtom (CAst.make ~loc @@ TacLetTac (true,na,b,Locusops.nowhere,true,None)) }
       | IDENT "set"; bl = bindings_with_parameters; p = clause_dft_concl ->
-	  { let (id,c) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (false,Names.Name.Name id,c,p,true,None)) }
+	  { let (id,c) = bl in TacAtom (CAst.make ~loc @@ TacLetTac (false,Names.Name.Name id,c,p,true,None)) }
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,c,p,true,None)) }
+          { TacAtom (CAst.make ~loc @@ TacLetTac (false,na,c,p,true,None)) }
       | IDENT "eset"; bl = bindings_with_parameters; p = clause_dft_concl ->
-	  { let (id,c) = bl in TacAtom (Loc.tag ~loc @@ TacLetTac (true,Names.Name id,c,p,true,None)) }
+	  { let (id,c) = bl in TacAtom (CAst.make ~loc @@ TacLetTac (true,Names.Name id,c,p,true,None)) }
       | IDENT "eset"; c = constr; na = as_name; p = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,c,p,true,None)) }
+          { TacAtom (CAst.make ~loc @@ TacLetTac (true,na,c,p,true,None)) }
       | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          { TacAtom (Loc.tag ~loc @@ TacLetTac (false,na,c,p,false,e)) }
+          { TacAtom (CAst.make ~loc @@ TacLetTac (false,na,c,p,false,e)) }
       | IDENT "eremember"; c = constr; na = as_name; e = eqn_ipat;
           p = clause_dft_all ->
-          { TacAtom (Loc.tag ~loc @@ TacLetTac (true,na,c,p,false,e)) }
+          { TacAtom (CAst.make ~loc @@ TacLetTac (true,na,c,p,false,e)) }
 
       (* Alternative syntax for "pose proof c as id" *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
 	  c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
-          TacAtom (Loc.tag ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+          TacAtom (CAst.make ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,true,Some tac,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (false,true,Some tac,ipat,c)) }
       | IDENT "eassert"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,true,Some tac,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (true,true,Some tac,ipat,c)) }
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,true,None,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (false,true,None,ipat,c)) }
       | IDENT "epose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,true,None,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (true,true,None,ipat,c)) }
       | IDENT "enough"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (false,false,Some tac,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (false,false,Some tac,ipat,c)) }
       | IDENT "eenough"; c = constr; ipat = as_ipat; tac = by_tactic ->
-	  { TacAtom (Loc.tag ~loc @@ TacAssert (true,false,Some tac,ipat,c)) }
+	  { TacAtom (CAst.make ~loc @@ TacAssert (true,false,Some tac,ipat,c)) }
 
       | IDENT "generalize"; c = constr ->
-	  { TacAtom (Loc.tag ~loc @@ TacGeneralize [((AllOccurrences,c),Names.Name.Anonymous)]) }
+	  { TacAtom (CAst.make ~loc @@ TacGeneralize [((AllOccurrences,c),Names.Name.Anonymous)]) }
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
 	  { let gen_everywhere c = ((AllOccurrences,c),Names.Name.Anonymous) in
-          TacAtom (Loc.tag ~loc @@ TacGeneralize (List.map gen_everywhere (c::l))) }
+          TacAtom (CAst.make ~loc @@ TacGeneralize (List.map gen_everywhere (c::l))) }
       | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
           l = LIST0 [","; c = pattern_occ; na = as_name -> { (c,na) } ] ->
-          { TacAtom (Loc.tag ~loc @@ TacGeneralize (((nl,c),na)::l)) }
+          { TacAtom (CAst.make ~loc @@ TacGeneralize (((nl,c),na)::l)) }
 
       (* Derived basic tactics *)
       | IDENT "induction"; ic = induction_clause_list ->
-	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct (true,false,ic)) }
+	  { TacAtom (CAst.make ~loc @@ TacInductionDestruct (true,false,ic)) }
       | IDENT "einduction"; ic = induction_clause_list ->
-	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(true,true,ic)) }
+	  { TacAtom (CAst.make ~loc @@ TacInductionDestruct(true,true,ic)) }
       | IDENT "destruct"; icl = induction_clause_list ->
-	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(false,false,icl)) }
+	  { TacAtom (CAst.make ~loc @@ TacInductionDestruct(false,false,icl)) }
       | IDENT "edestruct";  icl = induction_clause_list ->
-	  { TacAtom (Loc.tag ~loc @@ TacInductionDestruct(false,true,icl)) }
+	  { TacAtom (CAst.make ~loc @@ TacInductionDestruct(false,true,icl)) }
 
       (* Equality and inversion *)
       | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (Loc.tag ~loc @@ TacRewrite (false,l,cl,t)) }
+	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (CAst.make ~loc @@ TacRewrite (false,l,cl,t)) }
       | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ",";
-	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (Loc.tag ~loc @@ TacRewrite (true,l,cl,t)) }
+	  cl = clause_dft_concl; t=by_tactic -> { TacAtom (CAst.make ~loc @@ TacRewrite (true,l,cl,t)) }
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> { SimpleInversion }
 	  | IDENT "inversion" -> { FullInversion }
 	  | IDENT "inversion_clear" -> { FullInversionClear } ];
 	  hyp = quantified_hypothesis;
 	  ids = as_or_and_ipat; co = OPT ["with"; c = constr -> { c } ] ->
-	    { TacAtom (Loc.tag ~loc @@ TacInversion (DepInversion (k,co,ids),hyp)) }
+	    { TacAtom (CAst.make ~loc @@ TacInversion (DepInversion (k,co,ids),hyp)) }
       | IDENT "simple"; IDENT "inversion";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)) }
+	    { TacAtom (CAst.make ~loc @@ TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)) }
       | IDENT "inversion";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)) }
+	    { TacAtom (CAst.make ~loc @@ TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)) }
       | IDENT "inversion_clear";
 	  hyp = quantified_hypothesis; ids = as_or_and_ipat;
 	  cl = in_hyp_list ->
-	    { TacAtom (Loc.tag ~loc @@ TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)) }
+	    { TacAtom (CAst.make ~loc @@ TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)) }
       | IDENT "inversion"; hyp = quantified_hypothesis;
 	  "using"; c = constr; cl = in_hyp_list ->
-	    { TacAtom (Loc.tag ~loc @@ TacInversion (InversionUsing (c,cl), hyp)) }
+	    { TacAtom (CAst.make ~loc @@ TacInversion (InversionUsing (c,cl), hyp)) }
 
       (* Conversion *)
       | IDENT "red"; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Red false, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Red false, cl)) }
       | IDENT "hnf"; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Hnf, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Hnf, cl)) }
       | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Simpl (all_with d, po), cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Simpl (all_with d, po), cl)) }
       | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbv s, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Cbv s, cl)) }
       | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbn s, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Cbn s, cl)) }
       | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Lazy s, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Lazy s, cl)) }
       | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Cbv (all_with delta), cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Cbv (all_with delta), cl)) }
       | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (CbvVm po, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (CbvVm po, cl)) }
       | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (CbvNative po, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (CbvNative po, cl)) }
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP ","; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Unfold ul, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Unfold ul, cl)) }
       | IDENT "fold"; l = LIST1 constr; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Fold l, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Fold l, cl)) }
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP","; cl = clause_dft_concl ->
-          { TacAtom (Loc.tag ~loc @@ TacReduce (Pattern pl, cl)) }
+          { TacAtom (CAst.make ~loc @@ TacReduce (Pattern pl, cl)) }
 
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "change"; c = conversion; cl = clause_dft_concl ->
 	  { let (oc, c) = c in
 	  let p,cl = merge_occurrences loc cl oc in
-	  TacAtom (Loc.tag ~loc @@ TacChange (p,c,cl)) }
+	  TacAtom (CAst.make ~loc @@ TacChange (p,c,cl)) }
     ] ]
   ;
 END

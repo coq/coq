@@ -191,7 +191,7 @@ let make_unfold name =
 let u_not = make_unfold "not"
 
 let reduction_not_iff _ ist =
-  let make_reduce c = TacAtom (Loc.tag @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
+  let make_reduce c = TacAtom (CAst.make @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding with
     | true -> make_reduce [u_not]
     | false -> TacId []
@@ -244,7 +244,7 @@ let with_flags flags _ ist =
   let x = CAst.make @@ Id.of_string "x" in
   let arg = Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
-  eval_tactic_ist ist (TacArg (Loc.tag @@ TacCall (Loc.tag (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
+  eval_tactic_ist ist (TacArg (CAst.make @@ TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
@@ -252,7 +252,7 @@ let register_tauto_tactic tac name0 args =
   let name = { mltac_plugin = tauto_plugin; mltac_tactic = name0; } in
   let entry = { mltac_name = name; mltac_index = 0 } in
   let () = Tacenv.register_ml_tactic name [| tac |] in
-  let tac = TacFun (ids, TacML (Loc.tag (entry, []))) in
+  let tac = TacFun (ids, TacML (CAst.make (entry, []))) in
   let obj () = Tacenv.register_ltac true true (Id.of_string name0) tac in
   Mltop.declare_cache_obj obj tauto_plugin
 

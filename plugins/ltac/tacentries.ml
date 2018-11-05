@@ -177,7 +177,7 @@ let add_tactic_entry (kn, ml, tg) state =
         TacGeneric arg
     in
     let l = List.map map l in
-    (TacAlias (Loc.tag ~loc (kn,l)):raw_tactic_expr)
+    (TacAlias (CAst.make ~loc (kn,l)):raw_tactic_expr)
   in
   let () =
     if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
@@ -349,7 +349,7 @@ let extend_atomic_tactic name entries =
     | TacNonTerm (_, (symb, _)) ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
-      let inj x = TacArg (Loc.tag @@ TacGeneric (Genarg.in_gen typ x)) in
+      let inj x = TacArg (CAst.make @@ TacGeneric (Genarg.in_gen typ x)) in
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
@@ -363,7 +363,7 @@ let extend_atomic_tactic name entries =
   | Some (id, args) ->
     let args = List.map (fun a -> Tacexp a) args in
     let entry = { mltac_name = name; mltac_index = i } in
-    let body = TacML (Loc.tag (entry, args)) in
+    let body = TacML (CAst.make (entry, args)) in
     Tacenv.register_ltac false false (Names.Id.of_string id) body
   in
   List.iteri add_atomic entries
@@ -379,7 +379,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Locus.ArgVar (CAst.make id)) in
-    let tac = TacML (Loc.tag (entry, List.map map ids)) in
+    let tac = TacML (CAst.make (entry, List.map map ids)) in
     add_glob_tactic_notation false ~level ?deprecation prods true ids tac
   in
   List.iteri iter (List.rev prods);
@@ -664,7 +664,7 @@ let tactic_extend plugin_name tacname ~level ?deprecation sign =
   (** Arguments are not passed directly to the ML tactic in the TacML node,
       the ML tactic retrieves its arguments in the [ist] environment instead.
       This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
-    let body = Tacexpr.TacFun (vars, Tacexpr.TacML (Loc.tag (ml, [])))in
+    let body = Tacexpr.TacFun (vars, Tacexpr.TacML (CAst.make (ml, [])))in
     let id = Names.Id.of_string name in
     let obj () = Tacenv.register_ltac true false id body ?deprecation in
     let () = Tacenv.register_ml_tactic ml_tactic_name [|tac|] in
