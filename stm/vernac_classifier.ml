@@ -26,8 +26,8 @@ let string_of_vernac_type = function
   | VtUnknown -> "Unknown"
   | VtStartProof _ -> "StartProof"
   | VtSideff _ -> "Sideff"
-  | VtQed (VtKeep _) -> "Qed(keep)"
-  | VtQed VtKeepAsAxiom -> "Qed(admitted)"
+  | VtQed (VtKeep VtKeepAxiom) -> "Qed(admitted)"
+  | VtQed (VtKeep (VtKeepOpaque | VtKeepDefined)) -> "Qed(keep)"
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep { parallel; proof_block_detection } ->
       "ProofStep " ^ string_of_parallel parallel ^
@@ -42,6 +42,10 @@ let string_of_vernac_when = function
 
 let string_of_vernac_classification (t,w) =
   string_of_vernac_type t ^ " " ^ string_of_vernac_when w
+
+let vtkeep_of_opaque = let open Proof_global in function
+  | Opaque -> VtKeepOpaque
+  | Transparent -> VtKeepDefined
 
 let idents_of_name : Names.Name.t -> Names.Id.t list =
   function
@@ -65,9 +69,9 @@ let classify_vernac e =
        VtSideff [], VtNow
     (* Qed *)
     | VernacAbort _ -> VtQed VtDrop, VtLater
-    | VernacEndProof Admitted -> VtQed VtKeepAsAxiom, VtLater
-    | VernacEndProof (Proved (opaque,_)) -> VtQed (VtKeep opaque), VtLater
-    | VernacExactProof _ -> VtQed (VtKeep Proof_global.Opaque), VtLater
+    | VernacEndProof Admitted -> VtQed (VtKeep VtKeepAxiom), VtLater
+    | VernacEndProof (Proved (opaque,_)) -> VtQed (VtKeep (vtkeep_of_opaque opaque)), VtLater
+    | VernacExactProof _ -> VtQed (VtKeep VtKeepOpaque), VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
     | VernacCheckMayEval _ -> VtQuery, VtLater

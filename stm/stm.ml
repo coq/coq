@@ -20,14 +20,15 @@ let stm_pperr_endline s = if !stm_debug then begin stm_pp_err (s ()) end else ()
 
 let stm_prerr_debug   s = if !Flags.debug then begin stm_pr_err (s ()) end else ()
 
-let is_vtkeep = function Vernacextend.VtKeep _ -> true | _ -> false
-
 open Pp
 open CErrors
 open Names
 open Feedback
 open Vernacexpr
 open Vernacextend
+
+let is_vtkeep = function VtKeep _ -> true | _ -> false
+let get_vtkeep = function VtKeep x -> x | _ -> assert false
 
 module AsyncOpts = struct
 
@@ -2256,7 +2257,7 @@ let collect_proof keep cur hd brkind id =
      else
        let rc = collect (Some cur) [] id in
        if is_empty rc then make_sync `AlreadyEvaluated rc
-       else if (is_vtkeep keep || keep == VtKeepAsAxiom) &&
+       else if (is_vtkeep keep) &&
           (not(State.is_cached_and_valid id) || !cur_opt.async_proofs_full)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
@@ -2444,9 +2445,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           ), `Yes, true
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (block_start, nodes, name, delegate) -> (fun () ->
-                assert(is_vtkeep keep || keep == VtKeepAsAxiom);
-                let drop_pt = keep == VtKeepAsAxiom in
+            | `ASync (block_start, nodes, name, delegate) -> (fun () ->
+                let keep' = get_vtkeep keep in
+                let drop_pt = keep' == VtKeepAxiom in
                 let block_stop, exn_info, loc = eop, (id, eop), x.loc in
                 log_processing_async id name;
                 VCS.create_proof_task_box nodes ~qed:id ~block_start;
@@ -2457,8 +2458,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     if okeep <> keep then
                       msg_warning(strbrk("The command closing the proof changed. "
                         ^"The kernel cannot take this into account and will "
-                        ^(if is_vtkeep keep then "not check " else "reject ")
-                        ^"the "^(if is_vtkeep keep then "new" else "incomplete")
+                        ^(if not drop_pt then "not check " else "reject ")
+                        ^"the "^(if not drop_pt then "new" else "incomplete")
                         ^" proof. Reprocess the command declaring "
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
@@ -2481,9 +2482,10 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                           ~drop_pt exn_info block_stop, ref false
                     in
                     qed.fproof <- Some (fp, cancel);
-                    let opaque = match keep with
-                      | VtKeep opaque -> opaque
-                      | _ -> Proof_global.Opaque (* this seems strange *)
+                    let opaque = match keep' with
+                      | VtKeepAxiom | VtKeepOpaque ->
+                        Proof_global.Opaque (* Admitted -> Opaque should be OK. *)
+                      | VtKeepDefined -> Proof_global.Transparent
                     in
                     let proof =
                       Proof_global.close_future_proof ~opaque ~feedback_id:id fp in
@@ -2510,15 +2512,19 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let proof =
                   match keep with
                   | VtDrop -> None
-                  | VtKeepAsAxiom ->
+                  | VtKeep VtKeepAxiom ->
                       let ctx = UState.empty in
                       let fp = Future.from_val ([],ctx) in
                       qed.fproof <- Some (fp, ref false); None
                   | VtKeep opaque ->
+                    let opaque = let open Proof_global in  match opaque with
+                      | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
+                      | VtKeepAxiom -> assert false
+                    in
                       Some(Proof_global.close_proof ~opaque
                                 ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
-                if keep != VtKeepAsAxiom then
+                if keep <> VtKeep VtKeepAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
                 let st = Vernacstate.freeze_interp_state `No in
@@ -2722,7 +2728,7 @@ let rec join_admitted_proofs id =
   if Stateid.equal id Stateid.initial then () else
   let view = VCS.visit id in
   match view.step with
-  | `Qed ({ keep = VtKeepAsAxiom; fproof = Some (fp,_) },_) ->
+  | `Qed ({ keep = VtKeep VtKeepAxiom; fproof = Some (fp,_) },_) ->
        ignore(Future.force fp);
        join_admitted_proofs view.next
   | _ -> join_admitted_proofs view.next
