@@ -350,9 +350,6 @@ let map_universes f env =
     { env with env_stratification =
 	 { s with env_universes = f s.env_universes } }
 
-let set_universes env u =
-  { env with env_stratification = { env.env_stratification with env_universes = u } }
-
 let add_constraints c env =
   if Univ.Constraint.is_empty c then env
   else map_universes (UGraph.merge_constraints c) env
@@ -405,19 +402,12 @@ let add_constant_key kn cb linkinfo env =
 let add_constant kn cb env =
   add_constant_key kn cb no_link_info env
 
-let constraints_of cb u =
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.Constraint.empty
-  | Polymorphic_const ctx -> Univ.AUContext.instantiate u ctx
-
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
-  match cb.const_universes with
-  | Monomorphic_const _ -> cb.const_type, Univ.Constraint.empty
-  | Polymorphic_const _ctx ->
-    let csts = constraints_of cb u in
-    (subst_instance_constr u cb.const_type, csts)
+  let uctx = Declareops.constant_polymorphic_context cb in
+  let csts = Univ.AUContext.instantiate u uctx in
+  (subst_instance_constr u cb.const_type, csts)
 
 type const_evaluation_result = NoBody | Opaque
 
@@ -425,20 +415,14 @@ exception NotEvaluableConst of const_evaluation_result
 
 let constant_value_and_type env (kn, u) =
   let cb = lookup_constant kn env in
-    if Declareops.constant_is_polymorphic cb then
-      let cst = constraints_of cb u in
-      let b' = match cb.const_body with
-	| Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
-	| OpaqueDef _ -> None
-	| Undef _ -> None
-      in
-	b', subst_instance_constr u cb.const_type, cst
-    else 
-      let b' = match cb.const_body with
-	| Def l_body -> Some (Mod_subst.force_constr l_body)
-	| OpaqueDef _ -> None
-	| Undef _ -> None
-      in b', cb.const_type, Univ.Constraint.empty
+  let uctx = Declareops.constant_polymorphic_context cb in
+  let cst = Univ.AUContext.instantiate u uctx in
+  let b' = match cb.const_body with
+    | Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
+    | OpaqueDef _ -> None
+    | Undef _ -> None
+  in
+  b', subst_instance_constr u cb.const_type, cst
 
 let body_of_constant_body env cb =
   let otab = opaque_tables env in
@@ -457,9 +441,7 @@ let body_of_constant_body env cb =
 (* constant_type gives the type of a constant *)
 let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
-    if Declareops.constant_is_polymorphic cb then
-      subst_instance_constr u cb.const_type
-    else cb.const_type
+  subst_instance_constr u cb.const_type
 
 let constant_value_in env (kn,u) =
   let cb = lookup_constant kn env in

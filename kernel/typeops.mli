@@ -116,4 +116,5 @@ val constr_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
 (** {6 Miscellaneous. } *)
 
 (** Check that hyps are included in env and fails with error otherwise *)
-val check_hyps_inclusion : env -> ('a -> constr) -> 'a -> Constr.named_context -> unit
+val check_hyps_inclusion : env -> ?evars:((existential->constr option) * UGraph.t) ->
+  ('a -> constr) -> 'a -> Constr.named_context -> unit

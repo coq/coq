@@ -218,9 +218,6 @@ let judge_of_cast env sigma cj k tj =
     sigma, { uj_val = mkCast (cj.uj_val, k, expected_type);
              uj_type = expected_type }
 
-let enrich_env env sigma =
-  set_universes env @@ Evd.universes sigma
-
 let check_fix env sigma pfix =
   let inj c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let (idx, (ids, cs, ts)) = pfix in
@@ -277,6 +274,38 @@ let judge_of_letin env name defj typj j =
   { uj_val = mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
+let check_hyps_inclusion env sigma f x hyps =
+  let evars = Evarutil.safe_evar_value sigma, Evd.universes sigma in
+  let f x = EConstr.Unsafe.to_constr (f x) in
+  Typeops.check_hyps_inclusion env ~evars f x hyps
+
+let type_of_constant env sigma (c,u) =
+  let open Declarations in
+  let cb = Environ.lookup_constant c env in
+  let () = check_hyps_inclusion env sigma mkConstU (c,u) cb.const_hyps in
+  let u = EInstance.kind sigma u in
+  let ty, csts = Environ.constant_type env (c,u) in
+  let sigma = Evd.add_constraints sigma csts in
+  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.ConstRef c)))
+
+let type_of_inductive env sigma (ind,u) =
+  let open Declarations in
+  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let () = check_hyps_inclusion env sigma mkIndU (ind,u) mib.mind_hyps in
+  let u = EInstance.kind sigma u in
+  let ty, csts = Inductive.constrained_type_of_inductive env (specif,u) in
+  let sigma = Evd.add_constraints sigma csts in
+  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.IndRef ind)))
+
+let type_of_constructor env sigma ((ind,_ as ctor),u) =
+  let open Declarations in
+  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let () = check_hyps_inclusion env sigma mkIndU (ind,u) mib.mind_hyps in
+  let u = EInstance.kind sigma u in
+  let ty, csts = Inductive.constrained_type_of_constructor (ctor,u) specif in
+  let sigma = Evd.add_constraints sigma csts in
+  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.ConstructRef ctor)))
+
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env sigma cstr =
@@ -297,17 +326,17 @@ let rec execute env sigma cstr =
     | Var id ->
         sigma, judge_of_variable env id
 
-    | Const (c, u) ->
-        let u = EInstance.kind sigma u in
-        sigma, make_judge cstr (EConstr.of_constr (rename_type_of_constant env (c, u)))
+    | Const c ->
+        let sigma, ty = type_of_constant env sigma c in
+        sigma, make_judge cstr ty
 
-    | Ind (ind, u) ->
-        let u = EInstance.kind sigma u in
-        sigma, make_judge cstr (EConstr.of_constr (rename_type_of_inductive env (ind, u)))
+    | Ind ind ->
+        let sigma, ty = type_of_inductive env sigma ind in
+        sigma, make_judge cstr ty
 
-    | Construct (cstruct, u) ->
-        let u = EInstance.kind sigma u in
-        sigma, make_judge cstr (EConstr.of_constr (rename_type_of_constructor env (cstruct, u)))
+    | Construct ctor ->
+        let sigma, ty = type_of_constructor env sigma ctor in
+        sigma, make_judge cstr ty
 
     | Case (ci,p,c,lf) ->
         let sigma, cj = execute env sigma c in
@@ -391,7 +420,6 @@ and execute_recdef env sigma (names,lar,vdef) =
 and execute_array env = Array.fold_left_map (execute env)
 
 let check env sigma c t =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   match Evarconv.cumul env sigma j.uj_type t with
   | None ->
@@ -401,14 +429,12 @@ let check env sigma c t =
 (* Type of a constr *)
 
 let unsafe_type_of env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   j.uj_type
 
 (* Sort of a type *)
 
 let sort_of env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   let sigma, a = type_judgment env sigma j in
   sigma, a.utj_type
@@ -416,7 +442,6 @@ let sort_of env sigma c =
 (* Try to solve the existential variables by typing *)
 
 let type_of ?(refresh=false) env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   (* side-effect on evdref *)
     if refresh then
@@ -424,7 +449,6 @@ let type_of ?(refresh=false) env sigma c =
     else sigma, j.uj_type
 
 let solve_evars env sigma c =
-  let env = enrich_env env sigma in
   let sigma, j = execute env sigma c in
   (* side-effect on evdref *)
   sigma, nf_evar sigma j.uj_val
