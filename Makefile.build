@@ -86,7 +86,7 @@ byte: coqbyte coqide-byte pluginsbyte printers
 
 # This list of ml files used to be in the main Makefile, we moved it here
 # to avoid exhausting the variable env in Win32
-MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
+MLFILES := $(MLSTATICFILES) $(GENMLFILES)
 
 include Makefile.common
 include Makefile.vofiles
@@ -148,7 +148,7 @@ endif
 # This include below will lauch the build of all .d.
 # The - at front is for disabling warnings about currently missing ones.
 # For creating the missing .d, make will recursively build things like
-# coqdep_boot (for the .v.d files) or grammar.cma (for .ml4 -> .ml -> .ml.d).
+# coqdep_boot (for the .v.d files) or coqpp (for .mlg -> .ml -> .ml.d).
 
 VDFILE := .vfiles
 MLDFILE := .mlfiles
@@ -166,7 +166,7 @@ DEPENDENCIES := \
 # of include, and they will then be automatically deleted, leading to an
 # infinite loop.
 
-.SECONDARY: $(DEPENDENCIES) $(GENFILES) $(ML4FILES:.ml4=.ml)
+.SECONDARY: $(DEPENDENCIES) $(GENFILES) $(MLGFILES:.mlg=.ml)
 
 ###########################################################################
 # Compilation options
@@ -259,6 +259,7 @@ CAMLP5DEPS:=grammar/grammar.cma
 CAMLP5USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
+# XXX unused but should be used for mlp files
 
 # Main packages linked by Coq.
 SYSMOD:=-package num,str,unix,dynlink,threads
@@ -768,11 +769,6 @@ kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 	$(SHOW)'OCAMLYACC  $<'
 	$(HIDE)$(OCAMLYACC) --strict "$*.mly"
 
-%.ml: %.ml4 $(CAMLP5DEPS) $(COQPP)
-	$(SHOW)'CAMLP5O   $<'
-	$(HIDE)$(CAMLP5O) -I $(MYCAMLP5LIB) $(PR_O) \
-	  $(CAMLP5DEPS) $(CAMLP5USE) $(CAMLP5COMPAT) -impl $< -o $@
-
 %.ml: %.mlg $(COQPP)
 	$(SHOW)'COQPP   $<'
 	$(HIDE)$(COQPP) $<
@@ -782,7 +778,7 @@ kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 ###########################################################################
 
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
-OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
+OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 
 MAINMLFILES := $(filter-out checker/% plugins/%, $(MLFILES) $(MLIFILES))
 MAINMLLIBFILES := $(filter-out checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))

@@ -78,7 +78,6 @@ LEXFILES := $(call find, '*.mll')
 YACCFILES := $(call find, '*.mly')
 export MLLIBFILES := $(call find, '*.mllib')
 export MLPACKFILES := $(call find, '*.mlpack')
-export ML4FILES := $(call find, '*.ml4')
 export MLGFILES := $(call find, '*.mlg')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
 
@@ -94,19 +93,14 @@ EXISTINGMLI := $(call find, '*.mli')
 
 ## Files that will be generated
 
-GENML4FILES:= $(ML4FILES:.ml4=.ml)
 GENMLGFILES:= $(MLGFILES:.mlg=.ml)
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES) kernel/copcodes.ml
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
 
-# NB: all files in $(GENFILES) can be created initially, while
-# .ml files in $(GENML4FILES) might need some intermediate building.
-# That's why we keep $(GENML4FILES) out of $(GENFILES)
-
 ## More complex file lists
 
-export MLSTATICFILES := $(filter-out $(GENMLFILES) $(GENML4FILES) $(GENMLGFILES), $(EXISTINGML))
+export MLSTATICFILES := $(filter-out $(GENMLFILES), $(EXISTINGML))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
 
 include Makefile.common
@@ -194,7 +188,7 @@ META.coq: META.coq.in
 # Cleaning
 ###########################################################################
 
-.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide ml4clean depclean cleanconfig distclean voclean timingclean alienclean
+.PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide mlgclean depclean cleanconfig distclean voclean timingclean alienclean
 
 clean: objclean cruftclean depclean docclean camldevfilesclean
 
@@ -202,7 +196,7 @@ cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean
 
 objclean: archclean indepclean
 
-cruftclean: ml4clean
+cruftclean: mlgclean
 	find . \( -name '*~' -o -name '*.annot' \) -exec rm -f {} +
 	rm -f gmon.out core
 
@@ -252,8 +246,8 @@ clean-ide:
 	rm -f ide/utf8_convert.ml
 	rm -rf $(COQIDEAPP)
 
-ml4clean:
-	rm -f $(GENML4FILES) $(GENMLGFILES)
+mlgclean:
+	rm -f $(GENMLGFILES)
 
 depclean:
 	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -exec rm -f {} +
@@ -286,7 +280,7 @@ KNOWNVO:=$(patsubst %.v,%.vo,$(call find, '*.v'))
 ALIENVO:=$(filter-out $(KNOWNVO),$(EXISTINGVO))
 
 EXISTINGOBJS:=$(call find, '*.cm[oxia]' -o -name '*.cmxa')
-KNOWNML:=$(EXISTINGML) $(GENMLFILES) $(GENML4FILES) $(MLPACKFILES:.mlpack=.ml) \
+KNOWNML:=$(EXISTINGML) $(GENMLFILES) $(MLPACKFILES:.mlpack=.ml) \
  $(patsubst %.mlp,%.ml,$(wildcard grammar/*.mlp))
 KNOWNOBJS:=$(KNOWNML:.ml=.cmo) $(KNOWNML:.ml=.cmx) $(KNOWNML:.ml=.cmi) \
  $(MLIFILES:.mli=.cmi) \
@@ -308,7 +302,7 @@ include Makefile.ci
 .PHONY: tags printenv
 
 tags:
-	echo $(filter-out checker/%, $(MLIFILES)) $(filter-out checker/%, $(MLSTATICFILES)) $(ML4FILES) | sort -r | xargs \
+	echo $(filter-out checker/%, $(MLIFILES)) $(filter-out checker/%, $(MLSTATICFILES)) $(MLGFILES) | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
@@ -317,12 +311,12 @@ tags:
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
-	echo $(ML4FILES) | sort -r | xargs \
+	echo $(MLGFILES) | sort -r | xargs \
 	etags --append --language=none\
 	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
 
 checker-tags:
-	echo $(filter-out kernel/%, $(MLIFILES)) $(filter-out kernel/%, $(MLSTATICFILES)) $(ML4FILES) | sort -r | xargs \
+	echo $(filter-out kernel/%, $(MLIFILES)) $(filter-out kernel/%, $(MLSTATICFILES)) $(MLGFILES) | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
@@ -331,7 +325,7 @@ checker-tags:
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
-	echo $(ML4FILES) | sort -r | xargs \
+	echo $(MLGFILES) | sort -r | xargs \
 	etags --append --language=none\
 	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
 

@@ -1,0 +1,50 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+(* On win32, we add the directory of coqide to the PATH at launch-time
+   (this used to be done in a .bat script). *)
+
+let set_win32_path () =
+  Unix.putenv "PATH"
+    (Filename.dirname Sys.executable_name ^ ";" ^
+      (try Sys.getenv "PATH" with _ -> ""))
+
+(* On win32, since coqide is now console-free, we re-route stdout/stderr
+   to avoid Sys_error if someone writes to them. We write to a pipe which
+   is never read (by default) or to a temp log file (when in debug mode).
+*)
+
+let reroute_stdout_stderr () =
+  (* We anticipate a bit the argument parsing and look for -debug *)
+  let debug = List.mem "-debug" (Array.to_list Sys.argv) in
+  Minilib.debug := debug;
+  let out_descr =
+    if debug then
+      let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
+      Coqide.logfile := Some name;
+      Unix.descr_of_out_channel chan
+    else
+      snd (Unix.pipe ())
+  in
+  Unix.set_close_on_exec out_descr;
+  Unix.dup2 out_descr Unix.stdout;
+  Unix.dup2 out_descr Unix.stderr
+
+(* We also provide specific kill and interrupt functions. *)
+
+external win32_kill : int -> unit = "win32_kill"
+external win32_interrupt : int -> unit = "win32_interrupt"
+let () =
+  Coq.gio_channel_of_descr_socket := Glib.Io.channel_of_descr_socket;
+  set_win32_path ();
+  Coq.interrupter := win32_interrupt;
+  reroute_stdout_stderr ()
+
+let init () = ()
