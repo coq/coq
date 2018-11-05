@@ -422,6 +422,25 @@ Proof.
  unfold lt in *; simpl in *. now rewrite Pos.compare_xI_xO, H.
 Qed.
 
+Lemma double_lt_mono n m : n < m -> double n < double m.
+Proof.
+  destruct n as [|n], m as [|m]; intros H; try easy.
+Qed.
+
+Lemma double_le_mono n m : n <= m -> double n <= double m.
+Proof.
+  destruct n as [|n], m as [|m]; intros H; try easy.
+Qed.
+
+Lemma succ_double_lt_mono n m : n < m -> succ_double n < succ_double m.
+Proof.
+  destruct n as [|n], m as [|m]; intros H; try easy.
+Qed.
+
+Lemma succ_double_le_mono n m : n <= m -> succ_double n <= succ_double m.
+Proof.
+  destruct n as [|n], m as [|m]; intros H; try easy.
+Qed.
 
 (** 0 is the least natural number *)
 

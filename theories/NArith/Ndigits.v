@@ -8,9 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Bool Morphisms Setoid Bvector BinPos BinNat PeanoNat Pnat Nnat.
+Require Import Bool Morphisms Setoid Bvector BinPos BinNat PeanoNat Pnat Nnat
+        Basics ByteVector.
 
 Local Open Scope N_scope.
+Local Open Scope program_scope.
 
 (** This file is mostly obsolete, see directly [BinNat] now. *)
 
@@ -534,12 +536,20 @@ Definition N2Bv_sized (m : nat) (n : N) : Bvector m :=
   | Npos p => P2Bv_sized  m p
   end.
 
+Definition N2ByteV_sized (m : nat) : N -> ByteVector m :=
+  of_Bvector ∘ N2Bv_sized (m * 8).
+
 Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
     | Vector.nil _ => N0
     | Vector.cons _ false n bv => N.double (Bv2N n bv)
     | Vector.cons _ true n bv => N.succ_double (Bv2N n bv)
   end.
+
+Arguments Bv2N {n} bv, n bv.
+
+Definition ByteV2N {n : nat} : ByteVector n -> N :=
+  Bv2N ∘ to_Bvector.
 
 Lemma Bv2N_N2Bv : forall n, Bv2N _ (N2Bv n) = n.
 Proof.
@@ -573,6 +583,23 @@ apply Vector.rectS ; intros ; simpl.
 destruct a ; compute ; split ; intros x ; now inversion x.
  destruct a, (Bv2N (S n) v) ;
   simpl ;intuition ; try discriminate.
+Qed.
+
+Lemma Bv2N_upper_bound (n : nat) (bv : Bvector n) :
+    (Bv2N bv < N.shiftl_nat 1 n)%N.
+Proof with simpl; auto.
+  induction bv...
+  - constructor.
+  - destruct h.
+    + apply N.succ_double_lt...
+    + apply N.double_lt_mono...
+Qed.
+
+Corollary ByteV2N_upper_bound (n : nat) (v : ByteVector n) :
+  (ByteV2N v < N.shiftl_nat 1 (n * 8))%N.
+Proof.
+  unfold ByteV2N, compose.
+  apply Bv2N_upper_bound.
 Qed.
 
 (** To state nonetheless a second result about composition of

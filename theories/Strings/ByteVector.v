@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Ascii Basics Bvector Psatz String Vector.
+Require Import Ascii Basics Bvector String Vector.
 Export VectorNotations.
 Open Scope program_scope.
 Open Scope string_scope.
