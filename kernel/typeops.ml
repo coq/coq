@@ -151,6 +151,11 @@ let type_of_abstraction _env name var ty =
 let make_judgev c t = 
   Array.map2 make_judge c t
 
+let rec check_empty_stack = function
+| [] -> true
+| CClosure.Zupdate _ :: s -> check_empty_stack s
+| _ -> false
+
 let type_of_apply env func funt argsv argstv =
   let open CClosure in
   let len = Array.length argsv in
@@ -159,7 +164,9 @@ let type_of_apply env func funt argsv argstv =
   let rec apply_rec i typ =
     if Int.equal i len then term_of_fconstr typ
     else
-      let typ, _ = whd_stack infos tab typ [] in
+      let typ, stk = whd_stack infos tab typ [] in
+      (** The return stack is known to be empty *)
+      let () = assert (check_empty_stack stk) in
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
