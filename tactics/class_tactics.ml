@@ -121,15 +121,7 @@ let () =
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "debug output for typeclasses proof search";
-      optkey   = ["Debug";"Typeclasses"];
-      optread  = get_typeclasses_debug;
-      optwrite = set_typeclasses_debug; }
-
-let () =
+let _ =
   declare_int_option
     { optdepr  = false;
       optname  = "verbosity of debug output for typeclasses proof search";

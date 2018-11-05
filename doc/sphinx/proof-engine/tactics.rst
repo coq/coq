@@ -4503,3 +4503,28 @@ user-defined tactics.
   significant changes in your theories to obtain the same result. As a
   drawback of the re-engineering of the code, this tactic has also been
   completely revised to get a very compact and readable version.
+
+Proof maintenance
+-----------------
+
+*Experimental.*  Many tactics, such as :tacn:`intros`, can automatically generate names, such
+as "H0" or "H1" for a new hypothesis introduced from a goal.  Subsequent proof steps
+may explicitly refer to these names.  However, future versions of Coq may not assign
+names exactly the same way, which could cause the proof to fail because the
+new names don't match the explicit references in the proof.
+
+The following "Mangle Names" settings let users find all the
+places where proofs rely on automatically generated names, which can
+then be named explicitly to avoid any incompatibility.  These
+settings cause Coq to generate different names, producing errors for
+references to automatically generated names.
+
+.. flag:: Mangle Names
+
+   When set, generated names use the prefix specified in the following
+   option instead of the default prefix.
+
+.. opt:: Mangle Names Prefix @string
+   :name: Mangle Names Prefix
+
+   Specifies the prefix to use when generating names.

@@ -164,7 +164,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
 .. cmd:: Extraction Inline {+ @qualid }
 
    In addition to the automatic inline feature, the constants
-   mentionned by this command will always be inlined during extraction.
+   mentioned by this command will always be inlined during extraction.
 
 .. cmd:: Extraction NoInline {+ @qualid }
 
@@ -409,6 +409,52 @@ It is possible to instruct the extraction not to use particular filenames.
 
 For |OCaml|, a typical use of these commands is
 ``Extraction Blacklist String List``.
+
+Additional settings
+~~~~~~~~~~~~~~~~~~~
+
+.. opt:: Extraction File Comment @string
+   :name: Extraction File Comment
+
+   Provides a comment that is included at the beginning of the output files.
+
+.. opt:: Extraction Flag @num
+   :name: Extraction Flag
+
+   Controls which optimizations are used during extraction, providing a finer-grained
+   control than :flag:`Extraction Optimize`.  The bits of *num* are used as a bit mask.
+   Keeping an option off keeps the extracted ML more similar to the Coq term.
+   Values are:
+
+   +-----+-------+----------------------------------------------------------------+
+   | Bit | Value | Optimization (default is on unless noted otherwise)            |
+   +-----+-------+----------------------------------------------------------------+
+   |   0 |    1  | Remove local dummy variables                                   |
+   +-----+-------+----------------------------------------------------------------+
+   |   1 |    2  | Use special treatment for fixpoints                            |
+   +-----+-------+----------------------------------------------------------------+
+   |   2 |    4  | Simplify case with iota-redux                                  |
+   +-----+-------+----------------------------------------------------------------+
+   |   3 |    8  | Factor case branches as functions                              |
+   +-----+-------+----------------------------------------------------------------+
+   |   4 |   16  | (not available, default false)                                 |
+   +-----+-------+----------------------------------------------------------------+
+   |   5 |   32  | Simplify case as function of one argument                      |
+   +-----+-------+----------------------------------------------------------------+
+   |   6 |   64  | Simplify case by swapping case and lambda                      |
+   +-----+-------+----------------------------------------------------------------+
+   |   7 |  128  | Some case optimization                                         |
+   +-----+-------+----------------------------------------------------------------+
+   |   8 |  256  | Push arguments inside a letin                                  |
+   +-----+-------+----------------------------------------------------------------+
+   |   9 |  512  | Use linear let reduction (default false)                       |
+   +-----+-------+----------------------------------------------------------------+
+   |  10 | 1024  | Use linear beta reduction (default false)                      |
+   +-----+-------+----------------------------------------------------------------+
+
+.. flag:: Extraction TypeExpand
+
+   If set, fully expand Coq types in ML.  **see type_expand in mlutil.ml**
 
 Differences between |Coq| and ML type systems
 ----------------------------------------------

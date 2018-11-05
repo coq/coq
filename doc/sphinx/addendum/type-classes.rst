@@ -461,12 +461,12 @@ type, like:
 This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 
 
-Options
-~~~~~~~
+Settings
+~~~~~~~~
 
 .. flag:: Typeclasses Dependency Order
 
-   This option (on by default since 8.6) respects the dependency order
+   This flag (on by default since 8.6) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
    come first, while the non-dependent subgoals were put before
    the dependent ones previously (Coq 8.5 and below). This can result in
@@ -475,7 +475,7 @@ Options
 
 .. flag:: Typeclasses Filtered Unification
 
-   This option, available since Coq 8.6 and off by default, switches the
+   This flag, available since Coq 8.6 and off by default, switches the
    hint application procedure to a filter-then-unify strategy. To apply a
    hint, we first check that the goal *matches* syntactically the
    inferred or specified pattern of the hint, and only then try to
@@ -483,13 +483,13 @@ Options
    improve performance by calling unification less often, matching
    syntactic patterns being very quick. This also provides more control
    on the triggering of instances. For example, forcing a constant to
-   explicitely appear in the pattern will make it never apply on a goal
+   explicitly appear in the pattern will make it never apply on a goal
    where there is a hole in that place.
 
 
 .. flag:: Typeclasses Limit Intros
 
-   This option (on by default) controls the ability to apply hints while
+   This flag (on by default) controls the ability to apply hints while
    avoiding (functional) eta-expansions in the generated proof term. It
    does so by allowing hints that conclude in a product to apply to a
    goal with a matching product directly, avoiding an introduction.
@@ -503,16 +503,16 @@ Options
 
 .. flag:: Typeclass Resolution For Conversion
 
-   This option (on by default) controls the use of typeclass resolution
+   This flag (on by default) controls the use of typeclass resolution
    when a unification problem cannot be solved during elaboration/type
-   inference. With this option on, when a unification fails, typeclass
+   inference. With this flag on, when a unification fails, typeclass
    resolution is tried before launching unification once again.
 
 
 .. flag:: Typeclasses Strict Resolution
 
-   Typeclass declarations introduced when this option is set have a
-   stricter resolution behavior (the option is off by default). When
+   Typeclass declarations introduced when this flag is set have a
+   stricter resolution behavior (the flag is off by default). When
    looking for unifications of a goal with an instance of this class, we
    “freeze” all the existentials appearing in the goals, meaning that
    they are considered rigid during unification and cannot be
@@ -528,15 +528,28 @@ Options
 
 .. flag:: Typeclasses Unique Instances
 
-   Typeclass declarations introduced when this option is set have a more
-   efficient resolution behavior (the option is off by default). When a
+   Typeclass declarations introduced when this flag is set have a more
+   efficient resolution behavior (the flag is off by default). When a
    solution to the typeclass goal of this class is found, we never
    backtrack on it, assuming that it is canonical.
+
+.. flag:: Typeclasses Iterative Deepening
+
+   When this flag is set, the proof search strategy is breadth-first search.
+   Otherwise, the search strategy is depth-first search.  The default is off.
+   :cmd:`Typeclasses eauto` is another way to set this flag.
+
+.. opt:: Typeclasses Depth @num
+   :name: Typeclasses Depth
+
+   Sets the maximum proof search depth.  The default is unbounded.
+   :cmd:`Typeclasses eauto` is another way to set this option.
 
 .. flag:: Typeclasses Debug
 
    Controls whether typeclass resolution steps are shown during search.  Setting this flag
-   also sets :opt:`Typeclasses Debug Verbosity` to 1.
+   also sets :opt:`Typeclasses Debug Verbosity` to 1.  :cmd:`Typeclasses eauto`
+   is another way to set this flag.
 
 .. opt:: Typeclasses Debug Verbosity @num
    :name: Typeclasses Debug Verbosity
@@ -547,7 +560,7 @@ Options
 
 .. flag:: Refine Instance Mode
 
-   This option allows to switch the behavior of instance declarations made through
+   This flag allows to switch the behavior of instance declarations made through
    the Instance command.
 
    + When it is on (the default), instances that have unsolved holes in
@@ -560,14 +573,17 @@ Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Typeclasses eauto := {? debug} {? {dfs | bfs}} depth
+   :name: Typeclasses eauto
 
    This command allows more global customization of the typeclass
    resolution tactic. The semantics of the options are:
 
    + ``debug`` In debug mode, the trace of successfully applied tactics is
-     printed.
+     printed.  This value also be set with :flag:`Typeclasses Debug`.
 
    + ``dfs, bfs`` This sets the search strategy to depth-first search (the
-     default) or breadth-first search.
+     default) or breadth-first search.  This value can also be set with
+     :flag:`Typeclasses Iterative Deepening`.
 
-   + ``depth`` This sets the depth limit of the search.
+   + ``depth`` This sets the depth limit of the search.  This value can also be set with
+     :opt:`Typeclasses Depth`.
