@@ -1928,6 +1928,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
 let vernac_print ~pstate ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
+  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
   | PrintFullContext-> print_full_context_typ env sigma
   | PrintSectionContext qid -> print_sec_context_typ env sigma qid
