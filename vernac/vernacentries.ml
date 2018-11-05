@@ -1536,7 +1536,7 @@ let _ =
       optname  = "kernel term sharing";
       optkey   = ["Kernel"; "Term"; "Sharing"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
-      optwrite = (fun b -> Global.set_reduction_sharing b) }
+      optwrite = Global.set_share_reduction }
 
 let _ =
   declare_bool_option

@@ -282,7 +282,7 @@ val is_global : Evd.evar_map -> GlobRef.t -> constr -> bool
 
 val isGlobalRef : Evd.evar_map -> constr -> bool
 
-val is_template_polymorphic : env -> Evd.evar_map -> constr -> bool
+val is_template_polymorphic_ind : env -> Evd.evar_map -> constr -> bool
 
 val is_Prop : Evd.evar_map -> constr -> bool
 val is_Set : Evd.evar_map -> constr -> bool

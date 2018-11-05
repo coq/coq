@@ -137,6 +137,7 @@ val add_constraints :
 (** Setting the type theory flavor *)
 val set_engagement : Declarations.engagement -> safe_transformer0
 val set_typing_flags : Declarations.typing_flags -> safe_transformer0
+val set_share_reduction : bool -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 
@@ -217,4 +218,4 @@ val register :
 val register_inline : Constant.t -> safe_transformer0
 
 val set_strategy :
-  safe_environment -> Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_environment
+  Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0

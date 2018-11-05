@@ -194,6 +194,10 @@ let set_engagement c senv =
 let set_typing_flags c senv =
   { senv with env = Environ.set_typing_flags c senv.env }
 
+let set_share_reduction b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with share_reduction = b } senv
+
 (** Check that the engagement [c] expected by a library matches
     the current (initial) one *)
 let check_engagement env expected_impredicative_set =
@@ -1190,7 +1194,7 @@ loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
 
-let set_strategy e k l = { e with env =
+let set_strategy k l e = { e with env =
    (Environ.set_oracle e.env
       (Conv_oracle.set_strategy (Environ.oracle e.env) k l)) }
 

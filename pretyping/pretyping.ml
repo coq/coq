@@ -692,7 +692,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
     let sigma, resj =
       match EConstr.kind sigma resj.uj_val with
       | App (f,args) ->
-          if is_template_polymorphic !!env sigma f then
+          if Termops.is_template_polymorphic_ind !!env sigma f then
 	    (* Special case for inductive type applications that must be 
 	       refreshed right away. *)
             let c = mkApp (f, args) in

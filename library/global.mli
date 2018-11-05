@@ -150,7 +150,9 @@ val register_inline : Constant.t -> unit
 
 val set_strategy : Constant.t Names.tableKey -> Conv_oracle.level -> unit
 
-val set_reduction_sharing : bool -> unit
+(** {6 Conversion settings } *)
+
+val set_share_reduction : bool -> unit
 
 (* Modifies the global state, registering new universes *)
 

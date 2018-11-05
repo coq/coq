@@ -83,7 +83,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   (** Refresh the types of evars under template polymorphic references *)
   let rec refresh_term_evars ~onevars ~top t =
     match EConstr.kind !evdref t with
-    | App (f, args) when is_template_polymorphic env !evdref f ->
+    | App (f, args) when Termops.is_template_polymorphic_ind env !evdref f ->
       let pos = get_polymorphic_positions !evdref f in
         refresh_polymorphic_positions args pos; t
     | App (f, args) when top && isEvar !evdref f -> 
