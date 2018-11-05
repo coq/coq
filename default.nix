@@ -23,8 +23,8 @@
 
 { pkgs ?
     (import (fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/06613c189eebf4d6167d2d010a59cf38b43b6ff4.tar.gz";
-      sha256 = "13grhy3cvdwr7wql1rm5d7zsfpvp44cyjhiain4zs70r90q3swdg";
+      url = "https://github.com/NixOS/nixpkgs/archive/69522a0acf8e840e8b6ac0a9752a034ab74eb3c0.tar.gz";
+      sha256 = "12k80gd4lkw9h9y1szvmh0jmh055g3b6wnphmx4ab1qdwlfaylnx";
     }) {})
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true
@@ -33,6 +33,7 @@
 , shell ? false
   # We don't use lib.inNixShell because that would also apply
   # when in a nix-shell of some package depending on this one.
+, coq-version ? "8.10-git"
 }:
 
 with pkgs;
@@ -101,7 +102,20 @@ stdenv.mkDerivation rec {
 
   installCheckTarget = [ "check" ];
 
-  passthru = { inherit ocamlPackages; };
+  passthru = {
+    inherit coq-version ocamlPackages;
+    dontFilter = true; # Useful to use mkCoqPackages from <nixpkgs>
+  };
+
+  setupHook = writeText "setupHook.sh" "
+    addCoqPath () {
+      if test -d \"$1/lib/coq/${coq-version}/user-contrib\"; then
+        export COQPATH=\"$COQPATH\${COQPATH:+:}$1/lib/coq/${coq-version}/user-contrib/\"
+      fi
+    }
+
+    addEnvHooks \"$targetOffset\" addCoqPath
+  ";
 
   meta = {
     description = "Coq proof assistant";
@@ -113,6 +127,7 @@ stdenv.mkDerivation rec {
     '';
     homepage = http://coq.inria.fr;
     license = licenses.lgpl21;
+    platforms = platforms.unix;
   };
 
 }
