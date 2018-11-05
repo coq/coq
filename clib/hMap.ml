@@ -398,6 +398,10 @@ struct
 
   let height s = Int.Map.height s
 
+  (* Not as efficient as the original version *)
+  let filter_range f s =
+    filter (fun x _ -> f x = 0) s
+
   module Unsafe =
   struct
     let map f s =
