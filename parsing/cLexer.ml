@@ -767,15 +767,15 @@ let func cs =
   (ts, loct_func loct)
 
 let lexer = {
-  Token.tok_func = func;
-  Token.tok_using =
+  Plexing.tok_func = func;
+  Plexing.tok_using =
     (fun pat -> match Tok.of_pattern pat with
        | KEYWORD s -> add_keyword s
        | _ -> ());
-  Token.tok_removing = (fun _ -> ());
-  Token.tok_match = Tok.match_pattern;
-  Token.tok_comm = None;
-  Token.tok_text = token_text }
+  Plexing.tok_removing = (fun _ -> ());
+  Plexing.tok_match = Tok.match_pattern;
+  Plexing.tok_comm = None;
+  Plexing.tok_text = token_text }
 
 (** Terminal symbols interpretation *)
 
