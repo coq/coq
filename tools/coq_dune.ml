@@ -175,8 +175,10 @@ let pp_vo_dep dir fmt vo =
   let deps = List.map (fun s -> bpath [sdir;s]) (edep @ vo.deps) in
   (* The source file is also corrected as we will call coqtop from the top dir *)
   let source = bpath (dir @ [Filename.(remove_extension vo.target) ^ ".v"]) in
+  (* We explicitly include the location of coqlib to avoid tricky issues with coqlib location *)
+  let libflag = "-coqlib %{project_root}" in
   (* The final build rule *)
-  let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s -compile %s))" eflag cflag source in
+  let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s %s -compile %s))" libflag eflag cflag source in
   pp_rule fmt [vo.target] deps action
 
 let pp_ml4_dep _dir fmt ml =
