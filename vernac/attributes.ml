@@ -173,10 +173,9 @@ let polymorphic_nowarn =
   universe_transform ~warn_unqualified:false >>
   qualify_attribute ukey polymorphic_base
 
-let universe_poly_template =
-  let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in
+let template =
   universe_transform ~warn_unqualified:true >>
-  qualify_attribute ukey (polymorphic_base ++ template)
+  qualify_attribute ukey (bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate")
 
 let polymorphic =
   universe_transform ~warn_unqualified:true >>

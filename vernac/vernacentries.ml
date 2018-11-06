@@ -57,17 +57,16 @@ module DefAttributes = struct
   type t = {
     locality : bool option;
     polymorphic : bool;
-    template : bool option;
     program : bool;
     deprecated : deprecation option;
   }
 
   let parse f =
     let open Attributes in
-    let ((locality, deprecated), (polymorphic, template)), program =
-      parse Notations.(locality ++ deprecation ++ universe_poly_template ++ program) f
+    let ((locality, deprecated), polymorphic), program =
+      parse Notations.(locality ++ deprecation ++ polymorphic ++ program) f
     in
-    { polymorphic; program; locality; template; deprecated }
+    { polymorphic; program; locality; deprecated }
 end
 
 (*******************)
@@ -657,6 +656,7 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
   let open DefAttributes in
+  let atts, template = Attributes.(parse_with_extra template atts) in
   let atts = parse atts in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
@@ -682,7 +682,6 @@ let vernac_inductive ~atts cum lo finite indl =
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
-  let template = atts.template in
   if Option.has_some is_defclass then
     (** Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in

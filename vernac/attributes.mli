@@ -49,7 +49,7 @@ val mk_deprecation : ?since: string option -> ?note: string option -> unit -> de
 
 val polymorphic : bool attribute
 val program : bool attribute
-val universe_poly_template : (bool * bool option) attribute
+val template : bool option attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
 
