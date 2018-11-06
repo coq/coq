@@ -18,10 +18,3 @@
  (synopsis "Coq syntax plugin: reals")
  (modules r_syntax)
  (libraries coq.vernac))
-
-(library
- (name int31_syntax_plugin)
- (public_name coq.plugins.int31_syntax)
- (synopsis "Coq syntax plugin: int31")
- (modules int31_syntax)
- (libraries coq.vernac))

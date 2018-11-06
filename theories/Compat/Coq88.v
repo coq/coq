@@ -22,7 +22,7 @@ Require Coq.ZArith.BinIntDef Coq.PArith.BinPosDef Coq.NArith.BinNatDef.
 Require Coq.Reals.Rdefinitions.
 Require Coq.Numbers.Cyclic.Int31.Int31.
 Declare ML Module "r_syntax_plugin".
-Declare ML Module "int31_syntax_plugin".
 Numeral Notation BinNums.Z BinIntDef.Z.of_int BinIntDef.Z.to_int : Z_scope.
 Numeral Notation BinNums.positive BinPosDef.Pos.of_int BinPosDef.Pos.to_int : positive_scope.
 Numeral Notation BinNums.N BinNatDef.N.of_int BinNatDef.N.to_int : N_scope.
+Numeral Notation Int31.int31 Int31.phi_inv Int31.phi : int31_scope.

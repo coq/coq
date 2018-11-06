@@ -55,7 +55,6 @@ Scheme int31_rec := Induction for int31 Sort Set.
 Scheme int31_rect := Induction for int31 Sort Type.
 
 Declare Scope int31_scope.
-Declare ML Module "int31_syntax_plugin".
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.
 Local Open Scope int31_scope.
@@ -493,3 +492,5 @@ Definition tail031 (i:int31) :=
 
 Register head031 as int31.head0.
 Register tail031 as int31.tail0.
+
+Numeral Notation int31 phi_inv phi : int31_scope.

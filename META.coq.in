@@ -411,30 +411,6 @@ package "plugins" (
     archive(native)  = "nsatz_plugin.cmx"
   )
 
-  package "natsyntax" (
-
-    description = "Coq natsyntax plugin"
-    version     = "8.10"
-
-    requires    = ""
-    directory   = "syntax"
-
-    archive(byte)    = "nat_syntax_plugin.cmo"
-    archive(native)  = "nat_syntax_plugin.cmx"
-  )
-
-  package "zsyntax" (
-
-    description = "Coq zsyntax plugin"
-    version     = "8.10"
-
-    requires    = ""
-    directory   = "syntax"
-
-    archive(byte)    = "z_syntax_plugin.cmo"
-    archive(native)  = "z_syntax_plugin.cmx"
-  )
-
   package "rsyntax" (
 
     description = "Coq rsyntax plugin"
@@ -445,18 +421,6 @@ package "plugins" (
 
     archive(byte)    = "r_syntax_plugin.cmo"
     archive(native)  = "r_syntax_plugin.cmx"
-  )
-
-  package "int31syntax" (
-
-    description = "Coq int31syntax plugin"
-    version     = "8.10"
-
-    requires    = ""
-    directory   = "syntax"
-
-    archive(byte)    = "int31_syntax_plugin.cmo"
-    archive(native)  = "int31_syntax_plugin.cmx"
   )
 
   package "string_notation" (
