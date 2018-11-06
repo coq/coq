@@ -6,6 +6,25 @@ OCaml
 - Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
   INSTALL file for more information on dependencies.
 
+Specification language, type inference
+
+- Fixing a missing check in interpreting instances of existential
+  variables that are bound to local definitions might exceptionally
+  induce an overhead if the cost of checking the conversion of the
+  corresponding definitions is additionally high (PR #8215).
+
+- A few improvements in inference of the return clause of `match` can
+  exceptionally introduce incompatibilities (PR #262). This can be
+  solved by writing an explicit `return` clause, sometimes even simply
+  an explicit `return _` clause.
+
+Notations
+
+- New command `Declare Scope` to explicitly declare a scope name
+  before any use of it. Implicit declaration of a scope at the time of
+  `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
+  deprecated.
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)
@@ -23,6 +42,15 @@ Tactics
 - The tactics 'lia','nia','lra','nra' are now using a novel
   Simplex-based proof engine. In case of regression, 'Unset Simplex'
   to get the venerable Fourier-based engine.
+
+- Names of existential variables occurring in Ltac functions
+  (e.g. `?[n]` or `?n` in terms - not in patterns) are now interpreted
+  the same way as other variable names occurring in Ltac functions.
+
+Vernacular commands
+
+- `Combined Scheme` can now work when inductive schemes are generated in sort
+  `Type`. It used to be limited to sort `Prop`.
 
 Tools
 
@@ -44,6 +72,12 @@ Standard Library
   the upper bound of number represented by a vector.
   Allowed implicit vector length argument in `Ndigits.Bv2N`.
 
+- Added `Bvector.BVeq` that decides whether two `Bvector`s are equal.
+
+- Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`.
+
+- Added `ByteVector` type that can convert to and from [string].
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
@@ -55,11 +89,6 @@ Notations
 
 - New support for autonomous grammars of terms, called "custom
   entries" (see chapter "Syntax extensions" of the reference manual).
-
-- New command `Declare Scope` to explicitly declare a scope name
-  before any use of it. Implicit declaration of a scope at the time of
-  `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
-  deprecated.
 
 - Deprecated compatibility notations will actually be removed in the
   next version of Coq.  Uses of these notations are generally easy to
@@ -113,31 +142,17 @@ Tactics
 
 - The `romega` tactics have been deprecated; please use `lia` instead.
 
-- Names of existential variables occurring in Ltac functions
-  (e.g. `?[n]` or `?n` in terms - not in patterns) are now interpreted
-  the same way as other variable names occurring in Ltac functions.
-
 Focusing
 
 - Focusing bracket `{` now supports named goal selectors,
   e.g. `[x]: {` will focus on a goal (existential variable) named `x`.
   As usual, unfocus with `}` once the sub-goal is fully solved.
 
-Specification language, type inference
+Specification language
 
 - A fix to unification (which was sensitive to the ascii name of
   variables) may occasionally change type inference in incompatible
   ways, especially regarding the inference of the return clause of `match`.
-
-- Fixing a missing check in interpreting instances of existential
-  variables that are bound to local definitions might exceptionally
-  induce an overhead if the cost of checking the conversion of the
-  corresponding definitions is additionally high (PR #8215).
-
-- A few improvements in inference of the return clause of `match` can
-  exceptionally introduce incompatibilities (PR #262). This can be
-  solved by writing an explicit `return` clause, sometimes even simply
-  an explicit `return _` clause.
 
 Standard Library
 
@@ -178,9 +193,6 @@ Standard Library
   impacts users running Coq without the init library (`-nois` or
   `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
 
-- Added `Bvector.BVeq` that decides whether two `Bvector`s are equal.
-- Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`.
-
 Tools
 
 - Coq_makefile lets one override or extend the following variables from
@@ -219,8 +231,6 @@ Vernacular Commands
   scope. If you want the previous behavior, use `Global Set SsrHave
   NoTCResolution`.
 - Multiple sections with the same name are allowed.
-- `Combined Scheme` can now work when inductive schemes are generated in sort
-  `Type`. It used to be limited to sort `Prop`.
 
 Coq binaries and process model
 
@@ -259,8 +269,6 @@ Standard Library
 
 - There are now conversions between `string` and `positive`, `Z`,
   `nat`, and `N` in binary, octal, and hex.
-
-- Added `ByteVector` type that can convert to and from [string].
 
 Display diffs between proof steps
 
