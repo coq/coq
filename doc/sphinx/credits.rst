@@ -557,7 +557,7 @@ Pierre Courtieu, Julien Forest and Yves Bertot added extra support to
 reason on the inductive structure of recursively defined functions.
 
 Jean-Marc Notin significantly contributed to the general maintenance of
-the system. He also took care of `coqdoc`.
+the system. He also took care of ``coqdoc``.
 
 Pierre Castéran contributed to the documentation of (co-)inductive types
 and suggested improvements to the libraries.
@@ -642,7 +642,7 @@ improvements, Jean-Marc Notin provided help in debugging, general
 maintenance and coqdoc support, Vincent Siles contributed extensions of
 the Scheme command and of injection.
 
-Bruno Barras implemented the `coqchk` tool: this is a stand-alone
+Bruno Barras implemented the ``coqchk`` tool: this is a stand-alone
 type checker that can be used to certify .vo files. Especially, as this
 verifier runs in a separate process, it is granted not to be “hijacked”
 by virtually malicious extensions added to |Coq|.
@@ -817,12 +817,12 @@ expressions occurring in the goal by pattern in tactics such as set or
 destruct. Hugo Herbelin also relied on ideas from Chung-Kil Hur’s Heq
 plugin to introduce automatic computation of occurrences to generalize
 when using destruct and induction on types with indices. Stéphane Glondu
-introduced new tactics constr\_eq, is\_evar and has\_evar to be used
+introduced new tactics :tacn:`constr_eq`, :tacn:`is_evar`, and :tacn:`has_evar`, to be used
 when writing complex tactics. Enrico Tassi added support to fine-tuning
-the behavior of simpl. Enrico Tassi added the ability to specify over
+the behavior of :tacn:`simpl`. Enrico Tassi added the ability to specify over
 which variables of a section a lemma has to be exactly generalized.
 Pierre Letouzey added a tactic timeout and the interruptibility of
-vm\_compute. Bug fixes and miscellaneous improvements of the tactic
+:tacn:`vm_compute`. Bug fixes and miscellaneous improvements of the tactic
 language came from Hugo Herbelin, Pierre Letouzey and Matthieu Sozeau.
 
 Regarding decision tactics, Loïc Pottier maintained nsatz, moving in
@@ -866,7 +866,7 @@ Pierre Courtieu and Arnaud Spiwack contributed new features for using
 Coq through Proof General.
 
 The Dp plugin has been removed. Use the plugin provided with Why 3
-instead (http://why3.lri.fr).
+instead (http://why3.lri.fr/).
 
 Under the hood, the |Coq| architecture benefited from improvements in
 terms of efficiency and robustness, especially regarding universes
@@ -982,7 +982,7 @@ working at the IAS in Princeton.
 The guard condition has been made compliant with extensional equality
 principles such as propositional extensionality and univalence, thanks
 to Maxime Dénès and Bruno Barras. To ensure compatibility with the
-univalence axiom, a new flag “-indices-matter” has been implemented,
+univalence axiom, a new flag ``-indices-matter`` has been implemented,
 taking into account the universe levels of indices when computing the
 levels of inductive types. This supports using |Coq| as a tool to explore
 the relations between homotopy theory and type theory.
@@ -997,7 +997,7 @@ and improvements regarding the different components of the system. We
 shall only list a few of them.
 
 Pierre Boutillier developed an improved tactic for simplification of
-expressions called cbn.
+expressions called :tacn:`cbn`.
 
 Maxime Dénès maintained the bytecode-based reduction machine. Pierre
 Letouzey maintained the extraction mechanism.
@@ -1069,7 +1069,7 @@ over 100 contributions integrated. The main user visible changes are:
    document.
 
 -  More access to the proof engine features from Ltac: goal management
-   primitives, range selectors and a ``typeclasses eauto`` engine handling
+   primitives, range selectors and a :tacn:`typeclasses eauto` engine handling
    multiple goals and multiple successes, by Cyprien Mangin, Matthieu
    Sozeau and Arnaud Spiwack.
 
@@ -1199,25 +1199,25 @@ Credits: version 8.7
 and cleanups of the internals of the system along with a few new features. The
 main user visible changes are:
 
-- New tactics: variants of tactics supporting existential variables eassert,
-  eenough, etc... by Hugo Herbelin. Tactics extensionality in H and
-  inversion_sigma by Jason Gross, specialize with ... accepting partial bindings
+- New tactics: variants of tactics supporting existential variables :tacn:`eassert`,
+  :tacn:`eenough`, etc... by Hugo Herbelin. Tactics ``extensionality in H`` and
+  :tacn:`inversion_sigma` by Jason Gross, ``specialize with ...`` accepting partial bindings
   by Pierre Courtieu.
 
-- Cumulative Polymorphic Inductive Types, allowing cumulativity of universes to
+- ``Cumulative Polymorphic Inductive`` types, allowing cumulativity of universes to
   go through applied inductive types, by Amin Timany and Matthieu Sozeau.
 
 - Integration of the SSReflect plugin and its documentation in the reference
   manual, by Enrico Tassi, Assia Mahboubi and Maxime Dénès.
 
-- The coq_makefile tool was completely redesigned to improve its maintainability
-  and the extensibility of generated Makefiles, and to make `_CoqProject` files
+- The ``coq_makefile`` tool was completely redesigned to improve its maintainability
+  and the extensibility of generated Makefiles, and to make ``_CoqProject`` files
   more palatable to IDEs by Enrico Tassi.
 
 |Coq| 8.7 involved a large amount of work on cleaning and speeding up the code
 base, notably the work of Pierre-Marie Pédrot on making the tactic-level system
 insensitive to existential variable expansion, providing a safer API to plugin
-writers and making the code more robust. The `dev/doc/changes.txt` file
+writers and making the code more robust. The ``dev/doc/changes.txt`` file
 documents the numerous changes to the implementation and improvements of
 interfaces. An effort to provide an official, streamlined API to plugin writers
 is in progress, thanks to the work of Matej Košík.
@@ -1238,8 +1238,8 @@ The BigN, BigZ, BigQ libraries are no longer part of the |Coq| standard library,
 they are now provided by a separate repository https://github.com/coq/bignums,
 maintained by Pierre Letouzey.
 
-In the Reals library, `IZR` has been changed to produce a compact representation
-of integers and real constants are now represented using `IZR` (work by
+In the Reals library, ``IZR`` has been changed to produce a compact representation
+of integers and real constants are now represented using ``IZR`` (work by
 Guillaume Melquiond).
 
 Standard library additions and improvements by Jason Gross, Pierre Letouzey and
@@ -1346,7 +1346,7 @@ with a few new features. The main user visible changes are:
   Laurence Rideau, Matthieu Sozeau, Paul Steckler, Enrico Tassi,
   Laurent Théry, Nikita Zyuzin.
 
-- Tools: experimental ``-mangle-names`` option to coqtop/coqc for
+- Tools: experimental ``-mangle-names`` option to ``coqtop``/``coqc`` for
   linting proof scripts, by Jasper Hugunin.
 
 On the implementation side, the ``dev/doc/changes.md`` file
@@ -1370,7 +1370,7 @@ maintaining and improving the continuous integration system.
 
 The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
-users. A list of packages is available at https://coq.inria.fr/opam/www.
+users. A list of packages is available at https://coq.inria.fr/opam/www/.
 
 The 44 contributors for this version are Yves Bertot, Joachim Breitner, Tej
 Chajed, Arthur Charguéraud, Jacques-Pascal Deplaix, Maxime Dénès, Jim Fehrle,
@@ -1421,8 +1421,8 @@ changes:
 
 - Notations:
 
-  - Support for autonomous grammars of terms called "custom entries", by
-    Hugo Herbelin (see section :ref:`custom-entries` of the reference
+  - Support for autonomous grammars of terms called “custom entries”, by
+    Hugo Herbelin (see Section :ref:`custom-entries` of the reference
     manual).
 
   - Deprecated notations of the standard library will be removed in the
@@ -1449,9 +1449,9 @@ changes:
 - SSReflect: the implementation of delayed clear was simplified by
   Enrico Tassi: the variables are always renamed using inaccessible
   names when the clear switch is processed and finally cleared at the
-  end of the intro pattern. In addition to that the use-and-discard flag
-  `{}` typical of rewrite rules can now be also applied to views,
-  e.g. `=> {}/v` applies `v` and then clears `v`. See section
+  end of the intro pattern. In addition to that, the use-and-discard flag
+  ``{}`` typical of rewrite rules can now be also applied to views,
+  e.g. ``=> {}/v`` applies ``v`` and then clears ``v``. See Section
   :ref:`introduction_ssr`.
 
 - Vernacular:
@@ -1476,10 +1476,10 @@ changes:
   - Multiple sections with the same name are now allowed, by Jasper
     Hugunin.
 
-- Library: additions and changes in the ``VectorDef``, ``Ascii`` and
-  ``String`` library. Syntax notations are now available only when using
+- Library: additions and changes in the ``VectorDef``, ``Ascii``, and
+  ``String`` libraries. Syntax notations are now available only when using
   ``Import`` of libraries and not merely ``Require``, by various
-  contributors (source of incompatibility, see `CHANGES.md` for details).
+  contributors (source of incompatibility, see ``CHANGES.md`` for details).
 
 - Toplevels: ``coqtop`` and ``coqide`` can now display diffs between proof
   steps in color, using the :opt:`Diffs` option, by Jim Fehrle.
@@ -1515,7 +1515,7 @@ continuous integration system.
 
 The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
-users. A list of packages is available at https://coq.inria.fr/opam/www.
+users. A list of packages is available at https://coq.inria.fr/opam/www/.
 
 The 54 contributors for this version are Léo Andrès, Rin Arakaki,
 Benjamin Barenblat, Langston Barrett, Siddharth Bhat, Martin Bodin,
@@ -1548,6 +1548,6 @@ result of ~2,000 commits and ~500 PRs merged, closing 75+ issues.
 The |Coq| development team welcomed Vincent Laporte, a new |Coq|
 engineer working with Maxime Dénès in the |Coq| consortium.
 
-| Paris, October 2018,
+| Paris, November 2018,
 | Matthieu Sozeau for the |Coq| development team
 |
