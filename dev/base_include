@@ -176,7 +176,7 @@ open Mltop
 open Record
 open Coqloop
 open Vernacentries
-open Vernacinterp
+open Vernacextend
 open Vernac
 
 (* Various utilities *)

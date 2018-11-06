@@ -75,9 +75,9 @@ let is_ident x = function
 let make_extend loc self cl = match cl with
 | [[ExtNonTerminal (Uentry e, Some id)], act] when is_ident id act ->
   (** Special handling of identity arguments by not redeclaring an entry *)
-  <:expr< Vernacentries.Arg_alias $lid:e$ >>
+  <:expr< Vernacextend.Arg_alias $lid:e$ >>
 | _ ->
-  <:expr< Vernacentries.Arg_rules $mlexpr_of_list (make_rule loc self) (List.rev cl)$ >>
+  <:expr< Vernacextend.Arg_rules $mlexpr_of_list (make_rule loc self) (List.rev cl)$ >>
 
 let warning_deprecated prefix s = function
 | None -> ()
@@ -144,9 +144,9 @@ let declare_vernac_argument loc s pr cl =
   let pr_rules = match pr with
     | None -> <:expr< fun _ -> Pp.str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< $lid:pr$ >> in
-  declare_arg loc s <:expr< Vernacentries.vernac_argument_extend ~{ name = $se$ } {
-    Vernacentries.arg_printer = $pr_rules$;
-    Vernacentries.arg_parsing = $make_extend loc s cl$
+  declare_arg loc s <:expr< Vernacextend.vernac_argument_extend ~{ name = $se$ } {
+    Vernacextend.arg_printer = $pr_rules$;
+    Vernacextend.arg_parsing = $make_extend loc s cl$
   } >>
 
 open Pcaml
