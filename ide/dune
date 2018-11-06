@@ -35,7 +35,7 @@
 (rule
  (targets coqide_os_specific.ml)
  (deps (:in-file coqide_X11.ml.in)) ; TODO support others
- (action (run cp %{in-file} %{targets})))
+ (action (copy# %{in-file} %{targets})))
 
 (executable
  (name coqide_main)
