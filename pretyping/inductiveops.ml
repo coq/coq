@@ -759,6 +759,6 @@ let control_only_guard env sigma c =
   in
   let rec iter env c =
     check_fix_cofix env c;
-    iter_constr_with_full_binders sigma EConstr.push_rel iter env c
+    EConstr.iter_with_full_binders sigma EConstr.push_rel iter env c
   in
   iter env c

@@ -19,7 +19,6 @@ open Decl_kinds
 open Lib
 open Libobject
 open EConstr
-open Termops
 open Reductionops
 open Constrexpr
 open Namegen
@@ -200,16 +199,16 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
 	acc.(i) <- update pos rig acc.(i)
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
 	if strict then () else
-          iter_constr_with_full_binders sigma push_lift (frec false) ed c
+          iter_with_full_binders sigma push_lift (frec false) ed c
     | Proj (p,c) when rig ->
       if strict then () else
-        iter_constr_with_full_binders sigma push_lift (frec false) ed c
+        iter_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
 	if strict then () else
-          iter_constr_with_full_binders sigma push_lift (frec false) ed c
+          iter_with_full_binders sigma push_lift (frec false) ed c
     | Evar _ -> ()
     | _ ->
-        iter_constr_with_full_binders sigma push_lift (frec rig) ed c
+        iter_with_full_binders sigma push_lift (frec rig) ed c
   in
   let () = if not (Vars.noccur_between sigma 1 bound m) then frec true (env,1) m in
   acc

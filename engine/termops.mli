@@ -88,6 +88,7 @@ val iter_constr_with_full_binders : Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> unit) -> 'a ->
   constr -> unit
+[@@ocaml.deprecated "Use [EConstr.iter_with_full_binders]."]
 
 (**********************************************************************)
 

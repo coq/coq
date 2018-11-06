@@ -767,33 +767,7 @@ let fold_constr_with_binders sigma g f n acc c =
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let iter_constr_with_full_binders sigma g f l c =
-  let open RelDecl in
-  match EConstr.kind sigma c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
-  | Cast (c,_, t) -> f l c; f l t
-  | Prod (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
-  | Lambda (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
-  | LetIn (na,b,t,c) -> f l b; f l t; f (g (LocalDef (na,b,t)) l) c
-  | App (c,args) -> f l c; Array.iter (f l) args
-  | Proj (p,c) -> f l c
-  | Evar (_,args) -> Array.iter (f l) args
-  | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
-  | Fix (_,(lna,tl,bl)) ->
-    let l' = Array.fold_left2_i (fun i l na t ->
-        g (LocalAssum (na, EConstr.Vars.lift i t)) l)
-        l lna tl
-    in
-    Array.iter (f l) tl;
-    Array.iter (f l') bl
-  | CoFix (_,(lna,tl,bl)) ->
-    let l' = Array.fold_left2_i (fun i l na t ->
-        g (LocalAssum (na, EConstr.Vars.lift i t)) l)
-        l lna tl
-    in
-    Array.iter (f l) tl;
-    Array.iter (f l') bl
+let iter_constr_with_full_binders = EConstr.iter_with_full_binders
 
 (***************************)
 (* occurs check functions  *)
