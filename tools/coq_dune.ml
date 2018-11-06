@@ -163,6 +163,15 @@ let pp_rule fmt targets deps action =
     "@[(rule@\n @[(targets @[%a@])@\n(deps @[%a@])@\n(action @[%a@])@])@]@\n"
     ppl targets pp_deps deps pp_print_string action
 
+(* This won't recompile vo files when coqtop changes. *)
+let skip_vo_integrity = false
+
+let gen_action libflag eflag cflag source =
+  if skip_vo_integrity then
+    sprintf "(chdir %%{project_root} (system \"coqtop -boot %s %s %s -compile %s\"))" libflag eflag cflag source
+  else
+    sprintf "(chdir %%{project_root} (run coqtop -boot %s %s %s -compile %s))" libflag eflag cflag source
+
 (* Generate the dune rule: *)
 let pp_vo_dep dir fmt vo =
   let depth = List.length dir in
@@ -178,7 +187,7 @@ let pp_vo_dep dir fmt vo =
   (* We explicitly include the location of coqlib to avoid tricky issues with coqlib location *)
   let libflag = "-coqlib %{project_root}" in
   (* The final build rule *)
-  let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s %s -compile %s))" libflag eflag cflag source in
+  let action = gen_action libflag eflag cflag source in
   pp_rule fmt [vo.target] deps action
 
 let pp_ml4_dep _dir fmt ml =

@@ -144,6 +144,20 @@ files. We hope to solve this in the future.
 The documentation and test suite targets for Coq are still not
 implemented in Dune.
 
+## Avoiding .vo rebuild when `coqc` changes.
+
+All `.v -> .vo` rules have an implicit dependency on the digest of
+`coqc`, for obvious integrity reasons.
+
+However, a common use case to speed up development is to modify `coqc`
+but don't invalidate the previously generated `.vo` files, at the risk
+of the developer and the integrity of the build.
+
+`coq_dune` supports such build scenario by modifying setting the
+`skip_vo_integrity` flag to true. Note that when this flag is enabled,
+you must manually call Dune to build the proper ML targets, such as
+plugins or `coqc`.
+
 ## Planned and Advanced features
 
 Dune supports or will support extra functionality that may result very
