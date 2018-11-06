@@ -1,19 +1,24 @@
 DECLARE PLUGIN "tuto1_plugin"
 
+{
+
 (* If we forget this line and include our own tactic definition using
   TACTIC EXTEND, as below, then we get the strange error message
   no implementation available for Tacentries, only when compiling
   theories/Loader.v
 *)
 open Ltac_plugin
+open Attributes
 open Pp
 (* This module defines the types of arguments to be used in the
    EXTEND directives below, for example the string one. *)
 open Stdarg
 
+}
+
 VERNAC COMMAND EXTEND HelloWorld CLASSIFIED AS QUERY
 | [ "Hello" string(s) ] ->
-  [ Feedback.msg_notice (strbrk "Hello " ++ str s) ]
+  { Feedback.msg_notice (strbrk "Hello " ++ str s) }
 END
 
 (* reference is allowed as a syntactic entry, but so are all the entries
@@ -23,8 +28,8 @@ VERNAC COMMAND EXTEND HelloAgain CLASSIFIED AS QUERY
 | [ "HelloAgain" reference(r)] ->
 (* The function Ppconstr.pr_qualid was found by searching all mli files
    for a function of type qualid -> Pp.t *)
-  [ Feedback.msg_notice
-      (strbrk "Hello again " ++ Ppconstr.pr_qualid r)]
+  { Feedback.msg_notice
+      (strbrk "Hello again " ++ Ppconstr.pr_qualid r)}
 END
 
 (* According to parsing/pcoq.mli, e has type constr_expr *)
@@ -33,7 +38,7 @@ END
    constrexpr.mli --> Easier for packing the software in components. *)
 VERNAC COMMAND EXTEND TakingConstr CLASSIFIED AS QUERY
 | [ "Cmd1" constr(e) ] ->
-  [ let _ = e in Feedback.msg_notice (strbrk "Cmd1 parsed something") ]
+  { let _ = e in Feedback.msg_notice (strbrk "Cmd1 parsed something") }
 END
 
 (* The next step is to make something of parsed expression.
@@ -45,12 +50,12 @@ END
 
 VERNAC COMMAND EXTEND TakingConstr2 CLASSIFIED AS QUERY
 | [ "Cmd2" constr(e) ] ->
-  [ let _ = Constrintern.interp_constr
+  { let _ = Constrintern.interp_constr
     (Global.env())
     (* Make sure you don't use Evd.empty here, as this does not
       check consistency with existing universe constraints. *)
     (Evd.from_env (Global.env())) e in
-    Feedback.msg_notice (strbrk "Cmd2 parsed something legitimate") ]
+    Feedback.msg_notice (strbrk "Cmd2 parsed something legitimate") }
 END
 
 (* This is to show what happens when typing in an empty environment
@@ -60,10 +65,10 @@ END
  
 VERNAC COMMAND EXTEND TakingConstr3 CLASSIFIED AS QUERY
 | [ "Cmd3" constr(e) ] ->
-  [ let _ = Constrintern.interp_constr Environ.empty_env
+  { let _ = Constrintern.interp_constr Environ.empty_env
       Evd.empty e in
       Feedback.msg_notice
-        (strbrk "Cmd3 accepted something in the empty context")]
+        (strbrk "Cmd3 accepted something in the empty context")}
 END
 
 (* When adding a definition, we have to be careful that just
@@ -78,41 +83,41 @@ END
   there was "EConstr.constr" and not "Constr.constr". *)
 
 VERNAC COMMAND EXTEND Define1 CLASSIFIED AS SIDEFF
-| [ "Cmd4" ident(i) constr(e) ] ->
-  [ let v = Constrintern.interp_constr (Global.env())
+| #[ poly = polymorphic ] [ "Cmd4" ident(i) constr(e) ] ->
+  { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
-    Simple_declare.packed_declare_definition ~poly:(Attributes.(parse polymorphic atts)) i v ]
+    Simple_declare.packed_declare_definition ~poly i v }
 END
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
 | [ "Cmd5" constr(e) ] ->
-  [ let v = Constrintern.interp_constr (Global.env())
+  { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
     let (_, ctx) = v in
     let evd = Evd.from_ctx ctx in
     Feedback.msg_notice
     (Printer.pr_econstr_env (Global.env()) evd
-       (Simple_check.simple_check1 v)) ]
+       (Simple_check.simple_check1 v)) }
 END
 
 VERNAC COMMAND EXTEND Check2 CLASSIFIED AS QUERY
 | [ "Cmd6" constr(e) ] ->
-  [ let v = Constrintern.interp_constr (Global.env())
+  { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
     let evd, ty = Simple_check.simple_check2 v in
     Feedback.msg_notice
-      (Printer.pr_econstr_env (Global.env()) evd ty) ]
+      (Printer.pr_econstr_env (Global.env()) evd ty) }
 END
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
 | [ "Cmd7" constr(e) ] ->
-  [ let v = Constrintern.interp_constr (Global.env())
+  { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
     let (a, ctx) = v in
     let evd = Evd.from_ctx ctx in
       Feedback.msg_notice
       (Printer.pr_econstr_env (Global.env()) evd
-         (Simple_check.simple_check3 v)) ]
+         (Simple_check.simple_check3 v)) }
 END
 
 (* This command takes a name and return its value.  It does less
@@ -122,17 +127,17 @@ END
   intended use. *)
 VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
 | [ "Cmd8" reference(r) ] ->
-  [ let env = Global.env() in
+  { let env = Global.env() in
     let evd = Evd.from_env env in
     Feedback.msg_notice
     (Printer.pr_econstr_env env evd
       (EConstr.of_constr
-        (Simple_print.simple_body_access (Nametab.global r)))) ]
+        (Simple_print.simple_body_access (Nametab.global r)))) }
 END
 
 TACTIC EXTEND my_intro
 | [ "my_intro" ident(i) ] ->
-  [ Tactics.introduction i]
+  { Tactics.introduction i }
 END
 
 (* if one write this:
@@ -141,9 +146,9 @@ END
 
 VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
 | [ "Cmd9" ] ->
-  [ let p = Proof_global.give_me_the_proof () in
+  { let p = Proof_global.give_me_the_proof () in
     let sigma, env = Pfedit.get_current_context () in
     let pprf = Proof.partial_proof p in
     Feedback.msg_notice
-      (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf) ]
+      (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf) }
 END

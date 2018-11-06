@@ -8,5 +8,5 @@ src/tuto_tactic.ml
 src/tuto_tactic.mli
 src/construction_game.ml
 src/construction_game.mli
-src/g_tuto3.ml4
+src/g_tuto3.mlg
 src/tuto3_plugin.mlpack

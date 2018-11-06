@@ -2,5 +2,5 @@
 -I src
 
 theories/Test.v
-src/demo.ml4
+src/demo.mlg
 src/demo_plugin.mlpack

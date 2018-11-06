@@ -25,7 +25,7 @@ DECLARE PLUGIN "demo_plugin"
    (3) The file "demo_plugin.mlpack" lists the OCaml modules to be linked in
        "demo_plugin.cmxs".
 
-   (4) The file "demo_plugin.mlpack" as well as all .ml, .mli and .ml4 files
+   (4) The file "demo_plugin.mlpack" as well as all .ml, .mli and .mlg files
        are listed in the "_CoqProject" file.
 *)
 
@@ -36,7 +36,7 @@ DECLARE PLUGIN "demo_plugin"
 (* -------------------------------------------------------------------------- *)
 
 VERNAC COMMAND EXTEND Cmd1 CLASSIFIED AS QUERY
-  [ "Cmd1" ] -> [ () ]
+| [ "Cmd1" ] -> { () }
 END
 
 (*
@@ -64,7 +64,7 @@ END
 
    This:
 
-     [ "Cmd1" ] -> [ () ]
+     [ "Cmd1" ] -> { () }
 
    defines:
    - the parsing rule
@@ -84,10 +84,10 @@ END
    
    The interpretation rule, in this case, is:
 
-     [ () ]
+     { () }
 
-   Like in case of the parsing rule,
-   [ and ] characters mark the beginning and the end of the interpretation rule.
+   Similarly to the case of the parsing rule,
+   { and } characters mark the beginning and the end of the interpretation rule.
    In this case, the following Ocaml expression:
 
      ()
@@ -103,7 +103,7 @@ END
 (* -------------------------------------------------------------------------- *)
 
 VERNAC COMMAND EXTEND Cmd2 CLASSIFIED AS QUERY
-  [ "Cmd2" "With" "Some" "Terminal" "Parameters" ] -> [ () ]
+| [ "Cmd2" "With" "Some" "Terminal" "Parameters" ] -> { () }
 END
 
 (*
@@ -119,10 +119,14 @@ END
 (*                                                                            *)
 (* -------------------------------------------------------------------------- *)
 
+{
+
 open Stdarg
 
+}
+
 VERNAC COMMAND EXTEND Cmd3 CLASSIFIED AS QUERY
-  [ "Cmd3" int(i) ] -> [ () ]
+| [ "Cmd3" int(i) ] -> { () }
 END
 
 (*
@@ -179,7 +183,7 @@ END
 (* -------------------------------------------------------------------------- *)
 
 VERNAC COMMAND EXTEND Cmd4 CLASSIFIED AS QUERY
-  [ "Cmd4" int_list(l) ] -> [ () ]
+| [ "Cmd4" int_list(l) ] -> { () }
 END
 
 (*
@@ -211,7 +215,11 @@ END
 (*                                                                            *)
 (* -------------------------------------------------------------------------- *)
 
+{
+
 open Ltac_plugin
+
+}
 
 (*
    If we want to avoid a compilation failure
@@ -226,7 +234,11 @@ open Ltac_plugin
    do not expand to fully qualified names.
 *)
 
+{
+
 type type_5 = Foo_5 | Bar_5
+
+}
 
 (*
    We define a type of values that we want to pass to our Vernacular command.
@@ -241,11 +253,15 @@ type type_5 = Foo_5 | Bar_5
    of a type that is not supported by default, we must use the following macro:
 *)
 
+{
+
 open Pp
 
+}
+
 VERNAC ARGUMENT EXTEND custom5
-| [ "Foo_5" ] -> [ Foo_5 ]
-| [ "Bar_5" ] -> [ Bar_5 ]
+| [ "Foo_5" ] -> { Foo_5 }
+| [ "Bar_5" ] -> { Bar_5 }
 END
 
 (*
@@ -265,7 +281,7 @@ END
 (* Here: *)
 
 VERNAC COMMAND EXTEND Cmd5 CLASSIFIED AS QUERY
-  [ "Cmd5" custom5(x) ] -> [ () ]
+| [ "Cmd5" custom5(x) ] -> { () }
 END
 
 (*
@@ -280,7 +296,7 @@ END
 (* -------------------------------------------------------------------------- *)
 
 VERNAC COMMAND EXTEND Cmd6 CLASSIFIED AS QUERY
-  [ "Cmd6" ] -> [ Feedback.msg_notice (Pp.str "Everything is awesome!") ]
+| [ "Cmd6" ] -> { Feedback.msg_notice (Pp.str "Everything is awesome!") }
 END
 
 (*
@@ -306,7 +322,11 @@ END
 (*                                                                            *)
 (* -------------------------------------------------------------------------- *)
 
+{
+
 open Summary.Local
+
+}
 
 (*
    By opening Summary.Local module we shadow the original functions
@@ -318,18 +338,24 @@ open Summary.Local
 
    are now shadowed by their counterparts in Summary.Local. *)
 
+{
+
 let counter = ref ~name:"counter" 0
 
+}
+
 VERNAC COMMAND EXTEND Cmd7 CLASSIFIED AS SIDEFF
-  [ "Cmd7" ] -> [ counter := succ !counter;
-                  Feedback.msg_notice (Pp.str "counter = " ++ Pp.str (string_of_int (!counter))) ]
+| [ "Cmd7" ] -> { counter := succ !counter;
+                  Feedback.msg_notice (Pp.str "counter = " ++ Pp.str (string_of_int (!counter))) }
 END
 
 TACTIC EXTEND tactic1
-  [ "tactic1" ] -> [ Proofview.tclUNIT () ]
+| [ "tactic1" ] -> { Proofview.tclUNIT () }
 END
 
 (* ---- *)
+
+{
 
 type custom = Foo_2 | Bar_2
 
@@ -337,11 +363,13 @@ let pr_custom _ _ _ = function
   | Foo_2 -> Pp.str "Foo_2"
   | Bar_2 -> Pp.str "Bar_2"
 
-ARGUMENT EXTEND custom2 PRINTED BY pr_custom
-| [ "Foo_2" ] -> [ Foo_2 ]
-| [ "Bar_2" ] -> [ Bar_2 ]
+}
+
+ARGUMENT EXTEND custom2 PRINTED BY { pr_custom }
+| [ "Foo_2" ] -> { Foo_2 }
+| [ "Bar_2" ] -> { Bar_2 }
 END
 
 TACTIC EXTEND tactic2
-  [ "tactic2" custom2(x) ] -> [ Proofview.tclUNIT () ]
+| [ "tactic2" custom2(x) ] -> { Proofview.tclUNIT () }
 END

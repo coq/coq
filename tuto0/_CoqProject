@@ -6,5 +6,5 @@ theories/Demo.v
 
 src/tuto0_main.ml
 src/tuto0_main.mli
-src/g_tuto0.ml4
+src/g_tuto0.mlg
 src/tuto0_plugin.mlpack
