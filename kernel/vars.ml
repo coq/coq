@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Esubst
 
 module RelDecl = Context.Rel.Declaration
 
@@ -80,19 +79,9 @@ let noccur_with_meta n m term =
 (*      Lifting      *)
 (*********************)
 
-(* The generic lifting function *)
-let rec exliftn el c = match Constr.kind c with
-  | Constr.Rel i -> Constr.mkRel(reloc_rel i el)
-  | _ -> Constr.map_with_binders el_lift exliftn el c
-
-(* Lifting the binding depth across k bindings *)
-
-let liftn n k c =
-  match el_liftn (pred k) (el_shft n el_id) with
-    | ELID -> c
-    | el -> exliftn el c
-
-let lift n = liftn n 1
+let exliftn = Constr.exliftn
+let liftn = Constr.liftn
+let lift = Constr.lift
 
 (*********************)
 (*   Substituting    *)

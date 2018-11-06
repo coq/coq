@@ -452,27 +452,6 @@ let fold f acc c = match kind c with
   | CoFix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
 
-let fold_with_full_binders g f n acc c =
-  let open Context.Rel.Declaration in
-  match kind c with
-  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
-  | Cast (c,_, t) -> f n (f n acc c) t
-  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
-  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
-  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
-  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (_,c) -> f n acc c
-  | Evar (_,l) -> Array.fold_left (f n) acc l
-  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
-  | Fix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
-      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-  | CoFix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c n t -> g (LocalAssum (n,t)) c) n lna tl in
-      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-
 (* [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
@@ -798,6 +777,49 @@ let map_with_binders g f l c0 = match kind c0 with
     let l' = iterate g (Array.length tl) l in
     let bl' = Array.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
+
+(*********************)
+(*      Lifting      *)
+(*********************)
+
+(* The generic lifting function *)
+let rec exliftn el c =
+  let open Esubst in
+  match kind c with
+  | Rel i -> mkRel(reloc_rel i el)
+  | _ -> map_with_binders el_lift exliftn el c
+
+(* Lifting the binding depth across k bindings *)
+
+let liftn n k c =
+  let open Esubst in
+  match el_liftn (pred k) (el_shft n el_id) with
+    | ELID -> c
+    | el -> exliftn el c
+
+let lift n = liftn n 1
+
+let fold_with_full_binders g f n acc c =
+  let open Context.Rel.Declaration in
+  match kind c with
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (_,c) -> f n acc c
+  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+
 
 type 'univs instance_compare_fn = GlobRef.t -> int ->
   'univs -> 'univs -> bool

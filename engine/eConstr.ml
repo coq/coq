@@ -296,6 +296,8 @@ let decompose_prod_n_assum sigma n c =
 
 let existential_type = Evd.existential_type
 
+let lift n c = of_constr (Vars.lift n (unsafe_to_constr c))
+
 let map_under_context f n c =
   let f c = unsafe_to_constr (f (of_constr c)) in
   of_constr (Constr.map_under_context f n (unsafe_to_constr c))
@@ -453,11 +455,11 @@ let iter_with_full_binders sigma g f n c =
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
-    let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
+    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na, lift i t)) n) n lna tl in
     Array.iter (f n') bl
   | CoFix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
-    let n' = Array.fold_left2 (fun n na t -> g (LocalAssum (na,t)) n) n lna tl in
+    let n' = Array.fold_left2_i (fun i n na t -> g (LocalAssum (na,lift i t)) n) n lna tl in
     Array.iter (f n') bl
 
 let iter_with_binders sigma g f n c =
@@ -712,7 +714,7 @@ let to_rel_decl = unsafe_to_rel_decl
 type substl = t list
 
 (** Operations that commute with evar-normalization *)
-let lift n c = of_constr (Vars.lift n (to_constr c))
+let lift = lift
 let liftn n m c = of_constr (Vars.liftn n m (to_constr c))
 
 let substnl subst n c = of_constr (Vars.substnl (cast_list unsafe_eq subst) n (to_constr c))
