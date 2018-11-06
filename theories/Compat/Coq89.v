@@ -9,3 +9,4 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.9 *)
+Local Set Warnings "-deprecated".
