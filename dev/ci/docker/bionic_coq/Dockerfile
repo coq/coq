@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-10-23-V1"
+# CACHEKEY: "bionic_coq-V2018-10-30-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -53,8 +53,8 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
     opam install $BASE_OPAM camlp5.$CAMLP5_VER
 
 # EDGE switch
-ENV COMPILER_EDGE="4.07.0" \
-    CAMLP5_VER_EDGE="7.06" \
+ENV COMPILER_EDGE="4.07.1" \
+    CAMLP5_VER_EDGE="7.06.10-g84ce6cc4" \
     COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
     BASE_OPAM_EDGE="dune-release.1.1.0"
 
