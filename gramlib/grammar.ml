@@ -781,13 +781,6 @@ let delete_rule entry sl =
 
 (* Normal interface *)
 
-type token = string * string
-type g = token Gramext.grammar
-
-type ('self, 'a) ty_symbol = token Gramext.g_symbol
-type ('self, 'f, 'r) ty_rule = ('self, Obj.t) ty_symbol list
-type 'a ty_production = ('a, Obj.t, Obj.t) ty_rule * Gramext.g_action
-
 let create_toktab () = Hashtbl.create 301
 let gcreate glexer =
   {gtokens = create_toktab (); glexer = glexer }
@@ -805,12 +798,6 @@ type 'te gen_parsable =
   { pa_chr_strm : char Stream.t;
     pa_tok_strm : 'te Stream.t;
     pa_loc_func : Plexing.location_function }
-
-type parsable = token gen_parsable
-
-let parsable g cs =
-  let (ts, lf) = g.glexer.Plexing.tok_func cs in
-  {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
 
 let parse_parsable entry p =
   let efun = entry.estart 0 in
@@ -843,93 +830,6 @@ let parse_parsable entry p =
       let loc = Stream.count cs, Stream.count cs + 1 in
       restore (); Ploc.raise (Ploc.make_unlined loc) exc
 
-let find_entry e s =
-  let rec find_levels =
-    function
-      [] -> None
-    | lev :: levs ->
-        match find_tree lev.lsuffix with
-          None ->
-            begin match find_tree lev.lprefix with
-              None -> find_levels levs
-            | x -> x
-            end
-        | x -> x
-  and find_symbol =
-    function
-    | Snterm e -> if e.ename = s then Some e else None
-    | Snterml (e, _) -> if e.ename = s then Some e else None
-    | Slist0 s -> find_symbol s
-    | Slist0sep (s, _, _) -> find_symbol s
-    | Slist1 s -> find_symbol s
-    | Slist1sep (s, _, _) -> find_symbol s
-    | Sopt s -> find_symbol s
-    | Stree t -> find_tree t
-    | Sself | Snext | Stoken _ -> None
-  and find_tree =
-    function
-      Node {node = s; brother = bro; son = son} ->
-        begin match find_symbol s with
-          None ->
-            begin match find_tree bro with
-              None -> find_tree son
-            | x -> x
-            end
-        | x -> x
-        end
-    | LocAct (_, _) | DeadEnd -> None
-  in
-  match e.edesc with
-    Dlevels levs ->
-      begin match find_levels levs with
-        Some e -> e
-      | None -> raise Not_found
-      end
-  | Dparser _ -> raise Not_found
-module Entry =
-  struct
-    type te = token
-    type 'a e = te g_entry
-    let create g n =
-      {egram = g; ename = n; elocal = false; estart = empty_entry n;
-       econtinue = (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-       edesc = Dlevels []}
-    let parse_parsable (entry : 'a e) p : 'a =
-      Obj.magic (parse_parsable entry p : Obj.t)
-    let parse (entry : 'a e) cs : 'a =
-      let parsable = parsable entry.egram cs in parse_parsable entry parsable
-    let parse_parsable_all (entry : 'a e) p : 'a =
-      begin try Obj.magic [(parse_parsable entry p : Obj.t)] with
-          Stream.Failure | Stream.Error _ -> []
-      end
-    let parse_all (entry : 'a e) cs : 'a =
-      let parsable = parsable entry.egram cs in
-      parse_parsable_all entry parsable
-    let parse_token_stream (entry : 'a e) ts : 'a =
-      Obj.magic (entry.estart 0 ts : Obj.t)
-    let _warned_using_parse_token = ref false
-    let parse_token (entry : 'a e) ts : 'a =
-      (* commented: too often warned in Coq...
-      if not warned_using_parse_token.val then do {
-        eprintf "<W> use of Grammar.Entry.parse_token ";
-        eprintf "deprecated since 2017-06-16\n%!";
-        eprintf "use Grammar.Entry.parse_token_stream instead\n%! ";
-        warned_using_parse_token.val := True
-      }
-      else ();
-      *)
-      parse_token_stream entry ts
-    let name e = e.ename
-    let of_parser g n (p : te Stream.t -> 'a) : 'a e =
-      {egram = g; ename = n; elocal = false;
-       estart = (fun _ -> (Obj.magic p : te Stream.t -> Obj.t));
-       econtinue = (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-       edesc = Dparser (Obj.magic p : te Stream.t -> Obj.t)}
-    external obj : 'a e -> te Gramext.g_entry = "%identity"
-    let print ppf e = fprintf ppf "%a@." print_entry (obj e)
-    let find e s = find_entry (obj e) s
-  end
-
 (* Unsafe *)
 
 let clear_entry e =
@@ -940,12 +840,6 @@ let clear_entry e =
   | Dparser _ -> ()
 
 let gram_reinit g glexer = Hashtbl.clear g.gtokens; g.glexer <- glexer
-
-module Unsafe =
-  struct
-    let gram_reinit = gram_reinit
-    let clear_entry = clear_entry
-  end
 
 (* Functorial interface *)
 
