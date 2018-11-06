@@ -52,6 +52,24 @@ let cl_of_qualid = function
 let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
 
+(** Standard attributes for definition-like commands. *)
+module DefAttributes = struct
+  type t = {
+    locality : bool option;
+    polymorphic : bool;
+    template : bool option;
+    program : bool;
+    deprecated : deprecation option;
+  }
+
+  let parse f =
+    let open Attributes in
+    let ((locality, deprecated), (polymorphic, template)), program =
+      parse Notations.(locality ++ deprecation ++ universe_poly_template ++ program) f
+    in
+    { polymorphic; program; locality; template; deprecated }
+end
+
 (*******************)
 (* "Show" commands *)
 
@@ -511,7 +529,8 @@ let vernac_definition_hook p = function
 | _ -> no_hook
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
@@ -542,7 +561,8 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
 
 let vernac_start_proof ~atts kind l =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
@@ -560,7 +580,8 @@ let vernac_exact_proof c =
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
   let kind = local, atts.polymorphic, kind in
@@ -635,7 +656,8 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -731,7 +753,8 @@ let vernac_inductive ~atts cum lo finite indl =
     *)
 
 let vernac_fixpoint ~atts discharge l =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
@@ -744,7 +767,8 @@ let vernac_fixpoint ~atts discharge l =
   do_fixpoint local atts.polymorphic l
 
 let vernac_cofixpoint ~atts discharge l =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
@@ -985,7 +1009,8 @@ let vernac_identity_coercion ~atts id qids qidt =
 (* Type classes *)
 
 let vernac_instance ~atts abst sup inst props pri =
-  let atts = attributes_of_flags atts in
+  let open DefAttributes in
+  let atts = parse atts in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = Flags.is_program_mode () in

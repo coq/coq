@@ -56,21 +56,6 @@ val deprecation : deprecation option attribute
 val program_opt : bool option attribute
 (** For internal use when messing with the global option. *)
 
-type t = {
-  locality : bool option;
-  polymorphic : bool;
-  template : bool option;
-  program : bool;
-  deprecated : deprecation option;
-}
-(** Some attributes gathered in a adhoc record. Will probably be
-   removed at some point. *)
-
-val attributes_of_flags : vernac_flags -> t
-(** Parse the attributes supported by type [t]. Errors on other
-   attributes. Polymorphism and Program use the global flags as
-   default values. *)
-
 val only_locality : vernac_flags -> bool option
 (** Parse attributes allowing only locality. *)
 
