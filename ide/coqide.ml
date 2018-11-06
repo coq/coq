@@ -103,7 +103,8 @@ let make_coqtop_args fname =
         with
         | None -> "", base_args
         | Some proj ->
-          proj, coqtop_args_from_project (read_project_file proj) @ base_args
+          let warning_fn x = Feedback.msg_warning Pp.(str x) in
+          proj, coqtop_args_from_project (read_project_file ~warning_fn proj) @ base_args
   in
   let args = match fname with
     | None -> args
@@ -112,7 +113,6 @@ let make_coqtop_args fname =
       else "-topfile"::fname::args
   in
   proj, args
-;;
 
 (** Setting drag & drop on widgets *)
 
@@ -1355,7 +1355,8 @@ let read_coqide_args argv =
       if project_files <> None then
         (output_string stderr "Error: multiple -f options"; exit 1);
       let d = CUnix.canonical_path_name (Filename.dirname file) in
-      let p = CoqProject_file.read_project_file file in
+      let warning_fn x = Format.eprintf "%s@\n%!" x in
+      let p = CoqProject_file.read_project_file ~warning_fn file in
       filter_coqtop coqtop (Some (d,p)) out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1

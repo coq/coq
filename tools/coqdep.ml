@@ -473,7 +473,8 @@ let add_r_include path l = add_rec_dir_import add_known path (split_period l)
 let treat_coqproject f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
-  let project = read_project_file f in
+  let warning_fn x = coqdep_warning "%s" x in
+  let project = read_project_file ~warning_fn f in
   iter_sourced (fun { path } -> add_caml_dir path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> add_q_include path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
