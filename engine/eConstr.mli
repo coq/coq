@@ -155,6 +155,8 @@ val isCoFix : Evd.evar_map -> t -> bool
 val isCase : Evd.evar_map -> t -> bool
 val isProj : Evd.evar_map -> t -> bool
 
+val isType : Evd.evar_map -> constr -> bool
+
 type arity = rel_context * ESorts.t
 val destArity : Evd.evar_map -> types -> arity
 val isArity : Evd.evar_map -> t -> bool
