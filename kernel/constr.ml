@@ -534,12 +534,12 @@ let fold_constr_with_binders g f n acc c =
   | Proj (_p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
-  | Fix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c _n _t -> g c) n lna tl in
+  | Fix (_,(_,tl,bl)) ->
+      let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-  | CoFix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2 (fun c _n _t -> g c) n lna tl in
+  | CoFix (_,(_,tl,bl)) ->
+      let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
