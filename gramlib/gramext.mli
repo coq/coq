@@ -25,8 +25,6 @@ and 'te g_level =
     lprefix : 'te g_tree }
 and g_assoc = NonA | RightA | LeftA
 and 'te g_symbol =
-    Sfacto of 'te g_symbol
-  | Smeta of string * 'te g_symbol list * Obj.t
   | Snterm of 'te g_entry
   | Snterml of 'te g_entry * string
   | Slist0 of 'te g_symbol
@@ -34,13 +32,10 @@ and 'te g_symbol =
   | Slist1 of 'te g_symbol
   | Slist1sep of 'te g_symbol * 'te g_symbol * bool
   | Sopt of 'te g_symbol
-  | Sflag of 'te g_symbol
   | Sself
   | Snext
-  | Scut
   | Stoken of Plexing.pattern
   | Stree of 'te g_tree
-  | Svala of string list * 'te g_symbol
 and g_action = Obj.t
 and 'te g_tree =
     Node of 'te g_node

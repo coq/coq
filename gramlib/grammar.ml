@@ -41,8 +41,6 @@ let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 
 let rec print_symbol ppf =
   function
-    Sfacto s -> print_symbol ppf s
-  | Smeta (n, sl, _) -> print_meta ppf n sl
   | Slist0 s -> fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep (s, t, osep) ->
       fprintf ppf "LIST0 %a SEP %a%s" print_symbol1 s print_symbol1 t
@@ -52,42 +50,23 @@ let rec print_symbol ppf =
       fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
         (if osep then " OPT_SEP" else "")
   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Sflag s -> fprintf ppf "FLAG %a" print_symbol1 s
   | Stoken (con, prm) when con <> "" && prm <> "" ->
       fprintf ppf "%s@ %a" con print_str prm
-  | Svala (_, s) -> fprintf ppf "V %a" print_symbol s
   | Snterml (e, l) ->
       fprintf ppf "%s%s@ LEVEL@ %a" e.ename (if e.elocal then "*" else "")
         print_str l
-  | Snterm _ | Snext | Sself | Scut | Stoken _ | Stree _ as s ->
+  | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s
-and print_meta ppf n sl =
-  let rec loop i =
-    function
-      [] -> ()
-    | s :: sl ->
-        let j =
-          try String.index_from n i ' ' with Not_found -> String.length n
-        in
-        fprintf ppf "%s %a" (String.sub n i (j - i)) print_symbol1 s;
-        if sl = [] then ()
-        else
-          begin fprintf ppf " "; loop (min (j + 1) (String.length n)) sl end
-  in
-  loop 0 sl
 and print_symbol1 ppf =
   function
-    Sfacto s -> print_symbol1 ppf s
   | Snterm e -> fprintf ppf "%s%s" e.ename (if e.elocal then "*" else "")
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
-  | Scut -> pp_print_string ppf "/"
   | Stoken ("", s) -> print_str ppf s
   | Stoken (con, "") -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
-  | Smeta (_, _, _) | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
-    Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Sflag _ | Stoken _ |
-    Svala (_, _) as s ->
+  | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
+    Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Stoken _ as s ->
       fprintf ppf "(%a)" print_symbol s
 and print_rule ppf symbols =
   fprintf ppf "@[<hov 0>";
@@ -162,31 +141,24 @@ let name_of_symbol entry =
 let rec get_token_list entry rev_tokl last_tok tree =
   match tree with
     Node {node = Stoken tok; son = son; brother = DeadEnd} ->
-      get_token_list entry (last_tok :: rev_tokl) (tok, None) son
-  | Node {node = Svala (ls, Stoken tok); son = son; brother = DeadEnd} ->
-      get_token_list entry (last_tok :: rev_tokl) (tok, Some ls) son
+      get_token_list entry (last_tok :: rev_tokl) tok son
   | _ -> if rev_tokl = [] then None else Some (rev_tokl, last_tok, tree)
 
 let rec name_of_symbol_failed entry =
   function
-    Sfacto s -> name_of_symbol_failed entry s
   | Slist0 s -> name_of_symbol_failed entry s
   | Slist0sep (s, _, _) -> name_of_symbol_failed entry s
   | Slist1 s -> name_of_symbol_failed entry s
   | Slist1sep (s, _, _) -> name_of_symbol_failed entry s
   | Sopt s -> name_of_symbol_failed entry s
-  | Sflag s -> name_of_symbol_failed entry s
   | Stree t -> name_of_tree_failed entry t
-  | Svala (_, s) -> name_of_symbol_failed entry s
-  | Smeta (_, s :: _, _) -> name_of_symbol_failed entry s
   | s -> name_of_symbol entry s
 and name_of_tree_failed entry =
   function
     Node {node = s; brother = bro; son = son} ->
       let tokl =
         match s with
-          Stoken tok -> get_token_list entry [] (tok, None) son
-        | Svala (ls, Stoken tok) -> get_token_list entry [] (tok, Some ls) son
+          Stoken tok -> get_token_list entry [] tok son
         | _ -> None
       in
       begin match tokl with
@@ -205,7 +177,7 @@ and name_of_tree_failed entry =
           txt
       | Some (rev_tokl, last_tok, son) ->
           List.fold_left
-            (fun s (tok, _) ->
+            (fun s tok ->
                (if s = "" then "" else s ^ " ") ^
                entry.egram.glexer.Plexing.tok_text tok)
             "" (List.rev (last_tok :: rev_tokl))
@@ -318,7 +290,7 @@ let tree_failed entry prev_symb_result prev_symb tree =
             let txt1 = name_of_symbol_failed entry sep in
             txt1 ^ " or " ^ txt ^ " expected"
         end
-    | Sopt _ | Sflag _ | Stree _ | Svala (_, _) -> txt ^ " expected"
+    | Sopt _ | Stree _ -> txt ^ " expected"
     | _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
   in
   if !error_verbose then
@@ -426,29 +398,9 @@ let call_and_push ps al strm =
   let a = ps strm in
   let al = if !item_skipped then al else a :: al in item_skipped := false; al
 
-let token_ematch gram (tok, vala) =
+let token_ematch gram tok =
   let tematch = gram.glexer.Plexing.tok_match tok in
-  match vala with
-    Some al ->
-      let pa =
-        match al with
-          [] ->
-            let t = "V " ^ fst tok in gram.glexer.Plexing.tok_match (t, "")
-        | al ->
-            let rec loop =
-              function
-                a :: al ->
-                  let pa = gram.glexer.Plexing.tok_match ("V", a) in
-                  let pal = loop al in
-                  (fun tok -> try pa tok with Stream.Failure -> pal tok)
-              | [] -> fun tok -> raise Stream.Failure
-            in
-            loop al
-      in
-      (fun tok ->
-         try Obj.repr (Ploc.VaAnt (Obj.magic (pa tok : string))) with
-           Stream.Failure -> Obj.repr (Ploc.VaVal (tematch tok)))
-  | None -> fun tok -> Obj.repr (tematch tok : string)
+  fun tok -> Obj.repr (tematch tok : string)
 
 let rec parser_of_tree entry nlevn alevn =
   function
@@ -457,8 +409,6 @@ let rec parser_of_tree entry nlevn alevn =
   | Node {node = Sself; son = LocAct (act, _); brother = DeadEnd} ->
       (fun (strm__ : _ Stream.t) ->
          let a = entry.estart alevn strm__ in app act a)
-  | Node {node = Scut; son = son; brother = _} ->
-      parser_of_tree entry nlevn alevn son
   | Node {node = Sself; son = LocAct (act, _); brother = bro} ->
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ Stream.t) ->
@@ -470,8 +420,7 @@ let rec parser_of_tree entry nlevn alevn =
   | Node {node = s; son = son; brother = DeadEnd} ->
       let tokl =
         match s with
-          Stoken tok -> get_token_list entry [] (tok, None) son
-        | Svala (ls, Stoken tok) -> get_token_list entry [] (tok, Some ls) son
+          Stoken tok -> get_token_list entry [] tok son
         | _ -> None
       in
       begin match tokl with
@@ -488,24 +437,18 @@ let rec parser_of_tree entry nlevn alevn =
                    raise (Stream.Error (tree_failed entry a s son))
              in
              app act a)
-      | Some (rev_tokl, (last_tok, svala), son) ->
-          let lt =
-            let t = Stoken last_tok in
-            match svala with
-              Some l -> Svala (l, t)
-            | None -> t
-          in
+      | Some (rev_tokl, last_tok, son) ->
+          let lt = Stoken last_tok in
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn lt son in
           parser_of_token_list entry s son p1
             (fun (strm__ : _ Stream.t) -> raise Stream.Failure) rev_tokl
-            (last_tok, svala)
+            last_tok
       end
   | Node {node = s; son = son; brother = bro} ->
       let tokl =
         match s with
-          Stoken tok -> get_token_list entry [] (tok, None) son
-        | Svala (ls, Stoken tok) -> get_token_list entry [] (tok, Some ls) son
+          Stoken tok -> get_token_list entry [] tok son
         | _ -> None
       in
       match tokl with
@@ -525,18 +468,13 @@ let rec parser_of_tree entry nlevn alevn =
                  | None -> raise (Stream.Error (tree_failed entry a s son))
                  end
              | None -> p2 strm)
-      | Some (rev_tokl, (last_tok, vala), son) ->
-          let lt =
-            let t = Stoken last_tok in
-            match vala with
-              Some ls -> Svala (ls, t)
-            | None -> t
-          in
+      | Some (rev_tokl, last_tok, son) ->
+          let lt = Stoken last_tok in
           let p2 = parser_of_tree entry nlevn alevn bro in
           let p1 = parser_of_tree entry nlevn alevn son in
           let p1 = parser_cont p1 entry nlevn alevn lt son in
           let p1 =
-            parser_of_token_list entry lt son p1 p2 rev_tokl (last_tok, vala)
+            parser_of_token_list entry lt son p1 p2 rev_tokl last_tok
           in
           fun (strm__ : _ Stream.t) ->
             try p1 strm__ with Stream.Failure -> p2 strm__
@@ -592,13 +530,6 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
         let a = ps strm__ in let act = p1 strm__ in app act a
 and parser_of_symbol entry nlevn =
   function
-    Sfacto s -> parser_of_symbol entry nlevn s
-  | Smeta (_, symbl, act) ->
-      let act = Obj.magic act entry symbl in
-      Obj.magic
-        (List.fold_left
-           (fun act symb -> Obj.magic act (parser_of_symbol entry nlevn symb))
-           act symbl)
   | Slist0 s ->
       let ps = call_and_push (parser_of_symbol entry nlevn s) in
       let rec loop al (strm__ : _ Stream.t) =
@@ -705,12 +636,6 @@ and parser_of_symbol entry nlevn =
          match try Some (ps strm__) with Stream.Failure -> None with
            Some a -> Obj.repr (Some a)
          | _ -> Obj.repr None)
-  | Sflag s ->
-      let ps = parser_of_symbol entry nlevn s in
-      (fun (strm__ : _ Stream.t) ->
-         match try Some (ps strm__) with Stream.Failure -> None with
-           Some _ -> Obj.repr true
-         | _ -> Obj.repr false)
   | Stree t ->
       let pt = parser_of_tree entry 1 0 t in
       (fun (strm__ : _ Stream.t) ->
@@ -718,46 +643,11 @@ and parser_of_symbol entry nlevn =
          let a = pt strm__ in
          let ep = Stream.count strm__ in
          let loc = loc_of_token_interval bp ep in app a loc)
-  | Svala (al, s) ->
-      let pa =
-        match al with
-          [] ->
-            let t =
-              match s with
-                Sflag _ -> Some "V FLAG"
-              | Sopt _ -> Some "V OPT"
-              | Slist0 _ | Slist0sep (_, _, _) -> Some "V LIST"
-              | Slist1 _ | Slist1sep (_, _, _) -> Some "V LIST"
-              | Stoken (con, "") -> Some ("V " ^ con)
-              | _ -> None
-            in
-            begin match t with
-              Some t -> parser_of_token entry (t, "")
-            | None -> fun (strm__ : _ Stream.t) -> raise Stream.Failure
-            end
-        | al ->
-            let rec loop =
-              function
-                a :: al ->
-                  let pa = parser_of_token entry ("V", a) in
-                  let pal = loop al in
-                  (fun (strm__ : _ Stream.t) ->
-                     try pa strm__ with Stream.Failure -> pal strm__)
-              | [] -> fun (strm__ : _ Stream.t) -> raise Stream.Failure
-            in
-            loop al
-      in
-      let ps = parser_of_symbol entry nlevn s in
-      (fun (strm__ : _ Stream.t) ->
-         match try Some (pa strm__) with Stream.Failure -> None with
-           Some a -> Obj.repr (Ploc.VaAnt (Obj.magic a : string))
-         | _ -> let a = ps strm__ in Obj.repr (Ploc.VaVal a))
   | Snterm e -> (fun (strm__ : _ Stream.t) -> e.estart 0 strm__)
   | Snterml (e, l) ->
       (fun (strm__ : _ Stream.t) -> e.estart (level_number e l) strm__)
   | Sself -> (fun (strm__ : _ Stream.t) -> entry.estart 0 strm__)
   | Snext -> (fun (strm__ : _ Stream.t) -> entry.estart nlevn strm__)
-  | Scut -> (fun (strm__ : _ Stream.t) -> Obj.repr ())
   | Stoken tok -> parser_of_token entry tok
 and parser_of_token entry tok =
   let f = entry.egram.glexer.Plexing.tok_match tok in
@@ -967,27 +857,15 @@ let find_entry e s =
         | x -> x
   and find_symbol =
     function
-      Sfacto s -> find_symbol s
     | Snterm e -> if e.ename = s then Some e else None
     | Snterml (e, _) -> if e.ename = s then Some e else None
-    | Smeta (_, sl, _) -> find_symbol_list sl
     | Slist0 s -> find_symbol s
     | Slist0sep (s, _, _) -> find_symbol s
     | Slist1 s -> find_symbol s
     | Slist1sep (s, _, _) -> find_symbol s
     | Sopt s -> find_symbol s
-    | Sflag s -> find_symbol s
     | Stree t -> find_tree t
-    | Svala (_, s) -> find_symbol s
-    | Sself | Snext | Scut | Stoken _ -> None
-  and find_symbol_list =
-    function
-      s :: sl ->
-        begin match find_symbol s with
-          None -> find_symbol_list sl
-        | x -> x
-        end
-    | [] -> None
+    | Sself | Snext | Stoken _ -> None
   and find_tree =
     function
       Node {node = s; brother = bro; son = son} ->
@@ -1095,7 +973,6 @@ module type S =
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
     type 'a ty_production
-    val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
     val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
     val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
     val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
@@ -1107,18 +984,14 @@ module type S =
       ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
         ('self, 'a list) ty_symbol
     val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
-    val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol
     val s_rules : 'a ty_production list -> ('self, 'a) ty_symbol
-    val s_vala :
-      string list -> ('self, 'a) ty_symbol -> ('self, 'a Ploc.vala) ty_symbol
     val r_stop : ('self, 'r, 'r) ty_rule
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
         ('self, 'b -> 'a, 'r) ty_rule
-    val r_cut : ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
     val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
@@ -1187,7 +1060,6 @@ module GMake (L : GLexerType) =
     type ('self, 'a) ty_symbol = te Gramext.g_symbol
     type ('self, 'f, 'r) ty_rule = ('self, Obj.t) ty_symbol list
     type 'a ty_production = ('a, Obj.t, Obj.t) ty_rule * Gramext.g_action
-    let s_facto s = Sfacto s
     let s_nterm e = Snterm e
     let s_nterml e l = Snterml (e, l)
     let s_list0 s = Slist0 s
@@ -1195,15 +1067,12 @@ module GMake (L : GLexerType) =
     let s_list1 s = Slist1 s
     let s_list1sep s sep b = Slist1sep (s, sep, b)
     let s_opt s = Sopt s
-    let s_flag s = Sflag s
     let s_self = Sself
     let s_next = Snext
     let s_token tok = Stoken tok
     let s_rules (t : Obj.t ty_production list) = Gramext.srules (Obj.magic t)
-    let s_vala sl s = Svala (sl, s)
     let r_stop = []
     let r_next r s = r @ [s]
-    let r_cut r = r @ [Scut]
     let production
         (p : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f) : 'a ty_production =
       Obj.magic p

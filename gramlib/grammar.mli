@@ -112,7 +112,6 @@ module type S =
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
     type 'a ty_production
-    val s_facto : ('self, 'a) ty_symbol -> ('self, 'a) ty_symbol
     val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
     val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
     val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
@@ -124,18 +123,14 @@ module type S =
       ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
         ('self, 'a list) ty_symbol
     val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
-    val s_flag : ('self, 'a) ty_symbol -> ('self, bool) ty_symbol
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol
     val s_rules : 'a ty_production list -> ('self, 'a) ty_symbol
-    val s_vala :
-      string list -> ('self, 'a) ty_symbol -> ('self, 'a Ploc.vala) ty_symbol
     val r_stop : ('self, 'r, 'r) ty_rule
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
         ('self, 'b -> 'a, 'r) ty_rule
-    val r_cut : ('self, 'a, 'r) ty_rule -> ('self, 'a, 'r) ty_rule
     val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
 
     module Unsafe :

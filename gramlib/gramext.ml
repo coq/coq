@@ -27,8 +27,6 @@ and 'te g_level =
     lprefix : 'te g_tree }
 and g_assoc = NonA | RightA | LeftA
 and 'te g_symbol =
-    Sfacto of 'te g_symbol
-  | Smeta of string * 'te g_symbol list * Obj.t
   | Snterm of 'te g_entry
   | Snterml of 'te g_entry * string
   | Slist0 of 'te g_symbol
@@ -36,13 +34,10 @@ and 'te g_symbol =
   | Slist1 of 'te g_symbol
   | Slist1sep of 'te g_symbol * 'te g_symbol * bool
   | Sopt of 'te g_symbol
-  | Sflag of 'te g_symbol
   | Sself
   | Snext
-  | Scut
   | Stoken of Plexing.pattern
   | Stree of 'te g_tree
-  | Svala of string list * 'te g_symbol
 and g_action = Obj.t
 and 'te g_tree =
     Node of 'te g_node
@@ -66,12 +61,10 @@ let rec derive_eps =
   function
     Slist0 _ -> true
   | Slist0sep (_, _, _) -> true
-  | Sopt _ | Sflag _ -> true
-  | Sfacto s -> derive_eps s
+  | Sopt _ -> true
   | Stree t -> tree_derive_eps t
-  | Svala (_, s) -> derive_eps s
-  | Smeta (_, _, _) | Slist1 _ | Slist1sep (_, _, _) | Snterm _ |
-    Snterml (_, _) | Snext | Sself | Scut | Stoken _ ->
+  | Slist1 _ | Slist1sep (_, _, _) | Snterm _ |
+    Snterml (_, _) | Snext | Sself | Stoken _ ->
       false
 and tree_derive_eps =
   function
@@ -90,38 +83,11 @@ let rec eq_symbol s1 s2 =
   | Slist1 s1, Slist1 s2 -> eq_symbol s1 s2
   | Slist1sep (s1, sep1, b1), Slist1sep (s2, sep2, b2) ->
       eq_symbol s1 s2 && eq_symbol sep1 sep2 && b1 = b2
-  | Sflag s1, Sflag s2 -> eq_symbol s1 s2
   | Sopt s1, Sopt s2 -> eq_symbol s1 s2
-  | Svala (ls1, s1), Svala (ls2, s2) -> ls1 = ls2 && eq_symbol s1 s2
   | Stree _, Stree _ -> false
-  | Sfacto (Stree t1), Sfacto (Stree t2) ->
-      (* The only goal of the node 'Sfacto' is to allow tree comparison
-         (therefore factorization) without looking at the semantic
-         actions; allow factorization of rules like "SV foo" which are
-         actually expanded into a tree. *)
-      let rec eq_tree t1 t2 =
-        match t1, t2 with
-          Node n1, Node n2 ->
-            eq_symbol n1.node n2.node && eq_tree n1.son n2.son &&
-            eq_tree n1.brother n2.brother
-        | LocAct (_, _), LocAct (_, _) -> true
-        | DeadEnd, DeadEnd -> true
-        | _ -> false
-      in
-      eq_tree t1 t2
   | _ -> s1 = s2
 
 let is_before s1 s2 =
-  let s1 =
-    match s1 with
-      Svala (_, s) -> s
-    | _ -> s1
-  in
-  let s2 =
-    match s2 with
-      Svala (_, s) -> s
-    | _ -> s2
-  in
   match s1, s2 with
     Stoken ("ANY", _), _ -> false
   | _, Stoken ("ANY", _) -> true
@@ -158,9 +124,6 @@ let insert_tree entry_name gsymbols action tree =
         if eq_symbol s s1 then
           let t = Node {node = s1; son = insert sl son; brother = bro} in
           Some t
-        else if s = Scut then
-          try_insert s sl (Node {node = s; son = tree; brother = DeadEnd})
-        else if s1 = Scut then try_insert s1 (s :: sl) tree
         else if is_before s1 s || derive_eps s && not (derive_eps s1) then
           let bro =
             match try_insert s sl bro with
@@ -203,8 +166,6 @@ and token_exists_in_tree f =
   | LocAct (_, _) | DeadEnd -> false
 and token_exists_in_symbol f =
   function
-    Sfacto sy -> token_exists_in_symbol f sy
-  | Smeta (_, syl, _) -> List.exists (token_exists_in_symbol f) syl
   | Slist0 sy -> token_exists_in_symbol f sy
   | Slist0sep (sy, sep, _) ->
       token_exists_in_symbol f sy || token_exists_in_symbol f sep
@@ -212,11 +173,9 @@ and token_exists_in_symbol f =
   | Slist1sep (sy, sep, _) ->
       token_exists_in_symbol f sy || token_exists_in_symbol f sep
   | Sopt sy -> token_exists_in_symbol f sy
-  | Sflag sy -> token_exists_in_symbol f sy
   | Stoken tok -> f tok
   | Stree t -> token_exists_in_tree f t
-  | Svala (_, sy) -> token_exists_in_symbol f sy
-  | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> false
+  | Snterm _ | Snterml (_, _) | Snext | Sself -> false
 
 let insert_level entry_name e1 symbols action slev =
   match e1 with
@@ -341,17 +300,13 @@ Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
           flush stderr;
           failwith "Grammar.extend error"
         end
-  | Sfacto s -> check_gram entry s
-  | Smeta (_, sl, _) -> List.iter (check_gram entry) sl
   | Slist0sep (s, t, _) -> check_gram entry t; check_gram entry s
   | Slist1sep (s, t, _) -> check_gram entry t; check_gram entry s
   | Slist0 s -> check_gram entry s
   | Slist1 s -> check_gram entry s
   | Sopt s -> check_gram entry s
-  | Sflag s -> check_gram entry s
   | Stree t -> tree_check_gram entry t
-  | Svala (_, s) -> check_gram entry s
-  | Snext | Sself | Scut | Stoken _ -> ()
+  | Snext | Sself | Stoken _ -> ()
 and tree_check_gram entry =
   function
     Node {node = n; brother = bro; son = son} ->
@@ -371,16 +326,12 @@ let get_initial entry =
 let insert_tokens gram symbols =
   let rec insert =
     function
-      Sfacto s -> insert s
-    | Smeta (_, sl, _) -> List.iter insert sl
     | Slist0 s -> insert s
     | Slist1 s -> insert s
     | Slist0sep (s, t, _) -> insert s; insert t
     | Slist1sep (s, t, _) -> insert s; insert t
     | Sopt s -> insert s
-    | Sflag s -> insert s
     | Stree t -> tinsert t
-    | Svala (_, s) -> insert s
     | Stoken ("ANY", _) -> ()
     | Stoken tok ->
         gram.glexer.Plexing.tok_using tok;
@@ -389,7 +340,7 @@ let insert_tokens gram symbols =
             Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
         in
         incr r
-    | Snterm _ | Snterml (_, _) | Snext | Sself | Scut -> ()
+    | Snterm _ | Snterml (_, _) | Snext | Sself -> ()
   and tinsert =
     function
       Node {node = s; brother = bro; son = son} ->
@@ -507,17 +458,13 @@ let rec decr_keyw_use gram =
           Hashtbl.remove gram.gtokens tok;
           gram.glexer.Plexing.tok_removing tok
         end
-  | Sfacto s -> decr_keyw_use gram s
-  | Smeta (_, sl, _) -> List.iter (decr_keyw_use gram) sl
   | Slist0 s -> decr_keyw_use gram s
   | Slist1 s -> decr_keyw_use gram s
   | Slist0sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Slist1sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
   | Sopt s -> decr_keyw_use gram s
-  | Sflag s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
-  | Svala (_, s) -> decr_keyw_use gram s
-  | Sself | Snext | Scut | Snterm _ | Snterml (_, _) -> ()
+  | Sself | Snext | Snterm _ | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree gram =
   function
     DeadEnd | LocAct (_, _) -> ()
