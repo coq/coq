@@ -632,7 +632,7 @@ let rec map_ipat map_id map_ssrhyp map_ast_closure_term = function
   | IPatAbstractVars l -> IPatAbstractVars (List.map map_id l)
   | IPatClear clr -> IPatClear (List.map map_ssrhyp clr)
   | IPatCase iorpat -> IPatCase (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
-  | IPatDispatch iorpat -> IPatDispatch (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
+  | IPatDispatch (s,iorpat) -> IPatDispatch (s,List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
   | IPatInj iorpat -> IPatInj (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
   | IPatView (clr,v) -> IPatView (clr,List.map map_ast_closure_term v)
   | IPatTac _ -> assert false (*internal usage only *)
@@ -697,8 +697,8 @@ let interp_ipat ist gl =
     check_hyps_uniq [] clr'; IPatClear clr'
   | IPatCase(iorpat) ->
       IPatCase(List.map (List.map interp) iorpat)
-  | IPatDispatch(iorpat) ->
-      IPatDispatch(List.map (List.map interp) iorpat)
+  | IPatDispatch(s,iorpat) ->
+      IPatDispatch(s,List.map (List.map interp) iorpat)
   | IPatInj iorpat -> IPatInj (List.map (List.map interp) iorpat)
   | IPatAbstractVars l ->
      IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist gl) l))
