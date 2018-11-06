@@ -274,16 +274,6 @@
 
 /theories/Vectors/        @herbelin
 
-########## Dune  ##########
-
-/.ocamlinit            @ejgallego
-/Makefile.dune         @ejgallego
-/tools/coq_dune*       @ejgallego
-/dune*                 @ejgallego
-/coq.opam              @ejgallego
-/ide/coqide.opam       @ejgallego
-# Secondary maintainer @Zimmi48
-
 ########## Tools ##########
 
 /tools/coqdoc/         @silene
@@ -357,4 +347,11 @@
 
 /dev/tools/update-compat.py @JasonGross
 /test-suite/tools/update-compat/ @JasonGross
+# Secondary maintainer @Zimmi48
+
+########## Dune  ##########
+
+/.ocamlinit            @ejgallego
+*dune*                 @ejgallego
+*.opam                 @ejgallego
 # Secondary maintainer @Zimmi48
