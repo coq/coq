@@ -29,7 +29,7 @@ let axiom_into_instance = ref false
 let _ =
   let open Goptions in
   declare_bool_option
-    { optdepr = false;
+    { optdepr = true;
       optname = "automatically declare axioms whose type is a typeclass as instances";
       optkey = ["Typeclasses";"Axioms";"Are";"Instances"];
       optread = (fun _ -> !axiom_into_instance);
