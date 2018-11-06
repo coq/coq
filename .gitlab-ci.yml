@@ -15,6 +15,7 @@ variables:
   OPAM_SWITCH: "base"
   # Used to select special compiler switches such as flambda, 32bits, etc...
   OPAM_VARIANT: ""
+  GIT_DEPTH: "1"
 
 docker-boot:
   stage: docker
