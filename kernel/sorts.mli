@@ -41,3 +41,7 @@ end
 
 val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t
+
+val debug_print : t -> Pp.t
+
+val pr_sort_family : family -> Pp.t

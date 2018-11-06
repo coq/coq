@@ -590,3 +590,6 @@ val case_info_hash : case_info -> int
 (*********************************************************************)
 
 val hcons : constr -> constr
+
+val debug_print : constr -> Pp.t
+val debug_print_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t

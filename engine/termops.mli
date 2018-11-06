@@ -17,9 +17,10 @@ open Environ
 open EConstr
 
 (** printers *)
-val print_sort : Sorts.t -> Pp.t
 val pr_sort_family : Sorts.family -> Pp.t
+[@@ocaml.deprecated "Use [Sorts.pr_sort_family]"]
 val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
+[@@ocaml.deprecated "Use [Constr.debug_print_fix]"]
 
 (** about contexts *)
 val push_rel_assum : Name.t * types -> env -> env

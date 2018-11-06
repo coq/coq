@@ -201,8 +201,8 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
-      let pki = pr_sort_family ki in
-      let pkp = pr_sort_family kp in
+      let pki = Sorts.pr_sort_family ki in
+      let pkp = Sorts.pr_sort_family kp in
       let explanation =	match explanation with
 	| NonInformativeToInformative ->
           "proofs can be eliminated only to build proofs"
@@ -210,7 +210,7 @@ let explain_elim_arity env sigma ind sorts c pj okinds =
           "strong elimination on non-small inductive types leads to paradoxes"
 	| WrongArity ->
 	  "wrong arity" in
-      let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
+      let ppar = pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts in
       let ppt = pr_leconstr_env env sigma (snd (decompose_prod_assum sigma pj.uj_type)) in
       hov 0
 	(str "the return type has sort" ++ spc () ++ ppt ++ spc () ++

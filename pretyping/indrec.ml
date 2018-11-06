@@ -618,5 +618,5 @@ let lookup_eliminator ind_sp s =
       (strbrk "Cannot find the elimination combinator " ++
        Id.print id ++ strbrk ", the elimination of the inductive definition " ++
        Nametab.pr_global_env Id.Set.empty (IndRef ind_sp) ++
-       strbrk " on sort " ++ Termops.pr_sort_family s ++
+       strbrk " on sort " ++ Sorts.pr_sort_family s ++
        strbrk " is probably not allowed.")
