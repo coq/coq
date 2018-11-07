@@ -7,3 +7,4 @@ Makefile.coq*
 *.vo
 *.glob
 *.aux
+*/*/.merlin
