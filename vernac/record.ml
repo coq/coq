@@ -160,7 +160,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
   in
   let (sigma, data) = List.fold_left2_map fold sigma records arities in
   let sigma =
-    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma (Evd.from_env env_ar) in
+    Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
       if not def && (Sorts.is_prop sort ||

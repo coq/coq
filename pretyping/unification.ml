@@ -1530,7 +1530,7 @@ let indirectly_dependent sigma c d decls =
     List.exists (fun d' -> exists (fun c -> Termops.local_occur_var sigma (NamedDecl.get_id d') c) d) decls
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
-  let sigma = Pretyping.solve_remaining_evars flags env current_sigma pending in
+  let sigma = Pretyping.solve_remaining_evars flags env current_sigma ~initial:pending in
   (sigma, nf_evar sigma c)
 
 let default_matching_core_flags sigma =

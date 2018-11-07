@@ -215,7 +215,7 @@ type frozen =
   (** Proper partition of the evar map as described above. *)
 
 let frozen_and_pending_holes (sigma, sigma') =
-  let undefined0 = Evd.undefined_map sigma in
+  let undefined0 = Option.cata Evd.undefined_map Evar.Map.empty sigma in
   (** Fast path when the undefined evars where not modified *)
   if undefined0 == Evd.undefined_map sigma' then
     FrozenId undefined0
@@ -306,8 +306,8 @@ let check_evars_are_solved env sigma frozen =
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
-let solve_remaining_evars ?hook flags env sigma init_sigma =
-  let frozen = frozen_and_pending_holes (init_sigma, sigma) in
+let solve_remaining_evars ?hook flags env ?initial sigma =
+  let frozen = frozen_and_pending_holes (initial, sigma) in
   let sigma =
     if flags.use_typeclasses
     then apply_typeclasses env sigma frozen false
@@ -324,12 +324,12 @@ let solve_remaining_evars ?hook flags env sigma init_sigma =
   if flags.fail_evar then check_evars_are_solved env sigma frozen;
   sigma
 
-let check_evars_are_solved env current_sigma init_sigma =
-  let frozen = frozen_and_pending_holes (init_sigma, current_sigma) in
+let check_evars_are_solved env ?initial current_sigma =
+  let frozen = frozen_and_pending_holes (initial, current_sigma) in
   check_evars_are_solved env current_sigma frozen
 
-let process_inference_flags flags env initial_sigma (sigma,c,cty) =
-  let sigma = solve_remaining_evars flags env sigma initial_sigma in
+let process_inference_flags flags env initial (sigma,c,cty) =
+  let sigma = solve_remaining_evars flags env ~initial sigma in
   let c = if flags.expand_evars then nf_evar sigma c else c in
   sigma,c,cty
 

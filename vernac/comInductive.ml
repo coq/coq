@@ -402,7 +402,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Try further to solve evars, and instantiate them *)
-  let sigma = solve_remaining_evars all_and_fail_flags env_params sigma (Evd.from_env env_params) in
+  let sigma = solve_remaining_evars all_and_fail_flags env_params sigma in
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in

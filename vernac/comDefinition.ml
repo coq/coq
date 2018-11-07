@@ -87,8 +87,7 @@ let interp_definition pl bl poly red_option c ctypopt =
 
 let check_definition (ce, evd, _, imps) =
   let env = Global.env () in
-  let empty_sigma = Evd.from_env env in
-  check_evars_are_solved env evd empty_sigma;
+  check_evars_are_solved env evd;
   ce
 
 let do_definition ~program_mode ident k univdecl bl red_option c ctypopt hook =

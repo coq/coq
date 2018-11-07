@@ -239,7 +239,7 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
   end
 
 let ground_fixpoint env evd (fixnames,fixdefs,fixtypes) =
-  check_evars_are_solved env evd (Evd.from_env env);
+  check_evars_are_solved env evd;
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixdefs,fixtypes)
