@@ -219,29 +219,31 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t list * 'pc option * '
 
 (* XXX: Very unfortunately we cannot use the Proofview interface as
    Proof is still using the "legacy" one. *)
-let process_goal_concl sigma g : Constr.t * Environ.env =
+let process_goal_concl sigma g : EConstr.t * Environ.env =
   let env  = Goal.V82.env   sigma g in
   let ty   = Goal.V82.concl sigma g in
-  let ty   = EConstr.to_constr sigma ty in
   (ty, env)
 
-let process_goal sigma g : Constr.t reified_goal =
+let process_goal sigma g : EConstr.t reified_goal =
   let env  = Goal.V82.env   sigma g in
   let hyps = Goal.V82.hyps  sigma g in
   let ty   = Goal.V82.concl sigma g in
   let name = Goal.uid g             in
   (* There is a Constr/Econstr mess here... *)
-  let ty   = EConstr.to_constr sigma ty in
   (* compaction is usually desired [eg for better display] *)
+  (* next line copied from Printer.pr_context_limit_compact *)
+  let ctxt      = Termops.compact_named_context (Environ.named_context env) in
+  (* how do I modify to_tuple to get the right type? *)
+  (*let ctxt      = List.map to_tuple ctxt in*)
   let hyps      = Termops.compact_named_context (Environ.named_context_of_val hyps) in
   let hyps      = List.map to_tuple hyps in
-  { name; ty; hyps; env; sigma };;
+  { name; ty; hyps=[](* wrong *); env; sigma };;
 
 let pr_letype_core goal_concl_style env sigma t =
   Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style env sigma t)
 
 let pp_of_type env sigma ty =
-  pr_letype_core true env sigma EConstr.(of_constr ty)
+  pr_letype_core true env sigma ty
 
 let pr_leconstr_core goal_concl_style env sigma t =
   Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style env sigma t)
@@ -304,7 +306,7 @@ let goal_info goal sigma =
 
   try
     let { ty=ty; hyps=hyps; env=env } = process_goal sigma goal in
-    List.iter (build_hyp_info env sigma) (List.rev hyps);
+    List.iter (build_hyp_info env sigma) [] (* wrong! *);
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )
   with _ -> ([], !map, Pp.mt ());;
