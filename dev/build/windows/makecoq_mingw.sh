@@ -434,7 +434,7 @@ function build_prep_overlay {
 # ------------------------------------------------------------------------------
 
 function load_overlay_data {
-  if [ -n "${GITLAB_CI+}" ]; then
+  if [ -n "${GITLAB_CI-}" ]; then
     export CI_BRANCH="$CI_COMMIT_REF_NAME"
     if [[ ${CI_BRANCH#pr-} =~ ^[0-9]*$ ]]; then
       export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
