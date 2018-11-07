@@ -72,7 +72,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
     if with_classes then
       let evd' =
         Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-          ~fail:(not with_evars) ~split:false clenv.env clenv.evd
+          ~fail:(not with_evars) clenv.env clenv.evd
       in
       Typeclasses.make_unresolvables (fun x -> List.mem_f Evar.equal x evars) evd'
     else clenv.evd
