@@ -1,11 +1,8 @@
 open Pp
 open Util
 open Names
-open Cic
 open Reduction
 open Typeops
-open Indtypes
-open Modops
 open Subtyping
 open Declarations
 open Environ
@@ -13,29 +10,29 @@ open Environ
 (** {6 Checking constants } *)
 
 let check_constant_declaration env kn cb =
-  Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ prcon kn);
+  Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
   (** Locally set the oracle for further typechecking *)
-  let oracle = env.env_conv_oracle in
+  let oracle = env.env_typing_flags.conv_oracle in
   let env = Environ.set_oracle env cb.const_typing_flags.conv_oracle in
   (** [env'] contains De Bruijn universe variables *)
-  let env' =
+  let poly, env' =
     match cb.const_universes with
-    | Monomorphic_const ctx -> push_context_set ~strict:true ctx env
+    | Monomorphic_const ctx -> false, push_context_set ~strict:true ctx env
     | Polymorphic_const auctx ->
       let ctx = Univ.AUContext.repr auctx in
-      push_context ~strict:false ctx env
+      true, push_context ~strict:false ctx env
   in
   let ty = cb.const_type in
   let _ = infer_type env' ty in
   let () =
-    match body_of_constant cb with
+    match Environ.body_of_constant_body env cb with
     | Some bd ->
-      let j = infer env' bd in
-      conv_leq env' j ty
+      let j = infer env' (fst bd) in
+      conv_leq env' j.uj_type ty
     | None -> ()
   in
   let env =
-    if constant_is_polymorphic cb then add_constant kn cb env
+    if poly then add_constant kn cb env
     else add_constant kn cb env'
   in
   (** Reset the value of the oracle *)
@@ -63,6 +60,7 @@ let mk_mtb mp sign delta =
     mod_retroknowledge = ModTypeRK; }
 
 let rec check_module env mp mb =
+  Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let (_:module_signature) =
     check_signature env mb.mod_type mb.mod_mp mb.mod_delta
   in
@@ -76,10 +74,13 @@ let rec check_module env mp mb =
   |Some sign ->
     let mtb1 = mk_mtb mp sign mb.mod_delta
     and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
-    let env = add_module_type mp mtb1 env in
-    Subtyping.check_subtypes env mtb1 mtb2
+    let env = Modops.add_module_type mp mtb1 env in
+    let cu = check_subtypes env mtb1 mtb2 in
+    if not (Environ.check_constraints cu env) then
+      CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
 
 and check_module_type env mty =
+  Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string mty.mod_mp));
   let (_:module_signature) =
     check_signature env mty.mod_type mty.mod_mp mty.mod_delta in
   ()
@@ -89,32 +90,35 @@ and check_structure_field env mp lab res = function
       let c = Constant.make2 mp lab in
       check_constant_declaration env c cb
   | SFBmind mib ->
-      let kn = MutInd.make2 mp lab in
-      let kn = mind_of_delta res kn in
-      Indtypes.check_inductive env kn mib
+      let kn = KerName.make mp lab in
+      let kn = Mod_subst.mind_of_delta_kn res kn in
+      CheckInductive.check_inductive env kn mib
   | SFBmodule msb ->
       let () = check_module env (MPdot(mp,lab)) msb in
       Modops.add_module msb env
   | SFBmodtype mty ->
       check_module_type env mty;
-      add_modtype (MPdot(mp,lab)) mty env
+      add_modtype mty env
 
 and check_mexpr env mse mp_mse res = match mse with
   | MEident mp ->
       let mb = lookup_module mp env in
-      (subst_and_strengthen mb mp_mse).mod_type
+      (Modops.strengthen_and_subst_mb mb mp_mse false).mod_type
   | MEapply (f,mp) ->
       let sign = check_mexpr env f mp_mse res in
-      let farg_id, farg_b, fbody_b = destr_functor sign in
-      let mtb = module_type_of_module (Some mp) (lookup_module mp env) in
-      check_subtypes env mtb farg_b;
-      subst_signature (map_mbid farg_id mp) fbody_b
-  | MEwith _ -> error_with_module ()
+      let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
+      let mtb = Modops.module_type_of_module (lookup_module mp env) in
+      let cu = check_subtypes env mtb farg_b in
+      if not (Environ.check_constraints cu env) then
+        CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
+      Modops.subst_signature (Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver) fbody_b
+  | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
+
 
 and check_mexpression env sign mp_mse res = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
-      let env' = add_module_type (MPbound arg_id) mtb env in
+      let env' = Modops.add_module_type (MPbound arg_id) mtb env in
       let body = check_mexpression env' body mp_mse res in
       MoreFunctor(arg_id,mtb,body)
   | NoFunctor me -> check_mexpr env me mp_mse res
@@ -122,7 +126,7 @@ and check_mexpression env sign mp_mse res = match sign with
 and check_signature env sign mp_mse res = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
-      let env' = add_module_type (MPbound arg_id) mtb env in
+      let env' = Modops.add_module_type (MPbound arg_id) mtb env in
       let body = check_signature env' body mp_mse res in
       MoreFunctor(arg_id,mtb,body)
   | NoFunctor struc ->

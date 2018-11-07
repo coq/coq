@@ -141,6 +141,8 @@ val set_share_reduction : bool -> safe_transformer0
 val set_VM : bool -> safe_transformer0
 val set_native_compiler : bool -> safe_transformer0
 
+val check_engagement : Environ.env -> Declarations.set_predicativity -> unit
+
 (** {6 Interactive module functions } *)
 
 val start_module : Label.t -> ModPath.t safe_transformer
@@ -176,6 +178,8 @@ val current_dirpath : safe_environment -> DirPath.t
 type compiled_library
 
 type native_library = Nativecode.global list
+
+val module_of_library : compiled_library -> Declarations.module_body
 
 val get_library_native_symbols : safe_environment -> DirPath.t -> Nativecode.symbols
 

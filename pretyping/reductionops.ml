@@ -353,7 +353,7 @@ struct
     | Proj (p,cst) ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
     | Fix (f,args,cst) ->
-       str "ZFix(" ++ Termops.pr_fix pr_c f
+       str "ZFix(" ++ Constr.debug_print_fix pr_c f
        ++ pr_comma () ++ pr pr_c args ++ str ")"
     | Cst (mem,curr,remains,params,cst_l) ->
       str "ZCst(" ++ pr_cst_member pr_c mem ++ pr_comma () ++ int curr

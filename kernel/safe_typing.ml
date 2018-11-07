@@ -1061,6 +1061,8 @@ type compiled_library = {
   comp_natsymbs : Nativecode.symbols
 }
 
+let module_of_library lib = lib.comp_mod
+
 type native_library = Nativecode.global list
 
 let get_library_native_symbols senv dir =

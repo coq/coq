@@ -8,15 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*i*)
-open Cic
+open Declarations
 open Environ
-(*i*)
 
-(*s Typing functions (not yet tagged as safe) *)
+let import senv clib univs digest =
+  let mb = Safe_typing.module_of_library clib in
+  let env = Safe_typing.env_of_safe_env senv in
+  let env = push_context_set ~strict:true mb.mod_constraints env in
+  let env = push_context_set ~strict:true univs env in
+  Mod_checking.check_module env mb.mod_mp mb;
+  let (_,senv) = Safe_typing.import clib univs digest senv in senv
 
-val infer      : env -> constr      -> constr
-val infer_type : env -> constr      -> sorts
-val check_ctxt : env -> rel_context -> env
-val check_polymorphic_arity :
-  env -> rel_context -> template_arity -> unit
+let unsafe_import senv clib univs digest =
+  let (_,senv) = Safe_typing.import clib univs digest senv in senv

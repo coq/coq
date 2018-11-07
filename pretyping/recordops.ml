@@ -270,7 +270,7 @@ let pr_cs_pattern = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
   | Prod_cs -> str "_ -> _"
   | Default_cs -> str "_"
-  | Sort_cs s -> Termops.pr_sort_family s
+  | Sort_cs s -> Sorts.pr_sort_family s
 
 let warn_redundant_canonical_projection =
   CWarnings.create ~name:"redundant-canonical-projection" ~category:"typechecker"

@@ -1338,3 +1338,70 @@ type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
 type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
+
+(* Sorts and sort family *)
+
+let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
+  let open Pp in
+  let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
+  hov 1
+      (str"fix " ++ int i ++ spc() ++  str"{" ++
+         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
+           Name.print na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
+           cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
+         str"}")
+
+let pr_puniverses p u =
+  if Univ.Instance.is_empty u then p
+  else Pp.(p ++ str"(*" ++ Univ.Instance.pr Univ.Level.pr u ++ str"*)")
+
+(* Minimalistic constr printer, typically for debugging *)
+
+let rec debug_print c =
+  let open Pp in
+  match kind c with
+  | Rel n -> str "#"++int n
+  | Meta n -> str "Meta(" ++ int n ++ str ")"
+  | Var id -> Id.print id
+  | Sort s -> Sorts.debug_print s
+  | Cast (c,_, t) -> hov 1
+      (str"(" ++ debug_print c ++ cut() ++
+       str":" ++ debug_print t ++ str")")
+  | Prod (Name(id),t,c) -> hov 1
+      (str"forall " ++ Id.print id ++ str":" ++ debug_print t ++ str"," ++
+       spc() ++ debug_print c)
+  | Prod (Anonymous,t,c) -> hov 0
+      (str"(" ++ debug_print t ++ str " ->" ++ spc() ++
+       debug_print c ++ str")")
+  | Lambda (na,t,c) -> hov 1
+      (str"fun " ++ Name.print na ++ str":" ++
+       debug_print t ++ str" =>" ++ spc() ++ debug_print c)
+  | LetIn (na,b,t,c) -> hov 0
+      (str"let " ++ Name.print na ++ str":=" ++ debug_print b ++
+       str":" ++ brk(1,2) ++ debug_print t ++ cut() ++
+       debug_print c)
+  | App (c,l) ->  hov 1
+      (str"(" ++ debug_print c ++ spc() ++
+       prlist_with_sep spc debug_print (Array.to_list l) ++ str")")
+  | Evar (e,l) -> hov 1
+      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
+       prlist_with_sep spc debug_print (Array.to_list l) ++str"}")
+  | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
+  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
+  | Construct (((sp,i),j),u) ->
+      str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
+  | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"
+  | Case (_ci,p,c,bl) -> v 0
+      (hv 0 (str"<"++debug_print p++str">"++ cut() ++ str"Case " ++
+             debug_print c ++ str"of") ++ cut() ++
+       prlist_with_sep (fun _ -> brk(1,2)) debug_print (Array.to_list bl) ++
+      cut() ++ str"end")
+  | Fix f -> debug_print_fix debug_print f
+  | CoFix(i,(lna,tl,bl)) ->
+      let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
+      hov 1
+        (str"cofix " ++ int i ++ spc() ++  str"{" ++
+         v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
+           Name.print na ++ str":" ++ debug_print ty ++
+           cut() ++ str":=" ++ debug_print bd) (Array.to_list fixl)) ++
+         str"}")

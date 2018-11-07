@@ -43,12 +43,8 @@ val ppididmap : Names.Id.t Names.Id.Map.t -> unit
 (* Universes *)
 val ppuni : Univ.Universe.t -> unit
 val ppuni_level : Univ.Level.t -> unit (* raw *)
-val ppuniverse_set : Univ.LSet.t -> unit
-val ppuniverse_instance : Univ.Instance.t -> unit
-val ppauniverse_context : Univ.AUContext.t -> unit
 val ppuniverse_context : Univ.UContext.t -> unit
 val ppconstraints : Univ.Constraint.t -> unit
 val ppuniverse_context_future : Univ.UContext.t Future.computation -> unit
-val ppuniverses : Univ.universes -> unit
 
 val pploc : Loc.t -> unit

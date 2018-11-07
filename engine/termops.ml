@@ -24,84 +24,13 @@ module CompactedDecl = Context.Compacted.Declaration
 
 module Internal = struct
 
-(* Sorts and sort family *)
+let pr_sort_family = Sorts.pr_sort_family
+[@@ocaml.deprecated "Use [Sorts.pr_sort_family]"]
+let pr_fix = Constr.debug_print_fix
+[@@ocaml.deprecated "Use [Constr.debug_print_fix]"]
 
-let print_sort = function
-  | Set -> (str "Set")
-  | Prop -> (str "Prop")
-  | Type u -> (str "Type(" ++ Univ.Universe.pr u ++ str ")")
-
-let pr_sort_family = function
-  | InSet -> (str "Set")
-  | InProp -> (str "Prop")
-  | InType -> (str "Type")
-
-let pr_con sp = str(Constant.to_string sp)
-
-let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
-  let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
-  hov 1
-      (str"fix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
-           Name.print na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
-	   cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
-         str"}")
-
-let pr_puniverses p u = 
-  if Univ.Instance.is_empty u then p 
-  else p ++ str"(*" ++ Univ.Instance.pr UnivNames.pr_with_global_universes u ++ str"*)"
-
-(* Minimalistic constr printer, typically for debugging *)
-
-let rec pr_constr c = match kind c with
-  | Rel n -> str "#"++int n
-  | Meta n -> str "Meta(" ++ int n ++ str ")"
-  | Var id -> Id.print id
-  | Sort s -> print_sort s
-  | Cast (c,_, t) -> hov 1
-      (str"(" ++ pr_constr c ++ cut() ++
-       str":" ++ pr_constr t ++ str")")
-  | Prod (Name(id),t,c) -> hov 1
-      (str"forall " ++ Id.print id ++ str":" ++ pr_constr t ++ str"," ++
-       spc() ++ pr_constr c)
-  | Prod (Anonymous,t,c) -> hov 0
-      (str"(" ++ pr_constr t ++ str " ->" ++ spc() ++
-       pr_constr c ++ str")")
-  | Lambda (na,t,c) -> hov 1
-      (str"fun " ++ Name.print na ++ str":" ++
-       pr_constr t ++ str" =>" ++ spc() ++ pr_constr c)
-  | LetIn (na,b,t,c) -> hov 0
-      (str"let " ++ Name.print na ++ str":=" ++ pr_constr b ++
-       str":" ++ brk(1,2) ++ pr_constr t ++ cut() ++
-       pr_constr c)
-  | App (c,l) ->  hov 1
-      (str"(" ++ pr_constr c ++ spc() ++
-       prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
-  | Evar (e,l) -> hov 1
-      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
-       prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
-  | Const (c,u) -> str"Cst(" ++ pr_puniverses (pr_con c) u ++ str")"
-  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
-  | Construct (((sp,i),j),u) ->
-      str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
-  | Proj (p,c) -> str"Proj(" ++ pr_con (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ pr_constr c ++ str")"
-  | Case (ci,p,c,bl) -> v 0
-      (hv 0 (str"<"++pr_constr p++str">"++ cut() ++ str"Case " ++
-             pr_constr c ++ str"of") ++ cut() ++
-       prlist_with_sep (fun _ -> brk(1,2)) pr_constr (Array.to_list bl) ++
-      cut() ++ str"end")
-  | Fix f -> pr_fix pr_constr f
-  | CoFix(i,(lna,tl,bl)) ->
-      let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
-      hov 1
-        (str"cofix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
-           Name.print na ++ str":" ++ pr_constr ty ++
-           cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
-         str"}")
-
-let debug_print_constr c = pr_constr EConstr.Unsafe.(to_constr c)
-let debug_print_constr_env env sigma c = pr_constr EConstr.(to_constr sigma c)
+let debug_print_constr c = Constr.debug_print EConstr.Unsafe.(to_constr c)
+let debug_print_constr_env env sigma c = Constr.debug_print EConstr.(to_constr sigma c)
 let term_printer = ref debug_print_constr_env
 
 let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)

@@ -102,3 +102,13 @@ module Hsorts =
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
+
+let debug_print = function
+  | Set -> Pp.(str "Set")
+  | Prop -> Pp.(str "Prop")
+  | Type u -> Pp.(str "Type(" ++ Univ.Universe.pr u ++ str ")")
+
+let pr_sort_family = function
+  | InSet -> Pp.(str "Set")
+  | InProp -> Pp.(str "Prop")
+  | InType -> Pp.(str "Type")
