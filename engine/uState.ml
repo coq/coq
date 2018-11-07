@@ -553,6 +553,9 @@ let make_flexible_variable ctx ~algebraic u =
   {ctx with uctx_univ_variables = uvars'; 
       uctx_univ_algebraic = avars'}
 
+let make_nonalgebraic_variable ctx u =
+  { ctx with uctx_univ_algebraic = Univ.LSet.remove u ctx.uctx_univ_algebraic }
+
 let make_flexible_nonalgebraic ctx =
   {ctx with uctx_univ_algebraic = Univ.LSet.empty}
 
