@@ -39,7 +39,7 @@ WHAT DO YOU NEED ?
    - Findlib (version >= 1.4.1)
      (available at http://projects.camlcity.org/projects/findlib.html)
 
-   - Camlp5 (version >= 7.03)
+   - Camlp5 (version >= 7.06)
      (available at https://camlp5.github.io/)
 
    - GNU Make version 3.81 or later
