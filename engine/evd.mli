@@ -561,6 +561,9 @@ val universe_rigidity : evar_map -> Univ.Level.t -> rigid
 val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_map
 (** See [UState.make_flexible_variable] *)
 
+val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
+(** See [UState.make_nonalgebraic_variable]. *)
+
 val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option 
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
     not a local sort variable declared in [evm] *)
