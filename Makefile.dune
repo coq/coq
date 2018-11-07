@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 # Dune Makefile for Coq
 
-.PHONY: help voboot states world watch test-suite release apidoc ocheck ireport clean
+.PHONY: help voboot states world watch check quickbyte quickopt test-suite release apidoc ocheck ireport clean
 
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
@@ -13,6 +13,9 @@ help:
 	@echo "  - states:  build a minimal functional coqtop"
 	@echo "  - world:   build all binaries and libraries"
 	@echo "  - watch:   build all binaries and libraries [continuous build]"
+	@echo "  - check:   build all ML files as fast as possible [requires Dune >= 1.5.0]"
+	@echo "  - quickbyte:  build main ML files [coqtop + plugins + ide + printers] using the bytecode compiler"
+	@echo "  - quickopt:   build main ML files [coqtop + plugins + ide + printers] using the optimizing compiler"
 	@echo "  - test-suite: run Coq's test suite"
 	@echo "  - release: build Coq in release mode"
 	@echo "  - apidoc:  build ML API documentation"
@@ -33,6 +36,21 @@ world: voboot
 
 watch: voboot
 	dune build $(DUNEOPT) @install -w
+
+check: voboot
+	dune build $(DUNEOPT) @check
+
+COQTOP_FILES=ide/idetop.bc ide/coqide_main.bc checker/coqchk.bc
+PLUGIN_FILES=$(wildcard plugins/*/*.mlpack)
+PRINTER_FILES=dev/top_printers.cma dev/checker_printers.cma
+QUICKBYTE_TARGETS=$(COQTOP_FILES) $(PLUGIN_FILES:.mlpack=.cma) $(PRINTER_FILES) topbin/coqtop_byte_bin.bc
+QUICKOPT_TARGETS=$(COQTOP_FILES:.bc=.exe) $(PLUGIN_FILES:.mlpack=.cmxa) $(PRINTER_FILES:.cma=.cmxa) topbin/coqtop_bin.exe
+
+quickbyte: voboot
+	dune build $(DUNEOPT) $(QUICKBYTE_TARGETS)
+
+quickopt: voboot
+	dune build $(DUNEOPT) $(QUICKOPT_TARGETS)
 
 test-suite: voboot
 	dune $(DUNEOPT) runtest
