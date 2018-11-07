@@ -27,10 +27,6 @@ let array_get_start a =
     (Array.length a - 1)
     (fun i -> a.(i))
 
-let id_of_name = function
-    Name id -> id
-  | _ -> raise Not_found
-
 let locate qid = Nametab.locate qid
 
 let locate_ind ref =
@@ -104,15 +100,6 @@ let const_of_id id =
   with Not_found ->
     CErrors.user_err ~hdr:"IndFun.const_of_id"
       (str "cannot find " ++ Id.print id)
-
-let def_of_const t =
-   match Constr.kind t with
-    Const sp ->
-      (try (match Environ.constant_opt_value_in (Global.env()) sp with
-             | Some c -> c
-	     | _ -> assert false)
-       with Not_found -> assert false)
-    |_ -> assert false
 
 [@@@ocaml.warning "-3"]
 let coq_constant s =
