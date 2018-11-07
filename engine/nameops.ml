@@ -69,7 +69,7 @@ let root_of_id id =
    [bar0]  ↦ [bar1]
    [bar00] ↦ [bar01]
    [bar1]  ↦ [bar2]
-   [bar01] ↦ [bar01]
+   [bar01] ↦ [bar02]
    [bar9]  ↦ [bar10]
    [bar09] ↦ [bar10]
    [bar99] ↦ [bar100]
