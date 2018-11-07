@@ -212,25 +212,20 @@ let goals () =
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
-      let map_goal_for_diff ng = (* todo: move to proof_diffs.ml *)
-        try Evar.Map.find ng diff_goal_map  with Not_found -> ng
-      in
 
       let process_goal_diffs nsigma ng =
         let open Evd in
-        let og = map_goal_for_diff ng in
         let og_s = match oldp with
         | Some oldp ->
           let (_,_,_,_,osigma) = Proof.proof oldp in
-          Some { it = og; sigma = osigma }
+          (try Some { it = Evar.Map.find ng diff_goal_map; sigma = osigma }
+          with Not_found -> raise (Pp_diff.Diff_Failure "Unable to match goals between old and new proof states (6)"))
         | None -> None
         in
         let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
         { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
       in
-      try
-        Some (export_pre_goals (Proof.map_structured_proof newp process_goal_diffs))
-      with Pp_diff.Diff_Failure _ -> Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
+      Some (export_pre_goals (Proof.map_structured_proof newp process_goal_diffs))
     end else
       Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
   with Proof_global.NoCurrentProof -> None;;

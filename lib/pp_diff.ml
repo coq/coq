@@ -86,7 +86,7 @@ let shorten_diff_span dtype diff_list =
       if (get_variant !src) = dtype then begin
         if (lt !dst !src) then
           dst := !src;
-        while (lt !dst len) && (get_variant !dst) <> `Common do
+        while (lt !dst len) && (get_variant !dst) = dtype do
           dst := !dst + incr;
         done;
         if (lt !dst len) && (get_str !src) = (get_str !dst) then begin
