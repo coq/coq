@@ -1,0 +1,9 @@
+(library
+ (name tuto3_plugin)
+ (public_name coq.plugins.tutorial.p3)
+ (libraries coq.plugins.ltac))
+
+(rule
+ (targets g_tuto3.ml)
+ (deps (:pp-file g_tuto3.mlg))
+ (action (run coqpp %{pp-file})))
