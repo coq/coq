@@ -145,8 +145,6 @@ val tail_pac : pa_constructor -> pa_constructor
 
 val find : forest -> int -> int
 
-val find_pac : forest -> int -> pa_constructor -> int
-
 val find_oldest_pac : forest -> int -> pa_constructor -> int
 
 val term : forest -> int -> term
