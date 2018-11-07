@@ -22,8 +22,6 @@ type 'a with_backtracking = tactic -> 'a
 
 val wrap : int -> bool -> seqtac
 
-val basename_of_global: GlobRef.t -> Id.t
-
 val clear_global: GlobRef.t -> tactic
 
 val axiom_tac : constr -> Sequent.t -> tactic
@@ -51,5 +49,3 @@ val forall_tac : seqtac with_backtracking
 val left_exists_tac : pinductive -> lseqtac with_backtracking
 
 val ll_forall_tac : types -> lseqtac with_backtracking
-
-val normalize_evaluables : tactic

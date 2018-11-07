@@ -89,8 +89,6 @@ END
 
 {
 
-let fail_solver=tclFAIL 0 (Pp.str "GTauto failed")
-
 let gen_ground_tac flag taco ids bases =
   let backup= !qflag in
   Proofview.tclOR begin
