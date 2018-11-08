@@ -2,6 +2,5 @@
  (name printing)
  (synopsis "Coq's Term Pretty Printing Library")
  (public_name coq.printing)
- (flags :standard -open Gramlib)
  (wrapped false)
  (libraries parsing proofs))

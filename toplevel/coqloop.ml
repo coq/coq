@@ -255,7 +255,7 @@ let rec discard_to_dot () =
   try
     Pcoq.Entry.parse parse_to_dot top_buffer.tokens
   with
-    | Plexing.Error _ | CLexer.Error.E _ -> discard_to_dot ()
+    | Gramlib.Plexing.Error _ | CLexer.Error.E _ -> discard_to_dot ()
     | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 

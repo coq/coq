@@ -2,5 +2,4 @@
  (name ssrmatching_plugin)
  (public_name coq.plugins.ssrmatching)
  (synopsis "Coq ssrmatching plugin")
- (flags :standard -open Gramlib)
  (libraries coq.plugins.ltac))

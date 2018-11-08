@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Extend
 open Genarg
+open Gramlib
 
 let curry f x y = f (x, y)
 let uncurry f (x,y) = f x y

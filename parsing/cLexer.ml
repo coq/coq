@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Tok
+open Gramlib
 
 (** Location utilities  *)
 let ploc_file_of_coq_file = function

@@ -10,7 +10,7 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Grammar.GMake(CLexer).Entry.e
+type 'a entry = 'a Gramlib.Grammar.GMake(CLexer).Entry.e
 
 type side = Left | Right
 
