@@ -1522,6 +1522,104 @@ Numeral notations
     As noted above, the :n:`(abstract after @num)` directive has no
     effect when :n:`@ident__2` lands in an :g:`option` type.
 
+String notations
+-----------------
+
+.. cmd:: String Notation @ident__1 @ident__2 @ident__3 : @scope.
+   :name: String Notation
+
+  This command allows the user to customize the way strings are parsed
+  and printed.
+
+  The token :n:`@ident__1` should be the name of an inductive type,
+  while :n:`@ident__2` and :n:`@ident__3` should be the names of the
+  parsing and printing functions, respectively.  The parsing function
+  :n:`@ident__2` should have one of the following types:
+
+    * :n:`Byte.byte -> @ident__1`
+    * :n:`Byte.byte -> option @ident__1`
+    * :n:`list Byte.byte -> @ident__1`
+    * :n:`list Byte.byte -> option @ident__1`
+
+  And the printing function :n:`@ident__3` should have one of the
+  following types:
+
+    * :n:`@ident__1 -> Byte.byte`
+    * :n:`@ident__1 -> option Byte.byte`
+    * :n:`@ident__1 -> list Byte.byte`
+    * :n:`@ident__1 -> option (list Byte.byte)`
+
+    When parsing, the application of the parsing function
+    :n:`@ident__2` to the string will be fully reduced, and universes
+    of the resulting term will be refreshed.
+
+  .. exn:: Cannot interpret this string as a value of type @type
+
+    The string notation registered for :token:`type` does not support
+    the given string.  This error is given when the interpretation
+    function returns :g:`None`.
+
+  .. exn:: @ident should go from Byte.byte or (list Byte.byte) to @type or (option @type).
+
+    The parsing function given to the :cmd:`String Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @ident should go from @type to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).
+
+    The printing function given to the :cmd:`String Notation`
+    vernacular is not of the right type.
+
+  .. exn:: @type is not an inductive type.
+
+    String notations can only be declared for inductive types with no
+    arguments.
+
+  .. exn:: Unexpected term @term while parsing a string notation.
+
+    Parsing functions must always return ground terms, made up of
+    applications of constructors and inductive types.  Parsing
+    functions may not return terms containing axioms, bare
+    (co)fixpoints, lambdas, etc.
+
+  .. exn:: Unexpected non-option term @term while parsing a string notation.
+
+    Parsing functions expected to return an :g:`option` must always
+    return a concrete :g:`Some` or :g:`None` when applied to a
+    concrete string expressed as a decimal.  They may not return
+    opaque constants.
+
+  .. exn:: Cannot interpret in @scope because @ident could not be found in the current environment.
+
+    The inductive type used to register the string notation is no
+    longer available in the environment.  Most likely, this is because
+    the string notation was declared inside a functor for an
+    inductive type inside the functor.  This use case is not currently
+    supported.
+
+    Alternatively, you might be trying to use a primitive token
+    notation from a plugin which forgot to specify which module you
+    must :g:`Require` for access to that notation.
+
+  .. exn:: Syntax error: [prim:reference] expected after 'Notation' (in [vernac:command]).
+
+    The type passed to :cmd:`String Notation` must be a single
+    identifier.
+
+  .. exn:: Syntax error: [prim:reference] expected after [prim:reference] (in [vernac:command]).
+
+    Both functions passed to :cmd:`String Notation` must be single
+    identifiers.
+
+  .. exn:: The reference @ident was not found in the current environment.
+
+    Identifiers passed to :cmd:`String Notation` must exist in the
+    global environment.
+
+  .. exn:: @ident is bound to a notation that does not denote a reference.
+
+    Identifiers passed to :cmd:`String Notation` must be global
+    references, or notations which denote to single identifiers.
+
 .. _TacticNotation:
 
 Tactic Notations

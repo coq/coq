@@ -104,11 +104,12 @@ val register_string_interpretation :
 
 (** * Numeral notation *)
 
-type numeral_notation_error =
+type numeral_or_string_notation_error =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
 
-exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_notation_error
+exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_or_string_notation_error
+exception StringNotationError of Environ.env * Evd.evar_map * numeral_or_string_notation_error
 
 type numnot_option =
   | Nop
@@ -128,8 +129,13 @@ type target_kind =
   | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
 
+type string_target_kind =
+  | ListByte
+  | Byte
+
 type option_kind = Option | Direct
 type conversion_kind = target_kind * option_kind
+type string_conversion_kind = string_target_kind * option_kind
 
 type numeral_notation_obj =
   { to_kind : conversion_kind;
@@ -139,9 +145,17 @@ type numeral_notation_obj =
     num_ty : Libnames.qualid; (* for warnings / error messages *)
     warning : numnot_option }
 
+type string_notation_obj =
+  { sto_kind : string_conversion_kind;
+    sto_ty : GlobRef.t;
+    sof_kind : string_conversion_kind;
+    sof_ty : GlobRef.t;
+    string_ty : Libnames.qualid (* for warnings / error messages *) }
+
 type prim_token_interp_info =
     Uid of prim_token_uid
   | NumeralNotation of numeral_notation_obj
+  | StringNotation of string_notation_obj
 
 type prim_token_infos = {
   pt_local : bool; (** Is this interpretation local? *)

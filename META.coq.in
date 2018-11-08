@@ -459,28 +459,16 @@ package "plugins" (
     archive(native)  = "int31_syntax_plugin.cmx"
   )
 
-  package "asciisyntax" (
+  package "string_notation" (
 
-    description = "Coq asciisyntax plugin"
+    description = "Coq string_notation plugin"
     version     = "8.10"
 
     requires    = ""
     directory   = "syntax"
 
-    archive(byte)    = "ascii_syntax_plugin.cmo"
-    archive(native)  = "ascii_syntax_plugin.cmx"
-  )
-
-  package "stringsyntax" (
-
-    description = "Coq stringsyntax plugin"
-    version     = "8.10"
-
-    requires    = "coq.plugins.asciisyntax"
-    directory   = "syntax"
-
-    archive(byte)    = "string_syntax_plugin.cmo"
-    archive(native)  = "string_syntax_plugin.cmx"
+    archive(byte)    = "string_notation_plugin.cmo"
+    archive(native)  = "string_notation_plugin.cmx"
   )
 
   package "derive" (

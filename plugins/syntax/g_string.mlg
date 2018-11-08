@@ -1,0 +1,25 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+DECLARE PLUGIN "string_notation_plugin"
+
+{
+
+open String_notation
+open Names
+open Stdarg
+
+}
+
+VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
+  | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) ":"
+      ident(sc) ] ->
+    { vernac_string_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) }
+END

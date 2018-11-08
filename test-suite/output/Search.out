@@ -25,29 +25,30 @@ xorb: bool -> bool -> bool
 Nat.even: nat -> bool
 Nat.odd: nat -> bool
 BoolSpec: Prop -> Prop -> bool -> Prop
-Nat.eqb: nat -> nat -> bool
+Byte.byte_beq: Byte.byte -> Byte.byte -> bool
 Nat.testbit: nat -> nat -> bool
-Nat.ltb: nat -> nat -> bool
+Nat.eqb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
+Nat.ltb: nat -> nat -> bool
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
-bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
-bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
-eq_true_rec:
-  forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
-eq_true_ind:
-  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
-eq_true_rect_r:
-  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true
-eq_true_rec_r:
-  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true
 eq_true_rect:
   forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
-bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
+bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
+bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
+eq_true_rect_r:
+  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true
+eq_true_ind:
+  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
+eq_true_rec:
+  forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
+eq_true_rec_r:
+  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true
 eq_true_ind_r:
   forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true
+bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
+andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 andb_true_intro:
   forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
-andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 BoolSpec_ind:
   forall (P Q : Prop) (P0 : bool -> Prop),
   (P -> P0 true) ->

@@ -17,6 +17,7 @@ Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.testbit: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
+Byte.byte_beq: Byte.byte -> Byte.byte -> bool
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_O: forall n : nat, n = n + 0

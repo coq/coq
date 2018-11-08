@@ -12,7 +12,7 @@
 (** Contributed by Laurent Théry (INRIA);
     Adapted to Coq V8 by the Coq Development Team *)
 
-Require Import Bool BinPos BinNat PeanoNat Nnat.
+Require Import Bool BinPos BinNat PeanoNat Nnat Coq.Strings.Byte.
 
 (** * Definition of ascii characters *)
 
@@ -20,10 +20,7 @@ Require Import Bool BinPos BinNat PeanoNat Nnat.
 
 Inductive ascii : Set := Ascii (_ _ _ _ _ _ _ _ : bool).
 
-Register Ascii as plugins.syntax.Ascii.
-
 Declare Scope char_scope.
-Module Export AsciiSyntax. Declare ML Module "ascii_syntax_plugin". End AsciiSyntax.
 Delimit Scope char_scope with char.
 Bind Scope char_scope with ascii.
 
@@ -140,6 +137,12 @@ do 8 (destruct p; [ | | intros; vm_compute; reflexivity ]);
  intro H; vm_compute in H; destruct p; discriminate.
 Qed.
 
+Theorem N_ascii_bounded :
+  forall a : ascii, (N_of_ascii a < 256)%N.
+Proof.
+  destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
+Qed.
+
 Theorem ascii_nat_embedding :
   forall a : ascii, ascii_of_nat (nat_of_ascii a) = a.
 Proof.
@@ -156,6 +159,15 @@ Proof.
  change 256%N with (N.of_nat 256).
  rewrite <- Nat2N.inj_compare.
  now apply Nat.compare_lt_iff.
+Qed.
+
+Theorem nat_ascii_bounded :
+  forall a : ascii, nat_of_ascii a < 256.
+Proof.
+  intro a; unfold nat_of_ascii.
+  change 256 with (N.to_nat 256).
+  rewrite <- Nat.compare_lt_iff, <- N2Nat.inj_compare, N.compare_lt_iff.
+  apply N_ascii_bounded.
 Qed.
 
 
@@ -175,7 +187,44 @@ Qed.
   stand-alone utf8 characters so that only the notation "nnn" is
   available for them (unless your terminal is able to represent them,
   which is typically not the case in coqide).
-*)
+ *)
+
+Definition ascii_of_byte (b : byte) : ascii
+  := ascii_of_N (Byte.to_N b).
+
+Definition byte_of_ascii (a : ascii) : byte
+  := match Byte.of_N (N_of_ascii a) with
+     | Some v => v
+     | None => x00 (* can't happen *)
+     end.
+
+Lemma ascii_of_byte_of_ascii x : ascii_of_byte (byte_of_ascii x) = x.
+Proof.
+  cbv [ascii_of_byte byte_of_ascii].
+  pose proof (to_of_N (N_of_ascii x)).
+  destruct (of_N (N_of_ascii x)) as [x'|] eqn:H1.
+  { specialize (H x' eq_refl); rewrite H.
+    apply ascii_N_embedding. }
+  { exfalso.
+    rewrite of_N_None_iff in H1.
+    pose proof (N_ascii_bounded x) as H2.
+    rewrite N.lt_nge in H1, H2.
+    destruct (N.le_gt_cases (N_of_ascii x) 255) as [H3|H3].
+    { apply H1, H3. }
+    { rewrite <- N.le_succ_l in H3; apply H2, H3. } }
+Qed.
+
+Lemma byte_of_ascii_of_byte x : byte_of_ascii (ascii_of_byte x) = x.
+Proof.
+  cbv [ascii_of_byte byte_of_ascii].
+  rewrite N_ascii_embedding, of_to_N; [ reflexivity | ].
+  pose proof (to_N_bounded x) as H.
+  rewrite <- N.lt_succ_r in H; exact H.
+Qed.
+
+Module Export AsciiSyntax.
+  String Notation ascii ascii_of_byte byte_of_ascii : char_scope.
+End AsciiSyntax.
 
 Local Open Scope char_scope.
 
