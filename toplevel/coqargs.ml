@@ -9,7 +9,7 @@
 (************************************************************************)
 
 let fatal_error exn =
-  Topfmt.print_err_exn Topfmt.ParsingCommandLine exn;
+  Topfmt.(in_phase ~phase:ParsingCommandLine print_err_exn exn);
   let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
   exit exit_code
 

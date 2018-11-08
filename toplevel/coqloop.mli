@@ -27,7 +27,7 @@ val top_buffer : input_buffer
 val set_prompt : (unit -> string) -> unit
 
 (** Toplevel feedback printer. *)
-val coqloop_feed : Topfmt.execution_phase -> Feedback.feedback -> unit
+val coqloop_feed : Feedback.feedback -> unit
 
 (** Last document seen after `Drop` *)
 val drop_last_doc : Vernac.State.t option ref
