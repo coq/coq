@@ -408,6 +408,12 @@ checkproofs:
 		-schedule-vio-checking $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: checkproofs
 
+vos: $(VOFILES:%.vo=%.vos)
+.PHONY: vos
+
+vok: $(VOFILES:%.vo=%.vok)
+.PHONY: vok
+
 validate: $(VOFILES)
 	$(TIMER) $(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $^
 .PHONY: validate
@@ -558,6 +564,8 @@ clean::
 	$(HIDE)find . -name .coq-native -type d -empty -delete
 	$(HIDE)rm -f $(VOFILES)
 	$(HIDE)rm -f $(VOFILES:.vo=.vio)
+	$(HIDE)rm -f $(VOFILES:.vo=.vos)
+	$(HIDE)rm -f $(VOFILES:.vo=.vok)
 	$(HIDE)rm -f $(BEAUTYFILES) $(VFILES:=.old)
 	$(HIDE)rm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob all-mli.tex
 	$(HIDE)rm -f $(VFILES:.v=.glob)
@@ -665,6 +673,14 @@ $(GLOBFILES): %.glob: %.v
 $(VFILES:.v=.vio): %.vio: %.v
 	$(SHOW)COQC -quick $<
 	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+
+$(VFILES:.v=.vos): %.vos: %.v
+	$(SHOW)COQC -vos $<
+	$(HIDE)$(TIMER) $(COQC) -vos $(COQDEBUG) $(COQFLAGS) $<
+
+$(VFILES:.v=.vok): %.vok: %.v
+	$(SHOW)COQC -vok $<
+	$(HIDE)$(TIMER) $(COQC) -vok $(COQDEBUG) $(COQFLAGS) $<
 
 $(addsuffix .timing.diff,$(VFILES)): %.timing.diff : %.before-timing %.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<

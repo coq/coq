@@ -8,7 +8,21 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
+(** Compilation modes:
+  - BuildVo      : process statements and proofs (standard compilation),
+                   and also output an empty .vos file
+  - BuildVio     : process statements, delay proofs in futures
+  - Vio2Vo       : load delayed proofs and process them
+  - BuildVos     : process statements, and discard proofs,
+                   and load .vos files for required libraries
+  - BuildVok     : like BuildVo, but load .vos files for required libraries
+
+  When loading the .vos version of a required library, if the file exists but is
+  empty, then we attempt to load the .vo version of that library.
+  This trick is useful to avoid the need for the user to compile .vos version
+  when an up to date .vo version is already available.
+*)
+type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
 
 type t =
   { compilation_mode : compilation_mode

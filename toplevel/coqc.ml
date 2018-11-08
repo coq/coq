@@ -30,6 +30,9 @@ coqc specific options:\
 \n                         into fi.vo\
 \n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
 \n                         proofs in each fi.vio\
+\n  -vos                   process statements but ignore opaque proofs, and produce a .vos file\
+\n  -vok                   process the file by loading .vos instead of .vo files for\
+\n                         dependencies, and produce an empty .vok file on success\
 \n\
 \nUndocumented:\
 \n  -vio2vo                [see manual]\

@@ -184,6 +184,13 @@ and ``coqtop``, unless stated otherwise:
 :-verbose: Output the content of the input file as it is compiled.
   This option is available for ``coqc`` only; it is the counterpart of
   -compile-verbose.
+:-vos: Indicate |Coq| to skip the processing of opaque proofs
+  (i.e., proofs ending with ``Qed`` or ``Admitted``), output a ``.vos`` files
+  instead of a ``.vo`` file, and to load ``.vos`` files instead of ``.vo`` files
+  when interpreting ``Require`` commands.
+:-vok: Indicate |Coq| to check a file completely, to load ``.vos`` files instead
+  of ``.vo`` files when interpreting ``Require`` commands, and to output an empty
+  ``.vok`` files upon success instead of writing a ``.vo`` file.
 :-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
   option expects all, none or a comma-separated list of warning names or
   categories (see Section :ref:`controlling-display`).
@@ -244,6 +251,86 @@ and ``coqtop``, unless stated otherwise:
 :-list-tags: Print the highlight tags known by |Coq| as well as their
   currently associated color and exit.
 :-h, --help: Print a short usage and exit.
+
+
+
+Compiled interfaces (produced using ``-vos``)
+----------------------------------------------
+
+
+Compiled interfaces help saving time while developing Coq formalizations,
+by compiling the formal statements exported by a library independently of
+the proofs that it contains.
+
+   .. warning::
+
+      Compiled interfaces should only be used for development purposes.
+      At the end of the day, one still needs to proof check all files
+      by producing standard ``.vo`` files. (Technically, when using ``-vos``,
+      fewer universe constraints are collected.)
+
+   .. warning::
+
+      In the current implementation, the use of the command ``Include`` for
+      importing modules compiled using `-vos` might not work properly.
+
+
+**Typical usage.**
+
+Assume a file ``foo.v`` that depends on two files ``bar1.v`` and ``bar2.v``. The
+command ``make foo.requires_vos`` will compile ``bar1.v`` and ``bar2.v`` using
+the option ``-vos`` to skip the proofs, producing ``bar1.vos`` and ``bar2.vos``.
+At this point, one is ready to work interactively on the file ``foo.v``, even
+though it was never needed to compile the proofs involved in the ``bar*.v``
+files.
+
+Assume a set of files ``f1.v ... fn.v`` with linear dependencies. The command
+``make vos`` enables compiling the statements (i.e. excluding the proofs) in all
+the files. Next, ``make -j vok`` enables compiling all the proofs in parallel.
+Thus, calling ``make -j vok`` directly enables taking advantage of a maximal
+amount of parallelism during the compilation of the set of files.
+
+Note that this comes at the cost of parsing and typechecking all definitions
+twice, once for the ``.vos`` file and once for the ``.vok`` file. However, if
+files contain nontrivial proofs, or if the files have many linear chains of
+dependencies, or if one has many cores available, compilation should be faster
+overall.
+
+**Need for ``Proof using``**
+
+When a theorem is part of a section, typechecking the statement of this theorem
+might be insufficient for deducing the type of this statement as of at the end
+of the section. Indeed, the proof of the theorem could make use of section
+variables or section hypotheses that are not mentioned in the statement of the
+theorem.
+
+For this reason, proofs inside section should begin with :cmd:`Proof using`
+instead of :cmd:`Proof`, where after the ``using`` clause one should provide
+the list of the names of the section variables that are required for the proof
+but are not involved in the typechecking of the statement. Note that it is safe
+to write ``Proof using.`` instead of ``Proof.`` also for proofs that are not
+within a section.
+
+.. warn:: You should use the “Proof using [...].” syntax instead of “Proof.” to enable skipping this proof which is located inside a section. Give as argument to “Proof using” the list of section variables that are not needed to typecheck the statement but that are required by the proof.
+
+     If |Coq| is invoked using the ``-vos`` option, whenever it finds the
+     command ``Proof.`` inside a section, it will compile the proof, that is,
+     refuse to skip it, and it will raise a warning. To disable the warning, one
+     may pass the flag ``-w -proof-without-using-in-section``.
+
+**Interaction with standard compilation**
+
+When compiling a file ``foo.v`` using ``coqc`` in the standard way (i.e., without
+``-vos`` nor ``-vok``), an empty file ``foo.vos`` is created in addition to the
+regular output file ``foo.vo``. If ``coqc`` is subsequently invoked on some other
+file ``bar.v`` using option ``-vos`` or ``-vok``, and that ``bar.v`` requires
+``foo.v``, if |Coq| finds an empty file ``foo.vos``, then it will load
+``foo.vo`` instead of ``foo.vos``.
+
+The purpose of this feature is to allow users to benefit from the ``-vos``
+option even if they depend on libraries that were compiled in the traditional
+manner (i.e., never compiled using the ``-vos`` option).
+
 
 Compiled libraries checker (coqchk)
 ----------------------------------------

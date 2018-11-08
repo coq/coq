@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
+type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
 
 type t =
   { compilation_mode : compilation_mode
@@ -166,6 +166,13 @@ let parse arglist : t =
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
           set_compilation_mode oval BuildVio
+        |"-vos" ->
+          Flags.load_vos_libraries := true;
+          { oval with compilation_mode = BuildVos }
+        |"-vok" ->
+          Flags.load_vos_libraries := true;
+          { oval with compilation_mode = BuildVok }
+
         | "-check-vio-tasks" ->
           let tno = get_task_list (next ()) in
           let tfile = next () in

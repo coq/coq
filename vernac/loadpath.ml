@@ -138,6 +138,18 @@ let select_vo_file ~warn loadpath base =
         System.where_in_path ~warn loadpath name in
       Some (lpath, file)
     with Not_found -> None in
+  if !Flags.load_vos_libraries then begin
+    (* If the .vos file exists and is not empty, it describes the library.
+       If the .vos file exists and is empty, then load the .vo file.
+       If the .vos file is missing, then fail. *)
+    match find ".vos" with
+    | None -> Error LibNotFound
+    | Some (_, vos as resvos) ->
+        if (Unix.stat vos).Unix.st_size > 0 then Ok resvos else
+        match find ".vo" with
+        | None -> Error LibNotFound
+        | Some resvo -> Ok resvo
+  end else
   match find ".vo", find ".vio" with
   | None, None ->
     Error LibNotFound
@@ -189,8 +201,10 @@ let error_unmapped_dir qid =
             ])
 
 let error_lib_not_found qid =
+  let vos = !Flags.load_vos_libraries in
+  let vos_msg = if vos then [Pp.str " (while searching for a .vos file)"] else [] in
   CErrors.user_err ~hdr:"load_absolute_library_from"
-    Pp.(seq [ str "Cannot find library "; Libnames.pr_qualid qid; str" in loadpath"])
+    Pp.(seq ([ str "Cannot find library "; Libnames.pr_qualid qid; str" in loadpath"]@vos_msg))
 
 let try_locate_absolute_library dir =
   match locate_absolute_library dir with

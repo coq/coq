@@ -36,10 +36,18 @@ type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaqueproof.opaque_proofterm array
 
-(** End the compilation of a library and save it to a ".vo" file.
+(** End the compilation of a library and save it to a ".vo" file,
+    a ".vio" file, or a ".vos" file, depending on the todo_proofs
+    argument.
     [output_native_objects]: when producing vo objects, also compile the native-code version. *)
+
+type ('document,'counters) todo_proofs =
+ | ProofsTodoNone (* for .vo *)
+ | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
+ | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+
 val save_library_to :
-  ?todo:(((Future.UUID.t,'document) Stateid.request * bool) list * 'counters) ->
+  ('document,'counters) todo_proofs ->
   output_native_objects:bool ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
