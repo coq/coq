@@ -1076,7 +1076,7 @@ function make_ocaml {
 
 function make_ocaml_tools {
   make_findlib
-  make_camlp5
+  # make_camlp5
 }
 
 ##### OCAML EXTRA LIBRARIES #####
@@ -1386,7 +1386,7 @@ function make_coq {
   make_ocaml
   make_num
   make_findlib
-  make_camlp5
+  # make_camlp5
   make_lablgtk
   if
     case $COQ_VERSION in

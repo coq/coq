@@ -39,9 +39,6 @@ WHAT DO YOU NEED ?
    - Findlib (version >= 1.4.1)
      (available at http://projects.camlcity.org/projects/findlib.html)
 
-   - Camlp5 (version >= 7.03)
-     (available at https://camlp5.github.io/)
-
    - GNU Make version 3.81 or later
 
    - a C compiler
@@ -49,14 +46,14 @@ WHAT DO YOU NEED ?
    - for CoqIDE, the lablgtk development files (version >= 2.18.5),
      and the GTK 2.x libraries including gtksourceview2.
 
-   Note that num, camlp5 and lablgtk should be properly registered with
+   Note that num and lablgtk should be properly registered with
    findlib/ocamlfind as Coq's makefile will use it to locate the
    libraries during the build.
 
    Opam (https://opam.ocaml.org/) is recommended to install OCaml and
    the corresponding packages.
 
-   $ opam install num ocamlfind camlp5 lablgtk conf-gtksourceview
+   $ opam install num ocamlfind lablgtk conf-gtksourceview
 
    should get you a reasonable OCaml environment to compile Coq.
 
@@ -96,19 +93,14 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    bigger), you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
-2- Check that you have Camlp5 installed on your computer and that the
-   command "camlp5" lies in a directory which is present in your $PATH
-   environment variable path.  (You need Camlp5 in both bytecode and
-   native versions if your platform supports it).
-
-3- The uncompression and un-tarring of the distribution file gave birth
+2- The uncompression and un-tarring of the distribution file gave birth
    to a directory named "coq-8.xx". You can rename this directory and put
    it wherever you want. Just keep in mind that you will need some spare
    space during the compilation (reckon on about 300 Mb of disk space
    for the whole system in native-code compilation). Once installed, the
    binaries take about 30 Mb, and the library about 200 Mb.
 
-4- First you need to configure the system. It is done automatically with
+3- First you need to configure the system. It is done automatically with
    the command:
 
 	./configure <options>
@@ -171,7 +163,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
         c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
-5- Still in the root directory, do
+4- Still in the root directory, do
 
 	make
 
@@ -183,7 +175,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    it is recommended to compile in parallel, via make -jN where N is your number
    of cores.
 
-6- You can now install the Coq system. Executables, libraries, manual pages
+5- You can now install the Coq system. Executables, libraries, manual pages
    and emacs mode are copied in some standard places of your system, defined at
    configuration time (step 3). Just do
 
@@ -192,7 +184,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
    Of course, you may need superuser rights to do that.
 
-7- Optionally, you could build the bytecode version of Coq via:
+6- Optionally, you could build the bytecode version of Coq via:
 
         make byte
 
@@ -204,7 +196,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
   be helpful for debugging purposes. In particular, coqtop.byte embeds an OCaml
   toplevel accessible via the Drop command.
 
-8- You can now clean all the sources. (You can even erase them.)
+7- You can now clean all the sources. (You can even erase them.)
 
 	make clean
 

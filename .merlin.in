@@ -53,4 +53,4 @@ B dev
 S plugins/**
 B plugins/**
 
-PKG threads.posix camlp5
+PKG threads.posix

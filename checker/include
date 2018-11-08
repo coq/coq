@@ -13,7 +13,6 @@
 #directory "kernel";;
 #directory "checker";;
 #directory "+threads";;
-#directory "+camlp5";;
 
 #load "unix.cma";;
 #load"threads.cma";;

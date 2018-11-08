@@ -4,6 +4,7 @@
 
 (**********************************)
 
+
 (** This file should be run via: ocaml configure.ml <opts>
     You could also use our wrapper ./configure <opts> *)
 
@@ -188,34 +189,6 @@ let which prog =
 let program_in_path prog =
   try let _ = which prog in true with Not_found -> false
 
-(** Choose a command among a list of candidates
-    (command name, mandatory arguments, arguments for this test).
-    Chooses the first one whose execution outputs a non-empty (first) line.
-    Dies with message [msg] if none is found. *)
-
-let select_command msg candidates =
-  let rec search = function
-    | [] -> die msg
-    | (p, x, y) :: tl ->
-      if fst (tryrun p (x @ y)) <> ""
-      then List.fold_left (Printf.sprintf "%s %s") p x
-      else search tl
-  in search candidates
-
-(** As per bug #4828, ocamlfind on Windows/Cygwin barfs if you pass it
-    a quoted path to camlp5o via -pp.  So we only quote camlp5o on not
-    Windows, and warn on Windows if the path contains spaces *)
-let contains_suspicious_characters str =
-  List.fold_left (fun b ch -> String.contains str ch || b) false [' '; '\t']
-
-let win_aware_quote_executable str =
-  if not (os_type_win32 || os_type_cygwin) then
-    sprintf "%S" str
-  else
-    let _ = if contains_suspicious_characters str then
-      warn "The string %S contains suspicious characters; ocamlfind might fail" str in
-    Str.global_replace (Str.regexp "\\\\") "/" str
-
 (** * Date *)
 
 (** The short one is displayed when starting coqtop,
@@ -254,7 +227,6 @@ type preferences = {
   coqdocdir : string option;
   ocamlfindcmd : string option;
   lablgtkdir : string option;
-  camlp5dir : string option;
   arch : string option;
   natdynlink : bool;
   coqide : ide option;
@@ -292,7 +264,6 @@ let default = {
   coqdocdir = None;
   ocamlfindcmd = None;
   lablgtkdir = None;
-  camlp5dir = None;
   arch = None;
   natdynlink = true;
   coqide = None;
@@ -399,8 +370,6 @@ let args_options = Arg.align [
     "<dir> Specifies the ocamlfind command to use";
   "-lablgtkdir", arg_string_option (fun p lablgtkdir -> { p with lablgtkdir }),
     "<dir> Specifies the path to the Lablgtk library";
-  "-camlp5dir", arg_string_option (fun p camlp5dir -> { p with camlp5dir }),
-    "<dir> Specifies where is the Camlp5 library and tells to use it";
   "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
     "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
   "-arch", arg_string_option (fun p arch -> { p with arch }),
@@ -580,8 +549,6 @@ let camlbin, caml_version, camllib, findlib_version =
       then reset_caml_top camlexec (camlbin / "ocaml") in
     camlbin, caml_version, camllib, findlib_version
 
-let camlp5compat = "-loc loc"
-
 (** Caml version as a list of string, e.g. ["4";"00";"1"] *)
 
 let caml_version_list = numeric_prefix_list caml_version
@@ -660,75 +627,11 @@ let caml_flags =
 let coq_caml_flags =
   coq_warn_error
 
-(** * Camlp5 configuration *)
-
-(* Convention: we use camldir as a prioritary location for camlp5, if given *)
-(* i.e., in the case of camlp5, we search for a copy of camlp5o which *)
-(* answers the right camlp5 lib dir *)
-
-let strip_slash dir =
-  let n = String.length dir in
-  if n>0 && dir.[n - 1] = '/' then String.sub dir 0 (n-1) else dir
-
-let which_camlp5o_for camlp5lib =
-  let camlp5o = Filename.concat camlbin "camlp5o" in
-  let camlp5lib = strip_slash camlp5lib in
-  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
-  let camlp5o = which "camlp5o" in
-  if fst (tryrun camlp5o ["-where"]) = camlp5lib then camlp5o else
-  die ("Error: cannot find Camlp5 binaries corresponding to Camlp5 library " ^ camlp5lib)
-
-let which_camlp5 base =
-  let file = Filename.concat camlbin base in
-  if is_executable file then file else which base
-
-(* TODO: camlp5dir should rather be the *binary* location, just as camldir *)
-(* TODO: remove the late attempts at finding gramlib.cma *)
-
-let check_camlp5 testcma = match !prefs.camlp5dir with
-  | Some dir ->
-    if Sys.file_exists (dir/testcma) then
-      let camlp5o =
-        try which_camlp5o_for dir
-        with Not_found -> die "Error: cannot find Camlp5 binaries in path.\n" in
-      dir, camlp5o
-    else
-      let msg =
-        sprintf "Cannot find camlp5 libraries in '%s' (%s not found)."
-          dir testcma
-      in die msg
-  | None ->
-    try
-      let camlp5o = which_camlp5 "camlp5o" in
-      let dir,_ = tryrun camlp5o ["-where"] in
-      dir, camlp5o
-    with Not_found ->
-      die "No Camlp5 installation found."
-
-let check_camlp5_version camlp5o =
-  let version_line, _ = run ~err:StdOut camlp5o ["-v"] in
-  let version = List.nth (string_split ' ' version_line) 2 in
-  match numeric_prefix_list version with
-  | major::minor::_ when s2i major > 6 || (s2i major, s2i minor) >= (6,6) ->
-    cprintf "You have Camlp5 %s. Good!" version; version
-  | _ -> die "Error: unsupported Camlp5 (version < 6.06 or unrecognized).\n"
-
-let config_camlp5 () =
-    let camlp5mod = "gramlib" in
-    let camlp5libdir, camlp5o = check_camlp5 (camlp5mod^".cma") in
-    let camlp5_version = check_camlp5_version camlp5o in
-    camlp5o, Filename.dirname camlp5o, camlp5libdir, camlp5mod, camlp5_version
-
-let camlp5o, camlp5bindir, fullcamlp5libdir,
-    camlp5mod, camlp5_version = config_camlp5 ()
-
 let shorten_camllib s =
   if starts_with s (camllib^"/") then
     let l = String.length camllib + 1 in
     "+" ^ String.sub s l (String.length s - l)
   else s
-
-let camlp5libdir = shorten_camllib fullcamlp5libdir
 
 (** * Native compiler *)
 
@@ -737,9 +640,6 @@ let msg_byteonly =
 
 let msg_no_ocamlopt () =
   warn "Cannot find the OCaml native-code compiler.\n%s" msg_byteonly
-
-let msg_no_camlp5_cmxa () =
-  warn "Cannot find the native-code library of camlp5.\n%s" msg_byteonly
 
 let msg_no_dynlink_cmxa () =
   warn "Cannot find native-code dynlink library.\n%s" msg_byteonly;
@@ -751,8 +651,6 @@ let check_native () =
   let () = if !prefs.byteonly then raise Not_found in
   let version, _ = tryrun camlexec.find ["opt";"-version"] in
   if version = "" then let () = msg_no_ocamlopt () in raise Not_found
-  else if not (Sys.file_exists (fullcamlp5libdir/camlp5mod^".cmxa"))
-  then let () = msg_no_camlp5_cmxa () in raise Not_found
   else if fst (tryrun camlexec.find ["query";"dynlink"]) = ""
   then let () = msg_no_dynlink_cmxa () in raise Not_found
   else
@@ -770,7 +668,6 @@ let hasnatdynlink = !prefs.natdynlink && best_compiler = "opt"
 
 let natdynlinkflag =
   if hasnatdynlink then "true" else "false"
-
 
 (** * OS dependent libraries *)
 
@@ -1111,9 +1008,6 @@ let print_summary () =
   pr "  OCaml binaries in           : %s\n" (esc camlbin);
   pr "  OCaml library in            : %s\n" (esc camllib);
   pr "  OCaml flambda flags         : %s\n" (String.concat " " !prefs.flambda_flags);
-  pr "  Camlp5 version              : %s\n" camlp5_version;
-  pr "  Camlp5 binaries in          : %s\n" (esc camlp5bindir);
-  pr "  Camlp5 library in           : %s\n" (esc camlp5libdir);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
@@ -1153,7 +1047,6 @@ let write_dbg_wrapper f =
   pr "# DO NOT EDIT THIS FILE: automatically generated by ../configure #\n\n";
   pr "export COQTOP=%S\n" coqtop;
   pr "OCAMLDEBUG=%S\n" (camlbin^"/ocamldebug");
-  pr "CAMLP5LIB=%S\n\n" camlp5libdir;
   pr ". $COQTOP/dev/ocamldebug-coq.run\n";
   close_out o;
   Unix.chmod f 0o555
@@ -1185,10 +1078,6 @@ let write_configml f =
   pr_p "datadirsuffix" datadirsuffix;
   pr_p "docdirsuffix" docdirsuffix;
   pr_s "ocamlfind" camlexec.find;
-  pr_s "camlp5o" camlp5o;
-  pr_s "camlp5bin" camlp5bindir;
-  pr_s "camlp5lib" camlp5libdir;
-  pr_s "camlp5compat" camlp5compat;
   pr_s "caml_flags" caml_flags;
   pr_s "version" coq_version;
   pr_s "caml_version" caml_version;
@@ -1295,11 +1184,6 @@ let write_makefile f =
   pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
   pr "# Compilation profile flag\n";
   pr "CAMLTIMEPROF=%s\n\n" coq_profile_flag;
-  pr "# Camlp5 : flavor, binaries, libraries ...\n";
-  pr "# NB : avoid using CAMLP5LIB (conflict under Windows)\n";
-  pr "CAMLP5O=%s\n" (win_aware_quote_executable camlp5o);
-  pr "CAMLP5COMPAT=%s\n" camlp5compat;
-  pr "MYCAMLP5LIB=%S\n\n" camlp5libdir;
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;

@@ -1,5 +1,15 @@
 ## Changes between Coq 8.9 and Coq 8.10
 
+### ML4 Pre Processing
+
+- Support for `.ml4` files, processed by camlp5 has been removed in
+  favor of `.mlg` files processed by `coqpp`.
+
+  Porting is usually straightforward, and involves renaming the
+  `file.ml4` file to `file.mlg` and adding a few brackets.
+
+  See "Transitioning away from Camlp5" below for update instructions.
+
 ### ML API
 
 General deprecation

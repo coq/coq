@@ -22,10 +22,6 @@
 # set this variable to 1 (or any non-empty value):
 VERBOSE ?=
 
-# If set to 1 (or non-empty) then *.ml files corresponding to *.ml4 files
-# will be generated in a human-readable format rather than in a binary format.
-READABLE_ML4 ?=
-
 # When non-empty, a time command is performed at each .v compilation.
 # To collect compilation timings of .v and import them in a spreadsheet,
 # you could hence consider: make TIMED=1 2> timings.csv
@@ -199,7 +195,7 @@ COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
-MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP5LIB)
+MLINCLUDES=$(LOCALINCLUDES)
 
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
@@ -252,14 +248,6 @@ endef
 define ocamlbyte
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ -linkpkg $(1) $^
 endef
-
-# Camlp5 settings
-
-CAMLP5DEPS:=grammar/grammar.cma
-CAMLP5USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
-
-PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
-# XXX unused but should be used for mlp files
 
 # Main packages linked by Coq.
 SYSMOD:=-package num,str,unix,dynlink,threads
@@ -333,70 +321,15 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h kernel/make_opcodes.sh kernel/
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
-###########################################################################
-#  grammar/grammar.cma
-###########################################################################
-
-## In this part, we compile grammar/grammar.cma
-## without relying on .d dependency files, for bootstraping the creation
-## and inclusion of these .d files
-
-## Explicit dependencies for grammar stuff
-
-GRAMBASEDEPS := grammar/q_util.cmi
-GRAMCMO := grammar/q_util.cmo \
- grammar/argextend.cmo grammar/tacextend.cmo grammar/vernacextend.cmo
 COQPPCMO := $(addsuffix .cmo, $(addprefix coqpp/, coqpp_parse coqpp_lex))
-
-grammar/argextend.cmo : $(GRAMBASEDEPS)
-grammar/q_util.cmo : $(GRAMBASEDEPS)
-grammar/tacextend.cmo : $(GRAMBASEDEPS) grammar/argextend.cmo
-grammar/vernacextend.cmo : $(GRAMBASEDEPS) grammar/tacextend.cmo \
- grammar/argextend.cmo
 
 coqpp/coqpp_parse.cmi: coqpp/coqpp_ast.cmi
 coqpp/coqpp_parse.cmo: coqpp/coqpp_ast.cmi coqpp/coqpp_parse.cmi
 coqpp/coqpp_lex.cmo: coqpp/coqpp_ast.cmi coqpp/coqpp_parse.cmo
 
-## Ocaml compiler with the right options and -I for grammar
-
-GRAMC := $(OCAMLFIND) ocamlc $(CAMLFLAGS) $(CAMLDEBUG) $(USERFLAGS) \
- -I $(MYCAMLP5LIB) -I grammar
-
-## Specific rules for grammar.cma
-
-grammar/grammar.cma : $(GRAMCMO)
-	$(SHOW)'Testing $@'
-	@touch grammar/test.mlp
-	$(HIDE)$(GRAMC) -pp '$(CAMLP5O) $^ -impl' -impl grammar/test.mlp -o grammar/test
-	@rm -f grammar/test.* grammar/test
-	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(GRAMC) $^ -linkall -a -o $@
-
 $(COQPP): $(COQPPCMO) coqpp/coqpp_main.ml
 	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(GRAMC) -I coqpp $^ -linkall -o $@
-
-## Support of Camlp5 and Camlp5
-
-COMPATCMO:=
-GRAMP4USE:=$(COMPATCMO) pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
-GRAMPP:=$(CAMLP5O) -I $(MYCAMLP5LIB) $(GRAMP4USE) $(CAMLP5COMPAT) -impl
-
-## Rules for standard .mlp and .mli files in grammar/
-
-grammar/%.cmo: grammar/%.mlp | $(COMPATCMO)
-	$(SHOW)'OCAMLC -c -pp $<'
-	$(HIDE)$(GRAMC) -c -pp '$(GRAMPP)' -impl $<
-
-grammar/%.cmo: grammar/%.ml | $(COMPATCMO)
-	$(SHOW)'OCAMLC -c -pp $<'
-	$(HIDE)$(GRAMC) -c $<
-
-grammar/%.cmi: grammar/%.mli
-	$(SHOW)'OCAMLC -c $<'
-	$(HIDE)$(GRAMC) -c $<
-
+	$(HIDE)$(OCAMLC) -I coqpp $^ -linkall -o $@
 
 ###########################################################################
 # Main targets (coqtop.opt, coqtop.byte)
@@ -404,7 +337,7 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE) $(GRAMMARCMA)
+coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
 coqbyte: $(TOPBYTE) $(CHICKENBYTE)
 
 # Special rule for coqtop, we imitate `ocamlopt` can delete the target

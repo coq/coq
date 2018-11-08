@@ -84,10 +84,10 @@ unless these tests pass.
 
 We are currently running tests on the following platforms:
 
-- GitLab CI is the main CI platform. It tests the compilation of Coq, of the
-  documentation, and of CoqIDE on Linux with several versions of OCaml /
-  camlp5, and with warnings as errors; it runs the test-suite and tests the
-  compilation of several external developments.
+- GitLab CI is the main CI platform. It tests the compilation of Coq,
+  of the documentation, and of CoqIDE on Linux with several versions
+  of OCaml and with warnings as errors; it runs the test-suite and
+  tests the compilation of several external developments.
 
 - Travis CI is used to test the compilation of Coq and run the test-suite on
   macOS. It also runs a linter that checks whitespace discipline. A

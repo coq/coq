@@ -125,7 +125,6 @@ help:
 	@echo "   make clean"
 	@echo "or make archclean"
 	@echo "For make to be verbose, add VERBOSE=1"
-	@echo "If you want camlp5 to generate human-readable files, add READABLE_ML4=1"
 	@echo
 	@echo "Bytecode compilation is now a separate target:"
 	@echo "   make byte"

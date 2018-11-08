@@ -8,14 +8,13 @@
 # here are some reasonable default values
 
 [ -z "$OCAMLDEBUG" ] && OCAMLDEBUG=ocamldebug
-[ -z "$CAMLP5LIB" ] && CAMLP5LIB=+camlp5
 [ -z "$COQTOP" -a -d "$PWD/kernel" ] && COQTOP=$PWD
 [ -z "$COQTOP" -a -d "$PWD/../kernel" ] && COQTOP=`dirname $PWD`
 
 export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun:$CAML_LD_LIBRARY_PATH
 
 exec $OCAMLDEBUG \
-    -I $CAMLP5LIB -I +threads \
+    -I +threads \
     -I $COQTOP \
     -I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
     -I $COQTOP/lib -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
