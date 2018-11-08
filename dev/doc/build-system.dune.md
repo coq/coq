@@ -81,7 +81,7 @@ or
 
 ```
 dune exec dev/dune-dbg checker
-(ocd) source checker_dune_db
+(ocd) source dune_db
 ```
 
 for the checker. Unfortunately, dependency handling here is not fully

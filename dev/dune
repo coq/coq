@@ -3,17 +3,8 @@
  (public_name coq.top_printers)
  (synopsis "Coq's Debug Printers")
  (wrapped false)
- (modules :standard \ checker_printers)
+ (modules :standard)
  (libraries coq.toplevel coq.plugins.ltac))
-
-(library
- (name checker_printers)
- (public_name coq.checker_printers)
- (synopsis "Coq's Debug Printers [for the Checker]")
- (wrapped false)
- (flags :standard -open Checklib)
- (modules checker_printers)
- (libraries coq.checklib))
 
 (rule
   (targets dune-dbg)

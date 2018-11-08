@@ -59,8 +59,7 @@ checker/check.cmxa: checker/check.mllib
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $(filter-out %.mllib, $^)
 
-CHECKMLFILES:=$(filter checker/%, $(MLFILES) $(MLIFILES)) \
-  $(filter dev/checker_%, $(MLFILES) $(MLIFILES))
+CHECKMLFILES:=$(filter checker/%, $(MLFILES) $(MLIFILES))
 
 $(CHECKMLDFILE).d: $(filter checker/%, $(MLFILES) $(MLIFILES))
 	$(SHOW)'OCAMLDEP  checker/MLFILES checker/MLIFILES'
@@ -81,14 +80,6 @@ checker/%.cmo: checker/%.ml
 checker/%.cmx: checker/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -c $<
-
-dev/checker_%.cmo: dev/checker_%.ml
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -I dev/ -c $<
-
-dev/checker_%.cmi: dev/checker_%.mli
-	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -I dev/ -c $<
 
 # For emacs:
 # Local Variables:
