@@ -38,10 +38,6 @@ val path_to_list : string -> string list
     [file] does not already end with [suf]. *)
 val make_suffix : string -> string -> string
 
-(** Return the extension of a file, i.e. its smaller suffix starting
-    with "." if any, or "" otherwise. *)
-val get_extension : string -> string
-
 val file_readable_p : string -> bool
 
 (** {6 Executing commands } *)
