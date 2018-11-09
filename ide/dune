@@ -43,3 +43,14 @@
  (package coqide)
  (modules coqide_main)
  (libraries coqide.gui))
+
+; FIXME: we should install those in share/coqide. We better do this
+; once the make-based system has been phased out.
+(install
+ (section share_root)
+ (package coqide)
+ (files
+  (coq.png as coq/coq.png)
+  (coq_style.xml as coq/coq_style.xml)
+  (coq.lang as coq/coq.lang)
+  (coq-ssreflect.lang as coq/coq-ssreflect.lang)))
