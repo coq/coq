@@ -42,7 +42,7 @@ check: voboot
 
 COQTOP_FILES=ide/idetop.bc ide/coqide_main.bc checker/coqchk.bc
 PLUGIN_FILES=$(wildcard plugins/*/*.mlpack)
-PRINTER_FILES=dev/top_printers.cma dev/checker_printers.cma
+PRINTER_FILES=dev/top_printers.cma
 QUICKBYTE_TARGETS=$(COQTOP_FILES) $(PLUGIN_FILES:.mlpack=.cma) $(PRINTER_FILES) topbin/coqtop_byte_bin.bc
 QUICKOPT_TARGETS=$(COQTOP_FILES:.bc=.exe) $(PLUGIN_FILES:.mlpack=.cmxa) $(PRINTER_FILES:.cma=.cmxa) topbin/coqtop_bin.exe
 

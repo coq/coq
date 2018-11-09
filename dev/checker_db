@@ -1,5 +1,0 @@
-source checker.dbg
-
-load_printer checker_printers.cmo
-
-source checker_printers.dbg
