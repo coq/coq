@@ -83,7 +83,9 @@ let file_exists_respecting_case path f =
   let rec aux f =
     let bf = Filename.basename f in
     let df = Filename.dirname f in
-    (String.equal df "." || aux df)
+    (* When [df] is the same as [f], it means that the root of the file system
+       has been reached. There is no point in looking further up. *)
+    (String.equal df "." || String.equal f df || aux df)
     && exists_in_dir_respecting_case (Filename.concat path df) bf
   in (!trust_file_cache || Sys.file_exists (Filename.concat path f)) && aux f
 
