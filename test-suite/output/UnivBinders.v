@@ -130,6 +130,12 @@ End SomeSec.
 Print insec.
 Print insecind.
 
+Section SomeSec2.
+  Universe u.
+  Definition insec2@{} := Prop.
+End SomeSec2.
+Print insec2.
+
 Module SomeMod.
   Definition inmod@{u} := Type@{u}.
   Print inmod.

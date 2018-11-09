@@ -370,25 +370,24 @@ let context poly l =
       user_err Pp.(str "Anonymous variables not allowed in contexts.")
   in
   let univs =
-    let uctx = Evd.universe_context_set sigma in
     match ctx with
     | [] -> assert false
-    | [_] ->
-      if poly
-      then Polymorphic_const_entry (Univ.ContextSet.to_context uctx)
-      else Monomorphic_const_entry uctx
+    | [_] -> Evd.const_univ_entry ~poly sigma
     | _::_::_ ->
+      (** TODO: explain this little belly dance *)
       if Lib.sections_are_opened ()
       then
         begin
+          let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          if poly then Polymorphic_const_entry Univ.UContext.empty
+          if poly then Polymorphic_const_entry ([||], Univ.UContext.empty)
           else Monomorphic_const_entry Univ.ContextSet.empty
         end
-      else if poly
-      then Polymorphic_const_entry (Univ.ContextSet.to_context uctx)
+      else if poly then
+        Evd.const_univ_entry ~poly sigma
       else
         begin
+          let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
           Monomorphic_const_entry Univ.ContextSet.empty
         end

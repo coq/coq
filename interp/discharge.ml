@@ -79,13 +79,15 @@ let process_inductive info modlist mib =
     | Monomorphic_ind ctx -> Univ.empty_level_subst, Monomorphic_ind_entry ctx
     | Polymorphic_ind auctx ->
       let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
+      let nas = Univ.AUContext.names auctx in
       let auctx = Univ.AUContext.repr auctx in
-      subst, Polymorphic_ind_entry auctx
+      subst, Polymorphic_ind_entry (nas, auctx)
     | Cumulative_ind cumi ->
       let auctx = Univ.ACumulativityInfo.univ_context cumi in
       let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
+      let nas = Univ.AUContext.names auctx in
       let auctx = Univ.AUContext.repr auctx in
-      subst, Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context auctx)
+      subst, Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context auctx)
   in
   let discharge c = Vars.subst_univs_level_constr subst (expmod_constr modlist c) in
   let inds =

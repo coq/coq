@@ -277,12 +277,12 @@ let warn_non_primitive_record =
                     strbrk" could not be defined as a primitive record")))
 
 (* We build projections *)
-let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers ubinders fieldimpls fields =
+let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let u = match ctx with
-    | Polymorphic_const_entry ctx -> Univ.UContext.instance ctx
+    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
     | Monomorphic_const_entry ctx -> Univ.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
@@ -324,7 +324,6 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
                 (** Already defined by declare_mind silently *)
                 let kn = Projection.Repr.constant p in
                 Declare.definition_message fid;
-                UnivNames.register_universe_binders (ConstRef kn) ubinders;
                 kn, mkProj (Projection.make p false,mkRel 1)
 	      else
 		let ccl = subst_projection fid subst ti in
@@ -360,7 +359,6 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers u
 		      applist (mkConstU (kn,u),proj_args) 
                   in
                   Declare.definition_message fid;
-                  UnivNames.register_universe_binders (ConstRef kn) ubinders;
 		    kn, constr_fip
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
@@ -389,10 +387,10 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
     match univs with
     | Monomorphic_ind_entry ctx ->
       false, Monomorphic_const_entry Univ.ContextSet.empty
-    | Polymorphic_ind_entry ctx ->
-      true, Polymorphic_const_entry ctx
-    | Cumulative_ind_entry cumi ->
-      true, Polymorphic_const_entry (Univ.CumulativityInfo.univ_context cumi)
+    | Polymorphic_ind_entry (nas, ctx) ->
+      true, Polymorphic_const_entry (nas, ctx)
+    | Cumulative_ind_entry (nas, cumi) ->
+      true, Polymorphic_const_entry (nas, Univ.CumulativityInfo.univ_context cumi)
   in
   let binder_name =
     match name with
@@ -443,7 +441,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
   let map i (_, _, _, fieldimpls, fields, is_coe, coers) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers ubinders fieldimpls fields in
+    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = ConstructRef cstr in
     let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
     let () = Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs) in
@@ -480,7 +478,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
       let inst, univs = match univs with
-        | Polymorphic_const_entry uctx -> Univ.UContext.instance uctx, univs
+        | Polymorphic_const_entry (_, uctx) -> Univ.UContext.instance uctx, univs
         | Monomorphic_const_entry _ -> Univ.Instance.empty, Monomorphic_const_entry Univ.ContextSet.empty
       in
       let cstu = (cst, inst) in
@@ -496,9 +494,7 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
       in
       let cref = ConstRef cst in
       Impargs.declare_manual_implicits false cref [paramimpls];
-      UnivNames.register_universe_binders cref ubinders;
       Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
-      UnivNames.register_universe_binders (ConstRef proj_cst) ubinders;
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
@@ -508,11 +504,11 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
     | _ ->
        let univs =
          match univs with
-         | Polymorphic_const_entry univs ->
+         | Polymorphic_const_entry (nas, univs) ->
            if cum then
-             Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
+             Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
            else
-             Polymorphic_ind_entry univs
+             Polymorphic_ind_entry (nas, univs)
          | Monomorphic_const_entry univs ->
            Monomorphic_ind_entry univs
        in
@@ -541,8 +537,8 @@ let declare_class finite def cum ubinders univs id idbuild paramimpls params ari
   in
   let univs, ctx_context, fields =
     match univs with
-    | Polymorphic_const_entry univs ->
-      let usubst, auctx = Univ.abstract_universes univs in
+    | Polymorphic_const_entry (nas, univs) ->
+      let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
@@ -682,11 +678,11 @@ let definition_structure udecl kind ~template cum poly finite records =
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
       let univs =
         match univs with
-        | Polymorphic_const_entry univs ->
+        | Polymorphic_const_entry (nas, univs) ->
           if cum then
-            Cumulative_ind_entry (Univ.CumulativityInfo.from_universe_context univs)
+            Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
           else
-            Polymorphic_ind_entry univs
+            Polymorphic_ind_entry (nas, univs)
         | Monomorphic_const_entry univs ->
           Monomorphic_ind_entry univs
       in

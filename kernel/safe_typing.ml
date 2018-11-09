@@ -682,7 +682,7 @@ let constant_entry_of_side_effect cb u =
     | Monomorphic_const uctx ->
       Monomorphic_const_entry uctx
     | Polymorphic_const auctx ->
-      Polymorphic_const_entry (Univ.AUContext.repr auctx)
+      Polymorphic_const_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
   in
   let pt =
     match cb.const_body, u with

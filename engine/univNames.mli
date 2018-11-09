@@ -19,7 +19,7 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 
 val empty_binders : universe_binders
 
-val register_universe_binders : Names.GlobRef.t -> universe_binders -> unit
+val compute_instance_binders : Instance.t -> universe_binders -> Names.Name.t array
 
 type univ_name_list = Names.lname list
 

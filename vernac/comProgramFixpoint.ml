@@ -204,7 +204,6 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         (** FIXME: include locality *)
         let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
         let gr = ConstRef c in
-        let () = UnivNames.register_universe_binders gr (Evd.universe_binders sigma) in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr [impls]
       in

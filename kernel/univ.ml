@@ -937,16 +937,29 @@ let hcons_universe_context = UContext.hcons
 
 module AUContext =
 struct
-  include UContext
+  type t = Names.Name.t array constrained
 
   let repr (inst, cst) =
-    (Array.mapi (fun i _l -> Level.var i) inst, cst)
+    (Array.init (Array.length inst) (fun i -> Level.var i), cst)
 
-  let pr f ?variance ctx = pr f ?variance (repr ctx)
+  let pr f ?variance ctx = UContext.pr f ?variance (repr ctx)
 
   let instantiate inst (u, cst) =
     assert (Array.length u = Array.length inst);
     subst_instance_constraints inst cst
+
+  let names (nas, _) = nas
+
+  let hcons (univs, cst) =
+    (Array.map Names.Name.hcons univs, hcons_constraints cst)
+
+  let empty = ([||], Constraint.empty)
+
+  let is_empty (nas, cst) = Array.is_empty nas && Constraint.is_empty cst
+
+  let union (nas, cst) (nas', cst') = (Array.append nas nas', Constraint.union cst cst')
+
+  let size (nas, _) = Array.length nas
 
 end
 
@@ -993,7 +1006,22 @@ end
 
 let hcons_cumulativity_info = CumulativityInfo.hcons
 
-module ACumulativityInfo = CumulativityInfo
+module ACumulativityInfo =
+struct
+  type t = AUContext.t * Variance.t array
+
+  let pr prl (univs, variance) =
+    AUContext.pr prl ~variance univs
+
+  let hcons (univs, variance) = (* should variance be hconsed? *)
+    (AUContext.hcons univs, variance)
+
+  let univ_context (univs, _subtypcst) = univs
+  let variance (_univs, variance) = variance
+
+  let leq_constraints (_,variance) u u' csts = Variance.leq_constraints variance u u' csts
+  let eq_constraints (_,variance) u u' csts = Variance.eq_constraints variance u u' csts
+end
 
 let hcons_abstract_cumulativity_info = ACumulativityInfo.hcons
 
@@ -1145,19 +1173,20 @@ let make_inverse_instance_subst i =
       LMap.empty arr
 
 let make_abstract_instance (ctx, _) = 
-  Array.mapi (fun i _l -> Level.var i) ctx
+  Array.init (Array.length ctx) (fun i -> Level.var i)
 
-let abstract_universes ctx =
+let abstract_universes nas ctx =
   let instance = UContext.instance ctx in
+  let () = assert (Int.equal (Array.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints subst 
       (UContext.constraints ctx)
   in
-  let ctx = UContext.make (instance, cstrs) in
+  let ctx = (nas, cstrs) in
   instance, ctx
 
-let abstract_cumulativity_info (univs, variance) =
-  let subst, univs = abstract_universes univs in
+let abstract_cumulativity_info nas (univs, variance) =
+  let subst, univs = abstract_universes nas univs in
   subst, (univs, variance)
 
 let rec compact_univ s vars i u =
