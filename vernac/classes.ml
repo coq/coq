@@ -146,7 +146,7 @@ let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imp
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps ?hook (ConstRef cst); id
 
-let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl len term termtype =
+let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
   if program_mode then
     let hook _ _ vis gr =
@@ -189,10 +189,10 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
           in
           ignore (Pfedit.by init_refine)
         else if Flags.is_auto_intros () then
-          ignore (Pfedit.by (Tacticals.New.tclDO len Tactics.intro));
+          ignore (Pfedit.by (Tactics.auto_intros_tac ids));
         (match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ()
 
-let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props len =
+let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -275,7 +275,7 @@ let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~pro
   if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
     declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype
   else if program_mode || refine || Option.is_empty term then
-    declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl len term termtype
+    declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
   else CErrors.user_err Pp.(str "Unsolved obligations remaining.");
   id
 
@@ -341,7 +341,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) ~
     do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imps subst id
   else
     do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
-      cty k u ctx ctx' pri decl imps subst id props len
+      cty k u ctx ctx' pri decl imps subst id props
 
 let named_of_rel_context l =
   let open Vars in

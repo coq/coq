@@ -70,6 +70,9 @@ val intros_using         : Id.t list -> unit Proofview.tactic
 val intros_replacing     : Id.t list -> unit Proofview.tactic
 val intros_possibly_replacing : Id.t list -> unit Proofview.tactic
 
+(** [auto_intros_tac names] handles Automatic Introduction of binders *)
+val auto_intros_tac : Names.Name.t list -> unit Proofview.tactic
+
 val intros               : unit Proofview.tactic
 
 (** [depth_of_quantified_hypothesis b h g] returns the index of [h] in
