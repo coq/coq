@@ -1,4 +1,5 @@
-(* coq-prog-args: ("-top" "UnivBinders") *)
+(* -*- coq-prog-args: ("-top" "UnivBinders"); -*- *)
+
 Set Universe Polymorphism.
 Set Printing Universes.
 (* Unset Strict Universe Declaration. *)
