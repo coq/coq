@@ -136,7 +136,7 @@ let example_classes n =
 (* Question to coq developers: why do we pass two evd arguments to
    solve_remaining_evars? Is the choice of evd0 relevant here? *)
   let evd = Pretyping.solve_remaining_evars
-    (Pretyping.default_inference_flags true) env evd evd0 in
+    (Pretyping.default_inference_flags true) env evd ~initial:evd0 in
   let evd, final_type = Typing.type_of env evd proved_equality in
   Feedback.msg_notice (Printer.pr_econstr_env env evd proved_equality)
 
