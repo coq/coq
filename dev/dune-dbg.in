@@ -3,7 +3,7 @@
 # Run in a proper install dune env.
 case $1 in
     checker)
-        exe=_build/default/checker/main.bc
+        exe=_build/default/checker/coqchk.bc
         ;;
     *)
         exe=_build/default/topbin/coqtop_byte_bin.bc
