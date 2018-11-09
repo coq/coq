@@ -1,5 +1,5 @@
 *.ml*.d
-*.cm[ix]*
+*.cm[ixt]*
 Makefile.coq*
 *~
 *.[ao]
@@ -8,3 +8,6 @@ Makefile.coq*
 *.glob
 *.aux
 */*/.merlin
+
+# by convention g_foo.ml is generated
+g_*.ml
