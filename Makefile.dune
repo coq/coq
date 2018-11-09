@@ -53,7 +53,7 @@ quickopt: voboot
 	dune build $(DUNEOPT) $(QUICKOPT_TARGETS)
 
 test-suite: voboot
-	dune $(DUNEOPT) runtest
+	dune runtest $(DUNEOPT)
 
 release: voboot
 	dune build $(DUNEOPT) -p coq
