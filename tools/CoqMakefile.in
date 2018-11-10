@@ -719,6 +719,9 @@ endif
 
 redir_if_ok = > "$@" || ( RV=$$?; rm -f "$@"; exit $$RV )
 
+GENMLFILES:=$(MLGFILES:.mlg=.ml) $(ML4FILES:.ml4=.ml)
+$(addsuffix .d,$(ALLSRCFILES)): $(GENMLFILES)
+
 $(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli
 	$(SHOW)'CAMLDEP $<'
 	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) "$<" $(redir_if_ok)
