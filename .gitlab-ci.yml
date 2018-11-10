@@ -429,6 +429,9 @@ ci-math-comp:
 ci-mtac2:
   <<: *ci-template
 
+ci-paramcoq:
+  <<: *ci-template
+
 ci-pidetop:
   <<: *ci-template
 
