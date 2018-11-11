@@ -175,8 +175,9 @@ Standard Library
 
 - Syntax notations for `string`, `ascii`, `Z`, `positive`, `N`, `R`,
   and `int31` are no longer available merely by `Require`ing the files
-  that define the inductives.  You must `Import` `Coq.Strings.String`,
-  `Coq.Strings.Ascii`, `Coq.ZArith.BinIntDef`, `Coq.PArith.BinPosDef`,
+  that define the inductives.  You must `Import` `Coq.Strings.String.StringSyntax`
+  (after `Require` `Coq.Strings.String`), `Coq.Strings.Ascii.AsciiSyntax` (after
+  `Require` `Coq.Strings.Ascii`), `Coq.ZArith.BinIntDef`, `Coq.PArith.BinPosDef`,
   `Coq.NArith.BinNatDef`, `Coq.Reals.Rdefinitions`, and
   `Coq.Numbers.Cyclic.Int31.Int31`, respectively, to be able to use
   these notations.  Note that passing `-compat 8.8` or issuing
