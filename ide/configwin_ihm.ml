@@ -662,12 +662,13 @@ class configuration_box (tt : GData.tooltips) conf_struct =
    to configure the various parameters. *)
 let edit ?(with_apply=true)
     ?(apply=(fun () -> ()))
-    title ?width ?height
+    title ?parent ?width ?height
     conf_struct =
   let dialog = GWindow.dialog
     ~position:`CENTER
     ~modal: true ~title: title
-    ?height ?width
+    ~type_hint:`DIALOG
+    ?parent ?height ?width
     ()
   in
   let tooltips = GData.tooltips () in

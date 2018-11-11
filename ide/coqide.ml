@@ -1009,7 +1009,7 @@ let build_ui () =
     item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
-	  try Preferences.configure ~apply:refresh_notebook_pos ()
+	  try Preferences.configure ~apply:refresh_notebook_pos w
 	  with _ -> flash_info "Cannot save preferences"
         end;
         reset_revert_timer ());

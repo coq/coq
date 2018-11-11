@@ -60,6 +60,7 @@ val edit :
   ?with_apply:bool ->
   ?apply:(unit -> unit) ->
   string ->
+  ?parent:GWindow.window ->
   ?width:int ->
   ?height:int ->
   configuration_structure list ->
