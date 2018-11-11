@@ -153,13 +153,13 @@ let emacs = insert emacs "Emacs" [] [
     i#forward_sentence_end, { s with move = None }));
   mkE ~mods:mM _a "a" "Move to beginning of sentence" (Motion(fun s i ->
     i#backward_sentence_start, { s with move = None }));
-  mkE _n "n" "Move to next line" ~alias:[[],_Down,"DOWN"] (Motion(fun s i ->
+  mkE _n "n" "Move to next line" (Motion(fun s i ->
     let orig_off = Option.default i#line_offset s.move in
     let i = i#forward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
     (if new_off > 0 then i#set_line_offset new_off else i),
     { s with move = Some orig_off }));
-  mkE _p "p" "Move to previous line" ~alias:[[],_Up,"UP"] (Motion(fun s i ->
+  mkE _p "p" "Move to previous line" (Motion(fun s i ->
     let orig_off = Option.default i#line_offset s.move in
     let i = i#backward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
