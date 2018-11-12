@@ -316,9 +316,6 @@ let subst_con sub cst =
   try subst_con0 sub cst
   with No_subst -> fst cst, mkConstU cst
 
-let subst_con_kn sub con =
-  subst_con sub (con,Univ.Instance.empty)
-
 let subst_pcon sub (_con,u as pcon) =
   try let con', _can = subst_con0 sub pcon in
 	con',u

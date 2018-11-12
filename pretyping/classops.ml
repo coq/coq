@@ -192,7 +192,7 @@ let subst_cl_typ subst ct = match ct with
     let c' = subst_proj_repr subst c in
       if c' == c then ct else CL_PROJ c'
   | CL_CONST c ->
-      let c',t = subst_con_kn subst c in
+      let c',t = subst_con subst (Univ.in_punivs c) in
 	if c' == c then ct else
          pi1 (find_class_type Evd.empty (EConstr.of_constr t))
   | CL_IND i ->

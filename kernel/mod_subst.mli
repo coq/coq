@@ -141,9 +141,6 @@ val subst_pcon :
 val subst_pcon_term :
   substitution -> pconstant -> pconstant * constr
 
-val subst_con_kn :
-  substitution -> Constant.t -> Constant.t * constr
-
 val subst_constant :
   substitution -> Constant.t -> Constant.t
 

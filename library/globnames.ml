@@ -54,7 +54,7 @@ let subst_global_reference subst ref = match ref with
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->
-     let kn',t = subst_con_kn subst kn in
+     let kn',t = subst_con subst (Univ.in_punivs kn) in
       if kn==kn' then ref, mkConst kn else ConstRef kn', t
   | IndRef ind ->
       let ind' = subst_ind subst ind in
