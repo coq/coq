@@ -74,7 +74,7 @@ let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
      (Option.Smart.map (fun kn -> fst (subst_con_kn subst kn)))
     projs
   in
-  let id' = fst (subst_constructor subst id) in
+  let id' = subst_constructor_reference subst id in
     if projs' == projs && kn' == kn && id' == id then obj else
       ((kn',i),id',kl,projs')
 

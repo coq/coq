@@ -29,6 +29,11 @@ let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
+let subst_constructor_reference subst (ind,j as ref) =
+  let ind' = subst_ind subst ind in
+    if ind==ind' then ref
+    else (ind',j)
+
 let subst_constructor subst (ind,j as ref) =
   let ind' = subst_ind subst ind in
     if ind==ind' then ref, mkConstruct ref
@@ -43,7 +48,7 @@ let subst_global_reference subst ref = match ref with
     let ind' = subst_ind subst ind in
       if ind==ind' then ref else IndRef ind'
   | ConstructRef ((kn,i),j as c) ->
-    let c',t = subst_constructor subst c in
+    let c' = subst_constructor_reference subst c in
       if c'==c then ref else ConstructRef c'
 
 let subst_global subst ref = match ref with
