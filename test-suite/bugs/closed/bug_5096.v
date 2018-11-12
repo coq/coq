@@ -2,6 +2,7 @@
 Require Import Coq.FSets.FMapPositive Coq.PArith.BinPos Coq.Lists.List.
 
 Set Asymmetric Patterns.
+Set Uniform Inductive Parameters.
 
 Notation eta x := (fst x, snd x).
 
@@ -30,8 +31,8 @@ Arguments empty {_ _ _}.
 
 Module Export Named.
 Inductive expr Name : Type :=
-| Const : expr Name
-| LetIn : Name -> expr Name -> expr Name -> expr Name.
+| Const : expr
+| LetIn : Name -> expr -> expr -> expr.
 End Named.
 
 Global Arguments Const {_}.

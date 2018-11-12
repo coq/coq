@@ -1,8 +1,9 @@
 (* Regression in computing types of branches in "match" *)
+Set Uniform Inductive Parameters.
 Inductive flat_type := Unit | Prod (A B : flat_type).
 Inductive exprf (op : flat_type -> flat_type -> Type) {var : Type} : flat_type
 -> Type :=
-| Op {t1 tR} (opc : op t1 tR) (args : exprf op t1) : exprf op tR.
+| Op {t1 tR} (opc : op t1 tR) (args : exprf t1) : exprf tR.
 Inductive op : flat_type -> flat_type -> Type := a : op Unit Unit.
 Arguments Op {_ _ _ _} _ _.
 Definition bound_op {var}

@@ -1,10 +1,11 @@
 (* Revealed a missing re-consideration of postponed problems *)
+Set Uniform Inductive Parameters.
 
 Module A.
 Inductive flat_type := Unit | Prod (A B : flat_type).
 Inductive exprf (op : flat_type -> flat_type -> Type) {var : Type} : flat_type
 -> Type :=
-| Op {t1 tR} (opc : op t1 tR) (args : exprf op t1) : exprf op tR.
+| Op {t1 tR} (opc : op t1 tR) (args : exprf t1) : exprf tR.
 Inductive op : flat_type -> flat_type -> Type := .
 Arguments Op {_ _ _ _} _ _.
 Definition bound_op {var}
@@ -17,8 +18,8 @@ End A.
 (* A shorter variant *)
 Module B.
 Inductive exprf (op : unit -> Type) : Type :=
-| A : exprf op
-| Op tR (opc : op tR) (args : exprf op) : exprf op.
+| A : exprf
+| Op tR (opc : op tR) (args : exprf) : exprf.
 Inductive op : unit -> Type := .
 Definition bound_op (dst2 : unit) (opc2 : op dst2)
   : forall (args2 : exprf op), Op op dst2 opc2 args2 = A op

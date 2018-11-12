@@ -23,7 +23,6 @@ open Constrexpr
 open Constrexpr_ops
 open Constrintern
 open Impargs
-open Reductionops
 open Indtypes
 open Pretyping
 open Indschemes
@@ -45,20 +44,6 @@ let should_auto_template =
         optwrite = (fun b -> auto := b); }
   in
   fun () -> !auto
-
-let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
-  | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
-  | CLetIn (na,b,t,c) -> CLetIn (na,b,t,complete_conclusion a cs c)
-  | CHole (k, _, _) ->
-      let (has_no_args,name,params) = a in
-      if not has_no_args then
-        user_err ?loc
-         (strbrk"Cannot infer the non constant arguments of the conclusion of "
-          ++ Id.print cs ++ str ".");
-      let args = List.map (fun id -> CAst.(make ?loc @@ CRef(qualid_of_ident ?loc id,None))) params in
-      CAppExpl ((None,qualid_of_ident ?loc name,None),List.rev args)
-  | c -> c
-  )
 
 let push_types env idl tl =
   List.fold_left2 (fun env id t -> EConstr.push_rel (LocalAssum (Name id,t)) env)
@@ -97,10 +82,6 @@ let check_all_names_different indl =
   match l with
   | [] -> ()
   | _ -> raise (InductiveError (SameNamesOverlap l))
-
-let mk_mltype_data sigma env assums arity indname =
-  let is_ml_type = is_sort env sigma arity in
-  (is_ml_type,indname,assums)
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
@@ -145,16 +126,44 @@ let interp_ind_arity env sigma ind =
     let concl = if pseudo_poly then Some s else None in
     sigma, (t, concl, impls)
 
-let interp_cstrs env sigma impls mldata arity ind =
+(* ind_rel is the Rel for this inductive in the context without params.
+   n is how many arguments there are in the constructor. *)
+let model_conclusion env sigma ind_rel params n arity_indices =
+  let model_head = EConstr.mkRel (n + Context.Rel.length params + ind_rel) in
+  let model_params = Context.Rel.to_extended_vect EConstr.mkRel n params in
+  let sigma,model_indices =
+    List.fold_right
+      (fun (_,t) (sigma, subst) ->
+        let t = EConstr.Vars.substl subst (EConstr.Vars.liftn n (List.length subst + 1) (EConstr.Vars.liftn 1 (List.length params + List.length subst + 1) t)) in
+        let sigma, c = Evarutil.new_evar env sigma t in
+        sigma, c::subst)
+      arity_indices (sigma, []) in
+  sigma, EConstr.mkApp (EConstr.mkApp (model_head, model_params), Array.of_list (List.rev model_indices))
+
+let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   let cnames,ctyps = List.split ind.ind_lc in
-  (* Complete conclusions of constructor types if given in ML-style syntax *)
-  let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
+  let arity_indices, cstr_sort = Reductionops.splay_arity env sigma arity in
   (* Interpret the constructor types *)
+  let interp_cstr sigma ctyp =
+    let sigma, (ctyp', cimpl) = interp_type_evars_impls env sigma ~impls ctyp in
+    let ctx, concl = Reductionops.splay_prod_assum env sigma ctyp' in
+    let concl_env = EConstr.push_rel_context ctx env in
+    let sigma_with_model_evars, model = model_conclusion concl_env sigma ind_rel params (Context.Rel.length ctx) arity_indices in
+    (* unify the expected with the provided conclusion *)
+    (* If unification fails, the constructor is ill-formed, which we ignore for now and let the kernel complain about it later. *)
+    (* let sigma = Option.default sigma (Evarconv.conv concl_env sigma_with_model_evars concl model) in *)
+    let sigma =
+      try Evarconv.the_conv_x concl_env concl model sigma_with_model_evars
+      with Evarconv.UnableToUnify (sigma',e) ->
+        user_err (Himsg.explain_pretype_error concl_env sigma'
+                    (Pretype_errors.CannotUnify (concl, model, (Some e))))
+    in
+    sigma, (ctyp', cimpl)
+  in
   let sigma, (ctyps'', cimpls) =
     on_snd List.split @@
-    List.fold_left_map (fun sigma l ->
-        interp_type_evars_impls env sigma ~impls l) sigma ctyps' in
-  sigma, (cnames, ctyps'', cimpls)
+      List.fold_left_map interp_cstr sigma ctyps in
+  (sigma, pred ind_rel), (cnames, ctyps'', cimpls)
 
 let sign_level env evd sign =
   fst (List.fold_right
@@ -372,14 +381,15 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let arities = List.map pi1 arities and arityconcl = List.map pi2 arities in
   let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
-  let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
 
-  let sigma, constructors =
+  let (sigma, _), constructors =
     Metasyntax.with_syntax_protection (fun () ->
      (* Temporary declaration of notations and scopes *)
      List.iter (Metasyntax.set_notation_for_interpretation env_params ntn_impls) notations;
      (* Interpret the constructor types *)
-     List.fold_left3_map (fun sigma -> interp_cstrs env_ar_params sigma impls) sigma mldatas arities indl)
+     List.fold_left2_map
+       (fun (sigma, ind_rel) -> interp_cstrs env_ar_params (sigma, ind_rel) impls ctx_params)
+       (sigma, List.length indl) indl arities)
      () in
 
   (* generalize over the uniform parameters *)

@@ -33,7 +33,7 @@ open Pretyping
    while internalizing inductive types and recursive definitions, and also
    projection while typing records.
 
-   the third and fourth arguments associate a list of implicit
+   the second and third arguments associate a list of implicit
    positions and scopes to identifiers declared in the [rel_context]
    of [env] *)
 
@@ -47,9 +47,6 @@ type var_internalization_data =
     var_internalization_type *
       (** type of the "free" variable, for coqdoc, e.g. while typing the
 	  constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
-    Id.t list *
-      (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
-          in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
     Impargs.implicit_status list * (** signature of impargs of the variable *)
     Notation_term.scope_name option list (** subscopes of the args of the variable *)
 

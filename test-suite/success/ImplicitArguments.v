@@ -1,7 +1,8 @@
+Set Uniform Inductive Parameters.
 Inductive vector {A : Type} : nat -> Type :=
 | vnil : vector 0
 | vcons : A -> forall {n'}, vector n' -> vector (S n').
-
+Unset Uniform Inductive Parameters.
 Arguments vector A : clear implicits.
 
 Require Import Coq.Program.Program.

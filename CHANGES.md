@@ -55,6 +55,16 @@ Vernacular commands
 - Binders for an `Instance` now act more like binders for a `Theorem`.
   Names may not be repeated, and may not overlap with section variable names.
 
+- Strengthened inference of conclusions of inductive constructors.
+  Inference of arguments no longer assumes that implicit parameters
+  are uniform. This is a source of incompatibilites. If Coq fails
+  to infer the values of some parameters, either specify those parameters
+  explicitly, or wrap the inductive in a section to abstract the uniform
+  parameters (both of which are backwards compatible), or set the
+  Uniform Inductive Parameters option referenced above.
+  If all the parameters are implicit, setting Uniform Inductive Parameters
+  is also backwards compatible.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

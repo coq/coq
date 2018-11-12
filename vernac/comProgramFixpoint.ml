@@ -169,12 +169,12 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let lift_lets = lift_rel_context 1 letbinders in
   let sigma, intern_body =
     let ctx = LocalAssum (Name recname, get_type curry_fun) :: binders_rel in
-    let (r, l, impls, scopes) =
+    let (r, impls, scopes) =
       Constrintern.compute_internalization_data env sigma
         Constrintern.Recursive full_arity impls
     in
     let newimpls = Id.Map.singleton recname
-        (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
+        (r, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
          scopes @ [None]) in
     interp_casted_constr_evars (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)
