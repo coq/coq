@@ -97,7 +97,7 @@ type modifiers_param = {
 (** This type represents the different kinds of parameters. *)
 type parameter_kind =
     String_param of string string_param
-  | List_param of (GData.tooltips -> <box: GObj.widget ; apply : unit>)
+  | List_param of (unit -> <box: GObj.widget ; apply : unit>)
   | Bool_param of bool_param
   | Text_param of string string_param
   | Combo_param of combo_param

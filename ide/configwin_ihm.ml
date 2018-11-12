@@ -27,6 +27,10 @@
 
 open Configwin_types
 
+let set_help_tip wev = function
+  | None -> ()
+  | Some help -> GtkBase.Widget.Tooltip.set_text wev#as_widget help
+
 let modifiers_to_string m =
   let rec iter m s =
     match m with
@@ -71,7 +75,6 @@ class ['a] list_selection_box
     f_color
     (eq : 'a -> 'a -> bool)
     add_function title editable
-    (tt:GData.tooltips)
     =
   let _ = dbg "list_selection_box" in
   let wev = GBin.event_box () in
@@ -94,12 +97,8 @@ class ['a] list_selection_box
 	~titles_show: true
 	~packing: wscroll#add ()
   in
-  let _ =
-    match help_opt with
-      None -> ()
-    | Some help ->
-	tt#set_tip ~text: help ~privat: help wev#coerce
-  in  (* the vbox for the buttons *)
+  let _ = set_help_tip wev help_opt in
+  (* the vbox for the buttons *)
   let vbox_buttons = GPack.vbox () in
   let _ =
     if editable then
@@ -280,9 +279,8 @@ class ['a] list_selection_box
       self#update !listref
   end;;
 
-
 (** This class is used to build a box for a string parameter.*)
-class string_param_box param (tt:GData.tooltips) =
+class string_param_box param =
   let _ = dbg "string_param_box" in
   let hbox = GPack.hbox () in
   let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
@@ -292,12 +290,7 @@ class string_param_box param (tt:GData.tooltips) =
       ~packing: (hbox#pack ~expand: param.string_expand ~padding: 2)
       ()
   in
-  let _ =
-    match param.string_help with
-      None -> ()
-    | Some help ->
-	tt#set_tip ~text: help ~privat: help wev#coerce
-  in
+  let _ = set_help_tip wev param.string_help in
   let _ = we#set_text (param.string_to_string param.string_value) in
 
   object (self)
@@ -316,17 +309,12 @@ class string_param_box param (tt:GData.tooltips) =
   end ;;
 
 (** This class is used to build a box for a combo parameter.*)
-class combo_param_box param (tt:GData.tooltips) =
+class combo_param_box param =
     let _ = dbg "combo_param_box" in
     let hbox = GPack.hbox () in
     let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
     let _wl = GMisc.label ~text: param.combo_label ~packing: wev#add () in
-    let _ =
-      match param.combo_help with
-	  None -> ()
-	| Some help ->
-	    tt#set_tip ~text: help ~privat: help wev#coerce
-    in
+    let _ = set_help_tip wev param.combo_help in
     let get_value = if not param.combo_new_allowed then
       let wc = GEdit.combo_box_text
 	~strings: param.combo_choices
@@ -341,13 +329,13 @@ class combo_param_box param (tt:GData.tooltips) =
 	fun () -> match GEdit.text_combo_get_active wc with |None -> "" |Some s -> s
     else
       let (wc,_) = GEdit.combo_box_entry_text
-	~strings: param.combo_choices
-	~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
-	()
+       ~strings: param.combo_choices
+       ~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
+       ()
       in
       let _ = wc#entry#set_editable param.combo_editable in
       let _ = wc#entry#set_text param.combo_value in
-	fun () -> wc#entry#text
+       fun () -> wc#entry#text
     in
 object (self)
 
@@ -365,7 +353,7 @@ object (self)
 end ;;
 
 (** Class used to pack a custom box. *)
-class custom_param_box param (tt:GData.tooltips) =
+class custom_param_box param =
   let _ = dbg "custom_param_box" in
   let top =
     match param.custom_framed with
@@ -381,7 +369,7 @@ class custom_param_box param (tt:GData.tooltips) =
   end
 
 (** This class is used to build a box for a text parameter.*)
-class text_param_box param (tt:GData.tooltips) =
+class text_param_box param =
   let _ = dbg "text_param_box" in
   let wf = GBin.frame ~label: param.string_label ~height: 100 () in
   let wev = GBin.event_box ~packing: wf#add () in
@@ -395,12 +383,7 @@ class text_param_box param (tt:GData.tooltips) =
       ~packing: wscroll#add
       ()
   in
-  let _ =
-    match param.string_help with
-      None -> ()
-    | Some help ->
-	tt#set_tip ~text: help ~privat: help wev#coerce
-  in
+  let _ = set_help_tip wev param.string_help in
   let _ = dbg "text_param_box: buffer creation" in
   let buffer = GText.buffer () in
 
@@ -427,17 +410,13 @@ class text_param_box param (tt:GData.tooltips) =
   end ;;
 
 (** This class is used to build a box for a boolean parameter.*)
-class bool_param_box param (tt:GData.tooltips) =
+class bool_param_box param =
   let _ = dbg "bool_param_box" in
   let wchk = GButton.check_button
       ~label: param.bool_label
       ()
   in
-  let _ =
-    match param.bool_help with
-      None -> ()
-    | Some help -> tt#set_tip ~text: help ~privat: help wchk#coerce
-  in
+  let _ = set_help_tip wchk param.bool_help in
   let _ = wchk#set_active param.bool_value in
   let _ = wchk#misc#set_sensitive param.bool_editable in
 
@@ -471,14 +450,7 @@ class modifiers_param_box param =
                                  else value := List.filter ((<>) modifier) !value)))
             param.md_allow
   in
-  let _ =
-    match param.md_help with
-      None -> ()
-    | Some help ->
-       let tooltips = GData.tooltips () in
-       ignore (hbox#connect#destroy ~callback: tooltips#destroy);
-       tooltips#set_tip wev#coerce ~text: help ~privat: help
-  in
+  let _ = set_help_tip wev param.md_help in
   object (self)
 
     (** This method returns the main box ready to be packed. *)
@@ -495,7 +467,7 @@ class modifiers_param_box param =
   end ;;
 
 (** This class is used to build a box for a parameter whose values are a list.*)
-class ['a] list_param_box (param : 'a list_param) (tt:GData.tooltips) =
+class ['a] list_param_box (param : 'a list_param) =
   let _ = dbg "list_param_box" in
   let listref = ref param.list_value in
   let frame_selection = new list_selection_box
@@ -522,7 +494,7 @@ class ['a] list_param_box (param : 'a list_param) (tt:GData.tooltips) =
   end ;;
 
 (** This class creates a configuration box from a configuration structure *)
-class configuration_box (tt : GData.tooltips) conf_struct =
+class configuration_box conf_struct =
 
   let main_box = GPack.hbox () in
 
@@ -553,27 +525,27 @@ class configuration_box (tt : GData.tooltips) conf_struct =
 
   let make_param (main_box : #GPack.box) = function
   | String_param p ->
-    let box = new string_param_box p tt in
+    let box = new string_param_box p in
     let _ = main_box#pack ~expand: false ~padding: 2 box#box in
     box
   | Combo_param p ->
-    let box = new combo_param_box p tt in
+    let box = new combo_param_box p in
     let _ = main_box#pack ~expand: false ~padding: 2 box#box in
     box
   | Text_param p ->
-    let box = new text_param_box p tt in
+    let box = new text_param_box p in
     let _ = main_box#pack ~expand: p.string_expand ~padding: 2 box#box in
     box
   | Bool_param p ->
-    let box = new bool_param_box p tt in
+    let box = new bool_param_box p in
     let _ = main_box#pack ~expand: false ~padding: 2 box#box in
     box
   | List_param f ->
-    let box = f tt in
+    let box = f () in
     let _ = main_box#pack ~expand: true ~padding: 2 box#box in
     box
   | Custom_param p ->
-    let box = new custom_param_box p tt in
+    let box = new custom_param_box p in
     let _ = main_box#pack ~expand: p.custom_expand ~padding: 2 box#box in
     box
   | Modifiers_param p ->
@@ -684,9 +656,7 @@ let edit ?(with_apply=true)
     ?parent ?height ?width
     ()
   in
-  let tooltips = GData.tooltips () in
-
-  let config_box = new configuration_box tooltips conf_struct in
+  let config_box = new configuration_box conf_struct in
 
   let _ = dialog#vbox#add config_box#box#coerce in
 
@@ -697,7 +667,6 @@ let edit ?(with_apply=true)
   dialog#add_button Configwin_messages.mCancel `CANCEL;
 
   let destroy () =
-    tooltips#destroy () ;
     dialog#destroy ();
   in
   let rec iter rep =
@@ -753,7 +722,7 @@ let list ?(editable=true) ?help
     ?titles ?(color=(fun (_:'a) -> (None : string option)))
     label (f_strings : 'a -> string list) v =
   List_param
-    (fun tt ->
+    (fun () ->
 	new list_param_box
 	  {
 	    list_label = label ;
@@ -768,7 +737,6 @@ let list ?(editable=true) ?help
 	    list_f_add = add ;
 	    list_f_apply = f ;
 	  }
-	  tt
     )
 
 (** Create a strings param. *)
