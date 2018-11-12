@@ -147,13 +147,16 @@ let cache_head o =
 
 let subst_head_approximation subst = function
   | RigidHead (RigidParameter cst) as k ->
-      let cst,c = subst_con_kn subst cst in
-      if isConst c && Constant.equal (fst (destConst c)) cst then
-        (* A change of the prefix of the constant *)
-        k
-      else
-        (* A substitution of the constant by a functor argument *)
-        kind_of_head (Global.env()) c
+    let cst',c = subst_con subst cst in
+    if cst == cst' then k
+    else
+      (match c with
+       | None ->
+         (* A change of the prefix of the constant *)
+         RigidHead (RigidParameter cst')
+       | Some c ->
+         (* A substitution of the constant by a functor argument *)
+         kind_of_head (Global.env()) c.Univ.univ_abstracted_value)
   | x -> x
 
 let subst_head (subst,(ref,k)) =

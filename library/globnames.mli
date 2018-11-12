@@ -36,8 +36,8 @@ val destConstructRef : GlobRef.t -> constructor
 
 val is_global : GlobRef.t -> constr -> bool
 
-val subst_constructor : substitution -> constructor -> constructor * constr
-val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr
+val subst_constructor : substitution -> constructor -> constructor
+val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
 (** This constr is not safe to be typechecked, universe polymorphism is not 

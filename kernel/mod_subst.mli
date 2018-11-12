@@ -28,7 +28,7 @@ val add_kn_delta_resolver :
   KerName.t -> KerName.t -> delta_resolver -> delta_resolver
 
 val add_inline_delta_resolver :
-  KerName.t -> (int * (Univ.AUContext.t * constr) option) -> delta_resolver -> delta_resolver
+  KerName.t -> (int * constr Univ.univ_abstracted option) -> delta_resolver -> delta_resolver
 
 val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
 
@@ -133,16 +133,10 @@ val subst_kn :
   substitution -> KerName.t -> KerName.t
 
 val subst_con :
-  substitution -> pconstant -> Constant.t * constr
+  substitution -> Constant.t -> Constant.t * constr Univ.univ_abstracted option
 
 val subst_pcon :
   substitution -> pconstant -> pconstant
-
-val subst_pcon_term :
-  substitution -> pconstant -> pconstant * constr
-
-val subst_con_kn :
-  substitution -> Constant.t -> Constant.t * constr
 
 val subst_constant :
   substitution -> Constant.t -> Constant.t

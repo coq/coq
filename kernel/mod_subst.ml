@@ -24,7 +24,7 @@ open Constr
    is the term into which we should inline. *)
 
 type delta_hint =
-  | Inline of int * (Univ.AUContext.t * constr) option
+  | Inline of int * constr Univ.univ_abstracted option
   | Equiv of KerName.t
 
 (* NB: earlier constructor Prefix_equiv of ModPath.t
@@ -164,7 +164,7 @@ let find_prefix resolve mp =
 
 (** Applying a resolver to a kernel name *)
 
-exception Change_equiv_to_inline of (int * (Univ.AUContext.t * constr))
+exception Change_equiv_to_inline of (int * constr Univ.univ_abstracted)
 
 let solve_delta_kn resolve kn =
   try
@@ -294,43 +294,34 @@ let subst_ind sub (ind,i as indi) =
 let subst_pind sub (ind,u) =
   (subst_ind sub ind, u)
 
-let subst_con0 sub (cst,u) =
+let subst_con0 sub cst =
   let mpu,l = Constant.repr2 cst in
   let mpc = KerName.modpath (Constant.canonical cst) in
   let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
   let knu = KerName.make mpu l in
   let knc = if mpu == mpc then knu else KerName.make mpc l in
   match search_delta_inline resolve knu knc with
-    | Some (ctx, t) ->
+    | Some t ->
       (* In case of inlining, discard the canonical part (cf #2608) *)
-      let () = assert (Int.equal (Univ.AUContext.size ctx) (Univ.Instance.length u)) in
-      Constant.make1 knu, Vars.subst_instance_constr u t
+      Constant.make1 knu, Some t
     | None ->
       let knc' =
         progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
       in
       let cst' = Constant.make knu knc' in
-      cst', mkConstU (cst',u)
+      cst', None
 
 let subst_con sub cst =
   try subst_con0 sub cst
-  with No_subst -> fst cst, mkConstU cst
+  with No_subst -> cst, None
 
-let subst_con_kn sub con =
-  subst_con sub (con,Univ.Instance.empty)
-
-let subst_pcon sub (_con,u as pcon) =
-  try let con', _can = subst_con0 sub pcon in
+let subst_pcon sub (con,u as pcon) =
+  try let con', _can = subst_con0 sub con in
 	con',u
   with No_subst -> pcon
 
-let subst_pcon_term sub (_con,u as pcon) =
-  try let con', can = subst_con0 sub pcon in 
-	(con',u), can
-  with No_subst -> pcon, mkConstU pcon
-
 let subst_constant sub con =
-  try fst (subst_con0 sub (con,Univ.Instance.empty))
+  try fst (subst_con0 sub con)
   with No_subst -> con
 
 let subst_proj_repr sub p =
@@ -351,7 +342,7 @@ let subst_evaluable_reference subst = function
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
-      | Const kn -> (try snd (f' kn) with No_subst -> c)
+      | Const kn -> (try f' kn with No_subst -> c)
       | Proj (p,t) -> 
           let p' = Projection.map f p in
 	  let t' = func t in
@@ -420,8 +411,14 @@ let rec map_kn f f' c =
       | _ -> c
 
 let subst_mps sub c =
+  let subst_pcon_term sub (con,u) =
+    let con', can = subst_con0 sub con in
+    match can with
+    | None -> mkConstU (con',u)
+    | Some t -> Vars.univ_instantiate_constr u t
+  in
   if is_empty_subst sub then c
-  else map_kn (subst_mind sub) (subst_con0 sub) c
+  else map_kn (subst_mind sub) (subst_pcon_term sub) c
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
@@ -486,7 +483,7 @@ let gen_subst_delta_resolver dom subst resolver =
       | Equiv kequ ->
 	  (try Equiv (subst_kn_delta subst kequ)
 	   with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
-      | Inline (lev,Some (ctx, t)) -> Inline (lev,Some (ctx, subst_mps subst t))
+      | Inline (lev,Some t) -> Inline (lev,Some (Univ.map_univ_abstracted (subst_mps subst) t))
       | Inline (_,None) -> hint
     in
     Deltamap.add_kn kkey' hint' rslv

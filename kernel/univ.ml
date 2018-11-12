@@ -963,6 +963,15 @@ struct
 
 end
 
+type 'a univ_abstracted = {
+  univ_abstracted_value : 'a;
+  univ_abstracted_binder : AUContext.t;
+}
+
+let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
+  let univ_abstracted_value = f univ_abstracted_value in
+  {univ_abstracted_value;univ_abstracted_binder}
+
 let hcons_abstract_universe_context = AUContext.hcons
 
 (** Universe info for cumulative inductive types: A context of

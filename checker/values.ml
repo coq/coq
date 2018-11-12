@@ -168,8 +168,10 @@ let v_section_ctxt = v_enum "emptylist" 1
 
 (** kernel/mod_subst *)
 
+let v_univ_abstracted v = v_tuple "univ_abstracted" [|v;v_abs_context|]
+
 let v_delta_hint =
-  v_sum "delta_hint" 0 [|[|Int; Opt (v_pair v_abs_context v_constr)|];[|v_kn|]|]
+  v_sum "delta_hint" 0 [|[|Int; Opt (v_univ_abstracted v_constr)|];[|v_kn|]|]
 
 let v_resolver =
   v_tuple "delta_resolver"

@@ -530,8 +530,10 @@ let rec subst_notation_constr subst bound raw =
   match raw with
   | NRef ref ->
       let ref',t = subst_global subst ref in
-	if ref' == ref then raw else
-	  fst (notation_constr_of_constr bound t)
+      if ref' == ref then raw else (match t with
+          | None -> NRef ref'
+          | Some t ->
+            fst (notation_constr_of_constr bound t.Univ.univ_abstracted_value))
 
   | NVar _ -> raw
 

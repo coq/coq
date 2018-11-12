@@ -349,6 +349,14 @@ sig
 
 end
 
+type 'a univ_abstracted = {
+  univ_abstracted_value : 'a;
+  univ_abstracted_binder : AUContext.t;
+}
+(** A value with bound universe levels. *)
+
+val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
+
 (** Universe info for cumulative inductive types: A context of
    universe levels with universe constraints, representing local
    universe variables and constraints, together with an array of

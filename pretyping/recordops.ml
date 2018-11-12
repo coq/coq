@@ -71,12 +71,12 @@ let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    List.Smart.map
-     (Option.Smart.map (fun kn -> fst (subst_con_kn subst kn)))
+     (Option.Smart.map (subst_constant subst))
     projs
   in
-  let id' = fst (subst_constructor subst id) in
-    if projs' == projs && kn' == kn && id' == id then obj else
-      ((kn',i),id',kl,projs')
+  let id' = subst_constructor subst id in
+  if projs' == projs && kn' == kn && id' == id then obj else
+    ((kn',i),id',kl,projs')
 
 let discharge_structure (_,x) = Some x
 
