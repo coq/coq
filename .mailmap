@@ -133,5 +133,8 @@ Théo Zimmermann <theo.zimmermann@univ-paris-diderot.fr> Théo Zimmermann <theo.
 # Anonymous accounts
 
 anonymous < >                                      coq <coq@85f007b7-540e-0410-9357-904b9bb8a0f7>
-anonymous < >                                      (no author) <(no author)@85f007b7-540e-0410-9357-904b9bb8a0f7>
-anonymous < >                                      serpyc <serpyc@85f007b7-540e-0410-9357-904b9bb8a0f7>
+
+# Bot accounts
+
+cvs2svn < >                                        (no author) <(no author)@85f007b7-540e-0410-9357-904b9bb8a0f7>
+serpyc-bot < >                                     serpyc <serpyc@85f007b7-540e-0410-9357-904b9bb8a0f7>
