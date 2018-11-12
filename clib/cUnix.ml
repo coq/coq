@@ -74,10 +74,6 @@ let canonical_path_name p =
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
 
-let get_extension f =
-  let pos = try String.rindex f '.' with Not_found -> String.length f in
-  String.sub f pos (String.length f - pos)
-
 let correct_path f dir =
   if Filename.is_relative f then Filename.concat dir f else f
 

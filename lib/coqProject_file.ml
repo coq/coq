@@ -220,7 +220,7 @@ let process_cmd_line orig_dir proj args =
       let f = CUnix.correct_path f orig_dir in
       let proj =
         if exists_dir f then { proj with subdirs = proj.subdirs @ [sourced f] }
-        else match CUnix.get_extension f with
+        else match Filename.extension f with
           | ".v" ->
             { proj with v_files = proj.v_files @ [sourced f] }
         | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
