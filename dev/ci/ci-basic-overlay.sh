@@ -255,3 +255,10 @@
 : "${aactactics_CI_REF:=master}"
 : "${aactactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aactactics_CI_ARCHIVEURL:=${aactactics_CI_GITURL}/archive}"
+
+########################################################################
+# paramcoq
+########################################################################
+: "${paramcoq_CI_REF:=master}"
+: "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
+: "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
