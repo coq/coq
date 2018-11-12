@@ -52,7 +52,11 @@ IDETOPBYTE=bin/coqidetop.byte$(EXE)
 LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_os_specific.cmo ide/coqide_main.mli ide/coqide_main.ml
 LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_os_specific.cmx ide/coqide_main.mli ide/coqide_main.ml
 
-IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
+IDEBINDINGS:=ide/default.bindings
+IDEBINDINGSSRC:=ide/default_bindings_src.ml
+IDEBINDINGSEXE:=ide/default_bindings_src.exe
+
+IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map $(IDEBINDINGS)
 
 ## GTK for Coqide MacOS bundle
 
@@ -66,7 +70,7 @@ SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-2.0)/share
 # CoqIde special targets
 ###########################################################################
 
-.PHONY: coqide coqide-opt coqide-byte coqide-files coqide-binaries
+.PHONY: coqide coqide-opt coqide-byte coqide-bindings coqide-files coqide-binaries
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
 # target to build CoqIde (native version) and the stuff needed to lauch it
@@ -158,6 +162,15 @@ $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@
+
+coqide-bindings: $(IDEBINDINGS)
+
+$(IDEBINDINGSEXE): $(IDEBINDINGSSRC)
+	$(OCAMLC) $< -o $@
+
+$(IDEBINDINGS): $(IDEBINDINGSEXE)
+	$< $@
+
 
 ####################
 ## Install targets
