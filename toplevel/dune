@@ -3,6 +3,7 @@
  (public_name coq-core.toplevel)
  (synopsis "Coq's Interactive Shell [terminal-based]")
  (wrapped false)
+ (private_modules g_toplevel)
  (libraries coq-core.stm))
 ; Interp provides the `zarith` library to plugins, we could also use
 ; -linkall in the plugins file, to be discussed.

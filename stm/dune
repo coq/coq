@@ -3,4 +3,5 @@
  (synopsis "Coq's Document Manager and Proof Checking Scheduler")
  (public_name coq-core.stm)
  (wrapped false)
+ (private_modules dag proofBlockDelimiter tQueue vcs workerPool)
  (libraries sysinit))

@@ -3,6 +3,7 @@
  (synopsis "Coq's Vernacular Language")
  (public_name coq-core.vernac)
  (wrapped false)
+ (private_modules comProgramFixpoint egramcoq)
  (libraries tactics parsing))
 
 (coq.pp (modules g_proofs g_vernac))
