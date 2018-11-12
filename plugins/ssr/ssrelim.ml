@@ -353,6 +353,7 @@ let ssrelim ?(ind=ref None) ?(is_case=false) deps what ?elim eqid elim_intro_tac
   ppdebug(lazy Pp.(str"elim_pred_ty=" ++ pp_term gl pty));
   let gl = pf_unify_HO gl pred elim_pred in
   let elim = fire_subst gl elim in
+  let gl = pf_resolve_typeclasses ~where:elim ~fail:false gl in
   let gl, _ = pf_e_type_of gl elim in
   (* check that the patterns do not contain non instantiated dependent metas *)
   let () = 
