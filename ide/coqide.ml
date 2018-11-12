@@ -1386,7 +1386,6 @@ let read_coqide_args argv =
     |[] -> (coqtop,project_files,bindings_files,List.rev out)
   in
   let coqtop,project_files,bindings_files,argv = filter_coqtop None None [] [] argv in
-  let bindings_files = if bindings_files = [] then ["default"] else bindings_files in
   Ideutils.custom_coqtop := coqtop;
   custom_project_file := project_files;
   Preferences.load_unicode_bindings_files bindings_files;

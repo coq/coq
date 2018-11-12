@@ -249,9 +249,15 @@ let loaded_accel_file =
   try get_config_file "coqide.keys"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
-let loaded_default_unicode_bindings_file =
-  try get_config_file "coqide.bindings"
-  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) "coqide.bindings"
+let get_bindings_local_file () =
+  try Some (get_config_file "coqide.bindings")
+  with Not_found -> None
+
+let get_bindings_default_file () =
+  let ( / ) = Filename.concat in
+  let path = Envars.coqlib () / "ide/default.bindings" in
+  Printf.eprintf "==> %s\n" path;
+  if Sys.file_exists path then Some path else None
 
 (** Hooks *)
 
@@ -1030,7 +1036,7 @@ let configure ?(apply=(fun () -> ())) parent =
       \lambda λ 3
       \lambdas λs 4
       \lake Ο 2
-      \lemma "Lemma foo : x. Proof. Qed." 1  ---currently not supported by parser
+      \lemma "Lemma foo : x. Proof. Qed." 1  ---currently not supported by the parser
 
     - In case of equality between two candidates (same ascii word, or same
       priorities for two words with similar prefix), the first binding is considered.
@@ -1074,15 +1080,61 @@ let process_unicode_bindings_file filename =
   close_in ch
 
 let load_unicode_bindings_files filenames =
-  let filenames = List.map (fun f ->
-    if f = "default" then loaded_default_unicode_bindings_file else f) filenames in
-  List.iter process_unicode_bindings_file filenames;
+  let selected_filenames = ref [] in
+  let add f =
+    selected_filenames := f::!selected_filenames in
+  if filenames = [] then begin
+    (* If no argument is provided using [-unicode-bindings],
+       then use the default file and the local file, if it exists *)
+    begin match get_bindings_default_file() with
+    | Some f -> add f
+    | None -> output_string stderr (Printf.sprintf "Warning: the file ide/default.bindings was not found in %s.\n" (Envars.coqlib()))
+    (* TODO: flush stderr does not seem to eagerly display the output message *)
+    end;
+    begin match get_bindings_local_file() with
+    | Some f -> add f
+    | None -> ()
+    end;
+  end else begin
+    (* If [-unicode-bindings] is used with a list of file, consider
+       these files in order, with a special treatment for the tokens
+       "default" and "local", which are replaced by the appropriate path. *)
+    let add_arg f =
+      match f with
+      | "default" ->
+        begin match get_bindings_default_file() with
+        | Some f -> add f
+        | None -> output_string stderr (Printf.sprintf "Error:the file ide/default.bindings was not found in %s.\n" (Envars.coqlib())); exit 1
+        end
+      | "local" ->
+        begin match get_bindings_local_file() with
+        | Some f -> add f
+        | None -> output_string stderr (Printf.sprintf "Error: the local configuration file coqide.bindings was not found.\n"); exit 1
+        end
+      | _ -> add f
+      in
+    List.iter add_arg filenames
+  end;
+  (* Files must be processed in order, to build the list of bindings
+     by iteratively consing entry to its head, the list being reversed
+     at the very end *)
+  let real_filenames = List.rev !selected_filenames in
+  List.iter process_unicode_bindings_file real_filenames;
   unicode_bindings := List.rev !unicode_bindings
 
-  (* For debugging unicode bindings:
+  (* For debugging the list of unicode files loaded:
+    List.iter (fun f -> Printf.eprintf "%s\n" f) real_filenames;
+  *)
+  (* For debugging the list of unicode bindings loaded:
   let print_unicode_bindings () =
     List.iter (fun (x,y,p) ->
       Printf.eprintf "%s %s %d\n" x y (match p with None -> -1 | Some n -> n))
      !unicode_bindings;
     prerr_newline()
+  *)
+
+  (* TODO: known issue: the "~" in path of several arguments does
+     not seem to be correctly interpreted, e.g.
+       bin/coqide -unicode-bindings local,~/.config/coq/my.bindings &
+     Possible fix is to expand first to absolute paths.
   *)
