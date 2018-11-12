@@ -655,7 +655,7 @@ let inline_extraction : bool * GlobRef.t list -> obj =
        classify_function = (fun o -> Substitute o);
        discharge_function = (fun (_,x) -> Some x);
        subst_function =
-        (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
+        (fun (s,(b,l)) -> (b,(List.map (fun x -> subst_global_reference s x) l)))
     }
 
 (* Grammar entries. *)
@@ -736,7 +736,7 @@ let implicit_extraction : GlobRef.t * int_or_id list -> obj =
        cache_function = (fun (_,(r,l)) -> add_implicits r l);
        load_function = (fun _ (_,(r,l)) -> add_implicits r l);
        classify_function = (fun o -> Substitute o);
-       subst_function = (fun (s,(r,l)) -> (fst (subst_global s r), l))
+       subst_function = (fun (s,(r,l)) -> (subst_global_reference s r, l))
     }
 
 (* Grammar entries. *)
@@ -858,7 +858,7 @@ let in_customs : GlobRef.t * string list * string -> obj =
        load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
        classify_function = (fun o -> Substitute o);
        subst_function =
-        (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
+        (fun (s,(r,ids,str)) -> (subst_global_reference s r, ids, str))
     }
 
 let in_custom_matchs : GlobRef.t * string -> obj =
@@ -867,7 +867,7 @@ let in_custom_matchs : GlobRef.t * string -> obj =
        cache_function = (fun (_,(r,s)) -> add_custom_match r s);
        load_function = (fun _ (_,(r,s)) -> add_custom_match r s);
        classify_function = (fun o -> Substitute o);
-       subst_function = (fun (subs,(r,s)) -> (fst (subst_global subs r), s))
+       subst_function = (fun (subs,(r,s)) -> (subst_global_reference subs r, s))
     }
 
 (* Grammar entries. *)

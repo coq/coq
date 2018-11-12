@@ -535,7 +535,7 @@ let cache_implicits o =
   load_implicits 1 o
 
 let subst_implicits_decl subst (r,imps as o) =
-  let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
+  let r' = subst_global_reference subst r in if r==r' then o else (r',imps)
 
 let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.Smart.map (subst_implicits_decl subst) l)

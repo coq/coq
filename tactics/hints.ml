@@ -471,7 +471,7 @@ let subst_path_atom subst p =
   match p with
   | PathAny -> p
   | PathHints grs ->
-    let gr' gr = fst (subst_global subst gr) in
+    let gr' gr = subst_global_reference subst gr in
     let grs' = List.Smart.map gr' grs in
       if grs' == grs then p else PathHints grs'
 

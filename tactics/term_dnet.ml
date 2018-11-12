@@ -337,7 +337,7 @@ struct
   let subst s t =
     let sleaf id = Ident.subst s id in
     let snode = function
-      | DTerm.DRef gr -> DTerm.DRef (fst (subst_global s gr))
+      | DTerm.DRef gr -> DTerm.DRef (subst_global_reference s gr)
       | n -> n in
     TDnet.map sleaf snode t
 

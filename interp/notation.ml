@@ -1285,7 +1285,7 @@ let subst_scope_class subst cs =
   try Some (subst_cl_typ subst cs) with Not_found -> None
 
 let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
-  let r' = fst (subst_global subst r) in
+  let r' = subst_global_reference subst r in
   let subst_cl ocl = match ocl with
     | None -> ocl
     | Some cl ->

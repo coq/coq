@@ -193,7 +193,7 @@ let cache_class = load_class
 let subst_class (subst,cl) =
   let do_subst_con c = Mod_subst.subst_constant subst c
   and do_subst c = Mod_subst.subst_mps subst c
-  and do_subst_gr gr = fst (subst_global subst gr) in
+  and do_subst_gr gr = subst_global_reference subst gr in
   let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
   let do_subst_context (grs,ctx) =
     List.Smart.map (Option.Smart.map do_subst_gr) grs,
@@ -369,8 +369,8 @@ let cache_instance (_, (action, i)) =
 
 let subst_instance (subst, (action, inst)) = action,
   { inst with 
-      is_class = fst (subst_global subst inst.is_class);
-      is_impl = fst (subst_global subst inst.is_impl) }
+      is_class = subst_global_reference subst inst.is_class;
+      is_impl = subst_global_reference subst inst.is_impl }
 
 let discharge_instance (_, (action, inst)) =
   match inst.is_global with

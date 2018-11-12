@@ -37,9 +37,9 @@ let classify_rename_args = function
   | ReqLocal, _ -> Dispose
   | ReqGlobal _, _ as o -> Substitute o
 
-let subst_rename_args (subst, (_, (r, names as orig))) = 
+let subst_rename_args (subst, (_, (r, names as orig))) =
   ReqLocal,
-  let r' = fst (subst_global subst r) in 
+  let r' = subst_global_reference subst r in
   if r==r' then orig else (r', names)
 
 let discharge_rename_args = function

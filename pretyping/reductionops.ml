@@ -116,7 +116,7 @@ module ReductionBehaviour = struct
 
   let subst (subst, (_, (r,o as orig))) =
     ReqLocal,
-    let r' = fst (subst_global subst r) in if r==r' then orig else (r',o)
+    let r' = subst_global_reference subst r in if r==r' then orig else (r',o)
 
   let discharge = function
     | _,(ReqGlobal (ConstRef c as gr, req), (_, b)) ->

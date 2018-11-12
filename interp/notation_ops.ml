@@ -625,7 +625,7 @@ let rec subst_notation_constr subst bound raw =
   | NHole (knd, naming, solve) ->
     let nknd = match knd with
     | Evar_kinds.ImplicitArg (ref, i, b) ->
-      let nref, _ = subst_global subst ref in
+      let nref = subst_global_reference subst ref in
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
