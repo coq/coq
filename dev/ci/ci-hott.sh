@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download HoTT
 
-( cd "${CI_BUILD_DIR}/HoTT" && ./autogen.sh && ./configure && make && make validate )
+( cd "${CI_BUILD_DIR}/HoTT" && ./autogen.sh -skip-submodules && ./configure && make && make validate )
