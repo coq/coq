@@ -329,9 +329,19 @@ let subst_pcon_term sub (_con,u as pcon) =
 	(con',u), can
   with No_subst -> pcon, mkConstU pcon
 
-let subst_constant sub con =
-  try fst (subst_con0 sub (con,Univ.Instance.empty))
-  with No_subst -> con
+let subst_constant sub cst =
+  try
+    let mpu,l = Constant.repr2 cst in
+    let mpc = KerName.modpath (Constant.canonical cst) in
+    let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
+    let knu = KerName.make mpu l in
+    let knc = if mpu == mpc then knu else KerName.make mpc l in
+    let knc' =
+      progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
+    in
+    let cst' = Constant.make knu knc' in
+    cst'
+  with No_subst -> cst
 
 let subst_proj_repr sub p =
   Projection.Repr.map (subst_mind sub) p
