@@ -333,9 +333,6 @@ let get_representative uf i=
 
 let get_constructors uf i= uf.map.(i).constructors
 
-let find_pac uf i pac =
-  PacMap.find pac (get_constructors uf i)
-
 let rec find_oldest_pac uf i pac=
   try PacMap.find pac (get_constructors uf i) with
     Not_found -> 

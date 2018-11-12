@@ -34,10 +34,8 @@ let is_gr c gr = match DAst.get c with
 | _ -> false
 
 let positive_modpath = MPfile (make_dir binnums)
-let positive_path = make_path binnums "positive"
 
 let positive_kn = MutInd.make2 positive_modpath (Label.make "positive")
-let glob_positive = IndRef (positive_kn,0)
 let path_of_xI = ((positive_kn,0),1)
 let path_of_xO = ((positive_kn,0),2)
 let path_of_xH = ((positive_kn,0),3)
@@ -71,9 +69,7 @@ let rec bignat_of_pos c = match DAst.get c with
 (* Parsing Z via scopes                                               *)
 (**********************************************************************)
 
-let z_path = make_path binnums "Z"
 let z_kn = MutInd.make2 positive_modpath (Label.make "Z")
-let glob_z = IndRef (z_kn,0)
 let path_of_ZERO = ((z_kn,0),1)
 let path_of_POS = ((z_kn,0),2)
 let path_of_NEG = ((z_kn,0),3)

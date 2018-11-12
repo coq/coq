@@ -21,7 +21,6 @@ open Termops
 open Formula
 open Sequent
 open Globnames
-open Locus
 
 module NamedDecl = Context.Named.Declaration
 
@@ -55,10 +54,6 @@ let wrap n b continue seq =
     add_formula env sigma Concl dummy_id (pf_concl gls) seq1 else seq1 in
     continue seq2
   end
-
-let basename_of_global=function
-    VarRef id->id
-  | _->assert false
 
 let clear_global=function
     VarRef id-> clear [id]
@@ -230,19 +225,3 @@ let ll_forall_tac prod backtrack id continue seq=
     backtrack
 
 (* rules for instantiation with unification moved to instances.ml *)
-
-(* special for compatibility with old Intuition *)
-
-let constant str = Coqlib.lib_ref str
-
-let defined_connectives = lazy
-  [AllOccurrences, EvalConstRef (destConstRef (constant "core.not.type"));
-   AllOccurrences, EvalConstRef (destConstRef (constant "core.iff.type"))]
-
-let normalize_evaluables=
-  Proofview.Goal.enter begin fun gl ->
-    unfold_in_concl (Lazy.force defined_connectives) <*>
-    tclMAP
-      (fun id -> unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly))
-      (pf_ids_of_hyps gl)
-  end
