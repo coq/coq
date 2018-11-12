@@ -335,6 +335,14 @@ val refine_with :
            ?beta:bool ->
            ?with_evars:bool ->
            evar_map * EConstr.t -> v82tac
+
+val pf_resolve_typeclasses :
+  where:EConstr.t ->
+  fail:bool -> Goal.goal Evd.sigma -> Goal.goal Evd.sigma
+val resolve_typeclasses :
+  where:EConstr.t ->
+  fail:bool -> Environ.env -> Evd.evar_map -> Evd.evar_map
+
 (*********************** Wrapped Coq  tactics *****************************)
 
 val rewritetac : ssrdir -> EConstr.t -> tactic

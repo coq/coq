@@ -499,6 +499,22 @@ let pf_e_type_of gl t =
   let sigma, ty = Typing.type_of env sigma t in
   re_sig it sigma, ty
 
+let pf_resolve_typeclasses ~where ~fail gl =
+  let sigma, env, it = project gl, pf_env gl, sig_it gl in
+  let filter =
+    let evset = Evarutil.undefined_evars_of_term sigma where in
+    fun k _ -> Evar.Set.mem k evset in
+  let sigma = Typeclasses.resolve_typeclasses ~filter ~fail env sigma in
+  re_sig it sigma
+
+let resolve_typeclasses ~where ~fail env sigma =
+  let filter =
+    let evset = Evarutil.undefined_evars_of_term sigma where in
+    fun k _ -> Evar.Set.mem k evset in
+  let sigma = Typeclasses.resolve_typeclasses ~filter ~fail env sigma in
+  sigma
+
+
 let nf_evar sigma t = 
   EConstr.Unsafe.to_constr (Evarutil.nf_evar sigma (EConstr.of_constr t))
 
