@@ -95,7 +95,7 @@ End Bounds.
 Hint Resolve Totally_ordered_definition Upper_Bound_definition
   Lower_Bound_definition Lub_definition Glb_definition Bottom_definition
   Definition_of_Complete Definition_of_Complete
-  Definition_of_Conditionally_complete.
+  Definition_of_Conditionally_complete : core.
 
 Section Specific_orders.
   Variable U : Type.

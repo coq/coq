@@ -1373,10 +1373,10 @@ let interp_hints poly =
       let _, tacexp = Genintern.generic_intern env tacexp in
       HintsExternEntry ({ hint_priority = Some pri; hint_pattern = pat }, tacexp)
 
-let add_hints ~local dbnames0 h =
-  if String.List.mem "nocore" dbnames0 then
+let add_hints ~local dbnames h =
+  if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
-  let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
+  assert (not (List.is_empty dbnames));
   let env = Global.env() in
   let sigma = Evd.from_env env in
   match h with

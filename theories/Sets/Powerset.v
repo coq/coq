@@ -38,43 +38,43 @@ Variable U : Type.
 Inductive Power_set (A:Ensemble U) : Ensemble (Ensemble U) :=
     Definition_of_Power_set :
       forall X:Ensemble U, Included U X A -> In (Ensemble U) (Power_set A) X.
-Hint Resolve Definition_of_Power_set.
+Hint Resolve Definition_of_Power_set : core.
 
 Theorem Empty_set_minimal : forall X:Ensemble U, Included U (Empty_set U) X.
 intro X; red.
 intros x H'; elim H'.
 Qed.
-Hint Resolve Empty_set_minimal.
+Hint Resolve Empty_set_minimal : core.
 
 Theorem Power_set_Inhabited :
  forall X:Ensemble U, Inhabited (Ensemble U) (Power_set X).
 intro X.
 apply Inhabited_intro with (Empty_set U); auto with sets.
 Qed.
-Hint Resolve Power_set_Inhabited.
+Hint Resolve Power_set_Inhabited : core.
 
 Theorem Inclusion_is_an_order : Order (Ensemble U) (Included U).
 auto 6 with sets.
 Qed.
-Hint Resolve Inclusion_is_an_order.
+Hint Resolve Inclusion_is_an_order : core.
 
 Theorem Inclusion_is_transitive : Transitive (Ensemble U) (Included U).
 elim Inclusion_is_an_order; auto with sets.
 Qed.
-Hint Resolve Inclusion_is_transitive.
+Hint Resolve Inclusion_is_transitive : core.
 
 Definition Power_set_PO : Ensemble U -> PO (Ensemble U).
 intro A; try assumption.
 apply Definition_of_PO with (Power_set A) (Included U); auto with sets.
 Defined.
-Hint Unfold Power_set_PO.
+Hint Unfold Power_set_PO : core.
 
 Theorem Strict_Rel_is_Strict_Included :
  same_relation (Ensemble U) (Strict_Included U)
    (Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U))).
 auto with sets.
 Qed.
-Hint Resolve Strict_Rel_Transitive Strict_Rel_is_Strict_Included.
+Hint Resolve Strict_Rel_Transitive Strict_Rel_is_Strict_Included : core.
 
 Lemma Strict_inclusion_is_transitive_with_inclusion :
  forall x y z:Ensemble U,
@@ -109,7 +109,7 @@ Theorem Empty_set_is_Bottom :
  forall A:Ensemble U, Bottom (Ensemble U) (Power_set_PO A) (Empty_set U).
 intro A; apply Bottom_definition; simpl; auto with sets.
 Qed.
-Hint Resolve Empty_set_is_Bottom.
+Hint Resolve Empty_set_is_Bottom : core.
 
 Theorem Union_minimal :
  forall a b X:Ensemble U,
@@ -117,7 +117,7 @@ Theorem Union_minimal :
 intros a b X H' H'0; red.
 intros x H'1; elim H'1; auto with sets.
 Qed.
-Hint Resolve Union_minimal.
+Hint Resolve Union_minimal : core.
 
 Theorem Intersection_maximal :
  forall a b X:Ensemble U,
@@ -145,7 +145,7 @@ intros a b; red.
 intros x H'; elim H'; auto with sets.
 Qed.
 Hint Resolve Union_increases_l Union_increases_r Intersection_decreases_l
-  Intersection_decreases_r.
+  Intersection_decreases_r : core.
 
 Theorem Union_is_Lub :
  forall A a b:Ensemble U,

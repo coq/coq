@@ -21,8 +21,8 @@ Require Import DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Unfold transpose compat_op Proper respectful.
-Hint Extern 1 (Equivalence _) => constructor; congruence.
+Hint Unfold transpose compat_op Proper respectful : core.
+Hint Extern 1 (Equivalence _) => constructor; congruence : core.
 
 (** First, a functor for Weak Sets in functorial version. *)
 
@@ -732,7 +732,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
-  Hint Resolve cardinal_inv_1.
+  Hint Resolve cardinal_inv_1 : core.
 
   Lemma cardinal_inv_2 :
    forall s n, cardinal s = S n -> { x : elt | In x s }.
@@ -769,7 +769,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   exact Equal_cardinal.
   Qed.
 
-  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal.
+  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : core.
 
   (** ** Cardinal and set operators *)
 
@@ -887,7 +887,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   auto with set.
   Qed.
 
-  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2.
+  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : core.
 
 End WProperties_fun.
 
@@ -952,7 +952,7 @@ Module OrdProperties (M:S).
    red; intros x a b H; unfold leb.
    f_equal; apply gtb_compat; auto.
   Qed.
-  Hint Resolve gtb_compat leb_compat.
+  Hint Resolve gtb_compat leb_compat : core.
 
   Lemma elements_split : forall x s,
    elements s = elements_lt x s ++ elements_ge x s.

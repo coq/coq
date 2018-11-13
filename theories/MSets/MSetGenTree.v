@@ -46,7 +46,7 @@ End InfoTyp.
 Module Type Ops (X:OrderedType)(Info:InfoTyp).
 
 Definition elt := X.t.
-Hint Transparent elt.
+Hint Transparent elt : core.
 
 Inductive tree  : Type :=
 | Leaf : tree
@@ -342,11 +342,11 @@ Module Import MX := OrderedTypeFacts X.
 Scheme tree_ind := Induction for tree Sort Prop.
 Scheme bst_ind := Induction for bst Sort Prop.
 
-Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans ok.
-Local Hint Immediate MX.eq_sym.
-Local Hint Unfold In lt_tree gt_tree.
-Local Hint Constructors InT bst.
-Local Hint Unfold Ok.
+Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans ok : core.
+Local Hint Immediate MX.eq_sym : core.
+Local Hint Unfold In lt_tree gt_tree : core.
+Local Hint Constructors InT bst : core.
+Local Hint Unfold Ok : core.
 
 (** Automatic treatment of [Ok] hypothesis *)
 
@@ -432,7 +432,7 @@ Lemma In_1 :
 Proof.
  induction s; simpl; intuition_in; eauto.
 Qed.
-Local Hint Immediate In_1.
+Local Hint Immediate In_1 : core.
 
 Instance In_compat : Proper (X.eq==>eq==>iff) InT.
 Proof.
@@ -478,7 +478,7 @@ Proof.
  unfold gt_tree; intuition_in; order.
 Qed.
 
-Local Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node.
+Local Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node : core.
 
 Lemma lt_tree_not_in :
  forall (x : elt) (t : tree), lt_tree x t -> ~ InT x t.
@@ -516,7 +516,7 @@ Proof.
  intros x x' Hx s s' Hs H y Hy. subst. setoid_rewrite <- Hx; auto.
 Qed.
 
-Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
+Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans : core.
 
 Ltac induct s x :=
  induction s as [|i l IHl x' r IHr]; simpl; intros;
@@ -699,7 +699,7 @@ Proof.
  intros; unfold elements; apply elements_spec2'; auto.
  intros; inversion H0.
 Qed.
-Local Hint Resolve elements_spec2.
+Local Hint Resolve elements_spec2 : core.
 
 Lemma elements_spec2w : forall s `(Ok s), NoDupA X.eq (elements s).
 Proof.
@@ -1035,7 +1035,7 @@ Qed.
 
 Definition Cmp c x y := CompSpec L.eq L.lt x y c.
 
-Local Hint Unfold Cmp flip.
+Local Hint Unfold Cmp flip : core.
 
 Lemma compare_end_Cmp :
  forall e2, Cmp (compare_end e2) nil (flatten_e e2).

@@ -66,7 +66,7 @@ Proof.
   rewrite hq, hq' in H'. subst q'. f_equal.
   apply eq_proofs_unicity. intros.  repeat decide equality.
 Qed.
-Hint Resolve Qc_is_canon.
+Hint Resolve Qc_is_canon : core.
 
 Theorem Qc_decomp: forall q q': Qc, (q:Q) = q' -> q = q'.
 Proof.

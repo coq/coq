@@ -21,7 +21,7 @@ intros.
 now apply not_O_IZR.
 Qed.
 
-Hint Resolve IZR_nz Rmult_integral_contrapositive.
+Hint Resolve IZR_nz Rmult_integral_contrapositive : core.
 
 Lemma eqR_Qeq : forall x y : Q, Q2R x = Q2R y -> x==y.
 Proof.

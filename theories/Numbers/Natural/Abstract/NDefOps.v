@@ -383,7 +383,7 @@ f_equiv. apply E, half_decrease.
 rewrite two_succ, <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.
 order'.
 Qed.
-Hint Resolve log_good_step.
+Hint Resolve log_good_step : core.
 
 Theorem log_init : forall n, n < 2 -> log n == 0.
 Proof.

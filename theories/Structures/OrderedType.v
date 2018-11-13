@@ -42,8 +42,8 @@ Module Type MiniOrderedType.
 
   Parameter compare : forall x y : t, Compare lt eq x y.
 
-  Hint Immediate eq_sym.
-  Hint Resolve eq_refl eq_trans lt_not_eq lt_trans.
+  Hint Immediate eq_sym : core.
+  Hint Resolve eq_refl eq_trans lt_not_eq lt_trans : core.
 
 End MiniOrderedType.
 
@@ -143,9 +143,9 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma eq_not_gt x y : eq x y -> ~ lt y x. Proof. order. Qed.
   Lemma lt_not_gt x y : lt x y -> ~ lt y x. Proof. order. Qed.
 
-  Hint Resolve gt_not_eq eq_not_lt.
-  Hint Immediate eq_lt lt_eq le_eq eq_le neq_eq eq_neq.
-  Hint Resolve eq_not_gt lt_antirefl lt_not_gt.
+  Hint Resolve gt_not_eq eq_not_lt : core.
+  Hint Immediate eq_lt lt_eq le_eq eq_le neq_eq eq_neq : core.
+  Hint Resolve eq_not_gt lt_antirefl lt_not_gt : core.
 
   Lemma elim_compare_eq :
    forall x y : t,
@@ -247,8 +247,8 @@ Proof. exact (SortA_NoDupA eq_equiv lt_strorder lt_compat). Qed.
 
 End ForNotations.
 
-Hint Resolve ListIn_In Sort_NoDup Inf_lt.
-Hint Immediate In_eq Inf_lt.
+Hint Resolve ListIn_In Sort_NoDup Inf_lt : core.
+Hint Immediate In_eq Inf_lt : core.
 
 End OrderedTypeFacts.
 
@@ -266,8 +266,8 @@ Module KeyOrderedType(O:OrderedType).
           eq (fst p) (fst p') /\ (snd p) = (snd p').
   Definition ltk (p p':key*elt) := lt (fst p) (fst p').
 
-  Hint Unfold eqk eqke ltk.
-  Hint Extern 2 (eqke ?a ?b) => split.
+  Hint Unfold eqk eqke ltk : core.
+  Hint Extern 2 (eqke ?a ?b) => split : core.
 
    (* eqke is stricter than eqk *)
 
@@ -283,7 +283,7 @@ Module KeyOrderedType(O:OrderedType).
 
    Lemma ltk_right_l : forall x k e e', ltk (k,e) x -> ltk (k,e') x.
    Proof. auto. Qed.
-   Hint Immediate ltk_right_r ltk_right_l.
+   Hint Immediate ltk_right_r ltk_right_l : core.
 
   (* eqk, eqke are equalities, ltk is a strict order *)
 
@@ -319,9 +319,9 @@ Module KeyOrderedType(O:OrderedType).
     exact (lt_not_eq H H1).
   Qed.
 
-  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
-  Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke.
-  Hint Immediate eqk_sym eqke_sym.
+  Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : core.
+  Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : core.
+  Hint Immediate eqk_sym eqke_sym : core.
 
   Global Instance eqk_equiv : Equivalence eqk.
   Proof. constructor; eauto. Qed.
@@ -359,22 +359,22 @@ Module KeyOrderedType(O:OrderedType).
       intros (k,e) (k',e') (k'',e'').
       unfold ltk, eqk; simpl; eauto.
   Qed.
-  Hint Resolve eqk_not_ltk.
-  Hint Immediate ltk_eqk eqk_ltk.
+  Hint Resolve eqk_not_ltk : core.
+  Hint Immediate ltk_eqk eqk_ltk : core.
 
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
     unfold eqke; induction 1; intuition.
   Qed.
-  Hint Resolve InA_eqke_eqk.
+  Hint Resolve InA_eqke_eqk : core.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
   Definition In k m := exists e:elt, MapsTo k e m.
   Notation Sort := (sort ltk).
   Notation Inf := (lelistA ltk).
 
-  Hint Unfold MapsTo In.
+  Hint Unfold MapsTo In : core.
 
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
 
@@ -405,8 +405,8 @@ Module KeyOrderedType(O:OrderedType).
   Lemma Inf_lt : forall l x x', ltk x x' -> Inf x' l -> Inf x l.
   Proof. exact (InfA_ltA ltk_strorder). Qed.
 
-  Hint Immediate Inf_eq.
-  Hint Resolve Inf_lt.
+  Hint Immediate Inf_eq : core.
+  Hint Resolve Inf_lt : core.
 
   Lemma Sort_Inf_In :
       forall l p q, Sort l -> Inf q l -> InA eqk p l -> ltk q p.
@@ -469,19 +469,19 @@ Module KeyOrderedType(O:OrderedType).
 
  End Elt.
 
- Hint Unfold eqk eqke ltk.
- Hint Extern 2 (eqke ?a ?b) => split.
- Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl.
- Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke.
- Hint Immediate eqk_sym eqke_sym.
- Hint Resolve eqk_not_ltk.
- Hint Immediate ltk_eqk eqk_ltk.
- Hint Resolve InA_eqke_eqk.
- Hint Unfold MapsTo In.
- Hint Immediate Inf_eq.
- Hint Resolve Inf_lt.
- Hint Resolve Sort_Inf_NotIn.
- Hint Resolve In_inv_2 In_inv_3.
+ Hint Unfold eqk eqke ltk : core.
+ Hint Extern 2 (eqke ?a ?b) => split : core.
+ Hint Resolve eqk_trans eqke_trans eqk_refl eqke_refl : core.
+ Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke : core.
+ Hint Immediate eqk_sym eqke_sym : core.
+ Hint Resolve eqk_not_ltk : core.
+ Hint Immediate ltk_eqk eqk_ltk : core.
+ Hint Resolve InA_eqke_eqk : core.
+ Hint Unfold MapsTo In : core.
+ Hint Immediate Inf_eq : core.
+ Hint Resolve Inf_lt : core.
+ Hint Resolve Sort_Inf_NotIn : core.
+ Hint Resolve In_inv_2 In_inv_3 : core.
 
 End KeyOrderedType.
 

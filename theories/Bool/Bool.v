@@ -48,7 +48,7 @@ Proof.
   discriminate.
 Qed.
 Hint Resolve diff_false_true : bool.
-Hint Extern 1 (false <> true) => exact diff_false_true.
+Hint Extern 1 (false <> true) => exact diff_false_true : core.
 
 Lemma eq_true_false_abs : forall b:bool, b = true -> b = false -> False.
 Proof.
@@ -621,7 +621,7 @@ Lemma absurd_eq_true : forall b, False -> b = true.
 Proof.
   contradiction.
 Qed.
-Hint Resolve absurd_eq_true.
+Hint Resolve absurd_eq_true : core.
 
 (* A specific instance of eq_trans that preserves compatibility with
    old hint bool_2 *)
@@ -630,7 +630,7 @@ Lemma trans_eq_bool : forall x y z:bool, x = y -> y = z -> x = z.
 Proof.
   apply eq_trans.
 Qed.
-Hint Resolve trans_eq_bool.
+Hint Resolve trans_eq_bool : core.
 
 (*****************************************)
 (** * Reflection of [bool] into [Prop] *)

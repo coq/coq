@@ -157,6 +157,6 @@ Section RelProd_Instances.
   Proof. unfold RelCompFun; firstorder. Qed.
 End RelProd_Instances.
 
-Hint Unfold RelProd RelCompFun.
-Hint Extern 2 (RelProd _ _ _ _) => split.
+Hint Unfold RelProd RelCompFun : core.
+Hint Extern 2 (RelProd _ _ _ _) => split : core.
 

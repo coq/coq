@@ -193,7 +193,7 @@ Section first_definitions.
      | auto with datatypes ].
   Qed.
 
-  Hint Resolve set_add_intro1 set_add_intro2.
+  Hint Resolve set_add_intro1 set_add_intro2 : core.
 
   Lemma set_add_intro :
    forall (a b:A) (x:set), a = b \/ set_In a x -> set_In a (set_add b x).
@@ -224,7 +224,7 @@ Section first_definitions.
    case H1; trivial.
    Qed.
 
-  Hint Resolve set_add_intro set_add_elim set_add_elim2.
+  Hint Resolve set_add_intro set_add_elim set_add_elim2 : core.
 
   Lemma set_add_not_empty : forall (a:A) (x:set), set_add a x <> empty_set.
   Proof.
@@ -310,7 +310,7 @@ Section first_definitions.
     intros; elim H0; auto with datatypes.
   Qed.
 
-  Hint Resolve set_union_intro2 set_union_intro1.
+  Hint Resolve set_union_intro2 set_union_intro1 : core.
 
   Lemma set_union_intro :
    forall (a:A) (x y:set),
@@ -393,7 +393,7 @@ Section first_definitions.
     eauto with datatypes.
   Qed.
 
-  Hint Resolve set_inter_elim1 set_inter_elim2.
+  Hint Resolve set_inter_elim1 set_inter_elim2 : core.
 
   Lemma set_inter_elim :
    forall (a:A) (x y:set),
@@ -471,7 +471,7 @@ Section first_definitions.
   apply (set_diff_elim1 _ _ _ H).
   Qed.
 
-Hint Resolve set_diff_intro set_diff_trivial.
+Hint Resolve set_diff_intro set_diff_trivial : core.
 
 
 End first_definitions.

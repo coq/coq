@@ -219,7 +219,7 @@ Section Facts.
   Proof.
      auto using app_assoc.
   Qed.
-  Hint Resolve app_assoc_reverse.
+  Hint Resolve app_assoc_reverse : core.
   (* end hide *)
 
   (** [app] commutes with [cons] *)
@@ -1569,19 +1569,19 @@ Section SetIncl.
   Variable A : Type.
 
   Definition incl (l m:list A) := forall a:A, In a l -> In a m.
-  Hint Unfold incl.
+  Hint Unfold incl : core.
 
   Lemma incl_refl : forall l:list A, incl l l.
   Proof.
     auto.
   Qed.
-  Hint Resolve incl_refl.
+  Hint Resolve incl_refl : core.
 
   Lemma incl_tl : forall (a:A) (l m:list A), incl l m -> incl l (a :: m).
   Proof.
     auto with datatypes.
   Qed.
-  Hint Immediate incl_tl.
+  Hint Immediate incl_tl : core.
 
   Lemma incl_tran : forall l m n:list A, incl l m -> incl m n -> incl l n.
   Proof.
@@ -1592,13 +1592,13 @@ Section SetIncl.
   Proof.
     auto with datatypes.
   Qed.
-  Hint Immediate incl_appl.
+  Hint Immediate incl_appl : core.
 
   Lemma incl_appr : forall l m n:list A, incl l n -> incl l (m ++ n).
   Proof.
     auto with datatypes.
   Qed.
-  Hint Immediate incl_appr.
+  Hint Immediate incl_appr : core.
 
   Lemma incl_cons :
     forall (a:A) (l m:list A), In a m -> incl l m -> incl (a :: l) m.
@@ -1613,7 +1613,7 @@ Section SetIncl.
     now_show (In a0 l -> In a0 m).
     auto.
   Qed.
-  Hint Resolve incl_cons.
+  Hint Resolve incl_cons : core.
 
   Lemma incl_app : forall l m n:list A, incl l n -> incl m n -> incl (l ++ m) n.
   Proof.
@@ -1621,7 +1621,7 @@ Section SetIncl.
     now_show (In a n).
     elim (in_app_or _ _ _ H1); auto.
   Qed.
-  Hint Resolve incl_app.
+  Hint Resolve incl_app : core.
 
 End SetIncl.
 
@@ -2180,7 +2180,7 @@ Section Exists_Forall.
       | Exists_cons_hd : forall x l, P x -> Exists (x::l)
       | Exists_cons_tl : forall x l, Exists l -> Exists (x::l).
 
-    Hint Constructors Exists.
+    Hint Constructors Exists : core.
 
     Lemma Exists_exists (l:list A) :
       Exists l <-> (exists x, In x l /\ P x).
@@ -2214,7 +2214,7 @@ Section Exists_Forall.
       | Forall_nil : Forall nil
       | Forall_cons : forall x l, P x -> Forall l -> Forall (x::l).
 
-    Hint Constructors Forall.
+    Hint Constructors Forall : core.
 
     Lemma Forall_forall (l:list A):
       Forall l <-> (forall x, In x l -> P x).
@@ -2299,8 +2299,8 @@ Section Exists_Forall.
 
 End Exists_Forall.
 
-Hint Constructors Exists.
-Hint Constructors Forall.
+Hint Constructors Exists : core.
+Hint Constructors Forall : core.
 
 Section Forall2.
 
@@ -2314,7 +2314,7 @@ Section Forall2.
     | Forall2_cons : forall x y l l',
       R x y -> Forall2 l l' -> Forall2 (x::l) (y::l').
 
-  Hint Constructors Forall2.
+  Hint Constructors Forall2 : core.
 
   Theorem Forall2_refl : Forall2 [] [].
   Proof. intros; apply Forall2_nil. Qed.
@@ -2348,7 +2348,7 @@ Section Forall2.
   Qed.
 End Forall2.
 
-Hint Constructors Forall2.
+Hint Constructors Forall2 : core.
 
 Section ForallPairs.
 
@@ -2369,7 +2369,7 @@ Section ForallPairs.
     | FOP_cons : forall a l,
       Forall (R a) l -> ForallOrdPairs l -> ForallOrdPairs (a::l).
 
-  Hint Constructors ForallOrdPairs.
+  Hint Constructors ForallOrdPairs : core.
 
   Lemma ForallOrdPairs_In : forall l,
     ForallOrdPairs l ->

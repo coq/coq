@@ -41,21 +41,21 @@ Definition Singleton (a:A) :=
        end).
 
 Definition In (s:uniset) (a:A) : Prop := charac s a = true.
-Hint Unfold In.
+Hint Unfold In : core.
 
 (** uniset inclusion *)
 Definition incl (s1 s2:uniset) := forall a:A, leb (charac s1 a) (charac s2 a).
-Hint Unfold incl.
+Hint Unfold incl : core.
 
 (** uniset equality *)
 Definition seq (s1 s2:uniset) := forall a:A, charac s1 a = charac s2 a.
-Hint Unfold seq.
+Hint Unfold seq : core.
 
 Lemma leb_refl : forall b:bool, leb b b.
 Proof.
 destruct b; simpl; auto.
 Qed.
-Hint Resolve leb_refl.
+Hint Resolve leb_refl : core.
 
 Lemma incl_left : forall s1 s2:uniset, seq s1 s2 -> incl s1 s2.
 Proof.
@@ -71,7 +71,7 @@ Lemma seq_refl : forall x:uniset, seq x x.
 Proof.
 destruct x; unfold seq; auto.
 Qed.
-Hint Resolve seq_refl.
+Hint Resolve seq_refl : core.
 
 Lemma seq_trans : forall x y z:uniset, seq x y -> seq y z -> seq x z.
 Proof.
@@ -94,21 +94,21 @@ Lemma union_empty_left : forall x:uniset, seq x (union Emptyset x).
 Proof.
 unfold seq; unfold union; simpl; auto.
 Qed.
-Hint Resolve union_empty_left.
+Hint Resolve union_empty_left : core.
 
 Lemma union_empty_right : forall x:uniset, seq x (union x Emptyset).
 Proof.
 unfold seq; unfold union; simpl.
 intros x a; rewrite (orb_b_false (charac x a)); auto.
 Qed.
-Hint Resolve union_empty_right.
+Hint Resolve union_empty_right : core.
 
 Lemma union_comm : forall x y:uniset, seq (union x y) (union y x).
 Proof.
 unfold seq; unfold charac; unfold union.
 destruct x; destruct y; auto with bool.
 Qed.
-Hint Resolve union_comm.
+Hint Resolve union_comm : core.
 
 Lemma union_ass :
  forall x y z:uniset, seq (union (union x y) z) (union x (union y z)).
@@ -116,7 +116,7 @@ Proof.
 unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z; auto with bool.
 Qed.
-Hint Resolve union_ass.
+Hint Resolve union_ass : core.
 
 Lemma seq_left : forall x y z:uniset, seq x y -> seq (union x z) (union y z).
 Proof.
@@ -124,7 +124,7 @@ unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z.
 intros; elim H; auto.
 Qed.
-Hint Resolve seq_left.
+Hint Resolve seq_left : core.
 
 Lemma seq_right : forall x y z:uniset, seq x y -> seq (union z x) (union z y).
 Proof.
@@ -132,7 +132,7 @@ unfold seq; unfold union; unfold charac.
 destruct x; destruct y; destruct z.
 intros; elim H; auto.
 Qed.
-Hint Resolve seq_right.
+Hint Resolve seq_right : core.
 
 
 (** All the proofs that follow duplicate [Multiset_of_A] *)

@@ -136,7 +136,7 @@ Defined.
 Inductive BoolSpec (P Q : Prop) : bool -> Prop :=
   | BoolSpecT : P -> BoolSpec P Q true
   | BoolSpecF : Q -> BoolSpec P Q false.
-Hint Constructors BoolSpec.
+Hint Constructors BoolSpec : core.
 
 
 (********************************************************************)
@@ -344,7 +344,7 @@ Inductive CompareSpec (Peq Plt Pgt : Prop) : comparison -> Prop :=
  | CompEq : Peq -> CompareSpec Peq Plt Pgt Eq
  | CompLt : Plt -> CompareSpec Peq Plt Pgt Lt
  | CompGt : Pgt -> CompareSpec Peq Plt Pgt Gt.
-Hint Constructors CompareSpec.
+Hint Constructors CompareSpec : core.
 
 (** For having clean interfaces after extraction, [CompareSpec] is declared
     in Prop. For some situations, it is nonetheless useful to have a
@@ -354,7 +354,7 @@ Inductive CompareSpecT (Peq Plt Pgt : Prop) : comparison -> Type :=
  | CompEqT : Peq -> CompareSpecT Peq Plt Pgt Eq
  | CompLtT : Plt -> CompareSpecT Peq Plt Pgt Lt
  | CompGtT : Pgt -> CompareSpecT Peq Plt Pgt Gt.
-Hint Constructors CompareSpecT.
+Hint Constructors CompareSpecT : core.
 
 Lemma CompareSpec2Type : forall Peq Plt Pgt c,
  CompareSpec Peq Plt Pgt c -> CompareSpecT Peq Plt Pgt c.
@@ -371,7 +371,7 @@ Definition CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
 
 Definition CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
  CompareSpecT (eq x y) (lt x y) (lt y x).
-Hint Unfold CompSpec CompSpecT.
+Hint Unfold CompSpec CompSpecT : core.
 
 Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
  CompSpec eq lt x y c -> CompSpecT eq lt x y c.

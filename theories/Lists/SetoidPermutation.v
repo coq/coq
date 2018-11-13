@@ -28,7 +28,7 @@ Inductive PermutationA : list A -> list A -> Prop :=
   | permA_swap x y l : PermutationA (y :: x :: l) (x :: y :: l)
   | permA_trans l₁ l₂ l₃ :
      PermutationA l₁ l₂ -> PermutationA l₂ l₃ -> PermutationA l₁ l₃.
-Local Hint Constructors PermutationA.
+Local Hint Constructors PermutationA : core.
 
 Global Instance: Equivalence PermutationA.
 Proof.

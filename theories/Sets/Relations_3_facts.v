@@ -38,7 +38,7 @@ Proof.
 intros U R x y H'; red.
 exists y; auto with sets.
 Qed.
-Hint Resolve Rstar_imp_coherent.
+Hint Resolve Rstar_imp_coherent : core.
 
 Theorem coherent_symmetric :
  forall (U:Type) (R:Relation U), Symmetric U (coherent U R).

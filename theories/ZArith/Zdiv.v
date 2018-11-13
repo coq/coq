@@ -73,7 +73,7 @@ Proof.
  intros; unfold Remainder, Remainder_alt; omega with *.
 Qed.
 
-Hint Unfold Remainder.
+Hint Unfold Remainder : core.
 
 (** Now comes the fully general result about Euclidean division. *)
 

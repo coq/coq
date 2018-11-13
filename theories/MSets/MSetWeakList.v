@@ -123,15 +123,15 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Let eqr:= (@Equivalence_Reflexive _ _ X.eq_equiv).
   Let eqsym:= (@Equivalence_Symmetric _ _ X.eq_equiv).
   Let eqtrans:= (@Equivalence_Transitive _ _ X.eq_equiv).
-  Hint Resolve eqr eqtrans.
-  Hint Immediate eqsym.
+  Hint Resolve eqr eqtrans : core.
+  Hint Immediate eqsym : core.
 
   Definition IsOk := NoDup.
 
   Class Ok (s:t) : Prop := ok : NoDup s.
 
-  Hint Unfold Ok.
-  Hint Resolve ok.
+  Hint Unfold Ok : core.
+  Hint Resolve ok : core.
 
   Instance NoDup_Ok s (nd : NoDup s) : Ok s := { ok := nd }.
 

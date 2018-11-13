@@ -47,7 +47,7 @@ Section Log_pos. (* Log of positive integers *)
       | xI n => Z.succ (Z.succ (log_inf n))	(* 2n+1 *)
     end.
 
-  Hint Unfold log_inf log_sup.
+ Hint Unfold log_inf log_sup : core.
 
   Lemma Psize_log_inf : forall p, Zpos (Pos.size p) = Z.succ (log_inf p).
   Proof.
