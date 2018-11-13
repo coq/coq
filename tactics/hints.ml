@@ -738,16 +738,7 @@ module Hintdbmap = String.Map
 
 type hint_db = Hint_db.t
 
-(** Initially created hint databases, for typeclasses and rewrite *)
-let typeclasses_db = "typeclass_instances"
-let rewrite_db = "rewrite"
-
-let auto_init_db =
-  Hintdbmap.add typeclasses_db (Hint_db.empty TransparentState.full true)
-    (Hintdbmap.add rewrite_db (Hint_db.empty TransparentState.cst_full true)
-       Hintdbmap.empty)
-
-let searchtable = Summary.ref ~name:"searchtable" auto_init_db
+let searchtable = Summary.ref ~name:"searchtable" Hintdbmap.empty
 let statustable = Summary.ref ~name:"statustable" KNmap.empty
 
 let searchtable_map name =

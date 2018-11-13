@@ -33,7 +33,8 @@ open Hints
 
 module NamedDecl = Context.Named.Declaration
 
-(** Hint database named "typeclass_instances", now created directly in Auto *)
+(** Hint database named "typeclass_instances", created in prelude *)
+let typeclasses_db = "typeclass_instances"
 
 (** Options handling *)
 

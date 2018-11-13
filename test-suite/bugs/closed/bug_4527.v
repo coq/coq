@@ -10,6 +10,7 @@ Inductive False := .
 Axiom proof_admitted : False.
 Tactic Notation "admit" := case proof_admitted.
 Require Coq.Init.Datatypes.
+Require Import Coq.Init.Tactics.
 
 Import Coq.Init.Notations.
 

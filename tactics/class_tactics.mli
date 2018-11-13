@@ -13,6 +13,8 @@
 open Names
 open EConstr
 
+val typeclasses_db : string
+
 val catchable : exn -> bool
 
 val set_typeclasses_debug : bool -> unit
