@@ -611,28 +611,6 @@ let import_module export modl =
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
 
-let check_coq_overwriting p id =
-  let l = DirPath.repr p in
-  let is_empty = match l with [] -> true | _ -> false in
-  if not !Flags.boot && not is_empty && Id.equal (List.last l) coq_root then
-    user_err 
-      (str "Cannot build module " ++ DirPath.print p ++ str "." ++ Id.print id ++ str "." ++ spc () ++
-      str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
-
-let start_library fo =
-  let ldir0 =
-    try
-      let lp = Loadpath.find_load_path (Filename.dirname fo) in
-      Loadpath.logical lp
-    with Not_found -> Libnames.default_root_prefix
-  in
-  let file = Filename.chop_extension (Filename.basename fo) in
-  let id = Id.of_string file in
-  check_coq_overwriting ldir0 id;
-  let ldir = add_dirpath_suffix ldir0 id in
-  Declaremods.start_library ldir;
-  ldir
-
 let load_library_todo f =
   let longf = Loadpath.locate_file (f^".v") in
   let f = longf^"io" in
