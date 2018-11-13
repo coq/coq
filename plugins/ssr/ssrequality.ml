@@ -377,6 +377,10 @@ let is_construct_ref sigma c r =
 let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
 
 let rwcltac cl rdx dir sr gl =
+  let sr =
+    let sigma, r = sr in
+    let sigma = resolve_typeclasses ~where:r ~fail:false (pf_env gl) sigma in
+    sigma, r in
   let n, r_n,_, ucst = pf_abs_evars gl sr in
   let r_n' = pf_abs_cterm gl n r_n in
   let r' = EConstr.Vars.subst_var pattern_id r_n' in
