@@ -891,6 +891,9 @@ let make_flexible_variable evd ~algebraic u =
   { evd with universes =
       UState.make_flexible_variable evd.universes ~algebraic u }
 
+let make_nonalgebraic_variable evd u =
+  { evd with universes = UState.make_nonalgebraic_variable evd.universes u }
+
 (****************************************)
 (* Operations on constants              *)
 (****************************************)
