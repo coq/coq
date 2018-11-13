@@ -176,7 +176,6 @@ let simple_with_current_proof f = with_current_proof (fun t p -> f t p , ())
 
 let compact_the_proof () = simple_with_current_proof (fun _ -> Proof.compact)
 
-
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
 let set_endline_tactic tac =
   match !pstates with
@@ -416,20 +415,7 @@ let return_proof ?(allow_partial=false) () =
     proofs, Evd.evar_universe_context evd
  end else
   let initial_goals = Proof.initial_goals proof in
-  let evd =
-    let error s =
-      let prf = str " (in proof " ++ Id.print pid ++ str ")" in
-      raise (CErrors.UserError(Some "last tactic before Qed",s ++ prf))
-    in
-    try Proof.return proof with
-    | Proof.UnfinishedProof ->
-        error(str"Attempt to save an incomplete proof")
-    | Proof.HasShelvedGoals ->
-        error(str"Attempt to save a proof with shelved goals")
-    | Proof.HasGivenUpGoals ->
-        error(strbrk"Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed.")
-    | Proof.HasUnresolvedEvar->
-        error(strbrk"Attempt to save a proof with existential variables still non-instantiated") in
+  let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate

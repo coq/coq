@@ -358,7 +358,7 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
     Eauto.registered_e_assumption ::
     (tclTHEN Tactics.intro trivial_fail :: [trivial_resolve])
   in
-  tclFIRST (List.map tclCOMPLETE tacl)
+  tclSOLVE tacl
 
 and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl =
   let open Proofview.Notations in

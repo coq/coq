@@ -2,9 +2,9 @@ Miscprint
 Goal
 Evar_refiner
 Proof_type
-Logic
 Refine
 Proof
+Logic
 Goal_select
 Proof_bullet
 Proof_global

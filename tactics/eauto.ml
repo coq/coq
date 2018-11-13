@@ -151,7 +151,7 @@ let rec e_trivial_fail_db db_list local_db =
     (Tacticals.New.tclTHEN Tactics.intro next) ::
     (List.map fst (e_trivial_resolve (Tacmach.New.pf_env gl) (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl)))
   in
-  Tacticals.New.tclFIRST (List.map Tacticals.New.tclCOMPLETE tacl)
+  Tacticals.New.tclSOLVE tacl
   end
 
 and e_my_find_search env sigma db_list local_db secvars hdc concl =
