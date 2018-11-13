@@ -435,6 +435,7 @@ let init_toplevel custom_init arglist =
       Flags.if_verbose print_header ();
       Mltop.init_known_plugins ();
       Global.set_engagement opts.impredicative_set;
+      Global.set_indices_matter opts.indices_matter;
       Global.set_VM opts.enable_VM;
       Global.set_native_compiler opts.enable_native_compiler;
 

@@ -64,6 +64,7 @@ type coq_cmdopts = {
   color : color;
 
   impredicative_set : Declarations.set_predicativity;
+  indices_matter : bool;
   enable_VM : bool;
   enable_native_compiler : bool;
   stm_flags   : Stm.AsyncOpts.stm_opt;
@@ -118,6 +119,7 @@ let init_args = {
   color = `AUTO;
 
   impredicative_set = Declarations.PredicativeSet;
+  indices_matter = false;
   enable_VM = true;
   enable_native_compiler = Coq_config.native_compiler;
   stm_flags    = Stm.AsyncOpts.default_opts;
@@ -565,7 +567,7 @@ let parse_args arglist : coq_cmdopts * string list =
     |"-filteropts" -> { oval with filter_opts = true }
     |"-impredicative-set" ->
       { oval with impredicative_set = Declarations.ImpredicativeSet }
-    |"-indices-matter" -> Indtypes.enforce_indices_matter (); oval
+    |"-indices-matter" -> { oval with indices_matter = true }
     |"-m"|"--memory" -> { oval with memory_stat = true }
     |"-noinit"|"-nois" -> { oval with load_init = false }
     |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with glob_opt = true }

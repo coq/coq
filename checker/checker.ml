@@ -138,12 +138,15 @@ let set_debug () = Flags.debug := true
 
 let impredicative_set = ref Declarations.PredicativeSet
 let set_impredicative_set () = impredicative_set := Declarations.ImpredicativeSet
-let engage = Safe_typing.set_engagement (!impredicative_set)
 
-let disable_compilers senv =
+let indices_matter = ref false
+
+let make_senv () =
+  let senv = Safe_typing.empty_environment in
+  let senv = Safe_typing.set_engagement !impredicative_set senv in
+  let senv = Safe_typing.set_indices_matter !indices_matter senv in
   let senv = Safe_typing.set_VM false senv in
   Safe_typing.set_native_compiler false senv
-
 
 let admit_list = ref ([] : object_file list)
 let add_admit s =
@@ -318,6 +321,9 @@ let parse_args argv =
     | "-impredicative-set" :: rem ->
       set_impredicative_set (); parse rem
 
+    | "-indices-matter" :: rem ->
+      indices_matter:=true; parse rem
+
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 
 	fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
@@ -377,8 +383,7 @@ let init_with_argv argv =
     Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();
     init_load_path ();
-    let senv = Safe_typing.empty_environment in
-    disable_compilers (engage senv)
+    make_senv ()
   with e ->
     fatal_error (str "Error during initialization :" ++ (explain_exn e)) (is_anomaly e)
 

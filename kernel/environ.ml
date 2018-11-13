@@ -241,6 +241,8 @@ let is_impredicative_set env =
 let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded
 
+let indices_matter env = env.env_typing_flags.indices_matter
+
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
@@ -389,6 +391,7 @@ let same_flags {
      check_guarded;
      check_universes;
      conv_oracle;
+     indices_matter;
      share_reduction;
      enable_VM;
      enable_native_compiler;
@@ -396,6 +399,7 @@ let same_flags {
   check_guarded == alt.check_guarded &&
   check_universes == alt.check_universes &&
   conv_oracle == alt.conv_oracle &&
+  indices_matter == alt.indices_matter &&
   share_reduction == alt.share_reduction &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler

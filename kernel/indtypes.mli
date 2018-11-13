@@ -50,8 +50,3 @@ val check_positivity : chkpos:bool ->
 (** The following function does checks on inductive declarations. *)
 
 val check_inductive : env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
-
-(** The following enforces a system compatible with the univalent model *)
-
-val enforce_indices_matter : unit -> unit
-val is_indices_matter : unit -> bool
