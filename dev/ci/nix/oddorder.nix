@@ -1,0 +1,4 @@
+{ mathcomp }:
+{
+  buildInputs = [ mathcomp ];
+}

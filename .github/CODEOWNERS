@@ -24,6 +24,7 @@
 /.travis.yml      @coq/ci-maintainers
 /.gitlab-ci.yml   @coq/ci-maintainers
 /Makefile.ci      @coq/ci-maintainers
+/dev/ci/nix	@coq/nix-maintainers
 
 /dev/ci/user-overlays/*.sh @ghost
 # Trick to avoid getting review requests
