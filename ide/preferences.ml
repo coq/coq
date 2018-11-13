@@ -254,10 +254,12 @@ let get_bindings_local_file () =
   with Not_found -> None
 
 let get_bindings_default_file () =
-  let ( / ) = Filename.concat in
-  let path = Envars.coqlib () / "ide/default.bindings" in
-  Printf.eprintf "==> %s\n" path;
-  if Sys.file_exists path then Some path else None
+  let name = "default.bindings" in
+  let chk d = Sys.file_exists (Filename.concat d name) in
+  try
+    let dir = List.find chk (Minilib.coqide_data_dirs ()) in
+    Some (Filename.concat dir name)
+  with Not_found -> None
 
 (** Hooks *)
 
