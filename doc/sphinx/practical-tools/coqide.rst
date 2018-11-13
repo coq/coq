@@ -218,7 +218,8 @@ Using Unicode symbols
 
 |CoqIDE| is based on GTK+ and inherits from it support for Unicode in
 its text windows. Consequently a large set of symbols is available for
-notations.
+notations. Furthermore, |CoqIDE| conveniently provides a simple way to
+input Unicode characters.
 
 
 Displaying Unicode symbols
@@ -254,37 +255,62 @@ use antialiased fonts or not, by setting the environment variable
 Defining an input method for non-ASCII symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To input a Unicode symbol, a general method provided by GTK+ is to
-simultaneously press the Control, Shift and “u” keys, release, then
-type the hexadecimal code of the symbol required, for example `2200`
-for the ∀ symbol. A list of symbol codes is available at
-`http://www.unicode.org`.
+CoqIDE supports a builtin mechanism to input non-ASCII symbols.
+For example, to input ``π``, it suffices to type ``\pi`` then press the
+combination of key ``Shift+Space`` (default key binding). Often, it
+suffices to type a prefix of the latex token, e.g. typing ``\p``
+then ``Shift+Space`` suffices to insert a ``π``.
 
-An alternative method which does not require to know the hexadecimal
-code of the character is to use an Input Method Editor. On POSIX
-systems (Linux distributions, BSD variants and MacOS X), you can
-use `uim` version 1.6 or later which provides a LaTeX-style input
-method.
+For several symbols, ASCII art is also recognized, e.g. ``\->`` for a
+right arrow, or ``\>=`` for a greater than or equal sign.
 
-To configure uim, execute uim-pref-gtk as your regular user. In the
-"Global Settings" group set the default Input Method to "ELatin"
-(don’t forget to tick the checkbox "Specify default IM"). In the
-"ELatin" group set the layout to "TeX", and remember the content of
-the "[ELatin] on" field (by default Control-\\). You can now execute
-|CoqIDE| with the following commands (assuming you use a Bourne-style
-shell):
+A larger number of latex tokens are supported by default. The full list
+is available here:
+https://github.com/coq/coq/blob/master/ide/default_bindings_src.ml
 
-::
+Custom bindings may be added, as explained further on.
 
-    $ export GTK_IM_MODULE=uim
-    $ coqide
+Remark: it remains possible to input non-ASCII symbols using system-wide
+approaches independent of |CoqIDE|.
 
 
-Activate the ELatin Input Method with Control-\\, then type the
-sequence `\\Gamma`. You will see the sequence being replaced by Γ as
-soon as you type the second "a".
+Adding custom bindings
+~~~~~~~~~~~~~~~~~~~~~~
 
-.. _character-encoding-saved-files:
+To extend the default set of bindings, create a file named `coqide.bindings`
+and place it in the same folder as `coqide.keys`. On Linux, this would be
+the folder ``~/.config/coq``. The file `coqide.bindings` should contain one
+binding per line, in the form ``\key value``, followed by an optional priority
+integer. (The key and value should not contain any space character.)
+Here is an example configuration file:
+
+```
+\par ||
+\pi π 1
+\le ≤ 1
+\lambda λ 2
+\lambdas λs
+```
+
+Above, the priority number 1 on ``\pi`` indicates that the prefix ``\p``
+should resolve to ``\pi``, and not to something else (e.g. ``\par``).
+Similarly, the above settings ensure than ``\l`` resolves to ``\le``,
+and that ``\la`` resolves to ``\lambda``.
+
+It can be useful to work with per-project binding files. For this purpose
+|CoqIDE| accepts a command line argument of the form
+``-unicode-bindings file1,file2,...,fileN``.
+Each of the file tokens provided may consists of one of:
+
+ -  a path to a custom bindings file,
+ -  the token ``default``, which resolves to the default bindings file,
+ -  the token ``local``, which resolves to the `coqide.bindings` file
+    stored in the user configuration directory.
+
+Remark: if two bindings for a same token both have the same priority value
+(or both have no priority value set), then the binding considered is the
+one from the file that comes first on the command line.
+
 
 Character encoding for saved files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
