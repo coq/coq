@@ -357,15 +357,15 @@ let print_body fmt r =
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 
 let rec print_sig fmt = function
-| [] -> fprintf fmt "@[Vernacentries.TyNil@]"
+| [] -> fprintf fmt "@[Vernacextend.TyNil@]"
 | ExtTerminal s :: rem ->
-  fprintf fmt "@[Vernacentries.TyTerminal (\"%s\", %a)@]" s print_sig rem
+  fprintf fmt "@[Vernacextend.TyTerminal (\"%s\", %a)@]" s print_sig rem
 | ExtNonTerminal (symb, _) :: rem ->
-  fprintf fmt "@[Vernacentries.TyNonTerminal (%a, %a)@]"
+  fprintf fmt "@[Vernacextend.TyNonTerminal (%a, %a)@]"
     print_symbol symb print_sig rem
 
 let print_rule fmt r =
-  fprintf fmt "Vernacentries.TyML (%b, %a, %a, %a)"
+  fprintf fmt "Vernacextend.TyML (%b, %a, %a, %a)"
     r.vernac_depr print_sig r.vernac_toks print_body r print_rule_classifier r
 
 let print_rules fmt rules =
@@ -386,7 +386,7 @@ let print_entry fmt = function
 
 let print_ast fmt ext =
   let pr fmt () =
-    fprintf fmt "Vernacentries.vernac_extend ~command:\"%s\" %a ?entry:%a %a"
+    fprintf fmt "Vernacextend.vernac_extend ~command:\"%s\" %a ?entry:%a %a"
       ext.vernacext_name print_classifier ext.vernacext_class
       print_entry ext.vernacext_entry print_rules ext.vernacext_rules
   in
@@ -481,8 +481,8 @@ let print_rules fmt (name, rules) =
         factorization of parsing rules. It allows to recognize rules of the
         form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
         reuse the same entry directly. *)
-    fprintf fmt "@[Vernacentries.Arg_alias (%s)@]" e
-  | _ -> fprintf fmt "@[Vernacentries.Arg_rules (%a)@]" pr rules
+    fprintf fmt "@[Vernacextend.Arg_alias (%s)@]" e
+  | _ -> fprintf fmt "@[Vernacextend.Arg_rules (%a)@]" pr rules
 
 let print_printer fmt = function
 | None -> fprintf fmt "@[fun _ -> Pp.str \"missing printer\"@]"
@@ -491,9 +491,9 @@ let print_printer fmt = function
 let print_ast fmt arg =
   let name = arg.vernacargext_name in
   let pr fmt () =
-    fprintf fmt "Vernacentries.vernac_argument_extend ~name:%a @[{@\n\
-      Vernacentries.arg_parsing = %a;@\n\
-      Vernacentries.arg_printer = %a;@\n}@]"
+    fprintf fmt "Vernacextend.vernac_argument_extend ~name:%a @[{@\n\
+      Vernacextend.arg_parsing = %a;@\n\
+      Vernacextend.arg_printer = %a;@\n}@]"
       print_string name print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in

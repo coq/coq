@@ -25,24 +25,24 @@ type rule = {
 }
 
 let rec mlexpr_of_clause = function
-| [] -> <:expr< Vernacentries.TyNil >>
-| ExtTerminal s :: cl -> <:expr< Vernacentries.TyTerminal ($str:s$, $mlexpr_of_clause cl$) >>
+| [] -> <:expr< Vernacextend.TyNil >>
+| ExtTerminal s :: cl -> <:expr< Vernacextend.TyTerminal ($str:s$, $mlexpr_of_clause cl$) >>
 | ExtNonTerminal (g, id) :: cl ->
-  <:expr< Vernacentries.TyNonTerminal ($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
+  <:expr< Vernacextend.TyNonTerminal ($mlexpr_of_symbol g$, $mlexpr_of_clause cl$) >>
 
 let make_rule r =
   let ty = mlexpr_of_clause r.r_patt in
   let cmd = binders_of_tokens r.r_branch r.r_patt in
   let make_classifier c = binders_of_tokens c r.r_patt in
   let classif = mlexpr_of_option make_classifier r.r_class in
-  <:expr< Vernacentries.TyML ($mlexpr_of_bool r.r_depr$, $ty$, $cmd$, $classif$) >>
+  <:expr< Vernacextend.TyML ($mlexpr_of_bool r.r_depr$, $ty$, $cmd$, $classif$) >>
 
 let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
   let c = mlexpr_of_option (fun x -> x) c in
   let rules = mlexpr_of_list make_rule cl in
   declare_str_items loc
-  [ <:str_item< Vernacentries.vernac_extend ?{ classifier = $c$ } ~{ command = $se$ } ?{ entry = $nt$ } $rules$ >> ]
+  [ <:str_item< Vernacextend.vernac_extend ?{ classifier = $c$ } ~{ command = $se$ } ?{ entry = $nt$ } $rules$ >> ]
 
 open Pcaml
 

@@ -700,7 +700,7 @@ type ('b, 'c) argument_interp =
   (Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
 
 type ('a, 'b, 'c) tactic_argument = {
-  arg_parsing : 'a Vernacentries.argument_rule;
+  arg_parsing : 'a Vernacextend.argument_rule;
   arg_tag : 'c Val.tag option;
   arg_intern : ('a, 'b) argument_intern;
   arg_subst : 'b argument_subst;
@@ -751,10 +751,10 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
   in
   let () = register_interp0 wit (interp_fun name arg tag) in
   let entry = match arg.arg_parsing with
-  | Vernacentries.Arg_alias e ->
+  | Vernacextend.Arg_alias e ->
     let () = Pcoq.register_grammar wit e in
     e
-  | Vernacentries.Arg_rules rules ->
+  | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
     let () = Pcoq.grammar_extend e None (None, [(None, None, rules)]) in
     e

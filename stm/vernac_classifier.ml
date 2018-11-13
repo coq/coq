@@ -189,7 +189,7 @@ let classify_vernac e =
     | VernacWriteState _ -> VtSideff [], VtNow
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
-        try Vernacentries.get_vernac_classifier s l
+        try Vernacextend.get_vernac_classifier s l
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
   let rec static_control_classifier = function

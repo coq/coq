@@ -509,41 +509,23 @@ VERNAC COMMAND EXTEND PrintConstr
 END
 *)
 
-open Genarg
-open Stdarg
-open Egramml
+let _ =
+  let open Vernacextend in
+  let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
+  let cmd_sig = TyTerminal("PrintConstr", TyNonTerminal(ty_constr, TyNil)) in
+  let cmd_fn c ~atts ~st = in_current_context econstr_display c; st in
+  let cmd_class _ = Vernacexpr.(VtQuery,VtNow) in
+  let cmd : ty_ml = TyML (false, cmd_sig, cmd_fn, Some cmd_class) in
+  Vernacextend.vernac_extend ~command:"PrintConstr" [cmd]
 
 let _ =
-  try
-    Vernacinterp.vinterp_add false ("PrintConstr", 0)
-      (function
-         [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
-           let c = out_gen (rawwit wit_constr) c in
-           (fun ~atts ~st -> in_current_context econstr_display c; st)
-       | _ -> failwith "Vernac extension: cannot occur")
-  with
-    e -> pp (CErrors.print e)
-let _ =
-  extend_vernac_command_grammar ("PrintConstr", 0) None
-    [GramTerminal "PrintConstr";
-      GramNonTerminal
-        (Loc.tag (rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr))]
-
-let _ =
-  try
-    Vernacinterp.vinterp_add false ("PrintPureConstr", 0)
-      (function
-         [c] when genarg_tag c = unquote (topwit wit_constr) && true ->
-           let c = out_gen (rawwit wit_constr) c in
-           (fun ~atts ~st -> in_current_context print_pure_econstr c; st)
-       | _ -> failwith "Vernac extension: cannot occur")
-  with
-    e -> pp (CErrors.print e)
-let _ =
-  extend_vernac_command_grammar ("PrintPureConstr", 0) None
-    [GramTerminal "PrintPureConstr";
-      GramNonTerminal
-        (Loc.tag (rawwit wit_constr,Extend.Aentry Pcoq.Constr.constr))]
+  let open Vernacextend in
+  let ty_constr = Extend.TUentry (get_arg_tag Stdarg.wit_constr) in
+  let cmd_sig = TyTerminal("PrintPureConstr", TyNonTerminal(ty_constr, TyNil)) in
+  let cmd_fn c ~atts ~st = in_current_context print_pure_econstr c; st in
+  let cmd_class _ = Vernacexpr.(VtQuery,VtNow) in
+  let cmd : ty_ml = TyML (false, cmd_sig, cmd_fn, Some cmd_class) in
+  Vernacextend.vernac_extend ~command:"PrintPureConstr" [cmd]
 
 (* Setting printer of unbound global reference *)
 open Names

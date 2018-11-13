@@ -1,8 +1,7 @@
 (library
- (name grammar)
+ (name grammar5)
  (synopsis "Coq Camlp5 Grammar Extensions for Plugins")
  (public_name coq.grammar)
- (wrapped false)
  (flags (:standard -w -58))
  (libraries camlp5))
 
@@ -14,7 +13,7 @@
 
 (rule
  (targets coqp5)
- (action (run mkcamlp5.opt pa_o.cmx pa_op.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_macro.cmx pr_o.cmx %{dep:grammar.cmxa} -o coqp5)))
+ (action (run mkcamlp5.opt pa_o.cmx pa_op.cmx pr_dump.cmx pa_extend.cmx q_MLast.cmx pa_macro.cmx pr_o.cmx %{dep:grammar5.cmxa} -o coqp5)))
 
 (install
  (section bin)
