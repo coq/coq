@@ -70,6 +70,13 @@
 : "${HoTT_CI_ARCHIVEURL:=${HoTT_CI_GITURL}/archive}"
 
 ########################################################################
+# CoqHammer
+########################################################################
+: "${coqhammer_CI_REF:=master}"
+: "${coqhammer_CI_GITURL:=https://github.com/lukaszcz/coqhammer}"
+: "${coqhammer_CI_ARCHIVEURL:=${coqhammer_CI_GITURL}/archive}"
+
+########################################################################
 # Ltac2
 ########################################################################
 : "${ltac2_CI_REF:=master}"

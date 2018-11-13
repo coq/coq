@@ -414,6 +414,9 @@ ci-formal-topology:
 ci-geocoq:
   <<: *ci-template-flambda
 
+ci-coqhammer:
+  <<: *ci-template
+
 ci-hott:
   <<: *ci-template
 

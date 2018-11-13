@@ -29,6 +29,7 @@ CI_TARGETS= \
     ci-flocq \
     ci-formal-topology \
     ci-geocoq \
+    ci-coqhammer \
     ci-hott \
     ci-iris-lambda-rust \
     ci-ltac2 \
