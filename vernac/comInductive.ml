@@ -535,11 +535,11 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
+  Declare.declare_univ_binders (IndRef (mind,0)) pl;
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
               let gr = IndRef ind in
               maybe_declare_manual_implicits false gr indimpls;
-              Declare.declare_univ_binders gr pl;
               List.iteri
                 (fun j impls ->
                  maybe_declare_manual_implicits false

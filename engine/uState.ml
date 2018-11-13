@@ -148,7 +148,25 @@ let of_binders b =
   in
   { ctx with uctx_names = b, rmap }
 
-let universe_binders ctx = fst ctx.uctx_names
+let invent_name (named,cnt) u =
+  let rec aux i =
+    let na = Id.of_string ("u"^(string_of_int i)) in
+    if Id.Map.mem na named then aux (i+1)
+    else Id.Map.add na u named, i+1
+  in
+  aux cnt
+
+let universe_binders ctx =
+  let open Univ in
+  let named, rev = ctx.uctx_names in
+  let named, _ = LSet.fold (fun u named ->
+      match LMap.find u rev with
+      | exception Not_found -> (* not sure if possible *) invent_name named u
+      | { uname = None } -> invent_name named u
+      | { uname = Some _ } -> named)
+      (ContextSet.levels ctx.uctx_local) (named, 0)
+  in
+  named
 
 let instantiate_variable l b v =
   try v := Univ.LMap.set l (Some b) !v
