@@ -141,7 +141,7 @@ let init () =
 \n    <separator />\
 \n    <menuitem action='Coqtop arguments' />\
 \n    <separator />\
-\n    <menuitem action='Latex-to-unicode' />\
+\n    <menuitem action='LaTeX-to-unicode' />\
 \n  </menu>\
 \n  <menu action='Compile'>\
 \n    <menuitem action='Compile buffer' />\

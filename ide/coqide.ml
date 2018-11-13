@@ -1165,7 +1165,7 @@ let build_ui () =
       ~callback:MiscMenu.uncomment;
     item "Coqtop arguments" ~label:"Coqtop _arguments"
       ~callback:MiscMenu.coqtop_arguments;
-    item "Latex-to-unicode" ~label:"_Latex-to-unicode" ~accel:"<Shift>space"
+    item "LaTeX-to-unicode" ~label:"_LaTeX-to-unicode" ~accel:"<Shift>space"
       ~callback:MiscMenu.apply_unicode_binding;
   ];
 
