@@ -119,7 +119,9 @@ let print_mutual_inductive env mind mib udecl =
     | BiFinite -> "Variant"
     | CoFinite -> "CoInductive"
   in
-  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind, 0)) udecl in
+  let bl = UnivNames.universe_binders_with_opt_names
+      (Declareops.inductive_polymorphic_context mib) udecl
+  in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
          Printer.pr_cumulative
@@ -157,7 +159,9 @@ let print_record env mind mib udecl =
   let cstrtype = hnf_prod_applist_assum env nparamdecls cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
-  let bl = UnivNames.universe_binders_with_opt_names (IndRef (mind,0)) udecl in
+  let bl = UnivNames.universe_binders_with_opt_names (Declareops.inductive_polymorphic_context mib)
+      udecl
+  in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let keyword =
     let open Declarations in
@@ -296,7 +300,7 @@ let print_body is_impl extent env mp (l,body) =
       (match extent with
          | OnlyNames -> mt ()
          | WithContents ->
-            let bl = UnivNames.universe_binders_with_opt_names (ConstRef (Constant.make2 mp l)) None in
+            let bl = UnivNames.universe_binders_with_opt_names ctx None in
             let sigma = Evd.from_ctx (UState.of_binders bl) in
 	    str " :" ++ spc () ++
             hov 0 (Printer.pr_ltype_env env sigma cb.const_type) ++

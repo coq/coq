@@ -894,17 +894,20 @@ let explain_not_match_error = function
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
   | IncompatibleConstraints { got; expect } ->
       let open Univ in
-    (** FIXME: provide a proper naming for the bound variables *)
     let pr_auctx auctx =
+      let sigma = Evd.from_ctx
+          (UState.of_binders
+             (UnivNames.universe_binders_with_opt_names auctx None))
+      in
       let uctx = AUContext.repr auctx in
-      Printer.pr_universe_instance_constraints Evd.empty
+      Printer.pr_universe_instance_constraints sigma
         (UContext.instance uctx)
         (UContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h 0 (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h 0 (pr_auctx expect) ++
     (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
-       spc() ++ str "(incompatible constraints)")
+       fnl() ++ str "(incompatible constraints)")
 
 let explain_signature_mismatch l spec why =
   str "Signature components for label " ++ Label.print l ++

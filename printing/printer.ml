@@ -250,7 +250,7 @@ let pr_universe_instance_constraints evd inst csts =
   let pcsts = if Constraint.is_empty csts then mt()
     else str " |= " ++
          prlist_with_sep (fun () -> str "," ++ spc())
-           (fun (u,d,v) -> prlev u ++ pr_constraint_type d ++ prlev v)
+           (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
            (Constraint.elements csts)
   in
   str"@{" ++ Instance.pr prlev inst ++ pcsts ++ str"}"

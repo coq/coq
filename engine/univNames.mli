@@ -29,5 +29,5 @@ type univ_name_list = Names.lname list
     of [ref] by [univs] (skipping Anonymous). May error if the lengths mismatch.
 
     Otherwise return the bound universe names registered for [ref]. *)
-val universe_binders_with_opt_names : Names.GlobRef.t ->
+val universe_binders_with_opt_names : AUContext.t ->
   univ_name_list option -> universe_binders
