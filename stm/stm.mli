@@ -39,13 +39,15 @@ module AsyncOpts : sig
 
 end
 
+type interactive_top = TopLogical of DirPath.t | TopPhysical of string
+
 (** The STM document type [stm_doc_type] determines some properties
    such as what uncompleted proofs are allowed and what gets recorded
    to aux files. *)
 type stm_doc_type =
   | VoDoc       of string       (* file path *)
   | VioDoc      of string       (* file path *)
-  | Interactive of DirPath.t    (* module path *)
+  | Interactive of interactive_top    (* module path *)
 
 (** Coq initalization options:
 

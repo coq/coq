@@ -308,11 +308,13 @@ end (* }}} *)
 (*************************** THE DOCUMENT *************************************)
 (******************************************************************************)
 
+type interactive_top = TopLogical of DirPath.t | TopPhysical of string
+
 (* The main document type associated to a VCS *)
 type stm_doc_type =
   | VoDoc       of string
   | VioDoc      of string
-  | Interactive of Names.DirPath.t
+  | Interactive of interactive_top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
 type doc = int
@@ -522,7 +524,7 @@ end = struct (* {{{ *)
   type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (Names.DirPath.make []))
+  let doc_type = ref (Interactive (TopLogical (Names.DirPath.make [])))
   let ldir = ref Names.DirPath.empty
 
   let init dt id =
@@ -2609,9 +2611,17 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   List.iter Mltop.add_coq_path iload_path;
 
   begin match doc_type with
-  | Interactive ln ->
-    Safe_typing.allow_delayed_constants := true;
-    Declaremods.start_library ln
+    | Interactive ln ->
+      let dp = match ln with
+        | TopLogical dp -> dp
+        | TopPhysical f ->
+          let base = try Loadpath.logical (Loadpath.find_load_path (Filename.dirname f))
+            with Not_found -> Libnames.default_root_prefix
+          in
+          Libnames.add_dirpath_suffix base (Id.of_string Filename.(chop_extension (basename f)))
+      in
+      Safe_typing.allow_delayed_constants := true;
+      Declaremods.start_library dp
 
   | VoDoc ln ->
     let ldir = Flags.verbosely Library.start_library ln in
