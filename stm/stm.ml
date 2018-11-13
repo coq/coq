@@ -2587,6 +2587,27 @@ let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
 
+let check_coq_overwriting p =
+  let l = DirPath.repr p in
+  let id, l = match l with id::l -> id,l | [] -> assert false in
+  let is_empty = match l with [] -> true | _ -> false in
+  if not !Flags.boot && not is_empty && Id.equal (CList.last l) Libnames.coq_root then
+    user_err
+      (str "Cannot build module " ++ DirPath.print p ++ str "." ++ spc () ++
+      str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
+
+let dirpath_of_file f =
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      Loadpath.logical lp
+    with Not_found -> Libnames.default_root_prefix
+  in
+  let file = Filename.chop_extension (Filename.basename f) in
+  let id = Id.of_string file in
+  let ldir = Libnames.add_dirpath_suffix ldir0 id in
+  ldir
+
 let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let load_objs libs =
@@ -2614,25 +2635,25 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
     | Interactive ln ->
       let dp = match ln with
         | TopLogical dp -> dp
-        | TopPhysical f ->
-          let base = try Loadpath.logical (Loadpath.find_load_path (Filename.dirname f))
-            with Not_found -> Libnames.default_root_prefix
-          in
-          Libnames.add_dirpath_suffix base (Id.of_string Filename.(chop_extension (basename f)))
+        | TopPhysical f -> dirpath_of_file f
       in
       Safe_typing.allow_delayed_constants := true;
       Declaremods.start_library dp
 
-  | VoDoc ln ->
-    let ldir = Flags.verbosely Library.start_library ln in
-    VCS.set_ldir ldir;
-    set_compilation_hints ln
+    | VoDoc f ->
+      let ldir = dirpath_of_file f in
+      check_coq_overwriting ldir;
+      let () = Flags.verbosely Declaremods.start_library ldir in
+      VCS.set_ldir ldir;
+      set_compilation_hints f
 
-  | VioDoc ln ->
-    Safe_typing.allow_delayed_constants := true;
-    let ldir = Flags.verbosely Library.start_library ln in
-    VCS.set_ldir ldir;
-    set_compilation_hints ln
+    | VioDoc f ->
+      Safe_typing.allow_delayed_constants := true;
+      let ldir = dirpath_of_file f in
+      check_coq_overwriting ldir;
+      let () = Flags.verbosely Declaremods.start_library ldir in
+      VCS.set_ldir ldir;
+      set_compilation_hints f
   end;
 
   (* Import initial libraries. *)
