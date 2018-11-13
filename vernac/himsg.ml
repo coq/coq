@@ -895,7 +895,7 @@ let explain_not_match_error = function
       str "compared to " ++ spc () ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t2)
   | IncompatibleConstraints cst ->
-    str " the expected (polymorphic) constraints do not imply " ++
+    str "the expected (polymorphic) constraints do not imply " ++
       let cst = Univ.UContext.constraints (Univ.AUContext.repr cst) in
       (** FIXME: provide a proper naming for the bound variables *)
       quote (Univ.pr_constraints (Termops.pr_evd_level Evd.empty) cst)
