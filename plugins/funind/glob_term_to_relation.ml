@@ -1302,7 +1302,7 @@ let rec rebuild_return_type rt =
 	CAst.make ?loc @@ Constrexpr.CLetIn(na,v,t,rebuild_return_type t')
     | _ -> CAst.make ?loc @@ Constrexpr.CProdN([Constrexpr.CLocalAssum ([CAst.make Anonymous],
                                        Constrexpr.Default Decl_kinds.Explicit, rt)],
-			    CAst.make @@ Constrexpr.CSort(GType []))
+                            CAst.make @@ Constrexpr.CSort(GType UUnknown))
 
 let do_build_inductive
       evd (funconstants: pconstant list) (funsargs: (Name.t * glob_constr * glob_constr option) list list)

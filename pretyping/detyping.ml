@@ -689,7 +689,7 @@ let hack_qualid_of_univ_level sigma l =
 let detype_universe sigma u =
   let fn (l, n) =
     let qid = hack_qualid_of_univ_level sigma l in
-    Some (qid, n)
+    (qid, n)
   in
   Univ.Universe.map fn u
 
@@ -700,8 +700,8 @@ let detype_sort sigma = function
   | Type u ->
     GType
       (if !print_universes
-       then detype_universe sigma u
-       else [])
+       then UNamed (detype_universe sigma u)
+       else UUnknown)
 
 type binder_kind = BProd | BLambda | BLetIn
 

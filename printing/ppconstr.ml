@@ -157,10 +157,8 @@ let tag_var = tag Tag.variable
 
   let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
-  let pr_univ_expr = function
-    | Some (x,n) ->
-       pr_qualid x ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
-    | None -> str"_"
+  let pr_univ_expr (qid,n) =
+    pr_qualid qid ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
   let pr_univ l =
     match l with
@@ -173,8 +171,9 @@ let tag_var = tag Tag.variable
     | GSProp -> tag_type (str "SProp")
     | GProp -> tag_type (str "Prop")
     | GSet -> tag_type (str "Set")
-    | GType [] -> tag_type (str "Type")
-    | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
+    | GType UUnknown -> tag_type (str "Type")
+    | GType UAnonymous -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
+    | GType (UNamed u) -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
   let pr_glob_level = let open Glob_term in function
     | GSProp -> tag_type (str "SProp")

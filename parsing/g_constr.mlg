@@ -156,7 +156,7 @@ GRAMMAR EXTEND Gram
     [ [ "Set"  -> { GSet }
       | "Prop" -> { GProp }
       | "SProp" -> { GSProp }
-      | "Type" -> { GType [] }
+      | "Type" -> { GType UUnknown }
       | "Type"; "@{"; u = universe; "}" -> { GType u }
       ] ]
   ;
@@ -168,14 +168,14 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   universe_expr:
-    [ [ id = global; "+"; n = natural -> { Some (id,n) }
-      | id = global -> { Some (id,0) }
-      | "_" -> { None }
-    ] ]
+    [ [ id = global; "+"; n = natural -> { (id,n) }
+      | id = global -> { (id,0) }
+      ] ]
   ;
   universe:
-    [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> { ids }
-      | u = universe_expr -> { [u] }
+    [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> { UNamed ids }
+      | u = universe_expr -> { UNamed [u] }
+      | "_" -> { UAnonymous }
       ] ]
   ;
   lconstr:

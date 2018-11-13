@@ -757,11 +757,9 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 (* mapping glob_constr to constr_expr                                    *)
 
 let extern_glob_sort = function
-  | GSProp -> GSProp
-  | GProp -> GProp
-  | GSet -> GSet
-  | GType _ as s when !print_universes -> s
-  | GType _ -> GType []
+  (* In case we print a glob_constr w/o having passed through detyping *)
+  | GType _ when not !print_universes -> GType UUnknown
+  | u -> u
 
 let extern_universes = function
   | Some _ as l when !print_universes -> l
@@ -1315,7 +1313,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort Sorts.InSProp -> GSort GSProp
   | PSort Sorts.InProp -> GSort GProp
   | PSort Sorts.InSet -> GSort GSet
-  | PSort Sorts.InType -> GSort (GType [])
+  | PSort Sorts.InType -> GSort (GType UUnknown)
   | PInt i -> GInt i
 
 let extern_constr_pattern env sigma pat =

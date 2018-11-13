@@ -30,15 +30,15 @@ type 'a glob_sort_gen =
   | GType of 'a (** representation of [Type] literal *)
 
 type 'a universe_kind =
-  | UAnonymous
-  | UUnknown
-  | UNamed of 'a
+  | UAnonymous (** a flexible universe (collapsable by minimization) *)
+  | UUnknown (** a rigid universe *)
+  | UNamed of 'a (** a named universe or a universe expression *)
 
-type level_info = Libnames.qualid universe_kind
+type level_info = Libnames.qualid universe_kind (** levels, occurring in universe instances *)
 type glob_level = level_info glob_sort_gen
 type glob_constraint = glob_level * Univ.constraint_type * glob_level
 
-type sort_info = (Libnames.qualid * int) option list
+type sort_info = (Libnames.qualid * int) list universe_kind (** sorts: Prop, Set, Type@{...} *)
 type glob_sort = sort_info glob_sort_gen
 
 type glob_recarg = int option

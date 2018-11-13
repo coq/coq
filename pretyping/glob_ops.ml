@@ -45,14 +45,19 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
+let univ_name_eq u1 u2 = match u1, u2 with
+  | UUnknown, UUnknown -> true
+  | UAnonymous, UAnonymous -> true
+  | UNamed l1, UNamed l2 ->
+    List.equal (fun (x,m) (y,n) -> Libnames.qualid_eq x y && Int.equal m n) l1 l2
+  | (UNamed _ | UAnonymous | UUnknown), _ -> false
 
-let glob_sort_eq g1 g2 = let open Glob_term in match g1, g2 with
-| GSProp, GSProp
-| GProp, GProp
-| GSet, GSet -> true
-| GType l1, GType l2 ->
-   List.equal (Option.equal (fun (x,m) (y,n) -> Libnames.qualid_eq x y && Int.equal m n)) l1 l2
-| (GSProp|GProp|GSet|GType _), _ -> false
+let glob_sort_eq g1 g2 = match g1, g2 with
+  | GSProp, GSProp
+  | GProp, GProp
+  | GSet, GSet -> true
+  | GType u1, GType u2 -> univ_name_eq u1 u2
+  | (GSProp|GProp|GSet|GType _), _ -> false
 
 let glob_sort_family = let open Sorts in function
 | GSProp -> InSProp

@@ -165,26 +165,27 @@ let interp_universe_level_name ~anon_rigidity evd qid =
       in evd, level
 
 let interp_universe ?loc evd = function
-  | [] -> let evd, l = new_univ_level_variable ?loc univ_rigid evd in
-	    evd, Univ.Universe.make l
-  | l ->
-    List.fold_left (fun (evd, u) l ->
+  | UUnknown ->
+    let evd, l = new_univ_level_variable ?loc univ_rigid evd in
+    evd, Univ.Universe.make l
+  | UAnonymous ->
+    let evd, l = new_univ_level_variable ?loc univ_flexible evd in
+    evd, Univ.Universe.make l
+  | UNamed l ->
+    List.fold_left (fun (evd, u) (l,n) ->
       let evd', u' =
-        match l with
-        | Some (l,n) ->
+        let evd',u' =
            (* [univ_flexible_alg] can produce algebraic universes in terms *)
            let anon_rigidity = univ_flexible in
            let evd', l = interp_universe_level_name ~anon_rigidity evd l in
-           let u' = Univ.Universe.make l in
-           (match n with
+           evd', Univ.Universe.make l
+        in
+        match n with
             | 0 -> evd', u'
             | 1 -> evd', Univ.Universe.super u'
-            | _ ->
+            | n ->
                user_err ?loc ~hdr:"interp_universe"
-                        (Pp.(str "Cannot interpret universe increment +" ++ int n)))
-        | None ->
-           let evd, l = new_univ_level_variable ?loc univ_flexible evd in
-           evd, Univ.Universe.make l
+                        (Pp.(str "Cannot interpret universe increment +" ++ int n))
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
 
