@@ -109,7 +109,7 @@ let parse_args () =
     | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"|"-color"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"
-      |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"
+      |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"|"-topfile"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
       |"-o"|"-profile-ltac-cutoff"|"-mangle-names"
       as o) :: rem ->

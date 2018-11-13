@@ -1,3 +1,18 @@
+Changes from 8.9+beta1 to 8.9+beta2
+===================================
+
+Coqide
+
+- CoqIDE now properly sets the module name for a given file based on
+  its path, see -topfile change entry for more details.
+
+Coqtop
+
+- new option -topfile filename, which will set the current module name
+  (à la -top) based on the filename passed, taking into account the
+  proper -R/-Q options. For example, given -R Foo foolib using
+  -topfile foolib/bar.v will set the module name to Foo.Bar.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 

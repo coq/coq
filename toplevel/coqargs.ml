@@ -51,7 +51,7 @@ type coq_cmdopts = {
   batch_mode : bool;
   compilation_mode : compilation_mode;
 
-  toplevel_name : Names.DirPath.t;
+  toplevel_name : Stm.interactive_top;
 
   compile_list: (string * bool) list;  (* bool is verbosity  *)
   compilation_output_name : string option;
@@ -88,6 +88,8 @@ type coq_cmdopts = {
 
 }
 
+let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
+
 let init_args = {
 
   load_init   = true;
@@ -101,7 +103,7 @@ let init_args = {
   batch_mode = false;
   compilation_mode = BuildVo;
 
-  toplevel_name = Names.(DirPath.make [Id.of_string "Top"]);
+  toplevel_name = Stm.TopLogical default_toplevel;
 
   compile_list = [];
   compilation_output_name = None;
@@ -486,7 +488,10 @@ let parse_args arglist : coq_cmdopts * string list =
       let topname = Libnames.dirpath_of_string (next ()) in
       if Names.DirPath.is_empty topname then
         CErrors.user_err Pp.(str "Need a non empty toplevel module name");
-      { oval with toplevel_name = topname }
+      { oval with toplevel_name = Stm.TopLogical topname }
+
+    |"-topfile" ->
+      { oval with toplevel_name = Stm.TopPhysical (next()) }
 
     |"-main-channel" ->
       Spawned.main_channel := get_host_port opt (next()); oval

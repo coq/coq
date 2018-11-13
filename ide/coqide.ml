@@ -89,20 +89,29 @@ let make_coqtop_args fname =
     | Ignore_args -> !sup_args
     | Append_args -> !sup_args
     | Subst_args -> [] in
-  if read_project#get = Ignore_args then "", base_args
-  else
-    match !custom_project_file, fname with
-    | Some (d,proj), _ -> d, coqtop_args_from_project proj @ base_args
-    | None, None -> "", base_args
-    | None, Some the_file ->
-       match
-         CoqProject_file.find_project_file
-           ~from:(Filename.dirname the_file)
-           ~projfile_name:project_file_name#get
-       with
-       | None -> "", base_args
-       | Some proj -> 
-           proj, coqtop_args_from_project (read_project_file proj) @ base_args
+  let proj, args =
+    if read_project#get = Ignore_args then "", base_args
+    else
+      match !custom_project_file, fname with
+      | Some (d,proj), _ -> d, coqtop_args_from_project proj @ base_args
+      | None, None -> "", base_args
+      | None, Some the_file ->
+        match
+          CoqProject_file.find_project_file
+            ~from:(Filename.dirname the_file)
+            ~projfile_name:project_file_name#get
+        with
+        | None -> "", base_args
+        | Some proj ->
+          proj, coqtop_args_from_project (read_project_file proj) @ base_args
+  in
+  let args = match fname with
+    | None -> args
+    | Some fname ->
+      if List.exists (CString.equal "-top") args then args
+      else "-topfile"::fname::args
+  in
+  proj, args
 ;;
 
 (** Setting drag & drop on widgets *)
