@@ -1724,6 +1724,30 @@ let () =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "guard checking";
+      optkey   = ["Guard"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
+      optwrite = (fun b -> Global.set_check_guarded b) }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "positivity/productivity checking";
+      optkey   = ["Positivity"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
+      optwrite = (fun b -> Global.set_check_positive b) }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "universes checking";
+      optkey   = ["Universes"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
+      optwrite = (fun b -> Global.set_check_universes b) }
+
 let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =

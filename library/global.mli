@@ -31,6 +31,9 @@ val named_context : unit -> Constr.named_context
 val set_engagement : Declarations.engagement -> unit
 val set_indices_matter : bool -> unit
 val set_typing_flags : Declarations.typing_flags -> unit
+val set_check_guarded : bool -> unit
+val set_check_positive : bool -> unit
+val set_check_universes : bool -> unit
 val typing_flags : unit -> Declarations.typing_flags
 val make_sprop_cumulative : unit -> unit
 val set_allow_sprop : bool -> unit
