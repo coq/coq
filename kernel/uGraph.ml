@@ -967,12 +967,11 @@ let pr_universes prl g =
 let dump_universes output g =
   let dump_arc u = function
     | Canonical {univ=u; ltle; _} ->
-        let u_str = Level.to_string u in
         UMap.iter (fun v strict ->
           let typ = if strict then Lt else Le in
-          output typ u_str (Level.to_string v)) ltle;
+          output typ u v) ltle;
     | Equiv v ->
-      output Eq (Level.to_string u) (Level.to_string v)
+      output Eq u v
   in
   UMap.iter dump_arc g.entries
 

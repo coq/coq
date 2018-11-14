@@ -319,7 +319,7 @@ let print_registered () =
   hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
 
 
-let dump_universes_gen g s =
+let dump_universes_gen prl g s =
   let output = open_out s in
   let output_constraint, close =
     if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
@@ -344,10 +344,12 @@ let dump_universes_gen g s =
           | Univ.Lt -> "<"
           | Univ.Le -> "<="
           | Univ.Eq -> "="
-        in Printf.fprintf output "%s %s %s ;\n" left kind right
+        in
+        Printf.fprintf output "%s %s %s ;\n" left kind right
       end, (fun () -> close_out output)
     end
   in
+  let output_constraint k l r = output_constraint k (prl l) (prl r) in
   try
     UGraph.dump_universes output_constraint g;
     close ();
@@ -381,9 +383,10 @@ let print_universes ?loc ~sort ~subgraph dst =
     if Global.is_joined_environment () then mt ()
     else str"There may remain asynchronous universe constraints"
   in
+  let prl = UnivNames.pr_with_global_universes in
   begin match dst with
-    | None -> UGraph.pr_universes UnivNames.pr_with_global_universes univ ++ pr_remaining
-    | Some s -> dump_universes_gen univ s
+    | None -> UGraph.pr_universes prl univ ++ pr_remaining
+    | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
   end
 
 (*********************)
