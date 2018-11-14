@@ -157,8 +157,14 @@ let tag_var = tag Tag.variable
 
   let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
-  let pr_univ_expr (qid,n) =
-    pr_qualid qid ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+  let pr_glob_sort_name = function
+    | GSProp -> str "SProp"
+    | GProp -> str "Prop"
+    | GSet -> str "Set"
+    | GType qid -> pr_qualid qid
+
+  let pr_univ_expr (u,n) =
+    pr_glob_sort_name u ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
   let pr_univ l =
     match l with
@@ -168,20 +174,20 @@ let tag_var = tag Tag.variable
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
   let pr_glob_sort = let open Glob_term in function
-    | GSProp -> tag_type (str "SProp")
-    | GProp -> tag_type (str "Prop")
-    | GSet -> tag_type (str "Set")
-    | GType UUnknown -> tag_type (str "Type")
-    | GType UAnonymous -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
-    | GType (UNamed u) -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
+    | UNamed [GSProp,0] -> tag_type (str "SProp")
+    | UNamed [GProp,0] -> tag_type (str "Prop")
+    | UNamed [GSet,0] -> tag_type (str "Set")
+    | UAnonymous {rigid=true} -> tag_type (str "Type")
+    | UAnonymous {rigid=false} -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
+    | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
   let pr_glob_level = let open Glob_term in function
-    | GSProp -> tag_type (str "SProp")
-    | GProp -> tag_type (str "Prop")
-    | GSet -> tag_type (str "Set")
-    | GType UUnknown -> tag_type (str "Type")
-    | GType UAnonymous -> tag_type (str "_")
-    | GType (UNamed u) -> tag_type (pr_qualid u)
+    | UNamed GSProp -> tag_type (str "SProp")
+    | UNamed GProp -> tag_type (str "Prop")
+    | UNamed GSet -> tag_type (str "Set")
+    | UAnonymous {rigid=true} -> tag_type (str "Type")
+    | UAnonymous {rigid=false} -> tag_type (str "_")
+    | UNamed (GType u) -> tag_type (pr_qualid u)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in
@@ -198,21 +204,8 @@ let tag_var = tag Tag.variable
   let pr_qualid = pr_qualid
   let pr_patvar = pr_id
 
-  let pr_glob_sort_instance = let open Glob_term in function
-    | GSProp ->
-      tag_type (str "SProp")
-    | GProp ->
-      tag_type (str "Prop")
-    | GSet ->
-      tag_type (str "Set")
-    | GType u ->
-      (match u with
-        | UNamed u -> pr_qualid u
-        | UAnonymous -> tag_type (str "Type")
-        | UUnknown -> tag_type (str "_"))
-
   let pr_universe_instance l =
-    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_sort_instance)) l
+    pr_opt_no_spc (pr_univ_annot (prlist_with_sep spc pr_glob_level)) l
 
   let pr_reference qid =
     if qualid_is_ident qid then tag_var (pr_id @@ qualid_basename qid)

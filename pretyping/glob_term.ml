@@ -23,23 +23,23 @@ type existential_name = Id.t
 
 (** Sorts *)
 
-type 'a glob_sort_gen =
+type glob_sort_name =
   | GSProp (** representation of [SProp] literal *)
-  | GProp (** representation of [Prop] literal *)
-  | GSet  (** representation of [Set] literal *)
-  | GType of 'a (** representation of [Type] literal *)
+  | GProp (** representation of [Prop] level *)
+  | GSet  (** representation of [Set] level *)
+  | GType of Libnames.qualid (** representation of a [Type] level *)
 
-type 'a universe_kind =
-  | UAnonymous (** a flexible universe (collapsable by minimization) *)
-  | UUnknown (** a rigid universe *)
-  | UNamed of 'a (** a named universe or a universe expression *)
+type 'a glob_sort_expr =
+  | UAnonymous of { rigid : bool } (** not rigid = unifiable by minimization *)
+  | UNamed of 'a
 
-type level_info = Libnames.qualid universe_kind (** levels, occurring in universe instances *)
-type glob_level = level_info glob_sort_gen
-type glob_constraint = glob_level * Univ.constraint_type * glob_level
+(** levels, occurring in universe instances *)
+type glob_level = glob_sort_name glob_sort_expr
 
-type sort_info = (Libnames.qualid * int) list universe_kind (** sorts: Prop, Set, Type@{...} *)
-type glob_sort = sort_info glob_sort_gen
+(** sort expressions *)
+type glob_sort = (glob_sort_name * int) list glob_sort_expr
+
+type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 
 type glob_recarg = int option
 

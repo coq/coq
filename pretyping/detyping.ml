@@ -688,20 +688,21 @@ let hack_qualid_of_univ_level sigma l =
 
 let detype_universe sigma u =
   let fn (l, n) =
-    let qid = hack_qualid_of_univ_level sigma l in
-    (qid, n)
-  in
+    let s =
+      if Univ.Level.is_prop l then GProp else
+      if Univ.Level.is_set l then GSet else
+      GType (hack_qualid_of_univ_level sigma l) in
+    (s, n) in
   Univ.Universe.map fn u
 
 let detype_sort sigma = function
-  | SProp -> GSProp
-  | Prop -> GProp
-  | Set -> GSet
+  | SProp -> UNamed [GSProp,0]
+  | Prop -> UNamed [GProp,0]
+  | Set -> UNamed [GSet,0]
   | Type u ->
-    GType
       (if !print_universes
        then UNamed (detype_universe sigma u)
-       else UUnknown)
+       else UAnonymous {rigid=true})
 
 type binder_kind = BProd | BLambda | BLetIn
 
@@ -710,7 +711,7 @@ type binder_kind = BProd | BLambda | BLetIn
 
 let detype_level sigma l =
   let l = hack_qualid_of_univ_level sigma l in
-  GType (UNamed l)
+  UNamed (GType l)
 
 let detype_instance sigma l = 
   let l = EInstance.kind sigma l in

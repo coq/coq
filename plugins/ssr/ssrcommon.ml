@@ -194,8 +194,8 @@ let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRVar id = DAst.make @@ GRef (VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, CastConv rt)
-let mkRType =  DAst.make @@ GSort (GType UUnknown)
-let mkRProp =  DAst.make @@ GSort (GProp)
+let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=true})
+let mkRProp =  DAst.make @@ GSort (UNamed [GProp,0])
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
 let mkRConstruct c = DAst.make @@ GRef (ConstructRef c,None)
 let mkRInd mind = DAst.make @@ GRef (IndRef mind,None)
@@ -871,8 +871,8 @@ open Constrexpr
 open Util
 
 (** Constructors for constr_expr *)
-let mkCProp loc = CAst.make ?loc @@ CSort GProp
-let mkCType loc = CAst.make ?loc @@ CSort (GType UUnknown)
+let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [GProp,0])
+let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=true})
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =
   if n <= 0 then [] else (CAst.make ?loc @@ CHole (None, Namegen.IntroAnonymous, None)) :: mkCHoles ?loc (n - 1)

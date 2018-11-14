@@ -33,6 +33,7 @@ val pr_id : Id.t -> Pp.t
 val pr_qualid : qualid -> Pp.t
 val pr_patvar : Pattern.patvar -> Pp.t
 
+val pr_glob_sort_name : Glob_term.glob_sort_name -> Pp.t
 val pr_glob_level : Glob_term.glob_level -> Pp.t
 val pr_glob_sort : Glob_term.glob_sort -> Pp.t
 val pr_guard_annot

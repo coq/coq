@@ -45,25 +45,27 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
-let univ_name_eq u1 u2 = match u1, u2 with
-  | UUnknown, UUnknown -> true
-  | UAnonymous, UAnonymous -> true
-  | UNamed l1, UNamed l2 ->
-    List.equal (fun (x,m) (y,n) -> Libnames.qualid_eq x y && Int.equal m n) l1 l2
-  | (UNamed _ | UAnonymous | UUnknown), _ -> false
-
-let glob_sort_eq g1 g2 = match g1, g2 with
+let glob_sort_name_eq g1 g2 = match g1, g2 with
   | GSProp, GSProp
   | GProp, GProp
   | GSet, GSet -> true
-  | GType u1, GType u2 -> univ_name_eq u1 u2
+  | GType u1, GType u2 -> Libnames.qualid_eq u1 u2
   | (GSProp|GProp|GSet|GType _), _ -> false
 
+exception ComplexSort
+
 let glob_sort_family = let open Sorts in function
-| GSProp -> InSProp
-| GProp -> InProp
-| GSet -> InSet
-| GType _ -> InType
+  | UAnonymous {rigid=true} -> InType
+  | UNamed [GSProp,0] -> InProp
+  | UNamed [GProp,0] -> InProp
+  | UNamed [GSet,0] -> InSet
+  | _ -> raise ComplexSort
+
+let glob_sort_eq u1 u2 = match u1, u2 with
+  | UAnonymous {rigid=r1}, UAnonymous {rigid=r2} -> r1 = r2
+  | UNamed l1, UNamed l2 ->
+    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
+  | (UNamed _ | UAnonymous _), _ -> false
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Decl_kinds.Explicit, Decl_kinds.Explicit -> true

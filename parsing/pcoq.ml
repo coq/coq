@@ -427,6 +427,7 @@ module Constr =
     let binder_constr = gec_constr "binder_constr"
     let ident = make_gen_entry uconstr "ident"
     let global = make_gen_entry uconstr "global"
+    let universe_name = make_gen_entry uconstr "universe_name"
     let universe_level = make_gen_entry uconstr "universe_level"
     let sort = make_gen_entry uconstr "sort"
     let sort_family = make_gen_entry uconstr "sort_family"

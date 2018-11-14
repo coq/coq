@@ -1190,7 +1190,11 @@ let rec match_ inner u alp metas sigma a1 a2 =
       Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
   | GCast(t1, c1), NCast(t2, c2) ->
     match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
-  | GSort (GType _), NSort (GType _) when not u -> sigma
+
+  (* Next pair of lines useful only if not coming from detyping *)
+  | GSort (UNamed [(GProp|GSet),0]), NSort (UAnonymous _) -> raise No_match
+  | GSort _, NSort (UAnonymous _) when not u -> sigma
+
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GInt i1, NInt i2 when Uint63.equal i1 i2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
