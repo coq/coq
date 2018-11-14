@@ -3,7 +3,6 @@ open Util
 open Names
 open Reduction
 open Typeops
-open Subtyping
 open Declarations
 open Environ
 
@@ -65,17 +64,17 @@ let rec check_module env mp mb =
     check_signature env mb.mod_type mb.mod_mp mb.mod_delta
   in
   let optsign = match mb.mod_expr with
-    |Struct sign -> Some (check_signature env sign mb.mod_mp mb.mod_delta)
+    |Struct sign -> Some (check_signature env sign mb.mod_mp mb.mod_delta, mb.mod_delta)
     |Algebraic me -> Some (check_mexpression env me mb.mod_mp mb.mod_delta)
     |Abstract|FullStruct -> None
   in
   match optsign with
   |None -> ()
-  |Some sign ->
-    let mtb1 = mk_mtb mp sign mb.mod_delta
+  |Some (sign,delta) ->
+    let mtb1 = mk_mtb mp sign delta
     and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
     let env = Modops.add_module_type mp mtb1 env in
-    let cu = check_subtypes env mtb1 mtb2 in
+    let cu = Subtyping.check_subtypes env mtb1 mtb2 in
     if not (Environ.check_constraints cu env) then
       CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
 
@@ -103,15 +102,17 @@ and check_structure_field env mp lab res = function
 and check_mexpr env mse mp_mse res = match mse with
   | MEident mp ->
       let mb = lookup_module mp env in
-      (Modops.strengthen_and_subst_mb mb mp_mse false).mod_type
+      let mb = Modops.strengthen_and_subst_mb mb mp_mse false in
+      mb.mod_type, mb.mod_delta
   | MEapply (f,mp) ->
-      let sign = check_mexpr env f mp_mse res in
+      let sign, delta = check_mexpr env f mp_mse res in
       let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
       let mtb = Modops.module_type_of_module (lookup_module mp env) in
-      let cu = check_subtypes env mtb farg_b in
+      let cu = Subtyping.check_subtypes env mtb farg_b in
       if not (Environ.check_constraints cu env) then
         CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
-      Modops.subst_signature (Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver) fbody_b
+      let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
+      Modops.subst_signature subst fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
 
@@ -119,8 +120,8 @@ and check_mexpression env sign mp_mse res = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
       let env' = Modops.add_module_type (MPbound arg_id) mtb env in
-      let body = check_mexpression env' body mp_mse res in
-      MoreFunctor(arg_id,mtb,body)
+      let body, delta = check_mexpression env' body mp_mse res in
+      MoreFunctor(arg_id,mtb,body), delta
   | NoFunctor me -> check_mexpr env me mp_mse res
 
 and check_signature env sign mp_mse res = match sign with
