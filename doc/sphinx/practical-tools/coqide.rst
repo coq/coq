@@ -307,6 +307,11 @@ Each of the file tokens provided may consists of one of:
  -  the token ``local``, which resolves to the `coqide.bindings` file
     stored in the user configuration directory.
 
+Remark: if a filename other than the first one includes a "~" to refer
+to the home directory, it won't be expanded properly. To work around that
+issue, one should not use comas but instead repeat the flag, in the form:
+``-unicode-bindings file1 .. -unicode-bindings fileN``.
+
 Remark: if two bindings for a same token both have the same priority value
 (or both have no priority value set), then the binding considered is the
 one from the file that comes first on the command line.

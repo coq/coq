@@ -47,6 +47,10 @@ end
 
 val list_tags : unit -> tag preference Util.String.Map.t
 
+val get_unicode_bindings_local_file : unit -> string option
+val get_unicode_bindings_default_file : unit -> string option
+
+
 val cmd_coqtop : string option preference
 val cmd_coqc : string preference
 val cmd_make : string preference
@@ -111,6 +115,3 @@ val stick : 'a preference ->
   (#GObj.widget as 'obj) -> ('a -> unit) -> unit
 
 val use_default_doc_url : string
-
-val get_unicode_bindings : unit -> (string * string * int option) list
-val load_unicode_bindings_files : string list -> unit

@@ -408,34 +408,6 @@ object (self)
     | _ -> ()
 
   method apply_unicode_binding () =
-    let bindings = Preferences.get_unicode_bindings() in
-    (** Auxiliary function to test whether [s] is a prefix of [str];
-        Note that there might be overlap with wg_Completion::is_substring *)
-    let string_is_prefix s str =
-      let n = String.length s in
-      let m = String.length str in
-      if m < n
-        then false
-        else (s = String.sub str 0 n)
-      in
-    (* Auxiliary function to perform the lookup for a binding *)
-    let lookup prefix = (* lookup : string -> string option *)
-      let max_priority = 100000000 in
-      let cur_word = ref None in
-      let cur_prio = ref (max_priority+1) in
-      let test_binding (key, word, prio_opt) =
-        let prio =
-          match prio_opt with
-          | None -> max_priority
-          | Some p -> p
-          in
-        if string_is_prefix prefix key && prio < !cur_prio then begin
-          cur_word := Some word;
-          cur_prio := prio;
-        end in
-      List.iter test_binding bindings;
-      !cur_word
-      in
     (** Auxiliary method to reach the beginning of line or the
         nearest space before the iterator. *)
     let rec get_line_start iter =
@@ -458,7 +430,7 @@ object (self)
           in
         let prefix = backslash#get_text ~stop:insert in
         let word =
-          match lookup prefix with
+          match Unicode_bindings.lookup prefix with
           | None -> raise Abort
           | Some word -> word
           in
@@ -466,6 +438,11 @@ object (self)
         if not was_deleted then raise Abort;
         word
       with Abort -> " "
+       (* Insert a space if no binding applies. This is to make sure that the user
+          gets some visual feedback that the keystroke was taken into account.
+          And also avoid slowing down users who press "Shift" for capitalizing the
+          first letter of a sentence just before typing the "Space" that comes in
+          front of that first letter. *)
       in
     let insert2 = buffer#get_iter_at_mark (`MARK insert_mark) in
     let _was_inserted = buffer#insert_interactive ~iter:insert2 word_to_insert in
