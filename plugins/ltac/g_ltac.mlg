@@ -367,8 +367,7 @@ GRAMMAR EXTEND Gram
 
 open Stdarg
 open Tacarg
-open Vernacexpr
-open Vernac_classifier
+open Vernacextend
 open Goptions
 open Libnames
 

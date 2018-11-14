@@ -8,7 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Vernacexpr
+(** The type of parsing attribute data *)
+type vernac_flags = vernac_flag list
+and vernac_flag = string * vernac_flag_value
+and vernac_flag_value =
+  | VernacFlagEmpty
+  | VernacFlagLeaf of string
+  | VernacFlagList of vernac_flags
 
 type +'a attribute
 (** The type of attributes. When parsing attributes if an ['a
@@ -80,7 +86,7 @@ val parse_with_extra : 'a attribute -> vernac_flags -> vernac_flags * 'a
 
 (** * Defining attributes. *)
 
-type 'a key_parser = 'a option -> Vernacexpr.vernac_flag_value -> 'a
+type 'a key_parser = 'a option -> vernac_flag_value -> 'a
 (** A parser for some key in an attribute. It is given a nonempty ['a
     option] when the attribute is multiply set for some command.
 

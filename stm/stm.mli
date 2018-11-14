@@ -258,7 +258,7 @@ type dynamic_block_error_recovery =
   doc -> static_block_declaration -> [ `ValidBlock of recovery_action | `Leaks ]
 
 val register_proof_block_delimiter :
-  Vernacexpr.proof_block_name ->
+  Vernacextend.proof_block_name ->
   static_block_detection ->
   dynamic_block_error_recovery ->
     unit

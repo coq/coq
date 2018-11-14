@@ -186,8 +186,8 @@ VERNAC COMMAND EXTEND Function
            Vernac_classifier.classify_vernac
              (Vernacexpr.(VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
          with
-         | Vernacexpr.VtSideff ids, _ when hard ->
-             Vernacexpr.(VtStartProof ("Classic", GuaranteesOpacity, ids), VtLater)
+         | Vernacextend.VtSideff ids, _ when hard ->
+             Vernacextend.(VtStartProof ("Classic", GuaranteesOpacity, ids), VtLater)
          | x -> x }
     -> { do_generate_principle false (List.map snd recsl) }
 END
@@ -225,7 +225,7 @@ let warning_error names e =
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
 | ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
-   => { Vernacexpr.VtSideff(List.map pi1 fas), Vernacexpr.VtLater }
+   => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
     {
       begin
@@ -261,7 +261,7 @@ END
 
 VERNAC COMMAND EXTEND NewFunctionalCase
 | ["Functional" "Case" fun_scheme_arg(fas) ]
-  => { Vernacexpr.VtSideff[pi1 fas], Vernacexpr.VtLater }
+  => { Vernacextend.(VtSideff[pi1 fas], VtLater) }
   -> { Functional_principles_types.build_case_scheme fas }
 END
 

@@ -9,7 +9,14 @@
 (************************************************************************)
 
 open CErrors
-open Vernacexpr
+
+(** The type of parsing attribute data *)
+type vernac_flags = vernac_flag list
+and vernac_flag = string * vernac_flag_value
+and vernac_flag_value =
+  | VernacFlagEmpty
+  | VernacFlagLeaf of string
+  | VernacFlagList of vernac_flags
 
 let unsupported_attributes = function
   | [] -> ()

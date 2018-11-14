@@ -86,7 +86,7 @@ END
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
     { let l = match l with None -> [] | Some l -> l in add_theory id t l }
-  | [ "Print" "Rings" ] => {Vernac_classifier.classify_as_query} -> {
+  | [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
       let sigma, env = Pfedit.get_current_context () in
@@ -130,7 +130,7 @@ END
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
   { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
-| [ "Print" "Fields" ] => {Vernac_classifier.classify_as_query} -> {
+| [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
       let sigma, env = Pfedit.get_current_context () in

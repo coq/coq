@@ -31,6 +31,7 @@ open Tactypes
 open Tactics
 open Proofview.Notations
 open Attributes
+open Vernacextend
 
 let wit_hyp = wit_var
 
@@ -315,7 +316,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
 
-let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
+let classify_hint _ = VtSideff [], VtLater
 
 }
 
@@ -398,7 +399,7 @@ END
 open Inv
 open Leminv
 
-let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
+let seff id = VtSideff [id], VtLater
 
 }
 
@@ -910,7 +911,7 @@ END
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
 | [ "Grab" "Existential" "Variables" ]
-  => { Vernac_classifier.classify_as_proofstep }
+  => { classify_as_proofstep }
   -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) }
 END
 
@@ -942,7 +943,7 @@ END
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
 | [ "Unshelve" ]
-  => { Vernac_classifier.classify_as_proofstep }
+  => { classify_as_proofstep }
   -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) }
 END
 
@@ -1094,9 +1095,9 @@ END
 
 
 VERNAC COMMAND EXTEND OptimizeProof
-| [ "Optimize" "Proof" ] => { Vernac_classifier.classify_as_proofstep } ->
+| [ "Optimize" "Proof" ] => { classify_as_proofstep } ->
   { Proof_global.compact_the_proof () }
-| [ "Optimize" "Heap" ] => { Vernac_classifier.classify_as_proofstep } ->
+| [ "Optimize" "Heap" ] => { classify_as_proofstep } ->
   { Gc.compact () }
 END
 

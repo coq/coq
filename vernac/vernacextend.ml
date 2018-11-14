@@ -12,7 +12,43 @@ open Util
 open Pp
 open CErrors
 
-type 'a vernac_command = 'a -> atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
+type vernac_type =
+  (* Start of a proof *)
+  | VtStartProof of vernac_start
+  (* Command altering the global state, bad for parallel
+     processing. *)
+  | VtSideff of vernac_sideff_type
+  (* End of a proof *)
+  | VtQed of vernac_qed_type
+  (* A proof step *)
+  | VtProofStep of {
+      parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
+      proof_block_detection : proof_block_name option
+    }
+  (* To be removed *)
+  | VtProofMode of string
+  (* Queries are commands assumed to be "pure", that is to say, they
+     don't modify the interpretation state. *)
+  | VtQuery
+  (* To be removed *)
+  | VtMeta
+  | VtUnknown
+and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
+and vernac_start = string * opacity_guarantee * Names.Id.t list
+and vernac_sideff_type = Names.Id.t list
+and opacity_guarantee =
+  | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
+  | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
+and solving_tac = bool (** a terminator *)
+and anon_abstracting_tac = bool (** abstracting anonymously its result *)
+and proof_block_name = string (** open type of delimiters *)
+
+type vernac_when =
+  | VtNow
+  | VtLater
+type vernac_classification = vernac_type * vernac_when
+
+type 'a vernac_command = 'a -> atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
 
 type plugin_args = Genarg.raw_generic_argument list
 
@@ -68,10 +104,23 @@ let call opn converted_args ~atts ~st =
 
 (** VERNAC EXTEND registering *)
 
-type classifier = Genarg.raw_generic_argument list -> Vernacexpr.vernac_classification
+type classifier = Genarg.raw_generic_argument list -> vernac_classification
+
+(** Classifiers  *)
+let classifiers : classifier array String.Map.t ref = ref String.Map.empty
+
+let get_vernac_classifier (name, i) args =
+  (String.Map.find name !classifiers).(i) args
+
+let declare_vernac_classifier name f =
+  classifiers := String.Map.add name f !classifiers
+
+let classify_as_query = VtQuery, VtLater
+let classify_as_sideeff = VtSideff [], VtLater
+let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater
 
 type (_, _) ty_sig =
-| TyNil : (atts:Vernacexpr.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, Vernacexpr.vernac_classification) ty_sig
+| TyNil : (atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal : ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig -> ('a -> 'r, 'a -> 's) ty_sig
 
@@ -124,23 +173,13 @@ let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s
 | TUentry a -> Aentry (Pcoq.genarg_grammar (Genarg.ExtraArg a))
 | TUentryl (a, i) -> Aentryl (Pcoq.genarg_grammar (Genarg.ExtraArg a), string_of_int i)
 
-let rec untype_grammar : type r s. (r, s) ty_sig -> Vernacexpr.vernac_expr Egramml.grammar_prod_item list = function
+let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item list = function
 | TyNil -> []
 | TyTerminal (tok, ty) -> Egramml.GramTerminal tok :: untype_grammar ty
 | TyNonTerminal (tu, ty) ->
   let t = Genarg.rawwit (Egramml.proj_symbol tu) in
   let symb = untype_user_symbol tu in
   Egramml.GramNonTerminal (Loc.tag (t, symb)) :: untype_grammar ty
-
-let _ = untype_classifier, untype_command, untype_grammar, untype_user_symbol
-
-let classifiers : classifier array String.Map.t ref = ref String.Map.empty
-
-let get_vernac_classifier (name, i) args =
-  (String.Map.find name !classifiers).(i) args
-
-let declare_vernac_classifier name f =
-  classifiers := String.Map.add name f !classifiers
 
 let vernac_extend ~command ?classifier ?entry ext =
   let get_classifier (TyML (_, ty, _, cl)) = match cl with

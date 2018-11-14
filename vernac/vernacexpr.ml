@@ -219,13 +219,6 @@ type section_subset_expr =
 
     {b ("ExtractionBlacklist", 0)} indicates {b Extraction Blacklist {i ident{_1}} ... {i ident{_n}}} command.
  *)
-type extend_name =
-  (** Name of the vernac entry where the tactic is defined, typically found
-      after the VERNAC EXTEND statement in the source. *)
-  string *
-  (** Index of the extension in the VERNAC EXTEND statement. Each parsing branch
-      is given an offset, starting from zero. *)
-  int
 
 (* This type allows registering the inlining of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
@@ -252,6 +245,14 @@ type vernac_argument_status = {
   notation_scope : string CAst.t option;
   implicit_status : vernac_implicit_status;
 }
+
+type extend_name =
+  (** Name of the vernac entry where the tactic is defined, typically found
+      after the VERNAC EXTEND statement in the source. *)
+  string *
+  (** Index of the extension in the VERNAC EXTEND statement. Each parsing branch
+      is given an offset, starting from zero. *)
+  int
 
 type nonrec vernac_expr =
 
@@ -395,71 +396,11 @@ type nonrec vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-type vernac_flags = vernac_flag list
-and vernac_flag = string * vernac_flag_value
-and vernac_flag_value =
-  | VernacFlagEmpty
-  | VernacFlagLeaf of string
-  | VernacFlagList of vernac_flags
-
 type vernac_control =
-  | VernacExpr of vernac_flags * vernac_expr
+  | VernacExpr of Attributes.vernac_flags * vernac_expr
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
   | VernacTime of bool * vernac_control CAst.t
   | VernacRedirect of string * vernac_control CAst.t
   | VernacTimeout of int * vernac_control
   | VernacFail of vernac_control
-
-(* A vernac classifier provides information about the exectuion of a
-   command:
-
-   - vernac_when: encodes if the vernac may alter the parser [thus
-     forcing immediate execution], or if indeed it is pure and parsing
-     can continue without its execution.
-
-   - vernac_type: if it is starts, ends, continues a proof or
-     alters the global state or is a control command like BackTo or is
-     a query like Check.
-
-   The classification works on the assumption that we have 3 states:
-   parsing, execution (global enviroment, etc...), and proof
-   state. For example, commands that only alter the proof state are
-   considered safe to delegate to a worker.
-
-*)
-type vernac_type =
-  (* Start of a proof *)
-  | VtStartProof of vernac_start
-  (* Command altering the global state, bad for parallel
-     processing. *)
-  | VtSideff of vernac_sideff_type
-  (* End of a proof *)
-  | VtQed of vernac_qed_type
-  (* A proof step *)
-  | VtProofStep of proof_step
-  (* To be removed *)
-  | VtProofMode of string
-  (* Queries are commands assumed to be "pure", that is to say, they
-     don't modify the interpretation state. *)
-  | VtQuery
-  (* To be removed *)
-  | VtMeta
-  | VtUnknown
-and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
-and vernac_start = string * opacity_guarantee * Id.t list
-and vernac_sideff_type = Id.t list
-and opacity_guarantee =
-  | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
-  | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
-and proof_step = { (* TODO: inline with OCaml 4.03 *)
-  parallel : [ `Yes of solving_tac * anon_abstracting_tac | `No ];
-  proof_block_detection : proof_block_name option
-}
-and solving_tac = bool (* a terminator *)
-and anon_abstracting_tac = bool (* abstracting anonymously its result *)
-and proof_block_name = string (* open type of delimiters *)
-type vernac_when =
-  | VtNow
-  | VtLater
-type vernac_classification = vernac_type * vernac_when
