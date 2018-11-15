@@ -354,14 +354,16 @@ let nf_open_term sigma0 ise c =
   let c' = nf c in let _ = Evd.fold copy_def sigma0 () in
   !s', Evd.evar_universe_context s, EConstr.of_constr c'
 
-let unif_end env sigma0 ise0 pt ok =
+let unif_end ?(solve_TC=true) env sigma0 ise0 pt ok =
   let ise = Evarconv.solve_unif_constraints_with_heuristics env ise0 in
   let tcs = Evd.get_typeclass_evars ise in
   let s, uc, t = nf_open_term sigma0 ise pt in
   let ise1 = create_evar_defs s in
   let ise1 = Evd.set_typeclass_evars ise1 (Evar.Set.filter (fun ev -> Evd.is_undefined ise1 ev) tcs) in
   let ise1 = Evd.set_universe_context ise1 uc in
-  let ise2 = Typeclasses.resolve_typeclasses ~fail:true env ise1 in
+  let ise2 =
+    if solve_TC then Typeclasses.resolve_typeclasses ~fail:true env ise1
+    else ise1 in
   if not (ok ise) then raise NoProgress else
   if ise2 == ise1 then (s, uc, t)
   else
@@ -370,7 +372,7 @@ let unif_end env sigma0 ise0 pt ok =
 
 let unify_HO env sigma0 t1 t2 =
   let sigma = unif_HO env sigma0 t1 t2 in
-  let sigma, uc, _ = unif_end env sigma0 sigma t2 (fun _ -> true) in
+  let sigma, uc, _ = unif_end ~solve_TC:false env sigma0 sigma t2 (fun _ -> true) in
   Evd.set_universe_context sigma uc
 
 let pf_unify_HO gl t1 t2 =
