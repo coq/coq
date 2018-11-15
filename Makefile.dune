@@ -3,7 +3,7 @@
 
 .PHONY: help voboot states world watch check          # Main developer targets
 .PHONY: coq coqide coqide-server                      # Package targets
-.PHONY: quickbyte quickopt                            # Partial / quick developer targets
+.PHONY: quickbyte quickopt quickide                   # Partial / quick developer targets
 .PHONY: refman-html stdlib-html apidoc                # Documentation targets
 .PHONY: test-suite release                            # Accesory targets
 .PHONY: ocheck trunk ireport clean                    # Maintenance targets
@@ -27,6 +27,7 @@ help:
 	@echo ""
 	@echo "  - quickbyte: build main ML files [coqtop + plugins + ide + printers] using the bytecode compiler"
 	@echo "  - quickopt:  build main ML files [coqtop + plugins + ide + printers] using the optimizing compiler"
+	@echo "  - quickide:  build main IDE files [client + server + prelude] using the optimizing compiler"
 	@echo ""
 	@echo "  - test-suite:  run Coq's test suite"
 	@echo "  - refman-html: build Coq's reference manual [HTML version]"
@@ -76,6 +77,11 @@ quickbyte: voboot
 
 quickopt: voboot
 	dune build $(DUNEOPT) $(QUICKOPT_TARGETS)
+
+quickide: states
+	dune build $(DUNEOPT) @topworkers
+	dune build $(DUNEOPT) coqide-server.install
+	dune build $(DUNEOPT) coqide.install
 
 test-suite: voboot
 	dune runtest --no-buffer $(DUNEOPT)

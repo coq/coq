@@ -36,3 +36,8 @@
  (modules :standard \ coqtop_byte_bin coqtop_bin coqc_bin)
  (libraries coq.toplevel)
  (link_flags -linkall))
+
+; Workers installed targets
+(alias
+ (name topworkers)
+ (deps %{bin:coqqueryworker.opt} %{bin:coqtacticworker.opt} %{bin:coqproofworker.opt}))
