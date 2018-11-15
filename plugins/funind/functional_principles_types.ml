@@ -320,10 +320,16 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
     (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
     (* 	end; *)
-    get_proof_clean true, CEphemeron.create hook
+
+      let open Proof_global in
+      let { id; entries; persistence } = fst @@ close_proof ~keep_body_ucst_separate:false (fun x -> x) in
+      match entries with
+      | [entry] ->
+        discard_current ();
+        (id,(entry,persistence)), CEphemeron.create hook
+      | _ ->
+        CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
   end
-
-
 
 let generate_functional_principle (evd: Evd.evar_map ref)
     interactive_proof

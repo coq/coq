@@ -45,15 +45,6 @@ val jmeq_refl : unit -> EConstr.constr
 val save : bool -> Id.t -> Safe_typing.private_constants Entries.definition_entry  -> Decl_kinds.goal_kind ->
   Lemmas.declaration_hook CEphemeron.key -> unit
 
-(* [get_proof_clean do_reduce] : returns the proof name, definition, kind and hook and
-   abort the proof
-*)
-val get_proof_clean : bool ->
-  Names.Id.t *
-    (Safe_typing.private_constants Entries.definition_entry * Decl_kinds.goal_kind)
-
-
-
 (* [with_full_print f a] applies [f] to [a] in full printing environment.
 
    This function preserves the print settings

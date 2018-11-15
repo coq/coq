@@ -147,17 +147,6 @@ let save with_clean id const (locality,_,kind) hook =
   CEphemeron.iter_opt hook (fun f -> Lemmas.call_hook fix_exn f l r);
   definition_message id
 
-
-
-let cook_proof _ =
-  let (id,(entry,_,strength)) = Pfedit.cook_proof () in
-  (id,(entry,strength))
-
-let get_proof_clean do_reduce =
-  let result = cook_proof do_reduce in
-  Proof_global.discard_current ();
-  result
-
 let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()

@@ -844,8 +844,7 @@ let obligation_terminator name num guard hook auto pf =
   let term = Lemmas.universe_proof_terminator guard hook in
   match pf with
   | Admitted _ -> apply_terminator term pf
-  | Proved (opq, id, proof) ->
-    let (_, (entry, uctx, _)) = Pfedit.cook_this_proof proof in
+  | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
     let env = Global.env () in
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
     let ty = entry.Entries.const_entry_type in
@@ -904,6 +903,9 @@ let obligation_terminator name num guard hook auto pf =
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
+  end
+  | Proved (_, _, _ ) ->
+    CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")
 
 let obligation_hook prg obl num auto ctx' _ gr =
   let obls, rem = prg.prg_obligations in
