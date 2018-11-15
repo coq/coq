@@ -60,14 +60,14 @@ type closed_proof = proof_object * proof_terminator
 val make_terminator : (proof_ending -> unit) -> proof_terminator
 val apply_terminator : proof_terminator -> proof_ending -> unit
 
-(** [start_proof id str pl goals terminator] starts a proof of name [id]
-    with goals [goals] (a list of pairs of environment and
-    conclusion); [str] describes what kind of theorem/definition this
-    is (spiwack: for potential printing, I believe is used only by
-    closing commands and the xml plugin); [terminator] is used at the
-    end of the proof to close the proof. The proof is started in the
-    evar map [sigma] (which can typically contain universe
-    constraints), and with universe bindings pl. *)
+(** [start_proof id str pl goals terminator] starts a proof of name
+   [id] with goals [goals] (a list of pairs of environment and
+   conclusion); [str] describes what kind of theorem/definition this
+   is; [terminator] is used at the end of the proof to close the proof
+   (e.g. to declare the built constructions as a coercion or a setoid
+   morphism). The proof is started in the evar map [sigma] (which can
+   typically contain universe constraints), and with universe bindings
+   pl. *)
 val start_proof :
   Evd.evar_map -> Names.Id.t -> ?pl:UState.universe_decl ->
   Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->

@@ -331,7 +331,7 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.LocalAssum (id, NamedDecl.get_type d) else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> standard_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
@@ -341,19 +341,21 @@ let start_proof id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  Pfedit.start_proof id ?pl kind sigma sign c ?init_tac terminator
+  let goals = [ Global.env_of_context sign , c ] in
+  Proof_global.start_proof sigma id ?pl kind goals terminator
 
-let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?init_tac ?(compute_guard=[]) hook =
+let start_proof_univs id ?pl kind sigma ?terminator ?sign c ?(compute_guard=[]) hook =
   let terminator = match terminator with
   | None -> universe_proof_terminator compute_guard hook
   | Some terminator -> terminator compute_guard hook
   in
-  let sign = 
+  let sign =
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  Pfedit.start_proof id ?pl kind sigma sign c ?init_tac terminator
+  let goals = [ Global.env_of_context sign , c ] in
+  Proof_global.start_proof sigma id ?pl kind goals terminator
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -404,7 +406,11 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  call_hook (fun exn -> exn) hook strength ref) thms_data in
-      start_proof_univs id ~pl:decl kind sigma t ?init_tac (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard
+      start_proof_univs id ~pl:decl kind sigma t (fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard;
+      ignore (Proof_global.with_current_proof (fun _ p ->
+          match init_tac with
+          | None -> p,(true,[])
+          | Some tac -> Proof.run_tactic Global.(env ()) tac p))
 
 let start_proof_com ?inference_hook kind thms hook =
   let env0 = Global.env () in
