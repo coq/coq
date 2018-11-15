@@ -94,8 +94,9 @@ let init_color opts =
       | Some "" -> false                              (* No color output *)
       | Some s -> Topfmt.parse_color_config s; true   (* Overwrite all colors *)
     end
-    else
-      false
+    else begin
+      Topfmt.default_styles (); false                 (** textual markers, no color *)
+    end
   in
   if Proof_diffs.show_diffs () && not term_color then
     (prerr_endline "Error: -diffs requires enabling -color"; exit 1);
