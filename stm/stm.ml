@@ -308,11 +308,13 @@ end (* }}} *)
 (*************************** THE DOCUMENT *************************************)
 (******************************************************************************)
 
+type interactive_top = TopLogical of DirPath.t | TopPhysical of string
+
 (* The main document type associated to a VCS *)
 type stm_doc_type =
   | VoDoc       of string
   | VioDoc      of string
-  | Interactive of Names.DirPath.t
+  | Interactive of interactive_top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
 type doc = int
@@ -522,7 +524,7 @@ end = struct (* {{{ *)
   type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (Names.DirPath.make []))
+  let doc_type = ref (Interactive (TopLogical (Names.DirPath.make [])))
   let ldir = ref Names.DirPath.empty
 
   let init dt id =
@@ -2585,6 +2587,27 @@ let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
 
+let check_coq_overwriting p =
+  let l = DirPath.repr p in
+  let id, l = match l with id::l -> id,l | [] -> assert false in
+  let is_empty = match l with [] -> true | _ -> false in
+  if not !Flags.boot && not is_empty && Id.equal (CList.last l) Libnames.coq_root then
+    user_err
+      (str "Cannot build module " ++ DirPath.print p ++ str "." ++ spc () ++
+      str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
+
+let dirpath_of_file f =
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      Loadpath.logical lp
+    with Not_found -> Libnames.default_root_prefix
+  in
+  let file = Filename.chop_extension (Filename.basename f) in
+  let id = Id.of_string file in
+  let ldir = Libnames.add_dirpath_suffix ldir0 id in
+  ldir
+
 let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let load_objs libs =
@@ -2609,20 +2632,28 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   List.iter Mltop.add_coq_path iload_path;
 
   begin match doc_type with
-  | Interactive ln ->
-    Safe_typing.allow_delayed_constants := true;
-    Declaremods.start_library ln
+    | Interactive ln ->
+      let dp = match ln with
+        | TopLogical dp -> dp
+        | TopPhysical f -> dirpath_of_file f
+      in
+      Safe_typing.allow_delayed_constants := true;
+      Declaremods.start_library dp
 
-  | VoDoc ln ->
-    let ldir = Flags.verbosely Library.start_library ln in
-    VCS.set_ldir ldir;
-    set_compilation_hints ln
+    | VoDoc f ->
+      let ldir = dirpath_of_file f in
+      check_coq_overwriting ldir;
+      let () = Flags.verbosely Declaremods.start_library ldir in
+      VCS.set_ldir ldir;
+      set_compilation_hints f
 
-  | VioDoc ln ->
-    Safe_typing.allow_delayed_constants := true;
-    let ldir = Flags.verbosely Library.start_library ln in
-    VCS.set_ldir ldir;
-    set_compilation_hints ln
+    | VioDoc f ->
+      Safe_typing.allow_delayed_constants := true;
+      let ldir = dirpath_of_file f in
+      check_coq_overwriting ldir;
+      let () = Flags.verbosely Declaremods.start_library ldir in
+      VCS.set_ldir ldir;
+      set_compilation_hints f
   end;
 
   (* Import initial libraries. *)

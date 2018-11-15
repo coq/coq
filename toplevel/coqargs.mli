@@ -11,6 +11,8 @@
 type compilation_mode = BuildVo | BuildVio | Vio2Vo
 type color = [`ON | `AUTO | `OFF]
 
+val default_toplevel : Names.DirPath.t
+
 type coq_cmdopts = {
 
   load_init   : bool;
@@ -26,7 +28,7 @@ type coq_cmdopts = {
   batch_mode : bool;
   compilation_mode : compilation_mode;
 
-  toplevel_name : Names.DirPath.t;
+  toplevel_name : Stm.interactive_top;
 
   compile_list: (string * bool) list;  (* bool is verbosity  *)
   compilation_output_name : string option;
