@@ -50,8 +50,6 @@ End folding.
 
 (* Check definition by tactics *)
 
-Set Automatic Introduction.
-
 Inductive even : nat -> Type :=
   | even_O : even 0
   | even_S : forall n, odd n -> even (S n)

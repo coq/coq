@@ -69,6 +69,9 @@ Vernacular commands
 
 - Removed the deprecated `Implicit Tactic` family of commands.
 
+- The `Automatic Introduction` option has been removed and is now the
+  default.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

@@ -188,8 +188,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
             ]
           in
           ignore (Pfedit.by init_refine)
-        else if Flags.is_auto_intros () then
-          ignore (Pfedit.by (Tactics.auto_intros_tac ids));
+        else ignore (Pfedit.by (Tactics.auto_intros_tac ids));
         (match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ()
 
 let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =

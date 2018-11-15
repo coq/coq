@@ -372,22 +372,17 @@ let start_proof_with_initialization kind sigma decl recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
-      let rec_tac = rec_tac_initializer finite guard thms snl in
-      Some (match init_tac with
-        | None -> 
-            if Flags.is_auto_intros () then 
-              Tacticals.New.tclTHENS rec_tac (List.map intro_tac thms)
-            else
-              rec_tac
+    let rec_tac = rec_tac_initializer finite guard thms snl in
+    Some (match init_tac with
+        | None ->
+          Tacticals.New.tclTHENS rec_tac (List.map intro_tac thms)
         | Some tacl ->
-            Tacticals.New.tclTHENS rec_tac
-            (if Flags.is_auto_intros () then
-              List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms
-            else
-              tacl)),guard
+          Tacticals.New.tclTHENS rec_tac
+            List.(map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms)
+      ),guard
   | None ->
-      let () = match thms with [_] -> () | _ -> assert false in
-      (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
+    let () = match thms with [_] -> () | _ -> assert false in
+    Some (intro_tac (List.hd thms)), [] in
   match thms with
   | [] -> anomaly (Pp.str "No proof to start.")
   | (id,(t,(_,imps)))::other_thms ->

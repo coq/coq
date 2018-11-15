@@ -53,8 +53,6 @@ Definition foo (X:Type) (xy : @total2 X (λ _, X)) : X.
   exact x.
 Defined.
 
-Unset Automatic Introduction.
-
 Definition idfun (T : UU) := λ t:T, t.
 
 Definition pathscomp0 {X : UU} {a b c : X} (e1 : a = b) (e2 : b = c) : a = c.

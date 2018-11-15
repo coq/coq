@@ -99,10 +99,6 @@ let verbosely f x = without_option quiet f x
 let if_silent f x = if !quiet then f x
 let if_verbose f x = if not !quiet then f x
 
-let auto_intros = ref true
-let make_auto_intros flag = auto_intros := flag
-let is_auto_intros () = !auto_intros
-
 let polymorphic_inductive_cumulativity = ref false
 let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
 let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity
