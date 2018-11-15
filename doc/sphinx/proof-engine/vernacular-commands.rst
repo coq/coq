@@ -1204,6 +1204,79 @@ Controlling the locality of commands
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
      category.
 
+.. _controlling-typing-flags:
+
+Controlling Typing Flags
+----------------------------
+
+.. flag:: Guard Checking
+
+   This option can be used to enable/disable the guard checking of
+   fixpoints. Warning: this can break the consistency of the system, use at your
+   own risk. Decreasing argument can still be specified: the decrease is not checked
+   anymore but it still affects the reduction of the term. Unchecked fixpoints are
+   printed by :cmd:`Print Assumptions`.
+
+.. flag:: Positivity Checking
+
+   This option can be used to enable/disable the positivity checking of inductive
+   types and the productivity checking of coinductive types. Warning: this can
+   break the consistency of the system, use at your own risk. Unchecked
+   (co)inductive types are printed by :cmd:`Print Assumptions`.
+
+.. flag:: Universes Checking
+
+   This option can be used to enable/disable the checking of universes, providing a
+   form of "type in type".  Warning: this breaks the consistency of the system, use
+   at your own risk.  Constants relying on "type in type" are printed by
+   :cmd:`Print Assumptions`. It has the same effect as `-type-in-type` command line
+   argument (see :ref:`command-line-options`).
+
+.. cmd:: Print Typing Flags
+
+   Print the status of the three typing flags: guard checking, positivity checking
+   and universe checking.
+
+.. example::
+
+   .. coqtop:: all reset
+
+        Unset Guard Checking.
+
+        Print Typing Flags.
+
+        Fixpoint f (n : nat) : False
+          := f n.
+
+        Fixpoint ackermann (m n : nat) {struct m} : nat :=
+          match m with
+          | 0 => S n
+          | S m =>
+            match n with
+            | 0 => ackermann m 1
+            | S n => ackermann m (ackermann (S m) n)
+            end
+          end.
+
+        Print Assumptions ackermann.
+
+   Note that the proper way to define the Ackermann function is to use
+   an inner fixpoint:
+
+   .. coqtop:: all reset
+
+        Fixpoint ack m :=
+          fix ackm n :=
+          match m with
+          | 0 => S n
+          | S m' =>
+            match n with
+            | 0 => ack m' 1
+            | S n' => ack m' (ackm n')
+            end
+          end.
+
+
 .. _internal-registration-commands:
 
 Internal registration commands
