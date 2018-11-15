@@ -37,6 +37,9 @@ Fail #[check_guarded] Definition e := fix e (n : nat) : nat := e n.
 Definition e := fix e (n : nat) : nat := e n.
 Set Guard Checking.
 
+#[assumed_positive] Inductive T :=
+y : (T -> T) -> T.
+
 Unset Positivity Checking.
 Inductive Cor :=
 | Over : Cor

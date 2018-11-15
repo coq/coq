@@ -776,7 +776,9 @@ Simple inductive types
 
       The types of the constructors have to satisfy a *positivity condition*
       (see Section :ref:`positivity`). This condition ensures the soundness of
-      the inductive definition.
+      the inductive definition. The positivity checking can be disable using
+      the command :cmd:`Unset Positivity Checking` or the attribute
+      ``assume_positive`` (see :ref:`gallina-attributes`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -1500,7 +1502,7 @@ the following attributes names are recognized:
     (see :ref:`programs`).
 
 ``global``, ``local``
-    Take no value, analogous to the ``Global`` and ``Local`` flags
+    Takes no value, analogous to the ``Global`` and ``Local`` flags
     (see :ref:`controlling-locality-of-commands`).
 
 ``deprecated``
@@ -1532,6 +1534,29 @@ the following attributes names are recognized:
         Proof.
           now foo.
         Abort.
+
+``check_guarded``, ``assume_guarded``
+    Takes no value. Enable/disable the guard checking of fixpoints during a
+    definition (see also :ref:`controlling-typing-flags`). Works with
+    :cmd:`Definition`, :cmd:`Fixpoint`, :cmd:`CoFixpoint`, :cmd:`Theorem`
+    (and its variants).
+
+``check_positive``, ``assume_positive``
+    Takes no value. Enable/disable the positivity checking for the declaration
+    of an inductive type or the productivity checking for a coinductive type
+    (see also :ref:`controlling-typing-flags`).
+
+``check_universes``, ``type_in_type``
+    Takes no value. Enable/disable the checking of universes during a definition
+    or the declaration of a (co)inductive type.
+    (see also :ref:`controlling-typing-flags`).
+
+.. example::
+
+   .. coqtop:: all reset
+
+        #[assume_guarded] Fixpoint f (n : nat) : False
+          := f n.
 
 .. [1]
    This is similar to the expression “*entry* :math:`\{` sep *entry*

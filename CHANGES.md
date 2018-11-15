@@ -55,6 +55,9 @@ Vernacular commands
 - Binders for an `Instance` now act more like binders for a `Theorem`.
   Names may not be repeated, and may not overlap with section variable names.
 
+- New commands and attributes to enable/disable guard checking, positivity checking
+  and universes checking (providing a local `-type-in-type`).
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

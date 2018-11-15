@@ -1202,6 +1202,66 @@ scope of their effect. There are four kinds of commands:
   occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
   category.
 
+
+.. _controlling-typing-flags:
+
+Controlling Typing Flags
+----------------------------
+
+.. cmd:: Set Guard Checking
+.. cmd:: Unset Guard Checking
+
+   Enable/Disable the guard checking of fixpoints. Warning: this can break the
+   consistency of the system, use at your own risk. Decreasing argument can
+   still be specified but the decrease is not checked anymore. Unchecked
+   fixpoint are printed by :cmd:`Print Assumptions`.
+
+.. cmd:: Set Positivity Checking
+.. cmd:: Unset Positivity Checking
+
+   Enable/Disable the positivity checking of inductive types and the productivity
+   checking of coinductive types. Warning: this can break the consistency of the
+   system, use at your own risk. Unchecked (co)inductive types are printed by
+   :cmd:`Print Assumptions`.
+
+.. cmd:: Set Universes Checking
+.. cmd:: Unset Universes Checking
+
+   Enable/Disable the checking of universes, providing a form of "type in type".
+   Warning: this breaks the consistency of the system, use at your own risk.
+   Constants relying on "type in type" are printed by :cmd:`Print Assumptions`.
+
+.. cmd:: Print Typing Flags
+
+   Print the status of the three typing flags: check of guard, check of positivity
+   and check of universes.
+
+.. example::
+
+   .. coqtop:: all reset
+
+        Unset Guard Checking.
+
+        Print Typing Flags.
+
+        Fixpoint f (n : nat) : False
+          := f n.
+
+        Fixpoint ackermann (m n : nat) {struct m} : nat :=
+          match m with
+          | 0 => S n
+          | S m =>
+            match n with
+            | 0 => ackermann m 1
+            | S n => ackermann m (ackermann (S m) n)
+            end
+          end.
+
+        Print Assumptions ackermann.
+
+   Note that the proper way to define the Ackermann function is to use
+   well-founded recursion (see :cmd:`Program Fixpoint`).
+
 .. _exposing-constants-to-ocaml-libraries:
 
 Exposing constants to OCaml libraries
