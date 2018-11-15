@@ -42,6 +42,8 @@ For the first one we provide explicit and short proof terms. *)
 
 (* Direct version *)
 
+Require Import Arith.
+
 Section ConstructiveIndefiniteGroundDescription_Direct.
 
 Variable P : nat -> Prop.
@@ -84,13 +86,37 @@ Definition constructive_indefinite_ground_description_nat :
   (exists n, P n) -> {n:nat | P n} :=
   fun e => linear_search O (let (n, p) := e in O_witness n (stop n p)).
 
+Fixpoint linear_search_smallest (start : nat) (pr : before_witness start) :
+  forall k : nat, start <= k < proj1_sig (linear_search start pr) -> ~P k.
+Proof.
+  (* Recursion on pr, which is the distance between start and linear_search *)
+  intros. destruct (P_dec start) eqn:Pstart.
+  - (* P start, k cannot exist *)
+    intros. assert (proj1_sig (linear_search start pr) = start).
+    { unfold linear_search. destruct pr; rewrite -> Pstart; reflexivity. }
+    rewrite -> H0 in H. destruct H. apply (le_lt_trans start k) in H1.
+    apply lt_irrefl in H1. contradiction. assumption.
+  - (* ~P start, step once in the search and use induction hypothesis *)
+    destruct pr. contradiction. destruct H. apply le_lt_or_eq in H. destruct H.
+    apply (linear_search_smallest (S start) pr). split. assumption.
+    simpl in H0. rewrite -> Pstart in H0. assumption. subst. assumption.
+Defined.
+
+Definition epsilon_smallest :
+  (exists n : nat, P n)
+  -> { n : nat | P n /\ forall k : nat, k < n -> ~P k }.
+Proof.
+  intros. pose (wit := (let (n, p) := H in O_witness n (stop n p))).
+  destruct (linear_search 0 wit) as [n pr] eqn:ls. exists n. split. assumption. intros.
+  apply (linear_search_smallest 0 wit). split. apply le_0_n.
+  rewrite -> ls. assumption.
+Qed.
+
 End ConstructiveIndefiniteGroundDescription_Direct.
 
 (************************************************************************)
 
 (* Version using the predicate [Acc] *)
-
-Require Import Arith.
 
 Section ConstructiveIndefiniteGroundDescription_Acc.
 
