@@ -73,6 +73,9 @@ let mk_deprecation ?(since=None) ?(note=None) () =
 
 type t = {
   locality : bool option;
+  (* check_guard : bool option; *)
+  (* check_positivity : bool option; *)
+  (* check_universes : bool option; *)
   polymorphic : bool;
   template : bool option;
   program : bool;
@@ -133,6 +136,12 @@ let program = program_opt >>= function
   | None -> return (Flags.is_program_mode())
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
+
+let check_guard = bool_attribute ~name:"Check Guard" ~on:"check_guarded" ~off:"assume_guarded"
+
+let check_positivity = bool_attribute ~name:"Check Positivity" ~on:"check_positive" ~off:"assume_positive"
+
+let check_universes = bool_attribute ~name:"Check Universes" ~on:"check_universes" ~off:"type_in_type"
 
 let warn_unqualified_univ_attr =
   CWarnings.create ~name:"unqualified-univ-attr" ~category:"deprecated"
@@ -205,6 +214,10 @@ let attributes_of_flags f =
     parse (locality ++ deprecation ++ universe_poly_template ++ program) f
   in
   { polymorphic; program; locality; template; deprecated }
+  (* let (((((locality, check_guard), check_positivity), check_universes), deprecated), (polymorphic, template)), program = *)
+  (*   parse (locality ++ check_guard ++ check_positivity ++ check_universes ++ deprecation ++ universe_poly_template ++ program) f *)
+  (* in *)
+  (* { locality; check_guard; check_positivity; check_universes; deprecated; polymorphic; template; program } *)
 
 let only_locality atts = parse locality atts
 

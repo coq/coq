@@ -13,6 +13,9 @@ open Decl_kinds
 
 type declaration_hook
 val mk_hook : (Decl_kinds.locality -> GlobRef.t -> unit) -> declaration_hook
+
+(** [compose_hook h1 h2] is [h1; h2]*)
+val compose_hook : declaration_hook -> declaration_hook -> declaration_hook
 val call_hook : Future.fix_exn -> declaration_hook -> Decl_kinds.locality -> GlobRef.t -> unit
 
 val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->

@@ -93,6 +93,9 @@ val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
 
 val engagement    : env -> engagement
 val typing_flags    : env -> typing_flags
+val update_check_guarded : typing_flags -> bool option -> typing_flags
+val update_check_positive : typing_flags -> bool option -> typing_flags
+val update_check_universes : typing_flags -> bool option -> typing_flags
 val is_impredicative_set : env -> bool
 val type_in_type : env -> bool
 val deactivated_guard : env -> bool

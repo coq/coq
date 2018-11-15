@@ -36,6 +36,8 @@ module NamedDecl = Context.Named.Declaration
 
 type declaration_hook = Decl_kinds.locality -> GlobRef.t -> unit
 let mk_hook hook = hook
+let compose_hook h1 h2 =
+  fun l r -> h1 l r; h2 l r
 let call_hook fix_exn hook l c =
   try hook l c
   with e when CErrors.noncritical e ->

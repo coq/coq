@@ -90,6 +90,16 @@ let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
 let set_engagement c = globalize0 (Safe_typing.set_engagement c)
 let set_typing_flags c = globalize0 (Safe_typing.set_typing_flags c)
 let typing_flags () = Environ.typing_flags (env ())
+let update_check_guarded = function
+  | Some b -> set_typing_flags {(typing_flags ()) with Declarations.check_guarded = b}
+  | None -> ()
+let update_check_positive = function
+  | Some b -> set_typing_flags {(typing_flags ()) with Declarations.check_positive = b}
+  | None -> ()
+let update_check_universes = function
+  | Some b -> set_typing_flags {(typing_flags ()) with Declarations.check_universes = b}
+  | None -> ()
+
 let export_private_constants ~in_section cd = globalize (Safe_typing.export_private_constants ~in_section cd)
 let add_constant ~in_section id d = globalize (Safe_typing.add_constant ~in_section (i2l id) d)
 let add_mind id mie = globalize (Safe_typing.add_mind (i2l id) mie)

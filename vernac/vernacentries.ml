@@ -480,7 +480,12 @@ let vernac_definition_hook p = function
 | _ -> no_hook
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
+  let atts, check_guard = parse_with_extra check_guard atts in
+  let atts, check_universes = parse_with_extra check_universes atts in
   let atts = attributes_of_flags atts in
+  let original_typing_flag = Environ.typing_flags (Global.env ()) in
+  Global.update_check_guarded check_guard;
+  Global.update_check_universes check_universes;
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
@@ -499,8 +504,9 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-      start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
-        [(CAst.make ?loc name, pl), (bl, t)] hook
+       let hook' = Lemmas.mk_hook (fun _ _ -> Global.set_typing_flags original_typing_flag) in
+       start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
+        [(CAst.make ?loc name, pl), (bl, t)]  (Lemmas.compose_hook hook hook')
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
           | None -> None
@@ -508,7 +514,8 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
       ComDefinition.do_definition ~program_mode name
-        (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+        (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook;
+      Global.set_typing_flags original_typing_flag)
 
 let vernac_start_proof ~atts kind l =
   let atts = attributes_of_flags atts in
@@ -599,7 +606,12 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
+  let atts, check_positivity = parse_with_extra check_positivity atts in
+  let atts, check_universes = parse_with_extra check_universes atts in
   let atts = attributes_of_flags atts in
+  let original_typing_flag = Environ.typing_flags (Global.env ()) in
+  Global.update_check_positive check_positivity;
+  Global.update_check_universes check_universes;
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -631,7 +643,8 @@ let vernac_inductive ~atts cum lo finite indl =
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
-    vernac_record ~template udecl cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]];
+    Global.set_typing_flags original_typing_flag
   else if List.for_all is_record indl then
     (** Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -654,7 +667,8 @@ let vernac_inductive ~atts cum lo finite indl =
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl cum kind atts.polymorphic finite recordl
+    vernac_record ~template udecl cum kind atts.polymorphic finite recordl;
+    Global.set_typing_flags original_typing_flag
   else if List.for_all is_constructor indl then
     (** Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -680,9 +694,11 @@ let vernac_inductive ~atts cum lo finite indl =
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative atts.polymorphic lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative atts.polymorphic lo ~uniform finite;
+    Global.set_typing_flags original_typing_flag
   else
-    user_err (str "Mixed record-inductive definitions are not allowed")
+    (Global.set_typing_flags original_typing_flag;
+     user_err (str "Mixed record-inductive definitions are not allowed"))
 (*
 
   match indl with
@@ -695,6 +711,8 @@ let vernac_inductive ~atts cum lo finite indl =
     *)
 
 let vernac_fixpoint ~atts discharge l =
+  let atts, check_guard = parse_with_extra check_guard atts in
+  let atts, check_universes = parse_with_extra check_universes atts in
   let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -703,11 +721,13 @@ let vernac_fixpoint ~atts discharge l =
   let do_fixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_fixpoint
     else
-      ComFixpoint.do_fixpoint
+      ComFixpoint.do_fixpoint ?check_guard ?check_universes
   in
   do_fixpoint local atts.polymorphic l
 
 let vernac_cofixpoint ~atts discharge l =
+  let atts, check_guard = parse_with_extra check_guard atts in
+  let atts, check_universes = parse_with_extra check_universes atts in
   let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -715,7 +735,7 @@ let vernac_cofixpoint ~atts discharge l =
   let do_cofixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_cofixpoint
     else
-      ComFixpoint.do_cofixpoint
+      ComFixpoint.do_cofixpoint ?check_guard ?check_universes
   in
   do_cofixpoint local atts.polymorphic l
 

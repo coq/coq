@@ -233,6 +233,13 @@ let set_oracle env o =
 let engagement env = env.env_stratification.env_engagement
 let typing_flags env = env.env_typing_flags
 
+let update_check_guarded flags opt =
+  Option.cata (fun b -> {flags with check_guarded = b}) flags opt
+let update_check_positive flags opt =
+  Option.cata (fun b -> {flags with check_positive = b}) flags opt
+let update_check_universes flags opt =
+  Option.cata (fun b -> {flags with check_universes = b}) flags opt
+
 let is_impredicative_set env = 
   match engagement env with
   | ImpredicativeSet -> true

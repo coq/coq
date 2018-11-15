@@ -45,6 +45,9 @@ val polymorphic : bool attribute
 val program : bool attribute
 val universe_poly_template : (bool * bool option) attribute
 val locality : bool option attribute
+val check_guard : bool option attribute
+val check_positivity : bool option attribute
+val check_universes : bool option attribute
 val deprecation : deprecation option attribute
 
 val program_opt : bool option attribute
@@ -52,6 +55,9 @@ val program_opt : bool option attribute
 
 type t = {
   locality : bool option;
+  (* check_guard : bool option; (\* None -> use global env typing flags ; Some -> override *\) *)
+  (* check_positivity : bool option; (\* None -> use global env typing flags ; Some -> override *\) *)
+  (* check_universes : bool option; (\* None -> use global env typing flags ; Some -> override *\) *)
   polymorphic : bool;
   template : bool option;
   program : bool;

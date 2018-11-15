@@ -32,6 +32,11 @@ val set_engagement : Declarations.engagement -> unit
 val set_typing_flags : Declarations.typing_flags -> unit
 val typing_flags : unit -> Declarations.typing_flags
 
+(** Changing some typing flags (does nothing if None) *)
+val update_check_guarded : bool option -> unit
+val update_check_positive : bool option -> unit
+val update_check_universes : bool option -> unit
+
 (** Variables, Local definitions, constants, inductive types *)
 
 val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set -> unit
