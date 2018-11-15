@@ -28,8 +28,8 @@ open Environ
     It also contains conversion constraints, debugging information and
     information about meta variables. *)
 
-type econstr
-type etypes = econstr
+type econstr = constr
+type etypes = types
 
 (** {5 Existential variables and unification states} *)
 

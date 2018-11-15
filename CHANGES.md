@@ -59,6 +59,8 @@ Tactics
   (e.g. `?[n]` or `?n` in terms - not in patterns) are now interpreted
   the same way as other variable names occurring in Ltac functions.
 
+- Aligned type interfaces of `Evd` with their definitions.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
