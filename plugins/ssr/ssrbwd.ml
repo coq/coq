@@ -104,8 +104,6 @@ let mkRAppView ist gl rv gv =
   let nb_view_imps = interp_view_nbimps ist gl rv in
   mkRApp rv (mkRHoles (abs nb_view_imps))
 
-let prof_apply_interp_with = mk_profiler "ssrapplytac.interp_with";;
-
 let refine_interp_apply_view dbl ist gl gv =
   let pair i = List.map (fun x -> i, x) in
   let rv = pf_intern_term ist gl gv in
@@ -113,7 +111,6 @@ let refine_interp_apply_view dbl ist gl gv =
   let interp_with (dbl, hint) =
     let i = if dbl = Ssrview.AdaptorDb.Equivalence then 2 else 1 in
     interp_refine ist gl (mkRApp hint (v :: mkRHoles i)) in
-  let interp_with x = prof_apply_interp_with.profile interp_with x in
   let rec loop = function
   | [] -> (try apply_rconstr ~ist rv gl with _ -> view_error "apply" gv)
   | h :: hs -> (try refine_with (snd (interp_with h)) gl with _ -> loop hs) in
