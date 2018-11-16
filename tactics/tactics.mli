@@ -12,7 +12,6 @@ open Names
 open Constr
 open EConstr
 open Environ
-open Proof_type
 open Evd
 open Clenv
 open Redexpr
@@ -50,8 +49,8 @@ val convert_leq     : constr -> constr -> unit Proofview.tactic
 (** {6 Introduction tactics. } *)
 
 val fresh_id_in_env : Id.Set.t -> Id.t -> env -> Id.t
-val fresh_id : Id.Set.t -> Id.t -> goal sigma -> Id.t
-val find_intro_names : rel_context -> goal sigma -> Id.t list
+val fresh_id : Id.Set.t -> Id.t -> Goal.goal sigma -> Id.t
+val find_intro_names : rel_context -> Goal.goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic

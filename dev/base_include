@@ -135,7 +135,6 @@ open Pfedit
 open Proof
 open Proof_using
 open Proof_global
-open Proof_type
 open Redexpr
 open Refiner
 open Tacmach

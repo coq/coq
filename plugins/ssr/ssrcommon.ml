@@ -1000,7 +1000,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) n t gl =
           | _ -> assert false
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env (pf_env gl) (project gl) t));
-    Tacmach.refine_no_check t gl
+    Refiner.refiner ~check:false EConstr.Unsafe.(to_constr t) gl
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc gl =
   let rec mkRels = function 1 -> [] | n -> mkRel n :: mkRels (n-1) in

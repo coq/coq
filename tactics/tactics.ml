@@ -142,7 +142,6 @@ let introduction id =
     | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
   end
 
-let refine          = Tacmach.refine
 let error msg = CErrors.user_err Pp.(str msg)
 
 let convert_concl ?(check=true) ty k =
@@ -1300,7 +1299,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   if not with_evars && occur_meta clenv.evd new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Proofview.V82.tactic (Tacmach.refine_no_check new_hyp_prf) in
+  let exact_tac = Proofview.V82.tactic (Refiner.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf)) in
   let naming = NamingMustBe (CAst.make targetid) in
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
@@ -1624,7 +1623,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
 	    | Some (p,pt) ->
 	      Tacticals.New.tclTHENS
 		(assert_before_gen false (NamingAvoid avoid) pt)
-		[Proofview.V82.tactic (refine p);
+                [Proofview.V82.tactic (refiner ~check:true EConstr.Unsafe.(to_constr p));
 		 (* Might be ill-typed due to forbidden elimination. *)
 		 Tacticals.New.onLastHypId (tac (not isrec))]
            end)))

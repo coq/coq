@@ -12,8 +12,9 @@ open Pp
 open CErrors
 open Util
 open Evd
-open Proof_type
 open Logic
+
+type tactic = Proofview.V82.tac
 
 module NamedDecl = Context.Named.Declaration
 
@@ -25,16 +26,16 @@ let project x = x.sigma
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = EConstr.named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
-let refiner pr goal_sigma =
-  let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in
+let refiner ~check pr goal_sigma =
+  let (sgl,sigma') = prim_refiner ~check pr goal_sigma.sigma goal_sigma.it in
   { it = sgl; sigma = sigma'; }
 
 (* Profiling refiner *)
-let refiner = 
+let refiner ~check =
   if Flags.profile then
     let refiner_key = CProfile.declare_profile "refiner" in
-      CProfile.profile2 refiner_key refiner
-  else refiner
+      CProfile.profile2 refiner_key (refiner ~check)
+  else refiner ~check
 
 (*********************)
 (*   Tacticals       *)
@@ -178,9 +179,9 @@ let tclPROGRESS tac ptree =
    NOTE: some tactics delete hypothesis and reuse names (induction,
    destruct), this is not detected by this tactical. *)
 let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
-    :Proof_type.goal list Evd.sigma =
+    : Goal.goal list Evd.sigma =
   let oldhyps = pf_hyps goal in
-  let rslt:Proof_type.goal list Evd.sigma = tac goal in
+  let rslt:Goal.goal list Evd.sigma = tac goal in
   let { it = gls; sigma = sigma; } = rslt in
   let hyps =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in

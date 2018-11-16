@@ -11,18 +11,18 @@
 (** Legacy proof engine. Do not use in newly written code. *)
 
 open Evd
-open Proof_type
 open EConstr
 
 (** The refiner (handles primitive rules and high-level tactics). *)
+type tactic = Proofview.V82.tac
 
 val sig_it  : 'a sigma -> 'a
 val project : 'a sigma -> evar_map
 
-val pf_env  : goal sigma -> Environ.env
-val pf_hyps : goal sigma -> named_context
+val pf_env  : Goal.goal sigma -> Environ.env
+val pf_hyps : Goal.goal sigma -> named_context
 
-val refiner : rule -> tactic
+val refiner : check:bool -> Constr.t -> tactic
 
 (** {6 Tacticals. } *)
 

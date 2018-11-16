@@ -17,9 +17,7 @@ open Evd
 open Typing
 open Redexpr
 open Tacred
-open Proof_type
 open Logic
-open Refiner
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -30,7 +28,7 @@ let re_sig it  gc = { it = it; sigma = gc; }
 (* Operations for handling terms under a local typing context *)
 (**************************************************************)
 
-type tactic     = Proof_type.tactic
+type tactic = Proofview.V82.tac
 
 let sig_it   = Refiner.sig_it
 let project  = Refiner.project
@@ -102,20 +100,6 @@ let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls          = pf_get_type_of gls %> pf_whd_all gls
-
-(********************************************)
-(* Definition of the most primitive tactics *)
-(********************************************)
-
-let refiner = refiner
-
-let refine_no_check c gl =
-  let c = EConstr.Unsafe.to_constr c in
-  refiner (Refine c) gl
-
-(* Versions with consistency checks *)
-
-let refine c           = with_check (refine_no_check c)
 
 (* Pretty-printers *)
 

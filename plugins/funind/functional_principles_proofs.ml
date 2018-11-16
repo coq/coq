@@ -131,8 +131,7 @@ let finish_proof dynamic_infos g =
     g
 
 
-let refine c =
-  Tacmach.refine c
+let refine c = Refiner.refiner ~check:true EConstr.Unsafe.(to_constr c)
 
 let thin l = Proofview.V82.of_tactic (Tactics.clear l)
 

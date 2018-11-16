@@ -16,7 +16,6 @@ open EConstr
 open Refiner
 open Logic
 open Reduction
-open Tacmach
 open Clenv
 
 (* This function put casts around metavariables whose type could not be
@@ -79,7 +78,7 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
   let clenv = { clenv with evd = evd' } in
   tclTHEN
     (tclEVARS (Evd.clear_metas evd'))
-    (refine_no_check (clenv_cast_meta clenv (clenv_value clenv))) gl
+    (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv)))) gl
   end
 
 let clenv_pose_dependent_evars ?(with_evars=false) clenv =
