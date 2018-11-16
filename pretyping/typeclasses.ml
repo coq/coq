@@ -434,28 +434,40 @@ let remove_instance i =
   Lib.add_anonymous_leaf (instance_input (RemoveInstance, i));
   remove_instance_hint i.is_impl
 
-let declare_instance info local glob =
+let warning_not_a_class =
+  let name = "not-a-class" in
+  let category = "typeclasses" in
+  CWarnings.create ~name ~category (fun (n, ty) ->
+      let env = Global.env () in
+      let evd = Evd.from_env env in
+      Pp.(str "Ignored instance declaration for “"
+          ++ Nametab.pr_global_env Id.Set.empty n
+          ++ str "”: “"
+          ++ Termops.Internal.print_constr_env env evd (EConstr.of_constr ty)
+          ++ str "” is not a class")
+    )
+
+let declare_instance ?(warn = false) info local glob =
   let ty, _ = Typeops.type_of_global_in_context (Global.env ()) glob in
   let info = Option.default {hint_priority = None; hint_pattern = None} info in
     match class_of_constr Evd.empty (EConstr.of_constr ty) with
     | Some (rels, ((tc,_), args) as _cl) ->
       assert (not (isVarRef glob) || local);
       add_instance (new_instance tc info (not local) glob)
-    | None -> ()
+    | None -> if warn then warning_not_a_class (glob, ty)
 
 let add_class cl =
   add_class cl;
   List.iter (fun (n, inst, body) ->
-	     match inst with
-	     | Some (Backward, info) ->
-	       (match body with
-	       | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-	       | Some b -> declare_instance (Some info) false (ConstRef b))
-	     | _ -> ())
-  cl.cl_projs
+      match inst with
+      | Some (Backward, info) ->
+        (match body with
+         | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
+         | Some b -> declare_instance ~warn:true (Some info) false (ConstRef b))
+      | _ -> ())
+    cl.cl_projs
 
 
-      
 (*
  * interface functions
  *)

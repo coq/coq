@@ -133,7 +133,10 @@ val remove_instance_hint : GlobRef.t -> unit
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
-val declare_instance : hint_info option -> bool -> GlobRef.t -> unit
+(** Declares the given global reference as an instance of its type.
+    Does nothing — or emit a “not-a-class” warning if the [warn] argument is set —
+    when said type is not a registered type class. *)
+val declare_instance : ?warn:bool -> hint_info option -> bool -> GlobRef.t -> unit
 
 
 (** Build the subinstances hints for a given typeclass object.
