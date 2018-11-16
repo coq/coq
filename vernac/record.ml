@@ -458,7 +458,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class finite def cum ubinders univs id idbuild paramimpls params arity
+let declare_class def cum ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -671,7 +671,7 @@ let definition_structure udecl kind ~template cum poly finite records =
     in
     let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
     let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-    declare_class finite def cum ubinders univs id.CAst.v idbuild
+    declare_class def cum ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
