@@ -187,14 +187,6 @@ summary.log:
 	$(SHOW) BUILDING SUMMARY FILE
 	$(HIDE)$(MAKE) --quiet summary > "$@"
 
-# if not on travis we can get the log files (they're just there for a
-# local build, and downloadable on GitLab)
-PRINT_LOGS?=
-TRAVIS?= # special because we want to print travis_fold directives
-ifdef APPVEYOR
-PRINT_LOGS:=APPVEYOR
-endif #APPVEYOR
-
 report: summary.log
 	$(HIDE)bash report.sh
 
