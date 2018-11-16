@@ -45,7 +45,7 @@ val find_projection_nparams : GlobRef.t -> int
 val find_projection : GlobRef.t -> struc_typ
 
 (** Sets up the mapping from constants to primitive projections *)
-val declare_primitive_projection : Projection.Repr.t -> unit
+val declare_primitive_projection : Projection.Repr.t -> Constant.t -> unit
 
 val is_primitive_projection : Constant.t -> bool
 

@@ -106,16 +106,16 @@ let find_projection = function
 let prim_table =
   Summary.ref (Cmap_env.empty : Projection.Repr.t Cmap_env.t) ~name:"record-prim-projs"
 
-let load_prim i (_,p) =
-  prim_table := Cmap_env.add (Projection.Repr.constant p) p !prim_table
+let load_prim i (_,(p,c)) =
+  prim_table := Cmap_env.add c p !prim_table
 
 let cache_prim p = load_prim 1 p
 
-let subst_prim (subst,p) = subst_proj_repr subst p
+let subst_prim (subst,(p,c)) = subst_proj_repr subst p, subst_constant subst c
 
-let discharge_prim (_,p) = Some (Lib.discharge_proj_repr p)
+let discharge_prim (_,(p,c)) = Some (Lib.discharge_proj_repr p, c)
 
-let inPrim : Projection.Repr.t -> obj =
+let inPrim : (Projection.Repr.t * Constant.t) -> obj =
   declare_object {
     (default_object "PRIMPROJS") with
     cache_function = cache_prim ;
@@ -124,7 +124,7 @@ let inPrim : Projection.Repr.t -> obj =
     classify_function = (fun x -> Substitute x);
     discharge_function = discharge_prim }
 
-let declare_primitive_projection p = Lib.add_anonymous_leaf (inPrim p)
+let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
 
 let is_primitive_projection c = Cmap_env.mem c !prim_table
 
