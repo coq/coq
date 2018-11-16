@@ -53,7 +53,6 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
     let flags = {
       Pretyping.use_typeclasses = true;
       Pretyping.solve_unification_constraints = true;
-      Pretyping.use_hook = None;
       Pretyping.fail_evar = false;
       Pretyping.expand_evars = true } in
     try Pretyping.understand_ltac flags

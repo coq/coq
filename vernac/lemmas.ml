@@ -418,8 +418,8 @@ let start_proof_com ?inference_hook kind thms hook =
     let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
     let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
     let flags = all_and_fail_flags in
-    let flags = { flags with use_hook = inference_hook } in
-    let evd = solve_remaining_evars flags env evd Evd.empty in
+    let hook = inference_hook in
+    let evd = solve_remaining_evars ?hook flags env evd Evd.empty in
     let ids = List.map RelDecl.get_name ctx in
     check_name_freshness (pi1 kind) id;
     (* XXX: The nf_evar is critical !! *)

@@ -2247,7 +2247,3 @@ expression as described in :ref:`ltac`.
 This construction is useful when one wants to define complicated terms
 using highly automated tactics without resorting to writing the proof-term
 by means of the interactive proof engine.
-
-This mechanism is comparable to the ``Declare Implicit Tactic`` command
-defined at :ref:`tactics-implicit-automation`, except that the used
-tactic is local to each hole instead of being declared globally.

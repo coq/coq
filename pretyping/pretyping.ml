@@ -193,7 +193,6 @@ type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
 type inference_flags = {
   use_typeclasses : bool;
   solve_unification_constraints : bool;
-  use_hook : inference_hook option;
   fail_evar : bool;
   expand_evars : bool
 }
@@ -247,14 +246,14 @@ let apply_typeclasses env sigma frozen fail_evar =
     else sigma in
   sigma
 
-let apply_inference_hook hook sigma frozen = match frozen with
+let apply_inference_hook hook env sigma frozen = match frozen with
 | FrozenId _ -> sigma
 | FrozenProgress (lazy (_, pending)) ->
   Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
       try
-        let sigma, c = hook sigma evk in
+        let sigma, c = hook env sigma evk in
         Evd.define evk c sigma
       with Exit ->
         sigma
@@ -307,16 +306,16 @@ let check_evars_are_solved env sigma frozen =
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
-let solve_remaining_evars flags env sigma init_sigma =
+let solve_remaining_evars ?hook flags env sigma init_sigma =
   let frozen = frozen_and_pending_holes (init_sigma, sigma) in
   let sigma =
     if flags.use_typeclasses
     then apply_typeclasses env sigma frozen false
     else sigma
   in
-  let sigma = if Option.has_some flags.use_hook
-    then apply_inference_hook (Option.get flags.use_hook env) sigma frozen
-    else sigma
+  let sigma = match hook with
+  | None -> sigma
+  | Some hook -> apply_inference_hook hook env sigma frozen
   in
   let sigma = if flags.solve_unification_constraints
     then apply_heuristics env sigma false
@@ -1075,14 +1074,12 @@ let ise_pretype_gen flags env sigma lvar kind c =
 let default_inference_flags fail = {
   use_typeclasses = true;
   solve_unification_constraints = true;
-  use_hook = None;
   fail_evar = fail;
   expand_evars = true }
 
 let no_classes_no_fail_inference_flags = {
   use_typeclasses = false;
   solve_unification_constraints = true;
-  use_hook = None;
   fail_evar = false;
   expand_evars = true }
 

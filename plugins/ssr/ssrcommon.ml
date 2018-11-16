@@ -242,7 +242,6 @@ let interp_refine ist gl rc =
   let flags = {
     Pretyping.use_typeclasses = true;
     solve_unification_constraints = true;
-    use_hook = None;
     fail_evar = false;
     expand_evars = true }
   in
