@@ -214,10 +214,13 @@ let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
                      Obligations.program_tcc_summary_tag
 
+type exec_state =
+  | ExecError of Exninfo.iexn
+  | ExecSuccess of Vernacstate.t
+
 type cached_state =
-  | Empty
-  | Error of Exninfo.iexn
-  | Valid of Vernacstate.t
+  | NotEvaluated
+  | Evaluated of exec_state
 
 type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
@@ -229,7 +232,7 @@ type 'vcs state_info = { (* TODO: Make this record private to VCS *)
   mutable vcs_backup : 'vcs option * backup option;
 }
 let default_info () =
-  { n_reached = 0; n_goals = 0; state = Empty; vcs_backup = None,None }
+  { n_reached = 0; n_goals = 0; state = NotEvaluated; vcs_backup = None,None }
 
 module DynBlockData : Dyn.S = Dyn.Make ()
 
@@ -366,8 +369,10 @@ module VCS : sig
   val get_info : id -> vcs state_info
   val reached : id -> unit
   val goals : id -> int -> unit
-  val set_state : id -> cached_state -> unit
-  val get_state : id -> cached_state
+
+  (* These functions are internal, use [State.set_state] and [State.get_state] *)
+  val cache_state : id -> exec_state -> unit
+  val get_cached_state : id -> cached_state
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : block_start:id -> block_stop:id -> vcs
@@ -423,11 +428,11 @@ end = struct (* {{{ *)
       | Qed { qast } -> Pp.string_of_ppcmds (pr_ast qast) in
     let is_green id =
       match get_info vcs id with
-      | Some { state = Valid _ } -> true
+      | Some { state = Evaluated (ExecSuccess _) } -> true
       | _ -> false in
     let is_red id =
       match get_info vcs id with
-      | Some { state = Error _ } -> true
+      | Some { state = Evaluated (ExecError _) } -> true
       | _ -> false in
     let head = current_branch vcs in
     let heads =
@@ -580,10 +585,10 @@ end = struct (* {{{ *)
     match get_info !vcs id with
     | Some x -> x
     | None -> raise Vcs_aux.Expired
-  let set_state id s =
-    (get_info id).state <- s;
+  let cache_state id s =
+    (get_info id).state <- Evaluated s;
     if async_proofs_is_master !cur_opt then Hooks.(call state_ready ~doc:dummy_doc (* XXX should be taken in input *) id)
-  let get_state id = (get_info id).state
+  let get_cached_state id = (get_info id).state
   let reached id =
     let info = get_info id in
     info.n_reached <- info.n_reached + 1
@@ -632,14 +637,15 @@ end = struct (* {{{ *)
                          " to "^Stateid.to_string block_stop^"."))
     in aux block_stop
 
+  (* [slice] copies a slice of the DAG, keeping only the last known valid state *)
   let slice ~block_start ~block_stop =
     let l = nodes_in_slice ~block_start ~block_stop in
     let copy_info v id =
       Vcs_.set_info v id
-        { (get_info id) with state = Empty; vcs_backup = None,None } in
+        { (get_info id) with state = NotEvaluated; vcs_backup = None,None } in
     let copy_info_w_state v id =
       Vcs_.set_info v id { (get_info id) with vcs_backup = None,None } in
-    let copy_proof_blockes v =
+    let copy_proof_blocks v =
       let nodes = Vcs_.Dag.all_nodes (Vcs_.dag v) in
       let props =
         Stateid.Set.fold (fun n pl -> Vcs_.property_of !vcs n @ pl) nodes [] in
@@ -656,17 +662,17 @@ end = struct (* {{{ *)
       let v = copy_info v id in
       v) l v in
     (* Stm should have reached the beginning of proof *)
-    assert (match (get_info block_start).state with Valid _ -> true | _ -> false);
+    assert (match (get_info block_start).state with Evaluated (ExecSuccess _) -> true | _ -> false);
     (* We put in the new dag the most recent state known to master *)
     let rec fill id =
       match (get_info id).state with
-      | Empty | Error _ -> fill (Vcs_aux.visit v id).next
-      | Valid _ -> copy_info_w_state v id in
+      | NotEvaluated | Evaluated (ExecError _) -> fill (Vcs_aux.visit v id).next
+      | Evaluated (ExecSuccess _) -> copy_info_w_state v id in
     let v = fill block_stop in
     (* We put in the new dag the first state (since Qed shall run on it,
      * see check_task_aux) *)
     let v = copy_info_w_state v block_start in
-    copy_proof_blockes v
+    copy_proof_blocks v
 
   let nodes_in_slice ~block_start ~block_stop =
     List.rev (List.map fst (nodes_in_slice ~block_start ~block_stop))
@@ -757,14 +763,6 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
-let state_of_id ~doc id =
-  try match (VCS.get_info id).state with
-    | Valid s -> `Valid (Some s)
-    | Error (e,_) -> `Error e
-    | Empty -> `Valid None
-  with VCS.Expired -> `Expired
-
-
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
 
@@ -781,14 +779,13 @@ module State : sig
 
   val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
 
-  val install_cached : Stateid.t -> unit
-  val is_cached : ?cache:Summary.marshallable -> Stateid.t -> bool
-  val is_cached_and_valid : ?cache:Summary.marshallable -> Stateid.t -> bool
+  val install_state : Stateid.t -> unit
+  val get_state : Stateid.t -> exec_state option
+  val get_success_state : Stateid.t -> Vernacstate.t option
 
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
   (* to send states across worker/master *)
-  val get_cached : Stateid.t -> Vernacstate.t
   val same_env : Vernacstate.t -> Vernacstate.t -> bool
 
   type proof_part
@@ -832,81 +829,75 @@ end = struct (* {{{ *)
     Summary.project_from_summary st Util.(pi2 summary_pstate),
     Summary.project_from_summary st Util.(pi3 summary_pstate)
 
-  let freeze marshallable id =
-    VCS.set_state id (Valid (Vernacstate.freeze_interp_state marshallable))
+  let cache_current_state ~marshallable id =
+    VCS.cache_state id (ExecSuccess (Vernacstate.freeze_interp_state marshallable))
 
-  let freeze_invalid id iexn = VCS.set_state id (Error iexn)
+  let cache_error_state id iexn = VCS.cache_state id (ExecError iexn)
 
-  let is_cached ?(cache=`No) id only_valid =
-    if Stateid.equal id !cur_id then
-      try match VCS.get_info id with
-        | { state = Empty } when cache = `Yes -> freeze `No id; true
-        | { state = Empty } when cache = `Shallow -> freeze `Shallow id; true
-        | _ -> true
-      with VCS.Expired -> false
-    else
-      try match VCS.get_info id with
-        | { state = Empty } -> false
-        | { state = Valid _ } -> true
-        | { state = Error _ } -> not only_valid
-      with VCS.Expired -> false
-
-  let is_cached_and_valid ?cache id = is_cached ?cache id true
-  let is_cached ?cache id = is_cached ?cache id false
-
-  let install_cached id =
-    match VCS.get_info id with
-    | { state = Valid s } ->
+  let install_state id =
+    (* if the state to install is the current one, nothing to do *)
+    if not (Stateid.equal id !cur_id) then begin
+    match VCS.get_cached_state id with
+    | NotEvaluated -> anomaly Pp.(str"Trying to install a state that is not in cache")
+    | Evaluated (ExecSuccess s) ->
        Vernacstate.unfreeze_interp_state s;
        cur_id := id
-
-    | { state = Error ie } ->
-       cur_id := id;
+    | Evaluated (ExecError ie) ->
+       cur_id := id; (* FIXME what is the semantics of cur_id w.r.t. error states? *)
        Exninfo.iraise ie
+    end
 
-    | _ ->
-        (* coqc has a 1 slot cache and only for valid states *)
-        if VCS.is_interactive () = `No && Stateid.equal id !cur_id then ()
-        else anomaly Pp.(str "installing a non cached state.")
+  let get_state id =
+    match VCS.get_cached_state id with
+    | Evaluated s -> Some s
+    | NotEvaluated ->
+      (* if the state being asked for is the current one, we snapshot and cache it *)
+      if Stateid.equal id !cur_id then
+        let state = ExecSuccess (Vernacstate.freeze_interp_state `Shallow (* FIXME check this *)) in
+        VCS.cache_state id state; Some state
+      else None
+    | exception VCS.Expired -> None
 
-  let get_cached id =
-    try match VCS.get_info id with
-    | { state = Valid s } -> s
-    | _ -> anomaly Pp.(str "not a cached state.")
-    with VCS.Expired -> anomaly Pp.(str "not a cached state (expired).")
+  let get_success_state id =
+    Option.bind (get_state id) (function ExecSuccess s -> Some s | _ -> None)
 
+  (* [assign] is called to set the state when a worker computes it *)
   let assign id what =
     let open Vernacstate in
-    if VCS.get_state id <> Empty then () else
-    try match what with
-    | `Full s ->
-         let s =
-           try
-            let prev = (VCS.visit id).next in
-            if is_cached_and_valid prev
-            then { s with proof =
-              Proof_global.copy_terminators
-                ~src:(get_cached prev).proof ~tgt:s.proof }
-            else s
-           with VCS.Expired -> s in
-         VCS.set_state id (Valid s)
-    | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
-         if is_cached_and_valid ontop then
-           let s = get_cached ontop in
-           let s = { s with proof =
-             Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
-           let s = { s with system =
-             States.replace_summary s.system
-               begin
-                 let st = States.summary_of_state s.system in
-                 let st = Summary.modify_summary st Util.(pi1 summary_pstate) c1 in
-                 let st = Summary.modify_summary st Util.(pi2 summary_pstate) c2 in
-                 let st = Summary.modify_summary st Util.(pi3 summary_pstate) c3 in
-                 st
-               end
-                } in
-           VCS.set_state id (Valid s)
-    with VCS.Expired -> ()
+    match VCS.get_cached_state id with
+    | NotEvaluated ->
+      begin match what with
+        | `Full s ->
+          let s =
+            try
+              let prev = (VCS.visit id).next in
+              match get_success_state prev with
+              | Some prev_state ->
+                { s with proof =
+                           Proof_global.copy_terminators
+                             ~src:prev_state.proof ~tgt:s.proof }
+              | None -> s
+            with VCS.Expired -> s in
+          VCS.cache_state id (ExecSuccess s)
+        | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
+          match get_success_state ontop with
+          | Some s ->
+            let s = { s with proof =
+                               Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
+            let s = { s with system =
+                               States.replace_summary s.system
+                                 begin
+                                   let st = States.summary_of_state s.system in
+                                   let st = Summary.modify_summary st Util.(pi1 summary_pstate) c1 in
+                                   let st = Summary.modify_summary st Util.(pi2 summary_pstate) c2 in
+                                   let st = Summary.modify_summary st Util.(pi3 summary_pstate) c3 in
+                                   st
+                                 end
+                    } in
+            VCS.cache_state id (ExecSuccess s)
+          | None -> ()
+      end
+    | Evaluated _ -> () (* FIXME why do we silently ignore the new state here? *)
 
   let exn_on id ~valid (e, info) =
     match Stateid.get info with
@@ -924,13 +915,17 @@ end = struct (* {{{ *)
     let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
     e1 == e2
 
+  (* [define] puts the system in state [id] calling [f ()] *)
   let define ~doc ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
     feedback ~id:id (ProcessingIn !Flags.async_proofs_worker_id);
     let str_id = Stateid.to_string id in
+    (* FIXME if we redefine the current state, we should update the system (unfreeze the new state) *)
+    (* FIXME check this assertion
     if is_cached id && not redefine then
       anomaly Pp.(str"defining state "++str str_id++str" twice.");
+       *)
     try
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
@@ -938,8 +933,8 @@ end = struct (* {{{ *)
       fix_exn_ref := exn_on id ~valid:good_id;
       f ();
       fix_exn_ref := (fun x -> x);
-      if cache = `Yes then freeze `No id
-      else if cache = `Shallow then freeze `Shallow id;
+      if cache = `Yes then cache_current_state ~marshallable:`No id
+      else if cache = `Shallow then cache_current_state ~marshallable:`Shallow id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
       if feedback_processed then
@@ -958,7 +953,7 @@ end = struct (* {{{ *)
         | None, Some good_id -> (exn_on id ~valid:good_id (e, info))
         | Some _, None -> (e, info)
         | Some (_,at), Some id -> (e, Stateid.add info ~valid:id at) in
-      if cache = `Yes || cache = `Shallow then freeze_invalid id ie;
+      if cache = `Yes || cache = `Shallow then cache_error_state id ie;
       Hooks.(call unreachable_state ~doc id ie);
       Exninfo.iraise ie
 
@@ -1173,9 +1168,7 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     let open Vernacstate in
-    match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Some (Proof_global.proof_of_state vstate.proof)
-    | _ -> None
+    Option.map (fun st -> Proof_global.proof_of_state st.proof) @@ State.get_success_state id
 
   let undo_vernac_classifier v ~doc =
     if VCS.is_interactive () = `No && !cur_opt.async_proofs_cache <> Some Force
@@ -1565,7 +1558,7 @@ end = struct (* {{{ *)
           | None -> Stateid.dummy, Stateid.dummy in
         let e_msg = iprint (e, info) in
         stm_pperr_endline Pp.(fun () -> str "failed with the following exception: " ++ fnl () ++ e_msg);
-        let e_safe_states = List.filter State.is_cached_and_valid my_states in
+        let e_safe_states = List.filter (fun id -> Option.has_some @@ State.get_success_state id) my_states in
         RespError { e_error_at; e_safe_id; e_msg; e_safe_states }
 
   let perform_states query =
@@ -1583,12 +1576,12 @@ end = struct (* {{{ *)
       let prev =
         try
           let { next = prev; step } = VCS.visit id in
-          if State.is_cached_and_valid prev && List.mem prev seen
-          then Some (prev, State.get_cached prev, step)
-          else None
+          match State.get_success_state prev with
+          | Some prev_state when List.mem prev seen -> Some (prev, prev_state, step)
+          | _ -> None
         with VCS.Expired -> None in
       let this =
-        if State.is_cached_and_valid id then Some (State.get_cached id) else None in
+        State.get_success_state id in
       match prev, this with
       | _, None -> None
       | Some (prev, o, `Cmd { cast = { expr }}), Some n
@@ -2139,7 +2132,7 @@ and Reach : sig
 end = struct (* {{{ *)
 
 let async_policy () =
-  if Attributes.is_universe_polymorphism () then false
+  if Attributes.is_universe_polymorphism () then false (* FIXME this makes no sense, it is the default value of the attribute *)
   else if VCS.is_interactive () = `Yes then
     (async_proofs_is_master !cur_opt || !cur_opt.async_proofs_mode = APonLazy)
   else
@@ -2214,8 +2207,12 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `ASync (parent last,accn,name,delegate name)
+
+    (* We are producing a .vio file, the proof does not have `Proof using`, but
+    we look in the `aux` file for the section part used last time the proof was
+    checked. *)
     | `Fork((_, hd', GuaranteesOpacity, ids), _) when
-       has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
+       has_proof_no_using last && Option.is_empty @@ State.get_success_state @@ parent last &&
        VCS.is_vio_doc () ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
@@ -2254,7 +2251,7 @@ let collect_proof keep cur hd brkind id =
      else
        let rc = collect (Some cur) [] id in
        if is_empty rc then make_sync `AlreadyEvaluated rc
-       else if (is_vtkeep keep) && (not(State.is_cached_and_valid id))
+       else if (is_vtkeep keep) && Option.is_empty (State.get_success_state id)
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
 
@@ -2311,8 +2308,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                  (Proofview.Goal.goal gl) goals_to_admit then
              Proofview.give_up else Proofview.tclUNIT ()
               end in
-           match (VCS.get_info base_state).state with
-           | Valid { Vernacstate.proof } ->
+           match State.get_success_state base_state with
+           | Some { Vernacstate.proof } ->
                Proof_global.unfreeze proof;
                Proof_global.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
@@ -2377,10 +2374,10 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
   (* traverses the dag backward from nodes being already calculated *)
   and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     stm_prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
-    if not redefine_qed && State.is_cached ~cache id then begin
+    if not redefine_qed && Option.has_some @@ State.get_state id then begin
       Hooks.(call state_computed ~doc id ~in_cache:true);
       stm_prerr_endline (fun () -> "reached (cache)");
-      State.install_cached id
+      State.install_state id
     end else
     let step, cache_step, feedback_processed =
       let view = VCS.visit id in
@@ -2465,7 +2462,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     qed.fproof <- Some (fp, cancel);
                     (* We don't generate a new state, but we still need
                      * to install the right one *)
-                    State.install_cached id
+                    State.install_state id
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
                 | { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow block_start;
@@ -3121,7 +3118,7 @@ let query ~doc ~at ~route s =
       while true do
         let { CAst.loc; v=ast } = parse_sentence ~doc at s in
         let indentation, strlen = compute_indentation ?loc at in
-        let st = State.get_cached at in
+        let st = Option.get @@ State.get_success_state at in
         let aast = { verbose = true; indentation; strlen; loc; expr = ast } in
         ignore(stm_vernac_interp ~route at st aast)
       done;
@@ -3255,6 +3252,7 @@ let edit_at ~doc id =
         VCS.print ();
         Exninfo.iraise (e, info)
 
+let get_success_state ~doc = State.get_success_state
 let get_current_state ~doc = VCS.cur_tip ()
 let get_ldir ~doc = VCS.get_ldir ()
 

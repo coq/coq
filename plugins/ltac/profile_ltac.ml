@@ -426,7 +426,7 @@ let print_results_filter ~cutoff ~filter =
   (* The STM doesn't provide yet a proper document query and traversal
      API, thus we need to re-check if some states are current anymore
      (due to backtracking) using the `state_of_id` API. *)
-  let valid (did,id) _ = Stm.(state_of_id ~doc:(get_doc did) id) <> `Expired in
+  let valid (did,id) _ = Option.has_some @@ Stm.get_success_state ~doc:(Stm.get_doc did) id in
   data := SM.filter valid !data;
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in

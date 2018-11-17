@@ -169,6 +169,8 @@ val finish_tasks : string ->
   Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
     tasks -> Library.seg_univ * Library.seg_proofs
 
+val get_success_state : doc:doc -> Stateid.t -> Vernacstate.t option
+
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t
 val get_ldir : doc:doc -> Names.DirPath.t
@@ -282,9 +284,6 @@ val state_ready_hook : (doc:doc -> Stateid.t -> unit) Hook.t
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
 val get_doc : Feedback.doc_id -> doc
-
-val state_of_id : doc:doc ->
-  Stateid.t -> [ `Valid of Vernacstate.t option | `Expired | `Error of exn ]
 
 (* Queries for backward compatibility *)
 val current_proof_depth : doc:doc -> int
