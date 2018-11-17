@@ -22,7 +22,7 @@ val logfile : string option ref
 val read_coqide_args : string list -> string list
 
 (** Prepare the widgets, load the given files in tabs *)
-val main : string list -> unit
+val main : string list -> GWindow.window
 
 (** Function to save anything and kill all coqtops
     @return [false] if you're allowed to quit. *)
@@ -37,7 +37,7 @@ val do_load : string -> unit
 
 (** Set coqide to perform a clean quit at Ctrl-C, while launching
     [crash_save] and exiting for others received signals *)
-val set_signal_handlers : unit -> unit
+val set_signal_handlers : ?parent:GWindow.window -> unit -> unit
 
 (** Emergency saving of opened files as "foo.v.crashcoqide",
     and exit (if the integer isn't 127). *)

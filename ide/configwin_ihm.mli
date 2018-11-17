@@ -60,7 +60,17 @@ val edit :
   ?with_apply:bool ->
   ?apply:(unit -> unit) ->
   string ->
+  ?parent:GWindow.window ->
   ?width:int ->
   ?height:int ->
   configuration_structure list ->
   return_button
+
+val question_box : title:string ->
+  buttons:string list ->
+  ?default:int -> ?icon:#GObj.widget ->
+  ?parent:GWindow.window -> string -> int
+
+val message_box :
+  title:string -> ?icon:#GObj.widget ->
+  ?parent:GWindow.window -> ?ok:string -> string -> unit

@@ -662,12 +662,13 @@ class configuration_box (tt : GData.tooltips) conf_struct =
    to configure the various parameters. *)
 let edit ?(with_apply=true)
     ?(apply=(fun () -> ()))
-    title ?width ?height
+    title ?parent ?width ?height
     conf_struct =
   let dialog = GWindow.dialog
     ~position:`CENTER
     ~modal: true ~title: title
-    ?height ?width
+    ~type_hint:`DIALOG
+    ?parent ?height ?width
     ()
   in
   let tooltips = GData.tooltips () in
@@ -807,3 +808,40 @@ let custom ?label box f expand =
       custom_expand = expand ;
       custom_framed = label ;
     }
+
+(* Copying lablgtk question_box + forbidding hiding *)
+
+let question_box ~title ~buttons ?(default=1) ?icon ?parent message =
+  let button_nb = ref 0 in
+  let window = GWindow.dialog ~position:`CENTER ~modal:true ?parent ~type_hint:`DIALOG ~title () in
+  let hbox = GPack.hbox ~border_width:10 ~packing:window#vbox#add () in
+  let bbox = window#action_area in
+  begin match icon with
+    None -> ()
+  | Some i -> hbox#pack i#coerce ~padding:4
+  end;
+  ignore (GMisc.label ~text: message ~packing: hbox#add ());
+  (* the function called to create each button by iterating *)
+  let rec iter_buttons n = function
+      [] ->
+        ()
+    | button_label :: q ->
+        let b = GButton.button ~label: button_label
+            ~packing:(bbox#pack ~expand:true ~padding:4) ()
+        in
+        ignore (b#connect#clicked ~callback:
+          (fun () -> button_nb := n; window#destroy ()));
+	(* If it's the first button then give it the focus *)
+        if n = default then b#grab_default () else ();
+
+	iter_buttons (n+1) q
+  in
+  iter_buttons 1 buttons;
+  ignore (window#connect#destroy ~callback: GMain.Main.quit);
+  window#set_position `CENTER;
+  window#show ();
+  GMain.Main.main ();
+  !button_nb
+
+let message_box ~title ?icon ?parent ?(ok="Ok") message =
+  ignore (question_box ?icon ?parent ~title message ~buttons:[ ok ])

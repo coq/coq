@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let _ = Coqide.set_signal_handlers ()
 let _ = GtkMain.Main.init ()
 
 (* We handle Gtk warning messages ourselves :
@@ -62,7 +61,8 @@ let () =
   let args = List.filter (fun x -> not (List.mem x files)) argl in
   Coq.check_connection args;
   Coqide.sup_args := args;
-  Coqide.main files;
+  let w = Coqide.main files in
+  Coqide.set_signal_handlers ~parent:w ();
   Coqide_os_specific.init ();
   try
     GMain.main ();

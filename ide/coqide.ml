@@ -190,8 +190,8 @@ let load_file ?(maycreate=false) f =
 let confirm_save ok =
   if ok then flash_info "Saved" else warning "Save Failed"
 
-let select_and_save ~saveas ?filename sn =
-  let do_save = if saveas then sn.fileops#saveas else sn.fileops#save in
+let select_and_save ?parent ~saveas ?filename sn =
+  let do_save = if saveas then sn.fileops#saveas ?parent else sn.fileops#save in
   let title = if saveas then "Save file as" else "Save file" in
   match select_file_for_save ~title ?filename () with
     |None -> false
@@ -201,9 +201,9 @@ let select_and_save ~saveas ?filename sn =
       if ok then sn.tab_label#set_text (Filename.basename f);
       ok
 
-let check_save ~saveas sn =
+let check_save ?parent ~saveas sn =
   try match sn.fileops#filename with
-    |None -> select_and_save ~saveas sn
+    |None -> select_and_save ?parent ~saveas sn
     |Some f ->
       let ok = sn.fileops#save f in
       confirm_save ok;
@@ -212,16 +212,17 @@ let check_save ~saveas sn =
 
 exception DontQuit
 
-let check_quit saveall =
+let check_quit ?parent saveall =
   (try save_pref () with _ -> flash_info "Cannot save preferences");
   let is_modified sn = sn.buffer#modified in
   if List.exists is_modified notebook#pages then begin
-    let answ = GToolbox.question_box ~title:"Quit"
+    let answ = Configwin_ihm.question_box ~title:"Quit"
       ~buttons:["Save Named Buffers and Quit";
                 "Quit without Saving";
                 "Don't Quit"]
       ~default:0
       ~icon:(warn_image ())#coerce
+      ?parent
       "There are unsaved buffers"
     in
     match answ with
@@ -278,15 +279,15 @@ let load _ =
     | None -> ()
     | Some f -> FileAux.load_file f
 
-let save _ = on_current_term (FileAux.check_save ~saveas:false)
+let save ?parent _ = on_current_term (FileAux.check_save ?parent ~saveas:false)
 
-let saveas sn =
+let saveas ?parent sn =
   try
     let filename = sn.fileops#filename in
-    ignore (FileAux.select_and_save ~saveas:true ?filename sn)
+    ignore (FileAux.select_and_save ?parent ~saveas:true ?filename sn)
   with _ -> warning "Save Failed"
 
-let saveas = cb_on_current_term saveas
+let saveas ?parent = cb_on_current_term (saveas ?parent)
 
 let saveall _ =
   List.iter
@@ -297,33 +298,34 @@ let saveall _ =
 
 let () = Coq.save_all := saveall
 
-let revert_all _ =
+let revert_all ?parent _ =
   List.iter
-    (fun sn -> if sn.fileops#changed_on_disk then sn.fileops#revert)
+    (fun sn -> if sn.fileops#changed_on_disk then sn.fileops#revert ?parent ())
     notebook#pages
 
-let quit _ =
-  try FileAux.check_quit saveall; exit 0
+let quit ?parent _ =
+  try FileAux.check_quit ?parent saveall; exit 0
   with FileAux.DontQuit -> ()
 
-let close_buffer sn =
+let close_buffer ?parent sn =
   let do_remove () = notebook#remove_page notebook#current_page in
   if not sn.buffer#modified then do_remove ()
   else
-    let answ = GToolbox.question_box ~title:"Close"
+    let answ = Configwin_ihm.question_box ~title:"Close"
       ~buttons:["Save Buffer and Close";
                 "Close without Saving";
                 "Don't Close"]
       ~default:0
       ~icon:(warn_image ())#coerce
+      ?parent
       "This buffer has unsaved modifications"
     in
     match answ with
-      | 1 when FileAux.check_save ~saveas:true sn -> do_remove ()
+      | 1 when FileAux.check_save ?parent ~saveas:true sn -> do_remove ()
       | 2 -> do_remove ()
       | _ -> ()
 
-let close_buffer = cb_on_current_term close_buffer
+let close_buffer ?parent = cb_on_current_term (close_buffer ?parent)
 
 let export kind sn =
   match sn.fileops#filename with
@@ -434,16 +436,16 @@ let coq_makefile sn =
 
 let coq_makefile = cb_on_current_term coq_makefile
 
-let editor sn =
+let editor ?parent sn =
   match sn.fileops#filename with
     |None -> warning "Call to external editor available only on named files"
     |Some f ->
       File.save ();
       let f = Filename.quote f in
       let cmd = Util.subst_command_placeholder cmd_editor#get f in
-      run_command ignore (fun _ -> sn.fileops#revert) cmd
+      run_command ignore (fun _ -> sn.fileops#revert ?parent ()) cmd
 
-let editor = cb_on_current_term editor
+let editor ?parent = cb_on_current_term (editor ?parent)
 
 let compile sn =
   File.save ();
@@ -945,7 +947,7 @@ let build_ui () =
     try w#set_icon (Some (GdkPixbuf.from_file (MiscMenu.coq_icon ())))
     with _ -> ()
   in
-  let _ = w#event#connect#delete ~callback:(fun _ -> File.quit (); true) in
+  let _ = w#event#connect#delete ~callback:(fun _ -> File.quit ~parent:w (); true) in
   let _ = set_drag w#drag in
 
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
@@ -971,18 +973,18 @@ let build_ui () =
     item "File" ~label:"_File";
     item "New" ~callback:File.newfile ~stock:`NEW;
     item "Open" ~callback:File.load ~stock:`OPEN;
-    item "Save" ~callback:File.save ~stock:`SAVE ~tooltip:"Save current buffer";
-    item "Save as" ~label:"S_ave as" ~stock:`SAVE_AS ~callback:File.saveas;
+    item "Save" ~callback:(File.save ~parent:w) ~stock:`SAVE ~tooltip:"Save current buffer";
+    item "Save as" ~label:"S_ave as" ~stock:`SAVE_AS ~callback:(File.saveas ~parent:w);
     item "Save all" ~label:"Sa_ve all" ~callback:File.saveall;
     item "Revert all buffers" ~label:"_Revert all buffers"
-      ~callback:File.revert_all ~stock:`REVERT_TO_SAVED;
+      ~callback:(File.revert_all ~parent:w) ~stock:`REVERT_TO_SAVED;
     item "Close buffer" ~label:"_Close buffer" ~stock:`CLOSE
-      ~callback:File.close_buffer ~tooltip:"Close current buffer";
+      ~callback:(File.close_buffer ~parent:w) ~tooltip:"Close current buffer";
     item "Print..." ~label:"_Print..."
       ~callback:File.print ~stock:`PRINT ~accel:"<Ctrl>p";
     item "Rehighlight" ~label:"Reh_ighlight" ~accel:"<Ctrl>l"
       ~callback:File.highlight ~stock:`REFRESH;
-    item "Quit" ~stock:`QUIT ~callback:File.quit;
+    item "Quit" ~stock:`QUIT ~callback:(File.quit ~parent:w);
   ];
 
   menu export_menu [
@@ -1013,14 +1015,12 @@ let build_ui () =
     item "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP
       ~accel:"<Shift>F3"
       ~callback:(cb_on_current_term (fun t -> t.finder#find_backward ()));
-    item "Complete Word" ~label:"Complete Word" ~accel:"<Ctrl>slash"
-      ~callback:(fun _ -> ());
     item "External editor" ~label:"External editor" ~stock:`EDIT
-      ~callback:External.editor;
+      ~callback:(External.editor ~parent:w);
     item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
-	  try Preferences.configure ~apply:refresh_notebook_pos ()
+	  try Preferences.configure ~apply:refresh_notebook_pos w
 	  with _ -> flash_info "Cannot save preferences"
         end;
         reset_revert_timer ());
@@ -1309,8 +1309,8 @@ let build_ui () =
       (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
 
   (* Showtime ! *)
-  w#show ()
-
+  w#show ();
+  w
 
 
 (** {2 Coqide main function } *)
@@ -1325,7 +1325,7 @@ let make_scratch_buffer () =
   ()
 
 let main files =
-  build_ui ();
+  let w = build_ui () in
   reset_revert_timer ();
   reset_autosave_timer ();
   (match files with
@@ -1334,8 +1334,8 @@ let main files =
   notebook#goto_page 0;
   MiscMenu.initial_about ();
   on_current_term (fun t -> t.script#misc#grab_focus ());
-  Minilib.log "End of Coqide.main"
-
+  Minilib.log "End of Coqide.main";
+  w
 
 (** {2 Argument parsing } *)
 
@@ -1391,9 +1391,9 @@ let signals_to_crash =
   [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
    Sys.sigill; Sys.sigpipe; Sys.sigquit; Sys.sigusr1; Sys.sigusr2]
 
-let set_signal_handlers () =
+let set_signal_handlers ?parent () =
   try
-    Sys.set_signal Sys.sigint (Sys.Signal_handle File.quit);
+    Sys.set_signal Sys.sigint (Sys.Signal_handle (File.quit ?parent));
     List.iter
       (fun i -> Sys.set_signal i (Sys.Signal_handle FileAux.crash_save))
       signals_to_crash

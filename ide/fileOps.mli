@@ -16,10 +16,10 @@ object
   method filename : string option
   method update_stats : unit
   method changed_on_disk : bool
-  method revert : unit
+  method revert : ?parent:GWindow.window -> unit -> unit
   method auto_save : unit
   method save : string -> bool
-  method saveas : string -> bool
+  method saveas : ?parent:GWindow.window -> string -> bool
 end
 
 class fileops : GText.buffer -> string option -> (unit -> unit) -> ops

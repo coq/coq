@@ -60,7 +60,6 @@ let init () =
 \n    <menuitem action='Find' />\
 \n    <menuitem action='Find Next' />\
 \n    <menuitem action='Find Previous' />\
-\n    <menuitem action='Complete Word' />\
 \n    <separator />\
 \n    <menuitem action='External editor' />\
 \n    <separator />\

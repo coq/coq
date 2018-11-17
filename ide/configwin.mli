@@ -158,6 +158,7 @@ val custom : ?label: string -> GPack.box -> (unit -> unit) -> bool -> parameter_
 val edit :
   ?apply: (unit -> unit) ->
   string ->
+  ?parent:GWindow.window ->
   ?width:int ->
   ?height:int ->
   configuration_structure list ->

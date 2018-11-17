@@ -18,10 +18,10 @@ object
   method filename : string option
   method update_stats : unit
   method changed_on_disk : bool
-  method revert : unit
+  method revert : ?parent:GWindow.window -> unit -> unit
   method auto_save : unit
   method save : string -> bool
-  method saveas : string -> bool
+  method saveas : ?parent:GWindow.window -> string -> bool
 end
 
 class fileops (buffer:GText.buffer) _fn (reset_handler:unit->unit) =
@@ -48,7 +48,7 @@ object(self)
           false
         |_ -> false
 
-  method revert =
+  method revert ?parent () =
     let do_revert f =
       push_info "Reverting buffer";
       try
@@ -72,13 +72,14 @@ object(self)
       | Some f ->
         if not buffer#modified then do_revert f
         else
-          let answ = GToolbox.question_box
+          let answ = Configwin_ihm.question_box
             ~title:"Modified buffer changed on disk"
             ~buttons:["Revert from File";
                       "Overwrite File";
                       "Disable Auto Revert"]
             ~default:0
             ~icon:(stock_to_widget `DIALOG_WARNING)
+            ?parent
             "Some unsaved buffers changed on disk"
           in
           match answ with
@@ -102,13 +103,14 @@ object(self)
     end
     else false
 
-  method saveas f =
+  method saveas ?parent f =
   if not (Sys.file_exists f) then self#save f
   else
-    let answ = GToolbox.question_box ~title:"File exists on disk"
+    let answ = Configwin_ihm.question_box ~title:"File exists on disk"
       ~buttons:["Overwrite"; "Cancel";]
       ~default:1
       ~icon:(warn_image ())#coerce
+      ?parent
       ("File "^f^" already exists")
     in
     match answ with

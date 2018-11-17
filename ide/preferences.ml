@@ -688,7 +688,7 @@ let pmodifiers ?(all = false) name p = modifiers
   name
   (str_to_mod_list p#get)
 
-let configure ?(apply=(fun () -> ())) () =
+let configure ?(apply=(fun () -> ())) parent =
   let cmd_coqtop =
     string
       ~f:(fun s -> cmd_coqtop#set (if s = "AUTO" then None else Some s))
@@ -1068,7 +1068,7 @@ let configure ?(apply=(fun () -> ())) () =
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
-  let x = edit ~apply "Customizations" cmds in
+  let x = edit ~apply "Customizations" ~parent cmds in
 (*
   Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)

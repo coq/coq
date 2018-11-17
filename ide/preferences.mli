@@ -107,7 +107,7 @@ val diffs : string preference
 val save_pref : unit -> unit
 val load_pref : unit -> unit
 
-val configure : ?apply:(unit -> unit) -> unit -> unit
+val configure : ?apply:(unit -> unit) -> GWindow.window -> unit
 
 val stick : 'a preference ->
   (#GObj.widget as 'obj) -> ('a -> unit) -> unit

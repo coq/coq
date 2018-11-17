@@ -46,6 +46,6 @@ let modifiers = Configwin_ihm.modifiers
 
 let edit
     ?(apply=(fun () -> ()))
-    title ?width ?height
+    title ?parent ?width ?height
     conf_struct_list =
-  Configwin_ihm.edit ~with_apply: true ~apply title ?width ?height conf_struct_list
+  Configwin_ihm.edit ~with_apply: true ~apply title ?parent ?width ?height conf_struct_list
