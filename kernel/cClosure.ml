@@ -307,32 +307,32 @@ module Mark : sig
 end = struct
   type t = int
 
-  let of_state = function
+  let[@inline] of_state = function
     | Norm -> 0b00 | Cstr -> 0b01 | Whnf -> 0b10 | Red -> 0b11
 
-  let of_relevance = function
+  let[@inline] of_relevance = function
     | Unknown -> 0
     | KnownR -> 0b01
     | KnownI -> 0b10
 
-  let mark state relevance = (of_state state) * 4 + (of_relevance relevance)
+  let[@inline] mark state relevance = (of_state state) * 4 + (of_relevance relevance)
 
-  let relevance x = match x land 0b11 with
+  let[@inline] relevance x = match x land 0b11 with
     | 0b00 -> Unknown
     | 0b01 -> KnownR
     | 0b10 -> KnownI
     | _ -> assert false
 
-  let red_state x = match x land 0b1100 with
+  let[@inline] red_state x = match x land 0b1100 with
     | 0b0000 -> Norm
     | 0b0100 -> Cstr
     | 0b1000 -> Whnf
     | 0b1100 -> Red
     | _ -> assert false
 
-  let neutr x = x lor 0b1000 (* Whnf|Norm -> Whnf | Red|Cstr -> Red *)
+  let[@inline] neutr x = x lor 0b1000 (* Whnf|Norm -> Whnf | Red|Cstr -> Red *)
 
-  let set_norm x = x land 0b0011
+  let[@inline] set_norm x = x land 0b0011
 end
 let mark = Mark.mark
 
