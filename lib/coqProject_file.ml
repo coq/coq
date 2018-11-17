@@ -12,10 +12,6 @@
    ideally we would like to make this independent so it can be
    bootstrapped. *)
 
-(* Note the problem with the error invokation below calling exit... *)
-(* let error msg = Feedback.msg_error msg *)
-let warning msg = Feedback.msg_warning Pp.(str msg)
-
 type arg_source = CmdLine | ProjectFile
 
 type 'a sourced = { thing : 'a; source : arg_source }
@@ -147,7 +143,7 @@ let exists_dir dir =
   try Sys.is_directory (strip_trailing_slash dir) with Sys_error _ -> false
 
 
-let process_cmd_line orig_dir proj args =
+let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
   let orig_dir = (* avoids turning foo.v in ./foo.v *)
@@ -170,7 +166,7 @@ let process_cmd_line orig_dir proj args =
   | ("-full"|"-opt") :: r -> aux { proj with use_ocamlopt =  true } r
   | "-install" :: d :: r ->
     if proj.install_kind <> None then
-      (warning "-install set more than once.@\n%!");
+      (warning_fn "-install set more than once.");
     let install = match d with
       | "user" -> UserInstall
       | "none" -> NoInstall
@@ -197,7 +193,7 @@ let process_cmd_line orig_dir proj args =
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match proj.project_file with
       | None -> ()
-      | Some _ -> warning "Multiple project files are deprecated.@\n%!"
+      | Some _ -> warning_fn "Multiple project files are deprecated."
     in
     parsing_project_file := true;
     let proj = aux { proj with project_file = Some file } (parse file) in
@@ -236,11 +232,11 @@ let process_cmd_line orig_dir proj args =
 
  (******************************* API ************************************)
 
-let cmdline_args_to_project ~curdir args =
-  process_cmd_line curdir (mk_project None None None true) args
+let cmdline_args_to_project ~warning_fn ~curdir args =
+  process_cmd_line ~warning_fn curdir (mk_project None None None true) args
 
-let read_project_file f =
-  process_cmd_line (Filename.dirname f)
+let read_project_file ~warning_fn f =
+  process_cmd_line ~warning_fn (Filename.dirname f)
     (mk_project (Some f) None (Some NoInstall) true) (parse f)
 
 let rec find_project_file ~from ~projfile_name =

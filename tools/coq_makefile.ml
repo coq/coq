@@ -396,8 +396,9 @@ let _ =
     | "-destination-of" :: tgt :: rest -> Some tgt, rest
     | _ -> None, args in
 
-  let project = 
-    try cmdline_args_to_project ~curdir:Filename.current_dir_name args
+  let project =
+    let warning_fn x = Format.eprintf "%s@\n%!" x in
+    try cmdline_args_to_project ~warning_fn ~curdir:Filename.current_dir_name args
     with Parsing_error s -> prerr_endline s; usage_coq_makefile () in
 
   if only_destination <> None then begin
