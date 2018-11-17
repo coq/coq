@@ -3,6 +3,6 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-git_download Elpi
+git_download elpi
 
-( cd "${CI_BUILD_DIR}/Elpi" && make && make install )
+( cd "${CI_BUILD_DIR}/elpi" && make && make install )

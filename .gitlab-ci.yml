@@ -362,7 +362,7 @@ validate:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
 
-ci-aac-tactics:
+ci-aac_tactics:
   <<: *ci-template
 
 ci-bedrock2:
@@ -378,7 +378,7 @@ ci-color:
 ci-compcert:
   <<: *ci-template-flambda
 
-ci-coq-dpdgraph:
+ci-coq_dpdgraph:
   <<: *ci-template
 
 ci-coquelicot:
@@ -438,7 +438,7 @@ ci-paramcoq:
 ci-pidetop:
   <<: *ci-template
 
-ci-plugin-tutorial:
+ci-plugin_tutorial:
   <<: *ci-template
 
 ci-quickchick:

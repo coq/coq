@@ -113,16 +113,16 @@
 ########################################################################
 # CompCert
 ########################################################################
-: "${CompCert_CI_REF:=master}"
-: "${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
-: "${CompCert_CI_ARCHIVEURL:=${CompCert_CI_GITURL}/archive}"
+: "${compcert_CI_REF:=master}"
+: "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
+: "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################
 # VST
 ########################################################################
-: "${VST_CI_REF:=master}"
-: "${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
-: "${VST_CI_ARCHIVEURL:=${VST_CI_GITURL}/archive}"
+: "${vst_CI_REF:=master}"
+: "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
+: "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
 ########################################################################
 # cross-crypto
@@ -153,7 +153,7 @@
 : "${formal_topology_CI_ARCHIVEURL:=${formal_topology_CI_GITURL}/archive}"
 
 ########################################################################
-# coq-dpdgraph
+# coq_dpdgraph
 ########################################################################
 : "${coq_dpdgraph_CI_REF:=coq-master}"
 : "${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph}"
@@ -162,9 +162,9 @@
 ########################################################################
 # CoLoR
 ########################################################################
-: "${CoLoR_CI_REF:=master}"
-: "${CoLoR_CI_GITURL:=https://github.com/fblanqui/color}"
-: "${CoLoR_CI_ARCHIVEURL:=${CoLoR_CI_GITURL}/archive}"
+: "${color_CI_REF:=master}"
+: "${color_CI_GITURL:=https://github.com/fblanqui/color}"
+: "${color_CI_ARCHIVEURL:=${color_CI_GITURL}/archive}"
 
 ########################################################################
 # SF
@@ -196,16 +196,16 @@
 ########################################################################
 # Equations
 ########################################################################
-: "${Equations_CI_REF:=master}"
-: "${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
-: "${Equations_CI_ARCHIVEURL:=${Equations_CI_GITURL}/archive}"
+: "${equations_CI_REF:=master}"
+: "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
+: "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
 # Elpi
 ########################################################################
-: "${Elpi_CI_REF:=coq-master}"
-: "${Elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
-: "${Elpi_CI_ARCHIVEURL:=${Elpi_CI_GITURL}/archive}"
+: "${elpi_CI_REF:=coq-master}"
+: "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
+: "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
 ########################################################################
 # fcsl-pcm
@@ -257,11 +257,11 @@
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
 ########################################################################
-# aac-tactics
+# aac_tactics
 ########################################################################
-: "${aactactics_CI_REF:=master}"
-: "${aactactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
-: "${aactactics_CI_ARCHIVEURL:=${aactactics_CI_GITURL}/archive}"
+: "${aac_tactics_CI_REF:=master}"
+: "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
+: "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
 ########################################################################
 # paramcoq

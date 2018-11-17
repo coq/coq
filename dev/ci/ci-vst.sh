@@ -3,6 +3,6 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-git_download VST
+git_download vst
 
-( cd "${CI_BUILD_DIR}/VST" && make IGNORECOQVERSION=true )
+( cd "${CI_BUILD_DIR}/vst" && make IGNORECOQVERSION=true )
