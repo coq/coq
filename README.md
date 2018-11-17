@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ppedrot/ltac2.svg?branch=master)](https://travis-ci.org/ppedrot/ltac2)
+
 Overview
 ========
 
