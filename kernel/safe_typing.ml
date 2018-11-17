@@ -192,7 +192,9 @@ let set_engagement c senv =
     engagement = Some c }
 
 let set_typing_flags c senv =
-  { senv with env = Environ.set_typing_flags c senv.env }
+  let env = Environ.set_typing_flags c senv.env in
+  if env == senv.env then senv
+  else { senv with env }
 
 let set_share_reduction b senv =
   let flags = Environ.typing_flags senv.env in

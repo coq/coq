@@ -384,8 +384,26 @@ let set_engagement c env = (* Unsafe *)
   { env with env_stratification =
     { env.env_stratification with env_engagement = c } }
 
+(* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
+let same_flags {
+     check_guarded;
+     check_universes;
+     conv_oracle;
+     share_reduction;
+     enable_VM;
+     enable_native_compiler;
+  } alt =
+  check_guarded == alt.check_guarded &&
+  check_universes == alt.check_universes &&
+  conv_oracle == alt.conv_oracle &&
+  share_reduction == alt.share_reduction &&
+  enable_VM == alt.enable_VM &&
+  enable_native_compiler == alt.enable_native_compiler
+[@warning "+9"]
+
 let set_typing_flags c env = (* Unsafe *)
-  { env with env_typing_flags = c }
+  if same_flags env.env_typing_flags c then env
+  else { env with env_typing_flags = c }
 
 (* Global constants *)
 
