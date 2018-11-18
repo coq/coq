@@ -33,6 +33,18 @@ would be moved into our "allow failure" category. At the end of the grace
 period, in the absence of progress, the development would be removed from our
 CI.
 
+### Timely merging of overlays
+
+A pitfall of the current CI setup is that when a breaking change is
+merged in Coq upstream, CI for your contrib will be broken until you
+merge the corresponding pull request with the fix for your contribution.
+
+As of today, you have to worry about synchronizing with Coq upstream
+every once in a while; we hope we will improve this in the future by
+using [coqbot](https://github.com/coq/bot); meanwhile, a workaround is
+to give merge permissions to someone from the Coq team as to help with
+these kind of merges.
+
 ### Add your development by submitting a pull request
 
 Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding

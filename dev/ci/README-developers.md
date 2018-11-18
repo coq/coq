@@ -72,7 +72,7 @@ Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) fil
 
 If you break external projects that are hosted on GitHub, you can use
 the `create-overlays.sh` script to automatically perform most of the
-above step. In order to do so, call the script as:
+above steps. In order to do so, call the script as:
 ```
 ./dev/tools/create-overlays.sh ejgallego 9873 aac_tactics elpi ltac
 ```
@@ -81,7 +81,7 @@ number. The script will:
 
 - checkout the contributions and prepare the branch/remote so you can
   just commit the fixes and push,
-- add the corresponding overlay file in `dev/ci/user-overlays`
+- add the corresponding overlay file in `dev/ci/user-overlays`.
 
 For problems related to ML-plugins, if you use `dune build` to build
 Coq, it will actually be aware of the broken contributions and perform
