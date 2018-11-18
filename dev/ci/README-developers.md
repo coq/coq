@@ -42,8 +42,11 @@ See also [`test-suite/README.md`](../../test-suite/README.md) for information ab
 
 ### Breaking changes
 
-When your PR breaks an external project we test in our CI, you must prepare a
-patch (or ask someone to prepare a patch) to fix the project:
+When your PR breaks an external project we test in our CI, you must
+prepare a patch (or ask someone to prepare a patch) to fix the
+project. There is experimental support for an improved workflow, see
+[the next section](#experimental-automatic-overlay-creation-and-building), below
+are the steps to manually prepare a patch:
 
 1. Fork the external project, create a new branch, push a commit adapting
    the project to your changes.
@@ -64,6 +67,27 @@ patch (or ask someone to prepare a patch) to fix the project:
    [#6724](https://github.com/coq/coq/issues/6724).
 
 Moreover your PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) file.
+
+### Experimental automatic overlay creation and building
+
+If you break external projects that are hosted on GitHub, you can use
+the `create-overlays.sh` script to automatically perform most of the
+above step. In order to do so, call the script as:
+```
+./dev/tools/create-overlays.sh ejgallego 9873 aac_tactics elpi ltac
+```
+replacing `ejgallego` by your github id and `9873` by the actual PR
+number. The script will:
+
+- checkout the contributions and prepare the branch/remote so you can
+  just commit the fixes and push,
+- add the corresponding overlay file in `dev/ci/user-overlays`
+
+For problems related to ML-plugins, if you use `dune build` to build
+Coq, it will actually be aware of the broken contributions and perform
+a global build. This is very convenient when using `merlin` as you
+will get a coherent view of all the broken plugins, which full
+incremental cross-project rebuild.
 
 Advanced GitLab CI information
 ------------------------------
