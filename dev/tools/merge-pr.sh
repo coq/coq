@@ -202,9 +202,8 @@ info "merging"
 git merge -v -S --no-ff FETCH_HEAD -m "Merge PR #$PR: $TITLE" -e
 
 # TODO: improve this check
-if ! git diff --quiet "$REMOTE/$CURRENT_LOCAL_BRANCH" -- dev/ci/user-overlays; then
-  warning "this PR may have overlays (sorry the check is not perfect)"
-  warning "if it has overlays please check the following:"
+if ! git diff --quiet --diff-filter=A "$REMOTE/$CURRENT_LOCAL_BRANCH" -- dev/ci/user-overlays; then
+  warning "this PR has overlays, please check the following:"
   warning "- each overlay has a corresponding open PR on the upstream repo"
   warning "- after merging please notify the upstream they can merge the PR"
 fi
