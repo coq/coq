@@ -46,8 +46,11 @@ for overlay in "${ci_dir}"/user-overlays/*.sh; do
     # shellcheck source=/dev/null
     . "${overlay}"
 done
+
+set +x
 # shellcheck source=ci-basic-overlay.sh
 . "${ci_dir}/ci-basic-overlay.sh"
+set -x
 
 # [git_download project] will download [project] and unpack it
 # in [$CI_BUILD_DIR/project] if the folder does not exist already;

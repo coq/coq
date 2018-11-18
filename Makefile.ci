@@ -9,12 +9,12 @@
 ##########################################################################
 
 CI_TARGETS= \
-    ci-aac-tactics \
+    ci-aac_tactics \
     ci-bedrock2 \
     ci-bignums \
     ci-color \
     ci-compcert \
-    ci-coq-dpdgraph \
+    ci-coq_dpdgraph \
     ci-coquelicot \
     ci-corn \
     ci-cpdt \
@@ -38,7 +38,7 @@ CI_TARGETS= \
     ci-mtac2 \
     ci-paramcoq \
     ci-pidetop \
-    ci-plugin-tutorial \
+    ci-plugin_tutorial \
     ci-quickchick \
     ci-sf \
     ci-simple-io \

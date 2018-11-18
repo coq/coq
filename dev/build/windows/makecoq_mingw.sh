@@ -1645,7 +1645,7 @@ function make_addon_bignums {
 
 function make_addon_equations {
   installer_addon_dependency equations
-  if build_prep_overlay Equations; then
+  if build_prep_overlay equations; then
     installer_addon_section equations "Equations" "Coq plugin for defining functions by equations" ""
     # Note: PATH is automatically saved/restored by build_prep / build_post
     PATH=$COQBIN:$PATH
