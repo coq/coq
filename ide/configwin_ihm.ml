@@ -59,7 +59,7 @@ class type widget =
 
 let debug = false
 let dbg s = if debug then Minilib.log s else ()
-
+(*
 (** This class builds a frame with a clist and two buttons :
    one to add items and one to remove the selected items.
    The class takes in parameter a function used to add items and
@@ -278,6 +278,7 @@ class ['a] list_selection_box
       (* initialize the clist with the listref *)
       self#update !listref
   end;;
+*)
 
 (** This class is used to build a box for a string parameter.*)
 class string_param_box param =
@@ -465,7 +466,7 @@ class modifiers_param_box param =
       else
 	()
   end ;;
-
+(*
 (** This class is used to build a box for a parameter whose values are a list.*)
 class ['a] list_param_box (param : 'a list_param) =
   let _ = dbg "list_param_box" in
@@ -492,6 +493,7 @@ class ['a] list_param_box (param : 'a list_param) =
       param.list_f_apply !listref ;
       param.list_value <- !listref
   end ;;
+*)
 
 (** This class creates a configuration box from a configuration structure *)
 class configuration_box conf_struct =
@@ -683,10 +685,12 @@ let edit ?(with_apply=true)
   in
     iter Return_cancel
 
+(*
 let edit_string l s =
   match GToolbox.input_string ~title: l ~text: s Configwin_messages.mValue with
     None -> s
   | Some s2 -> s2
+*)
 
 (** Create a string param. *)
 let string ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =
@@ -713,6 +717,7 @@ let bool ?(editable=true) ?help ?(f=(fun _ -> ())) label v =
       bool_f_apply = f ;
     }
 
+(*
 (** Create a list param. *)
 let list ?(editable=true) ?help
     ?(f=(fun (_:'a list) -> ()))
@@ -745,6 +750,7 @@ let strings ?(editable=true) ?help
     ?(eq=Pervasives.(=))
     ?(add=(fun () -> [])) label v =
   list ~editable ?help ~f ~eq ~edit: (edit_string label) ~add label (fun s -> [s]) v
+*)
 
 (** Create a combo param. *)
 let combo ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ()))
