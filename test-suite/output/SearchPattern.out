@@ -11,7 +11,6 @@ Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.testbit: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
-Byte.byte_beq: Byte.byte -> Byte.byte -> bool
 Nat.two: nat
 Nat.one: nat
 Nat.zero: nat

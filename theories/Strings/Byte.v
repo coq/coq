@@ -14,278 +14,40 @@ Require Export Coq.Init.Byte.
 
 Local Set Implicit Arguments.
 
-Lemma byte_dec_lb x y : x = y -> Byte.eqb x y = true.
+Definition eqb (a b : byte) : bool
+  := let '(a7, a6, a5, a4, a3, a2, a1, a0) := to_bits a in
+     let '(b7, b6, b5, b4, b3, b2, b1, b0) := to_bits b in
+     (Bool.eqb a0 b0 && Bool.eqb a1 b1 && Bool.eqb a2 b2 && Bool.eqb a3 b3 &&
+          Bool.eqb a4 b4 && Bool.eqb a5 b5 && Bool.eqb a6 b6 && Bool.eqb a7 b7)%bool.
+
+Module Export ByteNotations.
+  Export ByteSyntaxNotations.
+  Infix "=?" := eqb (at level 70) : byte_scope.
+End ByteNotations.
+
+Lemma byte_dec_lb x y : x = y -> eqb x y = true.
 Proof. intro; subst y; destruct x; reflexivity. Defined.
 
-Definition byte_dec_bl x y (H : Byte.eqb x y = true) : x = y
-  := match H in (_ = tr) return if tr then x = y else True with
-     | eq_refl
-       => match x, y return if Byte.eqb x y then x = y else True with
-          | x00, x00 => eq_refl
-          | x01, x01 => eq_refl
-          | x02, x02 => eq_refl
-          | x03, x03 => eq_refl
-          | x04, x04 => eq_refl
-          | x05, x05 => eq_refl
-          | x06, x06 => eq_refl
-          | x07, x07 => eq_refl
-          | x08, x08 => eq_refl
-          | x09, x09 => eq_refl
-          | x0a, x0a => eq_refl
-          | x0b, x0b => eq_refl
-          | x0c, x0c => eq_refl
-          | x0d, x0d => eq_refl
-          | x0e, x0e => eq_refl
-          | x0f, x0f => eq_refl
-          | x10, x10 => eq_refl
-          | x11, x11 => eq_refl
-          | x12, x12 => eq_refl
-          | x13, x13 => eq_refl
-          | x14, x14 => eq_refl
-          | x15, x15 => eq_refl
-          | x16, x16 => eq_refl
-          | x17, x17 => eq_refl
-          | x18, x18 => eq_refl
-          | x19, x19 => eq_refl
-          | x1a, x1a => eq_refl
-          | x1b, x1b => eq_refl
-          | x1c, x1c => eq_refl
-          | x1d, x1d => eq_refl
-          | x1e, x1e => eq_refl
-          | x1f, x1f => eq_refl
-          | x20, x20 => eq_refl
-          | x21, x21 => eq_refl
-          | x22, x22 => eq_refl
-          | x23, x23 => eq_refl
-          | x24, x24 => eq_refl
-          | x25, x25 => eq_refl
-          | x26, x26 => eq_refl
-          | x27, x27 => eq_refl
-          | x28, x28 => eq_refl
-          | x29, x29 => eq_refl
-          | x2a, x2a => eq_refl
-          | x2b, x2b => eq_refl
-          | x2c, x2c => eq_refl
-          | x2d, x2d => eq_refl
-          | x2e, x2e => eq_refl
-          | x2f, x2f => eq_refl
-          | x30, x30 => eq_refl
-          | x31, x31 => eq_refl
-          | x32, x32 => eq_refl
-          | x33, x33 => eq_refl
-          | x34, x34 => eq_refl
-          | x35, x35 => eq_refl
-          | x36, x36 => eq_refl
-          | x37, x37 => eq_refl
-          | x38, x38 => eq_refl
-          | x39, x39 => eq_refl
-          | x3a, x3a => eq_refl
-          | x3b, x3b => eq_refl
-          | x3c, x3c => eq_refl
-          | x3d, x3d => eq_refl
-          | x3e, x3e => eq_refl
-          | x3f, x3f => eq_refl
-          | x40, x40 => eq_refl
-          | x41, x41 => eq_refl
-          | x42, x42 => eq_refl
-          | x43, x43 => eq_refl
-          | x44, x44 => eq_refl
-          | x45, x45 => eq_refl
-          | x46, x46 => eq_refl
-          | x47, x47 => eq_refl
-          | x48, x48 => eq_refl
-          | x49, x49 => eq_refl
-          | x4a, x4a => eq_refl
-          | x4b, x4b => eq_refl
-          | x4c, x4c => eq_refl
-          | x4d, x4d => eq_refl
-          | x4e, x4e => eq_refl
-          | x4f, x4f => eq_refl
-          | x50, x50 => eq_refl
-          | x51, x51 => eq_refl
-          | x52, x52 => eq_refl
-          | x53, x53 => eq_refl
-          | x54, x54 => eq_refl
-          | x55, x55 => eq_refl
-          | x56, x56 => eq_refl
-          | x57, x57 => eq_refl
-          | x58, x58 => eq_refl
-          | x59, x59 => eq_refl
-          | x5a, x5a => eq_refl
-          | x5b, x5b => eq_refl
-          | x5c, x5c => eq_refl
-          | x5d, x5d => eq_refl
-          | x5e, x5e => eq_refl
-          | x5f, x5f => eq_refl
-          | x60, x60 => eq_refl
-          | x61, x61 => eq_refl
-          | x62, x62 => eq_refl
-          | x63, x63 => eq_refl
-          | x64, x64 => eq_refl
-          | x65, x65 => eq_refl
-          | x66, x66 => eq_refl
-          | x67, x67 => eq_refl
-          | x68, x68 => eq_refl
-          | x69, x69 => eq_refl
-          | x6a, x6a => eq_refl
-          | x6b, x6b => eq_refl
-          | x6c, x6c => eq_refl
-          | x6d, x6d => eq_refl
-          | x6e, x6e => eq_refl
-          | x6f, x6f => eq_refl
-          | x70, x70 => eq_refl
-          | x71, x71 => eq_refl
-          | x72, x72 => eq_refl
-          | x73, x73 => eq_refl
-          | x74, x74 => eq_refl
-          | x75, x75 => eq_refl
-          | x76, x76 => eq_refl
-          | x77, x77 => eq_refl
-          | x78, x78 => eq_refl
-          | x79, x79 => eq_refl
-          | x7a, x7a => eq_refl
-          | x7b, x7b => eq_refl
-          | x7c, x7c => eq_refl
-          | x7d, x7d => eq_refl
-          | x7e, x7e => eq_refl
-          | x7f, x7f => eq_refl
-          | x80, x80 => eq_refl
-          | x81, x81 => eq_refl
-          | x82, x82 => eq_refl
-          | x83, x83 => eq_refl
-          | x84, x84 => eq_refl
-          | x85, x85 => eq_refl
-          | x86, x86 => eq_refl
-          | x87, x87 => eq_refl
-          | x88, x88 => eq_refl
-          | x89, x89 => eq_refl
-          | x8a, x8a => eq_refl
-          | x8b, x8b => eq_refl
-          | x8c, x8c => eq_refl
-          | x8d, x8d => eq_refl
-          | x8e, x8e => eq_refl
-          | x8f, x8f => eq_refl
-          | x90, x90 => eq_refl
-          | x91, x91 => eq_refl
-          | x92, x92 => eq_refl
-          | x93, x93 => eq_refl
-          | x94, x94 => eq_refl
-          | x95, x95 => eq_refl
-          | x96, x96 => eq_refl
-          | x97, x97 => eq_refl
-          | x98, x98 => eq_refl
-          | x99, x99 => eq_refl
-          | x9a, x9a => eq_refl
-          | x9b, x9b => eq_refl
-          | x9c, x9c => eq_refl
-          | x9d, x9d => eq_refl
-          | x9e, x9e => eq_refl
-          | x9f, x9f => eq_refl
-          | xa0, xa0 => eq_refl
-          | xa1, xa1 => eq_refl
-          | xa2, xa2 => eq_refl
-          | xa3, xa3 => eq_refl
-          | xa4, xa4 => eq_refl
-          | xa5, xa5 => eq_refl
-          | xa6, xa6 => eq_refl
-          | xa7, xa7 => eq_refl
-          | xa8, xa8 => eq_refl
-          | xa9, xa9 => eq_refl
-          | xaa, xaa => eq_refl
-          | xab, xab => eq_refl
-          | xac, xac => eq_refl
-          | xad, xad => eq_refl
-          | xae, xae => eq_refl
-          | xaf, xaf => eq_refl
-          | xb0, xb0 => eq_refl
-          | xb1, xb1 => eq_refl
-          | xb2, xb2 => eq_refl
-          | xb3, xb3 => eq_refl
-          | xb4, xb4 => eq_refl
-          | xb5, xb5 => eq_refl
-          | xb6, xb6 => eq_refl
-          | xb7, xb7 => eq_refl
-          | xb8, xb8 => eq_refl
-          | xb9, xb9 => eq_refl
-          | xba, xba => eq_refl
-          | xbb, xbb => eq_refl
-          | xbc, xbc => eq_refl
-          | xbd, xbd => eq_refl
-          | xbe, xbe => eq_refl
-          | xbf, xbf => eq_refl
-          | xc0, xc0 => eq_refl
-          | xc1, xc1 => eq_refl
-          | xc2, xc2 => eq_refl
-          | xc3, xc3 => eq_refl
-          | xc4, xc4 => eq_refl
-          | xc5, xc5 => eq_refl
-          | xc6, xc6 => eq_refl
-          | xc7, xc7 => eq_refl
-          | xc8, xc8 => eq_refl
-          | xc9, xc9 => eq_refl
-          | xca, xca => eq_refl
-          | xcb, xcb => eq_refl
-          | xcc, xcc => eq_refl
-          | xcd, xcd => eq_refl
-          | xce, xce => eq_refl
-          | xcf, xcf => eq_refl
-          | xd0, xd0 => eq_refl
-          | xd1, xd1 => eq_refl
-          | xd2, xd2 => eq_refl
-          | xd3, xd3 => eq_refl
-          | xd4, xd4 => eq_refl
-          | xd5, xd5 => eq_refl
-          | xd6, xd6 => eq_refl
-          | xd7, xd7 => eq_refl
-          | xd8, xd8 => eq_refl
-          | xd9, xd9 => eq_refl
-          | xda, xda => eq_refl
-          | xdb, xdb => eq_refl
-          | xdc, xdc => eq_refl
-          | xdd, xdd => eq_refl
-          | xde, xde => eq_refl
-          | xdf, xdf => eq_refl
-          | xe0, xe0 => eq_refl
-          | xe1, xe1 => eq_refl
-          | xe2, xe2 => eq_refl
-          | xe3, xe3 => eq_refl
-          | xe4, xe4 => eq_refl
-          | xe5, xe5 => eq_refl
-          | xe6, xe6 => eq_refl
-          | xe7, xe7 => eq_refl
-          | xe8, xe8 => eq_refl
-          | xe9, xe9 => eq_refl
-          | xea, xea => eq_refl
-          | xeb, xeb => eq_refl
-          | xec, xec => eq_refl
-          | xed, xed => eq_refl
-          | xee, xee => eq_refl
-          | xef, xef => eq_refl
-          | xf0, xf0 => eq_refl
-          | xf1, xf1 => eq_refl
-          | xf2, xf2 => eq_refl
-          | xf3, xf3 => eq_refl
-          | xf4, xf4 => eq_refl
-          | xf5, xf5 => eq_refl
-          | xf6, xf6 => eq_refl
-          | xf7, xf7 => eq_refl
-          | xf8, xf8 => eq_refl
-          | xf9, xf9 => eq_refl
-          | xfa, xfa => eq_refl
-          | xfb, xfb => eq_refl
-          | xfc, xfc => eq_refl
-          | xfd, xfd => eq_refl
-          | xfe, xfe => eq_refl
-          | xff, xff => eq_refl
-          | _, _ => I
-          end
-     end.
+Lemma byte_dec_bl x y (H : eqb x y = true) : x = y.
+Proof.
+  rewrite <- (of_bits_to_bits x), <- (of_bits_to_bits y).
+  cbv [eqb] in H; revert H.
+  generalize (to_bits x) (to_bits y); clear x y; intros x y H.
+  repeat match goal with
+         | [ H : and _ _ |- _ ] => destruct H
+         | [ H : prod _ _ |- _ ] => destruct H
+         | [ H : context[andb _ _ = true] |- _ ] => rewrite Bool.andb_true_iff in H
+         | [ H : context[Bool.eqb _ _ = true] |- _ ] => rewrite Bool.eqb_true_iff in H
+         | _ => progress subst
+         | _ => reflexivity
+         end.
+Qed.
 
-Lemma eqb_false x y : Byte.eqb x y = false -> x <> y.
+Lemma eqb_false x y : eqb x y = false -> x <> y.
 Proof. intros H H'; pose proof (byte_dec_lb H'); congruence. Qed.
 
 Definition byte_eq_dec (x y : byte) : {x = y} + {x <> y}
-  := (if Byte.eqb x y as beq return Byte.eqb x y = beq -> _
+  := (if eqb x y as beq return eqb x y = beq -> _
       then fun pf => left (byte_dec_bl x y pf)
       else fun pf => right (eqb_false pf))
        eq_refl.

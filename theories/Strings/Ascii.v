@@ -190,36 +190,29 @@ Qed.
  *)
 
 Definition ascii_of_byte (b : byte) : ascii
-  := ascii_of_N (Byte.to_N b).
+  := let '(b7, b6, b5, b4, b3, b2, b1, b0) := Byte.to_bits b in
+     Ascii b7 b6 b5 b4 b3 b2 b1 b0.
 
 Definition byte_of_ascii (a : ascii) : byte
-  := match Byte.of_N (N_of_ascii a) with
-     | Some v => v
-     | None => x00 (* can't happen *)
-     end.
+  := let (b7, b6, b5, b4, b3, b2, b1, b0) := a in
+     Byte.of_bits (b7, b6, b5, b4, b3, b2, b1, b0).
 
 Lemma ascii_of_byte_of_ascii x : ascii_of_byte (byte_of_ascii x) = x.
 Proof.
   cbv [ascii_of_byte byte_of_ascii].
-  pose proof (to_of_N (N_of_ascii x)).
-  destruct (of_N (N_of_ascii x)) as [x'|] eqn:H1.
-  { specialize (H x' eq_refl); rewrite H.
-    apply ascii_N_embedding. }
-  { exfalso.
-    rewrite of_N_None_iff in H1.
-    pose proof (N_ascii_bounded x) as H2.
-    rewrite N.lt_nge in H1, H2.
-    destruct (N.le_gt_cases (N_of_ascii x) 255) as [H3|H3].
-    { apply H1, H3. }
-    { rewrite <- N.le_succ_l in H3; apply H2, H3. } }
+  destruct x; rewrite to_bits_of_bits; reflexivity.
 Qed.
 
 Lemma byte_of_ascii_of_byte x : byte_of_ascii (ascii_of_byte x) = x.
 Proof.
   cbv [ascii_of_byte byte_of_ascii].
-  rewrite N_ascii_embedding, of_to_N; [ reflexivity | ].
-  pose proof (to_N_bounded x) as H.
-  rewrite <- N.lt_succ_r in H; exact H.
+  repeat match goal with
+         | [ |- context[match ?x with pair _ _ => _ end] ]
+           => rewrite (surjective_pairing x)
+         | [ |- context[(fst ?x, snd ?x)] ]
+           => rewrite <- (surjective_pairing x)
+         end.
+  rewrite of_bits_to_bits; reflexivity.
 Qed.
 
 Module Export AsciiSyntax.
