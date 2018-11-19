@@ -942,34 +942,36 @@ let check_eq_instances g t1 t2 =
 
 (** Pretty-printing *)
 
+let pr_umap sep pr map =
+  let cmp (u,_) (v,_) = Level.compare u v in
+  Pp.prlist_with_sep sep pr (List.sort cmp (UMap.bindings map))
+
 let pr_arc prl = function
   | _, Canonical {univ=u; ltle; _} ->
     if UMap.is_empty ltle then mt ()
     else
       prl u ++ str " " ++
       v 0
-        (pr_sequence (fun (v, strict) ->
+        (pr_umap Pp.spc (fun (v, strict) ->
           (if strict then str "< " else str "<= ") ++ prl v)
-           (UMap.bindings ltle)) ++
+           ltle) ++
       fnl ()
   | u, Equiv v ->
       prl u  ++ str " = " ++ prl v ++ fnl ()
 
 let pr_universes prl g =
-  let graph = UMap.fold (fun u a l -> (u,a)::l) g.entries [] in
-  prlist (pr_arc prl) graph
+  pr_umap mt (pr_arc prl) g.entries
 
 (* Dumping constraints to a file *)
 
 let dump_universes output g =
   let dump_arc u = function
     | Canonical {univ=u; ltle; _} ->
-        let u_str = Level.to_string u in
         UMap.iter (fun v strict ->
           let typ = if strict then Lt else Le in
-          output typ u_str (Level.to_string v)) ltle;
+          output typ u v) ltle;
     | Equiv v ->
-      output Eq (Level.to_string u) (Level.to_string v)
+      output Eq u v
   in
   UMap.iter dump_arc g.entries
 

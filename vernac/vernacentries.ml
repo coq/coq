@@ -319,7 +319,7 @@ let print_registered () =
   hov 0 (prlist_with_sep fnl pr_lib_ref @@ Coqlib.get_lib_refs ())
 
 
-let dump_universes_gen g s =
+let dump_universes_gen prl g s =
   let output = open_out s in
   let output_constraint, close =
     if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
@@ -344,10 +344,12 @@ let dump_universes_gen g s =
           | Univ.Lt -> "<"
           | Univ.Le -> "<="
           | Univ.Eq -> "="
-        in Printf.fprintf output "%s %s %s ;\n" left kind right
+        in
+        Printf.fprintf output "%s %s %s ;\n" left kind right
       end, (fun () -> close_out output)
     end
   in
+  let output_constraint k l r = output_constraint k (prl l) (prl r) in
   try
     UGraph.dump_universes output_constraint g;
     close ();
@@ -356,6 +358,36 @@ let dump_universes_gen g s =
     let reraise = CErrors.push reraise in
     close ();
     iraise reraise
+
+let universe_subgraph ?loc g univ =
+  let open Univ in
+  let sigma = Evd.from_env (Global.env()) in
+  let univs_of q =
+    let q =  Glob_term.(GType (UNamed q)) in
+    (* this function has a nice error message for not found univs *)
+    LSet.singleton (Pretyping.interp_known_glob_level ?loc sigma q)
+  in
+  let univs = List.fold_left (fun univs q -> LSet.union univs (univs_of q)) LSet.empty g in
+  let csts = UGraph.constraints_for ~kept:(LSet.add Level.prop (LSet.add Level.set univs)) univ in
+  let univ = LSet.fold UGraph.add_universe_unconstrained univs UGraph.initial_universes in
+  UGraph.merge_constraints csts univ
+
+let print_universes ?loc ~sort ~subgraph dst =
+  let univ = Global.universes () in
+  let univ = match subgraph with
+    | None -> univ
+    | Some g -> universe_subgraph ?loc g univ
+  in
+  let univ = if sort then UGraph.sort_universes univ else univ in
+  let pr_remaining =
+    if Global.is_joined_environment () then mt ()
+    else str"There may remain asynchronous universe constraints"
+  in
+  let prl = UnivNames.pr_with_global_universes in
+  begin match dst with
+    | None -> UGraph.pr_universes prl univ ++ pr_remaining
+    | Some s -> dump_universes_gen (fun u -> Pp.string_of_ppcmds (prl u)) univ s
+  end
 
 (*********************)
 (* "Locate" commands *)
@@ -1826,17 +1858,7 @@ let vernac_print ~atts env sigma =
   | PrintCoercionPaths (cls,clt) ->
     Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
   | PrintCanonicalConversions -> Prettyp.print_canonical_projections env sigma
-  | PrintUniverses (b, dst) ->
-     let univ = Global.universes () in
-     let univ = if b then UGraph.sort_universes univ else univ in
-     let pr_remaining =
-       if Global.is_joined_environment () then mt ()
-       else str"There may remain asynchronous universe constraints"
-     in
-     begin match dst with
-     | None -> UGraph.pr_universes UnivNames.pr_with_global_universes univ ++ pr_remaining
-     | Some s -> dump_universes_gen univ s
-     end
+  | PrintUniverses (sort, subgraph, dst) -> print_universes ~sort ~subgraph dst
   | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal -> Hints.pr_applicable_hint ()
   | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s

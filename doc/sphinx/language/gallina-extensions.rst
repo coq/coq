@@ -2155,6 +2155,12 @@ If `string` ends in ``.dot`` or ``.gv``, the constraints are printed in the DOT
 language, and can be processed by Graphviz tools. The format is
 unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
+.. cmdv:: Print Universes Subgraph(@names)
+
+Prints the graph restricted to the requested names (adjusting
+constraints to preserve the implied transitive constraints between
+kept universes).
+
 .. _existential-variables:
 
 Existential variables

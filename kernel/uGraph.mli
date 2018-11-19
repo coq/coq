@@ -86,7 +86,7 @@ val check_subtype : AUContext.t check_function
 (** {6 Dumping to a file } *)
 
 val dump_universes :
-  (constraint_type -> string -> string -> unit) -> t -> unit
+  (constraint_type -> Level.t -> Level.t -> unit) -> t -> unit
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit

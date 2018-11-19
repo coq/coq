@@ -45,7 +45,7 @@ type printable =
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
-  | PrintUniverses of bool * string option
+  | PrintUniverses of bool * qualid list option * string option
   | PrintHint of qualid or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string

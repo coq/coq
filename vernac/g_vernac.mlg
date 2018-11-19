@@ -989,8 +989,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Scope"; s = IDENT -> { PrintScope s }
       | IDENT "Visibility"; s = OPT IDENT -> { PrintVisibility s }
       | IDENT "Implicit"; qid = smart_global -> { PrintImplicit qid }
-      | IDENT "Universes"; fopt = OPT ne_string -> { PrintUniverses (false, fopt) }
-      | IDENT "Sorted"; IDENT "Universes"; fopt = OPT ne_string -> { PrintUniverses (true, fopt) }
+      | b = [ IDENT "Sorted" -> { true } | -> { false } ]; IDENT "Universes";
+        g = OPT printunivs_subgraph; fopt = OPT ne_string ->
+        { PrintUniverses (b, g, fopt) }
       | IDENT "Assumptions"; qid = smart_global -> { PrintAssumptions (false, false, qid) }
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (true, false, qid) }
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> { PrintAssumptions (false, true, qid) }
@@ -999,6 +1000,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Strategies" -> { PrintStrategy None }
       | IDENT "Registered" -> { PrintRegistered }
     ] ]
+  ;
+  printunivs_subgraph:
+    [ [ IDENT "Subgraph"; "("; l = LIST0 reference; ")" -> { l } ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> { FunClass }

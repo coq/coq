@@ -95,6 +95,11 @@ Standard Library
 
 - Added `ByteVector` type that can convert to and from [string].
 
+Universes
+
+- Added `Print Universes Subgraph` variant of `Print Universes`.
+  Try for instance `Print Universes Subgraph(sigT2.u1 sigT_of_sigT2.u1 projT3_eq.u1 eq_sigT2_rect.u1).`
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
