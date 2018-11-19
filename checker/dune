@@ -14,7 +14,7 @@
   %{project_root}/kernel/{cbytegen,clambda,nativeinstr,nativevalues,nativeconv,nativecode,nativelib,nativelibrary,nativelambda}.ml{,i})
 
 (copy_files#
-  %{project_root}/kernel/{subtyping,term_typing,safe_typing,entries,cooking}.ml{,i})
+  %{project_root}/kernel/{subtyping,term_typing,safe_typing,entries,cooking,transparentState}.ml{,i})
 
 ; VM stuff
 
