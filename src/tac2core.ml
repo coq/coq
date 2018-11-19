@@ -258,6 +258,16 @@ let () = define1 "int_neg" int begin fun m ->
   return (Value.of_int (~- m))
 end
 
+(** Char *)
+
+let () = define1 "char_of_int" int begin fun n ->
+  wrap (fun () -> Value.of_char (Char.chr n))
+end
+
+let () = define1 "char_to_int" char begin fun n ->
+  wrap (fun () -> Value.of_int (Char.code n))
+end
+
 (** String *)
 
 let () = define2 "string_make" int char begin fun n c ->

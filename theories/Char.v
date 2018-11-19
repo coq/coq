@@ -6,18 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export Ltac2.Init.
+Require Import Ltac2.Init.
 
-Require Ltac2.Int.
-Require Ltac2.Char.
-Require Ltac2.String.
-Require Ltac2.Ident.
-Require Ltac2.Array.
-Require Ltac2.Message.
-Require Ltac2.Constr.
-Require Ltac2.Control.
-Require Ltac2.Fresh.
-Require Ltac2.Pattern.
-Require Ltac2.Std.
-Require Ltac2.Env.
-Require Export Ltac2.Notations.
+Ltac2 @external of_int : int -> char := "ltac2" "char_of_int".
+Ltac2 @external to_int : char -> int := "ltac2" "char_to_int".
