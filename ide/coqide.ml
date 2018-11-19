@@ -359,7 +359,7 @@ let print sn =
         Filename.quote (Filename.basename f_name) ^ " | " ^ cmd_print#get
       in
       let w = GWindow.window ~title:"Print" ~modal:true
-        ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE" ()
+        ~position:`CENTER ~wmclass:("CoqIDE","CoqIDE") ()
       in
       let v = GPack.vbox ~spacing:10 ~border_width:10 ~packing:w#add ()
       in
@@ -939,7 +939,7 @@ let emit_to_focus window sgn =
 
 let build_ui () =
   let w = GWindow.window
-    ~wm_class:"CoqIde" ~wm_name:"CoqIde"
+    ~wmclass:("CoqIde","CoqIde")
     ~width:window_width#get ~height:window_height#get
     ~title:"CoqIde" ()
   in
