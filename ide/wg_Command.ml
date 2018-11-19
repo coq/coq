@@ -100,7 +100,7 @@ object(self)
     router#register_route route_id result;
     r_bin#add_with_viewport (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;
-    let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
+    let cb clr = result#misc#modify_bg [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
     let _ = result#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
     let cb ft = result#misc#modify_font (Pango.Font.from_string ft) in
@@ -164,7 +164,7 @@ object(self)
 
   method private refresh_color clr =
     let clr = Gdk.Color.color_parse clr in
-    let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
+    let iter (_,view,_) = view#misc#modify_bg [`NORMAL, `COLOR clr] in
     List.iter iter views
 
   initializer

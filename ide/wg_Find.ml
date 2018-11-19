@@ -135,13 +135,13 @@ class finder name (view : GText.view) =
       view#buffer#end_user_action ()
 
     method private set_not_found () =
-      find_entry#misc#modify_base [`NORMAL, `NAME "#F7E6E6"];
+      find_entry#misc#modify_bg [`NORMAL, `NAME "#F7E6E6"];
 
     method private set_found () =
-      find_entry#misc#modify_base [`NORMAL, `NAME "#BAF9CE"]
+      find_entry#misc#modify_bg [`NORMAL, `NAME "#BAF9CE"]
 
     method private set_normal () =
-      find_entry#misc#modify_base [`NORMAL, `NAME "white"]
+      find_entry#misc#modify_bg [`NORMAL, `NAME "white"]
 
     method private find_from backward ?(wrapped=false) (starti : GText.iter) =
       let found =

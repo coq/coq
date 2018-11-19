@@ -59,7 +59,7 @@ let message_view () : message_view =
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
   view#misc#show ();
-  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed ~callback:cb in
   let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
   let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
