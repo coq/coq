@@ -59,7 +59,7 @@ module type S =
         type e 'a = 'y;
         value create : string -> e 'a;
         value parse : e 'a -> parsable -> 'a;
-        value parse_token : e 'a -> Stream.t te -> 'a;
+        value parse_token_stream : e 'a -> Stream.t te -> 'a;
         value name : e 'a -> string;
         value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
         value print : Format.formatter -> e 'a -> unit;

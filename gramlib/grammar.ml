@@ -862,7 +862,6 @@ module type S =
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
         external obj : 'a e -> te Gramext.g_entry = "%identity"
-        val parse_token : 'a e -> te Stream.t -> 'a
       end
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
@@ -930,18 +929,6 @@ module GMake (L : GLexerType) =
           Obj.magic (parse_parsable e p : Obj.t)
         let parse_token_stream (e : 'a e) ts : 'a =
           Obj.magic (e.estart 0 ts : Obj.t)
-        let _warned_using_parse_token = ref false
-        let parse_token (entry : 'a e) ts : 'a =
-          (* commented: too often warned in Coq...
-          if not warned_using_parse_token.val then do {
-            eprintf "<W> use of Entry.parse_token ";
-            eprintf "deprecated since 2017-06-16\n%!";
-            eprintf "use Entry.parse_token_stream instead\n%! ";
-            warned_using_parse_token.val := True
-          }
-          else ();
-          *)
-          parse_token_stream entry ts
         let name e = e.ename
         let of_parser n (p : te Stream.t -> 'a) : 'a e =
           {egram = gram; ename = n; elocal = false;

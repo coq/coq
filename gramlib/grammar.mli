@@ -36,7 +36,6 @@ module type S =
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
         external obj : 'a e -> te Gramext.g_entry = "%identity"
-        val parse_token : 'a e -> te Stream.t -> 'a
       end
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule

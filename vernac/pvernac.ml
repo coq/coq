@@ -42,7 +42,7 @@ module Vernac_ =
     let command_entry_ref = ref noedit_mode
     let command_entry =
       Gram.Entry.of_parser "command_entry"
-        (fun strm -> Gram.Entry.parse_token !command_entry_ref strm)
+        (fun strm -> Gram.Entry.parse_token_stream !command_entry_ref strm)
 
   end
 
