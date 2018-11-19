@@ -16,13 +16,6 @@ open Entries
 
 (** Inductive type checking and errors *)
 
-(** The different kinds of errors that may result of a malformed inductive
-  definition. *)
-
-val infos_and_sort : env -> constr -> Univ.Universe.t
-
-val check_subtyping_arity_constructor : env -> (constr -> constr) -> types -> int -> bool -> unit
-
 val check_positivity : chkpos:bool ->
            Names.MutInd.t ->
            Environ.env ->
