@@ -71,27 +71,26 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_ref reduce ref udecl =
-  let typ, univs = Typeops.type_of_global_in_context (Global.env ()) ref in
+  let env = Global.env () in
+  let typ, univs = Typeops.type_of_global_in_context env ref in
   let inst = Univ.make_abstract_instance univs in
-  let bl = UnivNames.universe_binders_with_opt_names ref udecl in
+  let bl = UnivNames.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
   let typ = EConstr.of_constr typ in
   let typ =
     if reduce then
-      let env = Global.env () in
       let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
   let variance = match ref with
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
-      let mind = Environ.lookup_mind ind (Global.env ()) in
+      let mind = Environ.lookup_mind ind env in
       begin match mind.Declarations.mind_universes with
         | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ -> None
         | Declarations.Cumulative_ind cumi -> Some (Univ.ACumulativityInfo.variance cumi)
       end
   in
-  let env = Global.env () in
   let inst =
     if Global.is_polymorphic ref
     then Printer.pr_universe_instance sigma inst
@@ -571,7 +570,7 @@ let print_constant with_values sep sp udecl =
   in
   let ctx =
     UState.of_binders
-      (UnivNames.universe_binders_with_opt_names (ConstRef sp) udecl)
+      (UnivNames.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in

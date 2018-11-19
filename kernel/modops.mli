@@ -106,10 +106,9 @@ type signature_mismatch_error =
   | RecordFieldExpected of bool
   | RecordProjectionsExpected of Name.t list
   | NotEqualInductiveAliases
-  | IncompatibleInstances
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
-  | IncompatibleConstraints of Univ.AUContext.t
+  | IncompatibleConstraints of { got : Univ.AUContext.t; expect : Univ.AUContext.t }
 
 type module_typing_error =
   | SignatureMismatch of

@@ -41,8 +41,7 @@ Arguments A, Wrap are implicit and maximally inserted
 Argument scopes are [type_scope _]
 Polymorphic bar@{u} = nat
      : Wrap@{u} Set
-(* u |= Set < u
-         *)
+(* u |= Set < u *)
 
 bar is universe polymorphic
 Polymorphic foo@{u UnivBinders.17 v} = 

@@ -570,9 +570,9 @@ struct
   include S
 
   let pr prl c =
-    fold (fun (u1,op,u2) pp_std ->
-      pp_std ++ prl u1 ++ pr_constraint_type op ++
-	prl u2 ++ fnl () )  c (str "")
+    v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
+      hov 0 (prl u1 ++ pr_constraint_type op ++ prl u2))
+       (elements c))
 
 end
 
