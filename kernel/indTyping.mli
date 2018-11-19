@@ -8,17 +8,25 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open Constr
 open Environ
+open Entries
+open Declarations
 
-val typecheck_inductive :
-  env ->
-  Entries.mutual_inductive_entry ->
-  env * env * rel_context *
-  (Id.t * Id.t list * types array *
-   (rel_context *
-    (bool * types * Univ.Universe.t,
-     Univ.Level.t option list * Univ.Universe.t)
-      Declarations.declaration_arity))
+(** Type checking for some inductive entry.
+    Returns:
+    - environment with inductives + parameters in rel context
+    - abstracted universes
+    - parameters
+    - for each inductive,
+      (arity * constructors) (with params)
+      * (indices * splayed constructor types) (both without params)
+      * allowed eliminations
+ *)
+val typecheck_inductive : env -> mutual_inductive_entry ->
+  env
+  * abstract_inductive_universes
+  * Constr.rel_context
+  * ((inductive_arity * Constr.types array) *
+     (Constr.rel_context * (Constr.rel_context * Constr.types) array) *
+     Sorts.family list)
     array

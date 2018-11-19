@@ -1162,6 +1162,9 @@ let error_bad_entry () =
 let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
+let error_inductive_bad_univs () =
+  str "Incorrect universe constrains declared for inductive type."
+
 (* Recursion schemes errors *)
 
 let error_not_allowed_case_analysis env isrec kind i =
@@ -1198,7 +1201,8 @@ let explain_inductive_error = function
   | NotAnArity (env, c) -> error_not_an_arity env c
   | BadEntry -> error_bad_entry ()
   | LargeNonPropInductiveNotInType ->
-      error_large_non_prop_inductive_not_in_type ()
+    error_large_non_prop_inductive_not_in_type ()
+  | BadUnivs -> error_inductive_bad_univs ()
 
 (* Recursion schemes errors *)
 

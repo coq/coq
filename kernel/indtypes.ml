@@ -61,6 +61,7 @@ type inductive_error = Type_errors.inductive_error =
   | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
+  | BadUnivs
 
 exception InductiveError = Type_errors.InductiveError
 
@@ -366,21 +367,20 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
     If [chkpos] is [false] then positivity is assumed, and
     [check_positivity_one] computes the subterms occurrences in a
     best-effort fashion. *)
-let check_positivity ~chkpos kn env_ar_par paramsctxt finite inds =
+let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
   let ntypes = Array.length inds in
   let recursive = finite != BiFinite in
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
   let ra_env_ar = Array.rev_to_list rc in
   let nparamsctxt = Context.Rel.length paramsctxt in
   let nmr = Context.Rel.nhyps paramsctxt in
-  let check_one i (_,lcnames,lc,(sign,_)) =
+  let check_one i (_,lcnames) (nindices,lc) =
     let ra_env_ar_par =
       List.init nparamsctxt (fun _ -> (Norec,mk_norec)) @ ra_env_ar in
     let ienv = (env_ar_par, 1+nparamsctxt, ntypes, ra_env_ar_par) in
-    let nnonrecargs = Context.Rel.nhyps sign - nmr in
-    check_positivity_one ~chkpos recursive ienv paramsctxt (kn,i) nnonrecargs lcnames lc
+    check_positivity_one ~chkpos recursive ienv paramsctxt (kn,i) nindices lcnames lc
   in
-  let irecargs_nmr = Array.mapi check_one inds in
+  let irecargs_nmr = Array.map2_i check_one names inds in
   let irecargs = Array.map snd irecargs_nmr
   and nmr' = array_min nmr irecargs_nmr
   in (nmr',Rtree.mk_rec irecargs)
@@ -390,48 +390,17 @@ let check_positivity ~chkpos kn env_ar_par paramsctxt finite inds =
 (************************************************************************)
 (* Build the inductive packet *)
 
-(* Allowed eliminations *)
-
-let all_sorts = [InProp;InSet;InType]
-let small_sorts = [InProp;InSet]
-let logical_sorts = [InProp]
-
-let allowed_sorts is_smashed s =
-  if not is_smashed 
-  then (** Naturally in the defined sort.
-	   If [s] is Prop, it must be small and unitary.
-	   Unsmashed, predicative Type and Set: all elimination allowed
-	   as well. *)
-      all_sorts
-  else 
-    match Sorts.family s with
-    (* Type: all elimination allowed: above and below *)
-    | InType -> all_sorts
-    (* Smashed Set is necessarily impredicative: forbids large elimination *)
-    | InSet -> small_sorts
-    (* Smashed to Prop, no informative eliminations allowed *)
-    | InProp -> logical_sorts
-    
-(* Previous comment: *)
-(* Unitary/empty Prop: elimination to all sorts are realizable *)
-(* unless the type is large. If it is large, forbids large elimination *)
-(* which otherwise allows simulating the inconsistent system Type:Type. *)
-(* -> this is now handled by is_smashed: *)
-(* - all_sorts in case of small, unitary Prop (not smashed) *)
-(* - logical_sorts in case of large, unitary Prop (smashed) *)
-
-let arity_conclusion = function
-  | RegularArity (_, c, _) -> c
-  | TemplateArity (_, s) -> mkType s
+let repair_arity indices = function
+  | RegularArity ar -> ar.mind_user_arity
+  | TemplateArity ar -> mkArity (indices,Sorts.sort_of_univ ar.template_level)
 
 let fold_inductive_blocks f =
-  Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
-    f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (arity_conclusion ar) arsign))
+  Array.fold_left (fun acc ((arity,lc),(indices,_),_) ->
+    f (Array.fold_left f acc lc) (repair_arity indices arity))
 
 let used_section_variables env inds =
-  let ids = fold_inductive_blocks
-    (fun l c -> Id.Set.union (Environ.global_vars_set env c) l)
-      Id.Set.empty inds in
+  let fold l c = Id.Set.union (Environ.global_vars_set env c) l in
+  let ids = fold_inductive_blocks fold Id.Set.empty inds in
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
@@ -502,56 +471,21 @@ let compute_projections (kn, i as ind) mib =
     Array.of_list (List.rev labs),
     Array.of_list (List.rev pbs)
 
-let abstract_inductive_universes iu =
-  match iu with
-  | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
-  | Polymorphic_ind_entry (nas, ctx) ->
-    let (inst, auctx) = Univ.abstract_universes nas ctx in
-    let inst = Univ.make_instance_subst inst in
-    (inst, Polymorphic_ind auctx)
-  | Cumulative_ind_entry (nas, cumi) ->
-    let (inst, acumi) = Univ.abstract_cumulativity_info nas cumi in
-    let inst = Univ.make_instance_subst inst in
-    (inst, Cumulative_ind acumi)
-
-let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr recargs =
+let build_inductive env names prv univs paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
-  let nparamsctxt = Context.Rel.length paramsctxt in
-  let substunivs, aiu = abstract_inductive_universes iu in
-  let paramsctxt = Vars.subst_univs_level_context substunivs paramsctxt in
-  let env_ar =
-    let ctxunivs = Environ.rel_context env_ar in 
-    let ctxunivs' = Vars.subst_univs_level_context substunivs ctxunivs in
-      Environ.push_rel_context ctxunivs' env
-  in
   (* Check one inductive *)
-  let build_one_packet (id,cnames,lc,(ar_sign,ar_kind)) recarg =
+  let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
     (* Type of constructors in normal form *)
-    let lc = Array.map (Vars.subst_univs_level_constr substunivs) lc in
-    let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
-    let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
+    let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b (d@paramsctxt)) splayed_lc in
     let consnrealdecls =
-      Array.map (fun (d,_) -> Context.Rel.length d - nparamsctxt)
+      Array.map (fun (d,_) -> Context.Rel.length d)
 	splayed_lc in
     let consnrealargs =
-      Array.map (fun (d,_) -> Context.Rel.nhyps d - nparamargs)
+      Array.map (fun (d,_) -> Context.Rel.nhyps d)
 	splayed_lc in
-    (* Elimination sorts *)
-    let arkind,kelim = 
-      match ar_kind with
-      | TemplateArity (paramlevs, lev) -> 
-	let ar = {template_param_levels = paramlevs; template_level = lev} in
-	  TemplateArity ar, all_sorts
-      | RegularArity (info,ar,defs) ->
-        let s = Sorts.sort_of_univ defs in
-	let kelim = allowed_sorts info s in
-	let ar = RegularArity 
-	  { mind_user_arity = Vars.subst_univs_level_constr substunivs ar; 
-            mind_sort = Sorts.sort_of_univ (Univ.subst_univs_level_universe substunivs defs); } in
-	  ar, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
     let transf num =
@@ -568,10 +502,10 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
     let rtbl = Array.init (List.length cnames) transf in
       (* Build the inductive packet *)
       { mind_typename = id;
-	mind_arity = arkind;
-	mind_arity_ctxt = Vars.subst_univs_level_context substunivs ar_sign;
-	mind_nrealargs = Context.Rel.nhyps ar_sign - nparamargs;
-	mind_nrealdecls = Context.Rel.length ar_sign - nparamsctxt;
+        mind_arity = arity;
+        mind_arity_ctxt = indices @ paramsctxt;
+        mind_nrealargs = Context.Rel.nhyps indices;
+        mind_nrealdecls = Context.Rel.length indices;
 	mind_kelim = kelim;
 	mind_consnames = Array.of_list cnames;
 	mind_consnrealdecls = consnrealdecls;
@@ -583,7 +517,7 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 	mind_nb_args = !nblock;
 	mind_reloc_tbl = rtbl;
       } in
-  let packets = Array.map2 build_one_packet inds recargs in
+  let packets = Array.map3 build_one_packet names inds recargs in
   let mib =
       (* Build the mutual inductive *)
     { mind_record = NotRecord;
@@ -594,7 +528,7 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
       mind_nparams_rec = nmr;
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
-      mind_universes = aiu;
+      mind_universes = univs;
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }
@@ -602,7 +536,7 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
   let record_info = match isrecord with
   | Some (Some rid) ->
     let is_record pkt =
-      pkt.mind_kelim == all_sorts
+      List.exists (Sorts.family_equal Sorts.InType) pkt.mind_kelim
       && Array.length pkt.mind_consnames == 1
       && pkt.mind_consnrealargs.(0) > 0
     in
@@ -625,11 +559,17 @@ let build_inductive env prv iu env_ar paramsctxt kn isrecord isfinite inds nmr r
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar, env_ar_par, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
+  let (env_ar_par, univs, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
   (* Then check positivity conditions *)
   let chkpos = (Environ.typing_flags env).check_guarded in
-  let (nmr,recargs) = check_positivity ~chkpos kn env_ar_par paramsctxt mie.mind_entry_finite inds in
+  let names = Array.map_of_list (fun entry -> entry.mind_entry_typename, entry.mind_entry_consnames)
+      mie.mind_entry_inds
+  in
+  let (nmr,recargs) = check_positivity ~chkpos kn names
+      env_ar_par paramsctxt mie.mind_entry_finite
+      (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
+  in
   (* Build the inductive packets *)
-    build_inductive env mie.mind_entry_private mie.mind_entry_universes
-      env_ar paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
+    build_inductive env names mie.mind_entry_private univs
+      paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
       inds nmr recargs

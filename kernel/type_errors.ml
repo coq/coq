@@ -79,6 +79,7 @@ type inductive_error =
   | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
+  | BadUnivs
 
 exception InductiveError of inductive_error
 
