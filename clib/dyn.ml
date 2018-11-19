@@ -38,6 +38,7 @@ sig
   type t = Dyn : 'a tag * 'a -> t
 
   val create : string -> 'a tag
+  val anonymous : int -> 'a tag
   val eq : 'a tag -> 'b tag -> ('a, 'b) CSig.eq option
   val repr : 'a tag -> string
 
@@ -81,14 +82,21 @@ module Self : PreS = struct
 
   let create (s : string) =
     let hash = Hashtbl.hash s in
-    let () =
-      if Int.Map.mem hash !dyntab then
-        let old = Int.Map.find hash !dyntab in
-        let () = Printf.eprintf "Dynamic tag collision: %s vs. %s\n%!" s old in
-        assert false
-    in
-    let () = dyntab := Int.Map.add hash s !dyntab in
+    if Int.Map.mem hash !dyntab then begin
+      let old = Int.Map.find hash !dyntab in
+      Printf.eprintf "Dynamic tag collision: %s vs. %s\n%!" s old;
+      assert false
+    end;
+    dyntab := Int.Map.add hash s !dyntab;
     hash
+
+  let anonymous n =
+    if Int.Map.mem n !dyntab then begin
+      Printf.eprintf "Dynamic tag collision: %d\n%!" n;
+      assert false
+    end;
+    dyntab := Int.Map.add n "<anonymous>" !dyntab;
+    n
 
   let eq : 'a 'b. 'a tag -> 'b tag -> ('a, 'b) CSig.eq option =
     fun h1 h2 -> if Int.equal h1 h2 then Some (Obj.magic CSig.Refl) else None
