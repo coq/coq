@@ -1303,11 +1303,6 @@ let build_ui () =
   let _ = source_style#connect#changed ~callback:refresh_style in
   let _ = source_language#connect#changed ~callback:refresh_language in
 
-  (* Color configuration *)
-  Tags.Script.incomplete#set_property
-    (`BACKGROUND_STIPPLE
-      (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
-
   (* Showtime ! *)
   w#show ();
   w

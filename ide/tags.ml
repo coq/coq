@@ -24,7 +24,7 @@ struct
   let error_bg = make_tag table ~name:"error_bg" []
   let to_process = make_tag table ~name:"to_process" []
   let processed = make_tag table ~name:"processed" []
-  let incomplete = make_tag table ~name:"incomplete" [`BACKGROUND_STIPPLE_SET true]
+  let incomplete = make_tag table ~name:"incomplete" []
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
   let ephemere =
