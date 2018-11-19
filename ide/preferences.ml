@@ -575,7 +575,7 @@ object (self)
     | None -> set#set_active true
     | Some c ->
       set#set_active false;
-      but#set_color (Tags.color_of_string c)
+      but#set_color (Gdk.Color.color_parse c)
     in
     track tag.tag_bg_color bg_color bg_unset;
     track tag.tag_fg_color fg_color fg_unset;
@@ -587,7 +587,7 @@ object (self)
   method tag =
     let get but set =
       if set#active then None
-      else Some (Tags.string_of_color but#color)
+      else Some (Gdk.Color.color_to_string but#color)
     in
     {
       tag_bg_color = get bg_color bg_unset;
@@ -707,15 +707,15 @@ let configure ?(apply=(fun () -> ())) parent =
       in
       let () = label#set_xalign 0. in
       let button = GButton.color_button
-        ~color:(Tags.color_of_string pref#get)
+        ~color:(Gdk.Color.color_parse pref#get)
         ~packing:(table#attach ~left:1 ~top:i) ()
       in
       let _ = button#connect#color_set ~callback:begin fun () ->
-        pref#set (Tags.string_of_color button#color)
+        pref#set (Gdk.Color.color_to_string button#color)
       end in
       let reset _ =
         pref#reset ();
-        button#set_color Tags.(color_of_string pref#get)
+        button#set_color (Gdk.Color.color_parse pref#get)
       in
       let _ = reset_button#connect#clicked ~callback:reset in
       ()

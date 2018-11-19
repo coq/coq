@@ -48,13 +48,3 @@ struct
   let warning = make_tag table ~name:"warning" [`FOREGROUND "orange"]
   let item = make_tag table ~name:"item" [`WEIGHT `BOLD]
 end
-
-let string_of_color clr =
-  let r = Gdk.Color.red clr in
-  let g = Gdk.Color.green clr in
-  let b = Gdk.Color.blue clr in
-  Printf.sprintf "#%04X%04X%04X" r g b
-
-let color_of_string s =
-  let colormap = Gdk.Color.get_system_colormap () in
-  Gdk.Color.alloc ~colormap (`NAME s)

@@ -41,6 +41,3 @@ sig
   val warning : GText.tag
   val item : GText.tag
 end
-
-val string_of_color : Gdk.color -> string
-val color_of_string : string -> Gdk.color

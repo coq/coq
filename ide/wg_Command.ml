@@ -163,7 +163,7 @@ object(self)
     frame#visible
 
   method private refresh_color clr =
-    let clr = Tags.color_of_string clr in
+    let clr = Gdk.Color.color_parse clr in
     let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
     List.iter iter views
 
