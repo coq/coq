@@ -1220,7 +1220,7 @@ let build_ui () =
       ((Coqide_ui.ui_m#get_widget "/CoqIde ToolBar")#as_widget)
   in
   let () = GtkButton.Toolbar.set
-    ~orientation:`HORIZONTAL ~style:`ICONS ~tooltips:true tbar
+    ~orientation:`HORIZONTAL ~style:`ICONS tbar
   in
   let toolbar = new GButton.toolbar tbar in
   let () = vbox#pack toolbar#coerce in
