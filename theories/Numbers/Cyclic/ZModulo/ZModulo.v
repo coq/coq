@@ -60,7 +60,7 @@ Section ZModulo.
   apply Z.lt_gt.
   unfold wB, base; auto with zarith.
  Qed.
- Hint Resolve wB_pos.
+ Hint Resolve wB_pos : core.
 
  Lemma spec_to_Z_1 : forall x, 0 <= [|x|].
  Proof.
@@ -71,7 +71,7 @@ Section ZModulo.
  Proof.
   unfold to_Z; intros; destruct (Z_mod_lt x wB wB_pos); auto.
  Qed.
- Hint Resolve spec_to_Z_1 spec_to_Z_2.
+ Hint Resolve spec_to_Z_1 spec_to_Z_2 : core.
 
  Lemma spec_to_Z : forall x, 0 <= [|x|] < wB.
  Proof.
@@ -732,7 +732,7 @@ Section ZModulo.
  Proof.
  induction p; simpl; auto with zarith.
  Qed.
- Hint Resolve Ptail_pos.
+ Hint Resolve Ptail_pos : core.
 
  Lemma Ptail_bounded : forall p d, Zpos p < 2^(Zpos d) -> Ptail p < Zpos d.
  Proof.

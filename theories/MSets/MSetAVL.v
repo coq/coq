@@ -305,13 +305,13 @@ Include MSetGenTree.Props X I.
 
 (** Automation and dedicated tactics *)
 
-Local Hint Immediate MX.eq_sym.
-Local Hint Unfold In lt_tree gt_tree Ok.
-Local Hint Constructors InT bst.
-Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans ok.
-Local Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node.
-Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
-Local Hint Resolve elements_spec2.
+Local Hint Immediate MX.eq_sym : core.
+Local Hint Unfold In lt_tree gt_tree Ok : core.
+Local Hint Constructors InT bst : core.
+Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans ok : core.
+Local Hint Resolve lt_leaf gt_leaf lt_tree_node gt_tree_node : core.
+Local Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans : core.
+Local Hint Resolve elements_spec2 : core.
 
 (* Sometimes functional induction will expose too much of
    a tree structure. The following tactic allows factoring back
@@ -496,7 +496,7 @@ Proof.
   specialize (L m); rewrite remove_min_spec, e0 in L; simpl in L;
    [setoid_replace y with x|inv]; eauto.
 Qed.
-Local Hint Resolve remove_min_gt_tree.
+Local Hint Resolve remove_min_gt_tree : core.
 
 
 (** ** Merging two trees *)

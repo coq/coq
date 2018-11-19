@@ -10,7 +10,7 @@ end.
 
 Arguments decide P /H.
 
-Hint Extern 5 => progress bool.
+Hint Extern 5 => progress bool : core.
 
 Ltac define t x H :=
 set (x := t) in *; assert (H : t = x) by reflexivity; clearbody x.
@@ -147,7 +147,7 @@ Qed.
 
 (** * The core reflexive part. *)
 
-Hint Constructors valid.
+Hint Constructors valid : core.
 
 Fixpoint beq_poly pl pr :=
 match pl with
@@ -315,7 +315,7 @@ Section Validity.
 
 (* Decision procedure of validity *)
 
-Hint Constructors valid linear.
+Hint Constructors valid linear : core.
 
 Lemma valid_le_compat : forall k l p, valid k p -> (k <= l)%positive -> valid l p.
 Proof.
@@ -425,10 +425,10 @@ match goal with
 | [ |- (?z < Pos.max ?x ?y)%positive ] =>
   apply Pos.max_case_strong; intros; lia
 | _ => zify; omega
-end.
-Hint Resolve Pos.le_max_r Pos.le_max_l.
+end : core.
+Hint Resolve Pos.le_max_r Pos.le_max_l : core.
 
-Hint Constructors valid linear.
+Hint Constructors valid linear : core.
 
 (* Compatibility of validity w.r.t algebraic operations *)
 

@@ -58,7 +58,7 @@ Definition Cmp (elt:Type)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
 Module Type WSfun (E : DecidableType).
 
   Definition key := E.t.
-  Hint Transparent key.
+  Hint Transparent key : core.
 
   Parameter t : Type -> Type.
   (** the abstract type of maps *)

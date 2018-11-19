@@ -20,7 +20,7 @@ Require Export FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Extern 1 (Equivalence _) => constructor; congruence.
+Hint Extern 1 (Equivalence _) => constructor; congruence : core.
 
 (** * Facts about weak maps *)
 

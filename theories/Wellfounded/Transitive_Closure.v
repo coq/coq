@@ -31,7 +31,7 @@ Section Wf_Transitive_Closure.
     apply Acc_inv with y; auto with sets.
   Defined.
 
-  Hint Resolve Acc_clos_trans.
+  Hint Resolve Acc_clos_trans : core.
 
   Lemma Acc_inv_trans : forall x y:A, trans_clos y x -> Acc R x -> Acc R y.
   Proof.

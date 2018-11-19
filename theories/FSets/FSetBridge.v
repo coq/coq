@@ -137,7 +137,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     generalize (E.eq_sym H0); case (Pdec x); case (Pdec y); firstorder.
   Qed.
 
-  Hint Resolve compat_P_aux.
+  Hint Resolve compat_P_aux : core.
 
   Definition filter :
     forall (P : elt -> Prop) (Pdec : forall x : elt, {P x} + {~ P x}) (s : t),
@@ -467,7 +467,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Proof.
     intros; unfold elements; case (M.elements s); firstorder.
   Qed.
-  Hint Resolve elements_3.
+  Hint Resolve elements_3 : core.
 
   Lemma elements_3w : forall s : t, NoDupA E.eq (elements s).
   Proof. auto. Qed.
@@ -666,7 +666,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
       rewrite <- H1; firstorder.
   Qed.
 
-  Hint Resolve compat_P_aux.
+  Hint Resolve compat_P_aux : core.
 
   Definition filter (f : elt -> bool) (s : t) : t :=
     let (s', _) := filter (P:=fun x => f x = true) (f_dec f) s in s'.

@@ -30,7 +30,7 @@ Inductive InA (x : A) : list A -> Prop :=
   | InA_cons_hd : forall y l, eqA x y -> InA x (y :: l)
   | InA_cons_tl : forall y l, InA x l -> InA x (y :: l).
 
-Hint Constructors InA.
+Hint Constructors InA : core.
 
 (** TODO: it would be nice to have a generic definition instead
     of the previous one. Having [InA = Exists eqA] raises too
@@ -62,7 +62,7 @@ Inductive NoDupA : list A -> Prop :=
   | NoDupA_nil : NoDupA nil
   | NoDupA_cons : forall x l, ~ InA x l -> NoDupA l -> NoDupA (x::l).
 
-Hint Constructors NoDupA.
+Hint Constructors NoDupA : core.
 
 (** An alternative definition of [NoDupA] based on [ForallOrdPairs] *)
 
@@ -93,7 +93,7 @@ Inductive eqlistA : list A -> list A -> Prop :=
   | eqlistA_cons : forall x x' l l',
       eqA x x' -> eqlistA l l' -> eqlistA (x::l) (x'::l').
 
-Hint Constructors eqlistA.
+Hint Constructors eqlistA : core.
 
 (** We could also have written [eqlistA = Forall2 eqA]. *)
 
@@ -107,8 +107,8 @@ Definition eqarefl := (@Equivalence_Reflexive _ _ eqA_equiv).
 Definition eqatrans := (@Equivalence_Transitive _ _ eqA_equiv).
 Definition eqasym := (@Equivalence_Symmetric _ _ eqA_equiv).
  
-Hint Resolve eqarefl eqatrans.
-Hint Immediate eqasym.
+Hint Resolve eqarefl eqatrans : core.
+Hint Immediate eqasym : core.
 
 Ltac inv := invlist InA; invlist sort; invlist lelistA; invlist NoDupA.
 
@@ -154,14 +154,14 @@ Lemma InA_eqA : forall l x y, eqA x y -> InA x l -> InA y l.
 Proof.
  intros l x y H H'. rewrite <- H. auto.
 Qed.
-Hint Immediate InA_eqA.
+Hint Immediate InA_eqA : core.
 
 Lemma In_InA : forall l x, In x l -> InA x l.
 Proof.
  simple induction l; simpl; intuition.
  subst; auto.
 Qed.
-Hint Resolve In_InA.
+Hint Resolve In_InA : core.
 
 Lemma InA_split : forall l x, InA x l ->
  exists l1 y l2, eqA x y /\ l = l1++y::l2.
@@ -786,12 +786,12 @@ Hypothesis ltA_compat : Proper (eqA==>eqA==>iff) ltA.
 
 Let sotrans := (@StrictOrder_Transitive _ _ ltA_strorder).
 
-Hint Resolve sotrans.
+Hint Resolve sotrans : core.
 
 Notation InfA:=(lelistA ltA).
 Notation SortA:=(sort ltA).
 
-Hint Constructors lelistA sort.
+Hint Constructors lelistA sort : core.
 
 Lemma InfA_ltA :
  forall l x y, ltA x y -> InfA y l -> InfA x l.
@@ -814,7 +814,7 @@ Lemma InfA_eqA l x y : eqA x y -> InfA y l -> InfA x l.
 Proof using eqA_equiv ltA_compat.
  intros H; now rewrite H.
 Qed.
-Hint Immediate InfA_ltA InfA_eqA.
+Hint Immediate InfA_ltA InfA_eqA : core.
 
 Lemma SortA_InfA_InA :
  forall l x a, SortA l -> InfA a l -> InA x l -> ltA a x.
@@ -1005,7 +1005,7 @@ Qed.
 End Filter.
 End Type_with_equality.
 
-Hint Constructors InA eqlistA NoDupA sort lelistA.
+Hint Constructors InA eqlistA NoDupA sort lelistA : core.
 
 Arguments equivlistA_cons_nil {A} eqA {eqA_equiv} x l _.
 Arguments equivlistA_nil_eq {A} eqA {eqA_equiv} l _.

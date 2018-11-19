@@ -26,7 +26,7 @@ Arguments id {A} x.
 Definition compose {A B C} (g : B -> C) (f : A -> B) :=
   fun x : A => g (f x).
 
-Hint Unfold compose.
+Hint Unfold compose : core.
 
 Declare Scope program_scope.
 

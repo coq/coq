@@ -59,6 +59,10 @@ Tactics
   (e.g. `?[n]` or `?n` in terms - not in patterns) are now interpreted
   the same way as other variable names occurring in Ltac functions.
 
+- Hint declaration and removal should now specify a database (e.g. `Hint Resolve
+  foo : database`). When the database name is omitted, the hint is added to the
+  core database (as previously), but a deprecation warning is emitted.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort

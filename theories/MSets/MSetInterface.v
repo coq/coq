@@ -884,10 +884,10 @@ Module MakeListOrdering (O:OrderedType).
         O.lt x y -> lt_list (x :: s) (y :: s')
     | lt_cons_eq : forall x y s s',
         O.eq x y -> lt_list s s' -> lt_list (x :: s) (y :: s').
- Hint Constructors lt_list.
+ Hint Constructors lt_list : core.
 
  Definition lt := lt_list.
- Hint Unfold lt.
+ Hint Unfold lt : core.
 
  Instance lt_strorder : StrictOrder lt.
  Proof.
@@ -933,13 +933,13 @@ Module MakeListOrdering (O:OrderedType).
   left; MO.order. right; rewrite <- E12; auto.
   left; MO.order. right; rewrite E12; auto.
  Qed.
- Hint Resolve eq_cons.
+ Hint Resolve eq_cons : core.
 
  Lemma cons_CompSpec : forall c x1 x2 l1 l2, O.eq x1 x2 ->
   CompSpec eq lt l1 l2 c -> CompSpec eq lt (x1::l1) (x2::l2) c.
  Proof.
   destruct c; simpl; inversion_clear 2; auto with relations.
  Qed.
- Hint Resolve cons_CompSpec.
+ Hint Resolve cons_CompSpec : core.
 
 End MakeListOrdering.

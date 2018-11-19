@@ -63,7 +63,7 @@ Inductive avl : t elt -> Prop :=
 
 (** * Automation and dedicated tactics about [avl]. *)
 
-Hint Constructors avl.
+Hint Constructors avl : core.
 
 Lemma height_non_negative : forall (s : t elt), avl s ->
  height s >= 0.
@@ -100,7 +100,7 @@ Lemma avl_node : forall x e l r, avl l -> avl r ->
 Proof.
   intros; auto.
 Qed.
-Hint Resolve avl_node.
+Hint Resolve avl_node : core.
 
 (** Results about [height] *)
 
@@ -193,7 +193,7 @@ Lemma add_avl : forall m x e, avl m -> avl (add x e m).
 Proof.
  intros; generalize (add_avl_1 x e H); intuition.
 Qed.
-Hint Resolve add_avl.
+Hint Resolve add_avl : core.
 
 (** * Extraction of minimum binding *)
 
@@ -274,7 +274,7 @@ Lemma remove_avl : forall m x, avl m -> avl (remove x m).
 Proof.
  intros; generalize (remove_avl_1 x H); intuition.
 Qed.
-Hint Resolve remove_avl.
+Hint Resolve remove_avl : core.
 
 
 (** * Join *)
@@ -331,7 +331,7 @@ Lemma join_avl : forall l x d r, avl l -> avl r -> avl (join l x d r).
 Proof.
  intros; destruct (join_avl_1 x d H H0); auto.
 Qed.
-Hint Resolve join_avl.
+Hint Resolve join_avl : core.
 
 (** concat *)
 
@@ -341,7 +341,7 @@ Proof.
  intros; apply join_avl; auto.
  generalize (remove_min_avl H0); rewrite e1; simpl; auto.
 Qed.
-Hint Resolve concat_avl.
+Hint Resolve concat_avl : core.
 
 (** split *)
 
@@ -355,7 +355,7 @@ Proof.
 Qed.
 
 End Elt.
-Hint Constructors avl.
+Hint Constructors avl : core.
 
 Section Map.
 Variable elt elt' : Type.
@@ -713,7 +713,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Proof.
    destruct c; simpl; intros; MX.elim_comp; auto.
   Qed.
-  Hint Resolve cons_Cmp.
+  Hint Resolve cons_Cmp : core.
 
   Lemma compare_aux_Cmp : forall e,
    Cmp (compare_aux e) (flatten_e (fst e)) (flatten_e (snd e)).

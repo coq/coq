@@ -269,28 +269,28 @@ Section SCANNING.
 Inductive Forall {A} (P: A -> Prop): forall {n} (v: t A n), Prop :=
  |Forall_nil: Forall P []
  |Forall_cons {n} x (v: t A n): P x -> Forall P v -> Forall P (x::v).
-Hint Constructors Forall.
+Hint Constructors Forall : core.
 
 Inductive Exists {A} (P:A->Prop): forall {n}, t A n -> Prop :=
  |Exists_cons_hd {m} x (v: t A m): P x -> Exists P (x::v)
  |Exists_cons_tl {m} x (v: t A m): Exists P v -> Exists P (x::v).
-Hint Constructors Exists.
+Hint Constructors Exists : core.
 
 Inductive In {A} (a:A): forall {n}, t A n -> Prop :=
  |In_cons_hd {m} (v: t A m): In a (a::v)
  |In_cons_tl {m} x (v: t A m): In a v -> In a (x::v).
-Hint Constructors In.
+Hint Constructors In : core.
 
 Inductive Forall2 {A B} (P:A->B->Prop): forall {n}, t A n -> t B n -> Prop :=
  |Forall2_nil: Forall2 P [] []
  |Forall2_cons {m} x1 x2 (v1:t A m) v2: P x1 x2 -> Forall2 P v1 v2 ->
     Forall2 P (x1::v1) (x2::v2).
-Hint Constructors Forall2.
+Hint Constructors Forall2 : core.
 
 Inductive Exists2 {A B} (P:A->B->Prop): forall {n}, t A n -> t B n -> Prop :=
  |Exists2_cons_hd {m} x1 x2 (v1: t A m) (v2: t B m): P x1 x2 -> Exists2 P (x1::v1) (x2::v2)
  |Exists2_cons_tl {m} x1 x2 (v1:t A m) v2: Exists2 P v1 v2 -> Exists2 P (x1::v1) (x2::v2).
-Hint Constructors Exists2.
+Hint Constructors Exists2 : core.
 
 End SCANNING.
 

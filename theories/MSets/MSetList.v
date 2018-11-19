@@ -231,14 +231,14 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Notation In := (InA X.eq).
 
   Existing Instance X.eq_equiv.
-  Hint Extern 20 => solve [order].
+  Hint Extern 20 => solve [order] : core.
 
   Definition IsOk s := Sort s.
 
   Class Ok (s:t) : Prop := ok : Sort s.
 
-  Hint Resolve ok.
-  Hint Unfold Ok.
+  Hint Resolve ok : core.
+  Hint Unfold Ok : core.
 
   Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
 
@@ -276,7 +276,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
     destruct H; constructor; tauto.
   Qed.
 
-  Hint Extern 1 (Ok _) => rewrite <- isok_iff.
+  Hint Extern 1 (Ok _) => rewrite <- isok_iff : core.
 
   Ltac inv_ok := match goal with
    | H:sort X.lt (_ :: _) |- _ => inversion_clear H; inv_ok
@@ -326,7 +326,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   intuition.
   intros; elim_compare x a; inv; intuition.
   Qed.
-  Hint Resolve add_inf.
+  Hint Resolve add_inf : core.
 
   Global Instance add_ok s x : forall `(Ok s), Ok (add x s).
   Proof.
@@ -353,7 +353,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   intros; elim_compare x a; inv; auto.
   apply Inf_lt with a; auto.
   Qed.
-  Hint Resolve remove_inf.
+  Hint Resolve remove_inf : core.
 
   Global Instance remove_ok s x : forall `(Ok s), Ok (remove x s).
   Proof.
@@ -396,7 +396,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction2.
   Qed.
-  Hint Resolve union_inf.
+  Hint Resolve union_inf : core.
 
   Global Instance union_ok s s' : forall `(Ok s, Ok s'), Ok (union s s').
   Proof.
@@ -422,7 +422,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply Hrec'; auto.
   apply Inf_lt with x'; auto.
   Qed.
-  Hint Resolve inter_inf.
+  Hint Resolve inter_inf : core.
 
   Global Instance inter_ok s s' : forall `(Ok s, Ok s'), Ok (inter s s').
   Proof.
@@ -452,7 +452,7 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   apply Hrec'; auto.
   apply Inf_lt with x'; auto.
   Qed.
-  Hint Resolve diff_inf.
+  Hint Resolve diff_inf : core.
 
   Global Instance diff_ok s s' : forall `(Ok s, Ok s'), Ok (diff s s').
   Proof.

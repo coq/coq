@@ -1098,13 +1098,28 @@ let vernac_restore_state file =
 let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id full_transparent_state b
 
-let vernac_remove_hints ~module_local dbs ids =
-  Hints.remove_hints module_local dbs (List.map Smartlocate.global_with_alias ids)
+let warn_implicit_core_hint_db =
+  CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"
+         (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
+             ++ strbrk"Please specify a hint database.")
 
-let vernac_hints ~atts lb h =
+let vernac_remove_hints ~module_local dbnames ids =
+  let dbnames =
+    if List.is_empty dbnames then
+      (warn_implicit_core_hint_db (); ["core"])
+    else dbnames
+  in
+  Hints.remove_hints module_local dbnames (List.map Smartlocate.global_with_alias ids)
+
+let vernac_hints ~atts dbnames h =
+  let dbnames =
+    if List.is_empty dbnames then
+      (warn_implicit_core_hint_db (); ["core"])
+    else dbnames
+  in
   let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
   let local = enforce_module_locality local in
-  Hints.add_hints ~local lb (Hints.interp_hints poly h)
+  Hints.add_hints ~local dbnames (Hints.interp_hints poly h)
 
 let vernac_syntactic_definition ~module_local lid x y =
   Dumpglob.dump_definition lid false "syndef";

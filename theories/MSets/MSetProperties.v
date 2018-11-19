@@ -21,7 +21,7 @@ Require Import DecidableTypeEx OrdersLists MSetFacts MSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Unfold transpose.
+Hint Unfold transpose : core.
 
 (** First, a functor for Weak Sets in functorial version. *)
 
@@ -735,7 +735,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
-  Hint Resolve cardinal_inv_1.
+  Hint Resolve cardinal_inv_1 : core.
 
   Lemma cardinal_inv_2 :
    forall s n, cardinal s = S n -> { x : elt | In x s }.
@@ -774,7 +774,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   exact Equal_cardinal.
   Qed.
 
-  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal.
+  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : core.
 
   (** ** Cardinal and set operators *)
 
@@ -898,7 +898,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   auto with set.
   Qed.
 
-  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2.
+  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : core.
 
 End WPropertiesOn.
 
@@ -922,7 +922,7 @@ Module OrdProperties (M:Sets).
   Import M.E.
   Import M.
 
-  Hint Resolve elements_spec2.
+  Hint Resolve elements_spec2 : core.
   Hint Immediate
     min_elt_spec1 min_elt_spec2 min_elt_spec3
     max_elt_spec1 max_elt_spec2 max_elt_spec3 : set.
@@ -961,7 +961,7 @@ Module OrdProperties (M:Sets).
   Proof.
    intros a b H; unfold leb. rewrite H; auto.
   Qed.
-  Hint Resolve gtb_compat leb_compat.
+  Hint Resolve gtb_compat leb_compat : core.
 
   Lemma elements_split : forall x s,
    elements s = elements_lt x s ++ elements_ge x s.

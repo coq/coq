@@ -49,7 +49,7 @@ Proof.
  inversion abs.
 Qed.
 
-Hint Resolve empty_1.
+Hint Resolve empty_1 : core.
 
 Lemma empty_NoDup : NoDupA empty.
 Proof.
@@ -621,7 +621,7 @@ Proof.
  inversion_clear 1.
  intros; apply add_NoDup; auto.
 Qed.
-Hint Resolve fold_right_pair_NoDup.
+Hint Resolve fold_right_pair_NoDup : core.
 
 Lemma combine_NoDup :
   forall m (Hm:NoDupA (@eqk elt) m) m' (Hm':NoDupA (@eqk elt') m'),

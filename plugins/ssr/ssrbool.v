@@ -371,7 +371,7 @@ Ltac prop_congr := apply: prop_congr.
 Lemma is_true_true : true.               Proof. by []. Qed.
 Lemma not_false_is_true : ~ false.       Proof. by []. Qed.
 Lemma is_true_locked_true : locked true. Proof. by unlock. Qed.
-Hint Resolve is_true_true not_false_is_true is_true_locked_true.
+Hint Resolve is_true_true not_false_is_true is_true_locked_true : core.
 
 (**  Shorter names.  **)
 Definition isT := is_true_true.

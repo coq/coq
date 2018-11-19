@@ -51,7 +51,7 @@ Proof.
  intro abs.
  inversion abs.
 Qed.
-Hint Resolve empty_1.
+Hint Resolve empty_1 : core.
 
 Lemma empty_sorted : Sort empty.
 Proof.
@@ -216,7 +216,7 @@ Proof.
  compute in H0,H1.
  simpl; case (X.compare x x''); intuition.
 Qed.
-Hint Resolve add_Inf.
+Hint Resolve add_Inf : core.
 
 Lemma add_sorted : forall m (Hm:Sort m) x e, Sort (add x e m).
 Proof.
@@ -302,7 +302,7 @@ Proof.
  inversion_clear Hm.
  apply Inf_lt with (x'',e''); auto.
 Qed.
-Hint Resolve remove_Inf.
+Hint Resolve remove_Inf : core.
 
 Lemma remove_sorted : forall m (Hm:Sort m) x, Sort (remove x m).
 Proof.
@@ -586,7 +586,7 @@ Proof.
  inversion_clear H; auto.
 Qed.
 
-Hint Resolve map_lelistA.
+Hint Resolve map_lelistA : core.
 
 Lemma map_sorted : forall (m: t elt)(Hm : sort (@ltk elt) m)(f:elt -> elt'),
   sort (@ltk elt') (map f m).
@@ -654,7 +654,7 @@ Proof.
  inversion_clear H; auto.
 Qed.
 
-Hint Resolve mapi_lelistA.
+Hint Resolve mapi_lelistA : core.
 
 Lemma mapi_sorted : forall m (Hm : sort (@ltk elt) m)(f: key ->elt -> elt'),
   sort (@ltk elt') (mapi f m).
@@ -781,7 +781,7 @@ Proof.
  inversion_clear H; auto.
  inversion_clear H0; auto.
 Qed.
-Hint Resolve combine_lelistA.
+Hint Resolve combine_lelistA : core.
 
 Lemma combine_sorted :
   forall m (Hm : sort (@ltk elt) m) m' (Hm' : sort (@ltk elt') m'),

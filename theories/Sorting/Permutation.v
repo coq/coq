@@ -31,7 +31,7 @@ Inductive Permutation : list A -> list A -> Prop :=
 | perm_trans l l' l'' :
     Permutation l l' -> Permutation l' l'' -> Permutation l l''.
 
-Local Hint Constructors Permutation.
+Local Hint Constructors Permutation : core.
 
 (** Some facts about [Permutation] *)
 
@@ -71,13 +71,13 @@ Qed.
 
 End Permutation.
 
-Hint Resolve Permutation_refl perm_nil perm_skip.
+Hint Resolve Permutation_refl perm_nil perm_skip : core.
 
 (* These hints do not reduce the size of the problem to solve and they
    must be used with care to avoid combinatoric explosions *)
 
-Local Hint Resolve perm_swap perm_trans.
-Local Hint Resolve Permutation_sym Permutation_trans.
+Local Hint Resolve perm_swap perm_trans : core.
+Local Hint Resolve Permutation_sym Permutation_trans : core.
 
 (* This provides reflexivity, symmetry and transitivity and rewriting
    on morphims to come *)
@@ -156,7 +156,7 @@ Qed.
 Lemma Permutation_cons_append : forall (l : list A) x,
   Permutation (x :: l) (l ++ x :: nil).
 Proof. induction l; intros; auto. simpl. rewrite <- IHl; auto. Qed.
-Local Hint Resolve Permutation_cons_append.
+Local Hint Resolve Permutation_cons_append : core.
 
 Theorem Permutation_app_comm : forall (l l' : list A),
   Permutation (l ++ l') (l' ++ l).
@@ -166,7 +166,7 @@ Proof.
   rewrite app_comm_cons, Permutation_cons_append.
   now rewrite <- app_assoc.
 Qed.
-Local Hint Resolve Permutation_app_comm.
+Local Hint Resolve Permutation_app_comm : core.
 
 Theorem Permutation_cons_app : forall (l l1 l2:list A) a,
   Permutation l (l1 ++ l2) -> Permutation (a :: l) (l1 ++ a :: l2).
@@ -175,7 +175,7 @@ Proof.
   rewrite app_comm_cons, Permutation_cons_append.
   now rewrite <- app_assoc.
 Qed.
-Local Hint Resolve Permutation_cons_app.
+Local Hint Resolve Permutation_cons_app : core.
 
 Lemma Permutation_Add a l l' : Add a l l' -> Permutation (a::l) l'.
 Proof.
@@ -188,7 +188,7 @@ Theorem Permutation_middle : forall (l1 l2:list A) a,
 Proof.
   auto.
 Qed.
-Local Hint Resolve Permutation_middle.
+Local Hint Resolve Permutation_middle : core.
 
 Theorem Permutation_rev : forall (l : list A), Permutation l (rev l).
 Proof.

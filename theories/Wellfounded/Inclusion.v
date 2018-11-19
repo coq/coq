@@ -22,7 +22,7 @@ Section WfInclusion.
     apply Acc_intro; auto with sets.
   Qed.
 
-  Hint Resolve Acc_incl.
+  Hint Resolve Acc_incl : core.
 
   Theorem wf_incl : inclusion A R1 R2 -> well_founded R2 -> well_founded R1.
   Proof.

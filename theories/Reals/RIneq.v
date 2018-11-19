@@ -1087,7 +1087,7 @@ Proof.
   replace (r2 + r1 + - r2) with r1 by ring.
   exact H.
 Qed.
-Hint Resolve Ropp_gt_lt_contravar.
+Hint Resolve Ropp_gt_lt_contravar : core.
 
 Lemma Ropp_lt_gt_contravar : forall r1 r2, r1 < r2 -> - r1 > - r2.
 Proof.
@@ -1204,7 +1204,7 @@ Lemma Rmult_lt_compat_r : forall r r1 r2, 0 < r -> r1 < r2 -> r1 * r < r2 * r.
 Proof.
   intros; rewrite (Rmult_comm r1 r); rewrite (Rmult_comm r2 r); auto with real.
 Qed.
-Hint Resolve Rmult_lt_compat_r.
+Hint Resolve Rmult_lt_compat_r : core.
 
 Lemma Rmult_gt_compat_r : forall r r1 r2, r > 0 -> r1 > r2 -> r1 * r > r2 * r.
 Proof. eauto using Rmult_lt_compat_r with rorders. Qed.

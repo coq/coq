@@ -181,7 +181,7 @@ Module OTF_to_TotalOrder (O:OrderedTypeFull) <: TotalOrder
     we coerce [bool] into [Prop]. *)
 
 Local Coercion is_true : bool >-> Sortclass.
-Hint Unfold is_true.
+Hint Unfold is_true : core.
 
 Module Type HasLeb (Import T:Typ).
  Parameter Inline leb : t -> t -> bool.
