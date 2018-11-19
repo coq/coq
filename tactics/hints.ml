@@ -291,8 +291,8 @@ let lookup_tacs sigma concl st se =
 module Constr_map = Map.Make(GlobRef.Ordered)
 
 let is_transparent_gr ts = function
-  | VarRef id -> TranspState.is_transparent_variable ts id
-  | ConstRef cst -> TranspState.is_transparent_constant ts cst
+  | VarRef id -> TransparentState.is_transparent_variable ts id
+  | ConstRef cst -> TransparentState.is_transparent_constant ts cst
   | IndRef _ | ConstructRef _ -> false
 
 let strip_params env sigma c = 
@@ -497,7 +497,7 @@ type hint_db_name = string
 module Hint_db :
 sig
 type t
-val empty : ?name:hint_db_name -> TranspState.t -> bool -> t
+val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
 val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
@@ -513,8 +513,8 @@ val remove_one : GlobRef.t -> t -> t
 val remove_list : GlobRef.t list -> t -> t
 val iter : (GlobRef.t option -> hint_mode array list -> full_hint list -> unit) -> t -> unit
 val use_dn : t -> bool
-val transparent_state : t -> TranspState.t
-val set_transparent_state : t -> TranspState.t -> t
+val transparent_state : t -> TransparentState.t
+val set_transparent_state : t -> TransparentState.t -> t
 val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
@@ -526,7 +526,7 @@ end =
 struct
 
   type t = {
-    hintdb_state : TranspState.t;
+    hintdb_state : TransparentState.t;
     hintdb_cut : hints_path;
     hintdb_unfolds : Id.Set.t * Cset.t;
     hintdb_max_id : int;
@@ -664,7 +664,7 @@ struct
       match v.code.obj with
       | Unfold_nth egr ->
           let addunf ts (ids, csts) =
-            let open TranspState in
+            let open TransparentState in
 	    match egr with
             | EvalVarRef id ->
               { ts with tr_var = Id.Pred.add id ts.tr_var }, (Id.Set.add id ids, csts)
@@ -743,8 +743,8 @@ let typeclasses_db = "typeclass_instances"
 let rewrite_db = "rewrite"
 
 let auto_init_db =
-  Hintdbmap.add typeclasses_db (Hint_db.empty TranspState.full true)
-    (Hintdbmap.add rewrite_db (Hint_db.empty TranspState.cst_full true)
+  Hintdbmap.add typeclasses_db (Hint_db.empty TransparentState.full true)
+    (Hintdbmap.add rewrite_db (Hint_db.empty TransparentState.cst_full true)
        Hintdbmap.empty)
 
 let searchtable = Summary.ref ~name:"searchtable" auto_init_db
@@ -980,7 +980,7 @@ let make_trivial env sigma poly ?(name=PathAny) r =
 
 let get_db dbname =
   try searchtable_map dbname
-  with Not_found -> Hint_db.empty ~name:dbname TranspState.empty false
+  with Not_found -> Hint_db.empty ~name:dbname TransparentState.empty false
 
 let add_hint dbname hintlist =
   let check (_, h) =
@@ -998,7 +998,7 @@ let add_hint dbname hintlist =
     searchtable_add (dbname,db')
 
 let add_transparency dbname target b =
-  let open TranspState in
+  let open TransparentState in
   let db = get_db dbname in
   let st = Hint_db.transparent_state db in
   let st' =
@@ -1019,7 +1019,7 @@ let remove_hint dbname grs =
     searchtable_add (dbname, db')
 
 type hint_action =
-  | CreateDB of bool * TranspState.t
+  | CreateDB of bool * TransparentState.t
   | AddTransparency of evaluable_global_reference hints_transparency_target * bool
   | AddHints of hint_entry list
   | RemoveHints of GlobRef.t list
@@ -1547,7 +1547,7 @@ let pr_hint_db_env env sigma db =
     in
     Hint_db.fold fold db (mt ())
   in
-  let { TranspState.tr_var = ids; tr_cst = csts } = Hint_db.transparent_state db in
+  let { TransparentState.tr_var = ids; tr_cst = csts } = Hint_db.transparent_state db in
   hov 0
     ((if Hint_db.use_dn db then str"Discriminated database"
       else str"Non-discriminated database")) ++ fnl () ++

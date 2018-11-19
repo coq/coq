@@ -45,7 +45,7 @@ let auto_core_unif_flags_of st1 st2 = {
   use_metas_eagerly_in_conv_on_closed_terms = false;
   use_evars_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = st2;
-  modulo_delta_types = TranspState.full;
+  modulo_delta_types = TransparentState.full;
   check_applied_meta_types = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -59,13 +59,13 @@ let auto_unif_flags_of st1 st2 =
   let flags = auto_core_unif_flags_of st1 st2 in {
   core_unify_flags = flags;
   merge_unify_flags = flags;
-  subterm_unify_flags = { flags with modulo_delta = TranspState.empty };
+  subterm_unify_flags = { flags with modulo_delta = TransparentState.empty };
   allow_K_in_toplevel_higher_order_unification = false;
   resolve_evars = true
 }
 
 let auto_unif_flags =
-  auto_unif_flags_of TranspState.full TranspState.empty
+  auto_unif_flags_of TransparentState.full TransparentState.empty
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
@@ -291,7 +291,7 @@ let flags_of_state st =
   auto_unif_flags_of st st
 
 let auto_flags_of_state st =
-  auto_unif_flags_of TranspState.full st
+  auto_unif_flags_of TransparentState.full st
 
 let hintmap_of sigma secvars hdc concl =
   match hdc with
@@ -363,7 +363,7 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
 	    let l =
 	      match hdc with None -> Hint_db.map_none ~secvars db
 	      | Some hdc ->
-                  if TranspState.is_empty st
+                  if TransparentState.is_empty st
 		  then Hint_db.map_auto sigma ~secvars hdc concl db
 		  else Hint_db.map_existential sigma ~secvars hdc concl db
 	    in auto_flags_of_state st, l

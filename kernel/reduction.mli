@@ -31,7 +31,7 @@ exception NotConvertibleVect of int
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function = 
-  ?l2r:bool -> ?reds:TranspState.t -> env ->
+  ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
   'a -> 'a -> unit
 
@@ -77,15 +77,15 @@ val conv_leq : types extended_conversion_function
 (** These conversion functions are used by module subtyping, which needs to infer
     universe constraints inside the kernel *)
 val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) -> 
-  ?ts:TranspState.t -> constr infer_conversion_function
+  ?ts:TransparentState.t -> constr infer_conversion_function
 val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
-  ?ts:TranspState.t -> types infer_conversion_function
+  ?ts:TransparentState.t -> types infer_conversion_function
 
 (** Depending on the universe state functions, this might raise
   [UniverseInconsistency] in addition to [NotConvertible] (for better error
   messages). *)
 val generic_conv : conv_pb -> l2r:bool -> (existential->constr option) ->
-  TranspState.t -> (constr,'a) generic_conversion_function
+  TransparentState.t -> (constr,'a) generic_conversion_function
 
 val default_conv     : conv_pb -> ?l2r:bool -> types kernel_conversion_function
 val default_conv_leq : ?l2r:bool -> types kernel_conversion_function

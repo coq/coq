@@ -101,8 +101,8 @@ let rewrite_core_unif_flags = {
   modulo_conv_on_closed_terms = None;
   use_metas_eagerly_in_conv_on_closed_terms = true;
   use_evars_eagerly_in_conv_on_closed_terms = false;
-  modulo_delta = TranspState.empty;
-  modulo_delta_types = TranspState.empty;
+  modulo_delta = TransparentState.empty;
+  modulo_delta_types = TransparentState.empty;
   check_applied_meta_types = true;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
@@ -169,7 +169,7 @@ let instantiate_lemma gl c ty l l2r concl =
   [eqclause]
 
 let rewrite_conv_closed_core_unif_flags = {
-  modulo_conv_on_closed_terms = Some TranspState.full;
+  modulo_conv_on_closed_terms = Some TransparentState.full;
     (* We have this flag for historical reasons, it has e.g. the consequence *)
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
@@ -178,8 +178,8 @@ let rewrite_conv_closed_core_unif_flags = {
     (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
     (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
 
-  modulo_delta = TranspState.empty;
-  modulo_delta_types = TranspState.full;
+  modulo_delta = TransparentState.empty;
+  modulo_delta_types = TransparentState.full;
   check_applied_meta_types = true;
   use_pattern_unification = true;
     (* To rewrite "?n x y" in "y+x=0" when ?n is *)
@@ -204,7 +204,7 @@ let rewrite_conv_closed_unif_flags = {
 }
 
 let rewrite_keyed_core_unif_flags = {
-  modulo_conv_on_closed_terms = Some TranspState.full;
+  modulo_conv_on_closed_terms = Some TransparentState.full;
     (* We have this flag for historical reasons, it has e.g. the consequence *)
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
@@ -213,8 +213,8 @@ let rewrite_keyed_core_unif_flags = {
     (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
     (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
 
-  modulo_delta = TranspState.full;
-  modulo_delta_types = TranspState.full;
+  modulo_delta = TransparentState.full;
+  modulo_delta_types = TransparentState.full;
   check_applied_meta_types = true;
   use_pattern_unification = true;
     (* To rewrite "?n x y" in "y+x=0" when ?n is *)

@@ -72,8 +72,8 @@ let with_stats c =
   end else
     Lazy.force c
 
-let all_opaque = TranspState.empty
-let all_transparent = TranspState.full
+let all_opaque = TransparentState.empty
+let all_transparent = TransparentState.full
 
 module type RedFlagsSig = sig
   type reds
@@ -90,8 +90,8 @@ module type RedFlagsSig = sig
   val no_red : reds
   val red_add : reds -> red_kind -> reds
   val red_sub : reds -> red_kind -> reds
-  val red_add_transparent : reds -> TranspState.t -> reds
-  val red_transparent : reds -> TranspState.t
+  val red_add_transparent : reds -> TransparentState.t -> reds
+  val red_transparent : reds -> TransparentState.t
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
   val red_projection : reds -> Projection.t -> bool
@@ -103,13 +103,13 @@ module RedFlags = (struct
   (* [r_const=(false,cl)] means only those in [cl] *)
   (* [r_delta=true] just mean [r_const=(true,[])] *)
 
-  open TranspState
+  open TransparentState
 
   type reds = {
     r_beta : bool;
     r_delta : bool;
     r_eta : bool;
-    r_const : TranspState.t;
+    r_const : TransparentState.t;
     r_zeta : bool;
     r_match : bool;
     r_fix : bool;

@@ -19,7 +19,7 @@ Names
   Constant.make3 has been removed, use Constant.make2
   Constant.repr3 has been removed, use Constant.repr2
 
-- `Names.transparent_state` has been moved to its own module `TranspState`.
+- `Names.transparent_state` has been moved to its own module `TransparentState`.
   This module gathers utility functions that used to be defined in several
   places.
 

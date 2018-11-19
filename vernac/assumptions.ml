@@ -315,7 +315,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       let t = type_of_constant cb in
       let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
-    else if add_opaque && (Declareops.is_opaque cb || not (TranspState.is_transparent_constant st kn)) then
+    else if add_opaque && (Declareops.is_opaque cb || not (TransparentState.is_transparent_constant st kn)) then
       let t = type_of_constant cb in
       ContextObjectMap.add (Opaque kn) t accu
     else if add_transparent then

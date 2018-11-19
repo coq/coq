@@ -28,5 +28,5 @@ val traverse :
    on which a term relies (together with their type). The above warning of
    {!traverse} also applies. *)
 val assumptions :
-  ?add_opaque:bool -> ?add_transparent:bool -> TranspState.t ->
+  ?add_opaque:bool -> ?add_transparent:bool -> TransparentState.t ->
      GlobRef.t -> constr -> types ContextObjectMap.t

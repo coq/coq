@@ -191,7 +191,7 @@ let warn_bytecode_compiler_failed =
 let vm_conv_gen cv_pb env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
-      TranspState.full env univs t1 t2
+      TransparentState.full env univs t1 t2
   else
   try
     let v1 = val_of_constr env t1 in
@@ -200,7 +200,7 @@ let vm_conv_gen cv_pb env univs t1 t2 =
   with Not_found | Invalid_argument _ ->
     warn_bytecode_compiler_failed ();
     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
-      TranspState.full env univs t1 t2
+      TransparentState.full env univs t1 t2
 
 let vm_conv cv_pb env t1 t2 =
   let univs = Environ.universes env in

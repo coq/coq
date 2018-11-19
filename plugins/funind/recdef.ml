@@ -1359,7 +1359,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
 		      Eauto.eauto_with_bases
 			(true,5)
 			[(fun _ sigma -> (sigma, (Lazy.force refl_equal)))]
-                        [Hints.Hint_db.empty TranspState.empty false]
+                        [Hints.Hint_db.empty TransparentState.empty false]
 		      ]
 		    )
 		  )

@@ -1301,13 +1301,13 @@ let test_trans_conversion (f: constr Reduction.extended_conversion_function) red
   with Reduction.NotConvertible -> false
     | e when is_anomaly e -> report_anomaly e
 
-let is_conv ?(reds=TranspState.full) env sigma = test_trans_conversion f_conv reds env sigma
-let is_conv_leq ?(reds=TranspState.full) env sigma = test_trans_conversion f_conv_leq reds env sigma
-let is_fconv ?(reds=TranspState.full) = function
+let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv reds env sigma
+let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv_leq reds env sigma
+let is_fconv ?(reds=TransparentState.full) = function
   | Reduction.CONV -> is_conv ~reds
   | Reduction.CUMUL -> is_conv_leq ~reds
 
-let check_conv ?(pb=Reduction.CUMUL) ?(ts=TranspState.full) env sigma x y =
+let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
   let f = match pb with
     | Reduction.CONV -> f_conv
     | Reduction.CUMUL -> f_conv_leq
@@ -1341,7 +1341,7 @@ let sigma_univ_state =
     compare_cumul_instances = sigma_check_inductive_instances; }
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
-    ?(ts=TranspState.full) env sigma x y =
+    ?(ts=TransparentState.full) env sigma x y =
   (** FIXME *)
   try
       let ans = match pb with
@@ -1374,7 +1374,7 @@ let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
 
 (* This reference avoids always having to link C code with the kernel *)
-let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:TranspState.full)
+let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:TransparentState.full)
 let set_vm_infer_conv f = vm_infer_conv := f
 let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
   !vm_infer_conv ~pb env t1 t2

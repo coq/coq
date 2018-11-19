@@ -266,21 +266,21 @@ type conversion_test = Constraint.t -> Constraint.t
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val is_conv : ?reds:TranspState.t -> env -> evar_map -> constr -> constr -> bool
-val is_conv_leq : ?reds:TranspState.t -> env ->  evar_map -> constr -> constr -> bool
-val is_fconv : ?reds:TranspState.t -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
+val is_conv : ?reds:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
+val is_conv_leq : ?reds:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
+val is_fconv : ?reds:TransparentState.t -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (** [check_conv] Checks universe constraints only.
     pb defaults to CUMUL and ts to a full transparent state.
  *)
-val check_conv : ?pb:conv_pb -> ?ts:TranspState.t -> env ->  evar_map -> constr -> constr -> bool
+val check_conv : ?pb:conv_pb -> ?ts:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
 
 (** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
     @raise UniverseInconsistency iff catch_incon is set to false,
     otherwise returns false in that case.
  *)
-val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TranspState.t ->
+val infer_conv : ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t ->
   env -> evar_map -> constr -> constr -> evar_map option
 
 (** Conversion with inference of universe constraints *)
@@ -292,9 +292,9 @@ val vm_infer_conv : ?pb:conv_pb -> env -> evar_map -> constr -> constr ->
 
 (** [infer_conv_gen] behaves like [infer_conv] but is parametrized by a
 conversion function. Used to pretype vm and native casts. *)
-val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TranspState.t ->
+val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
     (Constr.constr, evar_map) Reduction.generic_conversion_function) ->
-  ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TranspState.t -> env ->
+  ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t -> env ->
   evar_map -> constr -> constr -> evar_map option
 
 (** {6 Special-Purpose Reduction Functions } *)
@@ -307,7 +307,7 @@ val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  TranspState.t -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
+  TransparentState.t -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
   state * Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
