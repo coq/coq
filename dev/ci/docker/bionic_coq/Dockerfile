@@ -10,7 +10,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of the image, the test-suite and external projects
         m4 automake autoconf time wget rsync git gcc-multilib build-essential unzip \
         # Dependencies of lablgtk (for CoqIDE)
-        libgtk2.0-dev libgtksourceview2.0-dev \
+        libgtk3.0-dev libgtksourceview3.0-dev \
         # Dependencies of stdlib and sphinx doc
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
@@ -41,7 +41,7 @@ ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.6.2 ounit.2.0.8 odoc.1.4.0" \
     CI_OPAM="menhir.20181113 elpi.1.1.0 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
-ENV COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2"
+ENV COQIDE_OPAM="lablgtk3 conf-gtksourceview3"
 
 # base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
@@ -53,7 +53,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch
 ENV COMPILER_EDGE="4.07.1" \
-    COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
+    COQIDE_OPAM_EDGE="lablgtk3 conf-gtksourceview3" \
     BASE_OPAM_EDGE="dune-release.1.1.0"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use

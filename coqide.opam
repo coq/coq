@@ -19,8 +19,8 @@ license: "LGPL-2.1"
 depends: [
   "dune"               { build & >= "1.4.0" }
   "coqide-server"
-  "conf-gtksourceview"
-  "lablgtk"            {         >= "2.18.5" }
+  "conf-gtksourceview3"
+  "lablgtk3"
 ]
 
 build-env: [

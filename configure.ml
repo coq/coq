@@ -700,7 +700,7 @@ let check_for_numlib () =
 let numlib =
   check_for_numlib ()
 
-(** * lablgtk2 and CoqIDE *)
+(** * lablgtk3 and CoqIDE *)
 
 type source = Manual | OCamlFind | Stdlib
 
@@ -716,7 +716,7 @@ let check_lablgtkdir ?(fatal=false) src dir =
   let msg = get_source src in
   if not (dir_exists dir) then
     yell (sprintf "No such directory '%s' (%s)." dir msg)
-  else if not (Sys.file_exists (dir/"gSourceView2.cmi")) then
+  else if not (Sys.file_exists (dir/"gSourceView2.cmi") || Sys.file_exists (dir/"gSourceView3.cmi")) then
     yell (sprintf "Incomplete LablGtk2 (%s): no %s/gSourceView2.cmi." msg dir)
   else if not (Sys.file_exists (dir/"glib.mli")) then
     yell (sprintf "Incomplete LablGtk2 (%s): no %s/glib.mli." msg dir)
@@ -732,15 +732,15 @@ let get_lablgtkdir () =
     else "", msg
   | None ->
     let msg = OCamlFind in
-    let d1,_ = tryrun camlexec.find ["query";"lablgtk2.sourceview2"] in
+    let d1,_ = tryrun camlexec.find ["query";"lablgtk3.sourceview3"] in
     if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
     else
-      (* In debian wheezy, ocamlfind knows only of lablgtk2 *)
-      let d2,_ = tryrun camlexec.find ["query";"lablgtk2"] in
+      (* In debian wheezy, ocamlfind knows only of lablgtk3 *)
+      let d2,_ = tryrun camlexec.find ["query";"lablgtk3"] in
       if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
       else
         let msg = Stdlib in
-        let d3 = camllib^"/lablgtk2" in
+        let d3 = camllib^"/lablgtk3" in
         if check_lablgtkdir msg d3 then d3, msg
         else "", msg
 
@@ -748,24 +748,14 @@ let get_lablgtkdir () =
 
 let check_lablgtk_version src dir = match src with
 | Manual | Stdlib ->
-  warn "Could not check the version of lablgtk2.\nMake sure your version is at least 2.18.3.";
+  warn "Could not check the version of lablgtk3.\nMake sure your version is at least 3.0.0.";
   (true, "an unknown version")
 | OCamlFind ->
-  let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk2"] in
+  let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk3"] in
   try
     let vi = List.map s2i (numeric_prefix_list v) in
-    if vi < [2; 16; 0] then
+    if vi < [3; 0; 0] then
       (false, v)
-    else if vi < [2; 18; 3] then
-      begin
-        (* Version 2.18.3 is known to report incorrectly as 2.18.0, and Launchpad packages report as version 2.16.0 due to a misconfigured META file; see https://bugs.launchpad.net/ubuntu/+source/lablgtk2/+bug/1577236 *)
-        warn "Your installed lablgtk reports as %s.\n\
-It is possible that the installed version is actually more recent\n\
-but reports an incorrect version. If the installed version is\n\
-actually more recent than 2.18.3, that's fine; if it is not,\n
-CoqIDE will compile but may be very unstable." v;
-        (true, "an unknown version")
-      end
     else
       (true, v)
   with _ -> (false, v)
@@ -791,10 +781,10 @@ let lablgtkdir = ref ""
 let check_coqide () =
   if !prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
-  if dir = "" then set_ide No "LablGtk2 not found";
+  if dir = "" then set_ide No "LablGtk3 not found";
   let (ok, version) = check_lablgtk_version via dir in
-  let found = sprintf "LablGtk2 found (%s, %s)" (get_source via) version in
-  if not ok then set_ide No (found^", but too old (required >= 2.18.3, found " ^ version ^ ")");
+  let found = sprintf "LablGtk3 found (%s, %s)" (get_source via) version in
+  if not ok then set_ide No (found^", but too old (required >= 3.0, found " ^ version ^ ")");
   (* We're now sure to produce at least one kind of coqide *)
   lablgtkdir := shorten_camllib dir;
   if !prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
@@ -1014,7 +1004,7 @@ let print_summary () =
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
-    pr "  Lablgtk2 library in         : %s\n" (esc !lablgtkdir);
+    pr "  Lablgtk3 library in         : %s\n" (esc !lablgtkdir);
   if !idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
   pr "  CoqIde                      : %s\n" coqide;

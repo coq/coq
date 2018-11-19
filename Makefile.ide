@@ -17,7 +17,7 @@
 
 ## Coqide-related variables set by ./configure in config/Makefile
 
-#COQIDEINCLUDES : something like -I +lablgtk2
+#COQIDEINCLUDES : something like -I +lablgtk3
 #HASCOQIDE : opt / byte / no
 #IDEFLAGS : some extra cma, for instance
 #IDEOPTCDEPS : on windows, ide/ide_win32_stubs.o ide/coq_icon.o
@@ -98,7 +98,7 @@ ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -108,7 +108,7 @@ endif
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
 	@rm -f $@
@@ -128,7 +128,7 @@ ide/%.cmx: ide/%.ml
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 # We need to compile this file without -safe-string due mess with
-# lablgtk API. Other option is to require lablgtk >= 2.8.16
+# lablgtk API. Other option is to require lablgtk >= 3.0.0
 ide/ideutils.cmo: ide/ideutils.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(filter-out -safe-string,$(OCAMLC)) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
@@ -228,7 +228,7 @@ $(COQIDEAPP)/Contents:
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	        -linkpkg -package str,unix,dynlink,threads,lablgtk2.sourceview2 $(IDEFLAGS:.cma=.cmxa) $^
+	        -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents

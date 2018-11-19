@@ -29,7 +29,7 @@
  (wrapped false)
  (modules (:standard \ document fake_ide idetop coqide_main))
  (optional)
- (libraries coqide-server.protocol coqide-server.core lablgtk2.sourceview2))
+ (libraries coqide-server.protocol coqide-server.core lablgtk3.sourceview3))
 
 (rule
  (targets coqide_os_specific.ml)
