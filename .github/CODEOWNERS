@@ -132,8 +132,14 @@
 
 ########## Parser ##########
 
-/parsing/         @herbelin
+/parsing/         @parsing-maintainers
 # Secondary maintainer @mattam82
+
+/gramlib/         @parsing-maintainers
+# Secondary maintainer @nobody
+
+/vernac/metasyntax.* @parsing-maintainers
+# Secondary maintainer @mattam82 @maximedenes
 
 ########## Plugins ##########
 
