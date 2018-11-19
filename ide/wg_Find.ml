@@ -14,10 +14,10 @@ class finder name (view : GText.view) =
   
   let widget = Wg_Detachable.detachable
     ~title:(Printf.sprintf "Find & Replace (%s)" name) () in 
-  let replace_box = GPack.table ~columns:4 ~rows:2 ~homogeneous:false
+  let replace_box = GPack.grid (* ~columns:4 ~rows:2 *) ~col_homogeneous:false ~row_homogeneous:false
     ~packing:widget#add () in
   let hb = GPack.hbox ~packing:(replace_box#attach
-      ~left:1 ~top:0 ~expand:`X ~fill:`X) () in
+      ~left:1 ~top:0 (*~expand:`X ~fill:`X*)) () in
   let use_regex =
     GButton.check_button ~label:"Regular expression"
       ~packing:(hb#pack ~expand:false ~fill:true ~padding:3) () in
@@ -26,25 +26,25 @@ class finder name (view : GText.view) =
       ~packing:(hb#pack ~expand:false ~fill:true ~padding:3) () in
   let _ = GMisc.label ~text:"Find:" ~xalign:1.0
     ~packing:(replace_box#attach
-      ~xpadding:3 ~ypadding:3 ~left:0 ~top:1 ~fill:`X) () in
+     (*~xpadding:3 ~ypadding:3*) ~left:0 ~top:1 (*~fill:`X*)) () in
   let _ = GMisc.label ~text:"Replace:" ~xalign:1.0
     ~packing:(replace_box#attach
-      ~xpadding:3 ~ypadding:3 ~left:0 ~top:2 ~fill:`X) () in
+     (* ~xpadding:3 ~ypadding:3*) ~left:0 ~top:2 (*~fill:`X*)) () in
   let find_entry = GEdit.entry ~editable:true
     ~packing:(replace_box#attach
-      ~xpadding:3 ~ypadding:3 ~left:1 ~top:1 ~expand:`X ~fill:`X) () in
+      (*~xpadding:3 ~ypadding:3*) ~left:1 ~top:1 (*~expand:`X ~fill:`X*)) () in
   let replace_entry = GEdit.entry ~editable:true
     ~packing:(replace_box#attach
-      ~xpadding:3 ~ypadding:3 ~left:1 ~top:2 ~expand:`X ~fill:`X) () in
+      (*~xpadding:3 ~ypadding:3*) ~left:1 ~top:2 (*~expand:`X ~fill:`X*)) () in
   let next_button = GButton.button ~label:"_Next" ~use_mnemonic:true
-    ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:2 ~top:1) () in
+    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:2 ~top:1) () in
   let previous_button = GButton.button ~label:"_Previous" ~use_mnemonic:true
-    ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:3 ~top:1) () in
+    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:3 ~top:1) () in
   let replace_button = GButton.button ~label:"_Replace" ~use_mnemonic:true
-    ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:2 ~top:2) () in
+    ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:2 ~top:2) () in
   let replace_all_button =
     GButton.button ~label:"Replace _All" ~use_mnemonic:true
-      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:3 ~top:2) () in
+      ~packing:(replace_box#attach (*~xpadding:3 ~ypadding:3*) ~left:3 ~top:2) () in
 
   object (self)
     val mutable last_found = None

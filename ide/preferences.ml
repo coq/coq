@@ -691,7 +691,7 @@ let configure ?(apply=(fun () -> ())) parent =
 
   let config_color =
     let box = GPack.vbox () in
-    let table = GPack.table
+    let grid = GPack.grid
       ~row_spacings:5
       ~col_spacings:5
       ~border_width:2
@@ -703,12 +703,12 @@ let configure ?(apply=(fun () -> ())) parent =
     in
     let iter i (text, pref) =
       let label = GMisc.label
-        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:i) ()
+        ~text ~packing:(grid#attach (*~expand:`X*) ~left:0 ~top:i) ()
       in
       let () = label#set_xalign 0. in
       let button = GButton.color_button
         ~color:(Gdk.Color.color_parse pref#get)
-        ~packing:(table#attach ~left:1 ~top:i) ()
+        ~packing:(grid#attach ~left:1 ~top:i) ()
       in
       let _ = button#connect#color_set ~callback:begin fun () ->
         pref#set (Gdk.Color.color_to_string button#color)
@@ -740,7 +740,7 @@ let configure ?(apply=(fun () -> ())) parent =
       ~packing:(box#pack ~expand:true)
       ()
     in
-    let table = GPack.table
+    let grid = GPack.grid
       ~row_spacings:5
       ~col_spacings:5
       ~border_width:2
@@ -750,13 +750,13 @@ let configure ?(apply=(fun () -> ())) parent =
     let cb = ref [] in
     let iter text tag =
       let label = GMisc.label
-        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:!i) ()
+        ~text ~packing:(grid#attach (*~expand:`X*) ~left:0 ~top:!i) ()
       in
       let () = label#set_xalign 0. in
       let button = tag_button () in
       let callback () = tag#set button#tag in
       button#set_tag tag#get;
-      table#attach ~left:1 ~top:!i button#coerce;
+      grid#attach ~left:1 ~top:!i button#coerce;
       incr i;
       cb := callback :: !cb;
     in
