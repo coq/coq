@@ -25,6 +25,7 @@ open CErrors
 open Names
 open Feedback
 open Vernacexpr
+open Vernacextend
 
 module AsyncOpts = struct
 
@@ -162,7 +163,7 @@ type branch_type =
   [ `Master
   | `Proof of proof_mode * depth
   | `Edit of
-      proof_mode * Stateid.t * Stateid.t  * vernac_qed_type * Vcs_.Branch.t ]
+      proof_mode * Stateid.t * Stateid.t  * Vernacextend.vernac_qed_type * Vcs_.Branch.t ]
 (* TODO 8.7 : split commands and tactics, since this type is too messy now *)
 type cmd_t = {
   ctac : bool; (* is a tactic *)
@@ -174,7 +175,7 @@ type cmd_t = {
            | `TacQueue of solving_tac * anon_abstracting_tac * AsyncTaskQueue.cancel_switch
            | `QueryQueue of AsyncTaskQueue.cancel_switch
            | `SkipQueue ] }
-type fork_t = aast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Names.Id.t list
+type fork_t = aast * Vcs_.Branch.t * opacity_guarantee * Names.Id.t list
 type qed_t = {
   qast : aast;
   keep : vernac_qed_type;

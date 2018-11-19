@@ -374,9 +374,9 @@ let print_rules fmt rules =
 let print_classifier fmt = function
 | ClassifDefault -> fprintf fmt ""
 | ClassifName "QUERY" ->
-  fprintf fmt "~classifier:(fun _ -> Vernac_classifier.classify_as_query)"
+  fprintf fmt "~classifier:(fun _ -> Vernacextend.classify_as_query)"
 | ClassifName "SIDEFF" ->
-  fprintf fmt "~classifier:(fun _ -> Vernac_classifier.classify_as_sideeff)"
+  fprintf fmt "~classifier:(fun _ -> Vernacextend.classify_as_sideeff)"
 | ClassifName s -> fatal (Printf.sprintf "Unknown classifier %s" s)
 | ClassifCode c -> fprintf fmt "~classifier:(%s)" c.code
 

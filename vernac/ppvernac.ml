@@ -1214,6 +1214,7 @@ open Pputils
 
 let rec pr_vernac_flag (k, v) =
   let k = keyword k in
+  let open Attributes in
   match v with
   | VernacFlagEmpty -> k
   | VernacFlagLeaf v -> k ++ str " = " ++ qs v

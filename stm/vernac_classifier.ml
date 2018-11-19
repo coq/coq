@@ -12,6 +12,7 @@ open CErrors
 open Util
 open Pp
 open CAst
+open Vernacextend
 open Vernacexpr
 
 let default_proof_mode () = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"]
@@ -209,7 +210,3 @@ let classify_vernac e =
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
   in
   static_control_classifier e
-
-let classify_as_query = VtQuery, VtLater
-let classify_as_sideeff = VtSideff [], VtLater
-let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater

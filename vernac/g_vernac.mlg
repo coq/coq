@@ -30,6 +30,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pcoq.Module
 open Pvernac.Vernac_
+open Attributes
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
 let _ = List.iter CLexer.add_keyword vernac_kw

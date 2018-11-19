@@ -26,6 +26,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 open Pvernac.Vernac_
 open Pltac
+open Vernacextend
 
 let wit_hyp = wit_var
 
@@ -280,18 +281,18 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
      }
   | #[ atts = rewrite_attributes; ] [ "Add" "Morphism" constr(m) ":" ident(n) ]
     (* This command may or may not open a goal *)
-    => { Vernacexpr.VtUnknown, Vernacexpr.VtNow }
+    => { VtUnknown, VtNow }
     -> {
            add_morphism_infer atts m n;
        }
   | #[ atts = rewrite_attributes; ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
-    => { Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) }
+    => { VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater }
     -> {
            add_morphism atts [] m s n;
        }
   | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
-    => { Vernacexpr.(VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater) }
+    => { VtStartProof("Classic",GuaranteesOpacity,[n]), VtLater }
     -> {
            add_morphism atts binders m s n;
        }

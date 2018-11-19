@@ -8,16 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Vernacexpr
+open Vernacextend
 
 val string_of_vernac_classification : vernac_classification -> string
 
 (** What does a vernacular do *)
-val classify_vernac : vernac_control -> vernac_classification
+val classify_vernac : Vernacexpr.vernac_control -> vernac_classification
 
-(** Standard constant classifiers *)
-val classify_as_query : vernac_classification
-val classify_as_sideeff : vernac_classification
-val classify_as_proofstep : vernac_classification
-
+(**  *)
 val stm_allow_nested_proofs_option_name : string list
