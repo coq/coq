@@ -73,11 +73,11 @@ object (self)
   method default = default
 end
 
-let stick (pref : 'a preference) (obj : #GObj.widget as 'obj)
+let stick (pref : 'a preference) (obj : < connect : #GObj.widget_signals ; .. >)
   (cb : 'a -> unit) =
   let _ = cb pref#get in
   let p_id = pref#connect#changed ~callback:(fun v -> cb v) in
-  let _ = obj#misc#connect#destroy ~callback:(fun () -> pref#connect#disconnect p_id) in
+  let _ = obj#connect#destroy ~callback:(fun () -> pref#connect#disconnect p_id) in
   ()
 
 (** Useful marshallers *)

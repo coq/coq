@@ -1222,8 +1222,8 @@ let build_ui () =
   let () = GtkButton.Toolbar.set
     ~orientation:`HORIZONTAL ~style:`ICONS ~tooltips:true tbar
   in
-  let toolbar = new GObj.widget tbar in
-  let () = vbox#pack toolbar in
+  let toolbar = new GButton.toolbar tbar in
+  let () = vbox#pack toolbar#coerce in
 
   (* Emacs/PG mode *)
   NanoPG.init w notebook all_menus;
