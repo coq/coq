@@ -867,6 +867,14 @@ let () = define1 "env_path" reference begin fun r ->
     throw err_notfound
 end
 
+let () = define1 "env_instantiate" reference begin fun r ->
+  Proofview.tclENV >>= fun env ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let (sigma, c) = Evd.fresh_global env sigma r in
+  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
+  return (Value.of_constr c)
+end
+
 (** ML types *)
 
 let constr_flags () =

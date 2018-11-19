@@ -20,3 +20,8 @@ Ltac2 @ external expand : ident list -> Std.reference list := "ltac2" "env_expan
 Ltac2 @ external path : Std.reference -> ident list := "ltac2" "env_path".
 (** Returns the absolute name of the given reference. Panics if the reference
     does not exist. *)
+
+Ltac2 @ external instantiate : Std.reference -> constr := "ltac2" "env_instantiate".
+(** Returns a fresh instance of the corresponding reference, in particular
+    generating fresh universe variables and constraints when this reference is
+    universe-polymorphic. *)
