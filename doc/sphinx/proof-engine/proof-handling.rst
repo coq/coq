@@ -758,18 +758,6 @@ Controlling the effect of proof editing commands
    available hypotheses.
 
 
-.. flag:: Automatic Introduction
-
-   This option controls the way binders are handled
-   in assertion commands such as :n:`Theorem @ident {? @binders} : @term`. When the
-   option is on, which is the default, binders are automatically put in
-   the local context of the goal to prove.
-
-   When the option is off, binders are discharged on the statement to be
-   proved and a tactic such as :tacn:`intro` (see Section :ref:`managingthelocalcontext`)
-   has to be used to move the assumptions to the local context.
-
-
 .. flag:: Nested Proofs Allowed
 
    When turned on (it is off by default), this option enables support for nested
