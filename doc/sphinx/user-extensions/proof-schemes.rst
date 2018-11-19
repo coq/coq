@@ -167,7 +167,7 @@ Combined Scheme
 
     Combined Scheme tree_forest_mutind from tree_forest_ind,forest_tree_ind.
 
-  The type of tree_forest_mutrec will be:
+  The type of tree_forest_mutind will be:
 
   .. coqtop:: all
 
