@@ -20,8 +20,11 @@ open Proofview.Notations
 module Value = Tac2ffi
 open Value
 
-let std_core n = KerName.make Tac2env.std_prefix (Label.of_id (Id.of_string_soft n))
-let coq_core n = KerName.make Tac2env.coq_prefix (Label.of_id (Id.of_string_soft n))
+let core_prefix path n = KerName.make path (Label.of_id (Id.of_string_soft n))
+
+let std_core n = core_prefix Tac2env.std_prefix n
+let coq_core n = core_prefix Tac2env.coq_prefix n
+let ltac1_core n = core_prefix Tac2env.ltac1_prefix n
 
 module Core =
 struct
@@ -37,6 +40,7 @@ let t_ident = coq_core "ident"
 let t_option = coq_core "option"
 let t_exn = coq_core "exn"
 let t_reference = std_core "reference"
+let t_ltac1 = ltac1_core "t"
 
 let c_nil = coq_core "[]"
 let c_cons = coq_core "::"
@@ -875,6 +879,73 @@ let () = define1 "env_instantiate" reference begin fun r ->
   return (Value.of_constr c)
 end
 
+(** Ltac1 in Ltac2 *)
+
+let ltac1 = Tac2ffi.repr_ext Value.val_ltac1
+let of_ltac1 v = Value.of_ext Value.val_ltac1 v
+
+let () = define1 "ltac1_ref" (list ident) begin fun ids ->
+  let open Ltac_plugin in
+  let r = match ids with
+  | [] -> raise Not_found
+  | _ :: _ as ids ->
+    let (id, path) = List.sep_last ids in
+    let path = DirPath.make (List.rev path) in
+    let fp = Libnames.make_path path id in
+    if Tacenv.exists_tactic fp then
+      List.hd (Tacenv.locate_extended_all_tactic (Libnames.qualid_of_path fp))
+    else raise Not_found
+  in
+  let tac = Tacinterp.Value.of_closure (Tacinterp.default_ist ()) (Tacenv.interp_ltac r) in
+  return (Value.of_ext val_ltac1 tac)
+end
+
+let () = define1 "ltac1_run" ltac1 begin fun v ->
+  let open Ltac_plugin in
+  Tacinterp.tactic_of_value (Tacinterp.default_ist ()) v >>= fun () ->
+  return v_unit
+end
+
+let () = define3 "ltac1_apply" ltac1 (list ltac1) closure begin fun f args k ->
+  let open Ltac_plugin in
+  let open Tacexpr in
+  let open Locus in
+  let k ret =
+    Proofview.tclIGNORE (Tac2ffi.apply k [Value.of_ext val_ltac1 ret])
+  in
+  let fold arg (i, vars, lfun) =
+    let id = Id.of_string ("x" ^ string_of_int i) in
+    let x = Reference (ArgVar CAst.(make id)) in
+    (succ i, x :: vars, Id.Map.add id arg lfun)
+  in
+  let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
+  let lfun = Id.Map.add (Id.of_string "F") f lfun in
+  let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
+  let tac = TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
+  Tacinterp.val_interp ist tac k >>= fun () ->
+  return v_unit
+end
+
+let () = define1 "ltac1_of_constr" constr begin fun c ->
+  let open Ltac_plugin in
+  return (Value.of_ext val_ltac1 (Tacinterp.Value.of_constr c))
+end
+
+let () = define1 "ltac1_to_constr" ltac1 begin fun v ->
+  let open Ltac_plugin in
+  return (Value.of_option Value.of_constr (Tacinterp.Value.to_constr v))
+end
+
+let () = define1 "ltac1_of_list" (list ltac1) begin fun l ->
+  let open Geninterp.Val in
+  return (Value.of_ext val_ltac1 (inject (Base typ_list) l))
+end
+
+let () = define1 "ltac1_to_list" ltac1 begin fun v ->
+  let open Ltac_plugin in
+  return (Value.of_option (Value.of_list of_ltac1) (Tacinterp.Value.to_list v))
+end
+
 (** ML types *)
 
 let constr_flags () =
@@ -1036,6 +1107,34 @@ let () =
     ml_print = print;
   } in
   define_ml_object Tac2quote.wit_ltac1 obj
+
+let () =
+  let open Ltac_plugin in
+  let intern self ist tac =
+    (** Prevent inner calls to Ltac2 values *)
+    let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
+    let ist = { ist with Genintern.extra } in
+    let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
+    GlbVal tac, gtypref t_ltac1
+  in
+  let interp ist tac =
+    let ist = { env_ist = Id.Map.empty } in
+    let lfun = Tac2interp.set_env ist Id.Map.empty in
+    let ist = Ltac_plugin.Tacinterp.default_ist () in
+    let ist = { ist with Geninterp.lfun = lfun } in
+    return (Value.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
+  in
+  let subst s tac = Genintern.substitute Tacarg.wit_tactic s tac in
+  let print env tac =
+    str "ltac1val:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
+  in
+  let obj = {
+    ml_intern = intern;
+    ml_subst = subst;
+    ml_interp = interp;
+    ml_print = print;
+  } in
+  define_ml_object Tac2quote.wit_ltac1val obj
 
 (** Ltac2 in terms *)
 

@@ -276,6 +276,9 @@ let coq_prefix =
 let std_prefix =
   MPfile (DirPath.make (List.map Id.of_string ["Std"; "Ltac2"]))
 
+let ltac1_prefix =
+  MPfile (DirPath.make (List.map Id.of_string ["Ltac1"; "Ltac2"]))
+
 (** Generic arguments *)
 
 let wit_ltac2 = Genarg.make0 "ltac2:value"

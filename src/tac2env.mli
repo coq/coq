@@ -133,6 +133,9 @@ val coq_prefix : ModPath.t
 val std_prefix : ModPath.t
 (** Path where Ltac-specific datatypes are defined in Ltac2 plugin. *)
 
+val ltac1_prefix : ModPath.t
+(** Path where the Ltac1 legacy FFI is defined. *)
+
 (** {5 Generic arguments} *)
 
 val wit_ltac2 : (raw_tacexpr, glb_tacexpr, Util.Empty.t) genarg_type

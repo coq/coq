@@ -880,6 +880,8 @@ a backtrace.
 
 ## Ltac1 from Ltac2
 
+### Simple API
+
 One can call Ltac1 code from Ltac2 by using the `ltac1` quotation. It parses
 a Ltac1 expression, and semantics of this quotation is the evaluation of the
 corresponding code for its side effects. In particular, in cannot return values,
@@ -887,6 +889,21 @@ and the quotation has type `unit`.
 
 Beware, Ltac1 **cannot** access variables from the Ltac2 scope. One is limited
 to the use of standalone function calls.
+
+### Low-level API
+
+There exists a lower-level FFI into Ltac1 that is not recommended for daily use,
+which is available in the `Ltac2.Ltac1` module. This API allows to directly
+manipulate dynamically-typed Ltac1 values, either through the function calls,
+or using the `ltac1val` quotation. The latter parses the same as `ltac1`, but
+has type `Ltac2.Ltac1.t` instead of `unit`, and dynamically behaves as an Ltac1
+thunk, i.e. `ltac1val:(foo)` corresponds to the tactic closure that Ltac1
+would generate from `idtac; foo`.
+
+Due to intricate dynamic semantics, understanding when Ltac1 value quotations
+focus is very hard. This is why some functions return a continuation-passing
+style value, as it can dispatch dynamically between focused and unfocused
+behaviour.
 
 ## Ltac2 from Ltac1
 

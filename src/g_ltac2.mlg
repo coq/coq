@@ -100,6 +100,7 @@ let inj_open_constr loc c = inj_wit Tac2quote.wit_open_constr loc c
 let inj_pattern loc c = inj_wit Tac2quote.wit_pattern loc c
 let inj_reference loc c = inj_wit Tac2quote.wit_reference loc c
 let inj_ltac1 loc e = inj_wit Tac2quote.wit_ltac1 loc e
+let inj_ltac1val loc e = inj_wit Tac2quote.wit_ltac1val loc e
 
 let pattern_of_qualid qid =
   if Tac2env.is_constructor qid then CAst.make ?loc:qid.CAst.loc @@ CPatRef (RelId qid, [])
@@ -224,6 +225,7 @@ GRAMMAR EXTEND Gram
       | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
       | IDENT "ltac1"; ":"; "("; qid = ltac1_expr; ")" -> { inj_ltac1 loc qid }
+      | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr; ")" -> { inj_ltac1val loc qid }
     ] ]
   ;
   let_clause:
