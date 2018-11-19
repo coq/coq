@@ -129,7 +129,7 @@ let closed_term_ast =
   fun l ->
   let l = List.map (fun gr -> ArgArg(Loc.tag gr)) l in
   TacFun([Name(Id.of_string"t")],
-  TacML(Loc.tag (tacname,
+  TacML(CAst.make (tacname,
   [TacGeneric (Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
    TacGeneric (Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)])))
 (*
@@ -160,7 +160,7 @@ let decl_constant na univs c =
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
-  TacArg(Loc.tag @@ TacCall (Loc.tag (ArgArg(Loc.tag @@ Lazy.force tac),args)))
+  TacArg(CAst.make @@ TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 let dummy_goal env sigma =
   let (gl,_,sigma) = 
@@ -197,7 +197,7 @@ let exec_tactic env evd n f args =
   (** Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
-  let get_res = TacML (Loc.tag (get_res, [TacGeneric n])) in
+  let get_res = TacML (CAst.make (get_res, [TacGeneric n])) in
   let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
   (** Evaluate the whole result *)
   let gl = dummy_goal env evd in
@@ -557,7 +557,7 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
         let t = ArgArg(Loc.tag @@ Lazy.force ltac_inv_morph_nothing) in
-              TacArg(Loc.tag (TacCall(Loc.tag (t,[]))))
+              TacArg(CAst.make (TacCall(CAst.make (t,[]))))
 
 let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
@@ -582,7 +582,7 @@ let interp_power env evdref pow =
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
-      (TacArg(Loc.tag (TacCall(Loc.tag (t,[])))), plapp evdref coq_None [|carrier|])
+      (TacArg(CAst.make (TacCall(CAst.make (t,[])))), plapp evdref coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with

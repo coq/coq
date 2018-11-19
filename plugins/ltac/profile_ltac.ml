@@ -251,7 +251,7 @@ let string_of_call ck =
        | Tacexpr.LtacVarCall (id, t) -> Names.Id.print id
        | Tacexpr.LtacAtomCall te ->
          (Pptactic.pr_glob_tactic (Global.env ())
-            (Tacexpr.TacAtom (Loc.tag te)))
+            (Tacexpr.TacAtom (CAst.make te)))
        | Tacexpr.LtacConstrInterp (c, _) ->
          pr_glob_constr_env (Global.env ()) c
        | Tacexpr.LtacMLCall te ->

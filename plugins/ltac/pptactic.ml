@@ -294,7 +294,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       let pr _ = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
-  let pr_farg prtac arg = prtac (1, Any) (TacArg (Loc.tag arg))
+  let pr_farg prtac arg = prtac (1, Any) (TacArg (CAst.make arg))
 
   let is_genarg tag wit =
     let ArgT.Any tag = tag in
@@ -350,9 +350,9 @@ let string_of_genarg_arg (ArgumentType arg) =
     pr_extend_gen (pr_farg prtac)
 
   let pr_raw_alias prtac lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (CAst.make a)))) lev key args
   let pr_glob_alias prtac lev key args =
-    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (Loc.tag a)))) lev key args
+    pr_alias_gen (pr_targ (fun l a -> prtac l (TacArg (CAst.make a)))) lev key args
 
   (**********************************************************************)
   (* The tactic printer                                                 *)
@@ -579,7 +579,7 @@ let pr_goal_selector ~toplevel s =
            pr_gen  arg
          else
            str name ++ str ":" ++ surround (pr_gen arg)
-      | _ -> pr_arg (TacArg (Loc.tag t)) in
+      | _ -> pr_arg (TacArg (CAst.make t)) in
     hov 0 (keyword k ++ spc () ++ pr_lname na ++ prlist pr_funvar bl ++
              str " :=" ++ brk (1,1) ++ pr t)
 
@@ -1045,30 +1045,30 @@ let pr_goal_selector ~toplevel s =
             | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
-            | TacAtom (loc,t) ->
+            | TacAtom { CAst.loc; v=t } ->
               pr_with_comments ?loc (hov 1 (pr_atom pr strip_prod_binders tag_atom t)), ltatom
-            | TacArg(_,Tacexp e) ->
+            | TacArg { CAst.v=Tacexp e } ->
               pr_tac inherited e, latom
-            | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
+            | TacArg { CAst.v=ConstrMayEval (ConstrTerm c) } ->
               keyword "constr:" ++ pr.pr_constr c, latom
-            | TacArg(_,ConstrMayEval c) ->
+            | TacArg { CAst.v=ConstrMayEval c } ->
               pr_may_eval pr.pr_constr pr.pr_lconstr pr.pr_constant pr.pr_pattern c, leval
-            | TacArg(_,TacFreshId l) ->
+            | TacArg { CAst.v=TacFreshId l } ->
               primitive "fresh" ++ pr_fresh_ids l, latom
-            | TacArg(_,TacGeneric arg) ->
+            | TacArg { CAst.v=TacGeneric arg } ->
               pr.pr_generic arg, latom
-            | TacArg(_,TacCall(_,(f,[]))) ->
+            | TacArg { CAst.v=TacCall {CAst.v=(f,[])} } ->
               pr.pr_reference f, latom
-            | TacArg(_,TacCall(loc,(f,l))) ->
+            | TacArg { CAst.v=TacCall {CAst.loc; v=(f,l)} } ->
               pr_with_comments ?loc (hov 1 (
                 pr.pr_reference f ++ spc ()
                 ++ prlist_with_sep spc pr_tacarg l)),
               lcall
-            | TacArg (_,a) ->
+            | TacArg { CAst.v=a } ->
               pr_tacarg a, latom
-            | TacML (loc,(s,l)) ->
+            | TacML { CAst.loc; v=(s,l) } ->
               pr_with_comments ?loc (pr.pr_extend 1 s l), lcall
-            | TacAlias (loc,(kn,l)) ->
+            | TacAlias { CAst.loc; v=(kn,l) } ->
               pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in
@@ -1087,7 +1087,7 @@ let pr_goal_selector ~toplevel s =
           | TacNumgoals ->
             keyword "numgoals"
           | (TacCall _|Tacexp _ | TacGeneric _) as a ->
-            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (Loc.tag a))))
+            hov 0 (keyword "ltac:" ++ surround (pr_tac ltop (TacArg (CAst.make a))))
 
         in pr_tac
 

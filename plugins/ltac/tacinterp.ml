@@ -1018,7 +1018,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | TacLetIn (false,l,u) -> interp_letin ist l u
   | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
   | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
-  | TacArg (loc,a) -> interp_tacarg ist a
+  | TacArg {loc;v} -> interp_tacarg ist v
   | t ->
     (** Delayed evaluation *)
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], t)))
@@ -1036,7 +1036,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
 
 
 and eval_tactic ist tac : unit Proofview.tactic = match tac with
-  | TacAtom (loc,t) ->
+  | TacAtom {loc;v=t} ->
       let call = LtacAtomCall t in
       push_trace(loc,call) ist >>= fun trace ->
       Profile_ltac.do_profile "eval_tactic:2" trace
@@ -1116,7 +1116,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       eval_tactic ist tac
   | TacSelect (sel, tac) -> Tacticals.New.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
-  | TacAlias (loc,(s,l)) ->
+  | TacAlias {loc; v=(s,l)} ->
       let alias = Tacenv.interp_alias s in
       let (>>=) = Ftactic.bind in
       let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
@@ -1147,7 +1147,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
-  | TacML (loc,(opn,l)) ->
+  | TacML {loc; v=(opn,l)} ->
       push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist >>= fun trace ->
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
@@ -1201,9 +1201,9 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
         Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Ftactic.return (Value.of_constr c_interp))
       end
-  | TacCall (loc,(r,[])) ->
+  | TacCall { v=(r,[]) } ->
       interp_ltac_reference true ist r
-  | TacCall (loc,(f,l)) ->
+  | TacCall { loc; v=(f,l) } ->
       let (>>=) = Ftactic.bind in
       interp_ltac_reference true ist f >>= fun fv ->
       Ftactic.List.map (fun a -> interp_tacarg ist a) l >>= fun largs ->
@@ -1337,7 +1337,7 @@ and interp_letrec ist llc u =
   Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
   let lref = ref ist.lfun in
   let fold accu ({v=na}, b) =
-    let v = of_tacvalue (VRec (lref, TacArg (Loc.tag b))) in
+    let v = of_tacvalue (VRec (lref, TacArg (CAst.make b))) in
     Name.fold_right (fun id -> Id.Map.add id v) na accu
   in
   let lfun = List.fold_left fold ist.lfun llc in
@@ -1875,7 +1875,7 @@ module Value = struct
     let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
     let lfun = Id.Map.add (Id.of_string "F") f lfun in
     let ist = { (default_ist ()) with lfun = lfun; } in
-    let tac = TacArg(Loc.tag @@ TacCall (Loc.tag (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
+    let tac = TacArg(CAst.make @@ TacCall (CAst.make (ArgVar CAst.(make @@ Id.of_string "F"),args))) in
     eval_tactic_ist ist tac
 
 end

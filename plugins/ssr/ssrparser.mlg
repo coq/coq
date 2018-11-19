@@ -1545,9 +1545,9 @@ let test_ssrseqvar = Gram.Entry.of_parser "test_ssrseqvar" accept_ssrseqvar
 let swaptacarg (loc, b) = (b, []), Some (TacId [])
 
 let check_seqtacarg dir arg = match snd arg, dir with
-  | ((true, []), Some (TacAtom (loc, _))), L2R ->
+  | ((true, []), Some (TacAtom { CAst.loc })), L2R ->
     CErrors.user_err ?loc (str "expected \"last\"")
-  | ((false, []), Some (TacAtom (loc, _))), R2L ->
+  | ((false, []), Some (TacAtom { CAst.loc })), R2L ->
     CErrors.user_err ?loc (str "expected \"first\"")
   | _, _ -> arg
 
@@ -1677,7 +1677,7 @@ let set_pr_ssrtac name prec afmt = (* FIXME *) () (*
     | ArgCoq at -> Egramml.GramTerminal "COQ_ARG") afmt in
   let tacname = ssrtac_name name in () *)
 
-let ssrtac_atom ?loc name args = TacML (Loc.tag ?loc (ssrtac_entry name 0, args))
+let ssrtac_atom ?loc name args = TacML (CAst.make ?loc (ssrtac_entry name 0, args))
 let ssrtac_expr ?loc name args = ssrtac_atom ?loc name args
 
 let tclintros_expr ?loc tac ipats =
@@ -1704,7 +1704,7 @@ END
 
 GRAMMAR EXTEND Gram
   GLOBAL: tactic_expr;
-  ssrparentacarg: [[ "("; tac = tactic_expr; ")" -> { Loc.tag ~loc (Tacexp tac) } ]];
+  ssrparentacarg: [[ "("; tac = tactic_expr; ")" -> { CAst.make ~loc (Tacexp tac) } ]];
   tactic_expr: LEVEL "0" [[ arg = ssrparentacarg -> { TacArg arg } ]];
 END
 
@@ -1724,7 +1724,7 @@ let ssrautoprop gl =
     let tacname = 
       try Tacenv.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
       with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
-    let tacexpr = Loc.tag @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
+    let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
     V82.of_tactic (eval_tactic (Tacexpr.TacArg tacexpr)) gl
   with Not_found -> V82.of_tactic (Auto.full_trivial []) gl
 

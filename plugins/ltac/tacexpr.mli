@@ -167,7 +167,7 @@ type 'a gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | Reference      of 'ref
-  | TacCall    of ('ref * 'a gen_tactic_arg list) Loc.located
+  | TacCall    of ('ref * 'a gen_tactic_arg list) CAst.t
   | TacFreshId of string or_var list
   | Tacexp of 'tacexpr
   | TacPretype of 'trm
@@ -189,7 +189,7 @@ constraint 'a = <
     'r : ltac refs, 'n : idents, 'l : levels *)
 
 and 'a gen_tactic_expr =
-  | TacAtom of ('a gen_atomic_tactic_expr) Loc.located
+  | TacAtom of ('a gen_atomic_tactic_expr) CAst.t
   | TacThen of
       'a gen_tactic_expr *
       'a gen_tactic_expr
@@ -245,12 +245,12 @@ and 'a gen_tactic_expr =
   | TacMatchGoal of lazy_flag * direction_flag *
       ('p,'a gen_tactic_expr) match_rule list
   | TacFun of 'a gen_tactic_fun_ast
-  | TacArg of 'a gen_tactic_arg located
+  | TacArg of 'a gen_tactic_arg CAst.t
   | TacSelect of Goal_select.t * 'a gen_tactic_expr
   (* For ML extensions *)
-  | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) Loc.located
+  | TacML of (ml_tactic_entry * 'a gen_tactic_arg list) CAst.t
   (* For syntax extensions *)
-  | TacAlias of (KerName.t * 'a gen_tactic_arg list) Loc.located
+  | TacAlias of (KerName.t * 'a gen_tactic_arg list) CAst.t
 
 constraint 'a = <
     term:'t;

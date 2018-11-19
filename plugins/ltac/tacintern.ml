@@ -137,7 +137,7 @@ let intern_isolated_global_tactic_reference qid =
   let kn = Tacenv.locate_tactic qid in
   Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
     Tacenv.tac_deprecation kn;
-  TacCall (Loc.tag ?loc (ArgArg (loc,kn),[]))
+  TacCall (CAst.make ?loc (ArgArg (loc,kn),[]))
 
 let intern_isolated_tactic_reference strict ist qid =
   (* An ltac reference *)
@@ -587,10 +587,10 @@ let rec intern_atomic lf ist x =
 and intern_tactic onlytac ist tac = snd (intern_tactic_seq onlytac ist tac)
 
 and intern_tactic_seq onlytac ist = function
-  | TacAtom (loc,t) ->
+  | TacAtom { loc; v=t } ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
-      !lf, TacAtom (Loc.tag ?loc:(adjust_loc loc) t)
+      !lf, TacAtom (CAst.make ?loc:(adjust_loc loc) t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetIn (isrec,l,u) ->
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
@@ -659,27 +659,27 @@ and intern_tactic_seq onlytac ist = function
   | TacFirst l -> ist.ltacvars, TacFirst (List.map (intern_pure_tactic ist) l)
   | TacSolve l -> ist.ltacvars, TacSolve (List.map (intern_pure_tactic ist) l)
   | TacComplete tac -> ist.ltacvars, TacComplete (intern_pure_tactic ist tac)
-  | TacArg (loc,a) -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
+  | TacArg { loc; v=a } -> ist.ltacvars, intern_tactic_as_arg loc onlytac ist a
   | TacSelect (sel, tac) ->
       ist.ltacvars, TacSelect (sel, intern_pure_tactic ist tac)
 
   (* For extensions *)
-  | TacAlias (loc,(s,l)) ->
+  | TacAlias { loc; v=(s,l) } ->
       let alias = Tacenv.interp_alias s in
       Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
       let l = List.map (intern_tacarg !strict_check false ist) l in
-      ist.ltacvars, TacAlias (Loc.tag ?loc (s,l))
-  | TacML (loc,(opn,l)) ->
+      ist.ltacvars, TacAlias (CAst.make ?loc (s,l))
+  | TacML { loc; v=(opn,l) } ->
       let _ignore = Tacenv.interp_ml_tactic opn in
-      ist.ltacvars, TacML (loc, (opn,List.map (intern_tacarg !strict_check false ist) l))
+      ist.ltacvars, TacML CAst.(make ?loc (opn,List.map (intern_tacarg !strict_check false ist) l))
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
   | TacCall _ | Reference _
-  | TacGeneric _ as a -> TacArg (loc,a)
+  | TacGeneric _ as a -> TacArg CAst.(make ?loc a)
   | Tacexp a -> a
   | ConstrMayEval _ | TacFreshId _ | TacPretype _ | TacNumgoals as a ->
-      if onlytac then error_tactic_expected ?loc else TacArg (loc,a)
+      if onlytac then error_tactic_expected ?loc else TacArg CAst.(make ?loc a)
 
 and intern_tactic_or_tacarg ist = intern_tactic false ist
 
@@ -692,9 +692,9 @@ and intern_tactic_fun ist (var,body) =
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | TacCall (loc,(f,[])) -> intern_isolated_tactic_reference strict ist f
-  | TacCall (loc,(f,l)) ->
-      TacCall (Loc.tag ?loc (
+  | TacCall { loc; v=(f,[]) } -> intern_isolated_tactic_reference strict ist f
+  | TacCall { loc; v=(f,l) } ->
+      TacCall (CAst.make ?loc (
         intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check false ist) l))
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
