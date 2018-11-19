@@ -884,8 +884,8 @@ END
 {
 
 let classify_ltac2 = function
-| StrSyn _ -> Vernacexpr.VtUnknown, Vernacexpr.VtNow
-| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernac_classifier.classify_as_sideeff
+| StrSyn _ -> Vernacextend.(VtUnknown, VtNow)
+| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernacextend.classify_as_sideeff
 
 }
 
@@ -915,7 +915,7 @@ END
 {
 
 open G_ltac
-open Vernac_classifier
+open Vernacextend
 
 }
 
