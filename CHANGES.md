@@ -95,6 +95,10 @@ Standard Library
 
 - Added `ByteVector` type that can convert to and from [string].
 
+- The prelude used to be automatically Exported and is now only
+  Imported. This should be relevant only when importing files which
+  don't use -noinit into files which do.
+
 Universes
 
 - Added `Print Universes Subgraph` variant of `Print Universes`.
