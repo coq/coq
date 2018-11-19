@@ -306,17 +306,18 @@ let universe_proof_terminator compute_guard hook =
   | Admitted (id,k,pe,ctx) ->
       admit (id,k,pe) (UState.universe_binders ctx) (hook (Some ctx)) ();
       Feedback.feedback Feedback.AddedAxiom
-  | Proved (opaque,idopt,proof) ->
-      let is_opaque, export_seff = match opaque with
-        | Transparent -> false, true
-        | Opaque      -> true, false
-      in
-      let (id,(const,univs,persistence)) = Pfedit.cook_this_proof proof in
-      let const = {const with const_entry_opaque = is_opaque} in
-      let id = match idopt with
-        | None -> id
-        | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-      save ~export_seff id const univs compute_guard persistence (hook (Some univs))
+  | Proved (opaque,idopt, { id; entries=[const]; persistence; universes } ) ->
+    let is_opaque, export_seff = match opaque with
+      | Transparent -> false, true
+      | Opaque      -> true, false
+    in
+    let const = {const with const_entry_opaque = is_opaque} in
+    let id = match idopt with
+      | None -> id
+      | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
+    save ~export_seff id const universes compute_guard persistence (hook (Some universes))
+  | Proved (opaque,idopt, _ ) ->
+    CErrors.anomaly Pp.(str "[universe_proof_terminator] close_proof returned more than one proof term")
   end
 
 let standard_proof_terminator compute_guard hook =

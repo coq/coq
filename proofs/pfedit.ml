@@ -35,16 +35,6 @@ let start_proof (id : Id.t) ?pl str sigma hyps c ?init_tac terminator =
     | None -> p,(true,[])
     | Some tac -> Proof.run_tactic env tac p))
 
-let cook_this_proof p =
-  match p with
-  | { Proof_global.id;entries=[constr];persistence;universes } ->
-      (id,(constr,universes,persistence))
-  | _ -> CErrors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
-
-let cook_proof () =
-  cook_this_proof (fst
-    (Proof_global.close_proof ~keep_body_ucst_separate:false (fun x -> x)))
-
 exception NoSuchGoal
 let _ = CErrors.register_handler begin function
   | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
@@ -155,10 +145,15 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   start_proof id goal_kind evd sign typ terminator;
   try
     let status = by tac in
-    let _,(const,univs,_) = cook_proof () in
-    Proof_global.discard_current ();
-    let univs = UState.demote_seff_univs const univs in
-    const, status, univs
+    let open Proof_global in
+    let { entries; universes } = fst @@ close_proof ~keep_body_ucst_separate:false (fun x -> x) in
+    match entries with
+    | [entry] ->
+      discard_current ();
+      let univs = UState.demote_seff_univs entry universes in
+      entry, status, univs
+    | _ ->
+      CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
   with reraise ->
     let reraise = CErrors.push reraise in
     Proof_global.discard_current ();

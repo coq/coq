@@ -29,21 +29,6 @@ val start_proof :
   Proof_global.proof_terminator -> unit
 
 (** {6 ... } *)
-(** [cook_proof opacity] turns the current proof (assumed completed) into
-    a constant with its name, kind and possible hook (see [start_proof]);
-    it fails if there is no current proof of if it is not completed;
-    it also tells if the guardness condition has to be inferred. *)
-
-val cook_this_proof :
-    Proof_global.proof_object ->
-  (Id.t *
-    (Safe_typing.private_constants Entries.definition_entry * UState.t * goal_kind))
-
-val cook_proof : unit ->
-  (Id.t *
-    (Safe_typing.private_constants Entries.definition_entry * UState.t * goal_kind))
-
-(** {6 ... } *)
 (** [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
