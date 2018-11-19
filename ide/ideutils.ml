@@ -230,14 +230,17 @@ let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
-let select_file_for_open ~title ?filename () =
+let select_file_for_open ~title ?(filter=true) ?filename () =
   let file_chooser =
     GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ()
   in
   file_chooser#add_button_stock `CANCEL `CANCEL ;
   file_chooser#add_select_button_stock `OPEN `OPEN ;
-  file_chooser#add_filter (filter_coq_files ());
-  file_chooser#add_filter (filter_all_files ());
+  if filter then
+    begin
+      file_chooser#add_filter (filter_coq_files ());
+      file_chooser#add_filter (filter_all_files ())
+    end;
   file_chooser#set_default_response `OPEN;
   let dir = match filename with
     | None -> current_dir ()
