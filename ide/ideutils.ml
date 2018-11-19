@@ -8,8 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
 open Preferences
+
+let _ = GtkMain.Main.init ()
 
 let warn_image () =
   let img = GMisc.image () in
