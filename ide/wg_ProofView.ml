@@ -193,12 +193,12 @@ let display mode (view : #GText.view_skel) goals hints evars =
 
 
 let proof_view () =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Proof.table ()
   in
   let text_buffer = new GText.buffer buffer#as_buffer in
-  let view = GSourceView2.source_view
+  let view = GSourceView3.source_view
     ~source_buffer:buffer ~editable:false ~wrap_mode:`WORD ()
   in
   let () = Gtk_parsing.fix_double_click view in

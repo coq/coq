@@ -47,7 +47,7 @@ type session = {
 }
 
 let create_buffer () =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~tag_table:Tags.Script.table
     ~highlight_matching_brackets:true
     ?language:(lang_manager#language source_language#get)

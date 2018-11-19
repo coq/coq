@@ -42,7 +42,7 @@ class type message_view =
   end
 
 let message_view () : message_view =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Message.table ()
   in
@@ -50,7 +50,7 @@ let message_view () : message_view =
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
-  let view = GSourceView2.source_view
+  let view = GSourceView3.source_view
     ~source_buffer:buffer ~packing:scroll#add
     ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
   in

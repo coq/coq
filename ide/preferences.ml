@@ -12,10 +12,10 @@ open Configwin
 
 let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
 let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
-let lang_manager = GSourceView2.source_language_manager ~default:true
+let lang_manager = GSourceView3.source_language_manager ~default:true
 let () = lang_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@lang_manager#search_path)
-let style_manager = GSourceView2.source_style_scheme_manager ~default:true
+let style_manager = GSourceView3.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@style_manager#search_path)
 

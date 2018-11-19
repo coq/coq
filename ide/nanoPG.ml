@@ -52,7 +52,7 @@ let pr_key t =
 type action =
   | Action of string * string
   | Callback of (gui -> unit)
-  | Edit of (status -> GSourceView2.source_buffer -> GText.iter ->
+  | Edit of (status -> GSourceView3.source_buffer -> GText.iter ->
               (string -> string -> unit) -> status)
   | Motion of (status -> GText.iter -> GText.iter * status)
 

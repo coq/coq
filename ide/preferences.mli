@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val lang_manager : GSourceView2.source_language_manager
-val style_manager : GSourceView2.source_style_scheme_manager
+val lang_manager : GSourceView3.source_language_manager
+val style_manager : GSourceView3.source_style_scheme_manager
 
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
