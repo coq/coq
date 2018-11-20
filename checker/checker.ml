@@ -302,6 +302,10 @@ let explain_exn = function
 (*      let ctx = Check.get_env() in
       hov 0
         (str "Error:" ++ spc () ++ Himsg.explain_inductive_error ctx e)*)
+
+  | CheckInductive.InductiveMismatch (mind,field) ->
+    hov 0 (MutInd.print mind ++ str ": field " ++ str field ++ str " is incorrect.")
+
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s = "" then mt ()

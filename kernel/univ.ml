@@ -1034,6 +1034,8 @@ module ACumulativityInfo =
 struct
   type t = AUContext.t * Variance.t array
 
+  let repr (auctx,var) = AUContext.repr auctx, var
+
   let pr prl (univs, variance) =
     AUContext.pr prl ~variance univs
 

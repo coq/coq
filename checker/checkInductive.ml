@@ -8,264 +8,155 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts
-open Pp
 open Declarations
 open Environ
 open Names
-open CErrors
 open Univ
 open Util
-open Constr
 
-let check_kind env ar u =
-  match Constr.kind (snd (Reduction.dest_prod env ar)) with
-  | Sort (Sorts.Type u') when Univ.Universe.equal u' (Univ.Universe.make u) -> ()
-  | _ -> failwith "not the correct sort"
+[@@@ocaml.warning "+9+27"]
 
-let check_polymorphic_arity env params par =
-  let pl = par.template_param_levels in
-  let rec check_p env pl params =
-    let open Context.Rel.Declaration in
-    match pl, params with
-        Some u::pl, LocalAssum (na,ty)::params ->
-          check_kind env ty u;
-          check_p (push_rel (LocalAssum (na,ty)) env) pl params
-      | None::pl,d::params -> check_p (push_rel d env) pl params
-      | [], _ -> ()
-      | _ -> failwith "check_poly: not the right number of params" in
-  check_p env pl (List.rev params)
+exception InductiveMismatch of MutInd.t * string
 
-let conv_ctxt_prefix env (ctx1:rel_context) ctx2 =
-  let rec chk env rctx1 rctx2 =
-    let open Context.Rel.Declaration in
-    match rctx1, rctx2 with
-        (LocalAssum (_,ty1) as d1)::rctx1', LocalAssum (_,ty2)::rctx2' ->
-          Reduction.conv env ty1 ty2;
-          chk (push_rel d1 env) rctx1' rctx2'
-      | (LocalDef (_,bd1,ty1) as d1)::rctx1', LocalDef (_,bd2,ty2)::rctx2' ->
-          Reduction.conv env ty1 ty2;
-          Reduction.conv env bd1 bd2;
-          chk (push_rel d1 env) rctx1' rctx2'
-      | [],_ -> ()
-      | _ -> failwith "non convertible contexts" in
-  chk env (List.rev ctx1) (List.rev ctx2)
+let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
-(* check information related to inductive arity *)
-let typecheck_arity env params inds =
-  let nparamargs = Context.Rel.nhyps params in
-  let nparamdecls = Context.Rel.length params in
-  let check_arity arctxt = function
-    | RegularArity mar ->
-        let ar = mar.mind_user_arity in
-        let _ = Typeops.infer_type env ar in
-        Reduction.conv env (Term.it_mkProd_or_LetIn (Constr.mkSort mar.mind_sort) arctxt) ar;
-        ar
-    | TemplateArity par ->
-      check_polymorphic_arity env params par;
-      Term.it_mkProd_or_LetIn (Constr.mkSort(Sorts.Type par.template_level)) arctxt
+let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
+  let open Entries in
+  let nparams = List.length mb.mind_params_ctxt in (* include letins *)
+  let mind_entry_record = match mb.mind_record with
+    | NotRecord -> None | FakeRecord -> Some None
+    | PrimRecord data -> Some (Some (Array.map pi1 data))
   in
-  let env_arities =
-    Array.fold_left
-      (fun env_ar ind ->
-        let ar_ctxt = ind.mind_arity_ctxt in
-        let _ = Typeops.check_context env ar_ctxt in
-        conv_ctxt_prefix env params ar_ctxt;
-        (* Arities (with params) are typed-checked here *)
-        let arity = check_arity ar_ctxt ind.mind_arity in
-        (* mind_nrealargs *)
-        let nrealargs = Context.Rel.nhyps ar_ctxt - nparamargs in
-        if ind.mind_nrealargs <> nrealargs then
-             failwith "bad number of real inductive arguments";
-        let nrealargs_ctxt = Context.Rel.length ar_ctxt - nparamdecls in
-        if ind.mind_nrealdecls <> nrealargs_ctxt then
-             failwith "bad length of real inductive arguments signature";
-        (* We do not need to generate the universe of full_arity; if
-           later, after the validation of the inductive definition,
-           full_arity is used as argument or subject to cast, an
-           upper universe will be generated *)
-        let id = ind.mind_typename in
-        let env_ar' = push_rel (Context.Rel.Declaration.LocalAssum (Name id, arity)) env_ar in
-        env_ar')
-      env
-      inds in
-  let env_ar_par = push_rel_context params env_arities in
-  env_arities, env_ar_par
-
-(* Check that the subtyping information inferred for inductive types in the block is correct. *)
-(* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
-let check_subtyping cumi paramsctxt env arities =
-  let numparams = Context.Rel.nhyps paramsctxt in
-  (* In [env] we already have [ Var(0) ... Var(n-1) |- cst ] available.
-     We must produce the substitution σ : [ Var(i) -> Var (i + n) | 0 <= i < n]
-     and push the constraints [ Var(n) ... Var(2n - 1) |- cst{σ} ], together
-     with the cumulativity constraints [ cumul_cst ]. *)
-  let uctx = ACumulativityInfo.univ_context cumi in
-  let len = AUContext.size uctx in
-  let inst = Instance.of_array @@ Array.init len (fun i -> Level.var (i + len)) in
-
-  let other_context = ACumulativityInfo.univ_context cumi in
-  let uctx_other = UContext.make (inst, AUContext.instantiate inst other_context) in
-  let cumul_cst =
-    Array.fold_left_i (fun i csts var ->
-        match var with
-        | Variance.Irrelevant -> csts
-        | Variance.Covariant -> Constraint.add (Level.var i,Le,Level.var (i+len)) csts
-        | Variance.Invariant -> Constraint.add (Level.var i,Eq,Level.var (i+len)) csts)
-      Constraint.empty (ACumulativityInfo.variance cumi)
+  let mind_entry_universes = match mb.mind_universes with
+    | Monomorphic_ind univs -> Monomorphic_ind_entry univs
+    | Polymorphic_ind auctx -> Polymorphic_ind_entry (AUContext.names auctx, AUContext.repr auctx)
+    | Cumulative_ind auctx ->
+      Cumulative_ind_entry (AUContext.names (ACumulativityInfo.univ_context auctx),
+                            ACumulativityInfo.repr auctx)
   in
-  let env = Environ.push_context uctx_other env in
-  let env = Environ.add_constraints cumul_cst env in
-  let dosubst = Vars.subst_instance_constr inst in
-    (* process individual inductive types: *)
-    Array.iter (fun { mind_user_lc = lc; mind_arity = arity } ->
-      match arity with
-        | RegularArity { mind_user_arity = full_arity} ->
-           Indtypes.check_subtyping_arity_constructor env dosubst full_arity numparams true;
-           Array.iter (fun cnt -> Indtypes.check_subtyping_arity_constructor env dosubst cnt numparams false) lc
-        | TemplateArity _ ->
-          anomaly ~label:"check_subtyping"
-            Pp.(str "template polymorphism and cumulative polymorphism are not compatible")
-    ) arities
+  let mind_entry_inds = Array.map_to_list (fun ind ->
+      let mind_entry_arity, mind_entry_template = match ind.mind_arity with
+        | RegularArity ar ->
+          let ctx, arity = Term.decompose_prod_n_assum nparams ar.mind_user_arity in
+          ignore ctx; (* we will check that the produced user_arity is equal to the input *)
+          arity, false
+        | TemplateArity ar ->
+          let ctx = ind.mind_arity_ctxt in
+          let ctx = List.firstn (List.length ctx - nparams) ctx in
+          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level), true
+      in
+      {
+        mind_entry_typename = ind.mind_typename;
+        mind_entry_arity;
+        mind_entry_template;
+        mind_entry_consnames = Array.to_list ind.mind_consnames;
+        mind_entry_lc = Array.map_to_list (fun c ->
+            let ctx, c = Term.decompose_prod_n_assum nparams c in
+            ignore ctx; (* we will check that the produced user_lc is equal to the input *)
+            c
+          ) ind.mind_user_lc;
+      })
+      mb.mind_packets
+  in
+  {
+    mind_entry_record;
+    mind_entry_finite = mb.mind_finite;
+    mind_entry_params = mb.mind_params_ctxt;
+    mind_entry_inds;
+    mind_entry_universes;
+    mind_entry_private = mb.mind_private;
+  }
 
-(* An inductive definition is a "unit" if it has only one constructor
-   and that all arguments expected by this constructor are
-   logical, this is the case for equality, conjunction of logical properties
-*)
-let is_unit constrsinfos =
-  match constrsinfos with  (* One info = One constructor *)
-   | [|constrinfos|] -> Univ.is_type0m_univ constrinfos
-   | [||] -> (* type without constructors *) true
-   | _ -> false
+let check_arity env ar1 ar2 = match ar1, ar2 with
+  | RegularArity ar, RegularArity {mind_user_arity;mind_sort} ->
+    Constr.equal ar.mind_user_arity mind_user_arity &&
+    Sorts.equal ar.mind_sort mind_sort
+  | TemplateArity ar, TemplateArity {template_param_levels;template_level} ->
+    List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+    UGraph.check_leq (universes env) template_level ar.template_level
+    (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
+  | (RegularArity _ | TemplateArity _), _ -> false
 
-let small_unit constrsinfos =
-  let issmall = Array.for_all Univ.is_small_univ constrsinfos
-  and isunit = is_unit constrsinfos in
-  issmall, isunit
+(* Use [eq_ind_chk] because when we rebuild the recargs we have lost
+   the knowledge of who is the canonical version.
+   Try with to see test-suite/coqchk/include.v *)
+let eq_recarg a1 a2 = match a1, a2 with
+  | Norec, Norec -> true
+  | Mrec i1, Mrec i2 -> eq_ind_chk i1 i2
+  | Imbr i1, Imbr i2 -> eq_ind_chk i1 i2
+  | (Norec | Mrec _ | Imbr _), _ -> false
 
-let all_sorts = [InProp;InSet;InType]
-let small_sorts = [InProp;InSet]
-let logical_sorts = [InProp]
+let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
 
-let allowed_sorts issmall isunit s =
-  match Sorts.family s with
-  (* Type: all elimination allowed *)
-  | InType -> all_sorts
+let check_packet env mind ind
+    { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
+      mind_nrealargs; mind_nrealdecls; mind_kelim; mind_nf_lc;
+      mind_consnrealargs; mind_consnrealdecls; mind_recargs; mind_nb_constant;
+      mind_nb_args; mind_reloc_tbl } =
+  let check = check mind in
 
-  (* Small Set is predicative: all elimination allowed *)
-  | InSet when issmall -> all_sorts
+  ignore mind_typename; (* passed through *)
+  check "mind_arity_ctxt" (Context.Rel.equal Constr.equal ind.mind_arity_ctxt mind_arity_ctxt);
+  check "mind_arity" (check_arity env ind.mind_arity mind_arity);
+  ignore mind_consnames; (* passed through *)
+  check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
+  check "mind_nrealargs" Int.(equal ind.mind_nrealargs mind_nrealargs);
+  check "mind_nrealdecls" Int.(equal ind.mind_nrealdecls mind_nrealdecls);
+  check "mind_kelim" (List.equal Sorts.family_equal ind.mind_kelim mind_kelim);
 
-  (* Large Set is necessarily impredicative: forbids large elimination *)
-  | InSet -> small_sorts
+  check "mind_nf_lc" (Array.equal Constr.equal ind.mind_nf_lc mind_nf_lc);
+  (* NB: here syntactic equality is not just an optimisation, we also
+     care about the shape of the terms *)
 
-  (* Unitary/empty Prop: elimination to all sorts are realizable *)
-  (* unless the type is large. If it is large, forbids large elimination *)
-  (* which otherwise allows simulating the inconsistent system Type:Type *)
-  | InProp when isunit -> if issmall then all_sorts else small_sorts
+  check "mind_consnrealargs" (Array.equal Int.equal ind.mind_consnrealargs mind_consnrealargs);
+  check "mind_consnrealdecls" (Array.equal Int.equal ind.mind_consnrealdecls mind_consnrealdecls);
 
-  (* Other propositions: elimination only to Prop *)
-  | InProp -> logical_sorts
+  check "mind_recargs" (Rtree.equal eq_recarg ind.mind_recargs mind_recargs);
 
-let check_predicativity env s small level =
-  match s, engagement env with
-      Type u, _ ->
-        (* let u' = fresh_local_univ () in *)
-        (* let cst = *)
-        (*   merge_constraints (enforce_leq u u' empty_constraint) *)
-        (*     (universes env) in *)
-        if not (UGraph.check_leq (universes env) level u) then
-          failwith "impredicative Type inductive type"
-    | Set, ImpredicativeSet -> ()
-    | Set, _ ->
-        if not small then failwith "impredicative Set inductive type"
-    | Prop,_ -> ()
+  check "mind_nb_args" Int.(equal ind.mind_nb_args mind_nb_args);
+  check "mind_nb_constant" Int.(equal ind.mind_nb_constant mind_nb_constant);
+  check "mind_reloc_tbl" (eq_reloc_tbl ind.mind_reloc_tbl mind_reloc_tbl);
 
-let sort_of_ind = function
-  | RegularArity mar -> mar.mind_sort
-  | TemplateArity par -> Type par.template_level
-
-let compute_elim_sorts env_ar params arity lc =
-  let inst = Context.Rel.to_extended_list Constr.mkRel 0 params in
-  let env_params = push_rel_context params env_ar in
-  let lc = Array.map
-    (fun c ->
-      Reduction.hnf_prod_applist env_params (Vars.lift (Context.Rel.length params) c) inst)
-    lc in
-  let s = sort_of_ind arity in
-  let infos = Array.map (Indtypes.infos_and_sort env_params) lc in
-  let (small,unit) = small_unit infos in
-  (* We accept recursive unit types... *)
-  (* compute the max of the sorts of the products of the constructor type *)
-  let min = if Array.length lc > 1 then Universe.type0 else Universe.type0m in
-  let level = Array.fold_left (fun max l -> Universe.sup max l) min infos in
-  check_predicativity env_ar s small level;
-  allowed_sorts small unit s
-
-let typecheck_one_inductive env params mip =
-  (* mind_typename and mind_consnames not checked *)
-  (* mind_reloc_tbl, mind_nb_constant, mind_nb_args not checked (VM) *)
-  (* mind_arity_ctxt, mind_arity, mind_nrealargs DONE (typecheck_arity) *)
-  (* mind_user_lc *)
-  let _ = Array.map (Typeops.infer_type env) mip.mind_user_lc in
-  (* mind_nf_lc *)
-  let _ = Array.map (Typeops.infer_type env) mip.mind_nf_lc in
-  Array.iter2 (Reduction.conv env) mip.mind_nf_lc mip.mind_user_lc;
-  (* mind_consnrealdecls *)
-  let check_cons_args c n =
-    let ctx,_ = Term.decompose_prod_assum c in
-    if n <> Context.Rel.length ctx - Context.Rel.length params then
-      failwith "bad number of real constructor arguments" in
-  Array.iter2 check_cons_args mip.mind_nf_lc mip.mind_consnrealdecls;
-  (* mind_kelim: checked by positivity criterion ? *)
-  let sorts =
-    compute_elim_sorts env params mip.mind_arity mip.mind_nf_lc in
-  let reject_sort s = not (List.mem_f Sorts.family_equal s sorts) in
-  if List.exists reject_sort mip.mind_kelim then
-    failwith "elimination not allowed";
-  (* mind_recargs: checked by positivity criterion *)
   ()
 
-let check_inductive env kn mib =
-  Flags.if_verbose Feedback.msg_notice (str "  checking mutind block: " ++ MutInd.print kn);
-  (* check mind_constraints: should be consistent with env *)
-  let env0 =
-    match mib.mind_universes with
-    | Monomorphic_ind _ -> env
-    | Polymorphic_ind auctx ->
-      let uctx = Univ.AUContext.repr auctx in
-      Environ.push_context uctx env
-    | Cumulative_ind cumi ->
-      let uctx = Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi) in
-      Environ.push_context uctx env
+let check_same_record r1 r2 = match r1, r2 with
+  | NotRecord, NotRecord | FakeRecord, FakeRecord -> true
+  | PrimRecord r1, PrimRecord r2 ->
+    (* The kernel doesn't care about the names, we just need to check
+       that the saved types are correct. *)
+    Array.for_all2 (fun (_,_,tys1) (_,_,tys2) ->
+        Array.equal Constr.equal tys1 tys2)
+      r1 r2
+  | (NotRecord | FakeRecord | PrimRecord _), _ -> false
+
+let check_inductive env mind mb =
+  let entry = to_entry mb in
+  let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
+        mind_nparams; mind_nparams_rec; mind_params_ctxt; mind_universes;
+        mind_private; mind_typing_flags; }
+    =
+    (* Locally set the oracle for further typechecking *)
+    let env = Environ.set_oracle env mb.mind_typing_flags.conv_oracle in
+    Indtypes.check_inductive env mind entry
   in
-  (* Locally set the oracle for further typechecking *)
-  let env0 = Environ.set_oracle env0 mib.mind_typing_flags.conv_oracle in
-  (* check mind_record : TODO ? check #constructor = 1 ? *)
-  (* check mind_finite : always OK *)
-  (* check mind_ntypes *)
-  if Array.length mib.mind_packets <> mib.mind_ntypes then
-    user_err Pp.(str "not the right number of packets");
-  (* check mind_params_ctxt *)
-  let params = mib.mind_params_ctxt in
-  let _ = Typeops.check_context env0 params in
-  (* check mind_nparams *)
-  if Context.Rel.nhyps params <> mib.mind_nparams then
-    user_err Pp.(str "number the right number of parameters");
-  (* mind_packets *)
-  (*  - check arities *)
-  let env_ar, env_ar_par = typecheck_arity env0 params mib.mind_packets in
-  (*  - check constructor types *)
-  Array.iter (typecheck_one_inductive env_ar params) mib.mind_packets;
-  (* check the inferred subtyping relation *)
-  let () =
-    match mib.mind_universes with
-    | Monomorphic_ind _ | Polymorphic_ind _ -> ()
-    | Cumulative_ind acumi ->
-      check_subtyping acumi params env_ar mib.mind_packets
-  in
-  (* check mind_nparams_rec: positivity condition *)
-  let packets = Array.map (fun p -> (p.mind_typename, Array.to_list p.mind_consnames, p.mind_user_lc, (p.mind_arity_ctxt,p.mind_arity))) mib.mind_packets in
-  let _ = Indtypes.check_positivity ~chkpos:true kn env_ar_par mib.mind_params_ctxt mib.mind_finite packets in
-  (* check mind_equiv... *)
-  (* Now we can add the inductive *)
-  add_mind kn mib env
+  let check = check mind in
+
+  Array.iter2 (check_packet env mind) mb.mind_packets mind_packets;
+  check "mind_record" (check_same_record mb.mind_record mind_record);
+  check "mind_finite" (mb.mind_finite == mind_finite);
+  check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);
+  check "mind_hyps" (Context.Named.equal Constr.equal mb.mind_hyps mind_hyps);
+  check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
+
+  check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
+  (* module substitution can increase the real number of recursively
+     uniform parameters, so be tolerant and use [<=]. *)
+
+  check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
+  ignore mind_universes; (* Indtypes did the necessary checking *)
+  ignore mind_private; (* passed through Indtypes *)
+
+  ignore mind_typing_flags;
+  (* TODO non oracle flags *)
+
+  add_mind mind mb env

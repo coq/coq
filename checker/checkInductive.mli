@@ -8,10 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*i*)
 open Names
 open Environ
-(*i*)
+
+exception InductiveMismatch of MutInd.t * string
+(** Some field of the inductive is different from what the kernel infers. *)
 
 (*s The following function does checks on inductive declarations. *)
 

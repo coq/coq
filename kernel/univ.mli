@@ -400,6 +400,7 @@ module ACumulativityInfo :
 sig
   type t
 
+  val repr : t -> CumulativityInfo.t
   val univ_context : t -> AUContext.t
   val variance : t -> Variance.t array
   val leq_constraints : t -> Instance.t constraint_function
