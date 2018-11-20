@@ -10,7 +10,8 @@ Coq can now be built using [Dune](https://github.com/ocaml/dune).
 
 ## Quick Start
 
-You need Dune >= 1.2.1 ; just type `dune build` to build the base Coq
+Dune >= 1.5.0 is recommended, see `dune-project` for the minimum
+required version; type `dune build` to build the base Coq
 libraries. No call to `./configure` is needed.
 
 Dune will get confused if it finds leftovers of in-tree compilation,
@@ -49,13 +50,24 @@ The default dune target is `dune build` (or `dune build @install`),
 which will scan all sources in the Coq tree and then build the whole
 project, creating an "install" overlay in `_build/install/default`.
 
-You can build some other target by doing `dune build $TARGET`.
+You can build some other target by doing `dune build $TARGET`, where
+`$TARGET` can be a `.cmxa`, a binary, a file that Dune considers a
+target, an alias, etc...
 
 In order to build a single package, you can do `dune build
 $PACKAGE.install`.
 
+A very useful target is `dune build @check`, that will compile all the
+ml files in quick mode.
+
 Dune also provides targets for documentation, testing, and release
 builds, please see below.
+
+## Documentation and test targets
+
+Coq's test-suite can be run with `dune runtest`.
+
+The documentation target is not implemented in Dune yet.
 
 ## Developer shell
 
@@ -138,11 +150,6 @@ and are in Emacs `org-mode` format.
 Note that due to https://github.com/ocaml/dune/issues/1401 , we must
 perform a full rebuild each time as otherwise Dune will remove the
 files. We hope to solve this in the future.
-
-## Documentation and test targets
-
-The documentation and test suite targets for Coq are still not
-implemented in Dune.
 
 ## Planned and Advanced features
 
