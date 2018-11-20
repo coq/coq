@@ -298,24 +298,24 @@ Variants:
 
       This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {? @binders} : Class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
+.. cmd:: Instance @ident {? @binders} : @class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
 
-The :cmd:`Instance` command is used to declare a typeclass instance named
-``ident`` of the class :cmd:`Class` with parameters ``t1`` to ``tn`` and
-fields ``b1`` to ``bi``, where each field must be a declared field of
-the class.  Missing fields must be filled in interactive proof mode.
+   This command is used to declare a typeclass instance named
+   :token:`ident` of the class :token:`class` with parameters ``t1`` to ``tn`` and
+   fields ``b1`` to ``bi``, where each field must be a declared field of
+   the class.  Missing fields must be filled in interactive proof mode.
 
-An arbitrary context of ``binders`` can be put after the name of the
-instance and before the colon to declare a parameterized instance. An
-optional priority can be declared, 0 being the highest priority as for
-:tacn:`auto` hints. If the priority is not specified, it defaults to the number
-of non-dependent binders of the instance.
+   An arbitrary context of :token:`binders` can be put after the name of the
+   instance and before the colon to declare a parameterized instance. An
+   optional priority can be declared, 0 being the highest priority as for
+   :tacn:`auto` hints. If the priority is not specified, it defaults to the number
+   of non-dependent binders of the instance.
 
-.. cmdv:: Instance @ident {? @binders} : forall {? @binders}, Class t1 … tn [| priority] := @term
+.. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n [| priority] := @term
 
    This syntax is used for declaration of singleton class instances or
-   for directly giving an explicit term of type ``forall binders, Class
-   t1 … tn``.  One need not even mention the unique field name for
+   for directly giving an explicit term of type :n:`forall @binders, @class
+   @term__1 … @term__n`.  One need not even mention the unique field name for
    singleton classes.
 
 .. cmdv:: Global Instance

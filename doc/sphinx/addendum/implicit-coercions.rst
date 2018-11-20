@@ -128,13 +128,28 @@ Declaring Coercions
   the two given classes.
 
   .. exn:: @qualid not declared.
+     :undocumented:
+
   .. exn:: @qualid is already a coercion.
+     :undocumented:
+
   .. exn:: Funclass cannot be a source class.
+     :undocumented:
+
   .. exn:: @qualid is not a function.
+     :undocumented:
+
   .. exn:: Cannot find the source class of @qualid.
+     :undocumented:
+
   .. exn:: Cannot recognize @class as a source class of @qualid.
+     :undocumented:
+
   .. exn:: @qualid does not respect the uniform inheritance condition.
+     :undocumented:
+
   .. exn:: Found target class ... instead of ...
+     :undocumented:
 
   .. warn:: Ambiguous path.
 
@@ -202,34 +217,34 @@ declaration, this constructor is declared as a coercion.
 
 .. cmd:: Identity Coercion @ident : @class >-> @class
 
-  If ``C`` is the source `class` and ``D`` the destination, we check
-  that ``C`` is a constant with a body of the form
-  :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
-  number of parameters of ``D``.  Then we define an identity
-  function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
-  and we declare it as an identity coercion between ``C`` and ``D``.
+   If ``C`` is the source `class` and ``D`` the destination, we check
+   that ``C`` is a constant with a body of the form
+   :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
+   number of parameters of ``D``.  Then we define an identity
+   function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
+   and we declare it as an identity coercion between ``C`` and ``D``.
 
-  .. exn:: @class must be a transparent constant.
+   .. exn:: @class must be a transparent constant.
+      :undocumented:
 
-  .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident
+   .. cmdv:: Local Identity Coercion @ident : @ident >-> @ident
 
-    Same as ``Identity Coercion`` but locally to the current section.
+      Same as :cmd:`Identity Coercion` but locally to the current section.
 
-  .. cmdv:: SubClass @ident := @type
-     :name: SubClass
+   .. cmdv:: SubClass @ident := @type
+      :name: SubClass
 
-    If `type` is a class `ident'` applied to some arguments then
-    `ident` is defined and an identity coercion of name
-    `Id_ident_ident'` is
-    declared. Otherwise said, this is an abbreviation for
+      If :n:`@type` is a class :n:`@ident'` applied to some arguments then
+      :n:`@ident` is defined and an identity coercion of name
+      :n:`Id_@ident_@ident'` is
+      declared. Otherwise said, this is an abbreviation for
 
-      ``Definition`` `ident` ``:=`` `type`.
+      :n:`Definition @ident := @type.`
+      :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.
 
-      ``Identity Coercion`` `Id_ident_ident'` : `ident` ``>->`` `ident'`.
+   .. cmdv:: Local SubClass @ident := @type
 
-  .. cmdv:: Local SubClass @ident := @type
-
-    Same as before but locally to the current section.
+      Same as before but locally to the current section.
 
 
 Displaying Available Coercions
@@ -237,19 +252,19 @@ Displaying Available Coercions
 
 .. cmd:: Print Classes
 
-  Print the list of declared classes in the current context.
+   Print the list of declared classes in the current context.
 
 .. cmd:: Print Coercions
 
-  Print the list of declared coercions in the current context.
+   Print the list of declared coercions in the current context.
 
 .. cmd:: Print Graph
 
-  Print the list of valid coercion paths in the current context.
+   Print the list of valid coercion paths in the current context.
 
 .. cmd:: Print Coercion Paths @class @class
 
-  Print the list of valid coercion paths between the two given classes.
+   Print the list of valid coercion paths between the two given classes.
 
 Activating the Printing of Coercions
 -------------------------------------
@@ -322,9 +337,9 @@ Coercions and Modules
 
 .. warn:: Coercion used but not in scope: @qualid. If you want to use this coercion, please Import the module that contains it.
 
-          This warning is emitted when typechecking relies on a coercion
-          contained in a module that has not been explicitely imported. It helps
-          migrating code and stop relying on the option above.
+   This warning is emitted when typechecking relies on a coercion
+   contained in a module that has not been explicitely imported. It helps
+   migrating code and stop relying on the option above.
 
 Examples
 --------

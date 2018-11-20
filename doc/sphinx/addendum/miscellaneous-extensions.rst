@@ -12,22 +12,22 @@ of program refinements. To use the Derive extension it must first be
 required with ``Require Coq.derive.Derive``. When the extension is loaded,
 it provides the following command:
 
-.. cmd:: Derive @ident SuchThat @term As @ident
+.. cmd:: Derive @ident__1 SuchThat @type As @ident__2
 
-The first `ident` can appear in `term`. This command opens a new proof
-presenting the user with a goal for term in which the name `ident` is
-bound to an existential variable `?x` (formally, there are other goals
-standing for the existential variables but they are shelved, as
-described in :tacn:`shelve`).
+   :n:`@ident__1` can appear in :n:`@type`. This command opens a new proof
+   presenting the user with a goal for :n:`@type` in which the name :n:`@ident__1` is
+   bound to an existential variable :g:`?x` (formally, there are other goals
+   standing for the existential variables but they are shelved, as
+   described in :tacn:`shelve`).
 
-When the proof ends two constants are defined:
+   When the proof ends two constants are defined:
 
-+ The first one is named using the first `ident` and is defined as the proof of the
-  shelved goal (which is also the value of `?x`). It is always
-  transparent.
-+ The second one is named using the second `ident`. It has type `term`, and its body is
-  the proof of the initially visible goal. It is opaque if the proof
-  ends with ``Qed``, and transparent if the proof ends with ``Defined``.
+   + The first one is named :n:`@ident__1` and is defined as the proof of the
+     shelved goal (which is also the value of :g:`?x`). It is always
+     transparent.
+   + The second one is named :n:`@ident__2`. It has type :n:`@type`, and its body is
+     the proof of the initially visible goal. It is opaque if the proof
+     ends with :cmd:`Qed`, and transparent if the proof ends with :cmd:`Defined`.
 
 .. example::
 

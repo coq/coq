@@ -292,6 +292,7 @@ focused goals with:
 
    .. exn:: No such goal.
       :name: No such goal. (Goal selector)
+      :undocumented:
 
    .. TODO change error message index entry
 
@@ -351,6 +352,7 @@ We can check if a tactic made progress with:
    goals (up to syntactical equality), then an error of level 0 is raised.
 
    .. exn:: Failed to progress.
+      :undocumented:
 
 Backtracking branching
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -393,6 +395,7 @@ tactic to work (i.e. which does not fail) among a panel of tactics:
    :n:`v__i` to have *at least* one success.
 
    .. exn:: No applicable tactic.
+      :undocumented:
 
    .. tacv:: first @expr
 
@@ -482,6 +485,7 @@ one* success:
       immediately.
 
    .. exn:: This tactic has more than one success.
+      :undocumented:
 
 Checking the failure
 ~~~~~~~~~~~~~~~~~~~~
@@ -521,6 +525,7 @@ among a panel of tactics:
    apply :n:`v__2` and so on. It fails if there is no solving tactic.
 
    .. exn:: Cannot solve the goal.
+      :undocumented:
 
    .. tacv:: solve @expr
 
@@ -576,8 +581,7 @@ Failing
       goals left. See the example for clarification.
 
    .. tacv:: gfail {* message_token}
-
-   .. tacv:: gfail @num {* message_token}
+             gfail @num {* message_token}
 
       These variants fail with an error message or an error level even if
       there are no goals left. Be careful however if Coq terms have to be
@@ -586,9 +590,11 @@ Failing
       evaluated, a tactic call like :n:`let x := H in fail 0 x` will succeed.
 
    .. exn:: Tactic Failure message (level @num).
+      :undocumented:
 
    .. exn:: No such goal.
       :name: No such goal. (fail)
+      :undocumented:
 
    .. example::
 
@@ -670,24 +676,24 @@ tactic
 
    This tactic currently does not support nesting, and will report times
    based on the innermost execution. This is due to the fact that it is
-   implemented using the tactics
+   implemented using the following internal tactics:
 
    .. tacn:: restart_timer @string
       :name: restart_timer
 
-   and
+      Reset a timer
 
-   .. tacn:: finish_timing {? @string} @string
+   .. tacn:: finish_timing {? (@string)} @string
       :name: finish_timing
 
-   which (re)set and display an optionally named timer, respectively. The
-   parenthesized string argument to :n:`finish_timing` is also optional, and
-   determines the label associated with the timer for printing.
+      Display an optionally named timer. The parenthesized string argument
+      is also optional, and determines the label associated with the timer
+      for printing.
 
-   By copying the definition of :n:`time_constr` from the standard library,
+   By copying the definition of :tacn:`time_constr` from the standard library,
    users can achive support for a fixed pattern of nesting by passing
-   different :n:`@string` parameters to :n:`restart_timer` and :n:`finish_timing`
-   at each level of nesting.
+   different :token:`string` parameters to :tacn:`restart_timer` and
+   :tacn:`finish_timing` at each level of nesting.
 
    .. example::
 
@@ -967,9 +973,9 @@ Evaluation of a term can be performed with:
 Recovering the type of a term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following returns the type of term:
-
 .. tacn:: type of @term
+
+   This tactic returns the type of :token:`term`.
 
 Manipulating untyped terms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1041,6 +1047,7 @@ Testing boolean expressions
          Fail all:let n:= numgoals in guard n=2.
 
    .. exn:: Condition not satisfied.
+      :undocumented:
 
 Proving a subgoal as a separate lemma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1092,6 +1099,7 @@ Proving a subgoal as a separate lemma
 
    .. exn:: Proof is not complete.
       :name: Proof is not complete. (abstract)
+      :undocumented:
 
 Tactic toplevel definitions
 ---------------------------
@@ -1348,6 +1356,6 @@ Run-time optimization tactic
 .. tacn:: optimize_heap
    :name: optimize_heap
 
-This tactic behaves like :n:`idtac`, except that running it compacts the
-heap in the OCaml run-time system. It is analogous to the Vernacular
-command :cmd:`Optimize Heap`.
+   This tactic behaves like :n:`idtac`, except that running it compacts the
+   heap in the OCaml run-time system. It is analogous to the Vernacular
+   command :cmd:`Optimize Heap`.

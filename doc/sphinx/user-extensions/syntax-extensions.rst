@@ -31,8 +31,8 @@ Basic notations
 
 .. cmd:: Notation
 
-A *notation* is a symbolic expression denoting some term or term
-pattern.
+   A *notation* is a symbolic expression denoting some term or term
+   pattern.
 
 A typical notation is the use of the infix symbol ``/\`` to denote the
 logical conjunction (and). Such a notation is declared by
