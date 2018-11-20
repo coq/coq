@@ -221,10 +221,6 @@ val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 (* One can also "Set SsrMatchingDebug" from a .v *)
 val debug : bool -> unit
 
-(* One should delimit a snippet with "Set SsrMatchingProfiling" and
- * "Unset SsrMatchingProfiling" to get timings *)
-val profile : bool -> unit
-
 val ssrinstancesof : cpattern -> Tacmach.tactic
 
 (** Functions used for grammar extensions. Do not use. *)

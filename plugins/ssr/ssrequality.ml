@@ -425,11 +425,6 @@ let rwcltac cl rdx dir sr gl =
   in
   tclTHEN cvtac' rwtac gl
 
-let prof_rwcltac = mk_profiler "rwrxtac.rwcltac";;
-let rwcltac cl rdx dir sr gl =
-  prof_rwcltac.profile (rwcltac cl rdx dir sr) gl
-;;
-
 
 [@@@ocaml.warning "-3"]
 let lz_coq_prod =
@@ -454,8 +449,6 @@ let ssr_is_setoid env =
   fun sigma r args ->
     Rewrite.is_applied_rewrite_relation env 
       sigma [] (EConstr.mkApp (r, args)) <> None
-
-let prof_rwxrtac_find_rule = mk_profiler "rwrxtac.find_rule";;
 
 let closed0_check cl p gl =
   if closed0 cl then
@@ -556,7 +549,6 @@ let rwrxtac occ rdx_pat dir rule gl =
           d, (ise, Evd.evar_universe_context ise, Reductionops.nf_evar ise r)
         with _ -> rwtac rs in
      rwtac rules in
-  let find_rule rdx = prof_rwxrtac_find_rule.profile find_rule rdx in
   let sigma0, env0, concl0 = project gl, pf_env gl, pf_concl gl in
   let find_R, conclude = match rdx_pat with
   | Some (_, (In_T _ | In_X_In_T _)) | None ->
@@ -580,11 +572,6 @@ let rwrxtac occ rdx_pat dir rule gl =
   let (d, r), rdx = conclude concl in
   let r = Evd.merge_universe_context (pi1 r) (pi2 r), EConstr.of_constr (pi3 r) in
   rwcltac (EConstr.of_constr concl) (EConstr.of_constr rdx) d r gl
-;;
-
-let prof_rwxrtac = mk_profiler "rwrxtac";;
-let rwrxtac occ rdx_pat dir rule gl =
-  prof_rwxrtac.profile (rwrxtac occ rdx_pat dir rule) gl
 ;;
 
 let ssrinstancesofrule ist dir arg gl =

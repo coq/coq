@@ -378,13 +378,6 @@ val pf_interp_gen_aux :
 val is_name_in_ipats :
            Id.t -> ssripats -> bool
 
-type profiler = { 
-  profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
-  reset : unit -> unit;
-  print : unit -> unit }
-
-val mk_profiler : string -> profiler
-
 (** Basic tactics *)
 
 val introid : ?orig:Name.t ref -> Id.t -> v82tac

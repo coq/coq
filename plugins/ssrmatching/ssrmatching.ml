@@ -174,82 +174,6 @@ let nf_evar sigma c =
 
 (* }}} *)
 
-(** Profiling *)(* {{{ *************************************************************)
-type profiler = { 
-  profile : 'a 'b. ('a -> 'b) -> 'a -> 'b;
-  reset : unit -> unit;
-  print : unit -> unit }
-let profile_now = ref false
-let something_profiled = ref false
-let profilers = ref []
-let add_profiler f = profilers := f :: !profilers;;
-let profile b =
-  profile_now := b;
-  if b then List.iter (fun f -> f.reset ()) !profilers;
-  if not b then List.iter (fun f -> f.print ()) !profilers
-;;
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optname  = "ssrmatching profiling";
-      Goptions.optkey   = ["SsrMatchingProfiling"];
-      Goptions.optread  = (fun _ -> !profile_now);
-      Goptions.optdepr  = false;
-      Goptions.optwrite = profile }
-let () =
-  let prof_total = 
-    let init = ref 0.0 in { 
-    profile = (fun f x -> assert false);
-    reset = (fun () -> init := Unix.gettimeofday ());
-    print = (fun () -> if !something_profiled then
-        prerr_endline 
-           (Printf.sprintf "!! %-39s %10d %9.4f %9.4f %9.4f"
-           "total" 0 (Unix.gettimeofday() -. !init) 0.0 0.0)) } in
-  let prof_legenda = {
-    profile = (fun f x -> assert false);
-    reset = (fun () -> ());
-    print = (fun () -> if !something_profiled then begin
-        prerr_endline 
-           (Printf.sprintf "!! %39s ---------- --------- --------- ---------" 
-           (String.make 39 '-'));
-        prerr_endline 
-           (Printf.sprintf "!! %-39s %10s %9s %9s %9s" 
-           "function" "#calls" "total" "max" "average") end) } in
-  add_profiler prof_legenda;
-  add_profiler prof_total
-;;
-
-let mk_profiler s =
-  let total, calls, max = ref 0.0, ref 0, ref 0.0 in
-  let reset () = total := 0.0; calls := 0; max := 0.0 in
-  let profile f x =
-    if not !profile_now then f x else
-    let before = Unix.gettimeofday () in
-    try
-      incr calls;
-      let res = f x in
-      let after = Unix.gettimeofday () in
-      let delta = after -. before in
-      total := !total +. delta;
-      if delta > !max then max := delta;
-      res
-    with exc ->
-      let after = Unix.gettimeofday () in
-      let delta = after -. before in
-      total := !total +. delta;
-      if delta > !max then max := delta;
-      raise exc in
-  let print () =
-     if !calls <> 0 then begin
-       something_profiled := true;
-       prerr_endline
-         (Printf.sprintf "!! %-39s %10d %9.4f %9.4f %9.4f" 
-         s !calls !total !max (!total /. (float_of_int !calls))) end in
-  let prof = { profile = profile; reset = reset; print = print } in
-  add_profiler prof;
-  prof
-;;
-(* }}} *)
-
 exception NoProgress
 
 (** Unification procedures.                                *)
@@ -285,11 +209,6 @@ let unif_EQ_args env sigma pa a =
   let n = Array.length pa in
   let rec loop i = (i = n) || unif_EQ env sigma pa.(i) a.(i) && loop (i + 1) in
   loop 0
-
-let prof_unif_eq_args = mk_profiler "unif_EQ_args";;
-let unif_EQ_args env sigma pa a =
-  prof_unif_eq_args.profile (unif_EQ_args env sigma pa) a 
-;;
 
 let unif_HO env ise p c =
   try Evarconv.the_conv_x env p c ise
@@ -650,11 +569,6 @@ let match_upats_FO upats env sigma0 ise orig_c =
   iter_constr_LR loop f; Array.iter loop a in
   try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
 
-let prof_FO = mk_profiler "match_upats_FO";;
-let match_upats_FO upats env sigma0 ise c =
-  prof_FO.profile (match_upats_FO upats env sigma0) ise c
-;;
-
 
 let match_upats_HO ~on_instance upats env sigma0 ise c =
  let dont_impact_evars = dont_impact_evars_in c in
@@ -705,11 +619,6 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  aux upats env sigma0 ise c;
  if !it_did_match then raise NoProgress;
  !failed_because_of_TC
-
-let prof_HO = mk_profiler "match_upats_HO";;
-let match_upats_HO ~on_instance upats env sigma0 ise c =
-  prof_HO.profile (match_upats_HO ~on_instance upats env sigma0) ise c
-;;
 
 
 let fixed_upat evd = function
