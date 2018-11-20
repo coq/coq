@@ -76,7 +76,7 @@ developer commands work more seamlessly.
 
 ### Supported CI images for Coq
 
-The Coq developers and contributors do provide official Docker and Nix
+The Coq developers and contributors provide official Docker and Nix
 images for testing against Coq master. Using these images is highly
 recommended:
 

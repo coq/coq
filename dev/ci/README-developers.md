@@ -1,7 +1,7 @@
 Information for developers about the CI system
 ----------------------------------------------
 
-When you submit a pull request (PR) on Coq GitHub repository, this will
+When you submit a pull request (PR) on the Coq GitHub repository, this will
 automatically launch a battery of CI tests. The PR will not be integrated
 unless these tests pass.
 
@@ -76,7 +76,7 @@ above steps. In order to do so, call the script as:
 ```
 ./dev/tools/create-overlays.sh ejgallego 9873 aac_tactics elpi ltac
 ```
-replacing `ejgallego` by your github id and `9873` by the actual PR
+replacing `ejgallego` by your GitHub nickname and `9873` by the actual PR
 number. The script will:
 
 - checkout the contributions and prepare the branch/remote so you can
@@ -86,7 +86,7 @@ number. The script will:
 For problems related to ML-plugins, if you use `dune build` to build
 Coq, it will actually be aware of the broken contributions and perform
 a global build. This is very convenient when using `merlin` as you
-will get a coherent view of all the broken plugins, which full
+will get a coherent view of all the broken plugins, with full
 incremental cross-project rebuild.
 
 Advanced GitLab CI information

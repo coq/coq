@@ -6,7 +6,7 @@ breakage on our Continuous Integration (CI) platforms *before* integration,
 so as to ensure better robustness and catch problems as early as possible.
 These tests include the compilation of several external libraries / plugins.
 
-This README is split on two specific documents:
+This README is split into two specific documents:
 
 - [README-users.md](./README-users.md) which contains information for
   authors of external libraries and plugins who might be interested in
