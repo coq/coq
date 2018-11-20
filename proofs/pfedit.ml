@@ -130,11 +130,10 @@ open Decl_kinds
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  let evd = Evd.from_ctx ctx in
+let build_constant_by_tactic id sigma sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  Proof_global.start_proof evd id goal_kind goals terminator;
+  Proof_global.start_proof sigma id goal_kind goals terminator;
   try
     let status = by tac in
     let open Proof_global in

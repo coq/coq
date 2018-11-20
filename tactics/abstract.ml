@@ -27,17 +27,17 @@ module NamedDecl = Context.Named.Declaration
 (** d1 is the section variable in the global context, d2 in the goal context *)
 let interpretable_as_section_decl env evd d1 d2 =
   let open Context.Named.Declaration in
-  let e_eq_constr_univs sigma c1 c2 = match eq_constr_universes env !sigma c1 c2 with
+  let i_eq_constr_univs sigma c1 c2 = match eq_constr_universes env sigma c1 c2 with
   | None -> false
   | Some cstr ->
-    try ignore (Evd.add_universe_constraints !sigma cstr); true
+    try ignore (Evd.add_universe_constraints sigma cstr); true
     with UState.UniversesDiffer -> false
   in
   match d2, d1 with
   | LocalDef _, LocalAssum _ -> false
   | LocalDef (_,b1,t1), LocalDef (_,b2,t2) ->
-    e_eq_constr_univs evd b1 b2 && e_eq_constr_univs evd t1 t2
-  | LocalAssum (_,t1), d2 -> e_eq_constr_univs evd t1 (NamedDecl.get_type d2)
+    i_eq_constr_univs evd b1 b2 && i_eq_constr_univs evd t1 t2
+  | LocalAssum (_,t1), d2 -> i_eq_constr_univs evd t1 (NamedDecl.get_type d2)
 
 let rec decompose len c t accu =
   let open Constr in
@@ -96,13 +96,12 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let sigma = Proofview.Goal.sigma gl in
   let current_sign = Global.named_context_val ()
   and global_sign = Proofview.Goal.hyps gl in
-  let evdref = ref sigma in
   let sign,secsign =
     List.fold_right
       (fun d (s1,s2) ->
         let id = NamedDecl.get_id d in
         if mem_named_context_val id current_sign &&
-          interpretable_as_section_decl env evdref (lookup_named_val id current_sign) d
+          interpretable_as_section_decl env sigma (lookup_named_val id current_sign) d
         then (s1,push_named_context_val d s2)
         else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, Environ.empty_named_context_val) in
@@ -112,21 +111,20 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
               | Some ty -> ty in
   let concl = it_mkNamedProd_or_LetIn concl sign in
   let concl =
-    try flush_and_check_evars !evdref concl
+    try flush_and_check_evars sigma concl
     with Uninstantiated_evar _ ->
       CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.") in
 
-  let evd, ctx, concl =
+  let sigma, ctx, concl =
     (* FIXME: should be done only if the tactic succeeds *)
-    let evd = Evd.minimize_universes !evdref in
+    let evd = Evd.minimize_universes sigma in
     let ctx = Evd.universe_context_set evd in
       evd, ctx, Evarutil.nf_evars_universes evd concl
   in
   let concl = EConstr.of_constr concl in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
-  let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~goal_kind:gk id sigma secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -157,7 +155,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     EInstance.make (Univ.UContext.instance ctx)
   in
   let lem = mkConstU (cst, inst) in
-  let evd = Evd.set_universe_context evd ectx in
+  let sigma = Evd.set_universe_context sigma ectx in
   let open Safe_typing in
   let eff = private_con_of_con (Global.safe_env ()) cst in
   let effs = concat_private eff
@@ -167,7 +165,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     tacK lem args
   in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) tac
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
   end
 
 let abstract_subproof ~opaque id gk tac =

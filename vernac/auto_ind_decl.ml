@@ -681,10 +681,10 @@ let make_bl_scheme mode mind =
   let lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
-  let ctx = UState.make (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
+  let env, sigma = (let e = Global.env () in e, Evd.from_env e) in
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff env sigma bl_goal
     (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
@@ -805,10 +805,10 @@ let make_lb_scheme mode mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
-  let ctx = UState.make (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
+  let env, sigma = (let e = Global.env () in e, Evd.from_env e) in
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff env sigma lb_goal
     (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
   ([|ans|], ctx), eff
@@ -975,11 +975,11 @@ let make_eq_decidability mode mind =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let u = Univ.Instance.empty in
-  let ctx = UState.make (Global.universes ()) in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
-  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx
+  let env, sigma = (let e = Global.env () in e, Evd.from_env e) in
+  let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff env sigma
     (EConstr.of_constr (compute_dec_goal (ind,u) lnamesparrec nparrec))
     (compute_dec_tact ind lnamesparrec nparrec)
   in
