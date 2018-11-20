@@ -675,10 +675,6 @@ let apply_subst recfun env sigma refold cst_l t stack =
 let stacklam recfun env sigma t stack =
   apply_subst (fun _ _ s -> recfun s) env sigma false Cst_stack.empty t stack
 
-let beta_app sigma (c,l) =
-  let zip s = Stack.zip sigma s in
-  stacklam zip [] sigma c (Stack.append_app l Stack.empty)
-
 let beta_applist sigma (c,l) =
   let zip s = Stack.zip sigma s in
   stacklam zip [] sigma c (Stack.append_app_list l Stack.empty)
@@ -1305,13 +1301,13 @@ let test_trans_conversion (f: constr Reduction.extended_conversion_function) red
   with Reduction.NotConvertible -> false
     | e when is_anomaly e -> report_anomaly e
 
-let is_conv ?(reds=full_transparent_state) env sigma = test_trans_conversion f_conv reds env sigma
-let is_conv_leq ?(reds=full_transparent_state) env sigma = test_trans_conversion f_conv_leq reds env sigma
-let is_fconv ?(reds=full_transparent_state) = function
+let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv reds env sigma
+let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv_leq reds env sigma
+let is_fconv ?(reds=TransparentState.full) = function
   | Reduction.CONV -> is_conv ~reds
   | Reduction.CUMUL -> is_conv_leq ~reds
 
-let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
+let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
   let f = match pb with
     | Reduction.CONV -> f_conv
     | Reduction.CUMUL -> f_conv_leq
@@ -1345,7 +1341,7 @@ let sigma_univ_state =
     compare_cumul_instances = sigma_check_inductive_instances; }
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
-    ?(ts=full_transparent_state) env sigma x y =
+    ?(ts=TransparentState.full) env sigma x y =
   (** FIXME *)
   try
       let ans = match pb with
@@ -1378,7 +1374,7 @@ let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
 
 (* This reference avoids always having to link C code with the kernel *)
-let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:full_transparent_state)
+let vm_infer_conv = ref (infer_conv ~catch_incon:true ~ts:TransparentState.full)
 let set_vm_infer_conv f = vm_infer_conv := f
 let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
   !vm_infer_conv ~pb env t1 t2
@@ -1680,25 +1676,6 @@ let meta_reducible_instance evd b =
   in
   if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
   else irec b.rebus
-
-
-let head_unfold_under_prod ts env sigma c =
-  let unfold (cst,u) =
-    let cstu = (cst, EInstance.kind sigma u) in
-    if Cpred.mem cst (snd ts) then
-      match constant_opt_value_in env cstu with
-	| Some c -> EConstr.of_constr c
-	| None -> mkConstU (cst, u)
-    else mkConstU (cst, u) in
-  let rec aux c =
-    match EConstr.kind sigma c with
-      | Prod (n,t,c) -> mkProd (n,aux t, aux c)
-      | _ ->
-	  let (h,l) = decompose_app_vect sigma c in
-	  match EConstr.kind sigma h with
-	    | Const cst -> beta_app sigma (unfold cst, l)
-	    | _ -> c in
-  aux c
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =

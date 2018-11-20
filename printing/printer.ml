@@ -456,9 +456,9 @@ let pr_predicate pr_elt (b, elts) =
 let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
 let pr_idpred p = pr_predicate Id.print (Id.Pred.elements p)
 
-let pr_transparent_state (ids, csts) =
-  hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
-	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
+let pr_transparent_state ts =
+  hv 0 (str"VARIABLES: " ++ pr_idpred ts.TransparentState.tr_var ++ fnl () ++
+        str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
 
 (* display complete goal
  og_s has goal+sigma on the previous proof step for diffs

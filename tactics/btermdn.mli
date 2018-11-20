@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pattern
-open Names
 
 (** Discrimination nets with bounded depth. *)
 
@@ -19,7 +18,7 @@ open Names
 order in such a way patterns having the same prefix have this common
 prefix shared and the seek for the action associated to the patterns
 that a term matches are found in time proportional to the maximal
-number of nodes of the patterns matching the term. The [transparent_state]
+number of nodes of the patterns matching the term. The [TransparentState.t]
 indicates which constants and variables can be considered as rigid.
 These dnets are able to cope with existential variables as well, which match
 [Everything]. *)
@@ -31,10 +30,10 @@ sig
 
   val empty : t
 
-  val add : transparent_state option -> t -> (constr_pattern * Z.t) -> t
-  val rmv : transparent_state option -> t -> (constr_pattern * Z.t) -> t
+  val add : TransparentState.t option -> t -> (constr_pattern * Z.t) -> t
+  val rmv : TransparentState.t option -> t -> (constr_pattern * Z.t) -> t
 
-  val lookup : Evd.evar_map -> transparent_state option -> t -> EConstr.constr -> Z.t list
+  val lookup : Evd.evar_map -> TransparentState.t option -> t -> EConstr.constr -> Z.t list
   val app : (Z.t -> unit) -> t -> unit
 end
 

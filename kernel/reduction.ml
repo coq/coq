@@ -177,7 +177,7 @@ type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
-  ?l2r:bool -> ?reds:Names.transparent_state -> env ->
+  ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
   'a -> 'a -> unit
 
@@ -758,7 +758,7 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
 	()
 
 (* Profiling *)
-let gen_conv cv_pb ?(l2r=false) ?(reds=full_transparent_state) env ?(evars=(fun _->None), universes env) =
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None), universes env) =
   let evars, univs = evars in
   if Flags.profile then
     let fconv_universes_key = CProfile.declare_profile "trans_fconv_universes" in
@@ -792,11 +792,11 @@ let infer_conv_universes =
       CProfile.profile8 infer_conv_universes_key infer_conv_universes
   else infer_conv_universes
 
-let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
+let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
     env univs t1 t2 = 
   infer_conv_universes CONV l2r evars ts env univs t1 t2
 
-let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state) 
+let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
     env univs t1 t2 = 
   infer_conv_universes CUMUL l2r evars ts env univs t1 t2
 

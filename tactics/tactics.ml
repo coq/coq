@@ -1660,7 +1660,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     let sigma = Tacmach.New.project gl in
     let ts =
       if respect_opaque then Conv_oracle.get_transp_state (oracle env)
-      else full_transparent_state
+      else TransparentState.full
     in
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
@@ -1826,7 +1826,7 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
     let sigma = Tacmach.New.project gl in
     let ts =
       if respect_opaque then Conv_oracle.get_transp_state (oracle env)
-      else full_transparent_state
+      else TransparentState.full
     in
     let flags =
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
@@ -4909,7 +4909,7 @@ let constr_eq ~strict x y =
       | None -> fail
   end
 
-let unify ?(state=full_transparent_state) x y =
+let unify ?(state=TransparentState.full) x y =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -4922,7 +4922,7 @@ let unify ?(state=full_transparent_state) x y =
     let flags = { (default_unify_flags ()) with
       core_unify_flags = core_flags;
       merge_unify_flags = core_flags;
-      subterm_unify_flags = { core_flags with modulo_delta = empty_transparent_state } }
+      subterm_unify_flags = { core_flags with modulo_delta = TransparentState.empty } }
     in
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma

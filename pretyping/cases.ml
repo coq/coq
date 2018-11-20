@@ -1698,7 +1698,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context !!env) in
         let sigma, ev' = Evarutil.new_evar ~src ~typeclass_candidate:false !!env sigma ty in
-        begin match solve_simple_eqn (evar_conv_x full_transparent_state) !!env sigma (None,ev,substl inst ev') with
+        begin match solve_simple_eqn (evar_conv_x TransparentState.full) !!env sigma (None,ev,substl inst ev') with
         | Success evd -> evdref := evd
         | UnifFailure _ -> assert false
         end;

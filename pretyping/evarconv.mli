@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open EConstr
 open Environ
 open Reductionops
@@ -22,20 +21,20 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 (** {6 Main unification algorithm for type inference. } *)
 
 (** returns exception NotUnifiable with best known evar_map if not unifiable *)
-val the_conv_x     : env -> ?ts:transparent_state -> constr -> constr -> evar_map -> evar_map
-val the_conv_x_leq : env -> ?ts:transparent_state -> constr -> constr -> evar_map -> evar_map
+val the_conv_x     : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
+val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
 
 (** The same function resolving evars by side-effect and
    catching the exception *)
-val conv : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
-val cumul : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+val conv : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
+val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
 
 (** {6 Unification heuristics. } *)
 
 (** Try heuristics to solve pending unification problems and to solve
     evars with candidates *)
 
-val solve_unif_constraints_with_heuristics : env -> ?ts:transparent_state -> evar_map -> evar_map
+val solve_unif_constraints_with_heuristics : env -> ?ts:TransparentState.t -> evar_map -> evar_map
 
 (** Check all pending unification problems are solved and raise an
     error otherwise *)
@@ -55,14 +54,14 @@ val check_conv_record : env -> evar_map ->
 (** Try to solve problems of the form ?x[args] = c by second-order
     matching, using typing to select occurrences *)
 
-val second_order_matching : transparent_state -> env -> evar_map ->
+val second_order_matching : TransparentState.t -> env -> evar_map ->
   EConstr.existential -> occurrences option list -> constr -> evar_map * bool
 
 (** Declare function to enforce evars resolution by using typing constraints *)
 
 val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
 
-type unify_fun = transparent_state ->
+type unify_fun = TransparentState.t ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
 
 (** Override default [evar_conv_x] algorithm. *)
@@ -73,7 +72,7 @@ val evar_conv_x : unify_fun
 
 (**/**)
 (* For debugging *)
-val evar_eqappr_x : ?rhs_is_already_stuck:bool -> transparent_state * bool ->
+val evar_eqappr_x : ?rhs_is_already_stuck:bool -> TransparentState.t * bool ->
   env -> evar_map ->
     conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
       Evarsolve.unification_result

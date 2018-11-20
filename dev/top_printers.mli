@@ -101,7 +101,7 @@ val ppdelta : Mod_subst.delta_resolver -> unit
 
 val pp_idpred : Names.Id.Pred.t -> unit
 val pp_cpred : Names.Cpred.t -> unit
-val pp_transparent_state : Names.transparent_state -> unit
+val pp_transparent_state : TransparentState.t -> unit
 
 val pp_stack_t : Constr.t Reductionops.Stack.t -> unit
 val pp_cst_stack_t : Reductionops.Cst_stack.t -> unit

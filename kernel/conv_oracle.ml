@@ -81,7 +81,8 @@ let fold_strategy f { var_opacity; cst_opacity; _ } accu =
   let accu = Id.Map.fold fvar var_opacity accu in
   Cmap.fold fcst cst_opacity accu
 
-let get_transp_state { var_trstate; cst_trstate; _ } = (var_trstate, cst_trstate)
+let get_transp_state { var_trstate; cst_trstate; _ } =
+  { TransparentState.tr_var = var_trstate; tr_cst = cst_trstate }
 
 let dep_order l2r k1 k2 = match k1, k2 with
 | RelKey _, RelKey _ -> l2r

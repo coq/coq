@@ -1096,7 +1096,7 @@ let vernac_restore_state file =
 (* Commands *)
 
 let vernac_create_hintdb ~module_local id b =
-  Hints.create_hint_db module_local id full_transparent_state b
+  Hints.create_hint_db module_local id TransparentState.full b
 
 let warn_implicit_core_hint_db =
   CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"

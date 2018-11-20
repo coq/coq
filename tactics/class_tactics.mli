@@ -25,7 +25,7 @@ type search_strategy = Dfs | Bfs
 
 val set_typeclasses_strategy : search_strategy -> unit
 
-val typeclasses_eauto : ?only_classes:bool -> ?st:transparent_state -> ?strategy:search_strategy ->
+val typeclasses_eauto : ?only_classes:bool -> ?st:TransparentState.t -> ?strategy:search_strategy ->
                         depth:(Int.t option) ->
                         Hints.hint_db_name list -> unit Proofview.tactic
 
@@ -39,7 +39,7 @@ val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
 module Search : sig
   val eauto_tac :
-    ?st:Names.transparent_state ->
+    ?st:TransparentState.t ->
     (** The transparent_state used when working with local hypotheses  *)
     ?unique:bool ->
     (** Should we force a unique solution *)

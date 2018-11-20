@@ -122,7 +122,7 @@ val glob_hints_path :
 module Hint_db :
   sig
     type t
-    val empty : ?name:hint_db_name -> transparent_state -> bool -> t
+    val empty : ?name:hint_db_name -> TransparentState.t -> bool -> t
     val find : GlobRef.t -> t -> search_entry
 
     (** All hints which have no pattern.
@@ -155,8 +155,8 @@ module Hint_db :
                 hint_mode array list -> full_hint list -> unit) -> t -> unit
 
     val use_dn : t -> bool
-    val transparent_state : t -> transparent_state
-    val set_transparent_state : t -> transparent_state -> t
+    val transparent_state : t -> TransparentState.t
+    val set_transparent_state : t -> TransparentState.t -> t
 
     val add_cut : hints_path -> t -> t
     val cut : t -> hints_path
@@ -191,7 +191,7 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
    [use_dn] switches the use of the discrimination net for all hints
    and patterns. *)
 
-val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
+val create_hint_db : bool -> hint_db_name -> TransparentState.t -> bool -> unit
 
 val remove_hints : bool -> hint_db_name list -> GlobRef.t list -> unit
 
@@ -273,7 +273,7 @@ val repr_hint : hint -> (raw_hint * clausenv) hint_ast
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : env -> evar_map -> ?ts:transparent_state -> bool -> delayed_open_constr list -> hint_db
+val make_local_hint_db : env -> evar_map -> ?ts:TransparentState.t -> bool -> delayed_open_constr list -> hint_db
 
 val make_db_list : hint_db_name list -> hint_db list
 
