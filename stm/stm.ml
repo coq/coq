@@ -76,18 +76,6 @@ let async_proofs_is_master opt =
   opt.async_proofs_mode = APon &&
   !Flags.async_proofs_worker_id = "master"
 
-(* Protect against state changes *)
-let stm_purify f x =
-  let st = Vernacstate.freeze_interp_state `No in
-  try
-    let res = f x in
-    Vernacstate.unfreeze_interp_state st;
-    res
-  with e ->
-    let e = CErrors.push e in
-    Vernacstate.unfreeze_interp_state st;
-    Exninfo.iraise e
-
 let execution_error ?loc state_id msg =
     feedback ~id:state_id (Message (Error, loc, msg))
 
@@ -766,6 +754,11 @@ end (* }}} *)
 (****** A cache: fills in the nodes of the VCS document with their value ******)
 module State : sig
 
+  type t
+
+  val freeze : unit -> t
+  val unfreeze : t -> unit
+
   (** The function is from unit, so it uses the current state to define
       a new one.  I.e. one may been to install the right state before
       defining a new one.
@@ -805,12 +798,21 @@ module State : sig
      be removed in the state handling refactoring.  *)
   val cur_id : Stateid.t ref
 
+  val purify : ('a -> 'b) -> 'a -> 'b
+
 end = struct (* {{{ *)
+
+  type t = { id : Stateid.t; vernac_state : Vernacstate.t }
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
   let cur_id = ref Stateid.dummy
   let fix_exn_ref = ref (fun x -> x)
+
+  let freeze () = { id = !cur_id; vernac_state = Vernacstate.freeze_interp_state `No }
+  let unfreeze st =
+    Vernacstate.unfreeze_interp_state st.vernac_state;
+    cur_id := st.id
 
   type proof_part =
     Proof_global.t *
@@ -916,6 +918,7 @@ end = struct (* {{{ *)
     e1 == e2
 
   (* [define] puts the system in state [id] calling [f ()] *)
+  (* [safe_id] is the last known valid state before execution *)
   let define ~doc ?safe_id ?(redefine=false) ?(cache=`No) ?(feedback_processed=true)
         f id
   =
@@ -964,7 +967,21 @@ end = struct (* {{{ *)
 
   let restore_root_state () =
     cur_id := Stateid.dummy;
-    Vernacstate.unfreeze_interp_state (Option.get !init_state);
+    Vernacstate.unfreeze_interp_state (Option.get !init_state)
+
+  (* Protect against state changes *)
+  let purify f x =
+    let st = freeze () in
+    try
+      let res = f x in
+      Vernacstate.invalidate_cache ();
+      unfreeze st;
+      res
+    with e ->
+      let e = CErrors.push e in
+      Vernacstate.invalidate_cache ();
+      unfreeze st;
+      Exninfo.iraise e
 
 end (* }}} *)
 
@@ -1525,14 +1542,14 @@ end = struct (* {{{ *)
        * a bad fixpoint *)
       let fix_exn = Future.fix_exn_of future_proof in
       (* STATE: We use the current installed imperative state *)
-      let st = Vernacstate.freeze_interp_state `No in
+      let st = State.freeze () in
       if not drop then begin
         let checked_proof = Future.chain future_proof (fun p ->
           let opaque = Proof_global.Opaque in
 
           (* Unfortunately close_future_proof and friends are not pure so we need
              to set the state manually here *)
-          Vernacstate.unfreeze_interp_state st;
+          State.unfreeze st;
           let pobject, _ =
             Proof_global.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
@@ -1546,7 +1563,7 @@ end = struct (* {{{ *)
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
-      Vernacstate.unfreeze_interp_state st;
+      State.unfreeze st;
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
@@ -1928,7 +1945,7 @@ end = struct (* {{{ *)
     Option.iter VCS.restore vcs;
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:`No id;
-      stm_purify (fun () ->
+      State.purify (fun () ->
        let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
        let is_ground c = Evarutil.is_ground_term sigma0 c in
@@ -2365,7 +2382,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
     Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l; update_global_env ()
   in
   let rec pure_cherry_pick_non_pstate safe_id id =
-    stm_purify (fun id ->
+    State.purify (fun id ->
         stm_prerr_endline (fun () -> "cherry-pick non pstate " ^ Stateid.to_string id);
         reach ~safe_id id;
         cherry_pick_non_pstate ())
@@ -2742,7 +2759,7 @@ let check_task name (tasks,rcbackup) i =
   RemoteCounter.restore rcbackup;
   let vcs = VCS.backup () in
   try
-    let rc = stm_purify (Slaves.check_task name tasks) i in
+    let rc = State.purify (Slaves.check_task name tasks) i in
     VCS.restore vcs;
     rc
   with e when CErrors.noncritical e -> VCS.restore vcs; false
@@ -2752,7 +2769,7 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    let u = stm_purify (Slaves.finish_task name u d p t) i in
+    let u = State.purify (Slaves.finish_task name u d p t) i in
     VCS.restore vcs;
     u in
   try
@@ -3111,7 +3128,7 @@ type focus = {
 }
 
 let query ~doc ~at ~route s =
-  stm_purify (fun s ->
+  State.purify (fun s ->
     if Stateid.equal at Stateid.dummy then ignore(finish ~doc:dummy_doc)
     else Reach.known_state ~doc ~cache:`Yes at;
     try
