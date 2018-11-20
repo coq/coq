@@ -82,7 +82,7 @@ after_script:
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
-    - make install
+    - make install install-byte $EXTRA_INSTALL
     - make install-byte
     - cp bin/fake_ide _install_ci/bin/
     - echo 'end:coq.install'
@@ -196,6 +196,7 @@ build:base:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     # coqdoc for stdlib, until we know how to build it from installed Coq
     EXTRA_TARGET: "stdlib"
+    EXTRA_INSTALL: "install-doc-stdlib-html install-doc-printable"
 
 # no coqide for 32bit: libgtk installation problems
 build:base+32bit:
