@@ -162,7 +162,7 @@ Currently available artifacts are:
   + Coq's Reference Manual [master branch]
     https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
   + Coq's Standard Library Documentation [master branch]
-    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/html/stdlib/index.html?job=doc:refman
+    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/html/stdlib/index.html?job=build:base
   + Coq's ML API Documentation [master branch]
     https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/dev/ocamldoc/html/index.html?job=doc:ml-api
 
