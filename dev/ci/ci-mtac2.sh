@@ -9,4 +9,4 @@ git_download unicoq
 
 git_download mtac2
 
-( cd "${CI_BUILD_DIR}/mtac2" && coq_makefile -f _CoqProject -o Makefile && make )
+( cd "${CI_BUILD_DIR}/mtac2" && coq_makefile -f _CoqProject -o Makefile && make && make test )
