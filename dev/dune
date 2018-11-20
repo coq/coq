@@ -4,6 +4,7 @@
  (synopsis "Coq's Debug Printers")
  (wrapped false)
  (modules :standard)
+ (optional)
  (libraries coq.toplevel coq.plugins.ltac))
 
 (rule
