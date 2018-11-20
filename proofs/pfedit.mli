@@ -16,19 +16,6 @@ open Environ
 open Decl_kinds
 
 (** {6 ... } *)
-(** [start_proof s str env t hook tac] starts a proof of name [s] and
-    conclusion [t]; [hook] is optionally a function to be applied at
-    proof end (e.g. to declare the built constructions as a coercion
-    or a setoid morphism); init_tac is possibly a tactic to
-    systematically apply at initialization time (e.g. to start the
-    proof of mutually dependent theorems) *)
-
-val start_proof :
-  Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map -> named_context_val -> EConstr.constr ->
-  ?init_tac:unit Proofview.tactic ->
-  Proof_global.proof_terminator -> unit
-
-(** {6 ... } *)
 (** [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)

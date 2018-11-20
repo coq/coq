@@ -18,13 +18,13 @@ val call_hook : Future.fix_exn -> declaration_hook -> Decl_kinds.locality -> Glo
 val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(Proof_global.lemma_possible_guards -> declaration_hook -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
-  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards ->
+  ?compute_guard:Proof_global.lemma_possible_guards ->
   declaration_hook -> unit
 
 val start_proof_univs : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(Proof_global.lemma_possible_guards -> (UState.t option -> declaration_hook) -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val -> EConstr.types ->
-  ?init_tac:unit Proofview.tactic -> ?compute_guard:Proof_global.lemma_possible_guards ->
+  ?compute_guard:Proof_global.lemma_possible_guards ->
   (UState.t option -> declaration_hook) -> unit
 
 val start_proof_com :

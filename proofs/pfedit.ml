@@ -26,15 +26,6 @@ let _ = Goptions.declare_bool_option {
 
 let use_unification_heuristics () = !use_unification_heuristics_ref
 
-let start_proof (id : Id.t) ?pl str sigma hyps c ?init_tac terminator =
-  let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof sigma id ?pl str goals terminator;
-  let env = Global.env () in
-  ignore (Proof_global.with_current_proof (fun _ p ->
-    match init_tac with
-    | None -> p,(true,[])
-    | Some tac -> Proof.run_tactic env tac p))
-
 exception NoSuchGoal
 let _ = CErrors.register_handler begin function
   | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
@@ -142,7 +133,8 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
-  start_proof id goal_kind evd sign typ terminator;
+  let goals = [ (Global.env_of_context sign , typ) ] in
+  Proof_global.start_proof evd id goal_kind goals terminator;
   try
     let status = by tac in
     let open Proof_global in
