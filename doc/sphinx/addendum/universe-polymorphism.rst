@@ -386,8 +386,10 @@ to universes and explicitly instantiate polymorphic definitions.
    global constraint on polymorphic universes.
 
    .. exn:: Undeclared universe @ident.
+      :undocumented:
 
    .. exn:: Universe inconsistency.
+      :undocumented:
 
 
 Polymorphic definitions

@@ -74,16 +74,22 @@ is generated:
   :tacn:`intro` as many times as needed.
 
 .. exn:: omega: Unrecognized predicate or connective: @ident.
+   :undocumented:
 
 .. exn:: omega: Unrecognized atomic proposition: ...
+   :undocumented:
 
 .. exn:: omega: Can't solve a goal with proposition variables.
+   :undocumented:
 
 .. exn:: omega: Unrecognized proposition.
+   :undocumented:
 
 .. exn:: omega: Can't solve a goal with non-linear products.
+   :undocumented:
 
 .. exn:: omega: Can't solve a goal with equality on type ...
+   :undocumented:
 
 
 Using ``omega``
