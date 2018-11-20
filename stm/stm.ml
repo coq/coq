@@ -750,7 +750,7 @@ end = struct (* {{{ *)
   end
 
   let print ?(now=false) () =
-    if not !Flags.debug && not now then () else NB.command ~now (print_dag !vcs)
+    if !Flags.debug then NB.command ~now (print_dag !vcs)
 
   let backup () = !vcs
   let restore v = vcs := v
