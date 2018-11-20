@@ -62,6 +62,8 @@ let is_unification_error = function
 
 let catchable_exception = function
   | CErrors.UserError _ | TypeError _
+  | Proof.OpenProof _
+  (* abstract will call close_proof inside a tactic *)
   | Notation.NumeralNotationError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _

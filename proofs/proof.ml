@@ -335,28 +335,42 @@ let dependent_start goals =
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
 
-exception UnfinishedProof
-exception HasShelvedGoals
-exception HasGivenUpGoals
-exception HasUnresolvedEvar
-let _ = CErrors.register_handler begin function
-  | UnfinishedProof -> CErrors.user_err Pp.(str "Some goals have not been solved.")
-  | HasShelvedGoals -> CErrors.user_err Pp.(str "Some goals have been left on the shelf.")
-  | HasGivenUpGoals -> CErrors.user_err Pp.(str "Some goals have been given up.")
-  | HasUnresolvedEvar -> CErrors.user_err Pp.(str "Some existential variables are uninstantiated.")
-  | _ -> raise CErrors.Unhandled
-end
+type open_error_reason =
+  | UnfinishedProof
+  | HasShelvedGoals
+  | HasGivenUpGoals
+  | HasUnresolvedEvar
 
-let return p =
+let print_open_error_reason er = let open Pp in match er with
+  | UnfinishedProof ->
+    str "Attempt to save an incomplete proof"
+  | HasShelvedGoals ->
+    str "Attempt to save a proof with shelved goals"
+  | HasGivenUpGoals ->
+    strbrk "Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed."
+  | HasUnresolvedEvar ->
+    strbrk "Attempt to save a proof with existential variables still non-instantiated"
+
+exception OpenProof of Names.Id.t option * open_error_reason
+
+let _ = CErrors.register_handler begin function
+    | OpenProof (pid, reason) ->
+      let open Pp in
+      Option.cata (fun pid ->
+          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason
+    | _ -> raise CErrors.Unhandled
+  end
+
+let return ?pid (p : t) =
   if not (is_done p) then
-    raise UnfinishedProof
+    raise (OpenProof(pid, UnfinishedProof))
   else if has_shelved_goals p then
-    raise HasShelvedGoals
+    raise (OpenProof(pid, HasShelvedGoals))
   else if has_given_up_goals p then
-    raise HasGivenUpGoals
+    raise (OpenProof(pid, HasGivenUpGoals))
   else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
-    raise HasUnresolvedEvar
+    raise (OpenProof(pid, HasUnresolvedEvar))
   else
     let p = unfocus end_of_stack_kind p () in
     Proofview.return p.proofview
@@ -449,10 +463,9 @@ module V82 = struct
 
   let grab_evars p =
     if not (is_done p) then
-      raise UnfinishedProof
+      raise (OpenProof(None, UnfinishedProof))
     else
       { p with proofview = Proofview.V82.grab p.proofview }
-
 
   (* Main component of vernac command Existential *)
   let instantiate_evar n com pr =

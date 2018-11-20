@@ -89,11 +89,15 @@ val compact : t -> t
     Raises [HasShelvedGoals] if some goals are left on the shelf.
     Raises [HasGivenUpGoals] if some goals have been given up.
     Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
-exception UnfinishedProof
-exception HasShelvedGoals
-exception HasGivenUpGoals
-exception HasUnresolvedEvar
-val return : t -> Evd.evar_map
+type open_error_reason =
+  | UnfinishedProof
+  | HasShelvedGoals
+  | HasGivenUpGoals
+  | HasUnresolvedEvar
+
+exception OpenProof of Names.Id.t option * open_error_reason
+
+val return : ?pid:Names.Id.t -> t -> Evd.evar_map
 
 (*** Focusing actions ***)
 

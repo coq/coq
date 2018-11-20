@@ -826,18 +826,34 @@ let rec string_of_list sep f = function
   | x :: ((y :: _) as tl) -> f x ^ sep ^ string_of_list sep f tl
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
+let warn_solve_errored = CWarnings.create ~name:"solve_obligation_error" ~category:"tactics" (fun err ->
+    Pp.seq [str "Solve Obligations tactic returned error: "; err; fnl ();
+            str "This will become an error in the future"])
 
-let solve_by_tac name evi t poly ctx =
+let solve_by_tac ?loc name evi t poly ctx =
   let id = name in
   (* spiwack: the status is dropped. *)
-  let (entry,_,ctx') = Pfedit.build_constant_by_tactic
-    id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl (Tacticals.New.tclCOMPLETE t) in
-  let env = Global.env () in
-  let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-  let body, () = Future.force entry.const_entry_body in
-  let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
-  Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
-  (fst body), entry.const_entry_type, Evd.evar_universe_context ctx'
+  try
+    let (entry,_,ctx') =
+      Pfedit.build_constant_by_tactic
+        id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
+    let env = Global.env () in
+    let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
+    let body, () = Future.force entry.const_entry_body in
+    let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
+    Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
+    Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
+  with
+  | Refiner.FailError (_, s) as exn ->
+    let _ = CErrors.push exn in
+    user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
+  (* If the proof is open we absorb the error and leave the obligation open *)
+  | Proof.OpenProof _ ->
+    None
+  | e when CErrors.noncritical e ->
+    let err = CErrors.print e in
+    warn_solve_errored ?loc err;
+    None
 
 let obligation_terminator name num guard hook auto pf =
   let open Proof_global in
@@ -989,41 +1005,34 @@ and solve_obligation_by_tac prg obls i tac =
     match obl.obl_body with
     | Some _ -> None
     | None ->
-	try
-	  if List.is_empty (deps_remaining obls obl.obl_deps) then
-	    let obl = subst_deps_obl obls obl in
-	    let tac =
-	      match tac with
-	      | Some t -> t
-	      | None ->
-		  match obl.obl_tac with
-		  | Some t -> t
-		  | None -> !default_tactic
-	    in
-	    let evd = Evd.from_ctx prg.prg_ctx in
-	    let evd = Evd.update_sigma_env evd (Global.env ()) in
-	    let t, ty, ctx =
-              solve_by_tac obl.obl_name (evar_of_obligation obl) tac
-                (pi2 prg.prg_kind) (Evd.evar_universe_context evd)
-            in
-            let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
-            let prg = {prg with prg_ctx = ctx} in
-            let def, obl' = declare_obligation prg obl t ty uctx in
-              obls.(i) <- obl';
-	      if def && not (pi2 prg.prg_kind) then (
-	        (* Declare the term constraints with the first obligation only *)
-	        let evd = Evd.from_env (Global.env ()) in
-	        let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
-		let ctx' = Evd.evar_universe_context evd in
-		  Some {prg with prg_ctx = ctx'})
-	      else Some prg
-	  else None
-	with e when CErrors.noncritical e ->
-          let (e, _) = CErrors.push e in
-          match e with
-	  | Refiner.FailError (_, s) ->
-	      user_err ?loc:(fst obl.obl_location) ~hdr:"solve_obligation" (Lazy.force s)
-          | e -> None (* FIXME really ? *)
+      if List.is_empty (deps_remaining obls obl.obl_deps) then
+        let obl = subst_deps_obl obls obl in
+        let tac =
+          match tac with
+          | Some t -> t
+          | None ->
+            match obl.obl_tac with
+            | Some t -> t
+            | None -> !default_tactic
+        in
+        let evd = Evd.from_ctx prg.prg_ctx in
+        let evd = Evd.update_sigma_env evd (Global.env ()) in
+        match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
+                (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
+        | None -> None
+        | Some (t, ty, ctx) ->
+          let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+          let prg = {prg with prg_ctx = ctx} in
+          let def, obl' = declare_obligation prg obl t ty uctx in
+          obls.(i) <- obl';
+          if def && not (pi2 prg.prg_kind) then (
+            (* Declare the term constraints with the first obligation only *)
+            let evd = Evd.from_env (Global.env ()) in
+            let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
+            let ctx' = Evd.evar_universe_context evd in
+            Some {prg with prg_ctx = ctx'})
+          else Some prg
+      else None
 
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
