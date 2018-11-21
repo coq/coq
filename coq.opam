@@ -22,7 +22,6 @@ depends: [
   "ocaml"     {         >= "4.05.0" }
   "dune"      { build & >= "1.4.0"  }
   "num"
-  "camlp5"    {         >= "7.03"   }
 ]
 
 build-env: [

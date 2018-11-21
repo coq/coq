@@ -1,6 +1,20 @@
 Changes from 8.9 to 8.10
 ========================
 
+OCaml and dependencies
+
+- Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
+  INSTALL file for more information on dependencies.
+
+- Coq 8.10 doesn't need Camlp5 to build anymore. It now includes a
+  fork of the core parsing library that Coq uses, which is a small
+  subset of the whole Camlp5 distribution. In particular, this subset
+  doesn't depend on the OCaml AST, allowing easier compilation and
+  testing on experimental OCaml versions.
+
+  The Coq developers would like to thank Daniel de Rauglaudre for many
+  years of continued support.
+
 Coqide
 
 - CoqIDE now properly sets the module name for a given file based on
@@ -12,11 +26,6 @@ Coqtop
   (à la -top) based on the filename passed, taking into account the
   proper -R/-Q options. For example, given -R Foo foolib using
   -topfile foolib/bar.v will set the module name to Foo.Bar.
-
-OCaml
-
-- Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
-  INSTALL file for more information on dependencies.
 
 Specification language, type inference
 

@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2018-10-30-V1"
+# CACHEKEY: "bionic_coq-V2018-11-08-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -41,29 +41,27 @@ ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.4.0 ounit.2.0.8 odoc.1.3.0" \
     CI_OPAM="menhir.20180530 elpi.1.1.0 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
-ENV CAMLP5_VER="7.03" \
-    COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2"
+ENV COQIDE_OPAM="lablgtk.2.18.5 conf-gtksourceview.2"
 
 # base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
-    opam install $BASE_OPAM camlp5.$CAMLP5_VER $COQIDE_OPAM $CI_OPAM
+    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM
 
 # base+32bit switch
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
-    opam install $BASE_OPAM camlp5.$CAMLP5_VER
+    opam install $BASE_OPAM
 
 # EDGE switch
 ENV COMPILER_EDGE="4.07.1" \
-    CAMLP5_VER_EDGE="7.06.10-g84ce6cc4" \
     COQIDE_OPAM_EDGE="lablgtk.2.18.6 conf-gtksourceview.2" \
     BASE_OPAM_EDGE="dune-release.1.1.0"
 
 RUN opam switch create $COMPILER_EDGE && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE camlp5.$CAMLP5_VER_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
 
 RUN opam clean -a -c

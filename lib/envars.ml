@@ -177,10 +177,6 @@ let print_config ?(prefix_var_name="") f coq_src_subdirs =
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());
   fprintf f "%sOCAMLFIND=%s\n" prefix_var_name (ocamlfind ());
-  fprintf f "%sCAMLP5O=%s\n" prefix_var_name Coq_config.camlp5o;
-  fprintf f "%sCAMLP5BIN=%s/\n" prefix_var_name Coq_config.camlp5bin;
-  fprintf f "%sCAMLP5LIB=%s\n" prefix_var_name Coq_config.camlp5lib;
-  fprintf f "%sCAMLP5OPTIONS=%s\n" prefix_var_name Coq_config.camlp5compat;
   fprintf f "%sCAMLFLAGS=%s\n" prefix_var_name Coq_config.caml_flags;
   fprintf f "%sHASNATDYNLINK=%s\n" prefix_var_name
     (if Coq_config.has_natdynlink then "true" else "false");

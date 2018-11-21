@@ -8,6 +8,7 @@
 #directory "toplevel";;
 #directory "library";;
 #directory "kernel";;
+#directory "gramlib";;
 #directory "engine";;
 #directory "pretyping";;
 #directory "lib";;
@@ -17,8 +18,6 @@
 #directory "grammar";;
 #directory "stm";;
 #directory "vernac";;
-
-#directory "+camlp5";; (* Gramext is found in top_printers.ml *)
 
 #use "top_printers.ml";;
 #use "vm_printers.ml";;

@@ -16,7 +16,6 @@ $ opam init --comp <latest-ocaml-version>
   ~/.bashrc and ~/.ocamlinit files.
 
 $ source ~/.bashrc
-$ opam install camlp5
 
 # needed if you want to build "coqide" target
 

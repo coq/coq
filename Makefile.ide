@@ -147,7 +147,7 @@ $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
 $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
-			   $(SYSMOD) -package camlp5.gramlib \
+			   $(SYSMOD) \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP_HIDE) $@
 	$(CODESIGN_HIDE) $@
@@ -156,7 +156,7 @@ $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
-			 $(SYSMOD) -package camlp5.gramlib \
+			 $(SYSMOD) \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@
 
 ####################

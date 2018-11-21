@@ -123,8 +123,6 @@ CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/l
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
         stm/stm.cma toplevel/toplevel.cma
 
-GRAMMARCMA:=grammar/grammar.cma
-
 ###########################################################################
 # plugins object files
 ###########################################################################

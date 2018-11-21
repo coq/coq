@@ -6,18 +6,6 @@ version = "8.10"
 directory = ""
 requires = ""
 
-package "grammar" (
-
-  description = "Coq Camlp5 Grammar Extensions for Plugins"
-  version     = "8.10"
-
-  requires    = "camlp5.gramlib"
-  directory   = "grammar"
-
-  archive(byte)   = "grammar.cma"
-  archive(native) = "grammar.cmxa"
-)
-
 package "config" (
 
   description = "Coq Configuration Variables"
@@ -155,7 +143,7 @@ package "proofs" (
 
 package "gramlib" (
 
-  description = "Coq Parsing Library"
+  description = "Coq Grammar Engine"
   version     = "8.10"
 
   requires    = ""

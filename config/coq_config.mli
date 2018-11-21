@@ -25,11 +25,6 @@ val docdirsuffix : string    (* doc directory relative to installation prefix *)
 
 val ocamlfind : string
 
-val camlp5o : string    (* name of the camlp5o executable *)
-val camlp5bin : string  (* base directory for camlp5 binaries *)
-val camlp5lib : string  (* where is the library of camlp5 *)
-val camlp5compat : string (* compatibility argument to camlp5 *)
-
 val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
 
 val arch : string       (* architecture *)
