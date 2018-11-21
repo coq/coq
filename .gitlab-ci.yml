@@ -436,9 +436,6 @@ ci-mtac2:
 ci-paramcoq:
   <<: *ci-template
 
-ci-pidetop:
-  <<: *ci-template
-
 ci-plugin_tutorial:
   <<: *ci-template
 
