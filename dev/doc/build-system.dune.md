@@ -44,6 +44,24 @@ Dune will read the file `~/.config/dune/config`; see `man
 dune-config`. Among others, you can set in this file the custom number
 of build threads `(jobs N)` and display options `(display _mode_)`.
 
+## Running binaries [coqtop / coqide]
+
+There are two special targets `states` and `quickide` that will
+generate "shims" for running `coqtop` and `coqide` in a fast build. In
+order to use them, do:
+
+```
+$ make -f Makefile.dune voboot                # Only once per session
+$ dune exec dev/shim/coqtop-prelude
+```
+
+or `quickide` / `dev/shim/coqide-prelude` for CoqIDE. These targets
+enjoy quick incremental compilation thanks to `-opaque` so they tend
+to be very fast while developing.
+
+Note that for a fast developer build of ML files, the `check` target
+will be faster.
+
 ## Targets
 
 The default dune target is `dune build` (or `dune build @install`),

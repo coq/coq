@@ -1,0 +1,27 @@
+(rule
+ (targets coqtop-prelude)
+ (deps
+  %{bin:coqtop}
+  %{project_root}/theories/Init/Prelude.vo)
+ (action
+  (with-outputs-to coqtop-prelude
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{bin:coqtop} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (run chmod +x %{targets})))))
+
+(rule
+ (targets coqide-prelude)
+ (deps
+  %{bin:coqqueryworker.opt}
+  %{bin:coqtacticworker.opt}
+  %{bin:coqproofworker.opt}
+  %{project_root}/theories/Init/Prelude.vo
+  %{project_root}/coqide-server.install
+  %{project_root}/coqide.install)
+ (action
+  (with-outputs-to coqide-prelude
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (run chmod +x %{targets})))))
