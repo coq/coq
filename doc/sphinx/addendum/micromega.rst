@@ -35,7 +35,7 @@ rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
 
 
 The tactics solve propositional formulas parameterized by atomic
-arithmetic expressions interpreted over a domain :math:`D` ∈ {ℤ, ℚ, ℝ}.
+arithmetic expressions interpreted over a domain :math:`D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}`.
 The syntax of the formulas is the following:
 
  .. productionlist:: `F`
@@ -46,8 +46,8 @@ The syntax of the formulas is the following:
 where :math:`c` is a numeric constant, :math:`x \in D` is a numeric variable, the
 operators :math:`−, +, ×` are respectively subtraction, addition, and product;
 :math:`p ^ n` is exponentiation by a constant :math:`n`, :math:`P` is an arbitrary proposition.
-For :math:`\mathbb{Q}`, equality is not Leibniz equality = but the equality of
-rationals ==.
+For :math:`\mathbb{Q}`, equality is not Leibniz equality ``=`` but the equality of
+rationals ``==``.
 
 For :math:`\mathbb{Z}` (resp. :math:`\mathbb{Q}`), :math:`c` ranges over integer constants (resp. rational
 constants). For :math:`\mathbb{R}`, the tactic recognizes as real constants the
@@ -58,7 +58,7 @@ following expressions:
    c ::= R0 | R1 | Rmul(c,c) | Rplus(c,c) | Rminus(c,c) | IZR z | IQR q | Rdiv(c,c) | Rinv c
 
 where :math:`z` is a constant in :math:`\mathbb{Z}` and :math:`q` is a constant in :math:`\mathbb{Q}`.
-This includes integer constants written using the decimal notation, *i.e.*, c%R.
+This includes integer constants written using the decimal notation, *i.e.*, ``c%R``.
 
 
 *Positivstellensatz* refutations
@@ -94,7 +94,7 @@ general form :math:`(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False}` and
 
 For each conjunct :math:`C_i`, the tactic calls an oracle which searches for
 :math:`-1` within the cone. Upon success, the oracle returns a *cone
-expression* that is normalized by the ring tactic (see :ref:`theringandfieldtacticfamilies`)
+expression* that is normalized by the :tacn:`ring` tactic (see :ref:`theringandfieldtacticfamilies`)
 and checked to be :math:`-1`.
 
 `lra`: a decision procedure for linear real and rational arithmetic
@@ -245,11 +245,11 @@ proof by abstracting monomials by variables.
 As shown, such a goal is solved by ``intro x. psatz Z 2.``. The oracle returns the
 cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) + -x^2`
 (polynomial hypotheses are printed in bold). By construction, this expression
-belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running `ring` we
+belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
 .. [#] Support for `nat` and :math:`\mathbb{N}` is obtained by pre-processing the goal with
-  the `zify` tactic.
+  the ``zify`` tactic.
 .. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#] Variants deal with equalities and strict inequalities.
 .. [#] In practice, the oracle might fail to produce such a refutation.
