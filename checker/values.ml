@@ -10,28 +10,15 @@
 
 (** Abstract representations of values in a vo *)
 
-(** NB: UPDATE THIS FILE EACH TIME cic.mli IS MODIFIED !
+(** NB: This needs updating when the types in declarations.ml and
+   their dependencies are changed. *)
 
-To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
-with a copy we maintain here:
-
-MD5 b8f0139f14e3370cd0a45d4cf69882ea checker/cic.mli
-
-*)
-
-(** We reify here the types of values present in a vo (see cic.mli),
+(** We reify here the types of values present in a vo.
     in order to validate its structure. Maybe this reification
     could become automatically generated someday ?
 
-    - [Any] stands for a value that we won't check,
-    - [Fail] means a value that shouldn't be there at all,
-    - [Tuple] provides a name and sub-values in this block
-    - [Sum] provides a name, a number of constant constructors,
-      and sub-values at each position of each possible constructed
-      variant
-    - [List] and [Opt] could have been defined via [Sum], but
-      having them here helps defining some recursive values below
-    - [Annot] is a no-op, just there for improving debug messages *)
+    See values.mli for the meaning of each constructor.
+*)
 
 type value =
   | Any
@@ -45,6 +32,7 @@ type value =
   | String
   | Annot of string * value
   | Dyn
+
   | Proxy of value ref
 
 let fix (f : value -> value) : value =

@@ -143,10 +143,8 @@ let validate debug v x =
   let o = Obj.repr x in
   try val_gen v mt_ec o
   with ValidObjError(msg,ctx,obj) ->
-    if debug then begin
+    (if debug then
       let ctx = List.rev_map print_frame ctx in
-      print_endline ("Validation failed: "^msg);
       print_endline ("Context: "^String.concat"/"ctx);
-      pr_obj obj
-    end;
-    failwith "vo structure validation failed"
+      pr_obj obj);
+    failwith ("Validation failed: "^msg^" (in "^(print_frame (List.hd ctx))^")")
