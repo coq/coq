@@ -4,7 +4,7 @@ description = "The Coq Proof Assistant Plugin API"
 version = "8.10"
 
 directory = ""
-requires = "camlp5"
+requires = ""
 
 package "grammar" (
 
@@ -153,12 +153,24 @@ package "proofs" (
 
 )
 
+package "gramlib" (
+
+  description = "Coq Parsing Library"
+  version     = "8.10"
+
+  requires    = ""
+  directory   = "gramlib__pack"
+
+  archive(byte)    = "gramlib.cma"
+  archive(native)  = "gramlib.cmxa"
+)
+
 package "parsing" (
 
   description = "Coq Parsing Engine"
   version     = "8.10"
 
-  requires    = "camlp5.gramlib, coq.proofs"
+  requires    = "coq.gramlib, coq.proofs"
   directory   = "parsing"
 
   archive(byte)    = "parsing.cma"

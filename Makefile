@@ -94,6 +94,10 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENMLGFILES:= $(MLGFILES:.mlg=.ml)
+# GRAMFILES must be in linking order
+export GRAMFILES=$(addprefix gramlib__pack/gramlib__,Ploc Plexing Gramext Grammar)
+export GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
+export GENGRAMFILES := $(GRAMMLFILES) gramlib__pack/gramlib.ml
 export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
@@ -190,11 +194,15 @@ META.coq: META.coq.in
 
 .PHONY: clean cleankeepvo objclean cruftclean indepclean docclean archclean optclean clean-ide mlgclean depclean cleanconfig distclean voclean timingclean alienclean
 
-clean: objclean cruftclean depclean docclean camldevfilesclean
+clean: objclean cruftclean depclean docclean camldevfilesclean gramlibclean
 
 cleankeepvo: indepclean clean-ide optclean cruftclean depclean docclean
 
 objclean: archclean indepclean
+
+.PHONY: gramlibclean
+gramlibclean:
+	rm -rf gramlib__pack/
 
 cruftclean: mlgclean
 	find . \( -name '*~' -o -name '*.annot' \) -exec rm -f {} +
@@ -284,7 +292,7 @@ KNOWNML:=$(EXISTINGML) $(GENMLFILES) $(MLPACKFILES:.mlpack=.ml) \
  $(patsubst %.mlp,%.ml,$(wildcard grammar/*.mlp))
 KNOWNOBJS:=$(KNOWNML:.ml=.cmo) $(KNOWNML:.ml=.cmx) $(KNOWNML:.ml=.cmi) \
  $(MLIFILES:.mli=.cmi) \
- $(MLLIBFILES:.mllib=.cma) $(MLLIBFILES:.mllib=.cmxa) grammar/grammar.cma
+ gramlib__pack/gramlib.cma gramlib__pack/gramlib.cmxa $(MLLIBFILES:.mllib=.cma) $(MLLIBFILES:.mllib=.cmxa) grammar/grammar.cma
 ALIENOBJS:=$(filter-out $(KNOWNOBJS),$(EXISTINGOBJS))
 
 alienclean:

@@ -13,6 +13,7 @@ open Extend
 open Genarg
 open Constrexpr
 open Libnames
+open Gramlib
 
 (** The parser of Coq *)
 

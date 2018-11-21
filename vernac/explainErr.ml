@@ -29,7 +29,7 @@ exception EvaluatedError of Pp.t * exn option
 let explain_exn_default = function
   (* Basic interaction exceptions *)
   | Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
-  | Plexing.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
+  | Gramlib.Plexing.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | CLexer.Error.E err -> hov 0 (str (CLexer.Error.to_string err))
   | Sys_error msg -> hov 0 (str "System error: " ++ guill msg)
   | Out_of_memory -> hov 0 (str "Out of memory.")

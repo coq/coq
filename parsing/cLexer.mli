@@ -40,7 +40,7 @@ where
       tok_text : pattern -> string;
       tok_comm : mutable option (list location) }
  *)
-include Grammar.GLexerType with type te = Tok.t
+include Gramlib.Grammar.GLexerType with type te = Tok.t
 
 module Error : sig
   type t

@@ -206,7 +206,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES)$(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
+DEPFLAGS=$(LOCALINCLUDES) -map gramlib__pack/gramlib.ml $(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -263,9 +263,6 @@ PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
 
 # Main packages linked by Coq.
 SYSMOD:=-package num,str,unix,dynlink,threads
-
-# We do not repeat the dependencies already in SYSMOD here
-P4CMA:=gramlib.cma
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile
@@ -418,7 +415,7 @@ $(COQTOPEXE): $(TOPBINOPT:.opt=.$(BEST))
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
-			   $(SYSMOD) -package camlp5.gramlib \
+			   $(SYSMOD) \
 			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP_HIDE) $@
 	$(CODESIGN_HIDE) $@
@@ -427,7 +424,7 @@ bin/%.byte$(EXE): topbin/%_bin.ml $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
-			 $(SYSMOD) -package camlp5.gramlib \
+			 $(SYSMOD) \
 			 $(LINKCMO) $(BYTEFLAGS) $< -o $@
 
 COQTOP_BYTE=topbin/coqtop_byte_bin.ml
@@ -438,7 +435,7 @@ $(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(COQTOP_BYTE)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg -I lib -I vernac -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
-			 $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
+			 $(SYSMOD) -package compiler-libs.toplevel \
 			 $(LINKCMO) $(BYTEFLAGS) $(COQTOP_BYTE) -o $@
 
 # For coqc
@@ -630,15 +627,40 @@ test-suite: world byte $(ALLSTDLIB).v
 # Default rules for compiling ML code
 ###########################################################################
 
-# Target for libraries .cma and .cmxa
+gramlib__pack:
+	mkdir -p $@
 
-# The dependency over the .mllib is somewhat artificial, since
-# ocamlc -a won't use this file, hence the $(filter-out ...) below.
-# But this ensures that the .cm(x)a is rebuilt when needed,
-# (especially when removing a module in the .mllib).
-# We used to have a "order-only" dependency over .mllib.d here,
-# but the -include mechanism should already ensure that we have
-# up-to-date dependencies.
+# gramlib.ml contents
+gramlib__pack/gramlib.ml: | gramlib__pack
+	echo " \
+module Ploc    = Gramlib__Ploc \
+module Plexing = Gramlib__Plexing \
+module Gramext = Gramlib__Gramext \
+module Grammar = Gramlib__Grammar" > $@
+
+gramlib__pack/gramlib__P%: gramlib/p% | gramlib__pack
+	cp -a $< $@
+	sed -e "1i # 1 \"$<\"" -i $@
+gramlib__pack/gramlib__G%: gramlib/g% | gramlib__pack
+	cp -a $< $@
+	sed -e "1i # 1 \"$<\"" -i $@
+
+# Specific rules for gramlib to pack it Dune / OCaml 4.08 style
+GRAMOBJS=$(addsuffix .cmo, $(GRAMFILES))
+
+gramlib__pack/%: COND_BYTEFLAGS+=-no-alias-deps -w -49
+gramlib__pack/%: COND_OPTFLAGS+=-no-alias-deps -w -49
+
+gramlib__pack/gramlib.%: COND_OPENFLAGS=
+gramlib__pack/gramlib__%: COND_OPENFLAGS=-open Gramlib
+
+gramlib__pack/gramlib.cma: $(GRAMOBJS) gramlib__pack/gramlib.cmo
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $^
+
+gramlib__pack/gramlib.cmxa: $(GRAMOBJS:.cmo=.cmx) gramlib__pack/gramlib.cmx
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $^
 
 # Specific rule for kernel.cma, with $(VMBYTEFLAGS).
 # This helps loading dllcoqrun.so during an ocamldebug
@@ -650,6 +672,16 @@ kernel/kernel.cma: kernel/kernel.mllib
 kernel/kernel.cmxa: kernel/kernel.mllib
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -I kernel/byterun/ -cclib -lcoqrun -a -o $@ $(filter-out %.mllib, $^)
+
+# Target for libraries .cma and .cmxa
+
+# The dependency over the .mllib is somewhat artificial, since
+# ocamlc -a won't use this file, hence the $(filter-out ...) below.
+# But this ensures that the .cm(x)a is rebuilt when needed,
+# (especially when removing a module in the .mllib).
+# We used to have a "order-only" dependency over .mllib.d here,
+# but the -include mechanism should already ensure that we have
+# up-to-date dependencies.
 
 %.cma: %.mllib
 	$(SHOW)'OCAMLC -a -o $@'
@@ -672,11 +704,14 @@ kernel/kernel.cmxa: kernel/kernel.mllib
 COND_IDEFLAGS=$(if $(filter ide/fake_ide% tools/coq_makefile%,$<), -I ide -I ide/protocol,)
 COND_PRINTERFLAGS=$(if $(filter dev/%,$<), -I dev,)
 
+# For module packing
+COND_OPENFLAGS=
+
 COND_BYTEFLAGS= \
- $(COND_IDEFLAGS) $(COND_PRINTERFLAGS) $(MLINCLUDES) $(BYTEFLAGS)
+ $(COND_IDEFLAGS) $(COND_PRINTERFLAGS) $(MLINCLUDES) $(BYTEFLAGS) $(COND_OPENFLAGS)
 
 COND_OPTFLAGS= \
- $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS)
+ $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS) $(COND_OPENFLAGS)
 
 plugins/micromega/%.cmi: plugins/micromega/%.mli
 	$(SHOW)'OCAMLC    $<'
@@ -780,12 +815,13 @@ kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
 OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 
-MAINMLFILES := $(filter-out checker/% plugins/%, $(MLFILES) $(MLIFILES))
-MAINMLLIBFILES := $(filter-out checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
+MAINMLFILES := $(filter-out gramlib__pack/% checker/% plugins/%, $(MLFILES) $(MLIFILES))
+MAINMLLIBFILES := $(filter-out gramlib__pack/% checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
 
-$(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES)
+$(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES) $(GENGRAMFILES)
 	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(MAINMLFILES) $(TOTARGET)
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS)  -passrest $(MAINMLFILES) -open Gramlib $(GRAMMLFILES) $(TOTARGET)
+#NB: -passrest is needed to avoid ocamlfind reordering the -open Gramlib
 
 $(MLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLLIBFILES) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
 	$(SHOW)'OCAMLLIBDEP  MLLIBFILES MLPACKFILES'
