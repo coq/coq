@@ -113,7 +113,7 @@ let _ =
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
 
-let set_typeclasses_debug =
+let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "debug output for typeclasses proof search";
@@ -137,7 +137,7 @@ let _ =
       optread  = get_typeclasses_verbose;
       optwrite = set_typeclasses_verbose; }
 
-let set_typeclasses_depth =
+let _ =
   declare_int_option
     { optdepr  = false;
       optname  = "depth for typeclasses proof search";

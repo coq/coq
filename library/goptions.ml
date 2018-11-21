@@ -276,10 +276,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (name, depr, (cread,cwrite,cappend)) !value_tab;
-  write
-
-type 'a write_function = 'a -> unit
+  value_tab := OptionMap.add key (name, depr, (cread,cwrite,cappend)) !value_tab
 
 let declare_int_option =
   declare_option
