@@ -10,7 +10,7 @@
 (rule
   (targets dune-dbg)
   (deps dune-dbg.in
-        ../checker/main.bc
+        ../checker/coqchk.bc
         ../topbin/coqtop_byte_bin.bc
         ; This is not enough as the call to `ocamlfind` will fail :/
         top_printers.cma)
