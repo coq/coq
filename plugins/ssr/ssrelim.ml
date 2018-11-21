@@ -398,7 +398,7 @@ let revtoptac n0 gl =
   let dc, cl = EConstr.decompose_prod_n_assum (project gl) n (pf_concl gl) in
   let dc' = dc @ [Context.Rel.Declaration.LocalAssum(Name rev_id, EConstr.it_mkProd_or_LetIn cl (List.rev dc))] in
   let f = EConstr.it_mkLambda_or_LetIn (mkEtaApp (EConstr.mkRel (n + 1)) (-n) 1) dc' in
-  refine (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|])) gl
+  Refiner.refiner ~check:true EConstr.Unsafe.(to_constr (EConstr.mkApp (f, [|Evarutil.mk_new_meta ()|]))) gl
 
 let equality_inj l b id c gl =
   let msg = ref "" in

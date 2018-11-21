@@ -20,7 +20,6 @@ open Environ
 open Reductionops
 open Inductiveops
 open Typing
-open Proof_type
 open Type_errors
 open Retyping
 
@@ -585,12 +584,15 @@ let convert_hyp check sign sigma d =
 let prim_refiner r sigma goal =
   let env = Goal.V82.env sigma goal in
   let cl = Goal.V82.concl sigma goal in
-  match r with
-    (* Logical rules *)
-    | Refine c ->
-        let cl = EConstr.Unsafe.to_constr cl in
-        check_meta_variables env sigma c;
-	let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl c in
-	let sgl = List.rev sgl in
-        let sigma = Goal.V82.partial_solution env sigma goal (EConstr.of_constr oterm) in
-	  (sgl, sigma)
+  let cl = EConstr.Unsafe.to_constr cl in
+  check_meta_variables env sigma r;
+  let (sgl,cl',sigma,oterm) = mk_refgoals sigma goal [] cl r in
+  let sgl = List.rev sgl in
+  let sigma = Goal.V82.partial_solution env sigma goal (EConstr.of_constr oterm) in
+  (sgl, sigma)
+
+let prim_refiner ~check r sigma goal =
+  if check then
+    with_check (prim_refiner r sigma) goal
+  else
+    prim_refiner r sigma goal

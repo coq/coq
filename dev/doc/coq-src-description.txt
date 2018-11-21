@@ -94,7 +94,7 @@ Tacexpr.glob_tactic_expr
  |
  | Tacinterp.eval_tactic (?)
  V
-Proof_type.tactic
+Proofview.V82.tac
 
 TODO: check with Hugo
 

@@ -120,9 +120,9 @@ val ppclenv : Clenv.clausenv -> unit
 
 val ppgoalgoal : Goal.goal -> unit
 
-val ppgoal : Proof_type.goal Evd.sigma -> unit
+val ppgoal : Goal.goal Evd.sigma -> unit
 (* also print evar map *)
-val ppgoalsigma : Proof_type.goal Evd.sigma -> unit
+val ppgoalsigma : Goal.goal Evd.sigma -> unit
 
 val pphintdb : Hints.Hint_db.t -> unit
 val ppproofview : Proofview.proofview -> unit

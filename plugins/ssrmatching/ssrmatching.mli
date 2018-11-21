@@ -230,7 +230,7 @@ sig
   val wit_rpatternty : (rpattern, rpattern, rpattern) Genarg.genarg_type
   val glob_rpattern : Genintern.glob_sign -> rpattern -> rpattern
   val subst_rpattern : Mod_subst.substitution -> rpattern -> rpattern
-  val interp_rpattern : Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> rpattern -> Evd.evar_map * rpattern
+  val interp_rpattern : Geninterp.interp_sign -> Goal.goal Evd.sigma -> rpattern -> Evd.evar_map * rpattern
   val pr_rpattern : rpattern -> Pp.t
   val mk_rpattern : (cpattern, cpattern) ssrpattern -> rpattern
   val mk_lterm : Constrexpr.constr_expr -> Geninterp.interp_sign option -> cpattern
@@ -238,7 +238,7 @@ sig
 
   val glob_cpattern : Genintern.glob_sign -> cpattern -> cpattern
   val subst_ssrterm : Mod_subst.substitution -> cpattern -> cpattern
-  val interp_ssrterm : Geninterp.interp_sign -> Proof_type.goal Evd.sigma -> cpattern -> Evd.evar_map * cpattern
+  val interp_ssrterm : Geninterp.interp_sign -> Goal.goal Evd.sigma -> cpattern -> Evd.evar_map * cpattern
   val pr_ssrterm : cpattern -> Pp.t
 end
 

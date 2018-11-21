@@ -26,6 +26,8 @@ module NamedDecl = Context.Named.Declaration
 (* Tacticals re-exported from the Refiner module                        *)
 (************************************************************************)
 
+type tactic = Proofview.V82.tac
+
 let tclIDTAC         = Refiner.tclIDTAC
 let tclIDTAC_MESSAGE = Refiner.tclIDTAC_MESSAGE
 let tclORELSE0       = Refiner.tclORELSE0

@@ -12,11 +12,12 @@ open Names
 open Constr
 open EConstr
 open Evd
-open Proof_type
 open Locus
 open Tactypes
 
 (** Tacticals i.e. functions from tactics to tactics. *)
+
+type tactic = Proofview.V82.tac
 
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : Pp.t -> tactic
@@ -65,20 +66,20 @@ val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (named_context -> tactic) -> tactic
 
-val lastHypId   : goal sigma -> Id.t
-val lastHyp     : goal sigma -> constr
-val lastDecl    : goal sigma -> named_declaration
-val nLastHypsId : int -> goal sigma -> Id.t list
-val nLastHyps   : int -> goal sigma -> constr list
-val nLastDecls  : int -> goal sigma -> named_context
+val lastHypId   : Goal.goal sigma -> Id.t
+val lastHyp     : Goal.goal sigma -> constr
+val lastDecl    : Goal.goal sigma -> named_declaration
+val nLastHypsId : int -> Goal.goal sigma -> Id.t list
+val nLastHyps   : int -> Goal.goal sigma -> constr list
+val nLastDecls  : int -> Goal.goal sigma -> named_context
 
-val afterHyp    : Id.t -> goal sigma -> named_context
+val afterHyp    : Id.t -> Goal.goal sigma -> named_context
 
 val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
 		   Id.t -> tactic
 
-val onHyps      : (goal sigma -> named_context) ->
+val onHyps      : (Goal.goal sigma -> named_context) ->
                   (named_context -> tactic) -> tactic
 
 (** {6 Tacticals applying to goal components } *)
@@ -127,11 +128,11 @@ val compute_constructor_signatures : rec_flag:bool -> inductive * 'a -> bool lis
 val compute_induction_names :
   bool list array -> or_and_intro_pattern option -> intro_patterns array
 
-val elimination_sort_of_goal : goal sigma -> Sorts.family
-val elimination_sort_of_hyp  : Id.t -> goal sigma -> Sorts.family
-val elimination_sort_of_clause : Id.t option -> goal sigma -> Sorts.family
+val elimination_sort_of_goal : Goal.goal sigma -> Sorts.family
+val elimination_sort_of_hyp  : Id.t -> Goal.goal sigma -> Sorts.family
+val elimination_sort_of_clause : Id.t option -> Goal.goal sigma -> Sorts.family
 
-val pf_with_evars :  (goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
+val pf_with_evars :  (Goal.goal sigma -> Evd.evar_map * 'a) -> ('a -> tactic) -> tactic
 val pf_constr_of_global : GlobRef.t -> (constr -> tactic) -> tactic
 
 (** Tacticals defined directly in term of Proofview *)

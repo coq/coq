@@ -15,7 +15,6 @@ open Names
 open Constr
 open Termops
 open EConstr
-open Proof_type
 open Tacticals
 open Tacmach
 open Evd
@@ -203,7 +202,7 @@ let find_first_goal gls =
 type search_state = {
   priority : int;
   depth : int; (*r depth of search before failing *)
-  tacres : goal list sigma;
+  tacres : Goal.goal list sigma;
   last_tactic : Pp.t Lazy.t;
   dblist : hint_db list;
   localdb :  hint_db list;

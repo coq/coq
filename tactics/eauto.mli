@@ -26,7 +26,7 @@ val gen_eauto : ?debug:debug -> bool * int -> delayed_open_constr list ->
 val eauto_with_bases :
   ?debug:debug ->
   bool * int ->
-  delayed_open_constr list -> hint_db list -> Proof_type.tactic
+  delayed_open_constr list -> hint_db list -> Proofview.V82.tac
 
 val autounfold : hint_db_name list -> Locus.clause -> unit Proofview.tactic
 val autounfold_tac : hint_db_name list option -> Locus.clause -> unit Proofview.tactic
