@@ -28,11 +28,10 @@ val create :
   ('a -> GObj.widget option * GObj.widget option * GObj.widget) ->
   ('a -> unit) ->
   ?enable_popup:bool ->
-  ?homogeneous_tabs:bool ->
+  ?group_name:string ->
   ?scrollable:bool ->
   ?show_border:bool ->
   ?show_tabs:bool ->
-  ?tab_border:int ->
   ?tab_pos:Gtk.Tags.position ->
   ?border_width:int ->
   ?width:int ->
