@@ -29,6 +29,11 @@ open Decl_kinds
 open Context.Named.Declaration
 open Ltac_pretype
 
+type detyping_flags = {
+  flg_lax : bool;
+  flg_isgoal : bool;
+}
+
 type _ delay =
 | Now : 'a delay
 | Later : [ `thunk ] delay
@@ -339,8 +344,8 @@ let update_name sigma na ((_,(e,_)),c) =
   | _ ->
       na
 
-let rec decomp_branch tags nal b (avoid,env as e) sigma c =
-  let flag = if b then RenamingForGoal else RenamingForCasesPattern (fst env,c) in
+let rec decomp_branch tags nal flags (avoid,env as e) sigma c =
+  let flag = if flags.flg_isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,c) in
   match tags with
   | [] -> (List.rev nal,(e,c))
   | b::tags ->
@@ -356,7 +361,7 @@ let rec decomp_branch tags nal b (avoid,env as e) sigma c =
 	  Anonymous,lift 1 c,compute_displayed_name_in,None,None
     in
     let na',avoid' = f sigma flag avoid na c in
-    decomp_branch tags (na'::nal) b
+    decomp_branch tags (na'::nal) flags
       (avoid', add_name_opt na' body t env) sigma c
 
 let rec build_tree na isgoal e sigma ci cl =
@@ -685,7 +690,7 @@ and detype_r d flags avoid env sigma t =
         GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
               (args @ [detype d flags avoid env sigma c]))
       in
-      if fst flags || !Flags.in_debugger || !Flags.in_toplevel then
+      if flags.flg_lax || !Flags.in_debugger || !Flags.in_toplevel then
 	try noparams ()
 	with _ ->
 	    (* lax mode, used by debug printers only *) 
@@ -743,7 +748,7 @@ and detype_r d flags avoid env sigma t =
 and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
     if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
-    let mat = build_tree Anonymous (snd flags) (avoid,env) sigma ci bl in
+    let mat = build_tree Anonymous flags (avoid,env) sigma ci bl in
     List.map (fun (ids,pat,((avoid,env),c)) ->
         CAst.make (Id.Set.elements ids,[pat],detype d flags avoid env sigma c))
       mat
@@ -751,12 +756,12 @@ and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
     Array.to_list
       (Array.map3 (detype_eqn d flags avoid env sigma) constructs consnargsl bl)
 
-and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs branch =
+and detype_eqn d flags avoid env sigma constr construct_nargs branch =
   let make_pat x avoid env b body ty ids =
     if force_wildcard () && noccurn sigma 1 b then
       DAst.make @@ PatVar Anonymous,avoid,(add_name Anonymous body ty env),ids
     else
-      let flag = if isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,b) in
+      let flag = if flags.flg_isgoal then RenamingForGoal else RenamingForCasesPattern (fst env,b) in
       let na,avoid' = compute_displayed_name_in sigma flag avoid x b in
       DAst.make (PatVar na),avoid',(add_name na body ty env),add_vname ids na
   in
@@ -793,23 +798,24 @@ and detype_eqn d (lax,isgoal as flags) avoid env sigma constr construct_nargs br
   in
   buildrec Id.Set.empty [] avoid env construct_nargs branch
 
-and detype_binder d (lax,isgoal as flags) bk avoid env sigma {binder_name=na} body ty c =
-  let flag = if isgoal then RenamingForGoal else RenamingElsewhereFor (fst env,c) in
+and detype_binder d flags bk avoid env sigma {binder_name=na} body ty c =
+  let flag = if flags.flg_isgoal then RenamingForGoal else RenamingElsewhereFor (fst env,c) in
   let na',avoid' = match bk with
   | BLetIn -> compute_displayed_let_name_in sigma flag avoid na c
   | _ -> compute_displayed_name_in sigma flag avoid na c in
   let r =  detype d flags avoid' (add_name na' body ty env) sigma c in
   match bk with
-  | BProd   -> GProd (na',Explicit,detype d (lax,false) avoid env sigma ty, r)
-  | BLambda -> GLambda (na',Explicit,detype d (lax,false) avoid env sigma ty, r)
+  | BProd   -> GProd (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
+  | BLambda -> GLambda (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
   | BLetIn ->
-      let c = detype d (lax,false) avoid env sigma (Option.get body) in
+      let c = detype d { flags with flg_isgoal = false } avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
-      let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d (lax,false) avoid env sigma ty) in
+      let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d { flags with flg_isgoal = false } avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d ?(lax=false) where avoid env sigma sign =
+  let flags = { flg_isgoal = false; flg_lax = lax } in
   let where = Option.map (fun c -> EConstr.it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []
@@ -831,15 +837,17 @@ let detype_rel_context d ?(lax=false) where avoid env sigma sign =
 	      | LocalAssum _ -> None
               | LocalDef (_,b,_) -> Some b
       in
-      let b' = Option.map (detype d (lax,false) avoid env sigma) b in
-      let t' = detype d (lax,false) avoid env sigma t in
+      let b' = Option.map (detype d flags avoid env sigma) b in
+      let t' = detype d flags avoid env sigma t in
       (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest
   in aux avoid env (List.rev sign)
 
 let detype_names isgoal avoid nenv env sigma t = 
-  detype Now (false,isgoal) avoid (nenv,env) sigma t
+  let flags = { flg_isgoal = isgoal; flg_lax = false } in
+  detype Now flags avoid (nenv,env) sigma t
 let detype d ?(lax=false) isgoal avoid env sigma t =
-  detype d (lax,isgoal) avoid (names_of_rel_context env, env) sigma t
+  let flags = { flg_isgoal = isgoal; flg_lax = lax } in
+  detype d flags avoid (names_of_rel_context env, env) sigma t
 
 let detype_rel_context d ?lax where avoid env sigma sign =
   detype_rel_context d ?lax where avoid env sigma sign
