@@ -108,7 +108,7 @@ let search_guard ?loc env possible_indexes fixdefs =
 let strict_universe_declarations = ref true
 let is_strict_universe_declarations () = !strict_universe_declarations
 
-let _ =
+let () =
   Goptions.(declare_bool_option
 	  { optdepr  = false;
 	    optname  = "strict universe declaration";

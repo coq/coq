@@ -1409,7 +1409,7 @@ let vernac_generalizable ~local =
   let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "silent";
@@ -1417,7 +1417,7 @@ let _ =
       optread  = (fun () -> !Flags.quiet);
       optwrite = ((:=) Flags.quiet) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments";
@@ -1425,7 +1425,7 @@ let _ =
       optread  = Impargs.is_implicit_args;
       optwrite = Impargs.make_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "strict implicit arguments";
@@ -1433,7 +1433,7 @@ let _ =
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "strong strict implicit arguments";
@@ -1441,7 +1441,7 @@ let _ =
       optread  = Impargs.is_strongly_strict_implicit_args;
       optwrite = Impargs.make_strongly_strict_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "contextual implicit arguments";
@@ -1449,7 +1449,7 @@ let _ =
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit status of reversible patterns";
@@ -1457,7 +1457,7 @@ let _ =
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "maximal insertion of implicit";
@@ -1465,7 +1465,7 @@ let _ =
       optread  = Impargs.is_maximal_implicit_args;
       optwrite = Impargs.make_maximal_implicit_args }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "coercion printing";
@@ -1473,7 +1473,7 @@ let _ =
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "printing of existential variable instances";
@@ -1481,7 +1481,7 @@ let _ =
       optread  = (fun () -> !Detyping.print_evar_arguments);
       optwrite = (:=) Detyping.print_evar_arguments }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments printing";
@@ -1489,7 +1489,7 @@ let _ =
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "implicit arguments defensive printing";
@@ -1497,7 +1497,7 @@ let _ =
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
       optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "projection printing using dot notation";
@@ -1505,7 +1505,7 @@ let _ =
       optread  = (fun () -> !Constrextern.print_projections);
       optwrite = (fun b ->  Constrextern.print_projections := b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "notations printing";
@@ -1513,7 +1513,7 @@ let _ =
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "raw printing";
@@ -1521,7 +1521,7 @@ let _ =
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "use of the program extension";
@@ -1529,7 +1529,7 @@ let _ =
       optread  = (fun () -> !Flags.program_mode);
       optwrite = (fun b -> Flags.program_mode:=b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Polymorphic inductive cumulativity";
@@ -1537,7 +1537,7 @@ let _ =
       optread  = Flags.is_polymorphic_inductive_cumulativity;
       optwrite = Flags.make_polymorphic_inductive_cumulativity }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Uniform inductive parameters";
@@ -1545,7 +1545,7 @@ let _ =
       optread  = (fun () -> !uniform_inductive_parameters);
       optwrite = (fun b -> uniform_inductive_parameters := b) }
 
-let _ =
+let () =
   declare_int_option
     { optdepr  = false;
       optname  = "the level of inlining during functor application";
@@ -1555,7 +1555,7 @@ let _ =
 	           let lev = Option.default Flags.default_inline_level o in
 	           Flags.set_inline_level lev) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "kernel term sharing";
@@ -1563,7 +1563,7 @@ let _ =
       optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
       optwrite = Global.set_share_reduction }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "display compact goal contexts";
@@ -1571,7 +1571,7 @@ let _ =
       optread  = (fun () -> Printer.get_compact_context());
       optwrite = (fun b -> Printer.set_compact_context b) }
 
-let _ =
+let () =
   declare_int_option
     { optdepr  = false;
       optname  = "the printing depth";
@@ -1579,7 +1579,7 @@ let _ =
       optread  = Topfmt.get_depth_boxes;
       optwrite = Topfmt.set_depth_boxes }
 
-let _ =
+let () =
   declare_int_option
     { optdepr  = false;
       optname  = "the printing width";
@@ -1587,7 +1587,7 @@ let _ =
       optread  = Topfmt.get_margin;
       optwrite = Topfmt.set_margin }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "printing of universes";
@@ -1595,7 +1595,7 @@ let _ =
       optread  = (fun () -> !Constrextern.print_universes);
       optwrite = (fun b -> Constrextern.print_universes:=b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "dumping bytecode after compilation";
@@ -1603,7 +1603,7 @@ let _ =
       optread  = (fun () -> !Cbytegen.dump_bytecode);
       optwrite = (:=) Cbytegen.dump_bytecode }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "dumping VM lambda code after compilation";
@@ -1611,7 +1611,7 @@ let _ =
       optread  = (fun () -> !Clambda.dump_lambda);
       optwrite = (:=) Clambda.dump_lambda }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "explicitly parsing implicit arguments";
@@ -1619,7 +1619,7 @@ let _ =
       optread  = (fun () -> !Constrintern.parsing_explicit);
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
 
-let _ =
+let () =
   declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optdepr  = false;
       optname  = "warnings display";
@@ -1627,7 +1627,7 @@ let _ =
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
 
-let _ =
+let () =
   declare_string_option 
     { optdepr  = false;
       optname  = "native_compute profiler output";
@@ -1635,7 +1635,7 @@ let _ =
       optread  = Nativenorm.get_profile_filename;
       optwrite = Nativenorm.set_profile_filename }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "enable native compute profiling";
@@ -1933,7 +1933,7 @@ let interp_search_about_item env sigma =
 *)
 let search_output_name_only = ref false
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "output-name-only search";
@@ -2303,13 +2303,13 @@ let interp ?proof ~atts ~st c =
 
 let default_timeout = ref None
 
-let _ =
-  Goptions.declare_int_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "the default timeout";
-      Goptions.optkey   = ["Default";"Timeout"];
-      Goptions.optread  = (fun () -> !default_timeout);
-      Goptions.optwrite = ((:=) default_timeout) }
+let () =
+  declare_int_option
+    { optdepr  = false;
+      optname  = "the default timeout";
+      optkey   = ["Default";"Timeout"];
+      optread  = (fun () -> !default_timeout);
+      optwrite = ((:=) default_timeout) }
 
 (** When interpreting a command, the current timeout is initially
     the default one, but may be modified locally by a Timeout command. *)

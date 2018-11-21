@@ -446,7 +446,7 @@ let do_print_results_at_close () =
 
 let _ = Declaremods.append_end_library_hook do_print_results_at_close
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;

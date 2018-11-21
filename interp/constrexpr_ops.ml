@@ -605,13 +605,13 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
                       (str "This expression should be coercible to a pattern.")) c
 
 let asymmetric_patterns = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname = "no parameters in constructors";
-  Goptions.optkey = ["Asymmetric";"Patterns"];
-  Goptions.optread = (fun () -> !asymmetric_patterns);
-  Goptions.optwrite = (fun a -> asymmetric_patterns:=a);
-}
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname = "no parameters in constructors";
+  optkey = ["Asymmetric";"Patterns"];
+  optread = (fun () -> !asymmetric_patterns);
+  optwrite = (fun a -> asymmetric_patterns:=a);
+})
 
 (** Local universe and constraint declarations. *)
 

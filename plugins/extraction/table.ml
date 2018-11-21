@@ -500,7 +500,7 @@ let info_file f =
 let my_bool_option name initval =
   let flag = ref initval in
   let access = fun () -> !flag in
-  let _ = declare_bool_option
+  let () = declare_bool_option
     {optdepr = false;
      optname = "Extraction "^name;
      optkey = ["Extraction"; name];
@@ -572,14 +572,14 @@ let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
 
 let optims () = !opt_flag_ref
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  {optdepr = false;
 	   optname = "Extraction Optimize";
 	   optkey = ["Extraction"; "Optimize"];
 	   optread = (fun () -> not (Int.equal !int_flag_ref 0));
 	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
-let _ = declare_int_option
+let () = declare_int_option
           { optdepr = false;
             optname = "Extraction Flag";
             optkey = ["Extraction";"Flag"];
@@ -593,7 +593,7 @@ let _ = declare_int_option
 let conservative_types_ref = ref false
 let conservative_types () = !conservative_types_ref
 
-let _ = declare_bool_option
+let () = declare_bool_option
   {optdepr = false;
    optname = "Extraction Conservative Types";
    optkey = ["Extraction"; "Conservative"; "Types"];
@@ -605,7 +605,7 @@ let _ = declare_bool_option
 let file_comment_ref = ref ""
 let file_comment () = !file_comment_ref
 
-let _ = declare_string_option
+let () = declare_string_option
   {optdepr = false;
    optname = "Extraction File Comment";
    optkey = ["Extraction"; "File"; "Comment"];

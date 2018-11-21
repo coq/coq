@@ -137,13 +137,13 @@ let suggest_common env ppid used ids_typ skip =
 
 let suggest_proof_using = ref false
 
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "suggest Proof using";
-      Goptions.optkey   = ["Suggest";"Proof";"Using"];
-      Goptions.optread  = (fun () -> !suggest_proof_using);
-      Goptions.optwrite = ((:=) suggest_proof_using) }
+let () =
+  Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = "suggest Proof using";
+      optkey   = ["Suggest";"Proof";"Using"];
+      optread  = (fun () -> !suggest_proof_using);
+      optwrite = ((:=) suggest_proof_using) })
 
 let suggest_constant env kn =
   if !suggest_proof_using
@@ -172,13 +172,13 @@ let value = ref None
 let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
 let using_from_string us = Pcoq.Entry.parse G_vernac.section_subset_expr (Pcoq.Parsable.make (Stream.of_string us))
 
-let _ =
-  Goptions.declare_stringopt_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "default value for Proof using";
-      Goptions.optkey   = ["Default";"Proof";"Using"];
-      Goptions.optread  = (fun () -> Option.map using_to_string !value);
-      Goptions.optwrite = (fun b -> value := Option.map using_from_string b);
-    }
+let () =
+  Goptions.(declare_stringopt_option
+    { optdepr  = false;
+      optname  = "default value for Proof using";
+      optkey   = ["Default";"Proof";"Using"];
+      optread  = (fun () -> Option.map using_to_string !value);
+      optwrite = (fun b -> value := Option.map using_from_string b);
+    })
 
 let get_default_proof_using () = !value

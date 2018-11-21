@@ -75,7 +75,7 @@ let is_program_cases () = !program_cases
 
 open Goptions
 
-let _ =
+let () =
   declare_bool_option
   { optdepr  = false;
     optname  = "preferred transparency of Program obligations";
@@ -83,7 +83,7 @@ let _ =
     optread  = get_proofs_transparency;
     optwrite = set_proofs_transparency; }
 
-let _ =
+let () =
   declare_bool_option
   { optdepr  = false;
     optname  = "program cases";
@@ -91,7 +91,7 @@ let _ =
     optread  = (fun () -> !program_cases);
     optwrite = (:=) program_cases }
 
-let _ =
+let () =
   declare_bool_option
   { optdepr  = false;
     optname  = "program generalized coercion";

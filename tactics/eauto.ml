@@ -329,21 +329,21 @@ module Search = Explore.Make(SearchProblem)
 let global_debug_eauto = ref false
 let global_info_eauto = ref false
 
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "Debug Eauto";
-      Goptions.optkey   = ["Debug";"Eauto"];
-      Goptions.optread  = (fun () -> !global_debug_eauto);
-      Goptions.optwrite = (:=) global_debug_eauto }
+let () =
+  Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = "Debug Eauto";
+      optkey   = ["Debug";"Eauto"];
+      optread  = (fun () -> !global_debug_eauto);
+      optwrite = (:=) global_debug_eauto })
 
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "Info Eauto";
-      Goptions.optkey   = ["Info";"Eauto"];
-      Goptions.optread  = (fun () -> !global_info_eauto);
-      Goptions.optwrite = (:=) global_info_eauto }
+let () =
+  Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = "Info Eauto";
+      optkey   = ["Info";"Eauto"];
+      optread  = (fun () -> !global_info_eauto);
+      optwrite = (:=) global_info_eauto })
 
 let mk_eauto_dbg d =
   if d == Debug || !global_debug_eauto then Debug

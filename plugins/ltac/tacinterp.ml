@@ -2039,7 +2039,7 @@ let _ =
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
@@ -2048,7 +2048,7 @@ let _ =
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;

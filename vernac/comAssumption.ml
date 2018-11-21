@@ -26,7 +26,7 @@ open Entries
 
 let axiom_into_instance = ref false
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr = true;

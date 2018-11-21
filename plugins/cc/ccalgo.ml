@@ -33,7 +33,7 @@ let print_constr t =
 let debug x =
   if !cc_verbose then Feedback.msg_debug (x ())
 
-let _=
+let () =
   let gdopt=
     { optdepr=false;
       optname="Congruence Verbose";
@@ -61,7 +61,7 @@ module ST=struct
   type t = {toterm: int IntPairTable.t;
 	    tosign: (int * int) IntTable.t}
 
-  let empty ()=
+  let empty () =
     {toterm=IntPairTable.create init_size;
      tosign=IntTable.create init_size}
 
@@ -321,7 +321,7 @@ let compress_path uf i j = uf.map.(j).cpath<-i
 
 let rec find_aux uf visited i=
   let j = uf.map.(i).cpath in
-    if j<0 then let _ = List.iter (compress_path uf i) visited in i else
+    if j<0 then let () = List.iter (compress_path uf i) visited in i else
       find_aux uf (i::visited) j
 
 let find uf i= find_aux uf [] i

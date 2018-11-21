@@ -15,7 +15,7 @@ open UnivSubst
 let set_minimization = ref true
 let is_set_minimization () = !set_minimization
 
-let _ =
+let () =
   Goptions.(declare_bool_option
           { optdepr  = false;
             optname  = "minimization to Set";

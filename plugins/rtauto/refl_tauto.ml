@@ -236,7 +236,7 @@ let opt_verbose=
    optread=(fun () -> !verbose);
    optwrite=(fun b -> verbose:=b)}
 
-let _ = declare_bool_option opt_verbose
+let () = declare_bool_option opt_verbose
 
 let check = ref false
 
@@ -247,7 +247,7 @@ let opt_check=
    optread=(fun () -> !check);
    optwrite=(fun b -> check:=b)}
 
-let _ = declare_bool_option opt_check
+let () = declare_bool_option opt_check
 
 open Pp
 
@@ -255,7 +255,7 @@ let rtauto_tac gls=
   Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
   let gamma={next=1;env=[]} in
   let gl=pf_concl gls in
-  let _=
+  let () =
     if Retyping.get_sort_family_of
       (pf_env gls) (Tacmach.project gls) gl != InProp
     then user_err ~hdr:"rtauto" (Pp.str "goal should be in Prop") in
@@ -267,7 +267,7 @@ let rtauto_tac gls=
   | Tactic_debug.DebugOn 0 -> Search.debug_depth_first
   | _ -> Search.depth_first
   in
-  let _ =
+  let () =
     begin
       reset_info ();
       if !verbose then
@@ -279,7 +279,7 @@ let rtauto_tac gls=
     with Not_found ->
       user_err ~hdr:"rtauto" (Pp.str "rtauto couldn't find any proof") in
   let search_end_time = System.get_time () in
-  let _ = if !verbose then
+  let () = if !verbose then
     begin
       Feedback.msg_info (str "Proof tree found in " ++
 	     System.fmt_time_difference search_start_time search_end_time);
@@ -287,7 +287,7 @@ let rtauto_tac gls=
       Feedback.msg_info (str "Building proof term ... ")
     end in
   let build_start_time=System.get_time () in
-  let _ = step_count := 0; node_count := 0 in
+  let () = step_count := 0; node_count := 0 in
   let main = mkApp (force node_count l_Reflect,
 		    [|build_env gamma;
 		      build_form formula;
@@ -295,7 +295,7 @@ let rtauto_tac gls=
   let term=
     applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
   let build_end_time=System.get_time () in
-  let _ = if !verbose then
+  let () = if !verbose then
     begin
       Feedback.msg_info (str "Proof term built in " ++
 	     System.fmt_time_difference build_start_time build_end_time ++
@@ -314,7 +314,7 @@ let rtauto_tac gls=
     else
       Proofview.V82.of_tactic (Tactics.exact_no_check term) gls in
   let tac_end_time = System.get_time () in
-  let _ =
+  let () =
     if !check then Feedback.msg_info (str "Proof term type-checking is on");
     if !verbose then
       Feedback.msg_info (str "Internal tactic executed in " ++

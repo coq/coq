@@ -61,7 +61,7 @@ let clear_hyp_by_default = ref false
 
 let use_clear_hyp_by_default () = !clear_hyp_by_default
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "default clearing of hypotheses after use";
@@ -77,7 +77,7 @@ let universal_lemma_under_conjunctions = ref false
 let accept_universal_lemma_under_conjunctions () =
   !universal_lemma_under_conjunctions
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "trivial unification in tactics applying under conjunctions";
@@ -96,7 +96,7 @@ let bracketing_last_or_and_intro_pattern = ref true
 let use_bracketing_last_or_and_intro_pattern () =
   !bracketing_last_or_and_intro_pattern
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "bracketing last or-and introduction pattern";
@@ -4548,7 +4548,7 @@ let induction_gen_l isrec with_evars elim names lc =
 	  match EConstr.kind sigma c with
 	    | Var id when not (mem_named_context_val id (Global.named_context_val ()))
 		&& not with_evars ->
-		let _ = newlc:= id::!newlc in
+                let () = newlc:= id::!newlc in
 		atomize_list l'
 
 	    | _ ->
@@ -4561,7 +4561,7 @@ let induction_gen_l isrec with_evars elim names lc =
 
                 let id = new_fresh_id Id.Set.empty x gl in
 		let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
-		let _ = newlc:=id::!newlc in
+                let () = newlc:=id::!newlc in
 		Tacticals.New.tclTHEN
 		  (letin_tac None (Name id) c None allHypsAndConcl)
 		  (atomize_list newl')

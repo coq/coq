@@ -37,7 +37,7 @@ module RelDecl = Context.Rel.Declaration
 let should_auto_template =
   let open Goptions in
   let auto = ref true in
-  let _ = declare_bool_option
+  let () = declare_bool_option
       { optdepr  = false;
         optname  = "Automatically make some inductive types template polymorphic";
         optkey   = ["Auto";"Template";"Polymorphism"];

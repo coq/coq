@@ -43,25 +43,25 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 let keyed_unification = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname = "Unification is keyed";
-  Goptions.optkey = ["Keyed";"Unification"];
-  Goptions.optread = (fun () -> !keyed_unification);
-  Goptions.optwrite = (fun a -> keyed_unification:=a);
-}
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname = "Unification is keyed";
+  optkey = ["Keyed";"Unification"];
+  optread = (fun () -> !keyed_unification);
+  optwrite = (fun a -> keyed_unification:=a);
+})
 
 let is_keyed_unification () = !keyed_unification
 
 let debug_unification = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname =
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname =
     "Print states sent to tactic unification";
-  Goptions.optkey = ["Debug";"Tactic";"Unification"];
-  Goptions.optread = (fun () -> !debug_unification);
-  Goptions.optwrite = (fun a -> debug_unification:=a);
-}
+  optkey = ["Debug";"Tactic";"Unification"];
+  optread = (fun () -> !debug_unification);
+  optwrite = (fun a -> debug_unification:=a);
+})
 
 (** Making this unification algorithm correct w.r.t. the evar-map abstraction
     breaks too much stuff. So we redefine incorrect functions here. *)

@@ -64,7 +64,7 @@ let write f x = f:=x
 
 open Goptions
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Omega system time displaying flag";
@@ -72,7 +72,7 @@ let _ =
       optread  = read display_system_flag;
       optwrite = write display_system_flag }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Omega action display flag";
@@ -80,7 +80,7 @@ let _ =
       optread  = read display_action_flag;
       optwrite = write display_action_flag }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Omega old style flag";
@@ -88,7 +88,7 @@ let _ =
       optread  = read old_style_flag;
       optwrite = write old_style_flag }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = true;
       optname  = "Omega automatic reset of generated names";
@@ -96,7 +96,7 @@ let _ =
       optread  = read reset_flag;
       optwrite = write reset_flag }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Omega takes advantage of context variables with body";

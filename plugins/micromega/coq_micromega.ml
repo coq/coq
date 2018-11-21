@@ -51,7 +51,7 @@ let get_lra_option () =
 
 
  
-let _ =
+let () =
  
  let int_opt l vref =
   {
@@ -89,11 +89,11 @@ let _ =
      optwrite = (fun x -> Certificate.dump_file := x)
    } in
 
- let _ = declare_bool_option solver_opt in
- let _ = declare_stringopt_option dump_file_opt in
- let _ = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
- let _ = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in 
- let _ = declare_bool_option lia_enum_opt in
+ let () = declare_bool_option solver_opt in
+ let () = declare_stringopt_option dump_file_opt in
+ let () = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
+ let () = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in
+ let () = declare_bool_option lia_enum_opt in
  ()
 
  

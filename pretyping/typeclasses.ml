@@ -37,7 +37,7 @@ let get_typeclasses_unique_solutions () = !typeclasses_unique_solutions
 
 open Goptions
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "check that typeclasses proof search returns unique solutions";

@@ -195,7 +195,7 @@ let without_specific_symbols l =
 (* Set Record Printing flag *)
 let record_print = ref true
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;

@@ -33,7 +33,7 @@ DECLARE PLUGIN "ground_plugin"
 
 let ground_depth=ref 3
 
-let _=
+let ()=
   let gdopt=
     { optdepr=false;
       optname="Firstorder Depth";
@@ -47,7 +47,7 @@ let _=
     declare_int_option gdopt
 
 
-let _=
+let ()=
   let congruence_depth=ref 100 in
   let gdopt=
     { optdepr=true; (* noop *)
