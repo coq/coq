@@ -67,6 +67,7 @@ stdenv.mkDerivation rec {
   ++ optionals shell (
     [ jq curl gitFull gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ merlin ocp-indent ocp-index utop ]) # Dev tools
+    ++ [ graphviz ] # Useful for STM debugging
   );
 
   src =
