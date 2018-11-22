@@ -442,11 +442,11 @@ let build_layout (sn:session) =
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
   let script_frame = GBin.frame ~shadow_type:`IN
-    ~packing:eval_paned#add1 () in
+    ~packing:(eval_paned#pack1 ~shrink:false) () in
   let script_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
   let state_paned = GPack.paned `VERTICAL
-    ~packing:eval_paned#add2 () in
+    ~packing:(eval_paned#pack2 ~shrink:false) () in
 
   (* Proof buffer. *)
 
