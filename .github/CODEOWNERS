@@ -96,16 +96,11 @@
 /engine/uState.* @SkySkimmer
 # Secondary maintainer @mattam82
 
-########## Grammar macros ##########
-
-/grammar/         @ppedrot
-# Secondary maintainer @maximedenes
-
 ########## CoqIDE ##########
 
 /ide/             @ppedrot
 /test-suite/ide/  @ppedrot
-# Secondary maintainer @gares
+# Secondary maintainers @gares @herbelin
 
 ########## Interpretation ##########
 
@@ -132,8 +127,9 @@
 
 ########## Parser ##########
 
-/parsing/         @herbelin
-# Secondary maintainer @mattam82
+/coqpp/           @coq/parsing-maintainers
+/gramlib/         @coq/parsing-maintainers
+/parsing/         @coq/parsing-maintainers
 
 ########## Plugins ##########
 
@@ -166,15 +162,11 @@
 /plugins/setoid_ring/   @amahboubi
 # Secondary maintainer @bgregoir
 
-/plugins/ssrmatching/   @gares
-# Secondary maintainer @maximedenes
+/plugins/ssrmatching/  @coq/ssreflect-maintainers
+/plugins/ssr/          @coq/ssreflect-maintainers
+/test-suite/ssr/       @coq/ssreflect-maintainers
 
-/plugins/ssr/          @gares
-/test-suite/ssr/       @gares
-# Secondary maintainer @maximedenes
-
-/plugins/syntax/        @ppedrot
-# Secondary maintainer @maximedenes
+/plugins/syntax/       @coq/parsing-maintainers
 
 /plugins/rtauto/       @PierreCorbineau
 # Secondary maintainer @herbelin
@@ -274,16 +266,6 @@
 
 /theories/Vectors/        @herbelin
 
-########## Dune  ##########
-
-/.ocamlinit            @ejgallego
-/Makefile.dune         @ejgallego
-/tools/coq_dune*       @ejgallego
-/dune*                 @ejgallego
-/coq.opam              @ejgallego
-/ide/coqide.opam       @ejgallego
-# Secondary maintainer @Zimmi48
-
 ########## Tools ##########
 
 /tools/coqdoc/         @silene
@@ -319,6 +301,8 @@
 
 /vernac/          @mattam82
 # Secondary maintainer @maximedenes
+
+/vernac/metasyntax.*   @coq/parsing-maintainers
 
 ########## Test suite ##########
 
@@ -357,4 +341,11 @@
 
 /dev/tools/update-compat.py @JasonGross
 /test-suite/tools/update-compat/ @JasonGross
+# Secondary maintainer @Zimmi48
+
+########## Dune  ##########
+
+/.ocamlinit            @ejgallego
+*dune*                 @ejgallego
+*.opam                 @ejgallego
 # Secondary maintainer @Zimmi48
