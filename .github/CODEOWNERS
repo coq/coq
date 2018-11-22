@@ -96,11 +96,6 @@
 /engine/uState.* @SkySkimmer
 # Secondary maintainer @mattam82
 
-########## Grammar macros ##########
-
-/grammar/         @ppedrot
-# Secondary maintainer @maximedenes
-
 ########## CoqIDE ##########
 
 /ide/             @ppedrot
@@ -132,8 +127,9 @@
 
 ########## Parser ##########
 
-/parsing/         @herbelin
-# Secondary maintainer @mattam82
+/coqpp/           @coq/parsing-maintainers
+/gramlib/         @coq/parsing-maintainers
+/parsing/         @coq/parsing-maintainers
 
 ########## Plugins ##########
 
@@ -170,8 +166,7 @@
 /plugins/ssr/          @coq/ssreflect-maintainers
 /test-suite/ssr/       @coq/ssreflect-maintainers
 
-/plugins/syntax/        @ppedrot
-# Secondary maintainer @maximedenes
+/plugins/syntax/       @coq/parsing-maintainers
 
 /plugins/rtauto/       @PierreCorbineau
 # Secondary maintainer @herbelin
@@ -306,6 +301,8 @@
 
 /vernac/          @mattam82
 # Secondary maintainer @maximedenes
+
+/vernac/metasyntax.*   @coq/parsing-maintainers
 
 ########## Test suite ##########
 
