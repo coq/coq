@@ -9,6 +9,8 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.7 *)
+Local Set Warnings "-deprecated".
+
 Require Export Coq.Compat.Coq88.
 
 (* In 8.7, omega wasn't taking advantage of local abbreviations,
