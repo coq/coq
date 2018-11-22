@@ -504,4 +504,6 @@ let all_goals p =
     let set = add goals Goal.Set.empty in
     let set = List.fold_left (fun s gs -> let (g1, g2) = gs in add g1 (add g2 set)) set stack in
     let set = add shelf set in
-    add given_up set
+    let set = add given_up set in
+    let { Evd.it = bgoals ; sigma = bsigma } = V82.background_subgoals p in
+    add bgoals set

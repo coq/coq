@@ -214,26 +214,22 @@ module CDC = Context.Compacted.Declaration
 
 let to_tuple : Constr.compacted_declaration -> (Names.Id.t list * 'pc option * 'pc) =
   let open CDC in function
-    | LocalAssum(idl, tm)   -> (idl, None, tm)
-    | LocalDef(idl,tdef,tm) -> (idl, Some tdef, tm);;
+    | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
+    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm);;
 
 (* XXX: Very unfortunately we cannot use the Proofview interface as
    Proof is still using the "legacy" one. *)
-let process_goal_concl sigma g : Constr.t * Environ.env =
+let process_goal_concl sigma g : EConstr.t * Environ.env =
   let env  = Goal.V82.env   sigma g in
   let ty   = Goal.V82.concl sigma g in
-  let ty   = EConstr.to_constr sigma ty in
   (ty, env)
 
-let process_goal sigma g : Constr.t reified_goal =
+let process_goal sigma g : EConstr.t reified_goal =
   let env  = Goal.V82.env   sigma g in
-  let hyps = Goal.V82.hyps  sigma g in
   let ty   = Goal.V82.concl sigma g in
   let name = Goal.uid g             in
-  (* There is a Constr/Econstr mess here... *)
-  let ty   = EConstr.to_constr sigma ty in
   (* compaction is usually desired [eg for better display] *)
-  let hyps      = Termops.compact_named_context (Environ.named_context_of_val hyps) in
+  let hyps      = Termops.compact_named_context (Environ.named_context env) in
   let hyps      = List.map to_tuple hyps in
   { name; ty; hyps; env; sigma };;
 
@@ -241,12 +237,14 @@ let pr_letype_core goal_concl_style env sigma t =
   Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style env sigma t)
 
 let pp_of_type env sigma ty =
-  pr_letype_core true env sigma EConstr.(of_constr ty)
+  pr_letype_core true env sigma ty
 
 let pr_leconstr_core goal_concl_style env sigma t =
   Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style env sigma t)
 
 let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
+
+let pr_lconstr_env_econstr env sigma c = pr_leconstr_core false env sigma c
 
 let diff_concl ?og_s nsigma ng =
   let open Evd in
@@ -291,8 +289,8 @@ let goal_info goal sigma =
     line_idents := idents :: !line_idents;
     let mid = match body with
     | Some c ->
-      let pb = pr_lconstr_env env sigma c in
-      let pb = if Constr.isCast c then surround pb else pb in
+      let pb = pr_lconstr_env_econstr env sigma c in
+      let pb = if EConstr.isCast sigma c then surround pb else pb in
       str " := " ++ pb
     | None -> mt() in
     let ts = pp_of_type env sigma ty in
@@ -409,7 +407,7 @@ let match_goals ot nt =
       match exp, exp2 with
       | Some expa, Some expb -> constr_expr ogname expa expb
       | None, None -> ()
-      | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (1)")
+      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (1)")
     in
     let local_binder_expr ogname exp exp2 =
       match exp, exp2 with
@@ -421,7 +419,7 @@ let match_goals ot nt =
       | CLocalPattern p, CLocalPattern p2 ->
         let (p,ty), (p2,ty2) = p.v,p2.v in
         constr_expr_opt ogname ty ty2
-      | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (2)")
+      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (2)")
     in
     let recursion_order_expr ogname exp exp2 =
       match exp, exp2 with
@@ -431,7 +429,7 @@ let match_goals ot nt =
       | CMeasureRec (m,r), CMeasureRec (m2,r2) ->
         constr_expr ogname m m2;
         constr_expr_opt ogname r r2
-      | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (3)")
+      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (3)")
     in
     let fix_expr ogname exp exp2 =
       let (l,(lo,ro),lb,ce1,ce2), (l2,(lo2,ro2),lb2,ce12,ce22) = exp,exp2 in
@@ -515,7 +513,7 @@ let match_goals ot nt =
       | CastNative a, CastNative a2 ->
         constr_expr ogname a a2
       | CastCoerce, CastCoerce -> ()
-      | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (4)"))
+      | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (4)"))
     | CNotation (ntn,args), CNotation (ntn2,args2) ->
       constr_notation_substitution ogname args args2
     | CGeneralization (b,a,c), CGeneralization (b2,a2,c2) ->
@@ -523,7 +521,7 @@ let match_goals ot nt =
     | CPrim p, CPrim p2 -> ()
     | CDelimiters (key,e), CDelimiters (key2,e2) ->
       constr_expr ogname e e2
-    | _, _ -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (5)")
+    | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (5)")
     end
   in
 
@@ -563,9 +561,8 @@ let db_goal_map op np ng_to_og =
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
 
-(* Create a map from new goals to old goals for proof diff.  The map only
- has entries for new goals that are not the same as the corresponding old
- goal; there are no entries for unchanged goals.
+(* Create a map from new goals to old goals for proof diff.  New goals
+ that are evars not appearing in the proof will not have a mapping.
 
  It proceeds as follows:
  1. Find the goal ids that were removed from the old proof and that were
@@ -583,7 +580,7 @@ let db_goal_map op np ng_to_og =
    the removed goal.
  - if there are more than 2 removals and more than one addition, call
    match_goals to get a map between old and new evar names, then use this
-   to create the map from new goal ids to old goal ids for the differing goals.
+   to create the map from new goal ids to old goal ids.
 *)
 let make_goal_map_i op np =
   let ng_to_og = ref GoalMap.empty in
@@ -597,6 +594,9 @@ let make_goal_map_i op np =
     let num_rems = cardinal rem_gs in
     let add_gs = diff ngs ogs in
     let num_adds = cardinal add_gs in
+
+    (* add common goals *)
+    Goal.Set.iter (fun x -> ng_to_og := GoalMap.add x x !ng_to_og) (inter ogs ngs);
 
     if num_rems = 0 then
       !ng_to_og (* proofs are the same *)
@@ -616,17 +616,16 @@ let make_goal_map_i op np =
       List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
           (Goal.Set.elements rem_gs);
 
-      try
-        let (_,_,_,_,nsigma) = Proof.proof np in
-        let get_og ng =
-          let nevar = goal_to_evar ng nsigma in
-          let oevar = StringMap.find nevar nevar_to_oevar in
-          let og = StringMap.find oevar !oevar_to_og in
-          og
-        in
-        Goal.Set.iter (fun ng -> ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og) add_gs;
-        !ng_to_og
-      with Not_found -> raise (Diff_Failure "Unable to match goals betwen old and new proof states (6)")
+      let (_,_,_,_,nsigma) = Proof.proof np in
+      let get_og ng =
+        let nevar = goal_to_evar ng nsigma in
+        let oevar = StringMap.find nevar nevar_to_oevar in
+        let og = StringMap.find oevar !oevar_to_og in
+        og
+      in
+      Goal.Set.iter (fun ng ->
+          try ng_to_og := GoalMap.add ng (get_og ng) !ng_to_og with Not_found -> ())  add_gs;
+      !ng_to_og
     end
 
 let make_goal_map op np =

@@ -685,10 +685,6 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     | None -> GoalMap.empty
   in
 
-  let map_goal_for_diff ng = (* todo: move to proof_diffs.ml *)
-    try GoalMap.find ng diff_goal_map  with Not_found -> ng
-  in
-
   (** Printing functions for the extra informations. *)
   let rec print_stack a = function
     | [] -> Pp.int a
@@ -724,7 +720,12 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
 
   let get_ogs g =
     match os_map with
-    | Some (osigma, _) -> Some { it = map_goal_for_diff g; sigma = osigma }
+    | Some (osigma, _) ->
+      (* if Not_found, returning None treats the goal as new and it will be highlighted;
+         returning Some { it = g; sigma = sigma } will compare the new goal
+         to itself and it won't be highlighted *)
+      (try Some { it = GoalMap.find g diff_goal_map; sigma = osigma }
+      with Not_found -> raise (Pp_diff.Diff_Failure "Unable to match goals between old and new proof states (7)"))
     | None -> None
   in
   let rec pr_rec n = function
