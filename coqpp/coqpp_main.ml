@@ -139,7 +139,7 @@ let print_local fmt ext =
   match locals with
   | [] -> ()
   | e :: locals ->
-    let mk_e fmt e = fprintf fmt "%s.Entry.create \"%s\"" ext.gramext_name e in
+    let mk_e fmt e = fprintf fmt "Pcoq.Entry.create \"%s\"" e in
     let () = fprintf fmt "@[<hv 2>let %s =@ @[%a@]@]@ " e mk_e e in
     let iter e = fprintf fmt "@[<hv 2>and %s =@ @[%a@]@]@ " e mk_e e in
     let () = List.iter iter locals in
@@ -277,16 +277,16 @@ let print_rule fmt r =
   let pr_prd fmt prd = print_list fmt print_prod prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
-let print_entry fmt gram e =
+let print_entry fmt e =
   let print_position_opt fmt pos = print_opt fmt print_position pos in
   let print_rules fmt rules = print_list fmt print_rule rules in
-  fprintf fmt "let () =@ @[%s.gram_extend@ %s@ @[(%a, %a)@]@]@ in@ "
-    gram e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
+  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ None@ @[(%a, %a)@]@]@ in@ "
+    e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
 
 let print_ast fmt ext =
   let () = fprintf fmt "let _ = @[" in
   let () = fprintf fmt "@[<v>%a@]" print_local ext in
-  let () = List.iter (fun e -> print_entry fmt ext.gramext_name e) ext.gramext_entries in
+  let () = List.iter (fun e -> print_entry fmt e) ext.gramext_entries in
   let () = fprintf fmt "()@]@\n" in
   ()
 

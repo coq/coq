@@ -11,7 +11,6 @@
 {
 
 open Ltac_plugin
-open Pcoq
 open Pcoq.Constr
 open Ssrmatching
 open Ssrmatching.Internal

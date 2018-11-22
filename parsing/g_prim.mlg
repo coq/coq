@@ -13,7 +13,6 @@
 open Names
 open Libnames
 
-open Pcoq
 open Pcoq.Prim
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
