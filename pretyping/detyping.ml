@@ -37,7 +37,7 @@ type detyping_flags = {
 module Avoid :
 sig
   type t
-  val make : Id.Set.t -> t
+  val make : fast:bool -> Id.Set.t -> t
   val compute_name : Evd.evar_map -> let_in:bool -> pattern:bool ->
     detyping_flags -> t -> Name.t list * 'a -> Name.t ->
     EConstr.constr -> Name.t * t
@@ -45,25 +45,71 @@ sig
 end =
 struct
 
-type t = { ids : Id.Set.t }
-let make ids = { ids = ids }
-let add id ids = { ids = Id.Set.add id ids.ids }
+open Nameops
+
+type t =
+| Nice of Id.Set.t
+| Fast of Subscript.t Id.Map.t
+  (** Overapproximation of the set of names to avoid. If [(id ↦ s) ∈ m] then for
+      all subscript [s'] smaller than [s], [add_subscript id s'] needs to be
+      avoided. *)
+
+let make ~fast ids =
+  if fast then
+    let fold id accu =
+      let id, ss = get_subscript id in
+      let old_ss = try Id.Map.find id accu with Not_found -> Subscript.zero in
+      if Subscript.compare ss old_ss <= 0 then accu else Id.Map.add id ss accu
+    in
+    let avoid = Id.Set.fold fold ids Id.Map.empty in
+    Fast avoid
+  else Nice ids
+
+let fresh_id_in id avoid =
+  let id, _ = get_subscript id in
+  (* Find the first free subscript for that identifier *)
+  let ss = try Subscript.succ (Id.Map.find id avoid) with Not_found -> Subscript.zero in
+  let avoid = Id.Map.add id ss avoid in
+  (add_subscript id ss, avoid)
 
 let compute_name sigma ~let_in ~pattern flags avoid env na c =
+match avoid with
+| Nice avoid ->
   let flags =
     if flags.flg_isgoal then RenamingForGoal
     else if pattern then RenamingForCasesPattern (fst env, c)
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in sigma flags avoid.ids na c
-    else compute_displayed_name_in sigma flags avoid.ids na c
+    if let_in then compute_displayed_let_name_in sigma flags avoid na c
+    else compute_displayed_name_in sigma flags avoid na c
   in
-  na, make avoid
+  na, Nice avoid
+| Fast avoid ->
+  (* In fast mode, we use a dumber algorithm but algorithmically more
+      efficient algorithm that doesn't iterate through the term to find the
+      used constants and variables. *)
+  let id = match na with
+  | Name id -> id
+  | Anonymous ->
+    if flags.flg_isgoal then default_non_dependent_ident
+    else if pattern then default_dependent_ident
+    else default_non_dependent_ident
+  in
+  let id, avoid = fresh_id_in id avoid in
+  (Name id, Fast avoid)
 
-let next_name_away flags na avoid =
-  let id = next_name_away na avoid.ids in
-  id, add id avoid
+let next_name_away flags na avoid = match avoid with
+| Nice avoid ->
+  let id = next_name_away na avoid in
+  id, Nice (Id.Set.add id avoid)
+| Fast avoid ->
+  let id = match na with
+  | Anonymous -> default_non_dependent_ident
+  | Name id -> id
+  in
+  let id, avoid = fresh_id_in id avoid in
+  (id, Fast avoid)
 
 end
 
@@ -187,6 +233,16 @@ let () = declare_bool_option
 	    optkey   = ["Printing";"Wildcard"];
 	    optread  = force_wildcard;
 	    optwrite = (:=) wildcard_value }
+
+let fast_name_generation = ref false
+
+let () = declare_bool_option {
+  optdepr = false;
+  optname = "fast bound name generation algorithm";
+  optkey = ["Fast";"Name";"Printing"];
+  optread = (fun () -> !fast_name_generation);
+  optwrite = (:=) fast_name_generation;
+}
 
 let synth_type_value = ref true
 let synthetize_type () = !synth_type_value
@@ -872,16 +928,16 @@ let detype_rel_context d flags where avoid env sigma sign =
 
 let detype_names isgoal avoid nenv env sigma t = 
   let flags = { flg_isgoal = isgoal; flg_lax = false } in
-  let avoid = Avoid.make avoid in
+  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
   detype Now flags avoid (nenv,env) sigma t
 let detype d ?(lax=false) isgoal avoid env sigma t =
   let flags = { flg_isgoal = isgoal; flg_lax = lax } in
-  let avoid = Avoid.make avoid in
+  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
   detype d flags avoid (names_of_rel_context env, env) sigma t
 
 let detype_rel_context d ?(lax = false) where avoid env sigma sign =
   let flags = { flg_isgoal = false; flg_lax = lax } in
-  let avoid = Avoid.make avoid in
+  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
   detype_rel_context d flags where avoid env sigma sign
 
 let detype_closed_glob ?lax isgoal avoid env sigma t =
