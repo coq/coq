@@ -59,7 +59,6 @@ val levels_of_rules :
       list ->
     'te g_level list
 val srules : ('te g_symbol list * g_action) list -> 'te g_symbol
-external action : 'a -> g_action = "%identity"
 val eq_symbol : 'a g_symbol -> 'a g_symbol -> bool
 
 val delete_rule_in_level_list :

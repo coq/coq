@@ -149,8 +149,6 @@ let srules rl =
   in
   Stree t
 
-external action : 'a -> g_action = "%identity"
-
 let is_level_labelled n lev =
   match lev.lname with
     Some n1 -> n = n1

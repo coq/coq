@@ -5,6 +5,8 @@
 open Gramext
 open Format
 
+external gramext_action : 'a -> g_action = "%identity"
+
 let rec flatten_tree =
   function
     DeadEnd -> []
@@ -350,7 +352,7 @@ let top_tree entry =
   | LocAct (_, _) | DeadEnd -> raise Stream.Failure
 
 let skip_if_empty bp p strm =
-  if Stream.count strm == bp then Gramext.action (fun a -> p strm)
+  if Stream.count strm == bp then gramext_action (fun a -> p strm)
   else raise Stream.Failure
 
 let continue entry bp a s son p1 (strm__ : _ Stream.t) =
@@ -359,7 +361,7 @@ let continue entry bp a s son p1 (strm__ : _ Stream.t) =
     try p1 strm__ with
       Stream.Failure -> raise (Stream.Error (tree_failed entry a s son))
   in
-  Gramext.action (fun _ -> app act a)
+  gramext_action (fun _ -> app act a)
 
 let do_recover parser_of_tree entry nlevn alevn bp a s son
     (strm__ : _ Stream.t) =
@@ -861,7 +863,6 @@ module type S =
         val of_parser : string -> (te Stream.t -> 'a) -> 'a e
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
-        external obj : 'a e -> te Gramext.g_entry = "%identity"
       end
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
@@ -891,18 +892,11 @@ module type S =
         val gram_reinit : te Plexing.lexer -> unit
         val clear_entry : 'a Entry.e -> unit
       end
-    val extend :
-      'a Entry.e -> Gramext.position option ->
-        (string option * Gramext.g_assoc option *
-           (te Gramext.g_symbol list * Gramext.g_action) list)
-          list ->
-        unit
     val safe_extend :
       'a Entry.e -> Gramext.position option ->
         (string option * Gramext.g_assoc option * 'a ty_production list)
           list ->
         unit
-    val delete_rule : 'a Entry.e -> te Gramext.g_symbol list -> unit
     val safe_delete_rule : 'a Entry.e -> ('a, 'r, 'f) ty_rule -> unit
   end
 
