@@ -660,7 +660,7 @@ let edit ?(with_apply=true)
   in
   let config_box = new configuration_box conf_struct in
 
-  let _ = dialog#vbox#add config_box#box#coerce in
+  let _ = dialog#vbox#pack ~expand:true config_box#box#coerce in
 
   if with_apply then
     dialog#add_button Configwin_messages.mApply `APPLY;
