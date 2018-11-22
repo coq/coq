@@ -75,4 +75,4 @@ done
 # End the file; copy to overlays folder.
 echo "fi" >> $OVERLAY_FILE
 PR_NUMBER=$(printf '%05d' "$PR_NUMBER")
-mv $OVERLAY_FILE dev/ci/user-overlays/$PR_NUMBER-$DEVELOPER_NAME-$OVERLAY_BRANCH.sh
+mv $OVERLAY_FILE dev/ci/user-overlays/$PR_NUMBER-$DEVELOPER_NAME-${OVERLAY_BRANCH///}.sh
