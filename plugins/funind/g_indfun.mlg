@@ -145,7 +145,6 @@ END
 
 {
 
-module Gram = Pcoq.Gram
 module Vernac = Pvernac.Vernac_
 module Tactic = Pltac
 

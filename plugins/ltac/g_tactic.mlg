@@ -39,7 +39,7 @@ let err () = raise Stream.Failure
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
-  Gram.Entry.of_parser "lpar_id_coloneq"
+  Pcoq.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
@@ -53,7 +53,7 @@ let test_lpar_id_coloneq =
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  Gram.Entry.of_parser "lpar_id_coloneq"
+  Pcoq.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
@@ -67,7 +67,7 @@ let test_lpar_id_rpar =
 
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
-  Gram.Entry.of_parser "test_lpar_idnum_coloneq"
+  Pcoq.Entry.of_parser "test_lpar_idnum_coloneq"
     (fun strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
@@ -84,7 +84,7 @@ open Extraargs
 
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
-  Gram.Entry.of_parser "lpar_id_colon"
+  Pcoq.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       let rec skip_to_rpar p n =
 	match List.last (Stream.npeek n strm) with
@@ -108,7 +108,7 @@ let check_for_coloneq =
       | _ -> err ())
 
 let lookup_at_as_comma =
-  Gram.Entry.of_parser "lookup_at_as_comma"
+  Pcoq.Entry.of_parser "lookup_at_as_comma"
     (fun strm ->
       match stream_nth 0 strm with
 	| KEYWORD (","|"at"|"as") -> ()

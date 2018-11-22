@@ -70,7 +70,7 @@ let _ =
 
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =
-  Gram.Entry.of_parser "test_bracket_ident"
+  Pcoq.Entry.of_parser "test_bracket_ident"
     (fun strm ->
       match stream_nth 0 strm with
         | KEYWORD "[" ->

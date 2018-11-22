@@ -14,7 +14,6 @@ open Extend
 open Genarg
 open Gramlib
 
-let curry f x y = f (x, y)
 let uncurry f (x,y) = f x y
 
 (** Location Utils  *)
@@ -141,6 +140,9 @@ struct
   let create = G.Entry.create
   let parse = G.entry_parse
   let print = G.Entry.print
+  let of_parser = G.Entry.of_parser
+  let name = G.Entry.name
+  let parse_token_stream = G.Entry.parse_token_stream
 
 end
 
@@ -289,22 +291,6 @@ let grammar_delete e reinit (pos,rls) =
     (G.safe_extend e) (Some ext) [Some lev,Some a,[]]
   | None -> ()
 
-let unsafe_grammar_delete e reinit (pos,rls) =
-  List.iter
-    (fun (n,ass,lev) ->
-      List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
-    (List.rev rls);
-  match reinit with
-  | Some (a,ext) ->
-    let a = of_coq_assoc a in
-    let ext = of_coq_position ext in
-    let lev = match pos with
-    | Some (Gramext.Level n) -> n
-    | _ -> assert false
-    in
-    (G.extend e) (Some ext) [Some lev,Some a,[]]
-  | None -> ()
-
 (** Extension *)
 
 let grammar_extend e reinit ext =
@@ -326,25 +312,6 @@ let grammar_extend_sync e reinit ext =
 module Gram =
   struct
     include G
-    let extend e =
-      curry
-    (fun ext ->
-      camlp5_state :=
-        (ByEXTEND ((fun () -> unsafe_grammar_delete e None ext),
-           (fun () -> uncurry (G.extend e) ext)))
-      :: !camlp5_state;
-      uncurry (G.extend e) ext)
-    let delete_rule e pil =
-      (* spiwack: if you use load an ML module which contains GDELETE_RULE
-      in a section, God kills a kitty. As it would corrupt remove_grammars.
-          There does not seem to be a good way to undo a delete rule. As deleting
-      takes fewer arguments than extending. The production rule isn't returned
-      by delete_rule. If we could retrieve the necessary information, then
-      ByEXTEND provides just the framework we need to allow this in section.
-      I'm not entirely sure it makes sense, but at least it would be more correct.
-          *)
-      G.delete_rule e pil
-    let gram_extend e ext = grammar_extend e None ext
   end
 
 (** Remove extensions
