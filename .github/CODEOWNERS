@@ -166,12 +166,9 @@
 /plugins/setoid_ring/   @amahboubi
 # Secondary maintainer @bgregoir
 
-/plugins/ssrmatching/   @gares
-# Secondary maintainer @maximedenes
-
-/plugins/ssr/          @gares
-/test-suite/ssr/       @gares
-# Secondary maintainer @maximedenes
+/plugins/ssrmatching/  @coq/ssreflect-maintainers
+/plugins/ssr/          @coq/ssreflect-maintainers
+/test-suite/ssr/       @coq/ssreflect-maintainers
 
 /plugins/syntax/        @ppedrot
 # Secondary maintainer @maximedenes
