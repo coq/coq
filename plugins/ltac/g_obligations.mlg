@@ -45,7 +45,6 @@ let with_tac f tac =
  * Subtac. These entries are named Subtac.<foo>
  *)
 
-module Gram = Pcoq.Gram
 module Tactic = Pltac
 
 open Pcoq

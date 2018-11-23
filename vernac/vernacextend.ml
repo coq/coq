@@ -190,7 +190,7 @@ let vernac_extend ~command ?classifier ?entry ext =
     | None ->
       let e = match entry with
       | None -> "COMMAND"
-      | Some e -> Pcoq.Gram.Entry.name e
+      | Some e -> Pcoq.Entry.name e
       in
       let msg = Printf.sprintf "\
         Vernac entry \"%s\" misses a classifier. \

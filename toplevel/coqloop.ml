@@ -245,7 +245,7 @@ let parse_to_dot =
     | Tok.EOI -> raise Stm.End_of_input
     | _ -> dot st
   in
-  Pcoq.Gram.Entry.of_parser "Coqtoplevel.dot" dot
+  Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered.

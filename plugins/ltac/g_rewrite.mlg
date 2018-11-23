@@ -226,8 +226,6 @@ let () =
   let raw_printer _ _ _ l = Pp.pr_non_empty_arg Ppconstr.pr_binders l in
   Pptactic.declare_extra_vernac_genarg_pprule wit_binders raw_printer
 
-open Pcoq
-
 }
 
 GRAMMAR EXTEND Gram

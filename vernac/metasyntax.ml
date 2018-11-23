@@ -58,7 +58,7 @@ let pr_registered_grammar name =
   | None -> user_err Pp.(str "Unknown or unprintable grammar entry.")
   | Some entries ->
     let pr_one (Pcoq.AnyEntry e) =
-      str "Entry " ++ str (Pcoq.Gram.Entry.name e) ++ str " is" ++ fnl () ++
+      str "Entry " ++ str (Pcoq.Entry.name e) ++ str " is" ++ fnl () ++
       pr_entry e
     in
     prlist pr_one entries

@@ -268,16 +268,16 @@ let negate_parser f x =
   | Some _ -> raise Stream.Failure 
 
 let test_not_ssrslashnum =
-  Pcoq.Gram.Entry.of_parser
+  Pcoq.Entry.of_parser
     "test_not_ssrslashnum" (negate_parser test_ssrslashnum10)
 let test_ssrslashnum00 =
-  Pcoq.Gram.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum00
+  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum00
 let test_ssrslashnum10 =
-  Pcoq.Gram.Entry.of_parser "test_ssrslashnum10" test_ssrslashnum10
+  Pcoq.Entry.of_parser "test_ssrslashnum10" test_ssrslashnum10
 let test_ssrslashnum11 =
-  Pcoq.Gram.Entry.of_parser "test_ssrslashnum11" test_ssrslashnum11
+  Pcoq.Entry.of_parser "test_ssrslashnum11" test_ssrslashnum11
 let test_ssrslashnum01 =
-  Pcoq.Gram.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum01
+  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum01
 
 }
 
@@ -470,7 +470,7 @@ let input_ssrtermkind strm = match Util.stream_nth 0 strm with
   | Tok.KEYWORD "@" -> xWithAt
   | _ -> xNoFlag
 
-let ssrtermkind = Pcoq.Gram.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 (* New kinds of terms *)
 
@@ -481,7 +481,7 @@ let input_term_annotation strm =
   | Tok.KEYWORD "@" :: _ -> `At
   | _ -> `None
 let term_annotation =
-  Gram.Entry.of_parser "term_annotation" input_term_annotation
+  Pcoq.Entry.of_parser "term_annotation" input_term_annotation
 
 (* terms *)
 
@@ -800,7 +800,7 @@ let reject_ssrhid strm =
       | _ -> ())
   | _ -> ()
 
-let test_nohidden = Pcoq.Gram.Entry.of_parser "test_ssrhid" reject_ssrhid
+let test_nohidden = Pcoq.Entry.of_parser "test_ssrhid" reject_ssrhid
 
 }
 
@@ -961,7 +961,7 @@ let accept_ssrfwdid strm =
   | Tok.IDENT id -> accept_before_syms_or_any_id [":"; ":="; "("] strm
   | _ -> raise Stream.Failure
 
-let test_ssrfwdid = Gram.Entry.of_parser "test_ssrfwdid" accept_ssrfwdid
+let test_ssrfwdid = Pcoq.Entry.of_parser "test_ssrfwdid" accept_ssrfwdid
 
 }
 
@@ -1540,7 +1540,7 @@ let accept_ssrseqvar strm =
      accept_before_syms_or_ids ["["] ["first";"last"] strm
   | _ -> raise Stream.Failure
 
-let test_ssrseqvar = Gram.Entry.of_parser "test_ssrseqvar" accept_ssrseqvar
+let test_ssrseqvar = Pcoq.Entry.of_parser "test_ssrseqvar" accept_ssrseqvar
 
 let swaptacarg (loc, b) = (b, []), Some (TacId [])
 
@@ -1628,7 +1628,7 @@ let ssr_id_of_string loc s =
   ^ "Scripts with explicit references to anonymous variables are fragile."))
     end; Id.of_string s
 
-let ssr_null_entry = Gram.Entry.of_parser "ssr_null" (fun _ -> ())
+let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ -> ())
 
 }
 
@@ -1955,7 +1955,7 @@ let accept_ssreqid strm =
                       accept_before_syms [":"] strm
   | _ -> raise Stream.Failure
 
-let test_ssreqid = Gram.Entry.of_parser "test_ssreqid" accept_ssreqid
+let test_ssreqid = Pcoq.Entry.of_parser "test_ssreqid" accept_ssreqid
 
 }
 
@@ -2373,7 +2373,7 @@ let test_ssr_rw_syntax =
     match Util.stream_nth 0 strm with
     | Tok.KEYWORD key when List.mem key.[0] [lbrace; '['; '/'] -> ()
     | _ -> raise Stream.Failure in
-  Gram.Entry.of_parser "test_ssr_rw_syntax" test
+  Pcoq.Entry.of_parser "test_ssr_rw_syntax" test
 
 }
 
@@ -2583,7 +2583,7 @@ let accept_idcomma strm =
   | Tok.IDENT _ | Tok.KEYWORD "_" -> accept_before_syms [","] strm
   | _ -> raise Stream.Failure
 
-let test_idcomma = Gram.Entry.of_parser "test_idcomma" accept_idcomma
+let test_idcomma = Pcoq.Entry.of_parser "test_idcomma" accept_idcomma
 
 }
 

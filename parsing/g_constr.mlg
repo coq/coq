@@ -81,7 +81,7 @@ let err () = raise Stream.Failure
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let lpar_id_coloneq =
-  Gram.Entry.of_parser "test_lpar_id_coloneq"
+  Pcoq.Entry.of_parser "test_lpar_id_coloneq"
     (fun strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
@@ -96,7 +96,7 @@ let lpar_id_coloneq =
         | _ -> err ())
 
 let impl_ident_head =
-  Gram.Entry.of_parser "impl_ident_head"
+  Pcoq.Entry.of_parser "impl_ident_head"
     (fun strm ->
       match stream_nth 0 strm with
 	| KEYWORD "{" ->
@@ -109,7 +109,7 @@ let impl_ident_head =
 	| _ -> err ())
 
 let name_colon =
-  Gram.Entry.of_parser "name_colon"
+  Pcoq.Entry.of_parser "name_colon"
     (fun strm ->
       match stream_nth 0 strm with
 	| IDENT s ->

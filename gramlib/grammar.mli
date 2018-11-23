@@ -35,7 +35,6 @@ module type S =
         val of_parser : string -> (te Stream.t -> 'a) -> 'a e
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
-        external obj : 'a e -> te Gramext.g_entry = "%identity"
       end
     type ('self, 'a) ty_symbol
     type ('self, 'f, 'r) ty_rule
@@ -66,18 +65,11 @@ module type S =
         val gram_reinit : te Plexing.lexer -> unit
         val clear_entry : 'a Entry.e -> unit
       end
-    val extend :
-      'a Entry.e -> Gramext.position option ->
-        (string option * Gramext.g_assoc option *
-           (te Gramext.g_symbol list * Gramext.g_action) list)
-          list ->
-        unit
     val safe_extend :
       'a Entry.e -> Gramext.position option ->
         (string option * Gramext.g_assoc option * 'a ty_production list)
           list ->
         unit
-    val delete_rule : 'a Entry.e -> te Gramext.g_symbol list -> unit
     val safe_delete_rule : 'a Entry.e -> ('a, 'f, 'r) ty_rule -> unit
   end
    (** Signature type of the functor [Grammar.GMake]. The types and

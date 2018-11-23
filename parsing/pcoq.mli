@@ -17,17 +17,6 @@ open Gramlib
 
 (** The parser of Coq *)
 
-(** DO NOT USE EXTENSION FUNCTIONS IN THIS MODULE.
-    We only have it here to work with Camlp5. Handwritten grammar extensions
-    should use the safe [Pcoq.grammar_extend] function below. *)
-module Gram : sig
-
-  include Grammar.S with type te = Tok.t
-
-  val gram_extend : 'a Entry.e -> 'a Extend.extend_statement -> unit
-
-end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e
-
 module Parsable :
 sig
   type t
@@ -41,6 +30,9 @@ module Entry : sig
   val create : string -> 'a t
   val parse : 'a t -> Parsable.t -> 'a
   val print : Format.formatter -> 'a t -> unit
+  val of_parser : string -> (Tok.t Stream.t -> 'a) -> 'a t
+  val parse_token_stream : 'a t -> Tok.t Stream.t -> 'a
+  val name : 'a t -> string
 end
 
 (** The parser of Coq is built from three kinds of rule declarations:
