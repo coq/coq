@@ -70,3 +70,27 @@ Notation "( x )" := x (in custom expr at level 0, x at level 2).
 Check [1 + 1].
 
 End C.
+
+(* An example of interaction between coercion and notations from
+   Robbert Krebbers. *)
+
+Require Import String.
+
+Module D.
+
+Inductive expr :=
+  | Var : string -> expr
+  | Lam : string -> expr -> expr
+  | App : expr -> expr -> expr.
+
+Notation Let x e1 e2 := (App (Lam x e2) e1).
+
+Parameter e1 e2 : expr.
+
+Check (Let "x" e1 e2).
+
+Coercion App : expr >-> Funclass.
+
+Check (Let "x" e1 e2).
+
+End D.
