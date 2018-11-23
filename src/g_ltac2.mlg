@@ -25,7 +25,7 @@ type lookahead = int -> Tok.t Stream.t -> int option
 
 let entry_of_lookahead s (lk : lookahead) =
   let run strm = match lk 0 strm with None -> err () | Some _ -> () in
-  Gram.Entry.of_parser s run
+  Pcoq.Entry.of_parser s run
 
 let (>>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
 | None -> None
@@ -859,7 +859,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Gram.gram_extend Pcoq.Constr.operconstr (Some (Level "0"), [(None, None, rules)])
+  Pcoq.grammar_extend Pcoq.Constr.operconstr None (Some (Level "0"), [(None, None, rules)])
 end
 
 }
