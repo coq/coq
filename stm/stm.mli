@@ -27,7 +27,6 @@ module AsyncOpts : sig
     async_proofs_mode : async_proofs;
 
     async_proofs_private_flags : string option;
-    async_proofs_full : bool;
     async_proofs_never_reopen_branch : bool;
 
     async_proofs_tac_error_resilience : tac_error_filter;

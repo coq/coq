@@ -44,7 +44,6 @@ module AsyncOpts = struct
     async_proofs_mode : async_proofs;
 
     async_proofs_private_flags : string option;
-    async_proofs_full : bool;
     async_proofs_never_reopen_branch : bool;
 
     async_proofs_tac_error_resilience : tac_error_filter;
@@ -61,7 +60,6 @@ module AsyncOpts = struct
     async_proofs_mode = APoff;
 
     async_proofs_private_flags = None;
-    async_proofs_full = false;
     async_proofs_never_reopen_branch = false;
 
     async_proofs_tac_error_resilience = `Only [ "curly" ];
@@ -1442,11 +1440,14 @@ end = struct (* {{{ *)
   let perspective = ref []
   let set_perspective l = perspective := l
 
+  let is_inside_perspective st = true
+    (* This code is now disabled. If an IDE needs this feature, make it accessible again.
+    List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) st
+    *)
+
   let task_match age t =
     match age, t with
-    | Fresh, BuildProof { t_states } ->
-        not !cur_opt.async_proofs_full ||
-        List.exists (fun x -> CList.mem_f Stateid.equal x !perspective) t_states
+    | Fresh, BuildProof { t_states } -> is_inside_perspective t_states
     | Old my_states, States l ->
         List.for_all (fun x -> CList.mem_f Stateid.equal x my_states) l
     | _ -> false
@@ -1482,8 +1483,7 @@ end = struct (* {{{ *)
         feedback (InProgress ~-1);
         t_assign (`Val pl);
         record_pb_time ?loc:t_loc t_name time;
-        if !cur_opt.async_proofs_full || t_drop
-        then `Stay(t_states,[States t_states])
+        if t_drop then `Stay(t_states,[States t_states])
         else `End
     | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
@@ -2126,8 +2126,7 @@ end = struct (* {{{ *)
     TaskQueue.enqueue_task (Option.get !queue)
       QueryTask.({ t_where = prev; t_for = id; t_what = q }) ~cancel_switch
 
-  let init () = queue := Some (TaskQueue.create
-    (if !cur_opt.async_proofs_full then 1 else 0))
+  let init () = queue := Some (TaskQueue.create 0)
 
 end (* }}} *)
 
@@ -2150,7 +2149,6 @@ let async_policy () =
 let delegate name =
      get_hint_bp_time name >= !cur_opt.async_proofs_delegation_threshold
   || VCS.is_vio_doc ()
-  || !cur_opt.async_proofs_full
 
 let collect_proof keep cur hd brkind id =
  stm_prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
@@ -2257,8 +2255,7 @@ let collect_proof keep cur hd brkind id =
      else
        let rc = collect (Some cur) [] id in
        if is_empty rc then make_sync `AlreadyEvaluated rc
-       else if (is_vtkeep keep) &&
-          (not(State.is_cached_and_valid id) || !cur_opt.async_proofs_full)
+       else if (is_vtkeep keep) && (not(State.is_cached_and_valid id))
        then check_policy rc
        else make_sync `AlreadyEvaluated rc
 
@@ -2869,11 +2866,10 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       | VtQuery, w ->
           let id = VCS.new_node ~id:newtip () in
           let queue =
-            if !cur_opt.async_proofs_full then `QueryQueue (ref false)
-            else if VCS.is_vio_doc () &&
-                    VCS.((get_branch head).kind = `Master) &&
-                    may_pierce_opaque (Vernacprop.under_control x.expr)
-                 then `SkipQueue
+            if VCS.is_vio_doc () &&
+               VCS.((get_branch head).kind = `Master) &&
+               may_pierce_opaque (Vernacprop.under_control x.expr)
+            then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
@@ -3206,8 +3202,7 @@ let edit_at ~doc id =
     VCS.delete_boxes_of id;
     VCS.gc ();
     VCS.print ();
-    if not !cur_opt.async_proofs_full then
-      Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
+    Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
     VCS.checkout_shallowest_proof_branch ();
     `NewTip in
   try

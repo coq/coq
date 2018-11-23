@@ -543,10 +543,6 @@ let parse_args arglist : coq_cmdopts * string list =
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
-    |"-async-proofs-full" ->
-      { oval with stm_flags = { oval.stm_flags with
-        Stm.AsyncOpts.async_proofs_full = true;
-      }}
     |"-async-proofs-never-reopen-branch" ->
       { oval with stm_flags = { oval.stm_flags with
         Stm.AsyncOpts.async_proofs_never_reopen_branch = true
