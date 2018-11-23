@@ -37,7 +37,6 @@ CI_TARGETS= \
     ci-math-comp \
     ci-mtac2 \
     ci-paramcoq \
-    ci-pidetop \
     ci-plugin_tutorial \
     ci-quickchick \
     ci-sf \
