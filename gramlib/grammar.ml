@@ -794,8 +794,6 @@ let tokens g con =
     g.gtokens;
   !list
 
-let glexer g = g.glexer
-
 type 'te gen_parsable =
   { pa_chr_strm : char Stream.t;
     pa_tok_strm : 'te Stream.t;
@@ -851,7 +849,6 @@ module type S =
     type parsable
     val parsable : char Stream.t -> parsable
     val tokens : string -> (string * int) list
-    val glexer : te Plexing.lexer
     module Entry :
       sig
         type 'a e
@@ -906,7 +903,6 @@ module GMake (L : GLexerType) =
       let (ts, lf) = L.lexer.Plexing.tok_func cs in
       {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
     let tokens = tokens gram
-    let glexer = glexer gram
     module Entry =
       struct
         type 'a e = te g_entry
