@@ -4,7 +4,7 @@
  (public_name coq.kernel)
  (wrapped false)
  (modules_without_implementation cinstr nativeinstr)
- (libraries clib config lib byterun))
+ (libraries lib byterun))
 
 (rule
  (targets copcodes.ml)

@@ -4,5 +4,5 @@
  (public_name coq.clib)
  (wrapped false)
  (modules_without_implementation cSig)
- (libraries threads str unix dynlink))
+ (libraries str unix threads))
 
