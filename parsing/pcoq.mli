@@ -26,7 +26,7 @@ sig
 end
 
 module Entry : sig
-  type 'a t = 'a Grammar.GMake(CLexer).Entry.e
+  type 'a t = 'a Extend.entry
   val create : string -> 'a t
   val parse : 'a t -> Parsable.t -> 'a
   val print : Format.formatter -> 'a t -> unit

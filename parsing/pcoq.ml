@@ -80,7 +80,6 @@ module type S =
   end
   *)
 
-  type 'a entry = 'a Entry.e
   type coq_parsable
 
   val coq_parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
@@ -89,11 +88,9 @@ module type S =
 
   val comment_state : coq_parsable -> ((int * int) * string) list
 
-end with type 'a Entry.e = 'a Grammar.GMake(CLexer).Entry.e = struct
+end with type 'a Entry.e = 'a Extend.entry = struct
 
   include Grammar.GMake(CLexer)
-
-  type 'a entry = 'a Entry.e
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
@@ -234,16 +231,16 @@ let fix_extend_statement (pos, st) =
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 
 type extend_rule =
-| ExtendRule : 'a G.entry * gram_reinit option * 'a extend_statement -> extend_rule
+| ExtendRule : 'a G.Entry.e * gram_reinit option * 'a extend_statement -> extend_rule
 
 module EntryCommand = Dyn.Make ()
-module EntryData = struct type _ t = Ex : 'b G.entry String.Map.t -> ('a * 'b) t end
+module EntryData = struct type _ t = Ex : 'b G.Entry.e String.Map.t -> ('a * 'b) t end
 module EntryDataMap = EntryCommand.Map(EntryData)
 
 type ext_kind =
   | ByGrammar of extend_rule
   | ByEXTEND of (unit -> unit) * (unit -> unit)
-  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b G.entry -> ext_kind
+  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b G.Entry.e -> ext_kind
 
 (** The list of extensions *)
 
@@ -518,7 +515,7 @@ let extend_grammar_command tag g =
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
-let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Gram.entry list =
+let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Gram.Entry.e list =
   let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
   let grammar_state = match !grammar_stack with
   | [] -> GramState.empty
@@ -550,7 +547,7 @@ let extend_dyn_grammar (e, _) = match e with
 
 (** Registering extra grammar *)
 
-type any_entry = AnyEntry : 'a Gram.entry -> any_entry
+type any_entry = AnyEntry : 'a Gram.Entry.e -> any_entry
 
 let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
 
