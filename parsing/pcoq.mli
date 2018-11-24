@@ -227,12 +227,8 @@ type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be
     marshallable. *)
 
-type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
-(** Type of reinitialization data *)
-
 type extend_rule =
 | ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
-| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,

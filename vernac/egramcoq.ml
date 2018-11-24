@@ -32,25 +32,27 @@ open Pcoq
 
 let constr_level = string_of_int
 
-let default_levels =
-  [200,Gramlib.Gramext.RightA,false;
-   100,Gramlib.Gramext.RightA,false;
-   99,Gramlib.Gramext.RightA,true;
-   90,Gramlib.Gramext.RightA,true;
-   10,Gramlib.Gramext.LeftA,false;
-   9,Gramlib.Gramext.RightA,false;
-   8,Gramlib.Gramext.RightA,true;
-   1,Gramlib.Gramext.LeftA,false;
-   0,Gramlib.Gramext.RightA,false]
+let default_levels = let open Gramlib.Gramext in
+  [ 200,RightA
+  ; 100,RightA
+  ; 99,RightA
+  ; 90,RightA
+  ; 10,LeftA
+  ; 9,RightA
+  ; 8,RightA
+  ; 1,LeftA
+  ; 0,RightA
+  ]
 
-let default_pattern_levels =
-  [200,Gramlib.Gramext.RightA,true;
-   100,Gramlib.Gramext.RightA,false;
-   99,Gramlib.Gramext.RightA,true;
-   90,Gramlib.Gramext.RightA,true;
-   10,Gramlib.Gramext.LeftA,false;
-   1,Gramlib.Gramext.LeftA,false;
-   0,Gramlib.Gramext.RightA,false]
+let default_pattern_levels = let open Gramlib.Gramext in
+  [ 200,RightA
+  ; 100,RightA
+  ; 99,RightA
+  ; 90,RightA
+  ; 10,LeftA
+  ; 1,LeftA
+  ; 0,RightA
+  ]
 
 let default_constr_levels = (default_levels, default_pattern_levels)
 
@@ -93,45 +95,30 @@ let create_pos = function
   | None -> Gramlib.Gramext.First
   | Some lev -> Gramlib.Gramext.After (constr_level lev)
 
-let find_position_gen current ensure assoc lev =
+let find_position_gen current assoc lev =
   match lev with
   | None ->
-    current, (None, None, None, None)
+    current, (None, None, None)
   | Some n ->
     let after = ref None in
-    let init = ref None in
     let rec add_level q = function
-      | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
-      | (p,a,reinit)::l when Int.equal p n ->
-        if reinit then
-          let a' = create_assoc assoc in
-          (init := Some (a',create_pos q); (p,a',false)::l)
-        else if admissible_assoc (a,assoc) then
+      | (p,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+      | (p,a)::l when Int.equal p n ->
+        if admissible_assoc (a,assoc) then
           raise Exit
         else
           error_level_assoc p a (Option.get assoc)
-      | l -> after := q; (n,create_assoc assoc,ensure)::l
+      | l -> after := q; (n,create_assoc assoc)::l
     in
     try
       let updated = add_level None current in
       let assoc = create_assoc assoc in
-      begin match !init with
-        | None ->
-          (* Create the entry *)
-          updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
-        | _ ->
-          (* The reinit flag has been updated *)
-          updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
-      end
+      updated, (Some (create_pos !after), Some assoc, Some (constr_level n))
     with
     (* Nothing has changed *)
       Exit ->
       (* Just inherit the existing associativity and name (None) *)
-      current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
-
-let rec list_mem_assoc_triple x = function
-  | [] -> false
-  | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
+      current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None)
 
 let register_empty_levels accu forpat levels =
   let rec filter accu = function
@@ -140,8 +127,8 @@ let register_empty_levels accu forpat levels =
     let rem, accu = filter accu rem in
     let accu, (clev, plev) = find_levels accu where in
     let levels = if forpat then plev else clev in
-    if not (list_mem_assoc_triple n levels) then
-      let nlev, ans = find_position_gen levels true None (Some n) in
+    if not (List.mem_assoc n levels) then
+      let nlev, ans = find_position_gen levels None (Some n) in
       let nlev = if forpat then (clev, nlev) else (nlev, plev) in
       (where, ans) :: rem, save_levels accu where nlev
     else rem, accu
@@ -152,7 +139,7 @@ let register_empty_levels accu forpat levels =
 let find_position accu custom forpat assoc level =
   let accu, (clev, plev) = find_levels accu custom in
   let levels = if forpat then plev else clev in
-  let nlev, ans = find_position_gen levels false assoc level in
+  let nlev, ans = find_position_gen levels assoc level in
   let nlev = if forpat then (clev, nlev) else (nlev, plev) in
   (ans, save_levels accu custom nlev)
 
@@ -500,13 +487,9 @@ let target_to_bool : type r. r target -> bool = function
 | ForConstr -> false
 | ForPattern -> true
 
-let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
+let prepare_empty_levels forpat (where,(pos,p4assoc,name)) =
   let empty = { pos; data = [(name, p4assoc, [])] } in
-  match reinit with
-  | None ->
-    ExtendRule (target_entry where forpat, empty)
-  | Some reinit ->
-    ExtendRuleReinit (target_entry where forpat, reinit, empty)
+  ExtendRule (target_entry where forpat, empty)
 
 let different_levels (custom,opt_level) (custom',string_level) =
   match opt_level with
@@ -550,7 +533,7 @@ let extend_constr state forpat ng =
     let pure_sublevels = pure_sublevels' assoc (custom,n) forpat level pt in
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
-    let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in
+    let (pos,p4assoc,name), state = find_position state custom isforpat assoc level in
     let empty_rules = List.map (prepare_empty_levels forpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = []; binderlists = [] } in
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
@@ -560,12 +543,7 @@ let extend_constr state forpat ng =
         | MayRecRMay symbs -> Pcoq.Production.make symbs act
       in
       name, p4assoc, [r] in
-    let r = match reinit with
-      | None ->
-        ExtendRule (entry, { pos; data = [rule]})
-      | Some reinit ->
-        ExtendRuleReinit (entry, reinit, { pos; data = [rule]})
-    in
+    let r = ExtendRule (entry, { pos; data = [rule]}) in
     (accu @ empty_rules @ [r], state)
   in
   List.fold_left fold ([], state) ng.notgram_prods

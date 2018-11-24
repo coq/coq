@@ -85,12 +85,8 @@ end
     In [single_extend_statement], first two parameters are name and
     assoc iff a level is created *)
 
-(** Type of reinitialization data *)
-type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
-
 type extend_rule =
 | ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
-| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 module EntryCommand = Dyn.Make ()
 module EntryData = struct type _ t = Ex : 'b Entry.t String.Map.t -> ('a * 'b) t end
@@ -108,25 +104,13 @@ let camlp5_state = ref []
 let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
-
 let grammar_delete e { pos; data } =
   List.iter
     (fun (n,ass,lev) ->
       List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
     (List.rev data)
 
-let grammar_delete_reinit e reinit ({ pos; data } as d)=
-  grammar_delete e d;
-  let a, ext = reinit in
-  let lev = match pos with
-    | Some (Gramext.Level n) -> n
-    | _ -> assert false
-  in
-  let ext = { pos = Some ext; data = [Some lev,Some a,[]] } in
-  safe_extend e ext
-
 (** Extension *)
-
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
   let redo () = safe_extend e ext in
@@ -135,10 +119,6 @@ let grammar_extend e ext =
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  safe_extend e ext
-
-let grammar_extend_sync_reinit e reinit ext =
-  camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
   safe_extend e ext
 
 (** Remove extensions
@@ -150,10 +130,6 @@ let rec remove_grammars n =
   if n>0 then
     match !camlp5_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
-       | ByGrammar (ExtendRuleReinit (g, reinit, ext)) :: t ->
-           grammar_delete_reinit g reinit ext;
-           camlp5_state := t;
-           remove_grammars (n-1)
        | ByGrammar (ExtendRule (g, ext)) :: t ->
            grammar_delete g ext;
            camlp5_state := t;
@@ -385,8 +361,6 @@ let create_entry_command name (interp : ('a, 'b) entry_extension) : ('a, 'b) ent
 let iter_extend_sync = function
   | ExtendRule (e, ext) ->
     grammar_extend_sync e ext
-  | ExtendRuleReinit (e, reinit, ext) ->
-    grammar_extend_sync_reinit e reinit ext
 
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
