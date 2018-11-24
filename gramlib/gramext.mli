@@ -6,7 +6,7 @@ type 'a parser_t = 'a Stream.t -> Obj.t
 
 type 'te grammar =
   { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
-    mutable glexer : 'te Plexing.lexer }
+    glexer : 'te Plexing.lexer }
 
 type 'te g_entry =
   { egram : 'te grammar;

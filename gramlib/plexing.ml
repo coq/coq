@@ -13,6 +13,6 @@ type 'te lexer =
   { tok_func : 'te lexer_func;
     tok_using : pattern -> unit;
     tok_removing : pattern -> unit;
-    mutable tok_match : pattern -> 'te -> string;
+    tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    mutable tok_comm : Loc.t list option }
+    tok_comm : Loc.t list option }
