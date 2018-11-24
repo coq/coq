@@ -284,39 +284,6 @@ let get_level ~warning entry position levs =
         lev :: levs -> [], change_lev ~warning lev "<top>", levs
       | [] -> [], empty_lev, []
 
-let rec check_gram entry =
-  function
-    Snterm e ->
-      if e.egram != entry.egram then
-        begin
-          eprintf "\
-Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
-            entry.ename e.ename;
-          flush stderr;
-          failwith "Grammar.extend error"
-        end
-  | Snterml (e, _) ->
-      if e.egram != entry.egram then
-        begin
-          eprintf "\
-Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
-            entry.ename e.ename;
-          flush stderr;
-          failwith "Grammar.extend error"
-        end
-  | Slist0sep (s, t, _) -> check_gram entry t; check_gram entry s
-  | Slist1sep (s, t, _) -> check_gram entry t; check_gram entry s
-  | Slist0 s -> check_gram entry s
-  | Slist1 s -> check_gram entry s
-  | Sopt s -> check_gram entry s
-  | Stree t -> tree_check_gram entry t
-  | Snext | Sself | Stoken _ -> ()
-and tree_check_gram entry =
-  function
-    Node {node = n; brother = bro; son = son} ->
-      check_gram entry n; tree_check_gram entry bro; tree_check_gram entry son
-  | LocAct (_, _) | DeadEnd -> ()
-
 let change_to_self entry =
   function
     Snterm e when e == entry -> Sself
@@ -373,7 +340,6 @@ let levels_of_rules ~warning entry position rules =
              List.fold_left
                (fun lev (symbols, action) ->
                   let symbols = List.map (change_to_self entry) symbols in
-                  List.iter (check_gram entry) symbols;
                   let (e1, symbols) = get_initial entry symbols in
                   insert_tokens entry.egram symbols;
                   insert_level ~warning entry.ename e1 symbols action lev)
