@@ -13,7 +13,6 @@ open Extend
 open Genarg
 open Constrexpr
 open Libnames
-open Gramlib
 
 (** The parser of Coq *)
 
@@ -260,11 +259,6 @@ val find_custom_entry : ('a, 'b) entry_command -> string -> 'b Entry.t
 (** {6 Protection w.r.t. backtrack} *)
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
-
-(** Location Utils  *)
-val of_coqloc : Loc.t -> Ploc.t
-val to_coqloc : Ploc.t -> Loc.t
-val (!@) : Ploc.t -> Loc.t
 
 type frozen_t
 val parser_summary_tag : frozen_t Summary.Dyn.tag

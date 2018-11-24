@@ -22,15 +22,19 @@ type t = {
   bol_pos_last : int; (** position of the beginning of end line *)
   bp : int; (** start position *)
   ep : int; (** end position *)
+  comm : string; (** start comment *)
+  ecomm : string (** end comment *)
 }
 
 let create fname line_nb bol_pos bp ep = {
   fname = fname; line_nb = line_nb; bol_pos = bol_pos;
-  line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep; }
+  line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep;
+  comm = ""; ecomm = "" }
 
 let make_loc (bp, ep) = {
   fname = ToplevelInput; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
-  bp = bp; ep = ep; }
+  bp = bp; ep = ep;
+  comm = ""; ecomm = "" }
 
 let mergeable loc1 loc2 =
   loc1.fname = loc2.fname
@@ -45,7 +49,8 @@ let merge loc1 loc2 =
       bol_pos = loc1.bol_pos;
       line_nb_last = loc2.line_nb_last;
       bol_pos_last = loc2.bol_pos_last;
-      bp = loc1.bp; ep = loc2.ep; }
+      bp = loc1.bp; ep = loc2.ep;
+      comm = loc1.comm; ecomm = loc2.comm }
     else loc1
   else if loc2.ep < loc1.ep then {
     fname = loc2.fname;
@@ -53,7 +58,9 @@ let merge loc1 loc2 =
     bol_pos = loc2.bol_pos;
     line_nb_last = loc1.line_nb_last;
     bol_pos_last = loc1.bol_pos_last;
-    bp = loc2.bp; ep = loc1.ep; }
+    bp = loc2.bp; ep = loc1.ep;
+    comm = loc2.comm; ecomm = loc1.comm
+  }
   else loc2
 
 let merge_opt l1 l2 = match l1, l2 with

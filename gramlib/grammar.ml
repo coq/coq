@@ -130,7 +130,7 @@ let loc_of_token_interval bp ep =
   if bp == ep then
     if bp == 0 then Ploc.dummy else Ploc.after (!floc (bp - 1)) 0 1
   else
-    let loc1 = !floc bp in let loc2 = !floc (pred ep) in Ploc.encl loc1 loc2
+    let loc1 = !floc bp in let loc2 = !floc (pred ep) in Loc.merge loc1 loc2
 
 let name_of_symbol entry =
   function
@@ -816,7 +816,7 @@ let parse_parsable entry p =
       let cnt = Stream.count ts in
       let loc = fun_loc cnt in
       if !token_count - 1 <= cnt then loc
-      else Ploc.encl loc (fun_loc (!token_count - 1))
+      else Loc.merge loc (fun_loc (!token_count - 1))
     with Failure _ -> Ploc.make_unlined (Stream.count cs, Stream.count cs + 1)
   in
   floc := fun_loc;
@@ -884,7 +884,7 @@ module type S =
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
         ('self, 'b -> 'a, 'r) ty_rule
-    val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
+    val production : ('a, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
         val clear_entry : 'a Entry.e -> unit
@@ -946,7 +946,7 @@ module GMake (L : GLexerType) =
     let r_stop = []
     let r_next r s = r @ [s]
     let production
-        (p : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f) : 'a ty_production =
+        (p : ('a, 'f, Loc.t -> 'a) ty_rule * 'f) : 'a ty_production =
       Obj.magic p
     module Unsafe =
       struct

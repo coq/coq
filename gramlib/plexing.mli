@@ -30,8 +30,8 @@ type 'te lexer =
     tok_removing : pattern -> unit;
     mutable tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    mutable tok_comm : Ploc.t list option }
+    mutable tok_comm : Loc.t list option }
 and 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
-and location_function = int -> Ploc.t
+and location_function = int -> Loc.t
   (** The type of a function giving the location of a token in the
       source from the token number in the stream (starting from zero). *)

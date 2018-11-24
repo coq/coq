@@ -13,28 +13,6 @@ open Util
 open Tok
 open Gramlib
 
-(** Location utilities  *)
-let ploc_file_of_coq_file = function
-| Loc.ToplevelInput -> ""
-| Loc.InFile f -> f
-
-let coq_file_of_ploc_file s =
-  if s = "" then Loc.ToplevelInput else Loc.InFile s
-
-let from_coqloc fname line_nb bol_pos bp ep =
-  Ploc.make_loc (ploc_file_of_coq_file fname) line_nb bol_pos (bp, ep) ""
-
-let to_coqloc loc =
-  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
-    Loc.line_nb = Ploc.line_nb loc;
-    Loc.bol_pos = Ploc.bol_pos loc;
-    Loc.bp = Ploc.first_pos loc;
-    Loc.ep = Ploc.last_pos loc;
-    Loc.line_nb_last = Ploc.line_nb_last loc;
-    Loc.bol_pos_last = Ploc.bol_pos_last loc; }
-
-let (!@) = to_coqloc
-
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
 
@@ -128,18 +106,22 @@ module Error = struct
 end
 open Error
 
-let err loc str = Loc.raise ~loc:(to_coqloc loc) (Error.E str)
+let err loc str = Loc.raise ~loc (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
-  Ploc.sub loc (bp - Ploc.first_pos loc) (ep - bp)
+  Ploc.sub loc (bp - loc.Loc.bp) (ep - bp)
 
 (* Increase line number by 1 and update position of beginning of line *)
 let bump_loc_line loc bol_pos =
-  Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb loc + 1) bol_pos
-		(Ploc.first_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+  Loc.{ loc with
+        line_nb      = loc.line_nb + 1;
+        line_nb_last = loc.line_nb + 1;
+        bol_pos;
+        bol_pos_last = bol_pos;
+      }
 
 (* Same as [bump_loc_line], but for the last line in location *)
 (* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
@@ -147,19 +129,25 @@ let bump_loc_line loc bol_pos =
 (* Warning: [bump_loc_line_last] changes the end position. You may need to call
    [set_loc_pos] to fix it. *)
 let bump_loc_line_last loc bol_pos =
-  let loc' =
-    Ploc.make_loc (Ploc.file_name loc) (Ploc.line_nb_last loc + 1) bol_pos
-		  (Ploc.first_pos loc + 1, Ploc.last_pos loc + 1) (Ploc.comment loc)
-  in
-  Ploc.encl loc loc'
+  let open Loc in
+  let loc' = { loc with
+               line_nb      = loc.line_nb_last + 1;
+               line_nb_last = loc.line_nb_last + 1;
+               bol_pos;
+               bol_pos_last = bol_pos;
+               bp = loc.bp + 1;
+               ep = loc.ep + 1;
+             } in
+  Loc.merge loc loc'
 
 (* For some reason, the [Ploc.after] function of Camlp5 does not update line
    numbers, so we define our own function that does it. *)
 let after loc =
-  let line_nb = Ploc.line_nb_last loc in
-  let bol_pos = Ploc.bol_pos_last loc in
-  Ploc.make_loc (Ploc.file_name loc) line_nb bol_pos
-		(Ploc.last_pos loc, Ploc.last_pos loc) (Ploc.comment loc)
+  Loc.{ loc with
+        line_nb = loc.line_nb_last;
+        bol_pos = loc.bol_pos_last;
+        bp      = loc.ep;
+      }
 
 (** Lexer conventions on tokens *)
 
@@ -324,7 +312,7 @@ let rec ident_tail loc len s = match Stream.peek s with
       | Utf8Token (st, n) when Unicode.is_unknown st ->
           let id = get_buff len in
           let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
-          warn_unrecognized_unicode ~loc:!@loc (u,id); len
+          warn_unrecognized_unicode ~loc (u,id); len
       | _ -> len
 
 let rec number len s = match Stream.peek s with
@@ -368,7 +356,7 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
             Stream.junk s;
             let () = match comm_level with
             | Some 0 ->
-              warn_comment_terminator_in_string ~loc:!@loc ()
+              warn_comment_terminator_in_string ~loc ()
             | _ -> ()
             in
             let comm_level = Option.map pred comm_level in
@@ -757,7 +745,7 @@ let token_text = function
 
 let func cs =
   let loct = loct_create () in
-  let cur_loc = ref (from_coqloc !current_file 1 0 0 0) in
+  let cur_loc = ref (Loc.create !current_file 1 0 0 0) in
   let ts =
     Stream.from
       (fun i ->
