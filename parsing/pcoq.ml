@@ -193,7 +193,9 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> (s, a) G.ty_symbol
 | Anext -> G.s_next
 | Aentry e -> G.s_nterm e
 | Aentryl (e, n) -> G.s_nterml e n
-| Arules rs -> G.s_rules ~warning:true (List.map symbol_of_rules rs)
+| Arules rs ->
+  let warning msg = Feedback.msg_warning Pp.(str msg) in
+  G.s_rules ~warning:(Some warning) (List.map symbol_of_rules rs)
 
 and symbol_of_rule : type s a r. (s, a, Loc.t -> r) Extend.rule -> (s, a, Ploc.t -> r) casted_rule = function
 | Stop -> Casted (G.r_stop, fun act loc -> act (!@loc))
@@ -261,7 +263,8 @@ let grammar_delete e reinit (pos,rls) =
     | Some (Gramext.Level n) -> n
     | _ -> assert false
     in
-    (G.safe_extend ~warning:true e) (Some ext) [Some lev,Some a,[]]
+    let warning msg = Feedback.msg_warning Pp.(str msg) in
+    (G.safe_extend ~warning:(Some warning) e) (Some ext) [Some lev,Some a,[]]
   | None -> ()
 
 (** Extension *)
@@ -270,14 +273,14 @@ let grammar_extend e reinit ext =
   let ext = of_coq_extend_statement ext in
   let undo () = grammar_delete e reinit ext in
   let pos, ext = fix_extend_statement ext in
-  let redo () = G.safe_extend ~warning:false e pos ext in
+  let redo () = G.safe_extend ~warning:None e pos ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e reinit ext =
   camlp5_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp5_state;
   let pos, ext = fix_extend_statement (of_coq_extend_statement ext) in
-  G.safe_extend ~warning:false e pos ext
+  G.safe_extend ~warning:None e pos ext
 
 (** The apparent parser of Coq; encapsulate G to keep track
     of the extensions. *)
@@ -325,14 +328,16 @@ let eoi_entry en =
   let e = Entry.create ((Gram.Entry.name en) ^ "_eoi") in
   let symbs = G.r_next (G.r_next G.r_stop (G.s_nterm en)) (Symbols.stoken Tok.EOI) in
   let act = fun _ x loc -> x in
-  Gram.safe_extend ~warning:true e None (make_rule [G.production (symbs, act)]);
+  let warning msg = Feedback.msg_warning Pp.(str msg) in
+  Gram.safe_extend ~warning:(Some warning) e None (make_rule [G.production (symbs, act)]);
   e
 
 let map_entry f en =
   let e = Entry.create ((Gram.Entry.name en) ^ "_map") in
   let symbs = G.r_next G.r_stop (G.s_nterm en) in
   let act = fun x loc -> f x in
-  Gram.safe_extend ~warning:true e None (make_rule [G.production (symbs, act)]);
+  let warning msg = Feedback.msg_warning Pp.(str msg) in
+  Gram.safe_extend ~warning:(Some warning) e None (make_rule [G.production (symbs, act)]);
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -462,7 +467,8 @@ let epsilon_value f e =
   let r = G.production (G.r_next G.r_stop (symbol_of_prod_entry_key e), (fun x _ -> f x)) in
   let ext = [None, None, [r]] in
   let entry = Gram.entry_create "epsilon" in
-  let () = G.safe_extend ~warning:true entry None ext in
+  let warning msg = Feedback.msg_warning Pp.(str msg) in
+  let () = G.safe_extend ~warning:(Some warning) entry None ext in
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)

@@ -841,8 +841,6 @@ let clear_entry e =
     Dlevels _ -> e.edesc <- Dlevels []
   | Dparser _ -> ()
 
-let gram_reinit g glexer = Hashtbl.clear g.gtokens; g.glexer <- glexer
-
 (* Functorial interface *)
 
 module type GLexerType = sig type te val lexer : te Plexing.lexer end
@@ -881,7 +879,7 @@ module type S =
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol
-    val s_rules : warning:bool -> 'a ty_production list -> ('self, 'a) ty_symbol
+    val s_rules : warning:(string -> unit) option -> 'a ty_production list -> ('self, 'a) ty_symbol
     val r_stop : ('self, 'r, 'r) ty_rule
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
@@ -889,10 +887,9 @@ module type S =
     val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
-        val gram_reinit : te Plexing.lexer -> unit
         val clear_entry : 'a Entry.e -> unit
       end
-    val safe_extend : warning:bool ->
+    val safe_extend : warning:(string -> unit) option ->
       'a Entry.e -> Gramext.position option ->
         (string option * Gramext.g_assoc option * 'a ty_production list)
           list ->
@@ -953,7 +950,6 @@ module GMake (L : GLexerType) =
       Obj.magic p
     module Unsafe =
       struct
-        let gram_reinit = gram_reinit gram
         let clear_entry = clear_entry
       end
     let safe_extend ~warning e pos

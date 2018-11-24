@@ -53,13 +53,13 @@ type position =
   | Like of string
   | Level of string
 
-val levels_of_rules : warning:bool ->
+val levels_of_rules : warning:(string -> unit) option ->
   'te g_entry -> position option ->
     (string option * g_assoc option * ('te g_symbol list * g_action) list)
       list ->
     'te g_level list
 
-val srules : warning:bool -> ('te g_symbol list * g_action) list -> 'te g_symbol
+val srules : warning:(string -> unit) option -> ('te g_symbol list * g_action) list -> 'te g_symbol
 val eq_symbol : 'a g_symbol -> 'a g_symbol -> bool
 
 val delete_rule_in_level_list :

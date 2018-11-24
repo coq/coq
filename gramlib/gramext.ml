@@ -103,14 +103,16 @@ let insert_tree ~warning entry_name gsymbols action tree =
           Node {node = s; son = son; brother = bro} ->
             Node {node = s; son = son; brother = insert [] bro}
         | LocAct (old_action, action_list) ->
-            if warning then
-              begin
-                eprintf "<W> Grammar extension: ";
-                if entry_name <> "" then eprintf "in [%s], " entry_name;
-                eprintf "some rule has been masked\n";
-                flush stderr
-              end;
-            LocAct (action, old_action :: action_list)
+          begin match warning with
+            | None -> ()
+            | Some warn_fn ->
+              let msg =
+                "<W> Grammar extension: " ^
+                (if entry_name <> "" then "" else "in ["^entry_name^"%s], ") ^
+                "some rule has been masked" in
+              warn_fn msg
+          end;
+          LocAct (action, old_action :: action_list)
         | DeadEnd -> LocAct (action, [])
   and insert_in_tree s sl tree =
     match try_insert s sl tree with
@@ -196,17 +198,23 @@ let change_lev ~warning lev n lname assoc =
     match assoc with
       None -> lev.assoc
     | Some a ->
-        if a <> lev.assoc && warning then
-          begin
-            eprintf "<W> Changing associativity of level \"%s\"\n" n;
-            flush stderr
-          end;
+      if a <> lev.assoc then
+        begin
+          match warning with
+          | None -> ()
+          | Some warn_fn ->
+            warn_fn ("<W> Changing associativity of level \""^n^"\"")
+        end;
         a
   in
   begin match lname with
     Some n ->
-      if lname <> lev.lname && warning then
-        begin eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr end
+      if lname <> lev.lname then
+        begin match warning with
+          | None -> ()
+          | Some warn_fn ->
+            warn_fn ("<W> Level label \""^n^"\" ignored")
+        end;
   | None -> ()
   end;
   {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
