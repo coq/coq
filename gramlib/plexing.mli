@@ -30,7 +30,7 @@ type 'te lexer =
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    tok_comm : Loc.t list option }
+  }
 and 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
 and location_function = int -> Loc.t
   (** The type of a function giving the location of a token in the

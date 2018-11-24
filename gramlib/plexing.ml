@@ -15,4 +15,4 @@ type 'te lexer =
     tok_removing : pattern -> unit;
     tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    tok_comm : Loc.t list option }
+  }
