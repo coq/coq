@@ -61,9 +61,11 @@ type execution_phase =
   | LoadingRcFile
   | InteractiveLoop
 
+val in_phase : phase:execution_phase -> ('a -> 'b) -> 'a -> 'b
+
 val pr_loc : Loc.t -> Pp.t
-val pr_phase : ?loc:Loc.t -> execution_phase -> Pp.t option
-val print_err_exn : execution_phase -> exn -> unit
+val pr_phase : ?loc:Loc.t -> unit -> Pp.t option
+val print_err_exn : exn -> unit
 
 (** [with_output_to_file file f x] executes [f x] with logging
     redirected to a file [file] *)

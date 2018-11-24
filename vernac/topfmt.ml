@@ -335,6 +335,20 @@ type execution_phase =
   | LoadingRcFile
   | InteractiveLoop
 
+let default_phase = ref InteractiveLoop
+
+let in_phase ~phase f x =
+  let op = !default_phase in
+  default_phase := phase;
+  try
+    let res = f x in
+    default_phase := op;
+    res
+  with exn ->
+    let iexn = Backtrace.add_backtrace exn in
+    default_phase := op;
+    Util.iraise iexn
+
 let pr_loc loc =
     let fname = loc.Loc.fname in
     match fname with
@@ -347,8 +361,8 @@ let pr_loc loc =
 	   int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos) ++
 	   str":")
 
-let pr_phase ?loc phase =
-  match phase, loc with
+let pr_phase ?loc () =
+  match !default_phase, loc with
   | LoadingRcFile, loc ->
      (* For when all errors go through feedback:
      str "While loading rcfile:" ++
@@ -363,10 +377,10 @@ let pr_phase ?loc phase =
      (* Note: interactive messages such as "foo is defined" are not located *)
      None
 
-let print_err_exn phase any =
+let print_err_exn any =
   let (e, info) = CErrors.push any in
   let loc = Loc.get_loc info in
-  let pre_hdr = pr_phase ?loc phase in
+  let pre_hdr = pr_phase ?loc () in
   let msg = CErrors.iprint (e, info) ++ fnl () in
   std_logger ?pre_hdr Feedback.Error msg
 
