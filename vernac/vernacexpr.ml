@@ -167,7 +167,7 @@ type syntax_modifier =
   | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level option
   | SetLevel of int
   | SetCustomEntry of string * int option
-  | SetAssoc of Extend.gram_assoc
+  | SetAssoc of Gramlib.Gramext.g_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing
   | SetOnlyPrinting

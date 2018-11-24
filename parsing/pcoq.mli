@@ -110,10 +110,6 @@ end
 
 *)
 
-(** Temporarily activate camlp5 verbosity *)
-
-val camlp5_verbosity : bool -> ('a -> unit) -> 'a -> unit
-
 (** Parse a string *)
 
 val parse_string : 'a Entry.t -> string -> 'a
@@ -202,7 +198,7 @@ val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
 
-type gram_reinit = gram_assoc * gram_position
+type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 (** Type of reinitialization data *)
 
 val grammar_extend : 'a Entry.t -> gram_reinit option ->

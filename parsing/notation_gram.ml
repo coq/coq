@@ -32,7 +32,7 @@ type grammar_constr_prod_item =
 
 type one_notation_grammar = {
   notgram_level : level;
-  notgram_assoc : Extend.gram_assoc option;
+  notgram_assoc : Gramlib.Gramext.g_assoc option;
   notgram_notation : Constrexpr.notation;
   notgram_prods : grammar_constr_prod_item list list;
 }

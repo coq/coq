@@ -119,7 +119,7 @@ let get_tactic_entry n =
   else if Int.equal n 5 then
     Pltac.binder_tactic, None
   else if 1<=n && n<5 then
-    Pltac.tactic_expr, Some (Extend.Level (string_of_int n))
+    Pltac.tactic_expr, Some (Gramlib.Gramext.Level (string_of_int n))
   else
     user_err Pp.(str ("Invalid Tactic Notation level: "^(string_of_int n)^"."))
 

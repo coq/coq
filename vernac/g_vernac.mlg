@@ -1175,9 +1175,9 @@ GRAMMAR EXTEND Gram
       | "in"; IDENT "custom"; x = IDENT -> { SetCustomEntry (x,None) }
       | "in"; IDENT "custom"; x = IDENT; "at"; IDENT "level"; n = natural ->
          { SetCustomEntry (x,Some n) }
-      | IDENT "left"; IDENT "associativity" -> { SetAssoc LeftA }
-      | IDENT "right"; IDENT "associativity" -> { SetAssoc RightA }
-      | IDENT "no"; IDENT "associativity" -> { SetAssoc NonA }
+      | IDENT "left"; IDENT "associativity" -> { SetAssoc Gramlib.Gramext.LeftA }
+      | IDENT "right"; IDENT "associativity" -> { SetAssoc Gramlib.Gramext.RightA }
+      | IDENT "no"; IDENT "associativity" -> { SetAssoc Gramlib.Gramext.NonA }
       | IDENT "only"; IDENT "printing" -> { SetOnlyPrinting }
       | IDENT "only"; IDENT "parsing" -> { SetOnlyParsing }
       | IDENT "compat"; s = STRING ->

@@ -55,8 +55,6 @@ type position =
   | Like of string
   | Level of string
 
-let warning_verbose = ref true
-
 let rec derive_eps =
   function
     Slist0 _ -> true
@@ -96,7 +94,7 @@ let is_before s1 s2 =
   | Stoken _, _ -> true
   | _ -> false
 
-let insert_tree entry_name gsymbols action tree =
+let insert_tree ~warning entry_name gsymbols action tree =
   let rec insert symbols tree =
     match symbols with
       s :: sl -> insert_in_tree s sl tree
@@ -105,7 +103,7 @@ let insert_tree entry_name gsymbols action tree =
           Node {node = s; son = son; brother = bro} ->
             Node {node = s; son = son; brother = insert [] bro}
         | LocAct (old_action, action_list) ->
-            if !warning_verbose then
+            if warning then
               begin
                 eprintf "<W> Grammar extension: ";
                 if entry_name <> "" then eprintf "in [%s], " entry_name;
@@ -141,10 +139,10 @@ let insert_tree entry_name gsymbols action tree =
   in
   insert gsymbols tree
 
-let srules rl =
+let srules ~warning rl =
   let t =
     List.fold_left
-      (fun tree (symbols, action) -> insert_tree "" symbols action tree)
+      (fun tree (symbols, action) -> insert_tree ~warning "" symbols action tree)
       DeadEnd rl
   in
   Stree t
@@ -175,15 +173,15 @@ and token_exists_in_symbol f =
   | Stree t -> token_exists_in_tree f t
   | Snterm _ | Snterml (_, _) | Snext | Sself -> false
 
-let insert_level entry_name e1 symbols action slev =
+let insert_level ~warning entry_name e1 symbols action slev =
   match e1 with
     true ->
       {assoc = slev.assoc; lname = slev.lname;
-       lsuffix = insert_tree entry_name symbols action slev.lsuffix;
+       lsuffix = insert_tree ~warning entry_name symbols action slev.lsuffix;
        lprefix = slev.lprefix}
   | false ->
       {assoc = slev.assoc; lname = slev.lname; lsuffix = slev.lsuffix;
-       lprefix = insert_tree entry_name symbols action slev.lprefix}
+       lprefix = insert_tree ~warning entry_name symbols action slev.lprefix}
 
 let empty_lev lname assoc =
   let assoc =
@@ -193,12 +191,12 @@ let empty_lev lname assoc =
   in
   {assoc = assoc; lname = lname; lsuffix = DeadEnd; lprefix = DeadEnd}
 
-let change_lev lev n lname assoc =
+let change_lev ~warning lev n lname assoc =
   let a =
     match assoc with
       None -> lev.assoc
     | Some a ->
-        if a <> lev.assoc && !warning_verbose then
+        if a <> lev.assoc && warning then
           begin
             eprintf "<W> Changing associativity of level \"%s\"\n" n;
             flush stderr
@@ -207,13 +205,13 @@ let change_lev lev n lname assoc =
   in
   begin match lname with
     Some n ->
-      if lname <> lev.lname && !warning_verbose then
+      if lname <> lev.lname && warning then
         begin eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr end
   | None -> ()
   end;
   {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
 
-let get_level entry position levs =
+let get_level ~warning entry position levs =
   match position with
     Some First -> [], empty_lev, levs
   | Some Last -> levs, empty_lev, []
@@ -226,7 +224,7 @@ let get_level entry position levs =
             flush stderr;
             failwith "Grammar.extend"
         | lev :: levs ->
-            if is_level_labelled n lev then [], change_lev lev n, levs
+            if is_level_labelled n lev then [], change_lev ~warning lev n, levs
             else
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
@@ -268,14 +266,14 @@ let get_level entry position levs =
             flush stderr;
             failwith "Grammar.extend"
         | lev :: levs ->
-            if token_exists_in_level f lev then [], change_lev lev n, levs
+            if token_exists_in_level f lev then [], change_lev ~warning lev n, levs
             else
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
       get levs
   | None ->
       match levs with
-        lev :: levs -> [], change_lev lev "<top>", levs
+        lev :: levs -> [], change_lev ~warning lev "<top>", levs
       | [] -> [], empty_lev, []
 
 let rec check_gram entry =
@@ -347,7 +345,7 @@ let insert_tokens gram symbols =
   in
   List.iter insert symbols
 
-let levels_of_rules entry position rules =
+let levels_of_rules ~warning entry position rules =
   let elev =
     match entry.edesc with
       Dlevels elev -> elev
@@ -358,7 +356,7 @@ let levels_of_rules entry position rules =
   in
   if rules = [] then elev
   else
-    let (levs1, make_lev, levs2) = get_level entry position elev in
+    let (levs1, make_lev, levs2) = get_level ~warning entry position elev in
     let (levs, _) =
       List.fold_left
         (fun (levs, make_lev) (lname, assoc, level) ->
@@ -370,7 +368,7 @@ let levels_of_rules entry position rules =
                   List.iter (check_gram entry) symbols;
                   let (e1, symbols) = get_initial entry symbols in
                   insert_tokens entry.egram symbols;
-                  insert_level entry.ename e1 symbols action lev)
+                  insert_level ~warning entry.ename e1 symbols action lev)
                lev level
            in
            lev :: levs, empty_lev)

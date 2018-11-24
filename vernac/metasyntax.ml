@@ -287,7 +287,7 @@ let pr_notation_entry = function
   | InConstrEntry -> str "constr"
   | InCustomEntry s -> str "custom " ++ str s
 
-let prec_assoc = function
+let prec_assoc = let open Gramlib.Gramext in function
   | RightA -> (L,E)
   | LeftA -> (E,L)
   | NonA -> (L,L)
@@ -685,7 +685,7 @@ let border = function
   | (_,(ETConstr(_,_,(_,BorderProd (_,a))))) :: _ -> a
   | _ -> None
 
-let recompute_assoc typs =
+let recompute_assoc typs = let open Gramlib.Gramext in
   match border typs, border (List.rev typs) with
     | Some LeftA, Some RightA -> assert false
     | Some LeftA, _ -> Some LeftA
@@ -802,7 +802,7 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
 module NotationMods = struct
 
 type notation_modifier = {
-  assoc         : gram_assoc option;
+  assoc         : Gramlib.Gramext.g_assoc option;
   level         : int option;
   custom        : notation_entry;
   etyps         : (Id.t * simple_constr_prod_entry_key) list;
@@ -1230,7 +1230,7 @@ let compute_syntax_data local df modifiers =
   let onlyprint = mods.only_printing in
   let onlyparse = mods.only_parsing in
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
-  let assoc = Option.append mods.assoc (Some NonA) in
+  let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
   let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
   let _ = check_binder_type recvars mods.etyps in
