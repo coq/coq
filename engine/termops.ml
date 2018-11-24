@@ -721,18 +721,16 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
       let bl' = Array.map (f l) bl in
       if p==p' && c==c' && Array.for_all2 (==) bl bl' then cstr else
         mkCase (ci, p', c', bl')
-  | Fix (ln,(lna,tl,bl)) ->
+  | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
-      let l' =
-        Array.fold_left2 (fun l na t -> g (RelDecl.LocalAssum (na, t)) l) l lna tl in
+      let l' = fold_rec_types g fx l in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
       else mkFix (ln,(lna,tl',bl'))
-  | CoFix(ln,(lna,tl,bl)) ->
+  | CoFix(ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
-      let l' =
-        Array.fold_left2 (fun l na t -> g (RelDecl.LocalAssum (na, t)) l) l lna tl in
+      let l' = fold_rec_types g fx l in
       let bl' = Array.map (f l') bl in
       if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
@@ -759,34 +757,17 @@ let fold_constr_with_full_binders sigma g f n acc c =
   Constr.fold_with_full_binders g f n acc c
 
 let fold_constr_with_binders sigma g f n acc c =
-  fold_constr_with_full_binders sigma (fun _ x -> g x) f n acc c
+  let open EConstr in
+  let f l acc c = f l acc (of_constr c) in
+  let c = Unsafe.to_constr (whd_evar sigma c) in
+  Constr.fold_constr_with_binders g f n acc c
 
 (* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
    subterms of [c]; it carries an extra data [acc] which is processed by [g] at
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let iter_constr_with_full_binders sigma g f l c =
-  let open RelDecl in
-  match EConstr.kind sigma c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
-  | Cast (c,_, t) -> f l c; f l t
-  | Prod (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
-  | Lambda (na,t,c) -> f l t; f (g (LocalAssum (na,t)) l) c
-  | LetIn (na,b,t,c) -> f l b; f l t; f (g (LocalDef (na,b,t)) l) c
-  | App (c,args) -> f l c; Array.iter (f l) args
-  | Proj (p,c) -> f l c
-  | Evar (_,args) -> Array.iter (f l) args
-  | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
-  | Fix (_,(lna,tl,bl)) ->
-      let l' = Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
-      Array.iter (f l) tl;
-      Array.iter (f l') bl
-  | CoFix (_,(lna,tl,bl)) ->
-      let l' = Array.fold_left2 (fun l na t -> g (LocalAssum (na,t)) l) l lna tl in
-      Array.iter (f l) tl;
-      Array.iter (f l') bl
+let iter_constr_with_full_binders = EConstr.iter_with_full_binders
 
 (***************************)
 (* occurs check functions  *)

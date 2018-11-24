@@ -383,6 +383,17 @@ type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
+(** {6 Relocation and substitution } *)
+
+(** [exliftn el c] lifts [c] with lifting [el] *)
+val exliftn : Esubst.lift -> constr -> constr
+
+(** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
+val liftn : int -> int -> constr -> constr
+
+(** [lift n c] lifts by [n] the positive indexes in [c] *)
+val lift : int -> constr -> constr
+
 (** {6 Functionals working on expressions canonically abstracted over
        a local context (possibly with let-ins)} *)
 
