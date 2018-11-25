@@ -1,3 +1,7 @@
+ifeq "$(COQBIN)" ""
+  COQBIN=$(dir $(shell which coqtop))/
+endif
+
 all: $(patsubst %.v,%.v.log,$(wildcard *.v))
 
 %.v.log: %.v
