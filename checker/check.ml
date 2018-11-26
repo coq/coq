@@ -136,36 +136,9 @@ type logical_path = DirPath.t
 
 let load_paths = ref ([],[] : CUnix.physical_path list * logical_path list)
 
-(* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p =
-  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
-  let n = String.length curdir in
-  if String.length p > n && String.sub p 0 n = curdir then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    p
-
-let strip_path p =
-  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
-  let n = String.length cwd in
-  if String.length p > n && String.sub p 0 n = cwd then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    remove_path_dot p
-
-let canonical_path_name p =
-  let current = Sys.getcwd () in
-  try
-    Sys.chdir p;
-    let p' = Sys.getcwd () in
-    Sys.chdir current;
-    p'
-  with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    strip_path p
 
 let find_logical_path phys_dir =
-  let phys_dir = canonical_path_name phys_dir in
+  let phys_dir = CUnix.canonical_path_name phys_dir in
   let physical, logical = !load_paths in
   match List.filter2 (fun p d -> p = phys_dir) physical logical with
   | _,[dir] -> dir
@@ -180,14 +153,14 @@ let add_load_path (phys_path,coq_path) =
   if !Flags.debug then
     Feedback.msg_notice (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
-  let phys_path = canonical_path_name phys_path in
+  let phys_path = CUnix.canonical_path_name phys_path in
   let physical, logical = !load_paths in
     match List.filter2 (fun p d -> p = phys_path) physical logical with
       | _,[dir] ->
 	  if coq_path <> dir
             (* If this is not the default -I . to coqtop *)
             && not
-            (phys_path = canonical_path_name Filename.current_dir_name
+            (phys_path = CUnix.canonical_path_name Filename.current_dir_name
 		&& coq_path = default_root_prefix)
 	  then
 	    begin
