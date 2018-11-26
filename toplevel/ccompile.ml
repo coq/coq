@@ -119,7 +119,8 @@ let compile opts ~echo ~f_in ~f_out =
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
       let wall_clock1 = Unix.gettimeofday () in
-      let state = Vernac.load_vernac ~echo ~check:true ~interactive:false ~state long_f_dot_v in
+      let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
+      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_v in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
@@ -148,6 +149,8 @@ let compile opts ~echo ~f_in ~f_out =
          document anyways. *)
       let stm_options = let open Stm.AsyncOpts in
         { stm_options with
+          async_proofs_mode = APon;
+          async_proofs_n_workers = 0;
           async_proofs_cmd_error_resilience = false;
           async_proofs_tac_error_resilience = `None;
         } in

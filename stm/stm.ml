@@ -2643,13 +2643,14 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
      name by looking at the load path! *)
   List.iter Mltop.add_coq_path iload_path;
 
+  Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
+
   begin match doc_type with
     | Interactive ln ->
       let dp = match ln with
         | TopLogical dp -> dp
         | TopPhysical f -> dirpath_of_file f
       in
-      Safe_typing.allow_delayed_constants := true;
       Declaremods.start_library dp
 
     | VoDoc f ->
@@ -2660,7 +2661,6 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
       set_compilation_hints f
 
     | VioDoc f ->
-      Safe_typing.allow_delayed_constants := true;
       let ldir = dirpath_of_file f in
       check_coq_overwriting ldir;
       let () = Flags.verbosely Declaremods.start_library ldir in
