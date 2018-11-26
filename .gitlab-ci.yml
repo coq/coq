@@ -229,6 +229,7 @@ windows64:
   <<: *windows-template
   variables:
     ARCH: "64"
+  allow_failure: true
 
 windows32:
   <<: *windows-template
@@ -236,6 +237,7 @@ windows32:
     ARCH: "32"
   except:
     - /^pr-.*$/
+  allow_failure: true
 
 pkg:opam:
   stage: test
