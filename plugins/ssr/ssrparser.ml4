@@ -342,7 +342,7 @@ let interp_index ist gl idx =
 
 open Pltac
 
-ARGUMENT EXTEND ssrindex TYPED AS ssrindex PRINTED BY pr_ssrindex
+ARGUMENT EXTEND ssrindex PRINTED BY pr_ssrindex
   INTERPRETED BY interp_index
 | [ int_or_var(i) ] -> [ mk_index ~loc i ]
 END
@@ -519,6 +519,7 @@ END
 
 (* New Views *)
 
+type ssrfwdview = ast_closure_term list
 
 let pr_ssrfwdview _ _ _ = pr_view2
 
@@ -581,6 +582,7 @@ let rec map_ipat map_id map_ssrhyp map_ast_closure_term = function
   | IPatView (clr,v) -> IPatView (clr,List.map map_ast_closure_term v)
   | IPatTac _ -> assert false (*internal usage only *)
 
+type ssripatrep = ssripat
 let wit_ssripatrep = add_genarg "ssripatrep" pr_ipat
 
 let pr_ssripat _ _ _ = pr_ipat
@@ -1751,6 +1753,8 @@ END
 
 (* argument *)
 
+type ssreqid = ssripatrep option
+
 let pr_eqid = function Some pat -> str " " ++ pr_ipat pat | None -> mt ()
 let pr_ssreqid _ _ _ = pr_eqid
 
@@ -1798,6 +1802,11 @@ END
 (* the entry point parses only non-empty arguments to avoid conflicts  *)
 (* with the basic Coq tactics.                                         *)
 
+type ssrarg =
+  Ssrast.ssrview *
+  (Ssrast.ssripat option *
+   (((Ssrast.ssrdocc * Ssrmatching_plugin.Ssrmatching.cpattern)
+       list list * Ssrast.ssrclear) * Ssrast.ssripats))
 (* type ssrarg = ssrbwdview * (ssreqid * (ssrdgens * ssripats)) *)
 
 let pr_ssrarg _ _ _ (view, (eqid, (dgens, ipats))) =

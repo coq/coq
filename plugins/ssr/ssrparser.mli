@@ -28,10 +28,75 @@ open Ssrmatching
 open Ssrast
 open Ssrequality
 
+type ssrfwdview = ast_closure_term list
+type ssreqid = ssripat option
+type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
+
+val wit_ssrseqdir : ssrdir Genarg.uniform_genarg_type
+val wit_ssrseqarg : (Tacexpr.raw_tactic_expr ssrseqarg, Tacexpr.glob_tactic_expr ssrseqarg, Geninterp.Val.t ssrseqarg) Genarg.genarg_type
+
+val wit_ssrintrosarg :
+  (Tacexpr.raw_tactic_expr * ssripats,
+   Tacexpr.glob_tactic_expr * ssripats,
+   Geninterp.Val.t * ssripats) Genarg.genarg_type
+
+val wit_ssrsufffwd :
+  (Tacexpr.raw_tactic_expr ffwbinders,
+   Tacexpr.glob_tactic_expr ffwbinders,
+   Geninterp.Val.t ffwbinders) Genarg.genarg_type
+
+val wit_ssripatrep : ssripat Genarg.uniform_genarg_type
+val wit_ssrarg : ssrarg Genarg.uniform_genarg_type
 val wit_ssrrwargs : ssrrwarg list Genarg.uniform_genarg_type
 val wit_ssrclauses : clauses Genarg.uniform_genarg_type
 val wit_ssrcasearg : (cpattern ssragens) ssrmovearg Genarg.uniform_genarg_type
 val wit_ssrmovearg : (cpattern ssragens) ssrmovearg Genarg.uniform_genarg_type
 val wit_ssrapplyarg : ssrapplyarg Genarg.uniform_genarg_type
 val wit_ssrhavefwdwbinders :
-  (Tacexpr.raw_tactic_expr fwdbinders, Tacexpr.glob_tactic_expr fwdbinders, Tacinterp.Value.t fwdbinders) Genarg.genarg_type
+  (Tacexpr.raw_tactic_expr fwdbinders,
+   Tacexpr.glob_tactic_expr fwdbinders,
+   Tacinterp.Value.t fwdbinders) Genarg.genarg_type
+val wit_ssrhintarg :
+  (Tacexpr.raw_tactic_expr ssrhint,
+   Tacexpr.glob_tactic_expr ssrhint,
+   Tacinterp.Value.t ssrhint) Genarg.genarg_type
+
+val wit_ssrexactarg : ssrapplyarg Genarg.uniform_genarg_type
+val wit_ssrcongrarg : ((int * ssrterm) * cpattern ssragens) Genarg.uniform_genarg_type
+val wit_ssrfwdid : Names.Id.t Genarg.uniform_genarg_type
+
+val wit_ssrsetfwd :
+  ((ssrfwdfmt * (cpattern * ast_closure_term option)) * ssrdocc) Genarg.uniform_genarg_type
+
+val wit_ssrdoarg :
+  (Tacexpr.raw_tactic_expr ssrdoarg,
+   Tacexpr.glob_tactic_expr ssrdoarg,
+   Tacinterp.Value.t ssrdoarg) Genarg.genarg_type
+
+val wit_ssrhint :
+  (Tacexpr.raw_tactic_expr ssrhint,
+   Tacexpr.glob_tactic_expr ssrhint,
+   Tacinterp.Value.t ssrhint) Genarg.genarg_type
+
+val wit_ssrhpats : ssrhpats Genarg.uniform_genarg_type
+val wit_ssrhpats_nobs : ssrhpats Genarg.uniform_genarg_type
+val wit_ssrhpats_wtransp : ssrhpats_wtransp Genarg.uniform_genarg_type
+
+val wit_ssrposefwd : (ssrfwdfmt * ast_closure_term) Genarg.uniform_genarg_type
+
+val wit_ssrrpat : ssripat Genarg.uniform_genarg_type
+val wit_ssrterm : ssrterm Genarg.uniform_genarg_type
+val wit_ssrunlockarg : (ssrocc * ssrterm) Genarg.uniform_genarg_type
+val wit_ssrunlockargs : (ssrocc * ssrterm) list Genarg.uniform_genarg_type
+
+val wit_ssrwgen : clause Genarg.uniform_genarg_type
+val wit_ssrwlogfwd : (clause list * (ssrfwdfmt * ast_closure_term)) Genarg.uniform_genarg_type
+
+val wit_ssrfixfwd : (Names.Id.t * (ssrfwdfmt * ast_closure_term)) Genarg.uniform_genarg_type
+val wit_ssrfwd : (ssrfwdfmt * ast_closure_term) Genarg.uniform_genarg_type
+val wit_ssrfwdfmt : ssrfwdfmt Genarg.uniform_genarg_type
+
+val wit_ssrcpat : ssripat Genarg.uniform_genarg_type
+val wit_ssrdgens : cpattern ssragens Genarg.uniform_genarg_type
+val wit_ssrdgens_tl : cpattern ssragens Genarg.uniform_genarg_type
+val wit_ssrdir : ssrdir Genarg.uniform_genarg_type
