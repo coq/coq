@@ -17,6 +17,7 @@ exec $OCAMLDEBUG \
     -I +threads \
     -I $COQTOP \
     -I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar -I $COQTOP/clib \
+    -I $COQTOP/gramlib__pack \
     -I $COQTOP/lib -I $COQTOP/kernel -I $COQTOP/kernel/byterun \
     -I $COQTOP/library -I $COQTOP/engine \
     -I $COQTOP/pretyping -I $COQTOP/parsing -I $COQTOP/vernac \
