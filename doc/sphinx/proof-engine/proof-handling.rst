@@ -67,6 +67,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
    added to the environment as an opaque constant.
 
    .. exn:: Attempt to save an incomplete proof.
+      :undocumented:
 
    .. note::
 
@@ -106,6 +107,7 @@ list of assertion commands is given in :ref:`Assertions`. The command
    proof was edited.
 
    .. exn:: No focused proof (No proof-editing in progress).
+      :undocumented:
 
    .. cmdv::  Abort @ident
 
@@ -282,6 +284,7 @@ Navigation in the proof tree
    This command restores the proof editing process to the original goal.
 
    .. exn:: No focused proof to restart.
+      :undocumented:
 
 .. cmd:: Focus
 
@@ -473,13 +476,14 @@ Requesting information
    This command displays the current goals.
 
    .. exn:: No focused proof.
+      :undocumented:
 
    .. cmdv:: Show @num
 
       Displays only the :token:`num`\-th subgoal.
 
       .. exn:: No such goal.
-
+         :undocumented:
 
    .. cmdv:: Show @ident
 
@@ -565,6 +569,7 @@ Requesting information
             Show Match nat.
 
       .. exn:: Unknown inductive type.
+         :undocumented:
 
    .. cmdv:: Show Universes
       :name: Show Universes

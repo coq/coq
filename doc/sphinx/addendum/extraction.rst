@@ -99,12 +99,12 @@ Extraction Options
 Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ability to fix target language is the first and more important
-of the extraction options. Default is ``OCaml``.
+.. cmd:: Extraction Language ( OCaml | Haskell | Scheme )
+   :name: Extraction Language
 
-.. cmd:: Extraction Language OCaml
-.. cmd:: Extraction Language Haskell
-.. cmd:: Extraction Language Scheme
+   The ability to fix target language is the first and more important
+   of the extraction options. Default is ``OCaml``.
+
 
 Inlining and optimizations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -283,6 +283,7 @@ arity, that is a sequence of product finished by a sort), then some type
 variables have to be given (as quoted strings). The syntax is then:
 
 .. cmdv:: Extract Constant @qualid @string ... @string => @string
+   :undocumented:
 
 The number of type variables is checked by the system. For example:
 
