@@ -202,7 +202,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES) -map gramlib__pack/gramlib.ml $(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
+DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -560,38 +560,38 @@ test-suite: world byte $(ALLSTDLIB).v
 # Default rules for compiling ML code
 ###########################################################################
 
-gramlib__pack:
+gramlib/.pack:
 	mkdir -p $@
 
 # gramlib.ml contents
-gramlib__pack/gramlib.ml: | gramlib__pack
+gramlib/.pack/gramlib.ml: | gramlib/.pack
 	echo " \
 module Ploc    = Gramlib__Ploc \
 module Plexing = Gramlib__Plexing \
 module Gramext = Gramlib__Gramext \
 module Grammar = Gramlib__Grammar" > $@
 
-gramlib__pack/gramlib__P%: gramlib/p% | gramlib__pack
+gramlib/.pack/gramlib__P%: gramlib/p% | gramlib/.pack
 	cp -a $< $@
 	sed -e "1i # 1 \"$<\"" -i $@
-gramlib__pack/gramlib__G%: gramlib/g% | gramlib__pack
+gramlib/.pack/gramlib__G%: gramlib/g% | gramlib/.pack
 	cp -a $< $@
 	sed -e "1i # 1 \"$<\"" -i $@
 
 # Specific rules for gramlib to pack it Dune / OCaml 4.08 style
 GRAMOBJS=$(addsuffix .cmo, $(GRAMFILES))
 
-gramlib__pack/%: COND_BYTEFLAGS+=-no-alias-deps -w -49
-gramlib__pack/%: COND_OPTFLAGS+=-no-alias-deps -w -49
+gramlib/.pack/%: COND_BYTEFLAGS+=-no-alias-deps -w -49
+gramlib/.pack/%: COND_OPTFLAGS+=-no-alias-deps -w -49
 
-gramlib__pack/gramlib.%: COND_OPENFLAGS=
-gramlib__pack/gramlib__%: COND_OPENFLAGS=-open Gramlib
+gramlib/.pack/gramlib.%: COND_OPENFLAGS=
+gramlib/.pack/gramlib__%: COND_OPENFLAGS=-open Gramlib
 
-gramlib__pack/gramlib.cma: $(GRAMOBJS) gramlib__pack/gramlib.cmo
+gramlib/.pack/gramlib.cma: $(GRAMOBJS) gramlib/.pack/gramlib.cmo
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $^
 
-gramlib__pack/gramlib.cmxa: $(GRAMOBJS:.cmo=.cmx) gramlib__pack/gramlib.cmx
+gramlib/.pack/gramlib.cmxa: $(GRAMOBJS:.cmo=.cmx) gramlib/.pack/gramlib.cmx
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $^
 
@@ -748,8 +748,8 @@ kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
 OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 
-MAINMLFILES := $(filter-out gramlib__pack/% checker/% plugins/%, $(MLFILES) $(MLIFILES))
-MAINMLLIBFILES := $(filter-out gramlib__pack/% checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
+MAINMLFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLFILES) $(MLIFILES))
+MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
 
 $(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES) $(GENGRAMFILES)
 	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'

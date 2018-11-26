@@ -147,7 +147,7 @@ package "gramlib" (
   version     = "8.10"
 
   requires    = "coq.lib"
-  directory   = "gramlib__pack"
+  directory   = "gramlib/.pack"
 
   archive(byte)    = "gramlib.cma"
   archive(native)  = "gramlib.cmxa"
