@@ -995,7 +995,7 @@ let expand_arg tms (p,ccl) ((_,t),_,na) =
 
 let use_unit_judge env evd =
   let j, ctx = coq_unit_judge !!env in
-  let evd' = Evd.merge_context_set Evd.univ_flexible_alg evd ctx in
+  let evd' = Evd.merge_context_set Evd.univ_flexible evd ctx in
     evd', j
 
 let add_assert_false_case pb tomatch =
@@ -2037,7 +2037,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
           | None ->
              (* No type constraint: we first create a generic evar type constraint *)
              let src = (loc, Evar_kinds.CasesType false) in
-             let sigma, (t, _) = Evarutil.new_type_evar !!env sigma univ_flexible_alg ~src in
+             let sigma, (t, _) = Evarutil.new_type_evar !!env sigma univ_flexible ~src in
              sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
@@ -2061,7 +2061,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
     | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context sigma) arsign env in
-      let sigma, newt = new_sort_variable univ_flexible_alg sigma in
+      let sigma, newt = new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
