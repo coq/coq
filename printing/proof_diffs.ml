@@ -545,16 +545,22 @@ module GoalMap = Evar.Map
 
 let goal_to_evar g sigma = Id.to_string (Termops.pr_evar_suggested_name g sigma)
 
+open Goal.Set
+
 [@@@ocaml.warning "-32"]
 let db_goal_map op np ng_to_og =
-  Printf.printf "New Goals: ";
-  let (ngoals,_,_,_,nsigma) = Proof.proof np in
-  List.iter (fun ng -> Printf.printf "%d -> %s  " (Evar.repr ng) (goal_to_evar ng nsigma)) ngoals;
+  let pr_goals title prf =
+    Printf.printf "%s: " title;
+    let (goals,_,_,_,sigma) = Proof.proof prf in
+    List.iter (fun g -> Printf.printf "%d -> %s  " (Evar.repr g) (goal_to_evar g sigma)) goals;
+    let gs = diff (Proof.all_goals prf) (List.fold_left (fun s g -> add g s) empty goals) in
+    List.iter (fun g -> Printf.printf "%d  " (Evar.repr g)) (elements gs);
+  in
+
+  pr_goals "New Goals" np;
   (match op with
   | Some op ->
-    let (ogoals,_,_,_,osigma) = Proof.proof op in
-    Printf.printf "\nOld Goals: ";
-    List.iter (fun og -> Printf.printf "%d -> %s  " (Evar.repr og) (goal_to_evar og osigma)) ogoals
+    pr_goals "\nOld Goals" op
   | None -> ());
   Printf.printf "\nGoal map: ";
   GoalMap.iter (fun og ng -> Printf.printf "%d -> %d  " (Evar.repr og) (Evar.repr ng)) ng_to_og;
