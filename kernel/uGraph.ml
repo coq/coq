@@ -868,6 +868,21 @@ let constraints_for ~kept g =
 
 let domain g = LMap.domain g.entries
 
+let choose p g u =
+  let exception Found of Level.t in
+  let ru = (repr g u).univ in
+  if p ru then Some ru
+  else
+    try LMap.iter (fun v -> function
+        | Canonical _ -> () (* we already tried [p ru] *)
+        | Equiv v' ->
+          let rv = (repr g v').univ in
+          if rv == ru && p v then raise (Found v)
+          (* NB: we could also try [p v'] but it will come up in the
+             rest of the iteration regardless. *)
+      ) g.entries; None
+    with Found v -> Some v
+
 (** [sort_universes g] builds a totally ordered universe graph.  The
     output graph should imply the input graph (and the implication
     will be strict most of the time), but is not necessarily minimal.
