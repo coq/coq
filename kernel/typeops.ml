@@ -151,28 +151,41 @@ let type_of_abstraction _env name var ty =
 let make_judgev c t = 
   Array.map2 make_judge c t
 
+let rec check_empty_stack = function
+| [] -> true
+| CClosure.Zupdate _ :: s -> check_empty_stack s
+| _ -> false
+
 let type_of_apply env func funt argsv argstv =
+  let open CClosure in
   let len = Array.length argsv in
-  let rec apply_rec i typ = 
-    if Int.equal i len then typ
-    else 
-      (match kind (whd_all env typ) with
-      | Prod (_,c1,c2) ->
-	let arg = argsv.(i) and argt = argstv.(i) in
-	  (try
-	     let () = conv_leq false env argt c1 in
-	       apply_rec (i+1) (subst1 arg c2)
-	   with NotConvertible ->
-	     error_cant_apply_bad_type env
-	       (i+1,c1,argt)
-	       (make_judge func funt)
-	       (make_judgev argsv argstv))
-	    
+  let infos = create_clos_infos all env in
+  let tab = create_tab () in
+  let rec apply_rec i typ =
+    if Int.equal i len then term_of_fconstr typ
+    else
+      let typ, stk = whd_stack infos tab typ [] in
+      (** The return stack is known to be empty *)
+      let () = assert (check_empty_stack stk) in
+      match fterm_of typ with
+      | FProd (_, c1, c2, e) ->
+        let arg = argsv.(i) in
+        let argt = argstv.(i) in
+        let c1 = term_of_fconstr c1 in
+        begin match conv_leq false env argt c1 with
+        | () -> apply_rec (i+1) (mk_clos (Esubst.subs_cons ([| inject arg |], e)) c2)
+        | exception NotConvertible ->
+          error_cant_apply_bad_type env
+            (i+1,c1,argt)
+            (make_judge func funt)
+            (make_judgev argsv argstv)
+        end
       | _ ->
-	error_cant_apply_not_functional env 
-	  (make_judge func funt)
-	  (make_judgev argsv argstv))
-  in apply_rec 0 funt
+        error_cant_apply_not_functional env
+          (make_judge func funt)
+          (make_judgev argsv argstv)
+  in
+  apply_rec 0 (inject funt)
 
 (* Type of product *)
 

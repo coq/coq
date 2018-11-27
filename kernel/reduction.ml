@@ -438,14 +438,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
         ccnv CONV l2r infos (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
-    | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
+    | (FProd (_, c1, c2, e), FProd (_, c'1, c'2, e')) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
 	  anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
 	(* Luo's system *)
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
-        ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) c2 c'2 cuniv
+        ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) (mk_clos (subs_lift e) c2) (mk_clos (subs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
