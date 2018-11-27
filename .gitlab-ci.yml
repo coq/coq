@@ -225,6 +225,13 @@ build:egde:dune:dev:
     OPAM_SWITCH: edge
     DUNE_TARGET: world
 
+build:base+async:
+  <<: *build-template
+  stage: test
+  variables:
+    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
+    COQUSERFLAGS: "-async-proofs on"
+
 windows64:
   <<: *windows-template
   variables:
