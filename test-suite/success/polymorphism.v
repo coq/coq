@@ -165,19 +165,13 @@ Module binders.
     exact A.
   Defined.
 
-  Definition nomoreu@{i j | i < j +} (A : Type@{i}) : Type@{j}.
-    pose(foo:=Type).
-    exact A.
-    Fail Defined.
-  Abort.
+  Polymorphic Lemma hidden_strict_type : Type.
+  Proof.
+    exact Type.
+  Qed.
+  Check hidden_strict_type@{_}.
+  Fail Check hidden_strict_type@{Set}.
 
-  Polymorphic Definition moreu@{i j +} (A : Type@{i}) : Type@{j}.
-    pose(foo:=Type).
-    exact A.
-  Defined.
-
-  Check moreu@{_ _ _ _}.
-  
   Fail Definition morec@{i j|} (A : Type@{i}) : Type@{j} := A.
 
   (* By default constraints are extensible *)

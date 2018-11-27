@@ -86,7 +86,7 @@ val update_global_env : unit -> unit
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The former is supposed to be
@@ -97,7 +97,7 @@ type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * USt
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
 val return_proof : ?allow_partial:bool -> unit -> closed_proof_output
-val close_future_proof : feedback_id:Stateid.t ->
+val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t ->
   closed_proof_output Future.computation -> closed_proof
 
 (** Gets the current terminator without checking that the proof has

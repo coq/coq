@@ -87,10 +87,10 @@ val pr_universe_instance   : evar_map -> Univ.Instance.t -> Pp.t
 val pr_universe_instance_constraints : evar_map -> Univ.Instance.t -> Univ.Constraint.t -> Pp.t
 val pr_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->
   Univ.UContext.t -> Pp.t
-val pr_abstract_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->
-  Univ.AUContext.t -> Pp.t
+val pr_abstract_universe_ctx : evar_map -> ?variance:Univ.Variance.t array ->
+  Univ.AUContext.t -> priv:Univ.ContextSet.t option -> Pp.t
 val pr_universe_ctx_set    : evar_map -> Univ.ContextSet.t -> Pp.t
-val pr_constant_universes  : evar_map -> Declarations.constant_universes -> Pp.t
+val pr_constant_universes  : evar_map -> priv:Univ.ContextSet.t option -> Declarations.constant_universes -> Pp.t
 val pr_cumulativity_info   : evar_map -> Univ.CumulativityInfo.t -> Pp.t
 val pr_abstract_cumulativity_info   : evar_map -> Univ.ACumulativityInfo.t -> Pp.t
 

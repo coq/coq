@@ -120,6 +120,10 @@ Universes
 - Added `Print Universes Subgraph` variant of `Print Universes`.
   Try for instance `Print Universes Subgraph(sigT2.u1 sigT_of_sigT2.u1 projT3_eq.u1 eq_sigT2_rect.u1).`
 
+- Added private universes for opaque polymorphic constants, see doc
+  for the "Private Polymorphic Universes" option (and Unset it to get
+  the previous behaviour).
+
 Misc
 
 - Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.

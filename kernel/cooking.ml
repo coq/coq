@@ -158,6 +158,7 @@ type result = {
   cook_body : constant_def;
   cook_type : types;
   cook_universes : constant_universes;
+  cook_private_univs : Univ.ContextSet.t option;
   cook_inline : inline;
   cook_context : Constr.named_context option;
 }
@@ -204,7 +205,8 @@ let lift_univs cb subst auctx0 =
     else
       let ainst = Univ.make_abstract_instance auctx in
       let subst = Instance.append subst ainst in
-      let auctx' = Univ.subst_univs_level_abstract_universe_context (Univ.make_instance_subst subst) auctx in
+      let substf = Univ.make_instance_subst subst in
+      let auctx' = Univ.subst_univs_level_abstract_universe_context substf auctx in
       subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
 
 let cook_constant ~hcons { from = cb; info } =
@@ -229,10 +231,15 @@ let cook_constant ~hcons { from = cb; info } =
 		  hyps)
       hyps0 ~init:cb.const_hyps in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
+  let private_univs = Option.map (on_snd (Univ.subst_univs_level_constraints
+                                            (Univ.make_instance_subst usubst)))
+      cb.const_private_poly_univs
+  in
   {
     cook_body = body;
     cook_type = typ;
     cook_universes = univs;
+    cook_private_univs = private_univs;
     cook_inline = cb.const_inline_code;
     cook_context = Some const_hyps;
   }

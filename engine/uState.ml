@@ -441,11 +441,13 @@ let restrict_universe_context (univs, csts) keep =
   if LSet.is_empty removed then univs, csts
   else
   let allunivs = Constraint.fold (fun (u,_,v) all -> LSet.add u (LSet.add v all)) csts univs in
-  let g = UGraph.empty_universes in
-  let g = LSet.fold UGraph.add_universe_unconstrained allunivs g in
+  let g = UGraph.initial_universes in
+  let g = LSet.fold (fun v g -> if Level.is_small v then g else UGraph.add_universe v false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
-  let allkept = LSet.diff allunivs removed in
+  let allkept = LSet.union (UGraph.domain UGraph.initial_universes) (LSet.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
+  let csts = Constraint.filter (fun (l,d,r) ->
+      not ((Level.is_set l && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
   (LSet.inter univs keep, csts)
 
 let restrict ctx vars =

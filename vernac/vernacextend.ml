@@ -12,6 +12,10 @@ open Util
 open Pp
 open CErrors
 
+type vernac_keep_as = VtKeepAxiom | VtKeepDefined | VtKeepOpaque
+
+type vernac_qed_type = VtKeep of vernac_keep_as | VtDrop
+
 type vernac_type =
   (* Start of a proof *)
   | VtStartProof of vernac_start
@@ -33,7 +37,6 @@ type vernac_type =
   (* To be removed *)
   | VtMeta
   | VtUnknown
-and vernac_qed_type = VtKeep | VtKeepAsAxiom | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * opacity_guarantee * Names.Id.t list
 and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =

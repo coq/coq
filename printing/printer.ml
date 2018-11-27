@@ -143,7 +143,7 @@ let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 let _ = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
-let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
+let pr_in_comment x = str "(* " ++ x ++ str " *)"
 
 (** Term printers resilient to [Nametab] errors *)
 
@@ -199,42 +199,43 @@ let safe_pr_constr_env = safe_gen pr_constr_env
 
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0
-      (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c)) c
+    fnl()++pr_in_comment (v 0 (Univ.pr_universe_context_set (Termops.pr_evd_level sigma) c))
   else
     mt()
 
 let pr_universe_ctx sigma ?variance c =
   if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0 
-      (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+    fnl()++pr_in_comment (v 0 (Univ.pr_universe_context (Termops.pr_evd_level sigma) ?variance c))
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (Univ.AUContext.is_empty c) then
-    fnl()++pr_in_comment (fun c -> v 0
-      (Univ.pr_abstract_universe_context (Termops.pr_evd_level sigma) ?variance c)) c
+let pr_abstract_universe_ctx sigma ?variance c ~priv =
+  let open Univ in
+  let priv = Option.default Univ.ContextSet.empty priv in
+  let has_priv = not (ContextSet.is_empty priv) in
+  if !Detyping.print_universes && (not (Univ.AUContext.is_empty c) || has_priv) then
+    let prlev u = Termops.pr_evd_level sigma u in
+    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (Univ.pr_abstract_universe_context prlev ?variance c) in
+    let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
+    fnl()++pr_in_comment (pub ++ priv)
   else
     mt()
 
-let pr_constant_universes sigma = function
+let pr_constant_universes sigma ~priv = function
   | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
-  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx
+  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx ~priv
 
 let pr_cumulativity_info sigma cumi =
   if !Detyping.print_universes 
   && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (fun uii -> v 0 
-      (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+    fnl()++pr_in_comment (v 0 (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) cumi))
   else
     mt()
 
 let pr_abstract_cumulativity_info sigma cumi =
   if !Detyping.print_universes
   && not (Univ.AUContext.is_empty (Univ.ACumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (fun uii -> v 0
-      (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) uii)) cumi
+    fnl()++pr_in_comment (v 0 (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) cumi))
   else
     mt()
 

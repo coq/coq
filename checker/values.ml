@@ -227,6 +227,7 @@ let v_cb = v_tuple "constant_body"
     v_constr;
     Any;
     v_const_univs;
+    Opt v_context_set;
     v_bool;
     v_typing_flags|]
 

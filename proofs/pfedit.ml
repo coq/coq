@@ -138,7 +138,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   try
     let status = by tac in
     let open Proof_global in
-    let { entries; universes } = fst @@ close_proof ~keep_body_ucst_separate:false (fun x -> x) in
+    let { entries; universes } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) in
     match entries with
     | [entry] ->
       discard_current ();

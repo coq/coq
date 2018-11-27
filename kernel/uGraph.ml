@@ -866,6 +866,8 @@ let constraints_for ~kept g =
         arc.ltle csts)
     kept csts
 
+let domain g = LMap.domain g.entries
+
 (** [sort_universes g] builds a totally ordered universe graph.  The
     output graph should imply the input graph (and the implication
     will be strict most of the time), but is not necessarily minimal.

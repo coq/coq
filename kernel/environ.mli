@@ -269,6 +269,12 @@ val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
 val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
+val push_subgraph : Univ.ContextSet.t -> env -> env
+(** [push_subgraph univs env] adds the universes and constraints in
+   [univs] to [env] as [push_context_set ~strict:false univs env], and
+   also checks that they do not imply new transitive constraints
+   between pre-existing universes in [env]. *)
+
 val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
 
