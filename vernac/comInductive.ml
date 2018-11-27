@@ -266,7 +266,7 @@ let inductive_levels env evd poly arities inds =
         in
         let minlev =
           (** Indices contribute. *)
-          if Indtypes.is_indices_matter () && List.length ctx > 0 then (
+          if indices_matter env && List.length ctx > 0 then (
             let ilev = sign_level env evd ctx in
               Univ.sup ilev minlev)
           else minlev

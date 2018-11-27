@@ -29,6 +29,7 @@ val named_context : unit -> Constr.named_context
 
 (** Changing the (im)predicativity of the system *)
 val set_engagement : Declarations.engagement -> unit
+val set_indices_matter : bool -> unit
 val set_typing_flags : Declarations.typing_flags -> unit
 val typing_flags : unit -> Declarations.typing_flags
 

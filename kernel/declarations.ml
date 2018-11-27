@@ -61,13 +61,27 @@ type constant_universes =
     of a constant are tracked in their {!constant_body} so that they
     can be displayed to the user. *)
 type typing_flags = {
-  check_guarded : bool; (** If [false] then fixed points and co-fixed
-                            points are assumed to be total. *)
-  check_universes : bool; (** If [false] universe constraints are not checked *)
-  conv_oracle : Conv_oracle.oracle; (** Unfolding strategies for conversion *)
-  share_reduction : bool; (** Use by-need reduction algorithm *)
-  enable_VM : bool; (** If [false], all VM conversions fall back to interpreted ones *)
-  enable_native_compiler : bool; (** If [false], all native conversions fall back to VM ones *)
+  check_guarded : bool;
+  (** If [false] then fixed points and co-fixed points are assumed to
+      be total. *)
+
+  check_universes : bool;
+  (** If [false] universe constraints are not checked *)
+
+  conv_oracle : Conv_oracle.oracle;
+  (** Unfolding strategies for conversion *)
+
+  share_reduction : bool;
+  (** Use by-need reduction algorithm *)
+
+  enable_VM : bool;
+  (** If [false], all VM conversions fall back to interpreted ones *)
+
+  enable_native_compiler : bool;
+  (** If [false], all native conversions fall back to VM ones *)
+
+  indices_matter: bool;
+  (** The universe of an inductive type must be above that of its indices. *)
 }
 
 (* some contraints are in constant_constraints, some other may be in

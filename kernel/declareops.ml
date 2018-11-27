@@ -24,6 +24,7 @@ let safe_flags oracle = {
   share_reduction = true;
   enable_VM = true;
   enable_native_compiler = true;
+  indices_matter = true;
 }
 
 (** {6 Arities } *)

@@ -35,14 +35,6 @@ env_ar_par = env_ar + declaration of parameters
 nmr = ongoing computation of recursive parameters
 *)
 
-(* Tell if indices (aka real arguments) contribute to size of inductive type *)
-(* If yes, this is compatible with the univalent model *)
-
-let indices_matter = ref false
-
-let enforce_indices_matter () = indices_matter := true
-let is_indices_matter () = !indices_matter
-
 (* [weaker_noccur_between env n nvars t] (defined above), checks that
    no de Bruijn indices between [n] and [n+nvars] occur in [t]. If
    some such occurrences are found, then reduction is performed
@@ -303,7 +295,7 @@ let typecheck_inductive env mie =
 	 let inflev = 
 	   (* The level of the inductive includes levels of indices if 
 	      in indices_matter mode *)
-	     if !indices_matter 
+             if indices_matter env
 	     then Some (cumulate_arity_large_levels env_params sign)
 	     else None
 	 in
