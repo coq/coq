@@ -44,6 +44,9 @@ NO_RECALC_DEPS ?=
 # Non-empty runs the checker on all produced .vo files:
 VALIDATE ?=
 
+# When non-empty, passed as extra arguments to coqtop/coqc:
+COQUSERFLAGS ?=
+
 # Output file names for timed builds
 TIME_OF_BUILD_FILE               ?= time-of-build.log
 TIME_OF_BUILD_BEFORE_FILE        ?= time-of-build-before.log
@@ -191,7 +194,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 # the output format of the unix command time. For instance:
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
-COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR)
+COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
 BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
