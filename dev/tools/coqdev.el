@@ -72,18 +72,19 @@ Specifically `camldebug-command-name' and `ocamldebug-command-name'."
 (make-variable-buffer-local 'coq-prog-args)
 (setq-default coq-prog-args nil)
 
+(defvar coqdev-dune-context "_build/default/")
+
 (defun coqdev-setup-proofgeneral ()
   "Setup Proofgeneral variables for Coq development.
 
 Note that this function is executed before _Coqproject is read if it exists."
-  (let ((dir (coqdev-default-directory)))
+  (let* ((dir (coqdev-default-directory))
+         (dune-dir (concat dir coqdev-dune-context)))
     (when dir
-      (unless coq-prog-args
-        (setq coq-prog-args
-              `("-coqlib" ,dir "-R" ,(concat dir "plugins")
-                "Coq" "-R" ,(concat dir "theories")
-                "Coq")))
-      (setq-local coq-prog-name (concat dir "bin/coqtop")))))
+      (setq coq-prog-args
+            `("-coqlib" ,dune-dir
+              ,@coq-prog-args))
+      (setq-local coq-prog-name (concat dune-dir "topbin/coqtop_bin.exe")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
 ;; This Elisp snippet adds a regexp parser for the format of Anomaly
