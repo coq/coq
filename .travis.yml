@@ -34,6 +34,7 @@ script:
     set -ex
     sudo chown -R coq:coq /home/coq/${CONTRIB_NAME}
     make
+    make tests
     "
 - docker stop COQ  # optional
 - echo -en 'travis_fold:end:script\\r'
