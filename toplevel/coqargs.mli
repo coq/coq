@@ -19,8 +19,8 @@ type coq_cmdopts = {
   load_rcfile : bool;
   rcfile      : string option;
 
-  ml_includes : string list;
-  vo_includes : (string * Names.DirPath.t * bool) list;
+  ml_includes : Mltop.coq_path list;
+  vo_includes : Mltop.coq_path list;
   vo_requires : (string * string option * bool option) list;
 
   (* Fuse these two? Currently, [batch_mode] is only used to
@@ -69,3 +69,6 @@ type coq_cmdopts = {
 
 val parse_args : string list -> coq_cmdopts * string list
 val exitcode : coq_cmdopts -> int
+
+val require_libs : coq_cmdopts -> (string * string option * bool option) list
+val build_load_path : coq_cmdopts -> Mltop.coq_path list
