@@ -30,7 +30,7 @@ When a proof is completed, the message ``Proof completed`` is displayed.
 One can then register this proof as a defined constant in the
 environment. Because there exists a correspondence between proofs and
 terms of λ-calculus, known as the *Curry-Howard isomorphism*
-:cite:`How80,Bar81,Gir89,Hue88`, |Coq| stores proofs as terms of |Cic|. Those
+:cite:`How80,Bar81,Gir89,H89`, |Coq| stores proofs as terms of |Cic|. Those
 terms are called *proof terms*.
 
 
