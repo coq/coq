@@ -16,7 +16,9 @@ open Names
 module AsyncOpts : sig
 
   type cache = Force
-  type async_proofs = APoff | APonLazy | APon
+  type async_proofs = APoff
+                    | APonLazy (* Delays proof checking, but does it in master *)
+                    | APon
   type tac_error_filter = [ `None | `Only of string list | `All ]
 
   type stm_opt = {
@@ -27,7 +29,6 @@ module AsyncOpts : sig
     async_proofs_mode : async_proofs;
 
     async_proofs_private_flags : string option;
-    async_proofs_full : bool;
     async_proofs_never_reopen_branch : bool;
 
     async_proofs_tac_error_resilience : tac_error_filter;
