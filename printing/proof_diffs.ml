@@ -138,13 +138,11 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
     let hyp_diffs = diff_str ~tokenize_string o_line n_line in
     let (has_added, has_removed) = has_changes hyp_diffs in
     if show_removed () && has_removed then begin
-      let o_entry = StringMap.find (List.hd old_ids) o_map in
-      o_entry.done_ <- true;
+      List.iter (fun x -> (StringMap.find x o_map).done_ <- true) old_ids;
       rv := (add_diff_tags `Removed o_pp hyp_diffs) :: !rv;
     end;
     if n_line <> "" then begin
-      let n_entry = StringMap.find (List.hd new_ids) n_map in
-      n_entry.done_ <- true;
+      List.iter (fun x -> (StringMap.find x n_map).done_ <- true) new_ids;
       rv := (add_diff_tags `Added n_pp hyp_diffs) :: !rv
     end
   in
@@ -157,7 +155,7 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
       if dtype = `Removed then begin
         let o_idents = (StringMap.find ident o_map).idents in
         (* only show lines that have all idents removed here; other removed idents appear later *)
-        if show_removed () &&
+        if show_removed () && not (is_done ident o_map) &&
             List.for_all (fun x -> not (exists x n_map)) o_idents then
           output (List.rev o_idents) []
       end
