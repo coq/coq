@@ -184,13 +184,13 @@ let cofixp_reducible flgs _ stk =
     false
 
 let debug_cbv = ref false
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname = "cbv visited constants display";
-  Goptions.optkey = ["Debug";"Cbv"];
-  Goptions.optread = (fun () -> !debug_cbv);
-  Goptions.optwrite = (fun a -> debug_cbv:=a);
-}
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname = "cbv visited constants display";
+  optkey = ["Debug";"Cbv"];
+  optread = (fun () -> !debug_cbv);
+  optwrite = (fun a -> debug_cbv:=a);
+})
 
 let debug_pr_key = function
   | ConstKey (sp,_) -> Names.Constant.print sp

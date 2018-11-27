@@ -138,7 +138,7 @@ open Goptions
 let wildcard_value = ref true
 let force_wildcard () = !wildcard_value
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "forced wildcard";
 	    optkey   = ["Printing";"Wildcard"];
@@ -148,7 +148,7 @@ let _ = declare_bool_option
 let synth_type_value = ref true
 let synthetize_type () = !synth_type_value
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "pattern matching return type synthesizability";
 	    optkey   = ["Printing";"Synth"];
@@ -158,7 +158,7 @@ let _ = declare_bool_option
 let reverse_matching_value = ref true
 let reverse_matching () = !reverse_matching_value
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "pattern-matching reversibility";
 	    optkey   = ["Printing";"Matching"];
@@ -168,7 +168,7 @@ let _ = declare_bool_option
 let print_primproj_params_value = ref false
 let print_primproj_params () = !print_primproj_params_value
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "printing of primitive projection parameters";
 	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
@@ -178,7 +178,7 @@ let _ = declare_bool_option
 let print_primproj_compatibility_value = ref false
 let print_primproj_compatibility () = !print_primproj_compatibility_value
 
-let _ = declare_bool_option
+let () = declare_bool_option
 	  { optdepr  = false;
 	    optname  = "backwards-compatible printing of primitive projections";
 	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
@@ -257,8 +257,7 @@ let lookup_index_as_renamed env sigma t n =
 
 let print_factorize_match_patterns = ref true
 
-let _ =
-  let open Goptions in
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "factorization of \"match\" patterns in printing";
@@ -268,8 +267,7 @@ let _ =
 
 let print_allow_match_default_clause = ref true
 
-let _ =
-  let open Goptions in
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "possible use of \"match\" default pattern in printing";

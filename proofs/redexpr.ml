@@ -54,14 +54,14 @@ let strong_cbn flags =
   strong_with_flags whd_cbn flags
 
 let simplIsCbn = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname =
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname =
     "Plug the simpl tactic to the new cbn mechanism";
-  Goptions.optkey = ["SimplIsCbn"];
-  Goptions.optread = (fun () -> !simplIsCbn);
-  Goptions.optwrite = (fun a -> simplIsCbn:=a);
-}
+  optkey = ["SimplIsCbn"];
+  optread = (fun () -> !simplIsCbn);
+  optwrite = (fun a -> simplIsCbn:=a);
+})
 
 let set_strategy_one ref l  =
   let k =

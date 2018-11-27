@@ -54,7 +54,7 @@ let opt_pruning=
    optread=(fun () -> !pruning);
    optwrite=(fun b -> pruning:=b)}
 
-let _ = declare_bool_option opt_pruning
+let () = declare_bool_option opt_pruning
 
 type form=
     Atom of int

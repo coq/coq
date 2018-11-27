@@ -66,14 +66,14 @@ open Ssripats
 
 let ssrhaveNOtcresolution = Summary.ref ~name:"SSR:havenotcresolution" false
 
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optname  = "have type classes";
-      Goptions.optkey   = ["SsrHave";"NoTCResolution"];
-      Goptions.optread  = (fun _ -> !ssrhaveNOtcresolution);
-      Goptions.optdepr  = false;
-      Goptions.optwrite = (fun b -> ssrhaveNOtcresolution := b);
-    }
+let () =
+  Goptions.(declare_bool_option
+    { optname  = "have type classes";
+      optkey   = ["SsrHave";"NoTCResolution"];
+      optread  = (fun _ -> !ssrhaveNOtcresolution);
+      optdepr  = false;
+      optwrite = (fun b -> ssrhaveNOtcresolution := b);
+    })
 
 
 open Constrexpr 

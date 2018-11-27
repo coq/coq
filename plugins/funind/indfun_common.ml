@@ -375,7 +375,7 @@ let functional_induction_rewrite_dependent_proofs_sig =
     optread = (fun () -> !functional_induction_rewrite_dependent_proofs);
     optwrite = (fun b -> functional_induction_rewrite_dependent_proofs := b)
   }
-let _ = declare_bool_option functional_induction_rewrite_dependent_proofs_sig
+let () = declare_bool_option functional_induction_rewrite_dependent_proofs_sig
 
 let do_rewrite_dependent () = !functional_induction_rewrite_dependent_proofs = true
 
@@ -388,7 +388,7 @@ let function_debug_sig =
     optwrite = (fun b -> function_debug := b)
   }
 
-let _ = declare_bool_option function_debug_sig
+let () = declare_bool_option function_debug_sig
 
 
 let do_observe () = !function_debug 
@@ -406,7 +406,7 @@ let strict_tcc_sig =
     optwrite = (fun b -> strict_tcc := b)
   }
 
-let _ = declare_bool_option strict_tcc_sig
+let () = declare_bool_option strict_tcc_sig
 
 
 exception Building_graph of exn

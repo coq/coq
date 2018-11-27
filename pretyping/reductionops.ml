@@ -29,14 +29,14 @@ exception Elimconst
     their parameters in its stack.
 *)
 
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname =
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname =
     "Generate weak constraints between Irrelevant universes";
-  Goptions.optkey = ["Cumulativity";"Weak";"Constraints"];
-  Goptions.optread = (fun () -> not !UState.drop_weak_constraints);
-  Goptions.optwrite = (fun a -> UState.drop_weak_constraints:=not a);
-}
+  optkey = ["Cumulativity";"Weak";"Constraints"];
+  optread = (fun () -> not !UState.drop_weak_constraints);
+  optwrite = (fun a -> UState.drop_weak_constraints:=not a);
+})
 
 
 (** Support for reduction effects *)
@@ -830,14 +830,14 @@ let fix_recarg ((recindices,bodynum),_) stack =
 *)
 
 let debug_RAKAM = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname =
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname =
     "Print states of the Reductionops abstract machine";
-  Goptions.optkey = ["Debug";"RAKAM"];
-  Goptions.optread = (fun () -> !debug_RAKAM);
-  Goptions.optwrite = (fun a -> debug_RAKAM:=a);
-}
+  optkey = ["Debug";"RAKAM"];
+  optread = (fun () -> !debug_RAKAM);
+  optwrite = (fun a -> debug_RAKAM:=a);
+})
 
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in

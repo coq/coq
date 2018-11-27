@@ -44,7 +44,7 @@ open Context.Rel.Declaration
 (* Flags governing automatic synthesis of schemes *)
 
 let elim_flag = ref true
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "automatic declaration of induction schemes";
@@ -53,7 +53,7 @@ let _ =
       optwrite = (fun b -> elim_flag := b) }
 
 let bifinite_elim_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "automatic declaration of induction schemes for non-recursive types";
@@ -62,7 +62,7 @@ let _ =
       optwrite = (fun b -> bifinite_elim_flag := b) }
 
 let case_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "automatic declaration of case analysis schemes";
@@ -71,7 +71,7 @@ let _ =
       optwrite = (fun b -> case_flag := b) }
 
 let eq_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "automatic declaration of boolean equality";
@@ -82,7 +82,7 @@ let _ =
 let is_eq_flag () = !eq_flag
 
 let eq_dec_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "automatic declaration of decidable equality";
@@ -91,7 +91,7 @@ let _ =
       optwrite = (fun b -> eq_dec_flag := b) }
 
 let rewriting_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  ="automatic declaration of rewriting schemes for equality types";

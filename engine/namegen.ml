@@ -210,7 +210,7 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 
 let mangle_names = ref false
 
-let _ = Goptions.(
+let () = Goptions.(
     declare_bool_option
       { optdepr  = false;
         optname  = "mangle auto-generated names";
@@ -226,7 +226,7 @@ let set_mangle_names_mode x = begin
     mangle_names := true
   end
 
-let _ = Goptions.(
+let () = Goptions.(
     declare_string_option
       { optdepr  = false;
         optname  = "mangled names prefix";

@@ -53,7 +53,7 @@ let default_proof_mode = ref (find_proof_mode "No")
 let get_default_proof_mode_name () =
   (CEphemeron.default !default_proof_mode standard).name
 
-let _ =
+let () =
   Goptions.(declare_string_option {
     optdepr = false;
     optname = "default proof mode" ;
@@ -128,13 +128,13 @@ let push a l = l := a::!l;
   update_proof_mode ()
 
 exception NoSuchProof
-let _ = CErrors.register_handler begin function
+let () = CErrors.register_handler begin function
   | NoSuchProof -> CErrors.user_err Pp.(str "No such proof.")
   | _ -> raise CErrors.Unhandled
 end
 
 exception NoCurrentProof
-let _ = CErrors.register_handler begin function
+let () = CErrors.register_handler begin function
   | NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof (No proof-editing in progress).")
   | _ -> raise CErrors.Unhandled
 end
@@ -272,12 +272,12 @@ let get_used_variables () = (cur_pstate ()).section_vars
 let get_universe_decl () = (cur_pstate ()).universe_decl
 
 let proof_using_auto_clear = ref false
-let _ = Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "Proof using Clear Unused";
-      Goptions.optkey   = ["Proof";"Using";"Clear";"Unused"];
-      Goptions.optread  = (fun () -> !proof_using_auto_clear);
-      Goptions.optwrite = (fun b -> proof_using_auto_clear := b) }
+let () = Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = "Proof using Clear Unused";
+      optkey   = ["Proof";"Using";"Clear";"Unused"];
+      optread  = (fun () -> !proof_using_auto_clear);
+      optwrite = (fun b -> proof_using_auto_clear := b) })
 
 let set_used_variables l =
   let open Context.Named.Declaration in
@@ -490,7 +490,7 @@ let update_global_env () =
          (p, ())))
 
 (* XXX: Bullet hook, should be really moved elsewhere *)
-let _ =
+let () =
   let hook n =
     try
       let prf = give_me_the_proof () in

@@ -52,7 +52,7 @@ let write_diffs_option = function
 | "removed" -> diff_option := `REMOVED
 | _ -> CErrors.user_err Pp.(str "Diffs option only accepts the following values: \"off\", \"on\", \"removed\".")
 
-let _ =
+let () =
   Goptions.(declare_string_option {
     optdepr = false;
     optname = "show diffs in proofs";

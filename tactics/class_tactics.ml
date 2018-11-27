@@ -80,7 +80,7 @@ let get_typeclasses_depth () = !typeclasses_depth
 
 open Goptions
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "do typeclass search avoiding eta-expansions " ^
@@ -89,7 +89,7 @@ let _ =
       optread  = get_typeclasses_limit_intros;
       optwrite = set_typeclasses_limit_intros; }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "during typeclass resolution, solve instances according to their dependency order";
@@ -97,7 +97,7 @@ let _ =
       optread  = get_typeclasses_dependency_order;
       optwrite = set_typeclasses_dependency_order; }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "use iterative deepening strategy";
@@ -105,7 +105,7 @@ let _ =
       optread  = get_typeclasses_iterative_deepening;
       optwrite = set_typeclasses_iterative_deepening; }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "compat";
@@ -113,7 +113,7 @@ let _ =
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
 
-let set_typeclasses_debug =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "debug output for typeclasses proof search";
@@ -121,7 +121,7 @@ let set_typeclasses_debug =
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "debug output for typeclasses proof search";
@@ -129,7 +129,7 @@ let _ =
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
-let _ =
+let () =
   declare_int_option
     { optdepr  = false;
       optname  = "verbosity of debug output for typeclasses proof search";
@@ -137,7 +137,7 @@ let _ =
       optread  = get_typeclasses_verbose;
       optwrite = set_typeclasses_verbose; }
 
-let set_typeclasses_depth =
+let () =
   declare_int_option
     { optdepr  = false;
       optname  = "depth for typeclasses proof search";
@@ -1126,7 +1126,7 @@ let solve_inst env evd filter unique split fail =
   end in
   sigma
 
-let _ =
+let () =
   Hook.set Typeclasses.solve_all_instances_hook solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
@@ -1151,7 +1151,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   end in
   (sigma, term)
 
-let _ =
+let () =
   Hook.set Typeclasses.solve_one_instance_hook
     (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
 

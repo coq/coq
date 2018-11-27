@@ -33,14 +33,14 @@ type unify_fun = TransparentState.t ->
   env -> evar_map -> conv_pb -> EConstr.constr -> EConstr.constr -> Evarsolve.unification_result
 
 let debug_unification = ref (false)
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname =
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname =
     "Print states sent to Evarconv unification";
-  Goptions.optkey = ["Debug";"Unification"];
-  Goptions.optread = (fun () -> !debug_unification);
-  Goptions.optwrite = (fun a -> debug_unification:=a);
-}
+  optkey = ["Debug";"Unification"];
+  optread = (fun () -> !debug_unification);
+  optwrite = (fun a -> debug_unification:=a);
+})
 
 (*******************************************)
 (* Functions to deal with impossible cases *)

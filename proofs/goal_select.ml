@@ -53,7 +53,7 @@ let parse_goal_selector = function
         with Failure _ -> CErrors.user_err Pp.(str err_msg)
       end
 
-let _ = let open Goptions in
+let () = let open Goptions in
   declare_string_option
     { optdepr = false;
       optname = "default goal selector" ;

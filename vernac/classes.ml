@@ -30,13 +30,13 @@ open Entries
 
 let refine_instance = ref true
 
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr  = false;
-  Goptions.optname  = "definition of instances by refining";
-  Goptions.optkey   = ["Refine";"Instance";"Mode"];
-  Goptions.optread  = (fun () -> !refine_instance);
-  Goptions.optwrite = (fun b -> refine_instance := b)
-}
+let () = Goptions.(declare_bool_option {
+  optdepr  = false;
+  optname  = "definition of instances by refining";
+  optkey   = ["Refine";"Instance";"Mode"];
+  optread  = (fun () -> !refine_instance);
+  optwrite = (fun b -> refine_instance := b)
+})
 
 let typeclasses_db = "typeclass_instances"
 
@@ -44,7 +44,7 @@ let set_typeclass_transparency c local b =
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
     
-let _ =
+let () =
   Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local info poly ->
      let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)

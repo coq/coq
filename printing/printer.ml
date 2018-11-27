@@ -34,7 +34,7 @@ let should_unfoc() = !enable_unfocused_goal_printing
 let should_gname() = !enable_goal_names_printing
 
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
@@ -45,7 +45,7 @@ let _ =
 
 (* This is set on by proofgeneral proof-tree mode. But may be used for
    other purposes *)
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
@@ -55,7 +55,7 @@ let _ =
       optwrite = (fun b -> enable_goal_tags_printing:=b) }
 
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
@@ -140,7 +140,7 @@ let pr_cases_pattern t =
 
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
-let _ = Termops.Internal.set_print_constr
+let () = Termops.Internal.set_print_constr
   (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment x = str "(* " ++ x ++ str " *)"
@@ -431,7 +431,7 @@ let pr_context_limit_compact ?n env sigma =
 (* If [None], no limit *)
 let print_hyps_limit = ref (None : int option)
 
-let _ =
+let () =
   let open Goptions in
   declare_int_option
     { optdepr  = false;
@@ -639,7 +639,7 @@ let print_evar_constraints gl sigma =
 
 let should_print_dependent_evars = ref false
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;

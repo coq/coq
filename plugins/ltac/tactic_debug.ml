@@ -89,7 +89,7 @@ let batch = ref false
 
 open Goptions
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Ltac batch debug";

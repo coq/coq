@@ -32,13 +32,13 @@ open Tacticals
 open Tacmach
 
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
-let _ =
-  Goptions.declare_bool_option
-    { Goptions.optname  = "ssreflect 1.3 compatibility flag";
-      Goptions.optkey   = ["SsrOldRewriteGoalsOrder"];
-      Goptions.optread  = (fun _ -> !ssroldreworder);
-      Goptions.optdepr  = false;
-      Goptions.optwrite = (fun b -> ssroldreworder := b) }
+let () =
+  Goptions.(declare_bool_option
+    { optname  = "ssreflect 1.3 compatibility flag";
+      optkey   = ["SsrOldRewriteGoalsOrder"];
+      optread  = (fun _ -> !ssroldreworder);
+      optdepr  = false;
+      optwrite = (fun b -> ssroldreworder := b) })
 
 (** The "simpl" tactic *)
 

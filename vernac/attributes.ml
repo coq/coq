@@ -162,7 +162,7 @@ let universe_transform ~warn_unqualified : unit attribute =
 let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
 let is_universe_polymorphism =
   let b = ref false in
-  let _ = let open Goptions in
+  let () = let open Goptions in
     declare_bool_option
       { optdepr  = false;
         optname  = "universe polymorphism";

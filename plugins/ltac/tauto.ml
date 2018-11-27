@@ -65,7 +65,7 @@ let assoc_flags ist : tauto_flags =
 let negation_unfolding = ref true
 
 open Goptions
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "unfolding of not in intuition";

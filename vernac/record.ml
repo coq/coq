@@ -36,7 +36,7 @@ module RelDecl = Context.Rel.Declaration
 
 (** Flag governing use of primitive projections. Disabled by default. *)
 let primitive_flag = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "use of primitive projections";
@@ -45,7 +45,7 @@ let _ =
       optwrite = (fun b -> primitive_flag := b) }
 
 let typeclasses_strict = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "strict typeclass resolution";
@@ -54,7 +54,7 @@ let _ =
       optwrite = (fun b -> typeclasses_strict := b); }
 
 let typeclasses_unique = ref false
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "unique typeclass instances";
@@ -103,7 +103,7 @@ let binders_of_decls = List.map binder_of_decl
 let typecheck_params_and_fields finite def poly pl ps records =
   let env0 = Global.env () in
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env0 pl in
-  let _ =
+  let () =
     let error bk {CAst.loc; v=name} =
       match bk, name with
       | Default _, Anonymous ->

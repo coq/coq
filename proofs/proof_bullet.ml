@@ -176,7 +176,7 @@ end
 (* Current bullet behavior, controlled by the option *)
 let current_behavior = ref Strict.strict
 
-let _ =
+let () =
   Goptions.(declare_string_option {
     optdepr = false;
     optname = "bullet behavior";

@@ -194,14 +194,14 @@ let write_warn_hint = function
 | "Strict" -> warn_hint := `STRICT
 | _ -> user_err Pp.(str "Only the following flags are accepted: Lax, Warn, Strict.")
 
-let _ =
-  Goptions.declare_string_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "behavior of non-imported hints";
-      Goptions.optkey   = ["Loose"; "Hint"; "Behavior"];
-      Goptions.optread  = read_warn_hint;
-      Goptions.optwrite = write_warn_hint;
-    }
+let () =
+  Goptions.(declare_string_option
+    { optdepr  = false;
+      optname  = "behavior of non-imported hints";
+      optkey   = ["Loose"; "Hint"; "Behavior"];
+      optread  = read_warn_hint;
+      optwrite = write_warn_hint;
+    })
 
 let fresh_key =
   let id = Summary.ref ~name:"HINT-COUNTER" 0 in

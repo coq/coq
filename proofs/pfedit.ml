@@ -16,18 +16,18 @@ open Environ
 open Evd
 
 let use_unification_heuristics_ref = ref true
-let _ = Goptions.declare_bool_option {
-  Goptions.optdepr = false;
-  Goptions.optname = "Solve unification constraints at every \".\"";
-  Goptions.optkey = ["Solve";"Unification";"Constraints"];
-  Goptions.optread = (fun () -> !use_unification_heuristics_ref);
-  Goptions.optwrite = (fun a -> use_unification_heuristics_ref:=a);
-}
+let () = Goptions.(declare_bool_option {
+  optdepr = false;
+  optname = "Solve unification constraints at every \".\"";
+  optkey = ["Solve";"Unification";"Constraints"];
+  optread = (fun () -> !use_unification_heuristics_ref);
+  optwrite = (fun a -> use_unification_heuristics_ref:=a);
+})
 
 let use_unification_heuristics () = !use_unification_heuristics_ref
 
 exception NoSuchGoal
-let _ = CErrors.register_handler begin function
+let () = CErrors.register_handler begin function
   | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
   | _ -> raise CErrors.Unhandled
 end

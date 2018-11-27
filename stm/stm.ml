@@ -2842,12 +2842,12 @@ let process_back_meta_command ~newtip ~head oid aast w =
     Backtrack.record (); if w == VtNow then ignore(finish ~doc:dummy_doc); `Ok
 
 let allow_nested_proofs = ref false
-let _ = Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = "Nested Proofs Allowed";
-      Goptions.optkey   = Vernac_classifier.stm_allow_nested_proofs_option_name;
-      Goptions.optread  = (fun () -> !allow_nested_proofs);
-      Goptions.optwrite = (fun b -> allow_nested_proofs := b) }
+let () = Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = "Nested Proofs Allowed";
+      optkey   = Vernac_classifier.stm_allow_nested_proofs_option_name;
+      optread  = (fun () -> !allow_nested_proofs);
+      optwrite = (fun b -> allow_nested_proofs := b) })
 
 let process_transaction ~doc ?(newtip=Stateid.fresh ())
   ({ verbose; loc; expr } as x) c =

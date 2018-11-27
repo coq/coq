@@ -450,7 +450,7 @@ let start_proof_com ?inference_hook kind thms hook =
 
 let keep_admitted_vars = ref true
 
-let _ =
+let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;

@@ -172,15 +172,14 @@ let global_info_trivial = ref false
 let global_info_auto = ref false
 
 let add_option ls refe =
-  let _ = Goptions.declare_bool_option
-    { Goptions.optdepr  = false;
-      Goptions.optname  = String.concat " " ls;
-      Goptions.optkey   = ls;
-      Goptions.optread  = (fun () -> !refe);
-      Goptions.optwrite = (:=) refe }
-  in ()
+  Goptions.(declare_bool_option
+    { optdepr  = false;
+      optname  = String.concat " " ls;
+      optkey   = ls;
+      optread  = (fun () -> !refe);
+      optwrite = (:=) refe })
 
-let _ =
+let () =
   add_option ["Debug";"Trivial"] global_debug_trivial;
   add_option ["Debug";"Auto"] global_debug_auto;
   add_option ["Info";"Trivial"] global_info_trivial;

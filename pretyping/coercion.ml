@@ -35,7 +35,7 @@ open Globnames
 
 let use_typeclasses_for_conversion = ref true
 
-let _ =
+let () =
   Goptions.(declare_bool_option
     { optdepr  = false;
       optname  = "use typeclass resolution during conversion";
@@ -183,7 +183,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	    with UnableToUnify _ ->
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
-	      let _ =
+              let () =
 		try evdref := the_conv_x_leq env eqT eqT' !evdref
 		with UnableToUnify _ -> raise NoSubtacCoercion
 	      in

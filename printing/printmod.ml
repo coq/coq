@@ -41,7 +41,7 @@ type short = OnlyNames | WithContents
 
 let short = ref false
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "short module printing";

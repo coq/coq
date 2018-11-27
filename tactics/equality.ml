@@ -69,7 +69,7 @@ let use_injection_in_context = function
   | None -> !injection_in_context
   | Some flags -> flags.injection_in_context
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "injection in context";
@@ -714,7 +714,7 @@ exception DiscrFound of
 
 let keep_proof_equalities_for_injection = ref false
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "injection on prop arguments";
@@ -1501,7 +1501,7 @@ let intro_decomp_eq tac data (c, t) =
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) data cl
   end
 
-let _ = declare_intro_decomp_eq intro_decomp_eq
+let () = declare_intro_decomp_eq intro_decomp_eq
 
 (* [subst_tuple_term dep_pair B]
 
@@ -1666,7 +1666,7 @@ user = raise user error specific to rewrite
 
 let regular_subst_tactic = ref true
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "more regular behavior of tactic subst";
@@ -1911,8 +1911,8 @@ let replace_term dir_opt c  =
 
 (* Declare rewriting tactic for intro patterns "<-" and "->" *)
 
-let _ =
+let () =
   let gmr l2r with_evars tac c = general_rewrite_clause l2r with_evars tac c in
   Hook.set Tactics.general_rewrite_clause gmr
 
-let _ = Hook.set Tactics.subst_one subst_one
+let () = Hook.set Tactics.subst_one subst_one

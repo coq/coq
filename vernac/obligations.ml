@@ -343,7 +343,7 @@ let set_hide_obligations = (:=) hide_obligations
 let get_hide_obligations () = !hide_obligations
 
 open Goptions
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optname  = "Hiding of Program obligations";
@@ -356,7 +356,7 @@ let shrink_obligations = ref true
 let set_shrink_obligations = (:=) shrink_obligations
 let get_shrink_obligations () = !shrink_obligations
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = true; (* remove in 8.8 *)
       optname  = "Shrinking of Program obligations";
@@ -893,7 +893,7 @@ let obligation_terminator name num guard hook auto pf =
     let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
     let obls = Array.copy obls in
-    let _ = obls.(num) <- obl in
+    let () = obls.(num) <- obl in
     let prg_ctx =
       if pi2 (prg.prg_kind) then (* Polymorphic *)
         (** We merge the new universes and constraints of the
@@ -949,7 +949,7 @@ in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
   let () = if transparent then add_hint true prg cst in
   let obls = Array.copy obls in
-  let _ = obls.(num) <- obl in
+  let () = obls.(num) <- obl in
   let prg = { prg with prg_ctx = ctx' } in
   let () =
     try ignore (update_obls prg obls (pred rem))
@@ -1045,7 +1045,7 @@ and solve_prg_obligations prg ?oblset tac =
       (fun i -> Int.Set.mem i !set)
   in
   let prgref = ref prg in
-  let _ =
+  let () =
     Array.iteri (fun i x ->
       if p i then
         match solve_obligation_by_tac !prgref obls' i tac with
@@ -1132,7 +1132,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
       Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str (String.plural len " obligation")) in
+    let () = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str (String.plural len " obligation")) in
       progmap_add n (CEphemeron.create prg);
       let res = auto_solve_obligations (Some n) tactic in
 	match res with

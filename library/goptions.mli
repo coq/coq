@@ -122,16 +122,14 @@ type 'a option_sig = {
 (** The [preprocess] function is triggered before setting the option. It can be
     used to emit a warning on certain values, and clean-up the final value. *)
 
-type 'a write_function = 'a -> unit
-
 val declare_int_option   : ?preprocess:(int option -> int option) ->
-                           int option option_sig -> int option write_function
+                           int option option_sig -> unit
 val declare_bool_option  : ?preprocess:(bool -> bool) ->
-                           bool option_sig   -> bool write_function
+                           bool option_sig   -> unit
 val declare_string_option: ?preprocess:(string -> string) ->
-                           string option_sig -> string write_function
+                           string option_sig -> unit
 val declare_stringopt_option: ?preprocess:(string option -> string option) ->
-                              string option option_sig -> string option write_function
+                              string option option_sig -> unit
 
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
