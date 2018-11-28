@@ -47,7 +47,7 @@ type ssrdocc = ssrclear option * ssrocc
 
 (* OLD ssr terms *)
 type ssrtermkind = char (* FIXME, make algebraic *)
-type ssrterm = ssrtermkind * Tacexpr.glob_constr_and_expr
+type ssrterm = ssrtermkind * Genintern.glob_constr_and_expr
 
 (* NEW ssr term *)
 

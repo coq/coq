@@ -17,6 +17,7 @@ open Names
 open Environ
 open Constrexpr
 open Notation_gram
+open Genintern
 open Tacexpr
 open Tactypes
 

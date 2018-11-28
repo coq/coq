@@ -5,9 +5,7 @@ open Goal
 open Environ
 open Evd
 open Constr
-
-open Ltac_plugin
-open Tacexpr
+open Genintern
 
 (** ******** Small Scale Reflection pattern matching facilities ************* *)
 

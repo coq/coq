@@ -43,6 +43,8 @@ type interp_sign = Geninterp.interp_sign = {
   lfun : value Id.Map.t;
   extra : TacStore.t }
 
+open Genintern
+
 val f_avoid_ids : Id.Set.t TacStore.field
 val f_debug : debug_info TacStore.field
 

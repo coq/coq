@@ -93,19 +93,8 @@ type ml_tactic_entry = {
 
 (** Composite types *)
 
-type glob_constr_and_expr = Genintern.glob_constr_and_expr
-
 type open_constr_expr = unit * constr_expr
-type open_glob_constr = unit * glob_constr_and_expr
-
-type binding_bound_vars = Constr_matching.binding_bound_vars
-type glob_constr_pattern_and_expr = binding_bound_vars * glob_constr_and_expr * constr_pattern
-
-type 'a delayed_open = Environ.env -> Evd.evar_map -> Evd.evar_map * 'a
-
-type delayed_open_constr_with_bindings = EConstr.constr with_bindings delayed_open
-
-type delayed_open_constr = EConstr.constr delayed_open
+type open_glob_constr = unit * Genintern.glob_constr_and_expr
 
 type intro_pattern = delayed_open_constr intro_pattern_expr CAst.t
 type intro_patterns = delayed_open_constr intro_pattern_expr CAst.t list
@@ -279,8 +268,8 @@ constraint 'a = <
 
 (** Globalized tactics *)
 
-type g_trm = glob_constr_and_expr
-type g_pat = glob_constr_pattern_and_expr
+type g_trm = Genintern.glob_constr_and_expr
+type g_pat = Genintern.glob_constr_pattern_and_expr
 type g_cst = evaluable_global_reference Stdarg.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident

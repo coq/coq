@@ -26,6 +26,7 @@ open Pputils
 open Ppconstr
 open Printer
 
+open Genintern
 open Tacexpr
 open Tacarg
 open Tactics

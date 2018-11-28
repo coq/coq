@@ -12,6 +12,7 @@ open Names
 open Tacexpr
 open Genarg
 open Constrexpr
+open Genintern
 open Tactypes
 
 (** Globalization of tactic expressions :
