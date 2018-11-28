@@ -5,6 +5,7 @@ OCaml and dependencies
 
 - Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
   INSTALL file for more information on dependencies.
+  (@ejgallego #7522, review by @gares, @Skyskimmer, and @Zimmi48)
 
 - Coq 8.10 doesn't need Camlp5 to build anymore. It now includes a
   fork of the core parsing library that Coq uses, which is a small
@@ -14,11 +15,13 @@ OCaml and dependencies
 
   The Coq developers would like to thank Daniel de Rauglaudre for many
   years of continued support.
+  (@ejgallego @ppedrot @Skyskimmer #8667 #8945 #8985, review by @gares)
 
 Coqide
 
 - CoqIDE now properly sets the module name for a given file based on
   its path, see -topfile change entry for more details.
+  (@Skyskimmer #8991, review by @ejgallego, @gares, and @ppedrot)
 
 Coqtop
 
@@ -26,6 +29,7 @@ Coqtop
   (à la -top) based on the filename passed, taking into account the
   proper -R/-Q options. For example, given -R Foo foolib using
   -topfile foolib/bar.v will set the module name to Foo.Bar.
+  (@Skyskimmer #8991, review by @ejgallego, @gares, and @ppedrot)
 
 Specification language, type inference
 
@@ -134,7 +138,8 @@ Universes
 
 Misc
 
-- Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.
+- Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare
+  Instance for axioms which should be instances.
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================
@@ -171,6 +176,7 @@ Tactics
   deprecated in 8.8 have been removed from Ltac's syntax; please use
   `fix ident N/cofix ident` to explicitly name the (co)fixpoint
   hypothesis to be introduced.
+  (@ejgallego #7196 #7200, review by @herbelin, @ppedrot, and @Zimmi48)
 
 - Introduction tactics `intro`/`intros` on a goal that is an
   existential variable now force a refinement of the goal into a
@@ -289,6 +295,12 @@ Vernacular Commands
   overwritting the opacity set of the hint database.
 - Added generic syntax for "attributes", as in:
   `#[local] Lemma foo : bar.`
+
+  (@vbgl, initial discussion at CEP#31 by @spiwak, initial
+   implementation design by @ejgallego @maximedenes, many other
+   reviews and contributions from @gares @herbelin @ppedrot
+   @SkySkimmer @Zimmi48)
+
 - Added the `Numeral Notation` command for registering decimal numeral
   notations for custom types
 - The `Set SsrHave NoTCResolution` command no longer has special global
@@ -307,6 +319,7 @@ Coq binaries and process model
   particular `coqidetop` is the CoqIDE language server, and
   `coq{proof,tactic,query}worker` are in charge of task-specific and
   parallel proof checking.
+  (@ejgallego #6859, review by @gares, @Skyskimmer, and @Zimmi48)
 
 SSReflect
 
@@ -341,6 +354,8 @@ Display diffs between proof steps
   `Set Diffs "on"/"off"/"removed"` command. Please see the documentation for
   details.  Showing diffs in Proof General requires small changes to PG
   (under discussion).
+  (@jfehrle #6801 #8247 #8301, review and design feedback by
+   @ejgallego, additional review by @gares, @herbelin, @ppedrot)
 
 Notations
 

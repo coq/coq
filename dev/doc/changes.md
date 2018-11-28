@@ -1,5 +1,12 @@
 ## Changes between Coq 8.9 and Coq 8.10
 
+### Build system
+
+  Coq can now be built using Dune (https://github.com/ocaml/dune);
+  this offers interesting possibilities including a fast build mode.
+  For more details check the docs at ./build-system.dune.md
+  (@ejgallego @Zimmi48 @rgrinberg)
+
 ### ML4 Pre Processing
 
 - Support for `.ml4` files, processed by camlp5 has been removed in

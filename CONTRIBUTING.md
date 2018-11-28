@@ -76,6 +76,19 @@ Here are a few tags Coq developers may add to your PR and what they mean. In gen
 To learn more about the merging process, you can read the
 [merging documentation for Coq maintainers](dev/doc/MERGING.md).
 
+### Writing a CHANGES.md entry
+
+If your pull request includes a user-facing change, you should update
+the CHANGES.md file. Format of the file is for now pretty free form,
+but you are encouraged to sign you change entry with your name, pull
+request number, issues fixes, and additional acknowledgements such as
+reviews and design contributions. Example:
+
+```
+- Added tactic 'foobar', which will apply the foo solver to derive bar-conditions.
+  (@greatest_developer #1234, review by @coq_superuser and @coq_infrauser)
+```
+
 ## Documentation
 
 Currently the process for contributing to the documentation is the same as for changing anything else in Coq, so please submit a pull request as described above.
