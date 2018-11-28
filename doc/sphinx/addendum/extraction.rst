@@ -422,7 +422,7 @@ Additional settings
    :name: Extraction Flag
 
    Controls which optimizations are used during extraction, providing a finer-grained
-   control than :flag:`Extraction Optimize`.  The bits of *num* are used as a bit mask.
+   control than :flag:`Extraction Optimize`.  The bits of :token:`num` are used as a bit mask.
    Keeping an option off keeps the extracted ML more similar to the Coq term.
    Values are:
 
@@ -454,7 +454,7 @@ Additional settings
 
 .. flag:: Extraction TypeExpand
 
-   If set, fully expand Coq types in ML.  **see type_expand in mlutil.ml**
+   If set, fully expand Coq types in ML.  See the Coq source code to learn more.
 
 Differences between |Coq| and ML type systems
 ----------------------------------------------

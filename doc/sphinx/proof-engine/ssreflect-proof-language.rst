@@ -167,8 +167,14 @@ compatible with the rest of |Coq|, up to a few discrepancies:
 
 .. flag:: SsrIdents
 
-   Controls whether reserved identifiers can appear in scripts.  The default
-   is "on".  "off" is compatible with other parts of Coq.
+   Controls whether tactics can refer to |SSR|-generated variables that are
+   in the form _xxx_.  Scripts with explicit references to such variables
+   are fragile; they are prone to failure if the proof is later modified or
+   if the details of variable name generation change in future releases of Coq.
+
+   The default is on, which gives an error message when the user tries to
+   create such identifiers.  Disabling the flag generates a warning instead,
+   increasing compatibility with other parts of Coq.
 
 |Gallina| extensions
 --------------------
@@ -3071,10 +3077,10 @@ An :token:`r_item` can be:
 
    Controls the order in which generated subgoals (side conditions)
    are added to the
-   proof context.  "off", the default value, puts subgoals generated
-   by conditional rules first, followed by the main goal.  "on" puts
-   the main goal first.  If your proofs are organized to complete
-   proving the main goal before side conditions, "on" will save you
+   proof context.  The flag is off by default, which puts subgoals generated
+   by conditional rules first, followed by the main goal.  When it is on,
+   the main goal appears first.  If your proofs are organized to complete
+   proving the main goal before side conditions, turning the flag on will save you
    from having to add :tacn:`last first` tactics that would be needed
    to keep the main goal as the currently focused goal.
 

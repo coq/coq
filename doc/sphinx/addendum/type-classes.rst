@@ -556,7 +556,8 @@ Settings
 
    Determines how much information is shown for typeclass resolution steps during search.
    1 is the default level.  2 shows additional information such as tried tactics and shelving
-   of goals.  Setting this option also sets :flag:`Typeclasses Debug`.
+   of goals.  Setting this option to 1 or 2 turns on :flag:`Typeclasses Debug`; setting this
+   option to 0 turns that option off.
 
 .. flag:: Refine Instance Mode
 
@@ -579,7 +580,7 @@ Typeclasses eauto `:=`
    resolution tactic. The semantics of the options are:
 
    + ``debug`` In debug mode, the trace of successfully applied tactics is
-     printed.  This value also be set with :flag:`Typeclasses Debug`.
+     printed.  This value can also be set with :flag:`Typeclasses Debug`.
 
    + ``dfs, bfs`` This sets the search strategy to depth-first search (the
      default) or breadth-first search.  This value can also be set with

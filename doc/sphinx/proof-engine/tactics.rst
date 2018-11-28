@@ -264,6 +264,11 @@ Applying theorems
       This tactic behaves like :tacn:`simple refine` except it performs type checking
       without resolution of typeclasses.
 
+   .. flag:: Debug Unification
+
+      Enables printing traces of unification steps used during
+      elaboration/typechecking and the :tacn:`refine` tactic.
+
 .. tacn:: apply @term
    :name: apply
 
@@ -606,6 +611,10 @@ Applying theorems
       when the instantiation of a variable cannot be found
       (cf. :tacn:`eapply` and :tacn:`apply`).
 
+.. flag:: Debug Tactic Unification
+
+   Enables printing traces of unification steps in tactic unification.
+   Tactic unification is used in tactics such as :tacn:`apply` and :tacn:`rewrite`.
 
 .. _managingthelocalcontext:
 
@@ -2096,9 +2105,9 @@ and an explanation of the underlying technique.
    Part of the behavior of the ``inversion`` tactic is to generate
    equalities between expressions that appeared in the hypothesis that is
    being processed. By default, no equalities are generated if they
-   relate two proofs (i.e. equalities between :n:`@terms` whose type is in sort
-   :g:`Prop`). This behavior can be turned off by using the option
-   :flag`Keep Proof Equalities`.
+   relate two proofs (i.e. equalities between :token:`term`\s whose type is in sort
+   :g:`Prop`). This behavior can be turned off by using the
+   :flag:`Keep Proof Equalities` setting.
 
 .. tacv:: inversion @num
 
@@ -2533,6 +2542,13 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       This tactic works as :n:`rewrite @term` but turning
       unresolved bindings into existential variables, if any, instead of
       failing. It has the same variants as :tacn:`rewrite` has.
+
+   .. flag:: Keyed Unification
+
+      Makes higher-order unification used by :tacn:`rewrite` rely on a set of keys to drive
+      unification.  The subterms, considered as rewriting candidates, must start with
+      the same key as the left- or right-hand side of the lemma given to rewrite, and the arguments
+      are then unified up to full reduction.
 
 .. tacn:: replace @term with @term’
    :name: replace
@@ -4503,6 +4519,20 @@ user-defined tactics.
   significant changes in your theories to obtain the same result. As a
   drawback of the re-engineering of the code, this tactic has also been
   completely revised to get a very compact and readable version.
+
+Delaying solving unification constraints
+----------------------------------------
+
+.. tacn:: solve_constraints
+   :name: solve_constraints
+   :undocumented:
+
+.. flag:: Solve Unification Constraints
+
+   By default, after each tactic application, postponed typechecking unification
+   problems are resolved using heuristics. Unsetting this flag disables this
+   behavior, allowing tactics to leave unification constraints unsolved. Use the
+   :tacn:`solve_constraints` tactic at any point to solve the constraints.
 
 Proof maintenance
 -----------------
