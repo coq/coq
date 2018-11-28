@@ -28,10 +28,22 @@ open Ssrmatching
 open Ssrast
 open Ssrequality
 
+type ssrfwdview = ast_closure_term list
+type ssreqid = ssripat option
+type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
+
+val wit_ssripatrep : ssripat Genarg.uniform_genarg_type
+val wit_ssrarg : ssrarg Genarg.uniform_genarg_type
 val wit_ssrrwargs : ssrrwarg list Genarg.uniform_genarg_type
 val wit_ssrclauses : clauses Genarg.uniform_genarg_type
 val wit_ssrcasearg : (cpattern ssragens) ssrmovearg Genarg.uniform_genarg_type
 val wit_ssrmovearg : (cpattern ssragens) ssrmovearg Genarg.uniform_genarg_type
 val wit_ssrapplyarg : ssrapplyarg Genarg.uniform_genarg_type
 val wit_ssrhavefwdwbinders :
-  (Tacexpr.raw_tactic_expr fwdbinders, Tacexpr.glob_tactic_expr fwdbinders, Tacinterp.Value.t fwdbinders) Genarg.genarg_type
+  (Tacexpr.raw_tactic_expr fwdbinders,
+   Tacexpr.glob_tactic_expr fwdbinders,
+   Tacinterp.Value.t fwdbinders) Genarg.genarg_type
+val wit_ssrhintarg :
+  (Tacexpr.raw_tactic_expr ssrhint,
+   Tacexpr.glob_tactic_expr ssrhint,
+   Tacinterp.Value.t ssrhint) Genarg.genarg_type
