@@ -215,6 +215,22 @@ Proof.
   rewrite of_bits_to_bits; reflexivity.
 Qed.
 
+Lemma ascii_of_byte_via_N x : ascii_of_byte x = ascii_of_N (Byte.to_N x).
+Proof. destruct x; reflexivity. Qed.
+
+Lemma ascii_of_byte_via_nat x : ascii_of_byte x = ascii_of_nat (Byte.to_nat x).
+Proof. destruct x; reflexivity. Qed.
+
+Lemma byte_of_ascii_via_N x : Some (byte_of_ascii x) = Byte.of_N (N_of_ascii x).
+Proof.
+  rewrite <- (ascii_of_byte_of_ascii x); destruct (byte_of_ascii x); reflexivity.
+Qed.
+
+Lemma byte_of_ascii_via_nat x : Some (byte_of_ascii x) = Byte.of_nat (nat_of_ascii x).
+Proof.
+  rewrite <- (ascii_of_byte_of_ascii x); destruct (byte_of_ascii x); reflexivity.
+Qed.
+
 Module Export AsciiSyntax.
   String Notation ascii ascii_of_byte byte_of_ascii : char_scope.
 End AsciiSyntax.

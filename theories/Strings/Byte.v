@@ -10,6 +10,7 @@
 
 Require Import Coq.Arith.EqNat.
 Require Import Coq.NArith.BinNat.
+Require Import Coq.NArith.Nnat.
 Require Export Coq.Init.Byte.
 
 Local Set Implicit Arguments.
@@ -1183,5 +1184,31 @@ Section N.
       rewrite N.lt_nge; intro H'; exfalso; apply H'; assumption. }
     { rewrite N.leb_nle in H; split; [ | reflexivity ].
       rewrite N.lt_nge; intro; assumption. }
+  Qed.
+
+  Lemma to_N_via_nat x : to_N x = N.of_nat (to_nat x).
+  Proof. destruct x; reflexivity. Qed.
+
+  Lemma to_nat_via_N x : to_nat x = N.to_nat (to_N x).
+  Proof. destruct x; reflexivity. Qed.
+
+  Lemma of_N_via_nat x : of_N x = of_nat (N.to_nat x).
+  Proof.
+    destruct (of_N x) as [b|] eqn:H1.
+    { rewrite to_of_N_iff in H1; subst.
+      destruct b; reflexivity. }
+    { rewrite of_N_None_iff, <- N.compare_lt_iff in H1.
+      symmetry; rewrite of_nat_None_iff, <- PeanoNat.Nat.compare_lt_iff.
+      rewrite Nat2N.inj_compare, N2Nat.id; assumption. }
+  Qed.
+
+  Lemma of_nat_via_N x : of_nat x = of_N (N.of_nat x).
+  Proof.
+    destruct (of_nat x) as [b|] eqn:H1.
+    { rewrite to_of_nat_iff in H1; subst.
+      destruct b; reflexivity. }
+    { rewrite of_nat_None_iff, <- PeanoNat.Nat.compare_lt_iff in H1.
+      symmetry; rewrite of_N_None_iff, <- N.compare_lt_iff.
+      rewrite N2Nat.inj_compare, Nat2N.id; assumption. }
   Qed.
 End N.
