@@ -16,8 +16,8 @@ Require Export Coq.Init.Byte.
 Local Set Implicit Arguments.
 
 Definition eqb (a b : byte) : bool
-  := let '(a7, a6, a5, a4, a3, a2, a1, a0) := to_bits a in
-     let '(b7, b6, b5, b4, b3, b2, b1, b0) := to_bits b in
+  := let '(a0, (a1, (a2, (a3, (a4, (a5, (a6, a7))))))) := to_bits a in
+     let '(b0, (b1, (b2, (b3, (b4, (b5, (b6, b7))))))) := to_bits b in
      (Bool.eqb a0 b0 && Bool.eqb a1 b1 && Bool.eqb a2 b2 && Bool.eqb a3 b3 &&
           Bool.eqb a4 b4 && Bool.eqb a5 b5 && Bool.eqb a6 b6 && Bool.eqb a7 b7)%bool.
 

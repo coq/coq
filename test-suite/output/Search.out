@@ -46,9 +46,11 @@ eq_true_ind:
 eq_true_ind_r:
   forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true
 Byte.to_bits:
-  Byte.byte -> bool * bool * bool * bool * bool * bool * bool * bool
+  Byte.byte ->
+  bool * (bool * (bool * (bool * (bool * (bool * (bool * bool))))))
 Byte.of_bits:
-  bool * bool * bool * bool * bool * bool * bool * bool -> Byte.byte
+  bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))) ->
+  Byte.byte
 andb_true_intro:
   forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
@@ -57,7 +59,8 @@ BoolSpec_ind:
   (P -> P0 true) ->
   (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 Byte.to_bits_of_bits:
-  forall b : bool * bool * bool * bool * bool * bool * bool * bool,
+  forall
+    b : bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))),
   Byte.to_bits (Byte.of_bits b) = b
 bool_choice:
   forall (S : Set) (R1 R2 : S -> Prop),

@@ -190,12 +190,12 @@ Qed.
  *)
 
 Definition ascii_of_byte (b : byte) : ascii
-  := let '(b7, b6, b5, b4, b3, b2, b1, b0) := Byte.to_bits b in
-     Ascii b7 b6 b5 b4 b3 b2 b1 b0.
+  := let '(b0, (b1, (b2, (b3, (b4, (b5, (b6, b7))))))) := Byte.to_bits b in
+     Ascii b0 b1 b2 b3 b4 b5 b6 b7.
 
 Definition byte_of_ascii (a : ascii) : byte
-  := let (b7, b6, b5, b4, b3, b2, b1, b0) := a in
-     Byte.of_bits (b7, b6, b5, b4, b3, b2, b1, b0).
+  := let (b0, b1, b2, b3, b4, b5, b6, b7) := a in
+     Byte.of_bits (b0, (b1, (b2, (b3, (b4, (b5, (b6, b7))))))).
 
 Lemma ascii_of_byte_of_ascii x : ascii_of_byte (byte_of_ascii x) = x.
 Proof.
