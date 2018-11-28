@@ -123,8 +123,5 @@ let get_inline_level () = !inline_level
 (* Native code compilation for conversion and normalization *)
 let output_native_objects = ref false
 
-(* Print the mod uid associated to a vo file by the native compiler *)
-let print_mod_uid = ref false
-
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0

@@ -119,8 +119,6 @@ val default_inline_level : int
 (** When producing vo objects, also compile the native-code version *)
 val output_native_objects : bool ref
 
-(** Print the mod uid associated to a vo file by the native compiler *)
-val print_mod_uid : bool ref
-
+(** Global profile_ltac flag  *)
 val profile_ltac : bool ref
 val profile_ltac_cutoff : float ref
