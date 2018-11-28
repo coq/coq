@@ -63,12 +63,17 @@ type coq_cmdopts = {
 
   print_emacs : bool;
 
+  (* Quiet / verbosity options should be here *)
+
   inputstate  : string option;
   outputstate : string option;
 
 }
 
-val parse_args : string list -> coq_cmdopts * string list
+(* Default options *)
+val default_opts : coq_cmdopts
+
+val parse_args : coq_cmdopts -> string list -> coq_cmdopts * string list
 val exitcode : coq_cmdopts -> int
 
 val require_libs : coq_cmdopts -> (string * string option * bool option) list

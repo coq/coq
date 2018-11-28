@@ -12,10 +12,13 @@
     [init] is used to do custom command line argument parsing.
     [run] launches a custom toplevel.
 *)
-type custom_toplevel = {
-  init : opts:Coqargs.coq_cmdopts -> string list -> Coqargs.coq_cmdopts * string list;
-  run  : opts:Coqargs.coq_cmdopts -> state:Vernac.State.t -> unit;
-}
+open Coqargs
+
+type custom_toplevel =
+  { init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list
+  ; run : opts:coq_cmdopts -> state:Vernac.State.t -> unit
+  ; opts : Coqargs.coq_cmdopts
+  }
 
 val coqtop_toplevel : custom_toplevel
 
