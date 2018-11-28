@@ -102,7 +102,7 @@ Syntactic control over equalities
 
 To give more control over the generation of equalities, the
 type checker will fall back directly to |Coq|’s usual typing of dependent
-pattern matching if a return or in clause is specified. Likewise, the
+pattern matching if a ``return`` or ``in`` clause is specified. Likewise, the
 if construct is not treated specially by |Program| so boolean tests in
 the code are not automatically reflected in the obligations. One can
 use the :g:`dec` combinator to get the correct hypotheses as in:
@@ -118,8 +118,9 @@ use the :g:`dec` combinator to get the correct hypotheses as in:
      else S (pred n).
 
 The :g:`let` tupling construct :g:`let (x1, ..., xn) := t in b` does not
-produce an equality, contrary to the let pattern construct :g:`let ’(x1,
-..., xn) := t in b`. Also, :g:`term :>` explicitly asks the system to
+produce an equality, contrary to the let pattern construct
+:g:`let '(x1,..., xn) := t in b`.
+Also, :g:`term :>` explicitly asks the system to
 coerce term to its support type. It can be useful in notations, for
 example:
 
