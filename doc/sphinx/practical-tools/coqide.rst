@@ -223,7 +223,7 @@ input Unicode characters.
 
 
 Displaying Unicode symbols
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You just need to define suitable notations as described in the chapter
 :ref:`syntaxextensionsandinterpretationscopes`. For example, to use the
@@ -252,8 +252,8 @@ use antialiased fonts or not, by setting the environment variable
 `GDK_USE_XFT` to 1 or 0 respectively.
 
 
-Defining an input method for non-ASCII symbols
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Bindings for input of Unicode symbols
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CoqIDE supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
@@ -270,15 +270,17 @@ https://github.com/coq/coq/blob/master/ide/default_bindings_src.ml
 
 Custom bindings may be added, as explained further on.
 
-Remark: it remains possible to input non-ASCII symbols using system-wide
-approaches independent of |CoqIDE|.
+.. note::
+
+    It remains possible to input non-ASCII symbols using system-wide
+    approaches independent of |CoqIDE|.
 
 
 Adding custom bindings
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To extend the default set of bindings, create a file named `coqide.bindings`
-and place it in the same folder as `coqide.keys`. On Linux, this would be
+To extend the default set of bindings, create a file named ``coqide.bindings``
+and place it in the same folder as ``coqide.keys``. On Linux, this would be
 the folder ``~/.config/coq``. The file `coqide.bindings` should contain one
 binding per line, in the form ``\key value``, followed by an optional priority
 integer. (The key and value should not contain any space character.)
@@ -307,15 +309,21 @@ Each of the file tokens provided may consists of one of:
  -  the token ``local``, which resolves to the `coqide.bindings` file
     stored in the user configuration directory.
 
-Remark: if a filename other than the first one includes a "~" to refer
-to the home directory, it won't be expanded properly. To work around that
-issue, one should not use comas but instead repeat the flag, in the form:
-``-unicode-bindings file1 .. -unicode-bindings fileN``.
+.. remark::
 
-Remark: if two bindings for a same token both have the same priority value
-(or both have no priority value set), then the binding considered is the
-one from the file that comes first on the command line.
+   If a filename other than the first one includes a "~" to refer
+   to the home directory, it won't be expanded properly. To work around that
+   issue, one should not use comas but instead repeat the flag, in the form:
+   ``-unicode-bindings file1 .. -unicode-bindings fileN``.
 
+.. note::
+
+   If two bindings for a same token both have the same priority value
+   (or both have no priority value set), then the binding considered is
+   the one from the file that comes first on the command line.
+
+
+.. _character-encoding-saved-files:
 
 Character encoding for saved files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
