@@ -39,6 +39,10 @@ SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\
 
 IF "%WINDOWS%" == "enabled_all_addons" (
   SET EXTRA_ADDONS=^
+    -addon=bignums ^
+    -addon=equations ^
+    -addon=ltac2 ^
+    -addon=mtac2 ^
     -addon=mathcomp ^
     -addon=menhir ^
     -addon=menhirlib ^
@@ -56,10 +60,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
 call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -arch=%ARCH% -installer=Y -coqver=%CI_PROJECT_DIR_CFMT% ^
   -destcyg=%CYGROOT% -destcoq=%DESTCOQ% -cygcache=%CYGCACHE% ^
-  -addon=bignums ^
-  -addon=equations ^
-  -addon=ltac2 ^
-  -addon=mtac2 ^
   %EXTRA_ADDONS% ^
   -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit

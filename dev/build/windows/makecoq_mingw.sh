@@ -1905,6 +1905,9 @@ function make_addon_quickchick {
 function make_addons {
   # Note: ':' is the empty command, which does not produce any output
   : > "/build/filelists/addon_dependencies.nsh"
+  : > "/build/filelists/addon_strings.nsh"
+  : > "/build/filelists/addon_descriptions.nsh"
+  : > "/build/filelists/addon_sections.nsh"
 
   for addon in $COQ_ADDONS; do
     "make_addon_$addon"
