@@ -77,7 +77,7 @@ End CompareFacts.
 
  (** * Properties of [OrderedTypeFull] *)
 
-Module Type OrderedTypeFullFacts (Import O:OrderedTypeFull').
+Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
 
  Module OrderTac := OTF_to_OrderTac O.
  Ltac order := OrderTac.order.
