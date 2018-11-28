@@ -37,3 +37,16 @@ Compute ascii_of_byte "a".
 Compute byte_of_ascii "a".
 Compute string_of_list_byte ("a"::nil)%byte.
 Compute list_byte_of_string "a".
+
+Local Open Scope byte_scope.
+Compute List.fold_right
+        (fun n ls => match Byte.of_nat n with
+                     | Some b => cons b ls
+                     | None => ls
+                     end)
+        nil
+        (List.seq 0 256).
+Local Close Scope byte_scope.
+Local Open Scope char_scope.
+Compute List.map Ascii.ascii_of_nat (List.seq 0 256).
+Local Close Scope char_scope.
