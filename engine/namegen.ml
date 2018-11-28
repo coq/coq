@@ -208,23 +208,16 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 (* Introduce a mode where auto-generated names are mangled
    to test dependence of scripts on auto-generated names *)
 
-let mangle_names = ref false
-
-let () = Goptions.(
-    declare_bool_option
-      { optdepr  = false;
-        optname  = "mangle auto-generated names";
-        optkey   = ["Mangle";"Names"];
-        optread  = (fun () -> !mangle_names);
-        optwrite = (:=) mangle_names; })
+let get_mangle_names =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"mangle auto-generated names"
+    ~key:["Mangle";"Names"]
+    ~value:false
 
 let mangle_names_prefix = ref (Id.of_string "_0")
-let set_prefix x = mangle_names_prefix := forget_subscript x
 
-let set_mangle_names_mode x = begin
-    set_prefix x;
-    mangle_names := true
-  end
+let set_prefix x = mangle_names_prefix := forget_subscript x
 
 let () = Goptions.(
     declare_string_option
@@ -238,7 +231,7 @@ let () = Goptions.(
                       with CErrors.UserError _ -> CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\".")))
                    end })
 
-let mangle_id id = if !mangle_names then !mangle_names_prefix else id
+let mangle_id id = if get_mangle_names () then !mangle_names_prefix else id
 
 (* Looks for next "good" name by lifting subscript *)
 

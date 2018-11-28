@@ -131,6 +131,9 @@ val declare_string_option: ?preprocess:(string -> string) ->
 val declare_stringopt_option: ?preprocess:(string option -> string option) ->
                               string option option_sig -> unit
 
+(** Helper to declare a reference controlled by an option. Read-only
+   as to avoid races. *)
+val declare_bool_option_and_ref : depr:bool -> name:string -> key:option_name -> value:bool -> (unit -> bool)
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 

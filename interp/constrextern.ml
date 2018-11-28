@@ -193,17 +193,12 @@ let without_specific_symbols l =
 (* Control printing of records *)
 
 (* Set Record Printing flag *)
-let record_print = ref true
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "record printing";
-      optkey   = ["Printing";"Records"];
-      optread  = (fun () -> !record_print);
-      optwrite = (fun b -> record_print := b) }
-
+let get_record_print =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"record printing"
+    ~key:["Printing";"Records"]
+    ~value:true
 
 let is_record indsp =
   try
@@ -431,7 +426,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
 	    with
 		Not_found | No_match | Exit ->
                   let c = extern_reference Id.Set.empty (ConstructRef cstrsp) in
-                  if !asymmetric_patterns then
+                  if Constrintern.get_asymmetric_patterns () then
 		    if pattern_printable_in_both_syntax cstrsp
 		    then CPatCstr (c, None, args)
 		    else CPatCstr (c, Some (add_patt_for_params (fst cstrsp) args), [])
@@ -469,7 +464,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 		List.map (extern_cases_pattern_in_scope subscope vars) c)
 		substlist in
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
-            let l2' = if !asymmetric_patterns || not (List.is_empty ll) then l2
+            let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
 	      else
 		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
@@ -489,7 +484,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
           subst in
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
-      let l2' = if !asymmetric_patterns then l2
+      let l2' = if Constrintern.get_asymmetric_patterns () then l2
 	else
 	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
@@ -824,7 +819,7 @@ let rec extern inctx scopes vars r =
                    ()
                  else if PrintingConstructor.active (fst cstrsp) then
                    raise Exit
-                 else if not !record_print then
+                 else if not (get_record_print ()) then
                    raise Exit;
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in

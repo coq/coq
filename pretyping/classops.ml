@@ -398,16 +398,12 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let automatically_import_coercions = ref false
-
-open Goptions
-let () =
-  declare_bool_option
-    { optdepr  = true; (* remove in 8.8 *)
-      optname  = "automatic import of coercions";
-      optkey   = ["Automatic";"Coercions";"Import"];
-      optread  = (fun () -> !automatically_import_coercions);
-      optwrite = (:=) automatically_import_coercions }
+let get_automatically_import_coercions =
+  Goptions.declare_bool_option_and_ref
+    ~depr:true (* Remove in 8.8 *)
+    ~name:"automatic import of coercions"
+    ~key:["Automatic";"Coercions";"Import"]
+    ~value:false
 
 let cache_coercion (_, c) =
   let () = add_class c.coercion_source in
@@ -425,7 +421,7 @@ let cache_coercion (_, c) =
   add_coercion_in_graph (xf,is,it)
 
 let load_coercion _ o =
-  if !automatically_import_coercions then
+  if get_automatically_import_coercions () then
     cache_coercion o
 
 let set_coercion_in_scope (_, c) =
@@ -435,7 +431,7 @@ let set_coercion_in_scope (_, c) =
 let open_coercion i o =
   if Int.equal i 1 then begin
     set_coercion_in_scope o;
-    if not !automatically_import_coercions then
+    if not (get_automatically_import_coercions ()) then
       cache_coercion o
   end
 

@@ -125,7 +125,3 @@ val rename_bound_vars_as_displayed :
 val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
   evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
-
-val set_mangle_names_mode : Id.t -> unit
-(** Turn on mangled names mode and with the given prefix.
-    @raise UserError if the argument is invalid as an identifier. *)

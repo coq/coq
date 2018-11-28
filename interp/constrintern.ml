@@ -1488,6 +1488,12 @@ let is_non_zero_pat c = match c with
 | { CAst.v = CPatPrim (Numeral (p, true)) } -> not (is_zero p)
 | _ -> false
 
+let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"no parameters in constructors"
+    ~key:["Asymmetric";"Patterns"]
+    ~value:false
+
 let drop_notations_pattern looked_for genv =
   (* At toplevel, Constructors and Inductives are accepted, in recursive calls
      only constructor are allowed *)
@@ -1562,7 +1568,7 @@ let drop_notations_pattern looked_for genv =
 	| None -> DAst.make ?loc @@ RCPatAtom None
 	| Some (n, head, pl) ->
           let pl =
-            if !asymmetric_patterns then pl else
+            if get_asymmetric_patterns () then pl else
             let pars = List.make n (CAst.make ?loc @@ CPatAtom None) in
             List.rev_append pars pl in
 	  match drop_syndef top scopes head pl with
@@ -1684,7 +1690,7 @@ let rec intern_pat genv ntnvars aliases pat =
       let aliases' = merge_aliases aliases id in
       intern_pat genv ntnvars aliases' p
     | RCPatCstr (head, expl_pl, pl) ->
-      if !asymmetric_patterns then
+      if get_asymmetric_patterns () then
         let len = if List.is_empty expl_pl then Some (List.length pl) else None in
 	let c,idslpl1 = find_constructor loc len head in
 	let with_letin =

@@ -31,19 +31,12 @@ type 'a hint_info_gen =
 
 type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 
-let typeclasses_unique_solutions = ref false
-let set_typeclasses_unique_solutions d = (:=) typeclasses_unique_solutions d
-let get_typeclasses_unique_solutions () = !typeclasses_unique_solutions
-
-open Goptions
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "check that typeclasses proof search returns unique solutions";
-      optkey   = ["Typeclasses";"Unique";"Solutions"];
-      optread  = get_typeclasses_unique_solutions;
-      optwrite = set_typeclasses_unique_solutions; }
+let get_typeclasses_unique_solutions =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"check that typeclasses proof search returns unique solutions"
+    ~key:["Typeclasses";"Unique";"Solutions"]
+    ~value:false
 
 let (add_instance_hint, add_instance_hint_hook) = Hook.make ()
 let add_instance_hint id = Hook.get add_instance_hint id
