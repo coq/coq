@@ -104,12 +104,11 @@ val register_string_interpretation :
 
 (** * Numeral notation *)
 
-type numeral_or_string_notation_error =
+type prim_token_notation_error =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
 
-exception NumeralNotationError of Environ.env * Evd.evar_map * numeral_or_string_notation_error
-exception StringNotationError of Environ.env * Evd.evar_map * numeral_or_string_notation_error
+exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_token_notation_error
 
 type numnot_option =
   | Nop
@@ -134,23 +133,18 @@ type string_target_kind =
   | Byte
 
 type option_kind = Option | Direct
-type conversion_kind = target_kind * option_kind
-type string_conversion_kind = string_target_kind * option_kind
+type 'target conversion_kind = 'target * option_kind
 
-type numeral_notation_obj =
-  { to_kind : conversion_kind;
+type ('target, 'warning) prim_token_notation_obj =
+  { to_kind : 'target conversion_kind;
     to_ty : GlobRef.t;
-    of_kind : conversion_kind;
+    of_kind : 'target conversion_kind;
     of_ty : GlobRef.t;
-    num_ty : Libnames.qualid; (* for warnings / error messages *)
-    warning : numnot_option }
+    ty_name : Libnames.qualid; (* for warnings / error messages *)
+    warning : 'warning }
 
-type string_notation_obj =
-  { sto_kind : string_conversion_kind;
-    sto_ty : GlobRef.t;
-    sof_kind : string_conversion_kind;
-    sof_ty : GlobRef.t;
-    string_ty : Libnames.qualid (* for warnings / error messages *) }
+type numeral_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
+type string_notation_obj = (string_target_kind, unit) prim_token_notation_obj
 
 type prim_token_interp_info =
     Uid of prim_token_uid

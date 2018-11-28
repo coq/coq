@@ -80,11 +80,12 @@ let vernac_string_notation local ty f g scope =
     else if has_type g (arrow cty (opt cbyte)) then Byte, Option
     else type_error_of g ty
   in
-  let o = { sto_kind = to_kind;
-            sto_ty = to_ty;
-            sof_kind = of_kind;
-            sof_ty = of_ty;
-            string_ty = ty }
+  let o = { to_kind = to_kind;
+            to_ty = to_ty;
+            of_kind = of_kind;
+            of_ty = of_ty;
+            ty_name = ty;
+            warning = () }
   in
   let i =
        { pt_local = local;
