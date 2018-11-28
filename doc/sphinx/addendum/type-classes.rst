@@ -260,6 +260,12 @@ preorder can be used instead. This is very similar to the coercion
 mechanism of ``Structure`` declarations. The implementation simply
 declares each projection as an instance.
 
+.. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
+
+   Using this ``:>`` syntax with a right-hand-side that is not itself a Class
+   has no effect (apart from emitting this warning). In particular, is does not
+   declare a coercion.
+
 One can also declare existing objects or structure projections using
 the Existing Instance command to achieve the same effect.
 
