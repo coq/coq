@@ -2,7 +2,7 @@ Definition T := nat.
 
 Definition le := le.
 
-Hint Unfold le.
+Hint Unfold le : core.
 
 Lemma le_refl : forall n : nat, le n n.
   auto.
