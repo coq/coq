@@ -14,8 +14,10 @@ type t = {
   shallow : bool                 (* is the state trimmed down (libstack) *)
 }
 
-val freeze_interp_state : Summary.marshallable -> t
+val freeze_interp_state : marshallable:bool -> t
 val unfreeze_interp_state : t -> unit
+
+val make_shallow : t -> t
 
 (* WARNING: Do not use, it will go away in future releases *)
 val invalidate_cache : unit -> unit

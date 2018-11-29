@@ -2437,7 +2437,7 @@ let interp ?verbosely ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try
     interp ?verbosely ?proof ~st cmd;
-    Vernacstate.freeze_interp_state `No
+    Vernacstate.freeze_interp_state ~marshallable:false
   with exn ->
     let exn = CErrors.push exn in
     Vernacstate.invalidate_cache ();
