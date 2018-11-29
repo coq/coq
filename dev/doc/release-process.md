@@ -64,10 +64,8 @@
 
 ## On the date of the feature freeze ##
 
-- [ ] Create the new version branch `vX.X` and
-  [protect it](https://github.com/coq/coq/settings/branches)
-  (activate the "Protect this branch", "Require pull request reviews before
-  merging" and "Restrict who can push to this branch" guards).
+- [ ] Create the new version branch `vX.X` (using this name will ensure that
+  the branch will be automatically protected).
 - [ ] Remove all remaining unmerged feature PRs from the beta milestone.
 - [ ] Start a new project to track PR backporting. The proposed model is to
   have a "X.X-only PRs" column for the rare PRs on the stable branch, a
