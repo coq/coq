@@ -2,7 +2,7 @@
 , branch
 , wd
 , project ? "xyz"
-, bn ? "release"
+, bn ? "master"
 }:
 
 with pkgs;
@@ -28,9 +28,14 @@ let math-classes =
     src = fetchTarball "https://github.com/coq-community/math-classes/archive/master.tar.gz";
   }); in
 
+let corn = (coqPackages.corn.override { inherit coq bignums math-classes; })
+  .overrideAttrs (o: {
+    src = fetchTarball "https://github.com/coq-community/corn/archive/master.tar.gz";
+  }); in
+
 let unicoq = callPackage ./unicoq.nix { inherit coq; }; in
 
-let callPackage = newScope { inherit coq mathcomp bignums coqprime math-classes unicoq; }; in
+let callPackage = newScope { inherit coq mathcomp bignums coqprime corn math-classes unicoq; }; in
 
 # Environments for building CI libraries with this Coq
 let projects = {
@@ -45,6 +50,7 @@ let projects = {
   fiat_crypto = callPackage ./fiat_crypto.nix {};
   fiat_crypto_legacy = callPackage ./fiat_crypto_legacy.nix {};
   flocq = callPackage ./flocq.nix {};
+  formal-topology = callPackage ./formal-topology.nix {};
   GeoCoq = callPackage ./GeoCoq.nix {};
   HoTT = callPackage ./HoTT.nix {};
   math_classes = callPackage ./math_classes.nix {};

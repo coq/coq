@@ -1,0 +1,4 @@
+{ corn }:
+{
+  buildInputs = [ corn ];
+}
