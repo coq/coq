@@ -1781,7 +1781,7 @@ let pr_visibility prglob = function
 (**********************************************************************)
 (* Synchronisation with reset *)
 
-let freeze _ =
+let freeze ~marshallable =
  (!scope_map, !scope_stack, !uninterp_scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !scope_class_map,
   !prim_token_interp_infos, !prim_token_uninterp_infos,
@@ -1818,7 +1818,7 @@ let _ =
       Summary.init_function = init }
 
 let with_notation_protection f x =
-  let fs = freeze false in
+  let fs = freeze ~marshallable:false in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = CErrors.push reraise in

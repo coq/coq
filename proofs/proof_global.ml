@@ -462,11 +462,8 @@ module V82 = struct
 end
 
 let freeze ~marshallable =
-  match marshallable with
-  | `Yes ->
-      CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")
-  | `Shallow -> !pstates
-  | `No -> !pstates
+  if marshallable then CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")
+  else !pstates
 let unfreeze s = pstates := s; update_proof_mode ()
 let proof_of_state = function { proof }::_ -> proof | _ -> raise NoCurrentProof
 let copy_terminators ~src ~tgt =

@@ -571,7 +571,7 @@ let open_section id =
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
   if Nametab.exists_section obj_dir then
     user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
-  let fs = Summary.freeze_summaries ~marshallable:`No in
+  let fs = Summary.freeze_summaries ~marshallable:false in
   add_entry (make_foname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
@@ -608,24 +608,21 @@ let close_section () =
 
 type frozen = lib_state
 
-let freeze ~marshallable =
-  match marshallable with
-  | `Shallow ->
-    (* TASSI: we should do something more sensible here *)
-    let lib_stk =
-      CList.map_filter (function
+let freeze ~marshallable = !lib_state
+
+let unfreeze st = lib_state := st
+
+let drop_objects st =
+  let lib_stk =
+    CList.map_filter (function
         | _, Leaf _ -> None
         | n, (CompilingLibrary _ as x) -> Some (n,x)
         | n, OpenedModule (it,e,op,_) ->
-               Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
+          Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
         | n, OpenedSection (op, _) ->
-               Some(n,OpenedSection(op,Summary.empty_frozen)))
-      !lib_state.lib_stk in
-    { !lib_state with lib_stk }
-  | _ ->
-    !lib_state
-
-let unfreeze st = lib_state := st
+          Some(n,OpenedSection(op,Summary.empty_frozen)))
+      st.lib_stk in
+  { st with lib_stk }
 
 let init () =
   unfreeze initial_lib_state;

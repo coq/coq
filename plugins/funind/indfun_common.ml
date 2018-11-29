@@ -500,7 +500,7 @@ type tcc_lemma_value =
 
 (* We only "purify" on exceptions. XXX: What is this doing here? *)
 let funind_purify f x =
-  let st = Vernacstate.freeze_interp_state `No in
+  let st = Vernacstate.freeze_interp_state ~marshallable:false in
   try f x
   with e ->
     let e = CErrors.push e in

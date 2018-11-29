@@ -553,7 +553,7 @@ type frozen_t =
   (grammar_entry * GramState.t) list *
   CLexer.keyword_state
 
-let freeze _ : frozen_t =
+let freeze ~marshallable : frozen_t =
   (!grammar_stack, CLexer.get_keyword_state ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
@@ -586,7 +586,7 @@ let parser_summary_tag =
       Summary.init_function = Summary.nop }
 
 let with_grammar_rule_protection f x =
-  let fs = freeze false in
+  let fs = freeze ~marshallable:false in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = CErrors.push reraise in
