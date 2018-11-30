@@ -2250,6 +2250,32 @@ Section Exists_Forall.
 
   End One_predicate.
 
+  Theorem Forall_inv_tail
+    :  forall (P : A -> Prop) (x0 : A) (xs : list A), Forall P (x0 :: xs) -> Forall P xs.
+  Proof.
+    intros P x0 xs H.
+    apply Forall_forall with (l := xs).
+    assert (H0 : forall x : A, In x (x0 :: xs) -> P x).
+    apply Forall_forall with (P := P) (l := x0 :: xs).
+    exact H.
+    assert (H1 : forall (x : A) (H2 : In x xs), P x).
+    intros x H2.
+    apply (H0 x).
+    right.
+    exact H2.
+    intros x H2.
+    apply (H1 x H2).
+  Qed.
+
+  Theorem Exists_impl
+    :  forall (P Q : A -> Prop), (forall x : A, P x -> Q x) -> forall xs : list A, Exists P xs -> Exists Q xs.
+  Proof.
+    intros P Q H xs H0.
+    induction H0.
+    apply (Exists_cons_hd Q x l (H x H0)).
+    apply (Exists_cons_tl x IHExists).
+  Qed.
+
   Lemma Forall_Exists_neg (P:A->Prop)(l:list A) :
    Forall (fun x => ~ P x) l <-> ~(Exists P l).
   Proof.
