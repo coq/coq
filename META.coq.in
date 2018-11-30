@@ -22,7 +22,7 @@ package "clib" (
   version     = "8.10"
 
   directory   = "clib"
-  requires    = "num, str, unix, threads"
+  requires    = "str, unix, threads"
 
   archive(byte)    = "clib.cma"
   archive(native)  = "clib.cmxa"
@@ -35,7 +35,7 @@ package "lib" (
 
   directory   = "lib"
 
-  requires    = "coq.clib, coq.config"
+  requires    = "coq.clib, coq.config, dynlink"
 
   archive(byte)   = "lib.cma"
   archive(native) = "lib.cmxa"
@@ -68,7 +68,7 @@ package "kernel" (
 
   directory   = "kernel"
 
-  requires    = "dynlink, coq.lib, coq.vm"
+  requires    = "coq.lib, coq.vm"
 
   archive(byte)    = "kernel.cma"
   archive(native)  = "kernel.cmxa"
@@ -223,7 +223,7 @@ package "toplevel" (
   description = "Coq Toplevel"
   version     = "8.10"
 
-  requires    = "coq.stm"
+  requires    = "num, coq.stm"
   directory   = "toplevel"
 
   archive(byte)    = "toplevel.cma"

@@ -4,4 +4,4 @@
  (public_name coq.lib)
  (wrapped false)
  (modules_without_implementation xml_datatype)
- (libraries threads coq.clib coq.config))
+ (libraries dynlink coq.clib coq.config))
