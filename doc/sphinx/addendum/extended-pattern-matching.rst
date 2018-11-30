@@ -31,9 +31,9 @@ A variable pattern matches any value, and the identifier is bound to
 that value. The pattern “``_``” (called “don't care” or “wildcard” symbol)
 also matches any value, but does not bind anything. It may occur an
 arbitrary number of times in a pattern. Alias patterns written
-:n:`(@pattern as @identifier)` are also accepted. This pattern matches the
-same values as ``pattern`` does and ``identifier`` is bound to the matched
-value. A pattern of the form :n:`pattern | pattern` is called disjunctive. A
+:n:`(@pattern as @ident)` are also accepted. This pattern matches the
+same values as :token:`pattern` does and :token:`ident` is bound to the matched
+value. A pattern of the form :n:`@pattern | @pattern` is called disjunctive. A
 list of patterns separated with commas is also considered as a pattern
 and is called *multiple pattern*. However multiple patterns can only
 occur at the root of pattern matching equations. Disjunctions of

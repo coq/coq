@@ -47,30 +47,30 @@ extraction. They both display extracted term(s) inside |Coq|.
 All the following commands produce real ML files. User can choose to
 produce one monolithic file or one file per |Coq| library.
 
-.. cmd:: Extraction "@file" {+ @qualid }
+.. cmd:: Extraction @string {+ @qualid }
 
    Recursive extraction of all the mentioned objects and all
-   their dependencies in one monolithic `file`.
+   their dependencies in one monolithic file :token:`string`.
    Global and local identifiers are renamed according to the chosen ML
    language to fulfill its syntactic conventions, keeping original
    names as much as possible.
   
 .. cmd:: Extraction Library @ident
 
-   Extraction of the whole |Coq| library ``ident.v`` to an ML module
-   ``ident.ml``. In case of name clash, identifiers are here renamed
+   Extraction of the whole |Coq| library :n:`@ident.v` to an ML module
+   :n:`@ident.ml`. In case of name clash, identifiers are here renamed
    using prefixes ``coq_``  or ``Coq_`` to ensure a session-independent
    renaming.
 
 .. cmd:: Recursive Extraction Library @ident
 
-   Extraction of the |Coq| library ``ident.v`` and all other modules 
-   ``ident.v`` depends on.
+   Extraction of the |Coq| library :n:`@ident.v` and all other modules
+   :n:`@ident.v` depends on.
 
 .. cmd:: Separate Extraction {+ @qualid }
 
    Recursive extraction of all the mentioned objects and all
-   their dependencies, just as ``Extraction "file"``,
+   their dependencies, just as :n:`Extraction @string {+ @qualid }`,
    but instead of producing one monolithic file, this command splits
    the produced code in separate ML files, one per corresponding Coq
    ``.v`` file. This command is hence quite similar to
