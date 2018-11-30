@@ -52,7 +52,6 @@ type position =
   | Last
   | Before of string
   | After of string
-  | Like of string
   | Level of string
 
 let rec derive_eps =
@@ -154,27 +153,6 @@ let is_level_labelled n lev =
     Some n1 -> n = n1
   | None -> false
 
-let rec token_exists_in_level f lev =
-  token_exists_in_tree f lev.lprefix || token_exists_in_tree f lev.lsuffix
-and token_exists_in_tree f =
-  function
-    Node n ->
-      token_exists_in_symbol f n.node || token_exists_in_tree f n.brother ||
-      token_exists_in_tree f n.son
-  | LocAct (_, _) | DeadEnd -> false
-and token_exists_in_symbol f =
-  function
-  | Slist0 sy -> token_exists_in_symbol f sy
-  | Slist0sep (sy, sep, _) ->
-      token_exists_in_symbol f sy || token_exists_in_symbol f sep
-  | Slist1 sy -> token_exists_in_symbol f sy
-  | Slist1sep (sy, sep, _) ->
-      token_exists_in_symbol f sy || token_exists_in_symbol f sep
-  | Sopt sy -> token_exists_in_symbol f sy
-  | Stoken tok -> f tok
-  | Stree t -> token_exists_in_tree f t
-  | Snterm _ | Snterml (_, _) | Snext | Sself -> false
-
 let insert_level ~warning entry_name e1 symbols action slev =
   match e1 with
     true ->
@@ -261,20 +239,6 @@ let get_level ~warning entry position levs =
             failwith "Grammar.extend"
         | lev :: levs ->
             if is_level_labelled n lev then [lev], empty_lev, levs
-            else
-              let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
-      in
-      get levs
-  | Some (Like n) ->
-      let f (tok, prm) = n = tok || n = prm in
-      let rec get =
-        function
-          [] ->
-            eprintf "No level with \"%s\" in entry \"%s\"\n" n entry.ename;
-            flush stderr;
-            failwith "Grammar.extend"
-        | lev :: levs ->
-            if token_exists_in_level f lev then [], change_lev ~warning lev n, levs
             else
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in

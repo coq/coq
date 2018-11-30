@@ -50,7 +50,6 @@ type position =
   | Last
   | Before of string
   | After of string
-  | Like of string
   | Level of string
 
 val levels_of_rules : warning:(string -> unit) option ->
