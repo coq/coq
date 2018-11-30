@@ -83,7 +83,7 @@ let tokenize_string s =
     if Tok.(equal e EOI) then
       List.rev acc
     else
-      stream_tok ((Tok.extract_string e) :: acc) str
+      stream_tok ((Tok.extract_string true e) :: acc) str
   in
   let st = CLexer.get_lexer_state () in
   try

@@ -22,7 +22,8 @@ type t =
   | EOI
 
 val equal : t -> t -> bool
-val extract_string : t -> string
+(* pass true for diff_mode *)
+val extract_string : bool -> t -> string
 val to_string : t -> string
 (* Needed to fit Camlp5 signature *)
 val print : Format.formatter -> t -> unit
