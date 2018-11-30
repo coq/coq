@@ -97,8 +97,8 @@ Logic
 The basic library of |Coq| comes with the definitions of standard
 (intuitionistic) logical connectives (they are defined as inductive
 constructions). They are equipped with an appealing syntax enriching the
-subclass `form` of the syntactic class `term`. The syntax of `form`
-is shown below:
+subclass :token:`form` of the syntactic class :token:`term`. The syntax of
+:token:`form` is shown below:
 
 .. /!\ Please keep the blanks in the lines below, experimentally they produce
    a nice last column. Or even better, find a proper way to do this!
