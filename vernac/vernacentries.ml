@@ -1221,11 +1221,9 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   let rec check_extra_args extra_args =
     match extra_args with
     | [] -> ()
-    | { notation_scope = None } :: _ -> err_extra_args (names_of extra_args)
-    | { name = Anonymous; notation_scope = Some _ } :: args ->
-       check_extra_args args
-    | _ ->
-       user_err Pp.(str "Extra notation scopes can be set on anonymous and explicit arguments only.")
+    | { notation_scope = None } :: _ ->
+      user_err Pp.(str"Extra arguments should specify a scope.")
+    | { notation_scope = Some _ } :: args -> check_extra_args args
   in
 
   let args, scopes =

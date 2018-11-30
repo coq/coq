@@ -88,6 +88,8 @@ Vernacular commands
 - The `Automatic Introduction` option has been removed and is now the
   default.
 
+- `Arguments` now accepts names for arguments provided with `extra_scopes`.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
