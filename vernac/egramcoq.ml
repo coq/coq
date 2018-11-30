@@ -33,24 +33,24 @@ open Pcoq
 let constr_level = string_of_int
 
 let default_levels =
-  [200,Extend.RightA,false;
-   100,Extend.RightA,false;
-   99,Extend.RightA,true;
-   90,Extend.RightA,true;
-   10,Extend.LeftA,false;
-   9,Extend.RightA,false;
-   8,Extend.RightA,true;
-   1,Extend.LeftA,false;
-   0,Extend.RightA,false]
+  [200,Gramlib.Gramext.RightA,false;
+   100,Gramlib.Gramext.RightA,false;
+   99,Gramlib.Gramext.RightA,true;
+   90,Gramlib.Gramext.RightA,true;
+   10,Gramlib.Gramext.LeftA,false;
+   9,Gramlib.Gramext.RightA,false;
+   8,Gramlib.Gramext.RightA,true;
+   1,Gramlib.Gramext.LeftA,false;
+   0,Gramlib.Gramext.RightA,false]
 
 let default_pattern_levels =
-  [200,Extend.RightA,true;
-   100,Extend.RightA,false;
-   99,Extend.RightA,true;
-   90,Extend.RightA,true;
-   10,Extend.LeftA,false;
-   1,Extend.LeftA,false;
-   0,Extend.RightA,false]
+  [200,Gramlib.Gramext.RightA,true;
+   100,Gramlib.Gramext.RightA,false;
+   99,Gramlib.Gramext.RightA,true;
+   90,Gramlib.Gramext.RightA,true;
+   10,Gramlib.Gramext.LeftA,false;
+   1,Gramlib.Gramext.LeftA,false;
+   0,Gramlib.Gramext.RightA,false]
 
 let default_constr_levels = (default_levels, default_pattern_levels)
 
@@ -70,28 +70,28 @@ let save_levels levels custom lev =
 (* first LeftA, then RightA and NoneA together *)
 
 let admissible_assoc = function
-  | Extend.LeftA, Some (Extend.RightA | Extend.NonA) -> false
-  | Extend.RightA, Some Extend.LeftA -> false
+  | Gramlib.Gramext.LeftA, Some (Gramlib.Gramext.RightA | Gramlib.Gramext.NonA) -> false
+  | Gramlib.Gramext.RightA, Some Gramlib.Gramext.LeftA -> false
   | _ -> true
 
 let create_assoc = function
-  | None -> Extend.RightA
+  | None -> Gramlib.Gramext.RightA
   | Some a -> a
 
 let error_level_assoc p current expected =
   let open Pp in
   let pr_assoc = function
-    | Extend.LeftA -> str "left"
-    | Extend.RightA -> str "right"
-    | Extend.NonA -> str "non" in
+    | Gramlib.Gramext.LeftA -> str "left"
+    | Gramlib.Gramext.RightA -> str "right"
+    | Gramlib.Gramext.NonA -> str "non" in
   user_err 
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
 
 let create_pos = function
-  | None -> Extend.First
-  | Some lev -> Extend.After (constr_level lev)
+  | None -> Gramlib.Gramext.First
+  | Some lev -> Gramlib.Gramext.After (constr_level lev)
 
 let find_position_gen current ensure assoc lev =
   match lev with
@@ -121,13 +121,13 @@ let find_position_gen current ensure assoc lev =
 	   updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
         | _ ->
 	  (* The reinit flag has been updated *)
-	   updated, (Some (Extend.Level (constr_level n)), None, None, !init)
+           updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
         end
       with
 	  (* Nothing has changed *)
           Exit ->
 	    (* Just inherit the existing associativity and name (None) *)
-	    current, (Some (Extend.Level (constr_level n)), None, None, None)
+            current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
@@ -186,15 +186,18 @@ let find_position accu custom forpat assoc level =
 (* Binding constr entry keys to entries                               *)
 
 (* Camlp5 levels do not treat NonA: use RightA with a NEXT on the left *)
-let camlp5_assoc = function
-  | Some NonA | Some RightA -> RightA
-  | None | Some LeftA -> LeftA
+let camlp5_assoc =
+  let open Gramlib.Gramext in function
+    | Some NonA | Some RightA -> RightA
+    | None | Some LeftA -> LeftA
 
-let assoc_eq al ar = match al, ar with
-| NonA, NonA
-| RightA, RightA
-| LeftA, LeftA -> true
-| _, _ -> false
+let assoc_eq al ar =
+  let open Gramlib.Gramext in
+  match al, ar with
+  | NonA, NonA
+  | RightA, RightA
+  | LeftA, LeftA -> true
+  | _, _ -> false
 
 (* [adjust_level assoc from prod] where [assoc] and [from] are the name
    and associativity of the level where to add the rule; the meaning of
@@ -204,7 +207,7 @@ let assoc_eq al ar = match al, ar with
      Some None = NEXT
      Some (Some (n,cur)) = constr LEVEL n
          s.t. if [cur] is set then [n] is the same as the [from] level *)
-let adjust_level assoc from = function
+let adjust_level assoc from = let open Gramlib.Gramext in function
 (* Associativity is None means force the level *)
   | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)

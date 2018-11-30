@@ -755,9 +755,9 @@ let init_entry_functions entry =
        let f = continue_parser_of_entry entry in
        entry.econtinue <- f; f lev bp a strm)
 
-let extend_entry entry position rules =
+let extend_entry ~warning entry position rules =
   try
-    let elev = Gramext.levels_of_rules entry position rules in
+    let elev = Gramext.levels_of_rules ~warning entry position rules in
     entry.edesc <- Dlevels elev; init_entry_functions entry
   with Plexing.Error s ->
     Printf.eprintf "Lexer initialization error:\n- %s\n" s;
@@ -841,8 +841,6 @@ let clear_entry e =
     Dlevels _ -> e.edesc <- Dlevels []
   | Dparser _ -> ()
 
-let gram_reinit g glexer = Hashtbl.clear g.gtokens; g.glexer <- glexer
-
 (* Functorial interface *)
 
 module type GLexerType = sig type te val lexer : te Plexing.lexer end
@@ -881,7 +879,7 @@ module type S =
     val s_self : ('self, 'self) ty_symbol
     val s_next : ('self, 'self) ty_symbol
     val s_token : Plexing.pattern -> ('self, string) ty_symbol
-    val s_rules : 'a ty_production list -> ('self, 'a) ty_symbol
+    val s_rules : warning:(string -> unit) option -> 'a ty_production list -> ('self, 'a) ty_symbol
     val r_stop : ('self, 'r, 'r) ty_rule
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
@@ -889,10 +887,9 @@ module type S =
     val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
     module Unsafe :
       sig
-        val gram_reinit : te Plexing.lexer -> unit
         val clear_entry : 'a Entry.e -> unit
       end
-    val safe_extend :
+    val safe_extend : warning:(string -> unit) option ->
       'a Entry.e -> Gramext.position option ->
         (string option * Gramext.g_assoc option * 'a ty_production list)
           list ->
@@ -945,7 +942,7 @@ module GMake (L : GLexerType) =
     let s_self = Sself
     let s_next = Snext
     let s_token tok = Stoken tok
-    let s_rules (t : Obj.t ty_production list) = Gramext.srules (Obj.magic t)
+    let s_rules ~warning (t : Obj.t ty_production list) = Gramext.srules ~warning (Obj.magic t)
     let r_stop = []
     let r_next r s = r @ [s]
     let production
@@ -953,15 +950,12 @@ module GMake (L : GLexerType) =
       Obj.magic p
     module Unsafe =
       struct
-        let gram_reinit = gram_reinit gram
         let clear_entry = clear_entry
       end
-    let extend = extend_entry
-    let safe_extend e pos
+    let safe_extend ~warning e pos
         (r :
          (string option * Gramext.g_assoc option * Obj.t ty_production list)
            list) =
-      extend e pos (Obj.magic r)
-    let delete_rule e r = delete_rule (Entry.obj e) r
-    let safe_delete_rule = delete_rule
+      extend_entry ~warning e pos (Obj.magic r)
+    let safe_delete_rule e r = delete_rule (Entry.obj e) r
   end

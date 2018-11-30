@@ -380,7 +380,7 @@ open Pputils
 
   let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
 
-  let pr_syntax_modifier = function
+  let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetItemLevel (l,bko,n) ->
       prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level_opt n ++
       pr_opt pr_constr_as_binder_kind bko

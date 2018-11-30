@@ -146,16 +146,16 @@ let print_local fmt ext =
     fprintf fmt "in@ "
 
 let print_position fmt pos = match pos with
-| First -> fprintf fmt "Extend.First"
-| Last -> fprintf fmt "Extend.Last"
-| Before s -> fprintf fmt "Extend.Before@ \"%s\"" s
-| After s -> fprintf fmt "Extend.After@ \"%s\"" s
-| Level s -> fprintf fmt "Extend.Level@ \"%s\"" s
+| First -> fprintf fmt "Gramlib.Gramext.First"
+| Last -> fprintf fmt "Gramlib.Gramext.Last"
+| Before s -> fprintf fmt "Gramlib.Gramext.Before@ \"%s\"" s
+| After s -> fprintf fmt "Gramlib.Gramext.After@ \"%s\"" s
+| Level s -> fprintf fmt "Gramlib.Gramext.Level@ \"%s\"" s
 
 let print_assoc fmt = function
-| LeftA -> fprintf fmt "Extend.LeftA"
-| RightA -> fprintf fmt "Extend.RightA"
-| NonA -> fprintf fmt "Extend.NonA"
+| LeftA -> fprintf fmt "Gramlib.Gramext.LeftA"
+| RightA -> fprintf fmt "Gramlib.Gramext.RightA"
+| NonA -> fprintf fmt "Gramlib.Gramext.NonA"
 
 let is_token s = match string_split s with
 | [s] -> is_uident s

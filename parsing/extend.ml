@@ -14,17 +14,8 @@ type 'a entry = 'a Gramlib.Grammar.GMake(CLexer).Entry.e
 
 type side = Left | Right
 
-type gram_assoc = NonA | RightA | LeftA
-
-type gram_position =
-  | First
-  | Last
-  | Before of string
-  | After of string
-  | Level of string
-
 type production_position =
-  | BorderProd of side * gram_assoc option
+  | BorderProd of side * Gramlib.Gramext.g_assoc option
   | InternalProd
 
 type production_level =
@@ -116,11 +107,11 @@ type 'a production_rule =
 type 'a single_extend_statement =
   string option *
   (** Level *)
-  gram_assoc option *
+  Gramlib.Gramext.g_assoc option *
   (** Associativity *)
   'a production_rule list
   (** Symbol list with the interpretation function *)
 
 type 'a extend_statement =
-  gram_position option *
+  Gramlib.Gramext.position option *
   'a single_extend_statement list
