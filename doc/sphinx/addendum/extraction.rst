@@ -28,7 +28,7 @@ Generating ML Code
 
 .. note::
 
-  In the following, a qualified identifier `qualid`
+  In the following, a qualified identifier :token:`qualid`
   can be used to refer to any kind of |Coq| global "object" : constant,
   inductive type, inductive constructor or module name.
 
@@ -214,9 +214,9 @@ principles of extraction (logical parts and types).
 .. cmd:: Extraction Implicit @qualid [ {+ @ident } ]
 
    This experimental command allows declaring some arguments of
-   `qualid` as implicit, i.e. useless in extracted code and hence to
-   be removed by extraction. Here `qualid` can be any function or
-   inductive constructor, and the given `ident` are the names of
+   :token:`qualid` as implicit, i.e. useless in extracted code and hence to
+   be removed by extraction. Here :token:`qualid` can be any function or
+   inductive constructor, and the given :token:`ident` are the names of
    the concerned arguments. In fact, an argument can also be referred
    by a number indicating its position, starting from 1.
 
@@ -253,7 +253,7 @@ what ML term corresponds to a given axiom.
 .. cmd:: Extract Constant @qualid => @string
 
    Give an ML extraction for the given constant.
-   The `string` may be an identifier or a quoted string.
+   The :token:`string` may be an identifier or a quoted string.
 
 .. cmd:: Extract Inlined Constant @qualid => @string
 
@@ -315,24 +315,24 @@ native boolean type instead of the |Coq| one. The syntax is the following:
 .. cmd:: Extract Inductive @qualid => @string [ {+ @string } ]
 
    Give an ML extraction for the given inductive type. You must specify
-   extractions for the type itself (first `string`) and all its
-   constructors (all the `string` between square brackets). In this form,
+   extractions for the type itself (first :token:`string`) and all its
+   constructors (all the :token:`string` between square brackets). In this form,
    the ML extraction must be an ML inductive datatype, and the native
    pattern matching of the language will be used.
 
 .. cmdv:: Extract Inductive @qualid => @string [ {+ @string } ] @string
 
-   Same as before, with a final extra `string` that indicates how to
+   Same as before, with a final extra :token:`string` that indicates how to
    perform pattern matching over this inductive type. In this form,
    the ML extraction could be an arbitrary type.
-   For an inductive type with `k` constructors, the function used to
-   emulate the pattern matching should expect `(k+1)` arguments, first the `k`
+   For an inductive type with :math:`k` constructors, the function used to
+   emulate the pattern matching should expect :math:`k+1` arguments, first the :math:`k`
    branches in functional form, and then the inductive element to
    destruct. For instance, the match branch ``| S n => foo`` gives the
    functional form ``(fun n -> foo)``. Note that a constructor with no
    arguments is considered to have one unit argument, in order to block
    early evaluation of the branch: ``| O => bar`` leads to the functional
-   form ``(fun () -> bar)``. For instance, when extracting ``nat``
+   form ``(fun () -> bar)``. For instance, when extracting :g:`nat`
    into |OCaml| ``int``, the code to be provided has type:
    ``(unit->'a)->(int->'a)->int->'a``.
 
