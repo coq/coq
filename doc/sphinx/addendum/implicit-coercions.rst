@@ -40,9 +40,9 @@ In addition to these user-defined classes, we have two built-in classes:
 Formally, the syntax of a classes is defined as:
 
 .. productionlist::
-   class: qualid
-        : | `Sortclass`
-        : | `Funclass`
+   class: `qualid`
+        : | Sortclass
+        : | Funclass
 
 
 Coercions
@@ -202,10 +202,10 @@ grammar of inductive types from Figure :ref:`vernacular` as follows:
    \comindex{CoInductive \mbox{\rm (and coercions)}}
 
 .. productionlist::
-   inductive : `Inductive` ind_body `with` ... `with` ind_body
-             : | `CoInductive` ind_body `with` ... `with` ind_body
-   ind_body : ident [binders] : term := [[|] constructor | ... | constructor]
-   constructor : ident [binders] [:[>] term]
+   inductive : Inductive `ind_body` with ... with `ind_body`
+             : | CoInductive `ind_body` with ... with `ind_body`
+   ind_body : `ident` [ `binders` ] : `term` := [[|] `constructor` | ... | `constructor` ]
+   constructor : `ident` [ `binders` ] [:[>] `term` ]
 
 Especially, if the extra ``>`` is present in a constructor
 declaration, this constructor is declared as a coercion.
