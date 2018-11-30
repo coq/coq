@@ -203,7 +203,20 @@ module ContextObjectSet : Set.S with type elt = context_object
 module ContextObjectMap : CMap.ExtS
   with type key = context_object and module Set := ContextObjectSet
 
-val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
+module AssumptionCtx : sig
+  type t =
+    { predicative : Declarations.set_predicativity
+    ; type_in_type : bool
+    ; vars   : (Id.t * types) list
+    ; axioms : (axiom * types * (Label.t * Constr.rel_context * Constr.t) list) list
+    ; opaque : (Constant.t * types) list
+    ; trans  : (Constant.t * types) list
+    }
+
+  val build : env -> types ContextObjectMap.t -> t
+end
+
+val pr_assumptionset : env -> evar_map -> AssumptionCtx.t -> Pp.t
 
 val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
 

@@ -1930,7 +1930,8 @@ let vernac_print ~atts env sigma =
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
-      Printer.pr_assumptionset env sigma nassums
+      let cassums = AssumptionCtx.build env nassums in
+      Printer.pr_assumptionset env sigma cassums
   | PrintStrategy r -> print_strategy r
   | PrintRegistered -> print_registered ()
 

@@ -892,9 +892,50 @@ end
 module ContextObjectSet = Set.Make (OrderedContextObject)
 module ContextObjectMap = Map.Make (OrderedContextObject)
 
-let pr_assumptionset env sigma s =
-  if ContextObjectMap.is_empty s &&
-       engagement env = PredicativeSet then
+module AssumptionCtx = struct
+
+  type t =
+    { predicative : Declarations.set_predicativity
+    ; type_in_type : bool
+    ; vars   : (Id.t * types) list
+    ; axioms : (axiom * types * (Label.t * Constr.rel_context * Constr.t) list) list
+    ; opaque : (Constant.t * types) list
+    ; trans  : (Constant.t * types) list
+    }
+
+  let build env ctxmap =
+    let fold t typ accu =
+      let (v, a, o, tr) = accu in
+      match t with
+      | Variable id ->
+        ((id,typ) :: v, a, o, tr)
+      | Axiom (axiom, l) ->
+        (v, (axiom,typ,l) :: a, o, tr)
+      | Opaque kn ->
+        (v, a, (kn,typ) :: o, tr)
+      | Transparent kn ->
+        (v, a, o, (kn,typ) :: tr)
+    in
+    let (vars, axioms, opaque, trans) =
+      ContextObjectMap.fold fold ctxmap ([], [], [], []) in
+    { predicative = Environ.engagement env
+    ; type_in_type = Environ.type_in_type env
+    ; vars
+    ; axioms
+    ; opaque
+    ; trans
+    }
+
+end
+
+let pr_assumptionset env sigma (s : AssumptionCtx.t) =
+  let open AssumptionCtx in
+  if CList.is_empty s.vars   &&
+     CList.is_empty s.axioms &&
+     CList.is_empty s.opaque &&
+     CList.is_empty s.trans  &&
+     s.predicative = PredicativeSet
+  then
     str "Closed under the global context"
   else
     let safe_pr_constant env kn =
@@ -922,41 +963,38 @@ let pr_assumptionset env sigma s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
+        safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
       | Positive m ->
-          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
+        hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
       | Guarded kn ->
-          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+        hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
     in
-    let fold t typ accu =
-      let (v, a, o, tr) = accu in
-      match t with
-      | Variable id ->
-        let var = pr_id id ++ str " : " ++ pr_ltype_env env sigma typ in
-        (var :: v, a, o, tr)
-      | Axiom (axiom, []) ->
-        let ax = pr_axiom env axiom typ in
-        (v, ax :: a, o, tr)
-      | Axiom (axiom,l) ->
-        let ax = pr_axiom env axiom typ ++
-          cut() ++
-          prlist_with_sep cut (fun (lbl, ctx, ty) ->
-            str " used in " ++ Label.print lbl ++
-            str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
-          l in
-        (v, ax :: a, o, tr)
-      | Opaque kn ->
-        let opq = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
-        (v, a, opq :: o, tr)
-      | Transparent kn ->
-        let tran = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
-        (v, a, o, tran :: tr)
-    in
-    let (vars, axioms, opaque, trans) = 
-      ContextObjectMap.fold fold s ([], [], [], [])
-    in
+    let vars =
+      List.map (fun (id,typ) ->
+          pr_id id ++ str " : " ++ pr_ltype_env env sigma typ
+        ) s.vars in
+    let axioms =
+      List.map (fun (axiom, typ, l) ->
+          match l with
+          | [] ->
+            pr_axiom env axiom typ
+          | l ->
+            pr_axiom env axiom typ ++
+            cut() ++
+            prlist_with_sep cut (fun (lbl, ctx, ty) ->
+                str " used in " ++ Label.print lbl ++
+                str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
+              l) s.axioms in
+    let opaque =
+      List.map (fun (kn, typ) ->
+          safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
+        ) s.opaque in
+    let trans =
+      List.map (fun (kn, typ) ->
+          safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
+        ) s.trans in
     let theory =
-      if is_impredicative_set env then
+      if s.predicative = ImpredicativeSet then
 	[str "Set is impredicative"]
       else []
     in
@@ -966,12 +1004,12 @@ let pr_assumptionset env sigma s =
       else theory
     in
     let opt_list title = function
-    | [] -> None
-    | l ->
-      let section =
-        title ++ fnl () ++
-        v 0 (prlist_with_sep fnl (fun s -> s) l) in
-      Some section
+      | [] -> None
+      | l ->
+        let section =
+          title ++ fnl () ++
+          v 0 (prlist_with_sep fnl (fun s -> s) l) in
+        Some section
     in
     let assums = [
       opt_list (str "Transparent constants:") trans;
