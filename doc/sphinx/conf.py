@@ -147,7 +147,7 @@ exclude_patterns = [
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-#default_role = None
+default_role = 'literal'
 
 # Use the Coq domain
 primary_domain = 'coq'

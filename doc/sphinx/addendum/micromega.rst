@@ -248,7 +248,7 @@ cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) +
 belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
-.. [#] Support for `nat` and :math:`\mathbb{N}` is obtained by pre-processing the goal with
+.. [#] Support for :g:`nat` and :g:`N` is obtained by pre-processing the goal with
   the ``zify`` tactic.
 .. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#] Variants deal with equalities and strict inequalities.
