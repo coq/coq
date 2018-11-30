@@ -16,6 +16,7 @@ open Names
 open Locus
 open Constrexpr
 open Glob_term
+open Genintern
 open Geninterp
 open Extraargs
 open Tacmach
@@ -37,8 +38,8 @@ DECLARE PLUGIN "ltac_plugin"
 {
 
 type constr_expr_with_bindings = constr_expr with_bindings
-type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
-type glob_constr_with_bindings_sign = interp_sign * Tacexpr.glob_constr_and_expr with_bindings
+type glob_constr_with_bindings = glob_constr_and_expr with_bindings
+type glob_constr_with_bindings_sign = interp_sign * glob_constr_and_expr with_bindings
 
 let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) =
   let _, env = Pfedit.get_current_context () in
@@ -70,7 +71,7 @@ END
 {
 
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
-type glob_strategy = (Tacexpr.glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
+type glob_strategy = (glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
 
 let interp_strategy ist gl s = 
   let sigma = project gl in

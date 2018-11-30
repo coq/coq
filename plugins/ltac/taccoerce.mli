@@ -53,7 +53,7 @@ val coerce_var_to_ident : bool -> Environ.env -> Evd.evar_map -> Value.t -> Id.t
 
 val coerce_to_ident_not_fresh : Evd.evar_map -> Value.t -> Id.t
 
-val coerce_to_intro_pattern : Evd.evar_map -> Value.t -> Tacexpr.delayed_open_constr intro_pattern_expr
+val coerce_to_intro_pattern : Evd.evar_map -> Value.t -> delayed_open_constr intro_pattern_expr
 
 val coerce_to_intro_pattern_naming :
   Evd.evar_map -> Value.t -> Namegen.intro_pattern_naming_expr

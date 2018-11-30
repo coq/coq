@@ -896,7 +896,7 @@ let interp_rpattern s = function
 
 let interp_rpattern0 ist gl t = Tacmach.project gl, interp_rpattern ist t
 
-type cpattern = char * glob_constr_and_expr * Geninterp.interp_sign option
+type cpattern = char * Genintern.glob_constr_and_expr * Geninterp.interp_sign option
 let tag_of_cpattern = pi1
 let loc_of_cpattern = loc_ofCG
 let cpattern_of_term (c, t) ist = c, t, Some ist

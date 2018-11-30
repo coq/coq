@@ -13,6 +13,7 @@ open Environ
 open EConstr
 open Constrexpr
 open Evd
+open Genintern
 open Tactypes
 open Tacexpr
 open Tacinterp

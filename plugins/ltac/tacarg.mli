@@ -11,6 +11,7 @@
 open Genarg
 open EConstr
 open Constrexpr
+open Genintern
 open Tactypes
 open Tacexpr
 
