@@ -73,6 +73,8 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
+type delimiter_depth = DelimOnlyTmpScope | DelimUnboundedScope
+
 type prim_token =
   | Number of NumTok.Signed.t
   | String of string
@@ -91,7 +93,7 @@ type cases_pattern_expr_r =
                                   applied to arguments l2 *)
   | CPatPrim   of prim_token
   | CPatRecord of (qualid * cases_pattern_expr) list
-  | CPatDelimiters of string * cases_pattern_expr
+  | CPatDelimiters of delimiter_depth * string * cases_pattern_expr
   | CPatCast   of cases_pattern_expr * constr_expr
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
 
@@ -131,7 +133,7 @@ and constr_expr_r =
   | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
   | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
-  | CDelimiters of string * constr_expr
+  | CDelimiters of delimiter_depth * string * constr_expr
   | CArray of instance_expr option * constr_expr array * constr_expr * constr_expr
 and constr_expr = constr_expr_r CAst.t
 

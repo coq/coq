@@ -1740,8 +1740,12 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       let subst = split_by_type_pat ?loc ids' (terms,termlists) in
       Dumpglob.dump_notation_location (patntn_loc ?loc fullargs ntn) ntn df;
       in_not test_kind loc scopes subst extrargs c
-    | CPatDelimiters (key, e) ->
-      in_pat test_kind (None,find_delimiters_scope ?loc key::snd scopes) e
+    | CPatDelimiters (depth, key, e) ->
+      let sc = find_delimiters_scope ?loc key in
+      let scopes = match depth with
+        | DelimOnlyTmpScope -> Some sc, snd scopes
+        | DelimUnboundedScope -> None, sc::snd scopes in
+      in_pat test_kind scopes e
     | CPatPrim p ->
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc test_kind_inner.test_kind p scopes in
       rcp_of_glob scopes pat
@@ -2096,9 +2100,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         intern_generalization intern env ntnvars loc b a c
     | CPrim p ->
         fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes))
-    | CDelimiters (key, e) ->
-        intern {env with tmp_scope = None;
-                  scopes = find_delimiters_scope ?loc key :: env.scopes} e
+    | CDelimiters (depth, key, e) ->
+        let sc = find_delimiters_scope ?loc key in
+        let env = match depth with
+          | DelimOnlyTmpScope -> {env with tmp_scope = Some sc}
+          | DelimUnboundedScope -> {env with tmp_scope = None; scopes = sc :: env.scopes} in
+        intern env e
     | CAppExpl ((isproj,ref,us), args) ->
         let f,args =
           let args = List.map (fun a -> (a,None)) args in

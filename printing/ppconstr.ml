@@ -132,8 +132,9 @@ let tag_var = tag Tag.variable
     let { notation_printing_unparsing = unpl; notation_printing_level = level } = find_notation_printing_rule which s in
     print_hunks level pr pr_patt pr_binders env unpl, level
 
-  let pr_delimiters key strm =
-    strm ++ str ("%"^key)
+  let pr_delimiters depth key strm =
+    let d = match depth with DelimOnlyTmpScope -> "%%" | DelimUnboundedScope -> "%" in
+    strm ++ str (d^key)
 
   let pr_generalization bk ak c =
     let hd, tl =
@@ -320,8 +321,8 @@ let tag_var = tag Tag.variable
       | CPatPrim p ->
         pr_prim_token p, latom
 
-      | CPatDelimiters (k,p) ->
-        pr_delimiters k (pr_patt mt pr lsimplepatt p), 1
+      | CPatDelimiters (depth,k,p) ->
+        pr_delimiters depth k (pr_patt mt pr lsimplepatt p), 1
 
       | CPatCast (p,t) ->
         (pr_patt mt pr lpatcast p ++ spc () ++ str ":" ++ ws 1 ++ pr t), 1
@@ -684,8 +685,8 @@ let tag_var = tag Tag.variable
         return (pr_generalization bk ak (pr mt ltop c), latom)
       | CPrim p ->
         return (pr_prim_token p, prec_of_prim_token p)
-      | CDelimiters (sc,a) ->
-        return (pr_delimiters sc (pr mt (LevelLe ldelim) a), ldelim)
+      | CDelimiters (depth,sc,a) ->
+        return (pr_delimiters depth sc (pr mt (LevelLe ldelim) a), ldelim)
       | CArray(u, t,def,ty) ->
         hov 0 (str "[| " ++ prvect_with_sep (fun () -> str "; ") (pr mt ltop) t ++
                (if not (Array.is_empty t) then str " " else mt()) ++
