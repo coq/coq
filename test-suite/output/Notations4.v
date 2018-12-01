@@ -483,3 +483,24 @@ Check MyNone+.
 Check Some MyNone+.
 
 End LeadingIdent.
+
+Require Import Coq.Numbers.Cyclic.Int63.Int63.
+Module NumeralNotations.
+  Module Test17.
+    (** Test int63 *)
+    Declare Scope test17_scope.
+    Delimit Scope test17_scope with test17.
+    Local Set Primitive Projections.
+    Record myint63 := of_int { to_int : int }.
+    Numeral Notation myint63 of_int to_int : test17_scope.
+    Check let v := 0%test17 in v : myint63.
+  End Test17.
+End NumeralNotations.
+
+(* Test interpretation of types in "{ x | P }" as a type *)
+
+Module K.
+
+Check fun P Q => { x : nat & P x * Q x }.
+
+End K.
