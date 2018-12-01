@@ -1554,6 +1554,7 @@ Opening a notation scope locally
 
 .. prodn::
    term_scope ::= @term0 % @scope_key
+   | @term0 %_ @scope_key
 
 The notation scope stack can be locally extended within
 a :token:`term` with the syntax
@@ -1561,6 +1562,10 @@ a :token:`term` with the syntax
 
 In this case, :n:`@term` is
 interpreted in the scope stack extended with the scope bound to :n:`@scope_key`.
+
+The term :n:`@term0%_@scope_key` is interpreted similarly to :n:`@term0%@scope_key`
+except that the scope stack is only temporarily extended for the head of :n:`@term0`,
+rather than all its subterms.
 
 .. cmd:: Delimit Scope @scope_name with @scope_key
 

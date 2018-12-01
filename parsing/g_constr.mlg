@@ -199,7 +199,10 @@ GRAMMAR EXTEND Gram
       | c = term; ".("; "@"; f = global; i = univ_annot;
         args = LIST0 (term LEVEL "9"); ")" ->
         { CAst.make ~loc @@ CProj(true, (f,i), List.map (fun a -> (a,None)) args, c) }
-      | c = term; "%"; key = IDENT -> { CAst.make ~loc @@ CDelimiters (key,c) } ]
+      | c = term; "%"; key = IDENT ->
+        { CAst.make ~loc @@ CDelimiters (DelimUnboundedScope,key,c) }
+      | c = term; "%_"; key = IDENT ->
+        { CAst.make ~loc @@ CDelimiters (DelimOnlyTmpScope,key,c) } ]
     | "0"
       [ c = atomic_constr -> { c }
       | c = term_match -> { c }
@@ -396,7 +399,10 @@ GRAMMAR EXTEND Gram
       | "@"; r = Prim.reference; lp = LIST0 NEXT ->
         { CAst.make ~loc @@ CPatCstr (r, Some lp, []) } ]
     | "1" LEFTA
-      [ c = pattern; "%"; key = IDENT -> { CAst.make ~loc @@ CPatDelimiters (key,c) } ]
+      [ c = pattern; "%"; key = IDENT ->
+        { CAst.make ~loc @@ CPatDelimiters (DelimUnboundedScope,key,c) }
+      | c = pattern; "%_"; key = IDENT ->
+        { CAst.make ~loc @@ CPatDelimiters (DelimOnlyTmpScope,key,c) } ]
     | "0"
       [ r = Prim.reference                -> { CAst.make ~loc @@ CPatAtom (Some r) }
       | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }

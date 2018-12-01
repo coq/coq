@@ -154,11 +154,11 @@ module PrintingConstructor = Goptions.MakeRefTable(PrintingRecordConstructor)
 
 let insert_delimiters e = function
   | None -> e
-  | Some sc -> CAst.make @@ CDelimiters (sc,e)
+  | Some sc -> CAst.make @@ CDelimiters (DelimUnboundedScope,sc,e)
 
 let insert_pat_delimiters ?loc p = function
   | None -> p
-  | Some sc -> CAst.make ?loc @@ CPatDelimiters (sc,p)
+  | Some sc -> CAst.make ?loc @@ CPatDelimiters (DelimUnboundedScope,sc,p)
 
 let insert_pat_alias ?loc p = function
   | Anonymous -> p
@@ -808,8 +808,8 @@ let filter_enough_applied nargs l =
 let extern_prim_token_delimiter_if_required n key_n scope_n scopes =
   match availability_of_prim_token n scope_n scopes with
   | Some None -> CPrim n
-  | None -> CDelimiters(key_n, CAst.make (CPrim n))
-  | Some (Some key) -> CDelimiters(key, CAst.make (CPrim n))
+  | None -> CDelimiters(DelimUnboundedScope, key_n, CAst.make (CPrim n))
+  | Some (Some key) -> CDelimiters(DelimUnboundedScope, key, CAst.make (CPrim n))
 
 (**********************************************************************)
 (* mapping decl                                                       *)

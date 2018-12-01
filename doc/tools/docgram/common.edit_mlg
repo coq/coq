@@ -379,6 +379,9 @@ term1: [
 | REPLACE term0 "%" IDENT
 | WITH term0 "%" scope_key
 | MOVETO term_scope term0 "%" scope_key
+| REPLACE term0 "%_" IDENT
+| WITH term0 "%_" scope_key
+| MOVETO term_scope term0 "%_" scope_key
 | MOVETO term_projection term0 ".(" global univ_annot LIST0 arg ")"
 | MOVETO term_projection term0 ".(" "@" global univ_annot LIST0 ( term9 ) ")"
 ]
@@ -518,6 +521,8 @@ pattern10: [
 pattern1: [
 | REPLACE pattern0 "%" IDENT
 | WITH pattern0 "%" scope_key
+| REPLACE pattern0 "%_" IDENT
+| WITH pattern0 "%_" scope_key
 ]
 
 pattern0: [

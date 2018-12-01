@@ -158,8 +158,9 @@ let tag_var = tag Tag.variable
     let { notation_printing_unparsing = unpl; notation_printing_level = level } = find_notation_printing_rule which s in
     print_hunks level lev_after pr pr_patt pr_binders env unpl
 
-  let pr_delimiters key strm =
-    strm ++ str ("%"^key)
+  let pr_delimiters depth key strm =
+    let d = match depth with DelimOnlyTmpScope -> "%_" | DelimUnboundedScope -> "%" in
+    strm ++ str (d^key)
 
   let pr_generalization bk c =
     let hd, tl =
@@ -390,8 +391,8 @@ let tag_var = tag Tag.variable
       | CPatPrim p ->
         return (fun lev_after -> pr_prim_token p) latom
 
-      | CPatDelimiters (k,p) ->
-        return (fun lev_after -> pr_delimiters k (pr_patt mt pr (Some 1) lsimplepatt p)) 1
+      | CPatDelimiters (depth,k,p) ->
+        return (fun lev_after -> pr_delimiters depth k (pr_patt mt pr (Some 1) lsimplepatt p)) 1
 
       | CPatCast (p,t) ->
         return (fun lev_after -> pr_patt mt pr (Some 1) lpatcast p ++ spc () ++ str ":" ++ ws 1 ++ pr t) 1
@@ -778,8 +779,8 @@ let tag_var = tag Tag.variable
         return (fun lev_after -> pr_generalization bk (pr mt no_after ltop c)) latom
       | CPrim p ->
         return (fun lev_after ->pr_prim_token p) (prec_of_prim_token p)
-      | CDelimiters (sc,a) ->
-        return (fun lev_after -> pr_delimiters sc (pr mt (Some ldelim) (LevelLe ldelim) a)) ldelim
+      | CDelimiters (depth,sc,a) ->
+        return (fun lev_after -> pr_delimiters depth sc (pr mt (Some ldelim) (LevelLe ldelim) a)) ldelim
       | CArray(u, t,def,ty) ->
         return (fun lev_after -> hov 0 (str "[| " ++ prvect_with_sep (fun () -> str "; ") (pr mt no_after ltop) t ++
                (if not (Array.is_empty t) then str " " else mt()) ++

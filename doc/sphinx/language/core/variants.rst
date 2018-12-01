@@ -144,6 +144,7 @@ to apply specific treatments accordingly.
    | @pattern1 {* @pattern1 }
    | @ @qualid {* @pattern1 }
    pattern1 ::= @pattern0 % @scope_key
+   | @pattern0 %_ @scope_key
    | @pattern0
    pattern0 ::= @qualid
    | %{%| {* @qualid := @pattern } %|%}

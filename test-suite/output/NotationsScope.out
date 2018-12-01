@@ -1,0 +1,6 @@
+f1 (f1 T T) T
+     : t
+f2 (f2 T T) T
+     : t
+f2 (f1 T T) T
+     : t

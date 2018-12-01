@@ -529,7 +529,7 @@ let match_goals ot nt =
     | CGeneralization (b,c), CGeneralization (b2,c2) ->
       constr_expr ogname c c2
     | CPrim p, CPrim p2 -> ()
-    | CDelimiters (key,e), CDelimiters (key2,e2) ->
+    | CDelimiters (depth,key,e), CDelimiters (depth2,key2,e2) ->
       constr_expr ogname e e2
     | CArray(u,t,def,ty), CArray(u2,t2,def2,ty2) ->
       constr_arr ogname t t2;

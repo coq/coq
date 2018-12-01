@@ -164,7 +164,7 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
     let body =
       match extra_scope with
       | None -> body
-      | Some s -> CAst.make (Constrexpr.CDelimiters(s,body))
+      | Some s -> CAst.make Constrexpr.(CDelimiters(DelimUnboundedScope,s,body))
     in
     (* We unravel notations *)
     let g = intern_constr_expr ist sigma body in
