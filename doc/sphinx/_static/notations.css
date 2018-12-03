@@ -60,9 +60,10 @@
     margin-right: 0.4em; /* Space for the right half of the sub- and sup-scripts */
 }
 
-.notation .hole {
+.notation .hole, .std-token .pre {
     color: #4e9a06;
     font-style: italic;
+    font-weight: bold;
 }
 
 /***********************/
