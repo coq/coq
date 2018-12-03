@@ -16,6 +16,11 @@ let mathcomp = coqPackages.mathcomp.overrideAttrs (o: {
     name = "coq-git-mathcomp-git";
     src = fetchTarball https://github.com/math-comp/math-comp/archive/master.tar.gz;
   }); in
+let ssreflect = coqPackages.ssreflect.overrideAttrs (o: {
+  inherit (mathcomp) src;
+  }); in
+let coq-ext-lib = coqPackages.coq-ext-lib; in
+let simple-io = coqPackages.simple-io; in
 let bignums = coqPackages.bignums.overrideAttrs (o:
     if bn == "release" then {} else
     if bn == "master" then { src = fetchTarball https://github.com/coq/bignums/archive/master.tar.gz; } else
@@ -35,7 +40,10 @@ let corn = (coqPackages.corn.override { inherit coq bignums math-classes; })
 
 let unicoq = callPackage ./unicoq { inherit coq; }; in
 
-let callPackage = newScope { inherit coq mathcomp bignums coqprime corn math-classes unicoq; }; in
+let callPackage = newScope { inherit coq
+  bignums coq-ext-lib coqprime corn math-classes
+  mathcomp simple-io ssreflect unicoq;
+}; in
 
 # Environments for building CI libraries with this Coq
 let projects = {
@@ -57,6 +65,7 @@ let projects = {
   mathcomp = {};
   mtac2 = callPackage ./mtac2.nix {};
   oddorder = callPackage ./oddorder.nix {};
+  quickchick = callPackage ./quickchick.nix {};
   VST = callPackage ./VST.nix {};
 }; in
 
