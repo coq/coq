@@ -218,7 +218,7 @@ let generate_conf_coq_config oc =
 ;;
 
 let generate_conf_files oc
-  { v_files; mli_files; ml4_files; mlg_files; ml_files; mllib_files; mlpack_files; }
+  { v_files; mli_files; mlg_files; ml_files; mllib_files; mlpack_files; }
 =
   let module S = String in
   let map = map_sourced_list in
@@ -226,7 +226,6 @@ let generate_conf_files oc
   fprintf oc "COQMF_VFILES = %s\n"      (S.concat " " (map quote v_files));
   fprintf oc "COQMF_MLIFILES = %s\n"    (S.concat " " (map quote mli_files));
   fprintf oc "COQMF_MLFILES = %s\n"     (S.concat " " (map quote ml_files));
-  fprintf oc "COQMF_ML4FILES = %s\n"    (S.concat " " (map quote ml4_files));
   fprintf oc "COQMF_MLGFILES = %s\n"    (S.concat " " (map quote mlg_files));
   fprintf oc "COQMF_MLPACKFILES = %s\n" (S.concat " " (map quote mlpack_files));
   fprintf oc "COQMF_MLLIBFILES = %s\n"  (S.concat " " (map quote mllib_files));
@@ -284,7 +283,7 @@ let generate_conf oc project args  =
 
 let ensure_root_dir
   ({ ml_includes; r_includes; q_includes;
-     v_files; ml_files; mli_files; ml4_files; mlg_files;
+     v_files; ml_files; mli_files; mlg_files;
      mllib_files; mlpack_files } as project)
   =
   let exists f = List.exists (forget_source > f) in
@@ -294,7 +293,7 @@ let ensure_root_dir
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) r_includes
   || exists (fun ({ canonical_path = x },_) -> is_prefix x here) q_includes
   || (not_tops v_files &&
-      not_tops mli_files && not_tops ml4_files && not_tops mlg_files &&
+      not_tops mli_files && not_tops mlg_files &&
       not_tops ml_files && not_tops mllib_files && not_tops mlpack_files)
   then
     project

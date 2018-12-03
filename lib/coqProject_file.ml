@@ -24,7 +24,6 @@ type project = {
 
   v_files : string sourced list;
   mli_files : string sourced list;
-  ml4_files : string sourced list;
   mlg_files : string sourced list;
   ml_files : string sourced list;
   mllib_files : string sourced list;
@@ -62,7 +61,6 @@ let mk_project project_file makefile install_kind use_ocamlopt = {
 
   v_files = [];
   mli_files = [];
-  ml4_files = [];
   mlg_files = [];
   ml_files = [];
   mllib_files = [];
@@ -220,7 +218,9 @@ let process_cmd_line ~warning_fn orig_dir proj args =
           | ".v" ->
             { proj with v_files = proj.v_files @ [sourced f] }
         | ".ml" -> { proj with ml_files = proj.ml_files @ [sourced f] }
-        | ".ml4" -> { proj with ml4_files = proj.ml4_files @ [sourced f] }
+        | ".ml4" ->
+          let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" f in
+          raise (Parsing_error msg)
         | ".mlg" -> { proj with mlg_files = proj.mlg_files @ [sourced f] }
         | ".mli" -> { proj with mli_files = proj.mli_files @ [sourced f] }
         | ".mllib" -> { proj with mllib_files = proj.mllib_files @ [sourced f] }
@@ -248,9 +248,9 @@ let rec find_project_file ~from ~projfile_name =
     else find_project_file ~from:newdir ~projfile_name
 ;;
 
-let all_files { v_files; ml_files; mli_files; ml4_files; mlg_files;
+let all_files { v_files; ml_files; mli_files; mlg_files;
                 mllib_files; mlpack_files } =
-  v_files @ mli_files @ ml4_files @ mlg_files @ ml_files @ mllib_files @ mlpack_files
+  v_files @ mli_files @ mlg_files @ ml_files @ mllib_files @ mlpack_files
 
 let map_sourced_list f l = List.map (fun x -> f x.thing) l
 ;;
