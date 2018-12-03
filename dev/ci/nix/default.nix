@@ -33,7 +33,7 @@ let corn = (coqPackages.corn.override { inherit coq bignums math-classes; })
     src = fetchTarball "https://github.com/coq-community/corn/archive/master.tar.gz";
   }); in
 
-let unicoq = callPackage ./unicoq.nix { inherit coq; }; in
+let unicoq = callPackage ./unicoq { inherit coq; }; in
 
 let callPackage = newScope { inherit coq mathcomp bignums coqprime corn math-classes unicoq; }; in
 
