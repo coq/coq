@@ -2,20 +2,9 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
 
-Ltac cleanup :=
-  repeat match goal with
-         | [ H : ?T -> _, H' : ?T |- _ ] => specialize (H H')
-         | [ H : ?T -> _, H' : ~?T |- _ ] => clear H
-         | [ H : ~?T -> _, H' : ?T |- _ ] => clear H
-         | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
-         | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
-         | _ => progress subst
-         end.
-
 (** Add [Z.div_mod_to_quot_rem] to the end of [zify], just for this
-    file.  Note that we also add a [cleanup] tactic, which is very
-    important for speed purposes. *)
-Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem; cleanup.
+    file. *)
+Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.
 
 Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. nia. Qed.
 Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. nia. Qed.

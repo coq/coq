@@ -16,7 +16,8 @@ Local Open Scope Z_scope.
 
 (** This tactic uses the complete specification of [Z.div] and
     [Z.modulo] to remove these functions from the goal without losing
-    information. *)
+    information.  The [Z.div_mod_to_quot_rem_cleanup] tactic removes
+    needless hypotheses, which makes tactics like [nia] run faster. *)
 
 Module Z.
   Lemma mod_0_r_ext x y : y = 0 -> x mod y = 0.
@@ -42,7 +43,16 @@ Module Z.
     | [ H : context[?x / ?y] |- _ ] => div_mod_to_quot_rem_generalize x y
     | [ H : context[?x mod ?y] |- _ ] => div_mod_to_quot_rem_generalize x y
     end.
-  Ltac div_mod_to_quot_rem := repeat div_mod_to_quot_rem_step.
+  Ltac div_mod_to_quot_rem' := repeat div_mod_to_quot_rem_step.
+  Ltac div_mod_to_quot_rem_cleanup :=
+    repeat match goal with
+           | [ H : ?T -> _, H' : ?T |- _ ] => specialize (H H')
+           | [ H : ?T -> _, H' : ~?T |- _ ] => clear H
+           | [ H : ~?T -> _, H' : ?T |- _ ] => clear H
+           | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
+           | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
+           end.
+  Ltac div_mod_to_quot_rem := div_mod_to_quot_rem'; div_mod_to_quot_rem_cleanup.
 End Z.
 
 (** * zify: the Z-ification tactic *)
