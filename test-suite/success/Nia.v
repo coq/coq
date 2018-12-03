@@ -2,8 +2,20 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
 
-(** Add [Z.div_mod_to_quot_rem] to the end of [zify], just for this file *)
-Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.
+Ltac cleanup :=
+  repeat match goal with
+         | [ H : ?T -> _, H' : ?T |- _ ] => specialize (H H')
+         | [ H : ?T -> _, H' : ~?T |- _ ] => clear H
+         | [ H : ~?T -> _, H' : ?T |- _ ] => clear H
+         | [ H : 0 < ?x -> _, H' : ?x < 0 |- _ ] => clear H
+         | [ H : ?x < 0 -> _, H' : 0 < ?x |- _ ] => clear H
+         | _ => progress subst
+         end.
+
+(** Add [Z.div_mod_to_quot_rem] to the end of [zify], just for this
+    file.  Note that we also add a [cleanup] tactic, which is very
+    important for speed purposes. *)
+Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem; cleanup.
 
 Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. nia. Qed.
 Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. nia. Qed.
@@ -59,8 +71,23 @@ Qed.
 Example Z_mod_le: forall a b : Z, 0 <= a -> 0 < b -> a mod b <= a. Proof. t. Qed.
 Example Zmod_le: forall a b : Z, 0 < b -> 0 <= a -> a mod b <= a. Proof. t. Qed.
 Example Zplus_mod_idemp_r: forall a b n : Z, (b + a mod n) mod n = (b + a) mod n.
-Proof. Fail solve [ t ]. Abort.
-Example Zplus_mod_idemp_l: forall a b n : Z, (a mod n + b) mod n = (a + b) mod n. Proof. Fail solve [ t ]. Abort.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((b + a mod n) / n = (b / n) + (b mod n + a mod n) / n)
+    by nia.
+  assert ((b + a) / n = (b / n) + (a / n) + (b mod n + a mod n) / n)
+    by nia.
+  nia.
+Qed.
+Example Zplus_mod_idemp_l: forall a b n : Z, (a mod n + b) mod n = (a + b) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a mod n + b) / n = (b / n) + (b mod n + a mod n) / n) by nia.
+  assert ((a + b) / n = (b / n) + (a / n) + (b mod n + a mod n) / n) by nia.
+  nia.
+Qed.
 Example Zmult_mod_distr_r: forall a b c : Z, (a * c) mod (b * c) = a mod b * c.
 Proof.
   intros a b c.
@@ -74,10 +101,42 @@ Proof.
   pose proof (Z_eq_dec_or (a/b) (-(-a/b))).
   nia.
 Qed.
-Example Zmult_mod_idemp_r: forall a b n : Z, (b * (a mod n)) mod n = (b * a) mod n. Proof. Fail solve [ t ]. Abort.
-Example Zmult_mod_idemp_l: forall a b n : Z, (a mod n * b) mod n = (a * b) mod n. Proof. Fail solve [ t ]. Abort.
-Example Zminus_mod_idemp_r: forall a b n : Z, (a - b mod n) mod n = (a - b) mod n. Proof. Fail solve [ t ]. Abort.
-Example Zminus_mod_idemp_l: forall a b n : Z, (a mod n - b) mod n = (a - b) mod n. Proof. Fail solve [ t ]. Abort.
+Example Zmult_mod_idemp_r: forall a b n : Z, (b * (a mod n)) mod n = (b * a) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((b * (a mod n)) / n = (b / n) * (a mod n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  assert ((b * a) / n = (b / n) * (a / n) * n + (b / n) * (a mod n) + (b mod n) * (a / n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  nia.
+Qed.
+Example Zmult_mod_idemp_l: forall a b n : Z, (a mod n * b) mod n = (a * b) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert (((a mod n) * b) / n = (b / n) * (a mod n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  assert ((a * b) / n = (b / n) * (a / n) * n + (b / n) * (a mod n) + (b mod n) * (a / n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  nia.
+Qed.
+Example Zminus_mod_idemp_r: forall a b n : Z, (a - b mod n) mod n = (a - b) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a - b mod n) / n = a / n + ((a mod n) - (b mod n)) / n) by nia.
+  assert ((a - b) / n = a / n - b / n + ((a mod n) - (b mod n)) / n) by nia.
+  nia.
+Qed.
+Example Zminus_mod_idemp_l: forall a b n : Z, (a mod n - b) mod n = (a - b) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a mod n - b) / n = - (b / n) + ((a mod n) - (b mod n)) / n) by nia.
+  assert ((a - b) / n = a / n - b / n + ((a mod n) - (b mod n)) / n) by nia.
+  nia.
+Qed.
 Example Z_mod_plus_full: forall a b c : Z, (a + b * c) mod c = a mod c.
 Proof.
   intros a b c.
@@ -105,9 +164,28 @@ Proof.
   pose proof (Z_eq_dec_or ((a*b)/b) a).
   nia.
 Qed.
-Example Zminus_mod: forall a b n : Z, (a - b) mod n = (a mod n - b mod n) mod n. Proof. Fail intros; nia. Abort.
-Example Zplus_mod: forall a b n : Z, (a + b) mod n = (a mod n + b mod n) mod n. Proof. Fail intros; nia. Abort.
-Example Zmult_mod: forall a b n : Z, (a * b) mod n = (a mod n * (b mod n)) mod n. Proof. Fail intros; nia. Abort.
+Example Zminus_mod: forall a b n : Z, (a - b) mod n = (a mod n - b mod n) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a - b) / n = (a / n) - (b / n) + ((a mod n) - (b mod n)) / n) by nia.
+  nia.
+Qed.
+Example Zplus_mod: forall a b n : Z, (a + b) mod n = (a mod n + b mod n) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a + b) / n = (a / n) + (b / n) + ((a mod n) + (b mod n)) / n) by nia.
+  nia.
+Qed.
+Example Zmult_mod: forall a b n : Z, (a * b) mod n = (a mod n * (b mod n)) mod n.
+Proof.
+  intros a b n.
+  destruct (Z_zerop n); [ subst; nia | ].
+  assert ((a * b) / n = n * (a / n) * (b / n) + (a mod n) * (b / n) + (a / n) * (b mod n) + ((a mod n) * (b mod n)) / n)
+    by nia.
+  nia.
+Qed.
 Example Z_mod_mod: forall a n : Z, n <> 0 -> (a mod n) mod n = a mod n. Proof. t. Qed.
 Example Z_mod_div: forall a b : Z, b <> 0 -> a mod b / b = 0. Proof. intros; nia. Qed.
 Example Z_div_exact_full_1: forall a b : Z, a = b * (a / b) -> a mod b = 0. Proof. intros; nia. Qed.
@@ -168,24 +246,63 @@ Proof.
   assert (a mod b <> 0 -> a / -b = -(a/b)-1) by t.
   nia.
 Qed.
-Example Z_mul_mod_idemp_l: forall a b n : Z, n <> 0 -> (a mod n * b) mod n = (a * b) mod n. Proof. Fail intros; nia. Abort.
+Example Z_mul_mod_idemp_l: forall a b n : Z, n <> 0 -> (a mod n * b) mod n = (a * b) mod n.
+Proof.
+  intros a b n ?.
+  assert (((a mod n) * b) / n = (b / n) * (a mod n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  assert ((a * b) / n = (b / n) * (a / n) * n + (b / n) * (a mod n) + (b mod n) * (a / n) + ((b mod n) * (a mod n)) / n)
+    by nia.
+  nia.
+Qed.
 Example Z_mod_nz_opp_full: forall a b : Z, a mod b <> 0 -> - a mod b = b - a mod b.
 Proof.
   intros a b.
   assert (a mod b <> 0 -> -a/b = -1-a/b) by nia.
   nia.
 Qed.
-Example Z_add_mod_idemp_r: forall a b n : Z, n <> 0 -> (a + b mod n) mod n = (a + b) mod n. Proof. Fail intros; nia. Abort.
-Example Z_add_mod_idemp_l: forall a b n : Z, n <> 0 -> (a mod n + b) mod n = (a + b) mod n. Proof. Fail intros; nia. Abort.
-Example Z_mul_mod_idemp_r: forall a b n : Z, n <> 0 -> (a * (b mod n)) mod n = (a * b) mod n. Proof. Fail intros; nia. Abort.
+Example Z_add_mod_idemp_r: forall a b n : Z, n <> 0 -> (a + b mod n) mod n = (a + b) mod n.
+Proof.
+  intros a b n ?.
+  assert ((a + b mod n) / n = (a / n) + (a mod n + b mod n) / n) by nia.
+  assert ((a + b) / n = (a / n) + (b / n) + (a mod n + b mod n) / n) by nia.
+  nia.
+Qed.
+Example Z_add_mod_idemp_l: forall a b n : Z, n <> 0 -> (a mod n + b) mod n = (a + b) mod n.
+Proof.
+  intros a b n ?.
+  assert ((a mod n + b) / n = (b / n) + (a mod n + b mod n) / n) by nia.
+  assert ((a + b) / n = (a / n) + (b / n) + (a mod n + b mod n) / n) by nia.
+  nia.
+Qed.
+Example Z_mul_mod_idemp_r: forall a b n : Z, n <> 0 -> (a * (b mod n)) mod n = (a * b) mod n.
+Proof.
+  intros a b n ?.
+  assert ((a * (b mod n)) / n = (a / n) * (b mod n) + ((a mod n) * (b mod n)) / n)
+    by nia.
+  assert ((a * b) / n = (b / n) * (a / n) * n + (b / n) * (a mod n) + (b mod n) * (a / n) + ((a mod n) * (b mod n)) / n)
+    by nia.
+  nia.
+Qed.
 Example Zmod_eq_full: forall a b : Z, b <> 0 -> a mod b = a - a / b * b. Proof. intros; nia. Qed.
 Example div_eq: forall x y : Z, y <> 0 -> x mod y = 0 -> x / y * y = x. Proof. intros; nia. Qed.
 Example Z_mod_eq: forall a b : Z, b <> 0 -> a mod b = a - b * (a / b). Proof. intros; nia. Qed.
 Example Z_mod_sign_nz: forall a b : Z, b <> 0 -> a mod b <> 0 -> Z.sgn (a mod b) = Z.sgn b. Proof. intros; nia. Qed.
 Example Z_div_exact_full_2: forall a b : Z, b <> 0 -> a mod b = 0 -> a = b * (a / b). Proof. intros; nia. Qed.
 Example Z_div_mod: forall a b : Z, b <> 0 -> a = b * (a / b) + a mod b. Proof. intros; nia. Qed.
-Example Z_add_mod: forall a b n : Z, n <> 0 -> (a + b) mod n = (a mod n + b mod n) mod n. Proof. Fail intros; nia. Abort.
-Example Z_mul_mod: forall a b n : Z, n <> 0 -> (a * b) mod n = (a mod n * (b mod n)) mod n. Proof. Fail intros; nia. Abort.
+Example Z_add_mod: forall a b n : Z, n <> 0 -> (a + b) mod n = (a mod n + b mod n) mod n.
+Proof.
+  intros a b n ?.
+  assert ((a + b) / n = (a / n) + (b / n) + (a mod n + b mod n) / n) by nia.
+  nia.
+Qed.
+Example Z_mul_mod: forall a b n : Z, n <> 0 -> (a * b) mod n = (a mod n * (b mod n)) mod n.
+Proof.
+  intros a b n ?.
+  assert ((a * b) / n = (b / n) * (a / n) * n + (b / n) * (a mod n) + (b mod n) * (a / n) + ((a mod n) * (b mod n)) / n)
+    by nia.
+  nia.
+Qed.
 Example Z_div_exact: forall a b : Z, b <> 0 -> a = b * (a / b) <-> a mod b = 0. Proof. intros; nia. Qed.
 Example Z_div_opp_l_z: forall a b : Z, b <> 0 -> a mod b = 0 -> - a / b = - (a / b). Proof. intros; nia. Qed.
 Example Z_div_opp_r_z: forall a b : Z, b <> 0 -> a mod b = 0 -> a / - b = - (a / b). Proof. intros; nia. Qed.
