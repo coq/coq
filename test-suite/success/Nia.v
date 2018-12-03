@@ -2,6 +2,9 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
 
+(** Add [Z.div_mod_to_quot_rem] to the end of [zify], just for this file *)
+Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.
+
 Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. nia. Qed.
 Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. nia. Qed.
 

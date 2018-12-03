@@ -455,4 +455,4 @@ Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
 
 (** The complete Z-ification tactic *)
 
-Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.
+Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op.
