@@ -136,7 +136,7 @@ type vodep = {
   deps : string list;
 }
 
-type ldep = | VO of vodep | ML4 of string | MLG of string
+type ldep = | VO of vodep | MLG of string
 type ddir = ldep list DirMap.t
 
 (* Filter `.vio` etc... *)
@@ -181,19 +181,13 @@ let pp_vo_dep dir fmt vo =
   let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s %s -compile %s))" libflag eflag cflag source in
   pp_rule fmt [vo.target] deps action
 
-let pp_ml4_dep _dir fmt ml =
-  let target = Filename.(remove_extension ml) ^ ".ml" in
-  let ml4_rule = "(run coqp5 -loc loc -impl %{pp-file} -o %{targets})" in
-  pp_rule fmt [target] [ml] ml4_rule
-
 let pp_mlg_dep _dir fmt ml =
   let target = Filename.(remove_extension ml) ^ ".ml" in
-  let ml4_rule = "(run coqpp %{pp-file})" in
-  pp_rule fmt [target] [ml] ml4_rule
+  let mlg_rule = "(run coqpp %{pp-file})" in
+  pp_rule fmt [target] [ml] mlg_rule
 
 let pp_dep dir fmt oo = match oo with
   | VO vo -> pp_vo_dep dir fmt vo
-  | ML4 f -> pp_ml4_dep dir fmt f
   | MLG f -> pp_mlg_dep dir fmt f
 
 let out_install fmt dir ff =
@@ -220,21 +214,17 @@ let record_dune d ff =
     eprintf "error in coq_dune, a directory disappeared: %s@\n%!" sd
 
 (* File Scanning *)
-let choose_ml4g_form f =
-  if Filename.check_suffix f ".ml4" then ML4 f
-  else MLG f
-
-let scan_mlg4 m d =
+let scan_mlg m d =
   let dir = ["plugins"; d] in
   let m = DirMap.add dir [] m in
-  let ml4 = Sys.(List.filter (fun f -> Filename.(check_suffix f ".ml4" || check_suffix f ".mlg"))
+  let mlg = Sys.(List.filter (fun f -> Filename.(check_suffix f ".mlg"))
                    Array.(to_list @@ readdir (bpath dir))) in
-  List.fold_left (fun m f -> add_map_list ["plugins"; d] (choose_ml4g_form f) m) m ml4
+  List.fold_left (fun m f -> add_map_list ["plugins"; d] (MLG f) m) m mlg
 
 let scan_plugins m =
   let is_plugin_directory dir = Sys.(is_directory dir && file_exists (bpath [dir;"plugin_base.dune"])) in
   let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath ["plugins";f]) Array.(to_list @@ readdir "plugins")) in
-  List.fold_left scan_mlg4 m dirs
+  List.fold_left scan_mlg m dirs
 
 (* Process .vfiles.d and generate a skeleton for the dune file *)
 let parse_coqdep_line l =

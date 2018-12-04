@@ -102,7 +102,7 @@ CAMLOPTC    ?= "$(OCAMLFIND)" opt      -c
 CAMLLINK    ?= "$(OCAMLFIND)" ocamlc   -linkpkg -dontlink $(CAMLDONTLINK)
 CAMLOPTLINK ?= "$(OCAMLFIND)" opt      -linkpkg -dontlink $(CAMLDONTLINK)
 CAMLDOC     ?= "$(OCAMLFIND)" ocamldoc
-CAMLDEP     ?= "$(OCAMLFIND)" ocamldep -slash -ml-synonym .ml4 -ml-synonym .mlpack
+CAMLDEP     ?= "$(OCAMLFIND)" ocamldep -slash -ml-synonym .mlpack
 
 # DESTDIR is prepended to all installation paths
 DESTDIR ?=
@@ -226,7 +226,6 @@ COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)toploop)
 VDFILE := .coqdeps
 
 ALLSRCFILES := \
-	$(ML4FILES) \
 	$(MLGFILES) \
 	$(MLFILES) \
 	$(MLPACKFILES) \
@@ -248,7 +247,6 @@ BEAUTYFILES = $(addsuffix .beautified,$(VFILES))
 TEXFILES = $(VFILES:.v=.tex)
 GTEXFILES = $(VFILES:.v=.g.tex)
 CMOFILES = \
-	$(ML4FILES:.ml4=.cmo) \
 	$(MLGFILES:.mlg=.cmo) \
 	$(MLFILES:.ml=.cmo) \
 	$(MLPACKFILES:.mlpack=.cmo)
@@ -265,7 +263,7 @@ CMXSFILES = \
 	$(MLPACKFILES:.mlpack=.cmxs) \
 	$(CMXAFILES:.cmxa=.cmxs) \
 	$(if $(MLPACKFILES)$(CMXAFILES),,\
-		$(ML4FILES:.ml4=.cmxs) $(MLGFILES:.mlg=.cmxs) $(MLFILES:.ml=.cmxs))
+		$(MLGFILES:.mlg=.cmxs) $(MLFILES:.ml=.cmxs))
 
 # files that are packed into a plugin (no extension)
 PACKEDFILES = \
@@ -583,14 +581,6 @@ $(MLIFILES:.mli=.cmi): %.cmi: %.mli
 	$(SHOW)'CAMLC -c $<'
 	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $<
 
-$(ML4FILES:.ml4=.cmo): %.cmo: %.ml4
-	$(SHOW)'CAMLC -pp -c $<'
-	$(HIDE)$(CAMLC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(PP) -impl $<
-
-$(ML4FILES:.ml4=.cmx): %.cmx: %.ml4
-	$(SHOW)'CAMLOPT -pp -c $(FOR_PACK) $<'
-	$(HIDE)$(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) $(PP) $(FOR_PACK) -impl $<
-
 $(MLGFILES:.mlg=.ml): %.ml: %.mlg
 	$(SHOW)'COQPP $<'
 	$(HIDE)$(COQPP) $<
@@ -642,7 +632,7 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -pack -o $@ $^
 
 # This rule is for _CoqProject with no .mllib nor .mlpack
-$(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(ML4FILES:.ml4=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
+$(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
 	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
 	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) \
 		-shared -o $@ $<
@@ -703,16 +693,12 @@ endif
 
 redir_if_ok = > "$@" || ( RV=$$?; rm -f "$@"; exit $$RV )
 
-GENMLFILES:=$(MLGFILES:.mlg=.ml) $(ML4FILES:.ml4=.ml)
+GENMLFILES:=$(MLGFILES:.mlg=.ml)
 $(addsuffix .d,$(ALLSRCFILES)): $(GENMLFILES)
 
 $(addsuffix .d,$(MLIFILES)): %.mli.d: %.mli
 	$(SHOW)'CAMLDEP $<'
 	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) "$<" $(redir_if_ok)
-
-$(addsuffix .d,$(ML4FILES)): %.ml4.d: %.ml4
-	$(SHOW)'CAMLDEP -pp $<'
-	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) $(PP) -impl "$<" $(redir_if_ok)
 
 $(addsuffix .d,$(MLGFILES)): %.mlg.d: %.ml
 	$(SHOW)'CAMLDEP $<'
