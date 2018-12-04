@@ -14,25 +14,21 @@ open Constr
 open Univ
 
 (* Generator of levels *)
-type universe_id = DirPath.t * int
-
 let new_univ_id, set_remote_new_univ_id =
   RemoteCounter.new_counter ~name:"Universes" 0 ~incr:((+) 1)
-    ~build:(fun n -> Global.current_dirpath (), n)
+    ~build:(fun n -> Level.Id.make n)
 
-let new_univ_level () =
-  let dp, id = new_univ_id () in
-  Univ.Level.make dp id
-
-let fresh_level () = new_univ_level ()
+let fresh_level () =
+  let id = new_univ_id () in
+  Univ.Level.make2 (Global.current_dirpath ()) id
 
 (* TODO: remove *)
-let new_univ dp = Univ.Universe.make (new_univ_level dp)
-let new_Type dp = mkType (new_univ dp)
-let new_Type_sort dp = Type (new_univ dp)
+let new_univ () = Univ.Universe.make (fresh_level ())
+let new_Type () = mkType (new_univ ())
+let new_Type_sort () = Type (new_univ ())
 
 let fresh_instance auctx =
-  let inst = Array.init (AUContext.size auctx) (fun _ -> new_univ_level()) in
+  let inst = Array.init (AUContext.size auctx) (fun _ -> fresh_level()) in
   let ctx = Array.fold_right LSet.add inst LSet.empty in
   let inst = Instance.of_array inst in
   inst, (ctx, AUContext.instantiate inst auctx)

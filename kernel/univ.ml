@@ -36,10 +36,35 @@ open Util
 module RawLevel =
 struct
   open Names
+
+  module Id = struct
+    type t = int
+
+    let make i = i
+    let to_string i = string_of_int i
+
+  end
+
+  module Qualid = struct
+    type t = DirPath.t * Id.t
+
+    let make dp i = (dp,i)
+    let repr x = x
+
+    let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
+
+    let hash (d,i) = Hashset.Combine.combine i (DirPath.hash d)
+
+    let compare (d, i) (d', i') =
+      let c = Int.compare i i' in
+      if Int.equal c 0 then DirPath.compare d d'
+      else c
+  end
+
   type t =
     | Prop
     | Set
-    | Level of int * DirPath.t
+    | Level of Qualid.t
     | Var of int
 
   (* Hash-consing *)
@@ -49,7 +74,7 @@ struct
       match x, y with
       | Prop, Prop -> true
       | Set, Set -> true
-      | Level (n,d), Level (n',d') ->
+      | Level (d,n), Level (d',n') ->
         Int.equal n n' && DirPath.equal d d'
       | Var n, Var n' -> Int.equal n n'
       | _ -> false
@@ -62,7 +87,7 @@ struct
     | Set, Set -> 0
     | Set, _ -> -1
     | _, Set -> 1
-    | Level (i1, dp1), Level (i2, dp2) ->
+    | Level (dp1, i1), Level (dp2, i2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
       else DirPath.compare dp1 dp2
@@ -83,9 +108,9 @@ struct
   let hcons = function
     | Prop as x -> x
     | Set as x -> x
-    | Level (n,d) as x -> 
+    | Level (d,n) as x ->
       let d' = Names.DirPath.hcons d in
-        if d' == d then x else Level (n,d')
+        if d' == d then x else Level (d',n)
     | Var _n as x -> x
 
   open Hashset.Combine
@@ -94,18 +119,20 @@ struct
     | Prop -> combinesmall 1 0
     | Set -> combinesmall 1 1
     | Var n -> combinesmall 2 n
-    | Level (n, d) -> combinesmall 3 (combine n (Names.DirPath.hash d))
+    | Level (d, n) -> combinesmall 3 (combine n (Names.DirPath.hash d))
 
 end
 
 module Level = struct
 
-  open Names
+  module Id = RawLevel.Id
+
+  module Qualid = RawLevel.Qualid
 
   type raw_level = RawLevel.t =
   | Prop
   | Set
-  | Level of int * DirPath.t
+  | Level of Qualid.t
   | Var of int
 
   (** Embed levels with their hash value *)
@@ -166,7 +193,7 @@ module Level = struct
     match data x with
     | Prop -> "Prop"
     | Set -> "Set"
-    | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Level (d,n) -> Names.DirPath.to_string d^"."^string_of_int n
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
   let pr u = str (to_string u)
@@ -185,11 +212,12 @@ module Level = struct
     match data u with
     | Var n -> Some n | _ -> None
 
-  let make m n = make (Level (n, Names.DirPath.hcons m))
+  let make2 m n = make (Level (Names.DirPath.hcons m, n))
+  let make qid = make (Level qid)
 
   let name u =
     match data u with
-    | Level (n, d) -> Some (d, n)
+    | Level (d, n) -> Some (d, n)
     | _ -> None
 end
 

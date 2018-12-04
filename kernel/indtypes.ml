@@ -218,7 +218,7 @@ let check_subtyping_arity_constructor env (subst : constr -> constr) (arcn : typ
 let check_subtyping cumi paramsctxt env_ar inds = 
     let numparams = Context.Rel.nhyps paramsctxt in
     let uctx = CumulativityInfo.univ_context cumi in
-    let new_levels = Array.init (UContext.size uctx) (Level.make DirPath.empty) in
+    let new_levels = Array.init (UContext.size uctx) (fun i -> Level.make2 DirPath.empty (Level.Id.make i)) in
     let lmap = Array.fold_left2 (fun lmap u u' -> LMap.add u u' lmap)
         LMap.empty (Instance.to_array @@ UContext.instance uctx) new_levels
     in

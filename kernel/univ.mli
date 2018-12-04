@@ -11,9 +11,32 @@
 (** Universes. *)
 module Level :
 sig
+
+  module Id : sig
+    type t
+
+    val make : int -> t
+    val to_string : t -> string
+
+  end
+  (** Non-qualified global universe level *)
+
+  module Qualid : sig
+    type t
+
+    val make : Names.DirPath.t -> Id.t -> t
+    val repr : t -> Names.DirPath.t * Id.t
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val compare : t -> t -> int
+
+  end
+  (** Qualified global universe level *)
+
   type t
   (** Type of universe levels. A universe level is essentially a unique name
-      that will be associated to constraints later on. *)
+      that will be associated to constraints later on. A level can be local to a
+      definition or global. *)
 
   val set : t
   val prop : t
@@ -34,7 +57,9 @@ sig
 
   val hash : t -> int
 
-  val make : Names.DirPath.t -> int -> t
+  val make : Qualid.t -> t
+
+  val make2 : Names.DirPath.t -> Id.t -> t
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 
@@ -48,7 +73,7 @@ sig
 
   val var_index : t -> int option
 
-  val name : t -> (Names.DirPath.t * int) option
+  val name : t -> Qualid.t option
 end
 
 (** Sets of universe levels *)

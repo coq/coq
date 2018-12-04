@@ -15,12 +15,13 @@ open Univ
 
 let qualid_of_level l =
   match Level.name l with
-  | Some (d, n as na)  ->
+  | Some qid  ->
     begin
-    try Nametab.shortest_qualid_of_universe na
+    try Nametab.shortest_qualid_of_universe qid
     with Not_found ->
-      let name = Id.of_string_soft (string_of_int n) in
-      Libnames.make_qualid d name
+      let (dp,n) = Level.Qualid.repr qid in
+      let name = Id.of_string_soft (Level.Id.to_string n) in
+      Libnames.make_qualid dp name
     end
   | None ->
     Libnames.qualid_of_ident @@ Id.of_string_soft (Level.to_string l)

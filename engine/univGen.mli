@@ -15,14 +15,12 @@ open Univ
 
 
 (** The global universe counter *)
-type universe_id = DirPath.t * int
-
-val set_remote_new_univ_id : universe_id RemoteCounter.installer
+val set_remote_new_univ_id : Level.Id.t RemoteCounter.installer
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_id : unit -> universe_id
-val new_univ_level : unit -> Level.t
+val new_univ_id : unit -> Level.Id.t
+val fresh_level : unit -> Level.t
 
 val new_univ : unit -> Universe.t
 [@@ocaml.deprecated "Use [new_univ_level]"]

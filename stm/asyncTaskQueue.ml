@@ -60,7 +60,7 @@ module Make(T : Task) () = struct
   type request = Request of T.request
 
   type more_data =
-    | MoreDataUnivLevel of UnivGen.universe_id list
+    | MoreDataUnivLevel of Univ.Level.Id.t list
 
   let slave_respond (Request r) =
     let res = T.perform r in

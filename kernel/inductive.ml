@@ -594,7 +594,7 @@ let rec ienv_decompose_prod (env,_ as ienv) n c =
      | _ -> assert false
 
 let lambda_implicit_lift n a =
-  let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
+  let level = Level.make2 (DirPath.make [Id.of_string "implicit"]) (Level.Id.make 0) in
   let implicit_sort = mkType (Universe.make level) in
   let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
   iterate lambda_implicit n (lift n a)

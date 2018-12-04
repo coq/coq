@@ -469,7 +469,7 @@ type universe_source =
   | QualifiedUniv of Id.t (* global universe introduced by some global value *)
   | UnqualifiedUniv (* other global universe *)
 
-type universe_name_decl = universe_source * (Id.t * Nametab.universe_id) list
+type universe_name_decl = universe_source * (Id.t * Univ.Level.Qualid.t) list
 
 let check_exists sp =
   if Nametab.exists_universe sp then
@@ -543,9 +543,9 @@ let do_universe poly l =
   let l =
     List.map (fun {CAst.v=id} ->
       let lev = UnivGen.new_univ_id () in
-      (id, lev)) l
+      (id, Univ.Level.Qualid.make (Global.current_dirpath ()) lev)) l
   in
-  let ctx = List.fold_left (fun ctx (_,(dp,i)) -> Univ.LSet.add (Univ.Level.make dp i) ctx)
+  let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
       Univ.LSet.empty l, Univ.Constraint.empty
   in
   let () = declare_universe_context poly ctx in

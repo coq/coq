@@ -347,12 +347,10 @@ module DirTab = Make(DirPath')(GlobDirRef)
 type dirtab = DirTab.t
 let the_dirtab = Summary.ref ~name:"dirtab" (DirTab.empty : dirtab)
 
-type universe_id = DirPath.t * int
-
 module UnivIdEqual =
 struct
-  type t = universe_id
-  let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
+  type t = Univ.Level.Qualid.t
+  let equal = Univ.Level.Qualid.equal
 end
 module UnivTab = Make(FullPath)(UnivIdEqual)
 type univtab = UnivTab.t
@@ -375,12 +373,9 @@ let the_modtyperevtab = Summary.ref ~name:"modtyperevtab" (MPmap.empty : mptrevt
 
 module UnivIdOrdered =
 struct
-  type t = universe_id
-  let hash (d, i) = i + DirPath.hash d
-  let compare (d, i) (d', i') =
-    let c = Int.compare i i' in
-    if Int.equal c 0 then DirPath.compare d d'
-    else c
+  type t = Univ.Level.Qualid.t
+  let hash = Univ.Level.Qualid.hash
+  let compare = Univ.Level.Qualid.compare
 end
 
 module UnivIdMap = HMap.Make(UnivIdOrdered)
