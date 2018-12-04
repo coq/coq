@@ -26,7 +26,11 @@ open Vmbytegen
 module NamedDecl = Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 
-external eval_tcode : tcode -> atom array -> vm_global -> values array -> values = "coq_eval_tcode"
+type vm_global = values array
+
+(* interpreteur *)
+external coq_interprete : tcode -> values -> atom array -> vm_global -> Vmvalues.vm_env -> int -> values =
+  "coq_interprete_byte" "coq_interprete_ml"
 
 (* table pour les structured_constant et les annotations des switchs *)
 
@@ -140,7 +144,7 @@ struct
     let () = reroot data in
     match !data with
     | DSet _ -> assert false
-    | Root a -> Vmvalues.vm_global a
+    | Root a -> (a : vm_global)
 
 end
 
@@ -288,7 +292,8 @@ and eval_to_patch env sigma (buff,pl,fv) =
     a.(1) <- Obj.magic 2;
     Array.iteri (fun i v -> a.(i + 2) <- slot_for_fv env sigma v) fv;
     a in
-  eval_tcode tc (get_atom_rel ()) (GlobVal.vm_global global_table.contents.glob_val) vm_env
+  let global = get_global_data () in
+  coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0
 
 and val_of_constr env sigma c =
   match compile ~fail_on_error:true env sigma c with
@@ -297,3 +302,6 @@ and val_of_constr env sigma c =
 
 let set_transparent_const _kn = () (* !?! *)
 let set_opaque_const _kn = () (* !?! *)
+
+let vm_interp code v env k =
+  coq_interprete code v (get_atom_rel ()) (get_global_data ()) env k

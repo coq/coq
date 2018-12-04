@@ -15,7 +15,6 @@ open Names
 type values
 type structured_values
 type vm_env
-type vm_global
 type vprod
 type vfun
 type vfix
@@ -61,12 +60,11 @@ val fun_val : vfun -> values
 val fix_val : vfix -> values
 val cofix_upd_val : to_update -> values
 
+val inj_env : values array -> vm_env
 val fun_env : vfun -> vm_env
 val fix_env : vfix -> vm_env
 val cofix_env : vcofix -> vm_env
 val cofix_upd_env : to_update -> vm_env
-
-val vm_global : values array -> vm_global
 
 (** Cast a value known to be a function, unsafe in general *)
 val fun_of_val : values -> vfun
