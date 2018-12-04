@@ -150,3 +150,24 @@ simplest way of getting them is to run `nix-shell` first.
 is not out of the box. Installing explicitly "pinentry-mac" seems important for
 typing of passphrase to work correctly (see also this
 [Stack Overflow Q-and-A](https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0)).
+
+## Addendum for organization admins
+
+### Adding a new code owner individual
+
+If someone is added to the [`CODEOWNERS`](../../.github/CODEOWNERS) file and
+they did not have merging rights before, they should also be added to the
+**@coq/pushers** team. You may do so using
+[this link](https://github.com/orgs/coq/teams/pushers/members?add=true).
+
+Before adding someone to the **@coq/pushers** team, you should ensure that they
+have read the present merging documentation, and explicitly tell them not to
+use the merging button on the GitHub web interface.
+
+### Adding a new code owner team
+
+Go to [that page](https://github.com/orgs/coq/teams/pushers/teams) and click on
+the green "Add a team" button. Use a "-maintainer" suffix for the name of your
+team. You may then add new members to this team (you don't need to add them to
+the **@coq/pushers** team first as this will be done automatically because the
+team you created is a sub-team of **@coq/pushers**).
