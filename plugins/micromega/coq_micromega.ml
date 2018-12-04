@@ -877,9 +877,9 @@ struct
     * This is the big generic function for expression parsers.
     *)
 
-  let parse_expr cenv sigma parse_constant parse_exp ops_spec env term =
+  let parse_expr env sigma parse_constant parse_exp ops_spec term_env term =
     if debug
-    then Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env cenv sigma term);
+    then Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env env sigma term);
 
 (*
     let constant_or_variable env term =
@@ -928,7 +928,7 @@ struct
 		   |   _ -> parse_variable env term
                )
 	   | _ -> parse_variable env term in
-     parse_expr env term
+     parse_expr term_env term
 
   let zop_spec =
     [
@@ -1007,7 +1007,7 @@ struct
       res
 
 
-  let parse_zexpr env sigma =  parse_expr env sigma
+  let parse_zexpr env sigma = parse_expr env sigma
     (zconstant sigma)
     (fun expr x ->
       let exp = (parse_z sigma x) in
@@ -1038,16 +1038,17 @@ struct
         Mc.PEpow(expr,exp))
    rop_spec
 
-  let  parse_arith parse_op parse_expr env cstr gl =
+  let parse_arith parse_op parse_expr term_env cstr gl =
     let sigma = gl.sigma in
+    let env = gl.env in
     if debug
-    then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr_env gl.env sigma cstr ++ fnl ());
+    then Feedback.msg_debug (Pp.str "parse_arith: " ++ Printer.pr_leconstr_env env sigma cstr ++ fnl ());
     match EConstr.kind sigma cstr with
     | App(op,args) ->
        let (op,lhs,rhs) = parse_op gl (op,args) in
-       let (e1,env) = parse_expr gl.env sigma env lhs in
-       let (e2,env) = parse_expr gl.env sigma env rhs in
-        ({Mc.flhs = e1; Mc.fop = op;Mc.frhs = e2},env)
+       let (e1,term_env) = parse_expr env sigma term_env lhs in
+       let (e2,term_env) = parse_expr env sigma term_env rhs in
+        ({Mc.flhs = e1; Mc.fop = op;Mc.frhs = e2},term_env)
     |  _ -> failwith "error : parse_arith(2)"
 
   let parse_zarith = parse_arith parse_zop parse_zexpr
