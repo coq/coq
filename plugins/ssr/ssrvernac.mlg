@@ -500,7 +500,8 @@ let pr_raw_ssrhintref prc _ _ = let open CAst in function
   | c -> prc c
 
 let pr_rawhintref c =
-  let _, env = Pfedit.get_current_context () in
+  (* PRINTED BY doesn't provide the an env, global is good enough tho *)
+  let env = Global.env () in
   match DAst.get c with
   | GApp (f, args) when isRHoles args ->
     pr_glob_constr_env env f ++ str "|" ++ int (List.length args)

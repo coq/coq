@@ -1223,7 +1223,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
   let evar_closed t p =
     if occur_existential sigma t then
       CErrors.user_err ?loc:(loc_of_cpattern p) ~hdr:"ssreflect"
-        (pr_constr_pat (EConstr.Unsafe.to_constr t) ++
+        (pr_econstr_pat env sigma t ++
         str" contains holes and matches no subterm of the goal") in
   match gen with
   | _, Some ((x, mode), None) when mode = "@" || (mode = " " && keep_let) ->
