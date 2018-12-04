@@ -1040,6 +1040,8 @@ interpreted in the scope stack extended with the scope bound tokey.
    To remove a delimiting key of a scope, use the command
    :n:`Undelimit Scope @scope`
 
+.. _ArgumentScopes:
+
 Binding arguments of a constant to an interpretation scope
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1306,6 +1308,65 @@ Displaying information about scopes
       This displays all the notations defined in the interpretation scope :token:`scope`.
       It also displays the delimiting key if any and the class to which the
       scope is bound, if any.
+
+Impact of scopes on printing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When several notations are available for printing the same expression,
+Coq will use the following rules for printing priorities:
+
+- If two notations are available in different scopes which are open,
+  the notation in the more recently opened scope takes precedence.
+
+- If two notations are available in the same scope, the more recently
+  defined (or imported) notation takes precedence.
+
+- Abbreviations and lonely notations, both of which have no scope,
+  take precedence over a notation in an open scope if and only if the
+  abbreviation or lonely notation was defined (or imported) more
+  recently than when the corresponding scope was open. They take
+  precedence over any notation not in an open scope, whether this scope
+  has a delimiter or not.
+
+- A scope is *active* for printing a term either because it was opened
+  with :cmd:`Open Scope`, or the term is the immediate argument of a
+  constant which temporarily opens a scope for this argument (see
+  :ref:`Arguments <ArgumentScopes>`) in which case this temporary
+  scope is the most recent open one.
+
+- In case no abbreviation, nor lonely notation, nor notation in an
+  explicitly open scope, nor notation in a temporarily open scope of
+  arguments, has been found, notations in those closed scopes which
+  have a delimiter are considered, giving priority to the most
+  recently defined (or imported) ones. The corresponding delimiter is
+  inserted, making the corresponding scope the most recent explicitly
+  open scope for all subterms of the current term. As an exception to
+  the insertion of the corresponding delimiter, when an expression is
+  statically known to be in a position expecting a type and the
+  notation is from scope ``type_scope``, and the latter is closed, the
+  delimiter is not inserted. This is because expressions statically
+  known to be in a position expecting a type are by default
+  interpreted with `type_scope` temporarily activated. Expressions
+  statically known to be in a position expecting a type typically
+  include being on the right-hand side of `:`, `<:`, `<<:` and after
+  the comma in a `forall` expression.
+
+- As a refinement of the previous rule, in the case of applied global
+  references, notations in a non-opened scope with delimiter
+  specifically defined for this applied global reference take priority
+  over notations in a non-opened scope with delimiter for generic
+  applications. For instance, in the presence of ``Notation "f ( x
+  )" := (f x) (at level 10, format "f ( x )") : app_scope`` and
+  ``Notation "x '.+1'" := (S x) (at level 10, format "x '.+1'") :
+  mynat_scope.`` and both of ``app_scope`` and ``mynat_scope`` being
+  bound to a delimiter *and* both not opened, the latter, more
+  specific notation will always take precedence over the first, more
+  generic one.
+
+- A scope can be closed by using :cmd:`Close Scope` and its delimiter
+  removed by using :cmd:`Undelimit Scope`. To remove automatic
+  temporary opening of scopes for arguments of a constant, use
+  :ref:`Arguments <ArgumentScopes>`.
 
 .. _Abbreviations:
 
