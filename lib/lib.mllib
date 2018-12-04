@@ -11,6 +11,7 @@ Feedback
 CErrors
 CWarnings
 
+AcyclicGraph
 Rtree
 System
 Explore
