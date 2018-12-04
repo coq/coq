@@ -82,7 +82,7 @@ let execution_error ?loc state_id msg =
 module Hooks = struct
 
 let state_computed, state_computed_hook = Hook.make
- ~default:(fun ~doc:_ state_id ~in_cache ->
+ ~default:(fun ~doc:_ state_id ->
     feedback ~id:state_id Processed) ()
 
 let state_ready, state_ready_hook = Hook.make
@@ -779,9 +779,11 @@ module State : sig
 
   val fix_exn_ref : (Exninfo.iexn -> Exninfo.iexn) ref
 
-  val install_state : Stateid.t -> unit
-  val get_state : Stateid.t -> exec_state option
+  exception Not_in_cache
+
+  val install_state : cache:bool -> Stateid.t -> unit
   val get_success_state : Stateid.t -> Vernacstate.t option
+  val get_proof : Stateid.t -> Proof.t option
 
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
@@ -801,8 +803,7 @@ module State : sig
   val register_root_state : unit -> unit
   val restore_root_state : unit -> unit
 
-  (* Only for internal use to catch problems in parse_sentence, should
-     be removed in the state handling refactoring.  *)
+  (* Used to test if the current imperative state corresponds to a state requested from the cache. *)
   val cur_id : Stateid.t ref
 
   val purify : ('a -> 'b) -> 'a -> 'b
@@ -838,23 +839,26 @@ end = struct (* {{{ *)
     Summary.project_from_summary st Util.(pi2 summary_pstate),
     Summary.project_from_summary st Util.(pi3 summary_pstate)
 
-  let cache_current_state ~marshallable id =
-    VCS.cache_state id (ExecSuccess (Vernacstate.freeze_interp_state ~marshallable))
+  let cache_current_state () =
+    VCS.cache_state !cur_id (ExecSuccess (Vernacstate.freeze_interp_state ~marshallable:false))
 
   let cache_error_state id iexn = VCS.cache_state id (ExecError iexn)
 
-  let install_state id =
+  exception Not_in_cache
+
+  let install_state ~cache id =
     (* if the state to install is the current one, nothing to do *)
-    if not (Stateid.equal id !cur_id) then begin
-    match VCS.get_cached_state id with
-    | NotEvaluated -> anomaly Pp.(str"Trying to install a state that is not in cache")
+    if (Stateid.equal id !cur_id) then begin
+      if cache then cache_current_state ()
+    end
+    else match VCS.get_cached_state id with
+    | NotEvaluated -> raise Not_in_cache
     | Evaluated (ExecSuccess s) ->
        Vernacstate.unfreeze_interp_state s;
        cur_id := id
     | Evaluated (ExecError ie) ->
        cur_id := id; (* FIXME what is the semantics of cur_id w.r.t. error states? *)
        Exninfo.iraise ie
-    end
 
   let get_state id =
     match VCS.get_cached_state id with
@@ -869,6 +873,16 @@ end = struct (* {{{ *)
 
   let get_success_state id =
     Option.bind (get_state id) (function ExecSuccess s -> Some s | _ -> None)
+
+  let get_proof id =
+    let open Vernacstate in
+    match VCS.get_cached_state id with
+    | Evaluated (ExecSuccess s) -> Some (Proof_global.proof_of_state s.proof)
+    | Evaluated (ExecError _) -> None
+    | NotEvaluated ->
+      if Stateid.equal id !cur_id then Some (Proof_global.give_me_the_proof ())
+      else None
+    | exception VCS.Expired -> None
 
   (* [assign] is called to set the state when a worker computes it *)
   let assign id what =
@@ -943,11 +957,11 @@ end = struct (* {{{ *)
       fix_exn_ref := exn_on id ~valid:good_id;
       f ();
       fix_exn_ref := (fun x -> x);
-      if cache then cache_current_state ~marshallable:false id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
+      if cache then cache_current_state ();
       if feedback_processed then
-        Hooks.(call state_computed ~doc id ~in_cache:false);
+        Hooks.(call state_computed ~doc id);
       VCS.reached id;
       if Proof_global.there_are_pending_proofs () then
         VCS.goals id (Proof_global.get_open_goals ())
@@ -1189,10 +1203,6 @@ end = struct (* {{{ *)
     let value = (if tactic then 1 else 0) - undo in
     if Int.equal n 0 then `Stop id else `Cont (n-value)
 
-  let get_proof ~doc id =
-    let open Vernacstate in
-    Option.map (fun st -> Proof_global.proof_of_state st.proof) @@ State.get_success_state id
-
   let undo_vernac_classifier v ~doc =
     if not (VCS.is_interactive ()) && !cur_opt.async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
@@ -1252,7 +1262,7 @@ end = struct (* {{{ *)
 
   let get_prev_proof ~doc id =
     try
-      let np = get_proof ~doc id in
+      let np = State.get_proof id in
       match np with
       | None -> None
       | Some cp ->
@@ -1261,7 +1271,7 @@ end = struct (* {{{ *)
         let done_ = ref false in
         while not !done_ do
           did := fold_until back_tactic 1 !did;
-          rv := get_proof ~doc !did;
+          rv := State.get_proof !did;
           done_ := match !rv with
             | Some rv -> not (Goal.Set.equal (Proof.all_goals rv) (Proof.all_goals cp))
             | None -> true
@@ -2395,11 +2405,12 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
   (* traverses the dag backward from nodes being already calculated *)
   and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     stm_prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
-    if not redefine_qed && Option.has_some @@ State.get_state id then begin
-      Hooks.(call state_computed ~doc id ~in_cache:true);
-      stm_prerr_endline (fun () -> "reached (cache)");
-      State.install_state id
-    end else
+    try
+      if redefine_qed then raise State.Not_in_cache;
+      State.install_state ~cache id;
+      Hooks.(call state_computed ~doc id);
+      stm_prerr_endline (fun () -> "reached (cache)")
+    with State.Not_in_cache ->
     let step, cache_step, feedback_processed =
       let view = VCS.visit id in
       match view.step with
@@ -2483,7 +2494,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     qed.fproof <- Some (fp, cancel);
                     (* We don't generate a new state, but we still need
                      * to install the right one *)
-                    State.install_state id
+                    State.install_state ~cache:false id
                 | { VCS.kind = `Proof _ }, Some _ -> assert false
                 | { VCS.kind = `Proof _ }, None ->
                     reach ~cache:true block_start;
