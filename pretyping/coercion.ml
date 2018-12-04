@@ -521,6 +521,13 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly env evd cj t =
+  let evd, cj =
+    let evd, uj_type = Evarsolve.refresh_universes
+        ~status:Evd.univ_flexible ~onlyalg:true (Some false)
+        env evd cj.uj_type
+    in
+    evd, {cj with uj_type }
+  in
   let (evd', val') =
     try
       inh_conv_coerce_to_fail ?loc env evd rigidonly (Some cj.uj_val) cj.uj_type t

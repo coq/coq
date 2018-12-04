@@ -38,10 +38,10 @@ Argument scopes are [type_scope _]
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u *)
-foo@{u UnivBinders.17 v} = 
-Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,UnivBinders.17+1,v+1)}
-(* u UnivBinders.17 v |=  *)
+foo@{u UnivBinders.18 v} = 
+Type@{UnivBinders.18} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,UnivBinders.18+1,v+1)}
+(* u UnivBinders.18 v |=  *)
 Type@{i} -> Type@{j}
      : Type@{max(i+1,j+1)}
 (* {j i} |=  *)
@@ -68,19 +68,19 @@ mono
 The command has indeed failed with message:
 Universe u already exists.
 bobmorane = 
-let tt := Type@{UnivBinders.32} in
-let ff := Type@{UnivBinders.34} in tt -> ff
-     : Type@{max(UnivBinders.31,UnivBinders.33)}
+let tt := Type@{UnivBinders.33} in
+let ff := Type@{UnivBinders.36} in tt -> ff
+     : Type@{max(UnivBinders.32,UnivBinders.35)}
 The command has indeed failed with message:
 Universe u already bound.
 foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
-foo@{u UnivBinders.17 v} = 
-Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
-     : Type@{max(u+1,UnivBinders.17+1,v+1)}
-(* u UnivBinders.17 v |=  *)
+foo@{u UnivBinders.18 v} = 
+Type@{UnivBinders.18} -> Type@{v} -> Type@{u}
+     : Type@{max(u+1,UnivBinders.18+1,v+1)}
+(* u UnivBinders.18 v |=  *)
 Inductive Empty@{E} : Type@{E} :=  
 (* E |=  *)
 Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
@@ -143,16 +143,16 @@ Applied.infunct@{u v} =
 inmod@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
-axfoo@{i UnivBinders.56 UnivBinders.57} :
-Type@{UnivBinders.56} -> Type@{i}
-(* i UnivBinders.56 UnivBinders.57 |=  *)
+axfoo@{i UnivBinders.59 UnivBinders.60} :
+Type@{UnivBinders.59} -> Type@{i}
+(* i UnivBinders.59 UnivBinders.60 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant UnivBinders.axfoo
-axbar@{i UnivBinders.56 UnivBinders.57} :
-Type@{UnivBinders.57} -> Type@{i}
-(* i UnivBinders.56 UnivBinders.57 |=  *)
+axbar@{i UnivBinders.59 UnivBinders.60} :
+Type@{UnivBinders.60} -> Type@{i}
+(* i UnivBinders.59 UnivBinders.60 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]
