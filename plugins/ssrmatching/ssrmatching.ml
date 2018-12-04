@@ -373,6 +373,12 @@ let pr_constr_pat env sigma c0 =
     if isEvar c then hole_var else map wipe_evar c in
   pr_constr_env env sigma (wipe_evar c0)
 
+let ehole_var = EConstr.mkVar (Id.of_string "_")
+let pr_econstr_pat env sigma c0 =
+  let rec wipe_evar c = let open EConstr in
+    if isEvar sigma c then ehole_var else map sigma wipe_evar c in
+  pr_econstr_env env sigma (wipe_evar c0)
+
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack env sigma0 (ise0:evar_map) c0 =
   let ise = ref ise0 in
@@ -694,8 +700,7 @@ let source env = match upats_origin, upats with
       (if fixed_upat ise p then str"term " else str"partial term ") ++
       pr_constr_pat env ise (p2t p) ++ spc()
   | Some (dir,rule), [p] -> str"The " ++ pr_dir_side dir ++ str" of " ++ 
-      pr_constr_pat env ise rule ++ fnl() ++ ws 4 ++
-      pr_constr_pat env ise (p2t p) ++ fnl()
+      pr_constr_pat env ise rule ++ fnl() ++ ws 4 ++ pr_constr_pat env ise (p2t p) ++ fnl()
   | Some (dir,rule), _ -> str"The " ++ pr_dir_side dir ++ str" of " ++ 
       pr_constr_pat env ise rule ++ spc()
   | _, [] | None, _::_::_ ->
@@ -732,13 +737,13 @@ let rec uniquize = function
       env, 0, uniquize (instances ())
     | NoMatch when (not raise_NoMatch) ->
       if !failed_because_of_TC then
-        errorstrm (source env++strbrk"matches but type classes inference fails")
+        errorstrm (source env ++ strbrk"matches but type classes inference fails")
       else
         errorstrm (source env ++ str "does not match any subterm of the goal")
     | NoProgress when (not raise_NoMatch) ->
         let dir = match upats_origin with Some (d,_) -> d | _ ->
           CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
-        errorstrm (str"all matches of "++source env++
+        errorstrm (str"all matches of "++ source env ++
           str"are equal to the " ++ pr_dir_side (inv_dir dir))
     | NoProgress -> raise NoMatch);
   let sigma, _, ({up_f = pf; up_a = pa} as u) =
@@ -823,7 +828,7 @@ let pr_pattern_aux pr_constr = function
   | E_As_X_In_T (e,x,t) ->
       pr_constr e ++ str " as " ++ pr_constr x ++ str " in " ++ pr_constr t
 let pp_pattern env (sigma, p) =
-  pr_pattern_aux (fun t -> pr_constr_pat env sigma (EConstr.Unsafe.to_constr (pi3 (nf_open_term sigma sigma (EConstr.of_constr t))))) p
+  pr_pattern_aux (fun t -> pr_econstr_pat env sigma (pi3 (nf_open_term sigma sigma (EConstr.of_constr t)))) p
 let pr_cpattern = pr_term
 
 let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern)
@@ -1253,10 +1258,8 @@ let fill_occ_term env cl occ sigma0 (sigma, t) =
     if sigma' != sigma0 then raise NoMatch
     else cl, (Evd.merge_universe_context sigma' uc, t')
   with _ ->
-    errorstrm (str "partial term " ++
-               pr_constr_pat env sigma
-                (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) ++
-               str " does not match any subterm of the goal")
+    errorstrm (str "partial term " ++ pr_econstr_pat env sigma t
+            ++ str " does not match any subterm of the goal")
 
 let pf_fill_occ_term gl occ t =
   let sigma0 = project gl and env = pf_env gl and concl = pf_concl gl in

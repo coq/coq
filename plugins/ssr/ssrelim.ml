@@ -239,8 +239,10 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       let elimty = Reductionops.whd_all env (project gl) elimty in
       seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
   in
-  ppdebug(lazy Pp.(str"elim= "++ pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr elim)));
-  ppdebug(lazy Pp.(str"elimty= "++ pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr elimty)));
+  let () =
+    let sigma = project gl in
+    ppdebug(lazy Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
+    ppdebug(lazy Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
   let inf_deps_r = match EConstr.kind_of_type (project gl) elimty with
     | AtomicType (_, args) -> List.rev (Array.to_list args)
     | _ -> assert false in
@@ -304,7 +306,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
    * looking at the ones provided by the user and the inferred ones looking at
    * the type of the elimination principle *)
   let pp_pat (_,p,_,occ) = Pp.(pr_occ occ ++ pp_pattern env p) in
-  let pp_inf_pat gl (_,_,t,_) = pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr (fire_subst gl t)) in
+  let pp_inf_pat gl (_,_,t,_) = pr_econstr_pat env (project gl) (fire_subst gl t) in
   let patterns, clr, gl =
     let rec loop patterns clr i = function
       | [],[] -> patterns, clr, gl
@@ -318,7 +320,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           loop (patterns @ [i, p, inf_t, occ]) 
             (clr_t @ clr) (i+1) (deps, inf_deps)
       | [], c :: inf_deps -> 
-          ppdebug(lazy Pp.(str"adding inf pattern " ++ pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr c)));
+          ppdebug(lazy Pp.(str"adding inf pattern " ++ pr_econstr_pat env (project gl) c));
           loop (patterns @ [i, mkTpat gl c, c, allocc]) 
             clr (i+1) ([], inf_deps)
       | _::_, [] -> errorstrm Pp.(str "Too many dependent abstractions") in
@@ -341,7 +343,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   let elim_pred, gen_eq_tac, clr, gl = 
     let error gl t inf_t = errorstrm Pp.(str"The given pattern matches the term"++
       spc()++pp_term gl t++spc()++str"while the inferred pattern"++
-      spc()++pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr (fire_subst gl inf_t))++spc()++ str"doesn't") in
+      spc()++pr_econstr_pat env (project gl) (fire_subst gl inf_t)++spc()++ str"doesn't") in
     let match_or_postpone (cl, gl, post) (h, p, inf_t, occ) =
       let p = unif_redex gl p inf_t in
       if is_undef_pat p then
@@ -426,7 +428,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     if not (Evar.Set.is_empty inter) then begin
       let i = Evar.Set.choose inter in
       let pat = List.find (fun t -> Evar.Set.mem i (evars_of_term t)) patterns in
-      errorstrm Pp.(str"Pattern"++spc()++pr_constr_pat env (project gl) (EConstr.Unsafe.to_constr pat)++spc()++
+      errorstrm Pp.(str"Pattern"++spc()++pr_econstr_pat env (project gl) pat++spc()++
         str"was not completely instantiated and one of its variables"++spc()++
         str"occurs in the type of another non-instantiated pattern variable");
     end

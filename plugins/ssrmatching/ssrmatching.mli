@@ -223,6 +223,7 @@ val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
 val pr_constr_pat : env -> evar_map -> constr -> Pp.t
+val pr_econstr_pat : env -> evar_map -> econstr -> Pp.t
 val pf_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 
