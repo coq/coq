@@ -105,15 +105,17 @@ let transl_with_decl env base kind = function
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
     let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
+    let sigma = Evd.set_universe_context sigma ectx in
+    let sigma = Evd.minimize_universes sigma in
+    let c = EConstr.to_constr sigma c in
+    let sigma = Evd.restrict_universe_context sigma (Vars.universes_of_constr c) in
     let poly = lookup_polymorphism env base kind fqid in
-    begin match UState.check_univ_decl ~poly ectx udecl with
+    begin match Evd.check_univ_decl ~poly sigma udecl with
       | Entries.Polymorphic_entry (nas, ctx) ->
         let inst, ctx = Univ.abstract_universes nas ctx in
-        let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
-        let c = EConstr.to_constr sigma c in
+        let c = Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
         WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
       | Entries.Monomorphic_entry ctx ->
-        let c = EConstr.to_constr sigma c in
         WithDef (fqid,(c, None)), ctx
     end
 
