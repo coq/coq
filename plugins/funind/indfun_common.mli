@@ -43,8 +43,7 @@ val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
 
 val save
-  :  bool
-  -> Id.t
+  :  Id.t
   -> Safe_typing.private_constants Entries.definition_entry
   -> ?hook:Lemmas.declaration_hook
   -> UState.t
@@ -78,14 +77,11 @@ val find_Function_infos : Constant.t -> function_info
 val find_Function_of_graph : inductive -> function_info
 (* WARNING: To be used just after the graph definition !!! *)
 val add_Function : bool -> Constant.t -> unit
-
 val update_Function : function_info -> unit
-
 
 (** debugging *)
 val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
-
 
 (* val function_debug : bool ref  *)
 val do_observe : unit -> bool

@@ -410,11 +410,11 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
   with e when CErrors.noncritical e ->
     on_error names e
 
-let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
+let register_struct ~pstate is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [(({CAst.v=fname},pl),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
-      ComDefinition.do_definition
+      ComDefinition.do_definition ~ontop:pstate
         ~program_mode:false
 	fname
         (Decl_kinds.Global,false,Decl_kinds.Definition) pl
@@ -432,9 +432,9 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
        in
-       evd,List.rev rev_pconstants
+       pstate, evd,List.rev rev_pconstants
     | _ ->
-       ComFixpoint.do_fixpoint Global false fixpoint_exprl;
+      let pstate = ComFixpoint.do_fixpoint ~ontop:pstate Global false fixpoint_exprl in
        let evd,rev_pconstants =
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
@@ -448,8 +448,8 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
        in
-       evd,List.rev rev_pconstants
-	   
+       pstate,evd,List.rev rev_pconstants
+
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -638,10 +638,10 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   fixpoint_exprl_with_new_bl
   
 
-let do_generate_principle pconstants on_error register_built interactive_proof
-    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit =
+let do_generate_principle ~pstate pconstants on_error register_built interactive_proof
+    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.t option =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
-  let _is_struct =
+  let pstate, _is_struct =
     match fixpoint_exprl with
       | [((_,(wf_x,Constrexpr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},pl),_,args,types,body)),_)  as fixpoint_expr =
@@ -665,8 +665,8 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      true
 	  in
 	  if register_built
-          then register_wf name rec_impls wf_rel (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook;
-	  false
+          then register_wf name rec_impls wf_rel (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, false
+          else pstate, false
       |[((_,(wf_x,Constrexpr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},_),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
@@ -689,8 +689,8 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      true
 	  in
 	  if register_built
-          then register_mes name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook;
-	  true
+          then register_mes name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, true
+          else pstate, true
       | _ ->
 	  List.iter (function ((_na,(_,ord),_args,_body,_type),_not) ->
 		       match ord with 
@@ -707,10 +707,10 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	(* ok all the expressions are structural *)
   	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	let is_rec = List.exists (is_rec fix_names) recdefs in
-	let evd,pconstants =
+        let pstate,evd,pconstants =
 	  if register_built
-	  then register_struct is_rec fixpoint_exprl
-	  else (Evd.from_env (Global.env ()),pconstants)
+          then register_struct ~pstate is_rec fixpoint_exprl
+          else pstate, Evd.from_env (Global.env ()), pconstants
 	in
 	let evd = ref evd in 
 	generate_principle
@@ -723,10 +723,11 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	  recdefs
 	  interactive_proof
 	  (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
-	if register_built then begin derive_inversion fix_names; end;
-	true; 
+          if register_built then
+            begin derive_inversion fix_names; end;
+          pstate, true
   in
-  ()
+  pstate
 
 let rec add_args id new_args = CAst.map (function
   | CRef (qid,_) as b ->
@@ -843,13 +844,14 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
     | _ -> [],b,t
 
 
-let make_graph (f_ref : GlobRef.t) =
+let make_graph ~pstate (f_ref : GlobRef.t) =
+  let sigma, env = Option.cata Pfedit.get_current_context
+      (let e = Global.env () in Evd.from_env e, e) pstate in
   let c,c_body =
     match f_ref with
     | ConstRef c ->
       begin try c,Global.lookup_constant c
         with Not_found ->
-          let sigma, env = Pfedit.get_current_context () in
           raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr_env env sigma (mkConst c)) )
       end
     | _ -> raise (UserError (None, str "Not a function reference") )
@@ -857,8 +859,7 @@ let make_graph (f_ref : GlobRef.t) =
   (match Global.body_of_constant_body c_body with
      | None -> error "Cannot build a graph over an axiom!"
      | Some (body, _) ->
-	 let env = Global.env () in
-	 let sigma = Evd.from_env env in
+       let env = Global.env () in
 	 let extern_body,extern_type =
 	   with_full_print (fun () ->
 		(Constrextern.extern_constr false env sigma (EConstr.of_constr body),
@@ -902,12 +903,11 @@ let make_graph (f_ref : GlobRef.t) =
                  [((CAst.make id,None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
          let mp = Constant.modpath c in
-	 do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list;
+         let pstate = do_generate_principle ~pstate [c,Univ.Instance.empty] error_error  false false expr_list in
 	 (* We register the infos *)
 	 List.iter
            (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
-	   expr_list)
+           expr_list;
+         pstate)
 
 let do_generate_principle = do_generate_principle [] warning_error true
-
-

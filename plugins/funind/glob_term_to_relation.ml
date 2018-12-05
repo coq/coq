@@ -369,7 +369,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
 	  let cs_args_types :types list = List.map RelDecl.get_type constructor.Inductiveops.cs_args in
 	  List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
   in
-  let new_env = add_pat_variables  env pat typ in
+  let new_env = add_pat_variables env pat typ in
   let res =
     fst (
       Context.Rel.fold_outside

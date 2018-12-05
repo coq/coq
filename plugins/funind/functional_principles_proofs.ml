@@ -722,7 +722,7 @@ let build_proof
 					  (treat_new_case
 					     ptes_infos
                                              nb_instantiate_partial
-                                             (build_proof env sigma do_finalize)
+                                             (build_proof do_finalize)
 					     t
 					     dyn_infos)
 					  g'
@@ -733,7 +733,7 @@ let build_proof
 		    ]
 		    g
 	      in
-              build_proof env sigma do_finalize_t {dyn_infos with info = t} g
+              build_proof do_finalize_t {dyn_infos with info = t} g
           | Lambda(n,t,b) ->
 	      begin
 		match EConstr.kind sigma (pf_concl g) with
@@ -749,7 +749,7 @@ let build_proof
 			   in
 			   let new_infos = {dyn_infos with info = new_term} in
 			   let do_prove new_hyps =
-                             build_proof env sigma do_finalize
+                             build_proof do_finalize
 			       {new_infos with
 			       	  rec_hyps = new_hyps;
 				  nb_rec_hyps  = List.length new_hyps
@@ -762,7 +762,7 @@ let build_proof
 		      do_finalize dyn_infos g
 	      end
 	  | Cast(t,_,_) ->
-              build_proof env sigma do_finalize {dyn_infos with info = t} g
+              build_proof do_finalize {dyn_infos with info = t} g
           | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ | Int _ ->
 	      do_finalize dyn_infos g
 	  | App(_,_) ->
@@ -792,7 +792,7 @@ let build_proof
 		  | Lambda _ ->
 		      let new_term =
                         Reductionops.nf_beta env sigma dyn_infos.info in
-                      build_proof env sigma do_finalize {dyn_infos with info = new_term}
+                      build_proof do_finalize {dyn_infos with info = new_term}
 			g
 		  | LetIn _ ->
 		      let new_infos =
@@ -805,11 +805,11 @@ let build_proof
 			     h_reduce_with_zeta (Locusops.onHyp hyp_id))
 			   dyn_infos.rec_hyps;
 			 h_reduce_with_zeta Locusops.onConcl;
-                         build_proof env sigma do_finalize new_infos
+                         build_proof do_finalize new_infos
 			]
 			g
 		  | Cast(b,_,_) ->
-                      build_proof env sigma do_finalize {dyn_infos with info = b } g
+                      build_proof do_finalize {dyn_infos with info = b } g
 		  | Case _ | Fix _ | CoFix _ ->
 		      let new_finalize dyn_infos =
 			let new_infos =
@@ -819,7 +819,7 @@ let build_proof
 			in
                         build_proof_args env sigma do_finalize new_infos
 		      in
-                      build_proof env sigma new_finalize {dyn_infos  with info = f } g
+                      build_proof new_finalize {dyn_infos  with info = f } g
 	      end
 	  | Fix _ | CoFix _ ->
 	      user_err Pp.(str ( "Anonymous local (co)fixpoints are not handled yet"))
@@ -839,12 +839,12 @@ let build_proof
 		   (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id))
 		   dyn_infos.rec_hyps;
 		 h_reduce_with_zeta Locusops.onConcl;
-                 build_proof env sigma do_finalize new_infos
+                 build_proof do_finalize new_infos
 		] g
 	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
-  and build_proof env sigma do_finalize dyn_infos g =
+  and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac_stream (str "build_proof with " ++ pr_leconstr_env env sigma dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
+    observe_tac_stream (str "build_proof with " ++ pr_leconstr_env (pf_env g) (project g) dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args env sigma do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
@@ -866,7 +866,7 @@ let build_proof
 		   {dyn_infos with info = (mkApp(f_args',[|new_arg|])), args}
 		)
 	      in
-              build_proof env sigma do_finalize
+              build_proof do_finalize
 		{dyn_infos with info = arg }
 		g
       in
@@ -879,19 +879,7 @@ let build_proof
   in
     (* observe_tac "build_proof" *)
   fun g ->
-    let env = pf_env g in
-    let sigma = project g in
-    build_proof env sigma (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos g
-
-
-
-
-
-
-
-
-
-
+    build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos g
 
 
 (* Proof of principles from structural functions *)
@@ -1002,19 +990,18 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       ]
   in
   (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
-  Lemmas.start_proof
+  let pstate = Lemmas.start_proof ~ontop:None
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
     (mk_equation_id f_id)
     (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
     evd
-  lemma_type;
-  ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
-  Lemmas.save_proof (Vernacexpr.(Proved(Proof_global.Transparent,None)));
-  evd
-
-
+  lemma_type
+  in
+  let pstate,_ = Pfedit.by (Proofview.V82.tactic prove_replacement) pstate in
+  let pstate = Lemmas.save_proof ~pstate (Vernacexpr.(Proved(Proof_global.Transparent,None))) in
+  pstate, evd
 
 
 let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num all_funs g =
@@ -1028,7 +1015,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	Ensures by: obvious
 	i*)
       let equation_lemma_id = (mk_equation_id f_id) in
-      evd := generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
+      evd := snd @@ generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
 	match e with
 	  | Option.IsNone ->
