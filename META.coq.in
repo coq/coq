@@ -146,7 +146,7 @@ package "gramlib" (
   description = "Coq Grammar Engine"
   version     = "8.10"
 
-  requires    = ""
+  requires    = "coq.lib"
   directory   = "gramlib__pack"
 
   archive(byte)    = "gramlib.cma"

@@ -1,3 +1,4 @@
 (library
  (name gramlib)
- (public_name coq.gramlib))
+ (public_name coq.gramlib)
+ (libraries coq.lib))

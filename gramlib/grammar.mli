@@ -58,7 +58,7 @@ module type S =
     val r_next :
       ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
         ('self, 'b -> 'a, 'r) ty_rule
-    val production : ('a, 'f, Ploc.t -> 'a) ty_rule * 'f -> 'a ty_production
+    val production : ('a, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_production
 
     module Unsafe :
       sig

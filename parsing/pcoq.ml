@@ -14,29 +14,6 @@ open Extend
 open Genarg
 open Gramlib
 
-(** Location Utils  *)
-let ploc_file_of_coq_file = function
-| Loc.ToplevelInput -> ""
-| Loc.InFile f -> f
-
-let coq_file_of_ploc_file s =
-  if s = "" then Loc.ToplevelInput else Loc.InFile s
-
-let of_coqloc loc =
-  let open Loc in
-  Ploc.make_loc (ploc_file_of_coq_file loc.fname) loc.line_nb loc.bol_pos (loc.bp, loc.ep) ""
-
-let to_coqloc loc =
-  { Loc.fname = coq_file_of_ploc_file (Ploc.file_name loc);
-    Loc.line_nb = Ploc.line_nb loc;
-    Loc.bol_pos = Ploc.bol_pos loc;
-    Loc.bp = Ploc.first_pos loc;
-    Loc.ep = Ploc.last_pos loc;
-    Loc.line_nb_last = Ploc.line_nb_last loc;
-    Loc.bol_pos_last = Ploc.bol_pos_last loc; }
-
-let (!@) = to_coqloc
-
 (** The parser of Coq *)
 module G : sig
 
@@ -112,7 +89,7 @@ end with type 'a Entry.e = 'a Extend.entry = struct
     with Ploc.Exc (loc,e) ->
       CLexer.drop_lexer_state ();
       let loc' = Loc.get_loc (Exninfo.info e) in
-      let loc = match loc' with None -> to_coqloc loc | Some loc -> loc in
+      let loc = match loc' with None -> loc | Some loc -> loc in
       Loc.raise ~loc e
 
   let comment_state (p,state) =
@@ -197,8 +174,8 @@ let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> (s, a) G.ty_symbol
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   G.s_rules ~warning:(Some warning) (List.map symbol_of_rules rs)
 
-and symbol_of_rule : type s a r. (s, a, Loc.t -> r) Extend.rule -> (s, a, Ploc.t -> r) casted_rule = function
-| Stop -> Casted (G.r_stop, fun act loc -> act (!@loc))
+and symbol_of_rule : type s a r. (s, a, Loc.t -> r) Extend.rule -> (s, a, Loc.t -> r) casted_rule = function
+| Stop -> Casted (G.r_stop, fun act loc -> act loc)
 | Next (r, s) ->
   let Casted (r, cast) = symbol_of_rule r in
   Casted (G.r_next r (symbol_of_prod_entry_key s), (fun act x -> cast (act x)))
@@ -209,7 +186,7 @@ and symbol_of_rules : type a. a Extend.rules -> a G.ty_production = function
   G.production (symb, cast act)
 
 (** FIXME: This is a hack around a deficient camlp5 API *)
-type 'a any_production = AnyProduction : ('a, 'f, Ploc.t -> 'a) G.ty_rule * 'f -> 'a any_production
+type 'a any_production = AnyProduction : ('a, 'f, Loc.t -> 'a) G.ty_rule * 'f -> 'a any_production
 
 let of_coq_production_rule : type a. a Extend.production_rule -> a any_production = function
 | Rule (toks, act) ->

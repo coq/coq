@@ -6,8 +6,7 @@ type pattern = string * string
 
 exception Error of string
 
-type location = Ploc.t
-type location_function = int -> location
+type location_function = int -> Loc.t
 type 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
 
 type 'te lexer =
@@ -16,4 +15,4 @@ type 'te lexer =
     tok_removing : pattern -> unit;
     mutable tok_match : pattern -> 'te -> string;
     tok_text : pattern -> string;
-    mutable tok_comm : location list option }
+    mutable tok_comm : Loc.t list option }
