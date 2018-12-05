@@ -304,7 +304,7 @@ open Evd
 
 val pr_existential_key : evar_map -> Evar.t -> Pp.t
 
-val pr_evar_suggested_name : Evar.t -> evar_map -> Id.t
+val evar_suggested_name : Evar.t -> evar_map -> Id.t
 
 val pr_evar_info : env -> evar_map -> evar_info -> Pp.t
 val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.t

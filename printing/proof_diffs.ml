@@ -546,7 +546,7 @@ let to_constr p =
 
 module GoalMap = Evar.Map
 
-let goal_to_evar g sigma = Id.to_string (Termops.pr_evar_suggested_name g sigma)
+let goal_to_evar g sigma = Id.to_string (Termops.evar_suggested_name g sigma)
 
 open Goal.Set
 
