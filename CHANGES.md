@@ -75,6 +75,11 @@ Tactics
   foo : database`). When the database name is omitted, the hint is added to the
   core database (as previously), but a deprecation warning is emitted.
 
+- There is now a tactic in `PreOmega.v` called `Z.div_mod_to_quot_rem`
+  which allows `lia`, `nia`, `romega`, etc to support `Z.div` and
+  `Z.modulo`, by posing the specifying equation for `Z.div` and
+  `Z.modulo` before replacing them with atoms.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
@@ -287,11 +292,6 @@ Standard Library
   entire prelude (`Require Import Coq.Init.Prelude`).  This only
   impacts users running Coq without the init library (`-nois` or
   `-noinit`) and also issuing `Require Import Coq.Init.Datatypes`.
-
-- Tactic `zify` (and therefore `lia`, `nia`, `romega`, etc) now
-  supports `Z.div` and `Z.modulo` via the `Z.div_mod_to_quot_rem`
-  tactic in `PreOmega.v`, which poses the specifying equation for
-  `Z.div` and `Z.modulo` before replacing them with atoms.
 
 Tools
 
