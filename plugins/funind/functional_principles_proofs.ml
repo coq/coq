@@ -44,10 +44,6 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
   *)
 
 
-let pr_leconstr_fp =
-  let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_leconstr_env env sigma
-
 let debug_queue = Stack.create ()
 
 let rec print_debug_queue e = 
@@ -163,7 +159,7 @@ let rec incompatible_constructor_terms sigma t1 t2 =
 	List.exists2 (incompatible_constructor_terms sigma) arg1 arg2
     )
 
-let is_incompatible_eq sigma t =
+let is_incompatible_eq env sigma t =
   let res =
     try
       match EConstr.kind sigma t with
@@ -175,7 +171,7 @@ let is_incompatible_eq sigma t =
 	| _ -> false
     with e when CErrors.noncritical e -> false
   in
-  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_fp t);
+  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_env env sigma t);
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
@@ -476,7 +472,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 		    ); *)
 	    raise TOREMOVE;  (* False -> .. useless *)
 	  end
-	else if is_incompatible_eq sigma t_x then raise TOREMOVE (* t_x := C1 ... =  C2 ... *)
+        else if is_incompatible_eq env sigma t_x then raise TOREMOVE (* t_x := C1 ... =  C2 ... *)
 	else if eq_constr sigma t_x coq_True  (* Trivial => we remove this precons *)
 	then
 (* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
@@ -844,7 +840,7 @@ let build_proof
 	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac_stream (str "build_proof with " ++ pr_leconstr_fp dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
+    observe_tac_stream (str "build_proof with " ++ pr_leconstr_env (pf_env g) (project g) dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
@@ -879,16 +875,6 @@ let build_proof
   in
     (* observe_tac "build_proof" *)
   (build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos)
-
-
-
-
-
-
-
-
-
-
 
 
 (* Proof of principles from structural functions *)
@@ -999,19 +985,18 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       ]
   in
   (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
-  Lemmas.start_proof
+  let pstate = Lemmas.start_proof ~ontop:None
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
     (mk_equation_id f_id)
     (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
     evd
-  lemma_type;
-  ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
-  Lemmas.save_proof (Vernacexpr.(Proved(Proof_global.Transparent,None)));
-  evd
-
-
+  lemma_type
+  in
+  let pstate,_ = Pfedit.by (Proofview.V82.tactic prove_replacement) pstate in
+  let pstate = Lemmas.save_proof ~pstate (Vernacexpr.(Proved(Proof_global.Transparent,None))) in
+  pstate, evd
 
 
 let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num all_funs g =
@@ -1025,7 +1010,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
 	Ensures by: obvious
 	i*)
       let equation_lemma_id = (mk_equation_id f_id) in
-      evd := generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
+      evd := snd @@ generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
 	match e with
 	  | Option.IsNone ->

@@ -304,31 +304,30 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
   evd := sigma;
   let hook = Lemmas.mk_hook (hook new_principle_type) in
-  begin
-    Lemmas.start_proof
+  let pstate =
+    Lemmas.start_proof ~ontop:None
       new_princ_name
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
       (EConstr.of_constr new_principle_type)
-  ;
-    (*       let _tim1 = System.get_time ()  in *)
-      let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
-      ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)));
-    (*       let _tim2 =  System.get_time ()  in *)
-    (* 	begin *)
-    (* 	  let dur1 = System.time_difference tim1 tim2 in *)
-    (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
-    (* 	end; *)
+  in
+  (*       let _tim1 = System.get_time ()  in *)
+  let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
+  let pstate,_ = Pfedit.by (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)) pstate in
+  (*       let _tim2 =  System.get_time ()  in *)
+  (* 	begin *)
+  (* 	  let dur1 = System.time_difference tim1 tim2 in *)
+  (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
+  (* 	end; *)
 
-      let open Proof_global in
-      let { id; entries; persistence } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) in
-      match entries with
-      | [entry] ->
-        discard_current ();
-        (id,(entry,persistence)), hook
-      | _ ->
-        CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
-  end
+  let open Proof_global in
+  let { id; entries; persistence } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pstate in
+  match entries with
+  | [entry] ->
+    let pstate = discard_current pstate in
+    (id,(entry,persistence)), hook, pstate
+  | _ ->
+    CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
 
 let generate_functional_principle (evd: Evd.evar_map ref)
     interactive_proof
@@ -378,7 +377,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       register_with_sort InProp;
       register_with_sort InSet
   in
-  let ((id,(entry,g_kind)),hook) =
+  let ((id,(entry,g_kind)),hook,pstate) =
     build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
     proof_tac hook
   in
@@ -387,23 +386,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   *)
   save false new_princ_name entry g_kind ~hook
   with e when CErrors.noncritical e ->
-    begin
-      begin
-	try
-	  let id = Proof_global.get_current_proof_name () in
-	  let s = Id.to_string id in
-	  let n = String.length "___________princ_________" in
-	  if String.length s >= n
-	  then if String.equal (String.sub s 0 n) "___________princ_________"
-	  then Proof_global.discard_current ()
-	  else ()
-	  else ()
-	with e when CErrors.noncritical e -> ()
-      end;
-      raise (Defining_principle e)
-    end
-(*   defined  () *)
-
+    raise (Defining_principle e)
 
 exception Not_Rec
 
@@ -531,7 +514,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	s::l_schemes -> s,l_schemes
       | _ -> anomaly (Pp.str "")
   in
-  let ((_,(const,_)),_) =
+  let ((_,(const,_)),_,pstate) =
     try
       build_functional_principle evd false
 	first_type
@@ -541,21 +524,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	(prove_princ_for_struct evd false 0 (Array.of_list (List.map fst funs)))
 	(fun _ _ _ -> ())
     with e when CErrors.noncritical e ->
-       begin
-	 begin
-	   try
-	     let id = Proof_global.get_current_proof_name () in
-	     let s = Id.to_string id in
-	     let n = String.length "___________princ_________" in
-	     if String.length s >= n
-	     then if String.equal (String.sub s 0 n) "___________princ_________"
-		  then Proof_global.discard_current ()
-		  else ()
-	     else ()
-	   with e when CErrors.noncritical e -> ()
-	 end;
-	 raise (Defining_principle e)
-       end
+      raise (Defining_principle e)
 
   in
   incr i;
@@ -605,7 +574,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	   (* If we reach this point, the two principle are not mutually recursive
 	      We fall back to the previous method
 	   *)
-	     let ((_,(const,_)),_) =
+             let ((_,(const,_)),_,pstate) =
 	       build_functional_principle
 		 evd
 		 false

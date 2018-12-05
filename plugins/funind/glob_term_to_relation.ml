@@ -369,11 +369,11 @@ let add_pat_variables pat typ env : Environ.env =
   in
   let new_env = add_pat_variables  env pat typ in
   let res =
+    let sigma = Evd.from_env new_env in
     fst (
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
            let open Context.Rel.Declaration in
-           let sigma, _ = Pfedit.get_current_context () in
            match decl with
 	   | LocalAssum (Anonymous,_) | LocalDef (Anonymous,_,_) -> assert false
 	   | LocalAssum (Name id, t) ->
@@ -890,8 +890,7 @@ let same_raw_term rt1 rt2 =
     | GRef(r1,_), GRef (r2,_) -> GlobRef.equal r1 r2
     | GHole _, GHole _ -> true
     | _ -> false
-let decompose_raw_eq lhs rhs = 
-  let _, env = Pfedit.get_current_context () in
+let decompose_raw_eq env lhs rhs =
   let rec decompose_raw_eq lhs rhs acc =
     observe (str "decomposing eq for " ++ pr_glob_constr_env env lhs ++ str " " ++ pr_glob_constr_env env rhs);
     let (rhd,lrhs) = glob_decompose_app rhs in
@@ -1078,7 +1077,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  ->
 	      begin
 		try 
-		  let l = decompose_raw_eq rt1 rt2 in 
+                  let l = decompose_raw_eq env rt1 rt2 in
 		  if List.length l > 1 
 		  then 
 		    let new_rt =
