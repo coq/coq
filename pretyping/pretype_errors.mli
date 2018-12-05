@@ -59,6 +59,7 @@ type pretype_error =
   | NonLinearUnification of Name.t * constr
   (** Pretyping *)
   | VarNotFound of Id.t
+  | EvarNotFound of Id.t
   | UnexpectedType of constr * constr
   | NotProduct of constr
   | TypingError of type_error
@@ -154,6 +155,8 @@ val error_not_product :
   ?loc:Loc.t -> env -> Evd.evar_map -> constr -> 'b
 
 val error_var_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
+
+val error_evar_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
 
 (** {6 Typeclass errors } *)
 

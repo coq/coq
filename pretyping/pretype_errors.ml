@@ -53,6 +53,7 @@ type pretype_error =
   | NonLinearUnification of Name.t * constr
   (* Pretyping *)
   | VarNotFound of Id.t
+  | EvarNotFound of Id.t
   | UnexpectedType of constr * constr
   | NotProduct of constr
   | TypingError of type_error
@@ -166,6 +167,9 @@ let error_not_product ?loc env sigma c =
 
 let error_var_not_found ?loc env sigma s =
   raise_pretype_error ?loc (env, sigma, VarNotFound s)
+
+let error_evar_not_found ?loc env sigma id =
+  raise_pretype_error ?loc (env, sigma, EvarNotFound id)
 
 (*s Typeclass errors *)
 
