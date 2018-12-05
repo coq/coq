@@ -29,45 +29,51 @@ module type Point = sig
   val pr : t -> Pp.t
 end
 
-module Make (Level:Point) : sig
+module Make (Point:Point) : sig
 
   type t
 
   val empty : t
 
-  val check_invariants : required_canonical:(Level.t -> bool) -> t -> unit
+  val check_invariants : required_canonical:(Point.t -> bool) -> t -> unit
 
   exception AlreadyDeclared
-  val add : ?rank:int -> Level.t -> t -> t
+  val add : ?rank:int -> Point.t -> t -> t
   (** Use a large [rank] to keep the node canonical *)
 
-  exception Undeclared of Level.t
-  val check_declared : t -> Level.Set.t -> unit
+  exception Undeclared of Point.t
+  val check_declared : t -> Point.Set.t -> unit
 
   type 'a check_function = t -> 'a -> 'a -> bool
 
-  val check_eq : Level.t check_function
-  val check_leq : Level.t check_function
-  val check_lt : Level.t check_function
+  val check_eq : Point.t check_function
+  val check_leq : Point.t check_function
+  val check_lt : Point.t check_function
 
-  val enforce_eq : Level.t -> Level.t -> t -> t
-  val enforce_leq : Level.t -> Level.t -> t -> t
-  val enforce_lt : Level.t -> Level.t -> t -> t
+  val enforce_eq : Point.t -> Point.t -> t -> t
+  val enforce_leq : Point.t -> Point.t -> t -> t
+  val enforce_lt : Point.t -> Point.t -> t -> t
 
-  val constraints_of : t -> Level.Constraint.t * Level.Set.t list
+  val constraints_of : t -> Point.Constraint.t * Point.Set.t list
 
-  val constraints_for : kept:Level.Set.t -> t -> Level.Constraint.t
+  val constraints_for : kept:Point.Set.t -> t -> Point.Constraint.t
 
-  val domain : t -> Level.Set.t
+  val domain : t -> Point.Set.t
 
-  val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
+  val choose : (Point.t -> bool) -> t -> Point.t -> Point.t option
 
-  val sort : (int -> Level.t) -> Level.t list -> t -> t
-  (** [sort make_dummy points g] sorts [g]. The [points] are the first
-     in the result graph. If the graph is bigger than the list, the
-     rest is named according to [make_dummy]. *)
+  val sort : (int -> Point.t) -> Point.t list -> t -> t
+  (** [sort mk first g] builds a totally ordered graph. The output
+     graph should imply the input graph (and the implication will be
+     strict most of the time), but is not necessarily minimal. The
+     lowest points in the result are identified with [first].
+     Moreover, it adds levels [Type.n] to identify the points (not in
+     [first]) at level n. An artificial constraint (last first < mk
+     (length first)) is added to ensure that they are not merged.
+     Note: the result is unspecified if the input graph already
+     contains [mk n] nodes. *)
 
-  val pr : (Level.t -> Pp.t) -> t -> Pp.t
+  val pr : (Point.t -> Pp.t) -> t -> Pp.t
 
-  val dump : (constraint_type -> Level.t -> Level.t -> unit) -> t -> unit
+  val dump : (constraint_type -> Point.t -> Point.t -> unit) -> t -> unit
 end
