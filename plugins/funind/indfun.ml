@@ -415,7 +415,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
         ~program_mode:false
 	fname
         (Decl_kinds.Global,false,Decl_kinds.Definition) pl
-	bl None body (Some ret_type) (Lemmas.mk_hook (fun _ _ -> ()));
+        bl None body (Some ret_type);
        let evd,rev_pconstants =
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->

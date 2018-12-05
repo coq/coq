@@ -33,7 +33,7 @@ let get_locality id ~kind = function
 | Local -> true
 | Global -> false
 
-let declare_definition ident (local, p, k) ce pl imps hook =
+let declare_definition ident (local, p, k) ?hook ce pl imps =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let gr = match local with
   | Discharge when Lib.sections_are_opened () ->
@@ -49,8 +49,8 @@ let declare_definition ident (local, p, k) ce pl imps hook =
   in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = definition_message ident in
-  Lemmas.call_hook fix_exn hook local gr; gr
+  Lemmas.call_hook ~fix_exn ?hook local gr; gr
 
 let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
-  declare_definition f kind ce pl imps (Lemmas.mk_hook (fun _ _ -> ()))
+  declare_definition f kind ce pl imps

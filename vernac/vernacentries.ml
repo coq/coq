@@ -475,7 +475,7 @@ let vernac_custom_entry ~module_local s =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print k l hook =
+let start_proof_and_print ?hook k l =
   let inference_hook =
     if Flags.is_program_mode () then
       let hook env sigma ev =
@@ -497,18 +497,16 @@ let start_proof_and_print k l hook =
       in Some hook
     else None
   in
-  start_proof_com ?inference_hook k l hook
-
-let no_hook = Lemmas.mk_hook (fun _ _ -> ())
+  start_proof_com ?inference_hook ?hook k l
 
 let vernac_definition_hook p = function
 | Coercion ->
-  Class.add_coercion_hook p
+  Some (Class.add_coercion_hook p)
 | CanonicalStructure ->
-  Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure)
+  Some (Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure))
 | SubClass ->
-  Class.add_subclass_hook p
-| _ -> no_hook
+  Some (Class.add_subclass_hook p)
+| _ -> None
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   let atts = attributes_of_flags atts in
@@ -531,7 +529,7 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
       start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
-        [(CAst.make ?loc name, pl), (bl, t)] hook
+        ?hook [(CAst.make ?loc name, pl), (bl, t)]
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
           | None -> None
@@ -539,14 +537,14 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
             let sigma, env = Pfedit.get_current_context () in
             Some (snd (Hook.get f_interp_redexp env sigma r)) in
       ComDefinition.do_definition ~program_mode name
-        (local, atts.polymorphic, kind) pl bl red_option c typ_opt hook)
+        (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook)
 
 let vernac_start_proof ~atts kind l =
   let atts = attributes_of_flags atts in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print (local, atts.polymorphic, Proof kind) l no_hook
+  start_proof_and_print (local, atts.polymorphic, Proof kind) l
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted

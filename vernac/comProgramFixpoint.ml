@@ -227,7 +227,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)
-  let hook = Obligations.mk_univ_hook (hook sigma) in
+  let univ_hook = Obligations.mk_univ_hook (hook sigma) in
   (* XXX: Grounding non-ground terms here... bad bad *)
   let fullcoqc = EConstr.to_constr ~abort_on_undefined_evars:false sigma def in
   let fullctyp = EConstr.to_constr sigma typ in
@@ -237,7 +237,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   in
   let ctx = Evd.evar_universe_context sigma in
     ignore(Obligations.add_definition recname ~term:evars_def ~univdecl:decl
-             evars_typ ctx evars ~hook)
+             evars_typ ctx evars ~univ_hook)
 
 let out_def = function
   | Some def -> def

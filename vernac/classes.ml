@@ -163,10 +163,10 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         in obls, Some constr, typ
       | None -> [||], None, termtype
     in
-    let hook = Obligations.mk_univ_hook hook in
+    let univ_hook = Obligations.mk_univ_hook hook in
     let ctx = Evd.evar_universe_context sigma in
     ignore (Obligations.add_definition id ?term:constr
-              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls)
+              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~univ_hook obls)
   else
     Flags.silently (fun () ->
         (* spiwack: it is hard to reorder the actions to do
@@ -176,7 +176,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         let gls = List.rev (Evd.future_goals sigma) in
         let sigma = Evd.reset_future_goals sigma in
         Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
-          (Lemmas.mk_hook
+          ~hook:(Lemmas.mk_hook
              (fun _ -> instance_hook k pri global imps ?hook));
         (* spiwack: I don't know what to do with the status here. *)
         if not (Option.is_empty term) then
@@ -423,8 +423,7 @@ let context poly l =
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let hook = Lemmas.mk_hook (fun _ _ -> ()) in
-        let _ = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] hook in
+        let _ = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

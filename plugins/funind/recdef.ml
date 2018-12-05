@@ -1372,7 +1372,7 @@ let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decomp
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
     sigma gls_type
-    (Lemmas.mk_hook hook);
+    ~hook:(Lemmas.mk_hook hook);
   if Indfun_common.is_strict_tcc  ()
   then
     ignore (by (Proofview.V82.tactic (tclIDTAC)))
@@ -1418,7 +1418,7 @@ let com_terminate
     let evd, env = Pfedit.get_current_context () in
     Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
-      ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) hook;
+      ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook;
 
     ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
     ignore (by (Proofview.V82.tactic (observe_tac (str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
@@ -1474,8 +1474,7 @@ let (com_eqn : int -> Id.t ->
     (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
        ~sign:(Environ.named_context_val env)
        evd
-       (EConstr.of_constr equation_lemma_type)
-       (Lemmas.mk_hook (fun _ _ -> ()));
+       (EConstr.of_constr equation_lemma_type);
      ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
