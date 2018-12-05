@@ -86,15 +86,20 @@ END
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
     { let l = match l with None -> [] | Some l -> l in add_theory id t l }
-  | [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
+  | ![proof] [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
+    fun ~pstate ->
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
-      let sigma, env = Pfedit.get_current_context () in
+      (* We should use the global env here as this shouldn't contain proof
+         data, however preserving behavior as requested in review. *)
+      let sigma, env = Option.cata Pfedit.get_current_context
+          (let e = Global.env () in Evd.from_env e, e) pstate in
       Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
-    ) !from_name }
+    ) !from_name;
+    pstate }
 END
 
 TACTIC EXTEND ring_lookup
@@ -130,15 +135,20 @@ END
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
   { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
-| [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
+| ![proof] [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
+    fun ~pstate ->
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
-      let sigma, env = Pfedit.get_current_context () in
+      (* We should use the global env here as this shouldn't
+         contain proof data. *)
+      let sigma, env = Option.cata Pfedit.get_current_context
+          (let e = Global.env () in Evd.from_env e, e) pstate in
       Feedback.msg_notice (hov 2
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
-    ) !field_from_name }
+    ) !field_from_name;
+    pstate }
 END
 
 TACTIC EXTEND field_lookup
