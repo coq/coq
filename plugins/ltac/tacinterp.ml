@@ -117,7 +117,7 @@ let combine_appl appl1 appl2 =
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
-let log_trace = ref true
+let log_trace = ref false
 
 let is_traced () =
   !log_trace || !Flags.profile_ltac

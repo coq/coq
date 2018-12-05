@@ -1,6 +1,8 @@
 (* coq-prog-args: ("-top" "Errors") *)
 (* Test error messages *)
 
+Set Ltac Backtrace.
+
 (* Test non-regression of bug fixed in r13486 (bad printer for module names) *)
 
 Module Type S.

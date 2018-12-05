@@ -95,7 +95,7 @@ Tactics
   by posing the specifying equation for `Z.div` and `Z.modulo` before
   replacing them with atoms.
 
-- Ltac backtraces can be turned off using the "Ltac Backtrace" option.
+- Ltac backtraces can be turned on using the "Ltac Backtrace" option.
 
 Vernacular commands
 

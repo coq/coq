@@ -51,5 +51,4 @@ instance: (addnC y x) matches: (x + y)
 instance: (addnC y x) matches: (x + y)
 END INSTANCES
 The command has indeed failed with message:
-Ltac call to "ssrinstancesoftpat (cpattern)" failed.
 Not supported
