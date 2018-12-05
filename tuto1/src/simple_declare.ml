@@ -11,7 +11,7 @@ let edeclare ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps hook =
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   let ubinders = Evd.universe_binders sigma in
   let ce = Declare.definition_entry ?types:tyopt ~univs body in
-  DeclareDef.declare_definition ident k ce ubinders imps hook
+  DeclareDef.declare_definition ident k ce ubinders imps ~hook
 
 let packed_declare_definition ~poly ident value_with_constraints =
   let body, ctx = value_with_constraints in
