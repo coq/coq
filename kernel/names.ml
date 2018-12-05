@@ -391,6 +391,8 @@ module KerName = struct
 
   let print kn = str (to_string kn)
 
+  let debug_print kn = str (debug_to_string kn)
+
   let compare (kn1 : kernel_name) (kn2 : kernel_name) =
     if kn1 == kn2 then 0
     else
