@@ -54,3 +54,23 @@ let declare_definition ident (local, p, k) ?hook ce pl imps =
 let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
   declare_definition f kind ce pl imps
+
+let check_definition_evars ~allow_evars sigma =
+  let env = Global.env () in
+  if not allow_evars then Pretyping.check_evars_are_solved env sigma
+
+let prepare_definition ~allow_evars ?opaque ?inline ~poly sigma udecl ~types ~body =
+  check_definition_evars ~allow_evars sigma;
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+      sigma (fun nf -> nf body, Option.map nf types)
+  in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  sigma, definition_entry ?opaque ?inline ?types ~univs body
+
+let prepare_parameter ~allow_evars ~poly sigma udecl typ =
+  check_definition_evars ~allow_evars sigma;
+  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+      sigma (fun nf -> nf typ)
+  in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  sigma, (None(*proof using*), (typ, univs), None(*inline*))
