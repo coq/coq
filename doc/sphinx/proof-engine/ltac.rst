@@ -1208,7 +1208,7 @@ Interactive debugger
 
 .. flag:: Ltac Debug
 
-   This option governs the step-by-step debugger that comes with the |Ltac| interpreter
+   This option governs the step-by-step debugger that comes with the |Ltac| interpreter.
 
 When the debugger is activated, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.

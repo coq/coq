@@ -271,14 +271,6 @@ let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator
 let get_used_variables () = (cur_pstate ()).section_vars
 let get_universe_decl () = (cur_pstate ()).universe_decl
 
-let proof_using_auto_clear = ref false
-let () = Goptions.(declare_bool_option
-    { optdepr  = false;
-      optname  = "Proof using Clear Unused";
-      optkey   = ["Proof";"Using";"Clear";"Unused"];
-      optread  = (fun () -> !proof_using_auto_clear);
-      optwrite = (fun b -> proof_using_auto_clear := b) })
-
 let set_used_variables l =
   let open Context.Named.Declaration in
   let env = Global.env () in
@@ -287,27 +279,26 @@ let set_used_variables l =
   let ctx_set =
     List.fold_right Id.Set.add (List.map NamedDecl.get_id ctx) Id.Set.empty in
   let vars_of = Environ.global_vars_set in
-  let aux env entry (ctx, all_safe, to_clear as orig) =
+  let aux env entry (ctx, all_safe as orig) =
     match entry with
     | LocalAssum (x,_) ->
        if Id.Set.mem x all_safe then orig
-       else (ctx, all_safe, (CAst.make x)::to_clear)
+       else (ctx, all_safe)
     | LocalDef (x,bo, ty) as decl ->
        if Id.Set.mem x all_safe then orig else
        let vars = Id.Set.union (vars_of env bo) (vars_of env ty) in
        if Id.Set.subset vars all_safe
-       then (decl :: ctx, Id.Set.add x all_safe, to_clear)
-       else (ctx, all_safe, (CAst.make x) :: to_clear) in
-  let ctx, _, to_clear =
-    Environ.fold_named_context aux env ~init:(ctx,ctx_set,[]) in
-  let to_clear = if !proof_using_auto_clear then to_clear else [] in
+       then (decl :: ctx, Id.Set.add x all_safe)
+       else (ctx, all_safe) in
+  let ctx, _ =
+    Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
       if not (Option.is_empty p.section_vars) then
         CErrors.user_err Pp.(str "Used section variables can be declared only once");
       pstates := { p with section_vars = Some ctx} :: rest;
-      ctx, to_clear
+      ctx, []
 
 let get_open_goals () =
   let gl, gll, shelf , _ , _ = Proof.proof (cur_pstate ()).proof in

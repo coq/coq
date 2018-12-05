@@ -1035,13 +1035,9 @@ let vernac_set_used_variables e =
       user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ Id.print id))
     l;
-  let _, to_clear = Proof_global.set_used_variables l in
-  let to_clear = List.map (fun x -> x.CAst.v) to_clear in
+  ignore (Proof_global.set_used_variables l);
   Proof_global.with_current_proof begin fun _ p ->
-    if List.is_empty to_clear then (p, ())
-    else
-      let tac = Tactics.clear to_clear in
-      fst (Pfedit.solve Goal_select.SelectAll None tac p), ()
+    (p, ())
   end
 
 (*****************************)

@@ -157,14 +157,24 @@ compatible with the rest of |Coq|, up to a few discrepancies:
   (see :ref:`pattern_conditional_ssr`).  To use the
   generalized form, turn off the |SSR| Boolean ``if`` notation using the command:
   ``Close Scope boolean_if_scope``.
-+ The following two options can be unset to disable the incompatible
-  rewrite syntax and allow reserved identifiers to appear in scripts.
++ The following flags can be unset to make |SSR| more compatible with
+  parts of Coq:
 
-  .. coqtop:: in
+.. flag:: SsrRewrite
 
-     Unset SsrRewrite.
-     Unset SsrIdents.
+   Controls whether the incompatible rewrite syntax is enabled (the default).
+   Disabling the flag makes the syntax compatible with other parts of Coq.
 
+.. flag:: SsrIdents
+
+   Controls whether tactics can refer to |SSR|-generated variables that are
+   in the form _xxx_.  Scripts with explicit references to such variables
+   are fragile; they are prone to failure if the proof is later modified or
+   if the details of variable name generation change in future releases of Coq.
+
+   The default is on, which gives an error message when the user tries to
+   create such identifiers.  Disabling the flag generates a warning instead,
+   increasing compatibility with other parts of Coq.
 
 |Gallina| extensions
 --------------------
@@ -3063,6 +3073,17 @@ An :token:`r_item` can be:
         rewrite -[f y x]/(y + _).
 
 
+.. flag:: SsrOldRewriteGoalsOrder
+
+   Controls the order in which generated subgoals (side conditions)
+   are added to the
+   proof context.  The flag is off by default, which puts subgoals generated
+   by conditional rules first, followed by the main goal.  When it is on,
+   the main goal appears first.  If your proofs are organized to complete
+   proving the main goal before side conditions, turning the flag on will save you
+   from having to add :tacn:`last first` tactics that would be needed
+   to keep the main goal as the currently focused goal.
+
 Remarks and examples
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -5427,6 +5448,17 @@ right hand side double , view hint declaration see :ref:`declaring_new_hints_ssr
 .. cmd:: Prenex Implicits {+ @ident }
 
 prenex implicits declaration see :ref:`parametric_polymorphism_ssr`
+
+Settings
+~~~~~~~~
+
+.. flag:: Debug Ssreflect
+
+   *Developer only.* Print debug information on reflect.
+
+.. flag:: Debug SsrMatching
+
+   *Developer only.* Print debug information on SSR matching.
 
 .. rubric:: Footnotes
 

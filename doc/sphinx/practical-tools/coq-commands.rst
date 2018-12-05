@@ -198,10 +198,10 @@ and ``coqtop``, unless stated otherwise:
 :-type-in-type: Collapse the universe hierarchy of |Coq|.
 
   .. warning:: This makes the logic inconsistent.
-:-mangle-names *ident*: Experimental: Do not depend on this option. Replace
+:-mangle-names *ident*: *Experimental.* Do not depend on this option. Replace
   Coq's auto-generated name scheme with names of the form *ident0*, *ident1*,
-  etc. The command ``Set Mangle Names`` turns the behavior on in a document,
-  and ``Set Mangle Names Prefix "ident"`` changes the used prefix. This feature
+  etc. Within Coq, the flag :flag:`Mangle Names` turns this behavior on,
+  and the :opt:`Mangle Names Prefix` option sets the prefix to use. This feature
   is intended to be used as a linter for developments that want to be robust to
   changes in the auto-generated name scheme. The options are provided to
   facilitate tracking down problems.
