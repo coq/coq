@@ -104,7 +104,7 @@ let pr_appl h vs =
 let rec name_with_list appl t =
   match appl with
   | [] -> t
-  | (h,vs)::l -> Proofview.Trace.name_tactic (fun () -> pr_appl h vs) (name_with_list l t)
+  | (h,vs)::l -> Proofview.Trace.name_tactic (fun _ _ -> pr_appl h vs) (name_with_list l t)
 let name_if_glob appl t =
   match appl with
   | UnnamedAppl -> t
@@ -1050,7 +1050,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         return (hov 0 msg , hov 0 msg)
       in
       let print (_,msgnl) = Proofview.(tclLIFT (NonLogical.print_info msgnl)) in
-      let log (msg,_) = Proofview.Trace.log (fun () -> msg) in
+      let log (msg,_) = Proofview.Trace.log (fun _ _ -> msg) in
       let break = Proofview.tclLIFT (db_breakpoint (curr_debug ist) s) in
       Ftactic.run msgnl begin fun msgnl ->
         print msgnl <*> log msgnl <*> break
@@ -1132,7 +1132,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       in
       let tac =
         Ftactic.with_env interp_vars >>= fun (env, lr) ->
-        let name () = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
+        let name _ _ = Pptactic.pr_alias (fun v -> print_top_val env v) 0 s lr in
         Proofview.Trace.name_tactic name (tac lr)
       (* spiwack: this use of name_tactic is not robust to a
          change of implementation of [Ftactic]. In such a situation,
@@ -1153,7 +1153,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
       let tac args =
-        let name () = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
+        let name _ _ = Pptactic.pr_extend (fun v -> print_top_val () v) 0 opn args in
         Proofview.Trace.name_tactic name (catch_error_tac trace (tac args ist))
       in
       Ftactic.run args tac
@@ -1539,7 +1539,7 @@ and name_atomic ?env tacexpr tac : unit Proofview.tactic =
   | None -> Proofview.tclENV
   end >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let name () = Pptactic.pr_atomic_tactic env sigma tacexpr in
+  let name _ _ = Pptactic.pr_atomic_tactic env sigma tacexpr in
   Proofview.Trace.name_tactic name tac
 
 (* Interprets a primitive tactic *)
@@ -1560,7 +1560,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<apply>") begin
+      Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<apply>") begin
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
@@ -1601,7 +1601,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacMutualFix (id,n,l) ->
       (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual fix>") begin
+      Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<mutual fix>") begin
       Proofview.Goal.enter begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,n,c) =
@@ -1616,7 +1616,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacMutualCofix (id,l) ->
       (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<mutual cofix>") begin
+      Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<mutual cofix>") begin
       Proofview.Goal.enter begin fun gl ->
         let env = pf_env gl in
         let f sigma (id,c) =
@@ -1731,7 +1731,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacChange (None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
+      Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<change>") begin
       Proofview.Goal.enter begin fun gl ->
         let is_onhyps = match cl.onhyps with
           | None | Some [] -> true
@@ -1756,7 +1756,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
       end
   | TacChange (Some op,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
-      Proofview.Trace.name_tactic (fun () -> Pp.str"<change>") begin
+      Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<change>") begin
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in

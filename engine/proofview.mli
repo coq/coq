@@ -548,7 +548,7 @@ module Trace : sig
   val log : Proofview_monad.lazy_msg -> unit tactic
   val name_tactic : Proofview_monad.lazy_msg -> 'a tactic -> 'a tactic
 
-  val pr_info : ?lvl:int -> Proofview_monad.Info.tree -> Pp.t
+  val pr_info : Environ.env -> Evd.evar_map -> ?lvl:int -> Proofview_monad.Info.tree -> Pp.t
 
 end
 

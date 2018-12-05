@@ -107,11 +107,14 @@ let solve ?with_end_tac gi info_lvl tac pr =
         Proofview.tclTHEN tac Refine.solve_constraints
       else tac
     in
-    let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac pr in
+    let env = Global.env () in
+    let (p,(status,info)) = Proof.run_tactic env tac pr in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
     let () =
       match info_lvl with
       | None -> ()
-      | Some i -> Feedback.msg_info (hov 0 (Proofview.Trace.pr_info ~lvl:i info))
+      | Some i -> Feedback.msg_info (hov 0 (Proofview.Trace.pr_info env sigma ~lvl:i info))
     in
     (p,status)
   with

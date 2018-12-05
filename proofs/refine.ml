@@ -107,8 +107,8 @@ let generic_refine ~typecheck f gl =
   (* Mark goals *)
   let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
-  let trace () = Pp.(hov 2 (str"simple refine"++spc()++
-                            Termops.Internal.print_constr_env env sigma c)) in
+  let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
+                                   Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
