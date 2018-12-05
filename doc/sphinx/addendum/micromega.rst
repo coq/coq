@@ -250,8 +250,16 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
 .. [#] Support for :g:`nat` and :g:`N` is obtained by pre-processing the goal with
   the ``zify`` tactic.
-.. [#] Support for :g:`Z.div` and :g:`Z.modulo` may be obtained by pre-processing the goal with
-  the ``Z.div_mod_to_quot_rem`` tactic after manually running ``zify``.
+.. [#] Support for :g:`Z.div` and :g:`Z.modulo` may be obtained by
+  pre-processing the goal with the ``Z.div_mod_to_equations`` tactic (you may
+  need to manually run ``zify`` first).
+.. [#] Support for :g:`Z.quot` and :g:`Z.rem` may be obtained by pre-processing
+  the goal with the ``Z.quot_rem_to_equations`` tactic (you may need to manually
+  run ``zify`` first).
+.. [#] Note that support for :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and
+  :g:`Z.rem` may be simultaneously obtained by pre-processing the goal with the
+  ``Z.to_euclidean_division_equations`` tactic (you may need to manually run
+  ``zify`` first).
 .. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#] Variants deal with equalities and strict inequalities.
 .. [#] In practice, the oracle might fail to produce such a refutation.

@@ -2,9 +2,9 @@ Require Import Coq.ZArith.ZArith.
 Require Import Coq.micromega.Lia.
 Open Scope Z_scope.
 
-(** Add [Z.div_mod_to_quot_rem] to the end of [zify], just for this
+(** Add [Z.to_euclidean_division_equations] to the end of [zify], just for this
     file. *)
-Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.div_mod_to_quot_rem.
+Ltac zify ::= repeat (zify_nat; zify_positive; zify_N); zify_op; Z.to_euclidean_division_equations.
 
 Lemma Z_zerop_or x : x = 0 \/ x <> 0. Proof. nia. Qed.
 Lemma Z_eq_dec_or (x y : Z) : x = y \/ x <> y. Proof. nia. Qed.
@@ -22,6 +22,10 @@ Ltac saturate_mod_div :=
          | [ H : context[?x mod ?y] |- _ ] => unique_pose_proof (Z_zerop_or (x / y))
          | [ |- context[?x / ?y] ] => unique_pose_proof (Z_zerop_or y)
          | [ H : context[?x / ?y] |- _ ] => unique_pose_proof (Z_zerop_or y)
+         | [ |- context[Z.rem ?x ?y] ] => unique_pose_proof (Z_zerop_or (Z.quot x y))
+         | [ H : context[Z.rem ?x ?y] |- _ ] => unique_pose_proof (Z_zerop_or (Z.quot x y))
+         | [ |- context[Z.quot ?x ?y] ] => unique_pose_proof (Z_zerop_or y)
+         | [ H : context[Z.quot ?x ?y] |- _ ] => unique_pose_proof (Z_zerop_or y)
          end.
 
 Ltac t := intros; saturate_mod_div; try nia.
