@@ -181,7 +181,7 @@ Program Definition
 Program Fixpoint
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Fixpoint @ident @params {? {@order}} : @type := @term
+.. cmd:: Program Fixpoint @ident @binders {? {@order}} : @type := @term
 
    The optional order annotation follows the grammar:
 

@@ -25,10 +25,10 @@ typed modulo insertion of appropriate coercions. We allow to write:
 Classes
 -------
 
-A class with `n` parameters is any defined name with a type
-:g:`forall (x₁:A₁)..(xₙ:Aₙ),s` where ``s`` is a sort.  Thus a class with
+A class with :math:`n` parameters is any defined name with a type
+:n:`forall (@ident__1 : @type__1)..(@ident__n:@type__n), @sort`.  Thus a class with
 parameters is considered as a single class and not as a family of
-classes.  An object of a class ``C`` is any term of type :g:`C t₁ .. tₙ`.
+classes.  An object of a class is any term of type :n:`@class @term__1 .. @term__n`.
 In addition to these user-defined classes, we have two built-in classes:
 
 
@@ -40,20 +40,20 @@ In addition to these user-defined classes, we have two built-in classes:
 Formally, the syntax of a classes is defined as:
 
 .. productionlist::
-   class: qualid
-        : | `Sortclass`
-        : | `Funclass`
+   class: `qualid`
+        : | Sortclass
+        : | Funclass
 
 
 Coercions
 ---------
 
 A name ``f`` can be declared as a coercion between a source user-defined class
-``C`` with `n` parameters and a target class ``D`` if one of these
+``C`` with :math:`n` parameters and a target class ``D`` if one of these
 conditions holds:
 
  * ``D`` is a user-defined class, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ), D u₁..uₘ` where `m`
+   :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ), D u₁..uₘ` where :math:`m`
    is the number of parameters of ``D``.
  * ``D`` is ``Funclass``, then the type of ``f`` must have the form
    :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ)(x:A), B`.
@@ -124,7 +124,7 @@ Declaring Coercions
 
 .. cmd:: Coercion @qualid : @class >-> @class
 
-  Declares the construction denoted by `qualid` as a coercion between
+  Declares the construction denoted by :token:`qualid` as a coercion between
   the two given classes.
 
   .. exn:: @qualid not declared.
@@ -159,23 +159,18 @@ Declaring Coercions
 
   .. cmdv:: Local Coercion @qualid : @class >-> @class
 
-     Declares the construction denoted by `qualid` as a coercion local to
+     Declares the construction denoted by :token:`qualid` as a coercion local to
      the current section.
 
-  .. cmdv:: Coercion @ident := @term
+  .. cmdv:: Coercion @ident := @term {? @type }
 
-     This defines `ident` just like ``Definition`` `ident` ``:=`` `term`,
-     and then declares `ident` as a coercion between it source and its target.
+     This defines :token:`ident` just like :n:`Definition @ident := term {? @type }`,
+     and then declares :token:`ident` as a coercion between it source and its target.
 
-  .. cmdv:: Coercion @ident := @term : @type
+  .. cmdv:: Local Coercion @ident := @term {? @type }
 
-     This defines `ident` just like ``Definition`` `ident` : `type` ``:=`` `term`,
-     and then declares `ident` as a coercion between it source and its target.
-
-  .. cmdv:: Local Coercion @ident := @term
-
-     This defines `ident` just like ``Let`` `ident` ``:=`` `term`,
-     and then declares `ident` as a coercion between it source and its target.
+     This defines :token:`ident` just like :n:`Let @ident := @term  {? @type }`,
+     and then declares :token:`ident` as a coercion between it source and its target.
 
 Assumptions can be declared as coercions at declaration time.
 This extends the grammar of assumptions from
@@ -207,10 +202,10 @@ grammar of inductive types from Figure :ref:`vernacular` as follows:
    \comindex{CoInductive \mbox{\rm (and coercions)}}
 
 .. productionlist::
-   inductive : `Inductive` ind_body `with` ... `with` ind_body
-             : | `CoInductive` ind_body `with` ... `with` ind_body
-   ind_body : ident [binders] : term := [[|] constructor | ... | constructor]
-   constructor : ident [binders] [:[>] term]
+   inductive : Inductive `ind_body` with ... with `ind_body`
+             : | CoInductive `ind_body` with ... with `ind_body`
+   ind_body : `ident` [ `binders` ] : `term` := [[|] `constructor` | ... | `constructor` ]
+   constructor : `ident` [ `binders` ] [:[>] `term` ]
 
 Especially, if the extra ``>`` is present in a constructor
 declaration, this constructor is declared as a coercion.

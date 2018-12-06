@@ -376,8 +376,8 @@ The syntax for adding a new ring is
    sign :n:`@term`
       allows :tacn:`ring_simplify` to use a minus operation when
       outputting its normal form, i.e writing ``x − y`` instead of ``x + (− y)``. The
-      term `:n:`@term` is a proof that a given sign function indicates expressions
-      that are signed (`term` has to be a proof of ``Ring_theory.get_sign``). See
+      term :token:`term` is a proof that a given sign function indicates expressions
+      that are signed (:token:`term` has to be a proof of ``Ring_theory.get_sign``). See
       ``plugins/setoid_ring/InitialRing.v`` for examples of sign function.
 
    div :n:`@term`
@@ -476,8 +476,8 @@ So now, what is the scheme for a normalization proof? Let p be the
 polynomial expression that the user wants to normalize. First a little
 piece of |ML| code guesses the type of `p`, the ring theory `T` to use, an
 abstract polynomial `ap` and a variables map `v` such that `p` is |bdi|-
-equivalent to ``(PEeval`` `v` `ap`\ ``)``. Then we replace it by ``(Pphi_dev`` `v`
-``(norm`` `ap`\ ``))``, using the main correctness theorem and we reduce it to a
+equivalent to `(PEeval v ap)`. Then we replace it by `(Pphi_dev v (norm ap))`,
+using the main correctness theorem and we reduce it to a
 concrete expression `p’`, which is the concrete normal form of `p`. This is summarized in this diagram:
 
 ========= ======  ====
@@ -540,15 +540,15 @@ Dealing with fields
 
 .. tacv:: field [{* @term}] 
 
-  decides the equality of two terms modulo
-  field operations and the equalities defined  
-  by the :n:`@term`\ s. Each :n:`@term` has to be a proof of some equality 
-  `m` ``=`` `p`, where `m` is a monomial (after “abstraction”), `p` a polynomial 
-  and ``=`` the corresponding equality of the field structure.
+   This tactic decides the equality of two terms modulo
+   field operations and the equalities defined
+   by the :token:`term`\s. Each :token:`term` has to be a proof of some equality
+   :g:`m = p`, where :g:`m` is a monomial (after “abstraction”), :g:`p` a polynomial
+   and :g:`=` the corresponding equality of the field structure.
 
 .. note:: 
 
-   rewriting works with the equality  `m` ``=`` `p` only if `p` is a polynomial since
+   Rewriting works with the equality  :g:`m = p` only if :g:`p` is a polynomial since
    rewriting is handled by the underlying ring tactic.
 
 .. tacv:: field_simplify
@@ -562,27 +562,28 @@ Dealing with fields
 
 .. tacv:: field_simplify [{* @term }] 
 
-  performs the simplification in the conclusion of the goal using the equalities 
-  defined by the :n:`@term`\ s.
+   This variant performs the simplification in the conclusion of the goal using the equalities
+   defined by the :token:`term`\s.
 
 .. tacv:: field_simplify [{* @term }] {* @term }
 
-   performs the simplification in the terms :n:`@terms`  of the conclusion of the goal
-   using the equalities defined by :n:`@term`\ s inside the brackets.
+   This variant performs the simplification in the terms :token:`term`\s  of the conclusion of the goal
+   using the equalities defined by :token:`term`\s inside the brackets.
 
-.. tacv :: field_simplify in @ident
+.. tacv:: field_simplify in @ident
 
-   performs the simplification in the assumption :n:`@ident`.
+   This variant performs the simplification in the assumption :token:`ident`.
 
-.. tacv :: field_simplify [{* @term }] in @ident 
+.. tacv:: field_simplify [{* @term }] in @ident
  
-   performs the simplification
-   in the assumption :n:`@ident` using the equalities defined by the :n:`@term`\ s.
+   This variant performs the simplification
+   in the assumption :token:`ident` using the equalities defined by the :token:`term`\s.
 
 .. tacv:: field_simplify [{* @term }] {* @term } in @ident
 
-   performs the simplification in the :n:`@term`\ s of the assumption :n:`@ident` using the
-   equalities defined by  the :n:`@term`\ s inside the brackets.
+   This variant performs the simplification in the :token:`term`\s of the
+   assumption :token:`ident` using the
+   equalities defined by the :token:`term`\s inside the brackets.
 
 .. tacv:: field_simplify_eq
 
@@ -591,18 +592,17 @@ Dealing with fields
 
 .. tacv:: field_simplify_eq [ {* @term }]
 
-   performs the simplification in
-   the conclusion of the goal using the equalities defined by 
-   :n:`@term`\ s.
+   This variant performs the simplification in
+   the conclusion of the goal using the equalities defined by :token:`term`\s.
 
 .. tacv:: field_simplify_eq in @ident
 
-   performs the simplification in the assumption :n:`@ident`.
+   This variant performs the simplification in the assumption :token:`ident`.
 
 .. tacv:: field_simplify_eq [{* @term}] in @ident
 
-   performs the simplification in the assumption :n:`@ident` using the equalities defined by
-   :n:`@terms`\ s and removing the denominator.
+   This variant performs the simplification in the assumption :token:`ident`
+   using the equalities defined by :token:`term`\s and removing the denominator.
 
 
 Adding a new field structure

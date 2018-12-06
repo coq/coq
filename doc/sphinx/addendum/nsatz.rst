@@ -81,7 +81,7 @@ performed using :ref:`typeclasses`.
      produces a goal which states that :math:`c` is not zero.
 
    * `variables` is the list of the variables in the decreasing order in
-     which they will be used in the Buchberger algorithm. If `variables` = `(@nil R)`,
+     which they will be used in the Buchberger algorithm. If `variables` = :g:`(@nil R)`,
      then `lvar` is replaced by all the variables which are not in
      `parameters`.
 

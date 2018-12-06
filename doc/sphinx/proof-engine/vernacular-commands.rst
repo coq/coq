@@ -274,8 +274,8 @@ Requests to the environment
 
       This searches for all statements or types of
       definition that contains a subterm that matches the pattern
-      `term_pattern` (holes of the pattern are either denoted by `_` or by
-      `?ident` when non linear patterns are expected).
+      :token:`term_pattern` (holes of the pattern are either denoted by `_` or by
+      :n:`?@ident` when non linear patterns are expected).
 
    .. cmdv:: Search { + [-]@term_pattern_string }
 
@@ -580,7 +580,7 @@ file is a particular case of module called *library file*.
    replayed nor rechecked.
 
    To locate the file in the file system, :n:`@qualid` is decomposed under the
-   form `dirpath.ident` and the file `ident.vo` is searched in the physical
+   form :n:`dirpath.@ident` and the file :n:`@ident.vo` is searched in the physical
    directory of the file system that is mapped in |Coq| loadpath to the
    logical path dirpath (see Section :ref:`libraries-and-filesystem`). The mapping between
    physical directories and logical names at the time of requiring the
@@ -611,7 +611,7 @@ file is a particular case of module called *library file*.
    .. cmdv:: Require [Import | Export] {+ @qualid }
 
       This loads the
-      modules named by the :n:`qualid` sequence and their recursive
+      modules named by the :token:`qualid` sequence and their recursive
       dependencies. If
       ``Import`` or ``Export`` is given, it also imports these modules and
       all the recursive dependencies that were marked or transitively marked
@@ -620,8 +620,8 @@ file is a particular case of module called *library file*.
    .. cmdv:: From @dirpath Require @qualid
 
       This command acts as :cmd:`Require`, but picks
-      any library whose absolute name is of the form dirpath.dirpath’.qualid
-      for some `dirpath’`. This is useful to ensure that the :n:`@qualid` library
+      any library whose absolute name is of the form :n:`@dirpath.@dirpath’.@qualid`
+      for some :n:`@dirpath’`. This is useful to ensure that the :token:`qualid` library
       comes from a given package by making explicit its absolute root.
 
    .. exn:: Cannot load qualid: no physical path bound to dirpath.
@@ -637,21 +637,21 @@ file is a particular case of module called *library file*.
 
       The command tried to load library file :n:`@ident`.vo that
       depends on some specific version of library :n:`@qualid` which is not the
-      one already loaded in the current |Coq| session. Probably `ident.v` was
+      one already loaded in the current |Coq| session. Probably :n:`@ident.v` was
       not properly recompiled with the last version of the file containing
-      module :n:`@qualid`.
+      module :token:`qualid`.
 
    .. exn:: Bad magic number.
 
-      The file `ident.vo` was found but either it is not a
+      The file :n:`@ident.vo` was found but either it is not a
       |Coq| compiled module, or it was compiled with an incompatible
       version of |Coq|.
 
-   .. exn:: The file `ident.vo` contains library dirpath and not library dirpath’.
+   .. exn:: The file :n:`@ident.vo` contains library dirpath and not library dirpath’.
 
-      The library file `dirpath’` is indirectly required by the
+      The library file :n:`@dirpath’` is indirectly required by the
       ``Require`` command but it is bound in the current loadpath to the
-      file `ident.vo` which was bound to a different library name `dirpath` at
+      file :n:`@ident.vo` which was bound to a different library name :token:`dirpath` at
       the time it was compiled.
 
 
@@ -675,10 +675,10 @@ file is a particular case of module called *library file*.
 .. cmd:: Declare ML Module {+ @string }
 
    This commands loads the OCaml compiled files
-   with names given by the :n:`@string` sequence
+   with names given by the :token:`string` sequence
    (dynamic link). It is mainly used to load tactics dynamically. The
    files are searched into the current OCaml loadpath (see the
-   command ``Add ML Path`` in Section :ref:`libraries-and-filesystem`).
+   command :cmd:`Add ML Path`).
    Loading of OCaml files is only possible under the bytecode version of
    ``coqtop`` (i.e. ``coqtop`` called with option ``-byte``, see chapter
    :ref:`thecoqcommands`), or when |Coq| has been compiled with a
@@ -698,9 +698,9 @@ file is a particular case of module called *library file*.
 
 .. cmd:: Print ML Modules
 
-   This prints the name of all OCaml modules loaded with ``Declare
-   ML Module``. To know from where these module were loaded, the user
-   should use the command ``Locate File`` (see :ref:`here <locate-file>`)
+   This prints the name of all OCaml modules loaded with :cmd:`Declare ML Module`.
+   To know from where these module were loaded, the user
+   should use the command :cmd:`Locate File`.
 
 
 .. _loadpath:
@@ -721,7 +721,7 @@ the toplevel, and using them in source files is discouraged.
 
 .. cmd:: Cd @string
 
-   This command changes the current directory according to :n:`@string` which
+   This command changes the current directory according to :token:`string` which
    can be any valid path.
 
    .. cmdv:: Cd
@@ -732,24 +732,24 @@ the toplevel, and using them in source files is discouraged.
 .. cmd:: Add LoadPath @string as @dirpath
 
    This command is equivalent to the command line option
-   ``-Q`` :n:`@string` :n:`@dirpath`. It adds the physical directory string to the current
+   :n:`-Q @string @dirpath`. It adds the physical directory string to the current
    |Coq| loadpath and maps it to the logical directory dirpath.
 
    .. cmdv:: Add LoadPath @string
 
-      Performs as Add LoadPath :n:`@string` as :n:`@dirpath` but
+      Performs as :n:`Add LoadPath @string @dirpath` but
       for the empty directory path.
 
 
 .. cmd:: Add Rec LoadPath @string as @dirpath
 
    This command is equivalent to the command line option
-   ``-R`` :n:`@string` :n:`@dirpath`. It adds the physical directory string and all its
+   :n:`-R @string @dirpath`. It adds the physical directory string and all its
    subdirectories to the current |Coq| loadpath.
 
    .. cmdv:: Add Rec LoadPath @string
 
-      Works as :cmd:`Add Rec LoadPath` :n:`@string` as :n:`@dirpath` but for the empty
+      Works as :n:`Add Rec LoadPath @string as @dirpath` but for the empty
       logical directory path.
 
 
@@ -792,7 +792,7 @@ the toplevel, and using them in source files is discouraged.
 .. cmd:: Locate File @string
 
    This command displays the location of file string in the current
-   loadpath. Typically, string is a .cmo or .vo or .v file.
+   loadpath. Typically, string is a ``.cmo`` or ``.vo`` or ``.v`` file.
 
 
 .. cmd:: Locate Library @dirpath
@@ -858,7 +858,7 @@ interactively, they cannot be part of a vernacular file loaded via
    state label is an integer which grows after each successful command.
    It is displayed in the prompt when in -emacs mode. Just as :cmd:`Back` (see
    above), the :cmd:`BackTo` command now handles proof states. For that, it may
-   have to undo some extra commands and end on a state `num′ ≤ num` if
+   have to undo some extra commands and end on a state :n:`@num′ ≤ @num` if
    necessary.
 
    .. cmdv:: Backtrack @num @num @num
@@ -1157,7 +1157,7 @@ described first.
 
    This command allows giving a short name to a reduction expression, for
    instance lazy beta delta [foo bar]. This short name can then be used
-   in ``Eval`` :n:`@ident` ``in`` ... or ``eval`` directives. This command
+   in :n:`Eval @ident in` or ``eval`` directives. This command
    accepts the
    Local modifier, for discarding this reduction name at the end of the
    file or module. For the moment the name cannot be qualified. In
@@ -1165,7 +1165,7 @@ described first.
    functor applications will be refused if these declarations are not
    local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
    nothing prevents the user to also perform a
-   ``Ltac`` `ident` ``:=`` `convtactic`.
+   :n:`Ltac @ident := @convtactic`.
 
    .. seealso:: :ref:`performingcomputations`
 
