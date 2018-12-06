@@ -843,8 +843,9 @@ let notation_subst bindings tac =
     (make ?loc @@ Name id, c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in
-  (** This is theoretically not correct due to potential variable capture, but
-      Ltac has no true variables so one cannot simply substitute *)
+  (* This is theoretically not correct due to potential variable
+     capture, but Ltac has no true variables so one cannot simply
+     substitute *)
   TacLetIn (false, bindings, tac)
 
 let () = Genintern.register_ntn_subst0 wit_tactic notation_subst

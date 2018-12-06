@@ -77,7 +77,9 @@ module Stack : sig
   | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
-  | Cst of cst_member * int (** current foccussed arg *) * int list (** remaining args *)
+  | Cst of cst_member
+           * int (* current foccussed arg *)
+           * int list (* remaining args *)
     * 'a t * Cst_stack.t
   and 'a t = 'a member list
 
@@ -93,6 +95,7 @@ module Stack : sig
   val compare_shape : 'a t -> 'a t -> bool
 
   exception IncompatibleFold2
+
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
       @return the result and the lifts to apply on the terms
       @raise IncompatibleFold2 when [sk1] and [sk2] have incompatible shapes *)
@@ -104,6 +107,7 @@ module Stack : sig
   (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
       start by App *)
   val strip_app : 'a t -> 'a t * 'a t
+
   (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
   val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
 

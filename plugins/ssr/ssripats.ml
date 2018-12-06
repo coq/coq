@@ -86,9 +86,9 @@ end (* }}} *************************************************************** *)
 
 open State
 
-(** [=> *] ****************************************************************)
-(** [nb_assums] returns the number of dependent premises *)
-(** Warning: unlike [nb_deps_assums], it does not perform reduction *)
+(***[=> *] ****************************************************************)
+(** [nb_assums] returns the number of dependent premises
+    Warning: unlike [nb_deps_assums], it does not perform reduction *)
 let rec nb_assums cur env sigma t =
   match EConstr.kind sigma t with
   | Prod(name,ty,body) ->
@@ -148,7 +148,7 @@ let tac_case t =
       Ssrelim.ssrscasetac t
 end
 
-(** [=> [: id]] ************************************************************)
+(***[=> [: id]] ************************************************************)
 [@@@ocaml.warning "-3"]
 let mk_abstract_id =
   let open Coqlib in

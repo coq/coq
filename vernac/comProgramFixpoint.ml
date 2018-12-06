@@ -211,7 +211,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         let univs = Evd.check_univ_decl ~poly sigma decl in
         (*FIXME poly? *)
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
-        (** FIXME: include locality *)
+        (* FIXME: include locality *)
         let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
         let gr = ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then

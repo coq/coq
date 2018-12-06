@@ -148,7 +148,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> glob_sort_eq s1 s2
   | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
-    Option.equal (==) gn1 gn2 (** Only thing sensible *) &&
+    Option.equal (==) gn1 gn2 (* Only thing sensible *) &&
     Namegen.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, t1), GCast (c2, t2) ->
     f c1 c2 && cast_type_eq f t1 t2

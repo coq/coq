@@ -1096,8 +1096,8 @@ let resolve_all_evars debug depth unique env p oevd do_split fail =
 let initial_select_evars filter =
   fun evd ev evi ->
     filter ev (Lazy.from_val (snd evi.Evd.evar_source)) &&
-    (** Typeclass evars can contain evars whose conclusion is not
-        yet determined to be a class or not. *)
+    (* Typeclass evars can contain evars whose conclusion is not
+       yet determined to be a class or not. *)
     Typeclasses.is_class_evar evd evi
 
 let resolve_typeclass_evars debug depth unique env evd filter split fail =

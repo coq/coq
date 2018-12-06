@@ -76,8 +76,8 @@ let unsafe_occur_meta_or_existential c =
 
 
 let occur_meta_or_undefined_evar evd c =
-  (** This is performance-critical. Using the evar-insensitive API changes the
-      resulting heuristic. *)
+  (* This is performance-critical. Using the evar-insensitive API changes the
+     resulting heuristic. *)
   let c = EConstr.Unsafe.to_constr c in
   let rec occrec c = match Constr.kind c with
     | Meta _ -> raise Occur
@@ -134,7 +134,7 @@ let abstract_list_all env evd typ c l =
     | UserError _ ->
         error_cannot_find_well_typed_abstraction env evd p l None
     | Type_errors.TypeError (env',x) ->
-        (** FIXME: plug back the typing information *)
+        (* FIXME: plug back the typing information *)
         error_cannot_find_well_typed_abstraction env evd p l None
     | Pretype_errors.PretypeError (env',evd,TypingError x) ->
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
@@ -154,10 +154,8 @@ let abstract_list_all_with_dependencies env evd typ c l =
   if b then
     let p = nf_evar evd ev in
       evd, p
-  else error_cannot_find_well_typed_abstraction env evd 
+  else error_cannot_find_well_typed_abstraction env evd
     c l None
-
-(**)
 
 (* A refinement of [conv_pb]: the integers tells how many arguments
    were applied in the context of the conversion problem; if the number
@@ -598,8 +596,9 @@ let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
 
 
 let subst_defined_metas_evars sigma (bl,el) c =
-  (** This seems to be performance-critical, and using the evar-insensitive
-      primitives blow up the time passed in this function. *)
+  (* This seems to be performance-critical, and using the
+     evar-insensitive primitives blow up the time passed in this
+     function. *)
   let c = EConstr.Unsafe.to_constr c in
   let rec substrec c = match Constr.kind c with
     | Meta i ->
@@ -656,7 +655,7 @@ let is_eta_constructor_app env sigma ts f l1 term =
       | PrimRecord info when mib.Declarations.mind_finite == Declarations.BiFinite &&
           let (_, projs, _) = info.(i) in
           Array.length projs == Array.length l1 - mib.Declarations.mind_nparams ->
-	(** Check that the other term is neutral *)
+        (* Check that the other term is neutral *)
 	is_neutral env sigma ts term
       | _ -> false)
   | _ -> false
@@ -783,7 +782,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	| LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb opt substn (subst1 a c) cN
 	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb opt substn cM (subst1 a c)
 
-	(** Fast path for projections. *)
+        (* Fast path for projections. *)
 	| Proj (p1,c1), Proj (p2,c2) when Constant.equal
 	    (Projection.constant p1) (Projection.constant p2) ->
 	  (try unify_same_proj curenvnb cv_pb {opt with at_top = true}
@@ -908,7 +907,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       	match EConstr.kind sigma c with
       	| Proj (p, t) when not (Projection.unfolded p) && needs_expansion p c' ->
       	  (try destApp sigma (Retyping.expand_projection curenv sigma p t (Array.to_list l))
-      	   with RetypeError _ -> (** Unification can be called on ill-typed terms, due
+           with RetypeError _ -> (* Unification can be called on ill-typed terms, due
       				     to FO and eta in particular, fail gracefully in that case *)
       	     (c, l))
       	| _ -> (c, l)
@@ -1604,7 +1603,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
     with
     | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
         raise (NotUnifiable (Some (c1,c2,e)))
-    (** MS: This is pretty bad, it catches Not_found for example *)
+    (* MS: This is pretty bad, it catches Not_found for example *)
     | e when CErrors.noncritical e -> raise (NotUnifiable None) in
   let merge_fun c1 c2 =
     match c1, c2 with

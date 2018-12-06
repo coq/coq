@@ -37,7 +37,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
    | _             -> false)
 | NApp (t1, a1), NApp (t2, a2) ->
   (eq_notation_constr vars) t1 t2 && List.equal (eq_notation_constr vars) a1 a2
-| NHole (_, _, _), NHole (_, _, _) -> true (** FIXME? *)
+| NHole (_, _, _), NHole (_, _, _) -> true (* FIXME? *)
 | NList (i1, j1, t1, u1, b1), NList (i2, j2, t2, u2, b2) ->
   Id.equal i1 i2 && Id.equal j1 j2 && (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2 && b1 == b2
@@ -51,7 +51,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
   Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
   Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
-| NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (** FIXME? *)
+| NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
   let eqpat (p1, t1) (p2, t2) =
     List.equal cases_pattern_eq p1 p2 &&
     (eq_notation_constr vars) t1 t2
@@ -75,7 +75,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   Option.equal (eq_notation_constr vars) o1 o2 &&
   (eq_notation_constr vars) u1 u2 &&
   (eq_notation_constr vars) r1 r2
-| NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (** FIXME? *)
+| NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (* FIXME? *)
   let eq (na1, o1, t1) (na2, o2, t2) =
     Name.equal na1 na2 &&
     Option.equal (eq_notation_constr vars) o1 o2 &&

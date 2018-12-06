@@ -366,7 +366,7 @@ let visit_vo f =
   |] in
   let repr =
     if Sys.word_size = 64 then (module ReprMem : S) else (module ReprObj : S)
-    (** On 32-bit machines, representation may exceed the max size of arrays *)
+    (* On 32-bit machines, representation may exceed the max size of arrays *)
   in
   let module Repr = (val repr : S) in
   let module Visit = Visit(Repr) in

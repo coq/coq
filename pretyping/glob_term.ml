@@ -106,6 +106,7 @@ and 'a tomatch_tuples_g = 'a tomatch_tuple_g list
 and 'a cases_clause_g = (Id.t list * 'a cases_pattern_g list * 'a glob_constr_g) CAst.t
 (** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
     of [t] are members of [il]. *)
+
 and 'a cases_clauses_g = 'a cases_clause_g list
 
 type glob_constr = [ `any ] glob_constr_g

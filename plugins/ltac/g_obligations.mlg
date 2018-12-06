@@ -24,7 +24,7 @@ let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
 
 let () =
-  (** Delay to recover the tactic imperatively *)
+  (* Delay to recover the tactic imperatively *)
   let tac = Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
     snd (get_default_tactic ())
   end in

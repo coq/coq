@@ -572,7 +572,7 @@ module New = struct
     with Failure _ -> CErrors.user_err Pp.(str "Not enough hypotheses in the goal.")
 
   let nthHypId m gl =
-    (** We only use [id] *)
+    (* We only use [id] *)
     nthDecl m gl |> NamedDecl.get_id
   let nthHyp m gl = 
     mkVar (nthHypId m gl)
@@ -688,12 +688,12 @@ module New = struct
     end) end
 
   let elimination_sort_of_goal gl =
-    (** Retyping will expand evars anyway. *)
+    (* Retyping will expand evars anyway. *)
     let c = Proofview.Goal.concl gl in
     pf_apply Retyping.get_sort_family_of gl c
 
   let elimination_sort_of_hyp id gl =
-    (** Retyping will expand evars anyway. *)
+    (* Retyping will expand evars anyway. *)
     let c = pf_get_hyp_typ id gl in
     pf_apply Retyping.get_sort_family_of gl c
 

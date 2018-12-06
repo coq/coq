@@ -39,20 +39,20 @@ val autoapply : constr -> Hints.hint_db_name -> unit Proofview.tactic
 
 module Search : sig
   val eauto_tac :
-    ?st:TransparentState.t ->
+    ?st:TransparentState.t
     (** The transparent_state used when working with local hypotheses  *)
-    ?unique:bool ->
+    -> ?unique:bool
     (** Should we force a unique solution *)
-    only_classes:bool ->
+    -> only_classes:bool
     (** Should non-class goals be shelved and resolved at the end *)
-    ?strategy:search_strategy ->
+    -> ?strategy:search_strategy
     (** Is a traversing-strategy specified? *)
-    depth:Int.t option ->
+    -> depth:Int.t option
     (** Bounded or unbounded search *)
-    dep:bool ->
+    -> dep:bool
     (** Should the tactic be made backtracking on the initial goals,
-       whatever their internal dependencies are. *)
-    Hints.hint_db list ->
+        whatever their internal dependencies are. *)
+    -> Hints.hint_db list
     (** The list of hint databases to use *)
-    unit Proofview.tactic
+    -> unit Proofview.tactic
 end

@@ -95,9 +95,9 @@ let init_color opts =
     if has_color then begin
       let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
       match colors with
-      | None -> Topfmt.default_styles (); true        (** Default colors *)
-      | Some "" -> false                              (** No color output *)
-      | Some s -> Topfmt.parse_color_config s; true   (** Overwrite all colors *)
+      | None -> Topfmt.default_styles (); true        (* Default colors *)
+      | Some "" -> false                              (* No color output *)
+      | Some s -> Topfmt.parse_color_config s; true   (* Overwrite all colors *)
     end
     else
       false
@@ -144,7 +144,7 @@ let init_gc () =
      * In this case, we put in place our preferred configuration.
      *)
     Gc.set { (Gc.get ()) with
-             Gc.minor_heap_size = 33554432; (** 4M *)
+             Gc.minor_heap_size = 33554432; (* 4M *)
              Gc.space_overhead = 120}
 
 (** Main init routine *)

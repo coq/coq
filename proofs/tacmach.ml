@@ -133,7 +133,7 @@ module New = struct
     f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
 
   let pf_global id gl =
-    (** We only check for the existence of an [id] in [hyps] *)
+    (* We only check for the existence of an [id] in [hyps] *)
     let hyps = Proofview.Goal.hyps gl in
     Constrintern.construct_reference hyps id
 
@@ -149,12 +149,12 @@ module New = struct
   let pf_conv_x gl t1 t2 = pf_apply is_conv gl t1 t2
 
   let pf_ids_of_hyps gl =
-    (** We only get the identifiers in [hyps] *)
+    (* We only get the identifiers in [hyps] *)
     let hyps = Proofview.Goal.hyps gl in
     ids_of_named_context hyps
 
   let pf_ids_set_of_hyps gl =
-    (** We only get the identifiers in [hyps] *)
+    (* We only get the identifiers in [hyps] *)
     let env = Proofview.Goal.env gl in
     Environ.ids_of_named_context_val (Environ.named_context_val env)
 
@@ -186,7 +186,7 @@ module New = struct
     List.hd hyps
 
   let pf_nf_concl (gl : Proofview.Goal.t) =
-    (** We normalize the conclusion just after *)
+    (* We normalize the conclusion just after *)
     let concl = Proofview.Goal.concl gl in
     let sigma = project gl in
     nf_evar sigma concl

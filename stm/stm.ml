@@ -1087,7 +1087,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
       (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
     else
       match cmd with
-      | VernacShow ShowScript -> ShowScript.show_script (); st (** XX we are ignoring control here *)
+      | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
       | _ ->
         stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
         try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (CAst.make ?loc expr)
@@ -1750,7 +1750,7 @@ end = struct (* {{{ *)
         let uc =
           Option.get
             (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
-        (** We only manipulate monomorphic terms here. *)
+        (* We only manipulate monomorphic terms here. *)
         let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
         let pr =
           Future.from_val (map (Option.get (Global.body_of_constant_body c))) in

@@ -27,22 +27,22 @@ val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 
 val declare_instance_constant :
   typeclass ->
-  Hints.hint_info_expr -> (** priority *)
-  bool -> (** globality *)
-  Impargs.manual_explicitation list -> (** implicits *)
+  Hints.hint_info_expr (** priority *) ->
+  bool (** globality *) ->
+  Impargs.manual_explicitation list (** implicits *) ->
   ?hook:(GlobRef.t -> unit) ->
-  Id.t -> (** name *)
+  Id.t (** name *) ->
   UState.universe_decl ->
-  bool -> (* polymorphic *)
-  Evd.evar_map -> (* Universes *)
-  Constr.t -> (** body *)
-  Constr.types -> (** type *)
+  bool (** polymorphic *) ->
+  Evd.evar_map (** Universes *) ->
+  Constr.t (** body *) ->
+  Constr.types (** type *) ->
   unit
 
 val new_instance :
-  ?abstract:bool -> (** Not abstract by default. *)
-  ?global:bool -> (** Not global by default. *)
-  ?refine:bool -> (** Allow refinement *)
+  ?abstract:bool (** Not abstract by default. *) ->
+  ?global:bool (** Not global by default. *) ->
+  ?refine:bool (** Allow refinement *) ->
   program_mode:bool ->
   Decl_kinds.polymorphic ->
   local_binder_expr list ->

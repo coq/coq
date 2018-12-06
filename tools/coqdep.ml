@@ -233,7 +233,7 @@ struct
             let rem = NSet.fold push next rem in
             aux rem seen
           | Some false ->
-            (** The path we took encountered x -> y but not the one in seen *)
+            (* The path we took encountered x -> y but not the one in seen *)
             if through then aux (NMap.add n true rem) (NMap.add n true seen)
             else aux rem seen
           | Some true -> aux rem seen
@@ -357,7 +357,7 @@ let treat_coq_file chan =
           | None -> acc
           | Some file_str -> (canonize file_str, ".v") :: acc
         else acc
-      | AddLoadPath _ | AddRecLoadPath _ -> acc (** TODO *)
+      | AddLoadPath _ | AddRecLoadPath _ -> acc (* TODO *)
       in
       loop acc
   in

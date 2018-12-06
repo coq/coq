@@ -91,8 +91,8 @@ let tag_on_insert buffer =
   in
   try
     let start = grab_sentence_start prev soi in
-    (** The status of "{" "}" as sentence delimiters is too fragile.
-        We retag up to the next "." instead. *)
+    (* The status of "{" "}" as sentence delimiters is too fragile.
+       We retag up to the next "." instead. *)
     let stop = grab_ending_dot insert in
     try split_slice_lax buffer start#backward_char stop
     with Coq_lex.Unterminated ->

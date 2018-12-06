@@ -427,7 +427,7 @@ let locate_modtype qid =
   let all = Nametab.locate_extended_all_modtype qid in
   let map mp = ModuleType mp, Nametab.shortest_qualid_of_modtype mp in
   let modtypes = List.map map all in
-  (** Don't forget the opened module types: they are not part of the same name tab. *)
+  (* Don't forget the opened module types: they are not part of the same name tab. *)
   let all = Nametab.locate_extended_all_dir qid in
   let map dir = let open Nametab.GlobDirRef in match dir with
   | DirOpenModtype _ -> Some (Dir dir, qid)

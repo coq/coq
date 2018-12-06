@@ -960,7 +960,7 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
 
   | GSort s -> CSort (extern_glob_sort s)
 
-  | GHole (e,naming,_) -> CHole (Some e, naming, None) (** TODO: extern tactics. *)
+  | GHole (e,naming,_) -> CHole (Some e, naming, None) (* TODO: extern tactics. *)
 
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,

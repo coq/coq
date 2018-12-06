@@ -49,16 +49,16 @@ val search_about   : int option -> (bool * glob_search_about_item) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =
-  (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
   | Name_Pattern of Str.regexp
-  (** Whether the object type satisfies a pattern *)
+  (** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
   | Type_Pattern of Pattern.constr_pattern
-  (** Whether some subtype of object type satisfies a pattern *)
+  (** Whether the object type satisfies a pattern *)
   | SubType_Pattern of Pattern.constr_pattern
-  (** Whether the object pertains to a module *)
+  (** Whether some subtype of object type satisfies a pattern *)
   | In_Module of Names.DirPath.t
-  (** Bypass the Search blacklist *)
+  (** Whether the object pertains to a module *)
   | Include_Blacklist
+  (** Bypass the Search blacklist *)
 
 type 'a coq_object = {
   coq_object_prefix : string list;

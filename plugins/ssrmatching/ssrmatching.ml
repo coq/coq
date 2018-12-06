@@ -122,6 +122,7 @@ let add_genarg tag pr =
 
 (** Constructors for cast type *)
 let dC t = CastConv t
+
 (** Constructors for constr_expr *)
 let isCVar   = function { CAst.v = CRef (qid,_) } -> qualid_is_ident qid | _ -> false
 let destCVar = function
@@ -139,6 +140,7 @@ let mkCLambda ?loc name ty t = CAst.make ?loc @@
 let mkCLetIn ?loc name bo t = CAst.make ?loc @@
    CLetIn ((CAst.make ?loc name), bo, None, t)
 let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, dC ty)
+
 (** Constructors for rawconstr *)
 let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous, None)
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
@@ -925,7 +927,7 @@ let of_ftactic ftac gl =
   let tac = Proofview.V82.of_tactic tac in
   let { sigma = sigma } = tac gl in
   let ans = match !r with
-  | None -> assert false (** If the tactic failed we should not reach this point *)
+  | None -> assert false (* If the tactic failed we should not reach this point *)
   | Some ans -> ans
   in
   (sigma, ans)

@@ -54,7 +54,7 @@ val scope_is_open : scope_name -> bool
 (** Open scope *)
 
 val open_close_scope :
-  (** locality *) bool * (* open *) bool * scope_name -> unit
+  (* locality *) bool * (* open *) bool * scope_name -> unit
 
 (** Extend a list of scopes *)
 val empty_scope_stack : scopes

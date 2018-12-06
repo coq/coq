@@ -263,9 +263,9 @@ let wait () =
   set_doc (Stm.wait ~doc)
 
 let status force =
-  (** We remove the initial part of the current [DirPath.t]
-      (usually Top in an interactive session, cf "coqtop -top"),
-      and display the other parts (opened sections and modules) *)
+  (* We remove the initial part of the current [DirPath.t]
+     (usually Top in an interactive session, cf "coqtop -top"),
+     and display the other parts (opened sections and modules) *)
   set_doc (Stm.finish ~doc:(get_doc ()));
   if force then
     set_doc (Stm.join ~doc:(get_doc ()));
@@ -408,14 +408,12 @@ let interp ((_raw, verbose), s) =
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
     before exiting. *)
-
 let quit = ref false
 
 (** Disabled *)
 let print_ast id = Xml_datatype.PCData "ERROR"
 
 (** Grouping all call handlers together + error handling *)
-
 let eval_call c =
   let interruptible f x =
     catch_break := true;

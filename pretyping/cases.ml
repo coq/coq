@@ -1015,9 +1015,9 @@ let add_assert_false_case pb tomatch =
 let adjust_impossible_cases sigma pb pred tomatch submat =
   match submat with
   | [] ->
-    (** FIXME: This breaks if using evar-insensitive primitives. In particular,
-        this means that the Evd.define below may redefine an already defined
-        evar. See e.g. first definition of test for bug #3388. *)
+    (* FIXME: This breaks if using evar-insensitive primitives. In particular,
+       this means that the Evd.define below may redefine an already defined
+       evar. See e.g. first definition of test for bug #3388. *)
     let pred = EConstr.Unsafe.to_constr pred in
     begin match Constr.kind pred with
     | Evar (evk,_) when snd (evar_source evk sigma) == Evar_kinds.ImpossibleCase ->
@@ -1684,8 +1684,8 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
      convertible subterms of the substitution *)
   let evdref = ref sigma in
   let rec aux (k,env,subst as x) t =
-    (** Use a reference because the [map_constr_with_full_binders] does not
-        allow threading a state. *)
+    (* Use a reference because the [map_constr_with_full_binders] does not
+       allow threading a state. *)
     let sigma = !evdref in
     match EConstr.kind sigma t with
     | Rel n when is_local_def (lookup_rel n !!env) -> t
@@ -2021,7 +2021,7 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
 
 let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
-    (** If we put the typing constraint in the term, it has to be
+    (* If we put the typing constraint in the term, it has to be
        refreshed to preserve the invariant that no algebraic universe
        can appear in the term.  *)
     refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)

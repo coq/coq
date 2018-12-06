@@ -1311,10 +1311,10 @@ let max_undefined_with_candidates evd =
   | None -> ()
   | Some l -> raise (MaxUndefined (evk, evi, l))
   in
-  (** [fold_right] traverses the undefined map in decreasing order of indices.
-  The evar with candidates of maximum index is thus the first evar with
-  candidates found by a [fold_right] traversal. This has a significant impact on
-  performance. *)
+  (* [fold_right] traverses the undefined map in decreasing order of
+     indices.  The evar with candidates of maximum index is thus the
+     first evar with candidates found by a [fold_right]
+     traversal. This has a significant impact on performance. *)
   try
     let () = Evar.Map.fold_right fold (Evd.undefined_map evd) () in
     None

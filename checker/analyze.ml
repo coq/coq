@@ -396,7 +396,7 @@ let parse_string s = PString.parse (s, ref 0)
 let instantiate (p, mem) =
   let len = LargeArray.length mem in
   let ans = LargeArray.make len (Obj.repr 0) in
-  (** First pass: initialize the subobjects *)
+  (* First pass: initialize the subobjects *)
   for i = 0 to len - 1 do
     let obj = match LargeArray.get mem i with
     | Struct (tag, blk) -> Obj.new_block tag (Array.length blk)
@@ -408,9 +408,9 @@ let instantiate (p, mem) =
   | Int n -> Obj.repr n
   | Ptr p -> LargeArray.get ans p
   | Atm tag -> Obj.new_block tag 0
-  | Fun _ -> assert false (** We shouldn't serialize closures *)
+  | Fun _ -> assert false (* We shouldn't serialize closures *)
   in
-  (** Second pass: set the pointers *)
+  (* Second pass: set the pointers *)
   for i = 0 to len - 1 do
     match LargeArray.get mem i with
     | Struct (_, blk) ->

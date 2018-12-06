@@ -50,7 +50,7 @@ let has_type : type a. Val.t -> a typed_abstract_argument_type -> bool = fun v w
   let Val.Dyn (t, _) = v in
   let t' = match val_tag wit with
   | Val.Base t' -> t'
-  | _ -> assert false (** not used in this module *)
+  | _ -> assert false (* not used in this module *)
   in
   match Val.eq t t' with
   | None -> false
@@ -68,13 +68,13 @@ let in_list tag v =
 let in_gen wit v =
   let t = match val_tag wit with
   | Val.Base t -> t
-  | _ -> assert false (** not used in this module *)
+  | _ -> assert false (* not used in this module *)
   in
   Val.Dyn (t, v)
 let out_gen wit v =
   let t = match val_tag wit with
   | Val.Base t -> t
-  | _ -> assert false (** not used in this module *)
+  | _ -> assert false (* not used in this module *)
   in
   match prj t v with None -> assert false | Some x -> x
 
@@ -585,8 +585,8 @@ let interp_pure_open_constr ist =
 let interp_typed_pattern ist env sigma (_,c,_) =
   let sigma, c =
     interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
-  (** FIXME: it is necessary to be unsafe here because of the way we handle
-      evars in the pretyper. Sometimes they get solved eagerly. *)
+  (* FIXME: it is necessary to be unsafe here because of the way we handle
+     evars in the pretyper. Sometimes they get solved eagerly. *)
   pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
 
 (* Interprets a constr expression *)
@@ -897,7 +897,7 @@ let interp_destruction_arg ist gl arg =
           end)
       in
       try
-        (** FIXME: should be moved to taccoerce *)
+        (* FIXME: should be moved to taccoerce *)
         let v = Id.Map.find id ist.lfun in
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
@@ -1020,7 +1020,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
   | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
   | TacArg {loc;v} -> interp_tacarg ist v
   | t ->
-    (** Delayed evaluation *)
+    (* Delayed evaluation *)
     Ftactic.return (of_tacvalue (VFun (UnnamedAppl,extract_trace ist, ist.lfun, [], t)))
   in
   let open Ftactic in
@@ -1396,12 +1396,12 @@ and interp_match_successes lz ist s =
         general
     | Select ->
       begin
-        (** Only keep the first matching result, we don't backtrack on it *)
+        (* Only keep the first matching result, we don't backtrack on it *)
         let s = Proofview.tclONCE s in
         s >>= fun ans -> interp_match_success ist ans
       end
     | Once ->
-        (** Once a tactic has succeeded, do not backtrack anymore *)
+        (* Once a tactic has succeeded, do not backtrack anymore *)
         Proofview.tclONCE general
 
 (* Interprets the Match expressions *)
@@ -1438,7 +1438,7 @@ and interp_match_goal ist lz lr lmr =
 (* Interprets extended tactic generic arguments *)
 and interp_genarg ist x : Val.t Ftactic.t =
     let open Ftactic.Notations in
-    (** Ad-hoc handling of some types. *)
+    (* Ad-hoc handling of some types. *)
     let tag = genarg_tag x in
     if argument_type_eq tag (unquote (topwit (wit_list wit_var))) then
       interp_genarg_var_list ist x

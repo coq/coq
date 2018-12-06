@@ -250,7 +250,7 @@ let invert_name labs l na0 env sigma ref = function
 		    let labs',ccl = decompose_lam sigma c in
 		    let _, l' = whd_betalet_stack sigma ccl in
 		    let labs' = List.map snd labs' in
-		    (** ppedrot: there used to be generic equality on terms here *)
+                    (* ppedrot: there used to be generic equality on terms here *)
                     let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
 		    if List.equal eq_constr labs' labs &&
                        List.equal eq_constr l l' then Some (minfxargs,ref)
@@ -450,7 +450,7 @@ let substl_checking_arity env subst sigma c =
      the other ones are replaced by the function symbol *)
   let rec nf_fix c = match EConstr.kind sigma c with
   | Evar (i,[|fx;f|]) when Evar.Map.mem i minargs ->
-    (** FIXME: find a less hackish way of doing this *)
+    (* FIXME: find a less hackish way of doing this *)
     begin match EConstr.kind sigma' c with
     | Evar _ -> f
     | c -> EConstr.of_kind c
@@ -943,7 +943,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
 	  | _ -> false) ->
         let npars = Projection.npars p in
           if List.length stack <= npars then
-	    (** Do not show the eta-expanded form *)
+            (* Do not show the eta-expanded form *)
 	    s'
 	  else redrec (applist (c, stack))
       | _ -> redrec (applist(c, stack)))
@@ -993,7 +993,7 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
-  (** FIXME: we do suspicious things with this evarmap *)
+  (* FIXME: we do suspicious things with this evarmap *)
   let evd = ref sigma in
   let rec traverse nested (env,c as envc) t =
     if nowhere_except_in && (!pos > maxocc) then (* Shortcut *) t

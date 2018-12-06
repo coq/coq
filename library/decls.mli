@@ -19,7 +19,7 @@ open Decl_kinds
 (** Registration and access to the table of variable *)
 
 type variable_data =
-  DirPath.t * bool (** opacity *) * Univ.ContextSet.t * polymorphic * logical_kind
+  DirPath.t * bool (* opacity *) * Univ.ContextSet.t * polymorphic * logical_kind
 
 val add_variable_data : variable -> variable_data -> unit
 val variable_path : variable -> DirPath.t

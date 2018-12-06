@@ -38,12 +38,15 @@ type subterm_unification_error = bool * position_reporting * position_reporting 
 type type_error = (constr, types) ptype_error
 
 type pretype_error =
-  (** Old Case *)
   | CantFindCaseType of constr
-  (** Type inference unification *)
+  (** Old Case *)
+
   | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
-  (** Tactic Unification *)
+  (** Type inference unification *)
+
   | UnifOccurCheck of Evar.t * constr
+  (** Tactic Unification *)
+
   | UnsolvableImplicit of Evar.t * Evd.unsolvability_explanation option
   | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr

@@ -1742,7 +1742,7 @@ let subst_one_var dep_proof_ok x =
       (* Find a non-recursive definition for x *)
       let res =
         try
-          (** [is_eq_x] ensures nf_evar on its side *)
+          (* [is_eq_x] ensures nf_evar on its side *)
           let hyps = Proofview.Goal.hyps gl in
           let test hyp _ = is_eq_x gl x hyp in
           Context.Named.fold_outside test ~init:() hyps;

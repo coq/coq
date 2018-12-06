@@ -183,7 +183,7 @@ let convert_gen pb x y =
     | Some sigma -> Proofview.Unsafe.tclEVARS sigma
     | None -> Tacticals.New.tclFAIL 0 (str "Not convertible")
     | exception _ ->
-      (** FIXME: Sometimes an anomaly is raised from conversion *)
+      (* FIXME: Sometimes an anomaly is raised from conversion *)
       Tacticals.New.tclFAIL 0 (str "Not convertible")
 end
 
@@ -241,7 +241,7 @@ let clear_gen fail = function
 | ids ->
   Proofview.Goal.enter begin fun gl ->
     let ids = List.fold_right Id.Set.add ids Id.Set.empty in
-    (** clear_hyps_in_evi does not require nf terms *)
+    (* clear_hyps_in_evi does not require nf terms *)
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
@@ -307,7 +307,7 @@ let rename_hyp repl =
       let concl = Proofview.Goal.concl gl in
       let env = Proofview.Goal.env gl in
       let sigma = Proofview.Goal.sigma gl in
-      (** Check that we do not mess variables *)
+      (* Check that we do not mess variables *)
       let fold accu decl = Id.Set.add (NamedDecl.get_id decl) accu in
       let vars = List.fold_left fold Id.Set.empty hyps in
       let () =
@@ -322,7 +322,7 @@ let rename_hyp repl =
           CErrors.user_err  (Id.print elt ++ str " is already used")
         with Not_found -> ()
       in
-      (** All is well *)
+      (* All is well *)
       let make_subst (src, dst) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
       let subst c = Vars.replace_vars subst c in
@@ -1235,7 +1235,7 @@ let cut c =
     let concl = Proofview.Goal.concl gl in
     let is_sort =
       try
-        (** Backward compat: ensure that [c] is well-typed. *)
+        (* Backward compat: ensure that [c] is well-typed. *)
         let typ = Typing.unsafe_type_of env sigma c in
         let typ = whd_all env sigma typ in
         match EConstr.kind sigma typ with
@@ -1245,7 +1245,7 @@ let cut c =
     in
     if is_sort then
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
-      (** Backward compat: normalize [c]. *)
+      (* Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Refine.refine ~typecheck:false begin fun h ->
         let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c (Vars.lift 1 concl)) in
@@ -1498,8 +1498,8 @@ let simplest_elim c = default_elim false None (c,NoBindings)
 *)
 
 let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
-  (** The evarmap of elimclause is assumed to be an extension of hypclause, so
-      we do not need to merge the universes coming from hypclause. *)
+  (* The evarmap of elimclause is assumed to be an extension of hypclause, so
+     we do not need to merge the universes coming from hypclause. *)
   try clenv_fchain ~with_univs:false ~flags mv elimclause hypclause
   with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
@@ -1909,7 +1909,7 @@ let exact_no_check c =
 let exact_check c =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
-  (** We do not need to normalize the goal because we just check convertibility *)
+  (* We do not need to normalize the goal because we just check convertibility *)
   let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
   let sigma, ct = Typing.type_of env sigma c in
@@ -2021,7 +2021,7 @@ let clear_body ids =
     let check =
       try
         let check (env, sigma, seen) decl =
-          (** Do no recheck hypotheses that do not depend *)
+          (* Do no recheck hypotheses that do not depend *)
           let sigma =
             if not seen then sigma
             else if List.exists (fun id -> occur_var_in_decl env sigma id decl) ids then
@@ -2848,7 +2848,7 @@ let generalize_dep ?(with_let=false) c =
   in
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
-  (** Check that the generalization is indeed well-typed *)
+  (* Check that the generalization is indeed well-typed *)
   let (evd, _) = Typing.type_of env evd cl'' in
   let args = Context.Named.to_instance mkVar to_quantify_rev in
   tclTHENLIST
@@ -3021,7 +3021,7 @@ let specialize (c,lbind) ipat =
 let unfold_body x =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
-  (** We normalize the given hypothesis immediately. *)
+  (* We normalize the given hypothesis immediately. *)
   let env = Proofview.Goal.env gl in
   let xval = match Environ.lookup_named x env with
   | LocalAssum _ -> user_err ~hdr:"unfold_body"

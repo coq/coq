@@ -255,8 +255,8 @@ object(self)
       let sentence = Doc.find document find in
       let mark = sentence.start in
       let iter = script#buffer#get_iter_at_mark mark in
-      (** Sentence starts tend to be at the end of a line, so we rather choose
-          the first non-line-ending position. *)
+      (* Sentence starts tend to be at the end of a line, so we rather choose
+         the first non-line-ending position. *)
       let rec sentence_start iter =
         if iter#ends_line then sentence_start iter#forward_line
         else iter

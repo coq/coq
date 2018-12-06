@@ -86,7 +86,7 @@ type evar_body =
 type evar_info = {
   evar_concl : econstr;
   (** Type of the evar. *)
-  evar_hyps : named_context_val; (** TODO econstr? *)
+  evar_hyps : named_context_val; (* TODO econstr? *)
   (** Context of the evar. *)
   evar_body : evar_body;
   (** Optional content of the evar. *)
@@ -546,6 +546,7 @@ val univ_flexible_alg : rigid
 type 'a in_evar_universe_context = 'a * UState.t
 
 val restrict_universe_context : evar_map -> Univ.LSet.t -> evar_map
+
 (** Raises Not_found if not a name for a universe in this map. *)
 val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 
@@ -567,6 +568,7 @@ val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option 
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
     not a local sort variable declared in [evm] *)
+
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
 (* val normalize_universe_level : evar_map -> Univ.Level.t -> Univ.Level.t *)

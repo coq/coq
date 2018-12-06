@@ -167,23 +167,23 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   cb, status, univs
 
 let refine_by_tactic env sigma ty tac =
-  (** Save the initial side-effects to restore them afterwards. We set the
-      current set of side-effects to be empty so that we can retrieve the
-      ones created during the tactic invocation easily. *)
+  (* Save the initial side-effects to restore them afterwards. We set the
+     current set of side-effects to be empty so that we can retrieve the
+     ones created during the tactic invocation easily. *)
   let eff = Evd.eval_side_effects sigma in
   let sigma = Evd.drop_side_effects sigma in
-  (** Save the existing goals *)
+  (* Save the existing goals *)
   let prev_future_goals = save_future_goals sigma in
-  (** Start a proof *)
+  (* Start a proof *)
   let prf = Proof.start sigma [env, ty] in
   let (prf, _) =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
-      (** Catch the inner error of the monad tactic *)
+      (* Catch the inner error of the monad tactic *)
       let (_, info) = CErrors.push src in
       iraise (e, info)
   in
-  (** Plug back the retrieved sigma *)
+  (* Plug back the retrieved sigma *)
   let (goals,stack,shelf,given_up,sigma) = Proof.proof prf in
   assert (stack = []);
   let ans = match Proof.initial_goals prf with
@@ -191,26 +191,26 @@ let refine_by_tactic env sigma ty tac =
   | _ -> assert false
   in
   let ans = EConstr.to_constr ~abort_on_undefined_evars:false sigma ans in
-  (** [neff] contains the freshly generated side-effects *)
+  (* [neff] contains the freshly generated side-effects *)
   let neff = Evd.eval_side_effects sigma in
-  (** Reset the old side-effects *)
+  (* Reset the old side-effects *)
   let sigma = Evd.drop_side_effects sigma in
   let sigma = Evd.emit_side_effects eff sigma in
-  (** Restore former goals *)
+  (* Restore former goals *)
   let sigma = restore_future_goals sigma prev_future_goals in
-  (** Push remaining goals as future_goals which is the only way we
-      have to inform the caller that there are goals to collect while
-      not being encapsulated in the monad *)
-  (** Goals produced by tactic "shelve" *)
+  (* Push remaining goals as future_goals which is the only way we
+     have to inform the caller that there are goals to collect while
+     not being encapsulated in the monad *)
+  (* Goals produced by tactic "shelve" *)
   let sigma = List.fold_right (Evd.declare_future_goal ~tag:Evd.ToShelve) shelf sigma in
-  (** Goals produced by tactic "give_up" *)
+  (* Goals produced by tactic "give_up" *)
   let sigma = List.fold_right (Evd.declare_future_goal ~tag:Evd.ToGiveUp) given_up sigma in
-  (** Other goals *)
+  (* Other goals *)
   let sigma = List.fold_right Evd.declare_future_goal goals sigma in
-  (** Get rid of the fresh side-effects by internalizing them in the term
-      itself. Note that this is unsound, because the tactic may have solved
-      other goals that were already present during its invocation, so that
-      those goals rely on effects that are not present anymore. Hopefully,
-      this hack will work in most cases. *)
+  (* Get rid of the fresh side-effects by internalizing them in the term
+     itself. Note that this is unsound, because the tactic may have solved
+     other goals that were already present during its invocation, so that
+     those goals rely on effects that are not present anymore. Hopefully,
+     this hack will work in most cases. *)
   let ans = Safe_typing.inline_private_constants_in_constr env ans neff in
   ans, sigma

@@ -95,11 +95,11 @@ let typecheck_arity env params inds =
 (* Check that the subtyping information inferred for inductive types in the block is correct. *)
 (* This check produces a value of the unit type if successful or raises an anomaly if check fails. *)
 let check_subtyping cumi paramsctxt env arities =
-    let numparams = Context.Rel.nhyps paramsctxt in
-  (** In [env] we already have [ Var(0) ... Var(n-1) |- cst ] available.
-      We must produce the substitution σ : [ Var(i) -> Var (i + n) | 0 <= i < n]
-      and push the constraints [ Var(n) ... Var(2n - 1) |- cst{σ} ], together
-      with the cumulativity constraints [ cumul_cst ]. *)
+  let numparams = Context.Rel.nhyps paramsctxt in
+  (* In [env] we already have [ Var(0) ... Var(n-1) |- cst ] available.
+     We must produce the substitution σ : [ Var(i) -> Var (i + n) | 0 <= i < n]
+     and push the constraints [ Var(n) ... Var(2n - 1) |- cst{σ} ], together
+     with the cumulativity constraints [ cumul_cst ]. *)
   let uctx = ACumulativityInfo.univ_context cumi in
   let len = AUContext.size uctx in
   let inst = Instance.of_array @@ Array.init len (fun i -> Level.var (i + len)) in
@@ -238,7 +238,7 @@ let check_inductive env kn mib =
       let uctx = Univ.AUContext.repr (Univ.ACumulativityInfo.univ_context cumi) in
       Environ.push_context uctx env
   in
-  (** Locally set the oracle for further typechecking *)
+  (* Locally set the oracle for further typechecking *)
   let env0 = Environ.set_oracle env0 mib.mind_typing_flags.conv_oracle in
   (* check mind_record : TODO ? check #constructor = 1 ? *)
   (* check mind_finite : always OK *)

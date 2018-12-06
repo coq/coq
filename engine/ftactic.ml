@@ -29,8 +29,8 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
 | Depends l ->
   let f arg = f arg >>= function
   | Uniform x ->
-    (** We dispatch the uniform result on each goal under focus, as we know
-        that the [m] argument was actually dependent. *)
+    (* We dispatch the uniform result on each goal under focus, as we know
+       that the [m] argument was actually dependent. *)
     Proofview.Goal.goals >>= fun goals ->
     let ans = List.map (fun g -> (g,x)) goals in
     Proofview.tclUNIT ans

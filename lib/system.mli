@@ -102,6 +102,7 @@ type time
 
 val get_time : unit -> time
 val time_difference : time -> time -> float (** in seconds *)
+
 val fmt_time_difference : time -> time -> Pp.t
 
 val with_time : batch:bool -> ('a -> 'b) -> 'a -> 'b

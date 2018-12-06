@@ -1,4 +1,4 @@
-FLG -rectypes -thread -safe-string -w +a-4-44-50
+FLG -rectypes -thread -safe-string -w +a-4-44
 
 S ../clib
 B ../clib

@@ -45,13 +45,15 @@ type var_internalization_type =
 
 type var_internalization_data =
     var_internalization_type *
-      (** type of the "free" variable, for coqdoc, e.g. while typing the
-	  constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
+      (* type of the "free" variable, for coqdoc, e.g. while typing the
+         constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
+
     Id.t list *
-      (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
-          in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
-    Impargs.implicit_status list * (** signature of impargs of the variable *)
-    Notation_term.scope_name option list (** subscopes of the args of the variable *)
+      (* impargs to automatically add to the variable, e.g. for "JMeq A a B b"
+         in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
+
+    Impargs.implicit_status list * (* signature of impargs of the variable *)
+    Notation_term.scope_name option list (* subscopes of the args of the variable *)
 
 (** A map of free variables to their implicit arguments and scopes *)
 type internalization_env = var_internalization_data Id.Map.t

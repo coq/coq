@@ -210,9 +210,9 @@ let fresh_key =
     let lbl = Id.of_string ("_" ^ string_of_int cur) in
     let kn = Lib.make_kn lbl in
     let (mp, _) = KerName.repr kn in
-    (** We embed the full path of the kernel name in the label so that the
-        identifier should be unique. This ensures that including two modules
-        together won't confuse the corresponding labels. *)
+    (* We embed the full path of the kernel name in the label so that
+       the identifier should be unique. This ensures that including
+       two modules together won't confuse the corresponding labels. *)
     let lbl = Id.of_string_soft (Printf.sprintf "%s#%i"
       (ModPath.to_string mp) cur)
     in
@@ -558,7 +558,7 @@ struct
   let realize_tac secvars (id,tac) =
     if Id.Pred.subset tac.secvars secvars then Some tac
     else
-      (** Warn about no longer typable hint? *)
+      (* Warn about no longer typable hint? *)
       None
 
   let head_evar sigma c =
@@ -601,7 +601,7 @@ struct
     let se = find k db in
     merge_entry secvars db se.sentry_nopat se.sentry_pat
 	
-  (** Precondition: concl has no existentials *)
+  (* Precondition: concl has no existentials *)
   let map_auto sigma ~secvars (k,args) concl db =
     let se = find k db in
     let st = if db.use_dn then  (Some db.hintdb_state) else None in
@@ -644,7 +644,7 @@ struct
       | None ->
           let is_present (_, (_, v')) = KerName.equal v.code.uid v'.code.uid in
 	  if not (List.exists is_present db.hintdb_nopat) then
-	    (** FIXME *)
+            (* FIXME *)
 	    { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
 	  else db
       | Some gr ->
@@ -738,7 +738,6 @@ module Hintdbmap = String.Map
 type hint_db = Hint_db.t
 
 (** Initially created hint databases, for typeclasses and rewrite *)
-
 let typeclasses_db = "typeclass_instances"
 let rewrite_db = "rewrite"
 
@@ -1586,7 +1585,7 @@ let log_hint h =
   let store = get_extra_data sigma in
   match Store.get store hint_trace with
   | None ->
-    (** All calls to hint logging should be well-scoped *)
+    (* All calls to hint logging should be well-scoped *)
     assert false
   | Some trace ->
     let trace = KNmap.add h.uid h trace in

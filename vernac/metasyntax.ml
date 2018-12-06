@@ -1467,7 +1467,7 @@ let add_notation_in_scope local df env c mods scope =
     notobj_local = local;
     notobj_scope = scope;
     notobj_interp = (List.map_filter map i_vars, ac);
-    (** Order is important here! *)
+    (* Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_coercion = coe;
     notobj_onlyprint = sd.only_printing;
@@ -1486,7 +1486,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
   let level, i_typs, onlyprint = if not (is_numeral symbs) then begin
     let sy = recover_notation_syntax (make_notation_key InConstrEntrySomeLevel symbs) in
     let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
-    (** If the only printing flag has been explicitly requested, put it back *)
+    (* If the only printing flag has been explicitly requested, put it back *)
     let onlyprint = onlyprint || sy.synext_notgram.notgram_onlyprinting in
     let _,_,_,typs = sy.synext_level in
     Some sy.synext_level, typs, onlyprint
@@ -1507,7 +1507,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
     notobj_local = local;
     notobj_scope = scope;
     notobj_interp = (List.map_filter map i_vars, ac);
-    (** Order is important here! *)
+    (* Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_coercion = coe;
     notobj_onlyprint = onlyprint;

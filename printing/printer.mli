@@ -112,6 +112,7 @@ val pr_pconstructor : env -> evar_map -> pconstructor -> Pp.t
 
 
 (** Contexts *)
+
 (** Display compact contexts of goals (simple hyps on the same line) *)
 val set_compact_context : bool -> unit
 val get_compact_context : unit -> bool

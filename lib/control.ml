@@ -62,8 +62,8 @@ let windows_timeout n f x e =
     let res = f x in
     let () = killed := true in
     let cur = Unix.gettimeofday () in
-    (** The thread did not interrupt, but the computation took longer than
-        expected. *)
+    (* The thread did not interrupt, but the computation took longer than
+       expected. *)
     let () = if float_of_int n <= cur -. init then begin
       exited := true;
       raise Sys.Break
@@ -71,7 +71,7 @@ let windows_timeout n f x e =
     res
   with
   | Sys.Break ->
-    (** Just in case, it could be a regular Ctrl+C *)
+    (* Just in case, it could be a regular Ctrl+C *)
     if not !exited then begin killed := true; raise Sys.Break end
     else raise e
   | e ->

@@ -78,6 +78,7 @@ val interp_fixpoint :
   (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Registering fixpoints and cofixpoints in the environment *)
+
 (** [Not used so far] *)
 val declare_fixpoint :
   locality -> polymorphic ->

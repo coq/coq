@@ -194,6 +194,7 @@ val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> c
 
 (** [do_once r f] calls [f] and updates the ref only once *)
 val do_once : 'a option ref -> (unit -> 'a) -> unit
+
 (** [assert_done r] return the content of r. @raise Anomaly is r is [None] *)
 val assert_done : 'a option ref -> 'a
 

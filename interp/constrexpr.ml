@@ -80,8 +80,8 @@ type cases_pattern_expr_r =
 and cases_pattern_expr = cases_pattern_expr_r CAst.t
 
 and cases_pattern_notation_substitution =
-    cases_pattern_expr list *     (** for constr subterms *)
-    cases_pattern_expr list list  (** for recursive notations *)
+    cases_pattern_expr list *     (* for constr subterms *)
+    cases_pattern_expr list list  (* for recursive notations *)
 
 and constr_expr_r =
   | CRef     of qualid * instance_expr option
@@ -142,10 +142,10 @@ and local_binder_expr =
   | CLocalPattern of (cases_pattern_expr * constr_expr option) CAst.t
 
 and constr_notation_substitution =
-    constr_expr list *      (** for constr subterms *)
-    constr_expr list list * (** for recursive notations *)
-    cases_pattern_expr list *   (** for binders *)
-    local_binder_expr list list (** for binder lists (recursive notations) *)
+    constr_expr list *      (* for constr subterms *)
+    constr_expr list list * (* for recursive notations *)
+    cases_pattern_expr list *   (* for binders *)
+    local_binder_expr list list (* for binder lists (recursive notations) *)
 
 type constr_pattern_expr = constr_expr
 

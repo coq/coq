@@ -374,7 +374,7 @@ let decompose_projection sigma c args =
   match EConstr.kind sigma c with
   | Const (c, u) ->
      let n = find_projection_nparams (ConstRef c) in
-     (** Check if there is some canonical projection attached to this structure *)
+     (* Check if there is some canonical projection attached to this structure *)
      let _ = GlobRef.Map.find (ConstRef c) !object_table in
      let arg = Stack.nth args n in
      arg

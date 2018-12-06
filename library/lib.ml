@@ -481,8 +481,8 @@ let named_of_variable_context =
   List.map fst
 
 let name_instance inst =
-  (** FIXME: this should probably be done at an upper level, by storing the
-      name information in the section data structure. *)
+  (* FIXME: this should probably be done at an upper level, by storing the
+     name information in the section data structure. *)
   let map lvl = match Univ.Level.name lvl with
     | None -> (* Having Prop/Set/Var as section universes makes no sense *)
       assert false
@@ -491,8 +491,8 @@ let name_instance inst =
         let qid = Nametab.shortest_qualid_of_universe na in
         Name (Libnames.qualid_basename qid)
       with Not_found ->
-        (** Best-effort naming from the string representation of the level.
-            See univNames.ml for a similar hack. *)
+        (* Best-effort naming from the string representation of the level.
+           See univNames.ml for a similar hack. *)
         Name (Id.of_string_soft (Univ.Level.to_string lvl))
   in
   Array.map map (Univ.Instance.to_array inst)

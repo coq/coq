@@ -78,16 +78,20 @@ type option_state = {
 }
 
 type search_constraint =
-(** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
 | Name_Pattern of string
-(** Whether the object type satisfies a pattern *)
+(** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
+
 | Type_Pattern of string
-(** Whether some subtype of object type satisfies a pattern *)
+(** Whether the object type satisfies a pattern *)
+
 | SubType_Pattern of string
-(** Whether the object pertains to a module *)
+(** Whether some subtype of object type satisfies a pattern *)
+
 | In_Module of string list
-(** Bypass the Search blacklist *)
+(** Whether the object pertains to a module *)
+
 | Include_Blacklist
+(** Bypass the Search blacklist *)
 
 (** A list of search constraints; the boolean flag is set to [false] whenever
     the flag should be negated. *)

@@ -155,7 +155,7 @@ let is_ground_env = memo is_ground_env
 exception NoHeadEvar
 
 let head_evar sigma c =
-  (** FIXME: this breaks if using evar-insensitive code *)
+  (* FIXME: this breaks if using evar-insensitive code *)
   let c = EConstr.Unsafe.to_constr c in
   let rec hrec c = match kind c with
     | Evar (evk,_)   -> evk
@@ -288,7 +288,7 @@ let empty_csubst = {
 }
 
 let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
-  (** Safe because this is a substitution *)
+  (* Safe because this is a substitution *)
   let c = EConstr.Unsafe.to_constr c in
   let rec subst n c = match Constr.kind c with
   | Rel m ->
@@ -318,7 +318,7 @@ let update_var src tgt subst =
   in
   match cur with
   | None ->
-    (** Missing keys stand for identity substitution [src ↦ src] *)
+    (* Missing keys stand for identity substitution [src ↦ src] *)
     let csubst_var = Id.Map.add src (Constr.mkVar tgt) subst.csubst_var in
     let csubst_rev = Id.Map.add tgt (SVar src) subst.csubst_rev in
     { subst with csubst_var; csubst_rev }
@@ -366,8 +366,8 @@ let push_rel_decl_to_named_context
         about this whole name generation problem. *)
     if Flags.is_program_mode () then next_name_away na avoid
     else
-      (** id_of_name_using_hdchar only depends on the rel context which is empty
-          here *)
+      (* id_of_name_using_hdchar only depends on the rel context which is empty
+         here *)
       next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid
   in
   match extract_if_neq id na with
@@ -540,8 +540,8 @@ let restrict_evar evd evk filter ?src candidates =
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
   | _ ->
      let evd, evk' = Evd.restrict evk filter ?candidates ?src evd in
-     (** Mark new evar as future goal, removing previous one,
-         circumventing Proofview.advance but making Proof.run_tactic catch these. *)
+     (* Mark new evar as future goal, removing previous one,
+        circumventing Proofview.advance but making Proof.run_tactic catch these. *)
      let future_goals = Evd.save_future_goals evd in
      let future_goals = Evd.filter_future_goals (fun evk' -> not (Evar.equal evk evk')) future_goals in
      let evd = Evd.restore_future_goals evd future_goals in
@@ -779,7 +779,7 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   let r =
     try Id.Map.find id cache.cache
     with Not_found ->
-      (** Dummy value *)
+      (* Dummy value *)
       let r = ref (NamedDecl.LocalAssum (id, EConstr.mkProp), Evar.Set.empty) in
       let () = cache.cache <- Id.Map.add id r cache.cache in
       r

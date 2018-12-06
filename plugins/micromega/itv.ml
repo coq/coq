@@ -11,10 +11,11 @@
 (** Intervals (extracted from mfourier.ml) *)
 
 open Num
+
   (** The type of intervals is *)
   type interval = num option * num option
-      (** None models the absence of bound i.e. infinity *)
-      (** As a result,
+      (** None models the absence of bound i.e. infinity
+          As a result,
           - None , None   -> \]-oo,+oo\[
           - None , Some v -> \]-oo,v\]
           - Some v, None  -> \[v,+oo\[

@@ -107,6 +107,7 @@ module type NAMETREE = sig
   val user_name : qualid -> t -> user_name
   val shortest_qualid : ?loc:Loc.t -> Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
+
   (** Matches a prefix of [qualid], useful for completion *)
   val match_prefixes : qualid -> t -> elt list
 end

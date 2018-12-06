@@ -605,12 +605,12 @@ let print_evar_constraints gl sigma =
     let t1 = Evarutil.nf_evar sigma t1
     and t2 = Evarutil.nf_evar sigma t2 in
     let env =
-      (** We currently allow evar instances to refer to anonymous de Bruijn
-          indices, so we protect the error printing code in this case by giving
-          names to every de Bruijn variable in the rel_context of the conversion
-          problem. MS: we should rather stop depending on anonymous variables, they
-          can be used to indicate independency. Also, this depends on a strategy for 
-          naming/renaming *)
+      (* We currently allow evar instances to refer to anonymous de Bruijn
+         indices, so we protect the error printing code in this case by giving
+         names to every de Bruijn variable in the rel_context of the conversion
+         problem. MS: we should rather stop depending on anonymous variables, they
+         can be used to indicate independency. Also, this depends on a strategy for
+         naming/renaming *)
       Namegen.make_all_name_different env sigma in
     str" " ++
       hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
@@ -686,7 +686,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     | None -> GoalMap.empty
   in
 
-  (** Printing functions for the extra informations. *)
+  (* Printing functions for the extra informations. *)
   let rec print_stack a = function
     | [] -> Pp.int a
     | b::l -> Pp.int a ++ str"-" ++ print_stack b l
@@ -753,7 +753,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     | None -> ()
   in
 
-  (** Main function *)
+  (* Main function *)
   match goals with
   | [] ->
       begin

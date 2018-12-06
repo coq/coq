@@ -76,7 +76,7 @@ let shrink_entry sign const =
   | None -> assert false
   | Some t -> t
   in
-  (** The body has been forced by the call to [build_constant_by_tactic] *)
+  (* The body has been forced by the call to [build_constant_by_tactic] *)
   let () = assert (Future.is_over const.const_entry_body) in
   let ((body, uctx), eff) = Future.force const.const_entry_body in
   let (body, typ, ctx) = decompose (List.length sign) body typ [] in
@@ -140,18 +140,18 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
   let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
   let cst () =
-    (** do not compute the implicit arguments, it may be costly *)
+    (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
-    (** ppedrot: seems legit to have abstracted subproofs as local*)
+    (* ppedrot: seems legit to have abstracted subproofs as local*)
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
   let cst = Impargs.with_implicit_protection cst () in
   let inst = match const.Entries.const_entry_universes with
   | Entries.Monomorphic_const_entry _ -> EInstance.empty
   | Entries.Polymorphic_const_entry (_, ctx) ->
-    (** We mimick what the kernel does, that is ensuring that no additional
-        constraints appear in the body of polymorphic constants. Ideally this
-        should be enforced statically. *)
+    (* We mimick what the kernel does, that is ensuring that no additional
+       constraints appear in the body of polymorphic constants. Ideally this
+       should be enforced statically. *)
     let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
     EInstance.make (Univ.UContext.instance ctx)

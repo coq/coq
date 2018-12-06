@@ -92,7 +92,7 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   | None -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
   | Some decl -> Option.iter (fun state -> decl.unfreeze_function state) ml_module
   end;
-  (** We must be independent on the order of the map! *)
+  (* We must be independent on the order of the map! *)
   let ufz name decl =
     try decl.unfreeze_function String.Map.(find name summaries)
     with Not_found ->

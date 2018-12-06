@@ -190,12 +190,18 @@ val build_bool_type : coq_bool_data delayed
 val build_prod : coq_sigma_data delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
 
-val build_coq_eq       : GlobRef.t delayed (** = [(build_coq_eq_data()).eq] *)
+val build_coq_eq       : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
-val build_coq_eq_refl  : GlobRef.t delayed (** = [(build_coq_eq_data()).refl] *)
+(** = [(build_coq_eq_data()).eq] *)
+
+val build_coq_eq_refl  : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
-val build_coq_eq_sym   : GlobRef.t delayed (** = [(build_coq_eq_data()).sym] *)
+(** = [(build_coq_eq_data()).refl] *)
+
+val build_coq_eq_sym   : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
+(** = [(build_coq_eq_data()).sym] *)
+
 val build_coq_f_equal2 : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
 
@@ -222,8 +228,8 @@ val build_coq_inversion_eq_true_data : coq_inversion_data delayed
 val build_coq_sumbool : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]
 
-(** {6 ... } *)
-(** Connectives
+(** {6 ... }
+   Connectives
    The False proposition *)
 val build_coq_False : GlobRef.t delayed
 [@@ocaml.deprecated "Please use Coqlib.lib_ref"]

@@ -37,8 +37,8 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 let empty_binders = Id.Map.empty
 
 let name_universe lvl =
-  (** Best-effort naming from the string representation of the level. This is
-      completely hackish and should be solved in upper layers instead. *)
+  (* Best-effort naming from the string representation of the level. This is
+     completely hackish and should be solved in upper layers instead. *)
   Id.of_string_soft (Level.to_string lvl)
 
 let compute_instance_binders inst ubinders =

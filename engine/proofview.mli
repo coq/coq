@@ -398,6 +398,7 @@ val tclPROGRESS : 'a tactic -> 'a tactic
 val tclCHECKINTERRUPT : unit tactic
 
 exception Timeout
+
 (** [tclTIMEOUT n t] can have only one success.
     In case of timeout if fails with [tclZERO Timeout]. *)
 val tclTIMEOUT : int -> 'a tactic -> 'a tactic
@@ -517,8 +518,8 @@ module Goal : sig
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
   val enter : (t -> unit tactic) -> unit tactic
 
-  (** Like {!enter}, but assumes exactly one goal under focus, raising *)
-  (** a fatal error otherwise. *)
+  (** Like {!enter}, but assumes exactly one goal under focus, raising
+      a fatal error otherwise. *)
   val enter_one : ?__LOC__:string -> (t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.
@@ -612,8 +613,10 @@ module Notations : sig
 
   (** {!tclBIND} *)
   val (>>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
+
   (** {!tclTHEN} *)
   val (<*>) : unit tactic -> 'a tactic -> 'a tactic
+
   (** {!tclOR}: [t1+t2] = [tclOR t1 (fun _ -> t2)]. *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 

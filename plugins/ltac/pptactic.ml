@@ -235,8 +235,8 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
     | TacTerm s :: l ->
-      (** First terminal token should be considered as the name of the tactic,
-          so we tag it differently than the other terminal tokens. *)
+      (* First terminal token should be considered as the name of the tactic,
+         so we tag it differently than the other terminal tokens. *)
       primitive s :: tacarg_using_rule_token pr_gen l
     | _ -> tacarg_using_rule_token pr_gen l
     in
@@ -1180,7 +1180,7 @@ let pr_goal_selector ~toplevel s =
         pr_constant = pr_evaluable_reference_env env;
         pr_reference = pr_located pr_ltac_constant;
         pr_name = pr_id;
-        (** Those are not used by the atomic printer *)
+        (* Those are not used by the atomic printer *)
         pr_generic = (fun _ -> assert false);
         pr_extend = (fun _ _ _ -> assert false);
         pr_alias = (fun _ _ _ -> assert false);

@@ -56,7 +56,7 @@ let load_constant i ((sp,kn), obj) =
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn), obj) =
-  (** Never open a local definition *)
+  (* Never open a local definition *)
   if obj.cst_locl then ()
   else
     let con = Global.constant_of_delta_kn kn in
@@ -166,9 +166,9 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
         export_seff ||
         not de.const_entry_opaque ||
         is_poly de ->
-      (** This globally defines the side-effects in the environment. We mark
-          exported constants as being side-effect not to redeclare them at
-          caching time. *)
+      (* This globally defines the side-effects in the environment. We mark
+         exported constants as being side-effect not to redeclare them at
+         caching time. *)
       let de, export = Global.export_private_constants ~in_section de in
       export, ConstantEntry (PureEntry, DefinitionEntry de)
     | _ -> [], ConstantEntry (EffectEntry, cd)
@@ -191,7 +191,6 @@ let declare_definition ?(internal=UserIndividualRequest)
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of section variables and local definitions *)
-
 type section_variable_entry =
   | SectionLocalDef of Safe_typing.private_constants definition_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
@@ -214,16 +213,16 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       let (de, eff) = Global.export_private_constants ~in_section:true de in
       let () = List.iter register_side_effect eff in
-      (** The body should already have been forced upstream because it is a
-          section-local definition, but it's not enforced by typing *)
+      (* The body should already have been forced upstream because it is a
+         section-local definition, but it's not enforced by typing *)
       let (body, uctx), () = Future.force de.const_entry_body in
       let poly, univs = match de.const_entry_universes with
       | Monomorphic_const_entry uctx -> false, uctx
       | Polymorphic_const_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
       let univs = Univ.ContextSet.union uctx univs in
-      (** We must declare the universe constraints before type-checking the
-          term. *)
+      (* We must declare the universe constraints before type-checking the
+         term. *)
       let () = Global.push_context_set (not poly) univs in
       let se = {
         secdef_body = body;
@@ -262,7 +261,6 @@ let declare_variable id obj =
   oname
 
 (** Declaration of inductive blocks *)
-
 let declare_inductive_argument_scopes kn mie =
   List.iteri (fun i {mind_entry_consnames=lc} ->
     Notation.declare_ref_arguments_scope Evd.empty (IndRef (kn,i));
@@ -360,7 +358,7 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
   let id = Label.to_id label in
   let univs = match univs with
     | Monomorphic_ind_entry _ ->
-      (** Global constraints already defined through the inductive *)
+      (* Global constraints already defined through the inductive *)
       Monomorphic_const_entry Univ.ContextSet.empty
     | Polymorphic_ind_entry (nas, ctx) ->
       Polymorphic_const_entry (nas, ctx)
@@ -511,7 +509,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       load_function = load_univ_names;
       open_function = open_univ_names;
       discharge_function = discharge_univ_names;
-      subst_function = (fun (subst, a) -> (** Actually the name is generated once and for all. *) a);
+      subst_function = (fun (subst, a) -> (* Actually the name is generated once and for all. *) a);
       classify_function = (fun a -> Substitute a) }
 
 let declare_univ_binders gr pl =

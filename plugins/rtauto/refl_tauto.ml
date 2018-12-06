@@ -131,7 +131,7 @@ let rec make_hyps atom_env gls lenv = function
   | LocalAssum (id,typ)::rest ->
       let hrec=
 	make_hyps atom_env gls (typ::lenv) rest in
-	if List.exists (fun c -> Termops.local_occur_var Evd.empty (** FIXME *) id c) lenv ||
+        if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id c) lenv ||
 	  (Retyping.get_sort_family_of
 	     (pf_env gls) (Tacmach.project gls) typ != InProp)
 	then

@@ -132,7 +132,7 @@ let add_mllib_known, _, search_mllib_known = mkknown ()
 let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
 let vKnown = (Hashtbl.create 19 : (string list, string * bool) Hashtbl.t)
-(** The associated boolean is true if this is a root path. *)
+(* The associated boolean is true if this is a root path. *)
 let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
 
 let get_prefix p l =

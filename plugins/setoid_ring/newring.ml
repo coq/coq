@@ -194,12 +194,12 @@ let exec_tactic env evd n f args =
   in
   let (_, args, lfun) = List.fold_right fold args (0, [], Id.Map.empty) in
   let ist = { (Tacinterp.default_ist ()) with Tacinterp.lfun = lfun; } in
-  (** Build the getter *)
+  (* Build the getter *)
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let n = Genarg.in_gen (Genarg.glbwit Stdarg.wit_int) n in
   let get_res = TacML (CAst.make (get_res, [TacGeneric n])) in
   let getter = Tacexp (TacFun (List.map (fun n -> Name n) lid, get_res)) in
-  (** Evaluate the whole result *)
+  (* Evaluate the whole result *)
   let gl = dummy_goal env evd in
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd = Evd.minimize_universes (Refiner.project gls) in
