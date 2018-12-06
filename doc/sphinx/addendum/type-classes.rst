@@ -228,6 +228,8 @@ mechanism if available, as shown in the example.
 Substructures
 ~~~~~~~~~~~~~
 
+.. index:: :> (substructure)
+
 Substructures are components of a class which are instances of a class
 themselves. They often arise when using classes for logical
 properties, e.g.:
