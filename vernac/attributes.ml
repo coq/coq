@@ -78,14 +78,6 @@ type deprecation = { since : string option ; note : string option }
 let mk_deprecation ?(since=None) ?(note=None) () =
   { since ; note }
 
-type t = {
-  locality : bool option;
-  polymorphic : bool;
-  template : bool option;
-  program : bool;
-  deprecated : deprecation option;
-}
-
 let assert_empty k v =
   if v <> VernacFlagEmpty
   then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
@@ -181,10 +173,9 @@ let polymorphic_nowarn =
   universe_transform ~warn_unqualified:false >>
   qualify_attribute ukey polymorphic_base
 
-let universe_poly_template =
-  let template = bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate" in
+let template =
   universe_transform ~warn_unqualified:true >>
-  qualify_attribute ukey (polymorphic_base ++ template)
+  qualify_attribute ukey (bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate")
 
 let polymorphic =
   universe_transform ~warn_unqualified:true >>
@@ -206,12 +197,6 @@ let deprecation_parser : deprecation key_parser = fun orig args ->
   |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]
-
-let attributes_of_flags f =
-  let ((locality, deprecated), (polymorphic, template)), program =
-    parse (locality ++ deprecation ++ universe_poly_template ++ program) f
-  in
-  { polymorphic; program; locality; template; deprecated }
 
 let only_locality atts = parse locality atts
 
