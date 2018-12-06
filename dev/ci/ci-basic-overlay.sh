@@ -13,6 +13,10 @@
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
+: "${fourcolor_CI_REF:=master}"
+: "${fourcolor_CI_GITURL:=https://github.com/math-comp/fourcolor}"
+: "${fourcolor_CI_ARCHIVEURL:=${fourcolor_CI_GITURL}/archive}"
+
 : "${oddorder_CI_REF:=master}"
 : "${oddorder_CI_GITURL:=https://github.com/math-comp/odd-order}"
 : "${oddorder_CI_ARCHIVEURL:=${oddorder_CI_GITURL}/archive}"

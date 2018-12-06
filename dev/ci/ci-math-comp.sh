@@ -8,6 +8,10 @@ git_download mathcomp
 
 ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && make && make install )
 
+git_download fourcolor
+
+( cd "${CI_BUILD_DIR}/fourcolor" && make && make install )
+
 git_download oddorder
 
 ( cd "${CI_BUILD_DIR}/oddorder" && make )
