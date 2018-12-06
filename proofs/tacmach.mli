@@ -12,7 +12,6 @@ open Names
 open Constr
 open Environ
 open EConstr
-open Redexpr
 open Locus
 
 (** Operations for handling terms under a local typing context. *)
@@ -43,9 +42,6 @@ val pf_get_hyp            : Goal.goal sigma -> Id.t -> named_declaration
 val pf_get_hyp_typ        : Goal.goal sigma -> Id.t -> types
 
 val pf_get_new_id         : Id.t -> Goal.goal sigma -> Id.t
-
-val pf_reduction_of_red_expr : Goal.goal sigma -> red_expr -> constr -> evar_map * constr
-
 
 val pf_apply : (env -> evar_map -> 'a) -> Goal.goal sigma -> 'a
 val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) -> 

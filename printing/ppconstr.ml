@@ -14,7 +14,6 @@ open Util
 open Pp
 open CAst
 open Names
-open Nameops
 open Libnames
 open Pputils
 open Ppextend
@@ -229,20 +228,6 @@ let tag_var = tag Tag.variable
   let pr_opt_type_spc pr = function
     | { CAst.v = CHole (_,IntroAnonymous,_) } -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
-
-  let pr_lident {loc; v=id} =
-    match loc with
-    | None     -> pr_id id
-    | Some loc -> let (b,_) = Loc.unloc loc in
-                  pr_located pr_id (Some (Loc.make_loc (b,b + String.length (Id.to_string id))), id)
-
-  let pr_lname = function
-    | {CAst.loc; v=Name id} -> pr_lident CAst.(make ?loc id)
-    | x -> pr_ast Name.print x
-
-  let pr_or_var pr = function
-    | Locus.ArgArg x -> pr x
-    | Locus.ArgVar id -> pr_lident id
 
   let pr_prim_token = function
     | Numeral (n,s) -> str (if s then n else "-"^n)

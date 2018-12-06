@@ -20,7 +20,7 @@ open Locus
 
 type red_expr =
     (constr, evaluable_global_reference, constr_pattern) red_expr_gen
- 
+
 val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
 
 val reduction_of_red_expr :

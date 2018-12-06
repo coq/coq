@@ -63,3 +63,17 @@ type r_pat = constr_pattern_expr
 type r_cst = qualid or_by_notation
 
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
+
+let make0 ?dyn name =
+  let wit = Genarg.make0 name in
+  let () = Geninterp.register_val0 wit dyn in
+  wit
+
+type 'a and_short_name = 'a * Names.lident option
+
+let wit_red_expr :
+  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
+   (Genintern.glob_constr_and_expr,Names.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
+   (EConstr.t,Names.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
+    Genarg.genarg_type =
+  make0 "redexpr"

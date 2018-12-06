@@ -74,13 +74,13 @@ let set_strategy_one ref l  =
         Csymtable.set_opaque_const sp
     | ConstKey sp, _ ->
         let cb = Global.lookup_constant sp in
-	(match cb.const_body with
-	  | OpaqueDef _ ->
+        (match cb.const_body with
+          | OpaqueDef _ ->
             user_err ~hdr:"set_transparent_const"
               (str "Cannot make" ++ spc () ++
                  Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef sp) ++
-		 spc () ++ str "transparent because it was declared opaque.");
-	  | _ -> Csymtable.set_transparent_const sp)
+                 spc () ++ str "transparent because it was declared opaque.");
+          | _ -> Csymtable.set_transparent_const sp)
     | _ -> ()
 
 let cache_strategy (_,str) =
@@ -126,10 +126,10 @@ type strategy_obj =
 let inStrategy : strategy_obj -> obj =
   declare_object {(default_object "STRATEGY") with
                     cache_function = (fun (_,obj) -> cache_strategy obj);
-		    load_function = (fun _ (_,obj) -> cache_strategy obj);
-		    subst_function = subst_strategy;
+                    load_function = (fun _ (_,obj) -> cache_strategy obj);
+                    subst_function = subst_strategy;
                     discharge_function = discharge_strategy;
-		    classify_function = classify_strategy }
+                    classify_function = classify_strategy }
 
 
 let set_strategy local str =
@@ -154,16 +154,16 @@ let make_flag env f =
   let red =
     if f.rDelta then (* All but rConst *)
         let red = red_add red fDELTA in
-        let red = red_add_transparent red 
+        let red = red_add_transparent red
                     (Conv_oracle.get_transp_state (Environ.oracle env)) in
-	List.fold_right
-	  (fun v red -> red_sub red (make_flag_constant v))
-	  f.rConst red
+        List.fold_right
+          (fun v red -> red_sub red (make_flag_constant v))
+          f.rConst red
     else (* Only rConst *)
         let red = red_add_transparent (red_add red fDELTA) TransparentState.empty in
-	List.fold_right
-	  (fun v red -> red_add red (make_flag_constant v))
-	  f.rConst red
+        List.fold_right
+          (fun v red -> red_add red (make_flag_constant v))
+          f.rConst red
   in red
 
 (* table of custom reductino fonctions, not synchronized,
@@ -234,7 +234,7 @@ let reduction_of_red_expr env =
      let am = if !simplIsCbn then strong_cbn (make_flag f) else simpl in
      let () =
        if not (!simplIsCbn || List.is_empty f.rConst) then
-	 warn_simpl_unfolding_modifiers () in
+         warn_simpl_unfolding_modifiers () in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)
   | Cbn f ->
@@ -246,9 +246,9 @@ let reduction_of_red_expr env =
   | ExtraRedExpr s ->
       (try (e_red (String.Map.find s !reduction_tab),DEFAULTcast)
       with Not_found ->
-	(try reduction_of_red_expr (String.Map.find s !red_expr_tab)
-	 with Not_found ->
-	   user_err ~hdr:"Redexpr.reduction_of_red_expr"
+        (try reduction_of_red_expr (String.Map.find s !red_expr_tab)
+         with Not_found ->
+           user_err ~hdr:"Redexpr.reduction_of_red_expr"
              (str "unknown user-defined reduction \"" ++ str s ++ str "\"")))
   | CbvVm o -> (contextualize cbv_vm cbv_vm o, VMcast)
   | CbvNative o -> (contextualize cbv_native cbv_native o, NATIVEcast)
@@ -270,9 +270,9 @@ let inReduction : bool * string * red_expr -> obj =
        cache_function = (fun (_,(_,s,e)) -> decl_red_expr s e);
        load_function = (fun _ (_,(_,s,e)) -> decl_red_expr s e);
        subst_function =
-	(fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
+        (fun (subs,(b,s,e)) -> b,s,subst_red_expr subs e);
        classify_function =
-	(fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
+        (fun ((b,_,_) as obj) -> if b then Dispose else Substitute obj) }
 
 let declare_red_expr locality s expr =
     Lib.add_anonymous_leaf (inReduction (locality,s,expr))

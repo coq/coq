@@ -11,8 +11,6 @@
 open Genarg
 open Geninterp
 
-type 'a and_short_name = 'a * Names.lident option
-
 let make0 ?dyn name =
   let wit = Genarg.make0 name in
   let () = register_val0 wit dyn in
@@ -53,8 +51,6 @@ let wit_uconstr = make0 "uconstr"
 
 let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 
-let wit_red_expr = make0 "redexpr"
-
 let wit_clause_dft_concl  =
   make0 "clause_dft_concl"
 
@@ -65,4 +61,3 @@ let wit_preident = wit_pre_ident
 let wit_reference = wit_ref
 let wit_global = wit_ref
 let wit_clause = wit_clause_dft_concl
-let wit_redexpr = wit_red_expr

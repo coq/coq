@@ -700,7 +700,7 @@ open Pputils
           | None -> mt()
           | Some r ->
             keyword "Eval" ++ spc() ++
-              pr_red_expr (pr_constr, pr_lconstr, pr_smart_global, pr_constr) keyword r ++
+              Ppred.pr_red_expr (pr_constr, pr_lconstr, pr_smart_global, pr_constr) keyword r ++
               keyword " in" ++ spc()
         in
         let pr_def_body = function
@@ -1134,7 +1134,7 @@ open Pputils
         let pr_mayeval r c = match r with
           | Some r0 ->
             hov 2 (keyword "Eval" ++ spc() ++
-                     pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r0 ++
+                     Ppred.pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r0 ++
                      spc() ++ keyword "in" ++ spc () ++ pr_lconstr c)
           | None -> hov 2 (keyword "Check" ++ spc() ++ pr_lconstr c)
         in
@@ -1146,7 +1146,7 @@ open Pputils
       | VernacDeclareReduction (s,r) ->
         return (
           keyword "Declare Reduction" ++ spc () ++ str s ++ str " := " ++
-            pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r
+            Ppred.pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) keyword r
         )
       | VernacPrint p ->
         return (pr_printable p)

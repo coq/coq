@@ -21,11 +21,6 @@ val prec_less : precedence -> tolerability -> bool
 
 val pr_tight_coma : unit -> Pp.t
 
-val pr_or_var : ('a -> Pp.t) -> 'a Locus.or_var -> Pp.t
-
-val pr_lident : lident -> Pp.t
-val pr_lname : lname -> Pp.t
-
 val pr_with_comments : ?loc:Loc.t -> Pp.t -> Pp.t
 val pr_com_at : int -> Pp.t
 val pr_sep_com :
