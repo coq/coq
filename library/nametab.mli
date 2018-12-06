@@ -120,9 +120,9 @@ val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
 val push_syndef : visibility -> full_path -> syndef_name -> unit
 
-module UnivIdMap : CMap.ExtS with type key = Univ.Level.Qualid.t
+module UnivIdMap : CMap.ExtS with type key = Univ.Level.UGlobal.t
 
-val push_universe : visibility -> full_path -> Univ.Level.Qualid.t -> unit
+val push_universe : visibility -> full_path -> Univ.Level.UGlobal.t -> unit
 
 (** {6 The following functions perform globalization of qualified names } *)
 
@@ -137,7 +137,7 @@ val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
-val locate_universe : qualid -> Univ.Level.Qualid.t
+val locate_universe : qualid -> Univ.Level.UGlobal.t
 
 (** These functions globalize user-level references into global
    references, like [locate] and co, but raise a nice error message
@@ -194,7 +194,7 @@ val path_of_modtype : ModPath.t -> full_path
 
 (** A universe_id might not be registered with a corresponding user name.
     @raise Not_found if the universe was not introduced by the user. *)
-val path_of_universe : Univ.Level.Qualid.t -> full_path
+val path_of_universe : Univ.Level.UGlobal.t -> full_path
 
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
@@ -216,7 +216,7 @@ val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
 val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
-val shortest_qualid_of_universe : ?loc:Loc.t -> Univ.Level.Qualid.t -> qualid
+val shortest_qualid_of_universe : ?loc:Loc.t -> Univ.Level.UGlobal.t -> qualid
 
 (** Deprecated synonyms *)
 

@@ -15,11 +15,13 @@ open Univ
 
 
 (** The global universe counter *)
-val set_remote_new_univ_id : Level.Id.t RemoteCounter.installer
+type univ_unique_id
+val set_remote_new_univ_id : univ_unique_id RemoteCounter.installer
+val new_univ_id : unit -> univ_unique_id (** for the stm *)
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_id : unit -> Level.Id.t
+val new_univ_global : unit -> Level.UGlobal.t
 val fresh_level : unit -> Level.t
 
 val new_univ : unit -> Universe.t

@@ -324,12 +324,14 @@ let constrain_variables diff ctx =
 let qualid_of_level uctx =
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try Libnames.qualid_of_ident (Option.get (Univ.LMap.find l map_rev).uname)
+      try Some (Libnames.qualid_of_ident (Option.get (Univ.LMap.find l map_rev).uname))
       with Not_found | Option.IsNone ->
         UnivNames.qualid_of_level l
 
 let pr_uctx_level uctx l =
-  Libnames.pr_qualid (qualid_of_level uctx l)
+  match qualid_of_level uctx l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> Univ.Level.pr l
 
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)

@@ -12,20 +12,10 @@
 module Level :
 sig
 
-  module Id : sig
+  module UGlobal : sig
     type t
 
-    val make : int -> t
-    val to_string : t -> string
-
-  end
-  (** Non-qualified global universe level *)
-
-  module Qualid : sig
-    type t
-
-    val make : Names.DirPath.t -> Id.t -> t
-    val repr : t -> Names.DirPath.t * Id.t
+    val make : Names.DirPath.t -> int -> t
     val equal : t -> t -> bool
     val hash : t -> int
     val compare : t -> t -> int
@@ -57,11 +47,7 @@ sig
 
   val hash : t -> int
 
-  val make : Qualid.t -> t
-
-  val make2 : Names.DirPath.t -> Id.t -> t
-  (** Create a new universe level from a unique identifier and an associated
-      module path. *)
+  val make : UGlobal.t -> t
 
   val pr : t -> Pp.t
   (** Pretty-printing *)
@@ -73,7 +59,7 @@ sig
 
   val var_index : t -> int option
 
-  val name : t -> Qualid.t option
+  val name : t -> UGlobal.t option
 end
 
 (** Sets of universe levels *)

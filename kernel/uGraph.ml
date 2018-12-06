@@ -921,7 +921,7 @@ let sort_universes g =
   let types = Array.init (max_lvl + 1) (function
     | 0 -> Level.prop
     | 1 -> Level.set
-    | n -> Level.make2 mp (Level.Id.make (n-2)))
+    | n -> Level.make (Level.UGlobal.make  mp (n-2)))
   in
   let g = Array.fold_left (fun g u ->
     let g, u = safe_repr g u in

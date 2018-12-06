@@ -589,8 +589,23 @@ let detype_cofix detype avoid env sigma n (names,tys,bodies) =
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
 
+(* TODO use some algebraic type with a case for unnamed univs so we
+   can cleanly detype them. NB: this corresponds to a hack in
+   Pretyping.interp_universe_level_name to convert Foo.xx strings into
+   universes. *)
+let hack_qualid_of_univ_level sigma l =
+  match Termops.reference_of_level sigma l with
+  | Some qid -> qid
+  | None ->
+    let path = String.split_on_char '.' (Univ.Level.to_string l) in
+    let path = List.rev_map Id.of_string_soft path in
+    Libnames.qualid_of_dirpath (DirPath.make path)
+
 let detype_universe sigma u =
-  let fn (l, n) = Some (Termops.reference_of_level sigma l, n) in
+  let fn (l, n) =
+    let qid = hack_qualid_of_univ_level sigma l in
+    Some (qid, n)
+  in
   Univ.Universe.map fn u
 
 let detype_sort sigma = function
@@ -611,7 +626,7 @@ let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index
 let set_detype_anonymous f = detype_anonymous := f
 
 let detype_level sigma l =
-  let l = Termops.reference_of_level sigma l in
+  let l = hack_qualid_of_univ_level sigma l in
   GType (UNamed l)
 
 let detype_instance sigma l = 

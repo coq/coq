@@ -140,7 +140,7 @@ let interp_universe_level_name ~anon_rigidity evd qid =
           user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
             (Pp.(str "Undeclared global universe: " ++ Libnames.pr_qualid qid))
       in
-      let level = Univ.Level.make2 dp (Univ.Level.Id.make num) in
+      let level = Univ.Level.(make (UGlobal.make dp num)) in
       let evd =
         try Evd.add_global_univ evd level
         with UGraph.AlreadyDeclared -> evd

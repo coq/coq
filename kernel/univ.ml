@@ -37,19 +37,10 @@ module RawLevel =
 struct
   open Names
 
-  module Id = struct
-    type t = int
+  module UGlobal = struct
+    type t = DirPath.t * int
 
-    let make i = i
-    let to_string i = string_of_int i
-
-  end
-
-  module Qualid = struct
-    type t = DirPath.t * Id.t
-
-    let make dp i = (dp,i)
-    let repr x = x
+    let make dp i = (DirPath.hcons dp,i)
 
     let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
 
@@ -64,7 +55,7 @@ struct
   type t =
     | Prop
     | Set
-    | Level of Qualid.t
+    | Level of UGlobal.t
     | Var of int
 
   (* Hash-consing *)
@@ -74,8 +65,7 @@ struct
       match x, y with
       | Prop, Prop -> true
       | Set, Set -> true
-      | Level (d,n), Level (d',n') ->
-        Int.equal n n' && DirPath.equal d d'
+      | Level l, Level l' -> UGlobal.equal l l'
       | Var n, Var n' -> Int.equal n n'
       | _ -> false
 
@@ -125,14 +115,12 @@ end
 
 module Level = struct
 
-  module Id = RawLevel.Id
-
-  module Qualid = RawLevel.Qualid
+  module UGlobal = RawLevel.UGlobal
 
   type raw_level = RawLevel.t =
   | Prop
   | Set
-  | Level of Qualid.t
+  | Level of UGlobal.t
   | Var of int
 
   (** Embed levels with their hash value *)
@@ -212,7 +200,6 @@ module Level = struct
     match data u with
     | Var n -> Some n | _ -> None
 
-  let make2 m n = make (Level (Names.DirPath.hcons m, n))
   let make qid = make (Level qid)
 
   let name u =

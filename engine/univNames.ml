@@ -16,17 +16,14 @@ open Univ
 let qualid_of_level l =
   match Level.name l with
   | Some qid  ->
-    begin
-    try Nametab.shortest_qualid_of_universe qid
-    with Not_found ->
-      let (dp,n) = Level.Qualid.repr qid in
-      let name = Id.of_string_soft (Level.Id.to_string n) in
-      Libnames.make_qualid dp name
-    end
-  | None ->
-    Libnames.qualid_of_ident @@ Id.of_string_soft (Level.to_string l)
+    (try Some (Nametab.shortest_qualid_of_universe qid)
+     with Not_found -> None)
+  | None -> None
 
-let pr_with_global_universes l = Libnames.pr_qualid (qualid_of_level l)
+let pr_with_global_universes l =
+  match qualid_of_level l with
+  | Some qid  -> Libnames.pr_qualid qid
+  | None -> Level.pr l
 
 (** Global universe information outside the kernel, to handle
     polymorphic universe names in sections that have to be discharged. *)

@@ -349,8 +349,8 @@ let the_dirtab = Summary.ref ~name:"dirtab" (DirTab.empty : dirtab)
 
 module UnivIdEqual =
 struct
-  type t = Univ.Level.Qualid.t
-  let equal = Univ.Level.Qualid.equal
+  type t = Univ.Level.UGlobal.t
+  let equal = Univ.Level.UGlobal.equal
 end
 module UnivTab = Make(FullPath)(UnivIdEqual)
 type univtab = UnivTab.t
@@ -373,9 +373,9 @@ let the_modtyperevtab = Summary.ref ~name:"modtyperevtab" (MPmap.empty : mptrevt
 
 module UnivIdOrdered =
 struct
-  type t = Univ.Level.Qualid.t
-  let hash = Univ.Level.Qualid.hash
-  let compare = Univ.Level.Qualid.compare
+  type t = Univ.Level.UGlobal.t
+  let hash = Univ.Level.UGlobal.hash
+  let compare = Univ.Level.UGlobal.compare
 end
 
 module UnivIdMap = HMap.Make(UnivIdOrdered)
