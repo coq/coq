@@ -782,8 +782,19 @@ module State : sig
   exception Not_in_cache
 
   val install_state : cache:bool -> Stateid.t -> unit
+  (** Put the system in the state described by the input state id. If the state
+  is missing from the cache, raise [Not_in_cache], except if the requested state
+  is the current one, in which case we snapshot and cache it if [cache] is true,
+  and do nothing otherwise. *)
+
   val get_success_state : Stateid.t -> Vernacstate.t option
+  (** Return the success stat designated by the input id. If it is the current
+  state id, snapshot, cache and return it. If no such state has been cached or
+  if it has been evaluated to an error state, return [None]. *)
+
   val get_proof : Stateid.t -> Proof.t option
+  (** Return the proof from a cached state or the current one. If not in cache
+  or an error state, return [None]. *)
 
   val exn_on : Stateid.t -> valid:Stateid.t -> Exninfo.iexn -> Exninfo.iexn
 
