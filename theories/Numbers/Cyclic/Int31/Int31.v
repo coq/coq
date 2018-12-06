@@ -17,6 +17,8 @@ Require Export DoubleType.
 
 Declare ML Module "int31_syntax_plugin".
 
+Local Unset Elimination Schemes.
+
 (** * 31-bit integers *)
 
 (** This file contains basic definitions of a 31-bit integer
@@ -49,6 +51,10 @@ Inductive int31 : Type := I31 : digits31 int31.
    occur when they are applied to one non-closed term and one closed term). *)
 Register digits as int31 bits in "coq_int31" by True.
 Register int31 as int31 type in "coq_int31" by True.
+
+Scheme int31_ind := Induction for int31 Sort Prop.
+Scheme int31_rec := Induction for int31 Sort Set.
+Scheme int31_rect := Induction for int31 Sort Type.
 
 Delimit Scope int31_scope with int31.
 Bind Scope int31_scope with int31.

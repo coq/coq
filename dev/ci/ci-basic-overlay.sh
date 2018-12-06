@@ -173,8 +173,8 @@
 ########################################################################
 # CoLoR
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${CoLoR_CI_REF:=f7f59973a94c80cc922cbb83223c6165597a6626}"
+# Latest commit on master as of Nov 5, 2018
+: "${CoLoR_CI_REF:=4ce3a9fb5f58501aef3c0727c8ba8cc38917399d}"
 : "${CoLoR_CI_GITURL:=https://github.com/fblanqui/color}"
 : "${CoLoR_CI_ARCHIVEURL:=${CoLoR_CI_GITURL}/archive}"
 
