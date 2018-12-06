@@ -20,10 +20,13 @@ Displaying
    Error messages:
 
    .. exn:: @qualid not a defined object.
+      :undocumented:
 
    .. exn:: Universe instance should have length @num.
+      :undocumented:
 
    .. exn:: This object does not support universe names.
+      :undocumented:
 
 
    .. cmdv:: Print Term @qualid
@@ -81,9 +84,9 @@ and tables:
 * A :production:`flag` has a boolean value, such as :flag:`Asymmetric Patterns`.
 * An :production:`option` generally has a numeric or string value, such as :opt:`Firstorder Depth`.
 * A :production:`table` contains a set of strings or qualids.
-* In addition, some commands provide settings, such as :cmd:`Extraction Language OCaml`.
+* In addition, some commands provide settings, such as :cmd:`Extraction Language`.
 
-.. FIXME Convert `Extraction Language OCaml` to an option.
+.. FIXME Convert "Extraction Language" to an option.
 
 Flags, options and tables are identified by a series of identifiers, each with an initial
 capital letter.
@@ -538,8 +541,7 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
       will use the default extension ``.v``.
 
    .. cmdv:: Load Verbose @ident
-
-   .. cmdv:: Load Verbose @string
+             Load Verbose @string
 
       Display, while loading,
       the answers of |Coq| to each command (including tactics) contained in
@@ -548,10 +550,13 @@ toplevel. This kind of file is called a *script* for |Coq|. The standard
       .. seealso:: Section :ref:`controlling-display`.
 
    .. exn:: Can’t find file @ident on loadpath.
+      :undocumented:
 
    .. exn:: Load is not supported inside proofs.
+      :undocumented:
 
    .. exn:: Files processed by Load cannot leave open proofs.
+      :undocumented:
 
 .. _compiled-files:
 
@@ -620,6 +625,7 @@ file is a particular case of module called *library file*.
       comes from a given package by making explicit its absolute root.
 
    .. exn:: Cannot load qualid: no physical path bound to dirpath.
+      :undocumented:
 
    .. exn:: Cannot find library foo in loadpath.
 
@@ -684,8 +690,10 @@ file is a particular case of module called *library file*.
       where they occur, even if outside a section.
 
    .. exn:: File not found on loadpath: @string.
+      :undocumented:
 
    .. exn:: Loading of ML object file forbidden in a native Coq.
+      :undocumented:
 
 
 .. cmd:: Print ML Modules
@@ -812,6 +820,7 @@ interactively, they cannot be part of a vernacular file loaded via
    over the name of a module or of an object inside a module.
 
    .. exn:: @ident: no such entry.
+      :undocumented:
 
    .. cmdv:: Reset Initial
 
@@ -953,6 +962,7 @@ Quitting and debugging
    it prints a message indicating that the failure did not occur.
 
    .. exn:: The command has not failed!
+      :undocumented:
 
 
 .. _controlling-display:
@@ -1136,6 +1146,7 @@ described first.
    variable nor a constant.
 
    .. exn:: The reference is not unfoldable.
+      :undocumented:
 
    .. cmdv:: Print Strategies
 
@@ -1166,38 +1177,38 @@ Controlling the locality of commands
 
 
 .. cmd:: Local @command
-.. cmd:: Global @command
+         Global @command
 
-Some commands support a Local or Global prefix modifier to control the
-scope of their effect. There are four kinds of commands:
+   Some commands support a Local or Global prefix modifier to control the
+   scope of their effect. There are four kinds of commands:
 
 
-+ Commands whose default is to extend their effect both outside the
-  section and the module or library file they occur in.  For these
-  commands, the Local modifier limits the effect of the command to the
-  current section or module it occurs in.  As an example, the :cmd:`Coercion`
-  and :cmd:`Strategy` commands belong to this category.
-+ Commands whose default behavior is to stop their effect at the end
-  of the section they occur in but to extend their effect outside the module or
-  library file they occur in. For these commands, the Local modifier limits the
-  effect of the command to the current module if the command does not occur in a
-  section and the Global modifier extends the effect outside the current
-  sections and current module if the command occurs in a section. As an example,
-  the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
-  to this category. Notice that a subclass of these commands do not support
-  extension of their scope outside sections at all and the Global modifier is not
-  applicable to them.
-+ Commands whose default behavior is to stop their effect at the end
-  of the section or module they occur in.  For these commands, the ``Global``
-  modifier extends their effect outside the sections and modules they
-  occur in.  The :cmd:`Transparent` and :cmd:`Opaque`
-  (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
-  belong to this category.
-+ Commands whose default behavior is to extend their effect outside
-  sections but not outside modules when they occur in a section and to
-  extend their effect outside the module or library file they occur in
-  when no section contains them.For these commands, the Local modifier
-  limits the effect to the current section or module while the Global
-  modifier extends the effect outside the module even when the command
-  occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
-  category.
+   + Commands whose default is to extend their effect both outside the
+     section and the module or library file they occur in.  For these
+     commands, the Local modifier limits the effect of the command to the
+     current section or module it occurs in.  As an example, the :cmd:`Coercion`
+     and :cmd:`Strategy` commands belong to this category.
+   + Commands whose default behavior is to stop their effect at the end
+     of the section they occur in but to extend their effect outside the module or
+     library file they occur in. For these commands, the Local modifier limits the
+     effect of the command to the current module if the command does not occur in a
+     section and the Global modifier extends the effect outside the current
+     sections and current module if the command occurs in a section. As an example,
+     the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+     to this category. Notice that a subclass of these commands do not support
+     extension of their scope outside sections at all and the Global modifier is not
+     applicable to them.
+   + Commands whose default behavior is to stop their effect at the end
+     of the section or module they occur in.  For these commands, the ``Global``
+     modifier extends their effect outside the sections and modules they
+     occur in.  The :cmd:`Transparent` and :cmd:`Opaque`
+     (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
+     belong to this category.
+   + Commands whose default behavior is to extend their effect outside
+     sections but not outside modules when they occur in a section and to
+     extend their effect outside the module or library file they occur in
+     when no section contains them.For these commands, the Local modifier
+     limits the effect to the current section or module while the Global
+     modifier extends the effect outside the module even when the command
+     occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
+     category.

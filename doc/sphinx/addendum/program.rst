@@ -150,6 +150,7 @@ Program Definition
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Program Definition)
+      :undocumented:
 
    .. cmdv:: Program Definition @ident : @type := @term
 
@@ -162,7 +163,7 @@ Program Definition
       and the aforementioned coercion derivation are solved.
 
       .. exn:: In environment … the term: @term does not have type @type. Actually, it has type ...
-
+         :undocumented:
 
    .. cmdv:: Program Definition @ident @binders : @type := @term
 
@@ -181,21 +182,21 @@ Program Fixpoint
 
 .. cmd:: Program Fixpoint @ident @params {? {@order}} : @type := @term
 
-The optional order annotation follows the grammar:
+   The optional order annotation follows the grammar:
 
-.. productionlist:: orderannot
-   order      : measure `term` (`term`)? | wf `term` `term`
+   .. productionlist:: orderannot
+      order      : measure `term` (`term`)? | wf `term` `term`
 
-+ :g:`measure f ( R )` where :g:`f` is a value of type :g:`X` computed on
-  any subset of the arguments and the optional (parenthesised) term
-  ``(R)`` is a relation on ``X``. By default ``X`` defaults to ``nat`` and ``R``
-  to ``lt``.
+   + :g:`measure f ( R )` where :g:`f` is a value of type :g:`X` computed on
+     any subset of the arguments and the optional (parenthesised) term
+     ``(R)`` is a relation on ``X``. By default ``X`` defaults to ``nat`` and ``R``
+     to ``lt``.
 
-+ :g:`wf R x` which is equivalent to :g:`measure x (R)`.
+   + :g:`wf R x` which is equivalent to :g:`measure x (R)`.
 
-The structural fixpoint operator behaves just like the one of |Coq| (see
-:cmd:`Fixpoint`), except it may also generate obligations. It works
-with mutually recursive definitions too.
+   The structural fixpoint operator behaves just like the one of |Coq| (see
+   :cmd:`Fixpoint`), except it may also generate obligations. It works
+   with mutually recursive definitions too.
 
 .. coqtop:: reset in
 

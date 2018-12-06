@@ -530,19 +530,11 @@ Notice, however, that using the prefixed tactics it is possible to
 pass additional arguments such as ``using relation``.
 
 .. tacv:: setoid_reflexivity
-   :name: setoid_reflexivity
-
-.. tacv:: setoid_symmetry {? in @ident}
-   :name: setoid_symmetry
-
-.. tacv:: setoid_transitivity
-   :name: setoid_transitivity
-
-.. tacv:: setoid_rewrite {? @orientation} @term {? at @occs} {? in @ident}
-   :name: setoid_rewrite
-
-.. tacv:: setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @tactic}
-   :name: setoid_replace
+          setoid_symmetry {? in @ident}
+          setoid_transitivity
+          setoid_rewrite {? @orientation} @term {? at @occs} {? in @ident}
+          setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @tactic}
+   :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; setoid_replace
 
    The ``using relation`` arguments cannot be passed to the unprefixed form.
    The latter argument tells the tactic what parametric relation should
