@@ -178,3 +178,4 @@ theories/*/dune
 theories/*/*/dune
 theories/*/*/*/dune
 *.install
+!Makefile.install
