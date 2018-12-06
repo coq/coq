@@ -22,7 +22,7 @@ open Extraargs
 open Tacmach
 open Rewrite
 open Stdarg
-open Tactypes
+open Tacbindings
 open Pcoq.Prim
 open Pcoq.Constr
 open Pvernac.Vernac_

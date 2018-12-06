@@ -29,7 +29,7 @@ open Libnames
 open Globnames
 open Nametab
 open Contradiction
-open Tactypes
+open Tacbindings
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration

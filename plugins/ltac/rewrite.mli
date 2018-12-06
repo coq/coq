@@ -14,7 +14,7 @@ open EConstr
 open Constrexpr
 open Evd
 open Genintern
-open Tactypes
+open Tacbindings
 open Tacexpr
 open Tacinterp
 

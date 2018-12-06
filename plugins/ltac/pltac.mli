@@ -15,6 +15,7 @@ open Libnames
 open Constrexpr
 open Tacexpr
 open Genredexpr
+open Tacbindings
 open Tactypes
 
 val open_constr : constr_expr Entry.t

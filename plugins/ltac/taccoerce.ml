@@ -13,6 +13,7 @@ open Names
 open Constr
 open EConstr
 open Namegen
+open Tacbindings
 open Tactypes
 open Genarg
 open Stdarg

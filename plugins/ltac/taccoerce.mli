@@ -13,6 +13,7 @@ open Names
 open EConstr
 open Genarg
 open Geninterp
+open Tacbindings
 open Tactypes
 
 (** Coercions from highest level generic arguments to actual data used by Ltac

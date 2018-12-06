@@ -183,12 +183,12 @@ let right_instance_tac inst continue seq=
 	   [introf;
             Proofview.Goal.enter begin fun gl ->
               let id0 = List.nth (pf_ids_of_hyps gl) 0 in
-              split (Tactypes.ImplicitBindings [mkVar id0])
+              split (Tacbindings.ImplicitBindings [mkVar id0])
             end;
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption]
     | Real ((0,t),_) ->
-        (tclTHEN (split (Tactypes.ImplicitBindings [t]))
+        (tclTHEN (split (Tacbindings.ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")

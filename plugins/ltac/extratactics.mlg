@@ -27,7 +27,7 @@ open Util
 open Termops
 open Equality
 open Namegen
-open Tactypes
+open Tacbindings
 open Tactics
 open Proofview.Notations
 open Attributes

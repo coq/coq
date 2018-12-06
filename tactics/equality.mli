@@ -15,6 +15,7 @@ open EConstr
 open Environ
 open Ind_tables
 open Locus
+open Tacbindings
 open Tactypes
 open Tactics
 (*i*)

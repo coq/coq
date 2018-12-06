@@ -12,7 +12,7 @@ open Tacexpr
 open Mod_subst
 open Genarg
 open Genintern
-open Tactypes
+open Tacbindings
 
 (** Substitution of tactics at module closing time *)
 

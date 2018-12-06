@@ -93,7 +93,7 @@ let clear id = Tactics.clear [id]
 
 let assumption = Tactics.assumption
 
-let split = Tactics.split_with_bindings false [Tactypes.NoBindings]
+let split = Tactics.split_with_bindings false [Tacbindings.NoBindings]
 
 (** Test *)
 
@@ -174,7 +174,7 @@ let flatten_contravariant_disj _ ist =
   | Some (_,args) ->
       let map i arg =
         let typ = mkArrow arg c in
-        let ci = Tactics.constructor_tac false None (succ i) Tactypes.NoBindings in
+        let ci = Tactics.constructor_tac false None (succ i) Tacbindings.NoBindings in
         let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
         assert_ ~by typ
       in

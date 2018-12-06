@@ -8,17 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Tactypes
-
-(** Printing of [intro_pattern] *)
-
-val pr_intro_pattern :
-  ('a -> Pp.t) -> 'a intro_pattern_expr CAst.t -> Pp.t
-
-val pr_or_and_intro_pattern :
-  ('a -> Pp.t) -> 'a or_and_intro_pattern_expr -> Pp.t
-
-val pr_intro_pattern_naming : Namegen.intro_pattern_naming_expr -> Pp.t
+open Tacbindings
 
 (** Printing of [move_location] *)
 

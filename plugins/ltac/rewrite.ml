@@ -26,7 +26,7 @@ open Classes
 open Constrexpr
 open Globnames
 open Evd
-open Tactypes
+open Tacbindings
 open Locus
 open Locusops
 open Decl_kinds

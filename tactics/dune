@@ -3,4 +3,5 @@
  (synopsis "Coq's Core Tactics [ML implementation]")
  (public_name coq.tactics)
  (wrapped false)
+ (modules_without_implementation tactypes)
  (libraries printing))

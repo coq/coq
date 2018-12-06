@@ -14,6 +14,7 @@ open Mod_subst
 open Genarg
 open Stdarg
 open Tacarg
+open Tacbindings
 open Tactypes
 open Tactics
 open Globnames

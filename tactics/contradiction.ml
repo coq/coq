@@ -118,7 +118,7 @@ let contradiction_term (c,lbind as cl) =
     else
       Proofview.tclORELSE
         begin
-          if lbind = Tactypes.NoBindings then
+          if lbind = Tacbindings.NoBindings then
             filter_hyp (fun c -> is_negation_of env sigma typ c)
               (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
           else

@@ -35,6 +35,7 @@ open Stdarg
 open Tacarg
 open Printer
 open Pretyping
+open Tacbindings
 open Tactypes
 open Tactics
 open Locus

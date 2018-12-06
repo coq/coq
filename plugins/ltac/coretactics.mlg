@@ -12,11 +12,11 @@
 
 open Util
 open Locus
-open Tactypes
 open Genredexpr
 open Stdarg
 open Extraargs
 open Tacarg
+open Tacbindings
 open Names
 open Logic
 

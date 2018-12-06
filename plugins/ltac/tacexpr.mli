@@ -16,6 +16,7 @@ open Genredexpr
 open Genarg
 open Pattern
 open Locus
+open Tacbindings
 open Tactypes
 
 type ltac_constant = KerName.t

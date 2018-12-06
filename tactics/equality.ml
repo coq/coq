@@ -42,7 +42,7 @@ open Ind_tables
 open Eqschemes
 open Locus
 open Locusops
-open Tactypes
+open Tacbindings
 open Proofview.Notations
 open Unification
 open Context.Named.Declaration

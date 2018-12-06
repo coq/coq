@@ -252,7 +252,7 @@ let interp_refine ist gl rc =
 
 
 let interp_open_constr ist gl gc =
-  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Tactypes.NoBindings) in
+  let (sigma, (c, _)) = Tacinterp.interp_open_constr_with_bindings ist (pf_env gl) (project gl) (gc, Tacbindings.NoBindings) in
   (project gl, (sigma, c))
 
 let interp_term ist gl (_, c) = snd (interp_open_constr ist gl c)

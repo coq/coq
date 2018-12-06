@@ -25,6 +25,7 @@ open Inductiveops
 open Tactics
 open Ind_tables
 open Namegen
+open Tacbindings
 open Tactypes
 open Proofview.Notations
 

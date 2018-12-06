@@ -18,7 +18,7 @@ open Environ
 open Evd
 open EConstr
 open Unification
-open Tactypes
+open Tacbindings
 
 (** {6 The Type of Constructions clausale environments.} *)
 

@@ -23,6 +23,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Tacmach
+open Tacbindings
 open Tactypes
 open Termops
 open Context.Rel.Declaration

@@ -26,6 +26,7 @@ open Tacticals.New
 open Tactics
 open Elim
 open Equality
+open Tacbindings
 open Tactypes
 open Proofview.Notations
 
@@ -297,7 +298,7 @@ let error_too_many_names pats =
   tclZEROMSG ?loc (
     str "Unexpected " ++
     str (String.plural (List.length pats) "introduction pattern") ++
-    str ": " ++ pr_enum (Miscprint.pr_intro_pattern
+    str ": " ++ pr_enum (Pptactypes.pr_intro_pattern
                            (fun c -> Printer.pr_econstr_env env sigma (snd (c env (Evd.from_env env))))) pats ++
     str ".")
 

@@ -14,7 +14,7 @@ open EConstr
 open Tacexpr
 open Genarg
 open Redexpr
-open Tactypes
+open Tacbindings
 
 val ltac_trace_info : ltac_trace Exninfo.t
 

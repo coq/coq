@@ -20,6 +20,7 @@ open Genredexpr
 open Constrexpr
 open Libnames
 open Tok
+open Tacbindings
 open Tactypes
 open Tactics
 open Inv

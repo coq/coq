@@ -27,7 +27,7 @@ open Constr_matching
 open Hipattern
 open Proofview.Notations
 open Tacmach.New
-open Tactypes
+open Tacbindings
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the

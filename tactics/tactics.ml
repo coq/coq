@@ -40,6 +40,7 @@ open Pretype_errors
 open Unification
 open Locus
 open Locusops
+open Tacbindings
 open Tactypes
 open Proofview.Notations
 open Context.Named.Declaration
@@ -3096,7 +3097,7 @@ let warn_unused_intro_pattern env sigma =
     (fun names ->
        strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
        str": " ++ prlist_with_sep spc
-         (Miscprint.pr_intro_pattern
+         (Pptactypes.pr_intro_pattern
             (fun c -> Printer.pr_econstr_env env sigma (snd (c env sigma)))) names)
 
 let check_unused_names env sigma names =
@@ -4539,7 +4540,7 @@ let induction_gen_l isrec with_evars elim names lc =
     | (c,None) -> c
     | (c,Some{CAst.loc;v=eqname}) ->
       user_err ?loc  (str "Do not know what to do with " ++
-                         Miscprint.pr_intro_pattern_naming eqname)) lc in
+                         Pptactypes.pr_intro_pattern_naming eqname)) lc in
   let rec atomize_list l =
     match l with
       | [] -> Proofview.tclUNIT ()

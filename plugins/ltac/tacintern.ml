@@ -27,6 +27,7 @@ open Genarg
 open Stdarg
 open Tacarg
 open Namegen
+open Tacbindings
 open Tactypes
 open Tactics
 open Locus

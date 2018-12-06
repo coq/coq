@@ -18,6 +18,7 @@ open Genarg
 open Geninterp
 open Stdarg
 open Notation_gram
+open Tacbindings
 open Tactypes
 open Locus
 open Decl_kinds
@@ -389,9 +390,9 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
-      pr_or_var (fun {CAst.loc;v=p} -> Miscprint.pr_or_and_intro_pattern prc p) ipatl
+      pr_or_var (fun {CAst.loc;v=p} -> Pptactypes.pr_or_and_intro_pattern prc p) ipatl
 
-  let pr_eqn_ipat {CAst.v=ipat} = keyword "eqn:" ++ Miscprint.pr_intro_pattern_naming ipat
+  let pr_eqn_ipat {CAst.v=ipat} = keyword "eqn:" ++ Pptactypes.pr_intro_pattern_naming ipat
 
   let pr_with_induction_names prc = function
     | None, None -> mt ()
@@ -401,7 +402,7 @@ let string_of_genarg_arg (ArgumentType arg) =
         hov 1 (pr_as_disjunctive_ipat prc ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
   let pr_as_intro_pattern prc ipat =
-    spc () ++ hov 1 (keyword "as" ++ spc () ++ Miscprint.pr_intro_pattern prc ipat)
+    spc () ++ hov 1 (keyword "as" ++ spc () ++ Pptactypes.pr_intro_pattern prc ipat)
 
   let pr_with_inversion_names prc = function
     | None -> mt ()
@@ -753,7 +754,7 @@ let pr_goal_selector ~toplevel s =
            hov 1 (primitive (if ev then "eintros" else "intros") ++
                     (match p with
                     | [{CAst.v=IntroForthcoming false}] -> mt ()
-                    | _ -> spc () ++ prlist_with_sep spc (Miscprint.pr_intro_pattern pr.pr_dconstr) p))
+                    | _ -> spc () ++ prlist_with_sep spc (Pptactypes.pr_intro_pattern pr.pr_dconstr) p))
         | TacApply (a,ev,cb,inhyp) ->
           hov 1 (
             (if a then mt() else primitive "simple ") ++
@@ -1268,7 +1269,7 @@ let declare_extra_vernac_genarg_pprule wit f =
 
 let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
   let print_constr c = let (sigma, c) = c env sigma in pr_econstr_env env sigma c in
-  Miscprint.pr_intro_pattern print_constr p)
+  Pptactypes.pr_intro_pattern print_constr p)
 
 let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
   pr_red_expr (pr_econstr_env env sigma, pr_leconstr_env env sigma,
@@ -1324,8 +1325,8 @@ let () =
   register_basic_print0 wit_var pr_lident pr_lident pr_id;
   register_print0
     wit_intro_pattern
-    (lift (Miscprint.pr_intro_pattern pr_constr_expr))
-    (lift (Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac c)))
+    (lift (Pptactypes.pr_intro_pattern pr_constr_expr))
+    (lift (Pptactypes.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac c)))
     pr_intro_pattern_env;
   Genprint.register_print0
     wit_clause_dft_concl

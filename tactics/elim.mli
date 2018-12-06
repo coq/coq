@@ -11,6 +11,7 @@
 open Names
 open EConstr
 open Tacticals
+open Tacbindings
 open Tactypes
 
 (** Eliminations tactics. *)

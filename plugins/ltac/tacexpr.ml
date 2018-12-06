@@ -15,6 +15,7 @@ open Libnames
 open Genredexpr
 open Genarg
 open Pattern
+open Tacbindings
 open Tactypes
 open Locus
 

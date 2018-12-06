@@ -17,6 +17,7 @@ open Clenv
 open Redexpr
 open Pattern
 open Unification
+open Tacbindings
 open Tactypes
 open Locus
 open Ltac_pretype

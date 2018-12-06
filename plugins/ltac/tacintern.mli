@@ -13,7 +13,7 @@ open Tacexpr
 open Genarg
 open Constrexpr
 open Genintern
-open Tactypes
+open Tacbindings
 
 (** Globalization of tactic expressions :
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)

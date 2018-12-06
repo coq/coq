@@ -19,7 +19,7 @@ open Constrexpr
 open Notation_gram
 open Genintern
 open Tacexpr
-open Tactypes
+open Tacbindings
 
 type 'a grammar_tactic_prod_item_expr =
 | TacTerm of string

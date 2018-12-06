@@ -8,14 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open EConstr
-open Constrexpr
-open Tacbindings
+open Tactypes
 
-val lemInv_clause :
-  quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
+(** Printing of [intro_pattern] *)
 
-val add_inversion_lemma_exn : poly:bool ->
-  Id.t -> constr_expr -> Sorts.family -> bool -> (Id.t -> unit Proofview.tactic) ->
-    unit
+val pr_intro_pattern :
+  ('a -> Pp.t) -> 'a intro_pattern_expr CAst.t -> Pp.t
+
+val pr_or_and_intro_pattern :
+  ('a -> Pp.t) -> 'a or_and_intro_pattern_expr -> Pp.t
+
+val pr_intro_pattern_naming : Namegen.intro_pattern_naming_expr -> Pp.t

@@ -16,7 +16,7 @@ open Printer
 open Term
 open Constr
 open Termops
-open Tactypes
+open Tacbindings
 open Tacmach
 
 open Ssrmatching_plugin
