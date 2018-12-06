@@ -763,7 +763,6 @@ let lexer = {
        | _ -> ());
   Plexing.tok_removing = (fun _ -> ());
   Plexing.tok_match = Tok.match_pattern;
-  Plexing.tok_comm = None;
   Plexing.tok_text = token_text }
 
 (** Terminal symbols interpretation *)

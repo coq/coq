@@ -186,84 +186,6 @@ and name_of_tree_failed entry =
       end
   | DeadEnd | LocAct (_, _) -> "???"
 
-let search_tree_in_entry prev_symb tree =
-  function
-    Dlevels levels ->
-      let rec search_levels =
-        function
-          [] -> tree
-        | level :: levels ->
-            match search_level level with
-              Some tree -> tree
-            | None -> search_levels levels
-      and search_level level =
-        match search_tree level.lsuffix with
-          Some t -> Some (Node {node = Sself; son = t; brother = DeadEnd})
-        | None -> search_tree level.lprefix
-      and search_tree t =
-        if tree <> DeadEnd && t == tree then Some t
-        else
-          match t with
-            Node n ->
-              begin match search_symbol n.node with
-                Some symb ->
-                  Some (Node {node = symb; son = n.son; brother = DeadEnd})
-              | None ->
-                  match search_tree n.son with
-                    Some t ->
-                      Some (Node {node = n.node; son = t; brother = DeadEnd})
-                  | None -> search_tree n.brother
-              end
-          | LocAct (_, _) | DeadEnd -> None
-      and search_symbol symb =
-        match symb with
-          Snterm _ | Snterml (_, _) | Slist0 _ | Slist0sep (_, _, _) |
-          Slist1 _ | Slist1sep (_, _, _) | Sopt _ | Stoken _ | Stree _
-          when symb == prev_symb ->
-            Some symb
-        | Slist0 symb ->
-            begin match search_symbol symb with
-              Some symb -> Some (Slist0 symb)
-            | None -> None
-            end
-        | Slist0sep (symb, sep, b) ->
-            begin match search_symbol symb with
-              Some symb -> Some (Slist0sep (symb, sep, b))
-            | None ->
-                match search_symbol sep with
-                  Some sep -> Some (Slist0sep (symb, sep, b))
-                | None -> None
-            end
-        | Slist1 symb ->
-            begin match search_symbol symb with
-              Some symb -> Some (Slist1 symb)
-            | None -> None
-            end
-        | Slist1sep (symb, sep, b) ->
-            begin match search_symbol symb with
-              Some symb -> Some (Slist1sep (symb, sep, b))
-            | None ->
-                match search_symbol sep with
-                  Some sep -> Some (Slist1sep (symb, sep, b))
-                | None -> None
-            end
-        | Sopt symb ->
-            begin match search_symbol symb with
-              Some symb -> Some (Sopt symb)
-            | None -> None
-            end
-        | Stree t ->
-            begin match search_tree t with
-              Some t -> Some (Stree t)
-            | None -> None
-            end
-        | _ -> None
-      in
-      search_levels levels
-  | Dparser _ -> tree
-
-let error_verbose = ref false
-
 let tree_failed entry prev_symb_result prev_symb tree =
   let txt = name_of_tree_failed entry tree in
   let txt =
@@ -295,18 +217,6 @@ let tree_failed entry prev_symb_result prev_symb tree =
     | Sopt _ | Stree _ -> txt ^ " expected"
     | _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
   in
-  if !error_verbose then
-    begin let tree = search_tree_in_entry prev_symb tree entry.edesc in
-      let ppf = err_formatter in
-      fprintf ppf "@[<v 0>@,";
-      fprintf ppf "----------------------------------@,";
-      fprintf ppf "Parse error in entry [%s], rule:@;<0 2>" entry.ename;
-      fprintf ppf "@[";
-      print_level ppf pp_force_newline (flatten_tree tree);
-      fprintf ppf "@]@,";
-      fprintf ppf "----------------------------------@,";
-      fprintf ppf "@]@."
-    end;
   txt ^ " (in [" ^ entry.ename ^ "])"
 
 let symb_failed entry prev_symb_result prev_symb symb =
@@ -374,11 +284,8 @@ let do_recover parser_of_tree entry nlevn alevn bp a s son
         continue entry bp a s son (parser_of_tree entry nlevn alevn son)
           strm__
 
-let strict_parsing = ref false
-
 let recover parser_of_tree entry nlevn alevn bp a s son strm =
-  if !strict_parsing then raise (Stream.Error (tree_failed entry a s son))
-  else do_recover parser_of_tree entry nlevn alevn bp a s son strm
+  do_recover parser_of_tree entry nlevn alevn bp a s son strm
 
 let token_count = ref 0
 
@@ -794,8 +701,6 @@ let tokens g con =
     g.gtokens;
   !list
 
-let glexer g = g.glexer
-
 type 'te gen_parsable =
   { pa_chr_strm : char Stream.t;
     pa_tok_strm : 'te Stream.t;
@@ -851,7 +756,6 @@ module type S =
     type parsable
     val parsable : char Stream.t -> parsable
     val tokens : string -> (string * int) list
-    val glexer : te Plexing.lexer
     module Entry :
       sig
         type 'a e
@@ -906,7 +810,6 @@ module GMake (L : GLexerType) =
       let (ts, lf) = L.lexer.Plexing.tok_func cs in
       {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
     let tokens = tokens gram
-    let glexer = glexer gram
     module Entry =
       struct
         type 'a e = te g_entry

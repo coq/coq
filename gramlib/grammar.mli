@@ -25,7 +25,6 @@ module type S =
     type parsable
     val parsable : char Stream.t -> parsable
     val tokens : string -> (string * int) list
-    val glexer : te Plexing.lexer
     module Entry :
       sig
         type 'a e

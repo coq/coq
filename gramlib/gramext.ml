@@ -8,7 +8,7 @@ type 'a parser_t = 'a Stream.t -> Obj.t
 
 type 'te grammar =
   { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
-    mutable glexer : 'te Plexing.lexer }
+    glexer : 'te Plexing.lexer }
 
 type 'te g_entry =
   { egram : 'te grammar;
@@ -52,7 +52,6 @@ type position =
   | Last
   | Before of string
   | After of string
-  | Like of string
   | Level of string
 
 let rec derive_eps =
@@ -154,27 +153,6 @@ let is_level_labelled n lev =
     Some n1 -> n = n1
   | None -> false
 
-let rec token_exists_in_level f lev =
-  token_exists_in_tree f lev.lprefix || token_exists_in_tree f lev.lsuffix
-and token_exists_in_tree f =
-  function
-    Node n ->
-      token_exists_in_symbol f n.node || token_exists_in_tree f n.brother ||
-      token_exists_in_tree f n.son
-  | LocAct (_, _) | DeadEnd -> false
-and token_exists_in_symbol f =
-  function
-  | Slist0 sy -> token_exists_in_symbol f sy
-  | Slist0sep (sy, sep, _) ->
-      token_exists_in_symbol f sy || token_exists_in_symbol f sep
-  | Slist1 sy -> token_exists_in_symbol f sy
-  | Slist1sep (sy, sep, _) ->
-      token_exists_in_symbol f sy || token_exists_in_symbol f sep
-  | Sopt sy -> token_exists_in_symbol f sy
-  | Stoken tok -> f tok
-  | Stree t -> token_exists_in_tree f t
-  | Snterm _ | Snterml (_, _) | Snext | Sself -> false
-
 let insert_level ~warning entry_name e1 symbols action slev =
   match e1 with
     true ->
@@ -265,57 +243,10 @@ let get_level ~warning entry position levs =
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
       get levs
-  | Some (Like n) ->
-      let f (tok, prm) = n = tok || n = prm in
-      let rec get =
-        function
-          [] ->
-            eprintf "No level with \"%s\" in entry \"%s\"\n" n entry.ename;
-            flush stderr;
-            failwith "Grammar.extend"
-        | lev :: levs ->
-            if token_exists_in_level f lev then [], change_lev ~warning lev n, levs
-            else
-              let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
-      in
-      get levs
   | None ->
       match levs with
         lev :: levs -> [], change_lev ~warning lev "<top>", levs
       | [] -> [], empty_lev, []
-
-let rec check_gram entry =
-  function
-    Snterm e ->
-      if e.egram != entry.egram then
-        begin
-          eprintf "\
-Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
-            entry.ename e.ename;
-          flush stderr;
-          failwith "Grammar.extend error"
-        end
-  | Snterml (e, _) ->
-      if e.egram != entry.egram then
-        begin
-          eprintf "\
-Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
-            entry.ename e.ename;
-          flush stderr;
-          failwith "Grammar.extend error"
-        end
-  | Slist0sep (s, t, _) -> check_gram entry t; check_gram entry s
-  | Slist1sep (s, t, _) -> check_gram entry t; check_gram entry s
-  | Slist0 s -> check_gram entry s
-  | Slist1 s -> check_gram entry s
-  | Sopt s -> check_gram entry s
-  | Stree t -> tree_check_gram entry t
-  | Snext | Sself | Stoken _ -> ()
-and tree_check_gram entry =
-  function
-    Node {node = n; brother = bro; son = son} ->
-      check_gram entry n; tree_check_gram entry bro; tree_check_gram entry son
-  | LocAct (_, _) | DeadEnd -> ()
 
 let change_to_self entry =
   function
@@ -373,7 +304,6 @@ let levels_of_rules ~warning entry position rules =
              List.fold_left
                (fun lev (symbols, action) ->
                   let symbols = List.map (change_to_self entry) symbols in
-                  List.iter (check_gram entry) symbols;
                   let (e1, symbols) = get_initial entry symbols in
                   insert_tokens entry.egram symbols;
                   insert_level ~warning entry.ename e1 symbols action lev)
