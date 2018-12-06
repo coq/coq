@@ -10,264 +10,266 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+(** #<style> .doc { font-family: monospace; white-space: pre; } </style># **)
+
 Require Bool.
 Require Import ssreflect ssrfun.
 
-(******************************************************************************)
-(* A theory of boolean predicates and operators. A large part of this file is *)
-(* concerned with boolean reflection.                                         *)
-(* Definitions and notations:                                                 *)
-(*               is_true b == the coercion of b : bool to Prop (:= b = true). *)
-(*                            This is just input and displayed as `b''.       *)
-(*             reflect P b == the reflection inductive predicate, asserting   *)
-(*                            that the logical proposition P : prop with the  *)
-(*                            formula b : bool. Lemmas asserting reflect P b  *)
-(*                            are often referred to as "views".               *)
-(*  iffP, appP, sameP, rwP :: lemmas for direct manipulation of reflection    *)
-(*                            views: iffP is used to prove reflection from    *)
-(*                            logical equivalence, appP to compose views, and *)
-(*                            sameP and rwP to perform boolean and setoid     *)
-(*                            rewriting.                                      *)
-(*                   elimT :: coercion reflect >-> Funclass, which allows the *)
-(*                            direct application of `reflect' views to        *)
-(*                            boolean assertions.                             *)
-(*             decidable P <-> P is effectively decidable (:= {P} + {~ P}.    *)
-(*    contra, contraL, ... :: contraposition lemmas.                          *)
-(*           altP my_viewP :: natural alternative for reflection; given       *)
-(*                            lemma myviewP: reflect my_Prop my_formula,      *)
-(*                              have [myP | not_myP] := altP my_viewP.        *)
-(*                            generates two subgoals, in which my_formula has *)
-(*                            been replaced by true and false, resp., with    *)
-(*                            new assumptions myP : my_Prop and               *)
-(*                            not_myP: ~~ my_formula.                         *)
-(*                            Caveat: my_formula must be an APPLICATION, not  *)
-(*                            a variable, constant, let-in, etc. (due to the  *)
-(*                            poor behaviour of dependent index matching).    *)
-(*        boolP my_formula :: boolean disjunction, equivalent to              *)
-(*                            altP (idP my_formula) but circumventing the     *)
-(*                            dependent index capture issue; destructing      *)
-(*                            boolP my_formula generates two subgoals with    *)
-(*                            assumtions my_formula and ~~ myformula. As      *)
-(*                            with altP, my_formula must be an application.   *)
-(*            \unless C, P <-> we can assume property P when a something that *)
-(*                            holds under condition C (such as C itself).     *)
-(*                         := forall G : Prop, (C -> G) -> (P -> G) -> G.     *)
-(*                            This is just C \/ P or rather its impredicative *)
-(*                            encoding, whose usage better fits the above     *)
-(*                            description: given a lemma UCP whose conclusion *)
-(*                            is \unless C, P we can assume P by writing:     *)
-(*                              wlog hP: / P by apply/UCP; (prove C -> goal). *)
-(*                           or even apply: UCP id _ => hP if the goal is C.  *)
-(*           classically P <-> we can assume P when proving is_true b.        *)
-(*                         := forall b : bool, (P -> b) -> b.                 *)
-(*                            This is equivalent to ~ (~ P) when P : Prop.    *)
-(*             implies P Q == wrapper variant type that coerces to P -> Q and *)
-(*                            can be used as a P -> Q view unambigously.      *)
-(*                            Useful to avoid spurious insertion of <-> views *)
-(*                            when Q is a conjunction of foralls, as in Lemma *)
-(*                            all_and2 below; conversely, avoids confusion in *)
-(*                            apply views for impredicative properties, such  *)
-(*                            as \unless C, P. Also supports contrapositives. *)
-(*                  a && b == the boolean conjunction of a and b.             *)
-(*                  a || b == the boolean disjunction of a and b.             *)
-(*                 a ==> b == the boolean implication of b by a.              *)
-(*                    ~~ a == the boolean negation of a.                      *)
-(*                 a (+) b == the boolean exclusive or (or sum) of a and b.   *)
-(*     [ /\ P1 , P2 & P3 ] == multiway logical conjunction, up to 5 terms.    *)
-(*     [ \/ P1 , P2 | P3 ] == multiway logical disjunction, up to 4 terms.    *)
-(*        [&& a, b, c & d] == iterated, right associative boolean conjunction *)
-(*                            with arbitrary arity.                           *)
-(*        [|| a, b, c | d] == iterated, right associative boolean disjunction *)
-(*                            with arbitrary arity.                           *)
-(*      [==> a, b, c => d] == iterated, right associative boolean implication *)
-(*                            with arbitrary arity.                           *)
-(*              and3P, ... == specific reflection lemmas for iterated         *)
-(*                            connectives.                                    *)
-(*       andTb, orbAC, ... == systematic names for boolean connective         *)
-(*                            properties (see suffix conventions below).      *)
-(*              prop_congr == a tactic to move a boolean equality from        *)
-(*                            its coerced form in Prop to the equality        *)
-(*                            in bool.                                        *)
-(*              bool_congr == resolution tactic for blindly weeding out       *)
-(*                            like terms from boolean equalities (can fail).  *)
-(* This file provides a theory of boolean predicates and relations:           *)
-(*                  pred T == the type of bool predicates (:= T -> bool).     *)
-(*            simpl_pred T == the type of simplifying bool predicates, using  *)
-(*                            the simpl_fun from ssrfun.v.                    *)
-(*                   rel T == the type of bool relations.                     *)
-(*                         := T -> pred T or T -> T -> bool.                  *)
-(*             simpl_rel T == type of simplifying relations.                  *)
-(*                predType == the generic predicate interface, supported for  *)
-(*                            for lists and sets.                             *)
-(*              pred_class == a coercion class for the predType projection to *)
-(*                            pred; declaring a coercion to pred_class is an  *)
-(*                            alternative way of equipping a type with a      *)
-(*                            predType structure, which interoperates better  *)
-(*                            with coercion subtyping. This is used, e.g.,    *)
-(*                            for finite sets, so that finite groups inherit  *)
-(*                            the membership operation by coercing to sets.   *)
-(* If P is a predicate the proposition "x satisfies P" can be written         *)
-(* applicatively as (P x), or using an explicit connective as (x \in P); in   *)
-(* the latter case we say that P is a "collective" predicate. We use A, B     *)
-(* rather than P, Q for collective predicates:                                *)
-(*                 x \in A == x satisfies the (collective) predicate A.       *)
-(*              x \notin A == x doesn't satisfy the (collective) predicate A. *)
-(* The pred T type can be used as a generic predicate type for either kind,   *)
-(* but the two kinds of predicates should not be confused. When a "generic"   *)
-(* pred T value of one type needs to be passed as the other the following     *)
-(* conversions should be used explicitly:                                     *)
-(*             SimplPred P == a (simplifying) applicative equivalent of P.    *)
-(*                   mem A == an applicative equivalent of A:                 *)
-(*                            mem A x simplifies to x \in A.                  *)
-(* Alternatively one can use the syntax for explicit simplifying predicates   *)
-(* and relations (in the following x is bound in E):                          *)
-(*            [pred x | E] == simplifying (see ssrfun) predicate x => E.      *)
-(*        [pred x : T | E] == predicate x => E, with a cast on the argument.  *)
-(*          [pred : T | P] == constant predicate P on type T.                 *)
-(*      [pred x | E1 & E2] == [pred x | E1 && E2]; an x : T cast is allowed.  *)
-(*           [pred x in A] == [pred x | x in A].                              *)
-(*       [pred x in A | E] == [pred x | x in A & E].                          *)
-(* [pred x in A | E1 & E2] == [pred x in A | E1 && E2].                       *)
-(*           [predU A & B] == union of two collective predicates A and B.     *)
-(*           [predI A & B] == intersection of collective predicates A and B.  *)
-(*           [predD A & B] == difference of collective predicates A and B.    *)
-(*               [predC A] == complement of the collective predicate A.       *)
-(*          [preim f of A] == preimage under f of the collective predicate A. *)
-(*          predU P Q, ... == union, etc of applicative predicates.           *)
-(*                   pred0 == the empty predicate.                            *)
-(*                   predT == the total (always true) predicate.              *)
-(*                            if T : predArgType, then T coerces to predT.    *)
-(*                   {: T} == T cast to predArgType (e.g., {: bool * nat})    *)
-(* In the following, x and y are bound in E:                                  *)
-(*           [rel x y | E] == simplifying relation x, y => E.                 *)
-(*       [rel x y : T | E] == simplifying relation with arguments cast.       *)
-(*  [rel x y in A & B | E] == [rel x y | [&& x \in A, y \in B & E]].          *)
-(*      [rel x y in A & B] == [rel x y | (x \in A) && (y \in B)].             *)
-(*      [rel x y in A | E] == [rel x y in A & A | E].                         *)
-(*          [rel x y in A] == [rel x y in A & A].                             *)
-(*                relU R S == union of relations R and S.                     *)
-(* Explicit values of type pred T (i.e., lamdba terms) should always be used  *)
-(* applicatively, while values of collection types implementing the predType  *)
-(* interface, such as sequences or sets should always be used as collective   *)
-(* predicates. Defined constants and functions of type pred T or simpl_pred T *)
-(* as well as the explicit simpl_pred T values described below, can generally *)
-(* be used either way. Note however that x \in A will not auto-simplify when  *)
-(* A is an explicit simpl_pred T value; the generic simplification rule inE   *)
-(* must be used (when A : pred T, the unfold_in rule can be used). Constants  *)
-(* of type pred T with an explicit simpl_pred value do not auto-simplify when *)
-(* used applicatively, but can still be expanded with inE. This behavior can  *)
-(* be controlled as follows:                                                  *)
-(*   Let A : collective_pred T := [pred x | ... ].                            *)
-(*     The collective_pred T type is just an alias for pred T, but this cast  *)
-(*     stops rewrite inE from expanding the definition of A, thus treating A  *)
-(*     into an abstract collection (unfold_in or in_collective can be used to *)
-(*     expand manually).                                                      *)
-(*   Let A : applicative_pred T := [pred x | ...].                            *)
-(*     This cast causes inE to turn x \in A into the applicative A x form;    *)
-(*     A will then have to unfolded explicitly with the /A rule. This will    *)
-(*     also apply to any definition that reduces to A (e.g., Let B := A).     *)
-(*   Canonical A_app_pred := ApplicativePred A.                               *)
-(*     This declaration, given after definition of A, similarly causes inE to *)
-(*     turn x \in A into A x, but in addition allows the app_predE rule to    *)
-(*     turn A x back into x \in A; it can be used for any definition of type  *)
-(*     pred T, which makes it especially useful for ambivalent predicates     *)
-(*     as the relational transitive closure connect, that are used in both    *)
-(*     applicative and collective styles.                                     *)
-(* Purely for aesthetics, we provide a subtype of collective predicates:      *)
-(*   qualifier q T == a pred T pretty-printing wrapper. An A : qualifier q T  *)
-(*                    coerces to pred_class and thus behaves as a collective  *)
-(*                    predicate, but x \in A and x \notin A are displayed as: *)
-(*             x \is A and x \isn't A when q = 0,                             *)
-(*         x \is a A and x \isn't a A when q = 1,                             *)
-(*       x \is an A and x \isn't an A when q = 2, respectively.               *)
-(*   [qualify x | P] := Qualifier 0 (fun x => P), constructor for the above.  *)
-(* [qualify x : T | P], [qualify a x | P], [qualify an X | P], etc.           *)
-(*                  variants of the above with type constraints and different *)
-(*                  values of q.                                              *)
-(* We provide an internal interface to support attaching properties (such as  *)
-(* being multiplicative) to predicates:                                       *)
-(*    pred_key p == phantom type that will serve as a support for properties  *)
-(*                  to be attached to p : pred_class; instances should be     *)
-(*                  created with Fact/Qed so as to be opaque.                 *)
-(* KeyedPred k_p == an instance of the interface structure that attaches      *)
-(*                  (k_p : pred_key P) to P; the structure projection is a    *)
-(*                  coercion to pred_class.                                   *)
-(* KeyedQualifier k_q == an instance of the interface structure that attaches *)
-(*                  (k_q : pred_key q) to (q : qualifier n T).                *)
-(* DefaultPredKey p == a default value for pred_key p; the vernacular command *)
-(*                  Import DefaultKeying attaches this key to all predicates  *)
-(*                  that are not explicitly keyed.                            *)
-(* Keys can be used to attach properties to predicates, qualifiers and        *)
-(* generic nouns in a way that allows them to be used transparently. The key  *)
-(* projection of a predicate property structure such as unsignedPred should   *)
-(* be a pred_key, not a pred, and corresponding lemmas will have the form     *)
-(*    Lemma rpredN R S (oppS : @opprPred R S) (kS : keyed_pred oppS) :        *)
-(*       {mono -%R: x / x \in kS}.                                            *)
-(* Because x \in kS will be displayed as x \in S (or x \is S, etc), the       *)
-(* canonical instance of opprPred will not normally be exposed (it will also  *)
-(* be erased by /= simplification). In addition each predicate structure      *)
-(* should have a DefaultPredKey Canonical instance that simply issues the     *)
-(* property as a proof obligation (which can be caught by the Prop-irrelevant *)
-(* feature of the ssreflect plugin).                                          *)
-(*   Some properties of predicates and relations:                             *)
-(*                  A =i B <-> A and B are extensionally equivalent.          *)
-(*         {subset A <= B} <-> A is a (collective) subpredicate of B.         *)
-(*             subpred P Q <-> P is an (applicative) subpredicate or Q.       *)
-(*              subrel R S <-> R is a subrelation of S.                       *)
-(* In the following R is in rel T:                                            *)
-(*             reflexive R <-> R is reflexive.                                *)
-(*           irreflexive R <-> R is irreflexive.                              *)
-(*             symmetric R <-> R (in rel T) is symmetric (equation).          *)
-(*         pre_symmetric R <-> R is symmetric (implication).                  *)
-(*         antisymmetric R <-> R is antisymmetric.                            *)
-(*                 total R <-> R is total.                                    *)
-(*            transitive R <-> R is transitive.                               *)
-(*       left_transitive R <-> R is a congruence on its left hand side.       *)
-(*      right_transitive R <-> R is a congruence on its right hand side.      *)
-(*       equivalence_rel R <-> R is an equivalence relation.                  *)
-(* Localization of (Prop) predicates; if P1 is convertible to forall x, Qx,   *)
-(* P2 to forall x y, Qxy and P3 to forall x y z, Qxyz :                       *)
-(*            {for y, P1} <-> Qx{y / x}.                                      *)
-(*             {in A, P1} <-> forall x, x \in A -> Qx.                        *)
-(*       {in A1 & A2, P2} <-> forall x y, x \in A1 -> y \in A2 -> Qxy.        *)
-(*           {in A &, P2} <-> forall x y, x \in A -> y \in A -> Qxy.          *)
-(*  {in A1 & A2 & A3, Q3} <-> forall x y z,                                   *)
-(*                            x \in A1 -> y \in A2 -> z \in A3 -> Qxyz.       *)
-(*     {in A1 & A2 &, Q3} == {in A1 & A2 & A2, Q3}.                           *)
-(*      {in A1 && A3, Q3} == {in A1 & A1 & A3, Q3}.                           *)
-(*          {in A &&, Q3} == {in A & A & A, Q3}.                              *)
-(*    {in A, bijective f} == f has a right inverse in A.                      *)
-(*             {on C, P1} == forall x, (f x) \in C -> Qx                      *)
-(*                           when P1 is also convertible to Pf f.             *)
-(*           {on C &, P2} == forall x y, f x \in C -> f y \in C -> Qxy        *)
-(*                           when P2 is also convertible to Pf f.             *)
-(*        {on C, P1' & g} == forall x, (f x) \in cd -> Qx                     *)
-(*                           when P1' is convertible to Pf f                  *)
-(*                           and P1' g is convertible to forall x, Qx.        *)
-(*    {on C, bijective f} == f has a right inverse on C.                      *)
-(* This file extends the lemma name suffix conventions of ssrfun as follows:  *)
-(*   A -- associativity, as in andbA : associative andb.                      *)
-(*  AC -- right commutativity.                                                *)
-(* ACA -- self-interchange (inner commutativity), e.g.,                       *)
-(*        orbACA : (a || b) || (c || d) = (a || c) || (b || d).               *)
-(*   b -- a boolean argument, as in andbb : idempotent andb.                  *)
-(*   C -- commutativity, as in andbC : commutative andb,                      *)
-(*        or predicate complement, as in predC.                               *)
-(*  CA -- left commutativity.                                                 *)
-(*   D -- predicate difference, as in predD.                                  *)
-(*   E -- elimination, as in negbFE : ~~ b = false -> b.                      *)
-(*   F or f -- boolean false, as in andbF : b && false = false.               *)
-(*   I -- left/right injectivity, as in addbI : right_injective addb,         *)
-(*        or predicate intersection, as in predI.                             *)
-(*   l -- a left-hand operation, as andb_orl : left_distributive andb orb.    *)
-(*   N or n -- boolean negation, as in andbN : a && (~~ a) = false.           *)
-(*   P -- a characteristic property, often a reflection lemma, as in          *)
-(*        andP : reflect (a /\ b) (a && b).                                   *)
-(*   r -- a right-hand operation, as orb_andr : rightt_distributive orb andb. *)
-(*   T or t -- boolean truth, as in andbT: right_id true andb.                *)
-(*   U -- predicate union, as in predU.                                       *)
-(*   W -- weakening, as in in1W : {in D, forall x, P} -> forall x, P.         *)
-(******************************************************************************)
+(**
+ A theory of boolean predicates and operators. A large part of this file is
+ concerned with boolean reflection.
+ Definitions and notations:
+               is_true b == the coercion of b : bool to Prop (:= b = true).
+                            This is just input and displayed as `b''.
+             reflect P b == the reflection inductive predicate, asserting
+                            that the logical proposition P : prop with the
+                            formula b : bool. Lemmas asserting reflect P b
+                            are often referred to as "views".
+  iffP, appP, sameP, rwP :: lemmas for direct manipulation of reflection
+                            views: iffP is used to prove reflection from
+                            logical equivalence, appP to compose views, and
+                            sameP and rwP to perform boolean and setoid
+                            rewriting.
+                   elimT :: coercion reflect >-> Funclass, which allows the
+                            direct application of `reflect' views to
+                            boolean assertions.
+             decidable P <-> P is effectively decidable (:= {P} + {~ P}.
+    contra, contraL, ... :: contraposition lemmas.
+           altP my_viewP :: natural alternative for reflection; given
+                            lemma myviewP: reflect my_Prop my_formula,
+                              have #[#myP | not_myP#]# := altP my_viewP.
+                            generates two subgoals, in which my_formula has
+                            been replaced by true and false, resp., with
+                            new assumptions myP : my_Prop and
+                            not_myP: ~~ my_formula.
+                            Caveat: my_formula must be an APPLICATION, not
+                            a variable, constant, let-in, etc. (due to the
+                            poor behaviour of dependent index matching).
+        boolP my_formula :: boolean disjunction, equivalent to
+                            altP (idP my_formula) but circumventing the
+                            dependent index capture issue; destructing
+                            boolP my_formula generates two subgoals with
+                            assumtions my_formula and ~~ myformula. As
+                            with altP, my_formula must be an application.
+            \unless C, P <-> we can assume property P when a something that
+                            holds under condition C (such as C itself).
+                         := forall G : Prop, (C -> G) -> (P -> G) -> G.
+                            This is just C \/ P or rather its impredicative
+                            encoding, whose usage better fits the above
+                            description: given a lemma UCP whose conclusion
+                            is \unless C, P we can assume P by writing:
+                              wlog hP: / P by apply/UCP; (prove C -> goal).
+                           or even apply: UCP id _ => hP if the goal is C.
+           classically P <-> we can assume P when proving is_true b.
+                         := forall b : bool, (P -> b) -> b.
+                            This is equivalent to ~ (~ P) when P : Prop.
+             implies P Q == wrapper variant type that coerces to P -> Q and
+                            can be used as a P -> Q view unambigously.
+                            Useful to avoid spurious insertion of <-> views
+                            when Q is a conjunction of foralls, as in Lemma
+                            all_and2 below; conversely, avoids confusion in
+                            apply views for impredicative properties, such
+                            as \unless C, P. Also supports contrapositives.
+                  a && b == the boolean conjunction of a and b.
+                  a || b == the boolean disjunction of a and b.
+                 a ==> b == the boolean implication of b by a.
+                    ~~ a == the boolean negation of a.
+                 a (+) b == the boolean exclusive or (or sum) of a and b.
+     #[# /\ P1 , P2 & P3 #]# == multiway logical conjunction, up to 5 terms.
+     #[# \/ P1 , P2 | P3 #]# == multiway logical disjunction, up to 4 terms.
+        #[#&& a, b, c & d#]# == iterated, right associative boolean conjunction
+                            with arbitrary arity.
+        #[#|| a, b, c | d#]# == iterated, right associative boolean disjunction
+                            with arbitrary arity.
+      #[#==> a, b, c => d#]# == iterated, right associative boolean implication
+                            with arbitrary arity.
+              and3P, ... == specific reflection lemmas for iterated
+                            connectives.
+       andTb, orbAC, ... == systematic names for boolean connective
+                            properties (see suffix conventions below).
+              prop_congr == a tactic to move a boolean equality from
+                            its coerced form in Prop to the equality
+                            in bool.
+              bool_congr == resolution tactic for blindly weeding out
+                            like terms from boolean equalities (can fail).
+ This file provides a theory of boolean predicates and relations:
+                  pred T == the type of bool predicates (:= T -> bool).
+            simpl_pred T == the type of simplifying bool predicates, using
+                            the simpl_fun from ssrfun.v.
+                   rel T == the type of bool relations.
+                         := T -> pred T or T -> T -> bool.
+             simpl_rel T == type of simplifying relations.
+                predType == the generic predicate interface, supported for
+                            for lists and sets.
+              pred_class == a coercion class for the predType projection to
+                            pred; declaring a coercion to pred_class is an
+                            alternative way of equipping a type with a
+                            predType structure, which interoperates better
+                            with coercion subtyping. This is used, e.g.,
+                            for finite sets, so that finite groups inherit
+                            the membership operation by coercing to sets.
+ If P is a predicate the proposition "x satisfies P" can be written
+ applicatively as (P x), or using an explicit connective as (x \in P); in
+ the latter case we say that P is a "collective" predicate. We use A, B
+ rather than P, Q for collective predicates:
+                 x \in A == x satisfies the (collective) predicate A.
+              x \notin A == x doesn't satisfy the (collective) predicate A.
+ The pred T type can be used as a generic predicate type for either kind,
+ but the two kinds of predicates should not be confused. When a "generic"
+ pred T value of one type needs to be passed as the other the following
+ conversions should be used explicitly:
+             SimplPred P == a (simplifying) applicative equivalent of P.
+                   mem A == an applicative equivalent of A:
+                            mem A x simplifies to x \in A.
+ Alternatively one can use the syntax for explicit simplifying predicates
+ and relations (in the following x is bound in E):
+            #[#pred x | E#]# == simplifying (see ssrfun) predicate x => E.
+        #[#pred x : T | E#]# == predicate x => E, with a cast on the argument.
+          #[#pred : T | P#]# == constant predicate P on type T.
+      #[#pred x | E1 & E2#]# == #[#pred x | E1 && E2#]#; an x : T cast is allowed.
+           #[#pred x in A#]# == #[#pred x | x in A#]#.
+       #[#pred x in A | E#]# == #[#pred x | x in A & E#]#.
+ #[#pred x in A | E1 & E2#]# == #[#pred x in A | E1 && E2#]#.
+           #[#predU A & B#]# == union of two collective predicates A and B.
+           #[#predI A & B#]# == intersection of collective predicates A and B.
+           #[#predD A & B#]# == difference of collective predicates A and B.
+               #[#predC A#]# == complement of the collective predicate A.
+          #[#preim f of A#]# == preimage under f of the collective predicate A.
+          predU P Q, ... == union, etc of applicative predicates.
+                   pred0 == the empty predicate.
+                   predT == the total (always true) predicate.
+                            if T : predArgType, then T coerces to predT.
+                   {: T} == T cast to predArgType (e.g., {: bool * nat})
+ In the following, x and y are bound in E:
+           #[#rel x y | E#]# == simplifying relation x, y => E.
+       #[#rel x y : T | E#]# == simplifying relation with arguments cast.
+  #[#rel x y in A & B | E#]# == #[#rel x y | #[#&& x \in A, y \in B & E#]# #]#.
+      #[#rel x y in A & B#]# == #[#rel x y | (x \in A) && (y \in B) #]#.
+      #[#rel x y in A | E#]# == #[#rel x y in A & A | E#]#.
+          #[#rel x y in A#]# == #[#rel x y in A & A#]#.
+                relU R S == union of relations R and S.
+ Explicit values of type pred T (i.e., lamdba terms) should always be used
+ applicatively, while values of collection types implementing the predType
+ interface, such as sequences or sets should always be used as collective
+ predicates. Defined constants and functions of type pred T or simpl_pred T
+ as well as the explicit simpl_pred T values described below, can generally
+ be used either way. Note however that x \in A will not auto-simplify when
+ A is an explicit simpl_pred T value; the generic simplification rule inE
+ must be used (when A : pred T, the unfold_in rule can be used). Constants
+ of type pred T with an explicit simpl_pred value do not auto-simplify when
+ used applicatively, but can still be expanded with inE. This behavior can
+ be controlled as follows:
+   Let A : collective_pred T := #[#pred x | ... #]#.
+     The collective_pred T type is just an alias for pred T, but this cast
+     stops rewrite inE from expanding the definition of A, thus treating A
+     into an abstract collection (unfold_in or in_collective can be used to
+     expand manually).
+   Let A : applicative_pred T := #[#pred x | ... #]#.
+     This cast causes inE to turn x \in A into the applicative A x form;
+     A will then have to unfolded explicitly with the /A rule. This will
+     also apply to any definition that reduces to A (e.g., Let B := A).
+   Canonical A_app_pred := ApplicativePred A.
+     This declaration, given after definition of A, similarly causes inE to
+     turn x \in A into A x, but in addition allows the app_predE rule to
+     turn A x back into x \in A; it can be used for any definition of type
+     pred T, which makes it especially useful for ambivalent predicates
+     as the relational transitive closure connect, that are used in both
+     applicative and collective styles.
+ Purely for aesthetics, we provide a subtype of collective predicates:
+   qualifier q T == a pred T pretty-printing wrapper. An A : qualifier q T
+                    coerces to pred_class and thus behaves as a collective
+                    predicate, but x \in A and x \notin A are displayed as:
+             x \is A and x \isn't A when q = 0,
+         x \is a A and x \isn't a A when q = 1,
+       x \is an A and x \isn't an A when q = 2, respectively.
+   #[#qualify x | P#]# := Qualifier 0 (fun x => P), constructor for the above.
+ #[#qualify x : T | P#]#, #[#qualify a x | P#]#, #[#qualify an X | P#]#, etc.
+                  variants of the above with type constraints and different
+                  values of q.
+ We provide an internal interface to support attaching properties (such as
+ being multiplicative) to predicates:
+    pred_key p == phantom type that will serve as a support for properties
+                  to be attached to p : pred_class; instances should be
+                  created with Fact/Qed so as to be opaque.
+ KeyedPred k_p == an instance of the interface structure that attaches
+                  (k_p : pred_key P) to P; the structure projection is a
+                  coercion to pred_class.
+ KeyedQualifier k_q == an instance of the interface structure that attaches
+                  (k_q : pred_key q) to (q : qualifier n T).
+ DefaultPredKey p == a default value for pred_key p; the vernacular command
+                  Import DefaultKeying attaches this key to all predicates
+                  that are not explicitly keyed.
+ Keys can be used to attach properties to predicates, qualifiers and
+ generic nouns in a way that allows them to be used transparently. The key
+ projection of a predicate property structure such as unsignedPred should
+ be a pred_key, not a pred, and corresponding lemmas will have the form
+    Lemma rpredN R S (oppS : @opprPred R S) (kS : keyed_pred oppS) :
+       {mono -%%R: x / x \in kS}.
+ Because x \in kS will be displayed as x \in S (or x \is S, etc), the
+ canonical instance of opprPred will not normally be exposed (it will also
+ be erased by /= simplification). In addition each predicate structure
+ should have a DefaultPredKey Canonical instance that simply issues the
+ property as a proof obligation (which can be caught by the Prop-irrelevant
+ feature of the ssreflect plugin).
+   Some properties of predicates and relations:
+                  A =i B <-> A and B are extensionally equivalent.
+         {subset A <= B} <-> A is a (collective) subpredicate of B.
+             subpred P Q <-> P is an (applicative) subpredicate or Q.
+              subrel R S <-> R is a subrelation of S.
+ In the following R is in rel T:
+             reflexive R <-> R is reflexive.
+           irreflexive R <-> R is irreflexive.
+             symmetric R <-> R (in rel T) is symmetric (equation).
+         pre_symmetric R <-> R is symmetric (implication).
+         antisymmetric R <-> R is antisymmetric.
+                 total R <-> R is total.
+            transitive R <-> R is transitive.
+       left_transitive R <-> R is a congruence on its left hand side.
+      right_transitive R <-> R is a congruence on its right hand side.
+       equivalence_rel R <-> R is an equivalence relation.
+ Localization of (Prop) predicates; if P1 is convertible to forall x, Qx,
+ P2 to forall x y, Qxy and P3 to forall x y z, Qxyz :
+            {for y, P1} <-> Qx{y / x}.
+             {in A, P1} <-> forall x, x \in A -> Qx.
+       {in A1 & A2, P2} <-> forall x y, x \in A1 -> y \in A2 -> Qxy.
+           {in A &, P2} <-> forall x y, x \in A -> y \in A -> Qxy.
+  {in A1 & A2 & A3, Q3} <-> forall x y z,
+                            x \in A1 -> y \in A2 -> z \in A3 -> Qxyz.
+     {in A1 & A2 &, Q3} == {in A1 & A2 & A2, Q3}.
+      {in A1 && A3, Q3} == {in A1 & A1 & A3, Q3}.
+          {in A &&, Q3} == {in A & A & A, Q3}.
+    {in A, bijective f} == f has a right inverse in A.
+             {on C, P1} == forall x, (f x) \in C -> Qx
+                           when P1 is also convertible to Pf f.
+           {on C &, P2} == forall x y, f x \in C -> f y \in C -> Qxy
+                           when P2 is also convertible to Pf f.
+        {on C, P1' & g} == forall x, (f x) \in cd -> Qx
+                           when P1' is convertible to Pf f
+                           and P1' g is convertible to forall x, Qx.
+    {on C, bijective f} == f has a right inverse on C.
+ This file extends the lemma name suffix conventions of ssrfun as follows:
+   A -- associativity, as in andbA : associative andb.
+  AC -- right commutativity.
+ ACA -- self-interchange (inner commutativity), e.g.,
+        orbACA : (a || b) || (c || d) = (a || c) || (b || d).
+   b -- a boolean argument, as in andbb : idempotent andb.
+   C -- commutativity, as in andbC : commutative andb,
+        or predicate complement, as in predC.
+  CA -- left commutativity.
+   D -- predicate difference, as in predD.
+   E -- elimination, as in negbFE : ~~ b = false -> b.
+   F or f -- boolean false, as in andbF : b && false = false.
+   I -- left/right injectivity, as in addbI : right_injective addb,
+        or predicate intersection, as in predI.
+   l -- a left-hand operation, as andb_orl : left_distributive andb orb.
+   N or n -- boolean negation, as in andbN : a && (~~ a) = false.
+   P -- a characteristic property, often a reflection lemma, as in
+        andP : reflect (a /\ b) (a && b).
+   r -- a right-hand operation, as orb_andr : rightt_distributive orb andb.
+   T or t -- boolean truth, as in andbT: right_id true andb.
+   U -- predicate union, as in predU.
+   W -- weakening, as in in1W : {in D, forall x, P} -> forall x, P.          **)
+
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -288,23 +290,24 @@ Reserved Notation "x \notin A"
 Reserved Notation "p1 =i p2"
   (at level 70, format "'[hv' p1 '/ '  =i  p2 ']'", no associativity).
 
-(* We introduce a number of n-ary "list-style" notations that share a common  *)
-(* format, namely                                                             *)
-(*    [op arg1, arg2, ... last_separator last_arg]                            *)
-(* This usually denotes a right-associative applications of op, e.g.,         *)
-(*  [&& a, b, c & d] denotes a && (b && (c && d))                             *)
-(* The last_separator must be a non-operator token. Here we use &, | or =>;   *)
-(* our default is &, but we try to match the intended meaning of op. The      *)
-(* separator is a workaround for limitations of the parsing engine; the same  *)
-(* limitations mean the separator cannot be omitted even when last_arg can.   *)
-(*   The Notation declarations are complicated by the separate treatment for  *)
-(* some fixed arities (binary for bool operators, and all arities for Prop    *)
-(* operators).                                                                *)
-(*   We also use the square brackets in comprehension-style notations         *)
-(*    [type var separator expr]                                               *)
-(* where "type" is the type of the comprehension (e.g., pred) and "separator" *)
-(* is | or => . It is important that in other notations a leading square      *)
-(* bracket [ is always followed by an operator symbol or a fixed identifier.  *)
+(**
+ We introduce a number of n-ary "list-style" notations that share a common
+ format, namely
+    #[#op arg1, arg2, ... last_separator last_arg#]#
+ This usually denotes a right-associative applications of op, e.g.,
+  #[#&& a, b, c & d#]# denotes a && (b && (c && d))
+ The last_separator must be a non-operator token. Here we use &, | or =>;
+ our default is &, but we try to match the intended meaning of op. The
+ separator is a workaround for limitations of the parsing engine; the same
+ limitations mean the separator cannot be omitted even when last_arg can.
+   The Notation declarations are complicated by the separate treatment for
+ some fixed arities (binary for bool operators, and all arities for Prop
+ operators).
+   We also use the square brackets in comprehension-style notations
+    #[#type var separator expr#]#
+ where "type" is the type of the comprehension (e.g., pred) and "separator"
+ is | or => . It is important that in other notations a leading square
+ bracket #[# is always followed by an operator symbol or a fixed identifier.   **)
 
 Reserved Notation "[ /\ P1 & P2 ]" (at level 0, only parsing).
 Reserved Notation "[ /\ P1 , P2 & P3 ]" (at level 0, format
@@ -344,19 +347,19 @@ Reserved Notation "[ 'rel' x y => E ]" (at level 0, x, y at level 8, format
 Reserved Notation "[ 'rel' x y : T => E ]" (at level 0, x, y at level 8, format
   "'[hv' [ 'rel'  x  y :  T  => '/ '  E ] ']'").
 
-(* Shorter delimiter *)
+(**  Shorter delimiter  **)
 Delimit Scope bool_scope with B.
 Open Scope bool_scope.
 
-(* An alternative to xorb that behaves somewhat better wrt simplification.    *)
+(**  An alternative to xorb that behaves somewhat better wrt simplification. **)
 Definition addb b := if b then negb else id.
 
-(* Notation for && and || is declared in Init.Datatypes. *)
+(**  Notation for && and || is declared in Init.Datatypes.  **)
 Notation "~~ b" := (negb b) : bool_scope.
 Notation "b ==> c" := (implb b c) : bool_scope.
 Notation "b1 (+) b2" := (addb b1 b2) : bool_scope.
 
-(* Constant is_true b := b = true is defined in Init.Datatypes. *)
+(**  Constant is_true b := b = true is defined in Init.Datatypes.  **)
 Coercion is_true : bool >-> Sortclass. (* Prop *)
 
 Lemma prop_congr : forall b b' : bool, b = b' -> b = b' :> Prop.
@@ -364,21 +367,22 @@ Proof. by move=> b b' ->. Qed.
 
 Ltac prop_congr := apply: prop_congr.
 
-(* Lemmas for trivial. *)
+(**  Lemmas for trivial.  **)
 Lemma is_true_true : true.               Proof. by []. Qed.
 Lemma not_false_is_true : ~ false.       Proof. by []. Qed.
 Lemma is_true_locked_true : locked true. Proof. by unlock. Qed.
 Hint Resolve is_true_true not_false_is_true is_true_locked_true.
 
-(* Shorter names. *)
+(**  Shorter names.  **)
 Definition isT := is_true_true.
 Definition notF := not_false_is_true.
 
-(* Negation lemmas. *)
+(**  Negation lemmas.  **)
 
-(* We generally take NEGATION as the standard form of a false condition:      *)
-(* negative boolean hypotheses should be of the form ~~ b, rather than ~ b or *)
-(* b = false, as much as possible.                                            *)
+(**
+ We generally take NEGATION as the standard form of a false condition:
+ negative boolean hypotheses should be of the form ~~ b, rather than ~ b or
+ b = false, as much as possible.                                             **)
 
 Lemma negbT b : b = false -> ~~ b.          Proof. by case: b. Qed.
 Lemma negbTE b : ~~ b -> b = false.         Proof. by case: b. Qed.
@@ -426,8 +430,9 @@ Proof. by move/contra=> notb_notc /notb_notc/negbTE. Qed.
 Lemma contraFF (c b : bool) : (c -> b) -> b = false -> c = false.
 Proof. by move/contraFN=> bF_notc /bF_notc/negbTE. Qed.
 
-(* Coercion of sum-style datatypes into bool, which makes it possible *)
-(* to use ssr's boolean if rather than Coq's "generic" if.            *)
+(**
+ Coercion of sum-style datatypes into bool, which makes it possible
+ to use ssr's boolean if rather than Coq's "generic" if.             **)
 
 Coercion isSome T (u : option T) := if u is Some _ then true else false.
 
@@ -441,16 +446,17 @@ Prenex Implicits  isSome is_inl is_left is_inleft.
 
 Definition decidable P := {P} + {~ P}.
 
-(* Lemmas for ifs with large conditions, which allow reasoning about the  *)
-(* condition without repeating it inside the proof (the latter IS         *)
-(* preferable when the condition is short).                               *)
-(* Usage :                                                                *)
-(*   if the goal contains (if cond then ...) = ...                        *)
-(*     case: ifP => Hcond.                                                *)
-(*   generates two subgoal, with the assumption Hcond : cond = true/false *)
-(*     Rewrite if_same  eliminates redundant ifs                          *)
-(*     Rewrite (fun_if f) moves a function f inside an if                 *)
-(*     Rewrite if_arg moves an argument inside a function-valued if       *)
+(**
+ Lemmas for ifs with large conditions, which allow reasoning about the
+ condition without repeating it inside the proof (the latter IS
+ preferable when the condition is short).
+ Usage :
+   if the goal contains (if cond then ...) = ...
+     case: ifP => Hcond.
+   generates two subgoal, with the assumption Hcond : cond = true/false
+     Rewrite if_same  eliminates redundant ifs
+     Rewrite (fun_if f) moves a function f inside an if
+     Rewrite if_arg moves an argument inside a function-valued if        **)
 
 Section BoolIf.
 
@@ -483,13 +489,13 @@ Lemma if_arg (fT fF : A -> B) :
   (if b then fT else fF) x = if b then fT x else fF x.
 Proof. by case b. Qed.
 
-(* Turning a boolean "if" form into an application.                           *)
+(**  Turning a boolean "if" form into an application.  **)
 Definition if_expr := if b then vT else vF.
 Lemma ifE : (if b then vT else vF) = if_expr. Proof. by []. Qed.
 
 End BoolIf.
 
-(* Core (internal) reflection lemmas, used for the three kinds of views. *)
+(**  Core (internal) reflection lemmas, used for the three kinds of views.  **)
 
 Section ReflectCore.
 
@@ -517,7 +523,7 @@ Proof. by case Hb => [? _ H ? | ? H _]; case: H. Qed.
 
 End ReflectCore.
 
-(* Internal negated reflection lemmas *)
+(**  Internal negated reflection lemmas  **)
 Section ReflectNegCore.
 
 Variables (P Q : Prop) (b c : bool).
@@ -537,7 +543,7 @@ Proof. by rewrite -if_neg; apply: xorPif. Qed.
 
 End ReflectNegCore.
 
-(* User-oriented reflection lemmas *)
+(**  User-oriented reflection lemmas  **)
 Section Reflect.
 
 Variables (P Q : Prop) (b b' c : bool).
@@ -584,7 +590,7 @@ Lemma rwP : P <-> b. Proof. by split; [apply: introT | apply: elimT]. Qed.
 Lemma rwP2 : reflect Q b -> (P <-> Q).
 Proof. by move=> Qb; split=> ?; [apply: appP | apply: elimT; case: Qb]. Qed.
 
-(*  Predicate family to reflect excluded middle in bool.                      *)
+(**   Predicate family to reflect excluded middle in bool.  **)
 Variant alt_spec : bool -> Type :=
   | AltTrue of     P : alt_spec true
   | AltFalse of ~~ b : alt_spec false.
@@ -600,7 +606,7 @@ Hint View for apply/ introTF|3 introNTF|3 introTFn|3 elimT|2 elimTn|2 elimN|2.
 
 Hint View for apply// equivPif|3 xorPif|3 equivPifn|3 xorPifn|3.
 
-(* Allow the direct application of a reflection lemma to a boolean assertion. *)
+(**  Allow the direct application of a reflection lemma to a boolean assertion.  **)
 Coercion elimT : reflect >-> Funclass.
 
 Variant implies P Q := Implies of P -> Q.
@@ -611,7 +617,7 @@ Coercion impliesP : implies >-> Funclass.
 Hint View for move/ impliesPn|2 impliesP|2.
 Hint View for apply/ impliesPn|2 impliesP|2.
 
-(* Impredicative or, which can emulate a classical not-implies. *)
+(**  Impredicative or, which can emulate a classical not-implies.  **)
 Definition unless condition property : Prop :=
  forall goal : Prop, (condition -> goal) -> (property -> goal) -> goal.
 
@@ -637,8 +643,9 @@ Proof. by split; apply=> [hC|hP]; [apply/unlessL/unlessL | apply/unlessR]. Qed.
 Lemma unless_contra b C : implies (~~ b -> C) (\unless C, b).
 Proof. by split; case: b => [_ | hC]; [apply/unlessR | apply/unlessL/hC]. Qed.
 
-(* Classical reasoning becomes directly accessible for any bool subgoal.      *)
-(* Note that we cannot use "unless" here for lack of universe polymorphism.   *)
+(**
+ Classical reasoning becomes directly accessible for any bool subgoal.
+ Note that we cannot use "unless" here for lack of universe polymorphism.    **)
 Definition classically P : Prop := forall b : bool, (P -> b) -> b.
 
 Lemma classicP (P : Prop) : classically P <-> ~ ~ P.
@@ -669,11 +676,12 @@ move=> iPQ []// notPQ; apply/notPQ=> /iPQ-cQ.
 by case: notF; apply: cQ => hQ; apply: notPQ.
 Qed.
 
-(* List notations for wider connectives; the Prop connectives have a fixed    *)
-(* width so as to avoid iterated destruction (we go up to width 5 for /\, and *)
-(* width 4 for or). The bool connectives have arbitrary widths, but denote    *)
-(* expressions that associate to the RIGHT. This is consistent with the right *)
-(* associativity of list expressions and thus more convenient in most proofs. *)
+(**
+ List notations for wider connectives; the Prop connectives have a fixed
+ width so as to avoid iterated destruction (we go up to width 5 for /\, and
+ width 4 for or). The bool connectives have arbitrary widths, but denote
+ expressions that associate to the RIGHT. This is consistent with the right
+ associativity of list expressions and thus more convenient in most proofs.  **)
 
 Inductive and3 (P1 P2 P3 : Prop) : Prop := And3 of P1 & P2 & P3.
 
@@ -822,7 +830,7 @@ Arguments implyP [b1 b2].
 Prenex Implicits idP idPn negP negPn negPf.
 Prenex Implicits andP and3P and4P and5P orP or3P or4P nandP norP implyP.
 
-(* Shorter, more systematic names for the boolean connectives laws.       *)
+(**  Shorter, more systematic names for the boolean connectives laws.        **)
 
 Lemma andTb : left_id true andb.       Proof. by []. Qed.
 Lemma andFb : left_zero false andb.    Proof. by []. Qed.
@@ -880,14 +888,14 @@ Proof. by case: a; case: b. Qed.
 Lemma negb_or (a b : bool) : ~~ (a || b) = ~~ a && ~~ b.
 Proof. by case: a; case: b. Qed.
 
-(* Pseudo-cancellation -- i.e, absorbtion *)
+(**  Pseudo-cancellation -- i.e, absorbtion  **)
 
 Lemma andbK a b : a && b || a = a.  Proof. by case: a; case: b. Qed.
 Lemma andKb a b : a || b && a = a.  Proof. by case: a; case: b. Qed.
 Lemma orbK a b : (a || b) && a = a. Proof. by case: a; case: b. Qed.
 Lemma orKb a b : a && (b || a) = a. Proof. by case: a; case: b. Qed.
 
-(* Imply *)
+(**  Imply  **)
 
 Lemma implybT b : b ==> true.           Proof. by case: b. Qed.
 Lemma implybF b : (b ==> false) = ~~ b. Proof. by case: b. Qed.
@@ -917,7 +925,7 @@ Proof. by case: a; case: b => // ->. Qed.
 Lemma implyb_id2l (a b c : bool) : (a -> b = c) -> (a ==> b) = (a ==> c).
 Proof. by case: a; case: b; case: c => // ->. Qed.
 
-(* Addition (xor) *)
+(**  Addition (xor)  **)
 
 Lemma addFb : left_id false addb.               Proof. by []. Qed.
 Lemma addbF : right_id false addb.              Proof. by case. Qed.
@@ -946,9 +954,10 @@ Lemma addbP a b : reflect (~~ a = b) (a (+) b).
 Proof. by case: a; case: b; constructor. Qed.
 Arguments addbP [a b].
 
-(* Resolution tactic for blindly weeding out common terms from boolean       *)
-(* equalities. When faced with a goal of the form (andb/orb/addb b1 b2) = b3 *)
-(* they will try to locate b1 in b3 and remove it. This can fail!            *)
+(**
+ Resolution tactic for blindly weeding out common terms from boolean
+ equalities. When faced with a goal of the form (andb/orb/addb b1 b2) = b3
+ they will try to locate b1 in b3 and remove it. This can fail!             **)
 
 Ltac bool_congr :=
   match goal with
@@ -963,100 +972,101 @@ Ltac bool_congr :=
   | |- (~~ ?X1 = ?X2) => congr 1 negb
   end.
 
-(******************************************************************************)
-(* Predicates, i.e., packaged functions to bool.                              *)
-(* - pred T, the basic type for predicates over a type T, is simply an alias  *)
-(* for T -> bool.                                                             *)
-(* We actually distinguish two kinds of predicates, which we call applicative *)
-(* and collective, based on the syntax used to test them at some x in T:      *)
-(* - For an applicative predicate P, one uses prefix syntax:                  *)
-(*     P x                                                                    *)
-(*   Also, most operations on applicative predicates use prefix syntax as     *)
-(*   well (e.g., predI P Q).                                                  *)
-(* - For a collective predicate A, one uses infix syntax:                     *)
-(*     x \in A                                                                *)
-(*   and all operations on collective predicates use infix syntax as well     *)
-(*   (e.g., [predI A & B]).                                                   *)
-(* There are only two kinds of applicative predicates:                        *)
-(* - pred T, the alias for T -> bool mentioned above                          *)
-(* - simpl_pred T, an alias for simpl_fun T bool with a coercion to pred T    *)
-(*   that auto-simplifies on application (see ssrfun).                        *)
-(* On the other hand, the set of collective predicate types is open-ended via *)
-(* - predType T, a Structure that can be used to put Canonical collective     *)
-(*   predicate interpretation on other types, such as lists, tuples,          *)
-(*   finite sets, etc.                                                        *)
-(* Indeed, we define such interpretations for applicative predicate types,    *)
-(* which can therefore also be used with the infix syntax, e.g.,              *)
-(*     x \in predI P Q                                                        *)
-(* Moreover these infix forms are convertible to their prefix counterpart     *)
-(* (e.g., predI P Q x which in turn simplifies to P x && Q x). The converse   *)
-(* is not true, however; collective predicate types cannot, in general, be    *)
-(* general, be used applicatively, because of the "uniform inheritance"       *)
-(* restriction on implicit coercions.                                         *)
-(*   However, we do define an explicit generic coercion                       *)
-(* - mem : forall (pT : predType), pT -> mem_pred T                           *)
-(*   where mem_pred T is a variant of simpl_pred T that preserves the infix   *)
-(*   syntax, i.e., mem A x auto-simplifies to x \in A.                        *)
-(* Indeed, the infix "collective" operators are notation for a prefix         *)
-(* operator with arguments of type mem_pred T or pred T, applied to coerced   *)
-(* collective predicates, e.g.,                                               *)
-(*      Notation "x \in A" := (in_mem x (mem A)).                             *)
-(* This prevents the variability in the predicate type from interfering with  *)
-(* the application of generic lemmas. Moreover this also makes it much easier *)
-(* to define generic lemmas, because the simplest type -- pred T -- can be    *)
-(* used as the type of generic collective predicates, provided one takes care *)
-(* not to use it applicatively; this avoids the burden of having to declare a *)
-(* different predicate type for each predicate parameter of each section or   *)
-(* lemma.                                                                     *)
-(*   This trick is made possible by the fact that the constructor of the      *)
-(* mem_pred T type aligns the unification process, forcing a generic          *)
-(* "collective" predicate A : pred T to unify with the actual collective B,   *)
-(* which mem has coerced to pred T via an internal, hidden implicit coercion, *)
-(* supplied by the predType structure for B. Users should take care not to    *)
-(* inadvertently "strip" (mem B) down to the coerced B, since this will       *)
-(* expose the internal coercion: Coq will display a term B x that cannot be   *)
-(* typed as such. The topredE lemma can be used to restore the x \in B        *)
-(* syntax in this case. While -topredE can conversely be used to change       *)
-(* x \in P into P x, it is safer to use the inE and memE lemmas instead, as   *)
-(* they do not run the risk of exposing internal coercions. As a consequence  *)
-(* it is better to explicitly cast a generic applicative pred T to simpl_pred *)
-(* using the SimplPred constructor, when it is used as a collective predicate *)
-(* (see, e.g., Lemma eq_big in bigop).                                        *)
-(*   We also sometimes "instantiate" the predType structure by defining a     *)
-(* coercion to the sort of the predPredType structure. This works better for  *)
-(* types such as {set T} that have subtypes that coerce to them, since the    *)
-(* same coercion will be inserted by the application of mem. It also lets us  *)
-(* turn any Type aT : predArgType into the total predicate over that type,    *)
-(* i.e., fun _: aT => true. This allows us to write, e.g., #|'I_n| for the    *)
-(* cardinal of the (finite) type of integers less than n.                     *)
-(*   Collective predicates have a specific extensional equality,              *)
-(*   - A =i B,                                                                *)
-(* while applicative predicates use the extensional equality of functions,    *)
-(*   - P =1 Q                                                                 *)
-(* The two forms are convertible, however.                                    *)
-(* We lift boolean operations to predicates, defining:                        *)
-(* - predU (union), predI (intersection), predC (complement),                 *)
-(*   predD (difference), and preim (preimage, i.e., composition)              *)
-(* For each operation we define three forms, typically:                       *)
-(* - predU : pred T -> pred T -> simpl_pred T                                 *)
-(* - [predU A & B], a Notation for predU (mem A) (mem B)                      *)
-(* - xpredU, a Notation for the lambda-expression inside predU,               *)
-(*     which is mostly useful as an argument of =1, since it exposes the head *)
-(*     head constant of the expression to the ssreflect matching algorithm.   *)
-(* The syntax for the preimage of a collective predicate A is                 *)
-(* - [preim f of A]                                                           *)
-(* Finally, the generic syntax for defining a simpl_pred T is                 *)
-(* - [pred x : T | P(x)], [pred x | P(x)], [pred x in A | P(x)], etc.         *)
-(* We also support boolean relations, but only the applicative form, with     *)
-(* types                                                                      *)
-(* - rel T, an alias for T -> pred T                                          *)
-(* - simpl_rel T, an auto-simplifying version, and syntax                     *)
-(*   [rel x y | P(x,y)], [rel x y in A & B | P(x,y)], etc.                    *)
-(* The notation [rel of fA] can be used to coerce a function returning a      *)
-(* collective predicate to one returning pred T.                              *)
-(*   Finally, note that there is specific support for ambivalent predicates   *)
-(* that can work in either style, as per this file's head descriptor.         *)
-(******************************************************************************)
+
+(**
+ Predicates, i.e., packaged functions to bool.
+ - pred T, the basic type for predicates over a type T, is simply an alias
+ for T -> bool.
+ We actually distinguish two kinds of predicates, which we call applicative
+ and collective, based on the syntax used to test them at some x in T:
+ - For an applicative predicate P, one uses prefix syntax:
+     P x
+   Also, most operations on applicative predicates use prefix syntax as
+   well (e.g., predI P Q).
+ - For a collective predicate A, one uses infix syntax:
+     x \in A
+   and all operations on collective predicates use infix syntax as well
+   (e.g., #[#predI A & B#]#).
+ There are only two kinds of applicative predicates:
+ - pred T, the alias for T -> bool mentioned above
+ - simpl_pred T, an alias for simpl_fun T bool with a coercion to pred T
+   that auto-simplifies on application (see ssrfun).
+ On the other hand, the set of collective predicate types is open-ended via
+ - predType T, a Structure that can be used to put Canonical collective
+   predicate interpretation on other types, such as lists, tuples,
+   finite sets, etc.
+ Indeed, we define such interpretations for applicative predicate types,
+ which can therefore also be used with the infix syntax, e.g.,
+     x \in predI P Q
+ Moreover these infix forms are convertible to their prefix counterpart
+ (e.g., predI P Q x which in turn simplifies to P x && Q x). The converse
+ is not true, however; collective predicate types cannot, in general, be
+ general, be used applicatively, because of the "uniform inheritance"
+ restriction on implicit coercions.
+   However, we do define an explicit generic coercion
+ - mem : forall (pT : predType), pT -> mem_pred T
+   where mem_pred T is a variant of simpl_pred T that preserves the infix
+   syntax, i.e., mem A x auto-simplifies to x \in A.
+ Indeed, the infix "collective" operators are notation for a prefix
+ operator with arguments of type mem_pred T or pred T, applied to coerced
+ collective predicates, e.g.,
+      Notation "x \in A" := (in_mem x (mem A)).
+ This prevents the variability in the predicate type from interfering with
+ the application of generic lemmas. Moreover this also makes it much easier
+ to define generic lemmas, because the simplest type -- pred T -- can be
+ used as the type of generic collective predicates, provided one takes care
+ not to use it applicatively; this avoids the burden of having to declare a
+ different predicate type for each predicate parameter of each section or
+ lemma.
+   This trick is made possible by the fact that the constructor of the
+ mem_pred T type aligns the unification process, forcing a generic
+ "collective" predicate A : pred T to unify with the actual collective B,
+ which mem has coerced to pred T via an internal, hidden implicit coercion,
+ supplied by the predType structure for B. Users should take care not to
+ inadvertently "strip" (mem B) down to the coerced B, since this will
+ expose the internal coercion: Coq will display a term B x that cannot be
+ typed as such. The topredE lemma can be used to restore the x \in B
+ syntax in this case. While -topredE can conversely be used to change
+ x \in P into P x, it is safer to use the inE and memE lemmas instead, as
+ they do not run the risk of exposing internal coercions. As a consequence
+ it is better to explicitly cast a generic applicative pred T to simpl_pred
+ using the SimplPred constructor, when it is used as a collective predicate
+ (see, e.g., Lemma eq_big in bigop).
+   We also sometimes "instantiate" the predType structure by defining a
+ coercion to the sort of the predPredType structure. This works better for
+ types such as {set T} that have subtypes that coerce to them, since the
+ same coercion will be inserted by the application of mem. It also lets us
+ turn any Type aT : predArgType into the total predicate over that type,
+ i.e., fun _: aT => true. This allows us to write, e.g., ##|'I_n| for the
+ cardinal of the (finite) type of integers less than n.
+   Collective predicates have a specific extensional equality,
+   - A =i B,
+ while applicative predicates use the extensional equality of functions,
+   - P =1 Q
+ The two forms are convertible, however.
+ We lift boolean operations to predicates, defining:
+ - predU (union), predI (intersection), predC (complement),
+   predD (difference), and preim (preimage, i.e., composition)
+ For each operation we define three forms, typically:
+ - predU : pred T -> pred T -> simpl_pred T
+ - #[#predU A & B#]#, a Notation for predU (mem A) (mem B)
+ - xpredU, a Notation for the lambda-expression inside predU,
+     which is mostly useful as an argument of =1, since it exposes the head
+     head constant of the expression to the ssreflect matching algorithm.
+ The syntax for the preimage of a collective predicate A is
+ - #[#preim f of A#]#
+ Finally, the generic syntax for defining a simpl_pred T is
+ - #[#pred x : T | P(x) #]#, #[#pred x | P(x) #]#, #[#pred x in A | P(x) #]#, etc.
+ We also support boolean relations, but only the applicative form, with
+ types
+ - rel T, an alias for T -> pred T
+ - simpl_rel T, an auto-simplifying version, and syntax
+   #[#rel x y | P(x,y) #]#, #[#rel x y in A & B | P(x,y) #]#, etc.
+ The notation #[#rel of fA#]# can be used to coerce a function returning a
+ collective predicate to one returning pred T.
+   Finally, note that there is specific support for ambivalent predicates
+ that can work in either style, as per this file's head descriptor.          **)
+
 
 Definition pred T := T -> bool.
 
@@ -1094,8 +1104,9 @@ Coercion applicative_pred_of_simpl (p : simpl_pred) : applicative_pred :=
   fun_of_simpl p.
 Coercion collective_pred_of_simpl (p : simpl_pred) : collective_pred :=
   fun x => (let: SimplFun f := p in fun _ => f x) x.
-(* Note: applicative_of_simpl is convertible to pred_of_simpl, while *)
-(* collective_of_simpl is not. *)
+(**
+ Note: applicative_of_simpl is convertible to pred_of_simpl, while
+ collective_of_simpl is not.  **)
 
 Definition pred0 := SimplPred xpred0.
 Definition predT := SimplPred xpredT.
@@ -1166,19 +1177,21 @@ Notation "[ 'rel' x y : T | E ]" := (SimplRel (fun x y : T => E%B))
 Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ _ id)
   (at level 0, format "[ 'predType'  'of'  T ]") : form_scope.
 
-(* This redundant coercion lets us "inherit" the simpl_predType canonical    *)
-(* instance by declaring a coercion to simpl_pred. This hack is the only way *)
-(* to put a predType structure on a predArgType. We use simpl_pred rather    *)
-(* than pred to ensure that /= removes the identity coercion. Note that the  *)
-(* coercion will never be used directly for simpl_pred, since the canonical  *)
-(* instance should always be resolved.                                       *)
+(**
+ This redundant coercion lets us "inherit" the simpl_predType canonical
+ instance by declaring a coercion to simpl_pred. This hack is the only way
+ to put a predType structure on a predArgType. We use simpl_pred rather
+ than pred to ensure that /= removes the identity coercion. Note that the
+ coercion will never be used directly for simpl_pred, since the canonical
+ instance should always be resolved.                                        **)
 
 Notation pred_class := (pred_sort (predPredType _)).
 Coercion sort_of_simpl_pred T (p : simpl_pred T) : pred_class := p : pred T.
 
-(* This lets us use some types as a synonym for their universal predicate.    *)
-(* Unfortunately, this won't work for existing types like bool, unless we     *)
-(* redefine bool, true, false and all bool ops.                               *)
+(**
+ This lets us use some types as a synonym for their universal predicate.
+ Unfortunately, this won't work for existing types like bool, unless we
+ redefine bool, true, false and all bool ops.                                **)
 Definition predArgType := Type.
 Bind Scope type_scope with predArgType.
 Identity Coercion sort_of_predArgType : predArgType >-> Sortclass.
@@ -1187,8 +1200,9 @@ Coercion pred_of_argType (T : predArgType) : simpl_pred T := predT.
 Notation "{ : T }" := (T%type : predArgType)
   (at level 0, format "{ :  T }") : type_scope.
 
-(* These must be defined outside a Section because "cooking" kills the        *)
-(* nosimpl tag.                                                               *)
+(**
+ These must be defined outside a Section because "cooking" kills the
+ nosimpl tag.                                                                **)
 
 Definition mem T (pT : predType T) : pT -> mem_pred T :=
   nosimpl (let: @PredType _ _ _ (exist _ mem _) := pT return pT -> _ in mem).
@@ -1254,12 +1268,13 @@ Section simpl_mem.
 Variables (T : Type) (pT : predType T).
 Implicit Types (x : T) (p : pred T) (sp : simpl_pred T) (pp : pT).
 
-(* Bespoke structures that provide fine-grained control over matching the     *)
-(* various forms of the \in predicate; note in particular the different forms *)
-(* of hoisting that are used. We had to work around several bugs in the       *)
-(* implementation of unification, notably improper expansion of telescope     *)
-(* projections and overwriting of a variable assignment by a later            *)
-(* unification (probably due to conversion cache cross-talk).                 *)
+(**
+ Bespoke structures that provide fine-grained control over matching the
+ various forms of the \in predicate; note in particular the different forms
+ of hoisting that are used. We had to work around several bugs in the
+ implementation of unification, notably improper expansion of telescope
+ projections and overwriting of a variable assignment by a later
+ unification (probably due to conversion cache cross-talk).                  **)
 Structure manifest_applicative_pred p := ManifestApplicativePred {
   manifest_applicative_pred_value :> pred T;
   _ : manifest_applicative_pred_value = p
@@ -1305,10 +1320,11 @@ Lemma in_simpl x p (msp : manifest_simpl_pred p) :
   in_mem x (Mem [eta fun_of_simpl (msp : simpl_pred T)]) = p x.
 Proof. by case: msp => _ /= ->. Qed.
 
-(* Because of the explicit eta expansion in the left-hand side, this lemma    *)
-(* should only be used in a right-to-left direction. The 8.3 hack allowing    *)
-(* partial right-to-left use does not work with the improved expansion        *)
-(* heuristics in 8.4.                                                         *)
+(**
+ Because of the explicit eta expansion in the left-hand side, this lemma
+ should only be used in a right-to-left direction. The 8.3 hack allowing
+ partial right-to-left use does not work with the improved expansion
+ heuristics in 8.4.                                                          **)
 Lemma unfold_in x p : (x \in ([eta p] : pred T)) = p x.
 Proof. by []. Qed.
 
@@ -1327,7 +1343,7 @@ Proof. by rewrite -mem_topred. Qed.
 
 End simpl_mem.
 
-(* Qualifiers and keyed predicates. *)
+(**  Qualifiers and keyed predicates.  **)
 
 Variant qualifier (q : nat) T := Qualifier of predPredType T.
 
@@ -1371,7 +1387,7 @@ Notation "[ 'qualify' 'an' x | P ]" := (Qualifier 2 (fun x => P%B))
 Notation "[ 'qualify' 'an' x : T | P ]" := (Qualifier 2 (fun x : T => P%B))
   (at level 0, x at level 99, only parsing) : form_scope.
 
-(* Keyed predicates: support for property-bearing predicate interfaces. *)
+(**  Keyed predicates: support for property-bearing predicate interfaces.  **)
 
 Section KeyPred.
 
@@ -1388,13 +1404,14 @@ Definition KeyedPred := @PackKeyedPred k p (frefl _).
 Variable k_p : keyed_pred k.
 Lemma keyed_predE : k_p =i p. Proof. by case: k_p. Qed.
 
-(* Instances that strip the mem cast; the first one has "pred_of_mem" as its  *)
-(* projection head value, while the second has "pred_of_simpl". The latter    *)
-(* has the side benefit of preempting accidental misdeclarations.             *)
-(* Note: pred_of_mem is the registered mem >-> pred_class coercion, while     *)
-(* simpl_of_mem; pred_of_simpl is the mem >-> pred >=> Funclass coercion. We  *)
-(* must write down the coercions explicitly as the Canonical head constant    *)
-(* computation does not strip casts !!                                        *)
+(**
+ Instances that strip the mem cast; the first one has "pred_of_mem" as its
+ projection head value, while the second has "pred_of_simpl". The latter
+ has the side benefit of preempting accidental misdeclarations.
+ Note: pred_of_mem is the registered mem >-> pred_class coercion, while
+ simpl_of_mem; pred_of_simpl is the mem >-> pred >=> Funclass coercion. We
+ must write down the coercions explicitly as the Canonical head constant
+ computation does not strip casts !!                                         **)
 Canonical keyed_mem :=
   @PackKeyedPred k (pred_of_mem (mem k_p)) keyed_predE.
 Canonical keyed_mem_simpl :=
@@ -1434,7 +1451,7 @@ Canonical default_keyed_qualifier T n (q : qualifier n T) :=
 
 End DefaultKeying.
 
-(* Skolemizing with conditions. *)
+(**  Skolemizing with conditions.  **)
 
 Lemma all_tag_cond_dep I T (C : pred I) U :
     (forall x, T x) -> (forall x, C x -> {y : T x & U x y}) ->
@@ -1461,8 +1478,9 @@ Proof. by move=> y0; apply: all_sig_cond_dep. Qed.
 
 Section RelationProperties.
 
-(* Caveat: reflexive should not be used to state lemmas, as auto and trivial  *)
-(* will not expand the constant.                                              *)
+(**
+ Caveat: reflexive should not be used to state lemmas, as auto and trivial
+ will not expand the constant.                                               **)
 
 Variable T : Type.
 
@@ -1496,8 +1514,9 @@ Proof. by move=> x y /sym_left_transitive Rxy z; rewrite !(symR z) Rxy. Qed.
 
 End PER.
 
-(* We define the equivalence property with prenex quantification so that it   *)
-(* can be localized using the {in ..., ..} form defined below.                *)
+(**
+ We define the equivalence property with prenex quantification so that it
+ can be localized using the {in ..., ..} form defined below.                 **)
 
 Definition equivalence_rel := forall x y z, R z z * (R x y -> R x z = R y z).
 
@@ -1512,7 +1531,7 @@ End RelationProperties.
 Lemma rev_trans T (R : rel T) : transitive R -> transitive (fun x y => R y x).
 Proof. by move=> trR x y z Ryx Rzy; apply: trR Rzy Ryx. Qed.
 
-(* Property localization *)
+(**  Property localization  **)
 
 Local Notation "{ 'all1' P }" := (forall x, P x : Prop) (at level 0).
 Local Notation "{ 'all2' P }" := (forall x y, P x y : Prop) (at level 0).
@@ -1626,11 +1645,12 @@ Notation "{ 'on' cd , 'bijective' f }" := (bijective_on (mem cd) f)
   (at level 0, f at level 8,
    format "{ 'on'  cd ,  'bijective'  f }") : type_scope.
 
-(* Weakening and monotonicity lemmas for localized predicates.                *)
-(* Note that using these lemmas in backward reasoning will force expansion of *)
-(* the predicate definition, as Coq needs to expose the quantifier to apply   *)
-(* these lemmas. We define a few specialized variants to avoid this for some  *)
-(* of the ssrfun predicates.                                                  *)
+(**
+ Weakening and monotonicity lemmas for localized predicates.
+ Note that using these lemmas in backward reasoning will force expansion of
+ the predicate definition, as Coq needs to expose the quantifier to apply
+ these lemmas. We define a few specialized variants to avoid this for some
+ of the ssrfun predicates.                                                   **)
 
 Section LocalGlobal.
 
