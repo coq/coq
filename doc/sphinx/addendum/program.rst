@@ -194,14 +194,14 @@ Program Fixpoint
    The optional order annotation follows the grammar:
 
    .. productionlist:: orderannot
-      order      : measure `term` (`term`)? | wf `term` `term`
+      order      : measure `term` [ `term` ] | wf `term` `ident`
 
-   + :g:`measure f ( R )` where :g:`f` is a value of type :g:`X` computed on
-     any subset of the arguments and the optional (parenthesised) term
-     ``(R)`` is a relation on ``X``. By default ``X`` defaults to ``nat`` and ``R``
-     to ``lt``.
+   + :g:`measure f R` where :g:`f` is a value of type :g:`X` computed on
+     any subset of the arguments and the optional term
+     :g:`R` is a relation on :g:`X`. :g:`X` defaults to :g:`nat` and :g:`R`
+     to :g:`lt`.
 
-   + :g:`wf R x` which is equivalent to :g:`measure x (R)`.
+   + :g:`wf R x` which is equivalent to :g:`measure x R`.
 
    The structural fixpoint operator behaves just like the one of |Coq| (see
    :cmd:`Fixpoint`), except it may also generate obligations. It works
