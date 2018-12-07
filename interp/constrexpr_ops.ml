@@ -196,10 +196,9 @@ and branch_expr_eq {CAst.v=(p1, e1)} {CAst.v=(p2, e2)} =
   List.equal (List.equal cases_pattern_expr_eq) p1 p2 &&
   constr_expr_eq e1 e2
 
-and fix_expr_eq (id1,(j1, r1),bl1,a1,b1) (id2,(j2, r2),bl2,a2,b2) =
+and fix_expr_eq (id1,r1,bl1,a1,b1) (id2,r2,bl2,a2,b2) =
   (eq_ast Id.equal id1 id2) &&
-  Option.equal (eq_ast Id.equal) j1 j2 &&
-  recursion_order_expr_eq r1 r2 &&
+  Option.equal (eq_ast recursion_order_expr_eq) r1 r2 &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
@@ -211,9 +210,11 @@ and cofix_expr_eq (id1,bl1,a1,b1) (id2,bl2,a2,b2) =
   constr_expr_eq b1 b2
 
 and recursion_order_expr_eq r1 r2 = match r1, r2 with
-  | CStructRec, CStructRec -> true
-  | CWfRec e1, CWfRec e2 -> constr_expr_eq e1 e2
-  | CMeasureRec (e1, o1), CMeasureRec (e2, o2) ->
+  | CStructRec i1, CStructRec i2 -> eq_ast Id.equal i1 i2
+  | CWfRec (i1,e1), CWfRec (i2,e2) ->
+    constr_expr_eq e1 e2
+  | CMeasureRec (i1, e1, o1), CMeasureRec (i2, e2, o2) ->
+    Option.equal (eq_ast Id.equal) i1 i2 &&
     constr_expr_eq e1 e2 && Option.equal constr_expr_eq o1 o2
   | _ -> false
 
@@ -349,7 +350,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
         (f (Option.fold_right (CAst.with_val (Name.fold_right g)) ona n)) acc po
     | CFix (_,l) ->
       let n' = List.fold_right (fun ( { CAst.v = id },_,_,_,_) -> g id) l n in
-      List.fold_right (fun (_,(_,o),lb,t,c) acc ->
+      List.fold_right (fun (_,ro,lb,t,c) acc ->
           fold_local_binders g f n'
             (fold_local_binders g f n acc t lb) c lb) l acc
     | CCoFix (_,_) ->

@@ -106,19 +106,9 @@ let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
   Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
   Option.equal f c1 c2 && f t1 t2
 
-let fix_recursion_order_eq f o1 o2 = match o1, o2 with
-  | GStructRec, GStructRec -> true
-  | GWfRec c1, GWfRec c2 -> f c1 c2
-  | GMeasureRec (c1, o1), GMeasureRec (c2, o2) ->
-    f c1 c2 && Option.equal f o1 o2
-  | (GStructRec | GWfRec _ | GMeasureRec _), _ -> false
-
-let fix_kind_eq f k1 k2 = match k1, k2 with
+let fix_kind_eq k1 k2 = match k1, k2 with
   | GFix (a1, i1), GFix (a2, i2) ->
-    let eq (i1, o1) (i2, o2) =
-      Option.equal Int.equal i1 i2 && fix_recursion_order_eq f o1 o2
-    in
-    Int.equal i1 i2 && Array.equal eq a1 a2
+    Int.equal i1 i2 && Array.equal (Option.equal Int.equal) a1 a2
   | GCoFix i1, GCoFix i2 -> Int.equal i1 i2
   | (GFix _ | GCoFix _), _ -> false
 
@@ -150,7 +140,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     f m1 m2 && Name.equal pat1 pat2 &&
     Option.equal f p1 p2 && f c1 c2 && f t1 t2
   | GRec (kn1, id1, decl1, t1, c1), GRec (kn2, id2, decl2, t2, c2) ->
-    fix_kind_eq f kn1 kn2 && Array.equal Id.equal id1 id2 &&
+    fix_kind_eq kn1 kn2 && Array.equal Id.equal id1 id2 &&
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> glob_sort_eq s1 s2

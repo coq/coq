@@ -134,16 +134,16 @@ and branch_expr =
   (cases_pattern_expr list list * constr_expr) CAst.t
 
 and fix_expr =
-    lident * (lident option * recursion_order_expr) *
+    lident * (recursion_order_expr CAst.t) option *
       local_binder_expr list * constr_expr * constr_expr
 
 and cofix_expr =
     lident * local_binder_expr list * constr_expr * constr_expr
 
 and recursion_order_expr =
-  | CStructRec
-  | CWfRec of constr_expr
-  | CMeasureRec of constr_expr * constr_expr option (** measure, relation *)
+  | CStructRec of lident
+  | CWfRec of lident * constr_expr
+  | CMeasureRec of lident option * constr_expr * constr_expr option (** argument, measure, relation *)
 
 (* Anonymous defs allowed ?? *)
 and local_binder_expr =
