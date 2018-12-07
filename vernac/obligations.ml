@@ -295,7 +295,7 @@ type obligation =
 type obligations = (obligation array * int)
 
 type fixpoint_kind =
-  | IsFixpoint of (lident option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of lident option list
   | IsCoFixpoint
 
 type notations = (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -486,7 +486,7 @@ let rec lam_index n t acc =
 	lam_index n b (succ acc)
     | _ -> raise Not_found
 
-let compute_possible_guardness_evidences (n,_) fixbody fixtype =
+let compute_possible_guardness_evidences n fixbody fixtype =
   match n with
   | Some { CAst.loc; v = n } -> [lam_index n fixbody 0]
   | None ->

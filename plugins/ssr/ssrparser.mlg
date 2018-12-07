@@ -1200,7 +1200,7 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | [BFcast], { v = CCast (c, Glob_term.CastConv t) } ->
     [Bcast t], c
   | BFrec (has_str, has_cast) :: h, 
-    { v = CFix ( _, [_, (Some locn, CStructRec), bl, t, c]) } ->
+    { v = CFix ( _, [_, Some {CAst.v = CStructRec locn}, bl, t, c]) } ->
     let bs = format_local_binders h bl in
     let bstr = if has_str then [Bstruct (Name locn.CAst.v)] else [] in
     bs @ bstr @ (if has_cast then [Bcast t] else []), c 
@@ -1424,7 +1424,7 @@ ARGUMENT EXTEND ssrfixfwd TYPED AS (ident * ssrfwd) PRINTED BY { pr_ssrfixfwd }
           | [] -> CErrors.user_err (Pp.str "Bad structural argument") in
         loop (names_of_local_assums lb) in
       let h' = BFrec (has_struct, has_cast) :: binders_fmts bs in
-      let fix = CAst.make ~loc @@ CFix (lid, [lid, (Some i, CStructRec), lb, t', c']) in
+      let fix = CAst.make ~loc @@ CFix (lid, [lid, (Some (CAst.make (CStructRec i))), lb, t', c']) in
       id, ((fk, h'),  { ac with body = fix }) }
 END
 
