@@ -156,10 +156,15 @@ type +'a tactic
     tactic has given up. In case of multiple success the first one is
     selected. If there is no success, fails with
     {!Logic_monad.TacticFailure}*)
-val apply : Environ.env -> 'a tactic -> proofview -> 'a
-                                                   * proofview
-                                                   * (bool*Evar.t list*Evar.t list)
-                                                   * Proofview_monad.Info.tree
+val apply
+  :  name:Names.Id.t
+  -> poly:bool
+  -> Environ.env
+  -> 'a tactic
+  -> proofview
+  -> 'a * proofview
+       * (bool*Evar.t list*Evar.t list)
+       * Proofview_monad.Info.tree
 
 (** {7 Monadic primitives} *)
 
@@ -406,6 +411,10 @@ val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 (** [tclTIME s t] displays time for each atomic call to t, using s as an
     identifying annotation if present *)
 val tclTIME : string option -> 'a tactic -> 'a tactic
+
+(** Internal, don't use. *)
+val tclProofInfo : (Names.Id.t * bool) tactic
+[@@ocaml.deprecated "internal, don't use"]
 
 (** {7 Unsafe primitives} *)
 

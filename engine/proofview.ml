@@ -223,9 +223,9 @@ module Proof = Logical
 type +'a tactic = 'a Proof.t
 
 (** Applies a tactic to the current proofview. *)
-let apply env t sp =
+let apply ~name ~poly env t sp =
   let open Logic_monad in
-  let ans = Proof.repr (Proof.run t false (sp,env)) in
+  let ans = Proof.repr (Proof.run t P.{trace=false; name; poly} (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
   | Nil (e, info) -> iraise (TacticFailure e, info)
@@ -993,7 +993,10 @@ let tclTIME s t =
         tclOR (tclUNIT x) (fun e -> aux (n+1) (k e))
   in aux 0 t
 
-
+let tclProofInfo =
+  let open Proof in
+  Logical.current >>= fun P.{name; poly} ->
+  tclUNIT (name, poly)
 
 (** {7 Unsafe primitives} *)
 
@@ -1275,7 +1278,8 @@ module V82 = struct
   let of_tactic t gls =
     try
       let init = { shelf = []; solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
-      let (_,final,_,_) = apply (goal_env gls.Evd.sigma gls.Evd.it) t init in
+      let name, poly = Names.Id.of_string "legacy_pe", false in
+      let (_,final,_,_) = apply ~name ~poly (goal_env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = CErrors.push src in

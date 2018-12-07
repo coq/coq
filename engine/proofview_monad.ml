@@ -177,7 +177,7 @@ module P = struct
   type s = proofview * Environ.env
 
   (** Recording info trace (true) or not. *)
-  type e = bool
+  type e = { trace: bool; name : Names.Id.t; poly : bool }
 
   (** Status (safe/unsafe) * shelved goals * given up *)
   type w = bool * goal list
@@ -254,13 +254,16 @@ end
 
 (** Lens and utilies pertaining to the info trace *)
 module InfoL = struct
-  let recording = Logical.current
+  let recording = Logical.(map (fun {P.trace} -> trace) current)
   let if_recording t =
     let open Logical in
     recording >>= fun r ->
     if r then t else return ()
 
-  let record_trace t = Logical.local true t
+  let record_trace t =
+    Logical.(
+      current >>= fun s ->
+      local {s with P.trace = true} t)
 
   let raw_update = Logical.update
   let update f = if_recording (raw_update f)

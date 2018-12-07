@@ -930,8 +930,16 @@ module Search = struct
        let _, pv = Proofview.init evm [] in
        let pv = Proofview.unshelve goals pv in
        try
+         (* Instance may try to call this before a proof is set up!
+            Thus, give_me_the_proof will fail. Beware! *)
+         let name, poly = try
+             let Proof.{ name; poly } = Proof.data Proof_global.(give_me_the_proof ()) in
+             name, poly
+           with | Proof_global.NoCurrentProof ->
+             Id.of_string "instance", false
+         in
          let (), pv', (unsafe, shelved, gaveup), _ =
-           Proofview.apply env tac pv
+           Proofview.apply ~name ~poly env tac pv
          in
          if not (List.is_empty gaveup) then
            CErrors.anomaly (Pp.str "run_on_evars not assumed to apply tactics generating given up goals.");

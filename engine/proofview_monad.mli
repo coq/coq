@@ -98,7 +98,7 @@ module P : sig
   val wprod : w -> w -> w
 
   (** Recording info trace (true) or not. *)
-  type e = bool
+  type e = { trace: bool; name : Names.Id.t; poly : bool }
 
   type u = Info.state
 

@@ -11,6 +11,12 @@
 open Names
 open EConstr
 
-val cache_term_by_tactic_then : opaque:bool -> ?goal_type:(constr option) -> Id.t -> Decl_kinds.goal_kind -> unit Proofview.tactic -> (constr -> constr list -> unit Proofview.tactic) -> unit Proofview.tactic
+val cache_term_by_tactic_then
+  :  opaque:bool
+  -> name_op:Id.t option
+  -> ?goal_type:(constr option)
+  -> unit Proofview.tactic
+  -> (constr -> constr list -> unit Proofview.tactic)
+  -> unit Proofview.tactic
 
 val tclABSTRACT : ?opaque:bool -> Id.t option -> unit Proofview.tactic -> unit Proofview.tactic

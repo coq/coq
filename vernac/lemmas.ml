@@ -481,7 +481,14 @@ let save_proof ?proof = function
             Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->
             let pftree = Proof_global.give_me_the_proof () in
-            let id, k, typ = Pfedit.current_proof_statement () in
+            let gk = Proof_global.get_current_persistence () in
+            let Proof.{ name; poly; entry } = Proof.data pftree in
+            let typ = match Proofview.initial_goals entry with
+              | [typ] -> snd typ
+              | _ ->
+                CErrors.anomaly
+                  ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
+            in
             let typ = EConstr.Unsafe.to_constr typ in
             let universes = Proof.((data pftree).initial_euctx) in
             (* This will warn if the proof is complete *)
@@ -491,16 +498,15 @@ let save_proof ?proof = function
               if not !keep_admitted_vars then None
               else match Proof_global.get_used_variables(), pproofs with
               | Some _ as x, _ -> x
-              | None, (pproof, _) :: _ -> 
+              | None, (pproof, _) :: _ ->
                   let env = Global.env () in
                   let ids_typ = Environ.global_vars_set env typ in
                   let ids_def = Environ.global_vars_set env pproof in
                   Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
               | _ -> None in
 	    let decl = Proof_global.get_universe_decl () in
-            let poly = pi2 k in
             let ctx = UState.check_univ_decl ~poly universes decl in
-            Admitted(id,k,(sec_vars, (typ, ctx), None), universes)
+            Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (opaque,idopt) ->

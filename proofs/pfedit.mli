@@ -34,11 +34,6 @@ val get_current_goal_context : unit -> Evd.evar_map * env
 
 val get_current_context : ?p:Proof.t -> unit -> Evd.evar_map * env
 
-(** [current_proof_statement] *)
-
-val current_proof_statement :
-  unit -> Id.t * goal_kind * EConstr.types
-
 (** {6 ... } *)
 
 (** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th

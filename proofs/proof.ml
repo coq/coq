@@ -415,8 +415,9 @@ let run_tactic env tac pr =
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT retrieved
   in
+  let { name; poly } = pr in
   let (retrieved,proofview,(status,to_shelve,give_up),info_trace) =
-    Proofview.apply env tac sp
+    Proofview.apply ~name ~poly env tac sp
   in
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
@@ -498,7 +499,8 @@ module V82 = struct
       let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
       Proofview.Unsafe.tclEVARS sigma
     end in
-    let ((), proofview, _, _) = Proofview.apply env tac pr.proofview in
+    let { name; poly } = pr in
+    let ((), proofview, _, _) = Proofview.apply ~name ~poly env tac pr.proofview in
     let shelf =
       List.filter begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g
