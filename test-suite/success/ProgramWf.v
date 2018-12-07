@@ -13,7 +13,7 @@ Print sigT_rect.
 Obligation Tactic := program_simplify ; auto with *.
 About MR.
 
-Program Fixpoint merge (n m : nat) {measure (n + m) (lt)} : nat :=
+Program Fixpoint merge (n m : nat) {measure (n + m) lt} : nat :=
   match n with
     | 0 => 0
     | S n' => merge n' m
