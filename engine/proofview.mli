@@ -601,6 +601,7 @@ module V82 : sig
      should be avoided as much as possible.  It should work as
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
+  (* [@@ocaml.deprecated "use new tactic"] *)
 
   (* marks as unsafe if the argument is [false] *)
   val put_status : bool -> unit tactic

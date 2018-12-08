@@ -13,8 +13,12 @@ open Glob_term
 open Declarations
 open Tactypes
 open Decl_kinds
+open Tacticals.New
 
 module RelDecl = Context.Rel.Declaration
+
+module PN = Proofview.Notations
+module PG = Proofview.Goal
 
 let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
@@ -29,64 +33,65 @@ let is_rec_info sigma scheme_info =
   List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
 let choose_dest_or_ind scheme_info args =
-  Proofview.tclBIND Proofview.tclEVARMAP (fun sigma ->
-  Tactics.induction_destruct (is_rec_info sigma scheme_info) false args)
+  let open PN in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Tactics.induction_destruct (is_rec_info sigma scheme_info) false args
 
 let functional_induction with_clean c princl pat =
-  let res =
-    fun g ->
-    let sigma = Tacmach.project g in
+  PG.enter begin fun gl ->
+    let env = PG.env gl in
+    let sigma = PG.sigma gl in
     let f,args = decompose_app sigma c in
-    let princ,bindings, princ_type,g' =
+    let princ, bindings, princ_type, gl' =
       match princl with
       | None -> (* No principle is given let's find the good one *)
-         begin
-           match EConstr.kind sigma f with
-           | Const (c',u) ->
-              let princ_option =
-                let finfo = (* we first try to find out a graph on f *)
-                  try find_Function_infos c'
-                  with Not_found ->
-                    user_err  (str "Cannot find induction information on "++
-                                       Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
+        begin
+          match EConstr.kind sigma f with
+          | Const (c',u) ->
+            let princ_option =
+              let finfo = (* we first try to find out a graph on f *)
+                try find_Function_infos c'
+                with Not_found ->
+                  user_err  (str "Cannot find induction information on "++
+                             Printer.pr_leconstr_env env sigma (mkConst c') )
+              in
+              match elimination_sort_of_goal gl with
+              | InSProp -> finfo.sprop_lemma
+              | InProp -> finfo.prop_lemma
+              | InSet -> finfo.rec_lemma
+              | InType -> finfo.rect_lemma
+            in
+            let princ,g' =  (* then we get the principle *)
+              try
+                let g',princ =
+                  Tacmach.New.pf_apply (Evd.fresh_global) gl (Globnames.ConstRef (Option.get princ_option)) in
+                princ,g'
+              with Option.IsNone ->
+                (*i If there is not default lemma defined then,
+                  we cross our finger and try to find a lemma named f_ind
+                  (or f_rec, f_rect) i*)
+                let princ_name =
+                  Indrec.make_elimination_ident
+                    (Label.to_id (Constant.label c'))
+                    (elimination_sort_of_goal gl)
                 in
-                match Tacticals.elimination_sort_of_goal g with
-                | InSProp -> finfo.sprop_lemma
-                | InProp -> finfo.prop_lemma
-                | InSet -> finfo.rec_lemma
-                | InType -> finfo.rect_lemma
-              in
-              let princ,g' =  (* then we get the principle *)
                 try
-                  let g',princ =
-                    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
-                  princ,g'
-                with Option.IsNone ->
-                  (*i If there is not default lemma defined then,
-                          we cross our finger and try to find a lemma named f_ind
-                          (or f_rec, f_rect) i*)
-                  let princ_name =
-                    Indrec.make_elimination_ident
-                      (Label.to_id (Constant.label c'))
-                      (Tacticals.elimination_sort_of_goal g)
-                  in
-                  try
-                    let princ_ref = const_of_id princ_name in
-                    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global) g princ_ref in
-                    (b,a)
-                    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
-                  with Not_found -> (* This one is neither defined ! *)
-                    user_err  (str "Cannot find induction principle for "
-                                     ++ Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
-              in
-              (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
-           | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
-         end
+                  let princ_ref = const_of_id princ_name in
+                  let (a,b) = Tacmach.New.pf_apply (Evd.fresh_global) gl princ_ref in
+                  (b,a)
+                (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
+                with Not_found -> (* This one is neither defined ! *)
+                  user_err  (str "Cannot find induction principle for "
+                             ++ Printer.pr_leconstr_env env sigma (mkConst c') )
+            in
+            (princ,NoBindings,Tacmach.New.pf_unsafe_type_of gl princ, gl)
+          | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
+        end
       | Some ((princ,binding)) ->
-         princ,binding,Tacmach.pf_unsafe_type_of g princ,g
+        princ,binding,Tacmach.New.pf_unsafe_type_of gl princ,gl
     in
-    let sigma = Tacmach.project g' in
-    let princ_infos = Tactics.compute_elim_sig (Tacmach.project g') princ_type in
+    let sigma = Tacmach.New.project gl' in
+    let princ_infos = Tactics.compute_elim_sig (Tacmach.New.project gl') princ_type in
     let args_as_induction_constr =
       let c_list =
         if princ_infos.Tactics.farg_in_concl
@@ -99,10 +104,10 @@ let functional_induction with_clean c princl pat =
       in
       List.map2
         (fun c pat ->
-          ((None,
-            Tactics.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)))),
-           (None,pat),
-           None))
+           ((None,
+             Tactics.ElimOnConstr (fun env sigma -> (sigma,(c,NoBindings)))),
+            (None,pat),
+            None))
         (args@c_list)
         encoded_pat_as_patlist
     in
@@ -113,14 +118,14 @@ let functional_induction with_clean c princl pat =
         args
         Id.Set.empty
     in
-    let old_idl = List.fold_right Id.Set.add (Tacmach.pf_ids_of_hyps g) Id.Set.empty in
+    let old_idl = List.fold_right Id.Set.add (Tacmach.New.pf_ids_of_hyps gl') Id.Set.empty in
     let old_idl = Id.Set.diff old_idl princ_vars in
-    let subst_and_reduce g =
+    let subst_and_reduce =
       if with_clean
       then
         let idl =
           List.filter (fun id -> not (Id.Set.mem id old_idl))
-            (Tacmach.pf_ids_of_hyps g)
+            (Tacmach.New.pf_ids_of_hyps gl')
         in
         let flag =
           Genredexpr.Cbv
@@ -128,19 +133,15 @@ let functional_induction with_clean c princl pat =
              with Genredexpr.rDelta = false;
             }
         in
-        Tacticals.tclTHEN
-          (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
-          (Proofview.V82.of_tactic (Tactics.reduce flag Locusops.allHypsAndConcl))
-          g
-      else Tacticals.tclIDTAC g
+        tclTHEN
+          (tclMAP (fun id -> tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id])) idl)
+          (Tactics.reduce flag Locusops.allHypsAndConcl)
+      else tclIDTAC
     in
-    Tacticals.tclTHEN
-      (Proofview.V82.of_tactic (choose_dest_or_ind
-         princ_infos
-         (args_as_induction_constr,princ')))
+    tclTHEN
+      (choose_dest_or_ind princ_infos (args_as_induction_constr,princ'))
       subst_and_reduce
-      g'
-  in res
+  end
 
 let rec abstract_glob_constr c = function
   | [] -> c
@@ -449,7 +450,6 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
            fixpoint_exprl
        in
        None,evd,List.rev rev_pconstants
-
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -855,15 +855,14 @@ let make_graph (f_ref : GlobRef.t) =
      | None -> error "Cannot build a graph over an axiom!"
      | Some (body, _, _) ->
        let env = Global.env () in
-         let extern_body,extern_type =
-           with_full_print (fun () ->
-                (Constrextern.extern_constr false env sigma (EConstr.of_constr body),
-                 Constrextern.extern_type false env sigma
-                   (EConstr.of_constr (*FIXME*) c_body.const_type)
-                )
-             )
-             ()
-         in
+       let extern_body,extern_type =
+         with_full_print (fun () ->
+             (Constrextern.extern_constr false env sigma (EConstr.of_constr body),
+              Constrextern.extern_type false env sigma
+                (EConstr.of_constr (*FIXME*) c_body.const_type)
+             ))
+           ()
+       in
   let (nal_tas,b,t)  = get_args extern_body extern_type in
   let expr_list =
     match b.CAst.v with

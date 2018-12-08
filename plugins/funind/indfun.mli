@@ -12,11 +12,11 @@ val do_generate_principle_interactive :
   (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
   Lemmas.t
 
-val functional_induction :
-  bool ->
-  EConstr.constr ->
-  (EConstr.constr * EConstr.constr bindings) option ->
-  Ltac_plugin.Tacexpr.or_and_intro_pattern option ->
-  Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
+val functional_induction
+  :  bool
+  -> EConstr.constr
+  -> (EConstr.constr * EConstr.constr bindings) option
+  -> Ltac_plugin.Tacexpr.or_and_intro_pattern option
+  -> unit Proofview.tactic
 
 val make_graph : GlobRef.t -> unit

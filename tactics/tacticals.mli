@@ -230,6 +230,7 @@ module New : sig
   val onLastHypId      : (Id.t -> unit tactic) -> unit tactic
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
+  val onNLastHypsId    : int -> (Id.t list -> unit tactic) -> unit tactic
 
   val onHyps      : (Proofview.Goal.t -> named_context) ->
                     (named_context -> unit tactic) -> unit tactic

@@ -166,7 +166,7 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
     user_err ?loc  (str "Expects " ++ msg p1 p2 ++ str ".") in
   let errn n =
     user_err ?loc  (str "Expects a disjunctive pattern with " ++ int n
-	++ str " branches.") in
+        ++ str " branches.") in
   let err1' p1 p2 =
     user_err ?loc  (strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
   let errforthcoming ?loc =
@@ -566,11 +566,11 @@ module New = struct
   let nthHypId m gl =
     (* We only use [id] *)
     nthDecl m gl |> NamedDecl.get_id
-  let nthHyp m gl = 
+  let nthHyp m gl =
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end 
+    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
   let onNthHyp m tac =
     Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
 
@@ -593,6 +593,17 @@ module New = struct
     end
 
   let onHyps find tac = Proofview.Goal.enter begin fun gl -> tac (find gl) end
+
+  let onNLastHypsId n tac =
+    let nLastDecls n gl =
+      let hyps =
+        try List.firstn n Proofview.Goal.(hyps gl)
+        with Failure _ -> user_err Pp.(str "Not enough hypotheses in the goal.")
+      in
+      List.map Context.Named.Declaration.get_id hyps
+      (* Proofview.Monad.List.iter tac hyps *)
+    in
+    onHyps (nLastDecls n) tac
 
   let afterHyp id tac =
     Proofview.Goal.enter begin fun gl ->
@@ -643,12 +654,12 @@ module New = struct
       match EConstr.kind elimclause.evd p with
       | Meta p -> p
       | _ ->
-	  let name_elim =
-	    match EConstr.kind sigma elim with
+          let name_elim =
+            match EConstr.kind sigma elim with
             | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
             | _ -> mt ()
-	  in
-	  user_err ~hdr:"Tacticals.general_elim_then_using"
+          in
+          user_err ~hdr:"Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in

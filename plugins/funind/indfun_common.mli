@@ -87,6 +87,12 @@ val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 val do_observe : unit -> bool
 val do_rewrite_dependent : unit -> bool
 
+val observe : Pp.t -> unit
+val observe_tac
+  :  header:Pp.t
+  -> (Environ.env -> Evd.evar_map -> Pp.t)
+  -> unit Proofview.tactic -> unit Proofview.tactic
+
 (* To localize pb *)
 exception Building_graph of exn
 exception Defining_principle of exn
@@ -94,7 +100,7 @@ exception ToShow of exn
 
 val is_strict_tcc : unit -> bool
 
-val h_intros: Names.Id.t list -> Tacmach.tactic
+val h_intros: Names.Id.t list -> unit Proofview.tactic
 val h_id :  Names.Id.t
 val hrec_id :  Names.Id.t
 val acc_inv_id :  EConstr.constr Util.delayed
@@ -103,7 +109,7 @@ val well_founded_ltof : EConstr.constr Util.delayed
 val acc_rel : EConstr.constr Util.delayed
 val well_founded : EConstr.constr Util.delayed
 val evaluable_of_global_reference : GlobRef.t -> Names.evaluable_global_reference
-val list_rewrite : bool -> (EConstr.constr*bool) list -> Tacmach.tactic
+val list_rewrite : bool -> (EConstr.constr*bool) list -> unit Proofview.tactic
 
 val decompose_lam_n : Evd.evar_map -> int -> EConstr.t ->
   (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t

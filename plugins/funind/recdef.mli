@@ -1,10 +1,10 @@
 open Constr
 
-val tclUSER_if_not_mes :
-  Tacmach.tactic ->
-  bool ->
-  Names.Id.t list option ->
-  Tacmach.tactic
+val tclUSER_if_not_mes
+  :  unit Proofview.tactic
+  -> bool
+  -> Names.Id.t list option
+  -> unit Proofview.tactic
 
 val recursive_definition
   :  interactive_proof:bool

@@ -3,7 +3,6 @@ open Pp
 open Constr
 open Libnames
 open Globnames
-open Refiner
 
 let mk_prefix pre id = Id.of_string (pre^(Id.to_string id))
 let mk_rel_id = mk_prefix "R_"
@@ -379,10 +378,50 @@ let function_debug_sig =
 
 let () = declare_bool_option function_debug_sig
 
-
 let do_observe () = !function_debug
 
+let observe strm =
+  if do_observe ()
+  then Feedback.msg_debug strm
+  else ()
 
+let debug_queue = Stack.create ()
+
+let print_debug_queue b e =
+  if not (Stack.is_empty debug_queue)
+  then
+    let lmsg,goal = Stack.pop debug_queue in
+    (if b then
+       Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
+     else
+       Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal))
+      (* print_debug_queue false e; *)
+    )
+
+let do_observe_tac ~header s tac =
+  let open Proofview.Notations in
+  Proofview.Goal.(enter begin fun gl ->
+    let goal = Printer.pr_goal Proofview.Goal.(print gl) in
+    let env, sigma = env gl, sigma gl in
+    let s = s env sigma in
+    let lmsg = seq [header; str " : " ++ s] in
+    observe (s++fnl());
+    Stack.push (lmsg, goal) debug_queue;
+    try
+      tac >>= fun v ->
+      ignore(Stack.pop debug_queue);
+      Proofview.tclUNIT v
+    with reraise ->
+      let reraise = CErrors.push reraise in
+      if not (Stack.is_empty debug_queue)
+      then print_debug_queue true (fst (ExplainErr.process_vernac_interp_error reraise));
+      Util.iraise reraise
+  end)
+
+let observe_tac ~header s tac =
+  if do_observe ()
+  then do_observe_tac ~header s tac
+  else tac
 
 let strict_tcc = ref false
 let is_strict_tcc () = !strict_tcc
@@ -419,7 +458,7 @@ let jmeq_refl () =
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l
+  Tacticals.New.tclMAP (fun x -> Tactics.Simple.intro x) l
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
@@ -441,9 +480,10 @@ let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (G
     | _ -> assert false;;
 
 let list_rewrite (rev:bool) (eqs: (EConstr.constr*bool) list) =
+  let open Tacticals.New in
   tclREPEAT
     (List.fold_right
-       (fun (eq,b) i -> tclORELSE (Proofview.V82.of_tactic ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)) i)
+       (fun (eq,b) i -> tclORELSE ((if b then Equality.rewriteLR else Equality.rewriteRL) eq) i)
        (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;
 
 let decompose_lam_n sigma n =
