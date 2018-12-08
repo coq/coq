@@ -211,30 +211,26 @@ let tclLOG (dbg,_,depth,trace) pp tac =
   match dbg with
     | Off -> tac
     | Debug ->
-       (* For "debug (trivial/auto)", we directly output messages *)
+      (* For "debug (trivial/auto)", we directly output messages *)
       let s = String.make (depth+1) '*' in
-      Proofview.V82.tactic begin fun gl ->
-	try
-	  let out = Proofview.V82.of_tactic tac gl in
-	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
-	  out
-	with reraise ->
-          let reraise = CErrors.push reraise in
-	  Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
-	  iraise reraise
-      end
+      Proofview.(tclIFCATCH (
+          tac >>= fun v ->
+          Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
+          tclUNIT v
+        ) Proofview.tclUNIT
+          (fun (exn, info) ->
+             Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
+             tclZERO ~info exn))
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
-      Proofview.V82.tactic begin fun gl ->
-	try
-	  let out = Proofview.V82.of_tactic tac gl in
-	  trace := (depth, Some pp) :: !trace;
-	  out
-	with reraise ->
-          let reraise = CErrors.push reraise in
-	  trace := (depth, None) :: !trace;
-	  iraise reraise
-      end
+      Proofview.(tclIFCATCH (
+          tac >>= fun v ->
+          trace := (depth, Some pp) :: !trace;
+          tclUNIT v
+        ) Proofview.tclUNIT
+          (fun (exn, info) ->
+             trace := (depth, None) :: !trace;
+             tclZERO ~info exn))
 
 (** For info, from the linear trace information, we reconstitute the part
     of the proof tree we're interested in. The last executed tactic

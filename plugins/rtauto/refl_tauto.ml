@@ -16,7 +16,6 @@ open CErrors
 open Util
 open Term
 open Constr
-open Tacmach
 open Proof_search
 open Context.Named.Declaration
 
@@ -60,12 +59,11 @@ let l_I_Or_r = gen_constant "plugins.rtauto.I_Or_r"
 let l_E_Or = gen_constant "plugins.rtauto.E_Or"
 let l_D_Or = gen_constant "plugins.rtauto.D_Or"
 
+let special_whd env sigma c =
+  Reductionops.clos_whd_flags CClosure.all env sigma c
 
-let special_whd gl c =
-  Reductionops.clos_whd_flags CClosure.all (pf_env gl) (Tacmach.project gl) c
-
-let special_nf gl c =
-  Reductionops.clos_norm_flags CClosure.betaiotazeta (pf_env gl) (Tacmach.project gl) c
+let special_nf env sigma c =
+  Reductionops.clos_norm_flags CClosure.betaiotazeta env sigma c
 
 type atom_env=
     {mutable next:int;
@@ -83,61 +81,58 @@ let make_atom atom_env term=
       atom_env.next<- i + 1;
       Atom i
 
-let rec make_form atom_env gls term =
+let rec make_form env sigma atom_env term =
   let open EConstr in
   let open Vars in
-  let normalize=special_nf gls in
-  let cciterm=special_whd gls term  in
-  let sigma = Tacmach.project gls in
-    match EConstr.kind sigma cciterm with
-	Prod(_,a,b) ->
-	  if noccurn sigma 1 b &&
-	    Retyping.get_sort_family_of
-	    (pf_env gls) sigma a == InProp
-	  then
-	    let fa=make_form atom_env gls a in
-	    let fb=make_form atom_env gls b in
-	      Arrow (fa,fb)
-	  else
-	    make_atom atom_env (normalize term)
-      | Cast(a,_,_) ->
-	  make_form atom_env gls a
-      | Ind (ind, _) ->
-	  if Names.eq_ind ind (fst (Lazy.force li_False)) then
-	    Bot
-	  else
-	    make_atom atom_env (normalize term)
-      | App(hd,argv) when Int.equal (Array.length argv) 2 ->
-	  begin
-	    try
-	      let ind, _ = destInd sigma hd in
-		if Names.eq_ind ind (fst (Lazy.force li_and)) then
-		  let fa=make_form atom_env gls argv.(0) in
-		  let fb=make_form atom_env gls argv.(1) in
-		    Conjunct (fa,fb)
-		else if Names.eq_ind ind (fst (Lazy.force li_or)) then
-		  let fa=make_form atom_env gls argv.(0) in
-		  let fb=make_form atom_env gls argv.(1) in
-		    Disjunct (fa,fb)
-		else make_atom atom_env (normalize term)
-	    with DestKO -> make_atom atom_env (normalize term)
-	  end
-      | _ -> make_atom atom_env (normalize term)
+  let normalize = special_nf env sigma in
+  let cciterm = special_whd env sigma term  in
+  match EConstr.kind sigma cciterm with
+    Prod(_,a,b) ->
+    if noccurn sigma 1 b &&
+       Retyping.get_sort_family_of env sigma a == InProp
+    then
+      let fa = make_form env sigma atom_env a in
+      let fb = make_form env sigma atom_env b in
+      Arrow (fa,fb)
+    else
+      make_atom atom_env (normalize term)
+  | Cast(a,_,_) ->
+    make_form env sigma atom_env a
+  | Ind (ind, _) ->
+    if Names.eq_ind ind (fst (Lazy.force li_False)) then
+      Bot
+    else
+      make_atom atom_env (normalize term)
+  | App(hd,argv) when Int.equal (Array.length argv) 2 ->
+    begin
+      try
+        let ind, _ = destInd sigma hd in
+        if Names.eq_ind ind (fst (Lazy.force li_and)) then
+          let fa = make_form env sigma atom_env argv.(0) in
+          let fb = make_form env sigma atom_env argv.(1) in
+          Conjunct (fa,fb)
+        else if Names.eq_ind ind (fst (Lazy.force li_or)) then
+          let fa = make_form env sigma atom_env argv.(0) in
+          let fb = make_form env sigma atom_env argv.(1) in
+          Disjunct (fa,fb)
+        else make_atom atom_env (normalize term)
+      with DestKO -> make_atom atom_env (normalize term)
+    end
+  | _ -> make_atom atom_env (normalize term)
 
-let rec make_hyps atom_env gls lenv = function
+let rec make_hyps env sigma atom_env lenv = function
     [] -> []
   | LocalDef (_,body,typ)::rest ->
-      make_hyps atom_env gls (typ::body::lenv) rest
+    make_hyps env sigma atom_env (typ::body::lenv) rest
   | LocalAssum (id,typ)::rest ->
-      let hrec=
-	make_hyps atom_env gls (typ::lenv) rest in
-        if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id c) lenv ||
-	  (Retyping.get_sort_family_of
-	     (pf_env gls) (Tacmach.project gls) typ != InProp)
-	then
-	  hrec
-	else
-	  (id,make_form atom_env gls typ)::hrec
+    let hrec=
+      make_hyps env sigma atom_env (typ::lenv) rest in
+    if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id c) lenv ||
+       (Retyping.get_sort_family_of env sigma typ != InProp)
+    then
+      hrec
+    else
+      (id,make_form env sigma atom_env typ)::hrec
 
 let rec build_pos n =
   if n<=1 then force node_count l_xH
@@ -251,73 +246,76 @@ let () = declare_bool_option opt_check
 
 open Pp
 
-let rtauto_tac gls=
-  Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
-  let gamma={next=1;env=[]} in
-  let gl=pf_concl gls in
-  let () =
-    if Retyping.get_sort_family_of
-      (pf_env gls) (Tacmach.project gls) gl != InProp
-    then user_err ~hdr:"rtauto" (Pp.str "goal should be in Prop") in
-  let glf=make_form gamma gls gl in
-  let hyps=make_hyps gamma gls [gl] (pf_hyps gls) in
-  let formula=
-    List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
-  let search_fun = match Tacinterp.get_debug() with
-  | Tactic_debug.DebugOn 0 -> Search.debug_depth_first
-  | _ -> Search.depth_first
-  in
-  let () =
-    begin
-      reset_info ();
+let rtauto_tac =
+  Proofview.Goal.enter begin fun gl ->
+    let hyps = Proofview.Goal.hyps gl in
+    let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
+    let gamma={next=1;env=[]} in
+    let () =
+      if Retyping.get_sort_family_of env sigma concl != InProp
+      then user_err ~hdr:"rtauto" (Pp.str "goal should be in Prop") in
+    let glf = make_form env sigma gamma concl in
+    let hyps = make_hyps env sigma gamma [concl] hyps in
+    let formula=
+      List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
+    let search_fun = match Tacinterp.get_debug() with
+      | Tactic_debug.DebugOn 0 -> Search.debug_depth_first
+      | _ -> Search.depth_first
+    in
+    let () =
+      begin
+        reset_info ();
+        if !verbose then
+          Feedback.msg_info (str "Starting proof-search ...");
+      end in
+    let search_start_time = System.get_time () in
+    let prf =
+      try project (search_fun (init_state [] formula))
+      with Not_found ->
+        user_err ~hdr:"rtauto" (Pp.str "rtauto couldn't find any proof") in
+    let search_end_time = System.get_time () in
+    let () = if !verbose then
+        begin
+          Feedback.msg_info (str "Proof tree found in " ++
+                             System.fmt_time_difference search_start_time search_end_time);
+          pp_info ();
+          Feedback.msg_info (str "Building proof term ... ")
+        end in
+    let build_start_time=System.get_time () in
+    let () = step_count := 0; node_count := 0 in
+    let main = mkApp (force node_count l_Reflect,
+                      [|build_env gamma;
+                        build_form formula;
+                        build_proof [] 0 prf|]) in
+    let term=
+      applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
+    let build_end_time=System.get_time () in
+    let () = if !verbose then
+        begin
+          Feedback.msg_info (str "Proof term built in " ++
+                             System.fmt_time_difference build_start_time build_end_time ++
+                             fnl () ++
+                             str "Proof size : " ++ int !step_count ++
+                             str " steps" ++ fnl () ++
+                             str "Proof term size : " ++ int (!step_count+ !node_count) ++
+                             str " nodes (constants)" ++ fnl () ++
+                             str "Giving proof term to Coq ... ")
+        end in
+    let tac_start_time = System.get_time () in
+    let term = EConstr.of_constr term in
+    let result=
+      if !check then
+        Tactics.exact_check term
+      else
+        Tactics.exact_no_check term in
+    let tac_end_time = System.get_time () in
+    let () =
+      if !check then Feedback.msg_info (str "Proof term type-checking is on");
       if !verbose then
-	Feedback.msg_info (str "Starting proof-search ...");
-    end in
-  let search_start_time = System.get_time () in
-  let prf =
-    try project (search_fun (init_state [] formula))
-    with Not_found ->
-      user_err ~hdr:"rtauto" (Pp.str "rtauto couldn't find any proof") in
-  let search_end_time = System.get_time () in
-  let () = if !verbose then
-    begin
-      Feedback.msg_info (str "Proof tree found in " ++
-	     System.fmt_time_difference search_start_time search_end_time);
-      pp_info ();
-      Feedback.msg_info (str "Building proof term ... ")
-    end in
-  let build_start_time=System.get_time () in
-  let () = step_count := 0; node_count := 0 in
-  let main = mkApp (force node_count l_Reflect,
-		    [|build_env gamma;
-		      build_form formula;
-		      build_proof [] 0 prf|]) in
-  let term=
-    applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
-  let build_end_time=System.get_time () in
-  let () = if !verbose then
-    begin
-      Feedback.msg_info (str "Proof term built in " ++
-	     System.fmt_time_difference build_start_time build_end_time ++
-	     fnl () ++
-	     str "Proof size : " ++ int !step_count ++
-	     str " steps" ++ fnl () ++
-	     str "Proof term size : " ++ int (!step_count+ !node_count) ++
-	     str " nodes (constants)" ++ fnl () ++
-	     str "Giving proof term to Coq ... ")
-    end in
-  let tac_start_time = System.get_time () in
-  let term = EConstr.of_constr term in
-  let result=
-    if !check then
-      Proofview.V82.of_tactic (Tactics.exact_check term) gls
-    else
-      Proofview.V82.of_tactic (Tactics.exact_no_check term) gls in
-  let tac_end_time = System.get_time () in
-  let () =
-    if !check then Feedback.msg_info (str "Proof term type-checking is on");
-    if !verbose then
-      Feedback.msg_info (str "Internal tactic executed in " ++
-	     System.fmt_time_difference tac_start_time tac_end_time) in
+        Feedback.msg_info (str "Internal tactic executed in " ++
+                           System.fmt_time_difference tac_start_time tac_end_time) in
     result
-
+  end
