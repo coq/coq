@@ -272,4 +272,4 @@
 ########################################################################
 : "${relation_algebra_CI_REF:=master}"
 : "${relation_algebra_CI_GITURL:=https://github.com/damien-pous/relation-algebra}"
-: "${aac_tactics_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
+: "${relation_algebra_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
