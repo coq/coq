@@ -39,6 +39,7 @@ CI_TARGETS= \
     ci-paramcoq \
     ci-plugin_tutorial \
     ci-quickchick \
+    ci-relation-algebra \
     ci-sf \
     ci-simple-io \
     ci-tlc \
