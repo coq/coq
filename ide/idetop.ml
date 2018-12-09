@@ -196,12 +196,24 @@ let process_goal sigma g =
       (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[]) in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 
-let export_pre_goals pgs =
-  {
-    Interface.fg_goals       = pgs.Proof.fg_goals;
-    Interface.bg_goals       = pgs.Proof.bg_goals;
-    Interface.shelved_goals  = pgs.Proof.shelved_goals;
-    Interface.given_up_goals = pgs.Proof.given_up_goals
+let process_goal_diffs diff_goal_map oldp nsigma ng =
+  let open Evd in
+  let og_s = match oldp with
+    | Some oldp ->
+      let Proof.{ sigma=osigma } = Proof.data oldp in
+      (try Some { it = Evar.Map.find ng diff_goal_map; sigma = osigma }
+       with Not_found -> None)
+    | None -> None
+  in
+  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
+  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
+
+let export_pre_goals Proof.{ sigma; goals; stack; shelf; given_up } process =
+  let process = List.map (process sigma) in
+  { Interface.fg_goals       = process goals
+  ; Interface.bg_goals       = List.(map (fun (lg,rg) -> process lg, process rg)) stack
+  ; Interface.shelved_goals  = process shelf
+  ; Interface.given_up_goals = process given_up
   }
 
 let goals () =
@@ -212,22 +224,9 @@ let goals () =
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
-
-      let process_goal_diffs nsigma ng =
-        let open Evd in
-        let og_s = match oldp with
-        | Some oldp ->
-          let (_,_,_,_,osigma) = Proof.proof oldp in
-          (try Some { it = Evar.Map.find ng diff_goal_map; sigma = osigma }
-          with Not_found -> None) (* will appear as a new goal *)
-        | None -> None
-        in
-        let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
-        { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp; Interface.goal_id = Goal.uid ng }
-      in
-      Some (export_pre_goals (Proof.map_structured_proof newp process_goal_diffs))
+      Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
     end else
-      Some (export_pre_goals (Proof.map_structured_proof newp process_goal))
+      Some (export_pre_goals Proof.(data newp) process_goal)
   with Proof_global.NoCurrentProof -> None;;
 
 let evars () =
@@ -235,7 +234,7 @@ let evars () =
     let doc = get_doc () in
     set_doc @@ Stm.finish ~doc;
     let pfts = Proof_global.give_me_the_proof () in
-    let all_goals, _, _, _, sigma = Proof.proof pfts in
+    let Proof.{ sigma } = Proof.data pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
@@ -245,8 +244,8 @@ let evars () =
 let hints () =
   try
     let pfts = Proof_global.give_me_the_proof () in
-    let all_goals, _, _, _, sigma = Proof.proof pfts in
-    match all_goals with
+    let Proof.{ goals; sigma } = Proof.data pfts in
+    match goals with
     | [] -> None
     | g :: _ ->
       let env = Goal.V82.env sigma g in

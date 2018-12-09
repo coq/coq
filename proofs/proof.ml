@@ -105,22 +105,29 @@ let done_cond ?(loose_end=false) k = CondDone (loose_end,k)
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
    are under control of the undo mechanism *)
-type t = {
-  (* Current focused proofview *)
-  proofview: Proofview.proofview;
-  (* Entry for the proofview *)
-  entry : Proofview.entry;
-  (* History of the focusings, provides information on how
-     to unfocus the proof and the extra information stored while focusing.
-     The list is empty when the proof is fully unfocused. *)
-  focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
-  (* List of goals that have been shelved. *)
-  shelf : Goal.goal list;
-  (* List of goals that have been given up *)
-  given_up : Goal.goal list;
-  (* The initial universe context (for the statement) *)
-  initial_euctx : UState.t
-}
+type t =
+  { proofview: Proofview.proofview
+  (** Current focused proofview *)
+  ; entry : Proofview.entry
+  (** Entry for the proofview *)
+  ; focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list
+  (** History of the focusings, provides information on how to unfocus
+     the proof and the extra information stored while focusing.  The
+     list is empty when the proof is fully unfocused. *)
+  ; shelf : Goal.goal list
+  (** List of goals that have been shelved. *)
+  ; given_up : Goal.goal list
+  (** List of goals that have been given up *)
+  ; initial_euctx : UState.t
+  (** The initial universe context (for the statement) *)
+  ; name : Names.Id.t
+  (** the name of the theorem whose proof is being constructed *)
+  ; poly : bool
+  (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
+  }
+
+let initial_goals pf = Proofview.initial_goals pf.entry
+let initial_euctx pf = pf.initial_euctx
 
 (*** General proof functions ***)
 
@@ -141,7 +148,7 @@ let proof p =
   (goals,stack,shelf,given_up,sigma)
 
 type 'a pre_goals = {
-    fg_goals : 'a list;
+  fg_goals : 'a list;
   (** List of the focussed goals *)
   bg_goals : ('a list * 'a list) list;
   (** Zipper representing the unfocussed background goals *)
@@ -311,7 +318,7 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
-let start sigma goals =
+let start ~name ~poly sigma goals =
   let entry, proofview = Proofview.init sigma goals in
   let pr = {
     proofview;
@@ -320,9 +327,13 @@ let start sigma goals =
     shelf = [] ;
     given_up = [];
     initial_euctx =
-      Evd.evar_universe_context (snd (Proofview.proofview proofview)) } in
+      Evd.evar_universe_context (snd (Proofview.proofview proofview))
+    ; name
+    ; poly
+  } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
-let dependent_start goals =
+
+let dependent_start ~name ~poly goals =
   let entry, proofview = Proofview.dependent_init goals in
   let pr = {
     proofview;
@@ -331,7 +342,10 @@ let dependent_start goals =
     shelf = [] ;
     given_up = [];
     initial_euctx =
-      Evd.evar_universe_context (snd (Proofview.proofview proofview)) } in
+      Evd.evar_universe_context (snd (Proofview.proofview proofview))
+    ; name
+    ; poly
+  } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
 
@@ -374,9 +388,6 @@ let return ?pid (p : t) =
   else
     let p = unfocus end_of_stack_kind p () in
     Proofview.return p.proofview
-
-let initial_goals p = Proofview.initial_goals p.entry
-let initial_euctx p = p.initial_euctx
 
 let compact p =
   let entry, proofview = Proofview.compact p.entry p.proofview in
@@ -468,7 +479,7 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
   (* Main component of vernac command Existential *)
-  let instantiate_evar n com pr =
+  let instantiate_evar env n com pr =
     let tac =
       Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
       let (evk, evi) =
@@ -487,7 +498,7 @@ module V82 = struct
       let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
       Proofview.Unsafe.tclEVARS sigma
     end in
-    let ((), proofview, _, _) = Proofview.apply (Global.env ()) tac pr.proofview in
+    let ((), proofview, _, _) = Proofview.apply env tac pr.proofview in
     let shelf =
       List.filter begin fun g ->
         Evd.is_undefined (Proofview.return proofview) g
@@ -507,3 +518,37 @@ let all_goals p =
     let set = add given_up set in
     let { Evd.it = bgoals ; sigma = bsigma } = V82.background_subgoals p in
     add bgoals set
+
+type data =
+  { sigma : Evd.evar_map
+  (** A representation of the evar_map [EJGA wouldn't it better to just return the proofview?] *)
+  ; goals : Evar.t list
+  (** Focused goals *)
+  ; entry : Proofview.entry
+  (** Entry for the proofview *)
+  ; stack : (Evar.t list * Evar.t list) list
+  (** A representation of the focus stack *)
+  ; shelf : Evar.t list
+  (** A representation of the shelf  *)
+  ; given_up : Evar.t list
+  (** A representation of the given up goals  *)
+  ; initial_euctx : UState.t
+  (** The initial universe context (for the statement) *)
+  ; name : Names.Id.t
+  (** The name of the theorem whose proof is being constructed *)
+  ; poly : bool
+  (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
+  }
+
+let data { proofview; focus_stack; entry; shelf; given_up; initial_euctx; name; poly } =
+  let goals, sigma = Proofview.proofview proofview in
+  (* spiwack: beware, the bottom of the stack is used by [Proof]
+     internally, and should not be exposed. *)
+  let rec map_minus_one f = function
+    | [] -> assert false
+    | [_] -> []
+    | a::l -> f a :: (map_minus_one f l)
+  in
+  let stack =
+    map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
+  { sigma; goals; entry; stack; shelf; given_up; initial_euctx; name; poly }

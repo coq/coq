@@ -323,7 +323,8 @@ let loop_flush_all () =
 let pequal cmp1 cmp2 (a1,a2) (b1,b2) = cmp1 a1 b1 && cmp2 a2 b2
 let evleq e1 e2 = CList.equal Evar.equal e1 e2
 let cproof p1 p2 =
-  let (a1,a2,a3,a4,_),(b1,b2,b3,b4,_) = Proof.proof p1, Proof.proof p2 in
+  let Proof.{goals=a1;stack=a2;shelf=a3;given_up=a4} = Proof.data p1 in
+  let Proof.{goals=b1;stack=b2;shelf=b3;given_up=b4} = Proof.data p2 in
   evleq a1 b1 &&
   CList.equal (pequal evleq evleq) a2 b2 &&
   CList.equal Evar.equal a3 b3 &&

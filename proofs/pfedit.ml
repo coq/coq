@@ -33,7 +33,7 @@ let () = CErrors.register_handler begin function
 end
 
 let get_nth_V82_goal p i =
-  let goals,_,_,_,sigma = Proof.proof p in
+  let Proof.{ sigma; goals } = Proof.data p in
   try { it = List.nth goals (i-1) ; sigma }
   with Failure _ -> raise NoSuchGoal
 
@@ -120,7 +120,8 @@ let solve ?with_end_tac gi info_lvl tac pr =
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
 
 let instantiate_nth_evar_com n com = 
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)
+  Proof_global.simple_with_current_proof (fun _ p ->
+      Proof.V82.instantiate_evar Global.(env ())n com p)
 
 
 (**********************************************************************)
@@ -166,7 +167,7 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let univs = UState.merge ~sideff:side_eff ~extend:true Evd.univ_rigid univs ctx in
   cb, status, univs
 
-let refine_by_tactic env sigma ty tac =
+let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the initial side-effects to restore them afterwards. We set the
      current set of side-effects to be empty so that we can retrieve the
      ones created during the tactic invocation easily. *)
@@ -175,7 +176,7 @@ let refine_by_tactic env sigma ty tac =
   (* Save the existing goals *)
   let prev_future_goals = save_future_goals sigma in
   (* Start a proof *)
-  let prf = Proof.start sigma [env, ty] in
+  let prf = Proof.start ~name ~poly sigma [env, ty] in
   let (prf, _) =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
@@ -184,9 +185,9 @@ let refine_by_tactic env sigma ty tac =
       iraise (e, info)
   in
   (* Plug back the retrieved sigma *)
-  let (goals,stack,shelf,given_up,sigma) = Proof.proof prf in
+  let Proof.{ goals; stack; shelf; given_up; sigma; entry } = Proof.data prf in
   assert (stack = []);
-  let ans = match Proof.initial_goals prf with
+  let ans = match Proofview.initial_goals entry with
   | [c, _] -> c
   | _ -> assert false
   in

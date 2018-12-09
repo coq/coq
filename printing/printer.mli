@@ -182,7 +182,7 @@ val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:bool -> ?oproof:Proof.t -> Pr
 val pr_open_subgoals       : proof:Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
-val pr_evars_int           : evar_map -> shelf:Goal.goal list -> givenup:Goal.goal list -> int -> evar_info Evar.Map.t -> Pp.t
+val pr_evars_int           : evar_map -> shelf:Goal.goal list -> given_up:Goal.goal list -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t

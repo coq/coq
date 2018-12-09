@@ -90,14 +90,13 @@ type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
 
 type pstate = {
-  pid : Id.t;  (* the name of the theorem whose proof is being constructed *)
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Constr.named_context option;
   proof : Proof.t;
-  strength : Decl_kinds.goal_kind;
   mode : proof_mode CEphemeron.key;
   universe_decl: UState.universe_decl;
+  strength : Decl_kinds.goal_kind;
 }
 
 type t = pstate list
@@ -142,7 +141,7 @@ end
 (*** Proof Global manipulation ***)
 
 let get_all_proof_names () =
-  List.map (function { pid = id } -> id) !pstates
+  List.map Proof.(function pf -> (data pf.proof).name) !pstates
 
 let cur_pstate () =
   match !pstates with
@@ -151,7 +150,7 @@ let cur_pstate () =
 
 let give_me_the_proof () = (cur_pstate ()).proof
 let give_me_the_proof_opt () = try Some (give_me_the_proof ()) with | NoCurrentProof -> None
-let get_current_proof_name () = (cur_pstate ()).pid
+let get_current_proof_name () = (Proof.data (cur_pstate ()).proof).Proof.name
 
 let with_current_proof f =
   match !pstates with
@@ -205,8 +204,12 @@ let check_no_pending_proof () =
        str"Use \"Abort All\" first or complete proof(s).")
   end
 
+let pf_name_eq id ps =
+  let Proof.{ name } = Proof.data ps.proof in
+  Id.equal name id
+
 let discard_gen id =
-  pstates := List.filter (fun { pid = id' } -> not (Id.equal id id')) !pstates
+  pstates := List.filter (fun pf -> not (pf_name_eq id pf)) !pstates
 
 let discard {CAst.loc;v=id} =
   let n = List.length !pstates in
@@ -223,9 +226,9 @@ let discard_all () = pstates := []
 (* [set_proof_mode] sets the proof mode to be used after it's called. It is
     typically called by the Proof Mode command. *)
 let set_proof_mode m id =
-  pstates :=
-    List.map (function { pid = id' } as p ->
-      if Id.equal id' id then { p with mode = m } else p) !pstates;
+  pstates := List.map
+      (fun ps -> if pf_name_eq id ps then { ps with mode = m } else ps)
+      !pstates;
   update_proof_mode ()
 
 let set_proof_mode mn =
@@ -244,28 +247,26 @@ let disactivate_current_proof_mode () =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma id ?(pl=UState.default_univ_decl) str goals terminator =
+let start_proof sigma name ?(pl=UState.default_univ_decl) kind goals terminator =
   let initial_state = {
-    pid = id;
     terminator = CEphemeron.create terminator;
-    proof = Proof.start sigma goals;
+    proof = Proof.start ~name ~poly:(pi2 kind) sigma goals;
     endline_tactic = None;
     section_vars = None;
-    strength = str;
     mode = find_proof_mode "No";
-    universe_decl = pl } in
+    universe_decl = pl;
+    strength = kind } in
   push initial_state pstates
 
-let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator =
+let start_dependent_proof name ?(pl=UState.default_univ_decl) kind goals terminator =
   let initial_state = {
-    pid = id;
     terminator = CEphemeron.create terminator;
-    proof = Proof.dependent_start goals;
+    proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals;
     endline_tactic = None;
     section_vars = None;
-    strength = str;
     mode = find_proof_mode "No";
-    universe_decl = pl } in
+    universe_decl = pl;
+    strength = kind } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
@@ -301,10 +302,10 @@ let set_used_variables l =
       ctx, []
 
 let get_open_goals () =
-  let gl, gll, shelf , _ , _ = Proof.proof (cur_pstate ()).proof in
-  List.length gl +
+  let Proof.{ goals; stack; shelf } = Proof.data (cur_pstate ()).proof in
+  List.length goals +
     List.fold_left (+) 0
-    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
+    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
     List.length shelf
 
 type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
@@ -323,12 +324,9 @@ let private_poly_univs =
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) =
-  let { pid; section_vars; strength; proof; terminator; universe_decl } =
-    cur_pstate () in
+  let { section_vars; proof; terminator; universe_decl; strength } = cur_pstate () in
+  let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
-  let poly = pi2 strength (* Polymorphic *) in
-  let initial_goals = Proof.initial_goals proof in
-  let initial_euctx = Proof.initial_euctx proof in
   let constrain_variables ctx =
     UState.constrain_variables (fst (UState.context_set initial_euctx)) ctx
   in
@@ -411,16 +409,16 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       const_entry_opaque = opaque;
       const_entry_universes = univs; }
   in
-  let entries = Future.map2 entry_fn fpl initial_goals in
-  { id = pid; entries = entries; persistence = strength;
+  let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
+  { id = name; entries = entries; persistence = strength;
     universes },
   fun pr_ending -> CEphemeron.get terminator pr_ending
 
 let return_proof ?(allow_partial=false) () =
- let { pid; proof; strength = (_,poly,_) } = cur_pstate () in
+ let { proof } = cur_pstate () in
  if allow_partial then begin
   let proofs = Proof.partial_proof proof in
-  let _,_,_,_, evd = Proof.proof proof in
+  let Proof.{sigma=evd} = Proof.data proof in
   let eff = Evd.eval_side_effects evd in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -428,7 +426,8 @@ let return_proof ?(allow_partial=false) () =
   let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
     proofs, Evd.evar_universe_context evd
  end else
-  let initial_goals = Proof.initial_goals proof in
+  let Proof.{name=pid;entry} = Proof.data proof in
+  let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
@@ -455,10 +454,11 @@ let set_terminator hook =
 
 module V82 = struct
   let get_current_initial_conclusions () =
-  let { pid; strength; proof } = cur_pstate () in
-  let initial = Proof.initial_goals proof in
+  let { proof; strength } = cur_pstate () in
+  let Proof.{ name; entry } = Proof.data proof in
+  let initial = Proofview.initial_goals entry in
   let goals = List.map (fun (o, c) -> c) initial in
-    pid, (goals, strength)
+  name, (goals, strength)
 end
 
 let freeze ~marshallable =
@@ -473,7 +473,7 @@ let copy_terminators ~src ~tgt =
   assert(List.length src = List.length tgt);
   List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
 
-let update_global_env () =
+let update_global_env pf_info =
   with_current_proof (fun _ p ->
      Proof.in_proof p (fun sigma ->
        let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in

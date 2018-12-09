@@ -2031,7 +2031,8 @@ let _ =
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun = lfun; extra; } in
     let tac = interp_tactic ist tac in
-    let (c, sigma) = Pfedit.refine_by_tactic env sigma ty tac in
+    let name, poly = Id.of_string "ltac_sub", false in
+    let (c, sigma) = Pfedit.refine_by_tactic ~name ~poly env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in
   GlobEnv.register_constr_interp0 wit_tactic eval

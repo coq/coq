@@ -1936,7 +1936,7 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:`No id;
       stm_purify (fun () ->
-       let _,_,_,_,sigma0 = Proof.proof (Proof_global.give_me_the_proof ()) in
+       let Proof.{sigma=sigma0} = Proof.data (Proof_global.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
        let is_ground c = Evarutil.is_ground_term sigma0 c in
        if not (
@@ -1957,7 +1957,7 @@ end = struct (* {{{ *)
         *)
         let st = Vernacstate.freeze_interp_state `No in
         ignore(stm_vernac_interp r_state_fb st ast);
-        let _,_,_,_,sigma = Proof.proof (Proof_global.give_me_the_proof ()) in
+        let Proof.{sigma} = Proof.data (Proof_global.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
@@ -1999,7 +1999,7 @@ end = struct (* {{{ *)
     (if time then System.with_time ~batch else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
-      let goals, _, _, _, _ = Proof.proof p in
+      let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
         let f, assign =

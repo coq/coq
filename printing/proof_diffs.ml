@@ -553,7 +553,7 @@ open Goal.Set
 let db_goal_map op np ng_to_og =
   let pr_goals title prf =
     Printf.printf "%s: " title;
-    let (goals,_,_,_,sigma) = Proof.proof prf in
+    let Proof.{goals;sigma} = Proof.data prf in
     List.iter (fun g -> Printf.printf "%d -> %s  " (Evar.repr g) (goal_to_evar g sigma)) goals;
     let gs = diff (Proof.all_goals prf) (List.fold_left (fun s g -> add g s) empty goals) in
     List.iter (fun g -> Printf.printf "%d  " (Evar.repr g)) (elements gs);
@@ -626,11 +626,11 @@ let make_goal_map_i op np =
       let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
 
       let oevar_to_og = ref StringMap.empty in
-      let (_,_,_,_,osigma) = Proof.proof op in
+      let Proof.{sigma=osigma} = Proof.data op in
       List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
           (Goal.Set.elements rem_gs);
 
-      let (_,_,_,_,nsigma) = Proof.proof np in
+      let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
         let nevar = goal_to_evar ng nsigma in
         let oevar = StringMap.find nevar nevar_to_oevar in

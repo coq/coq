@@ -183,7 +183,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
    scheme on sort [sort]. Depending on the value of [dep_option] it will
    build a dependent lemma or a non-dependent one *)
 
-let inversion_scheme env sigma t sort dep_option inv_op =
+let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let (env,i) = add_prods_sign env sigma t in
   let ind =
     try find_rectype env sigma i
@@ -201,7 +201,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     user_err ~hdr:"lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
-  let pf = Proof.start (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
+  let pf = Proof.start ~name ~poly (Evd.from_ctx (evar_universe_context sigma)) [invEnv,invGoal] in
   let pf =
     fst (Proof.run_tactic env (
       tclTHEN intro (onLastHypId inv_op)) pf)
@@ -217,7 +217,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       invEnv ~init:Context.Named.empty
   end in
   let avoid = ref Id.Set.empty in
-  let _,_,_,_,sigma = Proof.proof pf in
+  let Proof.{sigma} = Proof.data pf in
   let sigma = Evd.minimize_universes sigma in
   let rec fill_holes c =
     match EConstr.kind sigma c with
@@ -236,7 +236,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   p, sigma
 
 let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
-  let invProof, sigma = inversion_scheme env sigma t sort dep inv_op in
+  let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
   let univs =
     Evd.const_univ_entry ~poly sigma
   in

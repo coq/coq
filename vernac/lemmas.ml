@@ -483,7 +483,7 @@ let save_proof ?proof = function
             let pftree = Proof_global.give_me_the_proof () in
             let id, k, typ = Pfedit.current_proof_statement () in
             let typ = EConstr.Unsafe.to_constr typ in
-            let universes = Proof.initial_euctx pftree in
+            let universes = Proof.((data pftree).initial_euctx) in
             (* This will warn if the proof is complete *)
             let pproofs, _univs =
               Proof_global.return_proof ~allow_partial:true () in

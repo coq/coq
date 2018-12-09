@@ -50,27 +50,70 @@ val proof : t ->
   * Goal.goal list
   * Goal.goal list
   * Evd.evar_map
+[@@ocaml.deprecated "use [Proof.data]"]
+
+val initial_goals : t -> (EConstr.constr * EConstr.types) list
+[@@ocaml.deprecated "use [Proof.data]"]
+
+val initial_euctx : t -> UState.t
+[@@ocaml.deprecated "use [Proof.data]"]
+
+type data =
+  { sigma : Evd.evar_map
+  (** A representation of the evar_map [EJGA wouldn't it better to just return the proofview?] *)
+  ; goals : Evar.t list
+  (** Focused goals *)
+  ; entry : Proofview.entry
+  (** Entry for the proofview *)
+  ; stack : (Evar.t list * Evar.t list) list
+  (** A representation of the focus stack *)
+  ; shelf : Evar.t list
+  (** A representation of the shelf  *)
+  ; given_up : Evar.t list
+  (** A representation of the given up goals  *)
+  ; initial_euctx : UState.t
+  (** The initial universe context (for the statement) *)
+  ; name : Names.Id.t
+  (** The name of the theorem whose proof is being constructed *)
+  ; poly : bool;
+  (** polymorphism *)
+  }
+
+val data : t -> data
 
 (* Generic records structured like the return type of proof *)
 type 'a pre_goals = {
   fg_goals : 'a list;
+  [@ocaml.deprecated "use [Proof.data]"]
   (** List of the focussed goals *)
   bg_goals : ('a list * 'a list) list;
+  [@ocaml.deprecated "use [Proof.data]"]
   (** Zipper representing the unfocussed background goals *)
   shelved_goals : 'a list;
+  [@ocaml.deprecated "use [Proof.data]"]
   (** List of the goals on the shelf. *)
   given_up_goals : 'a list;
+  [@ocaml.deprecated "use [Proof.data]"]
   (** List of the goals that have been given up *)
 }
+[@@ocaml.deprecated "use [Proof.data]"]
 
-val map_structured_proof : t -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals)
-
+(* needed in OCaml 4.05.0, not needed in newer ones *)
+[@@@ocaml.warning "-3"]
+val map_structured_proof : t -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals) [@ocaml.warning "-3"]
+[@@ocaml.deprecated "use [Proof.data]"]
+[@@@ocaml.warning "+3"]
 
 (*** General proof functions ***)
-val start : Evd.evar_map -> (Environ.env * EConstr.types) list -> t
-val dependent_start : Proofview.telescope -> t
-val initial_goals : t -> (EConstr.constr * EConstr.types) list
-val initial_euctx : t -> UState.t
+val start
+  :  name:Names.Id.t
+  -> poly:bool
+  -> Evd.evar_map -> (Environ.env * EConstr.types) list -> t
+
+val dependent_start
+  :  name:Names.Id.t
+  -> poly:bool
+  -> Proofview.telescope -> t
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)
@@ -177,8 +220,9 @@ val no_focused_goal : t -> bool
 
 (* the returned boolean signal whether an unsafe tactic has been
    used. In which case it is [false]. *)
-val run_tactic : Environ.env ->
-  unit Proofview.tactic -> t -> t * (bool*Proofview_monad.Info.tree)
+val run_tactic
+  :  Environ.env
+  -> unit Proofview.tactic -> t -> t * (bool*Proofview_monad.Info.tree)
 
 val maximal_unfocus : 'a focus_kind -> t -> t
 
@@ -208,7 +252,8 @@ module V82 : sig
   val grab_evars : t -> t
 
   (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> t -> t
+  val instantiate_evar :
+    Environ.env -> int -> Constrexpr.constr_expr -> t -> t
 end
 
 (* returns the set of all goals in the proof *)

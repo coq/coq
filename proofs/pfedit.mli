@@ -81,8 +81,13 @@ val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:polymorphic ->
   EConstr.types -> unit Proofview.tactic -> 
   constr * bool * UState.t
 
-val refine_by_tactic : env -> Evd.evar_map -> EConstr.types -> unit Proofview.tactic ->
-  constr * Evd.evar_map
+val refine_by_tactic
+  :  name:Id.t
+  -> poly:bool
+  -> env -> Evd.evar_map
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> constr * Evd.evar_map
 (** A variant of the above function that handles open terms as well.
     Caveat: all effects are purged in the returned term at the end, but other
     evars solved by side-effects are NOT purged, so that unexpected failures may

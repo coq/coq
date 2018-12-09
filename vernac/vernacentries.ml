@@ -82,12 +82,12 @@ let show_proof () =
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = Proof_global.give_me_the_proof () in
-  let gls,_,shelf,givenup,sigma = Proof.proof pfts in
-  pr_evars_int sigma ~shelf ~givenup 1 (Evd.undefined_map sigma)
+  let Proof.{goals;shelf;given_up;sigma} = Proof.data pfts in
+  pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
 let show_universes () =
   let pfts = Proof_global.give_me_the_proof () in
-  let gls,_,_,_,sigma = Proof.proof pfts in
+  let Proof.{goals;sigma} = Proof.data pfts in
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
   str "Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
@@ -96,9 +96,9 @@ let show_universes () =
 let show_intro all =
   let open EConstr in
   let pf = Proof_global.give_me_the_proof() in
-  let gls,_,_,_,sigma = Proof.proof pf in
-  if not (List.is_empty gls) then begin
-    let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
+  let Proof.{goals;sigma} = Proof.data pf in
+  if not (List.is_empty goals) then begin
+    let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
@@ -1047,8 +1047,9 @@ let vernac_set_end_tac tac =
 
 let vernac_set_used_variables e =
   let env = Global.env () in
+  let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
   let tys =
-    List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+    List.map snd (initial_goals (Proof_global.give_me_the_proof ())) in
   let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
@@ -1815,8 +1816,8 @@ let vernac_global_check c =
 
 let get_nth_goal n =
   let pf = Proof_global.give_me_the_proof() in
-  let gls,_,_,_,sigma = Proof.proof pf in
-  let gl = {Evd.it=List.nth gls (n-1) ; sigma = sigma; } in
+  let Proof.{goals;sigma} = Proof.data pf in
+  let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
 
 exception NoHyp
