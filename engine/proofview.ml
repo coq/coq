@@ -1250,17 +1250,9 @@ module V82 = struct
     let (_goals,evd) = Evd.Monad.List.map map comb ps.solution in
     { ps with solution = evd; }
     end
-      
+
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
-
-  (* Main function in the implementation of Grab Existential Variables.*)
-  let grab pv =
-    let undef = Evd.undefined_map pv.solution in
-    let goals = CList.rev_map fst (Evar.Map.bindings undef) in
-    { pv with comb = List.map with_empty_state goals }
-      
-    
 
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in

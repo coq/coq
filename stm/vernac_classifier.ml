@@ -81,8 +81,6 @@ let classify_vernac e =
     | VernacSubproof _
     | VernacCheckGuard
     | VernacUnfocused
-    | VernacSolveExistential _ ->
-        VtProofStep { parallel = `No; proof_block_detection = None }, VtLater
     | VernacBullet _ ->
         VtProofStep { parallel = `No; proof_block_detection = Some "bullet" },
         VtLater

@@ -904,16 +904,6 @@ TACTIC EXTEND is_const
     | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a constant") }
 END
 
-(* Command to grab the evars left unresolved at the end of a proof. *)
-(* spiwack: I put it in extratactics because it is somewhat tied with
-   the semantics of the LCF-style tactics, hence with the classic tactic
-   mode. *)
-VERNAC COMMAND EXTEND GrabEvars
-| [ "Grab" "Existential" "Variables" ]
-  => { classify_as_proofstep }
-  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) }
-END
-
 (* Shelves all the goals under focus. *)
 TACTIC EXTEND shelve
 | [ "shelve" ] ->

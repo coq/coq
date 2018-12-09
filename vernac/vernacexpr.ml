@@ -326,10 +326,6 @@ type nonrec vernac_expr =
       module_binder list * module_ast_inl list * module_ast_inl list
   | VernacInclude of module_ast_inl list
 
-  (* Solving *)
-
-  | VernacSolveExistential of int * constr_expr
-
   (* Auxiliary file and library management *)
   | VernacAddLoadPath of rec_flag * string * DirPath.t option
   | VernacRemoveLoadPath of string

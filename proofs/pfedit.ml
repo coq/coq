@@ -122,11 +122,6 @@ let solve ?with_end_tac gi info_lvl tac pr =
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
 
-let instantiate_nth_evar_com n com = 
-  Proof_global.simple_with_current_proof (fun _ p ->
-      Proof.V82.instantiate_evar Global.(env ())n com p)
-
-
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
 

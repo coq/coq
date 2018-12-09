@@ -1064,8 +1064,6 @@ let focus_command_cond = Proof.no_cond command_focus
      there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
 
-let vernac_solve_existential = Pfedit.instantiate_nth_evar_com
-
 let vernac_set_end_tac tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
@@ -2277,9 +2275,6 @@ let interp ?proof ~atts ~st c =
   | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
   | VernacExistingInstance insts -> with_section_locality ~atts vernac_existing_instance insts
   | VernacExistingClass id -> unsupported_attributes atts; vernac_existing_class id
-
-  (* Solving *)
-  | VernacSolveExistential (n,c) -> unsupported_attributes atts; vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
   | VernacAddLoadPath (isrec,s,alias) -> unsupported_attributes atts; vernac_add_loadpath isrec s alias

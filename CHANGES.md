@@ -44,6 +44,9 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+- The commands `Existential` and `Grab Existential` have been
+  removed. Use XXX in its place.
+
 Kernel
 
 - Added primitive integers

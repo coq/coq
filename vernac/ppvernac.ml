@@ -969,9 +969,6 @@ open Pputils
           hov 2 (keyword "Include" ++ spc() ++
                    prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
         )
-      (* Solving *)
-      | VernacSolveExistential (i,c) ->
-        return (keyword "Existential" ++ spc () ++ int i ++ pr_lconstrarg c)
 
       (* Auxiliary file and library management *)
       | VernacAddLoadPath (fl,s,d) ->
