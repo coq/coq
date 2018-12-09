@@ -150,7 +150,10 @@ let numeric_prefix_list s =
   let max = String.length s in
   let i = ref 0 in
   while !i < max && isnum s.[!i] do incr i done;
-  string_split '.' (String.sub s 0 !i)
+  match string_split '.' (String.sub s 0 !i) with
+  | [v] -> [v;"0";"0"]
+  | [v1;v2] -> [v1;v2;"0"]
+  | v -> v
 
 (** Combined existence and directory tests *)
 
