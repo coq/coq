@@ -412,7 +412,7 @@ let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook strength ref) thms_data in
       start_proof_univs id ~pl:decl kind sigma t ~univ_hook:(fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard;
-      ignore (Proof_global.with_current_proof (fun _ p ->
+      ignore (Proof_global.with_current_proof (fun p ->
           match init_tac with
           | None -> p,(true,[])
           | Some tac -> Proof.run_tactic Global.(env ()) tac p))

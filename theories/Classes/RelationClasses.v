@@ -458,7 +458,7 @@ Section Binary.
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
   Global Instance partial_order_antisym `(PartialOrder eqA R) : ! Antisymmetric A eqA R.
-  Proof with auto.
+  Proof.
     reduce_goal.
     pose proof partial_order_equivalence as poe. do 3 red in poe.
     apply <- poe. firstorder.

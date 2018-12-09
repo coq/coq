@@ -1037,14 +1037,6 @@ let focus_command_cond = Proof.no_cond command_focus
 
 let vernac_solve_existential = Pfedit.instantiate_nth_evar_com
 
-let vernac_set_end_tac tac =
-  let env = Genintern.empty_glob_sign (Global.env ()) in
-  let _, tac = Genintern.generic_intern env tac in
-  if not (Proof_global.there_are_pending_proofs ()) then
-    user_err Pp.(str "Unknown command of the non proof-editing mode.");
-  Proof_global.set_endline_tactic tac
-    (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
-
 let vernac_set_used_variables e =
   let env = Global.env () in
   let tys =
@@ -1058,7 +1050,7 @@ let vernac_set_used_variables e =
         (str "Unknown variable: " ++ Id.print id))
     l;
   ignore (Proof_global.set_used_variables l);
-  Proof_global.with_current_proof begin fun _ p ->
+  Proof_global.with_current_proof begin fun p ->
     (p, ())
   end
 
@@ -2024,7 +2016,7 @@ let vernac_register qid r =
 (* Proof management *)
 
 let vernac_focus gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -2035,7 +2027,7 @@ let vernac_focus gln =
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
   Proof_global.simple_with_current_proof
-    (fun _ p -> Proof.unfocus command_focus p ())
+    (fun p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused () =
@@ -2053,7 +2045,7 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
@@ -2062,11 +2054,11 @@ let vernac_subproof gln =
              (str "Brackets do not support multi-goal selectors."))
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun p ->
     Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet : Proof_bullet.t) =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun p ->
     Proof_bullet.put p bullet)
 
 let vernac_show = function
@@ -2297,12 +2289,10 @@ let interp ?proof ~atts ~st c =
     Feedback.msg_notice @@ vernac_show s
   | VernacCheckGuard -> unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_check_guard ()
-  | VernacProof (tac, using) -> unsupported_attributes atts;
+  | VernacProof using -> unsupported_attributes atts;
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
-    let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
-    Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
-    Option.iter vernac_set_end_tac tac;
+    Aux_file.record_in_aux_at "VernacProof" (usings);
     Option.iter vernac_set_used_variables using
   | VernacProofMode mn -> unsupported_attributes atts;
     Proof_global.set_proof_mode mn [@ocaml.warning "-3"]

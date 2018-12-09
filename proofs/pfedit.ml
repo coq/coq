@@ -75,11 +75,8 @@ let current_proof_statement () =
     | (id,([concl],strength)) -> id,strength,concl
     | _ -> CErrors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement.")
 
-let solve ?with_end_tac gi info_lvl tac pr =
-  try 
-    let tac = match with_end_tac with
-      | None -> tac
-      | Some etac -> Proofview.tclTHEN tac etac in
+let solve gi info_lvl tac pr =
+  try
     let tac = match info_lvl with
       | None -> tac
       | Some _ -> Proofview.Trace.record_info_trace tac
@@ -117,11 +114,10 @@ let solve ?with_end_tac gi info_lvl tac pr =
   with
     Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof")
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
+let by tac = Proof_global.with_current_proof (solve (Goal_select.SelectNth 1) None tac)
 
-let instantiate_nth_evar_com n com = 
-  Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)
-
+let instantiate_nth_evar_com n com =
+  Proof_global.simple_with_current_proof (fun p -> Proof.V82.instantiate_evar n com p)
 
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)

@@ -390,7 +390,7 @@ type nonrec vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
+  | VernacProof of section_subset_expr option
   | VernacProofMode of string
 
   (* For extension *)

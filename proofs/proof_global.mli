@@ -112,13 +112,8 @@ val get_open_goals : unit -> int
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
     no current proof.
     The return boolean is set to [false] if an unsafe tactic has been used. *)
-val with_current_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
-val simple_with_current_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t) -> unit
-
-(** Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : Genarg.glob_generic_argument -> unit
+val with_current_proof : (Proof.t -> Proof.t * 'a) -> 'a
+val simple_with_current_proof : (Proof.t -> Proof.t) -> unit
 
 (** Sets the section variables assumed by the proof, returns its closure
  * (w.r.t. type dependencies and let-ins covered by it) + a list of

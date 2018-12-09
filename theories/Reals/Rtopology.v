@@ -690,7 +690,7 @@ Proof.
     destruct H3 as (H14,H15); unfold is_upper_bound in H14.
     assert (H16 := H14 m' H7).
       cut (m < m'); [intro H17|].
-        elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H16 H17))...
+        elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H16 H17)).
       unfold m', Rmin; destruct (Rle_dec (m + eps / 2) b) as [Hle'|Hnle'].
         pattern m at 1; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
           unfold Rdiv; apply Rmult_lt_0_compat;

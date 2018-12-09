@@ -912,7 +912,7 @@ END
 VERNAC COMMAND EXTEND GrabEvars
 | [ "Grab" "Existential" "Variables" ]
   => { classify_as_proofstep }
-  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) }
+  -> { Proof_global.simple_with_current_proof (fun p  -> Proof.V82.grab_evars p) }
 END
 
 (* Shelves all the goals under focus. *)
@@ -944,7 +944,7 @@ END
 VERNAC COMMAND EXTEND Unshelve
 | [ "Unshelve" ]
   => { classify_as_proofstep }
-  -> { Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) }
+  -> { Proof_global.simple_with_current_proof (fun p  -> Proof.unshelve p) }
 END
 
 (* Gives up on the goals under focus: the goals are considered solved,

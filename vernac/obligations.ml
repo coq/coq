@@ -975,7 +975,7 @@ let rec solve_obligation prg num tac =
   let univ_hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
   let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~univ_hook in
   let _ = Pfedit.by !default_tactic in
-  Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
+  ()
 
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in

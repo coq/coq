@@ -92,7 +92,6 @@ type closed_proof = proof_object * proof_terminator
 type pstate = {
   pid : Id.t;  (* the name of the theorem whose proof is being constructed *)
   terminator : proof_terminator CEphemeron.key;
-  endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Constr.named_context option;
   proof : Proof.t;
   strength : Decl_kinds.goal_kind;
@@ -157,30 +156,14 @@ let with_current_proof f =
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
-      let et =
-        match p.endline_tactic with
-        | None -> Proofview.tclUNIT ()
-        | Some tac ->
-          let open Geninterp in
-          let ist = { lfun = Id.Map.empty; extra = TacStore.empty } in
-          let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
-          let tac = Geninterp.interp tag ist tac in
-          Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
-      in
-      let (newpr,ret) = f et p.proof in
+      let (newpr,ret) = f p.proof in
       let p = { p with proof = newpr } in
       pstates := p :: rest;
       ret
 
-let simple_with_current_proof f = with_current_proof (fun t p -> f t p , ())
+let simple_with_current_proof f = with_current_proof (fun p -> f p , ())
 
-let compact_the_proof () = simple_with_current_proof (fun _ -> Proof.compact)
-
-(* Sets the tactic to be used when a tactic line is closed with [...] *)
-let set_endline_tactic tac =
-  match !pstates with
-  | [] -> raise NoCurrentProof
-  | p :: rest -> pstates := { p with endline_tactic = Some tac } :: rest
+let compact_the_proof () = simple_with_current_proof Proof.compact
 
 (* spiwack: it might be considered to move error messages away.
     Or else to remove special exceptions from Proof_global.
@@ -249,7 +232,6 @@ let start_proof sigma id ?(pl=UState.default_univ_decl) str goals terminator =
     pid = id;
     terminator = CEphemeron.create terminator;
     proof = Proof.start sigma goals;
-    endline_tactic = None;
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
@@ -261,7 +243,6 @@ let start_dependent_proof id ?(pl=UState.default_univ_decl) str goals terminator
     pid = id;
     terminator = CEphemeron.create terminator;
     proof = Proof.dependent_start goals;
-    endline_tactic = None;
     section_vars = None;
     strength = str;
     mode = find_proof_mode "No";
@@ -474,7 +455,7 @@ let copy_terminators ~src ~tgt =
   List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
 
 let update_global_env () =
-  with_current_proof (fun _ p ->
+  with_current_proof (fun p ->
      Proof.in_proof p (fun sigma ->
        let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
        let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in

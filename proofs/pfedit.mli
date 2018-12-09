@@ -46,9 +46,12 @@ val current_proof_statement :
     proof is focused or if there is no [n]th subgoal. [solve SelectAll
     tac] applies [tac] to all subgoals. *)
 
-val solve : ?with_end_tac:unit Proofview.tactic ->
-      Goal_select.t -> int option -> unit Proofview.tactic ->
-      Proof.t -> Proof.t * bool
+val solve
+  :  Goal_select.t
+  -> int option
+  -> unit Proofview.tactic
+  -> Proof.t
+  -> Proof.t * bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
     focused proof or raises a UserError if there is no focused proof or

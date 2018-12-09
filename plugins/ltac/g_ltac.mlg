@@ -344,12 +344,8 @@ GRAMMAR EXTEND Gram
       | g = OPT toplevel_selector; "{" -> { Vernacexpr.VernacSubproof g } ] ]
   ;
   command:
-    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
-        l = OPT [ "using"; l = G_vernac.section_subset_expr -> { l } ] ->
-          { Vernacexpr.VernacProof (Some (in_tac ta), l) } 
-      | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
-        ta = OPT [ "with"; ta = Pltac.tactic -> { in_tac ta } ] ->
-          { Vernacexpr.VernacProof (ta,Some l) } ] ]
+    [ [ IDENT "Proof"; "using"; l = G_vernac.section_subset_expr ->
+       { Vernacexpr.VernacProof (Some l) } ] ]
   ;
   hint:
     [ [ IDENT "Extern"; n = natural; c = OPT Constr.constr_pattern ; "=>";
@@ -381,14 +377,13 @@ let () = declare_int_option {
   optwrite = fun n -> print_info_trace := n;
 }
 
-let vernac_solve n info tcom b =
+let vernac_solve n info tcom =
   let open Goal_select in
-  let status = Proof_global.with_current_proof (fun etac p ->
-    let with_end_tac = if b then Some etac else None in
+  let status = Proof_global.with_current_proof (fun p ->
     let global = match n with SelectAll | SelectList _ -> true | _ -> false in
     let info = Option.append info !print_info_trace in
     let (p,status) =
-      Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
+      Pfedit.solve n info (Tacinterp.hide_interp global tcom None) p
     in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
@@ -416,18 +411,6 @@ END
 
 {
 
-let pr_ltac_use_default b =
-  if b then (* Bug: a space is inserted before "..." *) str ".." else mt ()
-
-}
-
-VERNAC ARGUMENT EXTEND ltac_use_default PRINTED BY { pr_ltac_use_default }
-| [ "." ] -> { false }
-| [ "..." ] -> { true }
-END
-
-{
-
 let is_anonymous_abstract = function
   | TacAbstract (_,None) -> true
   | TacSolve [TacAbstract (_,None)] -> true
@@ -441,12 +424,12 @@ let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 }
 
 VERNAC { tactic_mode } EXTEND VernacSolve
-| [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+| [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) "." ] =>
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
-    vernac_solve g n t def
+    vernac_solve g n t
   }
-| [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
+| [ "par" ":" ltac_info_opt(n) tactic(t) "." ] =>
     {
       let anon_abstracting_tac = is_anonymous_abstract t in
       let solving_tac = is_explicit_terminator t in
@@ -456,7 +439,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve
       VtLater
     } -> {
       let t = rm_abstract t in
-      vernac_solve Goal_select.SelectAll n t def
+      vernac_solve Goal_select.SelectAll n t
     }
 END
 

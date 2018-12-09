@@ -587,12 +587,12 @@ Qed.
 
 Lemma Bv2N_upper_bound (n : nat) (bv : Bvector n) :
     (Bv2N bv < N.shiftl_nat 1 n)%N.
-Proof with simpl; auto.
-  induction bv...
+Proof.
+  induction bv; auto.
   - constructor.
   - destruct h.
-    + apply N.succ_double_lt...
-    + apply N.double_lt_mono...
+    + apply N.succ_double_lt; auto.
+    + apply N.double_lt_mono; auto.
 Qed.
 
 Corollary ByteV2N_upper_bound (n : nat) (v : ByteVector n) :
@@ -718,25 +718,25 @@ Qed.
 
 Lemma N2Bv_sized_Nsize (n : N) :
   N2Bv_sized (N.size_nat n) n = N2Bv n.
-Proof with simpl; auto.
-  destruct n...
-  induction p...
-  all: rewrite IHp...
+Proof.
+  destruct n; simpl; auto.
+  induction p; simpl; auto.
+  all: rewrite IHp; simpl; auto.
 Qed.
 
 Lemma N2Bv_sized_Bv2N (n : nat) (v : Bvector n) :
   N2Bv_sized n (Bv2N n v) = v.
-Proof with simpl; auto.
-  induction v...
+Proof.
+  induction v; simpl; auto.
   destruct h;
   unfold N2Bv_sized;
   destruct (Bv2N n v) as [|[]];
-  rewrite <- IHv...
+  now rewrite <- IHv; auto.
 Qed.
 
 Lemma N2Bv_N2Bv_sized_above (a : N) (k : nat) :
   N2Bv_sized (N.size_nat a + k) a = N2Bv a ++ Bvect_false k.
-Proof with auto.
-  destruct a...
-  induction p; simpl; f_equal...
+Proof.
+  destruct a; auto.
+  now induction p; simpl; f_equal; auto.
 Qed.

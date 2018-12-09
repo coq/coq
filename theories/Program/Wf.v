@@ -94,18 +94,18 @@ Section Measure_well_founded.
   Register MR as program.wf.mr.
 
   Lemma measure_wf: well_founded MR.
-  Proof with auto.
+  Proof.
     unfold well_founded.
     cut (forall (a: M) (a0: T), m a0 = a -> Acc MR a0).
       intros.
-      apply (H (m a))...
+      apply (H (m a)); auto.
     apply (@well_founded_ind M R wf (fun mm => forall a, m a = mm -> Acc MR a)).
     intros.
     apply Acc_intro.
     intros.
     unfold MR in H1.
     rewrite H0 in H1.
-    apply (H (m y))...
+    now apply (H (m y)); auto.
   Defined.
 
 End Measure_well_founded.
@@ -139,14 +139,14 @@ Section Fix_rects.
           Q x (f (fun y: {y: A | R y x} =>
             Fix_F_sub A R P f (proj1_sig y) (Acc_inv a (proj2_sig y)))))
     : forall x a, Q _ (Fix_F_sub A R P f x a).
-  Proof with auto.
+  Proof.
     set (R' := fun (x: A) => forall a, Q _ (Fix_F_sub A R P f x a)).
-    cut (forall x, R' x)...
+    cut (forall x, R' x); auto.
     apply (well_founded_induction_type Rwf).
     subst R'.
     simpl.
     intros.
-    rewrite F_unfold...
+    now rewrite F_unfold; auto.
   Qed.
 
   (* Let's call f's second parameter its "lowers" function, since it
@@ -196,16 +196,16 @@ Section Fix_rects.
       (a: Acc R x),
         Q x (f (fun y: {y: A | R y x} => Fix_sub A R Rwf P f (proj1_sig y))))
     : forall x, Q _ (Fix_sub A R Rwf P f x).
-  Proof with auto.
+  Proof.
     unfold Fix_sub.
     intros.
     apply Fix_F_sub_rect.
     intros.
-    assert (forall y: A, R y x0 -> Q y (Fix_F_sub A R P f y (Rwf y)))...
+    assert (forall y: A, R y x0 -> Q y (Fix_F_sub A R P f y (Rwf y))); auto.
     set (inv x0 X0 a). clearbody q.
     rewrite <- (equiv_lowers (fun y: {y: A | R y x0} =>
       Fix_F_sub A R P f (proj1_sig y) (Rwf (proj1_sig y)))
-    (fun y: {y: A | R y x0} => Fix_F_sub A R P f (proj1_sig y) (Acc_inv a (proj2_sig y))))...
+    (fun y: {y: A | R y x0} => Fix_F_sub A R P f (proj1_sig y) (Acc_inv a (proj2_sig y)))); auto.
     intros.
     apply eq_Fix_F_sub.
   Qed.

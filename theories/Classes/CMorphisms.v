@@ -263,10 +263,10 @@ Section GenericInstances.
   Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
 
   Next Obligation.
-  Proof with auto.
+  Proof.
     assert(R x0 x0).
-    transitivity y0... symmetry...
-    transitivity (y x0)...
+    transitivity y0; auto. symmetry; auto.
+    transitivity (y x0); auto.
   Qed.
 
   Unset Strict Universe Declaration.
@@ -292,9 +292,9 @@ Section GenericInstances.
     `(Transitive A R) : Proper (R --> R ++> arrow) R.
   
   Next Obligation.
-  Proof with auto.
-    transitivity x...
-    transitivity x0...
+  Proof.
+    transitivity x; auto.
+    transitivity x0; auto.
   Qed.
 
   (** Proper declarations for partial applications. *)
@@ -304,8 +304,8 @@ Section GenericInstances.
   `(Transitive A R) : Proper (R --> flip arrow) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y...
+  Proof.
+    transitivity y; auto.
   Qed.
 
   Global Program 
@@ -313,8 +313,8 @@ Section GenericInstances.
     `(Transitive A R) : Proper (R ++> arrow) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity x0...
+  Proof.
+    transitivity x0; auto.
   Qed.
 
   Global Program 
@@ -322,27 +322,27 @@ Section GenericInstances.
     `(PER A R) : Proper (R ++> flip arrow) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y... symmetry...
+  Proof.
+    transitivity y; auto. symmetry; auto.
   Qed.
 
   Global Program Instance trans_sym_contra_arrow_morphism
     `(PER A R) : Proper (R --> arrow) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity x0... symmetry...
+  Proof.
+    transitivity x0; auto. symmetry; auto.
   Qed.
 
   Global Program Instance per_partial_app_type_morphism
   `(PER A R) : Proper (R ==> iffT) (R x) | 2.
 
   Next Obligation.
-  Proof with auto.
-    split. intros ; transitivity x0...
+  Proof.
+    split. intros ; transitivity x0; auto.
     intros.
-    transitivity y...
-    symmetry...
+    transitivity y; auto.
+    symmetry; auto.
   Qed.
 
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
@@ -352,8 +352,8 @@ Section GenericInstances.
   `(Transitive A R) : Proper (R ==> (@eq A) ==> flip arrow) R | 2.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y...
+  Proof.
+    transitivity y; auto.
   Qed.
 
   (** Every Symmetric and Transitive crelation gives rise to an equivariant morphism. *)
@@ -362,11 +362,11 @@ Section GenericInstances.
   Instance PER_type_morphism `(PER A R) : Proper (R ==> R ==> iffT) R | 1.
 
   Next Obligation.
-  Proof with auto.
+  Proof.
     split ; intros.
-    transitivity x0... transitivity x... symmetry...
+    transitivity x0; auto. transitivity x; auto. symmetry; auto.
 
-    transitivity y... transitivity y0... symmetry...
+    transitivity y; auto. transitivity y0; auto. symmetry; auto.
   Qed.
 
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).

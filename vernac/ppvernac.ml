@@ -1183,19 +1183,11 @@ open Pputils
       (* For extension *)
       | VernacExtend (s,c) ->
         return (pr_extend s c)
-      | VernacProof (None, None) ->
+      | VernacProof None ->
         return (keyword "Proof")
-      | VernacProof (None, Some e) ->
+      | VernacProof Some e ->
         return (keyword "Proof " ++ spc () ++
             keyword "using" ++ spc() ++ pr_using e)
-      | VernacProof (Some te, None) ->
-        return (keyword "Proof with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te)
-      | VernacProof (Some te, Some e) ->
-        return (
-          keyword "Proof" ++ spc () ++
-            keyword "using" ++ spc() ++ pr_using e ++ spc() ++
-            keyword "with" ++ spc() ++ Pputils.pr_raw_generic (Global.env ()) te
-        )
       | VernacProofMode s ->
         return (keyword "Proof Mode" ++ str s)
       | VernacBullet b ->

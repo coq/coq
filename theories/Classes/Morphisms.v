@@ -258,10 +258,11 @@ Section GenericInstances.
   Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
 
   Next Obligation.
-  Proof with auto.
+  Proof.
     assert(R x0 x0).
-    transitivity y0... symmetry...
-    transitivity (y x0)... 
+    transitivity y0; auto.
+    symmetry; auto.
+    now transitivity (y x0); auto.
   Qed.
 
   (** The complement of a relation conserves its proper elements. *)
@@ -297,9 +298,9 @@ Section GenericInstances.
     `(Transitive A R) : Proper (R --> R ++> impl) R.
   
   Next Obligation.
-  Proof with auto.
-    transitivity x...
-    transitivity x0...
+  Proof.
+    transitivity x; auto.
+    now transitivity x0; auto.
   Qed.
 
   (** Proper declarations for partial applications. *)
@@ -309,8 +310,8 @@ Section GenericInstances.
   `(Transitive A R) : Proper (R --> flip impl) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y...
+  Proof.
+    now transitivity y; auto.
   Qed.
 
   Global Program 
@@ -318,8 +319,8 @@ Section GenericInstances.
     `(Transitive A R) : Proper (R ++> impl) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity x0...
+  Proof.
+    now transitivity x0; auto.
   Qed.
 
   Global Program 
@@ -327,27 +328,28 @@ Section GenericInstances.
     `(PER A R) : Proper (R ++> flip impl) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y... symmetry...
+  Proof.
+    transitivity y; auto.
+    now symmetry; auto.
   Qed.
 
   Global Program Instance trans_sym_contra_impl_morphism
     `(PER A R) : Proper (R --> impl) (R x) | 3.
 
   Next Obligation.
-  Proof with auto.
-    transitivity x0... symmetry...
+  Proof.
+    transitivity x0; auto. symmetry; auto.
   Qed.
 
   Global Program Instance per_partial_app_morphism
   `(PER A R) : Proper (R ==> iff) (R x) | 2.
 
   Next Obligation.
-  Proof with auto.
-    split. intros ; transitivity x0...
+  Proof.
+    split. intros ; transitivity x0; auto.
     intros.
-    transitivity y...
-    symmetry...
+    transitivity y; auto.
+    symmetry; auto.
   Qed.
 
   (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
@@ -357,8 +359,8 @@ Section GenericInstances.
   `(Transitive A R) : Proper (R ==> (@eq A) ==> flip impl) R | 2.
 
   Next Obligation.
-  Proof with auto.
-    transitivity y...
+  Proof.
+    transitivity y; auto.
   Qed.
 
   (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
@@ -367,11 +369,11 @@ Section GenericInstances.
   Instance PER_morphism `(PER A R) : Proper (R ==> R ==> iff) R | 1.
 
   Next Obligation.
-  Proof with auto.
+  Proof.
     split ; intros.
-    transitivity x0... transitivity x... symmetry...
+    transitivity x0; auto. transitivity x; auto. symmetry; auto.
 
-    transitivity y... transitivity y0... symmetry...
+    transitivity y; auto. transitivity y0; auto. symmetry; auto.
   Qed.
 
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).

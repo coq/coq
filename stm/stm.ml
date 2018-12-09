@@ -1948,7 +1948,7 @@ end = struct (* {{{ *)
            "goals only"))
        else begin
         let (i, ast) = r_ast in
-        Proof_global.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
+        Proof_global.simple_with_current_proof (fun p -> Proof.focus focus_cond () i p);
         (* STATE SPEC:
          * - start : id
          * - return: id
@@ -1998,7 +1998,7 @@ end = struct (* {{{ *)
     Vernacentries.with_fail st fail (fun () ->
     (if time then System.with_time ~batch else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
-    Proof_global.with_current_proof (fun _ p ->
+    Proof_global.with_current_proof (fun p ->
       let goals, _, _, _, _ = Proof.proof p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
@@ -2163,7 +2163,7 @@ let collect_proof keep cur hd brkind id =
    | _, { expr = e } -> is_defined_expr (Vernacprop.under_control e)
                         && (not (Vernacprop.has_Fail e)) in
  let proof_using_ast = function
-   | VernacProof(_,Some _) -> true
+   | VernacProof(Some _) -> true
    | _ -> false
  in
  let proof_using_ast = function
@@ -2172,14 +2172,10 @@ let collect_proof keep cur hd brkind id =
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
  let proof_no_using = function
-   | VernacProof(t,None) -> t
-   | _ -> assert false
- in
- let proof_no_using = function
-   | Some (_, v) -> proof_no_using (Vernacprop.under_control v.expr), v
+   | Some (_, v) -> v
    | _ -> assert false in
  let has_proof_no_using = function
-   | VernacProof(_,None) -> true
+   | VernacProof(None) -> true
    | _ -> false
  in
  let has_proof_no_using = function
@@ -2220,8 +2216,8 @@ let collect_proof keep cur hd brkind id =
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
         (try
           let name, hint = name ids, get_hint_ctx loc  in
-          let t, v = proof_no_using last in
-          v.expr <- VernacExpr([], VernacProof(t, Some hint));
+          let v = proof_no_using last in
+          v.expr <- VernacExpr([], VernacProof(Some hint));
           `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2314,7 +2310,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
            match (VCS.get_info base_state).state with
            | Valid { Vernacstate.proof } ->
                Proof_global.unfreeze proof;
-               Proof_global.with_current_proof (fun _ p ->
+               Proof_global.with_current_proof (fun p ->
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Goal_select.SelectAll None tac p), ());
                (* STATE SPEC:
