@@ -13,6 +13,7 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import Max.
 Require Import Lia.
+Require Import ConstructiveLimits.
 Local Open Scope R_scope.
 
 (*****************************************************************)
@@ -586,22 +587,8 @@ Qed.
 Lemma UL_sequence :
   forall (Un:nat -> R) (l1 l2:R), Un_cv Un l1 -> Un_cv Un l2 -> l1 = l2.
 Proof.
-  intros Un l1 l2; unfold Un_cv; unfold R_dist; intros.
-  apply cond_eq.
-  intros; cut (0 < eps / 2);
-    [ intro
-      | unfold Rdiv; apply Rmult_lt_0_compat;
-        [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
-  elim (H (eps / 2) H2); intros.
-  elim (H0 (eps / 2) H2); intros.
-  set (N := max x x0).
-  apply Rle_lt_trans with (Rabs (l1 - Un N) + Rabs (Un N - l2)).
-  replace (l1 - l2) with (l1 - Un N + (Un N - l2));
-  [ apply Rabs_triang | ring ].
-  rewrite (double_var eps); apply Rplus_lt_compat.
-  rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H3;
-    unfold ge, N; apply le_max_l.
-  apply H4; unfold ge, N; apply le_max_r.
+  intros. apply ClassicalConstructiveReals.Req_constr_leibniz.
+  apply (CR_cv_unique Un); apply Un_cv_mod; assumption.
 Qed.
 
 (**********)
@@ -609,24 +596,7 @@ Lemma CV_plus :
   forall (An Bn:nat -> R) (l1 l2:R),
     Un_cv An l1 -> Un_cv Bn l2 -> Un_cv (fun i:nat => An i + Bn i) (l1 + l2).
 Proof.
-  unfold Un_cv; unfold R_dist; intros.
-  cut (0 < eps / 2);
-    [ intro
-      | unfold Rdiv; apply Rmult_lt_0_compat;
-        [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
-  elim (H (eps / 2) H2); intros.
-  elim (H0 (eps / 2) H2); intros.
-  set (N := max x x0).
-  exists N; intros.
-  replace (An n + Bn n - (l1 + l2)) with (An n - l1 + (Bn n - l2));
-  [ idtac | ring ].
-  apply Rle_lt_trans with (Rabs (An n - l1) + Rabs (Bn n - l2)).
-  apply Rabs_triang.
-  rewrite (double_var eps); apply Rplus_lt_compat.
-  apply H3; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_l | assumption ].
-  apply H4; unfold ge; apply le_trans with N;
-    [ unfold N; apply le_max_r | assumption ].
+  intros. apply Un_mod_cv, CR_cv_plus; apply Un_cv_mod; assumption.
 Qed.
 
 (**********)
@@ -915,13 +885,7 @@ Qed.
 Lemma CV_opp :
   forall (An:nat -> R) (l:R), Un_cv An l -> Un_cv (opp_seq An) (- l).
 Proof.
-  intros An l.
-  unfold Un_cv; unfold R_dist; intros.
-  elim (H eps H0); intros.
-  exists x; intros.
-  unfold opp_seq; replace (- An n - - l) with (- (An n - l));
-    [ rewrite Rabs_Ropp | ring ].
-  apply H1; assumption.
+  intros. apply Un_mod_cv, CR_cv_opp, Un_cv_mod, H.
 Qed.
 
 (**********)
@@ -942,12 +906,7 @@ Lemma CV_minus :
   forall (An Bn:nat -> R) (l1 l2:R),
     Un_cv An l1 -> Un_cv Bn l2 -> Un_cv (fun i:nat => An i - Bn i) (l1 - l2).
 Proof.
-  intros.
-  replace (fun i:nat => An i - Bn i) with (fun i:nat => An i + opp_seq Bn i).
-  unfold Rminus; apply CV_plus.
-  assumption.
-  apply CV_opp; assumption.
-  unfold Rminus, opp_seq; reflexivity.
+  intros. apply Un_mod_cv, CR_cv_minus; apply Un_cv_mod; assumption.
 Qed.
 
 (** Un -> +oo *)

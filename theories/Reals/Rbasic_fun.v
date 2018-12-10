@@ -14,8 +14,15 @@
 (*********************************************************)
 
 Require Import Rdefinitions Raxioms RIneq.
+Require Import ConstructiveCauchyReals.
+Require Import ConstructiveReals.
+Require Import ConstructiveCauchyAbs.
+Require Import ConstructiveAbs.
+Require Import ClassicalConstructiveReals.
 Require Import R_Ifp.
 Local Open Scope R_scope.
+
+Canonical Structure DRealConstructive.
 
 Implicit Type r : R.
 
@@ -300,6 +307,19 @@ Definition Rabs r : R :=
   end.
 
 (*********)
+Lemma Rabs_CR : forall x:R, Rabs x = CRabs _ x.
+Proof.
+  intro x. unfold Rabs. destruct (Rcase_abs x).
+  - simpl. unfold Rabs_quot. apply Rquot1. rewrite Rquot2.
+    rewrite CReal_abs_left, Rrepr_opp. reflexivity.
+    apply CRealLt_asym. rewrite Rlt_def, Rrepr_0 in r.
+    apply CRealLtEpsilon in r. exact r.
+  - simpl. unfold Rabs_quot. apply Rquot1. rewrite Rquot2.
+    rewrite CReal_abs_right. reflexivity. rewrite <- Rrepr_0.
+    apply Rrepr_le. apply Rge_le, r.
+Qed.
+
+(*********)
 Lemma Rabs_R0 : Rabs 0 = 0.
 Proof.
   unfold Rabs; case (Rcase_abs 0); auto; intro.
@@ -393,47 +413,15 @@ Qed.
 (*********)
 Lemma Rabs_minus_sym : forall x y:R, Rabs (x - y) = Rabs (y - x).
 Proof.
-  intros; unfold Rabs; case (Rcase_abs (x - y)) as [Hlt|Hge];
-    case (Rcase_abs (y - x)) as [Hlt'|Hge'].
-  apply Rminus_lt, Rlt_asym in Hlt; apply Rminus_lt in Hlt'; contradiction.
-  rewrite (Ropp_minus_distr x y); trivial.
-  rewrite (Ropp_minus_distr y x); trivial.
-  destruct Hge; destruct Hge'.
-  apply Ropp_lt_gt_0_contravar in H; rewrite (Ropp_minus_distr x y) in H;
-    apply Rlt_asym in H0; contradiction.
-  apply Rminus_diag_uniq in H0 as ->; trivial.
-  apply Rminus_diag_uniq in H as ->; trivial.
-  apply Rminus_diag_uniq in H0 as ->; trivial.
+  intros. apply Req_constr_leibniz.
+  do 2 rewrite Rabs_CR. apply CRabs_minus_sym.
 Qed.
 
 (*********)
 Lemma Rabs_mult : forall x y:R, Rabs (x * y) = Rabs x * Rabs y.
 Proof.
-  intros; unfold Rabs; case (Rcase_abs (x * y)) as [Hlt|Hge];
-    case (Rcase_abs x) as [Hltx|Hgex];
-    case (Rcase_abs y) as [Hlty|Hgey]; auto.
-  apply Rmult_lt_gt_compat_neg_l with (r:=x), Rlt_asym in Hlty; trivial.
-    rewrite Rmult_0_r in Hlty; contradiction.
-  rewrite (Ropp_mult_distr_l_reverse x y); trivial.
-  rewrite (Rmult_comm x (- y)); rewrite (Ropp_mult_distr_l_reverse y x);
-    rewrite (Rmult_comm x y); trivial.
-  destruct Hgex as [| ->], Hgey as [| ->].
-  apply Rmult_lt_compat_l with (r:=x), Rlt_asym in H0; trivial.
-    rewrite Rmult_0_r in H0; contradiction.
-  rewrite Rmult_0_r in Hlt; contradiction (Rlt_irrefl 0).
-  rewrite Rmult_0_l in Hlt; contradiction (Rlt_irrefl 0).
-  rewrite Rmult_0_l in Hlt; contradiction (Rlt_irrefl 0).
-  rewrite (Rmult_opp_opp x y); trivial.
-  destruct Hge. destruct Hgey.
-  apply Rmult_lt_compat_r with (r:=y), Rlt_asym in Hltx; trivial.
-    rewrite Rmult_0_l in Hltx; contradiction.
-  rewrite H0, Rmult_0_r in H; contradiction (Rlt_irrefl 0).
-  rewrite <- Ropp_mult_distr_l, H, Ropp_0; trivial.
-  destruct Hge. destruct Hgex.
-  apply Rmult_lt_compat_l with (r:=x), Rlt_asym in Hlty; trivial.
-    rewrite Rmult_0_r in Hlty; contradiction.
-  rewrite H0, 2!Rmult_0_l; trivial.
-  rewrite <- Ropp_mult_distr_r, H, Ropp_0; trivial.
+  intros. apply Req_constr_leibniz.
+  do 3 rewrite Rabs_CR. apply CRabs_mult.
 Qed.
 
 (*********)
@@ -454,110 +442,29 @@ Qed.
 
 Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
 Proof.
-  intro; replace (-x) with (-1 * x) by ring.
-  rewrite Rabs_mult.
-  replace (Rabs (-1)) with 1.
-  apply Rmult_1_l.
-  unfold Rabs; case (Rcase_abs (-1)).
-  intro; ring.
-  rewrite <- Ropp_0.
-  intro H0; apply Ropp_ge_cancel in H0.
-  elim (Rge_not_lt _ _ H0).
-  apply Rlt_0_1.
+  intros. apply Req_constr_leibniz.
+  do 2 rewrite Rabs_CR. apply CRabs_opp.
 Qed.
 
 (*********)
 Lemma Rabs_triang : forall a b:R, Rabs (a + b) <= Rabs a + Rabs b.
 Proof.
-  intros a b; unfold Rabs; case (Rcase_abs (a + b)) as [Hlt|Hge];
-    case (Rcase_abs a) as [Hlta|Hgea];
-    case (Rcase_abs b) as [Hltb|Hgeb].
-  apply (Req_le (- (a + b)) (- a + - b)); rewrite (Ropp_plus_distr a b);
-    reflexivity.
-(**)
-  rewrite (Ropp_plus_distr a b); apply (Rplus_le_compat_l (- a) (- b) b);
-    unfold Rle; elim Hgeb; intro.
-  left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- b) 0 b H); intro;
-    elim (Rplus_ne (- b)); intros v w; rewrite v in H0;
-      clear v w; rewrite (Rplus_opp_l b) in H0; apply (Rlt_trans (- b) 0 b H0 H).
-  right; rewrite H; apply Ropp_0.
-(**)
-  rewrite (Ropp_plus_distr a b); rewrite (Rplus_comm (- a) (- b));
-    rewrite (Rplus_comm a (- b)); apply (Rplus_le_compat_l (- b) (- a) a);
-      unfold Rle; elim Hgea; intro.
-  left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- a) 0 a H); intro;
-    elim (Rplus_ne (- a)); intros v w; rewrite v in H0;
-      clear v w; rewrite (Rplus_opp_l a) in H0; apply (Rlt_trans (- a) 0 a H0 H).
-  right; rewrite H; apply Ropp_0.
-(**)
-  exfalso; generalize (Rplus_ge_compat_l a b 0 Hgeb); intro;
-    elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
-      generalize (Rge_trans (a + b) a 0 H Hgea); intro; clear H;
-        unfold Rge in H0; elim H0; intro; clear H0.
-  unfold Rgt in H; generalize (Rlt_asym (a + b) 0 Hlt); intro; auto.
-  absurd (a + b = 0); auto.
-  apply (Rlt_dichotomy_converse (a + b) 0); left; assumption.
-(**)
-  exfalso; generalize (Rplus_lt_compat_l a b 0 Hltb); intro;
-    elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
-      generalize (Rlt_trans (a + b) a 0 H Hlta); intro; clear H;
-        destruct Hge.
-  unfold Rgt in H; generalize (Rlt_trans (a + b) 0 (a + b) H0 H); intro;
-    apply (Rlt_irrefl (a + b)); assumption.
-  rewrite H in H0; apply (Rlt_irrefl 0); assumption.
-(**)
-  rewrite (Rplus_comm a b); rewrite (Rplus_comm (- a) b);
-    apply (Rplus_le_compat_l b a (- a)); apply (Rminus_le a (- a));
-      unfold Rminus; rewrite (Ropp_involutive a);
-        generalize (Rplus_lt_compat_l a a 0 Hlta); clear Hge Hgeb;
-          intro; elim (Rplus_ne a); intros v w; rewrite v in H;
-            clear v w; generalize (Rlt_trans (a + a) a 0 H Hlta);
-              intro; apply (Rlt_le (a + a) 0 H0).
-(**)
-  apply (Rplus_le_compat_l a b (- b)); apply (Rminus_le b (- b));
-    unfold Rminus; rewrite (Ropp_involutive b);
-      generalize (Rplus_lt_compat_l b b 0 Hltb); clear Hge Hgea;
-        intro; elim (Rplus_ne b); intros v w; rewrite v in H;
-          clear v w; generalize (Rlt_trans (b + b) b 0 H Hltb);
-            intro; apply (Rlt_le (b + b) 0 H0).
-(**)
-  unfold Rle; right; reflexivity.
+  intros. apply Rnot_lt_le. do 3 rewrite Rabs_CR.
+  apply CRabs_triang.
 Qed.
 
 (*********)
 Lemma Rabs_triang_inv : forall a b:R, Rabs a - Rabs b <= Rabs (a - b).
 Proof.
-  intros; apply (Rplus_le_reg_l (Rabs b) (Rabs a - Rabs b) (Rabs (a - b)));
-    unfold Rminus; rewrite <- (Rplus_assoc (Rabs b) (Rabs a) (- Rabs b));
-      rewrite (Rplus_comm (Rabs b) (Rabs a));
-        rewrite (Rplus_assoc (Rabs a) (Rabs b) (- Rabs b));
-          rewrite (Rplus_opp_r (Rabs b)); rewrite (proj1 (Rplus_ne (Rabs a)));
-            replace (Rabs a) with (Rabs (a + 0)).
-  rewrite <- (Rplus_opp_r b); rewrite <- (Rplus_assoc a b (- b));
-    rewrite (Rplus_comm a b); rewrite (Rplus_assoc b a (- b)).
-  exact (Rabs_triang b (a + - b)).
-  rewrite (proj1 (Rplus_ne a)); trivial.
+  intros. apply Rnot_lt_le. do 3 rewrite Rabs_CR.
+  apply CRabs_triang_inv.
 Qed.
 
 (* ||a|-|b||<=|a-b| *)
 Lemma Rabs_triang_inv2 : forall a b:R, Rabs (Rabs a - Rabs b) <= Rabs (a - b).
 Proof.
-  cut
-    (forall a b:R, Rabs b <= Rabs a -> Rabs (Rabs a - Rabs b) <= Rabs (a - b)).
-  intros; destruct (Rtotal_order (Rabs a) (Rabs b)) as [Hlt| [Heq| Hgt]].
-  rewrite <- (Rabs_Ropp (Rabs a - Rabs b)); rewrite <- (Rabs_Ropp (a - b));
-    do 2 rewrite Ropp_minus_distr.
-  apply H; left; assumption.
-  rewrite Heq; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
-    apply Rabs_pos.
-  apply H; left; assumption.
-  intros; replace (Rabs (Rabs a - Rabs b)) with (Rabs a - Rabs b).
-  apply Rabs_triang_inv.
-  rewrite (Rabs_right (Rabs a - Rabs b));
-    [ reflexivity
-      | apply Rle_ge; apply Rplus_le_reg_l with (Rabs b); rewrite Rplus_0_r;
-        replace (Rabs b + (Rabs a - Rabs b)) with (Rabs a);
-        [ assumption | ring ] ].
+  intros. apply Rnot_lt_le. do 4 rewrite Rabs_CR.
+  apply CRabs_triang_inv2.
 Qed.
 
 (*********)

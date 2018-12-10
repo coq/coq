@@ -531,14 +531,16 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Cauchy/ConstructiveCauchyReals.v
     theories/Reals/Cauchy/ConstructiveCauchyRealsMult.v
     theories/Reals/Cauchy/ConstructiveCauchyAbs.v
-    theories/Reals/ClassicalDedekindReals.v
-    theories/Reals/Raxioms.v
     theories/Reals/Abstract/ConstructiveReals.v
     theories/Reals/Abstract/ConstructiveRealsMorphisms.v
-    theories/Reals/Abstract/ConstructiveLUB.v
+    theories/Reals/Cauchy/ClassicalCauchyReals.v
     theories/Reals/Abstract/ConstructiveAbs.v
-    theories/Reals/Abstract/ConstructiveLimits.v
     theories/Reals/Abstract/ConstructiveSum.v
+    theories/Reals/Abstract/ConstructiveLimits.v
+    theories/Reals/ClassicalDedekindReals.v
+    theories/Reals/Cauchy/ClassicalConstructiveReals.v
+    theories/Reals/Raxioms.v
+    theories/Reals/Abstract/ConstructiveLUB.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
     theories/Reals/ROrderedType.v
@@ -602,6 +604,21 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rregisternames.v
     (theories/Reals/Reals.v)
     theories/Reals/Runcountable.v
+    theories/Reals/ConstructivePartialFunctions.v
+    theories/Reals/CMTbase.v
+    theories/Reals/CMTIntegrableFunctions.v
+    theories/Reals/CMTMeasurableFunctions.v
+    theories/Reals/CMTPositivity.v
+    theories/Reals/CMTFullSets.v
+    theories/Reals/CMTprofile.v
+    theories/Reals/CMTIntegrableSets.v
+    theories/Reals/CMTProductIntegral.v
+    theories/Reals/CMTcast.v
+    theories/Reals/ConstructiveDiagonal.v
+    theories/Reals/ConstructiveUniformCont.v
+    theories/Reals/ConstructiveCauchyIntegral.v
+    theories/Reals/CMTReals.v
+    theories/Reals/CMTDirac.v
   </dd>
 
   <dt> <b>Program</b>:

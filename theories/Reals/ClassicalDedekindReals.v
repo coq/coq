@@ -99,6 +99,8 @@ Qed.
 Definition DReal : Set
   := { f : Q -> bool | isLowerCut f }.
 
+(* Approximation of a Dedekind real f by a rational number q,
+   within 1 / (n+1). *)
 Fixpoint DRealQlim_rec (f : Q -> bool) (low : isLowerCut f) (n p : nat) { struct p }
   : f (proj1_sig (lowerCutBelow f low) + (Z.of_nat p # Pos.of_nat (S n)))%Q = false
     -> { q : Q | f q = true /\ f (q + (1 # Pos.of_nat (S n)))%Q = false }.
@@ -253,15 +255,15 @@ Proof.
     discriminate.
 Defined.
 
-Definition Rle (x y : DReal)
+Definition DRealLe (x y : DReal)
   := forall q:Q, proj1_sig x q = true -> proj1_sig y q = true.
 
-Lemma Rle_antisym : forall x y : DReal,
-    Rle x y
-    -> Rle y x
+Lemma DReal_le_antisym : forall x y : DReal,
+    DRealLe x y
+    -> DRealLe y x
     -> x = y.
 Proof.
-  intros [f cf] [g cg] H H0. unfold Rle in H,H0; simpl in H, H0.
+  intros [f cf] [g cg] H H0. unfold DRealLe in H,H0; simpl in H, H0.
   assert (f = g).
   { apply functional_extensionality. intro q.
     specialize (H q). specialize (H0 q).
@@ -377,7 +379,7 @@ Qed.
 
 Lemma DRealQuot1 : forall x y:DReal, CRealEq (DRealRepr x) (DRealRepr y) -> x = y.
 Proof.
-  intros. destruct H. apply Rle_antisym.
+  intros. destruct H. apply DReal_le_antisym.
   - clear H. intros q H1. destruct (proj1_sig y q) eqn:des.
     reflexivity. exfalso. apply H0.
     apply (CReal_le_lt_trans _ (inject_Q q)). apply DRealReprQup.
