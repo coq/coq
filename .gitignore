@@ -165,8 +165,7 @@ user-contrib
 plugins/ssr/ssrparser.ml
 plugins/ssr/ssrvernac.ml
 
-# gramlib__pack
-gramlib__pack
+/gramlib/.pack
 
 # ocaml dev files
 .merlin
@@ -178,3 +177,4 @@ theories/*/dune
 theories/*/*/dune
 theories/*/*/*/dune
 *.install
+!Makefile.install
