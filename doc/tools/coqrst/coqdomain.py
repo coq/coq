@@ -332,6 +332,25 @@ class TacticNotationVariantObject(TacticNotationObject):
     index_suffix = "(tacnv)"
     annotation = "Variant"
 
+
+class TacticalNotationObject(NotationObject):
+    """A Coq tactical or Ltac construct
+
+    Example::
+
+       .. tactical:: numgoals
+          :name: numgoals (tactical)
+
+          Controls ...
+    """
+    subdomain = "tactical"
+    index_suffix = "(tactical)"
+    annotation = None
+
+    def _name_from_signature(self, signature):
+        return stringify_with_ellipses(signature)
+
+
 class OptionObject(NotationObject):
     """A Coq option (a setting with non-boolean value, e.g. a string or numeric value).
 
@@ -951,7 +970,7 @@ class CoqVernacIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "cmdindex", "Command Index", "commands", ["cmd"]
 
 class CoqTacticIndex(CoqSubdomainsIndex):
-    name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
+    name, localname, shortname, subdomains = "tacindex", "Tactics and tacticals Index", "tactics", ["tacn", "tactical"]
 
 class CoqOptionIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "optindex", "Flags, options and Tables Index", "options", ["flag", "opt", "table"]
@@ -1025,6 +1044,7 @@ class CoqDomain(Domain):
         'cmd': ObjType('cmd', 'cmd'),
         'cmdv': ObjType('cmdv', 'cmd'),
         'tacn': ObjType('tacn', 'tacn'),
+        'tactical': ObjType('tactical', 'tactical'),
         'tacv': ObjType('tacv', 'tacn'),
         'opt': ObjType('opt', 'opt'),
         'flag': ObjType('flag', 'flag'),
@@ -1043,6 +1063,7 @@ class CoqDomain(Domain):
         'cmd': VernacObject,
         'cmdv': VernacVariantObject,
         'tacn': TacticNotationObject,
+        'tactical': TacticalNotationObject,
         'tacv': TacticNotationVariantObject,
         'opt': OptionObject,
         'flag': FlagObject,
@@ -1057,6 +1078,7 @@ class CoqDomain(Domain):
         # Each of these roles lives in a different semantic “subdomain”
         'cmd': XRefRole(warn_dangling=True),
         'tacn': XRefRole(warn_dangling=True),
+        'tactical': XRefRole(warn_dangling=True),
         'opt': XRefRole(warn_dangling=True),
         'flag': XRefRole(warn_dangling=True),
         'table': XRefRole(warn_dangling=True),
@@ -1080,6 +1102,7 @@ class CoqDomain(Domain):
         'objects' : { # subdomain → name → docname, objtype, targetid
             'cmd': {},
             'tacn': {},
+            'tactical': {},
             'opt': {},
             'flag': {},
             'table': {},

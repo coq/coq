@@ -2,6 +2,6 @@
 
 .. hack to get index in TOC
 
--------------
-Tactic index
--------------
+--------------------------
+Tactic and tacticals index
+--------------------------

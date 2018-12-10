@@ -603,7 +603,7 @@ The following experimental command is available when the ``FunInd`` library has 
    This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
    for several ways of defining a function *and other useful related
    objects*, namely: an induction principle that reflects the recursive
-   structure of the function (see :tacn:`function induction`) and its fixpoint equality.
+   structure of the function (see :tacn:`functional induction`) and its fixpoint equality.
    The meaning of this declaration is to define a function ident,
    similarly to ``Fixpoint``. Like in ``Fixpoint``, the decreasing argument must
    be given (unless the function is not recursive), but it might not
@@ -616,7 +616,7 @@ The ``Function`` construction also enjoys the ``with`` extension to define
 mutually recursive definitions. However, this feature does not work
 for non structurally recursive functions.
 
-See the documentation of functional induction (:tacn:`function induction`)
+See the documentation of functional induction (:tacn:`functional induction`)
 and ``Functional Scheme`` (:ref:`functional-scheme`) for how to use
 the induction principle to easily reason about the function.
 
@@ -692,7 +692,7 @@ terminating functions.
 
    :tacn:`functional inversion` will not be available for the function.
 
-.. seealso:: :ref:`functional-scheme` and :tacn:`function induction`
+.. seealso:: :ref:`functional-scheme` and :tacn:`functional induction`
 
 Depending on the ``{…}`` annotation, different definition mechanisms are
 used by ``Function``. A more precise description is given below.

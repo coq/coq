@@ -287,7 +287,7 @@ Applying theorems
    the behavior depends on the form of the goal. If the goal is of the form
    :n:`(fun x => Q) u__1 ... u__n` and the :n:`t__i` and :n:`u__i` unify,
    then :g:`P` is taken to be :g:`(fun x => Q)`. Otherwise, :tacn:`apply`
-   tries to define :g:`P` by abstracting over :g:`t_1 ... t__n` in the goal.
+   tries to define :g:`P` by abstracting over :n:`t__1 ... t__n` in the goal.
    See :tacn:`pattern` to transform the goal so that it
    gets the form :n:`(fun x => Q) u__1 ... u__n`.
 
@@ -335,7 +335,7 @@ Applying theorems
       instantiate (see :ref:`Existential-Variables`). The instantiation is
       intended to be found later in the proof.
 
-   .. tacv:: simple apply @term.
+   .. tacv:: simple apply @term
 
       This behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
       that contain no variables to instantiate. For instance, the following example
@@ -1843,8 +1843,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 See also the larger example of :tacn:`dependent induction`
 and an explanation of the underlying technique.
 
-.. tacn:: function induction (@qualid {+ @term})
-   :name: function induction
+.. tacn:: functional induction (@qualid {+ @term})
+   :name: functional induction
 
    The tactic functional induction performs case analysis and induction
    following the definition of a function. It makes use of a principle
@@ -4067,16 +4067,6 @@ succeeds, and results in an error otherwise.
    Unification takes the transparency information defined in the hint database
    :n:`@ident` into account (see :ref:`the hints databases for auto and eauto <thehintsdatabasesforautoandeauto>`).
 
-.. tacn:: is_evar @term
-   :name: is_evar
-
-   This tactic checks whether its argument is a current existential
-   variable. Existential variables are uninstantiated variables generated
-   by :tacn:`eapply` and some other tactics.
-
-.. exn:: Not an evar.
-   :undocumented:
-
 .. tacn:: has_evar @term
    :name: has_evar
 
@@ -4087,14 +4077,6 @@ succeeds, and results in an error otherwise.
 .. exn:: No evars.
    :undocumented:
 
-.. tacn:: is_var @term
-   :name: is_var
-
-   This tactic checks whether its argument is a variable or hypothesis in
-   the current goal context or in the opened sections.
-
-.. exn:: Not a variable or hypothesis.
-   :undocumented:
 
 
 .. _equality:

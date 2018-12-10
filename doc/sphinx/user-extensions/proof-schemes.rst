@@ -259,7 +259,7 @@ Generation of induction principles with ``Functional`` ``Scheme``
     simpl; auto with arith.
     Qed.
 
-  We can use directly the functional induction (:tacn:`function induction`) tactic instead
+  We can use directly the functional induction (:tacn:`functional induction`) tactic instead
   of the pattern/apply trick:
 
   .. coqtop:: all

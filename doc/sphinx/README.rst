@@ -161,24 +161,32 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 ``.. tacn::`` :black_nib: A tactic, or a tactic notation.
     Example::
 
-       .. tacn:: do @num @expr
+       .. tacn:: apply @term
+          :name: apply
 
-          :token:`expr` is evaluated to ``v`` which must be a tactic value. …
+          This tactic applies to any goal. The argument term is a term well-formed in
+          the local context. …
 
-``.. tacv::`` :black_nib: A variant of a tactic.
+
+``.. tactical::`` :black_nib: A tactical or Ltac construct
     Example::
 
-       .. tacn:: fail
+       .. tactical:: fail
+          :name: fail (tactical)
 
           This is the always-failing tactic: it does not solve any goal. It is
           useful for defining other tacticals since it can be caught by
           :tacn:`try`, :tacn:`repeat`, :tacn:`match goal`, or the branching
           tacticals. …
 
-          .. tacv:: fail @natural
+``.. tacv::`` :black_nib: A variant of a tactic.
+    Example::
 
-             The number is the failure level. If no level is specified, it
-             defaults to 0. …
+       .. tacv:: simple apply @term
+          :name: simple apply
+
+          This is a shortcut for …
+
 
 ``.. thm::`` A theorem.
     Example::

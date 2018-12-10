@@ -515,7 +515,7 @@ is a valid tactic expression.
 The pose tactic is also improved for the local definition of higher
 order terms. Local definitions of functions can use the same syntax as
 global ones.
-For example, the tactic :tacn:`pose <pose (ssreflect)>` supoprts parameters:
+For example, the tactic :tacn:`pose <pose (ssreflect)>` supports parameters:
 
 .. example::
 
