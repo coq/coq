@@ -112,7 +112,7 @@ let iprint_no_report (e, info) =
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    hov 0 (where s ++ pps)
+    where s ++ pps
   | _ -> raise Unhandled
 end
 
