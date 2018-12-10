@@ -123,11 +123,7 @@ let print_mutual_inductive env mind mib udecl =
       (Declareops.inductive_polymorphic_context mib) udecl
   in
   let sigma = Evd.from_ctx (UState.of_binders bl) in
-  hov 0 (Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
-         Printer.pr_cumulative
-           (Declareops.inductive_is_polymorphic mib) 
-           (Declareops.inductive_is_cumulative mib) ++
-         def keyword ++ spc () ++
+  hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++
          match mib.mind_universes with
@@ -172,10 +168,6 @@ let print_record env mind mib udecl =
   in
   hov 0 (
     hov 0 (
-      Printer.pr_polymorphic (Declareops.inductive_is_polymorphic mib) ++
-      Printer.pr_cumulative
-        (Declareops.inductive_is_polymorphic mib)
-        (Declareops.inductive_is_cumulative mib) ++
       def keyword ++ spc () ++ Id.print mip.mind_typename ++ brk(1,4) ++
       print_params env sigma params ++
       str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++

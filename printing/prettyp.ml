@@ -575,7 +575,7 @@ let print_constant with_values sep sp udecl =
   in
   let env = Global.env () and sigma = Evd.from_ctx ctx in
   let pr_ltype = pr_ltype_env env sigma in
-  hov 0 (pr_polymorphic (Declareops.constant_is_polymorphic cb) ++
+  hov 0 (
     match val_0 with
     | None ->
 	str"*** [ " ++

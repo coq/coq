@@ -11,7 +11,7 @@ eq_refl
      : ?y = ?y
 where
 ?y : [ |- nat]
-Monomorphic Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq_refl: Arguments are renamed to B, y
 For eq: Argument A is implicit and maximally inserted
@@ -31,8 +31,7 @@ When applied to 1 argument:
   Argument B is implicit
 Argument scopes are [type_scope _]
 Expands to: Constructor Coq.Init.Logic.eq_refl
-Monomorphic Inductive myEq (B : Type) (x : A) : A -> Prop :=
-    myrefl : B -> myEq B x x
+Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
 
 For myrefl: Arguments are renamed to C, x, _
 For myrefl: Argument C is implicit and maximally inserted
@@ -45,7 +44,7 @@ Arguments are renamed to C, x, _
 Argument C is implicit and maximally inserted
 Argument scopes are [type_scope _ _]
 Expands to: Constructor Arguments_renaming.Test1.myrefl
-Monomorphic myplus = 
+myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
@@ -69,7 +68,7 @@ myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
 @myplus
      : forall Z : Type, Z -> nat -> nat -> nat
-Monomorphic Inductive myEq (A B : Type) (x : A) : A -> Prop :=
+Inductive myEq (A B : Type) (x : A) : A -> Prop :=
     myrefl : B -> myEq A B x x
 
 For myrefl: Arguments are renamed to A, C, x, _
@@ -85,7 +84,7 @@ Argument scopes are [type_scope type_scope _ _]
 Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
-Monomorphic myplus = 
+myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m

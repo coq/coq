@@ -4,7 +4,7 @@ existT is template universe polymorphic
 Argument A is implicit
 Argument scopes are [type_scope function_scope _ _]
 Expands to: Constructor Coq.Init.Specif.existT
-Monomorphic Inductive sigT (A : Type) (P : A -> Type) : Type :=
+Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}
 
 For sigT: Argument A is implicit
@@ -14,7 +14,7 @@ For existT: Argument scopes are [type_scope function_scope _ _]
 existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
-Monomorphic Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
 For eq_refl, when applied to no arguments:
@@ -38,7 +38,7 @@ When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
 When applied to 1 argument:
   Argument A is implicit
-Monomorphic Nat.add = 
+Nat.add = 
 fix add (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
@@ -62,7 +62,7 @@ plus_n_O is not universe polymorphic
 Argument scope is [nat_scope]
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
-Monomorphic Inductive le (n : nat) : nat -> Prop :=
+Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
 
 For le_S: Argument m is implicit
@@ -74,7 +74,7 @@ comparison : Set
 
 comparison is not universe polymorphic
 Expands to: Inductive Coq.Init.Datatypes.comparison
-Monomorphic Inductive comparison : Set :=
+Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison
 bar : foo
 
@@ -84,7 +84,7 @@ bar : forall x : nat, x = 0
 
 Argument x is implicit and maximally inserted
 Expands to: Constant PrintInfos.bar
-Monomorphic *** [ bar : foo ]
+*** [ bar : foo ]
 
 bar is not universe polymorphic
 Expanded type for implicit arguments
@@ -94,7 +94,7 @@ Argument x is implicit and maximally inserted
 Module Coq.Init.Peano
 Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
-Monomorphic Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
 For eq_refl, when applied to no arguments:

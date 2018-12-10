@@ -1,8 +1,8 @@
-Monomorphic f = 2
+f = 2
      : nat
 
 f is not universe polymorphic
-Monomorphic u = I
+u = I
      : True
 
 u is not universe polymorphic

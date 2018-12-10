@@ -225,7 +225,7 @@ fun S : nat => [[S | S + S]]
      : Set
 exists2 '{{y, z}} : nat * nat, y > z & z > y
      : Prop
-Monomorphic foo = 
+foo = 
 fun l : list nat => match l with
                     | _ :: (_ :: _) as l1 => l1
                     | _ => l
@@ -261,11 +261,11 @@ myfoo01 tt
  {4; 5; 6};
  {7; 8; 9}]
      : list (list nat)
-Monomorphic amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
+amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
      : unit
 
 amatch is not universe polymorphic
-Monomorphic alist = [0; 1; 2]
+alist = [0; 1; 2]
      : list nat
 
 alist is not universe polymorphic

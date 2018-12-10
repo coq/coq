@@ -81,8 +81,6 @@ val pr_sort                : evar_map -> Sorts.t -> Pp.t
 
 (** Universe constraints *)
 
-val pr_polymorphic         : bool -> Pp.t
-val pr_cumulative          : bool -> bool -> Pp.t
 val pr_universe_instance   : evar_map -> Univ.Instance.t -> Pp.t
 val pr_universe_instance_constraints : evar_map -> Univ.Instance.t -> Univ.Constraint.t -> Pp.t
 val pr_universe_ctx        : evar_map -> ?variance:Univ.Variance.t array ->

@@ -1,8 +1,8 @@
-Monomorphic Nat.t = nat
+Nat.t = nat
      : Set
 
 Nat.t is not universe polymorphic
-Monomorphic Nat.t = nat
+Nat.t = nat
      : Set
 
 Nat.t is not universe polymorphic

@@ -1,4 +1,4 @@
-Monomorphic P = 
+P = 
 fun e : option L => match e with
                     | Some cl => Some cl
                     | None => None
