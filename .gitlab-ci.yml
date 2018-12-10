@@ -442,6 +442,9 @@ ci-plugin_tutorial:
 ci-quickchick:
   <<: *ci-template-flambda
 
+ci-relation-algebra:
+  <<: *ci-template
+
 ci-sf:
   <<: *ci-template
 
