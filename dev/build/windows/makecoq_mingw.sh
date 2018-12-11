@@ -1779,7 +1779,7 @@ function make_addon_compcert {
   make_menhir
   make_addon_menhirlib
   installer_addon_dependency_end
-  if build_prep_overlay CompCert; then
+  if build_prep_overlay compcert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
     logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
     log1 make
@@ -1829,7 +1829,7 @@ function vst_patch_compcert_refs {
 
 function make_addon_vst {
   installer_addon_dependency vst
-  if build_prep_overlay VST; then
+  if build_prep_overlay vst; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
     # log1 coq_set_timeouts_1000
     log1 vst_patch_compcert_refs
@@ -1859,7 +1859,7 @@ function make_addon_coquelicot {
 
 function make_addon_aactactics {
   installer_addon_dependency aac
-  if build_prep_overlay aactactics; then
+  if build_prep_overlay aac_tactics; then
     installer_addon_section aac "AAC" "Coq plugin for extensible associative and commutative rewriting" ""
     log1 make
     log2 make install
