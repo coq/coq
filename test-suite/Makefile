@@ -62,6 +62,7 @@ get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_
 # get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
 has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
 get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqtopcompile),$(coqtopload))
+get_set_impredicativity= $(filter "-impredicative-set",$(call get_coq_prog_args,$(1)))
 
 
 bogomips:=
@@ -303,6 +304,8 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	    echo "    $<...correctly prepared" ; \
 	  fi; \
 	} > "$@"
+	@echo "CHK $(shell basename $< .v)"
+	$(HIDE)$(coqchk) -norec TestSuite.$(shell basename $< .v) > $(shell dirname $<)/$(shell basename $< .v).chk.log 2>&1
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v.log: %.v $(PREREQUISITELOG)
@@ -320,6 +323,16 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+	@echo "CHK $(shell basename $< .v)"
+	$(HIDE){ \
+    opts="$(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-I $(shell dirname $<) -norec $(shell basename $< .v))"; \
+	  $(coqchk) -silent $(call get_set_impredicativity,$<) $$opts 2>&1; R=$$?; \
+	  if [ $$R != 0 ]; then \
+	    echo $(log_failure); \
+	    echo "    $<...could not be checked (Error!)" ; \
+	    $(FAIL); \
+	  fi; \
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
 
 stm: $(wildcard stm/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
@@ -337,6 +350,15 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+	@echo "CHK $(shell basename $< .v)"
+	$(HIDE){ \
+	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  if [ $$R != 0 ]; then \
+	    echo $(log_failure); \
+	    echo "    $<...could not be checked (Error!)" ; \
+	    $(FAIL); \
+	  fi; \
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
 
 $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -352,6 +374,15 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+	@echo "CHK $(shell basename $< .v)"
+	$(HIDE){ \
+	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  if [ $$R != 0 ]; then \
+	    echo $(log_failure); \
+	    echo "    $<...could not be checked (Error!)" ; \
+	    $(FAIL); \
+	  fi; \
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
