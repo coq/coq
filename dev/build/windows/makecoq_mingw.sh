@@ -691,7 +691,7 @@ function installer_addon_end {
 # ------------------------------------------------------------------------------
 
 function coq_set_timeouts_1000 {
-  find . -type f -name '*.v' -print0 | xargs -0 sed -i 's/timeout\s\+[0-9]\+/timeout 1000/'
+  find . -type f -name '*.v' -print0 | xargs -0 sed -i 's/timeout\s\+[0-9]\+/timeout 1000/g'
 }
 
 ###################### MODULE BUILD FUNCTIONS #####################
@@ -1807,8 +1807,8 @@ function install_addon_vst {
     install_glob "progs" '*.v' "$VSTDEST/progs/"
     install_glob "progs" '*.c' "$VSTDEST/progs/"
     install_glob "progs" '*.h' "$VSTDEST/progs/"
-    install_glob "veric" '*.v' "$VSTDEST/msl/"
-    install_glob "veric" '*.vo' "$VSTDEST/msl/"
+    install_glob "veric" '*.v' "$VSTDEST/veric/"
+    install_glob "veric" '*.vo' "$VSTDEST/veric/"
 
     # Install VST documentation files
     install_glob "." 'LICENSE' "$VSTDEST"
@@ -1821,12 +1821,20 @@ function install_addon_vst {
     install_glob "." '_CoqProject-export' "$VSTDEST/progs"
 }
 
+function vst_patch_compcert_refs {
+  find . -type f -name '*.v' -print0 | xargs -0 sed -E -i \
+    -e 's/(Require\s+(Import\s+|Export\s+)*)compcert\./\1VST.compcert./g' \
+    -e 's/From compcert Require/From VST.compcert Require/g'
+}
+
 function make_addon_vst {
   installer_addon_dependency vst
   if build_prep_overlay VST; then
     installer_addon_section vst "VST" "ATTENTION: SOME INCLUDED COMPCERT PARTS ARE NOT OPEN SOURCE! Verified Software Toolchain for verifying C code" "off"
-    log1 coq_set_timeouts_1000
-    log1 make IGNORECOQVERSION=true $MAKE_OPT
+    # log1 coq_set_timeouts_1000
+    log1 vst_patch_compcert_refs
+    # The usage of the shell variable ARCH in VST collides with the usage in this shellscript
+    logn make env -u ARCH make IGNORECOQVERSION=true $MAKE_OPT
     log1 install_addon_vst
     build_post
   fi

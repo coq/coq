@@ -125,8 +125,8 @@
 ########################################################################
 # VST
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${VST_CI_REF:=7d41c087a20bd7937def5adf6fe562182de080d5}"
+# Latest commit on master as of Dec 10, 2018
+: "${VST_CI_REF:=f6afb456db69df66c366c36b2d0218d92813f546}"
 : "${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${VST_CI_ARCHIVEURL:=${VST_CI_GITURL}/archive}"
 
