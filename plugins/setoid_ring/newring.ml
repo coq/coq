@@ -149,11 +149,11 @@ let ic_unsafe c = (*FIXME remove *)
   let sigma = Evd.from_env env in
   fst (Constrintern.interp_constr env sigma c)
 
-let decl_constant na univs c =
+let decl_constant ~poly na evd c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
-  let univs = UState.restrict_universe_context univs vars in
-  let univs = Monomorphic_const_entry univs in
+  let evd = Evd.restrict_universe_context evd vars in
+  let univs = Evd.const_univ_entry ~poly evd in
   mkConst(declare_constant (Id.of_string na) 
             (DefinitionEntry (definition_entry ~opaque:true ~univs c),
 	     IsProof Lemma))
@@ -204,7 +204,7 @@ let exec_tactic env evd n f args =
   let gls = Proofview.V82.of_tactic (Tacinterp.eval_tactic_ist ist (ltac_call f (args@[getter]))) gl in
   let evd = Evd.minimize_universes (Refiner.project gls) in
   let nf c = constr_of evd c in
-  Array.map nf !tactic_res, Evd.universe_context_set evd
+  Array.map nf !tactic_res, evd
 
 let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
@@ -612,7 +612,7 @@ let interp_div env evdref div =
       plapp evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
+let add_theory0 ~poly name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
@@ -622,16 +622,16 @@ let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div
   let sspec = interp_sign env evd sign in
   let dspec = interp_div env evd div in
   let rk = reflect_coeff morphth in
-  let params,ctx =
+  let params,evd =
     exec_tactic env !evd 5 (zltac "ring_lemmas")
       [sth;ext;rth;pspec;sspec;dspec;rk] in
   let lemma1 = params.(3) in
   let lemma2 = params.(4) in
 
   let lemma1 =
-    decl_constant (Id.to_string name^"_ring_lemma1") ctx lemma1 in
+    decl_constant ~poly (Id.to_string name^"_ring_lemma1") evd lemma1 in
   let lemma2 =
-    decl_constant (Id.to_string name^"_ring_lemma2") ctx lemma2 in
+    decl_constant ~poly (Id.to_string name^"_ring_lemma2") evd lemma2 in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -692,10 +692,10 @@ let process_ring_mods l =
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
-let add_theory id rth l =
+let add_theory ~poly id rth l =
   let (sigma, rth) = ic rth in
   let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
-  add_theory0 id (sigma, rth) set k cst (pre,post) power sign div
+  add_theory0 ~poly id (sigma, rth) set k cst (pre,post) power sign div
 
 (*****************************************************************************)
 (* The tactics consist then only in a lookup in the ring database and
@@ -913,7 +913,7 @@ let field_equality evd r inv req =
             error "field inverse should be declared as a morphism" in
 	  inv_m_lem
 
-let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
+let add_field_theory0 ~poly name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   let open Constr in
   check_required_library (cdir@["Field_tac"]);
   let (sigma,fth) = ic fth in
@@ -923,13 +923,13 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
     dest_field env evd fth in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory0 name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
+  let () = add_theory0 ~poly name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
   let (pow_tac, pspec) = interp_power env evd power in
   let sspec = interp_sign env evd sign in
   let dspec = interp_div env evd odiv in
   let inv_m = field_equality evd r inv req in
   let rk = reflect_coeff morphth in
-  let params,ctx =
+  let params,evd =
     exec_tactic env !evd 9 (field_ltac"field_lemmas")
       [sth;ext;inv_m;fth;pspec;sspec;dspec;rk] in
   let lemma1 = params.(3) in
@@ -940,16 +940,16 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
     match inj with
       | Some thm -> mkApp(params.(8),[|EConstr.to_constr sigma thm|])
       | None -> params.(7) in
-  let lemma1 = decl_constant (Id.to_string name^"_field_lemma1")
-    ctx lemma1 in
-  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") 
-    ctx lemma2 in
-  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") 
-    ctx lemma3 in
-  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") 
-    ctx lemma4 in
-  let cond_lemma = decl_constant (Id.to_string name^"_lemma5") 
-    ctx cond_lemma in
+  let lemma1 = decl_constant ~poly (Id.to_string name^"_field_lemma1")
+    evd lemma1 in
+  let lemma2 = decl_constant ~poly (Id.to_string name^"_field_lemma2")
+    evd lemma2 in
+  let lemma3 = decl_constant ~poly (Id.to_string name^"_field_lemma3")
+    evd lemma3 in
+  let lemma4 = decl_constant ~poly (Id.to_string name^"_field_lemma4")
+    evd lemma4 in
+  let cond_lemma = decl_constant ~poly (Id.to_string name^"_lemma5")
+    evd cond_lemma in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -1001,9 +1001,9 @@ let process_field_mods l =
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
-let add_field_theory id t mods =
+let add_field_theory ~poly id t mods =
   let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods mods in
-  add_field_theory0 id t set k cst_tac inj (pre,post) power sign div
+  add_field_theory0 ~poly id t set k cst_tac inj (pre,post) power sign div
 
 let ltac_field_structure e =
   let req = carg e.field_req in
