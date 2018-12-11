@@ -1559,10 +1559,10 @@ whose general syntax is
    i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
 
 .. prodn::
-   i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+   i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| ( {?| @i_item } ) %| - %| [: {+ @ident } ]
 
 .. prodn::
-   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
+   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ] %|(^ @ident ) %| (^~ @ident ) %| (^~ @num )
 
 The ``=>`` tactical first executes :token:`tactic`, then the :token:`i_item`\s,
 left to right. An :token:`s_item` specifies a
@@ -1581,6 +1581,15 @@ An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
   tactic :tacn:`simpl` [#5]_.
 + ``//=`` combines both kinds of simplification; it is equivalent to
   ``/= //``, i.e., ``simpl; try done``.
++ the user can define variants of the above and access them by number.
+  In particular ``/1/`` executes ``try ssrdone1``, ``/1=`` executes
+  ``ssrsimpl1`` and ``/2/1=`` executes ``ssrsimpl1; try ssrdone2``.
+  ``ssrdone0`` is defined in |SSR| as a variant of :tacn:`done` not
+  calling :tacn:`split`.  A typical use case for custom simplification
+  or closing tactics is to adapt the proof language to a specific domain
+  where :tacn:`simpl` and :tacn:`done` are too weak. For example one
+  could bind ``/1/``, ``/2/`` and ``/3/`` to increasingly powerful but
+  also increasingly CPU-hungry automatic tactics.
 
 
 When an :token:`s_item` bears a :token:`clear_switch`, then the
@@ -1690,6 +1699,12 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   While it is good style to use the :token:`i_item` i * to pop the variables
   and assumptions corresponding to each constructor, this is not enforced by
   |SSR|.
+``(`` :token:`i_item` * ``| … |`` :token:`i_item` * ``)``
+  *branching* :token:`i_pattern`. With no exception
+  it executes the sequence :n:`@i_item`__i` on the i-th subgoal.
+  Raises an error if the number of goals and the number of :token:`i_item`
+  mismatch. Note that ``()`` can be used to assert that there is only one
+  goal.
 ``-``
   does nothing, but counts as an intro pattern. It can also be used to
   force the interpretation of ``[`` :token:`i_item` * ``| … |``
@@ -1788,6 +1803,34 @@ are all equivalent.
 
   Only a :token:`s_item` is allowed between the elimination tactic and
   the block destructing.
+
+:n:`(^ @ident )`
+  *block introduction* using :token:`ident` as a prefix. In this case
+  no case analysis is performed hence the :token:`i_block` must come
+  after an invocation of :tacn:`case` or :tacn:`elim` as in:
+
+  .. example::
+
+     .. coqtop:: reset
+
+        From Coq Require Import ssreflect.
+        Set Implicit Arguments.
+        Unset Strict Implicit.
+        Unset Printing Implicit Defensive.
+
+        Record r := { a : nat; b := (a, 3); _ : bool; }.
+
+     .. coqtop:: all
+
+        Lemma test : r -> True.
+        Proof. case => (^ x ).
+
+  Only a :token:`s_item` is allowed between the elimination tactic and
+  the block introduction.
+:n:`(^~ @ident )`
+  *block introduction* using :token:`ident` as a suffix.
+:n:`(^~ @num )`
+  *block introduction* using :token:`num` as a suffix.
 
 .. _generation_of_equations_ssr:
 
@@ -5306,7 +5349,7 @@ discharge item see :ref:`discharge_ssr`
 
 generalization item see :ref:`structure_ssr`
 
-.. prodn:: i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| - %| [: {+ @ident } ]
+.. prodn:: i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| ( {?|  @i_item } ) %| - %| [: {+ @ident } ]
 
 intro pattern :ref:`introduction_ssr`
 
@@ -5320,7 +5363,7 @@ view :ref:`introduction_ssr`
 intro block :ref:`introduction_ssr`
 
 .. prodn::
-   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
+   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ] %|(^ @ident ) %| (^~ @ident ) %| (^~ @num )
 
 intro item  see :ref:`introduction_ssr`
 

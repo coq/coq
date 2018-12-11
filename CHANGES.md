@@ -143,8 +143,10 @@ SSReflect
 
 - New intro patterns:
   - temporary introduction: => +
+  - custom /= and // switches: => /2/ /3=
   - block introduction: => [^ prefix ] [^~ suffix ]
   - fast introduction: => >
+  - dispatch: => ( .. | .. )
   - tactics as views: => /ltac:mytac
   See the reference manual for the actual documentation.
 

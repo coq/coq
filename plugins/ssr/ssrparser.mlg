@@ -831,7 +831,7 @@ let rec reject_binder crossed_paren k s =
   | Some (Tok.KEYWORD ")") when crossed_paren -> raise Stream.Failure
   | _ -> if crossed_paren then () else raise Stream.Failure
 
-let _test_nobinder = Pcoq.Entry.of_parser "test_nobinder" (reject_binder false 0)
+let test_nobinder = Pcoq.Entry.of_parser "test_nobinder" (reject_binder false 0)
 
 }
 
@@ -854,6 +854,12 @@ GRAMMAR EXTEND Gram
       IPatCase (Block(hat_id)) }
    | test_nohidden; "["; iorpat = ssriorpat; "]" -> {
       IPatCase (Regular iorpat) }
+   | "()" -> {
+      IPatDispatch (false,Regular [[]]) }
+   | test_nobinder; "("; hat = hat; ")" -> {
+      IPatDispatch (false,Block(hat)) }
+   | test_nobinder; "("; iorpat = ssriorpat; ")" -> {
+      IPatDispatch (false,Regular iorpat) }
    | test_nohidden; "[="; iorpat = ssriorpat; "]" -> {
       IPatInj iorpat } ]];
 END
