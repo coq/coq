@@ -701,7 +701,7 @@ function coq_set_timeouts_1000 {
 function make_sed {
   if build_prep https://ftp.gnu.org/gnu/sed/  sed-4.2.2  tar.gz ; then
     logn configure ./configure
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     log2 make clean
     build_post
@@ -1107,7 +1107,7 @@ function make_ocamlbuild {
   make_ocaml
   if build_prep https://github.com/ocaml/ocamlbuild/archive 0.12.0 tar.gz 1 ocamlbuild-0.12.0; then
     log2 make configure OCAML_NATIVE=true OCAMLBUILD_PREFIX=$PREFIXOCAML OCAMLBUILD_BINDIR=$PREFIXOCAML/bin OCAMLBUILD_LIBDIR=$PREFIXOCAML/lib
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
@@ -1634,7 +1634,7 @@ function make_addon_bignums {
     installer_addon_section bignums "Bignums" "Coq library for fast arbitrary size numbers" ""
     # To make command lines shorter :-(
     echo 'COQ_SRC_SUBDIRS:=$(filter-out plugins/%,$(COQ_SRC_SUBDIRS)) plugins/syntax' >> Makefile.coq.local
-    log1 make all
+    log1 make $MAKE_OPT all
     log2 make install
     build_post
   fi
@@ -1650,7 +1650,7 @@ function make_addon_equations {
     # Note: PATH is automatically saved/restored by build_prep / build_post
     PATH=$COQBIN:$PATH
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
@@ -1696,7 +1696,7 @@ function make_addon_ltac2 {
   installer_addon_dependency ltac2
   if build_prep_overlay ltac2; then
     installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactic language" ""
-    log1 make all
+    log1 make $MAKE_OPT all
     log2 make install
     build_post
   fi
@@ -1709,7 +1709,7 @@ function make_addon_unicoq {
   if build_prep_overlay unicoq; then
     installer_addon_section unicoq "Unicoq" "Coq plugin for an enhanced unification algorithm" ""
     log1 coq_makefile -f Make -o Makefile
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
@@ -1724,7 +1724,7 @@ function make_addon_mtac2 {
   if build_prep_overlay mtac2; then
     installer_addon_section mtac2 "Mtac-2" "Coq plugin for a typed tactic language for Coq." ""
     log1 coq_makefile -f _CoqProject -o Makefile
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
@@ -1766,7 +1766,7 @@ function make_addon_menhirlib {
     echo -R . MenhirLib > _CoqProject
     ls -1 *.v >> _CoqProject
     log1 coq_makefile -f _CoqProject -o Makefile.coq
-    log1 make -f Makefile.coq all
+    log1 make -f Makefile.coq $MAKE_OPT all
     logn make-install make -f Makefile.coq install
     build_post
   fi
@@ -1782,7 +1782,7 @@ function make_addon_compcert {
   if build_prep_overlay compcert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
     logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     logn install-license-1 install -D -T  "LICENSE" "$PREFIXCOQ/lib/coq/user-contrib/compcert/LICENSE"
     logn install-license-2 install -D -T  "LICENSE" "$PREFIXCOQ/lib/compcert/LICENSE"
@@ -1861,7 +1861,7 @@ function make_addon_aactactics {
   installer_addon_dependency aac
   if build_prep_overlay aac_tactics; then
     installer_addon_section aac "AAC" "Coq plugin for extensible associative and commutative rewriting" ""
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
@@ -1902,7 +1902,7 @@ function make_addon_quickchick {
   installer_addon_dependency_end
   if build_prep_overlay quickchick; then
     installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
-    log1 make
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
