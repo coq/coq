@@ -572,11 +572,11 @@ module Gramext = Gramlib__Gramext \
 module Grammar = Gramlib__Grammar" > $@
 
 gramlib/.pack/gramlib__P%: gramlib/p% | gramlib/.pack
-	cp -a $< $@
-	sed -e "1i # 1 \"$<\"" -i $@
+	printf '# 1 "%s"\n' $< > $@
+	cat $< >> $@
 gramlib/.pack/gramlib__G%: gramlib/g% | gramlib/.pack
-	cp -a $< $@
-	sed -e "1i # 1 \"$<\"" -i $@
+	printf '# 1 "%s"\n' $< > $@
+	cat $< >> $@
 
 # Specific rules for gramlib to pack it Dune / OCaml 4.08 style
 GRAMOBJS=$(addsuffix .cmo, $(GRAMFILES))
