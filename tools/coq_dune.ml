@@ -109,6 +109,9 @@ module Aux = struct
     (* Move to Dirmap.update once we require OCaml >= 4.06.0 *)
     Legacy.dirmap_update key (fun l -> Some (option_cata [elem] (fun ll -> elem :: ll) l)) map
 
+  let replace_ext ~file ~newext =
+    Filename.(remove_extension file) ^ newext
+
 end
 
 open Aux
@@ -163,6 +166,11 @@ let pp_rule fmt targets deps action =
     "@[(rule@\n @[(targets @[%a@])@\n(deps @[%a@])@\n(action @[%a@])@])@]@\n"
     ppl targets pp_deps deps pp_print_string action
 
+let gen_coqc_targets vo =
+  [ vo.target
+  ; replace_ext ~file:vo.target ~newext:".glob"
+  ; "." ^ replace_ext ~file:vo.target ~newext:".aux"]
+
 (* Generate the dune rule: *)
 let pp_vo_dep dir fmt vo =
   let depth = List.length dir in
@@ -174,12 +182,13 @@ let pp_vo_dep dir fmt vo =
   (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo" *)
   let deps = List.map (fun s -> bpath [sdir;s]) (edep @ vo.deps) in
   (* The source file is also corrected as we will call coqtop from the top dir *)
-  let source = bpath (dir @ [Filename.(remove_extension vo.target) ^ ".v"]) in
+  let source = bpath (dir @ [replace_ext ~file:vo.target ~newext:".v"]) in
   (* We explicitly include the location of coqlib to avoid tricky issues with coqlib location *)
   let libflag = "-coqlib %{project_root}" in
   (* The final build rule *)
   let action = sprintf "(chdir %%{project_root} (run coqtop -boot %s %s %s -compile %s))" libflag eflag cflag source in
-  pp_rule fmt [vo.target] deps action
+  let all_targets = gen_coqc_targets vo in
+  pp_rule fmt all_targets deps action
 
 let pp_mlg_dep _dir fmt ml =
   let target = Filename.(remove_extension ml) ^ ".ml" in
@@ -192,7 +201,7 @@ let pp_dep dir fmt oo = match oo with
 
 let out_install fmt dir ff =
   let itarget = String.concat "/" dir in
-  let ff = pmap (function | VO vo -> Some vo.target | _ -> None) ff in
+  let ff = List.concat @@ pmap (function | VO vo -> Some (gen_coqc_targets vo) | _ -> None) ff in
   let pp_ispec fmt tg = fprintf fmt "(%s as coq/%s)" tg (bpath [itarget;tg]) in
   fprintf fmt "(install@\n @[(section lib_root)@\n(package coq)@\n(files @[%a@])@])@\n"
     (pp_list pp_ispec sep) ff
