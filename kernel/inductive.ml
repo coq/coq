@@ -593,10 +593,10 @@ let rec ienv_decompose_prod (env,_ as ienv) n c =
      ienv_decompose_prod ienv' (n-1) b
      | _ -> assert false
 
+let dummy_univ = Level.(make (UGlobal.make (DirPath.make [Id.of_string "implicit"]) 0))
+let dummy_implicit_sort = mkType (Universe.make dummy_univ)
 let lambda_implicit_lift n a =
-  let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
-  let implicit_sort = mkType (Universe.make level) in
-  let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
+  let lambda_implicit a = mkLambda (Anonymous, dummy_implicit_sort, a) in
   iterate lambda_implicit n (lift n a)
 
 (* This removes global parameters of the inductive types in lc (for

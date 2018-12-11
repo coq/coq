@@ -11,9 +11,22 @@
 (** Universes. *)
 module Level :
 sig
+
+  module UGlobal : sig
+    type t
+
+    val make : Names.DirPath.t -> int -> t
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val compare : t -> t -> int
+
+  end
+  (** Qualified global universe level *)
+
   type t
   (** Type of universe levels. A universe level is essentially a unique name
-      that will be associated to constraints later on. *)
+      that will be associated to constraints later on. A level can be local to a
+      definition or global. *)
 
   val set : t
   val prop : t
@@ -34,9 +47,7 @@ sig
 
   val hash : t -> int
 
-  val make : Names.DirPath.t -> int -> t
-  (** Create a new universe level from a unique identifier and an associated
-      module path. *)
+  val make : UGlobal.t -> t
 
   val pr : t -> Pp.t
   (** Pretty-printing *)
@@ -48,7 +59,7 @@ sig
 
   val var_index : t -> int option
 
-  val name : t -> (Names.DirPath.t * int) option
+  val name : t -> UGlobal.t option
 end
 
 (** Sets of universe levels *)

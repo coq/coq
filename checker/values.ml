@@ -93,9 +93,9 @@ let v_cons = v_tuple "constructor" [|v_ind;Int|]
 
 
 (** kernel/univ *)
-
+let v_level_global = v_tuple "Level.Global.t" [|v_dp;Int|]
 let v_raw_level = v_sum "raw_level" 2 (* Prop, Set *) 
-  [|(*Level*)[|Int;v_dp|]; (*Var*)[|Int|]|]
+  [|(*Level*)[|v_level_global|]; (*Var*)[|Int|]|]
 let v_level = v_tuple "level" [|Int;v_raw_level|] 
 let v_expr = v_tuple "levelexpr" [|v_level;Int|]
 let v_univ = List v_expr

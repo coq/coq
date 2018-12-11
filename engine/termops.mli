@@ -290,7 +290,7 @@ val is_Prop : Evd.evar_map -> constr -> bool
 val is_Set : Evd.evar_map -> constr -> bool
 val is_Type : Evd.evar_map -> constr -> bool
 
-val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid
+val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid option
 
 (** Combinators on judgments *)
 

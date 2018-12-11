@@ -120,8 +120,8 @@ let interp_known_universe_level evd qid =
     if qualid_is_ident qid then Evd.universe_of_name evd @@ qualid_basename qid
     else raise Not_found
   with Not_found ->
-    let univ, k = Nametab.locate_universe qid in
-    Univ.Level.make univ k
+    let qid = Nametab.locate_universe qid in
+    Univ.Level.make qid
 
 let interp_universe_level_name ~anon_rigidity evd qid =
   try evd, interp_known_universe_level evd qid
@@ -140,7 +140,7 @@ let interp_universe_level_name ~anon_rigidity evd qid =
           user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
             (Pp.(str "Undeclared global universe: " ++ Libnames.pr_qualid qid))
       in
-      let level = Univ.Level.make dp num in
+      let level = Univ.Level.(make (UGlobal.make dp num)) in
       let evd =
         try Evd.add_global_univ evd level
         with UGraph.AlreadyDeclared -> evd

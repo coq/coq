@@ -11,7 +11,7 @@
 open Univ
 
 val pr_with_global_universes : Level.t -> Pp.t
-val qualid_of_level : Level.t -> Libnames.qualid
+val qualid_of_level : Level.t -> Libnames.qualid option
 
 (** Local universe name <-> level mapping *)
 

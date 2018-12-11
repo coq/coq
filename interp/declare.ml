@@ -469,7 +469,7 @@ type universe_source =
   | QualifiedUniv of Id.t (* global universe introduced by some global value *)
   | UnqualifiedUniv (* other global universe *)
 
-type universe_name_decl = universe_source * (Id.t * Nametab.universe_id) list
+type universe_name_decl = universe_source * (Id.t * Univ.Level.UGlobal.t) list
 
 let check_exists sp =
   if Nametab.exists_universe sp then
@@ -540,12 +540,8 @@ let do_universe poly l =
       user_err ~hdr:"Constraint"
                    (str"Cannot declare polymorphic universes outside sections")
   in
-  let l =
-    List.map (fun {CAst.v=id} ->
-      let lev = UnivGen.new_univ_id () in
-      (id, lev)) l
-  in
-  let ctx = List.fold_left (fun ctx (_,(dp,i)) -> Univ.LSet.add (Univ.Level.make dp i) ctx)
+  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
+  let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
       Univ.LSet.empty l, Univ.Constraint.empty
   in
   let () = declare_universe_context poly ctx in
