@@ -1559,7 +1559,7 @@ whose general syntax is
    i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
 
 .. prodn::
-   i_pattern ::= @ident %| > @ident %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+   i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
 
 .. prodn::
    i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
@@ -1615,16 +1615,17 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   a new constant, fact, or defined constant :token:`ident`, respectively.
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
-``>``:token:`ident`
-  pops the first assumption. Type class instances are not considered
-  as assumptions.
-  The tactic ``move=> >H`` is equivalent to
-  ``move=> ? ? H`` with enough ``?`` to name ``H`` the first assumption.
-  On a goal::
+``>``
+  pops every variable occurring in the rest of the stack.
+  Type class instances are popped even if then don't occur
+  in the rest of the stack.
+  The tactic ``move=> >`` is equivalent to
+  ``move=> ? ?`` on a goal such as::
 
     forall x y, x < y -> G
 
-  it names ``H`` the assumption ``x < y``.
+  A typical use if ``move=>> H`` to name ``H`` the first assumption,
+  in the example above ``x < y``.
 ``?``
   pops the top variable into an anonymous constant or fact, whose name
   is picked by the tactic interpreter. |SSR| only generates names that cannot
@@ -5305,7 +5306,7 @@ discharge item see :ref:`discharge_ssr`
 
 generalization item see :ref:`structure_ssr`
 
-.. prodn:: i_pattern ::= @ident %| > @ident %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| - %| [: {+ @ident } ]
+.. prodn:: i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| - %| [: {+ @ident } ]
 
 intro pattern :ref:`introduction_ssr`
 

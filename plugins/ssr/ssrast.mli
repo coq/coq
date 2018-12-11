@@ -64,8 +64,6 @@ type ast_closure_term = {
 
 type ssrview = ast_closure_term list
 
-type id_mod = Dependent
-
 type id_block = Prefix of Id.t | SuffixId of Id.t | SuffixNum of int
 
 (* Only [One] forces an introduction, possibly reducing the goal. *)
@@ -77,7 +75,7 @@ type anon_iter =
 
 type ssripat =
   | IPatNoop
-  | IPatId of id_mod option * Id.t
+  | IPatId of Id.t
   | IPatAnon of anon_iter (* inaccessible name *)
 (* TODO  | IPatClearMark *)
   | IPatDispatch of bool (* ssr exception: accept a dispatch on the empty list even when there are subgoals *) * ssripatss_or_block (* (..|..) *)
@@ -88,6 +86,7 @@ type ssripat =
   | IPatClear of ssrclear (* {H1 H2} *)
   | IPatSimpl of ssrsimpl
   | IPatAbstractVars of Id.t list
+  | IPatFastNondep
   | IPatEqGen of unit Proofview.tactic (* internal use: generation of eqn *)
 
 and ssripats = ssripat list

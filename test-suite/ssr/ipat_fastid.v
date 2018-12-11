@@ -11,12 +11,29 @@ lazymatch goal with
 end.
 Qed.
 
+Lemma simple2 :
+  forall x, 3 <= x -> forall y, odd (y+x) -> x = y -> True.
+Proof.
+move=> >; move=>x_ge_3; move=> >; move=>xy_odd.
+lazymatch goal with
+| |- ?x = ?y -> True => done
+end.
+Qed.
+
 
 Definition stuff x := 3 <= x -> forall y, odd (y+x) -> x = y -> True.
 
 Lemma harder : forall x, stuff x.
 Proof.
 move=> >x_ge_3 >xy_odd.
+lazymatch goal with
+| |- ?x = ?y -> True => done
+end.
+Qed.
+
+Lemma harder2 : forall x, stuff x.
+Proof.
+move=> >; move=>x_ge_3;move=> >; move=>xy_odd.
 lazymatch goal with
 | |- ?x = ?y -> True => done
 end.

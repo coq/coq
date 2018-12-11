@@ -292,7 +292,7 @@ let tac_intro_seed interp_ipats fix = Goal.enter begin fun gl ->
              | Prefix fix ->  Id.to_string fix ^ Id.to_string id
              | SuffixNum n -> Id.to_string id ^ string_of_int n
              | SuffixId fix -> Id.to_string id ^ Id.to_string fix in
-           IPatId (None, Id.of_string s)) seeds in
+           IPatId (Id.of_string s)) seeds in
     interp_ipats ipats
 end end
 
@@ -377,9 +377,8 @@ let rec ipat_tac1 ipat : bool tactic =
   | IPatDispatch(_,Block id_block) ->
       tac_intro_seed ipat_tac id_block <*> notTAC
 
-  | IPatId (None, id) -> Ssrcommon.tclINTRO_ID id <*> notTAC
-  | IPatId (Some Dependent, id) ->
-      intro_anon_deps <*> Ssrcommon.tclINTRO_ID id <*> notTAC
+  | IPatId id -> Ssrcommon.tclINTRO_ID id <*> notTAC
+  | IPatFastNondep -> intro_anon_deps <*> notTAC
 
   | IPatCase (Block id_block) ->
       Ssrcommon.tclWITHTOP tac_case <*> tac_intro_seed ipat_tac id_block <*> notTAC
@@ -456,7 +455,7 @@ let elaborate_ipats l =
   | IPatDispatch(s, Regular p) :: rest -> IPatDispatch (s, Regular (List.map elab p)) :: elab rest
   | IPatCase (Regular p) :: rest -> IPatCase (Regular (List.map elab p)) :: elab rest
   | IPatInj p :: rest -> IPatInj (List.map elab p) :: elab rest
-  | (IPatEqGen _ | IPatId _ | IPatSimpl _ | IPatClear _ |
+  | (IPatEqGen _ | IPatId _ | IPatSimpl _ | IPatClear _ | IPatFastNondep |
      IPatAnon _ | IPatView _ | IPatNoop | IPatRewrite _ |
      IPatAbstractVars _ | IPatDispatch(_, Block _) | IPatCase(Block _)) as x :: rest -> x :: elab rest
   in
@@ -512,8 +511,7 @@ let mkCoqRefl t c env sigma =
 let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
   let intro_eq =
     match eqid with
-    | Some (IPatId (Some _, _)) -> assert false (* parser *)
-    | Some (IPatId (None,ipat)) when not is_rec ->
+    | Some (IPatId ipat) when not is_rec ->
        let rec intro_eq () = Goal.enter begin fun g ->
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
          match EConstr.kind_of_type sigma concl with
@@ -527,7 +525,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          |_ -> Ssrcommon.errorstrm (Pp.str "Too many names in intro pattern")
        end in
        intro_eq ()
-    | Some (IPatId (None,ipat)) ->
+    | Some (IPatId ipat) ->
        let intro_lhs = Goal.enter begin fun g ->
          let sigma = Goal.sigma g in
          let elim_name = match clr, what with
@@ -860,7 +858,7 @@ let ssrabstract dgens =
      let ipats = List.map (fun (_,cp) ->
        match id_of_pattern (interp_cpattern gl0 cp None) with
        | None -> IPatAnon (One None)
-       | Some id -> IPatId (None,id))
+       | Some id -> IPatId id)
        (List.tl gens) in
      conclusion ipats
   end in

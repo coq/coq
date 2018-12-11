@@ -144,7 +144,7 @@ SSReflect
 - New intro patterns:
   - temporary introduction: => +
   - block introduction: => [^ prefix ] [^~ suffix ]
-  - fast introduction: => >H
+  - fast introduction: => >
   - tactics as views: => /ltac:mytac
   See the reference manual for the actual documentation.
 
