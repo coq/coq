@@ -1,0 +1,15 @@
+diff --git a/Makefile b/Makefile
+index 4a119042..fdfac13e 100755
+--- a/Makefile
++++ b/Makefile
+@@ -76,8 +76,8 @@ endif
+
+ COMPCERTDIRS=lib common $(ARCHDIRS) cfrontend flocq exportclight $(BACKEND)
+
+-COMPCERT_R_FLAGS= $(foreach d, $(COMPCERTDIRS), -R $(COMPCERT)/$(d) compcert.$(d))
+-EXTFLAGS= $(foreach d, $(COMPCERTDIRS), -Q $(COMPCERT)/$(d) compcert.$(d))
++COMPCERT_R_FLAGS= $(foreach d, $(COMPCERTDIRS), -R $(COMPCERT)/$(d) VST.compcert.$(d))
++EXTFLAGS= $(foreach d, $(COMPCERTDIRS), -Q $(COMPCERT)/$(d) VST.compcert.$(d))
+
+ # for SSReflect
+ ifdef MATHCOMP
