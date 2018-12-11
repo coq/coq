@@ -397,6 +397,10 @@ let match_goals ot nt =
      It's set to the old goal's evar name once a rewitten goal is found,
      at which point the code only searches for the replacing goals
      (and ot is set to nt). *)
+  let iter2 f l1 l2 =
+    if List.length l1 = (List.length l2) then
+      List.iter2 f l1 l2
+  in
   let rec match_goals_r ogname ot nt =
     let constr_expr ogname exp exp2 =
       match_goals_r ogname exp.v exp2.v
@@ -432,13 +436,13 @@ let match_goals ot nt =
     let fix_expr ogname exp exp2 =
       let (l,(lo,ro),lb,ce1,ce2), (l2,(lo2,ro2),lb2,ce12,ce22) = exp,exp2 in
         recursion_order_expr ogname ro ro2;
-        List.iter2 (local_binder_expr ogname) lb lb2;
+        iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22
     in
     let cofix_expr ogname exp exp2 =
       let (l,lb,ce1,ce2), (l2,lb2,ce12,ce22) = exp,exp2 in
-        List.iter2 (local_binder_expr ogname) lb lb2;
+        iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22
     in
@@ -452,38 +456,38 @@ let match_goals ot nt =
     in
     let constr_notation_substitution ogname exp exp2 =
       let (ce, cel, cp, lb), (ce2, cel2, cp2, lb2) = exp, exp2 in
-      List.iter2 (constr_expr ogname) ce ce2;
-      List.iter2 (fun a a2 -> List.iter2 (constr_expr ogname) a a2) cel cel2;
-      List.iter2 (fun a a2 -> List.iter2 (local_binder_expr ogname) a a2) lb lb2
+      iter2 (constr_expr ogname) ce ce2;
+      iter2 (fun a a2 -> iter2 (constr_expr ogname) a a2) cel cel2;
+      iter2 (fun a a2 -> iter2 (local_binder_expr ogname) a a2) lb lb2
     in
     begin
     match ot, nt with
     | CRef (ref,us), CRef (ref2,us2) -> ()
     | CFix (id,fl), CFix (id2,fl2) ->
-      List.iter2 (fix_expr ogname) fl fl2
+      iter2 (fix_expr ogname) fl fl2
     | CCoFix (id,cfl), CCoFix (id2,cfl2) ->
-      List.iter2 (cofix_expr ogname) cfl cfl2
+      iter2 (cofix_expr ogname) cfl cfl2
     | CProdN (bl,c2), CProdN (bl2,c22)
     | CLambdaN (bl,c2), CLambdaN (bl2,c22) ->
-      List.iter2 (local_binder_expr ogname) bl bl2;
+      iter2 (local_binder_expr ogname) bl bl2;
       constr_expr ogname c2 c22
     | CLetIn (na,c1,t,c2), CLetIn (na2,c12,t2,c22) ->
       constr_expr ogname c1 c12;
       constr_expr_opt ogname t t2;
       constr_expr ogname c2 c22
     | CAppExpl ((isproj,ref,us),args), CAppExpl ((isproj2,ref2,us2),args2) ->
-      List.iter2 (constr_expr ogname) args args2
+      iter2 (constr_expr ogname) args args2
     | CApp ((isproj,f),args), CApp ((isproj2,f2),args2) ->
       constr_expr ogname f f2;
-      List.iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
+      iter2 (fun a a2 -> let (c, _) = a and (c2, _) = a2 in
           constr_expr ogname c c2) args args2
     | CRecord fs, CRecord fs2 ->
-      List.iter2 (fun a a2 -> let (_, c) = a and (_, c2) = a2 in
+      iter2 (fun a a2 -> let (_, c) = a and (_, c2) = a2 in
           constr_expr ogname c c2) fs fs2
     | CCases (sty,rtnpo,tms,eqns), CCases (sty2,rtnpo2,tms2,eqns2) ->
         constr_expr_opt ogname rtnpo rtnpo2;
-        List.iter2 (case_expr ogname) tms tms2;
-        List.iter2 (branch_expr ogname) eqns eqns2
+        iter2 (case_expr ogname) tms tms2;
+        iter2 (branch_expr ogname) eqns eqns2
     | CLetTuple (nal,(na,po),b,c), CLetTuple (nal2,(na2,po2),b2,c2) ->
       constr_expr_opt ogname po po2;
       constr_expr ogname b b2;
@@ -498,7 +502,7 @@ let match_goals ot nt =
     | CEvar (n,l), CEvar (n2,l2) ->
       let oevar = if ogname = "" then Id.to_string n else ogname in
       nevar_to_oevar := StringMap.add (Id.to_string n2) oevar !nevar_to_oevar;
-      List.iter2  (fun x x2 -> let (_, g) = x and (_, g2) = x2 in constr_expr ogname g g2)  l l2
+      iter2  (fun x x2 -> let (_, g) = x and (_, g2) = x2 in constr_expr ogname g g2)  l l2
     | CEvar (n,l), nt' ->
       (* pass down the old goal evar name *)
       match_goals_r (Id.to_string n) nt' nt'
@@ -561,7 +565,13 @@ let db_goal_map op np ng_to_og =
     pr_goals "\nOld Goals" op
   | None -> ());
   Printf.printf "\nGoal map: ";
-  GoalMap.iter (fun og ng -> Printf.printf "%d -> %d  " (Evar.repr og) (Evar.repr ng)) ng_to_og;
+  GoalMap.iter (fun ng og -> Printf.printf "%d -> %d  " (Evar.repr ng) (Evar.repr og)) ng_to_og;
+  let unmapped = ref (Proof.all_goals np) in
+  GoalMap.iter (fun ng _ -> unmapped := Goal.Set.remove ng !unmapped) ng_to_og;
+  if Goal.Set.cardinal !unmapped > 0 then begin
+    Printf.printf "\nUnmapped goals: ";
+    Goal.Set.iter (fun ng -> Printf.printf "%d  " (Evar.repr ng)) !unmapped
+  end;
   Printf.printf "\n"
 [@@@ocaml.warning "+32"]
 
