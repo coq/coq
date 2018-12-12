@@ -13,6 +13,7 @@ Require Export Logic.
 Require Export Logic_Type.
 Require Export Datatypes.
 Require Export Specif.
+Require Coq.Init.Byte.
 Require Coq.Init.Decimal.
 Require Coq.Init.Nat.
 Require Export Peano.
@@ -26,6 +27,7 @@ Require Export Coq.Init.Tauto.
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
 Declare ML Module "numeral_notation_plugin".
+Declare ML Module "string_notation_plugin".
 
 (* Parsing / printing of decimal numbers *)
 Arguments Nat.of_uint d%dec_uint_scope.
@@ -37,6 +39,9 @@ Numeral Notation Decimal.int Decimal.int_of_int Decimal.int_of_int
 
 (* Parsing / printing of [nat] numbers *)
 Numeral Notation nat Nat.of_uint Nat.to_uint : nat_scope (abstract after 5000).
+
+(* Printing/Parsing of bytes *)
+Export Byte.ByteSyntaxNotations.
 
 (* Default substrings not considered by queries like SearchAbout *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".

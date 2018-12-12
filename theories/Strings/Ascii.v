@@ -12,7 +12,7 @@
 (** Contributed by Laurent Théry (INRIA);
     Adapted to Coq V8 by the Coq Development Team *)
 
-Require Import Bool BinPos BinNat PeanoNat Nnat.
+Require Import Bool BinPos BinNat PeanoNat Nnat Coq.Strings.Byte.
 
 (** * Definition of ascii characters *)
 
@@ -20,10 +20,7 @@ Require Import Bool BinPos BinNat PeanoNat Nnat.
 
 Inductive ascii : Set := Ascii (_ _ _ _ _ _ _ _ : bool).
 
-Register Ascii as plugins.syntax.Ascii.
-
 Declare Scope char_scope.
-Module Export AsciiSyntax. Declare ML Module "ascii_syntax_plugin". End AsciiSyntax.
 Delimit Scope char_scope with char.
 Bind Scope char_scope with ascii.
 
@@ -140,6 +137,12 @@ do 8 (destruct p; [ | | intros; vm_compute; reflexivity ]);
  intro H; vm_compute in H; destruct p; discriminate.
 Qed.
 
+Theorem N_ascii_bounded :
+  forall a : ascii, (N_of_ascii a < 256)%N.
+Proof.
+  destruct a as [[|][|][|][|][|][|][|][|]]; vm_compute; reflexivity.
+Qed.
+
 Theorem ascii_nat_embedding :
   forall a : ascii, ascii_of_nat (nat_of_ascii a) = a.
 Proof.
@@ -156,6 +159,15 @@ Proof.
  change 256%N with (N.of_nat 256).
  rewrite <- Nat2N.inj_compare.
  now apply Nat.compare_lt_iff.
+Qed.
+
+Theorem nat_ascii_bounded :
+  forall a : ascii, nat_of_ascii a < 256.
+Proof.
+  intro a; unfold nat_of_ascii.
+  change 256 with (N.to_nat 256).
+  rewrite <- Nat.compare_lt_iff, <- N2Nat.inj_compare, N.compare_lt_iff.
+  apply N_ascii_bounded.
 Qed.
 
 
@@ -175,7 +187,53 @@ Qed.
   stand-alone utf8 characters so that only the notation "nnn" is
   available for them (unless your terminal is able to represent them,
   which is typically not the case in coqide).
-*)
+ *)
+
+Definition ascii_of_byte (b : byte) : ascii
+  := let '(b0, (b1, (b2, (b3, (b4, (b5, (b6, b7))))))) := Byte.to_bits b in
+     Ascii b0 b1 b2 b3 b4 b5 b6 b7.
+
+Definition byte_of_ascii (a : ascii) : byte
+  := let (b0, b1, b2, b3, b4, b5, b6, b7) := a in
+     Byte.of_bits (b0, (b1, (b2, (b3, (b4, (b5, (b6, b7))))))).
+
+Lemma ascii_of_byte_of_ascii x : ascii_of_byte (byte_of_ascii x) = x.
+Proof.
+  cbv [ascii_of_byte byte_of_ascii].
+  destruct x; rewrite to_bits_of_bits; reflexivity.
+Qed.
+
+Lemma byte_of_ascii_of_byte x : byte_of_ascii (ascii_of_byte x) = x.
+Proof.
+  cbv [ascii_of_byte byte_of_ascii].
+  repeat match goal with
+         | [ |- context[match ?x with pair _ _ => _ end] ]
+           => rewrite (surjective_pairing x)
+         | [ |- context[(fst ?x, snd ?x)] ]
+           => rewrite <- (surjective_pairing x)
+         end.
+  rewrite of_bits_to_bits; reflexivity.
+Qed.
+
+Lemma ascii_of_byte_via_N x : ascii_of_byte x = ascii_of_N (Byte.to_N x).
+Proof. destruct x; reflexivity. Qed.
+
+Lemma ascii_of_byte_via_nat x : ascii_of_byte x = ascii_of_nat (Byte.to_nat x).
+Proof. destruct x; reflexivity. Qed.
+
+Lemma byte_of_ascii_via_N x : Some (byte_of_ascii x) = Byte.of_N (N_of_ascii x).
+Proof.
+  rewrite <- (ascii_of_byte_of_ascii x); destruct (byte_of_ascii x); reflexivity.
+Qed.
+
+Lemma byte_of_ascii_via_nat x : Some (byte_of_ascii x) = Byte.of_nat (nat_of_ascii x).
+Proof.
+  rewrite <- (ascii_of_byte_of_ascii x); destruct (byte_of_ascii x); reflexivity.
+Qed.
+
+Module Export AsciiSyntax.
+  String Notation ascii ascii_of_byte byte_of_ascii : char_scope.
+End AsciiSyntax.
 
 Local Open Scope char_scope.
 

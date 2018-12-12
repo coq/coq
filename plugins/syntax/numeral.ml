@@ -125,7 +125,7 @@ let vernac_numeral_notation local ty f g scope opts =
       | None -> type_error_of g ty true
   in
   let o = { to_kind; to_ty; of_kind; of_ty;
-            num_ty = ty;
+            ty_name = ty;
             warning = opts }
   in
   (match opts, to_kind with

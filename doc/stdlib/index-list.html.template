@@ -17,6 +17,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Init/Datatypes.v
     theories/Init/Logic.v
     theories/Init/Logic_Type.v
+    theories/Init/Byte.v
     theories/Init/Nat.v
     theories/Init/Decimal.v
     theories/Init/Peano.v
@@ -497,6 +498,7 @@ through the <tt>Require Import</tt> command.</p>
     Implementation of string as list of ascii characters
   </dt>
   <dd>
+    theories/Strings/Byte.v
     theories/Strings/Ascii.v
     theories/Strings/String.v
     theories/Strings/BinaryString.v

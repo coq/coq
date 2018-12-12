@@ -46,6 +46,9 @@ Notations
   `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
   deprecated.
 
+- New command `String Notation` to register string syntax for custom
+  inductive types.
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)

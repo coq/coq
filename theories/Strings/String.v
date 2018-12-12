@@ -15,6 +15,7 @@
 Require Import Arith.
 Require Import Ascii.
 Require Import Bool.
+Require Import Coq.Strings.Byte.
 
 (** *** Definition of strings *)
 
@@ -25,7 +26,6 @@ Inductive string : Set :=
   | String : ascii -> string -> string.
 
 Declare Scope string_scope.
-Module Export StringSyntax. Declare ML Module "string_syntax_plugin". End StringSyntax.
 Delimit Scope string_scope with string.
 Bind Scope string_scope with string.
 Local Open Scope string_scope.
@@ -114,12 +114,12 @@ Theorem get_correct :
 Proof.
 intros s1; elim s1; simpl.
 intros s2; case s2; simpl; split; auto.
-intros H; generalize (H 0); intros H1; inversion H1.
+intros H; generalize (H O); intros H1; inversion H1.
 intros; discriminate.
 intros a s1' Rec s2; case s2; simpl; split; auto.
-intros H; generalize (H 0); intros H1; inversion H1.
+intros H; generalize (H O); intros H1; inversion H1.
 intros; discriminate.
-intros H; generalize (H 0); simpl; intros H1; inversion H1.
+intros H; generalize (H O); simpl; intros H1; inversion H1.
 case (Rec s).
 intros H0; rewrite H0; auto.
 intros n; exact (H (S n)).
@@ -150,7 +150,7 @@ Proof.
 intros s1; elim s1; simpl; auto.
 intros s2 n; rewrite plus_comm; simpl; auto.
 intros a s1' Rec s2 n; case n; simpl; auto.
-generalize (Rec s2 0); simpl; auto. intros.
+generalize (Rec s2 O); simpl; auto. intros.
 rewrite <- Plus.plus_Snm_nSm; auto.
 Qed.
 
@@ -162,9 +162,9 @@ Qed.
 
 Fixpoint substring (n m : nat) (s : string) : string :=
   match n, m, s with
-  | 0, 0, _ => EmptyString
-  | 0, S m', EmptyString => s
-  | 0, S m', String c s' => String c (substring 0 m' s')
+  | O, O, _ => EmptyString
+  | O, S m', EmptyString => s
+  | O, S m', String c s' => String c (substring 0 m' s')
   | S n', _, EmptyString => s
   | S n', _, String c s' => substring n' m s'
   end.
@@ -257,16 +257,16 @@ Qed.
 
 Fixpoint index (n : nat) (s1 s2 : string) : option nat :=
   match s2, n with
-  | EmptyString, 0 =>
+  | EmptyString, O =>
       match s1 with
-      | EmptyString => Some 0
+      | EmptyString => Some O
       | String a s1' => None
       end
   | EmptyString, S n' => None
-  | String b s2', 0 =>
-      if prefix s1 s2 then Some 0
+  | String b s2', O =>
+      if prefix s1 s2 then Some O
       else
-        match index 0 s1 s2' with
+        match index O s1 s2' with
         | Some n => Some (S n)
         | None => None
         end
@@ -300,8 +300,8 @@ generalize (prefix_correct s1 (String b s2'));
 intros H0 H; injection H as <-; auto.
 case H0; simpl; auto.
 case m; simpl; auto.
-case (index 0 s1 s2'); intros; discriminate.
-intros m'; generalize (Rec 0 m' s1); case (index 0 s1 s2'); auto.
+case (index O s1 s2'); intros; discriminate.
+intros m'; generalize (Rec O m' s1); case (index O s1 s2'); auto.
 intros x H H0 H1; apply H; injection H1; auto.
 intros; discriminate.
 intros n'; case m; simpl; auto.
@@ -335,7 +335,7 @@ intros H0 H; injection H as <-; auto.
 intros p H2 H3; inversion H3.
 case m; simpl; auto.
 case (index 0 s1 s2'); intros; discriminate.
-intros m'; generalize (Rec 0 m' s1); case (index 0 s1 s2'); auto.
+intros m'; generalize (Rec O m' s1); case (index 0 s1 s2'); auto.
 intros x H H0 H1 p; try case p; simpl; auto.
 intros H2 H3; red; intros H4; case H0.
 intros H5 H6; absurd (false = true); auto with bool.
@@ -383,7 +383,7 @@ intros H4 H5; absurd (false = true); auto with bool.
 case s1; simpl; auto.
 intros a s n0 H H0 H1 H2;
  change (substring n0 (length (String a s)) s2' <> String a s);
- apply (Rec 0); auto.
+ apply (Rec O); auto.
 generalize H0; case (index 0 (String a s) s2'); simpl; auto; intros;
  discriminate.
 apply Le.le_O_n.
@@ -423,8 +423,52 @@ Qed.
 Definition findex n s1 s2 :=
   match index n s1 s2 with
   | Some n => n
-  | None => 0
+  | None => O
   end.
+
+(** *** Conversion to/from [list ascii] and [list byte] *)
+
+Fixpoint string_of_list_ascii (s : list ascii) : string
+  := match s with
+     | nil => EmptyString
+     | cons ch s => String ch (string_of_list_ascii s)
+     end.
+
+Fixpoint list_ascii_of_string (s : string) : list ascii
+  := match s with
+     | EmptyString => nil
+     | String ch s => cons ch (list_ascii_of_string s)
+     end.
+
+Lemma string_of_list_ascii_of_string s : string_of_list_ascii (list_ascii_of_string s) = s.
+Proof.
+  induction s as [|? ? IHs]; [ reflexivity | cbn; apply f_equal, IHs ].
+Defined.
+
+Lemma list_ascii_of_string_of_list_ascii s : list_ascii_of_string (string_of_list_ascii s) = s.
+Proof.
+  induction s as [|? ? IHs]; [ reflexivity | cbn; apply f_equal, IHs ].
+Defined.
+
+Definition string_of_list_byte (s : list byte) : string
+  := string_of_list_ascii (List.map ascii_of_byte s).
+
+Definition list_byte_of_string (s : string) : list byte
+  := List.map byte_of_ascii (list_ascii_of_string s).
+
+Lemma string_of_list_byte_of_string s : string_of_list_byte (list_byte_of_string s) = s.
+Proof.
+  cbv [string_of_list_byte list_byte_of_string].
+  erewrite List.map_map, List.map_ext, List.map_id, string_of_list_ascii_of_string; [ reflexivity | intro ].
+  apply ascii_of_byte_of_ascii.
+Qed.
+
+Lemma list_byte_of_string_of_list_byte s : list_byte_of_string (string_of_list_byte s) = s.
+Proof.
+  cbv [string_of_list_byte list_byte_of_string].
+  erewrite list_ascii_of_string_of_list_ascii, List.map_map, List.map_ext, List.map_id; [ reflexivity | intro ].
+  apply byte_of_ascii_of_byte.
+Qed.
 
 (** *** Concrete syntax *)
 
@@ -438,7 +482,11 @@ Definition findex n s1 s2 :=
   part of a valid utf8 sequence of characters are not representable
   using the Coq string notation (use explicitly the String constructor
   with the ascii codes of the characters).
-*)
+ *)
+
+Module Export StringSyntax.
+  String Notation string string_of_list_byte list_byte_of_string : string_scope.
+End StringSyntax.
 
 Example HelloWorld := "	""Hello world!""
 ".
