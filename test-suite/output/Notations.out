@@ -72,6 +72,8 @@ Nil
      : forall A : Type, list A
 NIL : list nat
      : list nat
+F Z 0
+     : Z
 (false && I 3)%bool /\ (I 6)%bool
      : Prop
 [|1, 2, 3; 4, 5, 6|]

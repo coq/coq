@@ -187,6 +187,14 @@ Check Nil.
 Notation NIL := nil.
 Check NIL : list nat.
 
+Section D.
+
+Variable f : forall A, A -> A.
+Arguments f {A}.
+Notation F := @f.
+Check f 0.
+
+End D.
 
 (**********************************************************************)
 (* Test printing of notation with coercions in scope of a coercion    *)

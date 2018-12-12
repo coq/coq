@@ -1069,6 +1069,11 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
         if is_inactive_rule keyrule then raise No_match;
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match DAst.get t ,n with
+          (* Convention: [Some 0] means a notation of the form @ref *)
+          (* This deactivates the use of implicit arguments or scopes *)
+          | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], [], []
+          | GApp (f,args), Some 0 -> DAst.make @@ GApp (f,[]), args, [], []
+          (* This deactivates the use of implicit arguments or scopes *)
 	  | GApp (f,args), Some n
 	      when List.length args >= n ->
 	      let args1, args2 = List.chop n args in
@@ -1086,11 +1091,11 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
                   subscopes,impls
                 | _ ->
                   [], [] in
-	      (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
-	      args2, subscopes, impls
+              DAst.make @@ GApp (f,args1), args2, subscopes, impls
 	  | GApp (f, args), None ->
             begin match DAst.get f with
             | GRef (ref,us) ->
+              (* The notation is a reference w/o @: we use impl/scope info *)
 	      let subscopes = find_arguments_scope ref in
 	      let impls =
 		  select_impargs_size
@@ -1098,7 +1103,6 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
 	      f, args, subscopes, impls
             | _ -> t, [], [], []
             end
-	  | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], [], []
           | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
