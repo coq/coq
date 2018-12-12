@@ -83,6 +83,7 @@ stdenv.mkDerivation rec {
   inherit doInstallCheck;
 
   preInstallCheck = ''
+    patchShebangs dev/tools/
     patchShebangs tools/
     patchShebangs test-suite/
   '';
