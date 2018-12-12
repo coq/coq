@@ -119,6 +119,7 @@ val vernac_monomorphic_flag : vernac_flag
 (** For the stm, do not use! *)
 
 val polymorphic_nowarn : bool attribute
+
 (** For internal use, avoid warning if not qualified as eg [universes(polymorphic)]. *)
 val universe_polymorphism_option_name : string list
 val is_universe_polymorphism : unit -> bool

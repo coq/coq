@@ -12,6 +12,7 @@
 
 (** Controls whether to show diffs.  Takes values "on", "off", "removed" *)
 val write_diffs_option : string -> unit
+
 (** Returns true if the diffs option is "on" or "removed" *)
 val show_diffs : unit -> bool
 

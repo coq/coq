@@ -66,7 +66,7 @@ let explain_coercion_error g = function
 let check_reference_arity ref =
   let env = Global.env () in
   let c, _ = Typeops.type_of_global_in_context env ref in
-  if not (Reductionops.is_arity env (Evd.from_env env) (EConstr.of_constr c)) (** FIXME *) then
+  if not (Reductionops.is_arity env (Evd.from_env env) (EConstr.of_constr c)) (* FIXME *) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
@@ -260,7 +260,7 @@ let add_new_coercion_core coef stre poly source target isid =
       raise (CoercionError (NoSource source))
   in
   check_source (Some cls);
-  if not (uniform_cond Evd.empty (** FIXME - for when possibly called with unresolved evars in the future *)
+  if not (uniform_cond Evd.empty (* FIXME - for when possibly called with unresolved evars in the future *)
                        ctx lvs) then
     warn_uniform_inheritance coef;
   let clt =

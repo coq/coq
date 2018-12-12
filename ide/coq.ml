@@ -334,8 +334,8 @@ let unsafe_handle_input handle feedback_processor state conds ~read_all =
     (* Parsing error at the end of s : we have only received a part of
         an xml answer. We store the current fragment for later *)
     let l_end = Lexing.lexeme_end lex in
-    (** Heuristic hack not to reimplement the lexer:  if ever the lexer dies
-        twice at the same place, then this is a non-recoverable error *)
+    (* Heuristic hack not to reimplement the lexer:  if ever the lexer dies
+       twice at the same place, then this is a non-recoverable error *)
     if state.lexerror = Some l_end then raise e;
     state.lexerror <- Some l_end
 
@@ -496,7 +496,7 @@ let init_coqtop coqtop task =
 type 'a query = 'a Interface.value task
 
 let eval_call call handle k =
-  (** Send messages to coqtop and prepare the decoding of the answer *)
+  (* Send messages to coqtop and prepare the decoding of the answer *)
   Minilib.log ("Start eval_call " ^ Xmlprotocol.pr_call call);
   assert (handle.alive && handle.waiting_for = None);
   handle.waiting_for <- Some (mk_ccb (call,k));

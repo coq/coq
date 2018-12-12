@@ -10,6 +10,7 @@ exception Exc of Loc.t * exn
        for an error. This exception must not be raised by [raise] but
        rather by [Ploc.raise] (see below), to prevent the risk of several
        encapsulations of [Ploc.Exc]. *)
+
 val raise : Loc.t -> exn -> 'a
    (** [Ploc.raise loc e], if [e] is already the exception [Ploc.Exc],
        re-raise it (ignoring the new location [loc]), else raise the
@@ -29,9 +30,11 @@ val sub : Loc.t -> int -> int -> Loc.t
    (** [Ploc.sub loc sh len] is the location [loc] shifted with [sh]
        characters and with length [len]. The previous ending position
        of the location is lost. *)
+
 val after : Loc.t -> int -> int -> Loc.t
    (** [Ploc.after loc sh len] is the location just after loc (starting at
        the end position of [loc]) shifted with [sh] characters and of length
        [len]. *)
+
 val with_comment : Loc.t -> string -> Loc.t
    (** Change the comment part of the given location *)

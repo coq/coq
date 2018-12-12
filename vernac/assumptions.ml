@@ -294,7 +294,7 @@ let traverse current t =
 let type_of_constant cb = cb.Declarations.const_type
 
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
-  (** Only keep the transitive dependencies *)
+  (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let fold obj _ accu = match obj with
   | VarRef id ->

@@ -681,14 +681,14 @@ let vernac_inductive ~atts cum lo finite indl =
   | _ -> None
   in
   if Option.has_some is_defclass then
-    (** Definitional class case *)
+    (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
     vernac_record ~template udecl cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
-    (** Mutual record case *)
+    (* Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
     | Variant ->
       user_err (str "The Variant keyword does not support syntax { ... }.")
@@ -704,14 +704,14 @@ let vernac_inductive ~atts cum lo finite indl =
     let unpack ((id, bl, c, _, decl), _) = match decl with
     | RecordDecl (oc, fs) ->
       (id, bl, c, oc, fs)
-    | Constructors _ -> assert false (** ruled out above *)
+    | Constructors _ -> assert false (* ruled out above *)
     in
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
     vernac_record ~template udecl cum kind atts.polymorphic finite recordl
   else if List.for_all is_constructor indl then
-    (** Mutual inductive case *)
+    (* Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
     | (Record | Structure) ->
       user_err (str "The Record keyword is for types defined using the syntax { ... }.")
@@ -1992,7 +1992,7 @@ let vernac_search ~atts s gopt r =
 let vernac_locate = function
   | LocateAny {v=AN qid}  -> print_located_qualid qid
   | LocateTerm {v=AN qid} -> print_located_term qid
-  | LocateAny {v=ByNotation (ntn, sc)} (** TODO : handle Ltac notations *)
+  | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
     let _, env = Pfedit.get_current_context () in
     Notation.locate_notation

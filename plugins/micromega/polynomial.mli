@@ -103,7 +103,7 @@ module Poly : sig
 
 end
 
-type cstr = {coeffs : Vect.t ; op : op ; cst : Num.num} (** Representation of linear constraints *)
+type cstr = {coeffs : Vect.t ; op : op ; cst : Num.num} (* Representation of linear constraints *)
 and op = Eq | Ge | Gt
 
 val eval_op : op -> Num.num -> Num.num -> bool

@@ -27,6 +27,7 @@ val to_string : t -> string
 (* Needed to fit Camlp5 signature *)
 val print : Format.formatter -> t -> unit
 val match_keyword : string -> t -> bool
+
 (** for camlp5 *)
 val of_pattern : string*string -> t
 val to_pattern : t -> string*string

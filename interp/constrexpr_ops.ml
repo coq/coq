@@ -140,7 +140,7 @@ let rec constr_expr_eq e1 e2 =
       in
       List.equal field_eq l1 l2
     | CCases(_,r1,a1,brl1), CCases(_,r2,a2,brl2) ->
-      (** Don't care about the case_style *)
+      (* Don't care about the case_style *)
       Option.equal constr_expr_eq r1 r2 &&
       List.equal case_expr_eq a1 a2 &&
       List.equal branch_expr_eq brl1 brl2
@@ -220,7 +220,7 @@ and local_binder_eq l1 l2 = match l1, l2 with
   | CLocalDef (n1, e1, t1), CLocalDef (n2, e2, t2) ->
     eq_ast Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
   | CLocalAssum (n1, _, e1), CLocalAssum (n2, _, e2) ->
-    (** Don't care about the [binder_kind] *)
+    (* Don't care about the [binder_kind] *)
     List.equal (eq_ast Name.equal) n1 n2 && constr_expr_eq e1 e2
   | _ -> false
 
@@ -258,7 +258,6 @@ let local_binders_loc bll = match bll with
   | h :: l -> Loc.merge_opt (local_binder_loc h) (local_binder_loc (List.last bll))
 
 (** Folds and maps *)
-
 let is_constructor id =
   try Globnames.isConstructRef
         (Smartlocate.global_of_extended_global

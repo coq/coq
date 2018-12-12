@@ -406,14 +406,15 @@ and nf_evar env sigma evk args =
     mkEvar (evk, [||]), ty
   end
   else
-    (** Let-bound arguments are present in the evar arguments but not in the
-        type, so we turn the let into a product. *)
+    (* Let-bound arguments are present in the evar arguments but not
+       in the type, so we turn the let into a product. *)
     let hyps = Context.Named.drop_bodies hyps in
     let fold accu d = Term.mkNamedProd_or_LetIn d accu in
     let t = List.fold_left fold ty hyps in
     let ty, args = nf_args env sigma args t in
-    (** nf_args takes arguments in the reverse order but produces them in the
-        correct one, so we have to reverse them again for the evar node *)
+    (* nf_args takes arguments in the reverse order but produces them
+       in the correct one, so we have to reverse them again for the
+       evar node *)
     mkEvar (evk, Array.rev_of_list args), ty
 
 let evars_of_evar_map sigma =

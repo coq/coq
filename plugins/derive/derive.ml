@@ -27,12 +27,12 @@ let start_deriving f suchthat lemma =
   let sigma = Evd.from_env env in
   let kind = Decl_kinds.(Global,false,DefinitionBody Definition) in
 
-  (** create a sort variable for the type of [f] *)
+  (* create a sort variable for the type of [f] *)
   (* spiwack: I don't know what the rigidity flag does, picked the one
      that looked the most general. *)
   let (sigma,f_type_sort) = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
   let f_type_type = EConstr.mkSort f_type_sort in
-  (** create the initial goals for the proof: |- Type ; |- ?1 ; f:=?2 |- suchthat *)
+  (* create the initial goals for the proof: |- Type ; |- ?1 ; f:=?2 |- suchthat *)
   let goals =
     let open Proofview in
         TCons ( env , sigma , f_type_type , (fun sigma f_type ->
@@ -45,14 +45,14 @@ let start_deriving f suchthat lemma =
         TNil sigma))))))
     in
 
-    (** The terminator handles the registering of constants when the proof is closed. *)
+    (* The terminator handles the registering of constants when the proof is closed. *)
     let terminator com =
       let open Proof_global in
-      (** Extracts the relevant information from the proof. [Admitted]
-          and [Save] result in user errors. [opaque] is [true] if the
-          proof was concluded by [Qed], and [false] if [Defined]. [f_def]
-          and [lemma_def] correspond to the proof of [f] and of
-          [suchthat], respectively. *)
+      (* Extracts the relevant information from the proof. [Admitted]
+         and [Save] result in user errors. [opaque] is [true] if the
+         proof was concluded by [Qed], and [false] if [Defined]. [f_def]
+         and [lemma_def] correspond to the proof of [f] and of
+         [suchthat], respectively. *)
       let (opaque,f_def,lemma_def) =
         match com with
         | Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
@@ -64,26 +64,26 @@ let start_deriving f suchthat lemma =
                 opaque <> Proof_global.Transparent , f_def , lemma_def
             | _ -> assert false
       in
-      (** The opacity of [f_def] is adjusted to be [false], as it
-          must. Then [f] is declared in the global environment. *)
+      (* The opacity of [f_def] is adjusted to be [false], as it
+         must. Then [f] is declared in the global environment. *)
       let f_def = { f_def with Entries.const_entry_opaque = false } in
       let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
       let f_kn = Declare.declare_constant f f_def in
       let f_kn_term = mkConst f_kn in
-      (** In the type and body of the proof of [suchthat] there can be
-          references to the variable [f]. It needs to be replaced by
-          references to the constant [f] declared above. This substitution
-          performs this precise action. *)
+      (* In the type and body of the proof of [suchthat] there can be
+         references to the variable [f]. It needs to be replaced by
+         references to the constant [f] declared above. This substitution
+         performs this precise action. *)
       let substf c = Vars.replace_vars [f,f_kn_term] c in
-      (** Extracts the type of the proof of [suchthat]. *)
+      (* Extracts the type of the proof of [suchthat]. *)
       let lemma_pretype =
         match Entries.(lemma_def.const_entry_type) with
         | Some t -> t
         | None -> assert false (* Proof_global always sets type here. *)
       in
-      (** The references of [f] are subsituted appropriately. *)
+      (* The references of [f] are subsituted appropriately. *)
       let lemma_type = substf lemma_pretype in
-      (** The same is done in the body of the proof. *)
+      (* The same is done in the body of the proof. *)
       let lemma_body =
         map_const_entry_body substf Entries.(lemma_def.const_entry_body)
       in
@@ -105,7 +105,3 @@ let start_deriving f suchthat lemma =
     Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
   end in
   ()
-
-
-
-

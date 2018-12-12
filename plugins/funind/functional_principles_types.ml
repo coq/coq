@@ -41,7 +41,7 @@ let pop t = Vars.lift (-1) t
 *)
 let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let princ_type = EConstr.of_constr princ_type in
-  let princ_type_info = compute_elim_sig Evd.empty princ_type (** FIXME *) in
+  let princ_type_info = compute_elim_sig Evd.empty princ_type (* FIXME *) in
   let env = Global.env () in
   let env_with_params = EConstr.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in

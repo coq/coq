@@ -26,6 +26,7 @@ class type message_view =
     method refresh : bool -> unit
     method push : Ideutils.logger
       (** same as [add], but with an explicit level instead of [Notice] *)
+
     method has_selection : bool
     method get_selected_text : string
   end

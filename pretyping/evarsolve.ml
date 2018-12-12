@@ -80,7 +80,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        if v' == v then t else mkProd (na, u, v')
     | _ -> t
   in
-  (** Refresh the types of evars under template polymorphic references *)
+  (* Refresh the types of evars under template polymorphic references *)
   let rec refresh_term_evars ~onevars ~top t =
     match EConstr.kind !evdref t with
     | App (f, args) when Termops.is_template_polymorphic_ind env !evdref f ->
@@ -1385,7 +1385,7 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
 let occur_evar_upto_types sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let seen = ref Evar.Set.empty in
-  (** FIXME: Is that supposed to be evar-insensitive? *)
+  (* FIXME: Is that supposed to be evar-insensitive? *)
   let rec occur_rec c = match Constr.kind c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | Evar (sp,args as e) ->
@@ -1581,7 +1581,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
       Id.Set.subset (collect_vars evd rhs) !names 
   in
   let body =
-    if fast rhs then nf_evar evd rhs (** FIXME? *)
+    if fast rhs then nf_evar evd rhs (* FIXME? *)
     else
       let t' = imitate (env,0) rhs in
 	if !progress then

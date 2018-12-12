@@ -46,7 +46,7 @@ let rich_pp width ppcmds =
   let pp_buffer = Buffer.create 180 in
 
   let push_pcdata () =
-    (** Push the optional PCData on the above node *)
+    (* Push the optional PCData on the above node *)
     let len = Buffer.length pp_buffer in
     if len = 0 then ()
     else match context.stack with
@@ -77,7 +77,7 @@ let rich_pp width ppcmds =
       let xml = Element (node, annotation, List.rev child) in
       match ctx with
       | Leaf ->
-        (** Final node: we keep the result in a dummy context *)
+        (* Final node: we keep the result in a dummy context *)
         context.stack <- Node ("", [xml], 0, Leaf)
       | Node (node, child, pos, ctx) ->
         context.stack <- Node (node, xml :: child, pos, ctx)
@@ -104,15 +104,15 @@ let rich_pp width ppcmds =
   pp_set_max_boxes ft 50 ;
   pp_set_ellipsis_text ft "...";
 
-  (** The whole output must be a valid document. To that
-      end, we nest the document inside <pp> tags. *)
+  (* The whole output must be a valid document. To that
+     end, we nest the document inside <pp> tags. *)
   pp_open_box ft 0;
   pp_open_tag ft "pp";
   Pp.(pp_with ft ppcmds);
   pp_close_tag ft ();
   pp_close_box ft ();
 
-  (** Get the resulting XML tree. *)
+  (* Get the resulting XML tree. *)
   let () = pp_print_flush ft () in
   let () = assert (Buffer.length pp_buffer = 0) in
   match context.stack with

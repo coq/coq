@@ -19,9 +19,9 @@ type marshallable =
 (** Types of global Coq states. The ['a] type should be pure and marshallable by
     the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
-  (** freeze_function [true] is for marshalling to disk. 
-   *  e.g. lazy must be forced *)
   freeze_function : marshallable -> 'a;
+  (** freeze_function [true] is for marshalling to disk.
+   *  e.g. lazy must be forced *)
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 

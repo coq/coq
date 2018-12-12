@@ -31,18 +31,23 @@ type statistics = {
 module type S = sig
   type elt
   (** Type of hashsets elements. *)
+
   type t
   (** Type of hashsets. *)
+
   val create : int -> t
   (** [create n] creates a fresh hashset with initial size [n]. *)
+
   val clear : t -> unit
   (** Clear the contents of a hashset. *)
+
   val repr : int -> elt -> t -> elt
   (** [repr key constr set] uses [key] to look for [constr]
       in the hashet [set]. If [constr] is in [set], returns the
       specific representation that is stored in [set]. Otherwise,
       [constr] is stored in [set] and will be used as the canonical
       representation of this value in the future. *)
+
   val stats : t -> statistics
   (** Recover statistics on the table. *)
 end

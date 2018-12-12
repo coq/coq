@@ -16,6 +16,7 @@ val make_ident : string -> int option -> Id.t
 val repr_ident : Id.t -> string * int option
 
 val atompart_of_id : Id.t -> string  (** remove trailing digits *)
+
 val root_of_id : Id.t -> Id.t (** remove trailing digits, ' and _ *)
 
 val add_suffix : Id.t -> string -> Id.t

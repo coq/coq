@@ -26,7 +26,7 @@ let pr_loc loc =
 
 let print_code fmt c =
   let loc = c.loc.loc_start in
-  (** Print the line location as a source annotation *)
+  (* Print the line location as a source annotation *)
   let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
   let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
   fprintf fmt "@[@<0>%s@]@\n" code_insert
@@ -471,16 +471,16 @@ let parse_rule self r =
   (symbs, vars, r.tac_body)
 
 let print_rules fmt (name, rules) =
-  (** Rules are reversed. *)
+  (* Rules are reversed. *)
   let rules = List.rev rules in
   let rules = List.map (fun r -> parse_rule name r) rules in
   let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) l in
   match rules with
   | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
-    (** This is a horrible hack to work aroud limitations of camlp5 regarding
-        factorization of parsing rules. It allows to recognize rules of the
-        form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
-        reuse the same entry directly. *)
+    (* This is a horrible hack to work aroud limitations of camlp5 regarding
+       factorization of parsing rules. It allows to recognize rules of the
+       form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
+       reuse the same entry directly. *)
     fprintf fmt "@[Vernacextend.Arg_alias (%s)@]" e
   | _ -> fprintf fmt "@[Vernacextend.Arg_rules (%a)@]" pr rules
 

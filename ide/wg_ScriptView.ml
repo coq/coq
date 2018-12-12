@@ -152,11 +152,11 @@ object(self)
     if self#process_delete_action del then (`OK, `WRITE) else (`FAIL, `NOOP)
   | Action lst ->
     let fold accu action = match accu with
-    | (`FAIL, _) -> accu (** we stop now! *)
+    | (`FAIL, _) -> accu (* we stop now! *)
     | (`OK, status) ->
       let (res, nstatus) = self#process_action action in
       let merge op1 op2 = match op1, op2 with
-      | `NOOP, `NOOP -> `NOOP (** only a noop when both are *)
+      | `NOOP, `NOOP -> `NOOP (* only a noop when both are *)
       | _ -> `WRITE
       in
       (res, merge status nstatus)
@@ -172,8 +172,8 @@ object(self)
     | (`OK, _) ->
       history <- rem;
       redo <- (negate_action action) :: redo
-    | (`FAIL, `NOOP) -> () (** we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (** we don't know how we failed, so start off *)
+    | (`FAIL, `NOOP) -> () (* we do nothing *)
+    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed, so start off *)
     end
 
   method perform_redo () = match redo with
@@ -184,8 +184,8 @@ object(self)
     | (`OK, _) ->
       redo <- rem;
       history <- (negate_action action) :: history;
-    | (`FAIL, `NOOP) -> () (** we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (** we don't know how we failed *)
+    | (`FAIL, `NOOP) -> () (* we do nothing *)
+    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
     end
 
   method undo () =
@@ -212,9 +212,9 @@ object(self)
     self#with_lock_undo self#process_begin_user_action ()
 
   method process_end_user_action () =
-    (** Search for the pending action *)
+    (* Search for the pending action *)
     let rec split accu = function
-    | [] -> raise Not_found (** no pending begin action! *)
+    | [] -> raise Not_found (* no pending begin action! *)
     | EndGrp :: rem ->
       let grp = List.rev accu in
       let rec flatten = function
@@ -240,7 +240,7 @@ object(self)
     (* Save the insert action *)
     let len = Glib.Utf8.length s in
     let mergeable =
-      (** heuristic: split at newline and atomic pastes *)
+      (* heuristic: split at newline and atomic pastes *)
       len = 1 && (s <> "\n")
     in
     let ins = {
@@ -460,7 +460,7 @@ object (self)
       if not proceed then GtkSignal.stop_emit ()
     in
     let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
-    (** Plug on preferences *)
+    (* Plug on preferences *)
     let cb clr = self#misc#modify_base [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
     let _ = self#misc#connect#realize ~callback:(fun () -> cb background_color#get) in

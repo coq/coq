@@ -609,7 +609,7 @@ type current_problem = {
 exception NotInIdealUpdate of current_problem
 
 let test_dans_ideal cur_pb table metadata p lp len0 =
-  (** Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
+  (* Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
   let (c,r) = reduce2 table cur_pb.cur_poly lp in
   info (fun () -> "remainder: "^(stringPcut metadata r));
   let cur_pb = {
@@ -657,7 +657,7 @@ let deg_hom p =
   | (a,m)::_ -> Monomial.deg m
 
 let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
-  (** Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
+  (* Invariant: [lp] is [List.tl (Array.to_list table.allpol)] *)
   sinfo "computation of the Groebner basis";
   let () = match table.hmon with
   | None -> ()

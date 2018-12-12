@@ -265,7 +265,7 @@ let inductive_levels env evd poly arities inds =
           else minlev
         in
         let minlev =
-          (** Indices contribute. *)
+          (* Indices contribute. *)
           if indices_matter env && List.length ctx > 0 then (
             let ilev = sign_level env evd ctx in
               Univ.sup ilev minlev)
@@ -282,15 +282,15 @@ let inductive_levels env evd poly arities inds =
   let evd, arities =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
       if is_impredicative env du then
-        (** Any product is allowed here. *)
+        (* Any product is allowed here. *)
         evd, arity :: arities
-      else (** If in a predicative sort, or asked to infer the type,
-               we take the max of:
-               - indices (if in indices-matter mode)
-               - constructors
-               - Type(1) if there is more than 1 constructor
+      else (* If in a predicative sort, or asked to infer the type,
+              we take the max of:
+              - indices (if in indices-matter mode)
+              - constructors
+              - Type(1) if there is more than 1 constructor
            *)
-        (** Constructors contribute. *)
+        (* Constructors contribute. *)
         let evd =
           if Sorts.is_set du then
             if not (Evd.check_leq evd cu Univ.type0_univ) then
@@ -301,7 +301,7 @@ let inductive_levels env evd poly arities inds =
         in
         let evd =
           if len >= 2 && Univ.is_type0m_univ cu then
-           (** "Polymorphic" type constraint and more than one constructor,
+           (* "Polymorphic" type constraint and more than one constructor,
                should not land in Prop. Add constraint only if it would
                land in Prop directly (no informative arguments as well). *)
             Evd.set_leq_sort env evd Set du
@@ -510,7 +510,7 @@ let is_recursive mie =
   let rec is_recursive_constructor lift typ =
     match Constr.kind typ with
     | Prod (_,arg,rest) ->
-        not (EConstr.Vars.noccurn Evd.empty (** FIXME *) lift (EConstr.of_constr arg)) ||
+        not (EConstr.Vars.noccurn Evd.empty (* FIXME *) lift (EConstr.of_constr arg)) ||
         is_recursive_constructor (lift+1) rest
     | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
     | _ -> false

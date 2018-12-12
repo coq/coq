@@ -172,8 +172,8 @@ let prioritize_search seq fn =
 
 (** Filters *)
 
-(** This function tries to see whether the conclusion matches a pattern. *)
-(** FIXME: this is quite dummy, we may find a more efficient algorithm. *)
+(** This function tries to see whether the conclusion matches a pattern.
+    FIXME: this is quite dummy, we may find a more efficient algorithm. *)
 let rec pattern_filter pat ref env sigma typ =
   let typ = Termops.strip_outer_cast sigma typ in
   if Constr_matching.is_matching env sigma pat typ then true

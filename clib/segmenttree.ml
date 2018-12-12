@@ -34,16 +34,16 @@ type elt = int
     integers which are _not_ in the set of keys handled by the tree. On 
     leaves, a domain represents the st of integers which are in the set of 
     keys. *)
-type domain = 
-    (** On internal nodes, a domain [Interval (a, b)] represents 
-	the interval [a + 1; b - 1]. On leaves, it represents [a; b]. 
-	We always have [a] <= [b]. *)
+type domain =
   | Interval of elt * elt
-      (** On internal node or root, a domain [Universe] represents all
-	  the integers. When the tree is not a trivial root,
-	  [Universe] has no interpretation on leaves. (The lookup
-	  function should never reach the leaves.) *)
+  (** On internal nodes, a domain [Interval (a, b)] represents
+      the interval [a + 1; b - 1]. On leaves, it represents [a; b].
+      We always have [a] <= [b]. *)
   | Universe
+  (** On internal node or root, a domain [Universe] represents all
+      the integers. When the tree is not a trivial root,
+      [Universe] has no interpretation on leaves. (The lookup
+      function should never reach the leaves.) *)
 
 (** We use an array to store the almost complete tree. This array
     contains at least one element. *)
@@ -71,26 +71,26 @@ let make segments =
   let tree = create nsegments (Universe, None) in 
   let leaves_offset = (1 lsl (log2n nsegments)) - 1 in
 
-    (** The algorithm proceeds in two steps using an intermediate tree
-	to store minimum and maximum of each subtree as annotation of
-	the node. *)
+    (* The algorithm proceeds in two steps using an intermediate tree
+       to store minimum and maximum of each subtree as annotation of
+       the node. *)
 
-    (** We start from leaves: the last level of the tree is initialized
-	with the given segments... *)
-    list_iteri 
+    (* We start from leaves: the last level of the tree is initialized
+       with the given segments... *)
+    list_iteri
       (fun i ((start, stop), value) ->
 	 let k = leaves_offset + i in
 	 let i = Interval (start, stop) in
 	   tree.(k) <- (i, Some i))
       segments;
-    (** ... the remaining leaves are initialized with neutral information. *)
+    (* ... the remaining leaves are initialized with neutral information. *)
     for k = leaves_offset + nsegments to Array.length tree -1 do 
       tree.(k) <- (Universe, Some Universe)
     done;
     
-    (** We traverse the tree bottom-up and compute the interval and
-	annotation associated to each node from the annotations of its
-	children. *)
+    (* We traverse the tree bottom-up and compute the interval and
+       annotation associated to each node from the annotations of its
+       children. *)
     for k = leaves_offset - 1 downto 0 do
       let node, annotation = 
 	match value_of (left_child k) tree, value_of (right_child k) tree with
@@ -104,7 +104,7 @@ let make segments =
 	tree.(k) <- (node, Some annotation)
     done;
 
-    (** Finally, annotation are replaced with the image related to each leaf. *)
+    (* Finally, annotation are replaced with the image related to each leaf. *)
     let final_tree = 
       Array.mapi (fun i (segment, value) -> (segment, None)) tree
     in

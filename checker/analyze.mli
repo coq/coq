@@ -30,6 +30,7 @@ sig
   type t
   val input_byte : t -> int
   (** Input a single byte *)
+
   val input_binary_int : t -> int
   (** Input a big-endian 31-bits signed integer *)
 end

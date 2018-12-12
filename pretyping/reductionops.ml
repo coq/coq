@@ -203,6 +203,7 @@ end
 (** Machinery about stack of unfolded constants *)
 module Cst_stack = struct
   open EConstr
+
 (** constant * params * args
 
 - constant applied to params = term in head applied to args
@@ -1342,7 +1343,7 @@ let sigma_univ_state =
 
 let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
-  (** FIXME *)
+  (* FIXME *)
   try
       let ans = match pb with
       | Reduction.CUMUL ->
@@ -1632,7 +1633,7 @@ let meta_reducible_instance evd b =
   in
   let metas = Metaset.fold fold fm Metamap.empty in
   let rec irec u =
-    let u = whd_betaiota Evd.empty u (** FIXME *) in
+    let u = whd_betaiota Evd.empty u (* FIXME *) in
     match EConstr.kind evd u with
     | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
 	let m = destMeta evd (strip_outer_cast evd c) in

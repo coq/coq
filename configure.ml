@@ -610,10 +610,9 @@ let camltag = match caml_version_list with
     44: "open" shadowing already defined identifier: too common, especially when some are aliases
     45: "open" shadowing a label or constructor: see 44
     48: implicit elimination of optional arguments: too common
-    50: unexpected documentation comment: too common and annoying to avoid
     58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
 *)
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-50-58"
+let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"

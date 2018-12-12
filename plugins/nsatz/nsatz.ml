@@ -374,7 +374,7 @@ let remove_zeros lci =
   let m = List.length lci in
   let u = Array.make m false in
   let rec utiles k =
-    (** TODO: Find a more reasonable implementation of this traversal. *)
+    (* TODO: Find a more reasonable implementation of this traversal. *)
     if k >= m || u.(k) then ()
     else
       let () = u.(k) <- true in

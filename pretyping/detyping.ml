@@ -703,7 +703,7 @@ and detype_r d flags avoid env sigma t =
 		[detype d flags avoid env sigma c])
       else 
 	if print_primproj_compatibility () && Projection.unfolded p then
-	  (** Print the compatibility match version *)
+          (* Print the compatibility match version *)
 	  let c' = 
 	    try 
               let ind = Projection.inductive p in

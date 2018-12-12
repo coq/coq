@@ -212,7 +212,7 @@ type frozen =
 
 let frozen_and_pending_holes (sigma, sigma') =
   let undefined0 = Option.cata Evd.undefined_map Evar.Map.empty sigma in
-  (** Fast path when the undefined evars where not modified *)
+  (* Fast path when the undefined evars where not modified *)
   if undefined0 == Evd.undefined_map sigma' then
     FrozenId undefined0
   else
@@ -579,7 +579,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
         sigma ctxtv vdef in
       let sigma = Typing.check_type_fixpoint ?loc !!env sigma names ftys vdefj in
       let nf c = nf_evar sigma c in
-      let ftys = Array.map nf ftys in (** FIXME *)
+      let ftys = Array.map nf ftys in (* FIXME *)
       let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
       let fixj = match fixkind with
 	| GFix (vn,i) ->

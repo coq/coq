@@ -70,6 +70,7 @@ module type Task = sig
 
   (** UID of the task kind, for -toploop *)
   val name : string ref
+
   (** Extra arguments of the task kind, for -toploop *)
   val extra_env : unit -> string array
 

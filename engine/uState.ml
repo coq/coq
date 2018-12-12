@@ -197,7 +197,7 @@ let process_universe_constraints ctx cstrs =
     | Some l -> Inr l
   in
   let equalize_variables fo l l' r r' local =
-    (** Assumes l = [l',0] and r = [r',0] *)
+    (* Assumes l = [l',0] and r = [r',0] *)
     let () =
       if is_local l' then
         instantiate_variable l' r vars
@@ -235,8 +235,8 @@ let process_universe_constraints ctx cstrs =
           match cst with
           | ULe (l, r) ->
             if UGraph.check_leq univs l r then
-              (** Keep Prop/Set <= var around if var might be instantiated by prop or set
-                  later. *)
+              (* Keep Prop/Set <= var around if var might be instantiated by prop or set
+                 later. *)
               match Univ.Universe.level l, Univ.Universe.level r with
               | Some l, Some r ->
                 Univ.Constraint.add (l, Univ.Le, r) local

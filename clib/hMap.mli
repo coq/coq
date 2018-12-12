@@ -13,6 +13,7 @@ sig
   type t
   val compare : t -> t -> int
   (** Total ordering *)
+
   val hash : t -> int
   (** Hashing function compatible with [compare], i.e. [compare x y = 0] implies
       [hash x = hash y]. *)

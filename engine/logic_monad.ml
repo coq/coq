@@ -28,8 +28,10 @@
     from the IO monad ([Proofview] catches errors in its compatibility
     layer, and when lifting goal-level expressions). *)
 exception Exception of exn
+
 (** This exception is used to signal abortion in [timeout] functions. *)
 exception Timeout
+
 (** This exception is used by the tactics to signal failure by lack of
     successes, rather than some other exceptions (like system
     interrupts). *)

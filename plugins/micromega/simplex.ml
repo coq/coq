@@ -20,6 +20,7 @@ type iset = unit IMap.t
 
 type tableau = Vect.t IMap.t (** Mapping basic variables to their equation.
                                  All variables >= than a threshold rst are restricted.*)
+
 module Restricted =
   struct
     type t =

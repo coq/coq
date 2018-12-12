@@ -19,8 +19,8 @@ open Libnames
   written at various dates.
 *)
 
-(** {6 ... } *)
-(** Require = load in the environment + open (if the optional boolean
+(** {6 ... }
+    Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
 val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
 

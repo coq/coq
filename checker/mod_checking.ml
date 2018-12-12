@@ -10,10 +10,10 @@ open Environ
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
-  (** Locally set the oracle for further typechecking *)
+  (* Locally set the oracle for further typechecking *)
   let oracle = env.env_typing_flags.conv_oracle in
   let env = Environ.set_oracle env cb.const_typing_flags.conv_oracle in
-  (** [env'] contains De Bruijn universe variables *)
+  (* [env'] contains De Bruijn universe variables *)
   let poly, env' =
     match cb.const_universes with
     | Monomorphic_const ctx -> false, push_context_set ~strict:true ctx env
@@ -40,7 +40,7 @@ let check_constant_declaration env kn cb =
     if poly then add_constant kn cb env
     else add_constant kn cb env'
   in
-  (** Reset the value of the oracle *)
+  (* Reset the value of the oracle *)
   Environ.set_oracle env oracle
 
 (** {6 Checking modules } *)

@@ -70,7 +70,7 @@ object (self)
     let cb rect =
       let w = rect.Gtk.width in
       let h = rect.Gtk.height in
-      (** Only refresh when size actually changed, otherwise loops *)
+      (* Only refresh when size actually changed, otherwise loops *)
       if self#misc#visible && (width <> w || height <> h) then begin
         width <- w;
         height <- h;
@@ -91,7 +91,7 @@ object (self)
     let _ = eventbox#event#connect#button_press ~callback:clicked_cb in
     let cb show = if show then self#misc#show () else self#misc#hide () in
     stick show_progress_bar self cb;
-    (** Initial pixmap *)
+    (* Initial pixmap *)
     draw#set_pixmap pixmap;
     refresh_timer.Ideutils.run ~ms:300
       ~callback:(fun () -> if need_refresh then self#refresh (); true)

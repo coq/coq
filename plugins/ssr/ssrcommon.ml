@@ -263,7 +263,7 @@ let of_ftactic ftac gl =
   let tac = Proofview.V82.of_tactic tac in
   let { sigma = sigma } = tac gl in
   let ans = match !r with
-  | None -> assert false (** If the tactic failed we should not reach this point *)
+  | None -> assert false (* If the tactic failed we should not reach this point *)
   | Some ans -> ans
   in
   (sigma, ans)

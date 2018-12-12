@@ -306,8 +306,8 @@ let add_rewrite_hint ~poly bases ort t lcsr =
     let ctx =
       let ctx = UState.context_set ctx in
         if poly then ctx
-	else (** This is a global universe context that shouldn't be
-	       refreshed at every use of the hint, declare it globally. *)
+	else (* This is a global universe context that shouldn't be
+	        refreshed at every use of the hint, declare it globally. *)
 	  (Declare.declare_universe_context false ctx;
            Univ.ContextSet.empty)
     in
@@ -738,7 +738,8 @@ let  mkCaseEq a  : unit Proofview.tactic =
           Proofview.Goal.enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
-            (** FIXME: this looks really wrong. Does anybody really use this tactic? *)
+            (* FIXME: this looks really wrong. Does anybody really use
+               this tactic? *)
             let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
 	    change_concl c
           end;

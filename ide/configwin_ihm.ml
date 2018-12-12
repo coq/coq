@@ -209,7 +209,8 @@ class ['a] list_selection_box
 	      ()
 
     initializer
-      (** create the functions called when the buttons are clicked *)
+
+      (* create the functions called when the buttons are clicked *)
       let f_add () =
         (* get the files to add with the function provided *)
         let l = add_function () in
@@ -300,8 +301,10 @@ class string_param_box param (tt:GData.tooltips) =
   let _ = we#set_text (param.string_to_string param.string_value) in
 
   object (self)
+
     (** This method returns the main box ready to be packed. *)
     method box = hbox#coerce
+
     (** This method applies the new value of the parameter. *)
     method apply =
       let new_value = param.string_of_string we#text in
@@ -347,9 +350,11 @@ class combo_param_box param (tt:GData.tooltips) =
 	fun () -> wc#entry#text
     in
 object (self)
+
   (** This method returns the main box ready to be packed. *)
   method box = hbox#coerce
-    (** This method applies the new value of the parameter. *)
+
+  (** This method applies the new value of the parameter. *)
   method apply =
     let new_value = get_value () in
       if new_value <> param.combo_value then
@@ -404,8 +409,10 @@ class text_param_box param (tt:GData.tooltips) =
   let _ = dbg "text_param_box: object(self)" in
   object (self)
     val wview = wview
+
     (** This method returns the main box ready to be packed. *)
     method box = wf#coerce
+
     (** This method applies the new value of the parameter. *)
     method apply =
       let v = param.string_of_string (buffer#get_text ()) in
@@ -435,8 +442,10 @@ class bool_param_box param (tt:GData.tooltips) =
   let _ = wchk#misc#set_sensitive param.bool_editable in
 
   object (self)
+
     (** This method returns the check button ready to be packed. *)
     method box = wchk#coerce
+
     (** This method applies the new value of the parameter. *)
     method apply =
       let new_value = wchk#active in
@@ -471,8 +480,10 @@ class modifiers_param_box param =
        tooltips#set_tip wev#coerce ~text: help ~privat: help
   in
   object (self)
+
     (** This method returns the main box ready to be packed. *)
     method box = hbox#coerce
+
     (** This method applies the new value of the parameter. *)
     method apply =
       let new_value = !value in
@@ -500,8 +511,10 @@ class ['a] list_param_box (param : 'a list_param) (tt:GData.tooltips) =
   in
 
   object (self)
+
     (** This method returns the main box ready to be packed. *)
     method box = frame_selection#box#coerce
+
     (** This method applies the new value of the parameter. *)
     method apply =
       param.list_f_apply !listref ;

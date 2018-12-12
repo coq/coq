@@ -27,7 +27,7 @@ let warn_local_declaration =
 
 let get_locality id ~kind = function
 | Discharge ->
-  (** If a Let is defined outside a section, then we consider it as a local definition *)
+  (* If a Let is defined outside a section, then we consider it as a local definition *)
    warn_local_declaration (id,kind);
   true
 | Local -> true

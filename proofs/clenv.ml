@@ -601,17 +601,17 @@ let make_evar_clause env sigma ?len t =
   | None -> -1
   | Some n -> assert (0 <= n); n
   in
-  (** FIXME: do the renaming online *)
+  (* FIXME: do the renaming online *)
   let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
   let rec clrec (sigma, holes) inst n t =
     if n = 0 then (sigma, holes, t)
     else match EConstr.kind sigma t with
     | Cast (t, _, _) -> clrec (sigma, holes) inst n t
     | Prod (na, t1, t2) ->
-      (** Share the evar instances as we are living in the same context *)
+      (* Share the evar instances as we are living in the same context *)
       let inst, ctx, args, subst = match inst with
       | None ->
-        (** Dummy type *)
+        (* Dummy type *)
         let ctx, _, args, subst = push_rel_context_to_named_context env sigma mkProp in
         Some (ctx, args, subst), ctx, args, subst
       | Some (ctx, args, subst) -> inst, ctx, args, subst
@@ -688,7 +688,7 @@ let solve_evar_clause env sigma hyp_only clause = function
   let open EConstr in
   let fold holes h =
     if h.hole_deps then
-      (** Some subsequent term uses the hole *)
+      (* Some subsequent term uses the hole *)
       let (ev, _) = destEvar sigma h.hole_evar in
       let is_dep hole = occur_evar sigma ev hole.hole_type in
       let in_hyp = List.exists is_dep holes in
@@ -697,7 +697,7 @@ let solve_evar_clause env sigma hyp_only clause = function
       let h = { h with hole_deps = dep } in
       h :: holes
     else
-      (** The hole does not occur anywhere *)
+      (* The hole does not occur anywhere *)
       h :: holes
   in
   let holes = List.fold_left fold [] (List.rev clause.cl_holes) in

@@ -58,8 +58,11 @@ and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
+
 and solving_tac = bool (** a terminator *)
+
 and anon_abstracting_tac = bool (** abstracting anonymously its result *)
+
 and proof_block_name = string (** open type of delimiters *)
 
 type vernac_when =
@@ -86,7 +89,7 @@ type (_, _) ty_sig =
   ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->
     ('a -> 'r, 'a -> 's) ty_sig
 
-type ty_ml = TyML : bool (** deprecated *) * ('r, 's) ty_sig * 'r * 's option -> ty_ml
+type ty_ml = TyML : bool (* deprecated *) * ('r, 's) ty_sig * 'r * 's option -> ty_ml
 
 (** Wrapper to dynamically extend vernacular commands. *)
 val vernac_extend :

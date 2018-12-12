@@ -42,8 +42,11 @@ and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
+
 and solving_tac = bool (** a terminator *)
+
 and anon_abstracting_tac = bool (** abstracting anonymously its result *)
+
 and proof_block_name = string (** open type of delimiters *)
 
 type vernac_when =

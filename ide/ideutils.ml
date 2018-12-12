@@ -43,10 +43,10 @@ color on Windows.  A clean fix, if ever needed, would be to combine the attribut
 of the tags into a single composite tag before applying.  This is left as an
 exercise for the reader. *)
 let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
-  (** FIXME: LablGTK2 does not export the C insert_with_tags function, so that
-      it has to reimplement its own helper function. Unluckily, it relies on
-      a slow algorithm, so that we have to have our own quicker version here.
-      Alas, it is still much slower than the native version... *)
+  (* FIXME: LablGTK2 does not export the C insert_with_tags function, so that
+     it has to reimplement its own helper function. Unluckily, it relies on
+     a slow algorithm, so that we have to have our own quicker version here.
+     Alas, it is still much slower than the native version... *)
   if CList.is_empty tags then buf#insert ~iter:(buf#get_iter_at_mark mark) text
   else
     let it = buf#get_iter_at_mark mark in

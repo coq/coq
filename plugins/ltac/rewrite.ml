@@ -97,7 +97,7 @@ let goalevars evars = fst evars
 let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
-  (** We handle the typeclass resolution of constraints ourselves *)
+  (* We handle the typeclass resolution of constraints ourselves *)
   let (evd', t) = Evarutil.new_evar env evd ~typeclass_candidate:false t in
   let ev, _ = destEvar evd' t in
     (evd', Evar.Set.add ev cstrs), t
@@ -474,7 +474,7 @@ let get_symmetric_proof b =
 let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite.")
 
 let rec decompose_app_rel env evd t = 
-  (** Head normalize for compatibility with the old meta mechanism *)
+  (* Head normalize for compatibility with the old meta mechanism *)
   let t = Reductionops.whd_betaiota evd t in
   match EConstr.kind evd t with
   | App (f, [||]) -> assert false
@@ -613,7 +613,7 @@ let solve_remaining_by env sigma holes by =
         Some evk
       | _ -> None
     in
-    (** Only solve independent holes *)
+    (* Only solve independent holes *)
     let indep = List.map_filter map holes in
     let ist = { Geninterp.lfun = Id.Map.empty; extra = Geninterp.TacStore.empty } in
     let solve_tac = match tac with
@@ -628,7 +628,7 @@ let solve_remaining_by env sigma holes by =
       in
       match evi with
       | None -> sigma
-        (** Evar should not be defined, but just in case *)
+        (* Evar should not be defined, but just in case *)
       | Some evi ->
         let env = Environ.reset_with_named_context evi.evar_hyps env in
         let ty = evi.evar_concl in
@@ -646,6 +646,7 @@ let poly_inverse sort =
 type rewrite_proof = 
   | RewPrf of constr * constr
   (** A Relation (R : rew_car -> rew_car -> Prop) and a proof of R rew_from rew_to *)
+
   | RewCast of cast_kind
   (** A proof of convertibility (with casts) *)
 
@@ -1561,7 +1562,7 @@ let newfail n s =
 
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
-  (** For compatibility *)
+  (* For compatibility *)
   let beta = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
   let beta_hyp id = Tactics.reduct_in_hyp Reductionops.nf_betaiota (id, InHyp) in
   let treat sigma res = 
@@ -1611,7 +1612,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     let env = match clause with
     | None -> env
     | Some id ->
-      (** Only consider variables not depending on [id] *)
+      (* Only consider variables not depending on [id] *)
       let ctx = named_context env in
       let filter decl = not (occur_var_in_decl env sigma id decl) in
       let nctx = List.filter filter ctx in
@@ -1623,7 +1624,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       in
       let sigma = match origsigma with None -> sigma | Some sigma -> sigma in
       treat sigma res <*>
-      (** For compatibility *)
+      (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->

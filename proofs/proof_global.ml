@@ -422,9 +422,9 @@ let return_proof ?(allow_partial=false) () =
   let proofs = Proof.partial_proof proof in
   let _,_,_,_, evd = Proof.proof proof in
   let eff = Evd.eval_side_effects evd in
-  (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-      side-effects... This may explain why one need to uniquize side-effects
-      thereafter... *)
+  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
   let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
     proofs, Evd.evar_universe_context evd
  end else
@@ -432,9 +432,9 @@ let return_proof ?(allow_partial=false) () =
   let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
-  (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-      side-effects... This may explain why one need to uniquize side-effects
-      thereafter... *)
+  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
   let proofs =
     List.map (fun (c, _) -> (EConstr.to_constr evd c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd

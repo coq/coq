@@ -281,7 +281,7 @@ struct
   open TDnet
 
   let pat_of_constr c : term_pattern =
-    (** To each evar we associate a unique identifier. *)
+    (* To each evar we associate a unique identifier. *)
     let metas = ref Evar.Map.empty in
     let rec pat_of_constr c = match Constr.kind c with
     | Rel _          -> Term DRel
@@ -378,7 +378,7 @@ struct
 	 let c_id = Opt.reduce (Ident.constr_of id) in
 	 let c_id = EConstr.of_constr c_id in
 	 let (ctx,wc) =
-	   try Termops.align_prod_letin Evd.empty whole_c c_id (** FIXME *)
+           try Termops.align_prod_letin Evd.empty whole_c c_id (* FIXME *)
 	   with Invalid_argument _ -> [],c_id in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
 	 try

@@ -169,7 +169,7 @@ let add_tactic_entry (kn, ml, tg) state =
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let mkact loc l =
     let map arg =
-      (** HACK to handle especially the tactic(...) entry *)
+      (* HACK to handle especially the tactic(...) entry *)
       let wit = Genarg.rawwit Tacarg.wit_tactic in
       if Genarg.has_type arg wit && not ml then
         Tacexp (Genarg.out_gen wit arg)
@@ -223,7 +223,7 @@ let interp_prod_item = function
       | Some arg -> arg
       end
     | Some n ->
-      (** FIXME: do better someday *)
+      (* FIXME: do better someday *)
       assert (String.equal s "tactic");
       begin match Tacarg.wit_tactic with
       | ExtraArg tag -> ArgT.Any tag
@@ -241,9 +241,9 @@ let make_fresh_key =
     | TacNonTerm _ -> "#"
     in
     let prods = String.concat "_" (List.map map prods) in
-    (** We embed the hash of the kernel name in the label so that the identifier
-        should be mostly unique. This ensures that including two modules
-        together won't confuse the corresponding labels. *)
+    (* We embed the hash of the kernel name in the label so that the identifier
+       should be mostly unique. This ensures that including two modules
+       together won't confuse the corresponding labels. *)
     let hash = (cur lxor (ModPath.hash (Lib.current_mp ()))) land 0x7FFFFFFF in
     let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
     Lib.make_kn lbl
@@ -281,7 +281,7 @@ let open_tactic_notation i (_, tobj) =
 let load_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
   let () = check_key key in
-  (** Only add the printing and interpretation rules. *)
+  (* Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram);
   if Int.equal i 1 && not tobj.tacobj_local then
@@ -342,7 +342,7 @@ let extend_atomic_tactic name entries =
   let map_prod prods =
     let (hd, rem) = match prods with
     | TacTerm s :: rem -> (s, rem)
-    | _ -> assert false (** Not handled by the ML extension syntax *)
+    | _ -> assert false (* Not handled by the ML extension syntax *)
     in
     let empty_value = function
     | TacTerm s -> raise NonEmptyArgument
@@ -383,8 +383,8 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
     add_glob_tactic_notation false ~level ?deprecation prods true ids tac
   in
   List.iteri iter (List.rev prods);
-  (** We call [extend_atomic_tactic] only for "basic tactics" (the ones at
-  tactic_expr level 0) *)
+  (* We call [extend_atomic_tactic] only for "basic tactics" (the ones
+     at tactic_expr level 0) *)
   if Int.equal level 0 then extend_atomic_tactic name prods
 
 (**********************************************************************)
@@ -474,8 +474,9 @@ let register_ltac local ?deprecation tacl =
     (name, body)
   in
   let defs () =
-    (** Register locally the tactic to handle recursivity. This function affects
-        the whole environment, so that we transactify it afterwards. *)
+    (* Register locally the tactic to handle recursivity. This
+       function affects the whole environment, so that we transactify
+       it afterwards. *)
     let iter_rec (sp, kn) = Tacenv.push_tactic (Nametab.Until 1) sp kn in
     let () = List.iter iter_rec recvars in
     List.map map rfun
@@ -557,7 +558,7 @@ let () =
   register_grammars_by_name "tactic" entries
 
 let get_identifier i =
-  (** Workaround for badly-designed generic arguments lacking a closure *)
+  (* Workaround for badly-designed generic arguments lacking a closure *)
   Names.Id.of_string_soft (Printf.sprintf "$%i" i)
 
 type _ ty_sig =
@@ -650,20 +651,22 @@ let tactic_extend plugin_name tacname ~level ?deprecation sign =
   in
   match sign with
   | [TyML (TyIdent (name, s),tac) as ml_tac] when only_constr s ->
-  (** The extension is only made of a name followed by constr entries: we do not
-      add any grammar nor printing rule and add it as a true Ltac definition. *)
+    (* The extension is only made of a name followed by constr
+       entries: we do not add any grammar nor printing rule and add it
+       as a true Ltac definition. *)
     let vars = mk_sign_vars 1 s in
     let ml = { Tacexpr.mltac_name = ml_tactic_name; Tacexpr.mltac_index = 0 } in
     let tac = match s with
     | TyNil -> eval ml_tac
-    (** Special handling of tactics without arguments: such tactics do not do
-        a Proofview.Goal.nf_enter to compute their arguments. It matters for some
-        whole-prof tactics like [shelve_unifiable]. *)
+    (* Special handling of tactics without arguments: such tactics do
+       not do a Proofview.Goal.nf_enter to compute their arguments. It
+       matters for some whole-prof tactics like [shelve_unifiable]. *)
     | _ -> lift_constr_tac_to_ml_tac vars (eval ml_tac)
     in
-  (** Arguments are not passed directly to the ML tactic in the TacML node,
-      the ML tactic retrieves its arguments in the [ist] environment instead.
-      This is the rôle of the [lift_constr_tac_to_ml_tac] function. *)
+    (* Arguments are not passed directly to the ML tactic in the TacML
+       node, the ML tactic retrieves its arguments in the [ist]
+       environment instead.  This is the rôle of the
+       [lift_constr_tac_to_ml_tac] function. *)
     let body = Tacexpr.TacFun (vars, Tacexpr.TacML (CAst.make (ml, [])))in
     let id = Names.Id.of_string name in
     let obj () = Tacenv.register_ltac true false id body ?deprecation in

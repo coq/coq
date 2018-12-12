@@ -87,8 +87,8 @@ let get_backtrace e =
 
 let add_backtrace e =
   if !is_recording then
-    (** This must be the first function call, otherwise the stack may be
-        destroyed *)
+    (* This must be the first function call, otherwise the stack may be
+       destroyed *)
     let current = get_exception_backtrace () in
     let info = Exninfo.info e in
     begin match current with

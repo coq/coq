@@ -660,9 +660,9 @@ let unifiable_delayed g l =
 let free_evars sigma l =
   let cache = Evarutil.create_undefined_evars_cache () in
   let map ev =
-  (** Computes the set of evars appearing in the hypotheses, the conclusion or
-      the body of the evar_info [evi]. Note: since we want to use it on goals,
-      the body is actually supposed to be empty. *)
+  (* Computes the set of evars appearing in the hypotheses, the conclusion or
+     the body of the evar_info [evi]. Note: since we want to use it on goals,
+     the body is actually supposed to be empty. *)
     let evi = Evd.find sigma ev in
     let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
     (ev, fevs)
@@ -672,9 +672,9 @@ let free_evars sigma l =
 let free_evars_with_state sigma l =
   let cache = Evarutil.create_undefined_evars_cache () in
   let map ev =
-  (** Computes the set of evars appearing in the hypotheses, the conclusion or
-      the body of the evar_info [evi]. Note: since we want to use it on goals,
-      the body is actually supposed to be empty. *)
+  (* Computes the set of evars appearing in the hypotheses, the conclusion or
+     the body of the evar_info [evi]. Note: since we want to use it on goals,
+     the body is actually supposed to be empty. *)
     let ev = drop_state ev in
     let evi = Evd.find sigma ev in
     let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
@@ -1157,7 +1157,7 @@ module Goal = struct
     let sigma = step.solution in
     let map goal =
       match cleared_alias sigma goal with
-      | None -> None (** ppedrot: Is this check really necessary? *)
+      | None -> None (* ppedrot: Is this check really necessary? *)
       | Some goal ->
         let gl =
           Env.get >>= fun env ->

@@ -321,7 +321,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
                     ~proj_arg:i
                     (Label.of_id fid)
                 in
-                (** Already defined by declare_mind silently *)
+                (* Already defined by declare_mind silently *)
                 let kn = Projection.Repr.constant p in
                 Declare.definition_message fid;
                 kn, mkProj (Projection.make p false,mkRel 1)

@@ -451,7 +451,7 @@ struct
       end
     done;
     if !i < len then begin
-      (** The array is not the same as the original one *)
+      (* The array is not the same as the original one *)
       let ans : 'a array = Array.copy ar in
       let v = match !temp with None -> assert false | Some x -> x in
       Array.unsafe_set ans !i v;
@@ -483,7 +483,7 @@ struct
       end
     done;
     if !i < len then begin
-      (** The array is not the same as the original one *)
+      (* The array is not the same as the original one *)
       let ans : 'a array = Array.copy ar in
       let v = match !temp with None -> assert false | Some x -> x in
       Array.unsafe_set ans !i v;
@@ -504,7 +504,7 @@ struct
     let i = ref 0 in
     let break = ref true in
     let r = ref accu in
-    (** This variable is never accessed unset *)
+    (* This variable is never accessed unset *)
     let temp = ref None in
     while !break && (!i < len) do
       let v = Array.unsafe_get ar !i in
@@ -539,7 +539,7 @@ struct
     let i = ref 0 in
     let break = ref true in
     let r = ref accu in
-    (** This variable is never accessed unset *)
+    (* This variable is never accessed unset *)
     let temp = ref None in
     while !break && (!i < len) do
       let v = Array.unsafe_get ar !i in
@@ -620,7 +620,7 @@ struct
         end
       done;
       if !i < len then begin
-        (** The array is not the same as the original one *)
+        (* The array is not the same as the original one *)
         let ans : 'a array = Array.copy ar in
         let v = match !temp with None -> assert false | Some x -> x in
         Array.unsafe_set ans !i v;

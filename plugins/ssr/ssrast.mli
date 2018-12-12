@@ -104,6 +104,7 @@ type ssrintrosarg = Tacexpr.raw_tactic_expr * ssripats
 
 
 type ssrfwdid = Id.t
+
 (** Binders (for fwd tactics) *)
 type 'term ssrbind =
   | Bvar of Name.t

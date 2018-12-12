@@ -469,9 +469,9 @@ let compute_projections env (kn, i as ind) =
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
   let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
-  (** We build a substitution smashing the lets in the record parameters so
-      that typechecking projections requires just a substitution and not
-      matching with a parameter context. *)
+  (* We build a substitution smashing the lets in the record parameters so
+     that typechecking projections requires just a substitution and not
+     matching with a parameter context. *)
   let indty =
     (* [ty] = [Ind inst] is typed in context [params] *)
     let inst = Context.Rel.to_extended_vect mkRel 0 paramslet in
@@ -748,7 +748,7 @@ let type_of_projection_knowing_arg env sigma p c ty =
 let control_only_guard env sigma c =
   let c = Evarutil.nf_evar sigma c in
   let check_fix_cofix e c =
-    (** [c] has already been normalized upfront *)
+    (* [c] has already been normalized upfront *)
     let c = EConstr.Unsafe.to_constr c in
     match kind c with
     | CoFix (_,(_,_,_) as cofix) ->

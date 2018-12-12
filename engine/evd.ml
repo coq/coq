@@ -89,8 +89,8 @@ struct
     | Some f2 -> normalize (CList.filter_with f1 f2)
 
   let apply_subfilter_array filter subfilter =
-    (** In both cases we statically know that the argument will contain at
-        least one [false] *)
+    (* In both cases we statically know that the argument will contain at
+       least one [false] *)
     match filter with
     | None -> Some (Array.to_list subfilter)
     | Some f ->
@@ -395,7 +395,7 @@ let rename evk id (evtoid, idtoev) =
 let reassign_name_defined evk evk' (evtoid, idtoev as names) =
   let id = try Some (EvMap.find evk evtoid) with Not_found -> None in
   match id with
-  | None -> names (** evk' must not be defined *)
+  | None -> names (* evk' must not be defined *)
   | Some id ->
     (EvMap.add evk' id (EvMap.remove evk evtoid),
     Id.Map.add id evk' (Id.Map.remove id idtoev))
@@ -416,7 +416,7 @@ type evar_flags =
     typeclass_evars : Evar.Set.t }
 
 type evar_map = {
-  (** Existential variables *)
+  (* Existential variables *)
   defn_evars : evar_info EvMap.t;
   undf_evars : evar_info EvMap.t;
   evar_names : EvNames.t;
@@ -520,7 +520,7 @@ let inherit_evar_flags evar_flags evk evk' =
 let remove_evar_flags evk evar_flags =
   { typeclass_evars = Evar.Set.remove evk evar_flags.typeclass_evars;
     obligation_evars = Evar.Set.remove evk evar_flags.obligation_evars;
-    (** Restriction information is kept. *)
+    (* Restriction information is kept. *)
     restricted_evars = evar_flags.restricted_evars }
 
 (** New evars *)
@@ -1341,14 +1341,14 @@ module MiniEConstr = struct
         | None -> c
       end
     | App (f, args) when isEvar f ->
-      (** Enforce smart constructor invariant on applications *)
+      (* Enforce smart constructor invariant on applications *)
       let ev = destEvar f in
       begin match safe_evar_value sigma ev with
         | None -> c
         | Some f -> whd_evar sigma (mkApp (f, args))
       end
     | Cast (c0, k, t) when isEvar c0 ->
-      (** Enforce smart constructor invariant on casts. *)
+      (* Enforce smart constructor invariant on casts. *)
       let ev = destEvar c0 in
       begin match safe_evar_value sigma ev with
         | None -> c

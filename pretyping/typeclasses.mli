@@ -25,33 +25,33 @@ type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 
 (** This module defines type-classes *)
 type typeclass = {
+  cl_univs : Univ.AUContext.t;
   (** The toplevel universe quantification in which the typeclass lives. In
       particular, [cl_props] and [cl_context] are quantified over it. *)
-  cl_univs : Univ.AUContext.t;
 
+  cl_impl : GlobRef.t;
   (** The class implementation: a record parameterized by the context with defs in it or a definition if
      the class is a singleton. This acts as the class' global identifier. *)
-  cl_impl : GlobRef.t;
 
+  cl_context : GlobRef.t option list * Constr.rel_context;
   (** Context in which the definitions are typed. Includes both typeclass parameters and superclasses.
       The global reference gives a direct link to the class itself. *)
-  cl_context : GlobRef.t option list * Constr.rel_context;
 
-  (** Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;
+  (** Context of definitions and properties on defs, will not be shared *)
 
+  cl_projs : (Name.t * (direction * hint_info) option * Constant.t option) list;
   (** The methods implementations of the typeclass as projections. 
       Some may be undefinable due to sorting restrictions or simply undefined if 
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
-  cl_projs : (Name.t * (direction * hint_info) option * Constant.t option) list;
 
-  (** Whether we use matching or full unification during resolution *)
   cl_strict : bool; 
+  (** Whether we use matching or full unification during resolution *)
 
+  cl_unique : bool;
   (** Whether we can assume that instances are unique, which allows 
       no backtracking and sharing of resolution. *)
-  cl_unique : bool; 
 }
 
 type instance

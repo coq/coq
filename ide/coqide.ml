@@ -566,7 +566,7 @@ let update_status sn =
   Coq.bind (Coq.status false) next
 
 let find_next_occurrence ~backward sn =
-  (** go to the next occurrence of the current word, forward or backward *)
+  (* go to the next occurrence of the current word, forward or backward *)
   let b = sn.buffer in
   let start = find_word_start (b#get_iter_at_mark `INSERT) in
   let stop = find_word_end start in
@@ -613,11 +613,11 @@ let printopts_callback opts v =
 (** Templates menu *)
 
 let get_current_word term =
-  (** First look to find if autocompleting *)
+  (* First look to find if autocompleting *)
   match term.script#complete_popup#proposal with
   | Some p -> p
   | None ->
-  (** Then look at the current selected word *)
+  (* Then look at the current selected word *)
   let buf1 = term.script#buffer in
   let buf2 = term.proof#buffer in
   if buf1#has_selection then
@@ -628,7 +628,7 @@ let get_current_word term =
     buf2#get_text ~slice:true ~start ~stop ()
   else if term.messages#has_selection then
     term.messages#get_selected_text
-  (** Otherwise try to find the word around the cursor *)
+  (* Otherwise try to find the word around the cursor *)
   else
     let it = term.script#buffer#get_iter_at_mark `INSERT in
     let start = find_word_start it in
@@ -772,11 +772,11 @@ let uncomment = cb_on_current_term (fun t -> t.script#uncomment ())
 let coqtop_arguments sn =
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
   let coqtop = sn.coqtop in
-  (** Text entry *)
+  (* Text entry *)
   let args = Coq.get_arguments coqtop in
   let text = String.concat " " args in
   let entry = GEdit.entry ~text ~packing:dialog#vbox#add () in
-  (** Buttons *)
+  (* Buttons *)
   let box = dialog#action_area in
   let ok = GButton.button ~stock:`OK ~packing:box#add () in
   let ok_cb () =

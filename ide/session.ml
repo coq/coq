@@ -217,7 +217,7 @@ let set_buffer_handlers
     | Some s -> Minilib.log (s^" moved")
     | None -> ()
   in
-  (** Pluging callbacks *)
+  (* Pluging callbacks *)
   let _ = buffer#connect#insert_text ~callback:insert_cb in
   let _ = buffer#connect#delete_range ~callback:delete_cb in
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
@@ -427,7 +427,7 @@ let build_layout (sn:session) =
     GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
   in
 
-  (** Right part of the window. *)
+  (* Right part of the window. *)
 
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
@@ -438,7 +438,7 @@ let build_layout (sn:session) =
   let state_paned = GPack.paned `VERTICAL
     ~packing:eval_paned#add2 () in
 
-  (** Proof buffer. *)
+  (* Proof buffer. *)
 
   let title = Printf.sprintf "Proof (%s)" sn.tab_label#text in
   let proof_detachable = Wg_Detachable.detachable ~title () in
@@ -454,7 +454,7 @@ let build_layout (sn:session) =
   let proof_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_detachable#pack () in
 
-  (** Message buffer. *)
+  (* Message buffer. *)
 
   let message_frame = GPack.notebook ~packing:state_paned#add () in
   let add_msg_page pos name text (w : GObj.widget) =
@@ -514,14 +514,14 @@ let build_layout (sn:session) =
   let detach, _ = add_msg_page 0 sn.tab_label#text "Messages" sn.messages#default_route#coerce in
   let _, label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
   let _, _ = add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce in
-  (** When a message is received, focus on the message pane *)
+  (* When a message is received, focus on the message pane *)
   let _ =
     sn.messages#default_route#connect#pushed ~callback:(fun _ _ ->
       let num = message_frame#page_num detach#coerce in
       if 0 <= num then message_frame#goto_page num
     )
   in
-  (** When an error occurs, paint the error label in red *)
+  (* When an error occurs, paint the error label in red *)
   let txt = label#text in
   let red s = "<span foreground=\"#FF0000\">" ^ s ^ "</span>" in
   sn.errpage#on_update ~callback:(fun l ->

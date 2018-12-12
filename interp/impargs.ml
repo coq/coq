@@ -448,7 +448,7 @@ let compute_mib_implicits flags kn =
     Array.to_list
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
         (fun i mip ->
-	  (** No need to care about constraints here *)
+          (* No need to care about constraints here *)
           let ty, _ = Typeops.type_of_global_in_context env (IndRef (kn,i)) in
 	  Context.Rel.Declaration.LocalAssum (Name mip.mind_typename, ty))
         mib.mind_packets) in

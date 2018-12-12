@@ -308,7 +308,7 @@ let declare_delimiters scope key =
     | None -> scope_map := String.Map.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-        (** FIXME: implement multikey scopes? *)
+        (* FIXME: implement multikey scopes? *)
 	Flags.if_verbose Feedback.msg_info
 	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
 	scope_map := String.Map.add scope newsc !scope_map

@@ -106,11 +106,11 @@ type 'a production_rule =
 
 type 'a single_extend_statement =
   string option *
-  (** Level *)
+  (* Level *)
   Gramlib.Gramext.g_assoc option *
-  (** Associativity *)
+  (* Associativity *)
   'a production_rule list
-  (** Symbol list with the interpretation function *)
+  (* Symbol list with the interpretation function *)
 
 type 'a extend_statement =
   Gramlib.Gramext.position option *

@@ -114,8 +114,8 @@ struct
           let () = t := DSet (i, old, res) in
           res
       else match v with
-      | None -> t (** Nothing to do! *)
-      | Some _ -> (** we must resize *)
+      | None -> t (* Nothing to do! *)
+      | Some _ -> (* we must resize *)
         let nlen = next len (succ i) in
         let nlen = min nlen Sys.max_array_length in
         let () = assert (i < nlen) in

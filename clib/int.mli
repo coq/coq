@@ -33,10 +33,13 @@ sig
   type 'a t
   (** Persistent, auto-resizable arrays. The [get] and [set] functions never
       fail whenever the index is between [0] and [Sys.max_array_length - 1]. *)
+
   val empty : int -> 'a t
   (** The empty array, with a given starting size. *)
+
   val get : 'a t -> int -> 'a option
   (** Get a value at the given index. Returns [None] if undefined. *)
+
   val set : 'a t -> int -> 'a option -> 'a t
   (** Set/unset a value at the given index. *)
 end

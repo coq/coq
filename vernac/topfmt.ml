@@ -222,20 +222,21 @@ let diff_tag_stack = ref []  (* global, just like std_ft *)
 (** Not thread-safe. We should put a lock somewhere if we print from
     different threads. Do we? *)
 let make_style_stack () =
-  (** Default tag is to reset everything *)
+  (* Default tag is to reset everything *)
   let style_stack = ref [] in
   let peek () = match !style_stack with
-  | []      -> default_style  (** Anomalous case, but for robustness *)
+  | []      -> default_style  (* Anomalous case, but for robustness *)
   | st :: _ -> st
   in
   let open_tag tag =
     let (tpfx, ttag) = split_tag tag in
     if tpfx = end_pfx then "" else
       let style = get_style ttag in
-    (** Merge the current settings and the style being pushed.  This allows
-    restoring the previous settings correctly in a pop when both set the same
-    attribute.  Example: current settings have red FG, the pushed style has
-    green FG.  When popping the style, we should set red FG, not default FG. *)
+      (* Merge the current settings and the style being pushed.  This
+         allows restoring the previous settings correctly in a pop
+         when both set the same attribute.  Example: current settings
+         have red FG, the pushed style has green FG.  When popping the
+         style, we should set red FG, not default FG. *)
     let style = Terminal.merge (peek ()) style in
     let diff = Terminal.diff (peek ()) style in
     style_stack := style :: !style_stack;
@@ -247,7 +248,7 @@ let make_style_stack () =
       if tpfx = start_pfx then "" else begin
         if tpfx = end_pfx then diff_tag_stack := (try List.tl !diff_tag_stack with tl -> []);
         match !style_stack with
-        | []       -> (** Something went wrong, we fallback *)
+        | []       -> (* Something went wrong, we fallback *)
                       Terminal.eval default_style
         | cur :: rem -> style_stack := rem;
                       if cur = (peek ()) then "" else

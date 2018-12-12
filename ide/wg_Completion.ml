@@ -40,7 +40,7 @@ let get_syntactic_completion (buffer : GText.buffer) pattern accu =
 (** Retrieve completion proposals in Coq libraries *)
 let get_semantic_completion pattern accu =
   let flags = [Interface.Name_Pattern ("^" ^ pattern), true] in
-  (** Only get the last part of the qualified name *)
+  (* Only get the last part of the qualified name *)
   let rec last accu = function
   | [] -> accu
   | [basename] -> Proposals.add basename accu
@@ -199,15 +199,15 @@ object (self)
           let () = self#init_proposals w props in
           update_completion_signal#call (start_offset, w, props)
         in
-        (** If not in the cache, we recompute it: first syntactic *)
+        (* If not in the cache, we recompute it: first syntactic *)
         let synt = get_syntactic_completion buffer w Proposals.empty in
-        (** Then semantic *)
+        (* Then semantic *)
         let next prop =
           let () = update prop in
           Coq.lift k
         in
         let query = Coq.bind (get_semantic_completion w synt) next in
-        (** If coqtop is computing, do the syntactic completion altogether *)
+        (* If coqtop is computing, do the syntactic completion altogether *)
         let occupied () =
           let () = update synt in
           k ()
@@ -264,20 +264,20 @@ object (self)
     renderer#set_properties [`FONT_DESC font; `XPAD 10]
 
   method private coordinates pos =
-    (** Toplevel position w.r.t. screen *)
+    (* Toplevel position w.r.t. screen *)
     let (x, y) = Gdk.Window.get_position view#misc#toplevel#misc#window in
-    (** Position of view w.r.t. window *)
+    (* Position of view w.r.t. window *)
     let (ux, uy) = Gdk.Window.get_position view#misc#window in
-    (** Relative buffer position to view *)
+    (* Relative buffer position to view *)
     let (dx, dy) = view#window_to_buffer_coords ~tag:`WIDGET ~x:0 ~y:0 in
-    (** Iter position *)
+    (* Iter position *)
     let iter = view#buffer#get_iter pos in
     let coords = view#get_iter_location iter in
     let lx = Gdk.Rectangle.x coords in
     let ly = Gdk.Rectangle.y coords in
     let w = Gdk.Rectangle.width coords in
     let h = Gdk.Rectangle.height coords in
-    (** Absolute position *)
+    (* Absolute position *)
     (x + lx + ux - dx, y + ly + uy - dy, w, h)
 
   method private select_any f =
@@ -374,9 +374,9 @@ object (self)
     else None
 
   method private manage_scrollbar () =
-    (** HACK: we don't have access to the treeview size because of the lack of
-        LablGTK binding for certain functions, so we bypass it by approximating
-        it through the size of the proposals *)
+    (* HACK: we don't have access to the treeview size because of the lack of
+       LablGTK binding for certain functions, so we bypass it by approximating
+       it through the size of the proposals *)
     let height = match model#store#get_iter_first with
     | None -> -1
     | Some iter ->
@@ -434,18 +434,18 @@ object (self)
         else false
       else false
     in
-    (** Style handling *)
+    (* Style handling *)
     let _ = view#misc#connect#style_set ~callback:self#refresh_style in
     let _ = self#refresh_style () in
     let _ = data#set_resize_mode `PARENT in
     let _ = frame#set_resize_mode `PARENT in
-    (** Callback to model *)
+    (* Callback to model *)
     let _ = model#connect#start_completion ~callback:self#start_callback in
     let _ = model#connect#update_completion ~callback:self#update_callback in
     let _ = model#connect#end_completion ~callback:self#end_callback in
-    (** Popup interaction *)
+    (* Popup interaction *)
     let _ = view#event#connect#key_press ~callback:key_cb in
-    (** Hiding the popup when necessary*)
+    (* Hiding the popup when necessary*)
     let _ = view#misc#connect#hide ~callback:obj#misc#hide in
     let _ = view#event#connect#button_press ~callback:(fun _ -> self#hide (); false) in
     let _ = view#connect#move_cursor ~callback:move_cb in

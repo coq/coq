@@ -89,18 +89,18 @@ let find_and_remove () =
 let info e =
   let (src, data) = find_and_remove () in
   if src == e then
-    (** Slightly unsound, some exceptions may not be unique up to pointer
-        equality. Though, it should be quite exceptional to be in a situation
-        where the following holds:
+    (* Slightly unsound, some exceptions may not be unique up to pointer
+       equality. Though, it should be quite exceptional to be in a situation
+       where the following holds:
 
-        1. An argument-free exception is raised through the enriched {!raise};
-        2. It is not captured by any enriched with-clause (which would reset
-            the current data);
-        3. The same exception is raised through the standard raise, accessing
-            the wrong data.
+       1. An argument-free exception is raised through the enriched {!raise};
+       2. It is not captured by any enriched with-clause (which would reset
+          the current data);
+       3. The same exception is raised through the standard raise, accessing
+          the wrong data.
     . *)
     data
   else
-    (** Mismatch: the raised exception is not the one stored, either because the
-        previous raise was not instrumented, or because something went wrong. *)
+    (* Mismatch: the raised exception is not the one stored, either because the
+       previous raise was not instrumented, or because something went wrong. *)
     Store.empty

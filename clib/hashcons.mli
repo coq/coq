@@ -29,17 +29,21 @@ module type HashconsedType =
 
     type t
     (** Type of objects to hashcons. *)
+
     type u
     (** Type of hashcons functions for the sub-structures contained in [t].
         Usually a tuple of functions. *)
+
     val hashcons :  u -> t -> t
     (** The actual hashconsing function, using its fist argument to recursively
         hashcons substructures. It should be compatible with [eq], that is
         [eq x (hashcons f x) = true]. *)
+
     val eq : t -> t -> bool
     (** A comparison function. It is allowed to use physical equality
         on the sub-terms hashconsed by the [hashcons] function, but it should be
         insensible to shallow copy of the compared object. *)
+
     val hash : t -> int
     (** A hash function passed to the underlying hashtable structure. [hash]
         should be compatible with [eq], i.e. if [eq x y = true] then
@@ -50,14 +54,19 @@ module type S =
   sig
     type t
     (** Type of objects to hashcons. *)
+
     type u
     (** Type of hashcons functions for the sub-structures contained in [t]. *)
+
     type table
     (** Type of hashconsing tables *)
+
     val generate : u -> table
     (** This create a hashtable of the hashconsed objects. *)
+
     val hcons : table -> t -> t
     (** Perform the hashconsing of the given object within the table. *)
+
     val stats : table -> Hashset.statistics
     (** Recover statistics of the hashconsing table. *)
   end

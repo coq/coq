@@ -20,8 +20,10 @@ type big_int = Big_int.big_int
 
 let zero = zero_big_int
         (** The big integer [0]. *)
+
 let one = unit_big_int
         (** The big integer [1]. *)
+
 let two = big_int_of_int 2
         (** The big integer [2]. *)
 
@@ -29,28 +31,39 @@ let two = big_int_of_int 2
 
 let opp = minus_big_int
         (** Unary negation. *)
+
 let abs = abs_big_int
         (** Absolute value. *)
+
 let add = add_big_int
         (** Addition. *)
+
 let succ = succ_big_int
         (** Successor (add 1). *)
+
 let add_int = add_int_big_int
         (** Addition of a small integer to a big integer. *)
+
 let sub = sub_big_int
         (** Subtraction. *)
+
 let pred = pred_big_int
         (** Predecessor (subtract 1). *)
+
 let mult = mult_big_int
         (** Multiplication of two big integers. *)
+
 let mult_int = mult_int_big_int
         (** Multiplication of a big integer by a small integer *)
+
 let square = square_big_int
         (** Return the square of the given big integer *)
+
 let sqrt = sqrt_big_int
         (** [sqrt_big_int a] returns the integer square root of [a],
            that is, the largest big integer [r] such that [r * r <= a].
            Raise [Invalid_argument] if [a] is negative. *)
+
 let quomod = quomod_big_int
         (** Euclidean division of two big integers.
            The first part of the result is the quotient,
@@ -58,14 +71,18 @@ let quomod = quomod_big_int
            Writing [(q,r) = quomod_big_int a b], we have
            [a = q * b + r] and [0 <= r < |b|].
            Raise [Division_by_zero] if the divisor is zero. *)
+
 let div = div_big_int
         (** Euclidean quotient of two big integers.
            This is the first result [q] of [quomod_big_int] (see above). *)
+
 let modulo = mod_big_int
         (** Euclidean modulus of two big integers.
            This is the second result [r] of [quomod_big_int] (see above). *)
+
 let gcd = gcd_big_int
         (** Greatest common divisor of two big integers. *)
+
 let power = power_big_int_positive_big_int
         (** Exponentiation functions.  Return the big integer
            representing the first argument [a] raised to the power [b]
@@ -78,18 +95,22 @@ let power = power_big_int_positive_big_int
 let sign = sign_big_int
         (** Return [0] if the given big integer is zero,
            [1] if it is positive, and [-1] if it is negative. *)
+
 let compare = compare_big_int
         (** [compare_big_int a b] returns [0] if [a] and [b] are equal,
            [1] if [a] is greater than [b], and [-1] if [a] is smaller
            than [b]. *)
+
 let eq = eq_big_int
 let le = le_big_int
 let ge = ge_big_int
 let lt = lt_big_int
 let gt = gt_big_int
         (** Usual boolean comparisons between two big integers. *)
+
 let max = max_big_int
         (** Return the greater of its two arguments. *)
+
 let min = min_big_int
         (** Return the smaller of its two arguments. *)
 
@@ -98,6 +119,7 @@ let min = min_big_int
 let to_string = string_of_big_int
         (** Return the string representation of the given big integer,
            in decimal (base 10). *)
+
 let of_string = big_int_of_string
         (** Convert a string to a big integer, in decimal.
            The string consists of an optional [-] or [+] sign,
@@ -107,6 +129,7 @@ let of_string = big_int_of_string
 
 let of_int = big_int_of_int
         (** Convert a small integer to a big integer. *)
+
 let is_int = is_int_big_int
         (** Test whether the given big integer is small enough to
            be representable as a small integer (type [int])
@@ -115,6 +138,7 @@ let is_int = is_int_big_int
            [a] is between 2{^30} and 2{^30}-1.  On a 64-bit platform,
            [is_int_big_int a] returns [true] if and only if
            [a] is between -2{^62} and 2{^62}-1. *)
+
 let to_int = int_of_big_int
         (** Convert a big integer to a small integer (type [int]).
            Raises [Failure "int_of_big_int"] if the big integer

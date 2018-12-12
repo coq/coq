@@ -381,7 +381,7 @@ let subst_deps expand obls deps t =
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let rec prod_app t n =
-  match Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t))) (** FIXME *) with
+  match Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast Evd.empty (EConstr.of_constr t))) (* FIXME *) with
     | Prod (_,_,b) -> subst1 n b
     | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
     | _ ->
@@ -503,7 +503,7 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (** FIXME *) in
+      let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (* FIXME *) in
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
@@ -649,7 +649,7 @@ let declare_obligation prg obl body ty uctx =
           const_entry_inline_code = false;
           const_entry_feedback = None;
       } in
-      (** ppedrot: seems legit to have obligations as local *)
+      (* ppedrot: seems legit to have obligations as local *)
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
@@ -857,9 +857,9 @@ let obligation_terminator ?univ_hook name num guard auto pf =
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
-    (** Declare the obligation ourselves and drop the hook *)
+    (* Declare the obligation ourselves and drop the hook *)
     let prg = get_info (ProgMap.find name !from_prg) in
-    (** Ensure universes are substituted properly in body and type *)
+    (* Ensure universes are substituted properly in body and type *)
     let body = EConstr.to_constr sigma (EConstr.of_constr body) in
     let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
     let ctx = Evd.evar_universe_context sigma in
@@ -885,14 +885,14 @@ let obligation_terminator ?univ_hook name num guard auto pf =
     let () = obls.(num) <- obl in
     let prg_ctx =
       if pi2 (prg.prg_kind) then (* Polymorphic *)
-        (** We merge the new universes and constraints of the
-            polymorphic obligation with the existing ones *)
+        (* We merge the new universes and constraints of the
+           polymorphic obligation with the existing ones *)
         UState.union prg.prg_ctx ctx
       else
-        (** The first obligation, if defined,
-            declares the univs of the constant,
-            each subsequent obligation declares its own additional
-            universes and constraints if any *)
+        (* The first obligation, if defined,
+           declares the univs of the constant,
+           each subsequent obligation declares its own additional
+           universes and constraints if any *)
         if defined then UState.make (Global.universes ())
         else ctx
     in

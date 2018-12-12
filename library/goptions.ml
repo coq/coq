@@ -246,14 +246,14 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
       | OptGlobal -> cache_options o
       | OptExport -> ()
       | OptLocal | OptDefault ->
-        (** Ruled out by classify_function *)
+        (* Ruled out by classify_function *)
         assert false
       in
       let open_options i  (_, (l, _, _) as o) = match l with
       | OptExport -> if Int.equal i 1 then cache_options o
       | OptGlobal -> ()
       | OptLocal | OptDefault ->
-        (** Ruled out by classify_function *)
+        (* Ruled out by classify_function *)
         assert false
       in
       let subst_options (subst,obj) = obj in

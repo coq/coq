@@ -125,12 +125,12 @@ let display_eq ~flags env sigma t1 t2 =
     printed alike. *)
 let rec pr_explicit_aux env sigma t1 t2 = function
 | [] ->
-  (** no specified flags: default. *)
+  (* no specified flags: default. *)
   (quote (Printer.pr_leconstr_env env sigma t1), quote (Printer.pr_leconstr_env env sigma t2))
 | flags :: rem ->
   let equal = display_eq ~flags env sigma t1 t2 in
   if equal then
-    (** The two terms are the same from the user point of view *)
+    (* The two terms are the same from the user point of view *)
     pr_explicit_aux env sigma t1 t2 rem
   else
     let open Constrextern in
@@ -142,12 +142,12 @@ let rec pr_explicit_aux env sigma t1 t2 = function
 
 let explicit_flags =
   let open Constrextern in
-  [ []; (** First, try with the current flags *)
-    [print_implicits]; (** Then with implicit *)
-    [print_universes]; (** Then with universes *)
-    [print_universes; print_implicits]; (** With universes AND implicits *)
-    [print_implicits; print_coercions; print_no_symbol]; (** Then more! *)
-    [print_universes; print_implicits; print_coercions; print_no_symbol] (** and more! *) ]
+  [ []; (* First, try with the current flags *)
+    [print_implicits]; (* Then with implicit *)
+    [print_universes]; (* Then with universes *)
+    [print_universes; print_implicits]; (* With universes AND implicits *)
+    [print_implicits; print_coercions; print_no_symbol]; (* Then more! *)
+    [print_universes; print_implicits; print_coercions; print_no_symbol] (* and more! *) ]
 
 let pr_explicit env sigma t1 t2 =
   pr_explicit_aux env sigma t1 t2 explicit_flags
@@ -328,7 +328,7 @@ let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env sigma in
   let j = j_nf_betaiotaevar env sigma j in
   let t = Reductionops.nf_betaiota env sigma t in
-  (** Actually print *)
+  (* Actually print *)
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_leconstr_env env sigma (Environ.j_val j) in
   let (pt, pct) = pr_explicit env sigma t (Environ.j_type j) in
@@ -774,7 +774,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs sigma in
   let tcs = Evd.get_typeclass_evars sigma in
   let undef = Evd.undefined_map sigma in
-  (** Only keep evars that are subject to resolution and members of the given
+  (* Only keep evars that are subject to resolution and members of the given
      component. *)
   let is_kept evk _ = match comp with
   | None -> Evar.Set.mem evk tcs
@@ -1112,7 +1112,7 @@ let error_ill_formed_inductive env c v =
 
 let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env (Evd.from_env env) v in
-  let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (** FIXME *) 0 in
+  let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (* FIXME *) 0 in
   str "The type of constructor" ++ brk(1,1) ++ Id.print id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
   strbrk (if atomic then "it must be " else "its conclusion must be ") ++

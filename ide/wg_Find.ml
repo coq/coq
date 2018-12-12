@@ -212,13 +212,13 @@ class finder name (view : GText.view) =
     initializer
       let _ = self#hide () in
 
-      (** Widget button interaction *)
+      (* Widget button interaction *)
       let _ = next_button#connect#clicked ~callback:self#find_forward in
       let _ = previous_button#connect#clicked ~callback:self#find_backward in
       let _ = replace_button#connect#clicked ~callback:self#replace in
       let _ = replace_all_button#connect#clicked ~callback:self#replace_all in
 
-      (** Keypress interaction *)
+      (* Keypress interaction *)
       let generic_cb esc_cb ret_cb ev =
         let ev_key = GdkEvent.Key.keyval ev in
         let (return, _) = GtkData.AccelGroup.parse "Return" in
@@ -232,7 +232,7 @@ class finder name (view : GText.view) =
       let _ = find_entry#event#connect#key_press ~callback:find_cb in
       let _ = replace_entry#event#connect#key_press ~callback:replace_cb in
 
-      (** TextView interaction *)
+      (* TextView interaction *)
       let view_cb ev =
         if widget#visible then
           let ev_key = GdkEvent.Key.keyval ev in

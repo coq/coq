@@ -1507,7 +1507,7 @@ let drop_notations_pattern looked_for genv =
   let test_kind top =
     if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
   in
-  (** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
+  (* [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
   let rec rcp_of_glob scopes x = DAst.(map (function
     | GVar id -> RCPatAtom (Some (CAst.make ?loc:x.loc id,scopes))
     | GHole (_,_,_) -> RCPatAtom (None)

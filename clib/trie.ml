@@ -51,7 +51,7 @@ let next (Node (_,m)) lbl = T_codom.find lbl m
 let get (Node (hereset,_)) = hereset
 
 let labels (Node (_,m)) =
-  (** FIXME: this is order-dependent. Try to find a more robust presentation? *)
+  (* FIXME: this is order-dependent. Try to find a more robust presentation? *)
   List.rev (T_codom.fold (fun x _ acc -> x::acc) m [])
 
 let is_empty_node (Node(a,b)) = (X.is_nil a) && (T_codom.is_empty b)

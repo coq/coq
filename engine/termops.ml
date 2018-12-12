@@ -197,8 +197,8 @@ let compute_evar_dependency_graph sigma =
 
 let evar_dependency_closure n sigma =
   let open Evd in
-  (** Create the DAG of depth [n] representing the recursive dependencies of
-      undefined evars. *)
+  (* Create the DAG of depth [n] representing the recursive dependencies of
+     undefined evars. *)
   let graph = compute_evar_dependency_graph sigma in
   let rec aux n curr accu =
     if Int.equal n 0 then Evar.Set.union curr accu
@@ -209,9 +209,9 @@ let evar_dependency_closure n sigma =
           Evar.Set.union deps accu
         with Not_found -> accu
       in
-      (** Consider only the newly added evars *)
+      (* Consider only the newly added evars *)
       let ncurr = Evar.Set.fold fold curr Evar.Set.empty in
-      (** Merge the others *)
+      (* Merge the others *)
       let accu = Evar.Set.union curr accu in
       aux (n - 1) ncurr accu
   in
@@ -261,13 +261,13 @@ let print_env_short env sigma =
 let pr_evar_constraints sigma pbs =
   let pr_evconstr (pbty, env, t1, t2) =
     let env =
-      (** We currently allow evar instances to refer to anonymous de
-          Bruijn indices, so we protect the error printing code in this
-          case by giving names to every de Bruijn variable in the
-          rel_context of the conversion problem. MS: we should rather
-          stop depending on anonymous variables, they can be used to
-          indicate independency. Also, this depends on a strategy for
-          naming/renaming. *)
+      (* We currently allow evar instances to refer to anonymous de
+         Bruijn indices, so we protect the error printing code in this
+         case by giving names to every de Bruijn variable in the
+         rel_context of the conversion problem. MS: we should rather
+         stop depending on anonymous variables, they can be used to
+         indicate independency. Also, this depends on a strategy for
+         naming/renaming. *)
       Namegen.make_all_name_different env sigma
     in
     print_env_short env sigma ++ spc () ++ str "|-" ++ spc () ++

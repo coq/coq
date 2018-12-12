@@ -59,7 +59,7 @@ let id_map_try_add_name id x m =
     the binding of the right-hand argument shadows that of the left-hand
     argument. *)
 let id_map_right_biased_union m1 m2 =
-  if Id.Map.is_empty m1 then m2 (** Don't reconstruct the whole map *)
+  if Id.Map.is_empty m1 then m2 (* Don't reconstruct the whole map *)
   else Id.Map.fold Id.Map.add m2 m1
 
 (** Tests whether the substitution [s] is empty. *)
@@ -102,7 +102,7 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
         else raise Not_coherent_metas
   in
   let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2 in
-  (** ppedrot: Is that even correct? *)
+  (* ppedrot: Is that even correct? *)
   let merged = ln +++ ln1 in
   (merged, Id.Map.merge merge lcm lm)
 
@@ -263,8 +263,8 @@ module PatternMatching (E:StaticEnvironment) = struct
     | All lhs -> wildcard_match_term lhs
     | Pat ([],pat,lhs) -> pattern_match_term false pat term lhs
     | Pat _ ->
-        (** Rules with hypotheses, only work in match goal. *)
-        fail
+      (* Rules with hypotheses, only work in match goal. *)
+      fail
 
   (** [match_term term rules] matches the term [term] with the set of
       matching rules [rules].*)

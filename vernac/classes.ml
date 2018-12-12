@@ -373,7 +373,7 @@ let context poly l =
     | [] -> assert false
     | [_] -> Evd.const_univ_entry ~poly sigma
     | _::_::_ ->
-      (** TODO: explain this little belly dance *)
+      (* TODO: explain this little belly dance *)
       if Lib.sections_are_opened ()
       then
         begin

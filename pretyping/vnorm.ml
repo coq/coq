@@ -207,10 +207,10 @@ and nf_evar env sigma evk stk =
     nf_stk env sigma (mkEvar (evk, [||])) concl stk
   else match stk with
   | Zapp args :: stk ->
-    (** We assume that there is no consecutive Zapp nodes in a VM stack. Is that
-        really an invariant? *)
-    (** Let-bound arguments are present in the evar arguments but not in the
-        type, so we turn the let into a product. *)
+    (* We assume that there is no consecutive Zapp nodes in a VM stack. Is that
+       really an invariant? *)
+    (* Let-bound arguments are present in the evar arguments but not in the
+       type, so we turn the let into a product. *)
     let hyps = Context.Named.drop_bodies hyps in
     let fold accu d = Term.mkNamedProd_or_LetIn d accu in
     let t = List.fold_left fold concl hyps in
@@ -388,7 +388,7 @@ and nf_cofix env sigma cf =
 let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then
     CErrors.user_err Pp.(str "vm_compute does not support metas.");
-  (** This evar-normalizes terms beforehand *)
+  (* This evar-normalizes terms beforehand *)
   let c = EConstr.to_constr ~abort_on_undefined_evars:false sigma c in
   let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
   let v = Csymtable.val_of_constr env c in

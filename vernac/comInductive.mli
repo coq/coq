@@ -39,8 +39,8 @@ val do_mutual_inductive :
    associated schemes *)
 
 type one_inductive_impls =
-  Impargs.manual_implicits (** for inds *)*
-  Impargs.manual_implicits list (** for constrs *)
+  Impargs.manual_implicits (* for inds *) *
+  Impargs.manual_implicits list (* for constrs *)
 
 val declare_mutual_inductive_with_eliminations :
   mutual_inductive_entry -> UnivNames.universe_binders -> one_inductive_impls list ->
