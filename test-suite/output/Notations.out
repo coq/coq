@@ -99,13 +99,13 @@ Init.Nat.mul
 le
      : nat -> nat -> Prop
 fun x : option Z => match x with
-                    | SOME x0 => x0
-                    | NONE => 0
+                    | SOME3 _ x0 => x0
+                    | NONE3 _ => 0
                     end
      : option Z -> Z
 fun x : option Z => match x with
-                    | SOME2 x0 => x0
-                    | NONE2 => 0
+                    | SOME x0 => x0
+                    | NONE => 0
                     end
      : option Z -> Z
 fun x : option Z => match x with

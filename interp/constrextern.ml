@@ -464,7 +464,11 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 		substlist in
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
             let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
-	      else
+              else if nb_to_drop = Some 0 then
+                (* indicates that notation is bound to some [@ref] *)
+                l2
+              else
+                let nb_to_drop = match nb_to_drop with Some nb_to_drop -> nb_to_drop | None -> 0 in
 		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
 		  |None -> raise No_match
@@ -485,7 +489,11 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
           subst in
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
       let l2' = if Constrintern.get_asymmetric_patterns () then l2
-	else
+        else if nb_to_drop = Some 0 then
+          (* indicates that notation is bound to some [@ref] *)
+          (assert (l1=[]); l2)
+        else
+          let nb_to_drop = match nb_to_drop with Some nb_to_drop -> nb_to_drop | None -> 0 in
 	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
 	    |None -> raise No_match
