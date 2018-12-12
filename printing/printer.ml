@@ -722,11 +722,11 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
   let get_ogs g =
     match os_map with
     | Some (osigma, _) ->
-      (* if Not_found, returning None treats the goal as new and it will be highlighted;
+      (* if Not_found, returning None treats the goal as new and it will be diff highlighted;
          returning Some { it = g; sigma = sigma } will compare the new goal
          to itself and it won't be highlighted *)
       (try Some { it = GoalMap.find g diff_goal_map; sigma = osigma }
-      with Not_found -> raise (Pp_diff.Diff_Failure "Unable to match goals between old and new proof states (7)"))
+      with Not_found -> None)
     | None -> None
   in
   let rec pr_rec n = function

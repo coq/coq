@@ -219,7 +219,7 @@ let goals () =
         | Some oldp ->
           let (_,_,_,_,osigma) = Proof.proof oldp in
           (try Some { it = Evar.Map.find ng diff_goal_map; sigma = osigma }
-          with Not_found -> raise (Pp_diff.Diff_Failure "Unable to match goals between old and new proof states (6)"))
+          with Not_found -> None) (* will appear as a new goal *)
         | None -> None
         in
         let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal_ide og_s ng nsigma in
