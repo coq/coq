@@ -120,7 +120,7 @@ Module Raw.
               end
        end.
 
-  Fixpoint to_N_of_pos (p : positive) (rest : string) (base : N)
+  Fixpoint to_N_of_pos (p : positive) (rest : string) (base : N) {struct p}
     : to_N (of_pos p rest) base
       = to_N rest match base with
                   | N0 => N.pos p
