@@ -74,6 +74,8 @@ Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
 Open Scope nat_scope.
 Check fun f x => f x + S x.
 
+Check fun (f:nat->nat->nat) x => f x x.
+
 Open Scope list_scope.
 Notation list1 := (1::nil)%list.
 Notation plus2 n := (S (S n)).

@@ -1084,10 +1084,12 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
           (* This deactivates the use of implicit arguments or scopes *)
 	  | GApp (f,args), Some n
 	      when List.length args >= n ->
-	      let args1, args2 = List.chop n args in
-              let subscopes, impls =
-                match DAst.get f with
+                (match DAst.get f with
                 | GRef (ref,us) ->
+                  (* Case of a notation with a ref at head *)
+                  (* We align on the ref and apply scope/impl *)
+                  (* info to extra arguments *)
+                  let args1, args2 = List.chop n args in
 	          let subscopes =
 		    try List.skipn n (find_arguments_scope ref)
                     with Failure _ -> [] in
@@ -1096,10 +1098,11 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
 		      select_impargs_size
 		        (List.length args) (implicits_of_global ref) in
 		    try List.skipn n impls with Failure _ -> [] in
-                  subscopes,impls
+                  DAst.make @@ GApp (f,args1), args2, subscopes,impls
                 | _ ->
-                  [], [] in
-              DAst.make @@ GApp (f,args1), args2, subscopes, impls
+                  (* Case of a notation with no ref at head *)
+                  (* We align on the size of arguments of the notation *)
+                  t, [], [], [])
 	  | GApp (f, args), None ->
             begin match DAst.get f with
             | GRef (ref,us) ->
