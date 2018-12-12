@@ -29,6 +29,7 @@ open Pattern
 open Notation
 open Detyping
 open Decl_kinds
+open Notation_term
 
 module NamedDecl = Context.Named.Declaration
 (*i*)
@@ -464,11 +465,9 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
 		substlist in
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
             let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
-              else if nb_to_drop = Some 0 then
-                (* indicates that notation is bound to some [@ref] *)
-                l2
-              else
-                let nb_to_drop = match nb_to_drop with Some nb_to_drop -> nb_to_drop | None -> 0 in
+              else match nb_to_drop with
+              | RefDeactivatingImpls | NotAppliedRef -> l2
+              | NAryApplication nb_to_drop ->
 		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
 		  |None -> raise No_match
@@ -489,11 +488,9 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
           subst in
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
       let l2' = if Constrintern.get_asymmetric_patterns () then l2
-        else if nb_to_drop = Some 0 then
-          (* indicates that notation is bound to some [@ref] *)
-          (assert (l1=[]); l2)
-        else
-          let nb_to_drop = match nb_to_drop with Some nb_to_drop -> nb_to_drop | None -> 0 in
+        else match nb_to_drop with
+        | RefDeactivatingImpls | NotAppliedRef -> l2
+        | NAryApplication nb_to_drop ->
 	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
 	    |None -> raise No_match
@@ -1077,12 +1074,9 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
         if is_inactive_rule keyrule then raise No_match;
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match DAst.get t ,n with
-          (* Convention: [Some 0] means a notation of the form @ref *)
-          (* This deactivates the use of implicit arguments or scopes *)
-          | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], [], []
-          | GApp (f,args), Some 0 -> DAst.make @@ GApp (f,[]), args, [], []
-          (* This deactivates the use of implicit arguments or scopes *)
-	  | GApp (f,args), Some n
+          | GRef (ref,us), RefDeactivatingImpls -> DAst.make @@ GApp (t,[]), [], [], []
+          | GApp (f,args), RefDeactivatingImpls -> DAst.make @@ GApp (f,[]), args, [], []
+          | GApp (f,args), NAryApplication n
 	      when List.length args >= n ->
                 (match DAst.get f with
                 | GRef (ref,us) ->
@@ -1098,23 +1092,13 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
 		      select_impargs_size
 		        (List.length args) (implicits_of_global ref) in
 		    try List.skipn n impls with Failure _ -> [] in
-                  DAst.make @@ GApp (f,args1), args2, subscopes,impls
+                  (if n = 0 then f else DAst.make @@ GApp (f,args1)), args2, subscopes,impls
                 | _ ->
                   (* Case of a notation with no ref at head *)
                   (* We align on the size of arguments of the notation *)
                   t, [], [], [])
-	  | GApp (f, args), None ->
-            begin match DAst.get f with
-            | GRef (ref,us) ->
-              (* The notation is a reference w/o @: we use impl/scope info *)
-	      let subscopes = find_arguments_scope ref in
-	      let impls =
-		  select_impargs_size
-		    (List.length args) (implicits_of_global ref) in
-	      f, args, subscopes, impls
-            | _ -> t, [], [], []
-            end
-          | _, None -> t, [], [], []
+          | GRef _, NAryApplication 0 -> t, [], [], []
+          | _, NotAppliedRef -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
         let terms,termlists,binders,binderlists =

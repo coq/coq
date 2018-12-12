@@ -184,8 +184,8 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of KerName.t
 
-type scoped_notation_rule_core = scope_name * notation * interpretation * int option
-type notation_rule_core = interp_rule * interpretation * int option
+type scoped_notation_rule_core = scope_name * notation * interpretation * notation_applicative_structure
+type notation_rule_core = interp_rule * interpretation * notation_applicative_structure
 type notation_rule = notation_rule_core * delimiters option * bool
 
 let interp_rule_compare r1 r2 = match r1, r2 with
@@ -462,15 +462,19 @@ let cases_pattern_key c = match DAst.get c with
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NApp (NRef ref,[]) -> RefKey(canonical_gr ref), RefDeactivatingImpls
+  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), NAryApplication (List.length args)
   | NList (_,_,NApp (NRef ref,args),_,_)
   | NBinderList (_,_,NApp (NRef ref,args),_,_) ->
-      RefKey (canonical_gr ref), Some (List.length args)
-  | NRef ref -> RefKey(canonical_gr ref), None
-  | NApp (_,args) -> Oth, Some (List.length args)
-  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, None
-  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, None
-  | _ -> Oth, None
+      RefKey (canonical_gr ref), NAryApplication (List.length args)
+  | NList (_,_,NRef ref,_,_)
+  | NBinderList (_,_,NRef ref,_,_) ->
+      RefKey (canonical_gr ref), NAryApplication 0
+  | NRef ref -> RefKey(canonical_gr ref), NAryApplication 0
+  | NApp (_,args) -> Oth, NAryApplication (List.length args)
+  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, NotAppliedRef
+  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, NotAppliedRef
+  | _ -> Oth, NotAppliedRef
 
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
@@ -1260,15 +1264,16 @@ let interp_notation ?loc ntn local_scopes =
     user_err ?loc 
     (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
-let less_args n n' = match n,n' with
-  | Some _, None -> true
-  | Some n, Some n' -> n < n'
-  | _, _ -> false
+let less_prioritary n n' = match n,n' with
+  | NAryApplication n, NAryApplication n' -> n < n'
+  | _, NAryApplication _ -> true
+  | RefDeactivatingImpls, _ -> true
+  | (NAryApplication _ | NotAppliedRef), _ -> false
 
 let rec insert_by_number_of_arguments ((_,_,n),_,_ as fullrule) = function
   | [] -> [fullrule]
   | ((_,_,n'),_,_ as x) :: rest as all ->
-     if less_args n n' then x :: insert_by_number_of_arguments fullrule rest
+     if less_prioritary n n' then x :: insert_by_number_of_arguments fullrule rest
      else fullrule :: all
 
 let rec append_by_number_of_arguments l l' =

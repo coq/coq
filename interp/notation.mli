@@ -224,7 +224,7 @@ val interp_notation : ?loc:Loc.t -> notation -> subscopes ->
 type notation_rule_core =
     interp_rule (* kind of notation *)
   * interpretation (* pattern associated to the notation *)
-  * int option (* number of expected arguments *)
+  * notation_applicative_structure (* structure of notation if applicative *)
 
 type notation_rule =
     notation_rule_core

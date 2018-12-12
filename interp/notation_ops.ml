@@ -1327,11 +1327,11 @@ let match_cases_pattern_list match_fun metas sigma rest x y iter termin revert =
 
 let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
  match DAst.get a1, a2 with
-  | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(None,[])
-  | PatVar Anonymous, NHole _ -> sigma,(None,[])
+  | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(NotAppliedRef,[])
+  | PatVar Anonymous, NHole _ -> sigma,(NotAppliedRef,[])
   | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
-      sigma,(None,l)
+      sigma,(NAryApplication 0,l)
   | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
       let l1 = try add_patterns_for_params_remove_local_defs r1 args1 with Not_found -> raise No_match in
@@ -1341,10 +1341,15 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
 	raise No_match
       else
 	let l1',more_args = Util.List.chop le2 l1 in
-        (List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(Some le2,more_args)
+        let k = if le2 = 0 then RefDeactivatingImpls else NAryApplication le2 in
+        (List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(k,more_args)
   | r1, NList (x,y,iter,termin,revert) ->
+      let k = match iter with
+        | NApp (NRef ref,args) -> NAryApplication (List.length args)
+        | NRef _ -> NAryApplication 0
+        | _ -> NotAppliedRef in
       (match_cases_pattern_list (match_cases_pattern_no_more_args)
-        metas (terms,termlists,(),()) a1 x y iter termin revert),(None,[])
+        metas (terms,termlists,(),()) a1 x y iter termin revert),(k,[])
   | _ -> raise No_match
 
 and match_cases_pattern_no_more_args metas sigma a1 a2 =
@@ -1355,7 +1360,7 @@ and match_cases_pattern_no_more_args metas sigma a1 a2 =
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
   | NRef (IndRef r2) when eq_ind ind r2 ->
-      sigma,(None,pats)
+      sigma,(NotAppliedRef,pats)
   | NApp (NRef (IndRef r2),l2)
       when eq_ind ind r2 ->
       let le2 = List.length l2 in
@@ -1364,7 +1369,8 @@ let match_ind_pattern metas sigma ind pats a2 =
 	raise No_match
       else
 	let l1',more_args = Util.List.chop le2 pats in
-        (List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(Some le2,more_args)
+        let k = if le2 = 0 then RefDeactivatingImpls else NAryApplication le2 in
+        (List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(k,more_args)
   |_ -> raise No_match
 
 let reorder_canonically_substitution terms termlists metas =

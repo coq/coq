@@ -84,6 +84,8 @@ F Z 0
      : Z * Z * (Z * Z) * (Z * Z) * (Z * bool * (Z * bool) * (Z * bool))
 fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|} : Z
      : (Z -> Z -> Z -> Z) -> Z
+{|@id; Z; 0|}
+     : Z
 Init.Nat.add
      : nat -> nat -> nat
 S
