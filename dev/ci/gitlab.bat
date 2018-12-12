@@ -54,12 +54,10 @@ call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -addon=extlib ^
   -addon=quickchick ^
   -addon=coquelicot ^
+  -addon=vst ^
+  -addon=aactactics ^
   -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit
-
-REM addons with build issues
-REM -addon=vst ^
-REM -addon=aactactics ^
 
 ECHO "Start Artifact Creation"
 TIME /T
