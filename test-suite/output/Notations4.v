@@ -193,3 +193,30 @@ End Mfoo.
 About Cn.
 
 End J.
+
+(* This addresses a wish expressed in #9180: proper support for
+   notations of generic forms of applications *)
+
+Module K.
+
+Parameter add : nat -> nat -> nat.
+Parameters x y : nat.
+Parameters z : nat * nat.
+
+Notation "f '.s' x" := (f (fst x)) (at level 10, format "f '.s'  x").
+Check add (fst z) y.
+Check add (fst z) (fst z).
+Check add x (fst z).
+
+Notation add1 x := (add (fst x)).
+Notation add2 x y := (add (fst x) (fst y)).
+Check add2 z z.
+
+Parameter g : nat -> nat -> nat -> nat.
+Notation gxy := (g x y).
+Check gxy.s z.
+
+Notation app f x := (f x).
+Check fun x y z => x z (y z).
+
+End K.

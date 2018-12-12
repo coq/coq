@@ -49,3 +49,22 @@ forall x : nat, x.+1 = x.+1
      : Prop
 Notation Cn := Foo.FooCn
 Expands to: Notation Top.J.Mfoo.Foo.Bar.Cn
+(add.s z) y
+     : nat
+(add.s z).s z
+     : nat
+(add x).s z
+     : nat
+add2 z z
+     : nat
+gxy.s z
+     : nat
+fun (x : forall (x : ?T) (x0 : ?T0), ?T1) (y : forall x0 : ?T, ?T0@{x:=x0})
+  (z : ?T) => app (app x z) (app y z)
+     : (forall (x : ?T) (x0 : ?T0), ?T1) ->
+       forall (y : forall x0 : ?T, ?T0@{x:=x0}) (z : ?T),
+       ?T1@{x:=z; x0:=app y z}
+where
+?T : [ |- Type]
+?T0 : [x : ?T |- Type]
+?T1 : [x : ?T  x0 : ?T0 |- Type]

@@ -184,7 +184,12 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of KerName.t
 
-type scoped_notation_rule_core = scope_name * notation * interpretation * notation_applicative_structure
+type key_rigidity =
+  | RigidHeadKey of notation_applicative_structure
+  | FlexHeadKey of int
+
+type scoped_notation_rule_core = scope_name * notation * interpretation * key_rigidity
+type notation_rule_core_with_rigidity = interp_rule * interpretation * key_rigidity
 type notation_rule_core = interp_rule * interpretation * notation_applicative_structure
 type notation_rule = notation_rule_core * delimiters option * bool
 
@@ -203,7 +208,7 @@ module InterpRuleSet = Set.Make(struct
 
 type uninterp_scope_elem =
   | UninterpScope of scope_name
-  | UninterpSingle of notation_rule_core
+  | UninterpSingle of notation_rule_core_with_rigidity
 
 let uninterp_scope_eq_weak s1 s2 = match s1, s2 with
 | UninterpScope s1, UninterpScope s2 -> String.equal s1 s2
@@ -394,7 +399,39 @@ let keymap_add key sc interp (scope_map,global_map) =
   | (NotationRule (None,_) | SynDefRule _), _, _ -> global_map in
   (scope_map, global_map)
 
-let keymap_extract istype keys sc map =
+(* We order the notations by number of arguments: for each arity come
+     first those with rigid arity, then those with a flexible arity
+     instantiable to the given arity; RefDeactivatingImpls] is 0-ary *)
+
+let arity_rule = function
+  | NAryApplication n -> n
+  | RefDeactivatingImpls | NotAppliedRef -> 0
+
+let add_depending_on_rigidity (rule,interp,rigidity) delim need_delim n l =
+  List.map_i (fun i (rigid,flex as x) ->
+    match rigidity with
+    | RigidHeadKey c ->
+      if i = arity_rule c then
+        let rule = (rule, interp, c) in
+        ((rule,delim,need_delim)::rigid,flex)
+      else x
+    | FlexHeadKey n' ->
+      if i >= n' then
+        let rule = (rule, interp, NAryApplication i) in
+        (rigid,(rule,delim,need_delim)::flex)
+      else x) 0 l
+
+let add_lonely (keyrule,_,_) seen =
+  match keyrule with
+  | NotationRule (None,ntn) -> ntn::seen
+  | SynDefRule _ | NotationRule (Some _,_) -> seen
+
+let is_seen (rule,_,_) seen =
+  match rule with
+  | NotationRule (sc,ntn) -> List.mem ntn seen
+  | _ -> false
+
+let keymap_extract_and_add n istype keys sc lonely_seen map rest =
   let keymap =
     try ScopeMap.find (Some sc) map
     with Not_found -> KeyMap.empty in
@@ -405,8 +442,16 @@ let keymap_extract istype keys sc map =
     else
       (* Pass the delimiter so that it can be used if ever the notation is masked *)
       (String.Map.find sc !scope_map).delimiters in
-  let add_scope rule = (rule,delim,false) in
-  List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys
+  let l = List.map_append (fun key -> try KeyMap.find key keymap with Not_found -> []) keys in
+  List.fold_right (fun rule ->
+      (* There is a case when we need to enforce a delimiter, it is
+         when there is a lonely notation which would be used prioritary
+         at parsing time and hide the given interpretation, as in:
+           Notation "# x" := (S x) (at level 20) : nat_scope.
+           Notation "# x" := (Some x).
+           Check fun x => (# x)%nat. *)
+      let needs_delim = is_seen rule lonely_seen in
+      add_depending_on_rigidity rule delim needs_delim n) l rest
 
 let find_with_delimiters istype = function
   | None ->
@@ -420,21 +465,22 @@ let find_with_delimiters istype = function
         | Some key -> Some (Some key)
         | None -> None
 
-let rec keymap_extract_remainder istype scope_seen = function
-  | [] -> []
-  | (sc,ntn,interp,c) :: l ->
-      if String.Set.mem sc scope_seen then keymap_extract_remainder istype scope_seen l
+let rec keymap_extract_remainder n istype scope_seen = function
+  | [] -> List.make (n+1) ([],[])
+  | (sc,ntn,interp,rigidity) :: l ->
+      if String.Set.mem sc scope_seen then keymap_extract_remainder n istype scope_seen l
       else
         match find_with_delimiters istype (Some sc) with
-        | None -> keymap_extract_remainder istype scope_seen l
+        | None -> keymap_extract_remainder n istype scope_seen l
         | Some delim ->
-           let rule = (NotationRule (Some sc, ntn), interp, c) in
-           (rule,delim,true) :: keymap_extract_remainder istype scope_seen l
+          let rule = NotationRule (Some sc, ntn) in
+          add_depending_on_rigidity (rule,interp,rigidity) delim true n
+            (keymap_extract_remainder n istype scope_seen l)
 
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table =
   ref ((ScopeMap.empty, KeyMap.empty) :
-       notation_rule_core list KeyMap.t ScopeMap.t *
+       notation_rule_core_with_rigidity list KeyMap.t ScopeMap.t *
        scoped_notation_rule_core list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
@@ -447,34 +493,37 @@ let glob_prim_constr_key c = match DAst.get c with
   | _ -> None
 
 let glob_constr_keys c = match DAst.get c with
-  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
-  | GApp (c, _) ->
+  | GRef (ref,_) -> 0, [RefKey (canonical_gr ref)]
+  | GApp (c, args) ->
+    let n = List.length args in
     begin match DAst.get c with
-    | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
-    | _ -> [Oth]
+    | GRef (ref, _) -> n, [RefKey (canonical_gr ref); Oth]
+    | _ -> n, [Oth]
     end
-  | GLambda _ -> [LambdaKey]
-  | GProd _ -> [ProdKey]
-  | _ -> [Oth]
+  | GLambda _ -> 0, [LambdaKey]
+  | GProd _ -> 0, [ProdKey]
+  | _ -> 0, [Oth]
 
 let cases_pattern_key c = match DAst.get c with
-  | PatCstr (ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
-  | _ -> Oth
+  | PatCstr ((ind,_ as ref),args,_) ->
+    let n = Inductiveops.inductive_nparamdecls ind + List.length args in
+    n, RefKey (canonical_gr (ConstructRef ref))
+  | _ -> 0, Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
-  | NApp (NRef ref,[]) -> RefKey(canonical_gr ref), RefDeactivatingImpls
-  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), NAryApplication (List.length args)
+  | NApp (NRef ref,[]) -> RefKey(canonical_gr ref), RigidHeadKey RefDeactivatingImpls
+  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), RigidHeadKey (NAryApplication (List.length args))
   | NList (_,_,NApp (NRef ref,args),_,_)
   | NBinderList (_,_,NApp (NRef ref,args),_,_) ->
-      RefKey (canonical_gr ref), NAryApplication (List.length args)
+      RefKey (canonical_gr ref), RigidHeadKey (NAryApplication (List.length args))
   | NList (_,_,NRef ref,_,_)
   | NBinderList (_,_,NRef ref,_,_) ->
-      RefKey (canonical_gr ref), NAryApplication 0
-  | NRef ref -> RefKey(canonical_gr ref), NAryApplication 0
-  | NApp (_,args) -> Oth, NAryApplication (List.length args)
-  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, NotAppliedRef
-  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, NotAppliedRef
-  | _ -> Oth, NotAppliedRef
+      RefKey (canonical_gr ref), RigidHeadKey (NAryApplication 0)
+  | NRef ref -> RefKey(canonical_gr ref), RigidHeadKey (NAryApplication 0)
+  | NApp (NVar _,args) -> Oth, FlexHeadKey (List.length args)
+  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, RigidHeadKey NotAppliedRef
+  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, RigidHeadKey NotAppliedRef
+  | _ -> Oth, RigidHeadKey NotAppliedRef
 
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
@@ -1182,10 +1231,10 @@ let uninterp_scope_to_add pat n = function
   | NotationRule (Some sc,_) -> None
 
 let declare_uninterpretation rule (metas,c as pat) =
-  let (key,n) = notation_constr_key c in
+  let (key,rigidity) = notation_constr_key c in
   let sc = scope_of_rule rule in
-  notations_key_table := keymap_add key sc (rule,pat,n) !notations_key_table;
-  uninterp_scope_stack := Option.List.cons (uninterp_scope_to_add pat n rule) !uninterp_scope_stack
+  notations_key_table := keymap_add key sc (rule,pat,rigidity) !notations_key_table;
+  uninterp_scope_stack := Option.List.cons (uninterp_scope_to_add pat rigidity rule) !uninterp_scope_stack
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
@@ -1264,36 +1313,27 @@ let interp_notation ?loc ntn local_scopes =
     user_err ?loc 
     (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
-let less_prioritary n n' = match n,n' with
-  | NAryApplication n, NAryApplication n' -> n < n'
-  | _, NAryApplication _ -> true
-  | RefDeactivatingImpls, _ -> true
-  | (NAryApplication _ | NotAppliedRef), _ -> false
+let append_rules =
+  (* We give priority:
+     - to rules with a rigid head over generic applicative rules
+     - to rules which match the largest subterm (hence fold_left) *)
+  List.fold_left (fun rest (rigid,flex) -> rigid@flex@rest) []
 
-let rec insert_by_number_of_arguments ((_,_,n),_,_ as fullrule) = function
-  | [] -> [fullrule]
-  | ((_,_,n'),_,_ as x) :: rest as all ->
-     if less_prioritary n n' then x :: insert_by_number_of_arguments fullrule rest
-     else fullrule :: all
-
-let rec append_by_number_of_arguments l l' =
-  match l with
-  | [] -> l'
-  | x :: l -> insert_by_number_of_arguments x (append_by_number_of_arguments l l')
-
-let extract_notations (istype,scopes) keys =
+let extract_notations (istype,scopes) (n,keys) =
   if keys == [] then [] (* shortcut *) else
   let scope_map, global_map = !notations_key_table in
-  let rec aux scopes seen =
+  let rec aux scopes scope_seen lonely_seen =
   match scopes with
   | UninterpScope sc :: scopes ->
-      append_by_number_of_arguments (keymap_extract istype keys sc scope_map) (aux scopes (String.Set.add sc seen))
+      keymap_extract_and_add n istype keys sc lonely_seen scope_map
+        (aux scopes (String.Set.add sc scope_seen) lonely_seen)
   | UninterpSingle rule :: scopes ->
-      insert_by_number_of_arguments (rule,None,false) (aux scopes seen)
+      add_depending_on_rigidity rule None false n
+        (aux scopes scope_seen (add_lonely rule lonely_seen))
   | [] ->
       let find key = try KeyMap.find key global_map with Not_found -> [] in
-      keymap_extract_remainder istype seen (List.flatten (List.map find keys))
-  in aux scopes String.Set.empty
+      keymap_extract_remainder n istype scope_seen (List.flatten (List.map find keys))
+  in append_rules (aux scopes String.Set.empty [])
 
 let uninterp_notations scopes c =
   let scopes = make_current_uninterp_scopes scopes in
@@ -1301,11 +1341,12 @@ let uninterp_notations scopes c =
 
 let uninterp_cases_pattern_notations scopes c =
   let scopes = make_current_uninterp_scopes scopes in
-  extract_notations scopes [cases_pattern_key c]
+  let n, key = cases_pattern_key c in
+  extract_notations scopes (n,[key])
 
-let uninterp_ind_pattern_notations scopes ind =
+let uninterp_ind_pattern_notations scopes ind args =
   let scopes = make_current_uninterp_scopes scopes in
-  extract_notations scopes [RefKey (canonical_gr (IndRef ind))]
+  extract_notations scopes (List.length args,[RefKey (canonical_gr (IndRef ind))])
 
 (* We support coercions from a custom entry at some level to an entry
    at some level (possibly the same), and from and to the constr entry. E.g.:

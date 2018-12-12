@@ -49,6 +49,9 @@ Notations
 - New command `String Notation` to register string syntax for custom
   inductive types.
 
+- Proper support for notations of generic applications (i.e. with
+  flexible head, as in "Notation app f x := (f x).")
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)

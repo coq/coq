@@ -234,7 +234,7 @@ type notation_rule =
 (** Return the possible notations for a given term *)
 val uninterp_notations : subscopes -> 'a glob_constr_g -> notation_rule list
 val uninterp_cases_pattern_notations : subscopes -> 'a cases_pattern_g -> notation_rule list
-val uninterp_ind_pattern_notations : subscopes -> inductive -> notation_rule list
+val uninterp_ind_pattern_notations : subscopes -> inductive -> 'a cases_pattern_g list -> notation_rule list
 
 (*
 (** Test if a notation is available in the scopes 
