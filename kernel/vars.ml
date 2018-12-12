@@ -295,6 +295,11 @@ let subst_instance_constr subst c =
     in
     aux c
 
+let univ_instantiate_constr u c =
+  let open Univ in
+  assert (Int.equal (Instance.length u) (AUContext.size c.univ_abstracted_binder));
+  subst_instance_constr u c.univ_abstracted_value
+
 (* let substkey = CProfile.declare_profile "subst_instance_constr";; *)
 (* let subst_instance_constr inst c = CProfile.profile2 substkey subst_instance_constr inst c;; *)
 

@@ -403,7 +403,8 @@ let inline_delta_resolver env inl mp mbid mtb delta =
 	    | Def body ->
 	      let constr = Mod_subst.force_constr body in
               let ctx = Declareops.constant_polymorphic_context constant in
-              add_inline_delta_resolver kn (lev, Some (ctx, constr)) l
+              let constr = Univ.{univ_abstracted_value=constr; univ_abstracted_binder=ctx} in
+              add_inline_delta_resolver kn (lev, Some constr) l
 	with Not_found ->
 	  error_no_such_label_sub (Constant.label con)
 	    (ModPath.to_string (Constant.modpath con))

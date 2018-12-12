@@ -1063,12 +1063,12 @@ let cache_autohint (kn, obj) =
 
 let subst_autohint (subst, obj) =
   let subst_key gr =
-    let (lab'', elab') = subst_global subst gr in
-    let elab' = EConstr.of_constr elab' in
-    let gr' =
-      (try head_constr_bound Evd.empty elab'
-       with Bound -> lab'')
-    in if gr' == gr then gr else gr'
+    let (gr', t) = subst_global subst gr in
+    match t with
+    | None -> gr'
+    | Some t ->
+      (try head_constr_bound Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)
+       with Bound -> gr')
   in
   let subst_hint (k,data as hint) =
     let k' = Option.Smart.map subst_key k in

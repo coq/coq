@@ -948,10 +948,13 @@ let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
 let rec subst_glob_constr subst = DAst.map (function
   | GRef (ref,u) as raw ->
     let ref',t = subst_global subst ref in
-    if ref' == ref then raw else
-      let env = Global.env () in
-      let evd = Evd.from_env env in
-      DAst.get (detype Now false Id.Set.empty env evd (EConstr.of_constr t))
+    if ref' == ref then raw else (match t with
+        | None -> GRef (ref', u)
+        | Some t ->
+          let env = Global.env () in
+          let evd = Evd.from_env env in
+          let t = t.Univ.univ_abstracted_value in (* XXX This seems dangerous *)
+          DAst.get (detype Now false Id.Set.empty env evd (EConstr.of_constr t)))
 
   | GSort _
   | GVar _

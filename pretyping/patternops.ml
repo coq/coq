@@ -279,10 +279,12 @@ let rec subst_pattern subst pat =
   match pat with
   | PRef ref ->
     let ref',t = subst_global subst ref in
-    if ref' == ref then pat else
-      let env = Global.env () in
-      let evd = Evd.from_env env in
-      pattern_of_constr env evd t
+    if ref' == ref then pat else (match t with
+        | None -> PRef ref'
+        | Some t ->
+          let env = Global.env () in
+          let evd = Evd.from_env env in
+          pattern_of_constr env evd t.Univ.univ_abstracted_value)
   | PVar _
   | PEvar _
   | PRel _ -> pat

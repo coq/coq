@@ -1361,7 +1361,7 @@ type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
-(* Sorts and sort family *)
+(** Minimalistic constr printer, typically for debugging *)
 
 let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
   let open Pp in
@@ -1376,8 +1376,6 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
 let pr_puniverses p u =
   if Univ.Instance.is_empty u then p
   else Pp.(p ++ str"(*" ++ Univ.Instance.pr Univ.Level.pr u ++ str"*)")
-
-(* Minimalistic constr printer, typically for debugging *)
 
 let rec debug_print c =
   let open Pp in
