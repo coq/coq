@@ -3800,7 +3800,7 @@ Setting implicit automation tactics
 
       .. example::
 
-         .. coqtop:: all
+         .. coqtop:: reset all
 
             Parameter quo : nat -> forall n:nat, n<>0 -> nat.
             Notation "x // y" := (quo x y _) (at level 40).
