@@ -168,8 +168,17 @@ Fail Notation "( x , y , .. , z )" := (pair .. (pair (pair y z) x) .. x).
 (**********************************************************************)
 (* Check preservation of scopes at printing time *)
 
-Notation SUM := sum.
+Module sum.
+
+Notation SUM a b := (sum a b).
 Check SUM (nat*nat) nat.
+
+  (* Alternative example which does not collide with the notation + for sum *)
+Parameter sum' : Type -> Type -> Type.
+Notation SUM' := sum'.
+Check SUM' (nat*nat) nat.
+
+End sum.
 
 (**********************************************************************)
 (* Check preservation of implicit arguments at printing time *)
@@ -266,9 +275,11 @@ Notation NONE2 := (@None _).
 Notation SOME2 := (@Some _).     
 Check (fun x => match x with SOME2 x => x | NONE2 => 0 end).
 
-Notation "a :'" := (cons a) (at level 12).
-
-Check (fun x => match x with | nil => NONE | h :' t => SOME3 _ t end).
+Module E.
+Inductive L := C : nat -> nat -> L.
+Notation "a :'" := (C a) (at level 12).
+Check (fun x => match x with h :' t => t end).
+End E.
 
 (* Check correct matching of "Type" in notations. Of course the
    notation denotes a term that will be reinterpreted with a different

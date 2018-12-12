@@ -1260,13 +1260,31 @@ let interp_notation ?loc ntn local_scopes =
     user_err ?loc 
     (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
+let less_args n n' = match n,n' with
+  | Some _, None -> true
+  | Some n, Some n' -> n < n'
+  | _, _ -> false
+
+let rec insert_by_number_of_arguments ((_,_,n),_,_ as fullrule) = function
+  | [] -> [fullrule]
+  | ((_,_,n'),_,_ as x) :: rest as all ->
+     if less_args n n' then x :: insert_by_number_of_arguments fullrule rest
+     else fullrule :: all
+
+let rec append_by_number_of_arguments l l' =
+  match l with
+  | [] -> l'
+  | x :: l -> insert_by_number_of_arguments x (append_by_number_of_arguments l l')
+
 let extract_notations (istype,scopes) keys =
   if keys == [] then [] (* shortcut *) else
   let scope_map, global_map = !notations_key_table in
   let rec aux scopes seen =
   match scopes with
-  | UninterpScope sc :: scopes -> keymap_extract istype keys sc scope_map @ aux scopes (String.Set.add sc seen)
-  | UninterpSingle rule :: scopes -> (rule,None,false) :: aux scopes seen
+  | UninterpScope sc :: scopes ->
+      append_by_number_of_arguments (keymap_extract istype keys sc scope_map) (aux scopes (String.Set.add sc seen))
+  | UninterpSingle rule :: scopes ->
+      insert_by_number_of_arguments (rule,None,false) (aux scopes seen)
   | [] ->
       let find key = try KeyMap.find key global_map with Not_found -> [] in
       keymap_extract_remainder istype seen (List.flatten (List.map find keys))

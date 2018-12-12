@@ -66,6 +66,8 @@ The command has indeed failed with message:
 Both ends of the recursive pattern are the same.
 SUM (nat * nat) nat
      : Set
+SUM' (nat * nat) nat
+     : Type
 FST (0; 1)
      : Z
 Nil
@@ -113,14 +115,10 @@ fun x : option Z => match x with
                     | NONE2 => 0
                     end
      : option Z -> Z
-fun x : list ?T => match x with
-                   | NIL => NONE2
-                   | (_ :') t => SOME2 t
-                   end
-     : list ?T -> option (list ?T)
-where
-?T : [x : list ?T  x1 : list ?T  x0 := x1 : list ?T |- Type] (x, x1,
-     x0 cannot be used)
+fun x : L => match x with
+             | (_ :') t => t
+             end
+     : L -> nat
 s
      : s
 10

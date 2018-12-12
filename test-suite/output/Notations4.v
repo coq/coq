@@ -165,6 +165,18 @@ Check ##.
 
 End H.
 
+(* This addresses #9180: give preference to notations which matches
+   the largest part of an applicative node *)
+
+Module I.
+
+Notation succn := (Datatypes.S).
+Notation "n .+1" := (succn n) (at level 2, left associativity,
+  format "n .+1") : nat_scope.
+Check forall x : nat, x.+1 = x.+1.
+
+End I.
+
 (* Fixing a bug reported by G. Gonthier in #9207 *)
 
 Module J.
