@@ -2715,7 +2715,7 @@ let finish ~doc =
   ); doc
 
 let wait ~doc =
-  let doc = finish ~doc in
+  let doc = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
   Slaves.wait_all_done ();
   VCS.print ();
   doc
@@ -2734,7 +2734,7 @@ let join ~doc =
   stm_prerr_endline (fun () -> "Joining the environment");
   Global.join_safe_environment ();
   stm_prerr_endline (fun () -> "Joining Admitted proofs");
-  join_admitted_proofs (VCS.get_branch_pos (VCS.current_branch ()));
+  join_admitted_proofs (VCS.get_branch_pos VCS.Branch.master);
   VCS.print ();
   doc
 
