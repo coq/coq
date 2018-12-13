@@ -14,14 +14,15 @@ type atom_env=
     {mutable next:int;
      mutable env:(Constr.t*int) list}
 
-val make_form : atom_env ->
-    Goal.goal Evd.sigma -> EConstr.types -> Proof_search.form
+val make_form
+  :  Environ.env -> Evd.evar_map -> atom_env
+  -> EConstr.types -> Proof_search.form
 
-val make_hyps :
-    atom_env ->
-    Goal.goal Evd.sigma ->
-    EConstr.types list ->
-    EConstr.named_context ->
-    (Names.Id.t * Proof_search.form) list
+val make_hyps
+  :  Environ.env -> Evd.evar_map
+  -> atom_env
+  -> EConstr.types list
+  -> EConstr.named_context
+  -> (Names.Id.t * Proof_search.form) list
 
-val rtauto_tac : Tacmach.tactic
+val rtauto_tac : unit Proofview.tactic
