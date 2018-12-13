@@ -3425,7 +3425,9 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
    .. cmdv:: Hint @hint_definition
 
-      No database name is given: the hint is registered in the core database.
+      No database name is given: the hint is registered in the ``core`` database.
+
+      .. deprecated:: 8.10
 
    .. cmdv:: Local Hint @hint_definition : {+ @ident}
 
