@@ -19,3 +19,6 @@ val declare_syntactic_definition : bool -> Id.t ->
   Flags.compat_version option -> syndef_interpretation -> unit
 
 val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> syndef_interpretation
+
+val search_filtered_syntactic_definition : ?loc:Loc.t ->
+  (syndef_interpretation -> 'a option) -> KerName.t -> 'a option

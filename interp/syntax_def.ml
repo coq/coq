@@ -105,3 +105,10 @@ let search_syntactic_definition ?loc kn =
   let def = out_pat pat in
   verbose_compat ?loc kn def v;
   def
+
+let search_filtered_syntactic_definition ?loc filter kn =
+  let pat,v = KNmap.find kn !syntax_table in
+  let def = out_pat pat in
+  let res = filter def in
+  (match res with Some _ -> verbose_compat ?loc kn def v | None -> ());
+  res

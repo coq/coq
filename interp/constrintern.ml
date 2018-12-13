@@ -1527,8 +1527,8 @@ let drop_notations_pattern looked_for genv =
     try
       match Nametab.locate_extended qid with
       | SynDef sp ->
-	let (vars,a) = Syntax_def.search_syntactic_definition sp in
-	(match a with
+        let filter (vars,a) =
+        try match a with
 	| NRef g ->
           (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
 	  test_kind top g;
@@ -1549,7 +1549,9 @@ let drop_notations_pattern looked_for genv =
               let idspl1 = List.map (in_not false qid.loc scopes (subst, Id.Map.empty) []) args in
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc scopes) argscs pats2)
-	| _ -> raise Not_found)
+        | _ -> raise Not_found
+        with Not_found -> None in
+        Syntax_def.search_filtered_syntactic_definition filter sp
       | TrueGlobal g ->
 	  test_kind top g;
           Dumpglob.add_glob ?loc:qid.loc g;
