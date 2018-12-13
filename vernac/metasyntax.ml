@@ -33,11 +33,9 @@ open Nameops
 let cache_token (_,s) = CLexer.add_keyword s
 
 let inToken : string -> obj =
-  declare_object {(default_object "TOKEN") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_token o);
-       cache_function = cache_token;
-       subst_function = Libobject.ident_subst_function;
-       classify_function = (fun o -> Substitute o)}
+  declare_object @@ global_object_nodischarge "TOKEN"
+    ~cache:cache_token
+    ~subst:(Some Libobject.ident_subst_function)
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 

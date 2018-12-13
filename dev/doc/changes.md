@@ -52,6 +52,26 @@ Macros:
   where `atts : Vernacexpr.vernac_flags` was bound in the expression
   and had to be manually parsed.
 
+Libobject
+
+- A Higher-level API for objects with fixed scope was introduced. It supports the following kinds of objects:
+
+  * Local objects, meaning that objects cannot be imported from outside.
+  * Global objects, meaning that they can be imported (by importing the module that contains the object).
+  * Superglobal objects, meaning that objects survive to closing a module, and
+    are imported when the file which contains them is Required (even without
+    Import).
+  * Objects that survive section closing or don't (see `nodischarge` variants,
+    however we discourage defining such objects)
+
+  This API is made of the following functions:
+  * `Libobject.local_object`
+  * `Libobject.local_object_nodischarge`
+  * `Libobject.global_object`
+  * `Libobject.global_object_nodischarge`
+  * `Libobject.superglobal_object`
+  * `Libobject.superglobal_object_nodischarge`
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API

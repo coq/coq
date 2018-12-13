@@ -69,11 +69,9 @@ let subst_reduction_effect (subst,(con,funkey)) =
   (subst_constant subst con,funkey)
 
 let inReductionEffect : Constant.t * string -> obj =
-  declare_object {(default_object "REDUCTION-EFFECT") with
-    cache_function = cache_reduction_effect;
-    open_function = (fun i o -> if Int.equal i 1 then cache_reduction_effect o);
-    subst_function = subst_reduction_effect;
-    classify_function = (fun o -> Substitute o) }
+  declare_object @@ global_object_nodischarge "REDUCTION-EFFECT"
+    ~cache:cache_reduction_effect
+    ~subst:(Some subst_reduction_effect)
 
 let declare_reduction_effect funkey f =
   if String.Map.mem funkey !effect_table then

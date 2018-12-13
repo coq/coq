@@ -59,12 +59,10 @@ let discharge_scheme (_,(kind,l)) =
   Some (kind, l)
 
 let inScheme : string * (inductive * Constant.t) array -> obj =
-  declare_object {(default_object "SCHEME") with
-                    cache_function = cache_scheme;
-                    load_function = (fun _ -> cache_scheme);
-                    subst_function = subst_scheme;
-		    classify_function = (fun obj -> Substitute obj);
-		    discharge_function = discharge_scheme}
+  declare_object @@ superglobal_object "SCHEME"
+    ~cache:cache_scheme
+    ~subst:(Some subst_scheme)
+    ~discharge:discharge_scheme
 
 (**********************************************************************)
 (* The table of scheme building functions *)

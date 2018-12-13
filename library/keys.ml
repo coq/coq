@@ -100,18 +100,13 @@ let discharge_keys (_,(k,k')) =
   | Some x, Some y -> Some (x, y)
   | _ -> None
 
-let rebuild_keys (ref,ref') = (ref, ref')
-
 type key_obj = key * key
 
 let inKeys : key_obj -> obj =
-  declare_object {(default_object "KEYS") with
-    cache_function = cache_keys;
-    load_function = load_keys;
-    subst_function = subst_keys;
-    classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_keys;
-    rebuild_function = rebuild_keys }
+  declare_object @@ superglobal_object "KEYS"
+    ~cache:cache_keys
+    ~subst:(Some subst_keys)
+    ~discharge:discharge_keys
 
 let declare_equiv_keys ref ref' =
   Lib.add_anonymous_leaf (inKeys (ref,ref'))
