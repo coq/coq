@@ -1,0 +1,20 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Error resiliency + async proofs off
+# coq-prog-args: ("-async-proofs" "off" "-async-proofs-command-error-resilience" "on")
+#
+
+ADD { Lemma x : True. }
+ADD { Proof using. }
+ADD here { trivial. }
+ADD { fail. }
+ADD { Qed. }
+ADD { Lemma y : True. }
+ADD { Proof using. }
+ADD { trivial. }
+ADD { Qed. }
+WAIT
+FAILJOIN
+ASSERT TIP here
+ABORT

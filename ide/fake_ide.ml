@@ -11,7 +11,7 @@
 (** Fake_ide : Simulate a [coqide] talking to a [coqidetop] *)
 
 let error s =
-  prerr_endline ("fake_id: error: "^s);
+  prerr_endline ("fake_ide: error: "^s);
   exit 1
 
 let pperr_endline pp = Format.eprintf "@[%a@]\n%!" Pp.pp_with pp
@@ -22,7 +22,7 @@ type coqtop = {
 }
 
 let print_error msg =
-  Format.eprintf "fake_id: error: @[%a@]\n%!" Pp.pp_with msg
+  Format.eprintf "fake_ide: error: @[%a@]\n%!" Pp.pp_with msg
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -312,6 +312,8 @@ let main =
         Array.of_list (def_args @ ct), f
     | _ -> usage () in
   let inc = if input_file = "-" then stdin else open_in input_file in
+  prerr_endline ("Running: "^idetop_name^" "^
+                   (String.concat " " (Array.to_list coqtop_args)));
   let coq =
     let _p, cin, cout = Coqide.spawn idetop_name coqtop_args in
     let ip = Xml_parser.make (Xml_parser.SChannel cin) in
