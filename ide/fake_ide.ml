@@ -257,10 +257,15 @@ let eval_print l coq =
       eval_call (wait ()) coq
   | [ Tok(_,"JOIN") ] ->
       eval_call (status true) coq
+  | [ Tok(_,"FAILJOIN") ] ->
+      after_fail coq (base_eval_call ~fail:false (status true) coq)
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"
       else prerr_endline "Good tip"
+  | [ Tok(_,"ABORT") ] ->
+      prerr_endline "Quitting fake_ide";
+      exit 0
   | Tok("#[^\n]*",_) :: _  -> ()
   | _ -> error "syntax error"
 
@@ -276,6 +281,8 @@ let grammar =
     ; Seq [Item (eat_rex "JOIN")]
     ; Seq [Item (eat_rex "GOALS")]
     ; Seq [Item (eat_rex "FAILGOALS")]
+    ; Seq [Item (eat_rex "FAILJOIN")]
+    ; Seq [Item (eat_rex "ABORT")]
     ; Seq [Item (eat_rex "ASSERT"); Item (eat_rex "TIP"); Item eat_id ]
     ; Item (eat_rex "#[^\n]*")
     ]
