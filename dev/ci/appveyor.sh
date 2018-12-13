@@ -13,4 +13,4 @@ eval "$(opam env)"
 opam install -y num ocamlfind ounit
 
 # Full regular Coq Build
-cd "$APPVEYOR_BUILD_FOLDER" && ./configure -local && make && make byte && make -C test-suite all INTERACTIVE= # && make validate
+cd "$APPVEYOR_BUILD_FOLDER" && ./configure -local && make && make byte # && make -C test-suite all INTERACTIVE= # && make validate
