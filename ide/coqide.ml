@@ -1004,8 +1004,6 @@ let build_ui () =
     item "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP
       ~accel:"<Shift>F3"
       ~callback:(cb_on_current_term (fun t -> t.finder#find_backward ()));
-    item "Complete Word" ~label:"Complete Word" ~accel:"<Ctrl>slash"
-      ~callback:(fun _ -> ());
     item "External editor" ~label:"External editor" ~stock:`EDIT
       ~callback:External.editor;
     item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
