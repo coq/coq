@@ -56,7 +56,9 @@ let stm_allow_nested_proofs_option_name = ["Nested";"Proofs";"Allowed"]
 
 let options_affecting_stm_scheduling =
   [ Attributes.universe_polymorphism_option_name;
-    stm_allow_nested_proofs_option_name ]
+    stm_allow_nested_proofs_option_name;
+    Proof_global.proof_mode_opt_name;
+  ]
 
 let classify_vernac e =
   let static_classifier ~poly e = match e with
