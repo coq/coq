@@ -198,20 +198,6 @@ class CoqObject(ObjectDescription):
             self._add_index_entry(name, target)
             return target
 
-    def _warn_if_undocumented(self):
-        document = self.state.document
-        config = document.settings.env.config
-        report = config.report_undocumented_coq_objects
-        if report and not self.content and "undocumented" not in self.options:
-            # This is annoyingly convoluted, but we don't want to raise warnings
-            # or interrupt the generation of the current node.  For more details
-            # see https://github.com/sphinx-doc/sphinx/issues/4976.
-            msg = 'No contents in directive {}'.format(self.name)
-            node = document.reporter.info(msg, line=self.lineno)
-            getLogger(__name__).info(node.astext())
-            if report == "warning":
-                raise self.warning(msg)
-
     def _prepare_names(self):
         sigs = self.get_signatures()
         names = self.options.get("name")
@@ -226,16 +212,35 @@ class CoqObject(ObjectDescription):
             self._names = dict(zip(sigs, names))
 
     def run(self):
-        self._warn_if_undocumented()
         self._prepare_names()
         return super().run()
 
-class PlainObject(CoqObject):
+class DocumentableObject(CoqObject):
+
+    def _warn_if_undocumented(self):
+        document = self.state.document
+        config = document.settings.env.config
+        report = config.report_undocumented_coq_objects
+        if report and not self.content and "undocumented" not in self.options:
+            # This is annoyingly convoluted, but we don't want to raise warnings
+            # or interrupt the generation of the current node.  For more details
+            # see https://github.com/sphinx-doc/sphinx/issues/4976.
+            msg = 'No contents in directive {}'.format(self.name)
+            node = document.reporter.info(msg, line=self.lineno)
+            getLogger(__name__).info(node.astext())
+            if report == "warning":
+                raise self.warning(msg)
+
+    def run(self):
+        self._warn_if_undocumented()
+        return super().run()
+
+class PlainObject(DocumentableObject):
     """A base class for objects whose signatures should be rendered literally."""
     def _render_signature(self, signature, signode):
         signode += addnodes.desc_name(signature, signature)
 
-class NotationObject(CoqObject):
+class NotationObject(DocumentableObject):
     """A base class for objects whose signatures should be rendered as nested boxes.
 
     Objects that inherit from this class can use the notation grammar (“{+ …}”,
