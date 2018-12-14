@@ -260,6 +260,18 @@ windows32:
   except:
     - /^pr-.*$/
 
+lint:
+  image: docker:git
+  stage: test
+  script:
+    - apk add bash
+    - dev/lint-repository.sh
+  dependencies: []
+  before_script: []
+  variables:
+    # we need an unknown amount of history for per-commit linting
+    GIT_DEPTH: ""
+
 pkg:opam:
   stage: test
   # OPAM will build out-of-tree so no point in importing artifacts

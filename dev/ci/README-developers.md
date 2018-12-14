@@ -10,12 +10,14 @@ We are currently running tests on the following platforms:
 - GitLab CI is the main CI platform. It tests the compilation of Coq,
   of the documentation, and of CoqIDE on Linux with several versions
   of OCaml and with warnings as errors; it runs the test-suite and
-  tests the compilation of several external developments.
+  tests the compilation of several external developments. It also runs
+  a linter that checks whitespace discipline. A [pre-commit
+  hook](../tools/pre-commit) is automatically installed by
+  `./configure`. It should allow complying with this discipline
+  without pain.
 
 - Travis CI is used to test the compilation of Coq and run the test-suite on
-  macOS. It also runs a linter that checks whitespace discipline. A
-  [pre-commit hook](../tools/pre-commit) is automatically installed by
-  `./configure`. It should allow complying with this discipline without pain.
+  macOS.
 
 - AppVeyor is used to test the compilation of Coq and run the test-suite on
   Windows.
