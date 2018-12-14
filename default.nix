@@ -23,8 +23,8 @@
 
 { pkgs ?
     (import (fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/69522a0acf8e840e8b6ac0a9752a034ab74eb3c0.tar.gz";
-      sha256 = "12k80gd4lkw9h9y1szvmh0jmh055g3b6wnphmx4ab1qdwlfaylnx";
+      url = "https://github.com/NixOS/nixpkgs/archive/958a6c6dd39b0d6628e1408e798a8f1308f2f3e1.tar.gz";
+      sha256 = "0vs6k4jn0rbdfzaxmh3xh64q213326680i9g3cjgr7l9y6h6m5sy";
     }) {})
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_06
 , buildIde ? true

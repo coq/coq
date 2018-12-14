@@ -1,0 +1,39 @@
+synopsis: "The Coq Proof Assistant --- Reference Manual"
+description: """
+Coq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+This package provides the Coq Reference Manual.
+"""
+opam-version: "2.0"
+maintainer: "The Coq development team <coqdev@inria.fr>"
+authors: "The Coq development team, INRIA, CNRS, and contributors."
+homepage: "https://coq.inria.fr/"
+bug-reports: "https://github.com/coq/coq/issues"
+dev-repo: "https://github.com/coq/coq.git"
+license: "Open Publication License"
+
+depends: [
+  "dune"      { build }
+  "coq"       { build }
+]
+
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+]
+
+build: [
+  [ "dune" "build" "@refman" "-j" jobs ]
+]
+
+# Would be better to have a *-conf package?
+depexts: [
+  [ "sphinx" ]
+  [ "sphinx_rtd_theme" ]
+  [ "beautifulsoup4" ]
+  [ "antlr4-python3-runtime"]
+  [ "pexpect" ]
+  [ "sphinxcontrib-bibtex" ]
+]
