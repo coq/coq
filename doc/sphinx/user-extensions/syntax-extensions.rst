@@ -70,7 +70,7 @@ associativity rules have to be given.
 
    The right-hand side of a notation is interpreted at the time the notation is
    given. In particular, disambiguation of constants, :ref:`implicit arguments
-   <ImplicitArguments>`, :ref:`coercions <Coercions>`, etc. are resolved at the
+   <ImplicitArguments>` and other notations are resolved at the
    time of the declaration of the notation.
 
 Precedences and associativity
