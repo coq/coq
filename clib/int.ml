@@ -41,6 +41,13 @@ struct
     if i < k then find i l
     else if i = k then v
     else find i r
+
+  let rec find_opt i s = match map_prj s with
+  | MEmpty -> None
+  | MNode (l, k, v, r, h) ->
+    if i < k then find_opt i l
+    else if i = k then Some v
+    else find_opt i r
 end
 
 module List = struct
