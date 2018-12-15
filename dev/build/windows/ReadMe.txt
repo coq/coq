@@ -369,8 +369,6 @@ Text files patched by the installer:
 
 Text files containing the install folder path after install:
 
-./bin/mkcamlp5:LIB=D:/bin/coq64_buildtest_reloc_ocaml20/libocaml/camlp5
-./bin/mkcamlp5.opt:LIB=D:/bin/coq64_buildtest_reloc_ocaml20/libocaml/camlp5
 ./libocaml/Makefile.config:PREFIX=D:/bin/coq64_buildtest_reloc_ocaml20
 ./libocaml/Makefile.config:LIBDIR=D:/bin/coq64_buildtest_reloc_ocaml20/libocaml
 ./libocaml/site-lib/findlib/Makefile.config:OCAML_CORE_BIN=/cygdrive/d/bin/coq64_buildtest_reloc_ocaml20/bin
@@ -382,8 +380,6 @@ Text files containing the install folder path after install:
 ./libocaml/topfind:  Topdirs.dir_load Format.err_formatter "D:\\bin\\coq64_buildtest_reloc_ocaml20\\libocaml\\site-lib/findlib/findlib_top.cma";
 ./libocaml/topfind:(* #load "D:\\bin\\coq64_buildtest_reloc_ocaml20\\libocaml\\site-lib/findlib/findlib.cma";; *)
 ./libocaml/topfind:(* #load "D:\\bin\\coq64_buildtest_reloc_ocaml20\\libocaml\\site-lib/findlib/findlib_top.cma";; *)
-./man/man1/camlp5.1:These files are installed in the directory D:/bin/coq64_buildtest_reloc_ocaml20/libocaml/camlp5.
-./man/man1/camlp5.1:D:/bin/coq64_buildtest_reloc_ocaml20/libocaml/camlp5
 
 Binary files containing the build folder path after install:
 
@@ -398,26 +394,6 @@ Binary file ./libocaml/ocamldoc/odoc_info.cma matches
 Binary files containing the install folder path after install:
 
 $ find . -type f -exec grep "coq64_buildtest_reloc_ocaml20" {} /dev/null \;
-Binary file ./bin/camlp4.exe matches
-Binary file ./bin/camlp4boot.exe matches
-Binary file ./bin/camlp4o.exe matches
-Binary file ./bin/camlp4o.opt.exe matches
-Binary file ./bin/camlp4of.exe matches
-Binary file ./bin/camlp4of.opt.exe matches
-Binary file ./bin/camlp4oof.exe matches
-Binary file ./bin/camlp4oof.opt.exe matches
-Binary file ./bin/camlp4orf.exe matches
-Binary file ./bin/camlp4orf.opt.exe matches
-Binary file ./bin/camlp4r.exe matches
-Binary file ./bin/camlp4r.opt.exe matches
-Binary file ./bin/camlp4rf.exe matches
-Binary file ./bin/camlp4rf.opt.exe matches
-Binary file ./bin/camlp5.exe matches
-Binary file ./bin/camlp5o.exe matches
-Binary file ./bin/camlp5o.opt matches
-Binary file ./bin/camlp5r.exe matches
-Binary file ./bin/camlp5r.opt matches
-Binary file ./bin/camlp5sch.exe matches
 Binary file ./bin/coqc.exe matches
 Binary file ./bin/coqchk.exe matches
 Binary file ./bin/coqdep.exe matches
@@ -428,11 +404,7 @@ Binary file ./bin/coqtop.exe matches
 Binary file ./bin/coqworkmgr.exe matches
 Binary file ./bin/coq_makefile.exe matches
 Binary file ./bin/menhir matches
-Binary file ./bin/mkcamlp4.exe matches
 Binary file ./bin/ocaml.exe matches
-Binary file ./bin/ocamlbuild.byte.exe matches
-Binary file ./bin/ocamlbuild.exe matches
-Binary file ./bin/ocamlbuild.native.exe matches
 Binary file ./bin/ocamlc.exe matches
 Binary file ./bin/ocamlc.opt.exe matches
 Binary file ./bin/ocamldebug.exe matches
@@ -455,17 +427,6 @@ Binary file ./lib/ide/ide_win32_stubs.o matches
 Binary file ./lib/lib/clib.a matches
 Binary file ./lib/lib/clib.cma matches
 Binary file ./lib/libcoqrun.a matches
-Binary file ./libocaml/camlp4/camlp4fulllib.a matches
-Binary file ./libocaml/camlp4/camlp4fulllib.cma matches
-Binary file ./libocaml/camlp4/camlp4lib.a matches
-Binary file ./libocaml/camlp4/camlp4lib.cma matches
-Binary file ./libocaml/camlp4/camlp4o.cma matches
-Binary file ./libocaml/camlp4/camlp4of.cma matches
-Binary file ./libocaml/camlp4/camlp4oof.cma matches
-Binary file ./libocaml/camlp4/camlp4orf.cma matches
-Binary file ./libocaml/camlp4/camlp4r.cma matches
-Binary file ./libocaml/camlp4/camlp4rf.cma matches
-Binary file ./libocaml/camlp5/odyl.cma matches
 Binary file ./libocaml/compiler-libs/ocamlcommon.a matches
 Binary file ./libocaml/compiler-libs/ocamlcommon.cma matches
 Binary file ./libocaml/dynlink.cma matches
