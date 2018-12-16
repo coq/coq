@@ -366,6 +366,14 @@ let free_vars_of_constr_expr c =
     | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
+let free_names_of_constr_expr c =
+  let vars = ref Id.Set.empty in
+  let rec aux () () = function
+    | { CAst.v = CRef (qid, _) } when qualid_is_ident qid ->
+      let id = qualid_basename qid in vars := Id.Set.add id !vars
+    | c -> fold_constr_expr_with_binders (fun a () -> vars := Id.Set.add a !vars) aux () () c
+  in aux () () c; !vars
+
 let occur_var_constr_expr id c = Id.Set.mem id (free_vars_of_constr_expr c)
 
 (* Used in correctness and interface *)

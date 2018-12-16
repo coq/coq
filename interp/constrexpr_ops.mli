@@ -119,6 +119,9 @@ val ids_of_cases_indtype : cases_pattern_expr -> Id.Set.t
 val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
+(** Return all names treating binders as names *)
+val free_names_of_constr_expr : constr_expr -> Id.Set.t
+
 val split_at_annot : local_binder_expr list -> lident option -> local_binder_expr list * local_binder_expr list
 
 val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
