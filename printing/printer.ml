@@ -546,10 +546,10 @@ let rec pr_evars_int_hd pr sigma i = function
       (hov 0 (pr i evk evi)) ++
       (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd pr sigma (i+1) rest)
 
-let pr_evars_int sigma ~shelf ~givenup i evs =
+let pr_evars_int sigma ~shelf ~given_up i evs =
   let pr_status i =
     if List.mem i shelf then str " (shelved)"
-    else if List.mem i givenup then str " (given up)"
+    else if List.mem i given_up then str " (given up)"
     else mt () in
   pr_evars_int_hd
     (fun i evk evi ->
@@ -761,7 +761,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
 	if Evar.Map.is_empty exl then
 	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
 	else
-          let pei = pr_evars_int sigma ~shelf ~givenup:[] 1 exl in
+          let pei = pr_evars_int sigma ~shelf ~given_up:[] 1 exl in
 	  v 0 ((str "No more subgoals,"
                 ++ str " but there are non-instantiated existential variables:"
 	        ++ cut () ++ (hov 0 pei)
@@ -789,7 +789,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = proof in
-  let (goals , stack , shelf, given_up, sigma ) = Proof.proof p in
+  let Proof.{goals; stack; shelf; given_up; sigma} = Proof.data p in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
   begin match goals with
@@ -821,7 +821,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
      let os_map = match oproof with
        | Some op when diffs ->
-         let (_,_,_,_, osigma) = Proof.proof op in
+         let Proof.{sigma=osigma} = Proof.data op in
          let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
          Some (osigma, diff_goal_map)
        | _ -> None
@@ -834,8 +834,8 @@ let pr_open_subgoals ~proof =
   pr_open_subgoals_diff proof
 
 let pr_nth_open_subgoal ~proof n =
-  let gls,_,_,_,sigma = Proof.proof proof in
-  pr_subgoal n sigma gls
+  let Proof.{goals;sigma} = Proof.data proof in
+  pr_subgoal n sigma goals
 
 let pr_goal_by_id ~proof id =
   try

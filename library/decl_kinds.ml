@@ -57,7 +57,6 @@ type assumption_object_kind = Definitional | Logical | Conjectural
 
 *)
 type assumption_kind = locality * polymorphic * assumption_object_kind
-
 type definition_kind = locality * polymorphic * definition_object_kind
 
 (** Kinds used in proofs *)

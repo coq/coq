@@ -1516,8 +1516,8 @@ let pr_hint_term env sigma cl =
 let pr_applicable_hint () =
   let env = Global.env () in
   let pts = Proof_global.give_me_the_proof () in
-  let glss,_,_,_,sigma = Proof.proof pts in
-  match glss with
+  let Proof.{goals;sigma} = Proof.data pts in
+  match goals with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
     pr_hint_term env sigma (Goal.V82.concl sigma g)
