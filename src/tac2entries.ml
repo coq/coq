@@ -750,7 +750,8 @@ let perform_eval e =
       Proof_global.give_me_the_proof ()
     with Proof_global.NoCurrentProof ->
       let sigma = Evd.from_env env in
-      Goal_select.SelectAll, Proof.start sigma []
+      let name, poly = Id.of_string "ltac2", false in
+      Goal_select.SelectAll, Proof.start ~name ~poly sigma []
   in
   let v = match selector with
   | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v

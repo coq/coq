@@ -1142,7 +1142,8 @@ let () =
   let interp ist env sigma concl tac =
     let ist = Tac2interp.get_env ist in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
-    let c, sigma = Pfedit.refine_by_tactic env sigma concl tac in
+    let name, poly = Id.of_string "ltac2", false in
+    let c, sigma = Pfedit.refine_by_tactic ~name ~poly env sigma concl tac in
     (EConstr.of_constr c, sigma)
   in
   GlobEnv.register_constr_interp0 wit_ltac2 interp
