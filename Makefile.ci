@@ -60,6 +60,7 @@ ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
 
+ci-simple-io: ci-ext-lib
 ci-quickchick: ci-ext-lib ci-simple-io
 
 ci-formal-topology: ci-corn
