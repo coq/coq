@@ -1,3 +1,8 @@
+Changes from 8.9+beta1 to 8.9.0
+===============================
+
+Assorted bug fixes.
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 
