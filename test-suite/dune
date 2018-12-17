@@ -70,4 +70,4 @@
   (progn
    ; XXX: we will allow to set the NJOBS variable in a future Dune
    ; version, either by using an env var or by letting Dune set `-j`
-   (run make -j 2 BIN= PRINT_LOGS=1))))
+   (run make -j 2 BIN= PRINT_LOGS=1 UNIT_TESTS=%{env:COQ_UNIT_TEST=unit-tests}))))
