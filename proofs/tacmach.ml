@@ -15,7 +15,6 @@ open Environ
 open Reductionops
 open Evd
 open Typing
-open Redexpr
 open Tacred
 open Logic
 open Context.Named.Declaration
@@ -70,11 +69,6 @@ let pf_global gls id =
   let env = pf_env gls in
   let sigma = project gls in
   Evd.fresh_global env sigma (Constrintern.construct_reference (pf_hyps gls) id)
-
-let pf_reduction_of_red_expr gls re c =
-  let (redfun, _) = reduction_of_red_expr (pf_env gls) re in
-  let sigma = project gls in
-  redfun (pf_env gls) sigma c
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = 

@@ -6,6 +6,10 @@ Hipattern
 Ind_tables
 Eqschemes
 Elimschemes
+Genredexpr
+Redops
+Redexpr
+Ppred
 Tactics
 Abstract
 Elim

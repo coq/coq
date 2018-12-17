@@ -270,7 +270,7 @@ constraint 'a = <
 
 type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
-type g_cst = evaluable_global_reference Stdarg.and_short_name or_var
+type g_cst = evaluable_global_reference Genredexpr.and_short_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
 
@@ -296,9 +296,6 @@ type glob_tactic_arg =
 
 (** Raw tactics *)
 
-type r_trm = constr_expr
-type r_pat = constr_pattern_expr
-type r_cst = qualid or_by_notation
 type r_ref = qualid
 type r_nam = lident
 type r_lev = rlevel

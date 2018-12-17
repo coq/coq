@@ -14,14 +14,10 @@ open Loc
 open Names
 open EConstr
 open Libnames
-open Genredexpr
-open Pattern
 open Constrexpr
 open Genarg
 open Genintern
 open Locus
-
-type 'a and_short_name = 'a * lident option
 
 val wit_unit : unit uniform_genarg_type
 
@@ -52,11 +48,6 @@ val wit_uconstr : (constr_expr , glob_constr_and_expr, Ltac_pretype.closed_glob_
 val wit_open_constr :
   (constr_expr, glob_constr_and_expr, constr) genarg_type
 
-val wit_red_expr :
-  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
-  (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
-
 val wit_clause_dft_concl :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
 
 (** Aliases for compatibility *)
@@ -66,7 +57,3 @@ val wit_preident : string uniform_genarg_type
 val wit_reference : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 val wit_global : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 val wit_clause :  (lident Locus.clause_expr, lident Locus.clause_expr, Names.Id.t Locus.clause_expr) genarg_type
-val wit_redexpr :
-  ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
-  (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type

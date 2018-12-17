@@ -21,14 +21,14 @@ let make_red_flag l =
     | FCofix :: lf -> add_flag { red with rCofix = true } lf
     | FZeta :: lf -> add_flag { red with rZeta = true } lf
     | FConst l :: lf ->
-	if red.rDelta then
-	  CErrors.user_err Pp.(str
-	    "Cannot set both constants to unfold and constants not to unfold");
+        if red.rDelta then
+          CErrors.user_err Pp.(str
+            "Cannot set both constants to unfold and constants not to unfold");
         add_flag { red with rConst = union_consts red.rConst l } lf
     | FDeltaBut l :: lf ->
-	if red.rConst <> [] && not red.rDelta then
-	  CErrors.user_err Pp.(str
-	    "Cannot set both constants to unfold and constants not to unfold");
+        if red.rConst <> [] && not red.rDelta then
+          CErrors.user_err Pp.(str
+            "Cannot set both constants to unfold and constants not to unfold");
         add_flag
           { red with rConst = union_consts red.rConst l; rDelta = true }
           lf

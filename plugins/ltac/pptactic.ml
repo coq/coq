@@ -22,8 +22,8 @@ open Tactypes
 open Locus
 open Decl_kinds
 open Genredexpr
-open Pputils
 open Ppconstr
+open Pputils
 open Printer
 
 open Genintern
@@ -159,8 +159,8 @@ let string_of_genarg_arg (ArgumentType arg) =
           end
         | _ -> default
 
-  let pr_with_occurrences pr c = pr_with_occurrences pr keyword c
-  let pr_red_expr pr c = pr_red_expr pr keyword c
+  let pr_with_occurrences pr c = Ppred.pr_with_occurrences pr keyword c
+  let pr_red_expr pr c = Ppred.pr_red_expr pr keyword c
 
   let pr_may_eval test prc prlc pr2 pr3 = function
     | ConstrEval (r,c) ->
@@ -185,12 +185,6 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_arg pr x = spc () ++ pr x
 
   let pr_and_short_name pr (c,_) = pr c
-
-  let pr_or_by_notation f = CAst.with_val (function
-    | AN v -> f v
-    | ByNotation (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc)
-
-  let pr_located pr (_,x) = pr x
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id
@@ -694,7 +688,7 @@ let pr_goal_selector ~toplevel s =
         (*  match t with
             | CHole _ -> spc() ++ prlist_with_sep spc (pr_lname) nal
             | _ ->*)
-        let s = prlist_with_sep spc Ppconstr.pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
+        let s = prlist_with_sep spc pr_lname nal ++ str ":" ++ pr.pr_lconstr t in
         spc() ++ hov 1 (str"(" ++ s ++ str")") in
 
       let pr_fix_tac (id,n,c) =

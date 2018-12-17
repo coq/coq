@@ -314,7 +314,7 @@ END
 
 let pr_by_arg_tac prtac opt_c = pr_by_arg_tac () () prtac opt_c
 
-let pr_in_clause _ _ _ cl = Pptactic.pr_in_clause Ppconstr.pr_lident cl
+let pr_in_clause _ _ _ cl = Pptactic.pr_in_clause Pputils.pr_lident cl
 let pr_in_top_clause _ _ _ cl = Pptactic.pr_in_clause Id.print cl
 let in_clause' = Pltac.in_clause
 

@@ -52,4 +52,4 @@ let set_command_entry e = Vernac_.command_entry_ref := e
 let get_command_entry () = !Vernac_.command_entry_ref
 
 let () =
-  register_grammar Stdarg.wit_red_expr (Vernac_.red_expr);
+  register_grammar Genredexpr.wit_red_expr (Vernac_.red_expr);

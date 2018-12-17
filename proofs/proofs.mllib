@@ -7,7 +7,6 @@ Logic
 Goal_select
 Proof_bullet
 Proof_global
-Redexpr
 Refiner
 Tacmach
 Pfedit
