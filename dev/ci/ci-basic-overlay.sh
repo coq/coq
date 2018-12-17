@@ -282,7 +282,7 @@
 ########################################################################
 # aac-tactics
 ########################################################################
-# Latest commit on master as of Oct 8, 2018
-: "${aactactis_CI_REF:=c10636221af6324dfeea89830699dbb7488dfdde}"
+# Latest commit on v8.9 as of Dec 17, 2018
+: "${aactactis_CI_REF:=c469b26e409b1bde6a64546df85226079796dbe7}"
 : "${aactactis_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aactactis_CI_ARCHIVEURL:=${aactactis_CI_GITURL}/archive}"
