@@ -14,10 +14,8 @@ open Util
 
 module Dyn = Dyn.Make ()
 
-type marshallable = [ `Yes | `No | `Shallow ]
-
 type 'a summary_declaration = {
-  freeze_function : marshallable -> 'a;
+  freeze_function : marshallable:bool -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
@@ -31,7 +29,7 @@ let ml_modules = "ML-MODULES"
 
 let internal_declare_summary fadd sumname sdecl =
   let infun, outfun, tag = Dyn.Easy.make_dyn_tag (mangle sumname) in
-  let dyn_freeze b = infun (sdecl.freeze_function b)
+  let dyn_freeze ~marshallable = infun (sdecl.freeze_function ~marshallable)
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
   and dyn_init = sdecl.init_function in
   let ddecl = {
@@ -70,9 +68,9 @@ type frozen = {
 let empty_frozen = { summaries = String.Map.empty; ml_module = None }
 
 let freeze_summaries ~marshallable : frozen =
-  let smap decl = decl.freeze_function marshallable in
+  let smap decl = decl.freeze_function ~marshallable in
   { summaries = String.Map.map smap !sum_map;
-    ml_module = Option.map (fun decl -> decl.freeze_function marshallable) !sum_mod;
+    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
   }
 
 let warn_summary_out_of_scope =
@@ -130,10 +128,10 @@ let remove_from_summary st tag =
 
 (** All-in-one reference declaration + registration *)
 
-let ref_tag ?(freeze=fun _ r -> r) ~name x =
+let ref_tag ?(freeze=fun ~marshallable r -> r) ~name x =
   let r = ref x in
   let tag = declare_summary_tag name
-    { freeze_function = (fun b -> freeze b !r);
+    { freeze_function = (fun ~marshallable -> freeze ~marshallable !r);
       unfreeze_function = ((:=) r);
       init_function = (fun () -> r := x) } in
   r, tag
@@ -157,7 +155,7 @@ let (!) r =
 let ref ?(freeze=fun x -> x) ~name init =
   let r = Pervasives.ref (CEphemeron.create init, name) in
   declare_summary name
-    { freeze_function = (fun _ -> freeze !r);
+    { freeze_function = (fun ~marshallable -> freeze !r);
       unfreeze_function = ((:=) r);
       init_function = (fun () -> r := init) };
   r

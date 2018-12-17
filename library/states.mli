@@ -19,11 +19,13 @@ val intern_state : string -> unit
 val extern_state : string -> unit
 
 type state
-val freeze : marshallable:Summary.marshallable -> state
+val freeze : marshallable:bool -> state
 val unfreeze : state -> unit
 
 val summary_of_state : state -> Summary.frozen
+val lib_of_state : state -> Lib.frozen
 val replace_summary : state -> Summary.frozen -> state
+val replace_lib : state -> Lib.frozen -> state
 
 (** {6 Rollback } *)
 

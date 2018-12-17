@@ -33,11 +33,18 @@ let do_if_not_cached rf f v =
   | Some _ ->
     ()
 
-let freeze_interp_state marshallable =
+let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (States.freeze ~marshallable);
     proof  = update_cache s_proof (Proof_global.freeze ~marshallable);
-    shallow = marshallable = `Shallow }
+    shallow = marshallable }
 
 let unfreeze_interp_state { system; proof } =
   do_if_not_cached s_cache States.unfreeze system;
   do_if_not_cached s_proof Proof_global.unfreeze proof
+
+let make_shallow st =
+  let lib = States.lib_of_state st.system in
+  { st with
+    system = States.replace_lib st.system @@ Lib.drop_objects lib;
+    shallow = true;
+  }
