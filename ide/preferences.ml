@@ -815,33 +815,20 @@ let configure ?(apply=(fun () -> ())) parent =
     custom ~label box callback true
   in
 
-(*
-  let show_toolbar =
-    bool
-      ~f:(fun s ->
-	    current.show_toolbar <- s;
-	    !show_toolbar s)
-      "Show toolbar" current.show_toolbar
-  in
   let window_height =
     string
-    ~f:(fun s -> current.window_height <- (try int_of_string s with _ -> 600);
-	  !resize_window ();
-       )
-      "Window height"
-      (string_of_int current.window_height)
+    ~f:(fun s -> try window_height#set (int_of_string s) with _ -> ())
+      "Default window height at starting time"
+      (string_of_int window_height#get)
   in
+
   let window_width =
     string
-    ~f:(fun s -> current.window_width <-
-	  (try int_of_string s with _ -> 800))
-      "Window width"
-      (string_of_int current.window_width)
+    ~f:(fun s -> try window_width#set (int_of_string s) with _ -> ())
+      "Default window width at starting time"
+      (string_of_int window_width#get)
   in
-*)
-(*
-  let config_appearance = [show_toolbar; window_width; window_height] in
-*)
+
   let global_auto_revert = pbool "Enable global auto revert" global_auto_revert in
   let global_auto_revert_delay =
     string
@@ -1049,10 +1036,7 @@ let configure ?(apply=(fun () -> ())) parent =
      Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;
 	     ]);
-(*
-     Section("Appearance",
-	     config_appearance);
-*)
+     Section("Appearance", Some `PREFERENCES, [window_width; window_height]);
      Section("Externals", None,
 	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
 	      cmd_print;cmd_editor;cmd_browse;doc_url;library_url]);
