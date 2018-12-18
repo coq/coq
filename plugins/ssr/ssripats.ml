@@ -19,14 +19,74 @@ open Proofview.Notations
 
 open Ssrast
 
+type ssriop =
+  | IOpId of Names.Id.t
+  | IOpDrop
+  | IOpTemporay
+  | IOpInaccessible of string option
+  | IOpInaccessibleAll
+  | IOpAbstractVars of Names.Id.t list
+  | IOpFastNondep
+
+  | IOpInj of ssriops list
+
+  | IOpDispatchBlock of id_block
+  | IOpDispatchBranches of ssriops list
+
+  | IOpCaseBlock of id_block
+  | IOpCaseBranches of ssriops list
+
+  | IOpRewrite of ssrocc * ssrdir
+  | IOpView of ssrclear option * ssrview (* extra clears to be performed *)
+
+  | IOpClear of ssrclear
+  | IOpSimpl of ssrsimpl
+
+  | IOpEqGen of unit Proofview.tactic (* generation of eqn *)
+
+  | IOpNoop
+
+and ssriops = ssriop list
+
+let rec pr_ipatop = function
+  | IOpId id -> Names.Id.print id
+  | IOpDrop -> Pp.str "_"
+  | IOpTemporay -> Pp.str "+"
+  | IOpInaccessible None -> Pp.str "?"
+  | IOpInaccessible (Some s) -> Pp.str ("?«"^s^"»")
+  | IOpInaccessibleAll -> Pp.str "*"
+  | IOpAbstractVars l -> Pp.str ("[:"^String.concat " " (List.map Names.Id.to_string l)^"]")
+  | IOpFastNondep -> Pp.str ">"
+
+  | IOpInj l -> Pp.(str "[=" ++ ppl l ++ str "]")
+
+  | IOpDispatchBlock b -> Pp.(str"(" ++ Ssrprinters.pr_block b ++ str")")
+  | IOpDispatchBranches l -> Pp.(str "(" ++ ppl l ++ str ")")
+
+  | IOpCaseBlock b -> Pp.(str"[" ++ Ssrprinters.pr_block b ++ str"]")
+  | IOpCaseBranches l -> Pp.(str "[" ++ ppl l ++ str "]")
+
+  | IOpRewrite (occ,dir) -> Pp.(Ssrprinters.(pr_occ occ ++ pr_dir dir))
+  | IOpView (None,vs) -> Pp.(prlist_with_sep mt (fun c -> str "/" ++ Ssrprinters.pr_ast_closure_term c) vs)
+  | IOpView (Some cl,vs) -> Pp.(Ssrprinters.pr_clear Pp.spc cl ++ prlist_with_sep mt (fun c -> str "/" ++ Ssrprinters.pr_ast_closure_term c) vs)
+
+  | IOpClear cl -> Ssrprinters.pr_clear Pp.spc cl
+  | IOpSimpl s -> Ssrprinters.pr_simpl s
+
+  | IOpEqGen _ -> Pp.str "E:"
+  | IOpNoop -> Pp.str"-"
+and ppl x = Pp.(prlist_with_sep (fun () -> str"|") (prlist_with_sep spc pr_ipatop)) x
+
+
 module IpatMachine : sig
 
   (* the => tactical.  ?eqtac is a tactic to be eventually run
    * after the first [..] block.  first_case_is_dispatch is the
    * ssr exception to elim: and case: *)
   val main : ?eqtac:unit tactic -> first_case_is_dispatch:bool ->
-        ssripats -> unit tactic
+        ssriops -> unit tactic
 
+  val tclCompileIPats : ssripats -> ssriops
 
   val tclSEED_SUBGOALS : Names.Name.t list array -> unit tactic -> unit tactic
 
@@ -53,7 +113,7 @@ module State : sig
   val isNSEED_CONSUME : (Names.Name.t list option -> unit tactic) -> unit tactic
 
   (* Some data may expire *)
-  val isTICK : ssripat -> unit tactic
+  val isTICK : ssriop -> unit tactic
 
   val isPRINT : Proofview.Goal.t -> Pp.t
 
@@ -149,7 +209,7 @@ let isNSEED_CONSUME k =
   k x)
 
 let isTICK = function
-  | IPatSimpl _ | IPatClear _ -> tclUNIT ()
+  | IOpSimpl _ | IOpClear _ -> tclUNIT ()
   | _ -> tclGET (fun s -> tclSET { s with name_seed = None })
 
 end (* }}} *************************************************************** *)
@@ -286,13 +346,13 @@ let tac_intro_seed interp_ipats fix = Goal.enter begin fun gl ->
              | Prefix id ->  Id.to_string id ^ "?"
              | SuffixNum n -> "?" ^ string_of_int n
              | SuffixId id -> "?" ^ Id.to_string id in
-           IPatAnon (One (Some s))
+           IOpInaccessible (Some s)
        | Name id ->
            let s = match fix with
              | Prefix fix ->  Id.to_string fix ^ Id.to_string id
              | SuffixNum n -> Id.to_string id ^ string_of_int n
              | SuffixId fix -> Id.to_string id ^ Id.to_string fix in
-           IPatId (Id.of_string s)) seeds in
+           IOpId (Id.of_string s)) seeds in
     interp_ipats ipats
 end end
 
@@ -342,7 +402,7 @@ let tclMK_ABSTRACT_VARS ids =
 (* Debugging *)
 let tclLOG p t =
   tclUNIT () >>= begin fun () ->
-    Ssrprinters.ppdebug (lazy Pp.(str "exec: " ++ Ssrprinters.pr_ipat p));
+    Ssrprinters.ppdebug (lazy Pp.(str "exec: " ++ pr_ipatop p));
     tclUNIT ()
   end <*>
   Goal.enter begin fun g ->
@@ -362,58 +422,66 @@ let tclLOG p t =
 
 let notTAC = tclUNIT false
 
+let duplicate_clear =
+  CWarnings.create ~name:"duplicate-clear" ~category:"ssr"
+    (fun id -> Pp.(str "Duplicate clear of " ++ Id.print id))
+
 (* returns true if it was a tactic (eg /ltac:tactic) *)
 let rec ipat_tac1 ipat : bool tactic =
   match ipat with
-  | IPatView (clear_if_id,l) ->
+  | IOpView (glued_clear,l) ->
+      let clear_if_id, extra_clear =
+        match glued_clear with
+        | None -> false, []
+        | Some x -> true, List.map Ssrcommon.hyp_id x in
       Ssrview.tclIPAT_VIEWS
         ~views:l ~clear_if_id
-        ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
+        ~conclusion:(fun ~to_clear:clr ->
+            let inter = CList.intersect Id.equal clr extra_clear in
+            List.iter duplicate_clear inter;
+            intro_clear (clr @ extra_clear))
 
-  | IPatDispatch(true, Regular [[]]) ->
-      notTAC
-  | IPatDispatch(_, Regular ipatss) ->
+  | IOpDispatchBranches ipatss ->
       tclDISPATCH (List.map ipat_tac ipatss) <*> notTAC
-  | IPatDispatch(_,Block id_block) ->
+  | IOpDispatchBlock id_block ->
       tac_intro_seed ipat_tac id_block <*> notTAC
-
-  | IPatId id -> Ssrcommon.tclINTRO_ID id <*> notTAC
-  | IPatFastNondep -> intro_anon_deps <*> notTAC
-
-  | IPatCase (Block id_block) ->
+  | IOpCaseBlock id_block ->
       Ssrcommon.tclWITHTOP tac_case <*> tac_intro_seed ipat_tac id_block <*> notTAC
 
-  | IPatCase (Regular ipatss) ->
+  | IOpCaseBranches ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP tac_case) ipatss <*> notTAC
-  | IPatInj ipatss ->
+
+  | IOpId id -> Ssrcommon.tclINTRO_ID id <*> notTAC
+  | IOpFastNondep -> intro_anon_deps <*> notTAC
+  | IOpDrop -> intro_drop <*> notTAC
+  | IOpInaccessible seed -> Ssrcommon.tclINTRO_ANON ?seed () <*> notTAC
+  | IOpInaccessibleAll -> intro_anon_all <*> notTAC
+  | IOpTemporay -> intro_anon_temp <*> notTAC
+
+  | IOpSimpl Nop -> assert false
+
+  | IOpInj ipatss ->
      tclIORPAT (Ssrcommon.tclWITHTOP
        (fun t -> V82.tactic  ~nf_evars:false (Ssrelim.perform_injection t)))
        ipatss
      <*> notTAC
 
-  | IPatAnon Drop -> intro_drop <*> notTAC
-  | IPatAnon (One seed) -> Ssrcommon.tclINTRO_ANON ?seed () <*> notTAC
-  | IPatAnon All -> intro_anon_all <*> notTAC
-  | IPatAnon Temporary -> intro_anon_temp <*> notTAC
-
-  | IPatNoop -> notTAC
-  | IPatSimpl Nop -> notTAC
-
-  | IPatClear ids ->
+  | IOpClear ids ->
       tacCHECK_HYPS_EXIST ids <*>
       intro_clear (List.map Ssrcommon.hyp_id ids) <*>
       notTAC
 
-  | IPatSimpl x ->
+  | IOpSimpl x ->
       V82.tactic ~nf_evars:false (Ssrequality.simpltac x) <*> notTAC
 
-  | IPatRewrite (occ,dir) ->
+  | IOpRewrite (occ,dir) ->
      Ssrcommon.tclWITHTOP
        (fun x -> V82.tactic  ~nf_evars:false (Ssrequality.ipat_rewrite occ dir x)) <*> notTAC
 
-  | IPatAbstractVars ids -> tclMK_ABSTRACT_VARS ids <*> notTAC
+  | IOpAbstractVars ids -> tclMK_ABSTRACT_VARS ids <*> notTAC
 
-  | IPatEqGen t -> t <*> notTAC
+  | IOpEqGen t -> t <*> notTAC
+  | IOpNoop -> notTAC
 
 and ipat_tac pl : unit tactic =
   match pl with
@@ -433,51 +501,88 @@ and tclIORPAT tac = function
   | p -> Tacticals.New.tclTHENS tac (List.map ipat_tac p)
 
 and ssr_exception is_on = function
-  | Some (IPatCase l) when is_on -> Some (IPatDispatch(true, l))
+  | Some (IOpCaseBranches [[]]) when is_on -> Some IOpNoop
+  | Some (IOpCaseBranches l) when is_on ->
+      Some (IOpDispatchBranches l)
+  | Some (IOpCaseBlock s) when is_on ->
+      Some (IOpDispatchBlock s)
   | x -> x
 
 and option_to_list = function None -> [] | Some x -> [x]
 
 and split_at_first_case ipats =
   let rec loop acc = function
-    | (IPatSimpl _ | IPatClear _) as x :: rest -> loop (x :: acc) rest
-    | (IPatCase _ | IPatDispatch _) as x :: xs -> CList.rev acc, Some x, xs
+    | (IOpSimpl _ | IOpClear _) as x :: rest -> loop (x :: acc) rest
+    | (IOpCaseBlock _ | IOpCaseBranches _
+      | IOpDispatchBlock _ | IOpDispatchBranches _) as x :: xs ->
+      CList.rev acc, Some x, xs
     | pats -> CList.rev acc, None, pats
   in
     loop [] ipats
 ;;
 
 (* Simple pass doing {x}/v ->  /v{x} *)
-let elaborate_ipats l =
+let tclCompileIPats l =
   let rec elab = function
-  | [] -> []
-  | (IPatClear _ as p1) :: (IPatView _ as p2) :: rest -> p2 :: p1 :: elab rest
-  | IPatDispatch(s, Regular p) :: rest -> IPatDispatch (s, Regular (List.map elab p)) :: elab rest
-  | IPatCase (Regular p) :: rest -> IPatCase (Regular (List.map elab p)) :: elab rest
-  | IPatInj p :: rest -> IPatInj (List.map elab p) :: elab rest
-  | (IPatEqGen _ | IPatId _ | IPatSimpl _ | IPatClear _ | IPatFastNondep |
-     IPatAnon _ | IPatView _ | IPatNoop | IPatRewrite _ |
-     IPatAbstractVars _ | IPatDispatch(_, Block _) | IPatCase(Block _)) as x :: rest -> x :: elab rest
-  in
-    elab l
 
-let main ?eqtac ~first_case_is_dispatch ipats =
-  let ipats = elaborate_ipats ipats in
-  let ip_before, case, ip_after = split_at_first_case ipats in
+  | (IPatClear []) :: (IPatView v) :: rest ->
+      (IOpView(Some [],v)) :: elab rest
+  | (IPatClear cl) :: (IPatView v) :: rest ->
+      (IOpView(None,v)) :: IOpClear cl :: elab rest
+
+  (* boring code *)
+  | [] -> []
+
+  | IPatId id :: rest -> IOpId id :: elab rest
+  | IPatAnon (One hint) ::rest -> IOpInaccessible hint :: elab rest
+  | IPatAnon Drop :: rest -> IOpDrop :: elab rest
+  | IPatAnon All :: rest -> IOpInaccessibleAll :: elab rest
+  | IPatAnon Temporary :: rest -> IOpTemporay :: elab rest
+  | IPatAbstractVars vs :: rest -> IOpAbstractVars vs :: elab rest
+  | IPatFastNondep :: rest -> IOpFastNondep :: elab rest
+
+  | IPatInj pats :: rest -> IOpInj (List.map elab pats) :: elab rest
+  | IPatRewrite(occ,dir) :: rest -> IOpRewrite(occ,dir) :: elab rest
+  | IPatView vs :: rest -> IOpView (None,vs) :: elab rest
+  | IPatSimpl s :: rest -> IOpSimpl s :: elab rest
+  | IPatClear cl :: rest -> IOpClear cl :: elab rest
+
+  | IPatCase (Block seed) :: rest -> IOpCaseBlock seed :: elab rest
+  | IPatCase (Regular bs) :: rest -> IOpCaseBranches (List.map elab bs) :: elab rest
+  | IPatDispatch (Block seed) :: rest -> IOpDispatchBlock seed :: elab rest
+  | IPatDispatch (Regular bs) :: rest -> IOpDispatchBranches (List.map elab bs) :: elab rest
+  | IPatNoop :: rest -> IOpNoop :: elab rest
+
+  in
+  elab l
+;;
+let tclCompileIPats l =
+  Ssrprinters.ppdebug (lazy Pp.(str "tclCompileIPats input: " ++
+                                  prlist_with_sep spc Ssrprinters.pr_ipat l));
+  let ops = tclCompileIPats l in
+  Ssrprinters.ppdebug (lazy Pp.(str "tclCompileIPats output: " ++
+                                  prlist_with_sep spc pr_ipatop ops));
+  ops
+
+let main ?eqtac ~first_case_is_dispatch iops =
+  let ip_before, case, ip_after = split_at_first_case iops in
   let case = ssr_exception first_case_is_dispatch case in
   let case = option_to_list case in
-  let eqtac = option_to_list (Option.map (fun x -> IPatEqGen x) eqtac) in
-  Ssrcommon.tcl0G ~default:() (ipat_tac (ip_before @ case @ eqtac @ ip_after) <*> intro_end)
+  let eqtac = option_to_list (Option.map (fun x -> IOpEqGen x) eqtac) in
+  let ipats = ip_before @ case @ eqtac @ ip_after in
+  Ssrcommon.tcl0G ~default:() (ipat_tac ipats <*> intro_end)
 
 end (* }}} *)
 
 let tclIPAT_EQ eqtac ip =
   Ssrprinters.ppdebug (lazy Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
-  IpatMachine.main ~eqtac ~first_case_is_dispatch:true ip
+  IpatMachine.(main ~eqtac ~first_case_is_dispatch:true (tclCompileIPats ip))
 
 let tclIPATssr ip =
   Ssrprinters.ppdebug (lazy Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
-  IpatMachine.main ~first_case_is_dispatch:true ip
+  IpatMachine.(main ~first_case_is_dispatch:true (tclCompileIPats ip))
+
+let tclCompileIPats = IpatMachine.tclCompileIPats
 
 (* Common code to handle generalization lists along with the defective case *)
 let with_defective maintac deps clr = Goal.enter begin fun g ->
@@ -721,12 +826,12 @@ let eqmovetac _ gen =
 ;;
 
 let rec eqmoveipats eqpat = function
-  | (IPatSimpl _ | IPatClear _ as ipat) :: ipats ->
+  | (IOpSimpl _ | IOpClear _ as ipat) :: ipats ->
        ipat :: eqmoveipats eqpat ipats
-  | (IPatAnon All :: _ | []) as ipats ->
-       IPatAnon (One None) :: eqpat :: ipats
+  | (IOpInaccessibleAll :: _ | []) as ipats ->
+       IOpInaccessible None :: eqpat @ ipats
   | ipat :: ipats ->
-       ipat :: eqpat :: ipats
+       ipat :: eqpat @ ipats
 
 let ssrsmovetac = Goal.enter begin fun g ->
   let sigma, concl = Goal.(sigma g, concl g) in
@@ -736,7 +841,6 @@ let ssrsmovetac = Goal.enter begin fun g ->
 end
 
 let tclIPAT ip =
-  Ssrprinters.ppdebug (lazy Pp.(str "ipat@run: " ++ Ssrprinters.pr_ipats ip));
   IpatMachine.main ~first_case_is_dispatch:false ip
 
 let ssrmovetac = function
@@ -748,17 +852,17 @@ let ssrmovetac = function
      gentac <*>
      tclLAST_GEN ~to_ind:false lastgen
        (tacVIEW_THEN_GRAB view ~conclusion) <*>
-     tclIPAT (IPatClear clr :: ipats)
+     tclIPAT (IOpClear clr :: IpatMachine.tclCompileIPats ipats)
   | _::_ as view, (_, ({ gens = []; clr }, ipats)) ->
-     tclIPAT (IPatView (false,view) :: IPatClear clr :: ipats)
+     tclIPAT (IOpView (None,view) :: IOpClear clr :: IpatMachine.tclCompileIPats ipats)
   | _, (Some pat, (dgens, ipats)) ->
     let dgentac = with_dgens dgens eqmovetac in
-    dgentac <*> tclIPAT (eqmoveipats pat ipats)
+    dgentac <*> tclIPAT (eqmoveipats (IpatMachine.tclCompileIPats [pat]) (IpatMachine.tclCompileIPats ipats))
   | _, (_, ({ gens = (_ :: _ as gens); dgens = []; clr}, ipats)) ->
     let gentac = V82.tactic ~nf_evars:false (Ssrcommon.genstac (gens, clr)) in
-    gentac <*> tclIPAT ipats
+    gentac <*> tclIPAT (IpatMachine.tclCompileIPats ipats)
   | _, (_, ({ clr }, ipats)) ->
-    Tacticals.New.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT ipats]
+    Tacticals.New.tclTHENLIST [ssrsmovetac; Tactics.clear (List.map Ssrcommon.hyp_id clr); tclIPAT (IpatMachine.tclCompileIPats ipats)]
 
 (** [abstract: absvar gens] **************************************************)
 let rec is_Evar_or_CastedMeta sigma x =

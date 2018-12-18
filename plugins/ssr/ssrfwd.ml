@@ -94,17 +94,23 @@ let basecuttac name c gl =
 let introstac ipats = Proofview.V82.of_tactic (tclIPAT ipats)
 
 let havetac ist
-  (transp,((((clr, pats), binders), simpl), (((fk, _), t), hint)))
+  (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst gl 
 =
  let concl = pf_concl gl in
+ let pats = tclCompileIPats orig_pats in
+ let binders = tclCompileIPats binders in
+ let simpl = tclCompileIPats simpl in
  let skols, pats =
-   List.partition (function IPatAbstractVars _ -> true | _ -> false) pats in
+   List.partition (function IOpAbstractVars _ -> true | _ -> false) pats in
  let itac_mkabs = introstac skols in
- let itac_c = introstac (IPatClear clr :: pats) in
+ let itac_c, clr =
+   match clr with
+   | None -> introstac pats, []
+   | Some clr -> introstac (tclCompileIPats (IPatClear clr :: orig_pats)), clr in
  let itac, id, clr = introstac pats, Tacticals.tclIDTAC, old_cleartac clr in
  let binderstac n =
-   let rec aux = function 0 -> [] | n -> IPatAnon (One None) :: aux (n-1) in
+   let rec aux = function 0 -> [] | n -> IOpInaccessible None :: aux (n-1) in
    Tacticals.tclTHEN (if binders <> [] then introstac (aux n) else Tacticals.tclIDTAC)
      (introstac binders) in
  let simpltac = introstac simpl in
@@ -160,7 +166,7 @@ let havetac ist
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function
-       | IPatAbstractVars ids -> ids
+       | IOpAbstractVars ids -> ids
        | _ -> assert false) skols) in
      let skols_args =
        List.map (fun id -> Ssripats.Internal.examine_abstract (EConstr.mkVar id) gl) skols in
@@ -203,10 +209,12 @@ let destProd_or_LetIn sigma c =
   | _ -> raise DestKO
 
 let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
+  let clr0 = Option.default [] clr0 in
+  let pats = tclCompileIPats pats in
   let mkabs gen = abs_wgen false (fun x -> x) gen in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
-  | _, Some ((x, _), _) -> fun pats -> IPatId (hoi_id x) :: pats
+  | _, Some ((x, _), _) -> fun pats -> IOpId (hoi_id x) :: pats
   | _ -> fun x -> x in
   let ct = match Ssrcommon.ssrterm_of_ast_closure_term ct with
   | (a, (b, Some ct)) ->
@@ -265,7 +273,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       if gens = [] then errorstrm(str"gen have requires some generalizations");
       let clear0 = old_cleartac clr0 in
       let id, name_general_hyp, cleanup, pats = match id, pats with
-      | None, (IPatId id as ip)::pats -> Some id, tacipat [ip], clear0, pats
+      | None, (IOpId id as ip)::pats -> Some id, tacipat [ip], clear0, pats
       | None, _ -> None, Tacticals.tclIDTAC, clear0, pats
       | Some (Some id),_ -> Some id, introid id, clear0, pats
       | Some _,_ ->
@@ -289,6 +297,10 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
 (** The "suffice" tactic *)
 
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
+  let clr = Option.default [] clr in
+  let pats = tclCompileIPats pats in
+  let binders = tclCompileIPats binders in
+  let simpl = tclCompileIPats simpl in
   let htac = Tacticals.tclTHEN (introstac pats) (hinttac ist true hint) in
   let c = match Ssrcommon.ssrterm_of_ast_closure_term c with
   | (a, (b, Some ct)) ->

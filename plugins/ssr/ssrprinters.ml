@@ -74,7 +74,7 @@ let pr_occ = function
   | None -> str "{}"
 
 let pr_clear_ne clr = str "{" ++ pr_hyps clr ++ str "}"
-let pr_clear sep clr = if clr = [] then mt () else sep () ++ pr_clear_ne clr
+let pr_clear sep clr = sep () ++ pr_clear_ne clr
 
 let pr_dir = function L2R -> str "->" | R2L -> str "<-"
 
@@ -102,20 +102,18 @@ let rec pr_ipat p =
   | IPatClear clr -> pr_clear mt clr
   | IPatCase (Regular iorpat) -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
   | IPatCase (Block m) -> hov 1 (str"[" ++ pr_block m ++ str"]")
-  | IPatDispatch(_,Regular iorpat) -> hov 1 (str "(" ++ pr_iorpat iorpat ++ str ")")
-  | IPatDispatch (_,Block m) -> hov 1 (str"(" ++ pr_block m ++ str")")
+  | IPatDispatch(Regular iorpat) -> hov 1 (str "(" ++ pr_iorpat iorpat ++ str ")")
+  | IPatDispatch (Block m) -> hov 1 (str"(" ++ pr_block m ++ str")")
   | IPatInj iorpat -> hov 1 (str "[=" ++ pr_iorpat iorpat ++ str "]")
   | IPatRewrite (occ, dir) -> pr_occ occ ++ pr_dir dir
   | IPatAnon All -> str "*"
   | IPatAnon Drop -> str "_"
   | IPatAnon (One _) -> str "?"
-  | IPatView (false,v) -> pr_view2 v
-  | IPatView (true,v) -> str"{}" ++ pr_view2 v
+  | IPatView v -> pr_view2 v
   | IPatAnon Temporary -> str "+"
   | IPatNoop -> str "-"
   | IPatAbstractVars l -> str "[:" ++ pr_list spc Id.print l ++ str "]"
   | IPatFastNondep -> str">"
-  | IPatEqGen _ -> str "<tac>"
 and pr_ipats ipats = pr_list spc pr_ipat ipats
 and pr_iorpat iorpat = pr_list pr_bar pr_ipats iorpat
 and pr_block = function (Prefix id) -> str"^" ++ Id.print id
