@@ -198,8 +198,25 @@ if [ -z "$(git config user.signingkey)" ]; then
   warning "gpg will guess a key out of your git config user.* data"
 fi
 
+# Generate commit message
+
+info "Fetching review data"
+reviews=$(curl -s "$API/pulls/$PR/reviews")
+msg="Merge PR #$PR: $TITLE"
+
+select_state() {
+    jq -rc 'map(select(.state == "'"$1"'") | .user.login) | join(" ")' <<< "$reviews"
+}
+
+for reviewer in $(select_state APPROVED); do
+    msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Reviewed-by="$reviewer")
+done
+for reviewer in $(select_state COMMENTED); do
+    msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Ack-by="$reviewer")
+done
+
 info "merging"
-git merge -v -S --no-ff FETCH_HEAD -m "Merge PR #$PR: $TITLE" -e
+git merge -v -S --no-ff FETCH_HEAD -m "$msg" -e
 
 # TODO: improve this check
 if ! git diff --quiet --diff-filter=A "$REMOTE/$CURRENT_LOCAL_BRANCH" -- dev/ci/user-overlays; then
