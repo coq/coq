@@ -22,11 +22,12 @@ end
 
 (* Apply views to the top of the stack (intro pattern). If clear_if_id is
  * true (default false) then views that happen to be a variable are considered
- * as to be cleared (see the to_clear argument to the continuation) *)
-val tclIPAT_VIEWS :
-    views:ast_closure_term list -> ?clear_if_id:bool ->
+ * as to be cleared (see the to_clear argument to the continuation)
+ *
+ * returns true if the last view was a tactic *)
+val tclIPAT_VIEWS : views:ast_closure_term list -> ?clear_if_id:bool ->
     conclusion:(to_clear:Names.Id.t list -> unit Proofview.tactic) ->
-  unit Proofview.tactic
+  bool Proofview.tactic
 
 (* Apply views to a given subject (as if was the top of the stack), then
    call conclusion on the obtained term (something like [v2 (v1 subject)]).

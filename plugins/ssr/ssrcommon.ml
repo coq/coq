@@ -401,6 +401,7 @@ let max_suffix m (t, j0 as tj0) id  =
     dt < ds && skip_digits s i = n in
   loop m
 
+(** creates a fresh (w.r.t. `gl_ids` and internal names) inaccessible name of the form _tXX_ *)
 let mk_anon_id t gl_ids =
   let m, si0, id0 =
     let s = ref (Printf.sprintf  "_%s_" t) in
@@ -409,7 +410,7 @@ let mk_anon_id t gl_ids =
     let rec loop i j =
       let d = !s.[i] in if not (is_digit d) then i + 1, j else
       loop (i - 1) (if d = '0' then j else i) in
-    let m, j = loop (n - 1) n in m, (!s, j), Id.of_string !s in
+    let m, j = loop (n - 1) n in m, (!s, j), Id.of_string_soft !s in
   if not (List.mem id0 gl_ids) then id0 else
   let s, i = List.fold_left (max_suffix m) si0 gl_ids in
   let open Bytes in
@@ -419,7 +420,7 @@ let mk_anon_id t gl_ids =
     if get s i = '9' then (set s i '0'; loop (i - 1)) else
     if i < m then (set s n '0'; set s m '1'; cat s (of_string "_")) else
     (set s i (Char.chr (Char.code (get s i) + 1)); s) in
-  Id.of_bytes (loop (n - 1))
+  Id.of_string_soft (Bytes.to_string (loop (n - 1)))
 
 let convert_concl_no_check t = Tactics.convert_concl_no_check t DEFAULTcast
 let convert_concl t = Tactics.convert_concl t DEFAULTcast
@@ -808,18 +809,6 @@ let clear_wilds_and_tmp_and_delayed_ids gl =
     (clear_with_wilds ctx.wild_ids ctx.delayed_clears)
     (clear_wilds (List.map fst ctx.tmp_ids @ ctx.wild_ids))) gl
 
-let rec is_name_in_ipats name = function
-  | IPatClear clr :: tl -> 
-      List.exists (function SsrHyp(_,id) -> id = name) clr 
-      || is_name_in_ipats name tl
-  | IPatId id :: tl -> id = name || is_name_in_ipats name tl
-  | IPatAbstractVars ids :: tl ->
-      CList.mem_f Id.equal name ids || is_name_in_ipats name tl
-  | (IPatCase l | IPatDispatch (_,l) | IPatInj l) :: tl ->
-      List.exists (is_name_in_ipats name) l || is_name_in_ipats name tl
-  | (IPatView _ | IPatAnon _ | IPatSimpl _ | IPatRewrite _ | IPatTac _ | IPatNoop) :: tl -> is_name_in_ipats name tl
-  | [] -> false
-
 let view_error s gv =
   errorstrm (str ("Cannot " ^ s ^ " view ") ++ pr_term gv)
 
@@ -1187,9 +1176,23 @@ let gen_tmp_ids
       ctx.tmp_ids) gl)
 ;;
 
-let pf_interp_gen gl to_ind gen =
+let pf_interp_gen to_ind gen gl =
   let _, _, a, b, c, ucst,gl = pf_interp_gen_aux gl to_ind gen in
-  a, b ,c, pf_merge_uc ucst gl
+  (a, b ,c), pf_merge_uc ucst gl
+
+let pfLIFT f =
+  let open Proofview.Notations in
+  let hack = ref None in
+  Proofview.V82.tactic (fun gl ->
+    let g = sig_it gl in
+    let x, gl = f gl in
+    hack := Some (x,project gl);
+    re_sig [g] (project gl))
+  >>= fun () ->
+    let x, sigma = option_assert_get !hack (Pp.str"pfLIFT") in
+    Proofview.Unsafe.tclEVARS sigma <*>
+    Proofview.tclUNIT x
+;;
 
 (* TASSI: This version of unprotects inlines the unfold tactic definition, 
  * since we don't want to wipe out let-ins, and it seems there is no flag
@@ -1273,7 +1276,7 @@ let unfold cl =
 open Proofview
 open Notations
 
-let tacSIGMA = Goal.enter_one begin fun g ->
+let tacSIGMA = Goal.enter_one ~__LOC__ begin fun g ->
   let k = Goal.goal g in
   let sigma = Goal.sigma g in
   tclUNIT (Tacmach.re_sig k sigma)
@@ -1347,6 +1350,11 @@ let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
   Tactics.e_reduct_in_concl ~check:false (r,Constr.DEFAULTcast)
 end
 
+type intro_id =
+  | Anon
+  | Id of Id.t
+  | Seed of string
+
 (** [intro id k] introduces the first premise (product or let-in) of the goal
     under the name [id], reducing the head of the goal (using beta, iota, delta
     but not zeta) if necessary. If [id] is None, a name is generated, that will
@@ -1360,11 +1368,12 @@ let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   let original_name = Rel.Declaration.get_name decl in
   let already_used = Tacmach.New.pf_ids_of_hyps gl in
   let id = match id, original_name with
-    | Some id, _ -> id
-    | _, Name id ->
+    | Id id, _ -> id
+    | Seed id, _ -> mk_anon_id id already_used
+    | Anon, Name id ->
        if is_discharged_id id then id
        else mk_anon_id (Id.to_string id) already_used
-    | _, _ ->
+    | Anon, Anonymous ->
        let ids = Tacmach.New.pf_ids_of_hyps gl in
        mk_anon_id ssr_anon_hyp ids
   in
@@ -1377,8 +1386,11 @@ end
 
 let return ~orig_name:_ ~new_name:_ = tclUNIT ()
 
-let tclINTRO_ID id = tclINTRO ~id:(Some id) ~conclusion:return
-let tclINTRO_ANON = tclINTRO ~id:None ~conclusion:return
+let tclINTRO_ID id = tclINTRO ~id:(Id id) ~conclusion:return
+let tclINTRO_ANON ?seed () =
+  match seed with
+  | None -> tclINTRO ~id:Anon ~conclusion:return
+  | Some seed -> tclINTRO ~id:(Seed seed) ~conclusion:return
 
 let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
   let convert_concl_no_check t =
@@ -1391,8 +1403,8 @@ let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
   | _ -> CErrors.anomaly (Pp.str "rename_hd_prod: no head product")
 end
 
-let tcl0G tac =
-  numgoals >>= fun ng -> if ng = 0 then tclUNIT () else tac
+let tcl0G ~default tac =
+  numgoals >>= fun ng -> if ng = 0 then tclUNIT default else tac
 
 let rec tclFIRSTa = function
   | [] -> Tacticals.New.tclZEROMSG Pp.(str"No applicable tactic.")
@@ -1490,6 +1502,12 @@ let tclGET k = Goal.enter begin fun gl ->
   let open Proofview_monad.StateStore in
   k (Option.default S.init (get (Goal.state gl) state_field))
 end
+
+let tclGET1 k = Goal.enter_one begin fun gl ->
+  let open Proofview_monad.StateStore in
+  k (Option.default S.init (get (Goal.state gl) state_field))
+end
+
 
 let tclSET new_s =
   let open Proofview_monad.StateStore in

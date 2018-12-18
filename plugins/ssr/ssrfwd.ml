@@ -104,7 +104,7 @@ let havetac ist
  let itac_c = introstac (IPatClear clr :: pats) in
  let itac, id, clr = introstac pats, Tacticals.tclIDTAC, old_cleartac clr in
  let binderstac n =
-   let rec aux = function 0 -> [] | n -> IPatAnon One :: aux (n-1) in
+   let rec aux = function 0 -> [] | n -> IPatAnon (One None) :: aux (n-1) in
    Tacticals.tclTHEN (if binders <> [] then introstac (aux n) else Tacticals.tclIDTAC)
      (introstac binders) in
  let simpltac = introstac simpl in
@@ -206,7 +206,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
   let mkabs gen = abs_wgen false (fun x -> x) gen in
   let mkclr gen clrs = clr_of_wgen gen clrs in
   let mkpats = function
-  | _, Some ((x, _), _) -> fun pats -> IPatId (hoi_id x) :: pats
+  | _, Some ((x, _), _) -> fun pats -> IPatId (None,hoi_id x) :: pats
   | _ -> fun x -> x in
   let ct = match Ssrcommon.ssrterm_of_ast_closure_term ct with
   | (a, (b, Some ct)) ->
@@ -265,7 +265,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
       if gens = [] then errorstrm(str"gen have requires some generalizations");
       let clear0 = old_cleartac clr0 in
       let id, name_general_hyp, cleanup, pats = match id, pats with
-      | None, (IPatId id as ip)::pats -> Some id, tacipat [ip], clear0, pats
+      | None, (IPatId(_, id) as ip)::pats -> Some id, tacipat [ip], clear0, pats
       | None, _ -> None, Tacticals.tclIDTAC, clear0, pats
       | Some (Some id),_ -> Some id, introid id, clear0, pats
       | Some _,_ ->

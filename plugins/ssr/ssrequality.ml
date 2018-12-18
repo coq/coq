@@ -181,13 +181,18 @@ let norwocc = noclr, None
 
 let simplintac occ rdx sim gl = 
   let simptac m gl =
-    if m <> ~-1 then
-      CErrors.user_err (Pp.str "Localized custom simpl tactic not supported");
-    let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
-    let simp env c _ _ = EConstr.Unsafe.to_constr (red_safe Tacred.simpl env sigma0 (EConstr.of_constr c)) in
-    Proofview.V82.of_tactic
-      (convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.Unsafe.to_constr concl0) rdx occ simp)))
-      gl in
+    if m <> ~-1 then begin
+      if rdx <> None then
+        CErrors.user_err (Pp.str "Custom simpl tactic does not support patterns");
+      if occ <> None then
+        CErrors.user_err (Pp.str "Custom simpl tactic does not support occurrence numbers");
+      simpltac (Simpl m) gl
+    end else
+      let sigma0, concl0, env0 = project gl, pf_concl gl, pf_env gl in
+      let simp env c _ _ = EConstr.Unsafe.to_constr (red_safe Tacred.simpl env sigma0 (EConstr.of_constr c)) in
+      Proofview.V82.of_tactic
+        (convert_concl_no_check (EConstr.of_constr (eval_pattern env0 sigma0 (EConstr.Unsafe.to_constr concl0) rdx occ simp)))
+        gl in
   match sim with
   | Simpl m -> simptac m gl
   | SimplCut (n,m) -> tclTHEN (simptac m) (tclTRY (donetac n)) gl
@@ -644,6 +649,6 @@ let unlocktac ist args gl =
   let key, gl = pf_mkSsrConst "master_key" gl in
   let ktacs = [
     (fun gl -> unfoldtac None None (project gl,locked) xInParens gl); 
-    Ssrelim.casetac key ] in
+    Proofview.V82.of_tactic (Ssrelim.casetac key (fun ?seed:_ k -> k)) ] in
   tclTHENLIST (List.map utac args @ ktacs) gl
 

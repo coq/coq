@@ -64,38 +64,37 @@ type ast_closure_term = {
 
 type ssrview = ast_closure_term list
 
-(* TODO
-type id_mod = Hat | HatTilde | Sharp
- *)
+type id_mod = Dependent
+
+type id_block = Prefix of Id.t | SuffixId of Id.t | SuffixNum of int
 
 (* Only [One] forces an introduction, possibly reducing the goal. *)
 type anon_iter =
-  | One
+  | One of string option (* name hint *)
   | Drop
   | All
-(* TODO
-  | Dependent (* fast mode *)
-  | UntilMark
-  | Temporary (* "+" *)
- *)
+  | Temporary
 
 type ssripat =
   | IPatNoop
-  | IPatId of (*TODO id_mod option * *) Id.t
+  | IPatId of id_mod option * Id.t
   | IPatAnon of anon_iter (* inaccessible name *)
 (* TODO  | IPatClearMark *)
-  | IPatDispatch of bool (* ssr exception: accept a dispatch on the empty list even when there are subgoals *) * ssripatss (* (..|..) *)
-  | IPatCase of (* ipats_mod option * *) ssripatss (* this is not equivalent to /case /[..|..] if there are already multiple goals *)
+  | IPatDispatch of bool (* ssr exception: accept a dispatch on the empty list even when there are subgoals *) * ssripatss_or_block (* (..|..) *)
+  | IPatCase of (* ipats_mod option * *) ssripatss_or_block (* this is not equivalent to /case /[..|..] if there are already multiple goals *)
   | IPatInj of ssripatss
   | IPatRewrite of (*occurrence option * rewrite_pattern **) ssrocc * ssrdir
   | IPatView of bool * ssrview (* {}/view (true if the clear is present) *)
   | IPatClear of ssrclear (* {H1 H2} *)
   | IPatSimpl of ssrsimpl
   | IPatAbstractVars of Id.t list
-  | IPatTac of unit Proofview.tactic
+  | IPatEqGen of unit Proofview.tactic (* internal use: generation of eqn *)
 
 and ssripats = ssripat list
 and ssripatss = ssripats list
+and ssripatss_or_block =
+  | Block of id_block
+  | Regular of ssripats list
 type ssrhpats = ((ssrclear * ssripats) * ssripats) * ssripats
 type ssrhpats_wtransp = bool * ssrhpats
 
