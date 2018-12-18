@@ -37,6 +37,9 @@
 
 *.nix             @coq/nix-maintainers
 
+azure-pipelines.yml @coq/ci-maintainers
+/dev/ci/azure* @coq/ci-maintainers
+
 ########## Documentation ##########
 
 /README.md        @Zimmi48
