@@ -1559,7 +1559,7 @@ whose general syntax is
    i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
 
 .. prodn::
-   i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+   i_pattern ::= {? %{%} } @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
 
 .. prodn::
    i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
@@ -1615,6 +1615,10 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   a new constant, fact, or defined constant :token:`ident`, respectively.
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
+  An empty occurrence switch ``{}`` has the effect of clearing
+  the :token:`ident` before performing the introduction of :token:`ident`.
+  In other words by prefixing the :token:`ident` with ``{}`` one can
+  *replace* the context entry.
 ``>``
   pops every variable occurring in the rest of the stack.
   Type class instances are popped even if they don't occur

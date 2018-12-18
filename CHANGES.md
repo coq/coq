@@ -146,6 +146,7 @@ SSReflect
   - block introduction: => [^ prefix ] [^~ suffix ]
   - fast introduction: => >
   - tactics as views: => /ltac:mytac
+  - replace hypothesis: => {}H
   See the reference manual for the actual documentation.
 
 Changes from 8.8.2 to 8.9+beta1
