@@ -340,6 +340,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     Proof.in_proof proof (fun m -> Evd.existential_opt_value0 m k) in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar
     (UState.subst universes) in
+
   let make_body =
     if poly || now then
       let make_body t (c, eff) =
@@ -387,14 +388,21 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       fun t p ->
         (* Already checked the univ_decl for the type universes when starting the proof. *)
         let univctx = Entries.Monomorphic_const_entry (UState.context_set universes) in
-        Future.from_val (univctx, nf t),
+        let t = nf t in
+        Future.from_val (univctx, t),
         Future.chain p (fun (pt,eff) ->
           (* Deferred proof, we already checked the universe declaration with
              the initial universes, ensure that the final universes respect
              the declaration as well. If the declaration is non-extensible,
              this will prevent the body from adding universes and constraints. *)
-          let bodyunivs = constrain_variables (Future.force univs) in
-          let univs = UState.check_mono_univ_decl bodyunivs universe_decl in
+          let univs = Future.force univs in
+          let univs = constrain_variables univs in
+          let used_univs = Univ.LSet.union
+              (Vars.universes_of_constr t)
+              (Vars.universes_of_constr pt)
+          in
+          let univs = UState.restrict univs used_univs in
+          let univs = UState.check_mono_univ_decl univs universe_decl in
           (pt,univs),eff)
   in
   let entry_fn p (_, t) =
