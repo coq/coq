@@ -1063,9 +1063,16 @@ let intros_replacing ids =
 
 (* The standard for implementing Automatic Introduction *)
 let auto_intros_tac ids =
-  Tacticals.New.tclMAP (function
-      | Name id -> intro_mustbe_force id
-      | Anonymous -> intro) (List.rev ids)
+  let fold used = function
+    | Name id -> Id.Set.add id used
+    | Anonymous -> used
+  in
+  let avoid = NamingAvoid (List.fold_left fold Id.Set.empty ids) in
+  let naming = function
+    | Name id -> NamingMustBe CAst.(make id)
+    | Anonymous -> avoid
+  in
+  Tacticals.New.tclMAP (fun name -> intro_gen (naming name) MoveLast true false) (List.rev ids)
 
 (* User-level introduction tactics *)
 
