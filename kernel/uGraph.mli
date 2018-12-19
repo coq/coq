@@ -22,9 +22,6 @@ val check_eq_level : Level.t check_function
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : t
 
-(** Check if we are in the initial case *)
-val is_initial_universes : t -> bool
-
 (** Check equality of instances w.r.t. a universe graph *)
 val check_eq_instances : Instance.t check_function
 

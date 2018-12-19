@@ -166,7 +166,7 @@ val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 
 (** {6 Constraints. } *)
 
-type constraint_type = Lt | Le | Eq
+type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 type univ_constraint = Level.t * constraint_type * Level.t
 
 module Constraint : sig
@@ -203,7 +203,7 @@ val enforce_leq_level : Level.t constraint_function
   system stores the graph and may result from combination of several
   Constraint.t...
 *)
-type explanation = (constraint_type * Universe.t) list
+type explanation = (constraint_type * Level.t) list
 type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
 
 exception UniverseInconsistency of univ_inconsistency
