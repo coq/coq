@@ -891,10 +891,6 @@ let reduce redexp cl =
     let pr = (pr_econstr_env, pr_leconstr_env, pr_evaluable_reference, pr_constr_pattern_env) in
     Pp.(hov 2 (Ppred.pr_red_expr_env env sigma pr str redexp))
   in
-  let trace () =
-    let sigma, env = Pfedit.get_current_context () in
-    trace env sigma
-  in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
   let cl' = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in

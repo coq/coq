@@ -215,11 +215,15 @@ let tclLOG (dbg,_,depth,trace) pp tac =
       let s = String.make (depth+1) '*' in
       Proofview.(tclIFCATCH (
           tac >>= fun v ->
-          Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
+          tclENV >>= fun env ->
+          tclEVARMAP >>= fun sigma ->
+          Feedback.msg_debug (str s ++ spc () ++ pp env sigma ++ str ". (*success*)");
           tclUNIT v
-        ) Proofview.tclUNIT
+        ) tclUNIT
           (fun (exn, info) ->
-             Feedback.msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
+             tclENV >>= fun env ->
+             tclEVARMAP >>= fun sigma ->
+             Feedback.msg_debug (str s ++ spc () ++ pp env sigma ++ str ". (*fail*)");
              tclZERO ~info exn))
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
@@ -248,12 +252,12 @@ and erase_subtree depth = function
   | [] -> []
   | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
 
-let pr_info_atom (d,pp) =
-  str (String.make d ' ') ++ pp () ++ str "."
+let pr_info_atom env sigma (d,pp) =
+  str (String.make d ' ') ++ pp env sigma ++ str "."
 
-let pr_info_trace = function
+let pr_info_trace env sigma = function
   | (Info,_,_,{contents=(d,Some pp)::l}) ->
-      Feedback.msg_info (prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l))
+    Feedback.msg_info (prlist_with_sep fnl (pr_info_atom env sigma) (cleanup_info_trace d [(d,pp)] l))
   | _ -> ()
 
 let pr_info_nop = function
@@ -269,8 +273,12 @@ let pr_dbg_header = function
 
 let tclTRY_dbg d tac =
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in
-  let tac = delay (fun () -> pr_dbg_header d; tac) >>=
-              fun () -> pr_info_trace d; Proofview.tclUNIT () in
+  let tac =
+    delay (fun () -> pr_dbg_header d; tac) >>= fun () ->
+      Proofview.tclENV >>= fun env ->
+      Proofview.tclEVARMAP >>= fun sigma ->
+      pr_info_trace env sigma d;
+      Proofview.tclUNIT () in
   let after = delay (fun () -> pr_info_nop d; Proofview.tclUNIT ()) in
   Tacticals.New.tclORELSE0 tac after
 
@@ -300,8 +308,8 @@ let exists_evaluable_reference env = function
   | EvalConstRef _ -> true
   | EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
 
-let dbg_intro dbg = tclLOG dbg (fun () -> str "intro") intro
-let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
+let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
+let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
 
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
@@ -385,12 +393,11 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
     | Extern tacast ->
       conclPattern concl p tacast
   in
-  let pr_hint () =
+  let pr_hint env sigma =
     let origin = match dbname with
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
-    let sigma, env = Pfedit.get_current_context () in
     pr_hint env sigma t ++ origin
   in
   tclLOG dbg pr_hint (run_hint t tactic)
