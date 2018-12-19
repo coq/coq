@@ -2,6 +2,7 @@
 # Dune Makefile for Coq
 
 .PHONY: help voboot states world watch check          # Main developer targets
+.PHONY: coq coqide coqide-server                      # Package targets
 .PHONY: quickbyte quickopt                            # Partial / quick developer targets
 .PHONY: test-suite refman-html apidoc release         # Accesory targets
 .PHONY: ocheck trunk ireport clean                    # Maintenance targets
@@ -18,6 +19,10 @@ help:
 	@echo "  - world:  build all binaries and libraries"
 	@echo "  - watch:  build all binaries and libraries [continuous build]"
 	@echo "  - check:  build all ML files as fast as possible"
+	@echo ""
+	@echo "  - coq: build package Coq [toplevel compilers, tools, stdlib, no GTK]"
+	@echo "  - coqide-server: build package coqide-server [XML protocol language server]"
+	@echo "  - coqide: build package CoqIDE [gtk application]"
 	@echo ""
 	@echo "  - quickbyte: build main ML files [coqtop + plugins + ide + printers] using the bytecode compiler"
 	@echo "  - quickopt:  build main ML files [coqtop + plugins + ide + printers] using the optimizing compiler"
@@ -42,6 +47,15 @@ states: voboot
 
 world: voboot
 	dune build $(DUNEOPT) @install
+
+coq: voboot
+	dune build $(DUNEOPT) coq.install
+
+coqide: voboot
+	dune build $(DUNEOPT) coqide.install
+
+coqide-server: voboot
+	dune build $(DUNEOPT) coqide-server.install
 
 watch: voboot
 	dune build $(DUNEOPT) @install -w
@@ -90,11 +104,11 @@ ireport:
 clean:
 	dune clean
 
-# Other common dev targets
+# Other common dev targets:
 #
 # dune build coq.install
-# dune build ide/coqide.install
-
+# dune build coqide.install
+#
 # Packaging / OPAM targets:
 #
 # dune -p coq @install
