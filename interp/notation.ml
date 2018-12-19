@@ -50,15 +50,25 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
+let notation_entry_level_compare s1 s2 = match (s1,s2) with
+| InConstrEntrySomeLevel, InConstrEntrySomeLevel -> 0
+| InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) ->
+   pair_compare String.compare Int.compare (s1,n1) (s2,n2)
+| InConstrEntrySomeLevel, _ -> -1
+| InCustomEntryLevel _, _ -> 1
+
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_level_eq from1 from2 && String.equal ntn1 ntn2
 
 let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntrySomeLevel -> mt () | InCustomEntryLevel (s,n) -> str " in custom " ++ str s
 
+let notation_compare =
+  pair_compare notation_entry_level_compare String.compare
+
 module NotationOrd =
   struct
     type t = notation
-    let compare = Pervasives.compare
+    let compare = notation_compare
   end
 
 module NotationSet = Set.Make(NotationOrd)
@@ -177,6 +187,17 @@ type interp_rule =
 type scoped_notation_rule_core = scope_name * notation * interpretation * int option
 type notation_rule_core = interp_rule * interpretation * int option
 type notation_rule = notation_rule_core * delimiters option * bool
+
+let interp_rule_compare r1 r2 = match r1, r2 with
+  | NotationRule (sc1,ntn1), NotationRule (sc2,ntn2) ->
+      pair_compare (Option.compare String.compare) notation_compare (sc1,ntn1) (sc2,ntn2)
+  | SynDefRule kn1, SynDefRule kn2 -> KerName.compare kn1 kn2
+  | (NotationRule _ | SynDefRule _), _ -> -1
+
+module InterpRuleSet = Set.Make(struct
+    type t = interp_rule
+    let compare = interp_rule_compare
+  end)
 
 (* Scopes for uninterpretation: includes abbreviations (i.e. syntactic definitions) and  *)
 

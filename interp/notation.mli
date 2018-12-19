@@ -210,6 +210,8 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of KerName.t
 
+module InterpRuleSet : Set.S with type elt = interp_rule
+
 val declare_notation_interpretation : notation -> scope_name option ->
       interpretation -> notation_location -> onlyprint:bool -> unit
 
