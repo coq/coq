@@ -601,19 +601,19 @@ let is_defined d e = EvMap.mem e d.defn_evars
 
 let is_undefined d e = EvMap.mem e d.undf_evars
 
-let existential_value d (n, args) =
-  let info = find d n in
-  match evar_body info with
-  | Evar_defined c ->
-    instantiate_evar_array info c args
-  | Evar_empty ->
-    raise NotInstantiatedEvar
+let existential_opt_value d (n, args) =
+  match EvMap.find_opt n d.defn_evars with
+  | None -> None
+  | Some info ->
+    match evar_body info with
+    | Evar_defined c -> Some (instantiate_evar_array info c args)
+    | Evar_empty -> None (* impossible but w/e *)
+
+let existential_value d ev = match existential_opt_value d ev with
+  | None -> raise NotInstantiatedEvar
+  | Some v -> v
 
 let existential_value0 = existential_value
-
-let existential_opt_value d ev =
-  try Some (existential_value d ev)
-  with NotInstantiatedEvar -> None
 
 let existential_opt_value0 = existential_opt_value
 

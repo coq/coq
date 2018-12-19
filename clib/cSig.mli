@@ -83,6 +83,7 @@ sig
     val choose: 'a t -> (key * 'a)
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
+    val find_opt : key -> 'a t -> 'a option
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
 end
