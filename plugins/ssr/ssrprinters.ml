@@ -97,8 +97,7 @@ let pr_view2 = pr_list mt (fun c -> str "/" ++ pr_ast_closure_term c)
 
 let rec pr_ipat p =
   match p with
-  | IPatId (None,id) -> Id.print id
-  | IPatId (Some Dependent,id) -> str">" ++ Id.print id
+  | IPatId id -> Id.print id
   | IPatSimpl sim -> pr_simpl sim
   | IPatClear clr -> pr_clear mt clr
   | IPatCase (Regular iorpat) -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
@@ -115,6 +114,7 @@ let rec pr_ipat p =
   | IPatAnon Temporary -> str "+"
   | IPatNoop -> str "-"
   | IPatAbstractVars l -> str "[:" ++ pr_list spc Id.print l ++ str "]"
+  | IPatFastNondep -> str">"
   | IPatEqGen _ -> str "<tac>"
 and pr_ipats ipats = pr_list spc pr_ipat ipats
 and pr_iorpat iorpat = pr_list pr_bar pr_ipats iorpat

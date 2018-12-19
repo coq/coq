@@ -605,7 +605,7 @@ let remove_loc x = x.CAst.v
 
 let ipat_of_intro_pattern p = Tactypes.(
   let rec ipat_of_intro_pattern = function
-    | IntroNaming (IntroIdentifier id) -> IPatId (None,id)
+    | IntroNaming (IntroIdentifier id) -> IPatId id
     | IntroAction IntroWildcard -> IPatAnon Drop
     | IntroAction (IntroOrAndPattern (IntroOrPattern iorpat)) ->
       IPatCase (Regular(
@@ -629,8 +629,8 @@ let ipat_of_intro_pattern p = Tactypes.(
 )
 
 let rec map_ipat map_id map_ssrhyp map_ast_closure_term = function
-  | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop) as x -> x
-  | IPatId (m,id) -> IPatId (m,map_id id)
+  | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop | IPatFastNondep) as x -> x
+  | IPatId id -> IPatId (map_id id)
   | IPatAbstractVars l -> IPatAbstractVars (List.map map_id l)
   | IPatClear clr -> IPatClear (List.map map_ssrhyp clr)
   | IPatCase (Regular iorpat) -> IPatCase (Regular (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat))
@@ -707,7 +707,7 @@ let interp_ipat ist gl =
         end
     | x -> x in
   let rec interp = function
-  | IPatId(_, id) when ltacvar id ->
+  | IPatId id when ltacvar id ->
     ipat_of_intro_pattern (interp_introid ist gl id)
   | IPatId _ as x -> x
   | IPatClear clr ->
@@ -729,7 +729,7 @@ let interp_ipat ist gl =
      IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist gl) l))
   | IPatView (clr,l) -> IPatView (clr,List.map (fun x -> snd(interp_ast_closure_term ist
      gl x)) l)
-  | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop) as x -> x
+  | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop | IPatFastNondep) as x -> x
   | IPatEqGen _ -> assert false (*internal usage only *)
     in
   interp
@@ -751,8 +751,8 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   GLOBALIZED BY { intern_ipats }
   | [ "_" ] -> { [IPatAnon Drop] }
   | [ "*" ] -> { [IPatAnon All] }
-  | [ ">" ident(id) ] -> { [IPatId(Some Dependent,id)] }
-  | [ ident(id) ] -> { [IPatId (None,id)] }
+  | [ ">" ] -> { [IPatFastNondep] }
+  | [ ident(id) ] -> { [IPatId id] }
   | [ "?" ] -> { [IPatAnon (One None)] }
   | [ "+" ] -> { [IPatAnon Temporary] }
   | [ "++" ] -> { [IPatAnon Temporary; IPatAnon Temporary] }
@@ -1492,7 +1492,7 @@ END
 {
 
 let intro_id_to_binder = List.map (function 
-  | IPatId (None,id) ->
+  | IPatId id ->
       let { CAst.loc=xloc } as x = bvar_lname (mkCVar id) in
       (FwdPose, [BFvar]),
         CAst.make @@ CLambdaN ([CLocalAssum([x], Default Explicit, mkCHole xloc)],
@@ -1502,8 +1502,8 @@ let intro_id_to_binder = List.map (function
 let binder_to_intro_id = CAst.(List.map (function
   | (FwdPose, [BFvar]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) }
   | (FwdPose, [BFdecl _]), { v = CLambdaN ([CLocalAssum(ids,_,_)],_) } ->
-      List.map (function {v=Name id} -> IPatId (None,id) | _ -> IPatAnon (One None)) ids
-  | (FwdPose, [BFdef]), { v = CLetIn ({v=Name id},_,_,_) } -> [IPatId (None,id)]
+      List.map (function {v=Name id} -> IPatId id | _ -> IPatAnon (One None)) ids
+  | (FwdPose, [BFdef]), { v = CLetIn ({v=Name id},_,_,_) } -> [IPatId id]
   | (FwdPose, [BFdef]), { v = CLetIn ({v=Anonymous},_,_,_) } -> [IPatAnon (One None)]
   | _ -> anomaly "ssrbinder is not a binder"))
 
@@ -1994,7 +1994,7 @@ let test_ssreqid = Pcoq.Entry.of_parser "test_ssreqid" accept_ssreqid
 GRAMMAR EXTEND Gram
   GLOBAL: ssreqid;
   ssreqpat: [
-    [ id = Prim.ident -> { IPatId (None,id) }
+    [ id = Prim.ident -> { IPatId id }
     | "_" -> { IPatAnon Drop }
     | "?" -> { IPatAnon (One None) }
     | "+" -> { IPatAnon Temporary }
