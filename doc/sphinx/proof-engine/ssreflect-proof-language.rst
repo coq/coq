@@ -1617,7 +1617,7 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   required to expose the top variable or assumption.
 ``>``
   pops every variable occurring in the rest of the stack.
-  Type class instances are popped even if then don't occur
+  Type class instances are popped even if they don't occur
   in the rest of the stack.
   The tactic ``move=> >`` is equivalent to
   ``move=> ? ?`` on a goal such as::
