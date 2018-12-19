@@ -25,29 +25,29 @@ Goal True.
   let x := match constr:(Set) with ?y => constr:(y) end in
   pose x.
 (* This fails with an error: *)
-  Fail let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let x := match constr:(x) with ?y => constr:(y) end in
   pose x. (* The command has indeed failed with message:
 Error: Variable y should be bound to a term. *)
 (* And the rest fail with Anomaly: Uncaught exception Not_found. Please report. *)
-  Fail let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let x := match constr:(x) with ?y => y end in
   pose x.
-  Fail let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let x := (eval cbv iota in x) in
   pose x.
-  Fail let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let x := type of x in
   pose x. (* should succeed *)
-  Fail let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:(_ : abstract_term term) in
   let x := type of x in
@@ -70,7 +70,7 @@ Even stranger, consider:*)
 
 (*This works fine.  But if I change the period to a semicolon, I get:*)
 
-      Fail let term := constr:(I) in
+      let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let y := (eval cbv iota in (let v : T := x in v)) in
@@ -82,7 +82,7 @@ Even stranger, consider:*)
  (* should succeed *)
 (*and if I use the second one instead of [pose x] (note that using [idtac] works fine), I get:*)
 
- Fail  let term := constr:(I) in
+  let term := constr:(I) in
   let T := type of term in
   let x := constr:((_ : abstract_term term) : T) in
   let y := (eval cbv iota in (let v : T := x in v)) in
@@ -92,3 +92,5 @@ Even stranger, consider:*)
       let x := (eval cbv delta [x'] in x') in
       let z := (eval cbv iota in x) in (* Error: Variable x should be bound to a term. *)
       idtac. (* should succeed *)
+  exact I.
+Qed.
