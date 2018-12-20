@@ -54,5 +54,5 @@ tools/CoqMakefile.in whitespace=blank-at-eol
 # CR is desired for these Windows files.
 *.bat whitespace=cr-at-eol,blank-at-eol,tab-in-indent
 
-* eol=lf
-*.bat eol=crlf
+# never do endline conversion
+* -text
