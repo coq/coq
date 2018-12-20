@@ -24,6 +24,7 @@ Require Import Logic.
     Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset
     of elements of the type [A] which satisfy both [P] and [Q]. *)
 
+#[universes(template)]
 Inductive sig (A:Type) (P:A -> Prop) : Type :=
     exist : forall x:A, P x -> sig P.
 
@@ -31,12 +32,14 @@ Register sig as core.sig.type.
 Register exist as core.sig.intro.
 Register sig_rect as core.sig.rect.
 
+#[universes(template)]
 Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
     exist2 : forall x:A, P x -> Q x -> sig2 P Q.
 
 (** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
+#[universes(template)]
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
     existT : forall x:A, P x -> sigT P.
 
@@ -44,6 +47,7 @@ Register sigT as core.sigT.type.
 Register existT as core.sigT.intro.
 Register sigT_rect as core.sigT.rect.
 
+#[universes(template)]
 Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
     existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
 
@@ -700,6 +704,7 @@ Register sumbool as core.sumbool.type.
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)
 
+#[universes(template)]
 Inductive sumor (A:Type) (B:Prop) : Type :=
   | inleft : A -> A + {B}
   | inright : B -> A + {B}

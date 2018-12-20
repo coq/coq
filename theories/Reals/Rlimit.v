@@ -116,6 +116,7 @@ Qed.
 (*******************************)
 
 (*********)
+#[universes(template)]
 Record Metric_Space : Type :=
   {Base : Type;
     dist : Base -> Base -> R;

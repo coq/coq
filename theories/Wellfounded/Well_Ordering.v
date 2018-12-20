@@ -18,6 +18,7 @@ Section WellOrdering.
   Variable A : Type.
   Variable B : A -> Type.
 
+  #[universes(template)]
   Inductive WO : Type :=
     sup : forall (a:A) (f:B a -> WO), WO.
 

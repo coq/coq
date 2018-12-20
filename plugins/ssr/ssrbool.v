@@ -609,6 +609,7 @@ Hint View for apply// equivPif|3 xorPif|3 equivPifn|3 xorPifn|3.
 (**  Allow the direct application of a reflection lemma to a boolean assertion.  **)
 Coercion elimT : reflect >-> Funclass.
 
+#[universes(template)]
 Variant implies P Q := Implies of P -> Q.
 Lemma impliesP P Q : implies P Q -> P -> Q. Proof. by case. Qed.
 Lemma impliesPn (P Q : Prop) : implies P Q -> ~ Q -> ~ P.
@@ -1130,10 +1131,12 @@ Proof. by move=> *; apply/orP; left. Qed.
 Lemma subrelUr r1 r2 : subrel r2 (relU r1 r2).
 Proof. by move=> *; apply/orP; right. Qed.
 
+#[universes(template)]
 Variant mem_pred := Mem of pred T.
 
 Definition isMem pT topred mem := mem = (fun p : pT => Mem [eta topred p]).
 
+#[universes(template)]
 Structure predType := PredType {
   pred_sort :> Type;
   topred : pred_sort -> pred T;
@@ -1275,6 +1278,7 @@ Implicit Types (x : T) (p : pred T) (sp : simpl_pred T) (pp : pT).
  implementation of unification, notably improper expansion of telescope
  projections and overwriting of a variable assignment by a later
  unification (probably due to conversion cache cross-talk).                  **)
+#[universes(template)]
 Structure manifest_applicative_pred p := ManifestApplicativePred {
   manifest_applicative_pred_value :> pred T;
   _ : manifest_applicative_pred_value = p
@@ -1283,18 +1287,21 @@ Definition ApplicativePred p := ManifestApplicativePred (erefl p).
 Canonical applicative_pred_applicative sp :=
   ApplicativePred (applicative_pred_of_simpl sp).
 
+#[universes(template)]
 Structure manifest_simpl_pred p := ManifestSimplPred {
   manifest_simpl_pred_value :> simpl_pred T;
   _ : manifest_simpl_pred_value = SimplPred p
 }.
 Canonical expose_simpl_pred p := ManifestSimplPred (erefl (SimplPred p)).
 
+#[universes(template)]
 Structure manifest_mem_pred p := ManifestMemPred {
   manifest_mem_pred_value :> mem_pred T;
   _ : manifest_mem_pred_value= Mem [eta p]
 }.
 Canonical expose_mem_pred p :=  @ManifestMemPred p _ (erefl _).
 
+#[universes(template)]
 Structure applicative_mem_pred p :=
   ApplicativeMemPred {applicative_mem_pred_value :> manifest_mem_pred p}.
 Canonical check_applicative_mem_pred p (ap : manifest_applicative_pred p) mp :=
@@ -1345,6 +1352,7 @@ End simpl_mem.
 
 (**  Qualifiers and keyed predicates.  **)
 
+#[universes(template)]
 Variant qualifier (q : nat) T := Qualifier of predPredType T.
 
 Coercion has_quality n T (q : qualifier n T) : pred_class :=
@@ -1392,9 +1400,11 @@ Notation "[ 'qualify' 'an' x : T | P ]" := (Qualifier 2 (fun x : T => P%B))
 Section KeyPred.
 
 Variable T : Type.
+#[universes(template)]
 Variant pred_key (p : predPredType T) := DefaultPredKey.
 
 Variable p : predPredType T.
+#[universes(template)]
 Structure keyed_pred (k : pred_key p) :=
   PackKeyedPred {unkey_pred :> pred_class; _ : unkey_pred =i p}.
 
@@ -1426,6 +1436,7 @@ Section KeyedQualifier.
 
 Variables (T : Type) (n : nat) (q : qualifier n T).
 
+#[universes(template)]
 Structure keyed_qualifier (k : pred_key q) :=
   PackKeyedQualifier {unkey_qualifier; _ : unkey_qualifier = q}.
 Definition KeyedQualifier k := PackKeyedQualifier k (erefl q).

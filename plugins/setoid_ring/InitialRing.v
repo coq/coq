@@ -740,6 +740,7 @@ Ltac abstract_ring_morphism set ext rspec :=
   | _ => fail 1 "bad ring structure"
   end.
 
+#[universes(template)]
 Record hypo : Type := mkhypo {
    hypo_type : Type;
    hypo_proof : hypo_type

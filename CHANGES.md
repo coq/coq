@@ -135,6 +135,17 @@ Universes
   for the "Private Polymorphic Universes" option (and Unset it to get
   the previous behaviour).
 
+Inductives
+
+- An option and attributes to control the automatic decision to
+  declare an inductive type as template polymorphic were added.
+  Warning "auto-template" will trigger when an inductive is
+  automatically declared template polymorphic without the attribute.
+
+Funind
+
+- Inductive types declared by Funind will never be template polymorphic.
+
 Misc
 
 - Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.

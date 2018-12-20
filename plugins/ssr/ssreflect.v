@@ -178,6 +178,7 @@ Register abstract_key as plugins.ssreflect.abstract_key.
 Register abstract as plugins.ssreflect.abstract.
 
 (**  Constants for tactic-views  **)
+#[universes(template)]
 Inductive external_view : Type := tactic_view of Type.
 
 (**
@@ -206,6 +207,7 @@ Inductive external_view : Type := tactic_view of Type.
 
 Module TheCanonical.
 
+#[universes(template)]
 Variant put vT sT (v1 v2 : vT) (s : sT) := Put.
 
 Definition get vT sT v s (p : @put vT sT v v s) := let: Put _ _ _ := p in s.
@@ -301,9 +303,11 @@ Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s)
    We also define a simpler version ("phant" / "Phant") of phantom for the
  common case where p_type is Type.                                           **)
 
+#[universes(template)]
 Variant phantom T (p : T) := Phantom.
 Arguments phantom : clear implicits.
 Arguments Phantom : clear implicits.
+#[universes(template)]
 Variant phant (p : Type) := Phant.
 
 (**  Internal tagging used by the implementation of the ssreflect elim.  **)
@@ -389,6 +393,7 @@ Ltac ssrdone0 :=
    | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
 (**  To unlock opaque constants.  **)
+#[universes(template)]
 Structure unlockable T v := Unlockable {unlocked : T; _ : unlocked = v}.
 Lemma unlock T x C : @unlocked T x C = x. Proof. by case: C. Qed.
 

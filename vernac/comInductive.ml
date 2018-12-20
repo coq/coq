@@ -34,6 +34,13 @@ module RelDecl = Context.Rel.Declaration
 
 (* 3b| Mutual inductive definitions *)
 
+let warn_auto_template =
+  CWarnings.create ~name:"auto-template" ~category:"vernacular"
+    (fun id ->
+       Pp.(strbrk "Automatically declaring " ++ Id.print id ++
+           strbrk " as template polymorphic. Use attributes or " ++
+           strbrk "disable Auto Template Polymorphism to avoid this warning."))
+
 let should_auto_template =
   let open Goptions in
   let auto = ref true in
@@ -44,7 +51,10 @@ let should_auto_template =
         optread  = (fun () -> !auto);
         optwrite = (fun b -> auto := b); }
   in
-  fun () -> !auto
+  fun id would_auto ->
+    let b = !auto && would_auto in
+    if b then warn_auto_template id;
+    b
 
 let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
@@ -431,8 +441,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
           if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
           template
         | None ->
-          should_auto_template () && not poly &&
-          Option.cata (fun s -> not (Sorts.is_small s)) false concl
+          should_auto_template ind.ind_name (not poly &&
+          Option.cata (fun s -> not (Sorts.is_small s)) false concl)
       in
       { mind_entry_typename = ind.ind_name;
         mind_entry_arity = arity;

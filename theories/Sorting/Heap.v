@@ -42,6 +42,7 @@ Section defs.
   Let emptyBag := EmptyBag A.
   Let singletonBag := SingletonBag _ eqA_dec.
 
+  #[universes(template)]
   Inductive Tree :=
     | Tree_Leaf : Tree
     | Tree_Node : A -> Tree -> Tree -> Tree.
@@ -128,6 +129,7 @@ Section defs.
 
   (** ** Merging two sorted lists *)
 
+  #[universes(template)]
   Inductive merge_lem (l1 l2:list A) : Type :=
     merge_exist :
     forall l:list A,
@@ -201,6 +203,7 @@ Section defs.
 
   (** ** Specification of heap insertion *)
 
+  #[universes(template)]
   Inductive insert_spec (a:A) (T:Tree) : Type :=
     insert_exist :
     forall T1:Tree,
@@ -234,6 +237,7 @@ Section defs.
 
   (** ** Building a heap from a list *)
 
+  #[universes(template)]
   Inductive build_heap (l:list A) : Type :=
     heap_exist :
     forall T:Tree,
@@ -258,6 +262,7 @@ Section defs.
 
   (** ** Building the sorted list *)
 
+  #[universes(template)]
   Inductive flat_spec (T:Tree) : Type :=
     flat_exist :
     forall l:list A,

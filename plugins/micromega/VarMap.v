@@ -30,6 +30,7 @@ Section MakeVarMap.
   Variable A : Type.
   Variable default : A.
 
+  #[universes(template)]
   Inductive t  : Type :=
   | Empty : t
   | Leaf : A -> t

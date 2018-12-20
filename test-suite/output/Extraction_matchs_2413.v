@@ -101,7 +101,7 @@ Section decoder_result.
 
  Variable inst : Type.
 
- Inductive decoder_result : Type :=
+ #[universes(template)] Inductive decoder_result : Type :=
  | DecUndefined : decoder_result
  | DecUnpredictable : decoder_result
  | DecInst : inst -> decoder_result

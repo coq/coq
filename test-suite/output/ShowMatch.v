@@ -3,12 +3,12 @@
 *)
 
 Module A.
-  Inductive foo := f.
+  #[universes(template)] Inductive foo := f.
   Show Match foo. (* no need to disambiguate *)
 End A. 
 
 Module B.
-  Inductive foo := f.
+  #[universes(template)] Inductive foo := f.
   (* local foo shadows A.foo, so constructor "f" needs disambiguation *)
   Show Match A.foo. 
 End B.

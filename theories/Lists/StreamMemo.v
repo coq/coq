@@ -78,6 +78,7 @@ Section DependentMemoFunction.
 Variable A: nat -> Type.
 Variable f: forall n, A n.
 
+#[universes(template)]
 Inductive memo_val: Type :=
   memo_mval: forall n, A n -> memo_val.
 

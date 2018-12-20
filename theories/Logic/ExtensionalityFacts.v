@@ -40,6 +40,7 @@ Definition is_inverse A B f g := (forall a:A, g (f a) = a) /\ (forall b:B, f (g 
 
 (** The diagonal over A and the one-one correspondence with A *)
 
+#[universes(template)]
 Record Delta A := { pi1:A; pi2:A; eq:pi1=pi2 }.
 
 Definition delta {A} (a:A) := {|pi1 := a; pi2 := a; eq := eq_refl a |}.

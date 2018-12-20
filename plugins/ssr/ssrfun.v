@@ -285,6 +285,7 @@ Lemma unitE : all_equal_to tt. Proof. by case. Qed.
 
 (**  A generic wrapper type  **)
 
+#[universes(template)]
 Structure wrapped T := Wrap {unwrap : T}.
 Canonical wrap T x := @Wrap T x.
 
@@ -334,6 +335,7 @@ Section SimplFun.
 
 Variables aT rT : Type.
 
+#[universes(template)]
 Variant simpl_fun := SimplFun of aT -> rT.
 
 Definition fun_of_simpl f := fun x => let: SimplFun lam := f in lam x.

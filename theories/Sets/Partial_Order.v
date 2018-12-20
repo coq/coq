@@ -36,6 +36,7 @@ Section Partial_orders.
 
   Definition Rel := Relation U.
 
+  #[universes(template)]
   Record PO : Type := Definition_of_PO
     { Carrier_of : Ensemble U;
       Rel_of : Relation U;

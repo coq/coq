@@ -53,6 +53,7 @@ Variable elt : Type.
 
    The fifth field of [Node] is the height of the tree *)
 
+#[universes(template)]
 Inductive tree :=
   | Leaf : tree
   | Node : tree -> key -> elt -> tree -> int -> tree.
@@ -235,6 +236,7 @@ Fixpoint join l : key -> elt -> t -> t :=
     - [o] is the result of [find x m].
 *)
 
+#[universes(template)]
 Record triple := mktriple { t_left:t; t_opt:option elt; t_right:t }.
 Notation "<< l , b , r >>" := (mktriple l b r) (at level 9).
 
@@ -291,6 +293,7 @@ Variable cmp : elt->elt->bool.
 
 (** ** Enumeration of the elements of a tree *)
 
+#[universes(template)]
 Inductive enumeration :=
  | End : enumeration
  | More : key -> elt -> t -> enumeration -> enumeration.
@@ -1817,6 +1820,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module Raw := Raw I X.
  Import Raw.Proofs.
 
+ #[universes(template)]
  Record bst (elt:Type) :=
   Bst {this :> Raw.tree elt; is_bst : Raw.bst this}.
 

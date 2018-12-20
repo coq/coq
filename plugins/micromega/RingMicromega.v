@@ -289,6 +289,7 @@ destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
  now apply (Rplus_nonneg_nonneg sor).
 Qed.
 
+#[universes(template)]
 Inductive Psatz : Type :=
 | PsatzIn : nat -> Psatz
 | PsatzSquare : PolC -> Psatz
@@ -685,6 +686,7 @@ end.
 Definition  eval_pexpr : PolEnv -> PExpr C -> R :=
  PEeval rplus rtimes rminus ropp phi pow_phi rpow.
 
+#[universes(template)]
 Record Formula (T:Type) : Type := {
   Flhs : PExpr T;
   Fop : Op2;

@@ -1024,6 +1024,7 @@ Module E := X.
 
 Definition key := E.t.
 
+#[universes(template)]
 Record slist (elt:Type) :=
   {this :> Raw.t elt; sorted : sort (@Raw.PX.ltk elt) this}.
 Definition t (elt:Type) : Type := slist elt.
