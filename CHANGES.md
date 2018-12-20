@@ -184,6 +184,11 @@ Universes
   for the "Private Polymorphic Universes" option (and Unset it to get
   the previous behaviour).
 
+SProp
+
+- Added a universe "SProp" for definitionally proof irrelevant
+  propositions. Use with -allow-sprop. See manual for details.
+
 Inductives
 
 - An option and attributes to control the automatic decision to

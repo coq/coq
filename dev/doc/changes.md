@@ -12,6 +12,8 @@
 
 ### ML API
 
+SProp was added, see <SProp.md>
+
 General deprecation
 
 - All functions marked [@@ocaml.deprecated] in 8.8 have been

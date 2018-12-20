@@ -81,6 +81,7 @@ Addendum
    addendum/parallel-proof-processing
    addendum/miscellaneous-extensions
    addendum/universe-polymorphism
+   addendum/sprop
 
 .. toctree::
    zebibliography

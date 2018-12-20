@@ -1424,6 +1424,14 @@ let vernac_generalizable ~local =
 let () =
   declare_bool_option
     { optdepr  = false;
+      optname  = "allow sprop";
+      optkey   = ["Allow";"StrictProp"];
+      optread  = (fun () -> Global.sprop_allowed());
+      optwrite = Global.set_allow_sprop }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
       optname  = "silent";
       optkey   = ["Silent"];
       optread  = (fun () -> !Flags.quiet);

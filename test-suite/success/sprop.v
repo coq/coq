@@ -24,7 +24,7 @@ Definition iSquash_rect A (P : iSquash A -> SProp) (H : forall x : A, P (isquash
 Fail Check (fun A : SProp => A : Type).
 
 Lemma foo : Prop.
-Proof. pose (fun A : SProp => A : Type). Abort.
+Proof. pose (fun A : SProp => A : Type); exact True. Fail Qed. Abort.
 
 (* define evar as product *)
 Check (fun (f:(_:SProp)) => f _).
@@ -186,4 +186,4 @@ Fail Definition relevance_unfixed := fun (A:SProp) (P:A -> Prop) x y (v:P x) => 
 
 (* but the kernel is fine *)
 Definition relevance_unfixed := fun (A:SProp) (P:A -> Prop) x y (v:P x) =>
-                                  ltac:(refine (_:P y);exact_no_check v).
+                                  ltac:(exact_no_check v) : P y.
