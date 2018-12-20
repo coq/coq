@@ -455,7 +455,7 @@ let coq_bin_annot_flag = if !prefs.bin_annot then "-bin-annot" else ""
 let coq_safe_string = "-safe-string"
 let coq_strict_sequence = "-strict-sequence"
 
-let cflags = "-Wall -Wno-unused -g -O2"
+let cflags = ref "-Wall -Wno-unused -g -O2"
 
 (** * Architecture *)
 
@@ -565,7 +565,10 @@ let caml_version_nums =
 
 let check_caml_version () =
   if caml_version_nums >= [4;5;0] then
-    cprintf "You have OCaml %s. Good!" caml_version
+    ((if caml_version_nums >= [4;8;0]
+    (* C value got renamed (and semantics changed a bit but not in a way we care about) *)
+      then cflags := !cflags ^ " -Dcaml_signals_are_pending=caml_signals_might_be_pending");
+     cprintf "You have OCaml %s. Good!" caml_version)
   else
     let () = cprintf "Your version of OCaml is %s." caml_version in
     if !prefs.force_caml_version then
@@ -1177,7 +1180,7 @@ let write_makefile f =
   (* XXX make this configurable *)
   pr "FLAMBDA_FLAGS=%s\n" (String.concat " " !prefs.flambda_flags);
   pr "# Flags for GCC\n";
-  pr "CFLAGS=%s\n\n" cflags;
+  pr "CFLAGS=%s\n\n" !cflags;
   pr "# Compilation debug flags\n";
   pr "CAMLDEBUG=%s\n" coq_debug_flag;
   pr "CAMLDEBUGOPT=%s\n\n" coq_debug_flag;
