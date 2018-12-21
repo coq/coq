@@ -164,7 +164,8 @@ let classify_vernac e =
     | VernacRegister _
     | VernacNameSectionHypSet _
     | VernacDeclareCustomEntry _
-    | VernacComments _ -> VtSideff [], VtLater
+    | VernacComments _
+    | VernacDeclareInstance _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)

@@ -1,7 +1,7 @@
 Require Import RelationClasses.
 
 Axiom R : Prop -> Prop -> Prop.
-Declare Instance : Reflexive R.
+Declare Instance R_refl : Reflexive R.
 
 Class bar := { x : False }.
 Record foo := { a : Prop ; b : bar }.

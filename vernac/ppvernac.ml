@@ -887,10 +887,9 @@ open Pputils
               spc() ++ pr_class_rawexpr c2)
         )
 
-      | VernacInstance (abst, sup, (instid, bk, cl), props, info) ->
+      | VernacInstance (sup, (instid, bk, cl), props, info) ->
         return (
           hov 1 (
-            (if abst then keyword "Declare" ++ spc () else mt ()) ++
             keyword "Instance" ++
             (match instid with
              | {loc; v = Name id}, l -> spc () ++ pr_ident_decl (CAst.(make ?loc id),l) ++ spc ()
@@ -904,6 +903,16 @@ open Pputils
                 | Some (true,_) -> assert false
                 | Some (false,p) -> spc () ++ str":=" ++ spc () ++ pr_constr p
                 | None -> mt()))
+        )
+
+      | VernacDeclareInstance (sup, (instid, bk, cl), info) ->
+        return (
+          hov 1 (
+            keyword "Declare Instance" ++ spc () ++ pr_ident_decl instid ++ spc () ++
+            pr_and_type_binders_arg sup ++
+              str":" ++ spc () ++
+              (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
+              pr_constr cl ++ pr_hint_info pr_constr_pattern_expr info)
         )
 
       | VernacContext l ->

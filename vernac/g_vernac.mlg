@@ -683,7 +683,7 @@ GRAMMAR EXTEND Gram
 	 info = hint_info ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
 	     ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
-	   { VernacInstance (false,snd namesup,(fst namesup,expl,t),props,info) }
+	   { VernacInstance (snd namesup,(fst namesup,expl,t),props,info) }
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
           info = hint_info ->
@@ -844,10 +844,10 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Comments"; l = LIST0 comment -> { VernacComments l }
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
-      | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
+      | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";
 	 expl = [ "!" -> { Decl_kinds.Implicit } | -> { Decl_kinds.Explicit } ] ; t = operconstr LEVEL "200";
 	 info = hint_info ->
-	   { VernacInstance (true, snd namesup, (fst namesup, expl, t), None, info) }
+	   { VernacDeclareInstance (bl, (id, expl, t), info) }
 
       (* Should be in syntax, but camlp5 would not factorize *)
       | IDENT "Declare"; IDENT "Scope"; sc = IDENT ->

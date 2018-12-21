@@ -128,7 +128,7 @@ let declare_instance_constant k info global imps ?hook id decl poly sigma term t
   Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
   instance_hook k info global imps ?hook (ConstRef kn)
 
-let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imps subst id =
+let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst id =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst (snd k.cl_context)
@@ -144,7 +144,7 @@ let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imp
          (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
   in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
-  instance_hook k pri global imps ?hook (ConstRef cst); id
+  instance_hook k pri global imps (ConstRef cst)
 
 let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -191,7 +191,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         else ignore (Pfedit.by (Tactics.auto_intros_tac ids));
         (match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ()
 
-let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -278,69 +278,78 @@ let do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~pro
   else CErrors.user_err Pp.(str "Unsolved obligations remaining.");
   id
 
-let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) ~program_mode
-    poly ctx (instid, bk, cl) props
-    ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
-  let env = Global.env() in
-  let ({CAst.loc;v=instid}, pl) = instid in
+let interp_instance_context env ctx ?(generalize=false) pl bk cl =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass, ids =
     match bk with
     | Decl_kinds.Implicit ->
-	Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
-	  (fun avoid (clname, _) ->
-	    match clname with
-            | Some cl ->
-                let t = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None) in
-		  t, avoid
-	    | None -> failwith ("new instance: under-applied typeclass"))
-	  cl
+      Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
+        (fun avoid (clname, _) ->
+           match clname with
+           | Some cl ->
+             let t = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None) in
+             t, avoid
+           | None -> failwith ("new instance: under-applied typeclass"))
+        cl
     | Explicit -> cl, Id.Set.empty
   in
   let tclass =
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
     else tclass
   in
-  let sigma, k, u, cty, ctx', ctx, imps, subst =
-    let sigma, (impls, ((env', ctx), imps)) = interp_context_evars env sigma ctx in
-    let sigma, (c', imps') = interp_type_evars_impls ~impls env' sigma tclass in
-    let len = Context.Rel.nhyps ctx in
-    let imps = imps @ Impargs.lift_implicits len imps' in
-    let ctx', c = decompose_prod_assum sigma c' in
-    let ctx'' = ctx' @ ctx in
-    let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in
-    let u_s = EInstance.kind sigma u in
-    let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
-    let args = List.map of_constr args in
-    let cl_context = List.map (Termops.map_rel_decl of_constr) (snd cl.cl_context) in
-    let _, args =
-      List.fold_right (fun decl (args, args') ->
-	match decl with
-	| LocalAssum _ -> (List.tl args, List.hd args :: args')
+  let sigma, (impls, ((env', ctx), imps)) = interp_context_evars env sigma ctx in
+  let sigma, (c', imps') = interp_type_evars_impls ~impls env' sigma tclass in
+  let len = Context.Rel.nhyps ctx in
+  let imps = imps @ Impargs.lift_implicits len imps' in
+  let ctx', c = decompose_prod_assum sigma c' in
+  let ctx'' = ctx' @ ctx in
+  let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in
+  let u_s = EInstance.kind sigma u in
+  let cl = Typeclasses.typeclass_univ_instance (k, u_s) in
+  let args = List.map of_constr args in
+  let cl_context = List.map (Termops.map_rel_decl of_constr) (snd cl.cl_context) in
+  let _, args =
+    List.fold_right (fun decl (args, args') ->
+        match decl with
+        | LocalAssum _ -> (List.tl args, List.hd args :: args')
         | LocalDef (_,b,_) -> (args, Vars.substl args' b :: args'))
-        cl_context (args, [])
-    in
-      sigma, cl, u, c', ctx', ctx, imps, args
+      cl_context (args, [])
+  in
+  let sigma = Evarutil.nf_evar_map sigma in
+  let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
+  sigma, cl, u, c', ctx', ctx, imps, args, decl
+
+
+let new_instance ?(global=false) ?(refine= !refine_instance) ~program_mode
+    poly ctx (instid, bk, cl) props
+    ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
+  let env = Global.env() in
+  let ({CAst.loc;v=instid}, pl) = instid in
+  let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
+    interp_instance_context env ~generalize ctx pl bk cl
   in
   let id =
     match instid with
-	Name id ->
-	  let sp = Lib.make_path id in
-	    if Nametab.exists_cci sp then
-	      user_err ~hdr:"new_instance" (Id.print id ++ Pp.str " already exists.");
-	    id
-      | Anonymous ->
-	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
-	    Namegen.next_global_ident_away i (Termops.vars_of_env env)
+      Name id ->
+      let sp = Lib.make_path id in
+      if Nametab.exists_cci sp then
+        user_err ~hdr:"new_instance" (Id.print id ++ Pp.str " already exists.");
+      id
+    | Anonymous ->
+      let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
+      Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  let sigma = Evarutil.nf_evar_map sigma in
-  let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
-  if abstract then
-    do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imps subst id
-  else
-    do_transparent_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
-      cty k u ctx ctx' pri decl imps subst id props
+  do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
+    cty k u ctx ctx' pri decl imps subst id props
+
+let declare_new_instance ?(global=false) poly ctx (instid, bk, cl) pri =
+  let env = Global.env() in
+  let ({CAst.loc;v=instid}, pl) = instid in
+  let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
+    interp_instance_context env ctx pl bk cl
+  in
+  do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
 
 let named_of_rel_context l =
   let open Vars in
