@@ -19,6 +19,6 @@ Class Category := {
 
 Require Export Coq.Setoids.Setoid.
 
-Add Parametric Morphism `{C : Category} {A B C} : (@compose _ A B C) with
+Add Parametric Morphism `{Category} {A B C} : (@compose _ A B C) with
   signature equiv ==> equiv ==> equiv as compose_mor.
 Proof. apply comp_respects. Qed.

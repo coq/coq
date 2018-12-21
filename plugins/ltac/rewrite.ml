@@ -2014,7 +2014,7 @@ let add_morphism atts binders m s n =
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
   ignore(new_instance ~program_mode:atts.program ~global:atts.global atts.polymorphic binders instance
-           (Some (true, CAst.make @@ CRecord []))
+     None
     ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info)
 
 (** Bind to "rewrite" too *)
