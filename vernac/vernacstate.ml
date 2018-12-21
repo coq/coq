@@ -36,7 +36,8 @@ let do_if_not_cached rf f v =
 let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (States.freeze ~marshallable);
     proof  = update_cache s_proof (Proof_global.freeze ~marshallable);
-    shallow = marshallable }
+    shallow = false;
+  }
 
 let unfreeze_interp_state { system; proof } =
   do_if_not_cached s_cache States.unfreeze system;
