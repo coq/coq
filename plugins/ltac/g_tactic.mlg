@@ -287,10 +287,10 @@ GRAMMAR EXTEND Gram
     [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
   ;
   intropatterns:
-    [ [ l = LIST0 nonsimple_intropattern -> { l } ] ]
+    [ [ l = LIST0 intropattern -> { l } ] ]
   ;
   ne_intropatterns:
-    [ [ l = LIST1 nonsimple_intropattern -> { l } ] ]
+    [ [ l = LIST1 intropattern -> { l } ] ]
   ;
   or_and_intropattern:
     [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> { IntroOrPattern tc }
@@ -317,7 +317,7 @@ GRAMMAR EXTEND Gram
       | "?" -> { IntroAnonymous }
       | id = ident -> { IntroIdentifier id } ] ]
   ;
-  nonsimple_intropattern:
+  intropattern:
     [ [ l = simple_intropattern -> { l }
       | "*"  -> { CAst.make ~loc @@ IntroForthcoming true }
       | "**" -> { CAst.make ~loc @@ IntroForthcoming false } ] ]
@@ -534,6 +534,8 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacIntroPattern (false,[CAst.make ~loc @@IntroForthcoming false])) }
       | IDENT "eintros"; pl = ne_intropatterns ->
           { TacAtom (CAst.make ~loc @@ TacIntroPattern (true,pl)) }
+      | IDENT "eintros" ->
+          { TacAtom (CAst.make ~loc @@ TacIntroPattern (true,[CAst.make ~loc @@IntroForthcoming false])) }
 
       | IDENT "apply"; cl = LIST1 constr_with_bindings_arg SEP ",";
           inhyp = in_hyp_as -> { TacAtom (CAst.make ~loc @@ TacApply (true,false,cl,inhyp)) }

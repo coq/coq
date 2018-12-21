@@ -172,12 +172,12 @@ Omitting annotations
 DO
   .. code::
 
-     .. tacv:: assert @form as @intro_pattern
+     .. tacv:: assert @form as @simple_intropattern
 
 DON'T
   .. code::
 
-     .. tacv:: assert form as intro_pattern
+     .. tacv:: assert form as simple_intropattern
 
 Using the ``.. coqtop::`` directive for syntax highlighting
 -----------------------------------------------------------
