@@ -12,3 +12,4 @@
 Local Set Warnings "-deprecated".
 
 Unset Private Polymorphic Universes.
+Set Refine Instance Mode.

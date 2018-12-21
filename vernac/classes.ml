@@ -28,7 +28,7 @@ module RelDecl = Context.Rel.Declaration
 open Decl_kinds
 open Entries
 
-let refine_instance = ref true
+let refine_instance = ref false
 
 let () = Goptions.(declare_bool_option {
   optdepr  = false;
