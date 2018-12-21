@@ -78,7 +78,8 @@ affect a person's ability to participate within them.
 
 If you believe someone is violating the code of conduct, we ask that you report
 it by emailing the Coq Code of Conduct enforcement team at
-<coq-conduct@inria.fr>. Confidentiality with regard to the reporter of an
+<coq-conduct@inria.fr> or, at your discretion, any member of the team.
+Confidentiality with regard to the reporter of an
 incident will be maintained while dealing with it.
 
 In particular, you should seek support from the team instead of dealing by
@@ -95,6 +96,11 @@ approach first (the offender does not necessarily realize immediately why their
 behavior is wrong). We consider short bans to form part of the pedagogical
 approach, especially when they come with explanatory comments, as this can give
 some time to the offender to calm down and think about their actions.
+
+The members of the team are currently:
+
+- Matthieu Sozeau
+- Théo Zimmermann
 
 ## Questions? ##
 
