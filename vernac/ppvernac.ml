@@ -912,7 +912,7 @@ open Pputils
             keyword "Context" ++ pr_and_type_binders_arg l)
         )
 
-      | VernacDeclareInstances insts ->
+      | VernacExistingInstance insts ->
          let pr_inst (id, info) =
            pr_qualid id ++ pr_hint_info pr_constr_pattern_expr info
          in

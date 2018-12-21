@@ -160,7 +160,7 @@ let classify_vernac e =
     | VernacMemOption _ | VernacPrintOption _
     | VernacGlobalCheck _
     | VernacDeclareReduction _
-    | VernacDeclareClass _ | VernacDeclareInstances _
+    | VernacDeclareClass _ | VernacExistingInstance _
     | VernacRegister _
     | VernacNameSectionHypSet _
     | VernacDeclareCustomEntry _

@@ -308,7 +308,7 @@ type nonrec vernac_expr =
 
   | VernacContext of local_binder_expr list
 
-  | VernacDeclareInstances of
+  | VernacExistingInstance of
     (qualid * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
 
   | VernacDeclareClass of qualid (* inductive or definition name *)

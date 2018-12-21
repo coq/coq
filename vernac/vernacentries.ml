@@ -1016,7 +1016,7 @@ let vernac_instance ~atts abst sup inst props pri =
 let vernac_context ~poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances ~section_local insts =
+let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
@@ -2230,7 +2230,7 @@ let interp ?proof ~atts ~st c =
   | VernacInstance (abst, sup, inst, props, info) ->
       vernac_instance ~atts abst sup inst props info
   | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
-  | VernacDeclareInstances insts -> with_section_locality ~atts vernac_declare_instances insts
+  | VernacExistingInstance insts -> with_section_locality ~atts vernac_existing_instance insts
   | VernacDeclareClass id -> unsupported_attributes atts; vernac_declare_class id
 
   (* Solving *)
