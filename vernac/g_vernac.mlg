@@ -809,9 +809,8 @@ GRAMMAR EXTEND Gram
       | IDENT "transparent" -> { Conv_oracle.transparent } ] ]
   ;
   instance_name:
-    [ [ name = ident_decl; sup = OPT binders ->
-          { (CAst.map (fun id -> Name id) (fst name), snd name),
-          (Option.default [] sup) }
+    [ [ name = ident_decl; bl = binders ->
+          { (CAst.map (fun id -> Name id) (fst name), snd name), bl }
       | -> { ((CAst.make ~loc Anonymous), None), []  } ] ]
   ;
   hint_info:
