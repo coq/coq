@@ -247,6 +247,25 @@ pkg:nix:
     paths:
       - nix-build-coq.drv-0/*/test-suite/logs
 
+build:macOS:
+  stage: build
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build
+    expire_in: 1 week
+  tags:
+    - macOS
+  dependencies: []
+  before_script: []
+  script:
+    - dev/build/osx/make-macos-dmg.sh
+  variables:
+    NJOBS: "2"
+  only:
+    variables:
+      - $MACOS == "enabled"
+
 doc:refman:
   <<: *doc-template
   dependencies:

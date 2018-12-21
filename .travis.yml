@@ -170,39 +170,6 @@ matrix:
       # only way to continue using OPAM 1.2
       - brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/d156edeeed7291f4bc1e08620b331bbd05d52b78/Formula/opam.rb
 
-    - if: NOT (type = pull_request)
-      os: osx
-      osx_image: xcode7.3
-      env:
-      - TEST_TARGET=""
-      - COMPILER="${COMPILER_BE}"
-      - FINDLIB_VER="${FINDLIB_VER_BE}"
-      - CAMLP5_VER="${CAMLP5_VER_BE}"
-      - NATIVE_COMP="no"
-      - COQ_DEST="-prefix ${PWD}/_install"
-      - EXTRA_CONF="-coqide opt -warn-error yes"
-      - EXTRA_OPAM="${LABLGTK_BE}"
-      before_install:
-      - brew update
-      - brew unlink python
-      - brew install gnu-time gtk+ expat gtksourceview gdk-pixbuf
-      # only way to continue using OPAM 1.2
-      - brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/d156edeeed7291f4bc1e08620b331bbd05d52b78/Formula/opam.rb
-      - brew unlink python@2
-      - brew install python3
-      - pip3 install macpack
-      before_deploy:
-        - dev/build/osx/make-macos-dmg.sh
-      deploy:
-      - provider: bintray
-        user: maximedenes
-        file: .bintray.json
-        key:
-          secure: "gUvXWwWR0gicDqsKOnBfe45taToSFied6gN8tCa5IOtl6E6gFoHoPZ83ZWXQsZP50oMDFS5eji0VQAFGEbOsGrTZaD9Y9Jnu34NND78SWL1tsJ6nHO3aCAoMpB0N3+oRuF6S+9HStU6KXWqgj+GeU4vZ4TOlG01RGctJa6U3vII="
-        skip_cleanup: true
-        on:
-          all_branches: true
-
 before_install:
 - if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then echo "Tested commit (followed by parent commits):"; git log -1; for commit in `git log -1 --format="%P"`; do echo; git log -1 $commit; done; fi
 
