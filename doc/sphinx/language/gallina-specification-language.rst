@@ -230,7 +230,7 @@ There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
    themselves are typing the proofs. We denote propositions by :production:`form`.
    This constitutes a semantic subclass of the syntactic class :token:`term`.
 
--  :g:`Set` is is the universe of *program types* or *specifications*. The
+-  :g:`Set` is the universe of *program types* or *specifications*. The
    specifications themselves are typing the programs. We denote
    specifications by :production:`specif`. This constitutes a semantic subclass of
    the syntactic class :token:`term`.
