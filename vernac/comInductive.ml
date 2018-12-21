@@ -43,18 +43,32 @@ let warn_auto_template =
 
 let should_auto_template =
   let open Goptions in
-  let auto = ref true in
-  let () = declare_bool_option
+  let auto = ref None in
+  let () = declare_stringopt_option
       { optdepr  = false;
-        optname  = "Automatically make some inductive types template polymorphic";
+        optname  = "Auto Template Polymorphism";
         optkey   = ["Auto";"Template";"Polymorphism"];
-        optread  = (fun () -> !auto);
-        optwrite = (fun b -> auto := b); }
+        optread  =
+          (fun () ->
+            Option.map
+              (function true -> "enabled" | false -> "disabled") !auto);
+        optwrite =
+          (fun s ->
+            auto :=
+              Option.map
+                (function
+                 | "enabled" -> true | "disabled" -> false
+                 | _ -> user_err Pp.(str "Auto Template Polymorphism option only accept \"enabled\" and \"disabled\" values.")
+                )
+                s
+          );
+      }
   in
   fun id would_auto ->
-    let b = !auto && would_auto in
-    if b then warn_auto_template id;
-    b
+  match !auto, would_auto with
+  | None, true -> warn_auto_template id; true
+  | None, false -> false
+  | Some b, _ -> b && would_auto
 
 let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   | CProdN (bl,c) -> CProdN (bl,complete_conclusion a cs c)
