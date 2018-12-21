@@ -105,8 +105,6 @@ let id_of_class cl =
 	  mip.(0).Declarations.mind_typename
     | _ -> assert false
 
-open Pp
-
 let instance_hook k info global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
   let info = intern_info info in
@@ -330,11 +328,7 @@ let new_instance ?(global=false) ?(refine= !refine_instance) ~program_mode
   in
   let id =
     match instid with
-      Name id ->
-      let sp = Lib.make_path id in
-      if Nametab.exists_cci sp then
-        user_err ~hdr:"new_instance" (Id.print id ++ Pp.str " already exists.");
-      id
+    | Name id -> id
     | Anonymous ->
       let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
