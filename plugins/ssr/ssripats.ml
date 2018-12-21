@@ -215,8 +215,11 @@ let rec ipat_tac1 ipat : unit tactic =
   | IPatView (clear_if_id,l) ->
       Ssrview.tclIPAT_VIEWS ~views:l ~clear_if_id
         ~conclusion:(fun ~to_clear:clr -> intro_clear clr)
-  | IPatDispatch ipatss ->
-      tclEXTEND (List.map ipat_tac ipatss) (tclUNIT ()) []
+
+  | IPatDispatch(true,[[]]) ->
+      tclUNIT ()
+  | IPatDispatch(_,ipatss) ->
+      tclDISPATCH (List.map ipat_tac ipatss)
 
   | IPatId id -> Ssrcommon.tclINTRO_ID id
 
@@ -274,7 +277,7 @@ let split_at_first_case ipats =
     loop [] ipats
 
 let ssr_exception is_on = function
-  | Some (IPatCase l) when is_on -> Some (IPatDispatch l)
+  | Some (IPatCase l) when is_on -> Some (IPatDispatch(true, l))
   | x -> x
 
 let option_to_list = function None -> [] | Some x -> [x]
@@ -284,7 +287,7 @@ let elaborate_ipats l =
   let rec elab = function
   | [] -> []
   | (IPatClear _ as p1) :: (IPatView _ as p2) :: rest -> p2 :: p1 :: elab rest
-  | IPatDispatch p :: rest -> IPatDispatch (List.map elab p) :: elab rest
+  | IPatDispatch(s,p) :: rest -> IPatDispatch (s,List.map elab p) :: elab rest
   | IPatCase p :: rest -> IPatCase (List.map elab p) :: elab rest
   | IPatInj p :: rest -> IPatInj (List.map elab p) :: elab rest
   | (IPatTac _ | IPatId _ | IPatSimpl _ | IPatClear _ |

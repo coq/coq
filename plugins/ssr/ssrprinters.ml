@@ -101,7 +101,7 @@ let rec pr_ipat p =
   | IPatSimpl sim -> pr_simpl sim
   | IPatClear clr -> pr_clear mt clr
   | IPatCase iorpat -> hov 1 (str "[" ++ pr_iorpat iorpat ++ str "]")
-  | IPatDispatch iorpat -> hov 1 (str "/[" ++ pr_iorpat iorpat ++ str "]")
+  | IPatDispatch(_,iorpat) -> hov 1 (str "/[" ++ pr_iorpat iorpat ++ str "]")
   | IPatInj iorpat -> hov 1 (str "[=" ++ pr_iorpat iorpat ++ str "]")
   | IPatRewrite (occ, dir) -> pr_occ occ ++ pr_dir dir
   | IPatAnon All -> str "*"
