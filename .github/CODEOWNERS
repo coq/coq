@@ -314,7 +314,7 @@ azure-pipelines.yml @coq/ci-maintainers
 /test-suite/README.md   @gares
 # Secondary maintainer  @SkySkimmer
 
-/test-suite/save-logs   @SkySkimmer
+/test-suite/report.sh   @SkySkimmer
 
 /test-suite/complexity/ @herbelin
 
