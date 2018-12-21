@@ -695,7 +695,7 @@ GRAMMAR EXTEND Gram
          let insts = List.map (fun i -> (i, info)) ids in
 	  VernacExistingInstance insts }
 
-      | IDENT "Existing"; IDENT "Class"; is = global -> { VernacDeclareClass is }
+      | IDENT "Existing"; IDENT "Class"; is = global -> { VernacExistingClass is }
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global; 

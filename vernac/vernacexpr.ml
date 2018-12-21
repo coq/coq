@@ -311,7 +311,7 @@ type nonrec vernac_expr =
   | VernacExistingInstance of
     (qualid * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
 
-  | VernacDeclareClass of qualid (* inductive or definition name *)
+  | VernacExistingClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *

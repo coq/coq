@@ -1020,7 +1020,7 @@ let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
-let vernac_declare_class id =
+let vernac_existing_class id =
   Record.declare_existing_class (Nametab.global id)
 
 (***********)
@@ -2231,7 +2231,7 @@ let interp ?proof ~atts ~st c =
       vernac_instance ~atts abst sup inst props info
   | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
   | VernacExistingInstance insts -> with_section_locality ~atts vernac_existing_instance insts
-  | VernacDeclareClass id -> unsupported_attributes atts; vernac_declare_class id
+  | VernacExistingClass id -> unsupported_attributes atts; vernac_existing_class id
 
   (* Solving *)
   | VernacSolveExistential (n,c) -> unsupported_attributes atts; vernac_solve_existential n c

@@ -922,7 +922,7 @@ open Pputils
                  spc () ++ prlist_with_sep (fun () -> str", ") pr_inst insts)
         )
 
-      | VernacDeclareClass id ->
+      | VernacExistingClass id ->
         return (
           hov 1 (keyword "Existing" ++ spc () ++ keyword "Class" ++ spc () ++ pr_qualid id)
         )
