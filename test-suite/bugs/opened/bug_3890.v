@@ -1,3 +1,5 @@
+Set Nested Proofs Allowed.
+
 Class Foo.
 Class Bar := b : Type.
 
