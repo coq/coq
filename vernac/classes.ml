@@ -269,9 +269,9 @@ let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode ct
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
   let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
-  if not (Evd.has_undefined sigma) && not (Option.is_empty term) then
+  if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
     declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype
-  else if program_mode || refine || Option.is_empty term then
+  else if program_mode || refine || Option.is_empty props then
     declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
   else CErrors.user_err Pp.(str "Unsolved obligations remaining.");
   id

@@ -5,7 +5,7 @@ Parameter P : nat -> Type.
 Parameter v : forall m, P m.
 Parameter f : forall (P : nat -> Type), (forall a, P a) -> P 0.
 Class U (R : P 0) (m : forall x, P x) : Prop.
-Instance w : U (f _ (fun _ => v _)) v.
+Instance w : U (f _ (fun _ => v _)) v := {}.
 Print HintDb typeclass_instances.
 End A.
 

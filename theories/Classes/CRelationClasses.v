@@ -177,6 +177,7 @@ Section Defs.
    a rewrite crelation. *)
     
   Global Instance equivalence_rewrite_crelation `(Equivalence eqA) : RewriteRelation eqA.
+  Defined.
 
   (** Leibniz equality. *)
   Section Leibniz.
@@ -195,7 +196,10 @@ End Defs.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
 Instance: RewriteRelation impl.
+Defined.
+
 Instance: RewriteRelation iff.
+Defined.
 
 (** Hints to drive the typeclass resolution avoiding loops
  due to the use of full unification. *)
@@ -299,7 +303,8 @@ Section Binary.
     fun R R' => forall x y, iffT (R x y) (R' x y).
 
   Global Instance: RewriteRelation relation_equivalence.
-  
+  Defined.
+
   Definition relation_conjunction (R : crelation A) (R' : crelation A) : crelation A :=
     fun x y => prod (R x y) (R' x y).
 

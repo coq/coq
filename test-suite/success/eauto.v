@@ -9,11 +9,11 @@
 (************************************************************************)
 
 Class A (A : Type).
-  Instance an: A nat.
+  Instance an: A nat := {}.
 
 Class B (A : Type) (a : A).
-Instance bn0: B nat 0.
-Instance bn1: B nat 1.
+Instance bn0: B nat 0 := {}.
+Instance bn1: B nat 1 := {}.
 
 Goal A nat.
 Proof.
@@ -39,7 +39,7 @@ Proof.
   eexists. eexists. typeclasses eauto.
 Defined.
 
-Instance ab: A bool. (* Backtrack on A instance *)
+Instance ab: A bool := {}. (* Backtrack on A instance *)
 Goal exists (T : Type) (t : T), A T /\ B T t.
 Proof.
   eexists. eexists. typeclasses eauto.
@@ -51,7 +51,7 @@ Hint Extern 0 { x : ?A & _ } =>
   unshelve class_apply @existT : typeclass_instances.
 Existing Class sigT.
 Set Typeclasses Debug.
-Instance can: C an 0.
+Instance can: C an 0 := {}.
 (* Backtrack on instance implementation *)
 Goal exists (T : Type) (t : T), { x : A T & C x t }.
 Proof.
@@ -59,7 +59,7 @@ Proof.
 Defined.
 
 Class D T `(a: A T).
-  Instance: D _ an.
+  Instance: D _ an := {}.
 Goal exists (T : Type), { x : A T & D T x }.
 Proof.
   eexists. typeclasses eauto.

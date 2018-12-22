@@ -15,8 +15,8 @@ Record T := { dom : Type }.
 Definition pairT A B := {| dom := (dom A * dom B)%type |}.
 Class C (A:Type).
 Parameter B:T.
-Instance c (A:T) : C (dom A).
-Instance cn : C (dom B).
+Instance c (A:T) : C (dom A) := {}.
+Instance cn : C (dom B) := {}.
 Parameter F : forall A:T, C (dom A) -> forall x:dom A, x=x -> A = A.
 Set Typeclasses Debug.
 Goal forall (A:T) (x:dom A), pairT A A = pairT A A.

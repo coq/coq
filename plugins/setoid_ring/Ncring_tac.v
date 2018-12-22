@@ -27,41 +27,50 @@ Class nth (R:Type) (t:R) (l:list R) (i:nat).
 
 Instance  Ifind0 (R:Type) (t:R) l
  : nth t(t::l) 0.
+Defined.
 
 Instance  IfindS (R:Type) (t2 t1:R) l i 
  {_:nth t1 l i} 
  : nth t1 (t2::l) (S i) | 1.
+Defined.
 
 Class closed (T:Type) (l:list T).
 
 Instance Iclosed_nil T 
  : closed (T:=T) nil.
+Defined.
 
 Instance Iclosed_cons T t (l:list T) 
  {_:closed l} 
  : closed (t::l).
+Defined.
 
 Class reify (R:Type)`{Rr:Ring (T:=R)} (e:PExpr Z) (lvar:list R) (t:R).
 
 Instance  reify_zero (R:Type)  lvar op
  `{Ring (T:=R)(ring0:=op)}
  : reify (ring0:=op)(PEc 0%Z) lvar op.
+Defined.
 
 Instance  reify_one (R:Type)  lvar op
  `{Ring (T:=R)(ring1:=op)}
  : reify (ring1:=op) (PEc 1%Z) lvar op.
+Defined.
 
 Instance  reifyZ0 (R:Type)  lvar 
  `{Ring (T:=R)}
  : reify (PEc Z0) lvar Z0|11.
+Defined.
 
 Instance  reifyZpos (R:Type)  lvar (p:positive)
  `{Ring (T:=R)}
  : reify (PEc (Zpos p)) lvar (Zpos p)|11.
+Defined.
 
 Instance  reifyZneg (R:Type)  lvar (p:positive)
  `{Ring (T:=R)}
  : reify (PEc (Zneg p)) lvar (Zneg p)|11.
+Defined.
 
 Instance  reify_add (R:Type)
   e1 lvar t1 e2 t2 op 
@@ -69,6 +78,7 @@ Instance  reify_add (R:Type)
  {_:reify (add:=op) e1 lvar t1}
  {_:reify (add:=op) e2 lvar t2}
  : reify (add:=op) (PEadd e1 e2) lvar (op t1 t2).
+Defined.
 
 Instance  reify_mul (R:Type) 
   e1 lvar t1 e2 t2 op 
@@ -76,6 +86,7 @@ Instance  reify_mul (R:Type)
  {_:reify (mul:=op) e1 lvar t1}
  {_:reify (mul:=op) e2 lvar t2}
  : reify (mul:=op) (PEmul e1 e2) lvar (op t1 t2)|10.
+Defined.
 
 Instance  reify_mul_ext (R:Type) `{Ring R}
   lvar (z:Z) e2 t2 
@@ -83,6 +94,7 @@ Instance  reify_mul_ext (R:Type) `{Ring R}
  {_:reify e2 lvar t2}
  : reify (PEmul (PEc z) e2) lvar
       (@multiplication Z _ _ z t2)|9.
+Defined.
 
 Instance  reify_sub (R:Type)
  e1 lvar t1 e2 t2 op
@@ -90,24 +102,28 @@ Instance  reify_sub (R:Type)
  {_:reify (sub:=op) e1 lvar t1}
  {_:reify (sub:=op) e2 lvar t2}
  : reify (sub:=op) (PEsub e1 e2) lvar (op t1 t2).
+Defined.
 
 Instance  reify_opp (R:Type)
  e1 lvar t1  op
  `{Ring (T:=R)(opp:=op)}
  {_:reify (opp:=op) e1 lvar t1}
  : reify (opp:=op) (PEopp e1) lvar (op t1).
+Defined.
 
 Instance  reify_pow (R:Type) `{Ring R}
  e1 lvar t1 n 
  `{Ring (T:=R)}
  {_:reify e1 lvar t1}
  : reify (PEpow e1 n) lvar (pow_N t1 n)|1.
+Defined.
 
 Instance  reify_var (R:Type) t lvar i 
  `{nth R t lvar i}
  `{Rr: Ring (T:=R)}
  : reify (Rr:= Rr) (PEX Z (Pos.of_succ_nat i))lvar t
  | 100.
+Defined.
 
 Class reifylist (R:Type)`{Rr:Ring (T:=R)} (lexpr:list (PExpr Z)) (lvar:list R) 
   (lterm:list R).
@@ -115,12 +131,14 @@ Class reifylist (R:Type)`{Rr:Ring (T:=R)} (lexpr:list (PExpr Z)) (lvar:list R)
 Instance reify_nil (R:Type) lvar 
  `{Rr: Ring (T:=R)}
  : reifylist (Rr:= Rr) nil lvar (@nil R).
+Defined.
 
 Instance reify_cons (R:Type) e1 lvar t1 lexpr2 lterm2
  `{Rr: Ring (T:=R)}
  {_:reify (Rr:= Rr) e1 lvar t1}
  {_:reifylist (Rr:= Rr) lexpr2 lvar lterm2} 
  : reifylist (Rr:= Rr) (e1::lexpr2) lvar (t1::lterm2).
+Defined.
 
 Definition list_reifyl (R:Type) lexpr lvar lterm 
  `{Rr: Ring (T:=R)}

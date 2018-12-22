@@ -149,10 +149,10 @@ Module IterativeDeepening.
   Class B.
   Class C.
 
-  Instance: B -> A | 0.
-  Instance: C -> A | 0.
-  Instance: C -> B -> A | 0.
-  Instance: A -> A | 0.
+  Instance: B -> A | 0 := {}.
+  Instance: C -> A | 0 := {}.
+  Instance: C -> B -> A | 0 := {}.
+  Instance: A -> A | 0 := {}.
   
   Goal C -> A.
     intros.

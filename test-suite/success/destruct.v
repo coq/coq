@@ -263,7 +263,7 @@ Abort.
 (* This one was working in 8.4 (because of full conv on closed arguments) *)
 
 Class E.
-Instance a:E.
+Instance a:E := {}.
 Goal forall h : E -> nat -> nat, h (id a) 0 = h a 0.
 intros.
 destruct (h _).

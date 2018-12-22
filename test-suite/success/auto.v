@@ -51,7 +51,7 @@ Qed.
 
 Class B (A : Type).
 Class I. 
-Instance i : I.
+Instance i : I := {}.
   
 Definition flip {A B C : Type} (f : A -> B -> C) := fun y x => f x y.
 Class D (f : nat -> nat -> nat).
@@ -59,7 +59,7 @@ Definition ftest (x y : nat) := x + y.
 Definition flipD (f : nat -> nat -> nat) : D f -> D (flip f).
   Admitted.
 Module Instnopat.
-  Local Instance: B nat.
+  Local Instance: B nat := {}.
   (* pattern_of_constr -> B nat *)
   (* exact hint *)
   Check (_ : B nat).
@@ -72,7 +72,7 @@ Module Instnopat.
     eauto with typeclass_instances.
   Qed.
 
-  Local Instance: D ftest.
+  Local Instance: D ftest := {}.
   Local Hint Resolve flipD | 0 : typeclass_instances.
   (* pattern: D (flip _) *)
   Fail Timeout 1 Check (_ : D _). (* loops applying flipD *)  
@@ -80,7 +80,7 @@ Module Instnopat.
 End Instnopat.
 
 Module InstnopatApply.
-  Local Instance: I -> B nat.
+  Local Instance: I -> B nat := {}.
   (* pattern_of_constr -> B nat *)
   (* apply hint  *)
   Check (_ : B nat).
@@ -116,7 +116,7 @@ Module InstPat.
 
   Hint Extern 0 (D (flip _)) => apply flipD : typeclass_instances.
   Module withftest.
-    Local Instance: D ftest.
+    Local Instance: D ftest := {}.
 
     Check (_ : D _).
     (* D_instance_0 : D ftest *)

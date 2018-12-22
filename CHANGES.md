@@ -101,6 +101,11 @@ Vernacular commands
 - Option `Refine Instance Mode` has been turned off by default, meaning that
   `Instance` no longer opens a proof when a body is provided.
 
+- `Instance`, when no body is provided, now always opens a proof. This is a
+   breaking change, as instance of `Instance foo : C.` where `C` is a trivial
+   class will have to be changed into `Instance foo : C := {}.` or
+   `Instance foo : C. Proof. Qed.`.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

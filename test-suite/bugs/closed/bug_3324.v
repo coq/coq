@@ -6,7 +6,7 @@ Module ETassi.
   Record hProp := hp { hproptype :> Type ; isp : IsHProp hproptype}.
   Record hSet := BuildhSet {setT:> Type; iss :> IsHSet setT}.
   Canonical Structure default_HSet:= fun T P => (@BuildhSet T P).
-  Global Instance isset_hProp : IsHSet hProp | 0.
+  Global Instance isset_hProp : IsHSet hProp | 0 := {}.
 
   Check (eq_refl _ : setT (default_HSet _ _) = hProp).
   Check (eq_refl _ : setT _ = hProp).
@@ -22,7 +22,7 @@ Module JGross.
   Definition Unit_hp:hProp:=(hp Unit admit).
   Record hSet := BuildhSet {setT:> Type; iss :> IsHSet setT}.
   Canonical Structure default_HSet:= fun T P => (@BuildhSet T P).
-  Global Instance isset_hProp : IsHSet hProp | 0.
+  Global Instance isset_hProp : IsHSet hProp | 0 := {}.
   Definition isepi {X Y} `(f:X->Y) := forall Z: hSet,
                                       forall g h: Y -> Z, (fun x => g (f x)) = (fun x => h (f x)) -> g = h.
   Lemma isepi_issurj {X Y} (f:X->Y): isepi f -> True.
