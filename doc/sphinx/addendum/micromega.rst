@@ -38,7 +38,7 @@ The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}`.
 The syntax of the formulas is the following:
 
- .. productionlist:: `F`
+ .. productionlist:: F
    F : A ∣ P ∣ True ∣ False ∣ F ∧ F ∣ F ∨ F ∣ F ↔ F ∣ F → F ∣ ¬ F
    A : p = p ∣ p > p ∣ p < p ∣ p ≥ p ∣ p ≤ p
    p : c ∣ x ∣ −p ∣ p − p ∣ p + p ∣ p × p ∣ p ^ n

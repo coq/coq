@@ -714,47 +714,47 @@ following grammar:
 
 .. productionlist:: rewriting
    s, t, u : `strategy`
-           : | `lemma`
-           : | `lemma_right_to_left`
-           : | `failure`
-           : | `identity`
-           : | `reflexivity`
-           : | `progress`
-           : | `failure_catch`
-           : | `composition`
-           : | `left_biased_choice`
-           : | `iteration_one_or_more`
-           : | `iteration_zero_or_more`
-           : | `one_subterm`
-           : | `all_subterms`
-           : | `innermost_first`
-           : | `outermost_first`
-           : | `bottom_up`
-           : | `top_down`
-           : | `apply_hint`
-           : | `any_of_the_terms`
-           : | `apply_reduction`
-           : | `fold_expression`
+           : `lemma`
+           : `lemma_right_to_left`
+           : `failure`
+           : `identity`
+           : `reflexivity`
+           : `progress`
+           : `failure_catch`
+           : `composition`
+           : `left_biased_choice`
+           : `iteration_one_or_more`
+           : `iteration_zero_or_more`
+           : `one_subterm`
+           : `all_subterms`
+           : `innermost_first`
+           : `outermost_first`
+           : `bottom_up`
+           : `top_down`
+           : `apply_hint`
+           : `any_of_the_terms`
+           : `apply_reduction`
+           : `fold_expression`
 
 .. productionlist:: rewriting
-   strategy : "(" `s` ")"
+   strategy : ( `s` )
    lemma : `c`
-   lemma_right_to_left : "<-" `c`
-   failure : `fail`
-   identity : `id`
-   reflexivity : `refl`
-   progress : `progress` `s`
-   failure_catch : `try` `s`
-   composition : `s` ";" `u`
+   lemma_right_to_left : <- `c`
+   failure : fail
+   identity : id
+   reflexivity : refl
+   progress : progress `s`
+   failure_catch : try `s`
+   composition : `s` ; `u`
    left_biased_choice : choice `s` `t`
-   iteration_one_or_more : `repeat` `s`
-   iteration_zero_or_more : `any` `s`
+   iteration_one_or_more : repeat `s`
+   iteration_zero_or_more : any `s`
    one_subterm : subterm `s`
    all_subterms : subterms `s`
-   innermost_first : `innermost` `s`
-   outermost_first : `outermost` `s`
-   bottom_up : `bottomup` `s`
-   top_down : `topdown` `s`
+   innermost_first : innermost `s`
+   outermost_first : outermost `s`
+   bottom_up : bottomup `s`
+   top_down : topdown `s`
    apply_hint : hints `hintdb`
    any_of_the_terms : terms (`c`)+
    apply_reduction : eval `redexpr`
@@ -767,7 +767,7 @@ primitive fixpoint operator:
 .. productionlist:: rewriting
    try `s` : choice `s` `id`
    any `s` : fix `u`. try (`s` ; `u`)
-   repeat `s` : `s` ; `any` `s`
+   repeat `s` : `s` ; any `s`
    bottomup s : fix `bu`. (choice (progress (subterms bu)) s) ; try bu
    topdown s : fix `td`. (choice s (progress (subterms td))) ; try td
    innermost s : fix `i`. (choice (subterm i) s)

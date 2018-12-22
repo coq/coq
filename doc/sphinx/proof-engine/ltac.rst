@@ -70,88 +70,88 @@ mode but it can also be used in toplevel definitions as shown below.
 
 .. productionlist::  coq
    expr              : `expr` ; `expr`
-                     : | [> `expr` | ... | `expr` ]
-                     : | `expr` ; [ `expr` | ... | `expr` ]
-                     : | `tacexpr3`
-   tacexpr3          : do (`natural` | `ident`) tacexpr3
-                     : | progress `tacexpr3`
-                     : | repeat `tacexpr3`
-                     : | try `tacexpr3`
-                     : | once `tacexpr3`
-                     : | exactly_once `tacexpr3`
-                     : | timeout (`natural` | `ident`) `tacexpr3`
-                     : | time [`string`] `tacexpr3`
-                     : | only `selector`: `tacexpr3`
-                     : | `tacexpr2`
+                     : [> `expr` | ... | `expr` ]
+                     : `expr` ; [ `expr` | ... | `expr` ]
+                     : `tacexpr3`
+   tacexpr3          : do (`natural` | `ident`) `tacexpr3`
+                     : progress `tacexpr3`
+                     : repeat `tacexpr3`
+                     : try `tacexpr3`
+                     : once `tacexpr3`
+                     : exactly_once `tacexpr3`
+                     : timeout (`natural` | `ident`) `tacexpr3`
+                     : time [`string`] `tacexpr3`
+                     : only `selector`: `tacexpr3`
+                     : `tacexpr2`
    tacexpr2          : `tacexpr1` || `tacexpr3`
-                     : | `tacexpr1` + `tacexpr3`
-                     : | tryif `tacexpr1` then `tacexpr1` else `tacexpr1`
-                     : | `tacexpr1`
+                     : `tacexpr1` + `tacexpr3`
+                     : tryif `tacexpr1` then `tacexpr1` else `tacexpr1`
+                     : `tacexpr1`
    tacexpr1          : fun `name` ... `name` => `atom`
-                     : | let [rec] `let_clause` with ... with `let_clause` in `atom`
-                     : | match goal with `context_rule` | ... | `context_rule` end
-                     : | match reverse goal with `context_rule` | ... | `context_rule` end
-                     : | match `expr` with `match_rule` | ... | `match_rule` end
-                     : | lazymatch goal with `context_rule` | ... | `context_rule` end
-                     : | lazymatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : | lazymatch `expr` with `match_rule` | ... | `match_rule` end
-                     : | multimatch goal with `context_rule` | ... | `context_rule` end
-                     : | multimatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : | multimatch `expr` with `match_rule` | ... | `match_rule` end
-                     : | abstract `atom`
-                     : | abstract `atom` using `ident`
-                     : | first [ `expr` | ... | `expr` ]
-                     : | solve [ `expr` | ... | `expr` ]
-                     : | idtac [ `message_token` ... `message_token`]
-                     : | fail [`natural`] [`message_token` ... `message_token`]
-                     : | fresh [ `component` … `component` ]
-                     : | context `ident` [`term`]
-                     : | eval `redexpr` in `term`
-                     : | type of `term`
-                     : | constr : `term`
-                     : | uconstr : `term`
-                     : | type_term `term`
-                     : | numgoals
-                     : | guard `test`
-                     : | assert_fails `tacexpr3`
-                     : | assert_succeeds `tacexpr3`
-                     : | `atomic_tactic`
-                     : | `qualid` `tacarg` ... `tacarg`
-                     : | `atom`
+                     : let [rec] `let_clause` with ... with `let_clause` in `atom`
+                     : match goal with `context_rule` | ... | `context_rule` end
+                     : match reverse goal with `context_rule` | ... | `context_rule` end
+                     : match `expr` with `match_rule` | ... | `match_rule` end
+                     : lazymatch goal with `context_rule` | ... | `context_rule` end
+                     : lazymatch reverse goal with `context_rule` | ... | `context_rule` end
+                     : lazymatch `expr` with `match_rule` | ... | `match_rule` end
+                     : multimatch goal with `context_rule` | ... | `context_rule` end
+                     : multimatch reverse goal with `context_rule` | ... | `context_rule` end
+                     : multimatch `expr` with `match_rule` | ... | `match_rule` end
+                     : abstract `atom`
+                     : abstract `atom` using `ident`
+                     : first [ `expr` | ... | `expr` ]
+                     : solve [ `expr` | ... | `expr` ]
+                     : idtac [ `message_token` ... `message_token`]
+                     : fail [`natural`] [`message_token` ... `message_token`]
+                     : fresh [ `component` … `component` ]
+                     : context `ident` [`term`]
+                     : eval `redexpr` in `term`
+                     : type of `term`
+                     : constr : `term`
+                     : uconstr : `term`
+                     : type_term `term`
+                     : numgoals
+                     : guard `test`
+                     : assert_fails `tacexpr3`
+                     : assert_succeeds `tacexpr3`
+                     : `atomic_tactic`
+                     : `qualid` `tacarg` ... `tacarg`
+                     : `atom`
    atom              : `qualid`
-                     : | ()
-                     : | `integer`
-                     : | ( `expr` )
+                     : ()
+                     : `integer`
+                     : ( `expr` )
    component : `string` | `qualid`
    message_token     : `string` | `ident` | `integer`
    tacarg            : `qualid`
-                     : | ()
-                     : | ltac : `atom`
-                     : | `term`
+                     : ()
+                     : ltac : `atom`
+                     : `term`
    let_clause        : `ident` [`name` ... `name`] := `expr`
    context_rule      : `context_hyp`, ..., `context_hyp` |- `cpattern` => `expr`
-                     : | `cpattern` => `expr`
-                     : | |- `cpattern` => `expr`
-                     : | _ => `expr`
+                     : `cpattern` => `expr`
+                     : |- `cpattern` => `expr`
+                     : _ => `expr`
    context_hyp       : `name` : `cpattern`
-                     : | `name` := `cpattern` [: `cpattern`]
+                     : `name` := `cpattern` [: `cpattern`]
    match_rule        : `cpattern` => `expr`
-                     : | context [ident] [ `cpattern` ] => `expr`
-                     : | _ => `expr`
+                     : context [`ident`] [ `cpattern` ] => `expr`
+                     : _ => `expr`
    test              : `integer` = `integer`
-                     : | `integer` (< | <= | > | >=) `integer`
+                     : `integer` (< | <= | > | >=) `integer`
    selector          : [`ident`]
-                     : | `integer`
-                     : | (`integer` | `integer` - `integer`), ..., (`integer` | `integer` - `integer`)
+                     : `integer`
+                     : (`integer` | `integer` - `integer`), ..., (`integer` | `integer` - `integer`)
    toplevel_selector : `selector`
-                     : | all
-                     : | par
-                     : | !
+                     : all
+                     : par
+                     : !
 
 .. productionlist:: coq
    top              : [Local] Ltac `ltac_def` with ... with `ltac_def`
    ltac_def         : `ident` [`ident` ... `ident`] := `expr`
-                    : | `qualid` [`ident` ... `ident`] ::= `expr`
+                    : `qualid` [`ident` ... `ident`] ::= `expr`
 
 .. _ltac-semantics:
 

@@ -36,7 +36,7 @@ language will be described in Chapter :ref:`ltac`.
 .. _invocation-of-tactics:
 
 Invocation of tactics
--------------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 A tactic is applied as an ordinary command. It may be preceded by a
 goal selector (see Section :ref:`ltac-semantics`). If no selector is
@@ -44,9 +44,9 @@ specified, the default selector is used.
 
 .. _tactic_invocation_grammar:
 
-  .. productionlist:: `sentence`
-     tactic_invocation : toplevel_selector : tactic.
-                       : |tactic .
+  .. productionlist:: sentence
+     tactic_invocation : `toplevel_selector` : `tactic`.
+                       : `tactic` .
 
 .. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
@@ -79,14 +79,14 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
 .. _bindings_list_grammar:
 
   .. productionlist:: `bindings_list`
-     bindings_list : (ref := `term`) ... (ref := `term`)
+     bindings_list : (`ref` := `term`) ... (`ref` := `term`)
                    : `term` ... `term`
 
-+ In a bindings list of the form :n:`{* (ref:= term)}`, :n:`ref` is either an
++ In a bindings list of the form :n:`{+ (@ref:= @term)}`, :n:`@ref` is either an
   :n:`@ident` or a :n:`@num`. The references are determined according to the type of
-  ``term``. If :n:`ref` is an identifier, this identifier has to be bound in the
+  ``term``. If :n:`@ref` is an identifier, this identifier has to be bound in the
   type of ``term`` and the binding provides the tactic with an instance for the
-  parameter of this name. If :n:`ref` is some number ``n``, this number denotes
+  parameter of this name. If :n:`@ref` is some number ``n``, this number denotes
   the ``n``-th non dependent premise of the ``term``, as determined by the type
   of ``term``.
 
@@ -113,11 +113,11 @@ Occurrence sets and occurrence clauses
 An occurrence clause is a modifier to some tactics that obeys the
 following syntax:
 
-  .. productionlist:: `sentence`
+  .. productionlist:: sentence
      occurrence_clause : in `goal_occurrences`
-     goal_occurrences : [`ident` [`at_occurrences`], ... , ident [`at_occurrences`] [|- [* [`at_occurrences`]]]]
-                      :| * |- [* [`at_occurrences`]]
-                      :| *
+     goal_occurrences : [`ident` [`at_occurrences`], ... , `ident` [`at_occurrences`] [|- [* [`at_occurrences`]]]]
+                      : * |- [* [`at_occurrences`]]
+                      : *
      at_occurrences : at `occurrences`
      occurrences     : [-] `num` ... `num`
 
@@ -3586,15 +3586,15 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       the following. Beware, there is no operator precedence during parsing, one can
       check with :cmd:`Print HintDb` to verify the current cut expression:
 
-      .. productionlist:: `regexp`
-          e : ident      hint or instance identifier
-            :| _         any hint
-            :| e\|e′     disjunction
-            :| e e′      sequence
-            :| e *       Kleene star
-            :| emp       empty
-            :| eps       epsilon
-            :| ( e  )
+      .. productionlist:: regexp
+          e : `ident`    hint or instance identifier
+            : _          any hint
+            : `e` | `e`  disjunction
+            : `e` `e`    sequence
+            : `e` *      Kleene star
+            : emp        empty
+            : eps        epsilon
+            : ( `e` )
 
       The `emp` regexp does not match any search path while `eps`
       matches the empty path. During proof search, the path of
@@ -4299,15 +4299,15 @@ Automating
 
    .. _btauto_grammar:
 
-   .. productionlist:: `sentence`
-      t : x
-        :∣ true
-        :∣ false
-        :∣ orb t1 t2
-        :∣ andb t1 t2
-        :∣ xorb t1 t2
-        :∣ negb t
-        :∣ if t1 then t2 else t3
+   .. productionlist:: sentence
+      t : `x`
+        : true
+        : false
+        : orb `t` `t`
+        : andb `t` `t`
+        : xorb `t` `t`
+        : negb `t`
+        : if `t` then `t` else `t`
 
    Whenever the formula supplied is not a tautology, it also provides a
    counter-example.

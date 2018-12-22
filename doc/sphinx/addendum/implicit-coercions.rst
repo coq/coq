@@ -41,8 +41,8 @@ Formally, the syntax of a classes is defined as:
 
 .. productionlist::
    class: `qualid`
-        : | Sortclass
-        : | Funclass
+        : Sortclass
+        : Funclass
 
 
 Coercions
@@ -184,10 +184,10 @@ Figure :ref:`vernacular` as follows:
    \comindex{Hypothesis \mbox{\rm (and coercions)}}
 
 .. productionlist::
-   assumption : assumption_keyword assums .
-   assums : simple_assums
-          : | (simple_assums) ... (simple_assums)
-   simple_assums : ident ... ident :[>] term
+   assumption : `assumption_keyword` `assums` .
+   assums : `simple_assums`
+          : (`simple_assums`) ... (`simple_assums`)
+   simple_assums : `ident` ... `ident` :[>] `term`
 
 If the extra ``>`` is present before the type of some assumptions, these
 assumptions are declared as coercions.
@@ -203,7 +203,7 @@ grammar of inductive types from Figure :ref:`vernacular` as follows:
 
 .. productionlist::
    inductive : Inductive `ind_body` with ... with `ind_body`
-             : | CoInductive `ind_body` with ... with `ind_body`
+             : CoInductive `ind_body` with ... with `ind_body`
    ind_body : `ident` [ `binders` ] : `term` := [[|] `constructor` | ... | `constructor` ]
    constructor : `ident` [ `binders` ] [:[>] `term` ]
 

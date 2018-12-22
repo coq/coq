@@ -308,13 +308,13 @@ The syntax for adding a new ring is
 
    .. productionlist:: coq
       ring_mod : abstract | decidable `term` | morphism `term`
-               : | setoid `term` `term`
-               : | constants [`ltac`]
-               : | preprocess [`ltac`]
-               : | postprocess [`ltac`]
-               : | power_tac `term` [`ltac`]
-               : | sign `term`
-               : | div `term`
+               : setoid `term` `term`
+               : constants [`ltac`]
+               : preprocess [`ltac`]
+               : postprocess [`ltac`]
+               : power_tac `term` [`ltac`]
+               : sign `term`
+               : div `term`
 
    abstract
       declares the ring as abstract. This is the default.
