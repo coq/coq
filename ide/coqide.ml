@@ -193,7 +193,7 @@ let confirm_save ok =
 let select_and_save ?parent ~saveas ?filename sn =
   let do_save = if saveas then sn.fileops#saveas ?parent else sn.fileops#save in
   let title = if saveas then "Save file as" else "Save file" in
-  match select_file_for_save ~title ?filename () with
+  match select_file_for_save ~title ?parent ?filename () with
     |None -> false
     |Some f ->
       let ok = do_save f in
@@ -271,11 +271,11 @@ let newfile _ =
   let index = notebook#append_term session in
   notebook#goto_page index
 
-let load _ =
+let load ?parent _ =
   let filename =
     try notebook#current_term.fileops#filename
     with Invalid_argument _ -> None in
-  match select_file_for_open ~title:"Load file" ?filename () with
+  match select_file_for_open ~title:"Load file" ?parent ?filename () with
     | None -> ()
     | Some f -> FileAux.load_file f
 
@@ -972,7 +972,7 @@ let build_ui () =
   menu file_menu [
     item "File" ~label:"_File";
     item "New" ~callback:File.newfile ~stock:`NEW;
-    item "Open" ~callback:File.load ~stock:`OPEN;
+    item "Open" ~callback:(File.load ~parent:w) ~stock:`OPEN;
     item "Save" ~callback:(File.save ~parent:w) ~stock:`SAVE ~tooltip:"Save current buffer";
     item "Save as" ~label:"S_ave as" ~stock:`SAVE_AS ~callback:(File.saveas ~parent:w);
     item "Save all" ~label:"Sa_ve all" ~callback:File.saveall;

@@ -230,9 +230,9 @@ let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
-let select_file_for_open ~title ?(filter=true) ?filename () =
+let select_file_for_open ~title ?(filter=true) ?parent ?filename () =
   let file_chooser =
-    GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ()
+    GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ?parent ()
   in
   file_chooser#add_button_stock `CANCEL `CANCEL ;
   file_chooser#add_select_button_stock `OPEN `OPEN ;
@@ -259,10 +259,10 @@ let select_file_for_open ~title ?(filter=true) ?filename () =
   file_chooser#destroy ();
   file
 
-let select_file_for_save ~title ?filename () =
+let select_file_for_save ~title ?parent ?filename () =
   let file = ref None in
   let file_chooser =
-    GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title ()
+    GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title ?parent ()
   in
   file_chooser#add_button_stock `CANCEL `CANCEL ;
   file_chooser#add_select_button_stock `SAVE `SAVE ;
