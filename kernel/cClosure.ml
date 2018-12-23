@@ -374,46 +374,6 @@ let rec stack_args_size = function
   | Zupdate(_)::s -> stack_args_size s
   | (ZcaseT _ | Zproj _ | Zfix _) :: _ | [] -> 0
 
-(* When used as an argument stack (only Zapp can appear) *)
-let rec decomp_stack = function
-  | Zapp v :: s ->
-      (match Array.length v with
-          0 -> decomp_stack s
-        | 1 -> Some (v.(0), s)
-        | _ ->
-            Some (v.(0), (Zapp (Array.sub v 1 (Array.length v - 1)) :: s)))
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _) :: _ | [] -> None
-let array_of_stack s =
-  let rec stackrec = function
-  | [] -> []
-  | Zapp args :: s -> args :: (stackrec s)
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _) :: _ -> assert false
-  in Array.concat (stackrec s)
-let rec stack_assign s p c = match s with
-  | Zapp args :: s ->
-      let q = Array.length args in
-      if p >= q then
-	Zapp args :: stack_assign s (p-q) c
-      else
-        (let nargs = Array.copy args in
-         nargs.(p) <- c;
-         Zapp nargs :: s)
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _) :: _ | [] -> s
-let rec stack_tail p s =
-  if Int.equal p 0 then s else
-    match s with
-      | Zapp args :: s ->
-	  let q = Array.length args in
-	  if p >= q then stack_tail (p-q) s
-	  else Zapp (Array.sub args p (q-p)) :: s
-      | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _) :: _ | [] -> failwith "stack_tail"
-let rec stack_nth s p = match s with
-  | Zapp args :: s ->
-      let q = Array.length args in
-      if p >= q then stack_nth s (p-q)
-      else args.(p)
-  | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _) :: _ | [] -> raise Not_found
-
 (* Lifting. Preserves sharing (useful only for cell with norm=Red).
    lft_fconstr always create a new cell, while lift_fconstr avoids it
    when the lift is 0. *)
