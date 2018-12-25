@@ -174,20 +174,17 @@ after_script:
   script:
     - set -e
     - echo 'start:coq.test'
-    - make -f Makefile.ci -j "$NJOBS" ${TEST_TARGET}
+    - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
     - echo 'end:coq.test'
     - set +e
   dependencies:
     - build:base
-  variables: &ci-template-vars
-    TEST_TARGET: "$CI_JOB_NAME"
 
 .ci-template-flambda: &ci-template-flambda
   <<: *ci-template
   dependencies:
     - build:edge+flambda
   variables:
-    <<: *ci-template-vars
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
@@ -445,93 +442,98 @@ validate:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
 
-ci-aac_tactics:
-  <<: *ci-template
+# Libraries are by convention the projects that depend on Coq
+# but not on its ML API
 
-ci-bedrock2:
+library:ci-bedrock2:
   <<: *ci-template
   allow_failure: true
 
-ci-bignums:
-  <<: *ci-template
-
-ci-color:
+library:ci-color:
   <<: *ci-template-flambda
 
-ci-compcert:
+library:ci-compcert:
   <<: *ci-template-flambda
 
-ci-coq_dpdgraph:
+library:ci-coquelicot:
   <<: *ci-template
 
-ci-coquelicot:
+library:ci-cross-crypto:
   <<: *ci-template
 
-ci-cross-crypto:
+library:ci-fcsl-pcm:
   <<: *ci-template
 
-ci-elpi:
-  <<: *ci-template
-
-ci-equations:
-  <<: *ci-template
-
-ci-fcsl-pcm:
-  <<: *ci-template
-
-ci-fiat-crypto:
+library:ci-fiat-crypto:
   <<: *ci-template-flambda
 
-ci-fiat-crypto-legacy:
+library:ci-fiat-crypto-legacy:
   <<: *ci-template-flambda
 
-ci-fiat-parsers:
+library:ci-flocq:
   <<: *ci-template
 
-ci-flocq:
-  <<: *ci-template
-
-ci-formal-topology:
+library:ci-formal-topology:
   <<: *ci-template-flambda
 
-ci-geocoq:
+library:ci-geocoq:
   <<: *ci-template-flambda
 
-ci-coqhammer:
+library:ci-hott:
   <<: *ci-template
 
-ci-hott:
-  <<: *ci-template
-
-ci-iris-lambda-rust:
+library:ci-iris-lambda-rust:
   <<: *ci-template-flambda
 
-ci-ltac2:
-  <<: *ci-template
-
-ci-math-comp:
+library:ci-math-comp:
   <<: *ci-template-flambda
 
-ci-mtac2:
+library:ci-sf:
   <<: *ci-template
 
-ci-paramcoq:
-  <<: *ci-template
-
-ci-plugin_tutorial:
-  <<: *ci-template
-
-ci-quickchick:
+library:ci-unimath:
   <<: *ci-template-flambda
 
-ci-relation-algebra:
-  <<: *ci-template
-
-ci-sf:
-  <<: *ci-template
-
-ci-unimath:
+library:ci-vst:
   <<: *ci-template-flambda
 
-ci-vst:
+# Plugins are by definition the projects that depend on Coq's ML API
+
+plugin:ci-aac_tactics:
+  <<: *ci-template
+
+plugin:ci-bignums:
+  <<: *ci-template
+
+plugin:ci-coq_dpdgraph:
+  <<: *ci-template
+
+plugin:ci-coqhammer:
+  <<: *ci-template
+
+plugin:ci-elpi:
+  <<: *ci-template
+
+plugin:ci-equations:
+  <<: *ci-template
+
+plugin:ci-fiat-parsers:
+  <<: *ci-template
+
+plugin:ci-ltac2:
+  <<: *ci-template
+
+plugin:ci-mtac2:
+  <<: *ci-template
+
+plugin:ci-paramcoq:
+  <<: *ci-template
+
+plugin:ci-plugin_tutorial:
+  <<: *ci-template
+
+plugin:ci-quickchick:
   <<: *ci-template-flambda
+
+plugin:ci-relation-algebra:
+  <<: *ci-template
