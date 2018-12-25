@@ -764,16 +764,7 @@ let add_env (alp,alpmetas) (terms,termlists,binders,binderlists) var v =
      ((fun y => P),(fun y => Q))". Then, we keep (z,y) in alpmetas, and we
      have to check that "fun z => ... z ..." denotes the same term as
      "fun x => ... x ... ?var ... x" up to alpha-conversion when [var]
-     is instantiated by [v];
-     Currently, we fail, but, eventually, [x] in [v] could be replaced by [x],
-     and, in match_, when finding "x" in subterm, failing because of a capture,
-     and, in match_, when finding "z" in subterm, replacing it with "x",
-     and, in an even further step, being even more robust, independent of the order, so
-     that e.g. the notation for ex2 works on "x y |- ex2 (fun x => y=x) (fun y => x=y)"
-     by giving, say, "exists2 x0, y=x0 & x=x0", but this would typically require the
-     glob_constr_eq in bind_term_env to be postponed in match_notation_constr, and the
-     choice of exact variable be done there; but again, this would be a non-trivial
-     refinement *)
+     is instantiated by [v] *)
   let v = alpha_rename alpmetas v in
   (* TODO: handle the case of multiple occs in different scopes *)
   ((var,v)::terms,termlists,binders,binderlists)
