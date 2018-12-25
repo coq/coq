@@ -17,6 +17,10 @@ val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 val map_pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
+(** Comparing pairs *)
+
+val pair_compare : ('a -> 'a -> int) -> ('b -> 'b -> int) -> ('a * 'b -> 'a * 'b -> int)
+
 (** Mapping under triple *)
 
 val on_pi1 : ('a -> 'b) -> 'a * 'c * 'd -> 'b * 'c * 'd
