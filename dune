@@ -42,3 +42,20 @@
  (name runtest)
  (package coqide-server)
  (deps test-suite/summary.log))
+
+; This is an ugly hack, we should use
+; %{lib_root:coq/theories/Init/Prelude.vo} when Dune supports it.
+(library
+ (name root)
+ (public_name coq.root))
+
+(alias
+ (name states)
+ (deps
+   %{lib:coq.root:../theories/Init/Prelude.vo}
+   %{lib:coq.plugins.ltac:ltac_plugin.cmxs}
+   %{lib:coq.plugins.tauto:tauto_plugin.cmxs}
+   %{lib:coq.plugins.cc:cc_plugin.cmxs}
+   %{lib:coq.plugins.firstorder:ground_plugin.cmxs}
+   %{lib:coq.plugins.numeral_notation:numeral_notation_plugin.cmxs}
+   %{lib:coq.plugins.string_notation:string_notation_plugin.cmxs}))

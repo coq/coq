@@ -171,6 +171,11 @@ let gen_coqc_targets vo =
   ; replace_ext ~file:vo.target ~newext:".glob"
   ; "." ^ replace_ext ~file:vo.target ~newext:".aux"]
 
+let amend_install_dir sdir s =
+  match Filename.extension s with
+  | ".vo" -> "%{lib:coq.root:../" ^ s ^ "}"
+  | _ -> bpath [sdir;s]
+
 (* Generate the dune rule: *)
 let pp_vo_dep dir fmt vo =
   let depth = List.length dir in
@@ -179,8 +184,9 @@ let pp_vo_dep dir fmt vo =
   let eflag, edep = if List.tl dir = ["Init"] then "-noinit -R theories Coq", [] else "", [bpath ["theories";"Init";"Prelude.vo"]] in
   (* Coq flags *)
   let cflag = Options.build_coq_flags () in
-  (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo" *)
-  let deps = List.map (fun s -> bpath [sdir;s]) (edep @ vo.deps) in
+  (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo"
+     except for vo files *)
+  let deps = List.map (amend_install_dir sdir) (edep @ vo.deps) in
   (* The source file is also corrected as we will call coqtop from the top dir *)
   let source = bpath (dir @ [replace_ext ~file:vo.target ~newext:".v"]) in
   (* We explicitly include the location of coqlib to avoid tricky issues with coqlib location *)

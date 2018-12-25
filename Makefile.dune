@@ -43,7 +43,7 @@ voboot:
 	dune exec coq_dune $(BUILD_CONTEXT)/.vfiles.d
 
 states: voboot
-	dune build $(DUNEOPT) theories/Init/Prelude.vo
+	dune build $(DUNEOPT) @states
 
 world: voboot
 	dune build $(DUNEOPT) @install
