@@ -313,3 +313,29 @@ Notation "x" := x (in custom com_top at level 90, x custom com at level 90).
 Check fun x => <{ x ; (S x) }>.
 
 End CoercionEntryTransitivity.
+
+Module K.
+
+Notation "# x |-> t & u" := ((fun x => (x,t)),(fun x => (x,u)))
+  (at level 0, x pattern, t, u at level 39).
+Check fun y : nat => # (x,z) |-> y & y.
+Check fun y : nat => # (x,z) |-> (x + y) & (y + z).
+
+End K.
+
+(* Fixing a limitation in printing notations with meta-variables used
+   both in as a binder and as a term (this is needed in MathComp) *)
+
+Module L.
+
+Notation foo1 x := ((forall x, x = 3) /\ x = 2).
+Check forall n, foo1 n.
+
+Notation foo2 x y := ((forall x : nat, x = y) /\ x = 0).
+Check forall n, foo2 n n.
+
+(* Should not use the notation *)
+Check forall n, ((forall x, x = n) /\ n = 0).
+Check forall n, ((forall x, x = S n) /\ n = 0).
+
+End L.

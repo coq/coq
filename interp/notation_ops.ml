@@ -736,13 +736,15 @@ let is_bindinglist_meta id metas =
   try match Id.List.assoc id metas with _,NtnTypeBinderList -> true | _ -> false
   with Not_found -> false
 
-type term_matching_status =
+type binding_meta_subst = (Id.t * (Id.t * Id.t)) list
+
+type 'a term_matching_status =
   (* The term to which is associated the meta-variable cannot be changed *)
-  | Fixed
+  | Fixed of 'a glob_constr_g * binding_meta_subst
   (* The term to which is associated the meta-variable has been
      obtained by matching a binding structure; it can still be
      alpha-converted but avoiding the given list of names *)
-  | UpToAvoiding of Id.t list
+  | UpToAvoiding of Id.t * Id.t list
 
 exception No_match
 
@@ -754,7 +756,7 @@ let rec alpha_var id1 id2 = function
 
 let alpha_rename alpmetas v =
   if alpmetas == [] then v
-  else try rename_glob_vars alpmetas v with UnsoundRenaming -> raise No_match
+  else try rename_glob_vars (List.map snd alpmetas) v with UnsoundRenaming -> raise No_match
 
 let add_env (alp,alpmetas) (terms,termlists,binders,binderlists,fvs) var v =
   (* Check that no capture of binding variables occur *)
@@ -773,9 +775,8 @@ let add_env (alp,alpmetas) (terms,termlists,binders,binderlists,fvs) var v =
      have to check that "fun z => ... z ..." denotes the same term as
      "fun x => ... x ... ?var ... x" up to alpha-conversion when [var]
      is instantiated by [v] *)
-  let v = alpha_rename alpmetas v in
   (* TODO: handle the case of multiple occs in different scopes *)
-  ((var,(v,Fixed))::terms,termlists,binders,binderlists,fvs)
+  ((var,Fixed (v,alpmetas))::terms,termlists,binders,binderlists,fvs)
 
 let add_termlist_env (alp,alpmetas) (terms,termlists,binders,binderlists,fvs) var vl =
   if List.exists (fun (id,_) -> List.exists (occur_glob_constr id) vl) alp then raise No_match;
@@ -832,16 +833,16 @@ let rec pat_binder_of_term t = DAst.map (function
   | _ -> raise No_match
   ) t
 
-let unify_name_upto alp na na' =
+let unify_name_upto var alp na na' =
   match na, na' with
   | Anonymous, na' -> alp, na'
   | na, Anonymous -> alp, na
   | Name id, Name id' ->
      if Id.equal id id' then alp, na'
-     else (fst alp,(id,id')::snd alp), na'
+     else (fst alp,(var,(id,id'))::snd alp), na'
 
-let unify_pat_upto alp p p' =
-  try fold_cases_pattern_eq unify_name_upto alp p p' with Failure _ -> raise No_match
+let unify_pat_upto var alp p p' =
+  try fold_cases_pattern_eq (unify_name_upto var) alp p p' with Failure _ -> raise No_match
 
 let unify_term alp v v' =
   match DAst.get v, DAst.get v' with
@@ -857,17 +858,17 @@ let unify_opt_term alp v v' =
 
 let unify_binding_kind bk bk' = if bk == bk' then bk' else raise No_match
 
-let unify_binder_upto alp b b' =
+let unify_binder_upto var alp b b' =
   let loc, loc' = CAst.(b.loc, b'.loc) in
   match DAst.get b, DAst.get b' with
   | GLocalAssum (na,bk,t), GLocalAssum (na',bk',t') ->
-     let alp, na = unify_name_upto alp na na' in
+     let alp, na = unify_name_upto var alp na na' in
      alp, DAst.make ?loc @@ GLocalAssum (na, unify_binding_kind bk bk', unify_term alp t t')
   | GLocalDef (na,bk,c,t), GLocalDef (na',bk',c',t') ->
-     let alp, na = unify_name_upto alp na na' in
+     let alp, na = unify_name_upto var alp na na' in
      alp, DAst.make ?loc @@ GLocalDef (na, unify_binding_kind bk bk', unify_term alp c c', unify_opt_term alp t t')
   | GLocalPattern ((disjpat,ids),id,bk,t), GLocalPattern ((disjpat',_),_,bk',t') when List.length disjpat = List.length disjpat' ->
-     let alp, p = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
+     let alp, p = List.fold_left2_map (unify_pat_upto var) alp disjpat disjpat' in
      alp, DAst.make ?loc @@ GLocalPattern ((p,ids), id, unify_binding_kind bk bk', unify_term alp t t')
   | _ -> raise No_match
 
@@ -877,23 +878,24 @@ let rec unify_terms alp vl vl' =
   | v :: vl, v' :: vl' -> unify_term alp v v' :: unify_terms alp vl vl'
   | _ -> raise No_match
 
-let rec unify_binders_upto alp bl bl' =
+let rec unify_binders_upto var alp bl bl' =
   match bl, bl' with
   | [], [] -> alp, []
   | b :: bl, b' :: bl' ->
-     let alp,b = unify_binder_upto alp b b' in
-     let alp,bl = unify_binders_upto alp bl bl' in
+     let alp,b = unify_binder_upto var alp b b' in
+     let alp,bl = unify_binders_upto var alp bl bl' in
      alp, b :: bl
   | _ -> raise No_match
 
 let unify_id alp id na' =
+  let alpmetas = List.map snd (snd alp) in
   match na' with
-  | Anonymous -> Name (rename_var (snd alp) id)
+  | Anonymous -> Name (rename_var alpmetas id)
   | Name id' ->
-     if Id.equal (rename_var (snd alp) id) id' then na' else raise No_match
+     if Id.equal (rename_var alpmetas id) id' then na' else raise No_match
 
 let unify_pat alp p p' =
-  if cases_pattern_eq (map_cases_pattern_name_left (Name.map (rename_var (snd alp))) p) p' then p'
+  if cases_pattern_eq (map_cases_pattern_name_left (Name.map (rename_var (List.map snd (snd alp)))) p) p' then p'
   else raise No_match
 
 let unify_term_binder alp c = DAst.(map (fun b' ->
@@ -919,6 +921,12 @@ let add_free_variables (terms,termlists,binders,binderlists,fvs) c =
   let ids = free_glob_vars c in
   (terms,termlists,binders,binderlists,Id.Set.fold (List.add_set Id.equal) ids fvs)
 
+let rename_existing_bindings (terms,termlists,binders,binderlists,fvs) var id =
+  let terms = List.map (function
+                  | (var',Fixed (c,l)) -> (var',Fixed (c,List.map (function (var'',(id',id'')) as x -> if Id.equal var var'' then (var',(id',id)) else x) l))
+                  | (var,UpToAvoiding _) as x -> x) terms in
+  (terms,termlists,binders,binderlists,fvs)
+
 let update_env alp (terms,termlists,binders,binderlists,fvs) var v =
   let sigma = (Id.List.remove_assoc var terms,termlists,binders,binderlists,fvs) in
   add_env alp sigma var v
@@ -928,33 +936,32 @@ let unify_term_and_take_best alp sigma var v v' =
 
 let bind_term_env alp (terms,termlists,binders,binderlists,fvs as sigma) var v =
   try
-    let (v',status) = Id.List.assoc var terms in
-    match DAst.get v' with
-    | GVar id ->
-      if List.mem_assoc id (snd alp) then
-        (* We are matching a bound [id] in some context where [x] is bound *)
+    match Id.List.assoc var terms with
+    | Fixed (v',alpmetas) ->
+      (* The current meta-level binding was obtained by matching
+         a term; it cannot be changed; unify with the new term *)
+       let sigma = unify_term_and_take_best alp sigma var v v' in
+       if List.mem_assoc var (snd alp) then
+         sigma
+       else
+         add_free_variables sigma v
+    | UpToAvoiding (id,l) ->
+      if List.mem_assoc var (snd alp) then
+        (* We are in a context where [var] is binding *)
         (* We expect [v] to be [v'] up to alpha-conversion *)
-        if glob_constr_eq (alpha_rename (snd alp) v) v' then sigma
+        if glob_constr_eq (alpha_rename (snd alp) v) (DAst.make (GVar id)) then sigma
         else raise No_match
       else
-        (* We are matching a free variable *)
-        (match status with
-        | Fixed ->
-          (* The current meta-level binding was obtained by matching
-             a term; it cannot be changed *)
-          unify_term_and_take_best alp sigma var v v'
-        | UpToAvoiding l ->
-          (* The current meta-level binding was obtained by matching
-             an object-level binding structure; it can still be
-             modified if not in the list of names which would break
-             the binding structure *)
-          match DAst.get v with
-          | GVar id when not (List.mem id l) ->
-            add_free_variables (update_env alp sigma var v) v
-          | _ -> raise No_match)
-      | _ ->
-    (* Already bound to a term, unify with the new term *)
-      add_free_variables (unify_term_and_take_best alp sigma var v v') v
+        (* The current meta-level binding was obtained by matching
+           an object-level binding structure; it can still be
+           modified if not in the list of names which would break
+           the binding structure *)
+        match DAst.get v with
+        | GVar id when not (List.mem id l) ->
+          let sigma = update_env alp sigma var v in
+          let sigma = add_free_variables sigma v in
+          rename_existing_bindings sigma var id
+        | _ -> raise No_match
   with Not_found ->
     add_free_variables (add_env alp sigma var v) v
 
@@ -971,29 +978,33 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists,fvs as sig
   try
     (* If already matched in the surrounding of the subterm rooted at
        this binder, unify the binder to the existing variable name *)
-    match DAst.get (fst (Id.List.assoc var terms)) with
-    | GVar id' ->
+    match Id.List.assoc var terms with
+    | UpToAvoiding (id',l') ->
        (* We remember the name even if [id] = [id'] to indicate that
           we are in the scope of [id] *)
-       (fst alp,(id,id')::snd alp), sigma
-    | t ->
+       (fst alp,(var,(id,id'))::snd alp), sigma
+    | Fixed (c,alpmetas) ->
+      match DAst.get c with
+      | GVar id' ->
+        let id' = rename_var (List.map snd alpmetas) id' in
+        (fst alp,(var,(id,id'))::snd alp), sigma
+      | _ ->
        (* Already bound to a term which is a non-variable pattern *)
        raise No_match
   with Not_found ->
     (* The matching against a term allowing to find the instance has not been found yet *)
     (* We take the current name as a temporary solution which we may change later *)
-    (fst alp,(id,id)::snd alp), ((var,(DAst.make @@ GVar id,UpToAvoiding []))::terms,termlists,binders,binderlists,fvs)
+    (fst alp,(var,(id,id))::snd alp), ((var,UpToAvoiding (id,[]))::terms,termlists,binders,binderlists,fvs)
 
 let update_free_variables (terms,termlists,binders,binderlists,fvs) id =
   (terms,termlists,binders,binderlists,List.remove Id.equal id fvs)
 
 let update_names_to_avoid (terms,termlists,binders,binderlists,fvs as sigma) var id =
-    let v,status = Id.List.assoc var terms in
-    match status with
-    | UpToAvoiding l ->
-      let terms = (var,(v,UpToAvoiding (l@fvs)))::(Id.List.remove_assoc var terms) in
-      (terms,termlists,binders,binderlists,List.remove Id.equal id fvs)
-    | Fixed -> sigma
+  match Id.List.assoc var terms with
+  | UpToAvoiding (id',l) ->
+    let terms = (var,(UpToAvoiding (id',l@fvs)))::(Id.List.remove_assoc var terms) in
+    (terms,termlists,binders,binderlists,List.remove Id.equal id fvs)
+  | Fixed _ -> sigma
 
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists,fvs as sigma) var c =
   let env = Global.env () in
@@ -1013,7 +1024,7 @@ let bind_binding_env alp (terms,termlists,binders,binderlists,fvs as sigma) var 
     (* If already bound to a binder possibly *)
     (* generating an alpha-renaming from unifying the new binder *)
     let disjpat' = Id.List.assoc var binders in
-    let alp, disjpat = List.fold_left2_map unify_pat_upto alp disjpat disjpat' in
+    let alp, disjpat = List.fold_left2_map (unify_pat_upto var) alp disjpat disjpat' in
     let sigma = (terms,termlists,Id.List.remove_assoc var binders,binderlists,fvs) in
     alp, add_binding_env alp sigma var disjpat
   with Not_found -> alp, add_binding_env alp sigma var disjpat
@@ -1024,7 +1035,7 @@ let bind_bindinglist_env alp (terms,termlists,binders,binderlists,fvs as sigma) 
     (* If already bound to a list of binders possibly *)
     (* generating an alpha-renaming from unifying the new binders *)
     let bl' = Id.List.assoc var binderlists in
-    let alp, bl = unify_binders_upto alp bl bl' in
+    let alp, bl = unify_binders_upto var alp bl bl' in
     let sigma = (terms,termlists,binders,Id.List.remove_assoc var binderlists,fvs) in
     alp, add_bindinglist_env sigma var bl
   with Not_found ->
@@ -1140,6 +1151,10 @@ let glue_inner_letin_with_decls = true
    should be included in sequence of binders *)
 let glue_trailing_letin_with_decls = false
 
+let expand_term = function
+  | Fixed (v,alpmetas) -> alpha_rename alpmetas v
+  | UpToAvoiding (id,l) -> DAst.make (GVar id)
+
 exception OnlyTrailingLetIns
 
 let match_binderlist match_fun metas alp sigma rest x y iter termin revert =
@@ -1147,7 +1162,7 @@ let match_binderlist match_fun metas alp sigma rest x y iter termin revert =
     try
       let metas = add_ldots_var (add_meta_bindinglist y metas) in
       let (terms,_,_,binderlists,fvs as sigma) = match_fun metas alp sigma rest iter in
-      let rest,_ = Id.List.assoc ldots_var terms in
+      let rest = expand_term (Id.List.assoc ldots_var terms) in
       let b =
         match Id.List.assoc y binderlists with [b] -> b | _ ->assert false
       in
@@ -1182,8 +1197,8 @@ let match_termlist match_fun metas alp sigma rest x y iter termin revert =
     try
       let metas = add_ldots_var (add_meta_term y metas) in
       let (terms,_,_,_,_ as sigma) = match_fun metas sigma rest iter in
-      let rest,_ = Id.List.assoc ldots_var terms in
-      let t,_ = Id.List.assoc y terms in
+      let rest = expand_term (Id.List.assoc ldots_var terms) in
+      let t = Id.List.assoc y terms in
       let sigma = remove_sigma y (remove_sigma ldots_var sigma) in
       if !print_parentheses && not (List.is_empty acc) then raise No_match;
       aux sigma (t::acc) rest
@@ -1194,9 +1209,9 @@ let match_termlist match_fun metas alp sigma rest x y iter termin revert =
   if is_bindinglist_meta x metas then
     (* This is a recursive pattern for both bindings and terms; it is *)
     (* registered for binders *)
-    bind_bindinglist_as_termlist_env alp sigma x l
+    bind_bindinglist_as_termlist_env alp sigma x (List.map expand_term l)
   else
-    bind_termlist_env alp sigma x l
+    bind_termlist_env alp sigma x (List.map expand_term l)
 
 let match_cast match_fun sigma c1 c2 =
   match c1, c2 with
@@ -1421,8 +1436,8 @@ let match_notation_constr u c (metas,pat) =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders',binderlists') ->
     match typ with
     | NtnTypeConstr ->
-      let term,_ = try Id.List.assoc x terms with Not_found -> raise No_match in
-       ((term, scl)::terms',termlists',binders',binderlists')
+      let term = try Id.List.assoc x terms with Not_found -> raise No_match in
+      ((expand_term term, scl)::terms',termlists',binders',binderlists')
     | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
        (match Id.List.assoc x binders with
         | [pat] ->
