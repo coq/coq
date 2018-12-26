@@ -131,16 +131,17 @@ include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
    simple_intropattern_closed : `naming_intropattern`
                               : _
                               : `or_and_intropattern`
-                              : `equality_intropattern`
+                              : `rewriting_intropattern`
+                              : `injection_intropattern`
    naming_intropattern     : `ident`
                            : ?
                            : ?`ident`
    or_and_intropattern     : [ `intropattern_list` | ... | `intropattern_list` ]
                            : ( `simple_intropattern` , ... , `simple_intropattern` )
                            : ( `simple_intropattern` & ... & `simple_intropattern` )
-   equality_intropattern   : ->
+   rewriting_intropattern  : ->
                            : <-
-                           : [= `intropattern_list` ]
+   injection_intropattern  : [= `intropattern_list` ]
    or_and_intropattern_loc : `or_and_intropattern`
                            : `ident`
 
@@ -2284,6 +2285,18 @@ and an explanation of the underlying technique.
       names are automatically generated to adjust the list of :n:`@simple_intropattern`
       to the number of new equalities. The original equality is erased if it
       corresponds to a hypothesis.
+
+   .. tacv:: injection @term {? with @bindings_list} as @injection_intropattern
+             injection @num as @injection_intropattern
+             injection as @injection_intropattern
+             einjection @term {? with @bindings_list} as @injection_intropattern
+             einjection @num as @injection_intropattern
+             einjection as @injection_intropattern
+
+      These are equivalent to the previous variants but using instead the
+      syntax :token:`injection_intropattern` which :tacn:`intros`
+      uses. In particular :n:`as [= {+ @simple_intropattern}]` behaves
+      the same as :n:`as {+ @simple_intropattern}`.
 
    .. flag:: Structural Injection
 

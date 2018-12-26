@@ -105,7 +105,7 @@ Section ZMORPHISM.
  Proof.
   constructor.
   destruct c;intros;try discriminate.
-  injection H as <-.
+  injection H as [= <-].
   simpl. unfold Zeq_bool. rewrite Z.compare_refl. trivial.
  Qed.
 

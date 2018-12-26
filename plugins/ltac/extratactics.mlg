@@ -146,6 +146,23 @@ let discrHyp id =
 let injection_main with_evars c =
  elimOnConstrWithHoles (injClause None None) with_evars c
 
+let isInjPat pat = match pat.CAst.v with IntroAction (IntroInjection _) -> Some pat.CAst.loc | _ -> None
+
+let decode_inj_ipat ?loc = function
+  (* For the "as [= pat1 ... patn ]" syntax *)
+  | [{ CAst.v = IntroAction (IntroInjection ipat) }] -> ipat
+  (* For the "as pat1 ... patn" syntax *)
+  | ([] | [_]) as ipat -> ipat
+  | pat1::pat2::_ as ipat ->
+  (* To be sure that there is no confusion of syntax, we check that no [= ...] occurs
+     in the non-singleton list of patterns *)
+  match isInjPat pat1 with
+  | Some _ -> user_err ?loc:pat2.CAst.loc (str "Unexpected pattern.")
+  | None ->
+  match List.map_filter isInjPat ipat with
+  | loc :: _ -> user_err ?loc (str "Unexpected injection pattern.")
+  | [] -> ipat
+
 }
 
 TACTIC EXTEND injection
@@ -158,15 +175,15 @@ TACTIC EXTEND einjection
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" intropattern_list(ipat)] ->
-    { injClause None (Some ipat) false None }
+    { injClause None (Some (decode_inj_ipat ipat)) false None }
 | [ "injection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    { mytclWithHoles (injClause None (Some ipat)) false c }
+    { mytclWithHoles (injClause None (Some (decode_inj_ipat ipat))) false c }
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" intropattern_list(ipat)] ->
-    { injClause None (Some ipat) true None }
+    { injClause None (Some (decode_inj_ipat ipat)) true None }
 | [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
-    { mytclWithHoles (injClause None (Some ipat)) true c }
+    { mytclWithHoles (injClause None (Some (decode_inj_ipat ipat))) true c }
 END
 TACTIC EXTEND simple_injection
 | [ "simple" "injection" ] -> { simpleInjClause None false None }

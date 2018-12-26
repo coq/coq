@@ -925,7 +925,7 @@ Qed.
  revert P1. induction LM1 as [|(M2,P2') LM2 IH]; simpl; intros.
  - discriminate.
  - assert (H':=PNSubst_ok n P3 M2 P2'). destruct PNSubst.
-   * injection H as <-. rewrite <- PSubstL1_ok; intuition.
+   * injection H as [= <-]. rewrite <- PSubstL1_ok; intuition.
    * now apply IH.
  Qed.
 
