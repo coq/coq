@@ -28,17 +28,6 @@ env:
 
 matrix:
   include:
-    - env:
-      - TEST_TARGET="lint"
-      install: []
-      before_script: []
-      addons:
-      apt:
-        sources: []
-        packages: []
-      script:
-        - dev/lint-repository.sh
-
     - os: osx
       env:
       - TEST_TARGET="test-suite"
