@@ -210,3 +210,12 @@ Module NumeralNotations.
     Check let v := 0%test17 in v : myint63.
   End Test17.
 End NumeralNotations.
+
+Module K.
+
+Notation "# x |-> t & u" := ((fun x => (x,t)),(fun x => (x,u)))
+  (at level 0, x pattern, t, u at level 39).
+Check fun y : nat => # (x,z) |-> y & y.
+Check fun y : nat => # (x,z) |-> (x + y) & (y + z).
+
+End K.
