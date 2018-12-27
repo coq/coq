@@ -10,8 +10,10 @@
   ;   + tools/coqdoc/coqdoc.css
   (package coq)
   (source_tree sphinx)
-  (source_tree tools))
- (action (run sphinx-build -j4 -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
+  (source_tree tools)
+  (env_var SPHINXWARNOPT))
+ (action
+  (run sphinx-build -j4 %{env:SPHINXWARNOPT=-W} -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
 
 (alias
  (name refman-html)
