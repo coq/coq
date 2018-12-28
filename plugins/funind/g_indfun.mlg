@@ -186,7 +186,7 @@ let classify_funind recsl =
   match classify_as_Fixpoint recsl with
   | Vernacextend.VtSideff (ids, _)
     when is_proof_termination_interactively_checked recsl ->
-      Vernacextend.(VtStartProof (GuaranteesOpacity, ids))
+      Vernacextend.(VtStartProof ids)
   | x -> x
 
 let is_interactive recsl =

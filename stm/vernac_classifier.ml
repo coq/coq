@@ -88,41 +88,27 @@ let classify_vernac e =
                       proof_block_detection = Some "curly" }
     (* StartProof *)
     | VernacDefinition ((DoDischarge,_),({v=i},_),ProveBody _) ->
-      VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i)
+      VtStartProof(idents_of_name i)
 
     | VernacDefinition (_,({v=i},_),ProveBody _) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
-      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-      VtStartProof(guarantee, idents_of_name i)
+      VtStartProof(idents_of_name i)
     | VernacStartTheoremProof (_,l) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
       let ids = List.map (fun (({v=i}, _), _) -> i) l in
-      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-      VtStartProof (guarantee,ids)
+      VtStartProof ids
     | VernacFixpoint (discharge,l) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
-       let guarantee =
-         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
-         else GuaranteesOpacity
-       in
-        let ids, open_proof =
-          List.fold_left (fun (l,b) {Vernacexpr.fname={CAst.v=id}; body_def} ->
+      let ids, open_proof =
+        List.fold_left (fun (l,b) {Vernacexpr.fname={CAst.v=id}; body_def} ->
             id::l, b || body_def = None) ([],false) l in
-        if open_proof
-        then VtStartProof (guarantee,ids)
-        else VtSideff (ids, VtLater)
+      if open_proof
+      then VtStartProof ids
+      else VtSideff (ids, VtLater)
     | VernacCoFixpoint (discharge,l) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
-       let guarantee =
-         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
-         else GuaranteesOpacity
-       in
-        let ids, open_proof =
-          List.fold_left (fun (l,b) { Vernacexpr.fname={CAst.v=id}; body_def } ->
+      let ids, open_proof =
+        List.fold_left (fun (l,b) { Vernacexpr.fname={CAst.v=id}; body_def } ->
             id::l, b || body_def = None) ([],false) l in
-        if open_proof
-        then VtStartProof (guarantee,ids)
-        else VtSideff (ids, VtLater)
+      if open_proof
+      then VtStartProof ids
+      else VtSideff (ids, VtLater)
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> id.v) l) l) in
@@ -184,9 +170,7 @@ let classify_vernac e =
     | VernacContext _ (* TASSI: unsure *) -> VtSideff ([], VtNow)
     | VernacProofMode pm -> VtProofMode pm
     | VernacInstance ((name,_),_,_,None,_) when not (Attributes.parse_drop_extra Attributes.program atts) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
-      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-      VtStartProof (guarantee, idents_of_name name.CAst.v)
+      VtStartProof (idents_of_name name.CAst.v)
     | VernacInstance ((name,_),_,_,_,_) ->
       VtSideff (idents_of_name name.CAst.v, VtLater)
     (* Stm will install a new classifier to handle these *)

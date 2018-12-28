@@ -40,11 +40,8 @@ type vernac_classification =
   | VtProofMode of string
   (* To be removed *)
   | VtMeta
-and vernac_start = opacity_guarantee * Names.Id.t list
+and vernac_start = Names.Id.t list
 and vernac_sideff_type = Names.Id.t list * vernac_when
-and opacity_guarantee =
-  | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
-  | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
 
 and solving_tac = bool (** a terminator *)
 

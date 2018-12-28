@@ -166,7 +166,7 @@ type cmd_t = {
            | `TacQueue of solving_tac * anon_abstracting_tac * AsyncTaskQueue.cancel_switch
            | `QueryQueue of AsyncTaskQueue.cancel_switch
            | `SkipQueue ] }
-type fork_t = aast * Vcs_.Branch.t * opacity_guarantee * Names.Id.t list
+type fork_t = aast * Vcs_.Branch.t * Names.Id.t list
 type qed_t = {
   qast : aast;
   keep : vernac_qed_type;
@@ -412,7 +412,7 @@ end = struct (* {{{ *)
     let fname =
       "stm_" ^ Str.global_replace (Str.regexp " ") "_" (Spawned.process_id ()) in
     let string_of_transaction = function
-      | Cmd { cast = t } | Fork (t, _,_,_) ->
+      | Cmd { cast = t } | Fork (t,_,_) ->
           (try Pp.string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (ReplayCommand t) ->
           sprintf "Sideff(%s)"
@@ -1138,7 +1138,7 @@ end = struct (* {{{ *)
         let ids, tactic, undo =
           if id = Stateid.initial || id = Stateid.dummy then [],false,0 else
           match VCS.visit id with
-          | { step = `Fork ((_,_,_,l),_) } -> l, false,0
+          | { step = `Fork ((_,_,l),_) } -> l, false,0
           | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
           | { step = `Alias (_,{ expr }) } when not (Vernacprop.has_Fail expr) ->
           begin match expr.CAst.v.expr with
@@ -1696,7 +1696,7 @@ end = struct (* {{{ *)
       | Some (_, cur) ->
           match VCS.visit cur with
           | { step = `Cmd { cast } }
-          | { step = `Fork (( cast, _, _, _), _) }
+          | { step = `Fork (( cast, _, _), _) }
           | { step = `Qed ( { qast = cast }, _) }
           | { step = `Sideff (ReplayCommand cast, _) } ->
               let loc = cast.expr.CAst.loc in
@@ -2198,15 +2198,13 @@ let collect_proof keep cur hd brkind id =
     | `Sideff (ReplayCommand x,_) -> collect (Some (id,x)) (id::accn) view.next
     (* An Alias could jump everywhere... we hope we can ignore it*)
     | `Alias _ -> `Sync (no_name,`Alias)
-    | `Fork((_,_,_,_::_::_), _) ->
+    | `Fork((_,_,_::_::_), _) ->
         `Sync (no_name,`MutualProofs)
-    | `Fork((_,_,Doesn'tGuaranteeOpacity,_), _) ->
-        `Sync (no_name,`Doesn'tGuaranteeOpacity)
-    | `Fork((_,hd',GuaranteesOpacity,ids), _) when has_proof_using last ->
+    | `Fork((_,hd',ids), _) when has_proof_using last ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `ASync (parent last,accn,name,delegate name)
-    | `Fork((_, hd', GuaranteesOpacity, ids), _) when
+    | `Fork((_, hd', ids), _) when
        has_proof_no_using last && not (State.is_cached_and_valid (parent last)) &&
        VCS.is_vio_doc () ->
         assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
@@ -2218,7 +2216,7 @@ let collect_proof keep cur hd brkind id =
         with Not_found ->
           let name = name ids in
           `MaybeASync (parent last, accn, name, delegate name))
-    | `Fork((_, hd', GuaranteesOpacity, ids), _) ->
+    | `Fork((_, hd', ids), _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         `MaybeASync (parent last, accn, name, delegate name)
@@ -2257,7 +2255,6 @@ let string_of_reason = function
   | `NestedProof -> "contains nested proof"
   | `Immediate -> "proof term given explicitly"
   | `Aborted -> "aborted proof"
-  | `Doesn'tGuaranteeOpacity -> "not a simple opaque lemma"
   | `MutualProofs -> "block of mutually recursive proofs"
   | `Alias -> "contains Undo-like command"
   | `Print -> "contains Print-like command"
@@ -2419,13 +2416,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           ignore(stm_vernac_interp id st x)
         ), eff || cache, true
-      | `Fork ((x,_,_,_), None) -> (fun () ->
+      | `Fork ((x,_,_), None) -> (fun () ->
             resilient_command reach view.next;
             let st = Vernacstate.freeze_interp_state ~marshallable:false in
             ignore(stm_vernac_interp id st x);
             wall_clock_last_fork := Unix.gettimeofday ()
           ), true, true
-      | `Fork ((x,_,_,_), Some prev) -> (fun () -> (* nested proof *)
+      | `Fork ((x,_,_), Some prev) -> (fun () -> (* nested proof *)
             reach ~cache:true prev;
             reach view.next;
 
@@ -2884,7 +2881,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
           Backtrack.record (); `Ok
 
       (* Proof *)
-      | VtStartProof (guarantee, names) ->
+      | VtStartProof names ->
 
          if not (get_allow_nested_proofs ()) && VCS.proof_nesting () > 0 then
            "Nested proofs are not allowed unless you turn option Nested Proofs Allowed on."
@@ -2899,11 +2896,11 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
           if VCS.Branch.equal head VCS.Branch.master then begin
-            VCS.commit id (Fork (x, bname, guarantee, names));
+            VCS.commit id (Fork (x, bname, names));
             VCS.branch bname (`Proof (VCS.proof_nesting () + 1))
           end else begin
             VCS.branch bname (`Proof (VCS.proof_nesting () + 1));
-            VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
+            VCS.merge id ~ours:(Fork (x, bname, names)) head
           end;
           VCS.set_parsing_state id head_parsing;
           Backtrack.record (); `Ok
@@ -2989,7 +2986,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 let get_ast ~doc id =
   match VCS.visit id with
   | { step = `Cmd { cast = { expr } } }
-  | { step = `Fork (({ expr }, _, _, _), _) }
+  | { step = `Fork (({ expr }, _, _), _) }
   | { step = `Sideff ((ReplayCommand { expr }) , _) }
   | { step = `Qed ({ qast = { expr } }, _) } ->
     Some expr
