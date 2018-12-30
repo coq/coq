@@ -1712,7 +1712,7 @@ let intern_ind_pattern genv ntnvars scopes pat =
       let idslpl = List.map (intern_pat genv ntnvars empty_alias) (expl_pl@pl2) in
       (with_letin,
        match product_of_cases_patterns empty_alias idslpl with
-       | _,[_,pl] -> (c,chop_params_pattern loc c pl with_letin)
+       | ids,[asubst,pl] -> (c,ids,asubst,chop_params_pattern loc c pl with_letin)
        | _ -> error_bad_inductive_type ?loc)
     | x -> error_bad_inductive_type ?loc
 
@@ -1951,16 +1951,19 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	end
     | CCases (sty, rtnpo, tms, eqns) ->
         let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
-	  Option.fold_left (fun acc tt -> Id.Set.union (ids_of_cases_indtype tt) acc)
-            (Option.fold_left (fun acc { CAst.v = y } -> Name.fold_right Id.Set.add y acc) acc na)
-	    inb) Id.Set.empty tms in
+          (Option.fold_left (fun acc { CAst.v = y } -> Name.fold_right Id.Set.add y acc) acc na))
+          Id.Set.empty tms in
         (* as, in & return vars *)
         let forbidden_vars = Option.cata free_vars_of_constr_expr as_in_vars rtnpo in
-        let tms,ex_ids,match_from_in = List.fold_right
-	  (fun citm (inds,ex_ids,matchs) ->
-	    let ((tm,ind),extra_id,match_td) = intern_case_item env forbidden_vars citm in
-	    (tm,ind)::inds, Option.fold_right Id.Set.add extra_id ex_ids, List.rev_append match_td matchs)
-	  tms ([],Id.Set.empty,[]) in
+        let tms,ex_ids,aliases,match_from_in = List.fold_right
+          (fun citm (inds,ex_ids,asubst,matchs) ->
+            let ((tm,ind),extra_id,(ind_ids,alias_subst,match_td)) =
+              intern_case_item env forbidden_vars citm in
+            (tm,ind)::inds,
+            Id.Set.union ind_ids (Option.fold_right Id.Set.add extra_id ex_ids),
+            merge_subst alias_subst asubst,
+            List.rev_append match_td matchs)
+          tms ([],Id.Set.empty,Id.Map.empty,[]) in
         let env' = Id.Set.fold
           (fun var bli -> push_name_env ntnvars (Variable,[],[],[]) bli (CAst.make @@ Name var))
 	  (Id.Set.union ex_ids as_in_vars) (reset_hidden_inductive_implicit_test env) in
@@ -1971,6 +1974,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	    | (_, c) :: q when is_patvar c -> aux q
 	    | l -> l
 	  in aux match_from_in in
+        let rtnpo = Option.map (replace_vars_constr_expr aliases) rtnpo in
         let rtnpo = match stripped_match_from_in with
 	  | [] -> Option.map (intern_type env') rtnpo (* Only PatVar in "in" clauses *)
 	  | l ->
@@ -2111,7 +2115,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     (* the "in" part *)
     let match_td,typ = match t with
     | Some t ->
-        let with_letin,(ind,l) = intern_ind_pattern globalenv ntnvars (None,env.scopes) t in
+        let with_letin,(ind,ind_ids,alias_subst,l) =
+          intern_ind_pattern globalenv ntnvars (None,env.scopes) t in
 	let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
 	let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
 	(* for "in Vect n", we answer (["n","n"],[(loc,"n")])
@@ -2147,9 +2152,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	  let _,args_rel =
 	    List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l forbidden_names_for_gen [] [] in
-        match_to_do, Some (CAst.make ?loc:(cases_pattern_expr_loc t) (ind,List.rev_map (fun x -> x.v) nal))
+        (Id.Set.of_list (List.map (fun id -> id.CAst.v) ind_ids),alias_subst,match_to_do),
+        Some (CAst.make ?loc:(cases_pattern_expr_loc t) (ind,List.rev_map (fun x -> x.v) nal))
     | None ->
-      [], None in
+      (Id.Set.empty,Id.Map.empty,[]), None in
     (tm',(na.CAst.v, typ)), extra_id, match_td
 
   and intern_impargs c env l subscopes args =

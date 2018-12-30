@@ -294,9 +294,6 @@ let ids_of_pattern_list =
     (List.fold_left (cases_pattern_fold_names Id.Set.add))
     Id.Set.empty
 
-let ids_of_cases_indtype p =
-  cases_pattern_fold_names Id.Set.add Id.Set.empty p
-
 let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_, ona, indnal) l ->
