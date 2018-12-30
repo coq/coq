@@ -573,12 +573,17 @@ let find_fresh_name renaming (terms,termlists,binders,binderlists) avoid id =
   (* TODO binders *)
   next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
 
-let is_var store pat =
+let is_patvar c =
+  match DAst.get c with
+  | PatVar _ -> true
+  | _ -> false
+
+let is_patvar_store store pat =
   match DAst.get pat with
   | PatVar na -> ignore(store na); true
   | _ -> false
 
-let out_var pat =
+let out_patvar pat =
   match pat.v with
   | CPatAtom (Some qid) when qualid_is_ident qid ->
     Name (qualid_basename qid)
@@ -600,7 +605,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     let pat = coerce_to_cases_pattern_expr (fst (Id.Map.find id terms)) in
     let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
     let pat, na = match disjpat with
-    | [pat] when is_var store pat -> let na = get () in None, na
+    | [pat] when is_patvar_store store pat -> let na = get () in None, na
     | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na.v in
     (renaming,env), pat, na
   with Not_found ->
@@ -610,7 +615,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     let env = set_env_scopes env scopes in
     if onlyident then
       (* Do not try to interpret a variable as a constructor *)
-      let na = out_var pat in
+      let na = out_patvar pat in
       let env = push_name_env ntnvars (Variable,[],[],[]) env (make ?loc:pat.loc na) in
       (renaming,env), None, na
     else
@@ -618,7 +623,7 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
       let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
       let pat, na =
         match disjpat with
-        | [pat] when is_var store pat -> let na = get () in None, na
+        | [pat] when is_patvar_store store pat -> let na = get () in None, na
         | _ -> Some ((List.map (fun x -> x.v) ids,disjpat),id), na.v in
       (renaming,env), pat, na
   with Not_found ->
@@ -743,7 +748,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         let mk_env' (c, (onlyident,(tmp_scope,subscopes))) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
           if onlyident then
-            let na = out_var c in term_of_name na, None
+            let na = out_patvar c in term_of_name na, None
           else
             let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
             match disjpat with
@@ -805,7 +810,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       (* and since we are only interested in the pattern as a term *)
       let env = reset_hidden_inductive_implicit_test env in
       if onlyident then
-        term_of_name (out_var pat)
+        term_of_name (out_patvar pat)
       else
         let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
         match disjpat with
@@ -1994,10 +1999,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	  (Id.Set.union ex_ids as_in_vars) (reset_hidden_inductive_implicit_test env) in
         (* PatVars before a real pattern do not need to be matched *)
         let stripped_match_from_in =
-          let is_patvar c = match DAst.get c with
-          | PatVar _ -> true
-          | _ -> false
-          in
           let rec aux = function
 	    | [] -> []
 	    | (_, c) :: q when is_patvar c -> aux q
