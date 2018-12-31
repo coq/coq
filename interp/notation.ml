@@ -426,12 +426,15 @@ let add_lonely (keyrule,_,_) seen =
   | NotationRule (None,ntn) -> ntn::seen
   | SynDefRule _ | NotationRule (Some _,_) -> seen
 
-let is_seen (rule,_,_) seen =
+let is_seen (rule,_,_) scope_seen lonely_seen =
   match rule with
-  | NotationRule (sc,ntn) -> List.mem ntn seen
-  | _ -> false
+  | NotationRule (_,ntn) ->
+    List.mem ntn lonely_seen ||
+    String.Set.exists (fun sc -> NotationMap.mem ntn (find_scope sc).notations) scope_seen
+  | _ ->
+    false
 
-let keymap_extract_and_add n istype keys sc lonely_seen map rest =
+let keymap_extract_and_add n istype keys sc scope_seen lonely_seen map rest =
   let keymap =
     try ScopeMap.find (Some sc) map
     with Not_found -> KeyMap.empty in
@@ -444,13 +447,13 @@ let keymap_extract_and_add n istype keys sc lonely_seen map rest =
       (String.Map.find sc !scope_map).delimiters in
   let l = List.map_append (fun key -> try KeyMap.find key keymap with Not_found -> []) keys in
   List.fold_right (fun rule ->
-      (* There is a case when we need to enforce a delimiter, it is
-         when there is a lonely notation which would be used prioritary
-         at parsing time and hide the given interpretation, as in:
-           Notation "# x" := (S x) (at level 20) : nat_scope.
-           Notation "# x" := (Some x).
-           Check fun x => (# x)%nat. *)
-      let needs_delim = is_seen rule lonely_seen in
+      (* We need a delimiter if the same notation with another
+         interpretation would be used prioritary at parsing time and
+         hide the given interpretation, as in:
+         Notation "# x" := (S x) (at level 20) : nat_scope.
+         Notation "# x" := (Some x).
+         Check fun x => (# x)%nat. *)
+      let needs_delim = is_seen rule scope_seen lonely_seen in
       add_depending_on_rigidity rule delim needs_delim n) l rest
 
 let find_with_delimiters istype = function
@@ -1325,7 +1328,7 @@ let extract_notations (istype,scopes) (n,keys) =
   let rec aux scopes scope_seen lonely_seen =
   match scopes with
   | UninterpScope sc :: scopes ->
-      keymap_extract_and_add n istype keys sc lonely_seen scope_map
+      keymap_extract_and_add n istype keys sc scope_seen lonely_seen scope_map
         (aux scopes (String.Set.add sc scope_seen) lonely_seen)
   | UninterpSingle rule :: scopes ->
       add_depending_on_rigidity rule None false n

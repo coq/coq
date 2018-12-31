@@ -220,3 +220,17 @@ Notation app f x := (f x).
 Check fun x y z => x z (y z).
 
 End K.
+
+(* Check uses of delimiters when a scope hides another one *)
+
+Module L.
+
+Axiom X : Type.
+Axiom add : X -> X -> X.
+Declare Scope X_scope.
+Notation "x + y" := (add x y) : X_scope.
+Open Scope X_scope.
+Delimit Scope X_scope with X.
+Check fun f x y z t => f (x + y)%X = (z + t)%nat.
+
+End L.

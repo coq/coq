@@ -68,3 +68,5 @@ where
 ?T : [ |- Type]
 ?T0 : [x : ?T |- Type]
 ?T1 : [x : ?T  x0 : ?T0 |- Type]
+fun (f : X -> nat) (x y : X) (z t : nat) => f (x + y) = (z + t)%nat
+     : (X -> nat) -> X -> X -> nat -> nat -> Prop
