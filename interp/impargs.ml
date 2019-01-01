@@ -21,7 +21,6 @@ open Libobject
 open EConstr
 open Reductionops
 open Constrexpr
-open Namegen
 
 module NamedDecl = Context.Named.Declaration
 
@@ -236,24 +235,22 @@ let is_rigid env sigma t =
      is_rigid_head sigma t
   | _ -> true
 
-let find_displayed_name_in sigma all avoid na (env, b) =
-  let envnames_b = (env, b) in
-  let flag = RenamingElsewhereFor envnames_b in
-  if all then compute_and_force_displayed_name_in sigma flag avoid na b
-  else compute_displayed_name_in sigma flag avoid na b
+let collect_names avoid na =
+  match na with
+  | Name id when not (Id.Set.mem id avoid) ->
+     Name id, Id.Set.add id avoid
+  | _ -> Anonymous, avoid
 
-let compute_implicits_names_gen all env sigma t =
+let compute_implicits_names env sigma t =
   let open Context.Rel.Declaration in
   let rec aux env avoid names t =
     let t = whd_all env sigma t in
     match kind sigma t with
     | Prod (na,a,b) ->
-       let na',avoid' = find_displayed_name_in sigma all avoid na (names,b) in
+       let na',avoid' = collect_names avoid na in
        aux (push_rel (LocalAssum (na,a)) env) avoid' (na'::names) b
     | _ -> List.rev names
   in aux env Id.Set.empty [] t
-
-let compute_implicits_names = compute_implicits_names_gen true
 
 let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
   let open Context.Rel.Declaration in
@@ -280,9 +277,9 @@ let compute_implicits_explanation_flags env sigma f t =
     (f.strict || f.strongly_strict) f.strongly_strict
     f.reversible_pattern f.contextual env sigma t
 
-let compute_implicits_flags env sigma f all t =
+let compute_implicits_flags env sigma f t =
   List.combine
-    (compute_implicits_names_gen all env sigma t)
+    (compute_implicits_names env sigma t)
     (compute_implicits_explanation_flags env sigma f t)
 
 let compute_auto_implicits env sigma flags enriching t =
@@ -340,9 +337,14 @@ let positions_of_implicits (_,impls) =
 
 (* Manage user-given implicit arguments *)
 
+(*
+Programmatically built terms may not have names in all relevant binders.
+We are resiliant in this case by marking those arguments as non-implicit,
+even if they can be inferred, because the current system requires a name for
+all implicit arguments.
+*)
 let rec prepare_implicits f = function
   | [] -> []
-  | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
   | (Name id, Some imp)::imps ->
       let imps' = prepare_implicits f imps in
       Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
@@ -422,7 +424,7 @@ let set_manual_implicits flags enriching autoimps l =
 
 let compute_semi_auto_implicits env sigma f t =
   if not f.auto then [DefaultImpArgs, []]
-  else let l = compute_implicits_flags env sigma f false t in
+  else let l = compute_implicits_flags env sigma f t in
        [DefaultImpArgs, prepare_implicits f l]
 
 (*s Constants. *)

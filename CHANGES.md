@@ -39,6 +39,10 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+- The automatic names for implicit arguments now never differ from those
+  given by the user, but we set fewer arguments to be implicit when using
+  the option `Implicit Arguments`.
+
 Notations
 
 - New command `Declare Scope` to explicitly declare a scope name
