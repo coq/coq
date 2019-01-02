@@ -123,8 +123,7 @@ type fterm =
 
 (***********************************************************************
   s A [stack] is a context of arguments, arguments are pushed by
-   [append_stack] one array at a time but popped with [decomp_stack]
-   one by one *)
+   [append_stack] one array at a time *)
 
 type stack_member =
   | Zapp of fconstr array
@@ -139,13 +138,7 @@ and stack = stack_member list
 val empty_stack : stack
 val append_stack : fconstr array -> stack -> stack
 
-val decomp_stack : stack -> (fconstr * stack) option
-val array_of_stack : stack -> fconstr array
-val stack_assign : stack -> int -> fconstr -> stack
 val stack_args_size : stack -> int
-val stack_tail : int -> stack -> stack
-val stack_nth : stack -> int -> fconstr
-val zip_term : (fconstr -> constr) -> constr -> stack -> constr
 val eta_expand_stack : stack -> stack
 
 (** To lazy reduce a constr, create a [clos_infos] with
