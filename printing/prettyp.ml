@@ -370,7 +370,6 @@ let pr_located_qualid = function
         let open GlobDirRef in match dir with
         | DirOpenModule { obj_dir ; _ } -> "Open Module", obj_dir
         | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
-        | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
         | DirModule { obj_dir ; _ } -> "Module", obj_dir
       in
       str s ++ spc () ++ DirPath.print dir
@@ -751,27 +750,6 @@ let print_full_pure_context env sigma =
    its constructors and elimination,
    assume that the declaration of constructors and eliminations
    follows the definition of the inductive type *)
-
-(* This is designed to print the contents of an opened section *)
-let read_sec_context qid =
-  let dir =
-    try Nametab.locate_section qid
-    with Not_found ->
-      user_err ?loc:qid.loc ~hdr:"read_sec_context" (str "Unknown section.") in
-  let rec get_cxt in_cxt = function
-    | (_,Lib.OpenedSection ({Nametab.obj_dir;_},_) as hd)::rest ->
-        if DirPath.equal dir obj_dir then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | [] -> []
-    | hd::rest -> get_cxt (hd::in_cxt) rest
-  in
-  let cxt = Lib.contents () in
-  List.rev (get_cxt [] cxt)
-
-let print_sec_context env sigma sec =
-  print_context env sigma true None (read_sec_context sec)
-
-let print_sec_context_typ env sigma sec =
-  print_context env sigma false None (read_sec_context sec)
 
 let maybe_error_reject_univ_decl na udecl =
   match na, udecl with

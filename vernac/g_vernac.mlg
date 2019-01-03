@@ -960,7 +960,6 @@ GRAMMAR EXTEND Gram
   printable:
     [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> { PrintName (qid,l) }
       | IDENT "All" -> { PrintFullContext }
-      | IDENT "Section"; s = global -> { PrintSectionContext s }
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  { PrintGrammar ent }

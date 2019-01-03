@@ -31,13 +31,11 @@ module GlobDirRef = struct
   type t =
     | DirOpenModule of object_prefix
     | DirOpenModtype of object_prefix
-    | DirOpenSection of object_prefix
     | DirModule of object_prefix
 
   let equal r1 r2 = match r1, r2 with
     | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
     | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
-    | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
     | DirModule op1, DirModule op2 -> eq_op op1 op2
     | _ -> false
 
@@ -465,11 +463,6 @@ let locate_module qid =
 let full_name_module qid =
   match locate_dir qid with
     | GlobDirRef.DirModule { obj_dir ; _} -> obj_dir
-    | _ -> raise Not_found
-
-let locate_section qid =
-  match locate_dir qid with
-    | GlobDirRef.DirOpenSection { obj_dir; _ } -> obj_dir
     | _ -> raise Not_found
 
 let locate_all qid =

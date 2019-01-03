@@ -452,8 +452,6 @@ open Pputils
   let pr_printable = function
     | PrintFullContext ->
       keyword "Print All"
-    | PrintSectionContext s ->
-      keyword "Print Section" ++ spc() ++ Libnames.pr_qualid s
     | PrintGrammar ent ->
       keyword "Print Grammar" ++ spc() ++ str ent
     | PrintLoadPath dir ->

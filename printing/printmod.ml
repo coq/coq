@@ -402,7 +402,6 @@ let rec printable_body dir =
       match Nametab.locate_dir (qualid_of_dirpath dir) with
 	  DirOpenModtype _ -> false
 	| DirModule _ | DirOpenModule _ -> printable_body dir
-	| _ -> true
     with
 	Not_found -> true
 

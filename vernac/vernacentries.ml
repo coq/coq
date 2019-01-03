@@ -1856,7 +1856,6 @@ let vernac_print ~atts env sigma =
   function
   | PrintTables -> print_tables ()
   | PrintFullContext-> print_full_context_typ env sigma
-  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
   | PrintInspect n -> inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir

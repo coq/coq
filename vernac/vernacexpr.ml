@@ -26,7 +26,6 @@ type goal_reference =
 type printable =
   | PrintTables
   | PrintFullContext
-  | PrintSectionContext of qualid
   | PrintInspect of int
   | PrintGrammar of string
   | PrintLoadPath of DirPath.t option

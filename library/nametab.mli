@@ -84,7 +84,6 @@ module GlobDirRef : sig
   type t =
     | DirOpenModule of object_prefix
     | DirOpenModtype of object_prefix
-    | DirOpenSection of object_prefix
     | DirModule of object_prefix
   val equal : t -> t -> bool
 end
@@ -136,7 +135,6 @@ val locate_syndef : qualid -> syndef_name
 val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
-val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.Level.UGlobal.t
 
 (** These functions globalize user-level references into global

@@ -23,8 +23,6 @@ val print_library_entry : env -> Evd.evar_map -> bool -> (Libobject.object_name 
 val print_full_context : env -> Evd.evar_map -> Pp.t
 val print_full_context_typ : env -> Evd.evar_map -> Pp.t
 val print_full_pure_context : env -> Evd.evar_map -> Pp.t
-val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
-val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : env -> Evd.evar_map -> Safe_typing.judgment -> Pp.t
 val print_eval :
