@@ -184,17 +184,6 @@ let split_lib_gen test =
   in
   findeq [] !lib_state.lib_stk
 
-let eq_object_name (fp1, kn1) (fp2, kn2) =
-  eq_full_path fp1 fp2 && Names.KerName.equal kn1 kn2
-
-let split_lib_at_opening sp =
-  let is_sp (nsp, obj) = match obj with
-    | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
-      eq_object_name nsp sp
-    | _ -> false
-  in
-  split_lib_gen is_sp
-
 (* Adding operations. *)
 
 let add_entry sp node =
@@ -284,16 +273,15 @@ let error_still_opened string oname =
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
 let end_mod is_type =
-  let oname,fs =
-    try match find_entry_p is_opening_node with
-      | oname,OpenedModule (ty,_,_,fs) ->
-	if ty == is_type then oname, fs
-	else error_still_opened (module_kind ty) oname
-      | oname,OpenedSection _ -> error_still_opened "section" oname
+  let after,(oname,fs),before =
+    try match split_lib_gen is_opening_node with
+      | after,(oname,OpenedModule (ty,_,_,fs)),before ->
+        if ty == is_type then after,(oname, fs),before
+        else error_still_opened (module_kind ty) oname
+      | after,(oname,OpenedSection _),before -> error_still_opened "section" oname
       | _ -> assert false
     with Not_found -> user_err (Pp.str "No opened modules.")
   in
-  let (after,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
   let prefix = !lib_state.path_prefix in
   recalc_path_prefix ();
@@ -325,17 +313,17 @@ let open_blocks_message es =
   str "The " ++ pr_enum open_block_name es ++ spc () ++
   str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
 
-let end_compilation_checks dir =
+let end_compilation dir =
   let _ = match find_entries_p is_opening_node with
     | [] -> ()
-    | es -> user_err ~hdr:"Lib.end_compilation_checks" (open_blocks_message es) in
+    | es -> user_err ~hdr:"Lib.end_compilation" (open_blocks_message es) in
   let is_opening_lib = function _,CompilingLibrary _ -> true | _ -> false
   in
-  let oname =
-    try match find_entry_p is_opening_lib with
-      |	(oname, CompilingLibrary prefix) -> oname
+  let lib_stk =
+    try match split_lib_gen is_opening_lib with
+      |	(after, (_, CompilingLibrary prefix), []) -> after
       | _ -> assert false
-    with Not_found -> anomaly (Pp.str "No module declared.")
+    with Not_found -> anomaly (Pp.str "No library declared.")
   in
   let _ =
     match !lib_state.comp_name with
@@ -345,12 +333,8 @@ let end_compilation_checks dir =
            (str "The current open module has name" ++ spc () ++ DirPath.print m ++
              spc () ++ str "and not" ++ spc () ++ DirPath.print m ++ str ".");
   in
-  oname
-
-let end_compilation oname =
-  let (after,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with comp_name = None };
-  !lib_state.path_prefix,after
+  !lib_state.path_prefix,lib_stk
 
 (* Returns true if we are inside an opened module or module type *)
 
@@ -577,17 +561,16 @@ let discharge_item ((sp,_ as oname),e) =
       anomaly (Pp.str "discharge_item.")
 
 let close_section () =
-  let oname,fs =
-    try match find_entry_p is_opening_node with
-      | oname,OpenedSection (_,fs) -> oname,fs
+  let after,fs,before =
+    try match split_lib_gen is_opening_node with
+      | after,(oname,OpenedSection (_,fs)),before -> after,fs,before
       | _ -> assert false
     with Not_found ->
       user_err Pp.(str  "No opened section.")
   in
-  let (secdecls,mark,before) = split_lib_at_opening oname in
   lib_state := { !lib_state with lib_stk = before };
   pop_path_prefix ();
-  let newdecls = List.map discharge_item secdecls in
+  let newdecls = List.map discharge_item after in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 

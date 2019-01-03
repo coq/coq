@@ -121,9 +121,7 @@ val end_modtype :
 (** {6 Compilation units } *)
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation_checks : DirPath.t -> Libobject.object_name
-val end_compilation :
-  Libobject.object_name-> Nametab.object_prefix * library_segment
+val end_compilation : DirPath.t -> Nametab.object_prefix * library_segment
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)
