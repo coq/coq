@@ -191,10 +191,6 @@ let split_lib_gen test =
 let eq_object_name (fp1, kn1) (fp2, kn2) =
   eq_full_path fp1 fp2 && Names.KerName.equal kn1 kn2
 
-let split_lib sp =
-  let is_sp (nsp, _) = eq_object_name sp nsp in
-  split_lib_gen is_sp
-
 let split_lib_at_opening sp =
   let is_sp (nsp, obj) = match obj with
     | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
@@ -314,8 +310,6 @@ let end_module () = end_mod false
 let end_modtype () = end_mod true
 
 let contents () = !lib_state.lib_stk
-
-let contents_after sp = let (after,_,_) = split_lib sp in after
 
 (* Modules. *)
 

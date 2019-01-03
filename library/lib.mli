@@ -69,11 +69,6 @@ val add_leaves : Id.t -> Libobject.obj list -> Libobject.object_name
 
 val contents : unit -> library_segment
 
-(** The function [contents_after] returns the current library segment,
-  starting from a given section path. *)
-
-val contents_after : Libobject.object_name -> library_segment
-
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
