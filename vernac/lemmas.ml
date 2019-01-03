@@ -217,7 +217,7 @@ let fresh_name_for_anonymous_theorem () =
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-     locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality == Global && Nametab.exists_cci (Lib.make_path id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 

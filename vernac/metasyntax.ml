@@ -1256,7 +1256,7 @@ let compute_syntax_data local df modifiers =
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
   let sy_fulldata = (ntn_for_grammar,(mods.custom,n,prec_for_grammar,List.map snd sy_typs_for_grammar),need_squash) in
-  let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
+  let df' = ((Lib.library_dp(),Lib.current_dirpath ()),df) in
   let i_data = ntn_for_interp, df' in
 
   (* Return relevant data for interpretation and for parsing/printing *)
@@ -1490,7 +1490,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
     Some sy.synext_level, typs, onlyprint
   end else None, [], false in
   (* Declare interpretation *)
-  let path = (Lib.library_dp(), Lib.current_dirpath true) in
+  let path = (Lib.library_dp(), Lib.current_dirpath ()) in
   let df'  = (make_notation_key InConstrEntrySomeLevel symbs, (path,df)) in
   let i_vars = make_internalization_vars recvars mainvars (List.map internalization_type_of_entry_type i_typs) in
   let nenv = {
@@ -1527,7 +1527,7 @@ let add_syntax_extension local ({CAst.loc;v=df},mods) = let open SynData in
 
 let add_notation_interpretation env ({CAst.loc;v=df},c,sc) =
   let df' = add_notation_interpretation_core false df env c sc false false None in
-  Dumpglob.dump_notation (loc,df') sc true
+  Dumpglob.dump_notation (loc,df') sc
 
 let set_notation_for_interpretation env impls ({CAst.v=df},c,sc) =
   (try ignore
@@ -1553,7 +1553,7 @@ let add_notation local env c ({CAst.loc;v=df},modifiers) sc =
     (* Declare both syntax and interpretation *)
     add_notation_in_scope local df env c modifiers sc
   in
-  Dumpglob.dump_notation (loc,df') sc true
+  Dumpglob.dump_notation (loc,df') sc
 
 let add_notation_extra_printing_rule df k v =
   let notk = 

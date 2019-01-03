@@ -25,7 +25,7 @@ type node =
   | Leaf of Libobject.obj
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
-  | OpenedSection of Nametab.object_prefix * Summary.frozen
+  | OpenedSection of Id.t * Summary.frozen
 
 type library_segment = (Libobject.object_name * node) list
 
@@ -73,10 +73,8 @@ val contents : unit -> library_segment
 
 (** User-side names *)
 val cwd : unit -> DirPath.t
-val cwd_except_section : unit -> DirPath.t
-val current_dirpath : bool -> DirPath.t (* false = except sections *)
+val current_dirpath : unit -> DirPath.t
 val make_path : Id.t -> Libnames.full_path
-val make_path_except_section : Id.t -> Libnames.full_path
 
 (** Kernel-side names *)
 val current_mp : unit -> ModPath.t

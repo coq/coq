@@ -59,13 +59,12 @@ open Globnames
 
 (** Object prefix morally contains the "prefix" naming of an object to
    be stored by [library], where [obj_dir] is the "absolute" path,
-   [obj_mp] is the current "module" prefix and [obj_sec] is the
-   "section" prefix.
+   [obj_mp] is the current "module" prefix.
 
     Thus, for an object living inside [Module A. Section B.] the
    prefix would be:
 
-    [ { obj_dir = "A.B"; obj_mp = "A"; obj_sec = "B" } ]
+    [ { obj_dir = "A"; obj_mp = "A" } ]
 
     Note that both [obj_dir] and [obj_sec] are "paths" that is to say,
    as opposed to [obj_mp] which is a single module name.
@@ -74,7 +73,6 @@ open Globnames
 type object_prefix = {
   obj_dir : DirPath.t;
   obj_mp  : ModPath.t;
-  obj_sec : DirPath.t;
 }
 
 val eq_op : object_prefix -> object_prefix -> bool

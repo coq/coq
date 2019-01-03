@@ -1554,39 +1554,39 @@ Section LocalProperties.
 Variables T1 T2 T3 : Type.
 
 Variables (d1 : mem_pred T1) (d2 : mem_pred T2) (d3 : mem_pred T3).
-Local Notation ph := (phantom Prop).
+Local Notation phProp := (phantom Prop).
 
-Definition prop_for (x : T1) P & ph {all1 P} := P x.
+Definition prop_for (x : T1) P & phProp {all1 P} := P x.
 
 Lemma forE x P phP : @prop_for x P phP = P x. Proof. by []. Qed.
 
-Definition prop_in1 P & ph {all1 P} :=
+Definition prop_in1 P & phProp {all1 P} :=
   forall x, in_mem x d1 -> P x.
 
-Definition prop_in11 P & ph {all2 P} :=
+Definition prop_in11 P & phProp {all2 P} :=
   forall x y, in_mem x d1 -> in_mem y d2 -> P x y.
 
-Definition prop_in2 P & ph {all2 P} :=
+Definition prop_in2 P & phProp {all2 P} :=
   forall x y, in_mem x d1 -> in_mem y d1 -> P x y.
 
-Definition prop_in111 P & ph {all3 P} :=
+Definition prop_in111 P & phProp {all3 P} :=
   forall x y z, in_mem x d1 -> in_mem y d2 -> in_mem z d3 -> P x y z.
 
-Definition prop_in12 P & ph {all3 P} :=
+Definition prop_in12 P & phProp {all3 P} :=
   forall x y z, in_mem x d1 -> in_mem y d2 -> in_mem z d2 -> P x y z.
 
-Definition prop_in21 P & ph {all3 P} :=
+Definition prop_in21 P & phProp {all3 P} :=
   forall x y z, in_mem x d1 -> in_mem y d1 -> in_mem z d2 -> P x y z.
 
-Definition prop_in3 P & ph {all3 P} :=
+Definition prop_in3 P & phProp {all3 P} :=
   forall x y z, in_mem x d1 -> in_mem y d1 -> in_mem z d1 -> P x y z.
 
 Variable f : T1 -> T2.
 
-Definition prop_on1 Pf P & phantom T3 (Pf f) & ph {all1 P} :=
+Definition prop_on1 Pf P & phantom T3 (Pf f) & phProp {all1 P} :=
   forall x, in_mem (f x) d2 -> P x.
 
-Definition prop_on2 Pf P & phantom T3 (Pf f) & ph {all2 P} :=
+Definition prop_on2 Pf P & phantom T3 (Pf f) & phProp {all2 P} :=
   forall x y, in_mem (f x) d2 -> in_mem (f y) d2 -> P x y.
 
 End LocalProperties.

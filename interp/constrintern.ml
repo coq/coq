@@ -398,7 +398,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
-      if global_level then Dumpglob.dump_definition CAst.(make ?loc id) true "var"
+      if global_level then Dumpglob.dump_definition CAst.(make ?loc id) "var"
       else Dumpglob.dump_binding ?loc id;
       {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
 

@@ -535,8 +535,8 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
     | Anonymous -> ()
     | Name n -> let lid = CAst.make ?loc n in
       match local with
-      | Discharge -> Dumpglob.dump_definition lid true "var"
-      | Local | Global -> Dumpglob.dump_definition lid false "def"
+      | Discharge -> Dumpglob.dump_definition lid "var"
+      | Local | Global -> Dumpglob.dump_definition lid "def"
   in
   let program_mode = Flags.is_program_mode () in
   let name =
@@ -562,7 +562,7 @@ let vernac_start_proof ~atts kind l =
   let atts = parse atts in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
-    List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
+    List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id "prf") l;
   start_proof_and_print (local, atts.polymorphic, Proof kind) l
 
 let vernac_end_proof ?proof = function
@@ -585,8 +585,8 @@ let vernac_assumption ~atts discharge kind l nl =
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
-	if global then Dumpglob.dump_definition lid false "ax"
-	else Dumpglob.dump_definition lid true "var") idl) l;
+        if global then Dumpglob.dump_definition lid "ax"
+        else Dumpglob.dump_definition lid "var") idl) l;
   let status = ComAssumption.do_assumptions kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
@@ -618,15 +618,15 @@ let vernac_record ~template udecl cum k poly finite records =
     let const = match nameopt with
     | None -> add_prefix "Build_" id.v
     | Some lid ->
-      let () = Dumpglob.dump_definition lid false "constr" in
+      let () = Dumpglob.dump_definition lid "constr" in
       lid.v
     in
     let () =
       if Dumpglob.dump () then
-        let () = Dumpglob.dump_definition id false "rec" in
+        let () = Dumpglob.dump_definition id "rec" in
         let iter (((_, x), _), _) = match x with
         | Vernacexpr.AssumExpr ({loc;v=Name id}, _) ->
-          Dumpglob.dump_definition (make ?loc id) false "proj"
+          Dumpglob.dump_definition (make ?loc id) "proj"
         | _ -> ()
         in
         List.iter iter cfs
@@ -662,9 +662,9 @@ let vernac_inductive ~atts cum lo finite indl =
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with
 	| Constructors cstrs ->
-	    Dumpglob.dump_definition lid false "ind";
+            Dumpglob.dump_definition lid "ind";
 	    List.iter (fun (_, (lid, _)) ->
-			 Dumpglob.dump_definition lid false "constr") cstrs
+                         Dumpglob.dump_definition lid "constr") cstrs
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
 
@@ -754,7 +754,7 @@ let vernac_fixpoint ~atts discharge l =
   let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
-    List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid "def") l;
   (* XXX: Switch to the attribute system and match on ~atts *)
   let do_fixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_fixpoint
@@ -768,7 +768,7 @@ let vernac_cofixpoint ~atts discharge l =
   let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
-    List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid "def") l;
   let do_cofixpoint = if Flags.is_program_mode () then
       ComProgramFixpoint.do_cofixpoint
     else
@@ -779,7 +779,7 @@ let vernac_cofixpoint ~atts discharge l =
 let vernac_scheme l =
   if Dumpglob.dump () then
     List.iter (fun (lid, s) ->
-	       Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+               Option.iter (fun lid -> Dumpglob.dump_definition lid "def") lid;
 	       match s with
 	       | InductionScheme (_, r, _)
 	       | CaseScheme (_, r, _) 
@@ -788,7 +788,7 @@ let vernac_scheme l =
 
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
-    (Dumpglob.dump_definition lid false "def";
+    (Dumpglob.dump_definition lid "def";
      List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l);
  Indschemes.do_combined_scheme lid l
 
@@ -932,12 +932,12 @@ let vernac_include l =
 
 let vernac_begin_section ({v=id} as lid) =
   Proof_global.check_no_pending_proof ();
-  Dumpglob.dump_definition lid true "sec";
+  Dumpglob.dump_definition lid "sec";
   Lib.open_section id
 
 let vernac_end_section {CAst.loc} =
   Dumpglob.dump_reference ?loc
-    (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
+    (DirPath.to_string (Lib.current_dirpath ())) "<>" "sec";
   Lib.close_section ()
 
 let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
@@ -1009,7 +1009,7 @@ let vernac_instance ~atts abst sup inst props pri =
   let open DefAttributes in
   let atts = parse atts in
   let global = not (make_section_locality atts.locality) in
-  Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
+  Dumpglob.dump_constraint (fst (pi1 inst)) "inst";
   let program_mode = Flags.is_program_mode () in
   ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
 
@@ -1145,7 +1145,7 @@ let vernac_hints ~atts dbnames h =
   Hints.add_hints ~local dbnames (Hints.interp_hints poly h)
 
 let vernac_syntactic_definition ~module_local lid x y =
-  Dumpglob.dump_definition lid false "syndef";
+  Dumpglob.dump_definition lid "syndef";
   Metasyntax.add_syntactic_definition (Global.env()) lid.v x module_local y
 
 let vernac_declare_implicits ~section_local r l =

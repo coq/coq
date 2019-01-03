@@ -127,15 +127,6 @@ let type_of_global_ref gr =
             end
     | Globnames.ConstructRef _ -> "constr"
 
-let remove_sections dir =
-  let cwd = Lib.cwd_except_section () in
-  if Libnames.is_dirpath_prefix_of cwd dir then
-    (* Not yet (fully) discharged *)
-    cwd
-  else
-    (* Theorem/Lemma outside its outer section of definition *)
-    dir
-
 let interval loc =
   let loc1,loc2 = Loc.unloc loc in
   loc1, loc2-1
@@ -219,7 +210,6 @@ let dump_notation_location posl df (((path,secpath),_),sc) =
 let add_glob_gen ?loc sp lib_dp ty =
   if dump () then
     let mod_dp,id = Libnames.repr_path sp in
-    let mod_dp = remove_sections mod_dp in
     let mod_dp_trunc = Libnames.drop_dirpath_prefix lib_dp mod_dp in
     let filepath = Names.DirPath.to_string lib_dp in
     let modpath = Names.DirPath.to_string mod_dp_trunc in
@@ -253,12 +243,12 @@ let dump_def ?loc ty secpath id = Option.iter (fun loc ->
     dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
   ) loc
 
-let dump_definition {CAst.loc;v=id} sec s =
-  dump_def ?loc s (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)
+let dump_definition {CAst.loc;v=id} s =
+  dump_def ?loc s (Names.DirPath.to_string (Lib.current_dirpath ())) (Names.Id.to_string id)
 
-let dump_constraint { CAst.loc; v = n } sec ty =
+let dump_constraint { CAst.loc; v = n } ty =
   match n with
-    | Names.Name id -> dump_definition CAst.(make ?loc id) sec ty
+    | Names.Name id -> dump_definition CAst.(make ?loc id) ty
     | Names.Anonymous -> ()
 
 let dump_moddef ?loc mp ty =
@@ -266,9 +256,9 @@ let dump_moddef ?loc mp ty =
   let mp = Names.DirPath.to_string (Names.DirPath.make l) in
   dump_def ?loc ty "<>" mp
 
-let dump_notation (loc,(df,_)) sc sec = Option.iter (fun loc ->
+let dump_notation (loc,(df,_)) sc = Option.iter (fun loc ->
   (* We dump the location of the opening '"' *)
   let i = fst (Loc.unloc loc) in
   let location = (Loc.make_loc (i, i+1)) in
-  dump_def ~loc:location "not" (Names.DirPath.to_string (Lib.current_dirpath sec)) (cook_notation df sc)
+  dump_def ~loc:location "not" (Names.DirPath.to_string (Lib.current_dirpath ())) (cook_notation df sc)
   ) loc
