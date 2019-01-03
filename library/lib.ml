@@ -177,12 +177,8 @@ let find_entries_p p =
   find !lib_state.lib_stk
 
 let split_lib_gen test =
-  let rec collect after equal = function
-    | hd::before when test hd -> collect after (hd::equal) before
-    | before -> after,equal,before
-  in
   let rec findeq after = function
-    | hd :: before when test hd -> collect after [hd] before
+    | hd :: before when test hd -> (after, hd, before)
     | hd :: before -> findeq (hd::after) before
     | [] -> user_err Pp.(str "no such entry")
   in
@@ -197,10 +193,7 @@ let split_lib_at_opening sp =
       eq_object_name nsp sp
     | _ -> false
   in
-  let a, s, b = split_lib_gen is_sp in
-  match s with
-  | [obj] -> (a, obj, b)
-  | _ -> assert false
+  split_lib_gen is_sp
 
 (* Adding operations. *)
 
