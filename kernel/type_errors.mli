@@ -34,6 +34,7 @@ type 'constr pguard_error =
   | RecCallInCasePred of 'constr
   | NotGuardedForm of 'constr
   | ReturnPredicateNotCoInductive of 'constr
+  | FixpointOnIrrelevantInductive
 
 type guard_error = constr pguard_error
 

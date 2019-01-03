@@ -1,59 +1,72 @@
 le_n: forall n : nat, n <= n
 le_0_n: forall n : nat, 0 <= n
 le_S: forall n m : nat, n <= m -> n <= S m
-le_n_S: forall n m : nat, n <= m -> S n <= S m
-le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
 le_S_n: forall n m : nat, S n <= S m -> n <= m
-min_l: forall n m : nat, n <= m -> Nat.min n m = n
+le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
+le_n_S: forall n m : nat, n <= m -> S n <= S m
+max_l: forall n m : nat, m <= n -> Nat.max n m = n
 max_r: forall n m : nat, n <= m -> Nat.max n m = m
 min_r: forall n m : nat, m <= n -> Nat.min n m = m
-max_l: forall n m : nat, m <= n -> Nat.max n m = n
+min_l: forall n m : nat, n <= m -> Nat.min n m = n
 le_ind:
   forall (n : nat) (P : nat -> Prop),
   P n ->
   (forall m : nat, n <= m -> P m -> P (S m)) ->
   forall n0 : nat, n <= n0 -> P n0
+le_sind:
+  forall (n : nat) (P : nat -> SProp),
+  P n ->
+  (forall m : nat, n <= m -> P m -> P (S m)) ->
+  forall n0 : nat, n <= n0 -> P n0
 false: bool
 true: bool
+eq_true: bool -> Prop
 is_true: bool -> Prop
 negb: bool -> bool
-eq_true: bool -> Prop
-implb: bool -> bool -> bool
-orb: bool -> bool -> bool
 andb: bool -> bool -> bool
+orb: bool -> bool -> bool
+implb: bool -> bool -> bool
 xorb: bool -> bool -> bool
 Nat.even: nat -> bool
 Nat.odd: nat -> bool
 BoolSpec: Prop -> Prop -> bool -> Prop
-Nat.eqb: nat -> nat -> bool
-Nat.testbit: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
+Nat.testbit: nat -> nat -> bool
+Nat.eqb: nat -> nat -> bool
 Nat.leb: nat -> nat -> bool
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
-bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
 bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
-eq_true_rec:
-  forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
-bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
-eq_true_rect_r:
-  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true
-eq_true_rec_r:
-  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true
-eq_true_rect:
-  forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
-eq_true_ind:
-  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
 eq_true_ind_r:
   forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true
+eq_true_rec:
+  forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
+bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
+eq_true_rect:
+  forall P : bool -> Type, P true -> forall b : bool, eq_true b -> P b
+eq_true_sind:
+  forall P : bool -> SProp, P true -> forall b : bool, eq_true b -> P b
+bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
+eq_true_ind:
+  forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
+eq_true_rec_r:
+  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true
+eq_true_rect_r:
+  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true
+bool_sind:
+  forall P : bool -> SProp, P true -> P false -> forall b : bool, P b
 Byte.to_bits:
   Byte.byte ->
   bool * (bool * (bool * (bool * (bool * (bool * (bool * bool))))))
 Byte.of_bits:
   bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))) ->
   Byte.byte
+andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 andb_true_intro:
   forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
-andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
+BoolSpec_sind:
+  forall (P Q : Prop) (P0 : bool -> SProp),
+  (P -> P0 true) ->
+  (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 BoolSpec_ind:
   forall (P Q : Prop) (P0 : bool -> Prop),
   (P -> P0 true) ->

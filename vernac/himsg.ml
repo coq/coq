@@ -489,6 +489,8 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
      str "The return clause of the following pattern matching should be" ++
      strbrk " a coinductive type:" ++
      spc () ++ pr_lconstr_env env sigma c
+  | FixpointOnIrrelevantInductive ->
+    strbrk "Fixpoints on proof irrelevant inductive types should produce proof irrelevant values"
   in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env sigma ++
@@ -1205,7 +1207,7 @@ let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
 let error_inductive_bad_univs () =
-  str "Incorrect universe constrains declared for inductive type."
+  str "Incorrect universe constraints declared for inductive type."
 
 (* Recursion schemes errors *)
 

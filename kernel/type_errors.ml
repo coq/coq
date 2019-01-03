@@ -33,6 +33,7 @@ type 'constr pguard_error =
   | RecCallInCasePred of 'constr
   | NotGuardedForm of 'constr
   | ReturnPredicateNotCoInductive of 'constr
+  | FixpointOnIrrelevantInductive
 
 type guard_error = constr pguard_error
 
@@ -173,6 +174,7 @@ let map_pguard_error f = function
 | RecCallInCasePred c -> RecCallInCasePred (f c)
 | NotGuardedForm c -> NotGuardedForm (f c)
 | ReturnPredicateNotCoInductive c -> ReturnPredicateNotCoInductive (f c)
+| FixpointOnIrrelevantInductive -> FixpointOnIrrelevantInductive
 
 let map_ptype_error f = function
 | UnboundRel n -> UnboundRel n

@@ -408,8 +408,6 @@ let used_section_variables env inds =
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
 let rel_list n m = Array.to_list (rel_vect n m)
 
-exception UndefinableExpansion
-
 (** From a rel context describing the constructor arguments,
     build an expansion function.
     The term built is expecting to be substituted first by 
@@ -464,7 +462,7 @@ let compute_projections (kn, i as ind) mib =
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
         (i + 1, j + 1, lab :: labs, r :: rs, projty :: pbs, fterm :: letsubst)
-      | Anonymous -> raise UndefinableExpansion
+      | Anonymous -> assert false (* checked by indTyping *)
   in
   let (_, _, labs, rs, pbs, _letsubst) =
     List.fold_right projections ctx (0, 1, [], [], [], paramsletsubst)
@@ -543,24 +541,12 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
   in
   let record_info = match isrecord with
   | Some (Some rid) ->
-    let is_record pkt =
-      if Array.length pkt.mind_consnames != 1 then
-        user_err ~hdr:"build_inductive"
-          Pp.(str "Primitive records must have exactly one constructor.")
-      else if pkt.mind_consnrealargs.(0) = 0 then
-        user_err ~hdr:"build_inductive"
-          Pp.(str "Primitive records must have at least one constructor argument.")
-      else List.exists (Sorts.family_equal Sorts.InType) pkt.mind_kelim
-    in
     (** The elimination criterion ensures that all projections can be defined. *)
-    if Array.for_all is_record packets then
-      let map i id =
-        let labs, rs, projs = compute_projections (kn, i) mib in
-        (id, labs, rs, projs)
-      in
-      try PrimRecord (Array.mapi map rid)
-      with UndefinableExpansion -> FakeRecord
-    else FakeRecord
+    let map i id =
+      let labs, rs, projs = compute_projections (kn, i) mib in
+      (id, labs, rs, projs)
+    in
+    PrimRecord (Array.mapi map rid)
   | Some None -> FakeRecord
   | None -> NotRecord
   in
@@ -571,7 +557,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, variance, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
+  let (env_ar_par, univs, variance, record, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
   (* Then check positivity conditions *)
   let chkpos = (Environ.typing_flags env).check_guarded in
   let names = Array.map_of_list (fun entry -> entry.mind_entry_typename, entry.mind_entry_consnames)
@@ -583,5 +569,5 @@ let check_inductive env kn mie =
   in
   (* Build the inductive packets *)
     build_inductive env names mie.mind_entry_private univs variance
-      paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
+      paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs

@@ -1075,8 +1075,19 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
                 (mind, (env', b))
 	      else check_occur env' (n+1) b
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
-        | _ -> raise_err env i NotEnoughAbstractionInFixBody in
-    check_occur fixenv 1 def in
+        | _ -> raise_err env i NotEnoughAbstractionInFixBody
+    in
+    let ((ind, _), _) as res = check_occur fixenv 1 def in
+    let _, ind = lookup_mind_specif env ind in
+    (* recursive sprop means non record with projections -> squashed *)
+    if Sorts.Irrelevant == ind.mind_relevant
+    then
+      begin
+        if names.(i).Context.binder_relevance == Sorts.Relevant
+        then raise_err env i FixpointOnIrrelevantInductive
+      end;
+    res
+  in
   (* Do it on every fixpoint *)
   let rv = Array.map2_i find_ind nvect bodies in
   (Array.map fst rv, Array.map snd rv)

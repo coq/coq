@@ -92,7 +92,7 @@ let compute_constructor_level evars env l =
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (EConstr.push_rel d env, univ))
-    l (env, Univ.type0m_univ)
+    l (env, Univ.Universe.sprop)
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
@@ -167,8 +167,8 @@ let typecheck_params_and_fields finite def poly pl ps records =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
-      if not def && (Sorts.is_prop sort ||
-	(Sorts.is_set sort && is_impredicative_set env0)) then
+    let univ = if Sorts.is_sprop sort then univ else Univ.Universe.sup univ Univ.type0m_univ in
+      if not def && is_impredicative_sort env0 sort then
         sigma, typ
       else
         let sigma = Evd.set_leq_sort env_ar sigma (Sorts.sort_of_univ univ) sort in

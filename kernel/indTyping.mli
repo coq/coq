@@ -17,6 +17,7 @@ open Declarations
     - environment with inductives + parameters in rel context
     - abstracted universes
     - checked variance info
+    - record entry (checked to be OK)
     - parameters
     - for each inductive,
       (arity * constructors) (with params)
@@ -26,6 +27,7 @@ open Declarations
 val typecheck_inductive : env -> mutual_inductive_entry ->
   env
   * universes * Univ.Variance.t array option
+  * Names.Id.t array option option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *
