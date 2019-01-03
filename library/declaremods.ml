@@ -609,7 +609,7 @@ let start_module interp_modast export id args res fs =
   mp
 
 let end_module () =
-  let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
+  let id,oldprefix,fs,lib_stack = Lib.end_module () in
   let substitute, keep, special = Lib.classify_segment lib_stack in
   let m_info = !openmod_info in
 
@@ -619,7 +619,6 @@ let end_module () =
     | Some (mty, inline) ->
       get_module_sobjs false (Global.env()) inline mty, [], []
   in
-  let id = basename (fst oldoname) in
   let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
   let sobjs = let (ms,objs) = sobjs0 in (mbids@ms,objs) in
 
@@ -641,7 +640,6 @@ let end_module () =
   let newoname = Lib.add_leaves id objects in
 
   (* Name consistency check : start_ vs. end_module, kernel vs. library *)
-  assert (eq_full_path (fst newoname) (fst oldoname));
   assert (ModPath.equal (mp_of_kn (snd newoname)) mp);
 
   mp
@@ -727,8 +725,7 @@ let start_modtype interp_modast id args mtys fs =
   mp
 
 let end_modtype () =
-  let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
-  let id = basename (fst oldoname) in
+  let id,prefix,fs,lib_stack = Lib.end_modtype () in
   let substitute, _, special = Lib.classify_segment lib_stack in
   let sub_mty_l = !openmodtype_info in
   let mp, mbids = Global.end_modtype fs id in
@@ -737,7 +734,6 @@ let end_modtype () =
   let oname = Lib.add_leaves id (special@[in_modtype modtypeobjs])
   in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
-  assert (eq_full_path (fst oname) (fst oldoname));
   assert (ModPath.equal (mp_of_kn (snd oname)) mp);
 
   mp
@@ -834,7 +830,7 @@ let declare_one_include interp_modast (me_ast,annot) =
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in
-  ignore (Lib.add_leaf (Lib.current_mod_id ()) (in_include aobjs))
+  ignore (Lib.add_anonymous_leaf (in_include aobjs))
 
 let declare_include interp me_asts =
   List.iter (declare_one_include interp) me_asts
@@ -983,7 +979,7 @@ let iter_all_segments f =
     List.iter (apply_obj prefix) keepobjs
   in
   let apply_node = function
-    | sp, Lib.Leaf o -> f sp o
+    | Lib.Leaf (sp,o) -> f sp o
     | _ -> ()
   in
   MPmap.iter apply_mod_obj (ModObjs.all ());

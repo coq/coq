@@ -29,7 +29,7 @@ open Common
 
 let toplevel_env () =
   let get_reference = function
-    | (_,kn), Lib.Leaf o ->
+    | Lib.Leaf ((_,kn),o) ->
         let mp,l = KerName.repr kn in
 	begin match Libobject.object_tag o with
 	  | "CONSTANT" ->

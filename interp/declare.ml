@@ -138,7 +138,7 @@ let register_side_effect (c, role) =
 let declare_constant_common id cst =
   let o = inConstant cst in
   let _, kn as oname = add_leaf id o in
-  pull_to_head oname;
+  pull_leaf_to_head oname;
   let c = Global.constant_of_delta_kn kn in
   update_tables c;
   c

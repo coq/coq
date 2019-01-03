@@ -947,8 +947,8 @@ let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 let vernac_end_segment ({v=id} as lid) =
   Proof_global.check_no_pending_proof ();
   match Lib.find_opening_node id with
-  | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
-  | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
+  | Lib.OpenedModule (_,false,export,_,_) -> vernac_end_module export lid
+  | Lib.OpenedModule (_,true,_,_,_) -> vernac_end_modtype lid
   | Lib.OpenedSection _ -> vernac_end_section lid
   | _ -> assert false
 

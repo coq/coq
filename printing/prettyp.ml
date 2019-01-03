@@ -41,7 +41,7 @@ type object_pr = {
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_entry       : env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
+  print_library_entry       : env -> Evd.evar_map -> bool -> Lib.node -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
@@ -627,16 +627,15 @@ let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
       | (_,s) -> None
 
 let gallina_print_library_entry env sigma with_values ent =
-  let pr_name (sp,_) = Id.print (basename sp) in
   match ent with
-    | (oname,Lib.Leaf lobj) ->
+    | Lib.Leaf (oname,lobj) ->
         gallina_print_leaf_entry env sigma with_values (oname,lobj)
-    | (oname,Lib.OpenedSection (dir,_)) ->
-        Some (str " >>>>>>> Section " ++ pr_name oname)
-    | (_,Lib.CompilingLibrary { Nametab.obj_dir; _ }) ->
+    | Lib.OpenedSection (id,dir) ->
+        Some (str " >>>>>>> Section " ++ Id.print id)
+    | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
         Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
-    | (oname,Lib.OpenedModule _) ->
-	Some (str " >>>>>>> Module " ++ pr_name oname)
+    | Lib.OpenedModule (id,_,_,_,_) ->
+      Some (str " >>>>>>> Module " ++ Id.print id)
 
 let gallina_print_context env sigma with_values =
   let rec prec n = function
@@ -706,7 +705,7 @@ let print_full_context_typ env sigma = print_context env sigma false None (Lib.c
 
 let print_full_pure_context env sigma =
   let rec prec = function
-  | ((_,kn),Lib.Leaf lobj)::rest ->
+  | Lib.Leaf ((_,kn),lobj)::rest ->
       let pp = match object_tag lobj with
       | "CONSTANT" ->
 	  let con = Global.constant_of_delta_kn kn in

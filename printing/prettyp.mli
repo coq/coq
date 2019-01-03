@@ -19,7 +19,7 @@ val assumptions_for_print : Name.t list -> Termops.names_context
 
 val print_closed_sections : bool ref
 val print_context : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t
-val print_library_entry : env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option
+val print_library_entry : env -> Evd.evar_map -> bool -> Lib.node -> Pp.t option
 val print_full_context : env -> Evd.evar_map -> Pp.t
 val print_full_context_typ : env -> Evd.evar_map -> Pp.t
 val print_full_pure_context : env -> Evd.evar_map -> Pp.t
@@ -87,7 +87,7 @@ type object_pr = {
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_entry       : env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option;
+  print_library_entry       : env -> Evd.evar_map -> bool -> Lib.node -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;

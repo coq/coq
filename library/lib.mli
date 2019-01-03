@@ -22,12 +22,12 @@ type export = bool option (* None for a Module Type *)
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 
 type node =
-  | Leaf of Libobject.obj
+  | Leaf of Libobject.object_name * Libobject.obj
   | CompilingLibrary of Nametab.object_prefix
-  | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
+  | OpenedModule of Id.t * is_type * export * Nametab.object_prefix * Summary.frozen
   | OpenedSection of Id.t * Summary.frozen
 
-type library_segment = (Libobject.object_name * node) list
+type library_segment = node list
 
 type lib_objects = (Id.t * Libobject.obj) list
 
@@ -57,7 +57,7 @@ val segment_of_objects :
 
 val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
-val pull_to_head : Libobject.object_name -> unit
+val pull_leaf_to_head : Libobject.object_name -> unit
 
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)
@@ -91,7 +91,6 @@ val is_modtype : unit -> bool
    if the latest module started is a module type.  *)
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
-val current_mod_id : unit -> module_ident
 
 (** Returns the opening node of a given name *)
 val find_opening_node : Id.t -> node
@@ -108,12 +107,12 @@ val start_modtype :
 
 val end_module :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
+  Id.t * Nametab.object_prefix *
     Summary.frozen * library_segment
 
 val end_modtype :
   unit ->
-  Libobject.object_name * Nametab.object_prefix *
+  Id.t * Nametab.object_prefix *
     Summary.frozen * library_segment
 
 (** {6 Compilation units } *)
