@@ -930,12 +930,13 @@ let vernac_include l =
 
 (* Sections *)
 
-let vernac_begin_section ({v=id} as lid) =
+let vernac_begin_section olid =
   Proof_global.check_no_pending_proof ();
-  Dumpglob.dump_definition lid "sec";
-  Lib.open_section id
+  Option.iter (fun lid -> Dumpglob.dump_definition lid "sec") olid;
+  Lib.open_section (Option.map (fun x -> x.CAst.v) olid)
 
-let vernac_end_section {CAst.loc} =
+let vernac_end_section olid =
+  let loc = Option.cata (fun x -> x.CAst.loc) None olid in
   Dumpglob.dump_reference ?loc
     (DirPath.to_string (Lib.current_dirpath ())) "<>" "sec";
   Lib.close_section ()
@@ -944,12 +945,14 @@ let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 
 (* Dispatcher of the "End" command *)
 
-let vernac_end_segment ({v=id} as lid) =
+let vernac_end_segment olid =
   Proof_global.check_no_pending_proof ();
-  match Lib.find_opening_node id with
-  | Lib.OpenedModule (_,false,export,_,_) -> vernac_end_module export lid
-  | Lib.OpenedModule (_,true,_,_,_) -> vernac_end_modtype lid
-  | Lib.OpenedSection _ -> vernac_end_section lid
+  match Lib.find_opening_node (Option.map (fun x -> x.CAst.v) olid) with
+  | Lib.OpenedModule (_,false,export,_,_) ->
+    vernac_end_module export @@ Option.get olid
+  | Lib.OpenedModule (_,true,_,_,_) ->
+    vernac_end_modtype @@ Option.get olid
+  | Lib.OpenedSection _ -> vernac_end_section olid
   | _ -> assert false
 
 (* Libraries *)
@@ -2212,9 +2215,9 @@ let interp ?proof ~atts ~st c =
   | VernacInclude in_asts ->
       unsupported_attributes atts; vernac_include in_asts
   (* Gallina extensions *)
-  | VernacBeginSection lid -> unsupported_attributes atts; vernac_begin_section lid
+  | VernacBeginSection olid -> unsupported_attributes atts; vernac_begin_section olid
 
-  | VernacEndSegment lid -> unsupported_attributes atts; vernac_end_segment lid
+  | VernacEndSegment olid -> unsupported_attributes atts; vernac_end_segment olid
 
   | VernacNameSectionHypSet (lid, set) -> unsupported_attributes atts; vernac_name_sec_hyp lid set
 

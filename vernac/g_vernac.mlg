@@ -512,11 +512,11 @@ GRAMMAR EXTEND Gram
 	bl = LIST0 module_binder; ":"; mty = module_type_inl ->
 	  { VernacDeclareModule (export, id, bl, mty) }
       (* Section beginning *)
-      | IDENT "Section"; id = identref -> { VernacBeginSection id }
-      | IDENT "Chapter"; id = identref -> { VernacBeginSection id }
+      | IDENT "Section"; oid = OPT identref -> { VernacBeginSection oid }
+      | IDENT "Chapter"; oid = OPT identref -> { VernacBeginSection oid }
 
       (* This end a Section a Module or a Module Type *)
-      | IDENT "End"; id = identref -> { VernacEndSegment id }
+      | IDENT "End"; oid = OPT identref -> { VernacEndSegment oid }
 
       (* Naming a set of section hyps *)
       | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->

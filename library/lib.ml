@@ -31,7 +31,7 @@ type node =
   | Leaf of object_name * obj
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of Id.t * is_type * export * Nametab.object_prefix * Summary.frozen
-  | OpenedSection of Id.t * Summary.frozen
+  | OpenedSection of Id.t option * Summary.frozen
 
 type library_entry = node
 
@@ -39,7 +39,7 @@ type library_segment = library_entry list
 
 type lib_objects =  (Names.Id.t * obj) list
 
-let module_kind is_type =
+let module_kind ~is_type =
   if is_type then "module type" else "module"
 
 let iter_objects f i prefix =
@@ -55,6 +55,17 @@ let subst_objects subst seg =
 	(id, obj')
   in
     List.Smart.map subst_one seg
+
+let error_module_still_open ~is_type id =
+  user_err
+    (str "The " ++ str (module_kind ~is_type) ++ str " " ++ Id.print id ++ str " is still open.")
+
+let error_section_still_open oid =
+  let obj = match oid with
+    | None -> str "An anonymous section"
+    | Some id -> str "Section " ++ Id.print id
+  in
+  user_err (obj ++ str " is still open.")
 
 (*let load_and_subst_objects i prefix subst seg =
   List.rev (List.fold_left (fun seg (id,obj as node) ->
@@ -76,10 +87,8 @@ let classify_segment seg =
 		 clean ((id,o')::substl, keepl, anticipl) stk
 	     | Anticipate o' ->
 		 clean (substl, keepl, o'::anticipl) stk)
-    | OpenedSection (id,_) :: _ -> user_err Pp.(str "section " ++ Id.print id ++ str " is still open")
-    | OpenedModule (id,ty,_,_,_) :: _ ->
-      user_err ~hdr:"Lib.classify_segment"
-        (str (module_kind ty) ++ spc () ++ Id.print id ++ str " is still open")
+    | OpenedSection (oid,_) :: _ -> error_section_still_open oid
+    | OpenedModule (id,is_type,_,_,_) :: _ -> error_module_still_open ~is_type id
   in
     clean ([],[],[]) (List.rev seg)
 
@@ -246,17 +255,13 @@ let start_mod is_type export id mp fs =
 let start_module = start_mod false
 let start_modtype = start_mod true None
 
-let error_still_opened string id =
-  user_err
-    (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
-
 let end_mod is_type =
   let after,(id,fs),before =
     try match split_lib_gen is_opening_node with
       | after,OpenedModule (id,ty,_,_,fs),before ->
         if ty == is_type then after,(id, fs),before
-        else error_still_opened (module_kind ty) id
-      | after,OpenedSection (id,_),before -> error_still_opened "section" id
+        else error_module_still_open ~is_type:ty id
+      | after,OpenedSection (oid,_),before -> error_section_still_open oid
       | _ -> assert false
     with Not_found -> user_err (Pp.str "No opened modules.")
   in
@@ -285,8 +290,9 @@ let start_compilation s mp =
 
 let open_blocks_message es =
   let open_block_name = function
-      | OpenedSection (id,_) -> str "section " ++ Id.print id
-      | OpenedModule (id,ty,_,_,_) -> str (module_kind ty) ++ spc () ++ Id.print id
+      | OpenedSection (Some id,_) -> str "section " ++ Id.print id
+      | OpenedSection (None,_) -> str "anonymous section"
+      | OpenedModule (id,is_type,_,_,_) -> str (module_kind ~is_type) ++ spc () ++ Id.print id
       | _ -> assert false in
   str "The " ++ pr_enum open_block_name es ++ spc () ++
   str "need" ++ str (if List.length es == 1 then "s" else "") ++ str " to be closed."
@@ -333,18 +339,24 @@ let is_modtype_strict () = is_module_gen (fun _ -> true) (fun b -> b)
 let is_module () = is_module_gen (fun b -> not b) (fun _ -> true)
 
 (* Returns the opening node of a given name *)
-let find_opening_node id =
+let find_opening_node oid =
   let rec get_opening_node = function
     | [] -> raise Not_found
-    | (OpenedModule (id,_,_,_,_) | OpenedSection (id,_) as e) :: _ -> (id,e)
+    | OpenedSection (oid,_) as e :: _ -> (oid,e)
+    | OpenedModule (id,_,_,_,_) as e :: _ -> (Some id,e)
     | _ :: l -> get_opening_node l
   in
   try
-    let (id',entry) = get_opening_node !lib_state.lib_stk in
-    if not (Names.Id.equal id id') then
+    let (oid',entry) = get_opening_node !lib_state.lib_stk in
+    match oid, oid' with
+    | Some id, Some id' when Names.Id.equal id id' -> entry
+    | None, None -> entry
+    | _, Some id' ->
       user_err ~hdr:"Lib.find_opening_node"
         (str "Last block to end has name " ++ Id.print id' ++ str ".");
-    entry
+    | _, None ->
+      user_err ~hdr:"Lib.find_opening_node"
+        (str "Last block to end is anonymous.");
   with Not_found -> user_err Pp.(str "There is nothing to end.")
 
 (* Discharge tables *)
@@ -518,9 +530,9 @@ let is_in_section ref =
 
 (*************)
 (* Sections. *)
-let open_section id =
+let open_section oid =
   let fs = Summary.freeze_summaries ~marshallable:false in
-  add_entry (OpenedSection (id, fs));
+  add_entry (OpenedSection (oid, fs));
   lib_state := { !lib_state with sections_depth = !lib_state.sections_depth + 1 };
   add_section ()
 

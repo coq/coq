@@ -25,7 +25,7 @@ type node =
   | Leaf of Libobject.object_name * Libobject.obj
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of Id.t * is_type * export * Nametab.object_prefix * Summary.frozen
-  | OpenedSection of Id.t * Summary.frozen
+  | OpenedSection of Id.t option * Summary.frozen
 
 type library_segment = node list
 
@@ -93,7 +93,7 @@ val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
 
 (** Returns the opening node of a given name *)
-val find_opening_node : Id.t -> node
+val find_opening_node : Id.t option -> node
 
 (** {6 Modules and module types } *)
 
@@ -131,7 +131,7 @@ val library_part :  GlobRef.t -> DirPath.t
 
 (** {6 Sections } *)
 
-val open_section : Id.t -> unit
+val open_section : Id.t option -> unit
 val close_section : unit -> unit
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)

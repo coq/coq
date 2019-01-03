@@ -844,10 +844,10 @@ open Pputils
         )
 
       (* Gallina extensions *)
-      | VernacBeginSection id ->
-        return (hov 2 (keyword "Section" ++ spc () ++ pr_lident id))
-      | VernacEndSegment id ->
-        return (hov 2 (keyword "End" ++ spc() ++ pr_lident id))
+      | VernacBeginSection oid ->
+        return (hov 2 (keyword "Section" ++ pr_opt (fun id -> spc () ++ pr_lident id) oid))
+      | VernacEndSegment oid ->
+        return (hov 2 (keyword "End" ++ pr_opt (fun id -> spc() ++ pr_lident id) oid))
       | VernacNameSectionHypSet (id,set) ->
         return (hov 2 (keyword "Package" ++ spc() ++ pr_lident id ++ spc()++
         str ":="++spc()++pr_using set))

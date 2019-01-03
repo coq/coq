@@ -286,8 +286,8 @@ type nonrec vernac_expr =
   | VernacConstraint of Glob_term.glob_constraint list
 
   (* Gallina extensions *)
-  | VernacBeginSection of lident
-  | VernacEndSegment of lident
+  | VernacBeginSection of lident option
+  | VernacEndSegment of lident option
   | VernacRequire of
       qualid option * export_flag option * qualid list
   | VernacImport of export_flag * qualid list

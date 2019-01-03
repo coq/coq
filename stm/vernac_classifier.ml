@@ -145,7 +145,8 @@ let classify_vernac e =
         let ids = List.map (fun {v}->v) (CList.map_filter (fun (x,_) -> x) l) in
         VtSideff ids, VtLater
     | VernacCombinedScheme ({v=id},_) -> VtSideff [id], VtLater
-    | VernacBeginSection {v=id} -> VtSideff [id], VtLater
+    | VernacBeginSection Some {v=id} -> VtSideff [id], VtLater
+    | VernacBeginSection None -> VtSideff [], VtLater
     | VernacUniverse _ | VernacConstraint _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _

@@ -631,7 +631,7 @@ let gallina_print_library_entry env sigma with_values ent =
     | Lib.Leaf (oname,lobj) ->
         gallina_print_leaf_entry env sigma with_values (oname,lobj)
     | Lib.OpenedSection (id,dir) ->
-        Some (str " >>>>>>> Section " ++ Id.print id)
+        Some (str " >>>>>>> Section " ++ pr_opt Id.print id)
     | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
         Some (str " >>>>>>> Library " ++ DirPath.print obj_dir)
     | Lib.OpenedModule (id,_,_,_,_) ->
