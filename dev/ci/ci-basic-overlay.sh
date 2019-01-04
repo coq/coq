@@ -150,13 +150,6 @@
 : "${fiat_crypto_CI_ARCHIVEURL:=${fiat_crypto_CI_GITURL}/archive}"
 
 ########################################################################
-# formal-topology
-########################################################################
-: "${formal_topology_CI_REF:=ci}"
-: "${formal_topology_CI_GITURL:=https://github.com/bmsherman/topology}"
-: "${formal_topology_CI_ARCHIVEURL:=${formal_topology_CI_GITURL}/archive}"
-
-########################################################################
 # coq_dpdgraph
 ########################################################################
 : "${coq_dpdgraph_CI_REF:=coq-master}"
