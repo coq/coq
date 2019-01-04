@@ -480,25 +480,6 @@ let compute_projections env (kn, i as ind) =
     (* [Ind inst] is typed in context [params-wo-let] *)
     ty
   in
-  let ci =
-    let print_info =
-      { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
-      { ci_ind     = ind;
-        ci_npar    = nparamargs;
-        ci_cstr_ndecls = pkt.mind_consnrealdecls;
-        ci_cstr_nargs = pkt.mind_consnrealargs;
-        ci_pp_info = print_info }
-  in
-  let len = List.length ctx in
-  let compat_body ccl i =
-    (* [ccl] is defined in context [params;x:indty] *)
-    (* [ccl'] is defined in context [params;x:indty;x:indty] *)
-    let ccl' = liftn 1 2 ccl in
-    let p = mkLambda (x, lift 1 indty, ccl') in
-    let branch = it_mkLambda_or_LetIn (mkRel (len - i)) ctx in
-    let body = mkCase (ci, p, mkRel 1, [|lift 1 branch|]) in
-      it_mkLambda_or_LetIn (mkLambda (x,indty,body)) params
-  in
   let projections decl (proj_arg, j, pbs, subst) =
     match decl with
     | LocalDef (na,c,t) ->
@@ -528,10 +509,9 @@ let compute_projections env (kn, i as ind) =
         let ty = substl subst t in
         let term = mkProj (Projection.make kn true, mkRel 1) in
         let fterm = mkProj (Projection.make kn false, mkRel 1) in
-        let compat = compat_body ty (j - 1) in
         let etab = it_mkLambda_or_LetIn (mkLambda (x, indty, term)) params in
         let etat = it_mkProd_or_LetIn (mkProd (x, indty, ty)) params in
-        let body = (etab, etat, compat) in
+        let body = (etab, etat) in
         (proj_arg + 1, j + 1, body :: pbs, fterm :: subst)
       | Anonymous ->
         anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")
@@ -540,13 +520,6 @@ let compute_projections env (kn, i as ind) =
     List.fold_right projections ctx (0, 1, [], [])
   in
   Array.rev_of_list pbs
-
-let legacy_match_projection env ind =
-  Array.map pi3 (compute_projections env ind)
-
-let compute_projections ind mib =
-  let ans = compute_projections ind mib in
-  Array.map (fun (prj, ty, _) -> (prj, ty)) ans
 
 (**************************************************)
 

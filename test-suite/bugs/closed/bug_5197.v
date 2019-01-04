@@ -1,6 +1,6 @@
 Set Universe Polymorphism.
 Set Primitive Projections.
-Unset Printing Primitive Projection Compatibility.
+
 Axiom Ω : Type.
 
 Record Pack (A : Ω -> Type) (Aᴿ : Ω -> (forall ω : Ω, A ω) -> Type) := mkPack {
