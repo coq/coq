@@ -506,6 +506,9 @@ library:ci-sf:
 library:ci-unimath:
   <<: *ci-template-flambda
 
+library:ci-verdi-raft:
+  <<: *ci-template-flambda
+
 library:ci-vst:
   <<: *ci-template-flambda
 

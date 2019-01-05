@@ -273,3 +273,26 @@
 : "${relation_algebra_CI_REF:=master}"
 : "${relation_algebra_CI_GITURL:=https://github.com/damien-pous/relation-algebra}"
 : "${relation_algebra_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
+
+########################################################################
+# StructTact + InfSeqExt + Cheerios + Verdi + Verdi Raft
+########################################################################
+: "${struct_tact_CI_REF:=master}"
+: "${struct_tact_CI_GITURL:=https://github.com/uwplse/StructTact}"
+: "${struct_tact_CI_ARCHIVEURL:=${struct_tact_CI_GITURL}/archive}"
+
+: "${inf_seq_ext_CI_REF:=master}"
+: "${inf_seq_ext_CI_GITURL:=https://github.com/DistributedComponents/InfSeqExt}"
+: "${inf_seq_ext_CI_ARCHIVEURL:=${inf_seq_ext_CI_GITURL}/archive}"
+
+: "${cheerios_CI_REF:=master}"
+: "${cheerios_CI_GITURL:=https://github.com/uwplse/cheerios}"
+: "${cheerios_CI_ARCHIVEURL:=${cheerios_CI_GITURL}/archive}"
+
+: "${verdi_CI_REF:=master}"
+: "${verdi_CI_GITURL:=https://github.com/uwplse/verdi}"
+: "${verdi_CI_ARCHIVEURL:=${verdi_CI_GITURL}/archive}"
+
+: "${verdi_raft_CI_REF:=master}"
+: "${verdi_raft_CI_GITURL:=https://github.com/uwplse/verdi-raft}"
+: "${verdi_raft_CI_ARCHIVEURL:=${verdi_raft_CI_GITURL}/archive}"
