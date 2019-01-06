@@ -213,7 +213,8 @@ let check_save ?parent ~saveas sn =
 exception DontQuit
 
 let check_quit ?parent saveall =
-  (try save_pref () with _ -> flash_info "Cannot save preferences");
+  (try save_pref ()
+   with e -> flash_info ("Cannot save preferences (" ^ Printexc.to_string e ^ ")"));
   let is_modified sn = sn.buffer#modified in
   if List.exists is_modified notebook#pages then begin
     let answ = Configwin_ihm.question_box ~title:"Quit"
@@ -1021,7 +1022,8 @@ let build_ui () =
       ~callback:(fun _ ->
         begin
 	  try Preferences.configure ~apply:refresh_notebook_pos w
-	  with _ -> flash_info "Cannot save preferences"
+          with e ->
+            flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;
         reset_revert_timer ());
   ];
