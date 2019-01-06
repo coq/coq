@@ -413,8 +413,11 @@ let attach_fg (pref : string preference) (tag : GText.tag) =
 let processing_color =
   new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
 
+let incompletely_processed_color =
+  new preference ~name:["incompletely_processed_color"] ~init:"light sky blue" ~repr:Repr.(string)
+
 let _ = attach_bg processing_color Tags.Script.to_process
-let _ = attach_bg processing_color Tags.Script.incomplete
+let _ = attach_bg incompletely_processed_color Tags.Script.incomplete
 
 let tags = ref Util.String.Map.empty
 
@@ -724,6 +727,7 @@ let configure ?(apply=(fun () -> ())) parent =
       ("Background color", background_color);
       ("Background color of processed text", processed_color);
       ("Background color of text being processed", processing_color);
+      ("Background color of incompletely processed Qed", incompletely_processed_color);
       ("Background color of errors", error_color);
       ("Foreground color of errors", error_fg_color);
     ] in
