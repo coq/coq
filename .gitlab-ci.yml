@@ -485,7 +485,7 @@ library:ci-fiat-crypto-legacy:
 library:ci-flocq:
   <<: *ci-template
 
-library:ci-formal-topology:
+library:ci-corn:
   <<: *ci-template-flambda
 
 library:ci-geocoq:
