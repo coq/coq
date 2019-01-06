@@ -43,6 +43,7 @@ CI_TARGETS= \
     ci-simple-io \
     ci-tlc \
     ci-unimath \
+    ci-verdi-raft \
     ci-vst
 
 .PHONY: ci-all $(CI_TARGETS)
