@@ -887,3 +887,18 @@ let eq_constr_univs_test sigma1 sigma2 t u =
       (universes sigma2) fold t u sigma2
   in
   match ans with None -> false | Some _ -> true
+
+let shrink sigma keep =
+  let rec close sigma set =
+    let set1 = ref set in
+    Evar.Set.iter (fun k ->
+        set1 := Evar.Set.union !set1
+            (undefined_evars_of_evar_info sigma (Evd.find_undefined sigma k))) set;
+    if Evar.Set.equal set !set1 then set
+    else close sigma !set1 in
+  let keep = close sigma keep in
+  (* over approximation *)
+  let evd = Evd.from_ctx (Evd.evar_universe_context sigma) in
+  Evar.Set.fold (fun k m ->
+     let i = Evd.find sigma k in
+     Evd.add m k (nf_evar_info sigma i)) keep evd

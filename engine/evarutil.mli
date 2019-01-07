@@ -272,6 +272,9 @@ val push_rel_context_to_named_context : ?hypnaming:naming_mode ->
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 
+val shrink : evar_map -> Evar.Set.t -> evar_map
+(** Keeps only the evars in the input set (and the full UState.t) *)
+
 (** Evar combinators *)
 
 val evd_comb0 : (evar_map -> evar_map * 'a) -> evar_map ref -> 'a
