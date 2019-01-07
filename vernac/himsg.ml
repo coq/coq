@@ -511,7 +511,7 @@ let pr_trailing_ne_context_of env sigma =
   if List.is_empty (Environ.rel_context env) &&
     List.is_empty (Environ.named_context env)
   then str "."
-  else (str " in environment:"++ pr_context_unlimited env sigma)
+  else (strbrk " in environment:" ++ pr_context_unlimited env sigma)
 
 let rec explain_evar_kind env sigma evk ty =
     let open Evar_kinds in
@@ -551,21 +551,21 @@ let rec explain_evar_kind env sigma evk ty =
       strbrk "an instance of type " ++ ty ++
       str " for the variable " ++ Id.print id
   | Evar_kinds.SubEvar (where,evk') ->
-      let evi = Evd.find sigma evk' in
+      let rec find_source evk =
+        let evi = Evd.find sigma evk in
+        match snd evi.evar_source with
+        | Evar_kinds.SubEvar (_,evk) -> find_source evk
+        | src -> evi,src in
+      let evi,src = find_source evk' in
       let pc = match evi.evar_body with
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
       let ty' = evi.evar_concl in
-      (match where with
-      | Some Evar_kinds.Body -> str "the body of "
-      | Some Evar_kinds.Domain -> str "the domain of "
-      | Some Evar_kinds.Codomain -> str "the codomain of "
-      | None ->
-      pr_existential_key sigma evk ++ str " of type " ++ ty ++
-      str " in the partial instance " ++ pc ++
-      str " found for ") ++
-      explain_evar_kind env sigma evk'
-      (pr_leconstr_env env sigma ty') (snd evi.evar_source)
+      pr_existential_key sigma evk ++
+      strbrk " in the partial instance " ++ pc ++
+      strbrk " found for " ++
+      explain_evar_kind env sigma evk
+      (pr_leconstr_env env sigma ty') src
 
 let explain_typeclass_resolution env sigma evi k =
   match Typeclasses.class_of_constr sigma evi.evar_concl with
