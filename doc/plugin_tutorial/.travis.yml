@@ -1,0 +1,38 @@
+dist: trusty
+sudo: required
+language: generic
+
+services:
+  - docker
+
+env:
+  global:
+  - NJOBS="2"
+  - CONTRIB_NAME="plugin_tutorials"
+  matrix:
+  - COQ_IMAGE="coqorg/coq:dev"
+
+install: |
+  # Prepare the COQ container
+  docker run -d -i --init --name=COQ -v ${TRAVIS_BUILD_DIR}:/home/coq/$CONTRIB_NAME -w /home/coq/$CONTRIB_NAME ${COQ_IMAGE}
+  docker exec COQ /bin/bash --login -c "
+    # This bash script is double-quoted to interpolate Travis CI env vars:
+    echo \"Build triggered by ${TRAVIS_EVENT_TYPE}\"
+    export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '
+    set -ex  # -e = exit on failure; -x = trace for debug
+    opam list
+    "
+script:
+- echo -e "${ANSI_YELLOW}Building $CONTRIB_NAME...${ANSI_RESET}" && echo -en 'travis_fold:start:testbuild\\r'
+- |
+  docker exec COQ /bin/bash --login -c "
+    export PS4='+ \e[33;1m(\$0 @ line \$LINENO) \$\e[0m '
+    set -ex
+    sudo chown -R coq:coq /home/coq/$CONTRIB_NAME
+    ( cd tuto0 && make )
+    ( cd tuto1 && make )
+    ( cd tuto2 && make )
+    ( cd tuto3 && make )
+    "
+- docker stop COQ  # optional
+- echo -en 'travis_fold:end:testbuild\\r'
