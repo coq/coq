@@ -1,5 +1,7 @@
 open Pp
 
+let find_reference = Coqlib.find_reference [@ocaml.warning "-3"]
+
 let example_sort evd =
 (* creating a new sort requires that universes should be recorded
   in the evd datastructure, so this datastructure also needs to be
@@ -12,10 +14,10 @@ let c_one evd =
 (* In the general case, global references may refer to universe polymorphic
    objects, and their universe has to be made afresh when creating an instance. *)
   let gr_S =
-    Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
+    find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
 (* the long name of "S" was found with the command "About S." *)
   let gr_O =
-    Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
+    find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
   let evd, c_O = Evarutil.new_global evd gr_O in
   let evd, c_S = Evarutil.new_global evd gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
@@ -63,43 +65,43 @@ let example_sort_app_lambda () =
 
 
 let c_S evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
+  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
   Evarutil.new_global evd gr
 
 let c_O evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
+  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
   Evarutil.new_global evd gr
 
 let c_E evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
+  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
   Evarutil.new_global evd gr
 
 let c_D evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
+  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
   Evarutil.new_global evd gr
 
 let c_Q evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
+  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
   Evarutil.new_global evd gr
 
 let c_R evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
+  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
   Evarutil.new_global evd gr
 
 let c_N evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
+  let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
   Evarutil.new_global evd gr
 
 let c_C evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
+  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
   Evarutil.new_global evd gr
 
 let c_F evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
+  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
   Evarutil.new_global evd gr
 
 let c_P evd =
-  let gr = Coqlib.find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
+  let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
   Evarutil.new_global evd gr
 
 (* If c_S was universe polymorphic, we should have created a new constant
