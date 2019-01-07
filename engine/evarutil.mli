@@ -177,10 +177,6 @@ val nf_evar_map_undefined : evar_map -> evar_map
 
 val nf_evars_universes : evar_map -> Constr.constr -> Constr.constr
 
-(** Replacing all evars, possibly raising [Uninstantiated_evar] *)
-exception Uninstantiated_evar of Evar.t
-val flush_and_check_evars :  evar_map -> constr -> Constr.constr
-
 (** [finalize env sigma f] combines universe minimisation,
    evar-and-universe normalisation and universe restriction.
 

@@ -62,21 +62,6 @@ let finalize ?abort_on_undefined_evars sigma f =
   let sigma = restrict_universe_context sigma !uvars in
   sigma, v
 
-(* flush_and_check_evars fails if an existential is undefined *)
-
-exception Uninstantiated_evar of Evar.t
-
-let rec flush_and_check_evars sigma c =
-  match kind c with
-  | Evar (evk,_ as ev) ->
-      (match existential_opt_value0 sigma ev with
-       | None -> raise (Uninstantiated_evar evk)
-       | Some c -> flush_and_check_evars sigma c)
-  | _ -> Constr.map (flush_and_check_evars sigma) c
-
-let flush_and_check_evars sigma c =
-  flush_and_check_evars sigma (EConstr.Unsafe.to_constr c)
-
 (** Term exploration up to instantiation. *)
 let kind_of_term_upto = EConstr.kind_upto
 

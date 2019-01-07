@@ -15,7 +15,6 @@ open Names
 open Termops
 open EConstr
 open Decl_kinds
-open Evarutil
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
@@ -50,24 +49,26 @@ let rec decompose len c t accu =
     decompose (pred len) c t (LocalDef (na, b, u) :: accu)
   | _ -> assert false
 
-let rec shrink ctx sign c t accu =
+let rec shrink ctx sign c t targs accu =
   let open Constr in
   let open CVars in
   match ctx, sign with
-  | [], [] -> (c, t, accu)
+  | [], [] -> (c, t, accu, targs)
   | p :: ctx, decl :: sign ->
       if noccurn 1 c && noccurn 1 t then
         let c = subst1 mkProp c in
         let t = subst1 mkProp t in
-        shrink ctx sign c t accu
+        let targs = subst1 mkProp targs in
+        shrink ctx sign c t targs accu
       else
         let c = Term.mkLambda_or_LetIn p c in
         let t = Term.mkProd_or_LetIn p t in
-        let accu = if RelDecl.is_local_assum p
-                   then mkVar (NamedDecl.get_id decl) :: accu
-                   else accu
-    in
-    shrink ctx sign c t accu
+        let accu, targs =
+          let v = mkVar (NamedDecl.get_id decl) in
+          (if RelDecl.is_local_assum p then v :: accu else accu),
+          subst1 v targs
+        in
+        shrink ctx sign c t targs accu
 | _ -> assert false
 
 let shrink_entry sign const =
@@ -80,12 +81,12 @@ let shrink_entry sign const =
   let () = assert (Future.is_over const.const_entry_body) in
   let ((body, uctx), eff) = Future.force const.const_entry_body in
   let (body, typ, ctx) = decompose (List.length sign) body typ [] in
-  let (body, typ, args) = shrink ctx sign body typ [] in
+  let (body, typ, args, ty_bodyargs) = shrink ctx sign body typ typ [] in
   let const = { const with
     const_entry_body = Future.from_val ((body, uctx), eff);
     const_entry_type = Some typ;
   } in
-  (const, args)
+  (const, args, ty_bodyargs)
 
 let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let open Tacticals.New in
@@ -107,26 +108,24 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
         else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, Environ.empty_named_context_val) in
   let id = Namegen.next_global_ident_away id (pf_ids_set_of_hyps gl) in
-  let concl = match goal_type with
+  let orig_concl = match goal_type with
               | None ->  Proofview.Goal.concl gl
               | Some ty -> ty in
-  let concl = it_mkNamedProd_or_LetIn concl sign in
-  let concl =
-    try flush_and_check_evars !evdref concl
-    with Uninstantiated_evar _ ->
-      CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.") in
+  let concl = it_mkNamedProd_or_LetIn orig_concl sign in
+
+  let sigma_concl =
+    Evarutil.shrink !evdref (Evarutil.undefined_evars_of_term !evdref concl) in
 
   let evd, ctx, concl =
     (* FIXME: should be done only if the tactic succeeds *)
     let evd = Evd.minimize_universes !evdref in
     let ctx = Evd.universe_context_set evd in
-      evd, ctx, Evarutil.nf_evars_universes evd concl
+      evd, ctx, Evarutil.nf_evars_universes evd (EConstr.to_constr ~abort_on_undefined_evars:false !evdref concl)
   in
   let concl = EConstr.of_constr concl in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
-  let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~goal_kind:gk id sigma_concl secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -135,8 +134,9 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     let (_, info) = CErrors.push src in
     iraise (e, info)
   in
-  let const, args = shrink_entry sign const in
+  let const, args, const_args_typ = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
+  let const_args_typ = EConstr.of_constr const_args_typ in
   let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
   let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
   let cst () =
@@ -162,16 +162,24 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let eff = private_con_of_con (Global.safe_env ()) cst in
   let effs = concat_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
+  let unify = Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    match Evarconv.cumul env sigma const_args_typ orig_concl with
+    | Some sigma -> Proofview.Unsafe.tclEVARS sigma
+    | None ->
+      Pretype_errors.error_actual_type_core env sigma
+        { Environ.uj_val = applist (lem, args); uj_type = const_args_typ } orig_concl
+    end in
   let solve =
-    Proofview.tclEFFECTS effs <*>
-    tacK lem args
-  in
+    Proofview.tclEFFECTS effs <*> unify <*> tacK lem args in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) tac
   end
 
 let abstract_subproof ~opaque id gk tac =
-  cache_term_by_tactic_then ~opaque id gk tac (fun lem args -> Tactics.exact_no_check (applist (lem, args)))
+  cache_term_by_tactic_then ~opaque id gk tac (fun lem args ->
+    Tactics.exact_no_check (applist (lem, args)))
 
 let anon_id = Id.of_string "anonymous"
 
