@@ -1007,7 +1007,7 @@ and solve_obligation_by_tac prg obls i tac =
         let evd = Evd.from_ctx prg.prg_ctx in
         let evd = Evd.update_sigma_env evd (Global.env ()) in
         match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
-                (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
+                (pi2 prg.prg_kind) evd with
         | None -> None
         | Some (t, ty, ctx) ->
           let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
