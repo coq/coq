@@ -109,6 +109,7 @@ Global Instance isisomorphism_compose' `{Funext}
        `{@IsIsomorphism (C -> D) F F' T}
 : @IsIsomorphism (C -> D) F F'' (T' o T)%natural_transformation
   := @isisomorphism_compose (C -> D) _ _ T' _ _ T _.
+Arguments isisomorphism_compose' {H C D F' F''} T' {F} T {H0 H1}.
 Section lemmas.
   Context `{Funext}.
   Variable C : PreCategory.

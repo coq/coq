@@ -106,7 +106,7 @@ let id_of_class cl =
     | _ -> assert false
 
 let instance_hook k info global imps ?hook cst =
-  Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
+  Impargs.maybe_declare_manual_implicits false cst imps;
   let info = intern_info info in
   Typeclasses.declare_instance (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
@@ -149,7 +149,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
   if program_mode then
     let hook _ _ vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-      Impargs.declare_manual_implicits false gr ~enriching:false [imps];
+      Impargs.declare_manual_implicits false gr [imps];
       let pri = intern_info pri in
       Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
     in
