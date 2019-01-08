@@ -2017,7 +2017,7 @@ end = struct (* {{{ *)
       find ~time:false ~batch:false ~fail:false e in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     Vernacentries.with_fail st fail (fun () ->
-    (if time then System.with_time ~batch else (fun x -> x)) (fun () ->
+    (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Proof_global.with_current_proof (fun _ p ->
       let Proof.{goals} = Proof.data p in

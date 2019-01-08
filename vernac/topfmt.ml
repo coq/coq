@@ -406,3 +406,24 @@ let with_output_to_file fname func input =
     deep_ft := Util.pi3 old_fmt;
     close_out channel;
     Exninfo.iraise reraise
+
+(* For coqtop -time, we display the position in the file,
+   and a glimpse of the executed command *)
+
+let pr_cmd_header {CAst.loc;v=com} =
+  let shorten s =
+    if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
+  in
+  let noblank s = String.map (fun c ->
+      match c with
+        | ' ' | '\n' | '\t' | '\r' -> '~'
+        | x -> x
+      ) s
+  in
+  let (start,stop) = Option.cata Loc.unloc (0,0) loc in
+  let safe_pr_vernac x =
+    try Ppvernac.pr_vernac x
+    with e -> str (Printexc.to_string e) in
+  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
+  in str "Chars " ++ int start ++ str " - " ++ int stop ++
+     str " [" ++ str cmd ++ str "] "

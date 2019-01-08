@@ -37,34 +37,6 @@ let vernac_echo ?loc in_chan = let open Loc in
       Feedback.msg_notice @@ str @@ really_input_string in_chan len
     ) loc
 
-(* For coqtop -time, we display the position in the file,
-   and a glimpse of the executed command *)
-
-let pp_cmd_header {CAst.loc;v=com} =
-  let shorten s =
-    if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
-  in
-  let noblank s = String.map (fun c ->
-      match c with
-	| ' ' | '\n' | '\t' | '\r' -> '~'
-	| x -> x
-      ) s
-  in
-  let (start,stop) = Option.cata Loc.unloc (0,0) loc in
-  let safe_pr_vernac x =
-    try Ppvernac.pr_vernac x
-    with e -> str (Printexc.to_string e) in
-  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
-  in str "Chars " ++ int start ++ str " - " ++ int stop ++
-     str " [" ++ str cmd ++ str "] "
-
-(* This is a special case where we assume we are in console batch mode
-   and take control of the console.
- *)
-let print_cmd_header com =
-  Pp.pp_with !Topfmt.std_ft (pp_cmd_header com);
-  Format.pp_print_flush !Topfmt.std_ft ()
-
 (* Reenable when we get back to feedback printing *)
 (* let is_end_of_input any = match any with *)
 (*     Stm.End_of_input -> true *)
@@ -88,7 +60,6 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
          due to the way it prints. *)
       let com = if state.time
         then begin
-          print_cmd_header com;
           CAst.make ?loc @@ VernacTime(state.time,com)
         end else com in
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
