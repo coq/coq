@@ -134,6 +134,15 @@ struct
           let ty' = f ty in
           if v == v' && ty == ty' then decl else LocalDef (na, v', ty')
 
+    let map_constr_het f = function
+      | LocalAssum (na, ty) ->
+          let ty' = f ty in
+          LocalAssum (na, ty')
+      | LocalDef (na, v, ty) ->
+          let v' = f v in
+          let ty' = f ty in
+          LocalDef (na, v', ty')
+
     (** Perform a given action on all terms in a given declaration. *)
     let iter_constr f = function
       | LocalAssum (_,ty) -> f ty
