@@ -402,6 +402,12 @@ Section Logic_lemmas.
 
   End equality.
 
+  Definition eq_sind_r :
+    forall (A:Type) (x:A) (P:A -> SProp), P x -> forall y:A, y = x -> P y.
+  Proof.
+    intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
+  Defined.
+
   Definition eq_ind_r :
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
     intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
