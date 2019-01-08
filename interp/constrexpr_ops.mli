@@ -113,9 +113,6 @@ val map_constr_expr_with_binders :
 val replace_vars_constr_expr :
   Id.t Id.Map.t -> constr_expr -> constr_expr
 
-(** Specific function for interning "in indtype" syntax of "match" *)
-val ids_of_cases_indtype : cases_pattern_expr -> Id.Set.t
-
 val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
 

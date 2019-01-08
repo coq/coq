@@ -1873,3 +1873,12 @@ Check match niln in listn O return O=O with niln => eq_refl end.
 (* (was failing up to May 2017) *)
 
 Check fun x => match x with (y,z) as t as w => (y+z,t) = (0,w) end.
+
+(* A test about binding variables of "in" clause of "match" *)
+(* (was failing from 8.5 to Dec 2018) *)
+
+Check match O in nat return nat with O => O | _ => O end.
+
+(* Checking that aliases are substituted in the correct order *)
+
+Check match eq_refl (1,0) in _ = (y as z, y' as z) return z = z with eq_refl => eq_refl end : 0=0.
