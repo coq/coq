@@ -150,6 +150,13 @@
 : "${fiat_crypto_CI_ARCHIVEURL:=${fiat_crypto_CI_GITURL}/archive}"
 
 ########################################################################
+# fiat_crypto_legacy
+########################################################################
+: "${fiat_crypto_legacy_CI_REF:=sp2019latest}"
+: "${fiat_crypto_legacy_CI_GITURL:=https://github.com/mit-plv/fiat-crypto}"
+: "${fiat_crypto_legacy_CI_ARCHIVEURL:=${fiat_crypto_legacy_CI_GITURL}/archive}"
+
+########################################################################
 # coq_dpdgraph
 ########################################################################
 : "${coq_dpdgraph_CI_REF:=coq-master}"
