@@ -57,6 +57,8 @@ let parse_user_entry s sep =
   in
   parse s sep table
 
+let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.dummy_pos} }
+
 %}
 
 %token <Coqpp_ast.code> CODE
@@ -64,7 +66,7 @@ let parse_user_entry s sep =
 %token <string> IDENT QUALID
 %token <string> STRING
 %token <int> INT
-%token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
+%token VERNAC TACTIC GRAMMAR DOC_GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
 %token RAW_PRINTED GLOB_PRINTED
 %token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
@@ -97,6 +99,7 @@ node:
 | vernac_extend { $1 }
 | tactic_extend { $1 }
 | argument_extend { $1 }
+| doc_gram { $1 }
 ;
 
 declare_plugin:
@@ -410,4 +413,59 @@ gram_token:
 gram_tokens:
 | gram_token { [$1] }
 | gram_token gram_tokens { $1 :: $2 }
+;
+
+doc_gram:
+| DOC_GRAMMAR doc_gram_entries
+  { GramExt { gramext_name = ""; gramext_globals=[]; gramext_entries = $2 } }
+
+doc_gram_entries:
+| { [] }
+| doc_gram_entry doc_gram_entries  { $1 :: $2 }
+;
+
+doc_gram_entry:
+| qualid_or_ident COLON LBRACKET PIPE doc_gram_rules RBRACKET
+  { { gentry_name = $1; gentry_pos = None;
+      gentry_rules = [{ grule_label = None; grule_assoc = None; grule_prods = $5; }] } }
+| qualid_or_ident COLON LBRACKET RBRACKET
+  { { gentry_name = $1; gentry_pos = None;
+      gentry_rules = [{ grule_label = None; grule_assoc = None; grule_prods = []; }] } }
+;
+
+doc_gram_rules:
+| doc_gram_rule { [$1] }
+| doc_gram_rule PIPE doc_gram_rules { $1 :: $3 }
+;
+
+doc_gram_rule:
+| doc_gram_symbols_opt { { gprod_symbs = $1; gprod_body = no_code; } }
+;
+
+doc_gram_symbols_opt:
+| { [] }
+| doc_gram_symbols { $1 }
+| doc_gram_symbols SEMICOLON { $1 }
+;
+
+doc_gram_symbols:
+| doc_gram_symbol { [$1] }
+| doc_gram_symbols SEMICOLON doc_gram_symbol { $1 @ [$3] }
+;
+
+doc_gram_symbol:
+| IDENT EQUAL doc_gram_gram_tokens { (Some $1, $3) }
+| doc_gram_gram_tokens { (None, $1) }
+;
+
+doc_gram_gram_tokens:
+| doc_gram_gram_token { [$1] }
+| doc_gram_gram_token doc_gram_gram_tokens { $1 :: $2 }
+;
+
+doc_gram_gram_token:
+| qualid_or_ident { GSymbQualid ($1, None) }
+| LPAREN doc_gram_gram_tokens RPAREN { GSymbParen $2 }
+| LBRACKET doc_gram_rules RBRACKET { GSymbProd $2 }
+| STRING { GSymbString $1 }
 ;

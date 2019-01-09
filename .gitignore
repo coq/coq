@@ -110,6 +110,9 @@ doc/stdlib/FullLibrary.coqdoc.tex
 doc/stdlib/html/
 doc/stdlib/index-body.html
 doc/stdlib/index-list.html
+doc/tools/docgram/productionlistGrammar
+doc/tools/docgram/editedGrammar
+doc/tools/docgram/prodnGrammar
 doc/tutorial/Tutorial.v.out
 doc/RecTutorial/RecTutorial.html
 doc/RecTutorial/RecTutorial.ps
