@@ -1,6 +1,7 @@
 # Coq
 
-[![pipeline status](https://gitlab.com/coq/coq/badges/master/pipeline.svg)](https://gitlab.com/coq/coq/commits/master)
+[![GitLab](https://gitlab.com/coq/coq/badges/master/pipeline.svg)](https://gitlab.com/coq/coq/commits/master)
+[![Azure Pipelines](https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master)](https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master)
 [![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds)
 [![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
 [![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
