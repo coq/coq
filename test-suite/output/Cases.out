@@ -7,7 +7,6 @@ fix F (t : t) : P t :=
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
-t_rect is not universe polymorphic
 Argument scopes are [function_scope function_scope _]
      = fun d : TT => match d with
                      | {| f3 := b |} => b
@@ -27,7 +26,6 @@ match Nat.eq_dec x y with
 end
      : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
 
-proj is not universe polymorphic
 Argument scopes are [nat_scope nat_scope function_scope _ _]
 foo = 
 fix foo (A : Type) (l : list A) {struct l} : option A :=
@@ -38,7 +36,6 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
   end
      : forall A : Type, list A -> option A
 
-foo is not universe polymorphic
 Argument scopes are [type_scope list_scope]
 uncast = 
 fun (A : Type) (x : I A) => match x with
@@ -46,12 +43,9 @@ fun (A : Type) (x : I A) => match x with
                             end
      : forall A : Type, I A -> A
 
-uncast is not universe polymorphic
 Argument scopes are [type_scope _]
 foo' = if A 0 then true else false
      : bool
-
-foo' is not universe polymorphic
 f = 
 fun H : B =>
 match H with
@@ -62,8 +56,6 @@ match H with
      else fun _ : P false => Logic.I) x
 end
      : B -> True
-
-f is not universe polymorphic
 The command has indeed failed with message:
 Non exhaustive pattern-matching: no clause found for pattern 
 gadtTy _ _
@@ -86,19 +78,14 @@ The constructor D (in type J) expects 3 arguments.
 lem1 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
-
-lem1 is not universe polymorphic
 lem2 = 
 fun dd : bool => if dd as aa return (aa = aa) then eq_refl else eq_refl
      : forall k : bool, k = k
 
-lem2 is not universe polymorphic
 Argument scope is [bool_scope]
 lem3 = 
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
-
-lem3 is not universe polymorphic
 1 subgoal
   
   x : nat

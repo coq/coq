@@ -9,7 +9,6 @@ fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
      : forall A : Type@{u}, PWrap@{u} A -> A
 (* u |=  *)
 
-punwrap is universe polymorphic
 Argument scopes are [type_scope _]
 Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
 
@@ -20,33 +19,26 @@ fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
      : forall A : Type@{u}, RWrap@{u} A -> A
 (* u |=  *)
 
-runwrap is universe polymorphic
 Argument scopes are [type_scope _]
 Wrap@{u} = fun A : Type@{u} => A
      : Type@{u} -> Type@{u}
 (* u |=  *)
 
-Wrap is universe polymorphic
 Argument scope is [type_scope]
 wrap@{u} = 
 fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
      : forall A : Type@{u}, Wrap@{u} A -> A
 (* u |=  *)
 
-wrap is universe polymorphic
 Arguments A, Wrap are implicit and maximally inserted
 Argument scopes are [type_scope _]
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u *)
-
-bar is universe polymorphic
 foo@{u UnivBinders.17 v} = 
 Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
      : Type@{max(u+1,UnivBinders.17+1,v+1)}
 (* u UnivBinders.17 v |=  *)
-
-foo is universe polymorphic
 Type@{i} -> Type@{j}
      : Type@{max(i+1,j+1)}
 (* {j i} |=  *)
@@ -56,8 +48,6 @@ Type@{i} -> Type@{j}
 mono = Type@{mono.u}
      : Type@{mono.u+1}
 (* {mono.u} |=  *)
-
-mono is not universe polymorphic
 mono
      : Type@{mono.u+1}
 Type@{mono.u}
@@ -78,22 +68,16 @@ bobmorane =
 let tt := Type@{UnivBinders.32} in
 let ff := Type@{UnivBinders.34} in tt -> ff
      : Type@{max(UnivBinders.31,UnivBinders.33)}
-
-bobmorane is not universe polymorphic
 The command has indeed failed with message:
 Universe u already bound.
 foo@{E M N} = 
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
-
-foo is universe polymorphic
 foo@{u UnivBinders.17 v} = 
 Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
      : Type@{max(u+1,UnivBinders.17+1,v+1)}
 (* u UnivBinders.17 v |=  *)
-
-foo is universe polymorphic
 Inductive Empty@{E} : Type@{E} :=  
 Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
 
@@ -119,26 +103,18 @@ bind_univs.mono =
 Type@{bind_univs.mono.u}
      : Type@{bind_univs.mono.u+1}
 (* {bind_univs.mono.u} |=  *)
-
-bind_univs.mono is not universe polymorphic
 bind_univs.poly@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
-
-bind_univs.poly is universe polymorphic
 insec@{v} = Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* v |=  *)
-
-insec is universe polymorphic
 Inductive insecind@{k} : Type@{k+1} :=  inseccstr : Type@{k} -> insecind@{k}
 
 For inseccstr: Argument scope is [type_scope]
 insec@{u v} = Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
-
-insec is universe polymorphic
 Inductive insecind@{u k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{u k}
 
@@ -146,29 +122,19 @@ For inseccstr: Argument scope is [type_scope]
 insec2@{u} = Prop
      : Type@{Set+1}
 (* u |=  *)
-
-insec2 is universe polymorphic
 inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
-
-inmod is universe polymorphic
 SomeMod.inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
-
-SomeMod.inmod is universe polymorphic
 inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)
-
-inmod is universe polymorphic
 Applied.infunct@{u v} = 
 inmod@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
-
-Applied.infunct is universe polymorphic
 axfoo@{i UnivBinders.56 UnivBinders.57} :
 Type@{UnivBinders.56} -> Type@{i}
 (* i UnivBinders.56 UnivBinders.57 |=  *)

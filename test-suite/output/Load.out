@@ -1,10 +1,6 @@
 f = 2
      : nat
-
-f is not universe polymorphic
 u = I
      : True
-
-u is not universe polymorphic
 The command has indeed failed with message:
 Files processed by Load cannot leave open proofs.

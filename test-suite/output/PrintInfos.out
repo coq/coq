@@ -46,7 +46,6 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
-Nat.add is not universe polymorphic
 Argument scopes are [nat_scope nat_scope]
 Nat.add : nat -> nat -> nat
 
@@ -86,7 +85,6 @@ Argument x is implicit and maximally inserted
 Expands to: Constant PrintInfos.bar
 *** [ bar : foo ]
 
-bar is not universe polymorphic
 Expanded type for implicit arguments
 bar : forall x : nat, x = 0
 

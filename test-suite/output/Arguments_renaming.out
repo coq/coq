@@ -52,7 +52,6 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
@@ -92,7 +91,6 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-myplus is not universe polymorphic
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
