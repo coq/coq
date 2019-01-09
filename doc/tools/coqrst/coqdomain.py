@@ -1189,7 +1189,6 @@ def setup(app):
     app.connect('doctree-resolved', CoqtopBlocksTransform.merge_consecutive_coqtop_blocks)
 
     # Add extra styles
-    app.add_stylesheet("fonts.css")
     app.add_stylesheet("ansi.css")
     app.add_stylesheet("coqdoc.css")
     app.add_javascript("notations.js")
