@@ -64,7 +64,7 @@ match local with
 
 | Global | Local | Discharge ->
   let do_instance = should_axiom_into_instance local in
-  let local = DeclareDef.get_locality ident ~kind:"axiom" local in
+  let local = Locality.bool_of_local ident ~kind:"axiom" local in
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())

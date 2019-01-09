@@ -16,6 +16,18 @@ let local_of_bool = function
   | true -> Local
   | false -> Global
 
+let warn_local_declaration =
+  CWarnings.create ~name:"local-declaration" ~category:"scope"
+    Pp.(fun (id,kind) ->
+        Names.Id.print id ++ strbrk " is declared as a local " ++ str kind)
+
+let bool_of_local id ~kind = function
+  | Discharge ->
+    (* If a Let is defined outside a section, then we consider it as a local definition *)
+    warn_local_declaration (id,kind);
+    true
+  | Local -> true
+  | Global -> false
 
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)

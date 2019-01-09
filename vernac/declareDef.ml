@@ -20,19 +20,6 @@ let warn_definition_not_visible =
         strbrk "Section definition " ++
         Names.Id.print ident ++ strbrk " is not visible from current goals")
 
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:"scope"
-    Pp.(fun (id,kind) ->
-        Names.Id.print id ++ strbrk " is declared as a local " ++ str kind)
-
-let get_locality id ~kind = function
-| Discharge ->
-  (* If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_declaration (id,kind);
-  true
-| Local -> true
-| Global -> false
-
 let declare_definition ident (local, p, k) ?hook ce pl imps =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let gr = match local with
@@ -41,7 +28,7 @@ let declare_definition ident (local, p, k) ?hook ce pl imps =
       let () = if Proof_global.there_are_pending_proofs () then warn_definition_not_visible ident in
       VarRef ident
   | Discharge | Local | Global ->
-      let local = get_locality ident ~kind:"definition" local in
+      let local = Locality.bool_of_local ident ~kind:"definition" local in
       let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
       let gr = ConstRef kn in
       let () = Declare.declare_univ_binders gr pl in
@@ -74,3 +61,6 @@ let prepare_parameter ~allow_evars ~poly sigma udecl typ =
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, (None(*proof using*), (typ, univs), None(*inline*))
+
+(* deprecated *)
+let get_locality = Locality.bool_of_local

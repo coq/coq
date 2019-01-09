@@ -13,6 +13,10 @@
 (** * Positioning locality for commands supporting discharging and export
     outside of modules *)
 
+val bool_of_local : Names.Id.t -> kind:string -> Decl_kinds.locality -> bool
+(** Warns if [Discharge]. [kind] is something like "definition" or
+   "axiom". *)
+
 (** For commands whose default is to discharge and export:
     Global is the default and is neutral;
     Local in a section deactivates discharge,

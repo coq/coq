@@ -189,10 +189,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           in
           VarRef id
       | Local | Global | Discharge ->
-          let local = match locality with
-          | Local | Discharge -> true
-          | Global -> false
-          in
+          let local = Locality.bool_of_local id ~kind:"definition" locality in
           let kn =
            declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
           let () = if should_suggest

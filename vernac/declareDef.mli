@@ -12,6 +12,7 @@ open Names
 open Decl_kinds
 
 val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
+[@@ocaml.deprecated "Use [Locality.bool_of_local]"]
 
 val declare_definition : Id.t -> definition_kind ->
   ?hook:Lemmas.declaration_hook ->
