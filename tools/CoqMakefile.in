@@ -721,7 +721,7 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 # projects. Note that extra options might be on the command line.
 VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLINE_VFILES)
 
-$(VDFILE).d: $(VFILES)
+$(VDFILE).d: $(wildcard $(VFILES))
 	$(SHOW)'COQDEP VFILES'
 	$(HIDE)$(COQDEP) -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
