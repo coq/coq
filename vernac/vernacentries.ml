@@ -2388,8 +2388,9 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
     control v
   | VernacRedirect (s, {v}) ->
     Topfmt.with_output_to_file s control v
-  | VernacTime (batch, {v}) ->
-    System.with_time ~batch control v;
+  | VernacTime (batch, com) ->
+    let header = if batch then Topfmt.pr_cmd_header com else Pp.mt () in
+    System.with_time ~batch ~header control com.CAst.v;
 
   and aux ~atts : _ -> unit =
     function
