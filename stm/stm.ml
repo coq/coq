@@ -2993,7 +2993,14 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
           let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
-          let id = VCS.new_node ~id:newtip () in
+          if not (get_allow_nested_proofs ()) && in_proof then
+            "Commands which may open proofs are not allowed in a proof unless you turn option Nested Proofs Allowed on."
+            |> Pp.str
+            |> (fun s -> (UserError (None, s), Exninfo.null))
+            |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
+            |> Exninfo.iraise
+          else
+            let id = VCS.new_node ~id:newtip () in
           let head_id = VCS.get_branch_pos head in
           let _st : unit = Reach.known_state ~doc ~cache:true head_id in (* ensure it is ok *)
           let step () =
