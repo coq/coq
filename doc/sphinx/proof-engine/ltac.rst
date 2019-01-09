@@ -8,6 +8,8 @@ This chapter documents the tactic language |Ltac|.
 We start by giving the syntax, and next, we present the informal
 semantics. To learn more about the language and
 especially about its foundations, please refer to :cite:`Del00`.
+(Note the examples in the paper won't work as-is; Coq has evolved
+since that paper was written.)
 
 .. example:: Basic tactic macros
 
@@ -88,91 +90,120 @@ mode but it can also be used in toplevel definitions as shown below.
 
         :n:`((try (repeat (@tactic__1 || @tactic__2)); @tactic__3); [ {+| @tactic } ]); @tactic__4`
 
-.. productionlist::  coq
-   ltac_expr         : `ltac_expr` ; `ltac_expr`
-                     : [> `ltac_expr` | ... | `ltac_expr` ]
-                     : `ltac_expr` ; [ `ltac_expr` | ... | `ltac_expr` ]
-                     : `ltac_expr3`
-   ltac_expr3        : do (`natural` | `ident`) `ltac_expr3`
-                     : progress `ltac_expr3`
-                     : repeat `ltac_expr3`
-                     : try `ltac_expr3`
-                     : once `ltac_expr3`
-                     : exactly_once `ltac_expr3`
-                     : timeout (`natural` | `ident`) `ltac_expr3`
-                     : time [`string`] `ltac_expr3`
-                     : only `selector`: `ltac_expr3`
-                     : `ltac_expr2`
-   ltac_expr2        : `ltac_expr1` || `ltac_expr3`
-                     : `ltac_expr1` + `ltac_expr3`
-                     : tryif `ltac_expr1` then `ltac_expr1` else `ltac_expr1`
-                     : `ltac_expr1`
-   ltac_expr1        : fun `name` ... `name` => `atom`
-                     : let [rec] `let_clause` with ... with `let_clause` in `atom`
-                     : match goal with `context_rule` | ... | `context_rule` end
-                     : match reverse goal with `context_rule` | ... | `context_rule` end
-                     : match `ltac_expr` with `match_rule` | ... | `match_rule` end
-                     : lazymatch goal with `context_rule` | ... | `context_rule` end
-                     : lazymatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : lazymatch `ltac_expr` with `match_rule` | ... | `match_rule` end
-                     : multimatch goal with `context_rule` | ... | `context_rule` end
-                     : multimatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : multimatch `ltac_expr` with `match_rule` | ... | `match_rule` end
-                     : abstract `atom`
-                     : abstract `atom` using `ident`
-                     : first [ `ltac_expr` | ... | `ltac_expr` ]
-                     : solve [ `ltac_expr` | ... | `ltac_expr` ]
-                     : idtac [ `message_token` ... `message_token`]
-                     : fail [`natural`] [`message_token` ... `message_token`]
-                     : gfail [`natural`] [`message_token` ... `message_token`]
-                     : fresh [ `component` … `component` ]
-                     : context `ident` [`term`]
-                     : eval `red_expr` in `term`
-                     : type of `term`
-                     : constr : `term`
-                     : uconstr : `term`
-                     : type_term `term`
-                     : numgoals
-                     : guard `test`
-                     : assert_fails `ltac_expr3`
-                     : assert_succeeds `ltac_expr3`
-                     : `tactic`
-                     : `qualid` `tacarg` ... `tacarg`
-                     : `atom`
-   atom              : `qualid`
-                     : ()
-                     : `int`
-                     : ( `ltac_expr` )
-   component : `string` | `qualid`
-   message_token     : `string` | `ident` | `int`
-   tacarg            : `qualid`
-                     : ()
-                     : ltac : `atom`
+.. insertgram ltac_expr tactic_atom
+
+.. productionlist:: coq
+   ltac_expr : `binder_tactic`
+             : `ltac_expr4`
+   binder_tactic : fun `fun_var_list` => `ltac_expr`
+                 : let `rec_opt` `let_clause_list` in `ltac_expr`
+                 : info `ltac_expr`
+   fun_var_list : `fun_var_list` `fun_var`
+                : `fun_var`
+   fun_var : `ident`
+           : _
+   rec_opt : rec
+           : `empty`
+   let_clause_list : `let_clause_list` with `let_clause`
+                   : `let_clause`
+   let_clause : `ident` := `ltac_expr`
+              : _ := `ltac_expr`
+              : `ident` `fun_var_list` := `ltac_expr`
+   ltac_expr4 : `ltac_expr3` ; `binder_tactic`
+              : `ltac_expr3` ; `ltac_expr3`
+              : `ltac_expr3` ; [ `multi_goal_tactics` ]
+              : `ltac_expr3` ; [ > `multi_goal_tactics` ]
+              : `ltac_expr` ; first `ssr_first_else`      (ssr plugin)
+              : `ltac_expr` ; first `ssrseqarg`      (ssr plugin)
+              : `ltac_expr` ; last `ssrseqarg`      (ssr plugin)
+              : `ltac_expr3`
+   multi_goal_tactics : `ltac_expr_opt` | `multi_goal_tactics`
+                      : `ltac_expr_opt` .. `or_opt` `ltac_expr_opt_list_or`
+                      : `ltac_expr`
+                      : `empty`
+   ltac_expr_opt : `ltac_expr`
+                 : `empty`
+   ltac_expr_opt_list_or : `ltac_expr_opt_list_or` | `ltac_expr_opt`
+                         : `ltac_expr_opt`
+   or_opt : |
+          : `empty`
+   ltac_expr3 : try `ltac_expr3`
+              : do `int_or_var` `ltac_expr3`
+              : do `ssrmmod` `ssrdotac` `ssrclauses`      (ssr plugin)
+              : do `ssrortacarg` `ssrclauses`      (ssr plugin)
+              : do `int_or_var` `ssrmmod` `ssrdotac` `ssrclauses`      (ssr plugin)
+              : timeout `int_or_var` `ltac_expr3`
+              : time `string_opt` `ltac_expr3`
+              : repeat `ltac_expr3`
+              : progress `ltac_expr3`
+              : once `ltac_expr3`
+              : exactly_once `ltac_expr3`
+              : infoH `ltac_expr3`
+              : abstract `ltac_expr2`
+              : abstract `ltac_expr2` using `ident`
+              : abstract `ssrdgens`      (ssr plugin)
+              : `only_selector` `ltac_expr3`
+              : `ltac_expr2`
+   ltac_expr2 : `ltac_expr1` + `binder_tactic`
+              : `ltac_expr1` + `ltac_expr2`
+              : tryif `ltac_expr` then `ltac_expr` else `ltac_expr2`
+              : `ltac_expr1` || `binder_tactic`
+              : `ltac_expr1` || `ltac_expr2`
+              : `ltac_expr1`
+   ltac_expr1 : `ltac_match_term`
+              : `ltac_match_goal`
+              : first [ `ltac_expr_list_or_opt` ]
+              : solve [ `ltac_expr_list_or_opt` ]
+              : idtac `message_token_list_opt`
+              : `failkw` `int_or_var_opt` `message_token_list_opt`
+              : `simple_tactic`
+              : `tactic_arg`
+              : `qualid` `tactic_arg_compat_list_opt`
+              : `ltac_expr` `ssrintros_ne`      (ssr plugin)
+              : `ltac_expr0`
+   ltac_expr_list_or_opt : `ltac_expr_list_or`
+                         : `empty`
+   ltac_expr_list_or : `ltac_expr_list_or` | `ltac_expr`
+                     : `ltac_expr`
+   message_token_list_opt : `message_token_list_opt` `message_token`
+                          : `empty`
+   message_token : `ident`
+                 : `string`
+                 : `int`
+   int_or_var_opt : `int_or_var`
+                  : `empty`
+   failkw : fail
+          : gfail
+   tactic_arg : eval `red_expr` in `term`
+              : context `ident` [ `term` ]
+              : type of `term`
+              : fresh `fresh_id_list_opt`
+              : type_term `term`
+              : numgoals
+   fresh_id_list_opt : `fresh_id_list_opt` `fresh_id`
+                     : `empty`
+   fresh_id : `string`
+            : `qualid`
+   tactic_arg_compat_list_opt : `tactic_arg_compat_list_opt` `tactic_arg_compat`
+                              : `empty`
+   tactic_arg_compat : `tactic_arg`
                      : `term`
-   let_clause        : `ident` [`name` ... `name`] := `ltac_expr`
-   context_rule      : `context_hyp`, ..., `context_hyp` |- `cpattern` => `ltac_expr`
-                     : `cpattern` => `ltac_expr`
-                     : |- `cpattern` => `ltac_expr`
-                     : _ => `ltac_expr`
-   context_hyp       : `name` : `cpattern`
-                     : `name` := `cpattern` [: `cpattern`]
-   match_rule        : `cpattern` => `ltac_expr`
-                     : context [`ident`] [ `cpattern` ] => `ltac_expr`
-                     : _ => `ltac_expr`
-   test              : `int` = `int`
-                     : `int` (< | <= | > | >=) `int`
-   selector          : [`ident`]
-                     : `int`
-                     : (`int` | `int` - `int`), ..., (`int` | `int` - `int`)
-   toplevel_selector : `selector`
-                     : all
-                     : par
-                     : !
+                     : ()
+   ltac_expr0 : ( `ltac_expr` )      (ssr plugin)
+              : [ > `multi_goal_tactics` ]
+              : `tactic_atom`
+   tactic_atom : `int`
+               : `qualid`
+               : ()
 
 .. productionlist:: coq
    top              : [Local] Ltac `ltac_def` with ... with `ltac_def`
    ltac_def         : `ident` [`ident` ... `ident`] := `ltac_expr`
                     : `qualid` [`ident` ... `ident`] ::= `ltac_expr`
+
+**TODO: is "reference tactic_arg_compat_list_opt" still useful or obsolete?**
+
+**I found no uses in any .v file**
 
 .. _ltac-semantics:
 
@@ -258,50 +289,50 @@ following form:
 Goal selectors
 ~~~~~~~~~~~~~~
 
-We can restrict the application of a tactic to a subset of the currently
-focused goals with:
+Goal selectors restrict the application of a tactic to a subset of the currently
+focused goals.
+
+.. insertgram toplevel_selector range_selector
+
+.. productionlist:: coq
+   toplevel_selector : `selector` :
+                     : all :
+                     : ! :
+   only_selector : only `selector` :
+   selector : `range_selector_list_comma`
+            : [ `ident` ]
+   range_selector_list_comma : `range_selector_list_comma` , `range_selector`
+                             : `range_selector`
+   range_selector : `num` - `num`
+                  : `num`
+
+For a top-level tactic, the goal selector appears before the tactic:
 
 .. tacn:: @toplevel_selector : @ltac_expr
    :name: ... : ... (goal selector)
+   :undocumented:
 
-   We can also use selectors as a tactical, which allows to use them nested
-   in a tactic expression, by using the keyword ``only``:
+Within a tactic expression, goal selectors must appear between the ``only`` keyword and the tactic:
 
-   .. tacv:: only @selector : @ltac_expr
-      :name: only ... : ...
+.. tacn:: only @selector : @ltac_expr
+   :name: only ... : ...
 
-      When selecting several goals, the tactic :token:`ltac_expr` is applied globally to all
-      selected goals.
+   The tactic :token:`ltac_expr` is applied globally to each selected goal.
 
-   .. tacv:: [@ident] : @ltac_expr
+   * :n:`@range_selector_list :` selects a group of goals by one or more goal numbers
+     or ranges of goal numbers.
 
-      In this variant, :token:`ltac_expr` is applied locally to a goal previously named
-      by the user (see :ref:`existential-variables`).
+   * :n:`[ @ident ] :` selects a goal previously named by the user (see :ref:`existential-variables`).
 
-   .. tacv:: @num : @ltac_expr
+   * ``all :`` selects all currently focused goals.  Only available for top-level tactics.
 
-      In this variant, :token:`ltac_expr` is applied locally to the :token:`num`-th goal.
-
-   .. tacv:: {+, @num-@num} : @ltac_expr
-
-      In this variant, :n:`@ltac_expr` is applied globally to the subset of goals
-      described by the given ranges. You can write a single ``n`` as a shortcut
-      for ``n-n`` when specifying multiple ranges.
-
-   .. tacv:: all: @ltac_expr
-      :name: all: ...
-
-      In this variant, :token:`ltac_expr` is applied to all focused goals. ``all:`` can only
-      be used at the toplevel of a tactic expression.
-
-   .. tacv:: !: @ltac_expr
-
-      In this variant, if exactly one goal is focused, :token:`ltac_expr` is
-      applied to it. Otherwise the tactic fails. ``!:`` can only be
-      used at the toplevel of a tactic expression.
+   * :n:`! :` applies the tactic if exactly one goal is focused.  Otherwise the tactic fails.
+     Only available for top-level tactics.
 
    .. tacv:: par: @ltac_expr
       :name: par: ...
+
+      **TODO: probably move to tactic_mode description**
 
       In this variant, :n:`@ltac_expr` is applied to all focused goals in parallel.
       The number of workers can be controlled via the command line option
@@ -317,10 +348,10 @@ focused goals with:
 
    .. TODO change error message index entry
 
-For loop
-~~~~~~~~
+Do loop
+~~~~~~~
 
-There is a for loop that repeats a tactic :token:`num` times:
+The do loop repeats a tactic :token:`num` times:
 
 .. tacn:: do @num @ltac_expr
    :name: do
@@ -345,8 +376,8 @@ We have a repeat loop with:
    fails. The recursion stops in a subgoal when the tactic has failed *to make
    progress*. The tactic :n:`repeat @ltac_expr` itself never fails.
 
-Error catching
-~~~~~~~~~~~~~~
+Try: catching errors
+~~~~~~~~~~~~~~~~~~~~
 
 We can catch the tactic errors with:
 
@@ -781,46 +812,101 @@ local definitions) with:
 Pattern matching on terms
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We can carry out pattern matching on terms with:
+Use this form to match against a term:
 
-.. tacn:: match @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
+   .. insertgram ltac_match_term match_pattern
 
-   The expression :n:`@ltac_expr` is evaluated and should yield a term which is
-   matched against :n:`cpattern__1`. The matching is non-linear: if a
-   metavariable occurs more than once, it should match the same expression
-   every time. It is first-order except on the variables of the form :n:`@?id`
-   that occur in head position of an application. For these variables, the
+   .. productionlist:: coq
+      ltac_match_term : `match_key` `ltac_expr` with `or_opt` `match_rule_list_or` end
+      match_key : match
+                : multimatch
+                : lazymatch
+      match_rule_list_or : `match_rule_list_or` | `match_rule`
+                         : `match_rule`
+      match_rule : `match_pattern_alt` => `ltac_expr`
+      match_pattern_alt : `match_pattern`
+                        : _
+      match_pattern : context `ident_opt` [ `term` ]
+                    : `term`
+      ident_opt : `ident`
+                : `empty`
+
+Which is equivalent to
+
+**TODO: I need a way to include "match term" in the tactics index (tacn in this case).  @cpitclaudel**
+**can we extend the python code to support that?**
+
+**I suppose we want to list all the Ltac constructs in an index, right?  I guess in the tactics index?**
+
+.. prodn::
+   ltac_match_term += @match_key @ltac_expr with {? %| } {+| {| @match_pattern | _ } => @ltac_expr } end
+   :name: match term
+
+   The given term, :n:`@ltac_expr` in :n:`@ltac_match_term`, is evaluated and then
+   compared sequentially to each
+   :n:`@match_pattern` in order.  If there is a match and the associated
+   :n:`@ltac_expr` succeeds, the match is complete.  If the associated
+   :n:`@ltac_expr` fails, then matching continues with the next
+   :n:`@match_pattern`.  If no pattern succeeds, the construct raises a
+   "No matching clauses for match" error.
+
+   The pattern :n:`_` matches any term and stops further evaluation of match patterns.
+
+   Patterns may contain pattern variables in the form :n:`?@ident`.
+   The matching is non-linear: if a pattern variable occurs more than once in
+   a pattern, it must have
+   the same value for each occurrence for it to match.  Pattern variables are
+   substituted into each :n:`@ltac_expr__i` before it's applied.
+
+   **TODO Below: what is "the head position of an application"?  Can someone give an example of 2nd order matching??**
+
+   Matching is first-order except for variables in the form :n:`@?id`
+   that occur in the head position of an application. For these variables,
    matching is second-order and returns a functional term.
 
-   Alternatively, when a metavariable of the form :n:`?id` occurs under binders,
+   **TODO Below: are the :n:`x__n` just the metavariables or something else?**
+
+   Alternatively, when metavariable of the form :n:`?id` occur under binders
+   (such as ``?z`` in ``fun ?z => ...``),
    say :n:`x__1, …, x__n` and the expression matches, the
    metavariable is instantiated by a term which can then be used in any
    context which also binds the variables :n:`x__1, …, x__n` with
    same types. This provides with a primitive form of matching under
-   context which does not require manipulating a functional term.
+   context which does not require manipulating a functional term.  :ref:`Example <match_with_holes_ex>`
 
-   If the matching with :n:`@cpattern__1` succeeds, then :n:`@ltac_expr__1` is
-   evaluated into some value by substituting the pattern matching
-   instantiations to the metavariables. If :n:`@ltac_expr__1` evaluates to a
+   **TODO Below:**
+
+   * **What is meant by "is in _position_ to be applied to a goal"?  Is this a technical**
+     **term or  just convoluted language?**
+
+   * **does "is not in position to be applied to a goal" just mean "doesn't match"?**
+
+   If :n:`@ltac_expr__i` evaluates to a
    tactic and the match expression is in position to be applied to a goal
    (e.g. it is not bound to a variable by a :n:`let in`), then this tactic is
    applied. If the tactic succeeds, the list of resulting subgoals is the
-   result of the match expression. If :n:`@ltac_expr__1` does not evaluate to a
+   result of the match expression. If :n:`@ltac_expr__i` does not evaluate to a
    tactic or if the match expression is not in position to be applied to a
-   goal, then the result of the evaluation of :n:`@ltac_expr__1` is the result
+   goal, then the result of the evaluation of :n:`@ltac_expr__i` is the result
    of the match expression.
 
-   If the matching with :n:`@cpattern__1` fails, or if it succeeds but the
-   evaluation of :n:`@ltac_expr__1` fails, or if the evaluation of
-   :n:`@ltac_expr__1` succeeds but returns a tactic in execution position whose
-   execution fails, then :n:`cpattern__2` is used and so on. The pattern
-   :n:`_` matches any term and shadows all remaining patterns if any. If all
-   clauses fail (in particular, there is no pattern :n:`_`) then a
-   no-matching-clause error is raised.
+   **TODO The following description of the match_keys may be wrong.**
 
-   Failures in subsequent tactics do not cause backtracking to select new
-   branches or inside the right-hand side of the selected branch even if it
-   has backtracking points.
+   **I need an example that distinguishes multimatch from match**
+
+   A :n:`@match_key` of `match` disables backtracking in the :n:`@ltac_expr__i` even if it has
+   backtracking points.
+
+   `multimatch` allows backtracking in :n:`@ltac_expr__i`
+   If all those backtracking points fail then it will try to select a new matching branch.
+
+   `lazymatch` allows backtracking in :n:`@ltac_expr__i`.
+   If all those backtracking points fail, the overall match construct fails
+   rather than selecting a new matching branch.
+
+   :ref:`Example of these <match_vs_lazymatch_ex>`
+
+   The syntax :n:`match …` is, in fact, a shorthand for :n:`once multimatch …`.
 
    .. exn:: No matching clauses for match.
 
@@ -830,82 +916,161 @@ We can carry out pattern matching on terms with:
 
       This happens when :n:`@ltac_expr` does not denote a term.
 
-   .. tacv:: multimatch @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
+   The :n:`@match_pattern` using `context` matches any term with a subterm matching
+   :n:`@lconstr_pattern`. If there is a match, the optional :n:`@ident` is assigned the "matched
+   context", i.e. the initial term where the matched subterm is replaced by a
+   hole. The example below will show how to use such term contexts.
 
-      Using multimatch instead of match will allow subsequent tactics to
-      backtrack into a right-hand side tactic which has backtracking points
-      left and trigger the selection of a new matching branch when all the
-      backtracking points of the right-hand side have been consumed.
+   If the evaluation of the right-hand-side of a valid match fails, the next
+   matching subterm is tried. If no further subterm matches, the next clause
+   is tried. Matching subterms are considered top to bottom and from left to
+   right (with respect to the raw printing obtained by setting option
+   :flag:`Printing All`).
 
-      The syntax :n:`match …` is, in fact, a shorthand for :n:`once multimatch …`.
+.. _match_term_context_ex:
 
-   .. tacv:: lazymatch @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
+   .. example:: Multiple matches for a "context" pattern.
 
-      Using lazymatch instead of match will perform the same pattern
-      matching procedure but will commit to the first matching branch
-      rather than trying a new matching if the right-hand side fails. If
-      the right-hand side of the selected branch is a tactic with
-      backtracking points, then subsequent failures cause this tactic to
-      backtrack.
+      Internally "x <> y" is represented as "(not x y)", which produces the
+      first match.
 
-   .. tacv:: context @ident [@cpattern]
+      .. coqtop:: in reset
 
-      This special form of patterns matches any term with a subterm matching
-      cpattern. If there is a match, the optional :n:`@ident` is assigned the "matched
-      context", i.e. the initial term where the matched subterm is replaced by a
-      hole. The example below will show how to use such term contexts.
-
-      If the evaluation of the right-hand-side of a valid match fails, the next
-      matching subterm is tried. If no further subterm matches, the next clause
-      is tried. Matching subterms are considered top-bottom and from left to
-      right (with respect to the raw printing obtained by setting option
-      :flag:`Printing All`).
-
-   .. example::
-
-      .. coqtop:: all abort
-
-         Ltac f x :=
-           match x with
-             context f [S ?X] =>
-             idtac X;                    (* To display the evaluation order *)
-             assert (p := eq_refl 1 : X=1);    (* To filter the case X=1 *)
-             let x:= context f[O] in assert (x=O) (* To observe the context *)
-           end.
+         Ltac f t := match t with
+                    | context [ (not ?t) ] => idtac "?t = " t; fail
+                    | _ => idtac
+                    end.
          Goal True.
-         f (3+4).
+
+      .. coqtop:: all
+
+         f ((not True) <> (not False)).
+
+.. _match_with_holes_ex:
+
+   .. example:: Matching a pattern with holes
+
+      Notice the :tacn:`idtac` prints ``(z + 1)`` while the :tacn:`pose` substitutes
+      ``(x + 1)``.
+
+      .. coqtop:: in reset
+
+         Goal True.
+
+      .. coqtop:: all
+
+           match constr:(fun x => (x + 1) * 3) with
+           | fun z => ?y * 3 => idtac "y =" y; pose (fun z: nat => y * 5)
+           end.
+
+.. _match_vs_lazymatch_ex:
+
+   .. example:: Comparison of match, multimatch and lazymatch
+
+      **todo: how do match and multimatch differ?**
+
+      .. coqtop:: reset in
+
+         Goal True.
+
+      .. coqtop:: all
+
+         match False with
+         | False => idtac "try"; fail
+         | _ => easy
+         end.
+
+      .. coqtop:: reset in
+
+         Goal True.
+
+      .. coqtop:: all
+
+         multimatch False with
+         | False => idtac "try"; fail
+         | _ => easy
+         end.
+
+      .. coqtop:: reset in
+
+         Goal True.
+
+      .. coqtop:: all fail
+
+         lazymatch False with
+         | False => idtac "try"; fail
+         | _ => easy
+         end.
 
 .. _ltac-match-goal:
 
 Pattern matching on goals
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We can perform pattern matching on goals using the following expression:
+Use this form to match against goals.  These patterns have zero or
+more subpatterns to match hypotheses followed by a subpattern to match
+the conclusion.
 
-.. we should provide the full grammar here
+   .. insertgram ltac_match_goal match_pattern_opt
 
-.. tacn:: match goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
+   .. productionlist:: coq
+      ltac_match_goal : `match_key` `reverse_opt` goal with `or_opt` `match_context_rule_list_or` end
+      reverse_opt : reverse
+                  : `empty`
+      match_context_rule_list_or : `match_context_rule_list_or` | `match_context_rule`
+                                 : `match_context_rule`
+      match_context_rule : `match_hyp_list_comma_opt` |- `match_pattern` => `ltac_expr`
+                         : [ `match_hyp_list_comma_opt` |- `match_pattern` ] => `ltac_expr`
+                         : _ => `ltac_expr`
+      match_hyp_list_comma_opt : `match_hyp_list_comma`
+                               : `empty`
+      match_hyp_list_comma : `match_hyp_list_comma` , `match_hyp`
+                           : `match_hyp`
+      match_hyp : `name` : `match_pattern`
+                : `name` := `match_pattern_opt` `match_pattern`
+      match_pattern_opt : [ `match_pattern` ] :
+                        : `empty`
+
+**TODO this is an experiment (below).  Still need the tacn/name to define "match goal" in the index**
+**note that the prodn override the definitions in the productionlist (if they have ::=)**
+
+**Todo: remove the tacn:: when there's another way to put it in the tactics index**
+
+.. tacn:: match goal with {+| {+, @match_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
    :name: match goal
+   :undocumented:
 
-   If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i = 1, ..., m\ :sub:`1` is
-   matched (non-linear first-order unification) by a hypothesis of the
-   goal and if :n:`cpattern_1` is matched by the conclusion of the goal,
-   then :n:`@ltac_expr__1` is evaluated to :n:`v__1` by substituting the
-   pattern matching to the metavariables and the real hypothesis names
-   bound to the possible hypothesis names occurring in the hypothesis
-   patterns. If :n:`v__1` is a tactic value, then it is applied to the
-   goal. If this application fails, then another combination of hypotheses
-   is tried with the same proof context pattern. If there is no other
-   combination of hypotheses then the second proof context pattern is tried
-   and so on. If the next to last proof context pattern fails then
-   the last :n:`@ltac_expr` is evaluated to :n:`v` and :n:`v` is
-   applied. Note also that matching against subterms (using the :n:`context
-   @ident [ @cpattern ]`) is available and is also subject to yielding several
-   matchings.
+Or, equivalently:
 
-   Failures in subsequent tactics do not cause backtracking to select new
-   branches or combinations of hypotheses, or inside the right-hand side of
-   the selected branch even if it has backtracking points.
+   .. prodn::
+      ltac_match_goal += @match_key {? reverse } goal with {? %| } {+| @match_context_rule } end
+      :name: match goal
+
+   .. prodn::
+      match_context_rule += {| @match_goal_pattern | [ @match_goal_pattern ] | _ } => @ltac_expr
+
+   .. prodn::
+      match_goal_pattern ::= {*, @match_hyp } |- @match_pattern
+
+   .. prodn::
+      match_hyp += @name {| : | := {? [ @match_pattern ] } } @match_pattern
+
+   Each :n:`@match_context_rule` is compared sequentially to the current goal.  If each of the
+   :n:`@match_hyp` matches a hypothesis of the current goal AND
+   the :n:`@match_pattern` matches the conclusion of the goal AND the associated
+   :n:`@ltac_expr` succeeds, the match is complete.  If the associated :n:`@ltac_expr`
+   fails, evaluation continues with alternative matches for the hypotheses
+   :ref:`Example <match_goal_multiple_hyps_ex>`.  If
+   the associated :n:`@ltac_expr` fails for all alternatives, then matching continues with
+   the next :n:`@match_context_rule`.  If no pattern succeeds, the construct raises a
+   "No matching clauses" error.
+
+   The :n:`@match_pattern` ":n:`context @ident_opt [ @lconstr_pattern ]`" may produce
+   several alternative matchings.
+
+   **TODO how do the [ ... ] patterns work?  Is it like "context" for matching on a term?**
+
+   **I will copy some text from match term here, or maybe just link to it**
 
    .. exn:: No matching clauses for match goal.
 
@@ -914,33 +1079,69 @@ We can perform pattern matching on goals using the following expression:
 
    .. note::
 
-      It is important to know that each hypothesis of the goal can be matched
-      by at most one hypothesis pattern. The order of matching is the
-      following: hypothesis patterns are examined from right to left
-      (i.e. hyp\ :sub:`i,m`\ :sub:`i`` before hyp\ :sub:`i,1`). For each
-      hypothesis pattern, the goal hypotheses are matched in order (newest
-      first), but it possible to reverse this order (oldest first)
-      with the :n:`match reverse goal with` variant.
-
-   .. tacv:: multimatch goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
-
-      Using :n:`multimatch` instead of :n:`match` will allow subsequent tactics
-      to backtrack into a right-hand side tactic which has backtracking points
-      left and trigger the selection of a new matching branch or combination of
-      hypotheses when all the backtracking points of the right-hand side have
-      been consumed.
+      Each hypothesis pattern is matched to a distinct hypothesis in the context;
+      two patterns will never be matched to the same hypothesis.  Hypothesis patterns
+      are matched from left to right against the hypotheses in last to first order
+      (i.e. newest to oldest).  Using the ``reverse`` option matches hypotheses
+      first to last (i.e. oldest to newest).
 
       The syntax :n:`match [reverse] goal …` is, in fact, a shorthand for
       :n:`once multimatch [reverse] goal …`.
 
-   .. tacv:: lazymatch goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
+Examples:
 
-      Using lazymatch instead of match will perform the same pattern matching
-      procedure but will commit to the first matching branch with the first
-      matching combination of hypotheses rather than trying a new matching if
-      the right-hand side fails. If the right-hand side of the selected branch
-      is a tactic with backtracking points, then subsequent failures cause
-      this tactic to backtrack.
+.. _match_goal_hyps_ex:
+
+   .. example:: Matching hypotheses
+
+      Hypotheses are matched from the last hypothesis (which is by default the newest
+      hypothesis) to the first until the :n:`apply` succeeds.
+
+      .. coqtop:: reset all
+
+         Goal forall A B : Prop, A -> B -> (A->B).
+         intros.
+         match goal with
+         | H : _ |- _ => idtac "apply " H; apply H
+         end.
+
+.. _match_goal_hyps_rev_ex:
+
+   .. example:: Matching hypotheses with reverse
+
+      Hypotheses are matched from the first hypothesis to the last until the :n:`apply` succeeds.
+
+      .. coqtop:: reset all
+
+         Goal forall A B : Prop, A -> B -> (A->B).
+         intros.
+         match reverse goal with
+         | H : _ |- _ => idtac "apply " H; apply H
+         end.
+
+.. _match_goal_multiple_hyps_ex:
+
+   .. example:: Multiple ways to match hypotheses
+
+      Every possible match for the hypotheses is evaluated until the right-hand
+      side succeeds.  Note that H1 and H2 are never matched to the same hypothesis.
+      Observe that the number of permutations can grow as the factorial
+      of the number of hypotheses and hypothesis patterns.
+
+      .. coqtop:: reset all
+
+         Goal forall A B : Prop, A -> B -> (A->B).
+         intros A B H.
+         match goal with
+         | H1 : _, H2 : _ |- _ => idtac "match " H1 H2; fail
+         | _ => idtac
+         end.
+
+   **TODO Reviewers: can you give me examples for the following syntax?**
+
+   * **match_context_rule : [ match_hyps_list_opt |- match_pattern ] => ltac_expr**
+
+   * **match_pattern_opt : [ match_pattern ] :**
 
 Filling a term context
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -990,6 +1191,8 @@ Evaluation of a term can be performed with:
    :tacn:`compute`, :tacn:`simpl`, :tacn:`cbv`, :tacn:`lazy`, :tacn:`unfold`,
    :tacn:`fold`, :tacn:`pattern`.
 
+**TODO: list of tactics is incomplete.  Fix by defining read_expr somewhere**
+
 Recovering the type of a term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1031,7 +1234,7 @@ Counting the goals
 
    .. example::
 
-      .. coqtop:: in
+      .. coqtop:: reset in
 
          Ltac pr_numgoals := let n := numgoals in idtac "There are" n "goals".
 
