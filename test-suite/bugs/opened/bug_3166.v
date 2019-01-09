@@ -81,3 +81,4 @@ Goal forall T (x y : T) (p : x = y), True.
   compute in H0.
   change (fun (x' : T) (_ : y = x') => x' = y) with ((fun y => fun (x' : T) (_ : y = x') => x' = y) y) in H0.
   Fail pose proof (fun k => @eq_trans _ _ _ k H0).
+Abort.

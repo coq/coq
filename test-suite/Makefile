@@ -36,9 +36,10 @@ include ../Makefile.common
 # easily overridden
 LIB := ..
 BIN := $(shell cd ..; pwd)/bin/
+COQFLAGS?=
 
-coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite
-coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
+coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite $(COQFLAGS)
+coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
 coqtopbyte := $(BIN)coqtop.byte

@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-profile-ltac") -*- *)
+(* -*- coq-prog-args: ("-async-proofs" "off" "-profile-ltac") -*- *)
 Require Coq.ZArith.BinInt.
 Module WithIdTac.
   Ltac sleep := do 50 (idtac; let sleep := (eval vm_compute in Coq.ZArith.BinInt.Z.div_eucl) in idtac).
