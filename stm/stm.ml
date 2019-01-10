@@ -869,7 +869,6 @@ end = struct (* {{{ *)
        cur_id := id
 
     | { state = Error ie } ->
-       cur_id := id;
        Exninfo.iraise ie
 
     | _ ->
