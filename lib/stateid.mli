@@ -20,6 +20,7 @@ val initial : t
 val dummy : t
 val fresh : unit -> t
 val to_string : t -> string
+val print : t -> Pp.t
 
 val of_int : int -> t
 val to_int : t -> int
