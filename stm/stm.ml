@@ -2831,17 +2831,9 @@ let merge_proof_branch ~valid ?id qast keep brname =
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
 let handle_failure (e, info) vcs =
-  match Stateid.get info with
-  | None ->
-      VCS.restore vcs;
-      VCS.print ();
-      anomaly(str"error with no safe_id attached:" ++ spc() ++
-        CErrors.iprint_no_report (e, info) ++ str".")
-  | Some (safe_id, id) ->
-      stm_prerr_endline (fun () -> "Failed at state " ^ Stateid.to_string id);
-      VCS.restore vcs;
-      VCS.print ();
-      Exninfo.iraise (e, info)
+  VCS.restore vcs;
+  VCS.print ();
+  Exninfo.iraise (e, info)
 
 let snapshot_vio ~doc ldir long_f_dot_vo =
   let doc = finish ~doc in
