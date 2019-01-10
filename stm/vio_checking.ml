@@ -95,6 +95,7 @@ let schedule_vio_checking j fs =
     done;
     let pid, ret = Unix.wait () in
     if ret <> Unix.WEXITED 0 then rc := 1;
+    Worker.kill (Pool.find pid !pool);
     pool := Pool.remove pid !pool;
   done;
   exit !rc
@@ -137,6 +138,7 @@ let schedule_vio_compilation j fs =
     done;
     let pid, ret = Unix.wait () in
     if ret <> Unix.WEXITED 0 then rc := 1;
+    Worker.kill (Pool.find pid !pool);
     pool := Pool.remove pid !pool;
   done;
   exit !rc
