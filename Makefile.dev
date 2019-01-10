@@ -63,7 +63,7 @@ revision:
 
 coqlight: theories-light tools coqbinaries
 
-states: theories/Init/Prelude.vo
+states: theories/Init/Prelude.$(VO)
 
 miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte
