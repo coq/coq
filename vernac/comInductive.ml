@@ -24,7 +24,7 @@ open Constrexpr_ops
 open Constrintern
 open Impargs
 open Reductionops
-open Indtypes
+open Type_errors
 open Pretyping
 open Indschemes
 open Context.Rel.Declaration
@@ -304,7 +304,7 @@ let inductive_levels env evd poly arities inds =
         let evd =
           if Sorts.is_set du then
             if not (Evd.check_leq evd cu Univ.type0_univ) then
-              raise (Indtypes.InductiveError Indtypes.LargeNonPropInductiveNotInType)
+              raise (InductiveError LargeNonPropInductiveNotInType)
             else evd
           else evd
             (* Evd.set_leq_sort env evd (Type cu) du *)

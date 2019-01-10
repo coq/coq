@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Indtypes
 open Environ
 open Type_errors
 open Pretype_errors

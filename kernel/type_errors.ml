@@ -68,6 +68,20 @@ type type_error = (constr, types) ptype_error
 
 exception TypeError of env * type_error
 
+type inductive_error =
+  | NonPos of env * constr * constr
+  | NotEnoughArgs of env * constr * constr
+  | NotConstructor of env * Id.t * constr * constr * int * int
+  | NonPar of env * constr * int * constr * constr
+  | SameNamesTypes of Id.t
+  | SameNamesConstructors of Id.t
+  | SameNamesOverlap of Id.t list
+  | NotAnArity of env * constr
+  | BadEntry
+  | LargeNonPropInductiveNotInType
+
+exception InductiveError of inductive_error
+
 let nfj env {uj_val=c;uj_type=ct} =
   {uj_val=c;uj_type=nf_betaiota env ct}
 

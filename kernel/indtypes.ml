@@ -56,7 +56,7 @@ let is_constructor_head t =
 (* Various well-formedness check for inductive declarations            *)
 
 (* Errors related to inductive constructions *)
-type inductive_error =
+type inductive_error = Type_errors.inductive_error =
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
   | NotConstructor of env * Id.t * constr * constr * int * int

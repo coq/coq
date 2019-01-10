@@ -15,7 +15,6 @@ open Nameops
 open Namegen
 open Constr
 open Termops
-open Indtypes
 open Environ
 open Pretype_errors
 open Type_errors
