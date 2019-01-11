@@ -786,8 +786,6 @@ ifdef QUICK
 	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio plugins/**.vio'
 	$(HIDE)$(BOOTCOQC:-compile=-schedule-vio2vo) $(NJOBS) \
 		$(THEORIESVO) $(PLUGINSVO)
-	@# this should be done by -schedule-vio2vo, see #9334
-	$(HIDE)touch $(THEORIESVO:.$(VO)=.vo) $(PLUGINSVO:.$(VO)=.vo)
 endif
 
 coqlib.timing.diff: theories.timing.diff plugins.timing.diff

@@ -125,6 +125,7 @@ let schedule_vio_compilation j fs =
     | s :: rest -> s :: filter_argv b rest in
   let prog = Sys.argv.(0) in  
   let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
+  let all_jobs = !jobs in
   let make_job () =
     let f, t = List.hd !jobs in
     jobs := List.tl !jobs;
@@ -141,6 +142,12 @@ let schedule_vio_compilation j fs =
     Worker.kill (Pool.find pid !pool);
     pool := Pool.remove pid !pool;
   done;
+  if !rc = 0 then begin
+    (* set the access and last modification time of all files to the same t
+     * not to confuse make into thinking that some of them are outdated *)
+    let t = Unix.gettimeofday () in
+    List.iter (fun (f,_) -> Unix.utimes (f^".vo") t t) all_jobs;
+  end;
   exit !rc
 
   
