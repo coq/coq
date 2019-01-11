@@ -71,7 +71,7 @@ azure-pipelines.yml @coq/ci-maintainers
 /man/             @silene
 # Secondary maintainer @maximedenes
 
-/doc/plugin_tutorial/ @ybertot
+/doc/plugin_tutorial/ @coq/plugin-tutorial-maintainers
 
 ########## Coqchk ##########
 
