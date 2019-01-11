@@ -126,6 +126,8 @@ TIME_OF_PRETTY_BUILD_FILE        ?= time-of-build-pretty.log
 TIME_OF_PRETTY_BOTH_BUILD_FILE   ?= time-of-build-both.log
 TIME_OF_PRETTY_BUILD_EXTRA_FILES ?= - # also output to the command line
 
+TGTS ?=
+
 ########## End of parameters ##################################################
 # What follows may be relevant to you only if you need to
 # extend this Makefile.  If so, look for 'Extension point' here and
@@ -237,6 +239,11 @@ vo_to_obj = $(addsuffix .o,\
   $(filter-out Warning: Error:,\
   $(shell $(COQTOP) -q -noinit -batch -quiet -print-mod-uid $(1))))
 strip_dotslash = $(patsubst ./%,%,$(1))
+
+# without this we get undefined variables in the expansion for the
+# targets of the [deprecated,use-mllib-or-mlpack] rule
+with_undef = $(if $(filter-out undefined, $(origin $(1))),$($(1)))
+
 VO = vo
 
 VOFILES = $(VFILES:.v=.$(VO))
@@ -269,14 +276,14 @@ CMXSFILES = \
 PACKEDFILES = \
 	$(call strip_dotslash, \
 	  $(foreach lib, \
-            $(call strip_dotslash, \
-	       $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES)),$($(lib))))
+	    $(call strip_dotslash, \
+	       $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES)),$(call with_undef,$(lib))))
 # files that are archived into a .cma (mllib)
 LIBEDFILES = \
 	$(call strip_dotslash, \
 	  $(foreach lib, \
-            $(call strip_dotslash, \
-	       $(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES)),$($(lib))))
+	    $(call strip_dotslash, \
+	       $(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES)),$(call with_undef,$(lib))))
 CMIFILESTOINSTALL = $(filter-out $(addsuffix .cmi,$(PACKEDFILES)),$(CMIFILES))
 CMOFILESTOINSTALL = $(filter-out $(addsuffix .cmo,$(PACKEDFILES)),$(CMOFILES))
 OBJFILES = $(call vo_to_obj,$(VOFILES))
@@ -681,11 +688,11 @@ $(GHTMLFILES): %.g.html: %.v %.glob
 
 # Dependency files ############################################################
 
-ifneq ($(filter-out archclean clean cleanall printenv make-pretty-timed make-pretty-timed-before make-pretty-timed-after print-pretty-timed print-pretty-timed-diff print-pretty-single-time-diff,$(MAKECMDGOALS)),)
- -include $(ALLDFILES)
-else
- ifeq ($(MAKECMDGOALS),)
+ifndef MAKECMDGOALS
   -include $(ALLDFILES)
+else
+  ifneq ($(filter-out archclean clean cleanall printenv make-pretty-timed make-pretty-timed-before make-pretty-timed-after print-pretty-timed print-pretty-timed-diff print-pretty-single-time-diff,$(MAKECMDGOALS)),)
+   -include $(ALLDFILES)
  endif
 endif
 
@@ -784,3 +791,7 @@ debug:
 .PHONY: debug
 
 .DEFAULT_GOAL := all
+
+# Local Variables:
+# mode: makefile-gmake
+# End:

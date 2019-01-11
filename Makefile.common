@@ -168,6 +168,8 @@ LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cmo=.cmx)
 
 ALLSTDLIB := test-suite/misc/universes/all_stdlib
 
+PLUGINTUTO := doc/plugin_tutorial
+
 # For emacs:
 # Local Variables:
 # mode: makefile

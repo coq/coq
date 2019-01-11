@@ -551,8 +551,12 @@ plugin:ci-mtac2:
 plugin:ci-paramcoq:
   <<: *ci-template
 
-plugin:ci-plugin_tutorial:
-  <<: *ci-template
+plugin:plugin-tutorial:
+  stage: test
+  dependencies: []
+  script:
+    - ./configure -local -warn-error yes
+    - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:
   <<: *ci-template-flambda
