@@ -1,11 +1,29 @@
 # Coq
 
-[![GitLab](https://gitlab.com/coq/coq/badges/master/pipeline.svg)](https://gitlab.com/coq/coq/commits/master)
-[![Azure Pipelines](https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master)](https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master)
-[![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds)
-[![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
-[![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg)](https://doi.org/10.5281/zenodo.1003420)
+[![GitLab][gitlab-badge]][gitlab-link]
+[![Azure Pipelines][azure-badge]][azure-link]
+[![Travis][travis-badge]][travis-link]
+[![Appveyor][appveyor-badge]][appveyor-link]
+[![Gitter][gitter-badge]][gitter-link]
+[![DOI][doi-badge]][doi-link]
+
+[gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
+[gitlab-link]: https://gitlab.com/coq/coq/commits/master
+
+[azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
+[azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
+
+[travis-badge]: https://travis-ci.org/coq/coq.svg?branch=master
+[travis-link]: https://travis-ci.org/coq/coq/builds
+
+[appveyor-badge]: https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true
+[appveyor-link]: https://ci.appveyor.com/project/coq/coq/branch/master
+
+[gitter-badge]: https://badges.gitter.im/coq/coq.svg
+[gitter-link]: https://gitter.im/coq/coq
+
+[doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
+[doi-link]: https://doi.org/10.5281/zenodo.1003420
 
 Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
