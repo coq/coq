@@ -30,9 +30,39 @@ mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
 ## Installation
-Download the pre-built packages of the [latest release](https://github.com/coq/coq/releases/latest) for Windows and MacOS;
-read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install Coq with OPAM;
-or refer to the [`INSTALL` file](INSTALL) for the procedure to install from source.
+
+[![latest packaged version(s)][repology-badge]][repology-link]
+
+[![Arch package][arch-badge]][arch-link]
+[![Chocolatey package][chocolatey-badge]][chocolatey-link]
+[![Homebrew package][homebrew-badge]][homebrew-link]
+[![MacPorts package][macports-badge]][macports-link]
+[![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
+
+[repology-badge]: https://repology.org/badge/latest-versions/coq.svg
+[repology-link]: https://repology.org/metapackage/coq/versions
+
+[arch-badge]: https://repology.org/badge/version-for-repo/arch/coq.svg
+[arch-link]: https://www.archlinux.org/packages/community/x86_64/coq/
+
+[chocolatey-badge]: https://repology.org/badge/version-for-repo/chocolatey/coq.svg
+[chocolatey-link]: https://chocolatey.org/packages/Coq
+
+[homebrew-badge]: https://repology.org/badge/version-for-repo/homebrew/coq.svg
+[homebrew-link]: https://formulae.brew.sh/formula/coq
+
+[macports-badge]: https://repology.org/badge/version-for-repo/macports/coq.svg
+[macports-link]: https://www.macports.org/ports.php?by=name&substr=coq
+
+[nixpkgs-badge]: https://repology.org/badge/version-for-repo/nix_unstable/coq.svg
+[nixpkgs-link]: https://nixos.org/nixos/packages.html#coq
+
+Download the pre-built packages of the [latest release][] for Windows and macOS;
+read the [help page][opam-using] on how to install Coq with OPAM;
+or refer to the [`INSTALL`](INSTALL) file for the procedure to install from source.
+
+[latest release]: https://github.com/coq/coq/releases/latest
+[opam-using]: https://coq.inria.fr/opam/www/using.html
 
 ## Documentation
 
