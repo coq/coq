@@ -93,6 +93,9 @@ Vernacular commands
 - The naming scheme for anonymous binders in a `Theorem` has changed to
   avoid conflicts with explicitly named binders.
 
+- Computation of implicit arguments now properly handles local definitions in the
+  binders for an `Instance`.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

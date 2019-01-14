@@ -301,10 +301,10 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) ~
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
     else tclass
   in
-  let sigma, k, u, cty, ctx', ctx, len, imps, subst =
+  let sigma, k, u, cty, ctx', ctx, imps, subst =
     let sigma, (impls, ((env', ctx), imps)) = interp_context_evars env sigma ctx in
     let sigma, (c', imps') = interp_type_evars_impls ~impls env' sigma tclass in
-    let len = List.length ctx in
+    let len = Context.Rel.nhyps ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum sigma c' in
     let ctx'' = ctx' @ ctx in
@@ -320,7 +320,7 @@ let new_instance ?(abstract=false) ?(global=false) ?(refine= !refine_instance) ~
         | LocalDef (_,b,_) -> (args, Vars.substl args' b :: args'))
         cl_context (args, [])
     in
-      sigma, cl, u, c', ctx', ctx, len, imps, args
+      sigma, cl, u, c', ctx', ctx, imps, args
   in
   let id =
     match instid with
