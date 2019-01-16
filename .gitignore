@@ -150,6 +150,7 @@ kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
 ide/index_urls.txt
 .lia.cache
+.nia.cache
 
 # emacs save files
 *~
