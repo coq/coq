@@ -621,7 +621,8 @@ let is_trivial_leq (l,d,r) =
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =
-  if Level.equal Level.prop l && d == Lt && not (Level.equal Level.set r) then
+  let open Univ in
+  if Level.equal Level.prop l && d != Eq && not (Level.equal Level.set r) then
     (Level.set, d, r)
   else cstr
 

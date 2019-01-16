@@ -462,3 +462,9 @@ Module ObligationRegression.
   Require Import CMorphisms.
   Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _ _}.
 End ObligationRegression.
+
+Axiom poly@{i} : forall(A : Type@{i}) (a : A), unit.
+Set Printing Universes.
+
+Definition nonpoly := @poly True Logic.I.
+Definition check := nonpoly@{}.
