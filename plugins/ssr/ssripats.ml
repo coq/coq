@@ -439,7 +439,8 @@ let rec ipat_tac1 ipat : bool tactic =
         ~conclusion:(fun ~to_clear:clr ->
             let inter = CList.intersect Id.equal clr extra_clear in
             List.iter duplicate_clear inter;
-            intro_clear (clr @ extra_clear))
+            let cl = CList.union Id.equal clr extra_clear in
+            intro_clear cl)
 
   | IOpDispatchBranches ipatss ->
       tclDISPATCH (List.map ipat_tac ipatss) <*> notTAC
@@ -525,10 +526,8 @@ and split_at_first_case ipats =
 let tclCompileIPats l =
   let rec elab = function
 
-  | (IPatClear []) :: (IPatView v) :: rest ->
-      (IOpView(Some [],v)) :: elab rest
   | (IPatClear cl) :: (IPatView v) :: rest ->
-      (IOpView(None,v)) :: IOpClear cl :: elab rest
+      (IOpView(Some cl,v)) :: elab rest
   | (IPatClear []) :: (IPatId id) :: rest ->
       (IOpClear [SsrHyp(None,id)]) :: IOpId id :: elab rest
 
