@@ -214,6 +214,6 @@ let classify_vernac e =
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtNow
-        | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
+        | (VtStartProof _ | VtUnknown), _ -> VtQuery, VtLater)
   in
   static_control_classifier e
