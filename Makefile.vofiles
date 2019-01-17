@@ -2,14 +2,20 @@
 # This file calls [find] and as such is not suitable for inclusion in
 # the test suite Makefile, unlike Makefile.common.
 
+ifdef QUICK
+VO=vio
+else
+VO=vo
+endif
+
 ###########################################################################
 # vo files
 ###########################################################################
 
-THEORIESVO := $(patsubst %.v,%.vo,$(shell find theories -type f -name "*.v"))
-PLUGINSVO := $(patsubst %.v,%.vo,$(shell find plugins -type f -name "*.v"))
+THEORIESVO := $(patsubst %.v,%.$(VO),$(shell find theories -type f -name "*.v"))
+PLUGINSVO := $(patsubst %.v,%.$(VO),$(shell find plugins -type f -name "*.v"))
 ALLVO := $(THEORIESVO) $(PLUGINSVO)
-VFILES := $(ALLVO:.vo=.v)
+VFILES := $(ALLVO:.$(VO)=.v)
 
 ## More specific targets
 
@@ -20,22 +26,27 @@ THEORIESLIGHTVO:= \
 # remove .vo, replace theories and plugins by Coq, and replace slashes by dots
 vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=))))
 
-ALLMODS:=$(call vo_to_mod,$(ALLVO))
+ALLMODS:=$(call vo_to_mod,$(ALLVO:.$(VO)=.vo))
 
 
 # Converting a stdlib filename into native compiler filenames
 # Used for install targets
-vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.cm*)))))
+vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.cm*)))))
 
-vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.o)))))
+vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.o)))))
 
-GLOBFILES:=$(ALLVO:.vo=.glob)
+ifdef QUICK
+GLOBFILES:=
+else
+GLOBFILES:=$(ALLVO:.$(VO)=.glob)
+endif
+
 ifdef NATIVECOMPUTE
 NATIVEFILES := $(call vo_to_cm,$(ALLVO)) $(call vo_to_obj,$(ALLVO))
 else
 NATIVEFILES :=
 endif
-LIBFILES:=$(ALLVO) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
+LIBFILES:=$(ALLVO:.$(VO)=.vo) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:

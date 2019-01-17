@@ -57,6 +57,9 @@ TIME_OF_PRETTY_BUILD_EXTRA_FILES ?= - # also output to the command line
 BEFORE ?=
 AFTER ?=
 
+# Number of parallel jobs for -schedule-vio2vo
+NJOBS ?= 2
+
 ###########################################################################
 # Default starting rule
 ###########################################################################
@@ -543,7 +546,7 @@ $(CSDPCERTBYTE): $(CSDPCERTCMO)
 
 VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
 
-validate: $(CHICKEN) | $(ALLVO)
+validate: $(CHICKEN) | $(ALLVO:.$(VO)=.vo)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
@@ -779,13 +782,19 @@ $(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLLIBFILES) $(
 # since they are all mentioned in at least one Declare ML Module in some .v
 
 coqlib: theories plugins
+ifdef QUICK
+	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio plugins/**.vio'
+	$(HIDE)$(BOOTCOQC:-compile=-schedule-vio2vo) $(NJOBS) \
+		$(THEORIESVO) $(PLUGINSVO)
+endif
+
 coqlib.timing.diff: theories.timing.diff plugins.timing.diff
 
 theories: $(THEORIESVO)
 plugins: $(PLUGINSVO)
 
-theories.timing.diff: $(THEORIESVO:.vo=.v.timing.diff)
-plugins.timing.diff: $(PLUGINSVO:.vo=.v.timing.diff)
+theories.timing.diff: $(THEORIESVO:.$(VO)=.v.timing.diff)
+plugins.timing.diff: $(PLUGINSVO:.$(VO)=.v.timing.diff)
 
 .PHONY: coqlib theories plugins coqlib.timing.diff theories.timing.diff plugins.timing.diff
 
@@ -802,6 +811,10 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
 
+theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
+	$(SHOW)'COQC -quick -noinit $<'
+	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -quick -noglob
+
 # The general rule for building .vo files :
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
@@ -813,6 +826,10 @@ ifdef VALIDATE
 	$(HIDE)$(CHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
+
+%.vio: %.v theories/Init/Prelude.vio $(VO_TOOLS_DEP)
+	$(SHOW)'COQC -quick $<'
+	$(HIDE)$(BOOTCOQC) $< -quick -noglob
 
 %.v.timing.diff: %.v.before-timing %.v.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<

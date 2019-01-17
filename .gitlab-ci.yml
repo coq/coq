@@ -245,6 +245,12 @@ build:base+async:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
 
+build:quick:
+  <<: *build-template
+  variables:
+    COQ_EXTRA_CONF: "-native-compiler no"
+    QUICK: "1"
+
 windows64:
   <<: *windows-template
   variables:
@@ -460,6 +466,11 @@ validate:edge+flambda:
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
+
+validate:quick:
+  <<: *validate-template
+  dependencies:
+    - build:quick
 
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API

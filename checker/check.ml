@@ -329,7 +329,7 @@ let intern_from_file (dir, f) =
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
-       chk_pp (str " (was a vio file) ");
+       Flags.if_verbose chk_pp (str " (was a vio file) ");
       Option.iter (fun (_,_,b) -> if not b then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
