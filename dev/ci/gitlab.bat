@@ -49,10 +49,9 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=compcert ^
     -addon=extlib ^
     -addon=quickchick ^
-    -addon=coquelicot
-  REM addons with build issues
-  REM -addon=vst ^
-  REM -addon=aactactics ^
+    -addon=coquelicot ^
+    -addon=vst ^
+    -addon=aactactics
 ) ELSE (
   SET "EXTRA_ADDONS= "
 )
