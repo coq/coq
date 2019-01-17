@@ -529,6 +529,8 @@ let tclCompileIPats l =
       (IOpView(Some [],v)) :: elab rest
   | (IPatClear cl) :: (IPatView v) :: rest ->
       (IOpView(None,v)) :: IOpClear cl :: elab rest
+  | (IPatClear []) :: (IPatId id) :: rest ->
+      (IOpClear [SsrHyp(None,id)]) :: IOpId id :: elab rest
 
   (* boring code *)
   | [] -> []
