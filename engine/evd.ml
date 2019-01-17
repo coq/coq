@@ -1376,6 +1376,13 @@ module MiniEConstr = struct
     in
     UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
+  let to_constr_opt sigma c =
+    let evar_value ev = Some (existential_value sigma ev) in
+    try
+      Some (UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c)
+    with NotInstantiatedEvar ->
+      None
+
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
   let of_rel_decl d = d
