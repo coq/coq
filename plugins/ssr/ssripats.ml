@@ -39,7 +39,7 @@ type ssriop =
   | IOpRewrite of ssrocc * ssrdir
   | IOpView of ssrclear option * ssrview (* extra clears to be performed *)
 
-  | IOpClear of ssrclear
+  | IOpClear of ssrclear * ssrhyp option (* must clear, may clear *)
   | IOpSimpl of ssrsimpl
 
   | IOpEqGen of unit Proofview.tactic (* generation of eqn *)
@@ -70,7 +70,11 @@ let rec pr_ipatop = function
   | IOpView (None,vs) -> Pp.(prlist_with_sep mt (fun c -> str "/" ++ Ssrprinters.pr_ast_closure_term c) vs)
   | IOpView (Some cl,vs) -> Pp.(Ssrprinters.pr_clear Pp.spc cl ++ prlist_with_sep mt (fun c -> str "/" ++ Ssrprinters.pr_ast_closure_term c) vs)
 
-  | IOpClear cl -> Ssrprinters.pr_clear Pp.spc cl
+  | IOpClear (clmust,clmay) ->
+      Pp.(Ssrprinters.pr_clear spc clmust ++
+            match clmay with
+            | Some cl -> str "(try " ++ Ssrprinters.pr_clear spc [cl] ++ str")"
+            | None -> mt ())
   | IOpSimpl s -> Ssrprinters.pr_simpl s
 
   | IOpEqGen _ -> Pp.str "E:"
@@ -298,6 +302,13 @@ let tacCHECK_HYPS_EXIST hyps = Goal.enter begin fun gl ->
   tclUNIT ()
 end
 
+let tacFILTER_HYP_EXIST hyps k = Goal.enter begin fun gl ->
+  let ctx = Goal.hyps gl in
+  k (Option.bind hyps (fun h ->
+      if Ssrcommon.test_hyp_exists ctx h &&
+         Ssrcommon.(not_section_id (hyp_id h)) then Some h else None))
+end
+
 (** [=> []] *****************************************************************)
 
 (* calls t1 then t2 on each subgoal passing to t2 the index of the current
@@ -467,9 +478,16 @@ let rec ipat_tac1 ipat : bool tactic =
        ipatss
      <*> notTAC
 
-  | IOpClear ids ->
-      tacCHECK_HYPS_EXIST ids <*>
-      intro_clear (List.map Ssrcommon.hyp_id ids) <*>
+  | IOpClear (must,may) ->
+      tacCHECK_HYPS_EXIST must <*>
+      tacFILTER_HYP_EXIST may (fun may ->
+        let must = List.map Ssrcommon.hyp_id must in
+        let cl = Option.fold_left (fun cls (SsrHyp(_,id)) ->
+          if CList.mem_f Id.equal id cls then begin
+            duplicate_clear id;
+            cls
+          end else id :: cls) must may in
+        intro_clear cl) <*>
       notTAC
 
   | IOpSimpl x ->
@@ -528,8 +546,8 @@ let tclCompileIPats l =
 
   | (IPatClear cl) :: (IPatView v) :: rest ->
       (IOpView(Some cl,v)) :: elab rest
-  | (IPatClear []) :: (IPatId id) :: rest ->
-      (IOpClear [SsrHyp(None,id)]) :: IOpId id :: elab rest
+  | (IPatClear cl) :: (IPatId id) :: rest ->
+      (IOpClear (cl,Some (SsrHyp(None,id)))) :: IOpId id :: elab rest
 
   (* boring code *)
   | [] -> []
@@ -546,7 +564,7 @@ let tclCompileIPats l =
   | IPatRewrite(occ,dir) :: rest -> IOpRewrite(occ,dir) :: elab rest
   | IPatView vs :: rest -> IOpView (None,vs) :: elab rest
   | IPatSimpl s :: rest -> IOpSimpl s :: elab rest
-  | IPatClear cl :: rest -> IOpClear cl :: elab rest
+  | IPatClear cl :: rest -> IOpClear (cl,None) :: elab rest
 
   | IPatCase (Block seed) :: rest -> IOpCaseBlock seed :: elab rest
   | IPatCase (Regular bs) :: rest -> IOpCaseBranches (List.map elab bs) :: elab rest
@@ -853,9 +871,9 @@ let ssrmovetac = function
      gentac <*>
      tclLAST_GEN ~to_ind:false lastgen
        (tacVIEW_THEN_GRAB view ~conclusion) <*>
-     tclIPAT (IOpClear clr :: IpatMachine.tclCompileIPats ipats)
+     tclIPAT (IOpClear (clr,None) :: IpatMachine.tclCompileIPats ipats)
   | _::_ as view, (_, ({ gens = []; clr }, ipats)) ->
-     tclIPAT (IOpView (None,view) :: IOpClear clr :: IpatMachine.tclCompileIPats ipats)
+      tclIPAT (IOpView (None,view) :: IOpClear (clr,None) :: IpatMachine.tclCompileIPats ipats)
   | _, (Some pat, (dgens, ipats)) ->
     let dgentac = with_dgens dgens eqmovetac in
     dgentac <*> tclIPAT (eqmoveipats (IpatMachine.tclCompileIPats [pat]) (IpatMachine.tclCompileIPats ipats))

@@ -1592,9 +1592,13 @@ of the remaining subgoals.
 The first entry in the :token:`i_view` grammar rule, :n:`/@term`,
 represents a view (see section :ref:`views_and_reflection_ssr`).
 It interprets the top of the stack with the view :token:`term`.
-It is equivalent to ``move/term``. The optional flag ``{}`` can
-be used to signal that the :token:`term`, when it is a context entry,
-has to be cleared.
+It is equivalent to ``move/term``.
+
+A :token:`clear_switch` that immediately precedes an :token:`i_view`
+that happen to be a :token:`ident` is extended with that
+:token:`ident` and the :token:`clear_switch` is executed after the view.
+Eg ``{}/v`` is equivalent to ``/v{v}``.
+
 If the next :token:`i_item` is a view, then the view is
 applied to the assumption in top position once all the
 previous :token:`i_item` have been performed.
@@ -1615,8 +1619,9 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   a new constant, fact, or defined constant :token:`ident`, respectively.
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
-  An empty occurrence switch ``{}`` has the effect of clearing
-  the :token:`ident` before performing the introduction of :token:`ident`.
+  A :token:`clear_switch` (even an empty one) immediately preceding a
+  :token:`ident` is extended with that :token:`ident` if the identifier
+  points to an existing context entry.
   In other words by prefixing the :token:`ident` with ``{}`` one can
   *replace* the context entry.
 ``>``

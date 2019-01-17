@@ -66,7 +66,7 @@ let check_hyp_exists hyps (SsrHyp(_, id)) =
   try ignore(Context.Named.lookup id hyps)
   with Not_found -> errorstrm Pp.(str"No assumption is named " ++ Id.print id)
 
-let test_hypname_exists hyps id =
+let test_hyp_exists hyps (SsrHyp(_, id)) =
   try ignore(Context.Named.lookup id hyps); true
   with Not_found -> false
 

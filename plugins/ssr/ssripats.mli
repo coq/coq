@@ -44,7 +44,7 @@ type ssriop =
   | IOpRewrite of ssrocc * ssrdir
   | IOpView of ssrclear option * ssrview (* extra clears to be performed *)
 
-  | IOpClear of ssrclear
+  | IOpClear of ssrclear * ssrhyp option
   | IOpSimpl of ssrsimpl
 
   | IOpEqGen of unit Proofview.tactic (* generation of eqn *)

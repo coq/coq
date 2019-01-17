@@ -9,9 +9,9 @@ have {}H : True.
 by apply: H.
 Qed.
 
-Lemma test2 (H : True) : False -> False.
+Lemma test2 (H : True) : False -> False -> False.
 Proof.
-Fail move=> {}W.
+move=> {}W.
 move=> {}H.
 by apply: H.
 Qed.
