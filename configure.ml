@@ -1117,11 +1117,11 @@ let write_configml f =
   Array.iter
     (fun f ->
       let f' = "plugins/"^f in
-      if Sys.is_directory f' && f.[0] <> '.' then pr "  %S;\n" f')
+      if Sys.is_directory f' && f.[0] <> '.' then pr "  %S;\n" f)
     plugins;
   pr "]\n";
 
-  pr "\nlet all_src_dirs = core_src_dirs @ plugins_dirs\n";
+  pr "\nlet all_src_dirs = core_src_dirs @ List.map (fun s -> %S^s) plugins_dirs\n" "plugins/";
 
   close_out o;
   Unix.chmod f 0o444

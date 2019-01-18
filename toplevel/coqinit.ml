@@ -91,6 +91,11 @@ let libs_init_load_path ~load_init =
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
+  let plugin_path p =
+    let unix_path = coqlib / "plugins" / p in
+    let coq_path = Names.DirPath.make [Names.Id.of_string p;Libnames.coq_root] in
+    build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml:true
+  in
 
   (* current directory (not recursively!) *)
   [ { recursive = false;
@@ -101,8 +106,9 @@ let libs_init_load_path ~load_init =
     } ] @
 
   (* then standard library and plugins *)
-  [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false;
-   build_stdlib_path ~load_init ~unix_path:(coqlib/"plugins")  ~coq_path ~with_ml:true ] @
+  [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false] @
+
+  List.map plugin_path Coq_config.plugins_dirs @
 
   (* then user-contrib *)
   (if Sys.file_exists user_contrib then
