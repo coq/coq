@@ -242,6 +242,7 @@ fi
 # $5 [optional] module name (if different from archive)
 # $6 [optional] expand folder name (if different from module name)
 # $7 [optional] module base name (used as 2nd choice for patches, defaults to $5)
+# $8 [optional] extra tar arguments (unquoted!)
 # ------------------------------------------------------------------------------
 
 function get_expand_source_tar {
@@ -270,6 +271,20 @@ function get_expand_source_tar {
     basename=$name
   fi
 
+  if [ "$#" -ge 8 ] ; then
+    tarextra=$8
+  else
+    tarextra=""
+  fi
+
+  # INRIA GIT paths don't follow the naming scheme, but we still need the extension
+  # So as a hack, if the name is empty, $1 is taken as full url
+  if [ -n "$2" ] ; then
+    fullurl="$1/$2.$3"
+  else
+    fullurl="$1"
+  fi
+
   # Set logging target
   logtargetold=$LOGTARGET
   LOGTARGET=$name
@@ -279,15 +294,12 @@ function get_expand_source_tar {
     if [ -f "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" ] ; then
       cp "$SOURCE_LOCAL_CACHE_CFMT/$name.$3" "$TARBALLS"
     else
-      wget --progress=dot:giga "$1/$2.$3"
-      if file -i "$2.$3" | grep text/html; then
-        echo Download failed: "$1/$2.$3"
+      wget --progress=dot:giga  --output-document="$name.$3" "$fullurl"
+      if file -i "$name.$3" | grep text/html; then
+        echo Download failed: "$fullurl"
         echo The file wget downloaded is an html file:
-        cat "$2.$3"
+        cat "$name.$3"
         exit 1
-      fi
-      if [ ! "$2.$3" == "$name.$3" ] ; then
-        mv "$2.$3" "$name.$3"
       fi
       mv "$name.$3" "$TARBALLS"
       # Save the source archive in the source cache
@@ -317,7 +329,8 @@ function get_expand_source_tar {
       return 1
     fi
   else
-    logn untar tar xvaf "$TARBALLS/$name.$3" --strip $strip
+    # Parameter $8 is intentionally unquoted - it might contain several parameters
+    logn untar tar xvaf "$TARBALLS/$name.$3" --strip $strip $tarextra
   fi
 
   # Patch if patch file exists
@@ -351,6 +364,7 @@ function get_expand_source_tar {
 # $4 [optional] number of path levels to strip from tar (usually 1)
 # $5 [optional] module name (if different from archive)
 # $6 [optional] module base name (used as 2nd choice for patches, defaults to $5)
+# $7 [optional] extra tar arguments (unquoted!)
 # ------------------------------------------------------------------------------
 
 function build_prep {
@@ -373,6 +387,12 @@ function build_prep {
     basename=$name
   fi
 
+  if [ "$#" -ge 7 ] ; then
+    tarextra=$7
+  else
+    tarextra=""
+  fi
+
   # Set installer section to not set by default
   installersection=
 
@@ -385,7 +405,7 @@ function build_prep {
 
     touch "$FLAGFILES/$name.started"
 
-    get_expand_source_tar "$1" "$2" "$3" "$strip" "$name" "$name" "$basename"
+    get_expand_source_tar "$1" "$2" "$3" "$strip" "$name" "$name" "$basename" "$tarextra"
 
     cd "$name"
 
@@ -1155,8 +1175,7 @@ function make_camlp4 {
   if ! command camlp4 ; then
     make_ocaml
     make_findlib
-    if build_prep https://github.com/ocaml/camlp4/archive 4.06+2 tar.gz 1 camlp4-4.06+2 ; then
-      # See https://github.com/ocaml/camlp4/issues/41#issuecomment-112018910
+    if build_prep https://github.com/ocaml/camlp4/archive 4.07+1 tar.gz 1 camlp4-4.07+1; then
       logn configure ./configure
       # Note: camlp4 doesn't support -j 8, so don't pass MAKE_OPT
       log2 make all
@@ -1904,6 +1923,83 @@ function make_addon_quickchick {
     installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
     log1 make
     log2 make install
+    build_post
+  fi
+}
+
+# Flocq: Floating point library
+
+function make_addon_flocq {
+  if build_prep_overlay Flocq; then
+    installer_addon_section flocq "Flocq" "Coq library for floating point arithmetic" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake install
+    build_post
+  fi
+}
+
+# Coq-Interval: interval arithmetic and inequality proofs
+
+function make_addon_interval {
+  installer_addon_dependency_beg interval
+  make_addon_mathcomp
+  make_addon_coquelicot
+  make_addon_bignums
+  make_addon_flocq
+  installer_addon_dependency_end
+  if build_prep_overlay Interval; then
+    installer_addon_section interval "Interval" "Coq library and tactic for proving real inequalities" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake install
+    build_post
+  fi
+}
+
+# Coq-Interval: interval arithmetic and inequality proofs
+
+function install_boost {
+  # The extra tar parameter extracts only the boost headers, not the boost library source code (which is huge and takes a long time)
+  if build_prep https://dl.bintray.com/boostorg/release/1.69.0/source boost_1_69_0 tar.gz 1 boost_1_69_0 boost boost_1_69_0/boost; then
+    # Move extracted boost folder where mingw-gcc can find it
+    mv boost /usr/$TARGET_ARCH/sys-root/mingw/include
+    build_post
+  fi
+}
+
+function copy_gappa_dlls {
+  copy_coq_dll LIBGMP-10.DLL
+  copy_coq_dll LIBMPFR-6.DLL
+  copy_coq_dll LIBSTDC++-6.DLL
+}
+
+function make_addon_gappa_tool {
+  install_boost
+  if build_prep_overlay Gappa_Tool; then
+    installer_addon_section gappa_tool "Gappa tool" "Stand alone tool for automated generation of numerical arithmetic proofs" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure --build="$HOST" --host="$HOST" --target="$TARGET" --prefix="$PREFIXCOQ"
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake -d install
+    log1 copy_gappa_dlls
+    build_post
+  fi
+}
+
+function make_addon_gappa {
+  installer_addon_dependency_beg gappa
+  make_addon_gappa_tool
+  make_addon_flocq
+  installer_addon_dependency_end
+  if build_prep_overlay Gappa_Plugin ; then
+    installer_addon_section gappa "Gappa plugin" "Coq plugin for the Gappa tool" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake
+    logn install ./remake install
     build_post
   fi
 }

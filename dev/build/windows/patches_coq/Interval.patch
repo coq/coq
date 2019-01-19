@@ -1,0 +1,27 @@
+diff/patch file created on Sun, Mar 10, 2019 10:58:15 AM with:
+difftar-folder.sh tarballs/Interval-interval-3.4.0.tar.gz Interval-interval-3.4.0 1
+TARFILE= tarballs/Interval-interval-3.4.0.tar.gz
+FOLDER= Interval-interval-3.4.0
+TARSTRIP= 1
+TARPREFIX= interval-3.4.0/
+ORIGFOLDER= Interval-interval-3.4.0.orig
+--- Interval-interval-3.4.0.orig/configure.in	2018-05-09 15:42:24.000000000 +0200
++++ Interval-interval-3.4.0/configure.in	2019-03-10 10:54:20.590429700 +0100
+@@ -10,7 +10,7 @@
+ 
+ m4_divert_push([HELP_ENABLE])
+ Fine tuning of the installation directory:
+-AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where`/user-contrib/Interval@:>@])
++AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Interval@:>@])
+ m4_divert_pop([HELP_ENABLE])
+ 
+ AC_PROG_CXX
+@@ -79,7 +79,7 @@
+ rm -f conftest.v conftest.vo conftest.err
+ 
+ if test "$libdir" = '${exec_prefix}/lib'; then
+-  libdir="`$COQC -where`/user-contrib/Interval"
++  libdir="`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Interval"
+ fi
+ 
+ AC_MSG_NOTICE([building remake...])

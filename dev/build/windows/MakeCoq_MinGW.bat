@@ -376,6 +376,7 @@ IF "%RUNSETUP%"=="Y" (
     -P pkg-config ^
     -P mingw64-%ARCH%-binutils,mingw64-%ARCH%-gcc-core,mingw64-%ARCH%-gcc-g++,mingw64-%ARCH%-windows_default_manifest ^
     -P mingw64-%ARCH%-headers,mingw64-%ARCH%-runtime,mingw64-%ARCH%-pthreads,mingw64-%ARCH%-zlib ^
+    -P mingw64-%ARCH%-gmp,mingw64-%ARCH%-mpfr ^
     -P libiconv-devel,libunistring-devel,libncurses-devel ^
     -P gettext-devel,libgettextpo-devel ^
     -P libglib2.0-devel,libgdk_pixbuf2.0-devel ^
@@ -383,6 +384,7 @@ IF "%RUNSETUP%"=="Y" (
     -P gtk-update-icon-cache ^
     -P libtool,automake ^
     -P intltool ^
+    -P bison,flex ^
     %EXTRAPACKAGES% ^
     || GOTO ErrorExit
 

@@ -109,10 +109,41 @@
 # See https://gforge.inria.fr/scm/browser.php?group_id=3599
 # Since this URL doesn't fit to our standard mechanism and since Coquelicot doesn't seem to change frequently,
 # we use a fixed version, which has a download path which does fit to our standard mechanism.
-# ATTENTION: The archive URL might depend on the version!
+# ATTENTION: The archive URL does depend on the version - see notes om Gappa_Tool!
 : "${Coquelicot_CI_REF:=coquelicot-3.0.2}"
 : "${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
 : "${Coquelicot_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37523}"
+
+########################################################################
+# Coq-interval
+########################################################################
+# Here the same applies as for Coquelicot => we are using a fixed version URL
+: "${Interval_CI_REF:=interval-3.4.0}"
+: "${Interval_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coq-interval/coq-interval}"
+: "${Interval_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37524}"
+
+########################################################################
+# Gappa stand alone tool
+########################################################################
+# Here the same applies as for Coquelicot => we are using a fixed version URL
+# ATTENTION: The archive URL does depend on the version e.g.
+# https://gforge.inria.fr/frs/download.php/file/37624/gappa-1.3.3.tar.gz
+# https://gforge.inria.fr/frs/download.php/file/37918/gappa-1.3.4.tar.gz
+# ATTENTION: Mixing paths, e.g.
+# https://gforge.inria.fr/frs/download.php/file/37624/gappa-1.3.4.tar.gz
+# Doesn't give an error, but one gets a wrong file (1.3.3 in the example above)
+: "${Gappa_Tool_CI_REF:=gappa-1.3.4}"
+: "${Gappa_Tool_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/gappa/gappa}"
+: "${Gappa_Tool_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37918}"
+
+########################################################################
+# Gappa plugin
+########################################################################
+# Here the same applies as for Coquelicot => we are using a fixed version URL
+# ATTENTION: The archive URL does depend on the version - see notes om Gappa_Tool!
+: "${Gappa_Plugin_CI_REF:=gappalib-coq-1.4.1}"
+: "${Gappa_Plugin_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/gappa/coq}"
+: "${Gappa_Plugin_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37917}"
 
 ########################################################################
 # CompCert
