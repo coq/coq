@@ -82,7 +82,8 @@ export MLPACKFILES := $(call find, '*.mlpack')
 export MLGFILES := $(call find, '*.mlg')
 export CFILES := $(call findindir, 'kernel/byterun', '*.c')
 
-MERLININFILES := $(call find, '.merlin.in')
+# NB our find wrapper ignores the test suite
+MERLININFILES := $(call find, '.merlin.in') test-suite/unit-tests/.merlin.in
 export MERLINFILES := $(MERLININFILES:.in=)
 
 # NB: The lists of currently existing .ml and .mli files will change
