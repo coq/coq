@@ -57,6 +57,7 @@ match local with
     strbrk " is not visible from current goals")
   in
   let r = VarRef ident in
+  let () = maybe_declare_manual_implicits true r imps in
   let () = Typeclasses.declare_instance None true r in
   let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
   (r,Univ.Instance.empty,true)
