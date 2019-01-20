@@ -554,31 +554,16 @@ let add_section_impls vars extra_impls (cond,impls) =
 let discharge_implicits (_,(req,l)) =
   match req with
   | ImplLocal -> None
-  | ImplInteractive (ref,flags,exp) ->
-    (try
-      let vars = variable_section_segment_of_reference ref in
-      let extra_impls = impls_of_context vars in
-      let l' = [ref, List.map (add_section_impls vars extra_impls) (snd (List.hd l))] in
-      Some (ImplInteractive (ref,flags,exp),l')
-    with Not_found -> (* ref not defined in this section *) Some (req,l))
-  | ImplConstant (con,flags) ->
-    (try
-      let vars = variable_section_segment_of_reference (ConstRef con) in
-      let extra_impls = impls_of_context vars in
-      let newimpls = List.map (add_section_impls vars extra_impls) (snd (List.hd l)) in
-      let l' = [ConstRef con,newimpls] in
-        Some (ImplConstant (con,flags),l')
-    with Not_found -> (* con not defined in this section *) Some (req,l))
-  | ImplMutualInductive (kn,flags) ->
-    (try
-      let l' = List.map (fun (gr, l) ->
-	let vars = variable_section_segment_of_reference gr in
-	let extra_impls = impls_of_context vars in
-        (gr,
-	 List.map (add_section_impls vars extra_impls) l)) l
-      in
-        Some (ImplMutualInductive (kn,flags),l')
-    with Not_found -> (* ref not defined in this section *) Some (req,l))
+  | ImplMutualInductive _ | ImplInteractive _ | ImplConstant _ ->
+     let l' =
+       try
+         List.map (fun (gr, l) ->
+             let vars = variable_section_segment_of_reference gr in
+             let extra_impls = impls_of_context vars in
+             let newimpls = List.map (add_section_impls vars extra_impls) l in
+             (gr, newimpls)) l
+       with Not_found -> l in
+     Some (req,l')
 
 let rebuild_implicits (req,l) =
   match req with
