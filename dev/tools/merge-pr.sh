@@ -204,15 +204,16 @@ info "Fetching review data"
 reviews=$(curl -s "$API/pulls/$PR/reviews")
 msg="Merge PR #$PR: $TITLE"
 
-select_state() {
-    jq -rc 'map(select(.state == "'"$1"'") | .user.login) | join(" ")' <<< "$reviews"
+has_state() {
+    [ "$(jq -rc 'map(select(.user.login == "'"$1"'") | .state) | any(. == "'"$2"'")' <<< "$reviews")" = true ]
 }
 
-for reviewer in $(select_state APPROVED); do
-    msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Reviewed-by="$reviewer")
-done
-for reviewer in $(select_state COMMENTED); do
-    msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Ack-by="$reviewer")
+for reviewer in $(jq -rc 'map(.user.login) | unique | join(" ")' <<< "$reviews" ); do
+    if has_state "$reviewer" APPROVED; then
+        msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Reviewed-by="$reviewer")
+    elif has_state "$reviewer" COMMENTED; then
+        msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Ack-by="$reviewer")
+    fi
 done
 
 info "merging"
