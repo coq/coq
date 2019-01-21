@@ -875,14 +875,6 @@ let explain_not_match_error = function
     pr_enum (function Name id -> Id.print id | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
-  | CumulativeStatusExpected b ->
-    let status b = if b then str"cumulative" else str"non-cumulative" in
-      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
-	status (not b) ++ str" declaration was found"
-  | PolymorphicStatusExpected b ->
-    let status b = if b then str"polymorphic" else str"monomorphic" in
-      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
-	status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
       Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon

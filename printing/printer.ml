@@ -209,33 +209,30 @@ let pr_universe_ctx sigma ?variance c =
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance c ~priv =
+let pr_universe_decl sigma ?variance ~priv univs =
   let open Univ in
-  let priv = Option.default Univ.ContextSet.empty priv in
+  let priv = Option.default ContextSet.empty priv in
+  let mono = univs.monomorphic_univs in
+  let poly = univs.polymorphic_univs in
+  let has_mono = not (ContextSet.is_empty mono) in
+  let has_poly = not (AUContext.is_empty poly) in
   let has_priv = not (ContextSet.is_empty priv) in
-  if !Detyping.print_universes && (not (Univ.AUContext.is_empty c) || has_priv) then
+  if !Detyping.print_universes && (has_mono || has_poly || has_priv) then
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (Univ.pr_abstract_universe_context prlev ?variance c) in
-    let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv) else mt() in
-    fnl()++pr_in_comment (pub ++ priv)
-  else
-    mt()
-
-let pr_constant_universes sigma ~priv = function
-  | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
-  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx ~priv
-
-let pr_cumulativity_info sigma cumi =
-  if !Detyping.print_universes 
-  && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) cumi))
-  else
-    mt()
-
-let pr_abstract_cumulativity_info sigma cumi =
-  if !Detyping.print_universes
-  && not (Univ.AUContext.is_empty (Univ.ACumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) cumi))
+    let pub_hd = if has_priv then str "Public universes:" ++ fnl() else mt() in
+    let mono = v 0 (Univ.pr_universe_context_set prlev mono) in
+    let poly = v 0 (Univ.pr_abstract_universe_context prlev ?variance poly) in
+    let pub = match has_mono, has_poly with
+      | true, true -> mono ++ poly
+      | true, false -> mono
+      | false, true -> poly
+      | false, false -> poly (* arbitrary choice of empty |= to constrast with the private univs *)
+    in
+    let priv = if has_priv then
+        fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.pr_universe_context_set prlev priv)
+      else mt()
+    in
+    fnl()++pr_in_comment (pub_hd ++ pub ++ priv)
   else
     mt()
 

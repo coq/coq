@@ -105,17 +105,16 @@ let transl_with_decl env base kind = function
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
     let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
+    (* XXX [poly] is pretty hacky, should work in the monomorphic case at least *)
     let poly = lookup_polymorphism env base kind fqid in
-    begin match UState.check_univ_decl ~poly ectx udecl with
-      | Entries.Polymorphic_const_entry (nas, ctx) ->
-        let inst, ctx = Univ.abstract_universes nas ctx in
-        let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
-        let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, Some ctx)), Univ.ContextSet.empty
-      | Entries.Monomorphic_const_entry ctx ->
-        let c = EConstr.to_constr sigma c in
-        WithDef (fqid,(c, None)), ctx
-    end
+    match UState.check_univ_decl ~poly ectx udecl with
+      Entries.{ entry_monomorphic_univs=mono;
+                entry_poly_univ_names=nas;
+                entry_polymorphic_univs=uctx } ->
+      let inst, uctx = Univ.abstract_universes nas uctx in
+      let c = EConstr.Vars.subst_univs_level_constr (Univ.make_instance_subst inst) c in
+      let c = EConstr.to_constr sigma c in
+      WithDef (fqid,(c, uctx)), mono
 
 let loc_of_module l = l.CAst.loc
 

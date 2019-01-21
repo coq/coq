@@ -78,11 +78,11 @@ let shrink_entry sign const =
   in
   (* The body has been forced by the call to [build_constant_by_tactic] *)
   let () = assert (Future.is_over const.const_entry_body) in
-  let ((body, uctx), eff) = Future.force const.const_entry_body in
-  let (body, typ, ctx) = decompose (List.length sign) body typ [] in
+  let (proof, eff) = Future.force const.const_entry_body in
+  let (body, typ, ctx) = decompose (List.length sign) proof.proof_body typ [] in
   let (body, typ, args) = shrink ctx sign body typ [] in
   let const = { const with
-    const_entry_body = Future.from_val ((body, uctx), eff);
+    const_entry_body = Future.from_val ({proof with proof_body=body}, eff);
     const_entry_type = Some typ;
   } in
   (const, args)
@@ -146,14 +146,8 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
     Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
   let cst = Impargs.with_implicit_protection cst () in
-  let inst = match const.Entries.const_entry_universes with
-  | Entries.Monomorphic_const_entry _ -> EInstance.empty
-  | Entries.Polymorphic_const_entry (_, ctx) ->
-    (* We mimick what the kernel does, that is ensuring that no additional
-       constraints appear in the body of polymorphic constants. Ideally this
-       should be enforced statically. *)
-    let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
-    let () = assert (Univ.ContextSet.is_empty body_uctx) in
+  let inst =
+    let ctx = Entries.(const.const_entry_universes.entry_polymorphic_univs) in
     EInstance.make (Univ.UContext.instance ctx)
   in
   let lem = mkConstU (cst, inst) in

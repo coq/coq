@@ -215,7 +215,7 @@ let build_id_coercion idf_opt source poly =
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
-  let univs = Evd.const_univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
       (definition_entry ~types:typ_f ~univs
@@ -246,7 +246,7 @@ let warn_uniform_inheritance =
           Printer.pr_global g ++
             strbrk" does not respect the uniform inheritance condition")
 
-let add_new_coercion_core coef stre poly source target isid =
+let add_new_coercion_core coef stre source target isid =
   check_source source;
   let t, _ = Typeops.type_of_global_in_context (Global.env ()) coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
@@ -279,40 +279,40 @@ let add_new_coercion_core coef stre poly source target isid =
   declare_coercion coef ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs)
 
 
-let try_add_new_coercion_core ref ~local c d e f =
-  try add_new_coercion_core ref (loc_of_bool local) c d e f
+let try_add_new_coercion_core ref ~local d e f =
+  try add_new_coercion_core ref (loc_of_bool local) d e f
   with CoercionError e ->
       user_err ~hdr:"try_add_new_coercion_core"
         (explain_coercion_error ref e ++ str ".")
 
-let try_add_new_coercion ref ~local poly =
-  try_add_new_coercion_core ref ~local poly None None false
+let try_add_new_coercion ref ~local =
+  try_add_new_coercion_core ref ~local None None false
 
 let try_add_new_coercion_subclass cl ~local poly =
   let coe_ref = build_id_coercion None cl poly in
-  try_add_new_coercion_core coe_ref ~local poly (Some cl) None true
+  try_add_new_coercion_core coe_ref ~local (Some cl) None true
 
-let try_add_new_coercion_with_target ref ~local poly ~source ~target =
-  try_add_new_coercion_core ref ~local poly (Some source) (Some target) false
+let try_add_new_coercion_with_target ref ~local ~source ~target =
+  try_add_new_coercion_core ref ~local (Some source) (Some target) false
 
 let try_add_new_identity_coercion id ~local poly ~source ~target =
   let ref = build_id_coercion (Some id) source poly in
-  try_add_new_coercion_core ref ~local poly (Some source) (Some target) true
+  try_add_new_coercion_core ref ~local (Some source) (Some target) true
 
-let try_add_new_coercion_with_source ref ~local poly ~source =
-  try_add_new_coercion_core ref ~local poly (Some source) None false
+let try_add_new_coercion_with_source ref ~local ~source =
+  try_add_new_coercion_core ref ~local (Some source) None false
 
-let add_coercion_hook poly local ref =
+let add_coercion_hook local ref =
   let local = match local with
   | Discharge
   | Local -> true
   | Global -> false
   in
-  let () = try_add_new_coercion ref ~local poly in
+  let () = try_add_new_coercion ref ~local in
   let msg = Nametab.pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
-let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)
+let add_coercion_hook = Lemmas.mk_hook add_coercion_hook
 
 let add_subclass_hook poly local ref =
   let stre = match local with

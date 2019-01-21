@@ -507,8 +507,6 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
-let mk_proof c = ((c, Univ.ContextSet.empty), Safe_typing.empty_private_constants)
-
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
@@ -550,14 +548,14 @@ let declare_mutual_definition l =
               possible_indexes fixdecls in
           Some indexes, 
           List.map_i (fun i _ ->
-            mk_proof (mkFix ((indexes,i),fixdecls))) 0 l
+            (mkFix ((indexes,i),fixdecls))) 0 l
       | IsCoFixpoint ->
           None,
           List.map_i (fun i _ ->
-            mk_proof (mkCoFix (i,fixdecls))) 0 l
+            (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let univs = UState.const_univ_entry ~poly first.prg_ctx in
+  let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
@@ -639,7 +637,7 @@ let declare_obligation prg obl body ty uctx =
 	if get_shrink_obligations () && not poly then
 	  shrink_body body ty else [], body, ty, [||]
       in
-      let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+      let body = Safe_typing.mk_pure_proof body in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
@@ -655,11 +653,11 @@ let declare_obligation prg obl body ty uctx =
       in
       if not opaque then add_hint (Locality.make_section_locality None) prg constant;
       definition_message obl.obl_name;
-      let body = match uctx with
-        | Polymorphic_const_entry (_, uctx) ->
-          Some (DefinedObl (constant, Univ.UContext.instance uctx))
-        | Monomorphic_const_entry _ ->
+      (* XXX why do we choose what to do based on polymorphism here? *)
+      let body = if Univ.UContext.is_empty uctx.entry_polymorphic_univs then
           Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx))
+        else
+          Some (DefinedObl (constant, Univ.UContext.instance uctx.entry_polymorphic_univs))
       in
       true, { obl with obl_body = body }
 
@@ -828,10 +826,11 @@ let solve_by_tac ?loc name evi t poly ctx =
         id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-    let body, () = Future.force entry.const_entry_body in
-    let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
-    Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
-    Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
+    let {proof_body;proof_univs;proof_priv_univs}, () = Future.force entry.const_entry_body in
+    assert (Univ.ContextSet.is_empty proof_priv_univs);
+    let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') proof_univs in
+    Inductiveops.control_only_guard env ctx' (EConstr.of_constr proof_body);
+    Some (proof_body, entry.const_entry_type, Evd.evar_universe_context ctx')
   with
   | Refiner.FailError (_, s) as exn ->
     let _ = CErrors.push exn in
@@ -853,9 +852,12 @@ let obligation_terminator ?univ_hook name num guard auto pf =
     let env = Global.env () in
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
     let ty = entry.Entries.const_entry_type in
-    let (body, cstr), () = Future.force entry.Entries.const_entry_body in
+    let {proof_body=body;proof_univs;proof_priv_univs}, () =
+      Future.force entry.Entries.const_entry_body
+    in
+    (* XXX what about priv_univs? *)
     let sigma = Evd.from_ctx uctx in
-    let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
+    let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma proof_univs in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
     let prg = get_info (ProgMap.find name !from_prg) in
@@ -879,7 +881,7 @@ let obligation_terminator ?univ_hook name num guard auto pf =
       if pi2 prg.prg_kind then ctx
       else UState.union prg.prg_ctx ctx
     in
-    let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+    let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
     let obls = Array.copy obls in
     let () = obls.(num) <- obl in
@@ -1010,7 +1012,7 @@ and solve_obligation_by_tac prg obls i tac =
                 (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
         | None -> None
         | Some (t, ty, ctx) ->
-          let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+          let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
           let prg = {prg with prg_ctx = ctx} in
           let def, obl' = declare_obligation prg obl t ty uctx in
           obls.(i) <- obl';
@@ -1159,9 +1161,9 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-            let ctx = Monomorphic_const_entry (UState.context_set prg.prg_ctx) in
+            let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:true
-              (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
+              (ParameterEntry (None,ctx,x.obl_type,None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }

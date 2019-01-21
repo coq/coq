@@ -14,17 +14,14 @@ let check_constant_declaration env kn cb =
   let oracle = env.env_typing_flags.conv_oracle in
   let env = Environ.set_oracle env cb.const_typing_flags.conv_oracle in
   (* [env'] contains De Bruijn universe variables *)
-  let poly, env' =
-    match cb.const_universes with
-    | Monomorphic_const ctx -> false, push_context_set ~strict:true ctx env
-    | Polymorphic_const auctx ->
-      let ctx = Univ.AUContext.repr auctx in
-      let env = push_context ~strict:false ctx env in
-      true, env
+  let env = push_context_set ~strict:true cb.const_universes.monomorphic_univs env in
+  let env' = push_context ~strict:false
+      (Univ.AUContext.repr cb.const_universes.polymorphic_univs)
+      env
   in
-  let env' = match cb.const_private_poly_univs, (cb.const_body, poly) with
+  let env' = match cb.const_private_univs, cb.const_body with
     | None, _ -> env'
-    | Some local, (OpaqueDef _, true) -> push_subgraph local env'
+    | Some local, OpaqueDef _ -> push_subgraph local env'
     | Some _, _ -> assert false
   in
   let ty = cb.const_type in
@@ -36,10 +33,7 @@ let check_constant_declaration env kn cb =
       conv_leq env' j.uj_type ty
     | None -> ()
   in
-  let env =
-    if poly then add_constant kn cb env
-    else add_constant kn cb env'
-  in
+  let env = add_constant kn cb env in
   (* Reset the value of the oracle *)
   Environ.set_oracle env oracle
 

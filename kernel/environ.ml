@@ -582,14 +582,13 @@ let constant_context env c =
   let cb = lookup_constant c env in
   Declareops.constant_polymorphic_context cb
 
-let universes_of_global env r =
-  let open GlobRef in
-    match r with
-    | VarRef _ -> Univ.AUContext.empty
-    | ConstRef c -> constant_context env c
+let univ_decl_of_global env = let open GlobRef in function
+    | VarRef _ -> Declareops.empty_univ_decl
+    | ConstRef c -> (lookup_constant c env).const_universes
     | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
-      let mib = lookup_mind mind env in
-      Declareops.inductive_polymorphic_context mib
+      (lookup_mind mind env).mind_universes
+
+let universes_of_global env r = (univ_decl_of_global env r).polymorphic_univs
 
 (* Returns the list of global variables in a term *)
 

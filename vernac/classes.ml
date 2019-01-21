@@ -141,7 +141,7 @@ let do_abstract_instance env sigma ?hook ~global ~poly k u ctx ctx' pri decl imp
   let termtype = to_constr sigma termtype in
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
       (ParameterEntry
-         (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+         (None,univs,termtype,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
   in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps ?hook (ConstRef cst); id
@@ -371,24 +371,28 @@ let context poly l =
   let univs =
     match ctx with
     | [] -> assert false
-    | [_] -> Evd.const_univ_entry ~poly sigma
+    | [_] -> Evd.univ_entry ~poly sigma
     | _::_::_ ->
-      (* TODO: explain this little belly dance *)
       if Lib.sections_are_opened ()
       then
+        (* More than 1 variable in a section: we can't associate
+           universes to any specific variable so we declare them
+           separately. *)
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          if poly then Polymorphic_const_entry ([||], Univ.UContext.empty)
-          else Monomorphic_const_entry Univ.ContextSet.empty
+          Declare.empty_univ_entry
         end
       else if poly then
-        Evd.const_univ_entry ~poly sigma
+        (* Multiple polymorphic axioms: they are all polymorphic the same way. *)
+        Evd.univ_entry ~poly sigma
       else
+        (* Multiple monomorphic axioms: declare universes separately
+           to avoid redeclaring them. *)
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          Monomorphic_const_entry Univ.ContextSet.empty
+          Declare.empty_univ_entry
         end
   in
   let fn status (id, b, t) =
@@ -397,18 +401,18 @@ let context poly l =
       (* Declare the universe context once *)
       let decl = match b with
       | None ->
-        (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
+        (ParameterEntry (None,univs,t,None), IsAssumption Logical)
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         (DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
         match class_of_constr sigma (of_constr t) with
-	| Some (rels, ((tc,_), args) as _cl) ->
+        | Some (rels, ((tc,_), args) as _cl) ->
             add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (ConstRef cst));
             status
-	    (* declare_subclasses (ConstRef cst) cl *)
-	| None -> status
+            (* declare_subclasses (ConstRef cst) cl *)
+        | None -> status
     else
       let test (x, _) = match x with
       | ExplByPos (_, Some id') -> Id.equal id id'
@@ -418,7 +422,7 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (ComAssumption.declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
+        pi3 (ComAssumption.declare_assumption false decl univs t UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
@@ -426,6 +430,6 @@ let context poly l =
         let _ = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
-	status && nstatus
+        status && nstatus
   in
   List.fold_left fn true (List.rev ctx)

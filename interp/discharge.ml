@@ -71,24 +71,26 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
     let ctx = List.rev mip.mind_arity_ctxt in
       mkArity (List.rev ctx, Type ar.template_level), true
 
+let dummy_variance mib univs =
+  match mib.mind_variance with
+  | None -> None
+  | Some _ ->
+    Some (Array.make (Univ.UContext.size univs.entry_polymorphic_univs)
+            Univ.Variance.Invariant)
+
+let discharge_univs info univs =
+  let auctx = univs.polymorphic_univs in
+  let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
+  let nas = Univ.AUContext.names auctx in
+  let auctx = Univ.AUContext.repr auctx in
+  subst, { entry_monomorphic_univs = univs.monomorphic_univs;
+           entry_poly_univ_names = nas;
+           entry_polymorphic_univs = auctx; }
+
 let process_inductive info modlist mib =
   let section_decls = Lib.named_of_variable_context info.Lib.abstr_ctx in
   let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
-  let subst, ind_univs =
-    match mib.mind_universes with
-    | Monomorphic_ind ctx -> Univ.empty_level_subst, Monomorphic_ind_entry ctx
-    | Polymorphic_ind auctx ->
-      let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
-      let nas = Univ.AUContext.names auctx in
-      let auctx = Univ.AUContext.repr auctx in
-      subst, Polymorphic_ind_entry (nas, auctx)
-    | Cumulative_ind cumi ->
-      let auctx = Univ.ACumulativityInfo.univ_context cumi in
-      let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
-      let nas = Univ.AUContext.names auctx in
-      let auctx = Univ.AUContext.repr auctx in
-      subst, Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context auctx)
-  in
+  let subst, ind_univs = discharge_univs info mib.mind_universes in
   let discharge c = Vars.subst_univs_level_constr subst (expmod_constr modlist c) in
   let inds =
     Array.map_to_list
@@ -114,6 +116,7 @@ let process_inductive info modlist mib =
     mind_entry_params = params';
     mind_entry_inds = inds';
     mind_entry_private = mib.mind_private;
-    mind_entry_universes = ind_univs
+    mind_entry_universes = ind_univs;
+    mind_entry_variance = dummy_variance mib ind_univs;
   }
 

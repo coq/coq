@@ -19,7 +19,6 @@ open Univ
 open Util
 open Constr
 open Declarations
-open Declareops
 open Reduction
 open Inductive
 open Modops
@@ -81,14 +80,15 @@ let make_labmap mp list =
   in
   CList.fold_right add_one list empty_labmap
 
-
-let check_conv_error error why cst poly f env a1 a2 =
+let check_conv_error error why cst f env a1 a2 =
   try 
     let cst' = f env (Environ.universes env) a1 a2 in
-      if poly then 
-	if Constraint.is_empty cst' then cst
-	else error (IncompatiblePolymorphism (env, a1, a2))
-      else Constraint.union cst cst'
+    if Constraint.exists (fun (l,_,r) ->
+        Level.is_var l || Level.is_var r)
+        cst'
+    then
+      error (IncompatiblePolymorphism (env, a1, a2))
+    else Constraint.union cst cst'
   with NotConvertible -> error why
      | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
@@ -110,33 +110,31 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       | IndType ((_,0), mib) -> Declareops.subst_mind_body subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
+  let () =
+    (** Currently there is no way to control variance of inductive types, but
+        just in case we require that they are in a subtyping relation. *)
+    let err () =
+        CErrors.anomaly
+          Pp.(str "Variance of " ++ KerName.print kn1 ++
+              str " is not compatible with the one of " ++ KerName.print kn2)
+    in
+    let v = mib1.mind_variance in
+    let v' = mib2.mind_variance in
+    match v, v' with
+    | None, None | Some _, None -> ()
+    | Some v, Some v' ->
+      if not (Array.for_all2 Variance.check_subtype v' v) then err ()
+    | None, Some _ -> err ()
+  in
   let env, inst =
-    match mib1.mind_universes, mib2.mind_universes with
-    | Monomorphic_ind _, Monomorphic_ind _ -> env, Univ.Instance.empty
-    | Polymorphic_ind auctx, Polymorphic_ind auctx' ->
-      let env = check_polymorphic_instance error env auctx auctx' in
-      env, Univ.make_abstract_instance auctx'
-    | Cumulative_ind cumi, Cumulative_ind cumi' ->
-      (** Currently there is no way to control variance of inductive types, but
-          just in case we require that they are in a subtyping relation. *)
-      let () =
-        let v = ACumulativityInfo.variance cumi in
-        let v' = ACumulativityInfo.variance cumi' in
-        if not (Array.for_all2 Variance.check_subtype v' v) then
-          CErrors.anomaly Pp.(str "Variance of " ++ KerName.print kn1 ++
-            str " is not compatible with the one of " ++ KerName.print kn2)
-      in
-      let auctx = Univ.ACumulativityInfo.univ_context cumi in
-      let auctx' = Univ.ACumulativityInfo.univ_context cumi' in
-      let env = check_polymorphic_instance error env auctx auctx' in
-      env, Univ.make_abstract_instance auctx'
-    | _ -> error 
-             (CumulativeStatusExpected (Declareops.inductive_is_cumulative mib2))
+    let u mib = mib.mind_universes.polymorphic_univs in
+    let env = check_polymorphic_instance error env (u mib1) (u mib2) in
+    env, Univ.make_abstract_instance (u mib2)
   in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type cst name t1 t2 =
     check_conv (NotConvertibleInductiveField name)
-      cst (inductive_is_polymorphic mib1) (infer_conv_leq ?l2r:None ?evars:None ?ts:None) env t1 t2
+      cst (infer_conv_leq ?l2r:None ?evars:None ?ts:None) env t1 t2
   in
 
   let check_packet cst p1 p2 =
@@ -163,7 +161,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let check_cons_types _i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst
-        (inductive_is_polymorphic mib1) (infer_conv ?l2r:None ?evars:None ?ts:None) env t1 t2)
+          (infer_conv ?l2r:None ?evars:None ?ts:None) env t1 t2)
       cst
       p2.mind_consnames
       (arities_of_specif (mind, inst) (mib1, p1))
@@ -224,10 +222,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     
 let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
   let error why = error_signature_mismatch l spec2 why in
-  let check_conv cst poly f = check_conv_error error cst poly f in
-  let check_type poly cst env t1 t2 =
+  let check_conv cst f = check_conv_error error cst f in
+  let check_type cst env t1 t2 =
     let err = NotConvertibleTypeField (env, t1, t2) in
-    check_conv err cst poly (infer_conv_leq ?l2r:None ?evars:None ?ts:None) env t1 t2
+    check_conv err cst (infer_conv_leq ?l2r:None ?evars:None ?ts:None) env t1 t2
   in
   match info1 with
     | Constant cb1 ->
@@ -235,21 +233,13 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
       let cb1 = Declareops.subst_const_body subst1 cb1 in
       let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking universes *)
-      let poly, env =
-        match cb1.const_universes, cb2.const_universes with
-        | Monomorphic_const _, Monomorphic_const _ ->
-          false, env
-        | Polymorphic_const auctx1, Polymorphic_const auctx2 ->
-          true, check_polymorphic_instance error env auctx1 auctx2
-        | Monomorphic_const _, Polymorphic_const _ ->
-          error (PolymorphicStatusExpected true)
-        | Polymorphic_const _, Monomorphic_const _ ->
-          error (PolymorphicStatusExpected false)
+      let env = check_polymorphic_instance error env cb1.const_universes.polymorphic_univs
+          cb2.const_universes.polymorphic_univs
       in
       (* Now check types *)
       let typ1 = cb1.const_type in
       let typ2 = cb2.const_type in
-      let cst = check_type poly cst env typ1 typ2 in
+      let cst = check_type cst env typ1 typ2 in
       (* Now we check the bodies:
 	 - A transparent constant can only be implemented by a compatible
 	   transparent constant.
@@ -266,7 +256,7 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
 		 Anyway [check_conv] will handle that afterwards. *)
 	      let c1 = Mod_subst.force_constr lc1 in
 	      let c2 = Mod_subst.force_constr lc2 in
-              check_conv NotConvertibleBodyField cst poly (infer_conv ?l2r:None ?evars:None ?ts:None) env c1 c2))
+              check_conv NotConvertibleBodyField cst (infer_conv ?l2r:None ?evars:None ?ts:None) env c1 c2))
    | IndType ((_kn,_i),_mind1) ->
        CErrors.user_err Pp.(str @@
        "The kernel does not recognize yet that a parameter can be " ^

@@ -785,7 +785,9 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	  Array.of_list
 	    (List.map
 	       (fun entry ->
-		  (EConstr.of_constr (fst (fst(Future.force entry.Entries.const_entry_body))), EConstr.of_constr (Option.get entry.Entries.const_entry_type ))
+                  (EConstr.of_constr
+                     (fst(Future.force entry.Entries.const_entry_body)).Entries.proof_body,
+                   EConstr.of_constr (Option.get entry.Entries.const_entry_type ))
 	       )
 	       (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
 	    )

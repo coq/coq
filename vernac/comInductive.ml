@@ -458,28 +458,20 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
           userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
-  let univs =
-    match uctx with
-    | Polymorphic_const_entry (nas, uctx) ->
-      if cum then
-        Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context uctx)
-      else Polymorphic_ind_entry (nas, uctx)
-    | Monomorphic_const_entry uctx ->
-      Monomorphic_ind_entry uctx
-  in
+  let variance = if poly && cum then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
-  let mind_ent =
+  let mie =
     { mind_entry_params = ctx_params;
       mind_entry_record = None;
       mind_entry_finite = finite;
       mind_entry_inds = entries;
       mind_entry_private = if prv then Some false else None;
-      mind_entry_universes = univs;
+      mind_entry_universes = uctx;
+      mind_entry_variance = variance;
     }
   in
-  (if poly && cum then
-      InferCumulativity.infer_inductive env_ar mind_ent
-   else mind_ent), Evd.universe_binders sigma, impls
+  let mie = InferCumulativity.infer_inductive env_ar mie in
+  mie, Evd.universe_binders sigma, impls
 
 let interp_mutual_inductive ~template udecl (paramsl,indl) notations cum poly prv finite =
   interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations cum poly prv finite
@@ -580,6 +572,6 @@ let do_mutual_inductive ~template udecl indl cum poly prv ~uniform finite =
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false poly) coes;
+  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false) coes;
   (* If positivity is assumed declares itself as unsafe. *)
   if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()

@@ -103,7 +103,7 @@ let () =
 
 let define ~poly id internal sigma c t =
   let f = declare_constant ~internal in
-  let univs = Evd.const_univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;
@@ -401,7 +401,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
     let decltype = EConstr.to_constr sigma decltype in
-    let proof_output = Future.from_val ((decl,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+    let proof_output = Future.from_val (Safe_typing.mk_pure_proof decl) in
     let cst = define ~poly fi UserIndividualRequest sigma proof_output (Some decltype) in
     ConstRef cst :: lrecref
   in
@@ -523,7 +523,7 @@ let do_combined_scheme name schemes =
       schemes
   in
   let sigma,body,typ = build_combined_scheme (Global.env ()) csts in
-  let proof_output = Future.from_val ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+  let proof_output = Future.from_val (Safe_typing.mk_pure_proof body) in
   (* It is possible for the constants to have different universe
      polymorphism from each other, however that is only when the user
      manually defined at least one of them (as Scheme would pick the

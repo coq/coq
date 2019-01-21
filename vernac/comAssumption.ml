@@ -42,14 +42,10 @@ let should_axiom_into_instance = function
     true
   | Global | Local -> !axiom_into_instance
 
-let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
+let declare_assumption is_coe (local,p,kind) ctx c pl imps impl nl {CAst.v=ident} =
 match local with
 | Discharge when Lib.sections_are_opened () ->
-  let ctx = match ctx with
-    | Monomorphic_const_entry ctx -> ctx
-    | Polymorphic_const_entry (_, ctx) -> Univ.ContextSet.of_context ctx
-  in
-  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
+  let decl = (Lib.cwd(), SectionLocalAssum (c,Lib.entry_to_var_univs ctx,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let () =
@@ -59,7 +55,7 @@ match local with
   in
   let r = VarRef ident in
   let () = Typeclasses.declare_instance None true r in
-  let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
+  let () = if is_coe then Class.try_add_new_coercion r ~local:true in
   (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
@@ -70,36 +66,29 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let decl = (ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
+  let decl = (ParameterEntry (None,ctx,c,inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.declare_univ_binders gr pl in
   let () = assumption_message ident in
   let () = if do_instance then Typeclasses.declare_instance None false gr in
-  let () = if is_coe then Class.try_add_new_coercion gr ~local p in
-  let inst = match ctx with
-    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
-    | Monomorphic_const_entry _ -> Univ.Instance.empty
-  in
-    (gr,inst,Lib.is_modtype_strict ())
+  let () = if is_coe then Class.try_add_new_coercion gr ~local in
+  let inst = Univ.UContext.instance ctx.entry_polymorphic_univs in
+  (gr,inst,Lib.is_modtype_strict ())
 
 let interp_assumption sigma env impls c =
   let sigma, (ty, impls) = interp_type_evars_impls env sigma ~impls c in
   sigma, (ty, impls)
 
 (* When monomorphic the universe constraints are declared with the first declaration only. *)
-let next_uctx =
-  let empty_uctx = Monomorphic_const_entry Univ.ContextSet.empty in
-  function
-  | Polymorphic_const_entry _ as uctx -> uctx
-  | Monomorphic_const_entry _ -> empty_uctx
+let next_uctx univs = {univs with entry_monomorphic_univs=Univ.ContextSet.empty}
 
 let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-        declare_assumption is_coe k (c,uctx) pl imps false nl id in
+        declare_assumption is_coe k uctx c pl imps false nl id in
       (ref',u')::refs, status' && status, next_uctx uctx)
       ([],true,uctx) idl
   in

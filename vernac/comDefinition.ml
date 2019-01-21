@@ -96,9 +96,8 @@ let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
   in
     if program_mode then
       let env = Global.env () in
-      let (c,ctx), sideff = Future.force ce.const_entry_body in
+      let {proof_body=c}, sideff = Future.force ce.const_entry_body in
       assert(Safe_typing.empty_private_constants = sideff);
-      assert(Univ.ContextSet.is_empty ctx);
       let typ = match ce.const_entry_type with
         | Some t -> t
         | None -> EConstr.to_constr ~abort_on_undefined_evars:false evd (Retyping.get_type_of env evd (EConstr.of_constr c))

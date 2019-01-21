@@ -74,55 +74,43 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let c', univs, ctx' =
-        match cb.const_universes, ctx with
-        | Monomorphic_const _, None ->
-          let c',cst = match cb.const_body with
-            | Undef _ | OpaqueDef _ ->
-              let j = Typeops.infer env' c in
-              let typ = cb.const_type in
-              let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-                  j.uj_type typ in
-              j.uj_val, cst'
-            | Def cs ->
-              let c' = Mod_subst.force_constr cs in
-              c, Reduction.infer_conv env' (Environ.universes env') c c'
-          in
-          c', Monomorphic_const Univ.ContextSet.empty, cst
-        | Polymorphic_const uctx, Some ctx ->
-          let () =
-            if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
-              error_incorrect_with_constraint lab
-          in
-          (** Terms are compared in a context with De Bruijn universe indices *)
-	  let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env in
-	  let cst = match cb.const_body with
-	    | Undef _ | OpaqueDef _ ->
-	      let j = Typeops.infer env' c in
-	      let typ = cb.const_type in
-	      let cst' = Reduction.infer_conv_leq env' (Environ.universes env')
-						j.uj_type typ in
-	      cst'
-	    | Def cs ->
-	       let c' = Mod_subst.force_constr cs in
-	       let cst' = Reduction.infer_conv env' (Environ.universes env') c c' in
-	        cst'
-	  in
-	    if not (Univ.Constraint.is_empty cst) then
-	      error_incorrect_with_constraint lab;
-            c, Polymorphic_const ctx, Univ.Constraint.empty
-        | _ -> error_incorrect_with_constraint lab
+      let c', univs, cst =
+        let uctx = cb.const_universes.polymorphic_univs in
+        let () =
+          if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
+            error_incorrect_with_constraint lab
+        in
+        (** Terms are compared in a context with De Bruijn universe indices *)
+        let env' = Environ.push_context ~strict:false (Univ.AUContext.repr uctx) env' in
+        let c', cst = match cb.const_body with
+          | Undef _ | OpaqueDef _ ->
+            let j = Typeops.infer env' c in
+            let cst = Reduction.infer_conv_leq env' (Environ.universes env')
+                j.uj_type cb.const_type in
+            j.uj_val, cst
+          | Def cs ->
+            (* XXX why don't we infer c here? *)
+            let c' = Mod_subst.force_constr cs in
+            let cst = Reduction.infer_conv env' (Environ.universes env') c c' in
+            c, cst
+        in
+        if Univ.Constraint.exists (fun (l,_,r) ->
+            Univ.Level.is_var l || Univ.Level.is_var r)
+            cst
+        then error_incorrect_with_constraint lab;
+        c', {monomorphic_univs=Univ.ContextSet.empty; polymorphic_univs=ctx}, cst
       in
       let def = Def (Mod_subst.from_val c') in
-(*      let ctx' = Univ.UContext.make (newus, cst) in *)
+      let code = Option.map Cemitcodes.from_val
+          (Cbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def)
+      in
       let cb' =
 	{ cb with
 	  const_body = def;
-          const_universes = univs ;
-	  const_body_code = Option.map Cemitcodes.from_val
-                              (Cbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
+          const_universes = univs;
+          const_body_code = code; }
       in
-      before@(lab,SFBconst(cb'))::after, c', ctx'
+      before@(lab,SFBconst(cb'))::after, c', cst
     else
       (* Definition inside a sub-module *)
       let mb = match spec with

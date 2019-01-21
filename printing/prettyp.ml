@@ -85,20 +85,17 @@ let print_ref reduce ref udecl =
   let variance = match ref with
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
-      let mind = Environ.lookup_mind ind env in
-      begin match mind.Declarations.mind_universes with
-        | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ -> None
-        | Declarations.Cumulative_ind cumi -> Some (Univ.ACumulativityInfo.variance cumi)
-      end
+      (Environ.lookup_mind ind env).mind_variance
   in
   let inst =
     if Global.is_polymorphic ref
     then Printer.pr_universe_instance sigma inst
     else mt ()
   in
-  let priv = None in (* We deliberately don't print private univs in About. *)
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
-           Printer.pr_abstract_universe_ctx sigma ?variance univs ~priv)
+  (* We deliberately don't print private univs in About as they're about the body. *)
+  let priv = None in
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++
+         Printer.pr_universe_decl sigma ?variance ~priv (Environ.univ_decl_of_global env ref))
 
 (********************************)
 (** Printing implicit arguments *)
@@ -555,19 +552,15 @@ let print_constant with_values sep sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body cb in
   let typ = cb.const_type in
+  let univs = cb.const_universes in
   let univs =
     let open Univ in
     let otab = Global.opaque_tables () in
     match cb.const_body with
-    | Undef _ | Def _ -> cb.const_universes
+    | Undef _ | Def _ -> univs
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
-      match cb.const_universes with
-      | Monomorphic_const ctx ->
-        Monomorphic_const (ContextSet.union body_uctxs ctx)
-      | Polymorphic_const ctx ->
-        assert(ContextSet.is_empty body_uctxs);
-        Polymorphic_const ctx
+      {univs with monomorphic_univs = ContextSet.union univs.monomorphic_univs body_uctxs}
   in
   let ctx =
     UState.of_binders
@@ -581,11 +574,11 @@ let print_constant with_values sep sp udecl =
 	str"*** [ " ++
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs
+        Printer.pr_universe_decl sigma univs ~priv:cb.const_private_univs
     | Some (c, ctx) ->
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs)
+        Printer.pr_universe_decl sigma univs ~priv:cb.const_private_univs)
 
 let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++

@@ -413,66 +413,74 @@ type abstr_info = {
 }
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
+type var_universes = { var_monomorphic_univs : Univ.ContextSet.t;
+                       var_polymorphic_univs : Univ.ContextSet.t; }
+
+let entry_to_var_univs univs =
+  let open Entries in
+  {var_monomorphic_univs=univs.entry_monomorphic_univs;
+   var_polymorphic_univs=Univ.ContextSet.of_context univs.entry_polymorphic_univs}
+
 type secentry =
-  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.ContextSet.t)
-  | Context of Univ.ContextSet.t
+  | Variable of (Names.Id.t * Decl_kinds.binding_kind * var_universes)
+  | Context of Univ.ContextSet.t (** only polymorphic universes in Context *)
 
 let sectab =
   Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
     ~name:"section-context"
 
+let polymorphic_univs = Summary.ref ~name:"section-poly-univs" Univ.LSet.empty
+
+let add_poly_univs univs = polymorphic_univs := Univ.LSet.union !polymorphic_univs univs
+let is_polymorphic_univ u = Univ.LSet.mem u !polymorphic_univs
+
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
                 (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
-let check_same_poly p vars =
-  let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
-  if List.exists pred vars then
-    user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
+let check_monomorphic_context (_,csts) =
+  Univ.Constraint.iter (fun (l,_,r) ->
+      if is_polymorphic_univ l || is_polymorphic_univ r
+      then user_err ~hdr:"check_monomorphic_context"
+          Pp.(str "Monomorphic constraints may not refer to " ++
+              str "polymorphic universes."))
+    csts
 
-let add_section_variable id impl poly ctx =
+let add_section_variable id impl univs =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-       List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
-       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+      check_monomorphic_context univs.var_monomorphic_univs;
+      add_poly_univs (fst univs.var_polymorphic_univs);
+      sectab := (Variable (id,impl,univs)::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
-       check_same_poly true vars;
-       sectab := (Context ctx :: vars,repl,abs)::sl
-
-exception PolyFound of bool (* make this a let exception once possible *)
-let is_polymorphic_univ u =
-  try
-    let open Univ in
-    List.iter (fun (vars,_,_) ->
-        List.iter (function
-            | Variable (_,_,poly,(univs,_)) ->
-              if LSet.mem u univs then raise (PolyFound poly)
-            | Context (univs,_) ->
-              if LSet.mem u univs then raise (PolyFound true)
-          ) vars
-      ) !sectab;
-    false
-  with PolyFound b -> b
+      add_poly_univs (fst ctx);
+      sectab := (Context ctx :: vars,repl,abs)::sl
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable (id,impl,univs)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-      (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
-    | (Variable (_,_,poly,ctx)::idl,hyps) ->
+      (decl,impl) :: l, Univ.ContextSet.union r univs.var_polymorphic_univs
+    | (Variable (_,_,univs)::idl,hyps) ->
         let l, r = aux (idl,hyps) in
-          l, if poly then Univ.ContextSet.union r ctx else r
+          l, Univ.ContextSet.union r univs.var_polymorphic_univs
     | (Context ctx :: idl, hyps) ->
        let l, r = aux (idl, hyps) in
        l, Univ.ContextSet.union r ctx
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
+
+let variable_monomorphic_univs id =
+  List.find_map (function
+      | Context _ -> None
+      | Variable (x,_,univs) when Id.equal id x -> Some univs.var_monomorphic_univs
+      | Variable _ -> None)
+    (pi1 (List.hd !sectab))
 
 let instance_from_variable_context =
   List.map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
@@ -497,11 +505,10 @@ let name_instance inst =
   in
   Array.map map (Univ.Instance.to_array inst)
 
-let add_section_replacement f g poly hyps =
+let add_section_replacement f g hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
-    let () = check_same_poly poly vars in
     let sechyps,ctx = extract_hyps (vars,hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
@@ -515,13 +522,13 @@ let add_section_replacement f g poly hyps =
     } in
     sectab := (vars,f (inst,args) exps, g info abs) :: sl
 
-let add_section_kn poly kn =
+let add_section_kn kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f f poly
+  add_section_replacement f f
 
-let add_section_constant poly kn =
+let add_section_constant kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f f poly
+  add_section_replacement f f
 
 let replacement_context () = pi2 (List.hd !sectab)
 
@@ -549,7 +556,7 @@ let variable_section_segment_of_reference gr =
 let section_instance = function
   | VarRef id ->
      let eq = function
-       | Variable (id',_,_,_) -> Names.Id.equal id id'
+       | Variable (id',_,_) -> Names.Id.equal id id'
        | Context _ -> false
      in
      if List.exists eq (pi1 (List.hd !sectab))

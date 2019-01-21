@@ -1309,9 +1309,9 @@ let project_hint ~poly pri l2r r =
   let id =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
-  let ctx = Evd.const_univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma in
   let c = EConstr.to_constr sigma c in
-  let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id (c,ctx) in
+  let c = Declare.declare_definition ~internal:Declare.InternalTacticRequest id univs c in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
 

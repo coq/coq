@@ -56,12 +56,7 @@ let inductive_paramdecls (mib,u) =
   Vars.subst_instance_context u mib.mind_params_ctxt
 
 let instantiate_inductive_constraints mib u =
-  let process auctx =  Univ.AUContext.instantiate u auctx in
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.Constraint.empty
-  | Polymorphic_ind auctx -> process auctx
-  | Cumulative_ind cumi -> process (Univ.ACumulativityInfo.univ_context cumi)
-
+  Univ.AUContext.instantiate u mib.mind_universes.polymorphic_univs
 
 (************************************************************************)
 

@@ -196,6 +196,10 @@ module Level = struct
   let var n = 
     if n < 20 then vars.(n) else make (Var n)
 
+  let is_var u = match u.data with
+    | Var _ -> true
+    | _ -> false
+
   let var_index u =
     match data u with
     | Var n -> Some n | _ -> None
@@ -989,68 +993,6 @@ let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
 
 let hcons_abstract_universe_context = AUContext.hcons
 
-(** Universe info for cumulative inductive types: A context of
-   universe levels with universe constraints, representing local
-   universe variables and constraints, together with an array of
-   Variance.t.
-
-    This data structure maintains the invariant that the variance
-   array has the same length as the universe instance. *)
-module CumulativityInfo =
-struct
-  type t = universe_context * Variance.t array
-
-  let make x =
-    if (Instance.length (UContext.instance (fst x))) =
-       (Array.length (snd x)) then x
-    else anomaly (Pp.str "Invalid subtyping information encountered!")
-
-  let empty = (UContext.empty, [||])
-  let is_empty (univs, variance) = UContext.is_empty univs && Array.is_empty variance
-
-  let pr prl (univs, variance) =
-    UContext.pr prl ~variance univs
-
-  let hcons (univs, variance) = (* should variance be hconsed? *)
-    (UContext.hcons univs, variance)
-
-  let univ_context (univs, _subtypcst) = univs
-  let variance (_univs, variance) = variance
-
-  (** This function takes a universe context representing constraints
-     of an inductive and produces a CumulativityInfo.t with the
-     trivial subtyping relation. *)
-  let from_universe_context univs =
-    (univs, Array.init (UContext.size univs) (fun _ -> Variance.Invariant))
-
-  let leq_constraints (_,variance) u u' csts = Variance.leq_constraints variance u u' csts
-  let eq_constraints (_,variance) u u' csts = Variance.eq_constraints variance u u' csts
-
-end
-
-let hcons_cumulativity_info = CumulativityInfo.hcons
-
-module ACumulativityInfo =
-struct
-  type t = AUContext.t * Variance.t array
-
-  let repr (auctx,var) = AUContext.repr auctx, var
-
-  let pr prl (univs, variance) =
-    AUContext.pr prl ~variance univs
-
-  let hcons (univs, variance) = (* should variance be hconsed? *)
-    (AUContext.hcons univs, variance)
-
-  let univ_context (univs, _subtypcst) = univs
-  let variance (_univs, variance) = variance
-
-  let leq_constraints (_,variance) u u' csts = Variance.leq_constraints variance u u' csts
-  let eq_constraints (_,variance) u u' csts = Variance.eq_constraints variance u u' csts
-end
-
-let hcons_abstract_cumulativity_info = ACumulativityInfo.hcons
-
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking. 
     Beware, representation could change.
@@ -1211,10 +1153,6 @@ let abstract_universes nas ctx =
   let ctx = (nas, cstrs) in
   instance, ctx
 
-let abstract_cumulativity_info nas (univs, variance) =
-  let subst, univs = abstract_universes nas univs in
-  subst, (univs, variance)
-
 let rec compact_univ s vars i u =
   match u with
   | [] -> (s, List.rev vars)
@@ -1235,11 +1173,7 @@ let pr_constraints prl = Constraint.pr prl
 
 let pr_universe_context = UContext.pr
 
-let pr_cumulativity_info = CumulativityInfo.pr
-
 let pr_abstract_universe_context = AUContext.pr
-
-let pr_abstract_cumulativity_info = ACumulativityInfo.pr
 
 let pr_universe_context_set = ContextSet.pr
 

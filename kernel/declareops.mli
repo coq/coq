@@ -15,6 +15,8 @@ open Univ
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+val empty_univ_decl : universe_decl
+
 (** {6 Arities} *)
 
 val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->

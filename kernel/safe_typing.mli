@@ -56,6 +56,7 @@ val concat_private : private_constants -> private_constants -> private_constants
 val private_con_of_con : safe_environment -> Constant.t -> private_constants
 val private_con_of_scheme : kind:string -> safe_environment -> (inductive * Constant.t) list -> private_constants
 
+val make_proof : ?global:Univ.ContextSet.t -> ?priv:Univ.ContextSet.t -> Constr.t -> Entries.proof_body
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :
   Environ.env -> Constr.constr -> private_constants -> Constr.constr
@@ -76,9 +77,7 @@ val is_joined_environment : safe_environment -> bool
 
 (** Insertion of local declarations (Local or Variables) *)
 
-val push_named_assum :
-  (Id.t * Constr.types * bool (* polymorphic *))
-    Univ.in_universe_context_set -> safe_transformer0
+val push_named_assum : Id.t * Constr.types -> safe_transformer0
 
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)

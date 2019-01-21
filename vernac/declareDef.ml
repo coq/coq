@@ -51,8 +51,8 @@ let declare_definition ident (local, p, k) ?hook ce pl imps =
   let () = definition_message ident in
   Lemmas.call_hook ~fix_exn ?hook local gr; gr
 
-let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
+let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f def t imps =
+  let ce = definition_entry ~opaque ~types:t ~univs def in
   declare_definition f kind ce pl imps
 
 let check_definition_evars ~allow_evars sigma =
@@ -73,4 +73,4 @@ let prepare_parameter ~allow_evars ~poly sigma udecl typ =
       sigma (fun nf -> nf typ)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  sigma, (None(*proof using*), (typ, univs), None(*inline*))
+  sigma, (None(*proof using*), univs, typ, None(*inline*))

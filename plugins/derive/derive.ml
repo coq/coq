@@ -12,10 +12,9 @@ open Constr
 open Context.Named.Declaration
 
 let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Entries.const_entry_body)
-    : Safe_typing.private_constants Entries.const_entry_body =
-  Future.chain x begin fun ((b,ctx),fx) ->
-    (f b , ctx) , fx
-  end
+  : Safe_typing.private_constants Entries.const_entry_body =
+  Future.chain x (fun (proof,fx) ->
+      Entries.{proof with proof_body=f proof.proof_body} , fx)
 
 (** [start_deriving f suchthat lemma] starts a proof of [suchthat]
     (which can contain references to [f]) in the context extended by

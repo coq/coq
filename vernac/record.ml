@@ -280,11 +280,7 @@ let warn_non_primitive_record =
 let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
-  let poly = Declareops.inductive_is_polymorphic mib in
-  let u = match ctx with
-    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
-    | Monomorphic_const_entry ctx -> Univ.Instance.empty
-  in
+  let u = Univ.UContext.instance ctx.entry_polymorphic_univs in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
@@ -367,7 +363,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 	    Impargs.maybe_declare_manual_implicits false refi impls;
 	    if coe then begin
 	      let cl = Class.class_of_global (IndRef indsp) in
-	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
+                Class.try_add_new_coercion_with_source refi ~local:false ~source:cl
 	    end;
 	    let i = if is_local_assum decl then i+1 else i in
 	      (Some kn::sp_projs, i, Projection term::subst)
@@ -381,17 +377,8 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 open Typeclasses
 
 
-let declare_structure finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
+let declare_structure finite ubinders ~cumul univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
   let nparams = List.length params in
-  let poly, ctx =
-    match univs with
-    | Monomorphic_ind_entry ctx ->
-      false, Monomorphic_const_entry Univ.ContextSet.empty
-    | Polymorphic_ind_entry (nas, ctx) ->
-      true, Polymorphic_const_entry (nas, ctx)
-    | Cumulative_ind_entry (nas, cumi) ->
-      true, Polymorphic_const_entry (nas, Univ.CumulativityInfo.univ_context cumi)
-  in
   let binder_name =
     match name with
     | None ->
@@ -411,13 +398,14 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
       match template with
       | Some template, _ ->
         (* templateness explicitly requested *)
-        if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
         template
       | None, template ->
         (* auto detect template *)
-        ComInductive.should_auto_template id (template && not poly &&
-        let _, s = Reduction.dest_arity (Global.env()) arity in
-        not (Sorts.is_small s))
+        ComInductive.should_auto_template id
+          (template &&
+           Univ.UContext.is_empty univs.entry_polymorphic_univs &&
+           let _, s = Reduction.dest_arity (Global.env()) arity in
+           not (Sorts.is_small s))
     in
     { mind_entry_typename = id;
       mind_entry_arity = arity;
@@ -426,6 +414,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block record_data in
+  let variance = if cumul then Some (InferCumulativity.dummy_variance univs) else None in
   let mie =
     { mind_entry_params = params;
       mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
@@ -433,6 +422,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
+      mind_entry_variance = variance;
     }
   in
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
@@ -441,9 +431,9 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
   let map i (_, _, _, fieldimpls, fields, is_coe, coers) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
+    let kinds,sp_projs = declare_projections rsp univs ~kind binder_name.(i) coers fieldimpls fields in
     let build = ConstructRef cstr in
-    let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
+    let () = if is_coe then Class.try_add_new_coercion build ~local:false in
     let () = Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs) in
     rsp
   in
@@ -458,7 +448,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class def cum ubinders univs id idbuild paramimpls params arity
+let declare_class def ~cumul ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -477,10 +467,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       let cst = Declare.declare_constant id
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
-      let inst, univs = match univs with
-        | Polymorphic_const_entry (_, uctx) -> Univ.UContext.instance uctx, univs
-        | Monomorphic_const_entry _ -> Univ.Instance.empty, Monomorphic_const_entry Univ.ContextSet.empty
-      in
+      let univs = {univs with entry_monomorphic_univs=Univ.ContextSet.empty} in
+      let inst = Univ.UContext.instance univs.entry_polymorphic_univs in
       let cstu = (cst, inst) in
       let inst_type = appvectc (mkConstU cstu)
 			       (Termops.rel_vect 0 (List.length params)) in
@@ -502,18 +490,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       in
       [cref, [Name proj_name, sub, Some proj_cst]]
     | _ ->
-       let univs =
-         match univs with
-         | Polymorphic_const_entry (nas, univs) ->
-           if cum then
-             Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
-           else
-             Polymorphic_ind_entry (nas, univs)
-         | Monomorphic_const_entry univs ->
-           Monomorphic_ind_entry univs
-       in
       let record_data = [id, idbuild, arity, fieldimpls, fields, false, List.map (fun _ -> false) fields] in
-      let inds = declare_structure Declarations.BiFinite ubinders univs paramimpls
+      let inds = declare_structure Declarations.BiFinite ubinders ~cumul univs paramimpls
         params template ~kind:Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri -> 
@@ -536,16 +514,17 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       params, params
   in
   let univs, ctx_context, fields =
-    match univs with
-    | Polymorphic_const_entry (nas, univs) ->
+    let nas = univs.entry_poly_univ_names in
+    let univs = univs.entry_polymorphic_univs in
+    if Univ.UContext.is_empty univs (* XXX should we keep this optimisation? *)
+    then Univ.AUContext.empty, ctx_context, fields
+    else
       let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
       auctx, ctx_context, fields
-    | Monomorphic_const_entry _ ->
-      Univ.AUContext.empty, ctx_context, fields
   in
   let map (impl, projs) =
     let k =
@@ -655,7 +634,7 @@ let extract_record_data records =
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
-let definition_structure udecl kind ~template cum poly finite records =
+let definition_structure udecl kind ~template cumul poly finite records =
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
@@ -671,26 +650,16 @@ let definition_structure udecl kind ~template cum poly finite records =
     in
     let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
     let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-    declare_class def cum ubinders univs id.CAst.v idbuild
+    declare_class def ~cumul ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
-      let univs =
-        match univs with
-        | Polymorphic_const_entry (nas, univs) ->
-          if cum then
-            Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
-          else
-            Polymorphic_ind_entry (nas, univs)
-        | Monomorphic_const_entry univs ->
-          Monomorphic_ind_entry univs
-      in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
       let coe = List.map (fun coe -> not (Option.is_empty coe)) coers in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
-    let inds = declare_structure finite ubinders univs implpars params template data in
+    let inds = declare_structure finite ubinders ~cumul univs implpars params template data in
     List.map (fun ind -> IndRef ind) inds

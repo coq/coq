@@ -87,9 +87,8 @@ let check_subtyping_arity_constructor env subst arcn numparams is_arity =
   let last_env = Context.Rel.fold_outside check_typ typs ~init:env in
   if not is_arity then basic_check last_env codom else ()
 
-let check_cumulativity univs env_ar params data =
+let check_cumulativity uctx variance env_ar params data =
   let numparams = Context.Rel.nhyps params in
-  let uctx = CumulativityInfo.univ_context univs in
   let new_levels = Array.init (UContext.size uctx)
       (fun i -> Level.(make (UGlobal.make DirPath.empty i)))
   in
@@ -102,7 +101,7 @@ let check_cumulativity univs env_ar params data =
   let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
   let env = Environ.push_context uctx_other env_ar in
   let subtyp_constraints =
-    CumulativityInfo.leq_constraints univs
+    enforce_leq_variance_instances variance
       (UContext.instance uctx) instance_other
       Constraint.empty
   in
@@ -235,27 +234,20 @@ let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_i
   let arity = match univ_info.ind_min_univ with
     | None -> RegularArity {mind_user_arity=arity;mind_sort=Sorts.sort_of_univ ind_univ}
     | Some min_univ ->
-      ((match univs with
-          | Monomorphic_ind _ -> ()
-          | Polymorphic_ind _ | Cumulative_ind _ ->
-            CErrors.anomaly ~label:"polymorphic_template_ind"
-              Pp.(strbrk "Template polymorphism and full polymorphism are incompatible."));
+      ((if not (AUContext.is_empty univs.polymorphic_univs) then
+          CErrors.anomaly ~label:"polymorphic_template_ind"
+            Pp.(strbrk "Template polymorphism and full polymorphism are incompatible."));
        TemplateArity {template_param_levels=param_ccls params; template_level=min_univ})
   in
 
   let kelim = allowed_sorts univ_info in
   (arity,lc), (indices,splayed_lc), kelim
 
-let abstract_inductive_universes = function
-  | Monomorphic_ind_entry ctx -> (Univ.empty_level_subst, Monomorphic_ind ctx)
-  | Polymorphic_ind_entry (nas, ctx) ->
-    let (inst, auctx) = Univ.abstract_universes nas ctx in
-    let inst = Univ.make_instance_subst inst in
-    (inst, Polymorphic_ind auctx)
-  | Cumulative_ind_entry (nas, cumi) ->
-    let (inst, acumi) = Univ.abstract_cumulativity_info nas cumi in
-    let inst = Univ.make_instance_subst inst in
-    (inst, Cumulative_ind acumi)
+let abstract_inductive_universes univs =
+  let ctx = univs.entry_polymorphic_univs in
+  let (inst, auctx) = Univ.abstract_universes univs.entry_poly_univ_names ctx in
+  let inst = Univ.make_instance_subst inst in
+  inst, {monomorphic_univs=univs.entry_monomorphic_univs; polymorphic_univs=auctx}
 
 let typecheck_inductive env (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
@@ -267,12 +259,8 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
   assert (List.is_empty (Environ.rel_context env));
 
   (* universes *)
-  let env_univs =
-    match mie.mind_entry_universes with
-    | Monomorphic_ind_entry ctx -> push_context_set ctx env
-    | Polymorphic_ind_entry (_, ctx) -> push_context ctx env
-    | Cumulative_ind_entry (_, cumi) -> push_context (Univ.CumulativityInfo.univ_context cumi) env
-  in
+  let env_univs = push_context_set mie.mind_entry_universes.entry_monomorphic_univs env in
+  let env_univs = push_context mie.mind_entry_universes.entry_polymorphic_univs env_univs in
 
   (* Params *)
   let env_params = Typeops.check_context env_univs mie.mind_entry_params in
@@ -287,9 +275,11 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
       mie.mind_entry_inds data
   in
 
-  let () = match mie.mind_entry_universes with
-    | Cumulative_ind_entry (_,univs) -> check_cumulativity univs env_ar params (List.map pi1 data)
-    | Monomorphic_ind_entry _ | Polymorphic_ind_entry _ -> ()
+  let () = match mie.mind_entry_variance with
+    | Some variance ->
+      check_cumulativity mie.mind_entry_universes.entry_polymorphic_univs
+        variance env_ar params (List.map pi1 data)
+    | None -> ()
   in
 
   (* Abstract universes *)
@@ -304,4 +294,4 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, params, Array.of_list data
+  env_ar_par, univs, mie.mind_entry_variance, params, Array.of_list data

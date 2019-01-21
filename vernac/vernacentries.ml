@@ -518,7 +518,7 @@ let start_proof_and_print ?hook k l =
 
 let vernac_definition_hook p = function
 | Coercion ->
-  Some (Class.add_coercion_hook p)
+  Some Class.add_coercion_hook
 | CanonicalStructure ->
   Some (Lemmas.mk_hook (fun _ -> Recordops.declare_canonical_structure))
 | SubClass ->
@@ -988,12 +988,12 @@ let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
 let vernac_coercion ~atts ref qids qidt =
-  let local, polymorphic = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local = only_locality atts in
   let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local polymorphic ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion ~atts id qids qidt =

@@ -157,7 +157,7 @@ type inline = bool
 type result = {
   cook_body : constant_def;
   cook_type : types;
-  cook_universes : constant_universes;
+  cook_universes : universe_decl;
   cook_private_univs : Univ.ContextSet.t option;
   cook_inline : inline;
   cook_context : Constr.named_context option;
@@ -183,11 +183,6 @@ let cook_constr { Opaqueproof.modlist ; abstract = (vars, subst, _) } c =
   abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst auctx0 =
-  match cb.const_universes with
-  | Monomorphic_const ctx ->
-    assert (AUContext.is_empty auctx0);
-    subst, (Monomorphic_const ctx)
-  | Polymorphic_const auctx ->
     (** Given a named instance [subst := u₀ ... uₙ₋₁] together with an abstract
         context [auctx0 := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
         and another abstract context relative to the former context
@@ -199,15 +194,19 @@ let lift_univs cb subst auctx0 =
         together with the instance
         [u₀ ... uₙ₋₁ Var(0) ... Var (m - 1)].
     *)
+  let auctx = cb.const_universes.polymorphic_univs in
+  let subst, auctx =
     if (Univ.Instance.is_empty subst) then
       (** Still need to take the union for the constraints between globals *)
-      subst, (Polymorphic_const (AUContext.union auctx0 auctx))
+      subst, AUContext.union auctx0 auctx
     else
       let ainst = Univ.make_abstract_instance auctx in
       let subst = Instance.append subst ainst in
       let substf = Univ.make_instance_subst subst in
       let auctx' = Univ.subst_univs_level_abstract_universe_context substf auctx in
-      subst, (Polymorphic_const (AUContext.union auctx0 auctx'))
+      subst, AUContext.union auctx0 auctx'
+  in
+  subst, {cb.const_universes with polymorphic_univs = auctx}
 
 let cook_constant ~hcons { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
@@ -233,7 +232,7 @@ let cook_constant ~hcons { from = cb; info } =
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
   let private_univs = Option.map (on_snd (Univ.subst_univs_level_constraints
                                             (Univ.make_instance_subst usubst)))
-      cb.const_private_poly_univs
+      cb.const_private_univs
   in
   {
     cook_body = body;

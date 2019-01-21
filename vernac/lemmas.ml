@@ -64,8 +64,8 @@ let adjust_guardness_conditions const = function
      let env = Global.env() in
      { const with const_entry_body =
         Future.chain const.const_entry_body
-        (fun ((body, ctx), eff) ->
-          match Constr.kind body with
+        (fun (proof, eff) ->
+          match Constr.kind proof.proof_body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
 	List.map2 (fun i c -> match i with Some i -> i | None ->
@@ -82,8 +82,8 @@ let adjust_guardness_conditions const = function
               let indexes =
                 search_guard env
                   possible_indexes fixdecls in
-		(mkFix ((indexes,0),fixdecls), ctx), eff
-          | _ -> (body, ctx), eff) }
+                {proof with proof_body=mkFix ((indexes,0),fixdecls)}, eff
+          | _ -> proof, eff) }
 
 let find_mutually_recursive_statements sigma thms =
     let n = List.length thms in
@@ -229,13 +229,8 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
       (match locality with
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
-          let univs = match univs with
-            | Polymorphic_const_entry (_, univs) ->
-              (* What is going on here? *)
-              Univ.ContextSet.of_context univs
-            | Monomorphic_const_entry univs -> univs
-          in
-          let c = SectionLocalAssum ((t_i, univs),p,impl) in
+          let univs = Lib.entry_to_var_univs univs in
+          let c = SectionLocalAssum (t_i, univs, impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
@@ -244,7 +239,7 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
           | Global -> false
           | Discharge -> assert false
           in
-          let decl = (ParameterEntry (None,(t_i,univs),None), k) in
+          let decl = (ParameterEntry (None,univs,t_i,None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
@@ -476,9 +471,9 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = UState.const_univ_entry ~poly:(pi2 k) universes in
+            let ctx = UState.univ_entry ~poly:(pi2 k) universes in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
-            Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
+            Admitted(id, k, (sec_vars, ctx, typ, None), universes)
         | None ->
             let pftree = Proof_global.give_me_the_proof () in
             let id, k, typ = Pfedit.current_proof_statement () in
@@ -500,7 +495,7 @@ let save_proof ?proof = function
 	    let decl = Proof_global.get_universe_decl () in
             let poly = pi2 k in
             let ctx = UState.check_univ_decl ~poly universes decl in
-            Admitted(id,k,(sec_vars, (typ, ctx), None), universes)
+            Admitted(id,k,(sec_vars, ctx, typ, None), universes)
       in
       Proof_global.apply_terminator (Proof_global.get_terminator ()) pe
   | Vernacexpr.Proved (opaque,idopt) ->

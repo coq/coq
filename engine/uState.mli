@@ -64,12 +64,8 @@ val constraints : t -> Univ.Constraint.t
 val context : t -> Univ.UContext.t
 (** Shorthand for {!context_set} with {!Context_set.to_context}. *)
 
-val const_univ_entry : poly:bool -> t -> Entries.constant_universes_entry
+val univ_entry : poly:bool -> t -> Entries.universe_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
-
-val ind_univ_entry : poly:bool -> t -> Entries.inductive_universes
-(** Pick from {!context} or {!context_set} based on [poly].
-    Cannot create cumulative entries. *)
 
 (** {5 Constraints handling} *)
 
@@ -177,7 +173,7 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:bool -> t -> universe_decl -> Entries.constant_universes_entry
+val check_univ_decl : poly:bool -> t -> universe_decl -> Entries.universe_entry
 
 val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
 

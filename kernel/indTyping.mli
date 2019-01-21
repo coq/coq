@@ -24,7 +24,7 @@ open Declarations
  *)
 val typecheck_inductive : env -> mutual_inductive_entry ->
   env
-  * abstract_inductive_universes
+  * universe_decl * Univ.Variance.t array option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *

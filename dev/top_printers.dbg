@@ -62,6 +62,7 @@ install_printer Top_printers.ppuni_level
 install_printer Top_printers.ppuniverse_set
 install_printer Top_printers.ppuniverse_instance
 install_printer Top_printers.ppuniverse_context
+install_printer Top_printers.ppaucontext
 install_printer Top_printers.ppuniverse_context_set
 install_printer Top_printers.ppuniverse_subst
 install_printer Top_printers.ppuniverse_opt_subst
@@ -70,8 +71,6 @@ install_printer Top_printers.ppevar_universe_context
 install_printer Top_printers.ppconstraints
 install_printer Top_printers.ppuniverseconstraints
 install_printer Top_printers.ppuniverse_context_future
-install_printer Top_printers.ppcumulativity_info
-install_printer Top_printers.ppabstract_cumulativity_info
 install_printer Top_printers.ppuniverses
 install_printer Top_printers.ppnamedcontextval
 install_printer Top_printers.ppenv

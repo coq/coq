@@ -166,9 +166,12 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
     else { ce with
       const_entry_body = Future.chain ce.const_entry_body
         (fun (pt, _) -> pt, ()) } in
-  let (cb, ctx), () = Future.force ce.const_entry_body in
-  let univs = UState.merge ~sideff:side_eff ~extend:true Evd.univ_rigid univs ctx in
-  cb, status, univs
+  let proof, () = Future.force ce.const_entry_body in
+  assert (Univ.ContextSet.is_empty proof.proof_priv_univs);
+  let univs = UState.merge ~sideff:side_eff ~extend:true Evd.univ_rigid univs
+      proof.proof_univs
+  in
+  proof.proof_body, status, univs
 
 let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the initial side-effects to restore them afterwards. We set the

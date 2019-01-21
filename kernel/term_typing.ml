@@ -65,23 +65,22 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       Feedback.feedback ~id:state_id Feedback.Complete)
 
-let abstract_constant_universes = function
-  | Monomorphic_const_entry uctx ->
-    Univ.empty_level_subst, Monomorphic_const uctx
-  | Polymorphic_const_entry (nas, uctx) ->
-    let sbst, auctx = Univ.abstract_universes nas uctx in
-    let sbst = Univ.make_instance_subst sbst in
-    sbst, Polymorphic_const auctx
+let abstract_constant_universes
+    { entry_monomorphic_univs=mono; entry_poly_univ_names=nas; entry_polymorphic_univs=uctx } =
+  let sbst, auctx = Univ.abstract_universes nas uctx in
+  let sbst = Univ.make_instance_subst sbst in
+  sbst, { monomorphic_univs=mono; polymorphic_univs=auctx }
+
+let push_universes univs env =
+  let env = push_context_set ~strict:true univs.entry_monomorphic_univs env in
+  push_context ~strict:false univs.entry_polymorphic_univs env
 
 let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   match dcl with
-    | ParameterEntry (ctx,(t,uctx),nl) ->
-      let env = match uctx with
-        | Monomorphic_const_entry uctx -> push_context_set ~strict:true uctx env
-        | Polymorphic_const_entry (_, uctx) -> push_context ~strict:false uctx env
-      in
+    | ParameterEntry (ctx,univs,t,nl) ->
+      let env = push_universes univs env in
       let j = infer env t in
-      let usubst, univs = abstract_constant_universes uctx in
+      let usubst, univs = abstract_constant_universes univs in
       let c = Typeops.assumption_of_judgment env j in
       let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
       {
@@ -97,19 +96,24 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       so we delay the typing and hash consing of its body.
       Remark: when the universe quantification is given explicitly, we could
       delay even in the polymorphic case.  *)
+    (* XXX can we ignore polymorphism here? eg delay unless [is_over body] *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
-                       const_entry_universes = Monomorphic_const_entry univs; _ } as c) ->
+                       const_entry_universes = univs; _ } as c)
+    when (Univ.UContext.is_empty univs.entry_polymorphic_univs) ->
+      let univs = univs.entry_monomorphic_univs in
       let env = push_context_set ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id ; _ } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain body (fun ((body,uctx),side_eff) ->
+        Future.chain body (fun (proof,side_eff) ->
+          let {proof_body=body; proof_univs=uctx; proof_priv_univs=priv} = proof in
           (* don't redeclare universes which are declared for the type *)
           let uctx = Univ.ContextSet.diff uctx univs in
           let j, uctx = match trust with
           | Pure ->
             let env = push_context_set uctx env in
+            let env = push_subgraph priv env in
             let j = infer env body in
             let _ = judge_of_cast env j DEFAULTcast tyj in
             j, uctx
@@ -118,6 +122,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
             let uctx = Univ.ContextSet.union uctx uctx' in
             let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
+            let env = push_subgraph priv env in
             let j = infer env body in
             let j = unzip ectx j in
             let _ = judge_of_cast env j DEFAULTcast tyj in
@@ -130,7 +135,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_universes = Monomorphic_const univs;
+        cook_universes = { monomorphic_univs=univs; polymorphic_univs=Univ.AUContext.empty };
         cook_private_univs = None;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -140,32 +145,36 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      let (body, ctx), side_eff = Future.join body in
+      let proof, side_eff = Future.join body in
+      let {proof_body=body; proof_univs=ctx; proof_priv_univs=priv} = proof in
       let body, ctx = match trust with
       | Pure -> body, ctx
       | SideEffects handle ->
         let body, ctx', _ = handle env body side_eff in
         body, Univ.ContextSet.union ctx ctx'
       in
-      let env, usubst, univs, private_univs = match c.const_entry_universes with
-      | Monomorphic_const_entry univs ->
-        let ctx = Univ.ContextSet.union univs ctx in
-        let env = push_context_set ~strict:true ctx env in
-        env, Univ.empty_level_subst, Monomorphic_const ctx, None
-      | Polymorphic_const_entry (nas, uctx) ->
-        (** [ctx] must contain local universes, such that it has no impact
-            on the rest of the graph (up to transitivity). *)
+      let env, usubst, univs, private_univs =
+        let mono = Univ.ContextSet.union c.const_entry_universes.entry_monomorphic_univs ctx in
+        let uctx = c.const_entry_universes.entry_polymorphic_univs in
+        (* [priv] must contain local universes,
+           such that it has no impact on the rest of the graph (up to
+           transitivity). *)
+        let env = push_context_set ~strict:true mono env in
         let env = push_context ~strict:false uctx env in
-        let sbst, auctx = Univ.abstract_universes nas uctx in
-        let sbst = Univ.make_instance_subst sbst in
-        let env, local =
-          if opaque then
-            push_subgraph ctx env, Some (on_snd (Univ.subst_univs_level_constraints sbst) ctx)
-          else
-          if Univ.ContextSet.is_empty ctx then env, None
-          else CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
+        let sbst, auctx = Univ.abstract_universes
+            c.const_entry_universes.entry_poly_univ_names
+            uctx
         in
-        env, sbst, Polymorphic_const auctx, local
+        let sbst = Univ.make_instance_subst sbst in
+        let env, priv =
+          if opaque then
+            push_subgraph priv env, Some (on_snd (Univ.subst_univs_level_constraints sbst) priv)
+          else
+          if Univ.ContextSet.is_empty priv then env, None
+          else CErrors.anomaly Pp.(str "Private universes in non-opaque definition.")
+        in
+        let univs = { monomorphic_univs=mono; polymorphic_univs=auctx } in
+        env, sbst, univs, priv
       in
       let j = infer env body in
       let typ = match typ with
@@ -281,7 +290,7 @@ let build_constant_declaration _kn env result =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_private_poly_univs = result.cook_private_univs;
+    const_private_univs = result.cook_private_univs;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
@@ -301,13 +310,18 @@ let translate_recipe ~hcons env kn r =
 
 let translate_local_def env _id centry =
   let open Cooking in
-  let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
+  let proof = { proof_body=centry.secdef_body;
+                proof_univs=Univ.ContextSet.empty;
+                proof_priv_univs=Univ.ContextSet.empty; } in
+  let body = Future.from_val (proof, ()) in
   let centry = {
     const_entry_body = body;
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_const_entry Univ.ContextSet.empty;
+    const_entry_universes = { entry_monomorphic_univs=Univ.ContextSet.empty;
+                              entry_poly_univ_names=[| |];
+                              entry_polymorphic_univs=Univ.UContext.empty; };
     const_entry_opaque = false;
     const_entry_inline_code = false;
   } in
@@ -323,9 +337,8 @@ let translate_local_def env _id centry =
          (Opaqueproof.force_proof (opaque_tables env) lc) in
        record_aux env ids_typ ids_def
   end;
-  let () = match decl.cook_universes with
-  | Monomorphic_const ctx -> assert (Univ.ContextSet.is_empty ctx)
-  | Polymorphic_const _ -> assert false
+  let () = assert (Univ.ContextSet.is_empty decl.cook_universes.monomorphic_univs &&
+                   Univ.AUContext.is_empty decl.cook_universes.polymorphic_univs)
   in
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c

@@ -41,33 +41,31 @@ let variance_pb cv_pb var =
   | CONV, Covariant -> Invariant
   | CUMUL, Covariant -> Covariant
 
-let infer_cumulative_ind_instance cv_pb cumi variances u =
+let infer_cumulative_ind_instance cv_pb variance variances u =
   Array.fold_left2 (fun variances varu u ->
       match LMap.find u variances with
       | exception Not_found -> variances
       | varu' ->
         LMap.set u (Variance.sup varu' (variance_pb cv_pb varu)) variances)
-    variances (ACumulativityInfo.variance cumi) (Instance.to_array u)
+    variances variance (Instance.to_array u)
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
   let mind = Environ.lookup_mind (fst ind) env in
-  match mind.mind_universes with
-  | Monomorphic_ind _ -> assert (Instance.is_empty u); variances
-  | Polymorphic_ind _ -> infer_generic_instance_eq variances u
-  | Cumulative_ind cumi ->
+  match mind.mind_variance with
+  | None -> infer_generic_instance_eq variances u
+  | Some variance ->
     if not (Int.equal (inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_cumulative_ind_instance cv_pb cumi variances u
+    else infer_cumulative_ind_instance cv_pb variance variances u
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   let mind = Environ.lookup_mind mi env in
-  match mind.mind_universes with
-  | Monomorphic_ind _ -> assert (Instance.is_empty u); variances
-  | Polymorphic_ind _ -> infer_generic_instance_eq variances u
-  | Cumulative_ind cumi ->
+  match mind.mind_variance with
+  | None -> infer_generic_instance_eq variances u
+  | Some variance ->
     if not (Int.equal (constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_cumulative_ind_instance CONV cumi variances u
+    else infer_cumulative_ind_instance CONV variance variances u
 
 let infer_sort cv_pb variances s =
   match cv_pb with
@@ -184,29 +182,28 @@ let infer_inductive env mie =
   let { mind_entry_params = params;
         mind_entry_inds = entries; } = mie
   in
-  let univs =
-    match mie.mind_entry_universes with
-    | Monomorphic_ind_entry _
-    | Polymorphic_ind_entry _ as univs -> univs
-    | Cumulative_ind_entry (nas, cumi) ->
-      let uctx = CumulativityInfo.univ_context cumi in
-      let uarray = Instance.to_array @@ UContext.instance uctx in
-      let env = Environ.push_context uctx env in
-      let variances =
-        Array.fold_left (fun variances u -> LMap.add u Variance.Irrelevant variances)
-          LMap.empty uarray
-      in
-      let env = Typeops.check_context env params in
-      let variances = List.fold_left (fun variances entry ->
-          let variances = infer_arity_constructor true
-              env variances entry.mind_entry_arity
-          in
-          List.fold_left (infer_arity_constructor false env)
-            variances entry.mind_entry_lc)
-          variances
-          entries
-      in
-      let variances = Array.map (fun u -> LMap.find u variances) uarray in
-      Cumulative_ind_entry (nas, CumulativityInfo.make (uctx, variances))
-  in
-  { mie with mind_entry_universes = univs }
+  match mie.mind_entry_variance with
+  | None -> mie
+  | Some _ ->
+    let uctx = mie.mind_entry_universes.entry_polymorphic_univs in
+    let uarray = Instance.to_array @@ UContext.instance uctx in
+    let env = Environ.push_context uctx env in
+    let variances =
+      Array.fold_left (fun variances u -> LMap.add u Variance.Irrelevant variances)
+        LMap.empty uarray
+    in
+    let env = Typeops.check_context env params in
+    let variances = List.fold_left (fun variances entry ->
+        let variances = infer_arity_constructor true
+            env variances entry.mind_entry_arity
+        in
+        List.fold_left (infer_arity_constructor false env)
+          variances entry.mind_entry_lc)
+        variances
+        entries
+    in
+    let variances = Array.map (fun u -> LMap.find u variances) uarray in
+    { mie with mind_entry_variance = Some variances }
+
+let dummy_variance univs =
+  Array.make (UContext.size univs.Entries.entry_polymorphic_univs) Variance.Invariant

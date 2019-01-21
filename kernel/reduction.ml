@@ -233,18 +233,14 @@ let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_packets.(ind).Declarations.mind_nrealargs
 
 let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 s =
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ ->
-    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
-    s
-  | Declarations.Polymorphic_ind _ ->
-    cmp_instances u1 u2 s
-  | Declarations.Cumulative_ind cumi ->
+  match mind.Declarations.mind_variance with
+  | None -> cmp_instances u1 u2 s
+  | Some variance ->
     let num_param_arity = inductive_cumulativity_arguments (mind,ind) in
     if not (Int.equal num_param_arity nargs) then
       cmp_instances u1 u2 s
     else
-      cmp_cumul cv_pb (Univ.ACumulativityInfo.variance cumi) u1 u2 s
+      cmp_cumul cv_pb variance u1 u2 s
 
 let convert_inductives cv_pb ind nargs u1 u2 (s, check) =
   convert_inductives_gen (check.compare_instances ~flex:false) check.compare_cumul_instances
@@ -255,13 +251,9 @@ let constructor_cumulativity_arguments (mind, ind, ctor) =
   mind.Declarations.mind_packets.(ind).Declarations.mind_consnrealargs.(ctor - 1)
 
 let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u2 s =
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ ->
-    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
-    s
-  | Declarations.Polymorphic_ind _ ->
-    cmp_instances u1 u2 s
-  | Declarations.Cumulative_ind _cumi ->
+  match mind.Declarations.mind_variance with
+  | None -> cmp_instances u1 u2 s
+  | Some _ ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
     if not (Int.equal num_cnstr_args nargs) then
       cmp_instances u1 u2 s

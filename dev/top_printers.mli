@@ -137,6 +137,7 @@ val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
 val ppuniverse_set : Univ.LSet.t -> unit
 val ppuniverse_instance : Univ.Instance.t -> unit
 val ppuniverse_context : Univ.UContext.t -> unit
+val ppaucontext : Univ.AUContext.t -> unit
 val ppuniverse_context_set : Univ.ContextSet.t -> unit
 val ppuniverse_subst : Univ.universe_subst -> unit
 val ppuniverse_opt_subst : UnivSubst.universe_opt_subst -> unit
@@ -145,8 +146,6 @@ val ppevar_universe_context : UState.t -> unit
 val ppconstraints : Univ.Constraint.t -> unit
 val ppuniverseconstraints : UnivProblem.Set.t -> unit
 val ppuniverse_context_future : Univ.UContext.t Future.computation -> unit
-val ppcumulativity_info : Univ.CumulativityInfo.t -> unit
-val ppabstract_cumulativity_info : Univ.ACumulativityInfo.t -> unit
 val ppuniverses : UGraph.t -> unit
 
 val ppnamedcontextval : Environ.named_context_val -> unit

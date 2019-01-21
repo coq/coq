@@ -96,8 +96,6 @@ type signature_mismatch_error =
   | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
   | NotConvertibleTypeField of env * types * types
-  | CumulativeStatusExpected of bool
-  | PolymorphicStatusExpected of bool
   | NotSameConstructorNamesField
   | NotSameInductiveNameInBlockField
   | FiniteInductiveFieldExpected of bool

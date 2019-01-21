@@ -29,7 +29,7 @@ val do_assumptions : locality * polymorphic * assumption_object_kind ->
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind ->
-  types in_constant_universes_entry ->
+  universe_entry -> types ->
   UnivNames.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Declaremods.inline -> variable CAst.t ->
   GlobRef.t * Univ.Instance.t * bool

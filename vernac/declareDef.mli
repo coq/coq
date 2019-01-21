@@ -19,8 +19,8 @@ val declare_definition : Id.t -> definition_kind ->
   GlobRef.t
 
 val declare_fix : ?opaque:bool -> definition_kind ->
-  UnivNames.universe_binders -> Entries.constant_universes_entry ->
-  Id.t -> Safe_typing.private_constants Entries.proof_output ->
+  UnivNames.universe_binders -> Entries.universe_entry ->
+  Id.t -> Constr.t ->
   Constr.types -> Impargs.manual_implicits ->
   GlobRef.t
 

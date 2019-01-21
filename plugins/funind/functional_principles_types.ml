@@ -364,7 +364,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
         let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
         let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
         (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-        let univs = Evd.const_univ_entry ~poly:false evd' in
+        let univs = Evd.univ_entry ~poly:false evd' in
         let ce = Declare.definition_entry ~univs value in
         ignore(
 	  Declare.declare_constant
@@ -579,7 +579,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
     let first_princ_body,first_princ_type = const.const_entry_body, const.const_entry_type in
-    let ctxt,fix = decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
+    let ctxt,fix = decompose_lam_assum (fst(Future.force first_princ_body)).proof_body in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = destFix fix in
     let other_result =
       List.map (* we can now compute the other principles *)

@@ -52,9 +52,10 @@ type constant_def =
   | Def of constr Mod_subst.substituted   (** or a transparent global definition *)
   | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
 
-type constant_universes =
-  | Monomorphic_const of Univ.ContextSet.t
-  | Polymorphic_const of Univ.AUContext.t
+type universe_decl = {
+  monomorphic_univs : Univ.ContextSet.t;
+  polymorphic_univs : Univ.AUContext.t;
+}
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -91,8 +92,8 @@ type constant_body = {
     const_body : constant_def;
     const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
-    const_universes : constant_universes;
-    const_private_poly_univs : Univ.ContextSet.t option;
+    const_universes : universe_decl;
+    const_private_univs : Univ.ContextSet.t option;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
@@ -184,11 +185,6 @@ type one_inductive_body = {
     mind_reloc_tbl :  Vmvalues.reloc_table;
   }
 
-type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.ContextSet.t
-  | Polymorphic_ind of Univ.AUContext.t
-  | Cumulative_ind of Univ.ACumulativityInfo.t
-
 type recursivity_kind =
   | Finite (** = inductive *)
   | CoFinite (** = coinductive *)
@@ -212,7 +208,9 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_universes : abstract_inductive_universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
+    mind_universes : universe_decl; (** Global and local universes and their constraints. *)
+
+    mind_variance : Univ.Variance.t array option; (** Variance for cumulativity for each polymorphic universe. [None] when not cumulative. *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
@@ -235,7 +233,7 @@ type ('ty,'a) functorize =
 
 type with_declaration =
   | WithMod of Id.t list * ModPath.t
-  | WithDef of Id.t list * (constr * Univ.AUContext.t option)
+  | WithDef of Id.t list * (constr * Univ.AUContext.t)
 
 type module_alg_expr =
   | MEident of ModPath.t

@@ -1,4 +1,5 @@
 Set Universe Polymorphism.
+Set Printing Universes.
 
 (** Tests for module subtyping of polymorphic terms *)
 
@@ -10,7 +11,7 @@ Universes i j.
 Constraint i <= j.
 
 Inductive foo : Type@{i} -> Type@{j} :=.
-
+About foo_rect.
 End Foo.
 
 End S.

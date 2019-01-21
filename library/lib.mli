@@ -180,15 +180,31 @@ val variable_section_segment_of_reference : GlobRef.t -> variable_context
 val section_instance : GlobRef.t -> Univ.Instance.t * Id.t array
 val is_in_section : GlobRef.t -> bool
 
-val add_section_variable : Id.t -> Decl_kinds.binding_kind -> Decl_kinds.polymorphic -> Univ.ContextSet.t -> unit
+type var_universes = { var_monomorphic_univs : Univ.ContextSet.t;
+                       var_polymorphic_univs : Univ.ContextSet.t; }
+
+(** The universes are only the polymorphic ones. *)
+val add_section_variable : Id.t -> Decl_kinds.binding_kind -> var_universes -> unit
 val add_section_context : Univ.ContextSet.t -> unit
-val add_section_constant : Decl_kinds.polymorphic ->
-  Constant.t -> Constr.named_context -> unit
-val add_section_kn : Decl_kinds.polymorphic ->
-  MutInd.t -> Constr.named_context -> unit
+val add_section_constant : Constant.t -> Constr.named_context -> unit
+val add_section_kn : MutInd.t -> Constr.named_context -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
-val is_polymorphic_univ : Univ.Level.t -> bool
+val check_monomorphic_context : Univ.ContextSet.t -> unit
+(** Monomorphic constraints are not allowed to refer to polymorphic
+    section universes. This function errors if called on such a
+    monomorphic context.
+
+    Note that we can't fully check this for opaque constants.
+    TODO check what happens if body constraints refer to polymorphic section univs.
+*)
+
+val variable_monomorphic_univs : Id.t -> Univ.ContextSet.t
+(** Returns the monomorphic universes and constraints for a variable
+   in the current section. raises [Not_found] for other variables. *)
+
+val entry_to_var_univs : Entries.universe_entry -> var_universes
+(** Forgets the names and order of polymorphic universes *)
 
 (** {6 Discharge: decrease the section level if in the current section } *)
 

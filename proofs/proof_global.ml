@@ -353,7 +353,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
         let used_univs_body = Vars.universes_of_constr body in
         let used_univs_typ = Vars.universes_of_constr typ in
         if allow_deferred then
-          let initunivs = UState.const_univ_entry ~poly initial_euctx in
+          let initunivs = UState.univ_entry ~poly initial_euctx in
           let ctx = constrain_variables universes in
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
@@ -361,17 +361,17 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx_body = UState.restrict ctx used_univs in
           let univs = UState.check_mono_univ_decl ctx_body universe_decl in
-          (initunivs, typ), ((body, univs), eff)
+          (initunivs, typ), (Safe_typing.make_proof body ~global:univs, eff)
         else if poly && opaque && private_poly_univs () then
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let universes = UState.restrict universes used_univs in
           let typus = UState.restrict universes used_univs_typ in
           let udecl = UState.check_univ_decl ~poly typus universe_decl in
-          let ubody = Univ.ContextSet.diff
+          let priv = Univ.ContextSet.diff
               (UState.context_set universes)
               (UState.context_set typus)
           in
-          (udecl, typ), ((body, ubody), eff)
+          (udecl, typ), (Safe_typing.make_proof body ~priv, eff)
         else
           (* Since the proof is computed now, we can simply have 1 set of
              constraints in which we merge the ones for the body and the ones
@@ -381,13 +381,13 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx = UState.restrict universes used_univs in
           let univs = UState.check_univ_decl ~poly ctx universe_decl in
-          (univs, typ), ((body, Univ.ContextSet.empty), eff)
+          (univs, typ), (Safe_typing.make_proof body, eff)
       in 
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
         (* Already checked the univ_decl for the type universes when starting the proof. *)
-        let univctx = Entries.Monomorphic_const_entry (UState.context_set universes) in
+        let univctx = UState.univ_entry ~poly:false universes in
         let t = nf t in
         Future.from_val (univctx, t),
         Future.chain p (fun (pt,eff) ->
@@ -403,7 +403,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
           in
           let univs = UState.restrict univs used_univs in
           let univs = UState.check_mono_univ_decl univs universe_decl in
-          (pt,univs),eff)
+          (Safe_typing.make_proof pt ~global:univs),eff)
   in
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in

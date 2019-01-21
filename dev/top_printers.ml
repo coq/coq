@@ -212,6 +212,7 @@ let prlev = UnivNames.pr_with_global_universes
 let ppuniverse_set l = pp (LSet.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
+let ppaucontext l = pp (pr_abstract_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
 let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
 let ppuniverse_opt_subst l = pp (UnivSubst.pr_universe_opt_subst l)
@@ -222,8 +223,6 @@ let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c = 
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppcumulativity_info c = pp (Univ.pr_cumulativity_info Univ.Level.pr c)
-let ppabstract_cumulativity_info c = pp (Univ.pr_abstract_cumulativity_info Univ.Level.pr c)
 let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
 let ppnamedcontextval e =
   let env = Global.env () in

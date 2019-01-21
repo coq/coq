@@ -310,9 +310,7 @@ let universes_of_private eff =
     | `Nothing -> acc
     | `Opaque (_, ctx) -> ctx :: acc
     in
-    match eff.seff_body.const_universes with
-    | Monomorphic_const ctx -> ctx :: acc
-    | Polymorphic_const _ -> acc
+    eff.seff_body.const_universes.monomorphic_univs :: acc
   in
   List.fold_left fold [] (side_effects_of_private_constants eff)
 
@@ -440,11 +438,10 @@ let push_named_def (id,de) senv =
   let env'' = safe_push_named (LocalDef (id, c, typ)) senv.env in
   { senv with env = env'' }
 
-let push_named_assum ((id,t,poly),ctx) senv =
-  let senv' = push_context_set poly ctx senv in
-  let t = Term_typing.translate_local_assum senv'.env t in
-  let env'' = safe_push_named (LocalAssum (id,t)) senv'.env in
-    {senv' with env=env''}
+let push_named_assum (id,t) senv =
+  let t = Term_typing.translate_local_assum senv.env t in
+  let env = safe_push_named (LocalAssum (id,t)) senv.env in
+  {senv with env}
 
 
 (** {6 Insertion of new declarations to current environment } *)
@@ -463,27 +460,19 @@ let labels_of_mib mib =
   get ()
 
 let globalize_constant_universes env cb =
-  match cb.const_universes with
-  | Monomorphic_const cstrs ->
-    Now (false, cstrs) ::
-    (match cb.const_body with
-     | (Undef _ | Def _) -> []
-     | OpaqueDef lc ->
-       match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
-       | None -> []
-       | Some fc ->
-            match Future.peek_val fc with
-             | None -> [Later fc]
-             | Some c -> [Now (false, c)])
-  | Polymorphic_const _ ->
-    [Now (true, Univ.ContextSet.empty)]
-      
+  Now (false, cb.const_universes.monomorphic_univs) ::
+  (match cb.const_body with
+   | (Undef _ | Def _) -> []
+   | OpaqueDef lc ->
+     match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
+     | None -> []
+     | Some fc ->
+       match Future.peek_val fc with
+       | None -> [Later fc]
+       | Some c -> [Now (false, c)])
+
 let globalize_mind_universes mb =
-  match mb.mind_universes with
-  | Monomorphic_ind ctx ->
-    [Now (false, ctx)]
-  | Polymorphic_ind _ -> [Now (true, Univ.ContextSet.empty)]
-  | Cumulative_ind _ -> [Now (true, Univ.ContextSet.empty)]
+  [Now (false, mb.mind_universes.monomorphic_univs)]
 
 let constraints_of_sfb env sfb = 
   match sfb with
@@ -574,7 +563,13 @@ let add_constant_aux ~in_section senv (kn, cb) =
   in
   senv''
 
-let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
+let make_proof ?(global=Univ.ContextSet.empty) ?(priv=Univ.ContextSet.empty) body =
+  Entries.{ proof_body = body;
+            proof_univs = global;
+            proof_priv_univs = priv; }
+
+let mk_pure_proof c =
+  make_proof c, SideEffects.empty
 
 let inline_side_effects env body side_eff =
   let open Entries in
@@ -605,14 +600,13 @@ let inline_side_effects env body side_eff =
       | OpaqueDef _, `Opaque (b,_) -> (b, true)
       | _ -> assert false
       in
-      match cb.const_universes with
-      | Monomorphic_const univs ->
+      if Univ.AUContext.is_empty cb.const_universes.polymorphic_univs then
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
-        let ctx = Univ.ContextSet.union ctx univs in
+        let ctx = Univ.ContextSet.union ctx cb.const_universes.monomorphic_univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const _ ->
+      else
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -655,10 +649,11 @@ let inline_private_constants_in_definition_entry env ce =
   let open Entries in
   { ce with
   const_entry_body = Future.chain
-    ce.const_entry_body (fun ((body, ctx), side_eff) ->
+    ce.const_entry_body (fun (proof, side_eff) ->
+      let {proof_body=body; proof_univs=ctx; proof_priv_univs} = proof in
       let body, ctx',_ = inline_side_effects env body side_eff in
       let ctx' = Univ.ContextSet.union ctx ctx' in
-      (body, ctx'), ());
+      {proof_body=body; proof_univs=ctx'; proof_priv_univs}, ());
   }
 
 let inline_private_constants_in_constr env body side_eff =
@@ -693,19 +688,23 @@ let check_signatures curmb sl =
 let constant_entry_of_side_effect cb u =
   let open Entries in
   let univs =
-    match cb.const_universes with
-    | Monomorphic_const uctx ->
-      Monomorphic_const_entry uctx
-    | Polymorphic_const auctx ->
-      Polymorphic_const_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
+    let univs = cb.const_universes in
+    let auctx = univs.polymorphic_univs in
+    { entry_monomorphic_univs=univs.monomorphic_univs;
+      entry_poly_univ_names=Univ.AUContext.names auctx;
+      entry_polymorphic_univs=Univ.AUContext.repr auctx; }
   in
-  let pt =
+  let body, bunivs =
     match cb.const_body, u with
     | OpaqueDef _, `Opaque (b, c) -> b, c
     | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
     | _ -> assert false in
+  let proof = { proof_body=body;
+                proof_univs=bunivs;
+                proof_priv_univs=Univ.ContextSet.empty; }
+  in
   DefinitionEntry {
-    const_entry_body = Future.from_val (pt, ());
+    const_entry_body = Future.from_val (proof, ());
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type = Some cb.const_type;
@@ -749,14 +748,12 @@ let export_side_effects mb env c =
       let push_seff env eff =
         let { seff_constant = kn; seff_body = cb ; _ } = eff in
         let env = Environ.add_constant kn cb env in
-        match cb.const_universes with
-        | Polymorphic_const _ -> env
-        | Monomorphic_const ctx ->
-          let ctx = match eff.seff_env with
+        let ctx = cb.const_universes.monomorphic_univs in
+        let ctx = match eff.seff_env with
           | `Nothing -> ctx
           | `Opaque(_, ctx') -> Univ.ContextSet.union ctx' ctx
-          in
-          Environ.push_context_set ~strict:true ctx env
+        in
+        Environ.push_context_set ~strict:true ctx env
       in
       let rec translate_seff sl seff acc env =
         match seff with

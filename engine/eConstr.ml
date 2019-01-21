@@ -403,25 +403,17 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ ->
-    assert (Univ.Instance.length u1 = 0 && Univ.Instance.length u2 = 0);
-    cstrs
-  | Declarations.Polymorphic_ind _ ->
-     enforce_eq_instances_univs false u1 u2 cstrs
-  | Declarations.Cumulative_ind cumi ->
+  match mind.Declarations.mind_variance with
+  | None -> enforce_eq_instances_univs false u1 u2 cstrs
+  | Some variances ->
     let num_param_arity = Reduction.inductive_cumulativity_arguments spec in
-    let variances = Univ.ACumulativityInfo.variance cumi in
     compare_cumulative_instances cv_pb (Int.equal num_param_arity nargs) variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
-  match mind.Declarations.mind_universes with
-  | Declarations.Monomorphic_ind _ ->
-    cstrs
-  | Declarations.Polymorphic_ind _ ->
-    enforce_eq_instances_univs false u1 u2 cstrs
-  | Declarations.Cumulative_ind cumi ->
+  match mind.Declarations.mind_variance with
+  | None -> enforce_eq_instances_univs false u1 u2 cstrs
+  | Some variances ->
     let num_cnstr_args = Reduction.constructor_cumulativity_arguments spec in
     if not (Int.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
