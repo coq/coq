@@ -1,20 +1,68 @@
 # Coq
 
-[![GitLab](https://gitlab.com/coq/coq/badges/master/pipeline.svg)](https://gitlab.com/coq/coq/commits/master)
-[![Azure Pipelines](https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master)](https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master)
-[![Travis](https://travis-ci.org/coq/coq.svg?branch=master)](https://travis-ci.org/coq/coq/builds)
-[![Appveyor](https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true)](https://ci.appveyor.com/project/coq/coq/branch/master)
-[![Gitter](https://badges.gitter.im/coq/coq.svg)](https://gitter.im/coq/coq)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg)](https://doi.org/10.5281/zenodo.1003420)
+[![GitLab][gitlab-badge]][gitlab-link]
+[![Azure Pipelines][azure-badge]][azure-link]
+[![Travis][travis-badge]][travis-link]
+[![Appveyor][appveyor-badge]][appveyor-link]
+[![Gitter][gitter-badge]][gitter-link]
+[![DOI][doi-badge]][doi-link]
+
+[gitlab-badge]: https://gitlab.com/coq/coq/badges/master/pipeline.svg
+[gitlab-link]: https://gitlab.com/coq/coq/commits/master
+
+[azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
+[azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
+
+[travis-badge]: https://travis-ci.org/coq/coq.svg?branch=master
+[travis-link]: https://travis-ci.org/coq/coq/builds
+
+[appveyor-badge]: https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true
+[appveyor-link]: https://ci.appveyor.com/project/coq/coq/branch/master
+
+[gitter-badge]: https://badges.gitter.im/coq/coq.svg
+[gitter-link]: https://gitter.im/coq/coq
+
+[doi-badge]: https://zenodo.org/badge/DOI/10.5281/zenodo.1003420.svg
+[doi-link]: https://doi.org/10.5281/zenodo.1003420
 
 Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
 ## Installation
-Download the pre-built packages of the [latest release](https://github.com/coq/coq/releases/latest) for Windows and MacOS;
-read the [help page](https://coq.inria.fr/opam/www/using.html) on how to install Coq with OPAM;
-or refer to the [`INSTALL` file](INSTALL) for the procedure to install from source.
+
+[![latest packaged version(s)][repology-badge]][repology-link]
+
+[![Arch package][arch-badge]][arch-link]
+[![Chocolatey package][chocolatey-badge]][chocolatey-link]
+[![Homebrew package][homebrew-badge]][homebrew-link]
+[![MacPorts package][macports-badge]][macports-link]
+[![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
+
+[repology-badge]: https://repology.org/badge/latest-versions/coq.svg
+[repology-link]: https://repology.org/metapackage/coq/versions
+
+[arch-badge]: https://repology.org/badge/version-for-repo/arch/coq.svg
+[arch-link]: https://www.archlinux.org/packages/community/x86_64/coq/
+
+[chocolatey-badge]: https://repology.org/badge/version-for-repo/chocolatey/coq.svg
+[chocolatey-link]: https://chocolatey.org/packages/Coq
+
+[homebrew-badge]: https://repology.org/badge/version-for-repo/homebrew/coq.svg
+[homebrew-link]: https://formulae.brew.sh/formula/coq
+
+[macports-badge]: https://repology.org/badge/version-for-repo/macports/coq.svg
+[macports-link]: https://www.macports.org/ports.php?by=name&substr=coq
+
+[nixpkgs-badge]: https://repology.org/badge/version-for-repo/nix_unstable/coq.svg
+[nixpkgs-link]: https://nixos.org/nixos/packages.html#coq
+
+Download the pre-built packages of the [latest release][] for Windows and macOS;
+read the [help page][opam-using] on how to install Coq with OPAM;
+or refer to the [`INSTALL`](INSTALL) file for the procedure to install from source.
+
+[latest release]: https://github.com/coq/coq/releases/latest
+[opam-using]: https://coq.inria.fr/opam/www/using.html
 
 ## Documentation
 
