@@ -163,14 +163,16 @@ SSReflect
   - replace hypothesis: => {}H
   See the reference manual for the actual documentation.
 
-- Clear discipline made consistent: when a clear switch {x..} comes
-  immediately before an existing identifier (used as a view, as a rewrite rule
-  or as name for a new context entry) then such identifier is cleared too.
-  Eg. The following sentences are elaborated as follows:
-  - "=> {x..} H" -> "=> H {x..H}" if H can be cleared
-  - "=> {x..} /v" -> "=> /v {x..v}" if v can be cleared
-  - "rewrite {x..} E" -> "rewrite E {x..E}" if E can be cleared
+- Clear discipline made consistent across the entire proof language language.
+  Whenever a clear switch {x..} comes immediately before an existing proof
+  context entry (used as a view, as a rewrite rule or as name for a new
+  context entry) then such entry is cleared too.
 
+  Eg. The following sentences are elaborated as follows (when H is an existing
+  proof context entry):
+  - "=> {x..} H"       ->  "=> {x..H} H"
+  - "=> {x..} /H"      ->  "=> /v {x..H}"
+  - "rewrite {x..} H"  ->  "rewrite E {x..H}"
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================
