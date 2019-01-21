@@ -25,7 +25,7 @@ let mk_univ_hook f = f
 let call_univ_hook ?univ_hook ?fix_exn uctx trans l c =
   try Option.iter (fun hook -> hook uctx trans l c) univ_hook
   with e when CErrors.noncritical e ->
-    let e, info = Option.cata (fun fix -> fix e) (e, Exninfo.info e) fix_exn in
+    let e, info = Option.cata (fun fix -> fix (e, Exninfo.info e)) (e, Exninfo.info e) fix_exn in
     let e = Exninfo.attach e info in
     reraise e
 
@@ -833,7 +833,7 @@ let solve_by_tac ?loc name evi t poly ctx =
     Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
     Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
   with
-  | Refiner.FailError (_, s) as exn ->
+  | Refiner.FailError (_, s) as _exn ->
     user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
   | Proof.OpenProof _ ->
@@ -993,36 +993,34 @@ and solve_obligation_by_tac prg obls i tac =
   match obl.obl_body with
   | Some _ -> None
   | None ->
-    try
-      if List.is_empty (deps_remaining obls obl.obl_deps) then
-        let obl = subst_deps_obl obls obl in
-        let tac =
-          match tac with
+    if List.is_empty (deps_remaining obls obl.obl_deps) then
+      let obl = subst_deps_obl obls obl in
+      let tac =
+        match tac with
+        | Some t -> t
+        | None ->
+          match obl.obl_tac with
           | Some t -> t
-          | None ->
-            match obl.obl_tac with
-            | Some t -> t
-            | None -> !default_tactic
-        in
-        let evd = Evd.from_ctx prg.prg_ctx in
-        let evd = Evd.update_sigma_env evd (Global.env ()) in
-        match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
-                (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
-        | None -> None
-        | Some (t, ty, ctx) ->
-          let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
-          let prg = {prg with prg_ctx = ctx} in
-          let def, obl' = declare_obligation prg obl t ty uctx in
-          obls.(i) <- obl';
-          if def && not (pi2 prg.prg_kind) then (
-            (* Declare the term constraints with the first obligation only *)
-            let evd = Evd.from_env (Global.env ()) in
-            let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
-            let ctx' = Evd.evar_universe_context evd in
-            Some {prg with prg_ctx = ctx'})
-          else Some prg
-      else None
-
+          | None -> !default_tactic
+      in
+      let evd = Evd.from_ctx prg.prg_ctx in
+      let evd = Evd.update_sigma_env evd (Global.env ()) in
+      match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
+              (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
+      | None -> None
+      | Some (t, ty, ctx) ->
+        let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+        let prg = {prg with prg_ctx = ctx} in
+        let def, obl' = declare_obligation prg obl t ty uctx in
+        obls.(i) <- obl';
+        if def && not (pi2 prg.prg_kind) then (
+          (* Declare the term constraints with the first obligation only *)
+          let evd = Evd.from_env (Global.env ()) in
+          let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
+          let ctx' = Evd.evar_universe_context evd in
+          Some {prg with prg_ctx = ctx'})
+        else Some prg
+    else None
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in

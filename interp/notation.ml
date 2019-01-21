@@ -649,7 +649,8 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
-  | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
+  | _ ->
+    raise Loc.(attach ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c)))
 
 let no_such_prim_token uninterpreted_token_kind ?loc ty =
   CErrors.user_err ?loc
@@ -660,7 +661,8 @@ let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma c =
   match Constr.kind c with
   | App (_Some, [| _; c |]) -> glob_of_constr token_kind ?loc env sigma c
   | App (_None, [| _ |]) -> no_such_prim_token uninterpreted_token_kind ?loc ty
-  | x -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
+  | x ->
+    raise Loc.(attach ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c)))
 
 let uninterp_option c =
   match Constr.kind c with

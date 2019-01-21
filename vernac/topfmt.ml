@@ -346,9 +346,8 @@ let in_phase ~phase f x =
     default_phase := op;
     res
   with exn ->
-    let iexn = Backtrace.add_backtrace exn in
     default_phase := op;
-    Util.iraise iexn
+    Util.reraise exn
 
 let pr_loc loc =
     let fname = loc.Loc.fname in

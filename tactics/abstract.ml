@@ -127,13 +127,12 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
     try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
-    with Logic_monad.TacticFailure e as src ->
+    with Logic_monad.TacticFailure e as _src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
        success). Hence it reraises [e]. *)
-    let (_, info) = CErrors.push src in
-    iraise (e, info)
+      reraise e
   in
   let const, args = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in

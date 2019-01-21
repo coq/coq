@@ -39,7 +39,7 @@ let mk_hook hook = hook
 let call_hook ?hook ?fix_exn l c =
   try Option.iter (fun hook -> hook l c) hook
   with e when CErrors.noncritical e ->
-    let e, info = Option.cata (fun fix -> fix e) (e, Exninfo.info e) fix_exn in
+    let e, info = Option.cata (fun fix -> fix (e, Exninfo.info e)) (e, Exninfo.info e) fix_exn in
     let e = Exninfo.attach e info in
     reraise e
 
