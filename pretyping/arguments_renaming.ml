@@ -43,7 +43,7 @@ let subst_rename_args (subst, (_, (r, names as orig))) =
   if r==r' then orig else (r', names)
 
 let discharge_rename_args = function
-  | _, (ReqGlobal (c, names), _ as req) ->
+  | _, (ReqGlobal (c, names), _ as req) when not (isVarRef c && Lib.is_in_section c) ->
      (try 
        let vars = Lib.variable_section_segment_of_reference c in
        let var_names = List.map (fst %> NamedDecl.get_id %> Name.mk_name) vars in
