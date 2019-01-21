@@ -1041,6 +1041,12 @@ in :math:`\Type`.
    enabled it will prevail over automatic template polymorphism and
    cause an error when using the ``template`` attribute.
 
+.. warn:: Automatically declaring @ident as template polymorphic.
+
+   Warning ``auto-template`` can be used to find which types are
+   implicitly declared template polymorphic by :flag:`Auto Template
+   Polymorphism`.
+
 If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
 Especially, if :math:`A` is well-typed in some global environment and local

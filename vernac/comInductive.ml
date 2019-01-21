@@ -35,7 +35,7 @@ module RelDecl = Context.Rel.Declaration
 (* 3b| Mutual inductive definitions *)
 
 let warn_auto_template =
-  CWarnings.create ~name:"auto-template" ~category:"vernacular"
+  CWarnings.create ~name:"auto-template" ~category:"vernacular" ~default:CWarnings.Disabled
     (fun id ->
        Pp.(strbrk "Automatically declaring " ++ Id.print id ++
            strbrk " as template polymorphic. Use attributes or " ++
