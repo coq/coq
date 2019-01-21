@@ -98,6 +98,9 @@ val type_in_type : env -> bool
 val deactivated_guard : env -> bool
 val indices_matter : env -> bool
 
+val is_impredicative_sort : env -> Sorts.t -> bool
+val is_impredicative_univ : env -> Univ.Universe.t -> bool
+
 (** is the local context empty *)
 val empty_context : env -> bool
 

@@ -10,7 +10,6 @@
 
 open Pp
 open CErrors
-open Indtypes
 open Type_errors
 open Pretype_errors
 open Indrec

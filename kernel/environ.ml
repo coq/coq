@@ -238,6 +238,13 @@ let is_impredicative_set env =
   | ImpredicativeSet -> true
   | _ -> false
 
+let is_impredicative_sort env = function
+  | Sorts.Prop -> true
+  | Sorts.Set -> is_impredicative_set env
+  | Sorts.Type _ -> false
+
+let is_impredicative_univ env u = is_impredicative_sort env (Sorts.sort_of_univ u)
+
 let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded
 

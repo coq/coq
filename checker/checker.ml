@@ -297,7 +297,7 @@ let explain_exn = function
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
 
-  | Indtypes.InductiveError e ->
+  | InductiveError e ->
       hov 0 (str "Error related to inductive types")
 (*      let ctx = Check.get_env() in
       hov 0

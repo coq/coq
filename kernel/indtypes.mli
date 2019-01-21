@@ -14,12 +14,10 @@ open Declarations
 open Environ
 open Entries
 
-(** Inductive type checking and errors *)
+(** Check an inductive. *)
+val check_inductive : env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
 
-(** The different kinds of errors that may result of a malformed inductive
-  definition. *)
-
-(** Errors related to inductive constructions *)
+(** Deprecated *)
 type inductive_error =
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
@@ -31,22 +29,8 @@ type inductive_error =
   | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
+  | BadUnivs
+[@@ocaml.deprecated "Use [Type_errors.inductive_error]"]
 
-exception InductiveError of inductive_error
-
-val infos_and_sort : env -> constr -> Univ.Universe.t
-
-val check_subtyping_arity_constructor : env -> (constr -> constr) -> types -> int -> bool -> unit
-
-val check_positivity : chkpos:bool ->
-           Names.MutInd.t ->
-           Environ.env ->
-           (Constr.constr, Constr.types) Context.Rel.pt ->
-           Declarations.recursivity_kind ->
-           ('a * Names.Id.t list * Constr.types array *
-            (('b, 'c) Context.Rel.pt * 'd))
-           array -> Int.t * Declarations.recarg Rtree.t array
-
-(** The following function does checks on inductive declarations. *)
-
-val check_inductive : env -> MutInd.t -> mutual_inductive_entry -> mutual_inductive_body
+exception InductiveError of Type_errors.inductive_error
+[@@ocaml.deprecated "Use [Type_errors.InductiveError]"]
