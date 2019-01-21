@@ -4343,7 +4343,7 @@ Automating
    distributivity, constant propagation) and comparing syntactically the
    results.
 
-.. tacn:: ring_simplify {+ @term}
+.. tacn:: ring_simplify {* @term}
    :name: ring_simplify
 
    This tactic applies the normalization procedure described above to
@@ -4357,7 +4357,7 @@ the tactic and how to declare new ring structures. All declared field structures
 can be printed with the ``Print Rings`` command.
 
 .. tacn:: field
-          field_simplify {+ @term}
+          field_simplify {* @term}
           field_simplify_eq
    :name: field; field_simplify; field_simplify_eq
 
