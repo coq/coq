@@ -426,9 +426,15 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block record_data in
+  let primitive =
+    !primitive_flag &&
+    List.for_all (fun (_,_,_,_,fields,_,_) -> List.exists is_local_assum fields) record_data
+    (* will warn_non_primitive_record in declare_projections if we try
+       to declare a 0-field record *)
+  in
   let mie =
     { mind_entry_params = params;
-      mind_entry_record = Some (if !primitive_flag then Some binder_name else None);
+      mind_entry_record = Some (if primitive then Some binder_name else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;
       mind_entry_private = None;
