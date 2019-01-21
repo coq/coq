@@ -752,17 +752,6 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   | [ "*" ] -> { [IPatAnon All] }
   | [ ">" ] -> { [IPatFastNondep] }
   | [ ident(id) ] -> { [IPatId id] }
-(*
-  | [ ssrdocc(occ) ident(id) ] -> { match occ with
-      | Some [], None -> [IPatClear[SsrHyp(Some loc,id)];IPatId id]
-      | Some cl, None ->
-          check_hyps_uniq [] cl;
-          let cl =
-            if CList.mem_f Id.equal id (List.map hyp_id cl)
-            then cl else (SsrHyp(Some loc,id) :: cl) in
-          [IPatClear cl;IPatId id]
-      | _ -> CErrors.user_err ~loc (str"Only identifiers are allowed here") }
-*)
   | [ "?" ] -> { [IPatAnon (One None)] }
   | [ "+" ] -> { [IPatAnon Temporary] }
   | [ "++" ] -> { [IPatAnon Temporary; IPatAnon Temporary] }

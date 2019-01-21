@@ -22,7 +22,7 @@ open Ssrast
 (* Atomic operations for the IPat machine. Use this if you are "patching" an
  * ipat written by the user, since patching it at he AST level and then
  * compiling it may have tricky effects, eg adding a clear in front of a view
- * also has the effect of disposing the view (the compilation phase takes case
+ * also has the effect of disposing the view (the compilation phase takes care
  * of this, by using the compiled ipats you can be more precise *)
 type ssriop =
   | IOpId of Names.Id.t
