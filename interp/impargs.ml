@@ -239,8 +239,13 @@ let is_rigid env sigma t =
 let find_displayed_name_in sigma all avoid na (env, b) =
   let envnames_b = (env, b) in
   let flag = RenamingElsewhereFor envnames_b in
-  if all then compute_and_force_displayed_name_in sigma flag avoid na b
-  else compute_displayed_name_in sigma flag avoid na b
+  let comp_name,avoid' =
+     if all then compute_and_force_displayed_name_in sigma flag avoid na b
+     else compute_displayed_name_in sigma flag avoid na b in
+  match comp_name, na with
+  | Name _, Name id -> na,Id.Set.add id avoid
+  | Anonymous, _ -> comp_name,avoid'
+  | Name _, Anonymous -> comp_name,avoid'
 
 let compute_implicits_names_gen all env sigma t =
   let open Context.Rel.Declaration in

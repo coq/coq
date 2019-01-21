@@ -39,6 +39,11 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+- Dependent named implicit arguments are always named as given by the user.
+  If you have two implicit arguments with the same name, the latter one
+  may become inaccessable from explicit applications `foo (x := v)` until
+  a distinct name is assigned with the `Arguments` command.
+
 Notations
 
 - New command `Declare Scope` to explicitly declare a scope name
