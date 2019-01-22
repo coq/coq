@@ -26,12 +26,12 @@ if %ARCH% == 64 (
 
 SET CYGROOT=C:\ci\cygwin%ARCH%
 SET DESTCOQ=C:\ci\coq%ARCH%
+SET CYGCACHE=C:\ci\cache\cgwin
 
 CALL :MakeUniqueFolder %CYGROOT% CYGROOT
 CALL :MakeUniqueFolder %DESTCOQ% DESTCOQ
 
 powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/%SETUP%', '%SETUP%')"
-SET CYGCACHE=%CYGROOT%\var\cache\setup
 SET CI_PROJECT_DIR_MFMT=%CI_PROJECT_DIR:\=/%
 SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
 SET COQREGTESTING=Y
