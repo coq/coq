@@ -134,7 +134,6 @@ coqpp/coqpp_parse.mli
 
 g_*.ml
 
-lib/coqProject_file.ml
 plugins/ltac/coretactics.ml
 plugins/ltac/extratactics.ml
 plugins/ltac/extraargs.ml
