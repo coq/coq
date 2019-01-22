@@ -279,6 +279,11 @@ let load _ =
     | None -> ()
     | Some f -> FileAux.load_file f
 
+let load_tutorial _ =
+  let filename = Filename.concat (Envars.docdir ()) "nahas_tutorial.v" in
+  if Sys.file_exists filename then FileAux.load_file filename
+  else warning "Tutorial file not found"
+
 let save ?parent _ = on_current_term (FileAux.check_save ?parent ~saveas:false)
 
 let saveas ?parent sn =
@@ -717,7 +722,8 @@ let log_file_message () =
 
 let initial_about () =
   let initial_string =
-    "Welcome to CoqIDE, an Integrated Development Environment for Coq"
+    "Welcome to CoqIDE, an Integrated Development Environment for Coq.\n\
+     Tutorial available in the Help menu."
   in
   let coq_version = Coq.short_version () in
   let version_info =
@@ -1193,6 +1199,8 @@ let build_ui () =
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#default_route#clear;
          sn.messages#default_route#add_string (NanoPG.get_documentation ())));
+    item "Tutorial" ~label:"Tutorial"
+      ~callback:File.load_tutorial;
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];

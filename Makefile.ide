@@ -212,6 +212,7 @@ install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same t
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
+	$(INSTALLLIB) doc/nahas_tutorial.v $(FULLDOCDIR)/nahas_tutorial.v
 
 ###########################################################################
 # CoqIde MacOS special targets
