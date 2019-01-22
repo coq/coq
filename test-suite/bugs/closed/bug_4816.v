@@ -9,7 +9,7 @@ Section Foo.
   Polymorphic Universes Z W.
   Polymorphic Constraint W < Z.
 
-  Fail Definition bla := Type@{W}.
+  Definition blu := Type@{W}.
   Polymorphic Definition bla := Type@{W}.
   Section Bar.
     Fail Constraint X <= Z.

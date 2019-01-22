@@ -454,8 +454,8 @@ let declare_universe_context poly ctx =
   if poly then
     (Global.push_context_set true ctx; Lib.add_section_context ctx)
   else
-    Lib.check_monomorphic_context ctx;
-    Lib.add_anonymous_leaf (input_universe_context ctx)
+    (Lib.check_monomorphic_context ctx;
+     Lib.add_anonymous_leaf (input_universe_context ctx))
 
 (** Global universes are not substitutive objects but global objects
    bound at the *library* or *module* level. The polymorphic flag is

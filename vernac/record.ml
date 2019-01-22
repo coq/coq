@@ -377,7 +377,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 open Typeclasses
 
 
-let declare_structure finite ubinders ~cumul univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
+let declare_structure finite ubinders ~poly ~cumul univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
   let nparams = List.length params in
   let binder_name =
     match name with
@@ -403,7 +403,7 @@ let declare_structure finite ubinders ~cumul univs paramimpls params template ?(
         (* auto detect template *)
         ComInductive.should_auto_template id
           (template &&
-           Univ.UContext.is_empty univs.entry_polymorphic_univs &&
+           not poly &&
            let _, s = Reduction.dest_arity (Global.env()) arity in
            not (Sorts.is_small s))
     in
@@ -448,7 +448,7 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class def ~cumul ubinders univs id idbuild paramimpls params arity
+let declare_class def ~poly ~cumul ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -491,7 +491,7 @@ let declare_class def ~cumul ubinders univs id idbuild paramimpls params arity
       [cref, [Name proj_name, sub, Some proj_cst]]
     | _ ->
       let record_data = [id, idbuild, arity, fieldimpls, fields, false, List.map (fun _ -> false) fields] in
-      let inds = declare_structure Declarations.BiFinite ubinders ~cumul univs paramimpls
+      let inds = declare_structure Declarations.BiFinite ubinders ~poly ~cumul univs paramimpls
         params template ~kind:Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri -> 
@@ -650,7 +650,7 @@ let definition_structure udecl kind ~template cumul poly finite records =
     in
     let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
     let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-    declare_class def ~cumul ubinders univs id.CAst.v idbuild
+    declare_class def ~poly ~cumul ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
@@ -661,5 +661,5 @@ let definition_structure udecl kind ~template cumul poly finite records =
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
-    let inds = declare_structure finite ubinders ~cumul univs implpars params template data in
+    let inds = declare_structure finite ubinders ~poly ~cumul univs implpars params template data in
     List.map (fun ind -> IndRef ind) inds

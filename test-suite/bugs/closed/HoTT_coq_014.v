@@ -27,7 +27,7 @@ Polymorphic Definition GeneralizeCategory `(C : @SpecializedCategory obj) : Cate
   refine {| CObject := C.(Object) |}; auto.
 Defined.
 
-Polymorphic Coercion GeneralizeCategory : SpecializedCategory >-> Category.
+Coercion GeneralizeCategory : SpecializedCategory >-> Category.
 
 
 
@@ -46,7 +46,7 @@ Section SpecializedFunctor.
   }.
 End SpecializedFunctor.
 
-Global Polymorphic Coercion ObjectOf' : SpecializedFunctor >-> Funclass.
+Global Coercion ObjectOf' : SpecializedFunctor >-> Funclass.
 Set Universe Polymorphism.
 Section Functor.
   Variable C D : Category.
@@ -57,7 +57,7 @@ Unset Universe Polymorphism.
 
 Polymorphic Identity Coercion Functor_SpecializedFunctor_Id : Functor >-> SpecializedFunctor.
 Polymorphic Definition GeneralizeFunctor objC C objD D (F : @SpecializedFunctor objC C objD D) : Functor C D := F.
-Polymorphic Coercion GeneralizeFunctor : SpecializedFunctor >-> Functor.
+Coercion GeneralizeFunctor : SpecializedFunctor >-> Functor.
 
 Arguments SpecializedFunctor {objC} C {objD} D.
 
@@ -72,7 +72,7 @@ Polymorphic Definition GeneralizeSmallCategory `(C : @SmallSpecializedCategory o
   refine {| SObject := obj |}; destruct C; econstructor; eassumption.
 Defined.
 
-Polymorphic Coercion GeneralizeSmallCategory : SmallSpecializedCategory >-> SmallCategory.
+Coercion GeneralizeSmallCategory : SmallSpecializedCategory >-> SmallCategory.
 
 Bind Scope category_scope with SmallCategory.
 

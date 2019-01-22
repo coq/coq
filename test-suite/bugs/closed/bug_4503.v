@@ -9,9 +9,9 @@ Section foo.
   Polymorphic Universes A.
   Polymorphic Context {A : Type@{A}} {rA : A -> A -> Prop} {PO : PreOrder A rA}.
 
-  Fail Definition foo := PO.
+  Definition foo := PO.
 End foo.
-
+Check foo@{_}. (* foo takes a universe even though it's marked monomorphic *)
 
 Module ILogic.
 
