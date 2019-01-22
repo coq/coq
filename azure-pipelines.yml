@@ -1,31 +1,78 @@
 
-pool:
-  vmImage: 'vs2017-win2016'
+# NB: image names can be found at
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted
 
-steps:
-- checkout: self
-  fetchDepth: 10
+variables:
+  NJOBS: "2"
 
-# cygwin package list not checked for minimality
-- script: |
-    powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
-    SET CYGROOT=C:\cygwin64
-    SET CYGCACHE=%CYGROOT%\var\cache\setup
-    setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib -P python
+jobs:
+- job: Windows
+  pool:
+    vmImage: 'vs2017-win2016'
 
-    SET TARGET_ARCH=x86_64-w64-mingw32
-    SET CD_MFMT=%cd:\=/%
-    SET RESULT_INSTALLDIR_CFMT=%CD_MFMT:C:/=/cygdrive/c/%
-    C:\cygwin64\bin\bash -l %cd%\dev\build\windows\configure_profile.sh
-  displayName: 'Install cygwin'
-  env:
-    CYGMIRROR: "http://mirror.easyname.at/cygwin"
+  steps:
+  - checkout: self
+    fetchDepth: 10
 
-- script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-opam.sh
-  displayName: 'Install opam'
+  # cygwin package list not checked for minimality
+  - script: |
+      powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
+      SET CYGROOT=C:\cygwin64
+      SET CYGCACHE=%CYGROOT%\var\cache\setup
+      setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib -P python
 
-- script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-build.sh
-  displayName: 'Build Coq'
+      SET TARGET_ARCH=x86_64-w64-mingw32
+      SET CD_MFMT=%cd:\=/%
+      SET RESULT_INSTALLDIR_CFMT=%CD_MFMT:C:/=/cygdrive/c/%
+      C:\cygwin64\bin\bash -l %cd%\dev\build\windows\configure_profile.sh
+    displayName: 'Install cygwin'
+    env:
+      CYGMIRROR: "http://mirror.easyname.at/cygwin"
 
-- script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-test.sh
-  displayName: 'Test Coq'
+  - script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-opam.sh
+    displayName: 'Install opam'
+
+  - script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-build.sh
+    displayName: 'Build Coq'
+
+  - script: C:\cygwin64\bin\bash -l %cd%\dev\ci\azure-test.sh
+    displayName: 'Test Coq'
+
+- job: macOS
+  pool:
+    vmImage: 'macOS-10.13'
+
+  steps:
+  - checkout: self
+    fetchDepth: 10
+
+  - script: |
+      set -e
+      brew update
+      brew unlink python
+      brew install gnu-time opam
+
+      opam init -a -j "$NJOBS" --compiler=$COMPILER
+      opam switch set $COMPILER
+      eval $(opam env)
+      opam update
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit
+      opam list
+    displayName: 'Install dependencies'
+    env:
+      COMPILER: "4.07.1"
+      FINDLIB_VER: ".1.8.0"
+      OPAMYES: "true"
+
+  - script: |
+      set -e
+
+      eval $(opam env)
+      ./configure -local -warn-error yes -native-compiler no
+      make -j "$NJOBS"
+    displayName: 'Build Coq'
+
+  - script: |
+      eval $(opam env)
+      make -j "$NJOBS" test-suite
+    displayName: 'Run Coq Test Suite'
