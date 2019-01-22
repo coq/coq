@@ -1001,6 +1001,7 @@ let print_summary () =
   pr "  Architecture                : %s\n" arch;
   if operating_system <> "" then
     pr "  Operating system            : %s\n" operating_system;
+  pr "  Sys.os_type                 : %s\n" Sys.os_type;
   pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
   pr "  Other bytecode link flags   : %s\n" custom_flag;
   pr "  OCaml version               : %s\n" caml_version;
