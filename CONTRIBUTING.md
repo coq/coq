@@ -55,7 +55,7 @@ please add an entry to [`dev/doc/critical-bugs`](/dev/doc/critical-bugs).
 
 Don't be alarmed if the pull request process takes some time. It can take a few days to get feedback, approval on the final changes, and then a merge. Coq doesn't release new versions very frequently so it can take a few months for your change to land in a released version. That said, you can start using the latest Coq `master` branch to take advantage of all the new features, improvements, and fixes.
 
-Whitespace discipline (do not indent using tabs, no trailing spaces, text files end with newlines) is checked by Travis (using `git diff --check`). We ship a [`dev/tools/pre-commit`](/dev/tools/pre-commit) git hook which fixes these errors at commit time. `configure` automatically sets you up to use it, unless you already have a hook at `.git/hooks/pre-commit`.
+Whitespace discipline (do not indent using tabs, no trailing spaces, text files end with newlines) is checked by the `lint` job on GitLab CI (using `git diff --check`). We ship a [`dev/tools/pre-commit`](/dev/tools/pre-commit) git hook which fixes these errors at commit time. `configure` automatically sets you up to use it, unless you already have a hook at `.git/hooks/pre-commit`.
 
 Here are a few tags Coq developers may add to your PR and what they mean. In general feedback and requests for you as the pull request author will be in the comments and tags are only used to organize pull requests.
 

@@ -444,9 +444,6 @@ function load_overlay_data {
   else
     export CI_BRANCH=""
     export CI_PULL_REQUEST=""
-    # Used when building 8.8.0 with the latest scripts
-    export TRAVIS_BRANCH=""
-    export TRAVIS_PULL_REQUEST=""
   fi
 
   for overlay in /build/user-overlays/*.sh; do
