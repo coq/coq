@@ -155,7 +155,8 @@ let decl_constant na univs c =
   let univs = UState.restrict_universe_context univs vars in
   let univs = { entry_monomorphic_univs = univs;
                 entry_poly_univ_names = [| |];
-                entry_polymorphic_univs = Univ.UContext.empty; }
+                entry_polymorphic_univs = Univ.UContext.empty;
+                entry_is_polymorphic=false; }
   in
   mkConst(declare_constant (Id.of_string na) 
             (DefinitionEntry (definition_entry ~opaque:true ~univs c),

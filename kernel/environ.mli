@@ -188,9 +188,6 @@ val lookup_constant_key :  Constant.t -> env -> constant_key
 val lookup_constant    : Constant.t -> env -> constant_body
 val evaluable_constant : Constant.t -> env -> bool
 
-(** New-style polymorphism *)
-val polymorphic_constant  : Constant.t -> env -> bool
-val polymorphic_pconstant : pconstant -> env -> bool
 val type_in_type_constant : Constant.t -> env -> bool
 
 (** {6 ... } *)
@@ -240,9 +237,6 @@ val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
    raises [Not_found] if the required path is not found *)
 val lookup_mind : MutInd.t -> env -> mutual_inductive_body
 
-(** New-style polymorphism *)
-val polymorphic_ind  : inductive -> env -> bool
-val polymorphic_pind : pinductive -> env -> bool
 val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
@@ -332,7 +326,6 @@ val apply_to_hyp : named_context_val -> variable ->
 
 val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
 
-val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
 val is_type_in_type : env -> GlobRef.t -> bool
 

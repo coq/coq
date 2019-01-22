@@ -33,8 +33,6 @@ val constant_has_body : constant_body -> bool
 val constant_polymorphic_context : constant_body -> AUContext.t
 
 (** Is the constant polymorphic? *)
-val constant_is_polymorphic : constant_body -> bool
-
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
 
@@ -58,8 +56,6 @@ val subst_mind_body : substitution -> mutual_inductive_body -> mutual_inductive_
 
 val inductive_polymorphic_context : mutual_inductive_body -> AUContext.t
 
-(** Is the inductive polymorphic? *)
-val inductive_is_polymorphic : mutual_inductive_body -> bool
 (** Is the inductive cumulative? *)
 val inductive_is_cumulative : mutual_inductive_body -> bool
 

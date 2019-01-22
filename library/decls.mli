@@ -32,3 +32,8 @@ val variable_exists : variable -> bool
 
 val add_constant_kind : Constant.t -> logical_kind -> unit
 val constant_kind : Constant.t -> logical_kind
+
+val register_poly_const : Constant.t -> bool -> unit
+val register_poly_mind : MutInd.t -> bool -> unit
+val is_polymorphic : GlobRef.t -> bool
+val mind_is_polymorphic : MutInd.t -> bool

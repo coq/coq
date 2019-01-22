@@ -159,8 +159,6 @@ let type_of_global_in_context = Typeops.type_of_global_in_context
 let universes_of_global gr = 
   universes_of_global (env ()) gr
 
-let is_polymorphic r = Environ.is_polymorphic (env()) r
-
 let is_template_polymorphic r = is_template_polymorphic (env ()) r
 
 let is_type_in_type r = is_type_in_type (env ()) r

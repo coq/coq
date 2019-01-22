@@ -88,7 +88,7 @@ let print_ref reduce ref udecl =
       (Environ.lookup_mind ind env).mind_variance
   in
   let inst =
-    if Global.is_polymorphic ref
+    if Decls.is_polymorphic ref
     then Printer.pr_universe_instance sigma inst
     else mt ()
   in
@@ -222,7 +222,7 @@ let print_if_is_coercion ref =
 (* *)
 
 let print_polymorphism ref =
-  let poly = Global.is_polymorphic ref in
+  let poly = Decls.is_polymorphic ref in
   let template_poly = Global.is_template_polymorphic ref in
   [ pr_global ref ++ str " is " ++ str
       (if poly then "universe polymorphic"
@@ -541,8 +541,8 @@ let print_body env evd = function
 let print_typed_body env evd (val_0,typ) =
   (print_body env evd val_0 ++ fnl () ++ str "     : " ++ pr_ltype_env env evd typ)
 
-let print_instance sigma cb =
-  if Declareops.constant_is_polymorphic cb then
+let print_instance sigma c cb =
+  if Decls.is_polymorphic (ConstRef c) then
     let univs = Declareops.constant_polymorphic_context cb in
     let inst = Univ.make_abstract_instance univs in
     pr_universe_instance sigma inst
@@ -572,11 +572,11 @@ let print_constant with_values sep sp udecl =
     match val_0 with
     | None ->
 	str"*** [ " ++
-	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
+        print_basename sp ++ print_instance sigma sp cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
         Printer.pr_universe_decl sigma univs ~priv:cb.const_private_univs
     | Some (c, ctx) ->
-	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
+        print_basename sp ++ print_instance sigma sp cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
         Printer.pr_universe_decl sigma univs ~priv:cb.const_private_univs)
 

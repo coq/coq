@@ -5,7 +5,9 @@ open Univ
 let make_entry ?(mono=ContextSet.empty) ?(poly=UContext.empty) () =
   { entry_monomorphic_univs = mono;
     entry_poly_univ_names = Array.make (UContext.size poly) Anonymous;
-    entry_polymorphic_univs = poly; }
+    entry_polymorphic_univs = poly;
+    entry_is_polymorphic = not (UContext.is_empty poly);
+  }
 
 let evil t f =
   let open Decl_kinds in

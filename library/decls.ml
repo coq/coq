@@ -42,3 +42,34 @@ let csttab = Summary.ref (Cmap.empty : logical_kind Cmap.t) ~name:"CONSTANT"
 let add_constant_kind kn k = csttab := Cmap.add kn k !csttab
 
 let constant_kind kn = Cmap.find kn !csttab
+
+let polytab = Summary.ref (Cmap.empty,Mindmap.empty) ~name:"polytab"
+
+type poly_obj = PConst of Constant.t | PMind of MutInd.t
+
+let poly_cache (_,(who,p)) = match who with
+  | PConst c -> polytab := Util.on_fst (Cmap.add c p) !polytab
+  | PMind m -> polytab := Util.on_snd (Mindmap.add m p) !polytab
+
+let poly_subst (subst, (who, p)) =
+  let who = match who with
+    | PConst c -> PConst (Mod_subst.subst_constant subst c)
+    | PMind m -> PMind (Mod_subst.subst_mind subst m)
+  in
+  (who, p)
+
+let poly_obj = let open Libobject in
+  declare_object
+    (superglobal_object "polymorphism register"
+       ~cache:poly_cache ~subst:(Some poly_subst) ~discharge:(fun (_,x) -> Some x))
+
+let register_poly_const c p = Lib.add_anonymous_leaf (poly_obj (PConst c, p))
+
+let register_poly_mind m p = Lib.add_anonymous_leaf (poly_obj (PMind m, p))
+
+let is_polymorphic = let open GlobRef in function
+  | VarRef _ -> false
+  | ConstRef c -> Cmap.find c (fst !polytab)
+  | IndRef (m,_) | ConstructRef ((m,_),_) -> Mindmap.find m (snd !polytab)
+
+let mind_is_polymorphic mind = is_polymorphic (GlobRef.IndRef (mind,0))

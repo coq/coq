@@ -124,7 +124,6 @@ val env_of_context : Environ.named_context_val -> Environ.env
 val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 val is_joined_environment : unit -> bool
 
-val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
 val is_type_in_type : GlobRef.t -> bool
 

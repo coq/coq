@@ -505,13 +505,6 @@ let evaluable_constant kn env =
     | OpaqueDef _ -> false
     | Undef _ -> false
 
-let polymorphic_constant cst env =
-  Declareops.constant_is_polymorphic (lookup_constant cst env)
-
-let polymorphic_pconstant (cst,u) env =
-  if Univ.Instance.is_empty u then false
-  else polymorphic_constant cst env
-
 let type_in_type_constant cst env =
   not (lookup_constant cst env).const_typing_flags.check_universes
 
@@ -535,13 +528,6 @@ let get_projections env ind =
   Declareops.inductive_make_projections ind mib
 
 (* Mutual Inductives *)
-let polymorphic_ind (mind,_i) env =
-  Declareops.inductive_is_polymorphic (lookup_mind mind env)
-
-let polymorphic_pind (ind,u) env =
-  if Univ.Instance.is_empty u then false
-  else polymorphic_ind ind env
-
 let type_in_type_ind (mind,_i) env =
   not (lookup_mind mind env).mind_typing_flags.check_universes
 
@@ -717,14 +703,6 @@ let remove_hyps ids check_context check_value ctxt =
   fst (remove_hyps ctxt)
 
 (* A general request *)
-
-let is_polymorphic env r =
-  let open Names.GlobRef in
-  match r with
-  | VarRef _id -> false
-  | ConstRef c -> polymorphic_constant c env
-  | IndRef ind -> polymorphic_ind ind env
-  | ConstructRef cstr -> polymorphic_ind (inductive_of_constructor cstr) env
 
 let is_template_polymorphic env r =
   let open Names.GlobRef in

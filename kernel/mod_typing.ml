@@ -98,7 +98,10 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
             Univ.Level.is_var l || Univ.Level.is_var r)
             cst
         then error_incorrect_with_constraint lab;
-        c', {monomorphic_univs=Univ.ContextSet.empty; polymorphic_univs=ctx}, cst
+        let univs = {monomorphic_univs=Univ.ContextSet.empty;
+                     polymorphic_univs=ctx;}
+        in
+        c', univs, cst
       in
       let def = Def (Mod_subst.from_val c') in
       let code = Option.map Cemitcodes.from_val

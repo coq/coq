@@ -77,10 +77,11 @@ let lookup_polymorphism env base kind fqid =
     | [] -> assert false
     | [id] ->
       let test (lab,obj) =
+        let is_poly univs = not (Univ.AUContext.is_empty univs.polymorphic_univs) in
         match Id.equal (Label.to_id lab) id, obj with
         | false, _ | _, (SFBmodule _ | SFBmodtype _) -> None
-        | true, SFBmind mind -> Some (Declareops.inductive_is_polymorphic mind)
-        | true, SFBconst const -> Some (Declareops.constant_is_polymorphic const)
+        | true, SFBmind mind -> Some (is_poly mind.mind_universes)
+        | true, SFBconst const -> Some (is_poly const.const_universes)
       in
       (try CList.find_map test m with Not_found -> false (* error later *))
     | id::rem ->
@@ -105,7 +106,6 @@ let transl_with_decl env base kind = function
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
     let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
-    (* XXX [poly] is pretty hacky, should work in the monomorphic case at least *)
     let poly = lookup_polymorphism env base kind fqid in
     match UState.check_univ_decl ~poly ectx udecl with
       Entries.{ entry_monomorphic_univs=mono;

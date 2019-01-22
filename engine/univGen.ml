@@ -77,7 +77,7 @@ let fresh_global_instance ?loc ?names env gr =
   mkRef (gr, u), ctx
 
 let constr_of_monomorphic_global gr =
-  if not (Global.is_polymorphic gr) then
+  if not (Decls.is_polymorphic gr) then
     fst (fresh_global_instance (Global.env ()) gr)
   else CErrors.user_err ~hdr:"constr_of_global"
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++

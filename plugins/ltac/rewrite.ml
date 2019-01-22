@@ -1861,7 +1861,7 @@ let proper_projection sigma r ty =
     it_mkLambda_or_LetIn app ctx
 
 let declare_projection n instance_id r =
-  let poly = Global.is_polymorphic r in
+  let poly = Decls.is_polymorphic r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in

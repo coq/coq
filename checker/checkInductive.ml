@@ -31,7 +31,9 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     let u = mb.mind_universes in
     { entry_monomorphic_univs = u.monomorphic_univs;
       entry_poly_univ_names = AUContext.names u.polymorphic_univs;
-      entry_polymorphic_univs = AUContext.repr u.polymorphic_univs; }
+      entry_polymorphic_univs = AUContext.repr u.polymorphic_univs;
+      entry_is_polymorphic = not (AUContext.is_empty u.polymorphic_univs);}
+    (* is_polymorphic doesn't matter but try to be sane regardless *)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity, mind_entry_template = match ind.mind_arity with

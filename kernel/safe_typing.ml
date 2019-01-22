@@ -692,7 +692,9 @@ let constant_entry_of_side_effect cb u =
     let auctx = univs.polymorphic_univs in
     { entry_monomorphic_univs=univs.monomorphic_univs;
       entry_poly_univ_names=Univ.AUContext.names auctx;
-      entry_polymorphic_univs=Univ.AUContext.repr auctx; }
+      entry_polymorphic_univs=Univ.AUContext.repr auctx;
+      entry_is_polymorphic=not (Univ.AUContext.is_empty auctx);}
+    (* is_polymorphic doesn't matter but try to be sane regardless *)
   in
   let body, bunivs =
     match cb.const_body, u with

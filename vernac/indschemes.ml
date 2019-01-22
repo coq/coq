@@ -396,7 +396,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
     (* NB: build_mutual_induction_scheme forces nonempty list of mutual inductives
        (force_mutual is about the generated schemes) *)
     let _,_,ind,_ = List.hd lnamedepindsort in
-    Global.is_polymorphic (IndRef ind)
+    Decls.is_polymorphic (IndRef ind)
   in
   let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 sigma (EConstr.of_constr decl) in
@@ -530,7 +530,7 @@ let do_combined_scheme name schemes =
      polymorphism of the inductive block). In that case if they want
      some other polymorphism they can also manually define the
      combined scheme. *)
-  let poly = Global.is_polymorphic (ConstRef (List.hd csts)) in
+  let poly = Decls.is_polymorphic (ConstRef (List.hd csts)) in
   ignore (define ~poly name.v UserIndividualRequest sigma proof_output (Some typ));
   fixpoint_message None [name.v]
 

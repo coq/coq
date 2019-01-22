@@ -100,7 +100,7 @@ let print_one_inductive env sigma mib ((_,i) as ind) =
   let cstrtypes = Array.map (fun c -> hnf_prod_applist_assum env nparamdecls c args) cstrtypes in
   let envpar = push_rel_context params env in
   let inst =
-    if Declareops.inductive_is_polymorphic mib then
+    if Decls.is_polymorphic (IndRef ind) then
       Printer.pr_universe_instance sigma u
     else mt ()
   in

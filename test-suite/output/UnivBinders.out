@@ -1,5 +1,7 @@
 Inductive Empty@{u} : Type@{u} :=  
+(* u |=  *)
 Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
+(* u |=  *)
 
 PWrap has primitive projections with eta conversion.
 For PWrap: Argument scope is [type_scope]
@@ -12,6 +14,7 @@ fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
 punwrap is universe polymorphic
 Argument scopes are [type_scope _]
 Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
+(* u |=  *)
 
 For RWrap: Argument scope is [type_scope]
 For rwrap: Argument scopes are [type_scope _]
@@ -95,7 +98,9 @@ Type@{UnivBinders.17} -> Type@{v} -> Type@{u}
 
 foo is universe polymorphic
 Inductive Empty@{E} : Type@{E} :=  
+(* E |=  *)
 Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
+(* E |=  *)
 
 PWrap has primitive projections with eta conversion.
 For PWrap: Argument scope is [type_scope]
@@ -131,7 +136,9 @@ insec@{v} = Type@{u} -> Type@{v}
 (* v |=  *)
 
 insec is universe polymorphic
-Inductive insecind@{k} : Type@{k+1} :=  inseccstr : Type@{k} -> insecind@{k}
+Inductive insecind@{k} : Type@{k+1} :=
+    inseccstr : Type@{k} -> insecind@{k}
+(* k |=  *)
 
 For inseccstr: Argument scope is [type_scope]
 insec@{u v} = Type@{u} -> Type@{v}
@@ -141,6 +148,7 @@ insec@{u v} = Type@{u} -> Type@{v}
 insec is universe polymorphic
 Inductive insecind@{u k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{u k}
+(* u k |=  *)
 
 For inseccstr: Argument scope is [type_scope]
 insec2@{u} = Prop
@@ -184,6 +192,7 @@ axbar is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant UnivBinders.axbar
 axfoo' : Type@{axbar'.u0} -> Type@{axbar'.i}
+(* {axbar'.u0 axbar'.i} |=  *)
 
 axfoo' is not universe polymorphic
 Argument scope is [type_scope]

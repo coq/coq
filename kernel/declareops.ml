@@ -56,9 +56,6 @@ let hcons_template_arity ar =
 
 (** {6 Constants } *)
 
-let constant_is_polymorphic cb =
-  not (Univ.AUContext.is_empty cb.const_universes.polymorphic_univs)
-
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
   | Def _ | OpaqueDef _ -> true
@@ -127,7 +124,7 @@ let hcons_const_def = function
 
 let hcons_universe_decl cbu =
   { monomorphic_univs = Univ.hcons_universe_context_set cbu.monomorphic_univs;
-    polymorphic_univs = Univ.hcons_abstract_universe_context cbu.polymorphic_univs; }
+    polymorphic_univs = Univ.hcons_abstract_universe_context cbu.polymorphic_univs;}
 
 let hcons_const_private_univs = function
   | None -> None
@@ -242,9 +239,6 @@ let subst_mind_body sub mib =
 
 let inductive_polymorphic_context mib =
   mib.mind_universes.polymorphic_univs
-
-let inductive_is_polymorphic mib =
-  not (Univ.AUContext.is_empty mib.mind_universes.polymorphic_univs)
 
 let inductive_is_cumulative mib = Option.has_some mib.mind_variance
 

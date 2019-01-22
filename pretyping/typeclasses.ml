@@ -388,7 +388,7 @@ let is_local_for_hint i =
      itself *)
 
 let add_instance check inst =
-  let poly = Global.is_polymorphic inst.is_impl in
+  let poly = Decls.is_polymorphic inst.is_impl in
   let local = is_local_for_hint inst in
   add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] local
     inst.is_info poly;

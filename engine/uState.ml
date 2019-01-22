@@ -101,6 +101,7 @@ let constraints ctx = snd ctx.uctx_local
 let context ctx = ContextSet.to_context ctx.uctx_local
 
 let univ_entry ~poly uctx =
+  let ispoly = poly in
   let mono, nas, poly =
     if poly then
       let (binders, _) = uctx.uctx_names in
@@ -111,7 +112,8 @@ let univ_entry ~poly uctx =
   in
   Entries.{ entry_monomorphic_univs=mono;
             entry_poly_univ_names=nas;
-            entry_polymorphic_univs=poly; }
+            entry_polymorphic_univs=poly;
+            entry_is_polymorphic=ispoly; }
 
 let of_context_set ctx = { empty with uctx_local = ctx }
 
@@ -409,6 +411,7 @@ let check_mono_univ_decl uctx decl =
   uctx.uctx_local
 
 let check_univ_decl ~poly uctx decl =
+  let ispoly = poly in
   let mono, nas, poly =
     let names = decl.univdecl_instance in
     let extensible = decl.univdecl_extensible_instance in
@@ -427,7 +430,8 @@ let check_univ_decl ~poly uctx decl =
       (ContextSet.constraints uctx.uctx_local);
   Entries.{ entry_monomorphic_univs=mono;
             entry_poly_univ_names=nas;
-            entry_polymorphic_univs=poly; }
+            entry_polymorphic_univs=poly;
+            entry_is_polymorphic=ispoly;}
 
 let restrict_universe_context (univs, csts) keep =
   let removed = LSet.diff univs keep in

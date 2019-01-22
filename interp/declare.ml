@@ -118,12 +118,13 @@ let (inConstant : constant_obj -> obj) =
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
 
-let update_tables c =
+let update_tables ~poly c =
+  Decls.register_poly_const c poly;
   declare_constant_implicits c;
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope Evd.empty (ConstRef c)
 
-let register_side_effect (c, role) =
+let register_side_effect ~poly (c, role) =
   let o = inConstant {
     cst_decl = None;
     cst_kind = IsProof Theorem;
@@ -131,7 +132,7 @@ let register_side_effect (c, role) =
   } in
   let id = Label.to_id (Constant.label c) in
   ignore(add_leaf id o);
-  update_tables c;
+  update_tables ~poly c;
   match role with
   | Subproof -> ()
   | Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
@@ -141,13 +142,20 @@ let declare_constant_common id cst =
   let _, kn as oname = add_leaf id o in
   pull_to_head oname;
   let c = Global.constant_of_delta_kn kn in
-  update_tables c;
+  let poly = match cst.cst_decl with
+    | None -> assert false
+    | Some (ConstantEntry (_,DefinitionEntry de)) -> de.const_entry_universes.entry_is_polymorphic
+    | Some (ConstantEntry (_,ParameterEntry (_,u,_,_))) -> u.entry_is_polymorphic
+    | Some (GlobalRecipe _) -> assert false
+  in
+  update_tables ~poly c;
   c
 
 let empty_univ_entry = {
   entry_monomorphic_univs = ContextSet.empty;
   entry_poly_univ_names = [| |];
   entry_polymorphic_univs = UContext.empty;
+  entry_is_polymorphic = false;
 }
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=empty_univ_entry) ?(eff=Safe_typing.empty_private_constants) body =
@@ -160,25 +168,22 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_inline_code = inline}
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
-  (* XXX deciding based on presence of poly univs seems fragile *)
-  let is_poly de =
-    not (UContext.is_empty de.const_entry_universes.entry_polymorphic_univs)
-  in
   let in_section = Lib.sections_are_opened () in
-  let export, decl = (* We deal with side effects *)
+  let poly, export, decl = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
         export_seff ||
         not de.const_entry_opaque ||
-        is_poly de ->
+        de.const_entry_universes.entry_is_polymorphic ->
       (* This globally defines the side-effects in the environment. We mark
          exported constants as being side-effect not to redeclare them at
          caching time. *)
       let de, export = Global.export_private_constants ~in_section de in
-      export, ConstantEntry (PureEntry, DefinitionEntry de)
-    | _ -> [], ConstantEntry (EffectEntry, cd)
+      de.const_entry_universes.entry_is_polymorphic, export,
+      ConstantEntry (PureEntry, DefinitionEntry de)
+    | _ -> false (* irrelevant *), [], ConstantEntry (EffectEntry, cd)
   in
-  let () = List.iter register_side_effect export in
+  let () = List.iter (register_side_effect ~poly) export in
   let cst = {
     cst_decl = Some decl;
     cst_kind = kind;
@@ -219,7 +224,9 @@ let cache_variable ((sp,_),o) =
       impl, true, univs
     | SectionLocalDef (de) ->
       let (de, eff) = Global.export_private_constants ~in_section:true de in
-      let () = List.iter register_side_effect eff in
+      let () = List.iter (register_side_effect ~poly:de.const_entry_universes.entry_is_polymorphic)
+          eff
+      in
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
       let {proof_body;proof_univs;proof_priv_univs}, () = Future.force de.const_entry_body in
@@ -320,10 +327,9 @@ let cache_inductive ((sp,kn),mie) =
 
 let discharge_inductive ((sp,kn),mie) =
   let mind = Global.mind_of_delta_kn kn in
-  let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
   let info = section_segment_of_mutual_inductive mind in
-  Some (Discharge.process_inductive info repl mie)
+  Some (Discharge.process_inductive info repl mind)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;
@@ -393,6 +399,7 @@ let declare_mind mie =
     | [] -> anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive mie) in
   let mind = Global.mind_of_delta_kn kn in
+  Decls.register_poly_mind mind mie.mind_entry_universes.entry_is_polymorphic;
   let isprim = declare_projections mie.mind_entry_universes mind in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
@@ -506,7 +513,7 @@ let input_univ_names : universe_name_decl -> Libobject.obj =
       classify_function = (fun a -> Substitute a) }
 
 let declare_univ_binders gr pl =
-  if Global.is_polymorphic gr then
+  if Decls.is_polymorphic gr then
     ()
   else
     let l = match gr with

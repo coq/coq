@@ -32,6 +32,7 @@ type universe_entry = {
   entry_monomorphic_univs : Univ.ContextSet.t;
   entry_poly_univ_names : Name.t array;
   entry_polymorphic_univs : Univ.UContext.t;
+  entry_is_polymorphic : bool; (* ignored by the kernel *)
 }
 
 type one_inductive_entry = {

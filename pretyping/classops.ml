@@ -320,8 +320,8 @@ let different_class_params i =
     if (snd ci).cl_param > 0 then true
     else 
       match fst ci with
-      | CL_IND i -> Global.is_polymorphic (IndRef i)
-      | CL_CONST c -> Global.is_polymorphic (ConstRef c)
+      | CL_IND i -> Decls.is_polymorphic (IndRef i)
+      | CL_CONST c -> Decls.is_polymorphic (ConstRef c)
       | _ -> false
 
 let add_coercion_in_graph (ic,source,target) =

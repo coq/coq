@@ -1359,13 +1359,12 @@ let interp_hints poly =
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
-	let mib,_ = Global.lookup_inductive ind in
         Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_qualid qid) "ind";
           List.init (nconstructors ind) 
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in
 			empty_hint_info, 
-                        (Declareops.inductive_is_polymorphic mib), true,
+                        (Decls.mind_is_polymorphic (fst ind)), true,
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->

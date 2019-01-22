@@ -247,7 +247,8 @@ let abstract_inductive_universes univs =
   let ctx = univs.entry_polymorphic_univs in
   let (inst, auctx) = Univ.abstract_universes univs.entry_poly_univ_names ctx in
   let inst = Univ.make_instance_subst inst in
-  inst, {monomorphic_univs=univs.entry_monomorphic_univs; polymorphic_univs=auctx}
+  inst, {monomorphic_univs=univs.entry_monomorphic_univs;
+         polymorphic_univs=auctx;}
 
 let typecheck_inductive env (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
