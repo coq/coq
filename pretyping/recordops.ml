@@ -202,7 +202,14 @@ let cs_pattern_of_constr env t =
       App (f,vargs) ->
 	begin
 	  try Const_cs (global_of_constr f) , None, Array.to_list vargs
-          with e when CErrors.noncritical e -> raise Not_found
+          with
+          | Not_found when isProj f ->
+              let p, c = destProj f in
+              let { Environ.uj_type = ty } = Typeops.infer env c in
+              let _, params = Inductive.find_rectype env ty in
+              Const_cs (ConstRef (Projection.constant p)), None,
+              params @ [c] @ Array.to_list vargs
+          | e when CErrors.noncritical e -> raise Not_found
 	end
     | Rel n -> Default_cs, Some n, []
     | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
