@@ -163,12 +163,12 @@ SSReflect
   - replace hypothesis: => {}H
   See the reference manual for the actual documentation.
 
-- Clear discipline made consistent across the entire proof language language.
+- Clear discipline made consistent across the entire proof language.
   Whenever a clear switch {x..} comes immediately before an existing proof
   context entry (used as a view, as a rewrite rule or as name for a new
   context entry) then such entry is cleared too.
 
-  Eg. The following sentences are elaborated as follows (when H is an existing
+  E.g. The following sentences are elaborated as follows (when H is an existing
   proof context entry):
   - "=> {x..} H"       ->  "=> {x..H} H"
   - "=> {x..} /H"      ->  "=> /v {x..H}"
