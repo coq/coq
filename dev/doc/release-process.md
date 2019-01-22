@@ -1,76 +1,23 @@
 # Release process #
 
-## Anytime before the previous version is branched off master ##
-
-- [ ] Update the compatibility infrastructure, which consists of doing
-      the following steps.  Note that all but the final step can be
-      performed automatically by
-      [`dev/tools/update-compat.py`](/dev/tools/update-compat.py) with
-      the `--release` flag which sets up Coq to support three
-      `-compat` flag arguments).
-  + [ ] Delete the file `theories/Compat/CoqUU.v`, where U.U is four
-        versions prior to the new version X.X.  After this, there
-        should be exactly three `theories/Compat/CoqNN.v` files.
-  + [ ] Update
-        [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
-        with the deleted file.
-  + [ ] Remove any notations in the standard library which have `compat "U.U"`.
-  + [ ] Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
-        bumping all the version numbers by one, and update the interpretations
-        of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
-        [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
-
-  + [ ] Remove the file
-        [`test-suite/success/CompatOldOldFlag.v`](/test-suite/success/CompatOldOldFlag.v).
-  + [ ] Update
-        [`test-suite/tools/update-compat/run.sh`](/test-suite/tools/update-compat/run.sh)
-        to ensure that it passes `--release` to the `update-compat.py`
-        script.
-  + [ ] Decide what to do about all test-suite files which mention
-        `-compat U.U` or `Coq.Comapt.CoqUU` (which is no longer valid,
-        since we only keep compatibility against the two previous
-        versions on releases)
-
 ## As soon as the previous version branched off master ##
 
 - [ ] Create a new issue to track the release process where you can copy-paste
   the present checklist.
-- [ ] Change the version name to the next major version and the magic numbers
-  (see [#7008](https://github.com/coq/coq/pull/7008/files)).
-- [ ] Update the compatibility infrastructure, which consists of doing
-      the following steps.  Note that all of these steps can be
-      performed automatically by
-      [`dev/tools/update-compat.py`](/dev/tools/update-compat.py).
-      Note that the `update-compat.py` script must be run twice: once
-      *before* branching with the `--release` flag (see above), and
-      again *after* branching with the `--master` flag (which sets up
-      Coq to support four `-compat` flag arguments), *in the same
-      commit* as the one that updates `coq_version` in
-      [`configure.ml`](/configure.ml).
-  + [ ] Add a file `theories/Compat/CoqXX.v` which contains just the header
-        from [`dev/header.ml`](/dev/header.ml)
-  + [ ] Add the line `Require Export Coq.Compat.CoqXX.` at the top of
-        `theories/Compat/CoqYY.v`, where Y.Y is the version prior to X.X.
-  + [ ] Update
-        [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
-        with the added file.
-  + [ ] Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
-        bumping all the version numbers by one, and update the interpretations
-        of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
-        [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
-  + [ ] Update the files
-        [`test-suite/success/CompatCurrentFlag.v`](/test-suite/success/CompatCurrentFlag.v),
-        [`test-suite/success/CompatPreviousFlag.v`](/test-suite/success/CompatPreviousFlag.v),
-        and
-        [`test-suite/success/CompatOldFlag.v`](/test-suite/success/CompatOldFlag.v)
-        by bumping all version numbers by 1.  Re-create the file
-        [`test-suite/success/CompatOldOldFlag.v`](/test-suite/success/CompatOldOldFlag.v)
-        with its version numbers also bumped by 1 (file should have
-        been removed right before branching; see above).
-  + [ ] Update
-        [`test-suite/tools/update-compat/run.sh`](/test-suite/tools/update-compat/run.sh)
-        to ensure that it passes `--master` to the `update-compat.py`
-        script.
+- [ ] Change the version name to the next major version and the magic
+  numbers (see [#7008](https://github.com/coq/coq/pull/7008/files)).
+
+  Additionally, in the same commit, update the compatibility
+  infrastructure, which consists of invoking
+  [`dev/tools/update-compat.py`](../tools/update-compat.py) with the
+  `--master` flag.
+
+  Note that the `update-compat.py` script must be run twice: once
+  *immediately after* branching with the `--master` flag (which sets
+  up Coq to support four `-compat` flag arguments), *in the same
+  commit* as the one that updates `coq_version` in
+  [`configure.ml`](../../configure.ml), and once again later on before
+  the next branch point with the `--release` flag (see next section).
 - [ ] Put the corresponding alpha tag using `git tag -s`.
   The `VX.X+alpha` tag marks the first commit to be in `master` and not in the
   branch of the previous version.
@@ -78,6 +25,19 @@
 - [ ] Decide the release calendar with the team (freeze date, beta date, final
   release date) and put this information in the milestone (using the
   description and due date fields).
+
+## Anytime after the previous version is branched off master ##
+
+- [ ] Update the compatibility infrastructure to the next release,
+  which consists of invoking
+  [`dev/tools/update-compat.py`](../tools/update-compat.py) with the
+  `--release` flag; this sets up Coq to support three `-compat` flag
+  arguments.  To ensure that CI passes, you will have to decide what
+  to do about all test-suite files which mention `-compat U.U` or
+  `Coq.Comapt.CoqUU` (which is no longer valid, since we only keep
+  compatibility against the two previous versions on releases), and
+  you may have to prepare overlays for projects using the
+  compatibility flags.
 
 ## About one month before the beta ##
 

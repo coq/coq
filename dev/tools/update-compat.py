@@ -2,6 +2,60 @@
 from __future__ import with_statement
 import os, re, sys, subprocess
 
+# When passed `--release`, this script sets up Coq to support three
+# `-compat` flag arguments.  If executed manually, this would consist
+# of doing the following steps:
+#
+# - Delete the file `theories/Compat/CoqUU.v`, where U.U is four
+#   versions prior to the new version X.X.  After this, there
+#   should be exactly three `theories/Compat/CoqNN.v` files.
+# - Update
+#   [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
+#   with the deleted file.
+# - Remove any notations in the standard library which have `compat "U.U"`.
+# - Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
+#   bumping all the version numbers by one, and update the interpretations
+#   of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
+#   [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
+#
+# - Remove the file
+#   [`test-suite/success/CompatOldOldFlag.v`](/test-suite/success/CompatOldOldFlag.v).
+# - Update
+#   [`test-suite/tools/update-compat/run.sh`](/test-suite/tools/update-compat/run.sh)
+#   to ensure that it passes `--release` to the `update-compat.py`
+#   script.
+
+# When passed the `--master` flag, this script sets up Coq to support
+# four `-compat` flag arguments.  If executed manually, this would
+# consist of doing the following steps:
+#
+# - Add a file `theories/Compat/CoqXX.v` which contains just the header
+#   from [`dev/header.ml`](/dev/header.ml)
+# - Add the line `Require Export Coq.Compat.CoqXX.` at the top of
+#   `theories/Compat/CoqYY.v`, where Y.Y is the version prior to X.X.
+# - Update
+#   [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
+#   with the added file.
+# - Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
+#   bumping all the version numbers by one, and update the interpretations
+#   of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
+#   [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
+# - Update the files
+#   [`test-suite/success/CompatCurrentFlag.v`](/test-suite/success/CompatCurrentFlag.v),
+#   [`test-suite/success/CompatPreviousFlag.v`](/test-suite/success/CompatPreviousFlag.v),
+#   and
+#   [`test-suite/success/CompatOldFlag.v`](/test-suite/success/CompatOldFlag.v)
+#   by bumping all version numbers by 1.  Re-create the file
+#   [`test-suite/success/CompatOldOldFlag.v`](/test-suite/success/CompatOldOldFlag.v)
+#   with its version numbers also bumped by 1 (file should have
+#   been removed before branching; see above).
+# - Update
+#   [`test-suite/tools/update-compat/run.sh`](/test-suite/tools/update-compat/run.sh)
+#   to ensure that it passes `--master` to the `update-compat.py`
+#   script.
+
+
+
 # Obtain the absolute path of the script being run.  By assuming that
 # the script lives in dev/tools/, and basing all calls on the path of
 # the script, rather than the current working directory, we can be
@@ -51,8 +105,8 @@ def maybe_git_add(local_path, suggest_add=True, **args):
 
 def maybe_git_rm(local_path, **args):
     if args['git_add']:
-        print("Running 'git rm --cached %s'..." % local_path)
-        retc = subprocess.call(['git', 'rm', '--cached', local_path], cwd=ROOT_PATH)
+        print("Running 'git rm %s'..." % local_path)
+        retc = subprocess.call(['git', 'rm', local_path], cwd=ROOT_PATH)
         if retc is not None and retc != 0:
             print('!!! Process returned code %d' % retc)
 
@@ -379,7 +433,7 @@ def parse_args(argv):
         'git_add': False,
     }
     if '--master' not in argv and '--release' not in argv:
-        print(r'''WARNING: You should pass either --release (right before branching)
+        print(r'''WARNING: You should pass either --release (sometime before branching)
   or --master (right after branching and updating the version number in version.ml)''')
         if '--assert-unchanged' not in args: break_or_continue()
     for arg in argv[1:]:
