@@ -33,8 +33,8 @@ Section Axiomatisation.
     forall x y z t:U, cong x y -> cong z t -> cong (op x z) (op y t).
   Proof.
     intros; apply cong_trans with (op y z).
-    apply cong_left; trivial.
-    apply cong_right; trivial.
+    - apply cong_left; trivial.
+    - apply cong_right; trivial.
   Qed.
 
   Lemma comm_right : forall x y z:U, cong (op x (op y z)) (op x (op z y)).
@@ -51,27 +51,27 @@ Section Axiomatisation.
   Proof.
     intros.
     apply cong_trans with (op x (op y z)).
-    apply op_ass.
-    apply cong_trans with (op x (op z y)).
-    apply cong_right; apply op_comm.
-    apply cong_sym; apply op_ass.
+    - apply op_ass.
+    - apply cong_trans with (op x (op z y)).
+      + apply cong_right; apply op_comm.
+      + apply cong_sym; apply op_ass.
   Qed.
 
   Lemma perm_left : forall x y z:U, cong (op x (op y z)) (op y (op x z)).
   Proof.
     intros.
     apply cong_trans with (op (op x y) z).
-    apply cong_sym; apply op_ass.
-    apply cong_trans with (op (op y x) z).
-    apply cong_left; apply op_comm.
-    apply op_ass.
+    - apply cong_sym; apply op_ass.
+    - apply cong_trans with (op (op y x) z).
+      + apply cong_left; apply op_comm.
+      + apply op_ass.
   Qed.
 
   Lemma op_rotate : forall x y z t:U, cong (op x (op y z)) (op z (op x y)).
   Proof.
     intros; apply cong_trans with (op (op x y) z).
-    apply cong_sym; apply op_ass.
-    apply op_comm.
+    - apply cong_sym; apply op_ass.
+    - apply op_comm.
   Qed.
 
   (** Needed for treesort ... *)
@@ -80,10 +80,10 @@ Section Axiomatisation.
   Proof.
     intros.
     apply cong_trans with (op x (op (op y t) z)).
-    apply cong_right; apply perm_right.
-    apply cong_trans with (op (op x (op y t)) z).
-    apply cong_sym; apply op_ass.
-    apply cong_left; apply perm_left.
+    - apply cong_right; apply perm_right.
+    - apply cong_trans with (op (op x (op y t)) z).
+      + apply cong_sym; apply op_ass.
+      + apply cong_left; apply perm_left.
   Qed.
 
 End Axiomatisation.

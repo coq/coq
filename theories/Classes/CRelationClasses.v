@@ -310,9 +310,11 @@ Section Binary.
 
   Global Instance relation_equivalence_equivalence :
     Equivalence relation_equivalence.
-  Proof. split; red; unfold relation_equivalence, iffT. firstorder. 
-    firstorder. 
-    intros. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
+  Proof.
+    split; red; unfold relation_equivalence, iffT.
+    - firstorder.
+    - firstorder.
+    - intros. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
   Qed.
     
   Global Instance relation_implication_preorder : PreOrder (@subrelation A).
@@ -337,8 +339,11 @@ Section Binary.
   Qed.
 
   Lemma PartialOrder_inverse `(PartialOrder eqA R) : PartialOrder eqA (flip R).
-  Proof. unfold flip; constructor; unfold flip. intros. apply H. apply symmetry. apply X.
-         unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption. Qed.
+  Proof.
+    unfold flip; constructor; unfold flip.
+    - intros. apply H. apply symmetry. apply X.
+    - unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption.
+  Qed.
 End Binary.
 
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.

@@ -72,15 +72,15 @@ Lemma eq_mul_1_nonneg : forall n m,
 Proof.
  intros n m Hn H.
  le_elim Hn.
- destruct (lt_ge_cases m 0) as [Hm|Hm].
- generalize (mul_pos_neg n m Hn Hm). order'.
- le_elim Hm.
- apply le_succ_l in Hn. rewrite <- one_succ in Hn.
- le_elim Hn.
- generalize (lt_1_mul_pos n m Hn Hm). order.
- rewrite <- Hn, mul_1_l in H. now split.
- rewrite <- Hm, mul_0_r in H. order'.
- rewrite <- Hn, mul_0_l in H. order'.
+ - destruct (lt_ge_cases m 0) as [Hm|Hm].
+   + generalize (mul_pos_neg n m Hn Hm). order'.
+   + le_elim Hm.
+     * apply le_succ_l in Hn. rewrite <- one_succ in Hn.
+       le_elim Hn.
+       -- generalize (lt_1_mul_pos n m Hn Hm). order.
+       -- rewrite <- Hn, mul_1_l in H. now split.
+     * rewrite <- Hm, mul_0_r in H. order'.
+ - rewrite <- Hn, mul_0_l in H. order'.
 Qed.
 
 Lemma eq_mul_1_nonneg' : forall n m,
@@ -117,13 +117,13 @@ Lemma divide_antisym_nonneg : forall n m,
 Proof.
  intros n m Hn Hm (q,Hq) (r,Hr).
  le_elim Hn.
- destruct (lt_ge_cases q 0) as [Hq'|Hq'].
- generalize (mul_neg_pos q n Hq' Hn). order.
- rewrite Hq, mul_assoc in Hr. symmetry in Hr.
- apply mul_id_l in Hr; [|order].
- destruct (eq_mul_1_nonneg' r q) as [_ H]; trivial.
- now rewrite H, mul_1_l in Hq.
- rewrite <- Hn, mul_0_r in Hq. now rewrite <- Hn.
+ - destruct (lt_ge_cases q 0) as [Hq'|Hq'].
+   + generalize (mul_neg_pos q n Hq' Hn). order.
+   + rewrite Hq, mul_assoc in Hr. symmetry in Hr.
+     apply mul_id_l in Hr; [|order].
+     destruct (eq_mul_1_nonneg' r q) as [_ H]; trivial.
+     now rewrite H, mul_1_l in Hq.
+ - rewrite <- Hn, mul_0_r in Hq. now rewrite <- Hn.
 Qed.
 
 Lemma mul_divide_mono_l : forall n m p, (n | m) -> (p * n | p * m).
@@ -140,8 +140,8 @@ Lemma mul_divide_cancel_l : forall n m p, p ~= 0 ->
  ((p * n | p * m) <-> (n | m)).
 Proof.
  intros n m p Hp. split.
- intros (q,Hq). exists q. now rewrite mul_shuffle3, mul_cancel_l in Hq.
- apply mul_divide_mono_l.
+ - intros (q,Hq). exists q. now rewrite mul_shuffle3, mul_cancel_l in Hq.
+ - apply mul_divide_mono_l.
 Qed.
 
 Lemma mul_divide_cancel_r : forall n m p, p ~= 0 ->
@@ -179,14 +179,14 @@ Qed.
 Lemma divide_pos_le : forall n m, 0 < m -> (n | m) -> n <= m.
 Proof.
  intros n m Hm (q,Hq).
- destruct (le_gt_cases n 0) as [Hn|Hn]. order.
- rewrite Hq.
- destruct (lt_ge_cases q 0) as [Hq'|Hq'].
- generalize (mul_neg_pos q n Hq' Hn). order.
- le_elim Hq'.
- rewrite <- (mul_1_l n) at 1. apply mul_le_mono_pos_r; trivial.
- now rewrite one_succ, le_succ_l.
- rewrite <- Hq', mul_0_l in Hq. order.
+ destruct (le_gt_cases n 0) as [Hn|Hn]. - order.
+ - rewrite Hq.
+   destruct (lt_ge_cases q 0) as [Hq'|Hq'].
+   + generalize (mul_neg_pos q n Hq' Hn). order.
+   + le_elim Hq'.
+     * rewrite <- (mul_1_l n) at 1. apply mul_le_mono_pos_r; trivial.
+       now rewrite one_succ, le_succ_l.
+     * rewrite <- Hq', mul_0_l in Hq. order.
 Qed.
 
 (** Basic properties of gcd *)
@@ -197,28 +197,28 @@ Lemma gcd_unique : forall n m p,
  gcd n m == p.
 Proof.
  intros n m p Hp Hn Hm H.
- apply divide_antisym_nonneg; trivial. apply gcd_nonneg.
- apply H. apply gcd_divide_l. apply gcd_divide_r.
- now apply gcd_greatest.
+ apply divide_antisym_nonneg; trivial. - apply gcd_nonneg.
+ - apply H. + apply gcd_divide_l. + apply gcd_divide_r.
+ - now apply gcd_greatest.
 Qed.
 
 Instance gcd_wd : Proper (eq==>eq==>eq) gcd.
 Proof.
  intros x x' Hx y y' Hy.
  apply gcd_unique.
- apply gcd_nonneg.
- rewrite Hx. apply gcd_divide_l.
- rewrite Hy. apply gcd_divide_r.
- intro. rewrite Hx, Hy. apply gcd_greatest.
+ - apply gcd_nonneg.
+ - rewrite Hx. apply gcd_divide_l.
+ - rewrite Hy. apply gcd_divide_r.
+ - intro. rewrite Hx, Hy. apply gcd_greatest.
 Qed.
 
 Lemma gcd_divide_iff : forall n m p,
   (p | gcd n m) <-> (p | n) /\ (p | m).
 Proof.
- intros. split. split.
- transitivity (gcd n m); trivial using gcd_divide_l.
- transitivity (gcd n m); trivial using gcd_divide_r.
- intros (H,H'). now apply gcd_greatest.
+  intros. split. - split.
+                   + transitivity (gcd n m); trivial using gcd_divide_l.
+                   + transitivity (gcd n m); trivial using gcd_divide_r.
+  - intros (H,H'). now apply gcd_greatest.
 Qed.
 
 Lemma gcd_unique_alt : forall n m p, 0<=p ->
@@ -227,9 +227,9 @@ Lemma gcd_unique_alt : forall n m p, 0<=p ->
 Proof.
  intros n m p Hp H.
  apply gcd_unique; trivial.
- apply H. apply divide_refl.
- apply H. apply divide_refl.
- intros. apply H. now split.
+ - apply H. apply divide_refl.
+ - apply H. apply divide_refl.
+ - intros. apply H. now split.
 Qed.
 
 Lemma gcd_comm : forall n m, gcd n m == gcd m n.
@@ -247,8 +247,8 @@ Qed.
 Lemma gcd_0_l_nonneg : forall n, 0<=n -> gcd 0 n == n.
 Proof.
  intros. apply gcd_unique; trivial.
- apply divide_0_r.
- apply divide_refl.
+ - apply divide_0_r.
+ - apply divide_refl.
 Qed.
 
 Lemma gcd_0_r_nonneg : forall n, 0<=n -> gcd n 0 == n.
@@ -284,24 +284,26 @@ Qed.
 
 Lemma gcd_eq_0 : forall n m, gcd n m == 0 <-> n == 0 /\ m == 0.
 Proof.
- intros. split. split.
- now apply gcd_eq_0_l with m.
- now apply gcd_eq_0_r with n.
- intros (EQ,EQ'). rewrite EQ, EQ'. now apply gcd_0_r_nonneg.
+  intros. split.
+  - split.
+    + now apply gcd_eq_0_l with m.
+    + now apply gcd_eq_0_r with n.
+  - intros (EQ,EQ'). rewrite EQ, EQ'. now apply gcd_0_r_nonneg.
 Qed.
 
 Lemma gcd_mul_diag_l : forall n m, 0<=n -> gcd n (n*m) == n.
 Proof.
  intros n m Hn. apply gcd_unique_alt; trivial.
- intros q. split. split; trivial. now apply divide_mul_l.
- now destruct 1.
+ intros q. split. - split; trivial. now apply divide_mul_l.
+ - now destruct 1.
 Qed.
 
 Lemma divide_gcd_iff : forall n m, 0<=n -> ((n|m) <-> gcd n m == n).
 Proof.
- intros n m Hn. split. intros (q,Hq). rewrite Hq.
- rewrite mul_comm. now apply gcd_mul_diag_l.
- intros EQ. rewrite <- EQ. apply gcd_divide_r.
+  intros n m Hn. split.
+  - intros (q,Hq). rewrite Hq.
+    rewrite mul_comm. now apply gcd_mul_diag_l.
+  - intros EQ. rewrite <- EQ. apply gcd_divide_r.
 Qed.
 
 End NZGcdProp.

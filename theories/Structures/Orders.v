@@ -143,8 +143,8 @@ Module Compare2EqBool (Import O:DecStrOrder') <: HasEqBool O.
  Proof.
  unfold eqb. intros x y.
  destruct (compare_spec x y) as [H|H|H]; split; auto; try discriminate.
- intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
- intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
+ - intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
+ - intros EQ; rewrite EQ in H; elim (StrictOrder_Irreflexive _ H).
  Qed.
 
 End Compare2EqBool.
@@ -252,9 +252,11 @@ Module OTF_to_TTLB (Import O : OrderedTypeFull') <: TotalTransitiveLeBool.
  Proof.
  intros. unfold leb. rewrite le_lteq.
  destruct (compare_spec x y) as [EQ|LT|GT]; split; auto.
- discriminate.
- intros LE. elim (StrictOrder_Irreflexive x).
- destruct LE as [LT|EQ]. now transitivity y. now rewrite <- EQ in GT.
+ - discriminate.
+ - intros LE. elim (StrictOrder_Irreflexive x).
+   destruct LE as [LT|EQ].
+   + now transitivity y.
+   + now rewrite <- EQ in GT.
  Qed.
 
  Lemma leb_total : forall x y, leb x y \/ leb y x.
@@ -267,10 +269,10 @@ Module OTF_to_TTLB (Import O : OrderedTypeFull') <: TotalTransitiveLeBool.
  Proof.
  intros x y z. rewrite !leb_le, !le_lteq.
  intros [Hxy|Hxy] [Hyz|Hyz].
- left; transitivity y; auto.
- left; rewrite <- Hyz; auto.
- left; rewrite Hxy; auto.
- right; transitivity y; auto.
+ - left; transitivity y; auto.
+ - left; rewrite <- Hyz; auto.
+ - left; rewrite Hxy; auto.
+ - right; transitivity y; auto.
  Qed.
 
  Definition t := t.
@@ -302,10 +304,10 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  Proof.
  intros. unfold compare.
  case_eq (x <=? y).
- case_eq (y <=? x).
- constructor. split; auto.
- constructor. split; congruence.
- constructor. destruct (leb_total x y); split; congruence.
+ - case_eq (y <=? x).
+   + constructor. split; auto.
+   + constructor. split; congruence.
+ - constructor. destruct (leb_total x y); split; congruence.
  Qed.
 
  Definition eqb x y := (x <=? y) && (y <=? x).
@@ -321,19 +323,19 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  Instance eq_equiv : Equivalence eq.
  Proof.
  split.
- intros x; unfold eq, le. destruct (leb_total x x); auto.
- intros x y; unfold eq, le. intuition.
- intros x y z; unfold eq, le. intuition; apply leb_trans with y; auto.
+ - intros x; unfold eq, le. destruct (leb_total x x); auto.
+ - intros x y; unfold eq, le. intuition.
+ - intros x y z; unfold eq, le. intuition; apply leb_trans with y; auto.
  Qed.
 
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
- intros x. unfold lt; red; intuition.
- intros x y z; unfold lt, le. intuition.
- apply leb_trans with y; auto.
- absurd (z <=? y); auto.
- apply leb_trans with x; auto.
+ - intros x. unfold lt; red; intuition.
+ - intros x y z; unfold lt, le. intuition.
+   + apply leb_trans with y; auto.
+   + absurd (z <=? y); auto.
+     apply leb_trans with x; auto.
  Qed.
 
  Instance lt_compat : Proper (eq ==> eq ==> iff) lt.
@@ -341,11 +343,11 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  apply proper_sym_impl_iff_2; auto with *.
  intros x x' Hx y y' Hy' H. unfold eq, lt, le in *.
  intuition.
- apply leb_trans with x; auto.
- apply leb_trans with y; auto.
- absurd (y <=? x); auto.
- apply leb_trans with x'; auto.
- apply leb_trans with y'; auto.
+ - apply leb_trans with x; auto.
+   apply leb_trans with y; auto.
+ - absurd (y <=? x); auto.
+   apply leb_trans with x'; auto.
+   apply leb_trans with y'; auto.
  Qed.
 
  Definition le_lteq : forall x y, le x y <-> lt x y \/ eq x y.

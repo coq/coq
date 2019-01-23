@@ -36,23 +36,23 @@ Section WfLexicographic_Product.
     apply Acc_intro.
     destruct y as [x2 y1]; intro H6.
     simple inversion H6; intro.
-    cut (leA x2 x); intros.
-    apply IHAcc; auto with sets.
-    intros.
-    apply H2.
-    apply t_trans with x2; auto with sets.
+    - cut (leA x2 x); intros.
+      + apply IHAcc; auto with sets.
+        * intros.
+          apply H2.
+          apply t_trans with x2; auto with sets.
 
-    red in H2.
-    apply H2.
-    auto with sets.
+        * red in H2.
+          apply H2.
+          auto with sets.
 
-    injection H1 as <- _.
-    injection H3 as <- _; auto with sets.
+      + injection H1 as <- _.
+        injection H3 as <- _; auto with sets.
 
-    rewrite <- H1.
-    injection H3 as -> H3.
-    apply IHAcc0.
-    elim inj_pair2 with A B x y' x0; assumption.
+    - rewrite <- H1.
+      injection H3 as -> H3.
+      apply IHAcc0.
+      elim inj_pair2 with A B x y' x0; assumption.
   Defined.
 
   Theorem wf_lexprod :
@@ -116,17 +116,17 @@ Section Swap.
     apply Acc_intro.
     destruct y0; intros.
     inversion_clear H; inversion_clear H1; apply H0.
-    apply sp_swap.
-    apply right_sym; auto with sets.
+    - apply sp_swap.
+      apply right_sym; auto with sets.
 
-    apply sp_swap.
-    apply left_sym; auto with sets.
+    - apply sp_swap.
+      apply left_sym; auto with sets.
 
-    apply sp_noswap.
-    apply right_sym; auto with sets.
+    - apply sp_noswap.
+      apply right_sym; auto with sets.
 
-    apply sp_noswap.
-    apply left_sym; auto with sets.
+    - apply sp_noswap.
+      apply left_sym; auto with sets.
   Defined.
 
 
@@ -135,26 +135,26 @@ Section Swap.
   Proof.
     induction 1 as [x0 _ IHAcc0]; intros H2.
     cut (forall y0:A, R y0 x0 -> Acc SwapProd (y0, y)).
-    clear IHAcc0.
-    induction H2 as [x1 _ IHAcc1]; intros H4.
-    cut (forall y:A, R y x1 -> Acc SwapProd (x0, y)).
-    clear IHAcc1.
-    intro.
-    apply Acc_intro.
-    destruct y; intro H5.
-    inversion_clear H5.
-    inversion_clear H0; auto with sets.
+    - clear IHAcc0.
+      induction H2 as [x1 _ IHAcc1]; intros H4.
+      cut (forall y:A, R y x1 -> Acc SwapProd (x0, y)).
+      + clear IHAcc1.
+        intro.
+        apply Acc_intro.
+        destruct y; intro H5.
+        inversion_clear H5.
+        * inversion_clear H0; auto with sets.
 
-    apply swap_Acc.
-    inversion_clear H0; auto with sets.
+        * apply swap_Acc.
+          inversion_clear H0; auto with sets.
 
-    intros.
-    apply IHAcc1; auto with sets; intros.
-    apply Acc_inv with (y0, x1); auto with sets.
-    apply sp_noswap.
-    apply right_sym; auto with sets.
+      + intros.
+        apply IHAcc1; auto with sets; intros.
+        apply Acc_inv with (y0, x1); auto with sets.
+        apply sp_noswap.
+        apply right_sym; auto with sets.
 
-    auto with sets.
+    - auto with sets.
   Defined.
 
 

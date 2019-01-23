@@ -73,10 +73,10 @@ Proof.
   simpl.
   split ; intros ; subst.
 
-  inversion H.
-  reflexivity.
+  - inversion H.
+    reflexivity.
 
-  pi.
+  - pi.
 Qed.
 
 (* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f]

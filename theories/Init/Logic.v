@@ -383,6 +383,11 @@ Section Logic_lemmas.
 
     Register eq_trans as core.eq.trans.
 
+    Theorem eq_trans_r : x = y -> z = y -> x = z.
+    Proof.
+      destruct 2; trivial.
+    Defined.
+
     Theorem f_equal : x = y -> f x = f y.
     Proof.
       destruct 1; trivial.
@@ -695,8 +700,8 @@ Proof.
   - intros (x,(Hx,Huni)); split.
     + exists x; assumption.
     + intros x' x'' Hx' Hx''; transitivity x.
-      symmetry; auto.
-      auto.
+      * symmetry; auto.
+      * auto.
 Qed.
 
 Lemma forall_exists_unique_domain_coincide :

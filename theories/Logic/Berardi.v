@@ -88,8 +88,8 @@ Lemma L1 : forall A B:Prop, retract_cond (pow A) (pow B).
 Proof.
 intros A B.
 destruct (EM (retract (pow A) (pow B))) as [(f0,g0,e) | hf].
-  exists f0 g0; trivial.
-  exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F); intros;
+- exists f0 g0; trivial.
+- exists (fun (x:pow A) (y:B) => F) (fun (x:pow B) (y:A) => F); intros;
     destruct hf; auto.
 Qed.
 
@@ -130,9 +130,9 @@ Proof.
 unfold R at 1.
 unfold g.
 rewrite AC.
-trivial.
-exists (fun x:pow U => x) (fun x:pow U => x).
-trivial.
+- trivial.
+- exists (fun x:pow U => x) (fun x:pow U => x).
+  trivial.
 Qed.
 
 
@@ -141,11 +141,11 @@ Proof.
 generalize not_has_fixpoint.
 unfold Not_b.
 apply AC_IF.
-intros is_true is_false.
-elim is_true; elim is_false; trivial.
+- intros is_true is_false.
+  elim is_true; elim is_false; trivial.
 
-intros not_true is_true.
-elim not_true; trivial.
+- intros not_true is_true.
+  elim not_true; trivial.
 Qed.
 
 

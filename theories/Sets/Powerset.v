@@ -154,9 +154,9 @@ Theorem Union_is_Lub :
    Lub (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b) (Union U a b).
 intros A a b H' H'0.
 apply Lub_definition; simpl.
-apply Upper_Bound_definition; simpl; auto with sets.
-intros y H'1; elim H'1; auto with sets.
-intros y H'1; elim H'1; simpl; auto with sets.
+- apply Upper_Bound_definition; simpl; auto with sets.
+  intros y H'1; elim H'1; auto with sets.
+- intros y H'1; elim H'1; simpl; auto with sets.
 Qed.
 
 Theorem Intersection_is_Glb :
@@ -167,12 +167,12 @@ Theorem Intersection_is_Glb :
      (Intersection U a b).
 intros A a b H' H'0.
 apply Glb_definition; simpl.
-apply Lower_Bound_definition; simpl; auto with sets.
-apply Definition_of_Power_set.
-generalize Inclusion_is_transitive; intro IT; red in IT; apply IT with a;
- auto with sets.
-intros y H'1; elim H'1; auto with sets.
-intros y H'1; elim H'1; simpl; auto with sets.
+- apply Lower_Bound_definition; simpl; auto with sets.
+  + apply Definition_of_Power_set.
+    generalize Inclusion_is_transitive; intro IT; red in IT; apply IT with a;
+      auto with sets.
+  + intros y H'1; elim H'1; auto with sets.
+- intros y H'1; elim H'1; simpl; auto with sets.
 Qed.
 
 End The_power_set_partial_order.

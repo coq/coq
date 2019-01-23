@@ -290,9 +290,9 @@ Module Type CompareBasedOrderFacts
  Lemma compare_spec x y : CompareSpec (x==y) (x<y) (y<x) (x?=y).
  Proof.
   case_eq (compare x y); intros H; constructor.
-  now apply compare_eq_iff.
-  now apply compare_lt_iff.
-  rewrite compare_antisym, CompOpp_iff in H. now apply compare_lt_iff.
+  - now apply compare_eq_iff.
+  - now apply compare_lt_iff.
+  - rewrite compare_antisym, CompOpp_iff in H. now apply compare_lt_iff.
  Qed.
 
  Lemma compare_eq x y : (x ?= y) = Eq -> x==y.

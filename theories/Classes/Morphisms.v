@@ -260,8 +260,8 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     assert(R x0 x0).
-    transitivity y0... symmetry...
-    transitivity (y x0)... 
+    - transitivity y0... symmetry...
+    - transitivity (y x0)...
   Qed.
 
   (** The complement of a relation conserves its proper elements. *)
@@ -344,10 +344,11 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
-    split. intros ; transitivity x0...
-    intros.
-    transitivity y...
-    symmetry...
+    split.
+    - intros ; transitivity x0...
+    - intros.
+      transitivity y...
+      symmetry...
   Qed.
 
   (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
@@ -369,9 +370,9 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     split ; intros.
-    transitivity x0... transitivity x... symmetry...
+    - transitivity x0... transitivity x... symmetry...
 
-    transitivity y... transitivity y0... symmetry...
+    - transitivity y... transitivity y0... symmetry...
   Qed.
 
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
@@ -403,15 +404,15 @@ Section GenericInstances.
     unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
     split ; intros.
     
-    rewrite <- H0.
-    apply H1.
-    rewrite H.
-    assumption.
-    
-    rewrite H0.
-    apply H1.
-    rewrite <- H.
-    assumption.
+    - rewrite <- H0.
+      apply H1.
+      rewrite H.
+      assumption.
+
+    - rewrite H0.
+      apply H1.
+      rewrite <- H.
+      assumption.
   Qed.
 
   (** [R] is Reflexive, hence we can build the needed proof. *)
@@ -514,10 +515,10 @@ Proof.
   simpl_relation.
   reduce in H.
   split ; red ; intros.
-  setoid_rewrite <- H.
-  apply H0.
-  setoid_rewrite H.
-  apply H0.
+  - setoid_rewrite <- H.
+    apply H0.
+  - setoid_rewrite H.
+    apply H0.
 Qed.
 
 Ltac proper_reflexive :=
@@ -574,8 +575,8 @@ Proof.
   unfold relation_equivalence in *. 
   unfold predicate_equivalence in *. simpl in *.
   unfold respectful. unfold flip in *. firstorder.
-  apply NB. apply H. apply NA. apply H0.
-  apply NB. apply H. apply NA. apply H0.
+  - apply NB. apply H. apply NA. apply H0.
+  - apply NB. apply H. apply NA. apply H0.
 Qed.
 
 Ltac normalizes :=
@@ -642,9 +643,9 @@ intros.
 apply proper_sym_impl_iff_2; auto with *.
 intros x x' Hx y y' Hy Hr.
 transitivity x.
-generalize (partial_order_equivalence x x'); compute; intuition.
-transitivity y; auto.
-generalize (partial_order_equivalence y y'); compute; intuition.
+- generalize (partial_order_equivalence x x'); compute; intuition.
+- transitivity y; auto.
+  generalize (partial_order_equivalence y y'); compute; intuition.
 Qed.
 
 (** From a [PartialOrder] to the corresponding [StrictOrder]:
@@ -655,13 +656,13 @@ Lemma PartialOrder_StrictOrder `(PartialOrder A eqA R) :
   StrictOrder (relation_conjunction R (complement eqA)).
 Proof.
 split; compute.
-intros x (_,Hx). apply Hx, Equivalence_Reflexive.
-intros x y z (Hxy,Hxy') (Hyz,Hyz'). split.
-apply PreOrder_Transitive with y; assumption.
-intro Hxz.
-apply Hxy'.
-apply partial_order_antisym; auto.
-rewrite Hxz; auto.
+- intros x (_,Hx). apply Hx, Equivalence_Reflexive.
+- intros x y z (Hxy,Hxy') (Hyz,Hyz'). split.
+  + apply PreOrder_Transitive with y; assumption.
+  + intro Hxz.
+    apply Hxy'.
+    apply partial_order_antisym; auto.
+    rewrite Hxz; auto.
 Qed.
 
 
@@ -674,12 +675,12 @@ Lemma StrictOrder_PreOrder
  PreOrder (relation_disjunction R eqA).
 Proof.
 split.
-intros x. right. reflexivity.
-intros x y z [Hxy|Hxy] [Hyz|Hyz].
-left. transitivity y; auto.
-left. rewrite <- Hyz; auto.
-left. rewrite Hxy; auto.
-right. transitivity y; auto.
+- intros x. right. reflexivity.
+- intros x y z [Hxy|Hxy] [Hyz|Hyz].
+  + left. transitivity y; auto.
+  + left. rewrite <- Hyz; auto.
+  + left. rewrite Hxy; auto.
+  + right. transitivity y; auto.
 Qed.
 
 Hint Extern 4 (PreOrder (relation_disjunction _ _)) => 

@@ -135,10 +135,10 @@ Proof.
 exists bool. exists (fun _ => True). exists true. exists false.
 exists I. exists I.
 split.
-trivial.
-intro H.
-assert (true=false) by (destruct H; reflexivity).
-discriminate.
+- trivial.
+- intro H.
+  assert (true=false) by (destruct H; reflexivity).
+  discriminate.
 Qed.
 
 (** However, when the dependencies are equal, [JMeq (P p) x (P q) y]

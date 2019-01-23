@@ -45,12 +45,12 @@ Theorem Equiv_from_preorder :
 Proof.
 intros U R H'; elim H'; intros H'0 H'1.
 apply Definition_of_equivalence.
-red in H'0; auto 10 with sets.
-2: red; intros x y h; elim h; intros H'3 H'4; auto 10 with sets.
-red in H'1; red; auto 10 with sets.
-intros x y z h; elim h; intros H'3 H'4; clear h.
-intro h; elim h; intros H'5 H'6; clear h.
-split; apply H'1 with y; auto 10 with sets.
+- red in H'0; auto 10 with sets.
+- red in H'1; red; auto 10 with sets.
+  intros x y z h; elim h; intros H'3 H'4; clear h.
+  intro h; elim h; intros H'5 H'6; clear h.
+  split; apply H'1 with y; auto 10 with sets.
+- red; intros x y h; elim h; intros H'3 H'4; auto 10 with sets.
 Qed.
 Hint Resolve Equiv_from_preorder : core.
 

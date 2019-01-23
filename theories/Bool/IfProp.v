@@ -45,6 +45,6 @@ Qed.
 
 Lemma IfProp_sum : forall (A B:Prop) (b:bool), IfProp A B b -> {A} + {B}.
 destruct b; intro H.
-left; inversion H; auto with bool.
-right; inversion H; auto with bool.
+- left; inversion H; auto with bool.
+- right; inversion H; auto with bool.
 Qed.

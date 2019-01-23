@@ -765,8 +765,9 @@ Section Dependent_choice_lemmas.
     intros H x0.
     set (f:=fix f n := match n with O => x0 | S n' => proj1_sig (H (f n')) end).
     exists f.
-    split. reflexivity.
-    induction n; simpl; apply proj2_sig.
+    split.
+    - reflexivity.
+    - induction n; simpl; apply proj2_sig.
   Defined.
 
 End Dependent_choice_lemmas.

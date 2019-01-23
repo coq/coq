@@ -404,9 +404,10 @@ Program Instance predicate_equivalence_equivalence :
   Qed.
   Next Obligation.
     fold pointwise_lifting.
-    induction l. firstorder.
-    intros. simpl in *. pose (IHl (x x0) (y x0) (z x0)).
-    firstorder.
+    induction l.
+    - firstorder.
+    - intros. simpl in *. pose (IHl (x x0) (y x0) (z x0)).
+      firstorder.
   Qed.
 
 Program Instance predicate_implication_preorder :
@@ -415,9 +416,10 @@ Program Instance predicate_implication_preorder :
     induction l ; firstorder.
   Qed.
   Next Obligation.
-    induction l. firstorder.
-    unfold predicate_implication in *. simpl in *.
-    intro. pose (IHl (x x0) (y x0) (z x0)). firstorder.
+    induction l.
+    - firstorder.
+    - unfold predicate_implication in *. simpl in *.
+      intro. pose (IHl (x x0) (y x0) (z x0)). firstorder.
   Qed.
 
 (** We define the various operations which define the algebra on binary relations,

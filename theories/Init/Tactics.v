@@ -202,13 +202,17 @@ Set Implicit Arguments.
 Lemma decide_left : forall (C:Prop) (decide:{C}+{~C}),
   C -> forall P:{C}+{~C}->Prop, (forall H:C, P (left _ H)) -> P decide.
 Proof.
-intros; destruct decide. apply H0. contradiction.
+  intros; destruct decide.
+  - apply H0.
+  - contradiction.
 Qed.
 
 Lemma decide_right : forall (C:Prop) (decide:{C}+{~C}),
   ~C -> forall P:{C}+{~C}->Prop, (forall H:~C, P (right _ H)) -> P decide.
 Proof.
-intros; destruct decide. contradiction. apply H0.
+  intros; destruct decide.
+  - contradiction.
+  - apply H0.
 Qed.
 
 Tactic Notation "decide" constr(lemma) "with" constr(H) :=

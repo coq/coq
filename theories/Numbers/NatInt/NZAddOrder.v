@@ -17,8 +17,8 @@ Include NZBaseProp NZ <+ NZMulProp NZ <+ NZOrderProp NZ.
 
 Theorem add_lt_mono_l : forall n m p, n < m <-> p + n < p + m.
 Proof.
-intros n m p; nzinduct p. now nzsimpl.
-intro p. nzsimpl. now rewrite <- succ_lt_mono.
+  intros n m p; nzinduct p. - now nzsimpl.
+  - intro p. nzsimpl. now rewrite <- succ_lt_mono.
 Qed.
 
 Theorem add_lt_mono_r : forall n m p, n < m <-> n + p < m + p.
@@ -35,8 +35,8 @@ Qed.
 
 Theorem add_le_mono_l : forall n m p, n <= m <-> p + n <= p + m.
 Proof.
-intros n m p; nzinduct p. now nzsimpl.
-intro p. nzsimpl. now rewrite <- succ_le_mono.
+  intros n m p; nzinduct p. - now nzsimpl.
+  - intro p. nzsimpl. now rewrite <- succ_le_mono.
 Qed.
 
 Theorem add_le_mono_r : forall n m p, n <= m <-> n + p <= m + p.
@@ -124,9 +124,9 @@ Qed.
 Theorem add_le_cases : forall n m p q, n + m <= p + q -> n <= p \/ m <= q.
 Proof.
 intros n m p q H.
-destruct (le_gt_cases n p) as [H1 | H1]. now left.
-destruct (le_gt_cases m q) as [H2 | H2]. now right.
-contradict H; rewrite nle_gt. now apply add_lt_mono.
+destruct (le_gt_cases n p) as [H1 | H1]. - now left.
+- destruct (le_gt_cases m q) as [H2 | H2]. + now right.
+  + contradict H; rewrite nle_gt. now apply add_lt_mono.
 Qed.
 
 Theorem add_neg_cases : forall n m, n + m < 0 -> n < 0 \/ m < 0.
@@ -156,10 +156,10 @@ Qed.
 
 Lemma le_exists_sub : forall n m, n<=m -> exists p, m == p+n /\ 0<=p.
 Proof.
- intros n m H. apply le_ind with (4:=H). solve_proper.
- exists 0; nzsimpl; split; order.
- clear m H. intros m H (p & EQ & LE). exists (S p).
-  split. nzsimpl. now f_equiv. now apply le_le_succ_r.
+  intros n m H. apply le_ind with (4:=H). - solve_proper.
+  - exists 0; nzsimpl; split; order.
+  - clear m H. intros m H (p & EQ & LE). exists (S p).
+    split. + nzsimpl. now f_equiv. + now apply le_le_succ_r.
 Qed.
 
 (** For the moment, it doesn't seem possible to relate

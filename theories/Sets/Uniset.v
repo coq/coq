@@ -174,8 +174,8 @@ Lemma uniset_twist2 :
    seq (union x (union (union y z) t)) (union (union y (union x z)) t).
 Proof.
 intros; apply seq_trans with (union (union x (union y z)) t).
-apply seq_sym; apply union_ass.
-apply seq_left; apply union_perm_left.
+- apply seq_sym; apply union_ass.
+- apply seq_left; apply union_perm_left.
 Qed.
 
 (** specific for treesort *)
@@ -186,8 +186,8 @@ Lemma treesort_twist1 :
    seq (union x (union u t)) (union (union y (union x t)) z).
 Proof.
 intros; apply seq_trans with (union x (union (union y z) t)).
-apply seq_right; apply seq_left; trivial.
-apply uniset_twist1.
+- apply seq_right; apply seq_left; trivial.
+- apply uniset_twist1.
 Qed.
 
 Lemma treesort_twist2 :
@@ -196,8 +196,8 @@ Lemma treesort_twist2 :
    seq (union x (union u t)) (union (union y (union x z)) t).
 Proof.
 intros; apply seq_trans with (union x (union (union y z) t)).
-apply seq_right; apply seq_left; trivial.
-apply uniset_twist2.
+- apply seq_right; apply seq_left; trivial.
+- apply uniset_twist2.
 Qed.
 
 

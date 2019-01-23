@@ -45,11 +45,11 @@ Section Wf_Disjoint_Union.
     intros.
     unfold well_founded.
     destruct a as [a| b].
-    apply (acc_A_sum a).
-    apply (H a).
+    - apply (acc_A_sum a).
+      apply (H a).
 
-    apply (acc_B_sum H b).
-    apply (H0 b).
+    - apply (acc_B_sum H b).
+      apply (H0 b).
   Qed.
 
 End Wf_Disjoint_Union.

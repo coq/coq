@@ -60,19 +60,19 @@ Qed.
 Theorem nle_succ_diag_l : forall n, ~ S n <= n.
 Proof.
 intros n H; le_elim H.
-false_hyp H nlt_succ_diag_l. false_hyp H neq_succ_diag_l.
++ false_hyp H nlt_succ_diag_l. + false_hyp H neq_succ_diag_l.
 Qed.
 
 Theorem le_succ_l : forall n m, S n <= m <-> n < m.
 Proof.
 intro n; nzinduct m n.
-split; intro H. false_hyp H nle_succ_diag_l. false_hyp H lt_irrefl.
-intro m.
-rewrite (lt_eq_cases (S n) (S m)), !lt_succ_r, (lt_eq_cases n m), succ_inj_wd.
-rewrite or_cancel_r.
-reflexivity.
-intros LE EQ; rewrite EQ in LE; false_hyp LE nle_succ_diag_l.
-intros LT EQ; rewrite EQ in LT; false_hyp LT lt_irrefl.
+- split; intro H. + false_hyp H nle_succ_diag_l. + false_hyp H lt_irrefl.
+- intro m.
+  rewrite (lt_eq_cases (S n) (S m)), !lt_succ_r, (lt_eq_cases n m), succ_inj_wd.
+  rewrite or_cancel_r.
+  + reflexivity.
+  + intros LE EQ; rewrite EQ in LE; false_hyp LE nle_succ_diag_l.
+  + intros LT EQ; rewrite EQ in LT; false_hyp LT lt_irrefl.
 Qed.
 
 (** Trichotomy *)
@@ -80,8 +80,8 @@ Qed.
 Theorem le_gt_cases : forall n m, n <= m \/ n > m.
 Proof.
 intros n m; nzinduct n m.
-left; apply le_refl.
-intro n. rewrite lt_succ_r, le_succ_l, !lt_eq_cases. intuition.
+- left; apply le_refl.
+- intro n. rewrite lt_succ_r, le_succ_l, !lt_eq_cases. intuition.
 Qed.
 
 Theorem lt_trichotomy : forall n m,  n < m \/ n == m \/ m < n.
@@ -96,14 +96,14 @@ Notation lt_eq_gt_cases := lt_trichotomy (only parsing).
 Theorem lt_asymm : forall n m, n < m -> ~ m < n.
 Proof.
 intros n m; nzinduct n m.
-intros H; false_hyp H lt_irrefl.
-intro n; split; intros H H1 H2.
-apply lt_succ_r in H2. le_elim H2.
-apply H; auto. apply le_succ_l. now apply lt_le_incl.
-rewrite H2 in H1. false_hyp H1 nlt_succ_diag_l.
-apply le_succ_l in H1. le_elim H1.
-apply H; auto. rewrite lt_succ_r. now apply lt_le_incl.
-rewrite <- H1 in H2. false_hyp H2 nlt_succ_diag_l.
+- intros H; false_hyp H lt_irrefl.
+- intro n; split; intros H H1 H2.
+  + apply lt_succ_r in H2. le_elim H2.
+    * apply H; auto. apply le_succ_l. now apply lt_le_incl.
+    * rewrite H2 in H1. false_hyp H1 nlt_succ_diag_l.
+  + apply le_succ_l in H1. le_elim H1.
+    * apply H; auto. rewrite lt_succ_r. now apply lt_le_incl.
+    * rewrite <- H1 in H2. false_hyp H2 nlt_succ_diag_l.
 Qed.
 
 Notation lt_ngt := lt_asymm (only parsing).
@@ -111,13 +111,15 @@ Notation lt_ngt := lt_asymm (only parsing).
 Theorem lt_trans : forall n m p, n < m -> m < p -> n < p.
 Proof.
 intros n m p; nzinduct p m.
-intros _ H; false_hyp H lt_irrefl.
-intro p. rewrite 2 lt_succ_r.
-split; intros H H1 H2.
-apply lt_le_incl; le_elim H2; [now apply H | now rewrite H2 in H1].
-assert (n <= p) as H3 by (auto using lt_le_incl).
-le_elim H3. assumption. rewrite <- H3 in H2.
-elim (lt_asymm n m); auto.
+- intros _ H; false_hyp H lt_irrefl.
+- intro p. rewrite 2 lt_succ_r.
+  split; intros H H1 H2.
+  + apply lt_le_incl; le_elim H2; [now apply H | now rewrite H2 in H1].
+  + assert (n <= p) as H3 by (auto using lt_le_incl).
+    le_elim H3.
+    * assumption.
+    * rewrite <- H3 in H2.
+      elim (lt_asymm n m); auto.
 Qed.
 
 Theorem le_trans : forall n m p, n <= m -> m <= p -> n <= p.
@@ -130,16 +132,16 @@ Qed.
 (** Some type classes about order *)
 
 Instance lt_strorder : StrictOrder lt.
-Proof. split. exact lt_irrefl. exact lt_trans. Qed.
+Proof. split. - exact lt_irrefl. - exact lt_trans. Qed.
 
 Instance le_preorder : PreOrder le.
-Proof. split. exact le_refl. exact le_trans. Qed.
+Proof. split. - exact le_refl. - exact le_trans. Qed.
 
 Instance le_partialorder : PartialOrder _ le.
 Proof.
 intros x y. compute. split.
-intro EQ; now rewrite EQ.
-rewrite 2 lt_eq_cases. intuition. elim (lt_irrefl x). now transitivity y.
+- intro EQ; now rewrite EQ.
+- rewrite 2 lt_eq_cases. intuition. elim (lt_irrefl x). now transitivity y.
 Qed.
 
 (** We know enough now to benefit from the generic [order] tactic. *)
@@ -246,7 +248,7 @@ Qed.
 
 Theorem lt_0_2 : 0 < 2.
 Proof.
-transitivity 1. apply lt_0_1. apply lt_1_2.
+  transitivity 1. - apply lt_0_1. - apply lt_1_2.
 Qed.
 
 Theorem le_0_2 : 0 <= 2.
@@ -300,9 +302,9 @@ Qed.
 Theorem eq_dne : forall n m, ~ ~ n == m <-> n == m.
 Proof.
 intros n m; split; intro H.
-destruct (eq_decidable n m) as [H1 | H1].
-assumption. false_hyp H1 H.
-intro H1; now apply H1.
+- destruct (eq_decidable n m) as [H1 | H1].
+  + assumption. + false_hyp H1 H.
+- intro H1; now apply H1.
 Qed.
 
 Theorem le_ngt : forall n m, n <= m <-> ~ n > m.
@@ -321,8 +323,8 @@ Qed.
 Theorem lt_dne : forall n m, ~ ~ n < m <-> n < m.
 Proof.
 intros n m; split; intro H.
-destruct (lt_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
-intro H1; false_hyp H H1.
+- destruct (lt_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
+- intro H1; false_hyp H H1.
 Qed.
 
 Theorem nle_gt : forall n m, ~ n <= m <-> n > m.
@@ -341,8 +343,8 @@ Qed.
 Theorem le_dne : forall n m, ~ ~ n <= m <-> n <= m.
 Proof.
 intros n m; split; intro H.
-destruct (le_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
-intro H1; false_hyp H H1.
+- destruct (le_decidable n m) as [H1 | H1]; [assumption | false_hyp H1 H].
+- intro H1; false_hyp H H1.
 Qed.
 
 Theorem nlt_succ_r : forall n m, ~ m < S n <-> n < m.
@@ -361,18 +363,18 @@ Lemma lt_exists_pred_strong :
   forall z n m, z < m -> m <= n -> exists k, m == S k /\ z <= k.
 Proof.
 intro z; nzinduct n z.
-order.
-intro n; split; intros IH m H1 H2.
-apply le_succ_r in H2. destruct H2 as [H2 | H2].
-now apply IH. exists n. now split; [| rewrite <- lt_succ_r; rewrite <- H2].
-apply IH. assumption. now apply le_le_succ_r.
+- order.
+- intro n; split; intros IH m H1 H2.
+  + apply le_succ_r in H2. destruct H2 as [H2 | H2].
+    * now apply IH. * exists n. now split; [| rewrite <- lt_succ_r; rewrite <- H2].
+  + apply IH. * assumption. * now apply le_le_succ_r.
 Qed.
 
 Theorem lt_exists_pred :
   forall z n, z < n -> exists k, n == S k /\ z <= k.
 Proof.
 intros z n H; apply lt_exists_pred_strong with (z := z) (n := n).
-assumption. apply le_refl.
+- assumption. - apply le_refl.
 Qed.
 
 Lemma lt_succ_pred : forall z n, z < n -> S (P n) == n.
@@ -404,18 +406,19 @@ Let right_step'' := forall n, A' n <-> A' (S n).
 Lemma rs_rs' :  A z -> right_step -> right_step'.
 Proof.
 intros Az RS n H1 H2.
-le_elim H1. apply lt_exists_pred in H1. destruct H1 as [k [H3 H4]].
-rewrite H3. apply RS; trivial. apply H2; trivial.
-rewrite H3; apply lt_succ_diag_r.
-rewrite <- H1; apply Az.
+le_elim H1.
+- apply lt_exists_pred in H1. destruct H1 as [k [H3 H4]].
+  rewrite H3. apply RS; trivial. apply H2; trivial.
+  rewrite H3; apply lt_succ_diag_r.
+- rewrite <- H1; apply Az.
 Qed.
 
 Lemma rs'_rs'' : right_step' -> right_step''.
 Proof.
 intros RS' n; split; intros H1 m H2 H3.
-apply lt_succ_r in H3; le_elim H3;
-[now apply H1 | rewrite H3 in *; now apply RS'].
-apply H1; [assumption | now apply lt_lt_succ_r].
+- apply lt_succ_r in H3; le_elim H3;
+    [now apply H1 | rewrite H3 in *; now apply RS'].
+- apply H1; [assumption | now apply lt_lt_succ_r].
 Qed.
 
 Lemma rbase : A' z.
@@ -444,10 +447,12 @@ Theorem right_induction' :
 Proof.
 intros L R n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-apply L; now apply lt_le_incl.
-apply L; now apply eq_le_incl.
-apply right_induction. apply L; now apply eq_le_incl. assumption.
-now apply lt_le_incl.
+- apply L; now apply lt_le_incl.
+- apply L; now apply eq_le_incl.
+- apply right_induction.
+  + apply L; now apply eq_le_incl.
+  + assumption.
+  + now apply lt_le_incl.
 Qed.
 
 Theorem strong_right_induction' :
@@ -455,9 +460,10 @@ Theorem strong_right_induction' :
 Proof.
 intros L R n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-apply L; now apply lt_le_incl.
-apply L; now apply eq_le_incl.
-apply strong_right_induction. assumption. now apply lt_le_incl.
+- apply L; now apply lt_le_incl.
+- apply L; now apply eq_le_incl.
+- apply strong_right_induction.
+  + assumption. + now apply lt_le_incl.
 Qed.
 
 End RightInduction.
@@ -472,17 +478,17 @@ Let left_step'' := forall n, A' n <-> A' (S n).
 Lemma ls_ls' :  A z -> left_step -> left_step'.
 Proof.
 intros Az LS n H1 H2. le_elim H1.
-apply LS; trivial. apply H2; [now apply le_succ_l | now apply eq_le_incl].
-rewrite H1; apply Az.
+- apply LS; trivial. apply H2; [now apply le_succ_l | now apply eq_le_incl].
+- rewrite H1; apply Az.
 Qed.
 
 Lemma ls'_ls'' : left_step' -> left_step''.
 Proof.
 intros LS' n; split; intros H1 m H2 H3.
-apply le_succ_l in H3. apply lt_le_incl in H3. now apply H1.
-le_elim H3.
-apply le_succ_l in H3. now apply H1.
-rewrite <- H3 in *; now apply LS'.
+- apply le_succ_l in H3. apply lt_le_incl in H3. now apply H1.
+- le_elim H3.
+  + apply le_succ_l in H3. now apply H1.
+  + rewrite <- H3 in *; now apply LS'.
 Qed.
 
 Lemma lbase : A' (S z).
@@ -512,10 +518,12 @@ Theorem left_induction' :
 Proof.
 intros R L n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-apply left_induction. apply R. now apply eq_le_incl. assumption.
-now apply lt_le_incl.
-rewrite H; apply R; now apply eq_le_incl.
-apply R; now apply lt_le_incl.
+- apply left_induction.
+  + apply R. now apply eq_le_incl.
+  + assumption.
+  + now apply lt_le_incl.
+- rewrite H; apply R; now apply eq_le_incl.
+- apply R; now apply lt_le_incl.
 Qed.
 
 Theorem strong_left_induction' :
@@ -523,9 +531,9 @@ Theorem strong_left_induction' :
 Proof.
 intros R L n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-apply strong_left_induction; auto. now apply lt_le_incl.
-rewrite H; apply R; now apply eq_le_incl.
-apply R; now apply lt_le_incl.
+- apply strong_left_induction; auto. now apply lt_le_incl.
+- rewrite H; apply R; now apply eq_le_incl.
+- apply R; now apply lt_le_incl.
 Qed.
 
 End LeftInduction.
@@ -538,9 +546,9 @@ Theorem order_induction :
 Proof.
 intros Az RS LS n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-now apply left_induction; [| | apply lt_le_incl].
-now rewrite H.
-now apply right_induction; [| | apply lt_le_incl].
+- now apply left_induction; [| | apply lt_le_incl].
+- now rewrite H.
+- now apply right_induction; [| | apply lt_le_incl].
 Qed.
 
 Theorem order_induction' :
@@ -622,21 +630,24 @@ Theorem lt_wf : well_founded Rlt.
 Proof.
 unfold well_founded.
 apply strong_right_induction' with (z := z).
-auto with typeclass_instances.
-intros n H; constructor; intros y [H1 H2].
-apply nle_gt in H2. elim H2. now apply le_trans with z.
-intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
+- auto with typeclass_instances.
+- intros n H; constructor; intros y [H1 H2].
+  apply nle_gt in H2. elim H2. now apply le_trans with z.
+- intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
 Qed.
 
 Theorem gt_wf : well_founded Rgt.
 Proof.
 unfold well_founded.
 apply strong_left_induction' with (z := z).
-auto with typeclass_instances.
-intros n H; constructor; intros y [H1 H2].
-apply nle_gt in H2. elim H2. now apply le_lt_trans with n.
-intros n H1 H2; constructor; intros m [H3 H4].
-apply H2. assumption. now apply le_succ_l.
+- auto with typeclass_instances.
+- intros n H; constructor; intros y [H1 H2].
+  apply nle_gt in H2.
+  + elim H2.
+  + now apply le_lt_trans with n.
+- intros n H1 H2; constructor; intros m [H3 H4].
+  apply H2.
+  + assumption. + now apply le_succ_l.
 Qed.
 
 End WF.

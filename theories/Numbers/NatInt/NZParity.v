@@ -48,20 +48,20 @@ Qed.
 Lemma Even_or_Odd : forall x, Even x \/ Odd x.
 Proof.
  nzinduct x.
- left. exists 0. now nzsimpl.
- intros x.
- split; intros [(y,H)|(y,H)].
- right. exists y. rewrite H. now nzsimpl.
- left. exists (S y). rewrite H. now nzsimpl'.
- right.
- assert (LT : exists z, z<y).
-  destruct (lt_ge_cases 0 y) as [LT|GT]; [now exists 0 | exists x].
-  rewrite <- le_succ_l, H. nzsimpl'.
-  rewrite <- (add_0_r y) at 3. now apply add_le_mono_l.
- destruct LT as (z,LT).
- destruct (lt_exists_pred z y LT) as (y' & Hy' & _).
- exists y'. rewrite <- succ_inj_wd, H, Hy'. now nzsimpl'.
- left. exists y. rewrite <- succ_inj_wd. rewrite H. now nzsimpl.
+ - left. exists 0. now nzsimpl.
+ - intros x.
+   split; intros [(y,H)|(y,H)].
+   + right. exists y. rewrite H. now nzsimpl.
+   + left. exists (S y). rewrite H. now nzsimpl'.
+   + right.
+     assert (LT : exists z, z<y).
+     * destruct (lt_ge_cases 0 y) as [LT|GT]; [now exists 0 | exists x].
+       rewrite <- le_succ_l, H. nzsimpl'.
+       rewrite <- (add_0_r y) at 3. now apply add_le_mono_l.
+     * destruct LT as (z,LT).
+       destruct (lt_exists_pred z y LT) as (y' & Hy' & _).
+       exists y'. rewrite <- succ_inj_wd, H, Hy'. now nzsimpl'.
+   + left. exists y. rewrite <- succ_inj_wd. rewrite H. now nzsimpl.
 Qed.
 
 Lemma double_below : forall n m, n<=m -> 2*n < 2*m+1.
@@ -80,16 +80,16 @@ Lemma Even_Odd_False : forall x, Even x -> Odd x -> False.
 Proof.
 intros x (y,E) (z,O). rewrite O in E; clear O.
 destruct (le_gt_cases y z) as [LE|GT].
-generalize (double_below _ _ LE); order.
-generalize (double_above _ _ GT); order.
+- generalize (double_below _ _ LE); order.
+- generalize (double_above _ _ GT); order.
 Qed.
 
 Lemma orb_even_odd : forall n, orb (even n) (odd n) = true.
 Proof.
  intros.
  destruct (Even_or_Odd n) as [H|H].
- rewrite <- even_spec in H. now rewrite H.
- rewrite <- odd_spec in H. now rewrite H, orb_true_r.
+ - rewrite <- even_spec in H. now rewrite H.
+ - rewrite <- odd_spec in H. now rewrite H, orb_true_r.
 Qed.
 
 Lemma negb_odd : forall n, negb (odd n) = even n.
@@ -142,8 +142,8 @@ Qed.
 Lemma Odd_succ : forall n, Odd (S n) <-> Even n.
 Proof.
  split; intros (m,H).
- exists m. apply succ_inj. now rewrite add_1_r in H.
- exists m. rewrite add_1_r. now f_equiv.
+ - exists m. apply succ_inj. now rewrite add_1_r in H.
+ - exists m. rewrite add_1_r. now f_equiv.
 Qed.
 
 Lemma odd_succ : forall n, odd (S n) = even n.
@@ -192,10 +192,10 @@ Proof.
  case_eq (even n); case_eq (even m);
   rewrite <- ?negb_true_iff, ?negb_even, ?odd_spec, ?even_spec;
   intros (m',Hm) (n',Hn).
- exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm.
- exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_assoc.
- exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_shuffle0.
- exists (n'+m'+1). rewrite Hm,Hn. nzsimpl'. now rewrite add_shuffle1.
+ - exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm.
+ - exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_assoc.
+ - exists (n'+m'). now rewrite mul_add_distr_l, Hn, Hm, add_shuffle0.
+ - exists (n'+m'+1). rewrite Hm,Hn. nzsimpl'. now rewrite add_shuffle1.
 Qed.
 
 Lemma odd_add : forall n m, odd (n+m) = xorb (odd n) (odd m).
@@ -210,14 +210,14 @@ Lemma even_mul : forall n m, even (mul n m) = even n || even m.
 Proof.
  intros.
  case_eq (even n); simpl; rewrite ?even_spec.
- intros (n',Hn). exists (n'*m). now rewrite Hn, mul_assoc.
- case_eq (even m); simpl; rewrite ?even_spec.
- intros (m',Hm). exists (n*m'). now rewrite Hm, !mul_assoc, (mul_comm 2).
- (* odd / odd *)
- rewrite <- !negb_true_iff, !negb_even, !odd_spec.
- intros (m',Hm) (n',Hn). exists (n'*2*m' +n'+m').
- rewrite Hn,Hm, !mul_add_distr_l, !mul_add_distr_r, !mul_1_l, !mul_1_r.
- now rewrite add_shuffle1, add_assoc, !mul_assoc.
+ - intros (n',Hn). exists (n'*m). now rewrite Hn, mul_assoc.
+ - case_eq (even m); simpl; rewrite ?even_spec.
+   + intros (m',Hm). exists (n*m'). now rewrite Hm, !mul_assoc, (mul_comm 2).
+     (* odd / odd *)
+   + rewrite <- !negb_true_iff, !negb_even, !odd_spec.
+     intros (m',Hm) (n',Hn). exists (n'*2*m' +n'+m').
+     rewrite Hn,Hm, !mul_add_distr_l, !mul_add_distr_r, !mul_1_l, !mul_1_r.
+     now rewrite add_shuffle1, add_assoc, !mul_assoc.
 Qed.
 
 Lemma odd_mul : forall n m, odd (mul n m) = odd n && odd m.
