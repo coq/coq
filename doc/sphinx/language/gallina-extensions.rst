@@ -234,7 +234,8 @@ Primitive Projections
    extended the Calculus of Inductive Constructions with a new binary
    term constructor `r.(p)` representing a primitive projection `p` applied
    to a record object `r` (i.e., primitive projections are always applied).
-   Even if the record type has parameters, these do not appear at
+   Even if the record type has parameters, these do not appear
+   in the internal representation of
    applications of the projection, considerably reducing the sizes of
    terms when manipulating parameterized records and type checking time.
    On the user level, primitive projections can be used as a replacement
