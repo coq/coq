@@ -113,7 +113,8 @@ Sequences of implicit arguments must be of different lengths.
 The command has indeed failed with message:
 Some argument names are duplicated: F
 The command has indeed failed with message:
-Argument z cannot be declared implicit.
+Argument number 2 (anonymous in original definition) cannot be declared
+implicit.
 The command has indeed failed with message:
 Extra arguments: y.
 The command has indeed failed with message:

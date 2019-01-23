@@ -16,6 +16,7 @@ open Util
 open Names
 open Glob_term
 open Vernacexpr
+open Impargs
 open Constrexpr
 open Constrexpr_ops
 open Extend
@@ -836,11 +837,11 @@ GRAMMAR EXTEND Gram
   ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
-    [ name = name -> { [(name.CAst.v, Vernacexpr.NotImplicit)] }
+    [ name = name -> { [(name.CAst.v, NotImplicit)] }
     | "["; items = LIST1 name; "]" ->
-       { List.map (fun name -> (name.CAst.v, Vernacexpr.Implicit)) items }
+       { List.map (fun name -> (name.CAst.v, Impargs.Implicit)) items }
     | "{"; items = LIST1 name; "}" ->
-       { List.map (fun name -> (name.CAst.v, Vernacexpr.MaximallyImplicit)) items }
+       { List.map (fun name -> (name.CAst.v, MaximallyImplicit)) items }
     ]
   ];
   strategy_level:

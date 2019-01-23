@@ -487,8 +487,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
         (DefinitionEntry proj_entry, IsDefinition Definition)
       in
       let cref = ConstRef cst in
-      Impargs.declare_manual_implicits false cref [paramimpls];
-      Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
+      Impargs.declare_manual_implicits false cref paramimpls;
+      Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 

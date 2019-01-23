@@ -1173,14 +1173,6 @@ let vernac_syntactic_definition ~module_local lid x y =
   Dumpglob.dump_definition lid false "syndef";
   Metasyntax.add_syntactic_definition (Global.env()) lid.v x module_local y
 
-let vernac_declare_implicits ~section_local r l =
-  match l with
-  | [] ->
-      Impargs.declare_implicits section_local (smart_global r)
-  | _::_ as imps ->
-      Impargs.declare_manual_implicits section_local (smart_global r) ~enriching:false
-	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
-
 let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
          (fun sr ->
@@ -1336,43 +1328,15 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     user_err (strbrk "Some argument names are duplicated: " ++ duplicates)
   end;
 
-  (* Parts of this code are overly complicated because the implicit arguments
-     API is completely crazy: positions (ExplByPos) are elaborated to
-     names. This is broken by design, since not all arguments have names. So
-     even though we eventually want to map only positions to implicit statuses,
-     we have to check whether the corresponding arguments have names, not to
-     trigger an error in the impargs code. Even better, the names we have to
-     check are not the current ones (after previous renamings), but the original
-     ones (inferred from the type). *)
-
   let implicits =
     List.map (fun { name; implicit_status = i } -> (name,i)) args
   in
   let implicits = implicits :: more_implicits in
 
-  let open Vernacexpr in
-  let rec build_implicits inf_names implicits =
-    match inf_names, implicits with
-    | _, [] -> []
-    | _ :: inf_names, (_, NotImplicit) :: implicits ->
-       build_implicits inf_names implicits
-
-    (* With the current impargs API, it is impossible to make an originally
-       anonymous argument implicit *)
-    | Anonymous :: _, (name, _) :: _ ->
-       user_err ~hdr:"vernac_declare_arguments"
-                    (strbrk"Argument "++ Name.print name ++ 
-                       strbrk " cannot be declared implicit.")
-
-    | Name id :: inf_names, (name, impl) :: implicits ->
-       let max = impl = MaximallyImplicit in
-       (ExplByName id,max,false) :: build_implicits inf_names implicits
-    
-    | _ -> assert false (* already checked in [names_union] *)
-  in
-  
-  let implicits = List.map (build_implicits inf_names) implicits in
-  let implicits_specified = match implicits with [[]] -> false | _ -> true in
+  let implicits = List.map (List.map snd) implicits in
+  let implicits_specified = match implicits with
+    | [l] -> List.exists (function Impargs.NotImplicit -> false | _ -> true) l
+    | _ -> true in
 
   if implicits_specified && clear_implicits_flag then
     user_err Pp.(str "The \"clear implicits\" flag is incompatible with implicit annotations");
@@ -1415,10 +1379,10 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     end;
 
   if implicits_specified || clear_implicits_flag then
-    vernac_declare_implicits ~section_local reference implicits;
+    Impargs.set_implicits section_local (smart_global reference) implicits;
 
   if default_implicits_flag then
-    vernac_declare_implicits ~section_local reference [];
+    Impargs.declare_implicits section_local (smart_global reference);
 
   if red_modifiers_specified then begin
     match sr with

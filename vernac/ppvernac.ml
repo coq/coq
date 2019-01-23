@@ -1033,9 +1033,9 @@ open Pputils
               let pr_s = function None -> str"" | Some {v=s} -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
               let pr_br imp x = match imp with
-                | Vernacexpr.Implicit -> str "[" ++ x ++ str "]"
-                | Vernacexpr.MaximallyImplicit -> str "{" ++ x ++ str "}"
-                | Vernacexpr.NotImplicit -> x in
+                | Impargs.Implicit -> str "[" ++ x ++ str "]"
+                | Impargs.MaximallyImplicit -> str "{" ++ x ++ str "}"
+                | Impargs.NotImplicit -> x in
               let rec print_arguments n l =
                 match n, l with
                   | Some 0, l -> spc () ++ str"/" ++ print_arguments None l

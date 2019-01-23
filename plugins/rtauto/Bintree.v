@@ -294,10 +294,10 @@ Qed.
 
 End Store.
 
-Arguments PNone [A].
+Arguments PNone {A}.
 Arguments PSome [A] _.
 
-Arguments Tempty [A].
+Arguments Tempty {A}.
 Arguments Branch0 [A] _ _.
 Arguments Branch1 [A] _ _ _.
 
@@ -311,7 +311,7 @@ Arguments mkStore [A] index contents.
 Arguments index [A] s.
 Arguments contents [A] s.
 
-Arguments empty [A].
+Arguments empty {A}.
 Arguments get [A] i S.
 Arguments push [A] a S.
 
@@ -319,7 +319,7 @@ Arguments get_empty [A] i.
 Arguments get_push_Full [A] i a S _.
 
 Arguments Full [A] _.
-Arguments F_empty [A].
+Arguments F_empty {A}.
 Arguments F_push [A] a S _.
 Arguments In [A] x S F.
 

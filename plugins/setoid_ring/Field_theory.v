@@ -1789,5 +1789,5 @@ End Field.
 
 End Complete.
 
-Arguments FEO [C].
-Arguments FEI [C].
+Arguments FEO {C}.
+Arguments FEI {C}.

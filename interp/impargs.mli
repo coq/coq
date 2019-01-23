@@ -112,12 +112,19 @@ val declare_implicits : bool -> GlobRef.t -> unit
    Unsets implicits if [l] is empty. *)
 
 val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
-  manual_implicits list -> unit
+  manual_implicits -> unit
 
 (** If the list is empty, do nothing, otherwise declare the implicits. *)
 
 val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
   manual_implicits -> unit
+
+type implicit_kind = Implicit | MaximallyImplicit | NotImplicit
+
+(** [set_implicits local ref l]
+   Manual declaration of implicit arguments.
+  `l` is a list of possible sequences of implicit statuses. *)
+val set_implicits : bool -> GlobRef.t -> implicit_kind list list -> unit
 
 val implicits_of_global : GlobRef.t -> implicits_list list
 

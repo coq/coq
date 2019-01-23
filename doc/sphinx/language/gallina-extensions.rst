@@ -1651,6 +1651,13 @@ Declaring Implicit Arguments
    To know which are the implicit arguments of an object, use the
    command :cmd:`Print Implicit` (see :ref:`displaying-implicit-args`).
 
+.. warn:: Argument number @num is a trailing implicit so must be maximal.
+
+   For instance in
+
+   .. coqtop:: all
+
+      Arguments prod _ [_].
 
 Automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
