@@ -96,20 +96,22 @@ file's names usually end in ".v".  If this file's name currently ends
 in ".txt", you'll want to change it to ".v" before loading it into
 CoqIDE or Emacs.  (If this file's name ends in ".html" or ".pdf",
 someone used Coq to generate this document, in which case you need to
-find the original ".v" file they used.)
+find the original ".v" file they used.  If you can't find it, the
+author hosts a recent version at
+https://mdnahas.github.io/doc/nahas_tutorial.v)
 
 Once you've made sure the file's name ends in ".v", start CoqIDE or
 Emacs and load the file.
 
 You need to know that this file was designed to work in a specific
 version of Coq.  Coq is a research tool and the developers
-occasionally change its file format, so it is possible that this file
-is for a different version of Coq.  As you progress through the
-tutorial, you may find a proof that your version of Coq doesn't like.
-You can probably make it work, but if you can't, you can always
-install a version of CoqIDE that ships with the tutorial (version 8.10
-and higher) and that version of the tutorial will be sure to be
-compatible with that version of Coq.
+occasionally make small changes to its file format, so it is possible
+that this file is for a different version of Coq.  As you progress
+through the tutorial, you may find a proof that your version of Coq
+doesn't like.  You can probably make it work, but if you can't, you
+can always install a version of CoqIDE that ships with the tutorial
+(version 8.10 and higher) and that version of the tutorial will be
+sure to be compatible with that version of Coq.
 
 *)
 
@@ -2680,6 +2682,18 @@ solving your puzzles!
 
 
 (** * Postscripts *)
+
+(** ** Contact *)
+(**
+A Coq version of the tutorial ships with Coq.  It is available in their git repo on Github: https://github.com/coq/coq
+
+HTML and Coq versions of the tutorial are hosted on the author's professional website.
+
+https://mdnahas.github.io/doc/nahas_tutorial.html
+https://mdnahas.github.io/doc/nahas_tutorial.v
+
+The author, Michael Nahas, can be reached at michael@nahas.com
+*)
 
 (** ** Further Reading *)
 (**
