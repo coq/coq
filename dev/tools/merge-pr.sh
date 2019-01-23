@@ -12,7 +12,8 @@ OFFICIAL_REMOTE_HTTPS_URL="github.com/coq/coq"
 
 # Set SLOW_CONF to have the confirmation output wait for a newline
 # E.g. call $ SLOW_CONF= dev/tools/merge-pr.sh /PR number/
-if [ -z ${SLOW_CONF+x} ]; then
+# emacs doesn't send characters until the RET so we can't quick_conf
+if [ -z ${SLOW_CONF+x} ] || [ -n "$INSIDE_EMACS" ]; then
     QUICK_CONF="-n 1"
 else
     QUICK_CONF=""
