@@ -284,15 +284,12 @@ let pr_vertical_list pr = function
    [pr 0 a0 ++ sep() ++ ... ++ sep() ++ pr n an] *)
 
 let prvecti_with_sep sep elem v =
-  let rec pr i =
-    if Int.equal i 0 then
-      elem 0 v.(0)
-    else
-      let r = pr (i-1) and s = sep () and e = elem i v.(i) in
-      r ++ s ++ e
+  let v = CArray.mapi (fun i x ->
+      let pp = if i = 0 then mt() else sep() in
+      pp ++ elem i x)
+      v
   in
-  let n = Array.length v in
-  if Int.equal n 0 then mt () else pr (n - 1)
+  seq (Array.to_list v)
 
 (* [prvecti pr [|a0 ; ... ; an|]] outputs [pr 0 a0 ++ ... ++ pr n an] *)
 
