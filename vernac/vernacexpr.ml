@@ -300,18 +300,22 @@ type nonrec vernac_expr =
 
   (* Type classes *)
   | VernacInstance of
-      bool * (* abstract instance *)
       local_binder_expr list * (* super *)
         typeclass_constraint * (* instance name, class name, params *)
         (bool * constr_expr) option * (* props *)
         Hints.hint_info_expr
 
+  | VernacDeclareInstance of
+      local_binder_expr list * (* super *)
+        (ident_decl * Decl_kinds.binding_kind * constr_expr) * (* instance name, class name, params *)
+        Hints.hint_info_expr
+
   | VernacContext of local_binder_expr list
 
-  | VernacDeclareInstances of
+  | VernacExistingInstance of
     (qualid * Hints.hint_info_expr) list (* instances names, priorities and patterns *)
 
-  | VernacDeclareClass of qualid (* inductive or definition name *)
+  | VernacExistingClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *

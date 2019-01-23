@@ -194,14 +194,17 @@ Instance skel_equiv A : Equivalence (@skel A).
 Admitted.
 
 Import FunctionalExtensionality.
-Instance set_cat : Category Type (fun A B => A -> B) := {
+
+Instance set_cat : Category Type (fun A B => A -> B).
+refine {|
   id := fun A => fun x => x
   ; comp c b a f g := fun x => f (g x)
   ; eqv := fun A B => @skel (A -> B)
-}.
+|}.
 intros. compute. symmetry. apply eta_expansion.
 intros. compute. symmetry. apply eta_expansion.
-intros. compute. reflexivity. Defined.
+intros. compute. reflexivity.
+Defined.
 
 (* The [list] type constructor is a Functor. *)
 

@@ -160,11 +160,12 @@ let classify_vernac e =
     | VernacMemOption _ | VernacPrintOption _
     | VernacGlobalCheck _
     | VernacDeclareReduction _
-    | VernacDeclareClass _ | VernacDeclareInstances _
+    | VernacExistingClass _ | VernacExistingInstance _
     | VernacRegister _
     | VernacNameSectionHypSet _
     | VernacDeclareCustomEntry _
-    | VernacComments _ -> VtSideff [], VtLater
+    | VernacComments _
+    | VernacDeclareInstance _ -> VtSideff [], VtLater
     (* Who knows *)
     | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)

@@ -1005,22 +1005,29 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance ~atts abst sup inst props pri =
+let vernac_instance ~atts sup inst props pri =
   let open DefAttributes in
   let atts = parse atts in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = Flags.is_program_mode () in
-  ignore(Classes.new_instance ~program_mode ~abstract:abst ~global atts.polymorphic sup inst props pri)
+  ignore(Classes.new_instance ~program_mode ~global atts.polymorphic sup inst props pri)
+
+let vernac_declare_instance ~atts sup inst pri =
+  let open DefAttributes in
+  let atts = parse atts in
+  let global = not (make_section_locality atts.locality) in
+  Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
+  Classes.declare_new_instance ~global atts.polymorphic sup inst pri
 
 let vernac_context ~poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
-let vernac_declare_instances ~section_local insts =
+let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
   List.iter (fun (id, info) -> Classes.existing_instance glob id (Some info)) insts
 
-let vernac_declare_class id =
+let vernac_existing_class id =
   Record.declare_existing_class (Nametab.global id)
 
 (***********)
@@ -2227,11 +2234,13 @@ let interp ?proof ~atts ~st c =
       vernac_identity_coercion ~atts id s t
 
   (* Type classes *)
-  | VernacInstance (abst, sup, inst, props, info) ->
-      vernac_instance ~atts abst sup inst props info
+  | VernacInstance (sup, inst, props, info) ->
+      vernac_instance ~atts sup inst props info
+  | VernacDeclareInstance (sup, inst, info) ->
+      vernac_declare_instance ~atts sup inst info
   | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
-  | VernacDeclareInstances insts -> with_section_locality ~atts vernac_declare_instances insts
-  | VernacDeclareClass id -> unsupported_attributes atts; vernac_declare_class id
+  | VernacExistingInstance insts -> with_section_locality ~atts vernac_existing_instance insts
+  | VernacExistingClass id -> unsupported_attributes atts; vernac_existing_class id
 
   (* Solving *)
   | VernacSolveExistential (n,c) -> unsupported_attributes atts; vernac_solve_existential n c

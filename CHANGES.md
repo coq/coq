@@ -96,6 +96,11 @@ Vernacular commands
 - Computation of implicit arguments now properly handles local definitions in the
   binders for an `Instance`.
 
+- `Declare Instance` now requires an instance name.
+
+- Option `Refine Instance Mode` has been turned off by default, meaning that
+  `Instance` no longer opens a proof when a body is provided.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

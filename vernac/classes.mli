@@ -40,7 +40,6 @@ val declare_instance_constant :
   unit
 
 val new_instance :
-  ?abstract:bool (** Not abstract by default. *) ->
   ?global:bool (** Not global by default. *) ->
   ?refine:bool (** Allow refinement *) ->
   program_mode:bool ->
@@ -53,6 +52,14 @@ val new_instance :
   ?hook:(GlobRef.t -> unit) ->
   Hints.hint_info_expr ->
   Id.t
+
+val declare_new_instance :
+  ?global:bool (** Not global by default. *) ->
+  Decl_kinds.polymorphic ->
+  local_binder_expr list ->
+  ident_decl * Decl_kinds.binding_kind * constr_expr ->
+  Hints.hint_info_expr ->
+  unit
 
 (** Setting opacity *)
 

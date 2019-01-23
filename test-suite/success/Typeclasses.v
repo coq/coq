@@ -198,7 +198,9 @@ Module UniqueInstances.
       for it. *)
   Set Typeclasses Unique Instances.
   Class Eq (A : Type) : Set.
+    Set Refine Instance Mode.
     Instance eqa : Eq nat := _. constructor. Qed.
+    Unset Refine Instance Mode.
     Instance eqb : Eq nat := {}.
     Class Foo (A : Type) (e : Eq A) : Set.
     Instance fooa : Foo _ eqa := {}.
