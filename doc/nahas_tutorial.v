@@ -1,3 +1,4 @@
+
 (**
 Mike Nahas's Coq Tutorial
 
@@ -1831,7 +1832,7 @@ call, we get "eq nat (plus 1 1) 2", that is, "1 + 1 = 2"!
 The concept of substituting a function call with its result or
 substituting the result with the function call is called
 "convertibility".  One tactic we've seen, "simpl", replaces
-convertibile values.  We'll see more tactics in the future.
+convertible values.  We'll see more tactics in the future.
 
 
 Now that we have a concept of what "=" means in Coq, let's use it!
