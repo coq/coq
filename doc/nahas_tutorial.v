@@ -1,8 +1,8 @@
 (**
 Mike Nahas's Coq Tutorial
+
 Started 2012-Nov-06
 Version 1.2, 2019-Jan-22
-
 Tested with Coq version 8.10+alpha
 
 ------------------------
@@ -56,26 +56,41 @@ useful links.
 
 (** ** Installing Coq *)
 (**
-To get started, you need to install Coq.
-The simple way is:
-  - Get "CoqIDE", the graphical version of Coq.
-    It is available at http://coq.inria.fr/download
-    (If you're running Linux, your package manager may have it.)
 
-If you like the Emacs text editor, the alternative is
-  - Get "coqtop", the command-line version of Coq.
-    It is available at http://coq.inria.fr/download
-    (If you're running Linux, your package manager may have it.)
-  - Get "Proof General" Emacs mode.
-    Is is available at http://proofgeneral.inf.ed.ac.uk/
-  - Install Proof General for Emacs.
-    This is not difficult.  Or, at least, it is easier than learning Emacs.
-    The Proof General documentation will tell you how to install it.
+This tutorial now ships with CoqIDE, so if you're reading this in
+CoqIDE, you can skip this section and the next one.  If you don't yet
+have Coq installed, keep reading.
+
+The easiest thing is to install "CoqIDE", the graphical version of
+Coq.  Windows and MacOS installers and the latest source code are
+available at http://coq.inria.fr/download If you're running Linux,
+your package manager probably has a recent-ish version.
+(Debian/Ubuntu/Mint: "sudo apt install coqide", Fedora/CentOS might be
+'su -c "yum install coq-coqide"'.  Arch might be "sudo pacman -S
+coqide")
+
+If you like the Emacs text editor, the alternative is to run "coqtop",
+the command-line version of Coq.  It is also available at
+http://coq.inria.fr/download The Linux package is usually called
+"coq".  To use it in Emacs, you have to also download and install the
+"Proof General" Emacs mode.  Is is available at
+http://proofgeneral.inf.ed.ac.uk/ Linux package managers include some
+version of it.  (Debian/Ubuntu/Mint calls it "proofgeneral".
+Fedora/CentOS might call it "emacs-common-proofgeneral".  Arch might
+call it "proofgeneral".)
+
 *)
 
 
 (** ** Loading this file *)
 (**
+
+This tutorial now ships with CoqIDE, so if you're running a recent
+version of CoqIDE, you can load the tutorial by going to the "Help"
+menu and selecting "Tutorial".  If the "Help" menu doesn't have a
+"Tutorial" button, you're running an older version of CoqIDE, which is
+fine, but keep reading to learn how to load this file.
+
 This file (yes, the one you're reading right now) is a Coq file.  Coq
 file's names usually end in ".v".  If this file's name currently ends
 in ".txt", you'll want to change it to ".v" before loading it into
@@ -85,6 +100,17 @@ find the original ".v" file they used.)
 
 Once you've made sure the file's name ends in ".v", start CoqIDE or
 Emacs and load the file.
+
+You need to know that this file was designed to work in a specific
+version of Coq.  Coq is a research tool and the developers
+occasionally change its file format, so it is possible that this file
+is for a different version of Coq.  As you progress through the
+tutorial, you may find a proof that your version of Coq doesn't like.
+You can probably make it work, but if you can't, you can always
+install a version of CoqIDE that ships with the tutorial (version 8.10
+and higher) and that version of the tutorial will be sure to be
+compatible with that version of Coq.
+
 *)
 
 (** * Comments *)
