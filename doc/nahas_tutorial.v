@@ -2678,9 +2678,9 @@ If you have a deep interest in logic, I highly recommend Gentzen's
 "Investigations into Logical Deductions".  It's not necessary at all,
 but it is a beautiful paper.
 
-If you need to learn a programming language, OCaML is the one that
-would help you with Coq the most.  Coq is written in OCaML and it
-borrows a lot of OCaML's syntax and style.
+If you need to learn a programming language, OCaml is the one that
+would help you with Coq the most.  Coq is written in OCaml and it
+borrows a lot of OCaml's syntax and style.
 
 http://caml.inria.fr/
 
