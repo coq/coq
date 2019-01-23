@@ -77,6 +77,9 @@ val to_constr : ?abort_on_undefined_evars:bool -> Evd.evar_map -> t -> Constr.t
     For getting the evar-normal form of a term with evars see
    {!Evarutil.nf_evar}. *)
 
+val to_constr_opt : Evd.evar_map -> t -> Constr.t option
+(** Same as [to_constr], but returns [None] if some unresolved evars remain *)
+
 val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
 
 (** {5 Constructors} *)

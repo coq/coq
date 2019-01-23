@@ -130,13 +130,10 @@ val compact : t -> t
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
     Raises [HasShelvedGoals] if some goals are left on the shelf.
-    Raises [HasGivenUpGoals] if some goals have been given up.
-    Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
+    Raises [HasGivenUpGoals] if some goals have been given up. *)
 type open_error_reason =
   | UnfinishedProof
-  | HasShelvedGoals
   | HasGivenUpGoals
-  | HasUnresolvedEvar
 
 exception OpenProof of Names.Id.t option * open_error_reason
 

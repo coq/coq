@@ -443,8 +443,13 @@ let return_proof ?(allow_partial=false) () =
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
      thereafter... *)
+  let proof_opt c =
+    match EConstr.to_constr_opt evd c with
+    | Some p -> p
+    | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+  in
   let proofs =
-    List.map (fun (c, _) -> (EConstr.to_constr evd c, eff)) initial_goals in
+    List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~opaque ~feedback_id proof =
