@@ -62,7 +62,7 @@ mode but it can also be used in toplevel definitions as shown below.
    - As shown by the figure, tactical  ``… || …``  binds more than the prefix
      tacticals :tacn:`try`, :tacn:`repeat`, :tacn:`do` and :tacn:`abstract`
      which themselves bind more than the postfix tactical  ``… ;[ … ]`` 
-     which binds more than  ``… ; …`` .
+     which binds at the same level as  ``… ; …`` .
 
      .. example::
 
@@ -70,7 +70,7 @@ mode but it can also be used in toplevel definitions as shown below.
 
         is understood as:
 
-        :n:`try (repeat (@tactic__1 || @tactic__2)); ((@tactic__3; [ {+| @tactic }]); @tactic__4)`
+        :n:`((try (repeat (@tactic__1 || @tactic__2)); @tactic__3); [ {+| @tactic } ]); @tactic__4`
 
 .. productionlist::  coq
    expr              : `expr` ; `expr`
