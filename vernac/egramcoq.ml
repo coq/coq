@@ -146,7 +146,8 @@ let register_empty_levels accu forpat levels =
       (where, ans) :: rem, save_levels accu where nlev
     else rem, accu
   in
-  filter accu levels
+  let (l,accu) = filter accu levels in
+  List.rev l, accu
 
 let find_position accu custom forpat assoc level =
   let accu, (clev, plev) = find_levels accu custom in
