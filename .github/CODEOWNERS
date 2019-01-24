@@ -74,6 +74,7 @@ azure-pipelines.yml @coq/ci-maintainers
 /doc/plugin_tutorial/ @ybertot
 
 /doc/nahas_tutorial.v @mdnahas
+# Secondary maintainer @coq/doc-maintainers
 
 ########## Coqchk ##########
 
