@@ -190,7 +190,7 @@ module Make(T : Task) () = struct
         let () = TQueue.broadcast queue in
         Worker.kill proc
     in
-    let _ = Thread.create kill_if () in
+    let _ = CThread.create kill_if () in
 
     try while true do
       report_status ~id "Idle";
@@ -250,7 +250,7 @@ module Make(T : Task) () = struct
     {
       active = Pool.create queue ~size;
       queue;
-      cleaner = if size > 0 then Some (Thread.create cleaner queue) else None;
+      cleaner = if size > 0 then Some (CThread.create cleaner queue) else None;
     }
 
   let destroy { active; queue } =

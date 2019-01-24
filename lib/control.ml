@@ -57,7 +57,7 @@ let windows_timeout n f x e =
     done
   in
   let init = Unix.gettimeofday () in
-  let _id = Thread.create thread init in
+  let _id = CThread.create thread init in
   try
     let res = f x in
     let () = killed := true in

@@ -26,3 +26,6 @@ val thread_friendly_really_read :
   thread_ic -> Bytes.t -> off:int -> len:int -> unit
 val thread_friendly_really_read_line : thread_ic -> string
 
+(* Wrapper around Thread.create that blocks signals such as Sys.sigalrm (used
+ * for Timeout *)
+val create : ('a -> 'b) -> 'a -> Thread.t

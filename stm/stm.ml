@@ -739,7 +739,7 @@ end = struct (* {{{ *)
       else begin
         set_last_job job;
         if Option.is_empty !worker then
-          worker := Some (Thread.create run_command ())
+          worker := Some (CThread.create run_command ())
       end
 
   end

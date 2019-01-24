@@ -38,7 +38,7 @@ let controller h pr pw =
         prerr_endline ("control channel broken: " ^ Printexc.to_string e);
         exit 1 in
     loop () in
-  ignore(Thread.create main ())
+  ignore(CThread.create main ())
 
 let main_channel = ref None
 let control_channel = ref None

@@ -86,7 +86,7 @@ let rec create_worker extra pool id =
   let exit () = cancel := true; cleanup pool; Thread.exit () in
   let cancelled () = !cancel in
   let cpanel = { exit; cancelled; extra } in
-  let manager = Thread.create (Model.manager cpanel) worker in
+  let manager = CThread.create (Model.manager cpanel) worker in
   { name; cancel; manager; process }
   
 and cleanup x = locking x begin fun { workers; count; extra_arg } ->
