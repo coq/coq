@@ -64,11 +64,19 @@ let is_known_option cmd = match Vernacprop.under_control cmd with
 
 (** Check whether a command is forbidden in the IDE *)
 
-let ide_cmd_checks ~id {CAst.loc;v=ast} =
-  let user_error s = CErrors.user_err ?loc ~hdr:"IDE" (str s) in
-  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
+let ide_cmd_checks ~last_valid {CAst.loc;v=ast} =
+  let user_error s =
+    try CErrors.user_err ?loc ~hdr:"IDE" (str s)
+    with e ->
+      let (e, info) = CErrors.push e in
+      let info = Stateid.add info ~valid:last_valid Stateid.dummy in
+      Exninfo.raise ~info e
+  in
   if is_debug ast then
-    user_error "Debug mode not available in the IDE";
+    user_error "Debug mode not available in the IDE"
+
+let ide_cmd_warns ~id {CAst.loc;v=ast} =
+  let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
   if is_known_option ast then
     warn "Set this option from the IDE menu instead";
   if is_navigation_vernac ast || is_undo ast then
@@ -87,10 +95,11 @@ let add ((s,eid),(sid,verbose)) =
   | None -> assert false (* s is not an empty string *)
   | Some (loc, ast) ->
   let loc_ast = CAst.make ~loc ast in
+  ide_cmd_checks ~last_valid:sid loc_ast;
   let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose loc_ast in
   set_doc doc;
   let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  ide_cmd_checks ~id:newid loc_ast;
+  ide_cmd_warns ~id:newid loc_ast;
   (* TODO: the "" parameter is a leftover of the times the protocol
    * used to include stderr/stdout output.
    *
