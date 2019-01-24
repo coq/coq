@@ -73,6 +73,8 @@ azure-pipelines.yml @coq/ci-maintainers
 
 /doc/plugin_tutorial/ @ybertot
 
+/doc/nahas_tutorial.v @mdnahas
+
 ########## Coqchk ##########
 
 /checker/               @ppedrot
