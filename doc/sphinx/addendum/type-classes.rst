@@ -316,7 +316,7 @@ Summary of the commands
    This command is used to declare a typeclass instance named
    :token:`ident` of the class :n:`@term__0` with parameters :token:`term` and
    fields defined by :token:`field_def`, where each field must be a declared field of
-   the class.  Missing fields must be filled in interactive proof mode.
+   the class.
 
    An arbitrary context of :token:`binders` can be put after the name of the
    instance and before the colon to declare a parameterized instance. An
@@ -562,19 +562,6 @@ Settings
    1 is the default level.  2 shows additional information such as tried tactics and shelving
    of goals.  Setting this option to 1 or 2 turns on :flag:`Typeclasses Debug`; setting this
    option to 0 turns that option off.
-
-.. flag:: Refine Instance Mode
-
-   .. deprecated:: 8.10
-
-   This flag allows to switch the behavior of instance declarations made through
-   the Instance command.
-
-   + When it is off (the default), they fail with an error instead.
-
-   + When it is on, instances that have unsolved holes in
-     their proof-term silently open the proof mode with the remaining
-     obligations to prove.
 
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~

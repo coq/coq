@@ -486,10 +486,9 @@ Other changes in 8.10+beta1
 
   - :cmd:`Declare Instance` now requires an instance name.
 
-    The flag :flag:`Refine Instance Mode` has been turned off by default,
-    meaning that :cmd:`Instance` no longer opens a proof when a body is
-    provided. The flag has been deprecated and will be removed in the next
-    version.
+    The flag `Refine Instance Mode` has been turned off by default, meaning that
+    :cmd:`Instance` no longer opens a proof when a body is provided. The flag
+    has been deprecated and will be removed in the next version.
 
     (`#9270 <https://github.com/coq/coq/pull/9270>`_,
     and `#9825 <https://github.com/coq/coq/pull/9825>`_,
