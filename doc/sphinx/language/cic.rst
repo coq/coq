@@ -133,8 +133,8 @@ the following rules.
 #. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
    (:g:`t u` in |Coq| concrete
    syntax). The term :math:`(t~u)` reads as “t applied to u”.
-#. if :g:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
-   terms then :g:`let x:=t:T in u` is
+#. if :math:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
+   terms then :math:`\letin{x}{t:T}{u}` is
    a term which denotes the term :math:`u` where the variable :math:`x` is locally bound
    to :math:`t` of type :math:`T`. This stands for the common “let-in” construction of
    functional programs such as ML or Scheme.
@@ -145,7 +145,7 @@ the following rules.
 
 **Free variables.**
 The notion of free variables is defined as usual. In the expressions
-:g:`λx:T. U` and :g:`∀ x:T, U` the occurrences of :math:`x` in :math:`U` are bound.
+:math:`λx:T.~U` and :math:`∀ x:T,~U` the occurrences of :math:`x` in :math:`U` are bound.
 
 
 .. _Substitution:
@@ -383,7 +383,7 @@ following rules.
 
 .. note::
    We may have :math:`\letin{x}{t:T}{u}` well-typed without having
-   :math:`((λ x:T.u) t)` well-typed (where :math:`T` is a type of
+   :math:`((λ x:T.~u)~t)` well-typed (where :math:`T` is a type of
    :math:`t`). This is because the value :math:`t` associated to
    :math:`x` may be used in a conversion rule
    (see Section :ref:`Conversion-rules`).
@@ -407,17 +407,17 @@ can decide if two programs are *intentionally* equal (one says
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type T can be written
-:math:`λx:T. x`. In any global environment :math:`E` and local context
+:math:`λx:T.~x`. In any global environment :math:`E` and local context
 :math:`Γ`, we want to identify any object :math:`a` (of type
-:math:`T`) with the application :math:`((λ x:T. x) a)`.  We define for
+:math:`T`) with the application :math:`((λ x:T.~x)~a)`.  We define for
 this a *reduction* (or a *conversion*) rule we call :math:`β`:
 
 .. math::
    
-	E[Γ] ⊢ ((λx:T. t) u)~\triangleright_β~\subst{t}{x}{u}
+        E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
 
 We say that :math:`\subst{t}{x}{u}` is the *β-contraction* of
-:math:`((λx:T. t) u)` and, conversely, that :math:`((λ x:T. t) u)` is the
+:math:`((λx:T.~t)~u)` and, conversely, that :math:`((λ x:T.~t)~u)` is the
 *β-expansion* of :math:`\subst{t}{x}{u}`.
 
 According to β-reduction, terms of the *Calculus of Inductive
@@ -481,7 +481,7 @@ destroyed, this reduction differs from δ-reduction. It is called
    \WTEG{u}{U}
    \WTE{\Gamma::(x:=u:U)}{t}{T}
    --------------
-   E[Γ] ⊢ \letin{x}{u}{t}~\triangleright_ζ~\subst{t}{x}{u}
+   E[Γ] ⊢ \letin{x}{u:U}{t}~\triangleright_ζ~\subst{t}{x}{u}
 
 
 .. _eta-expansion:
@@ -519,7 +519,7 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    We could not allow
 
    .. math::
-      λ x:Type(1),(f x) \triangleright_η f
+      λ x:Type(1),(f~x) \triangleright_η f
    
    because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
@@ -544,7 +544,7 @@ exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangle
 i.e. :math:`u_1` is :math:`λ x:T. u_1'` and :math:`u_2 x` is
 recursively convertible to :math:`u_1'` , or, symmetrically,
 :math:`u_2` is :math:`λx:T. u_2'` 
-and :math:`u_1 x` is recursively convertible to u_2′ . We then write
+and :math:`u_1 x` is recursively convertible to :math:`u_2'`. We then write
 :math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2` .
 
 Apart from this we consider two instances of polymorphic and
@@ -625,14 +625,14 @@ a *subtyping* relation inductively defined by:
    universe levels) with constructors
 
    .. math::
-      [c_1 : ∀Γ_P ,∀ T_{1,1} … T_{1,n_1} , t~v_{1,1} … v_{1,m} ;…;
-      c_k : ∀Γ_P ,∀ T_{k,1} … T_{k,n_k} ,t~v_{n,1} … v_{n,m} ]
+      [c_1 : ∀Γ_P ,∀ T_{1,1} … T_{1,n_1} ,~t~v_{1,1} … v_{1,m} ;…;
+      c_k : ∀Γ_P ,∀ T_{k,1} … T_{k,n_k} ,~t~v_{k,1} … v_{k,m} ]
 
    and
 
    .. math::
-      [c_1 : ∀Γ_P' ,∀ T_{1,1}' … T_{1,n_1}' , t'~v_{1,1}' … v_{1,m}' ;…;
-      c_k : ∀Γ_P' ,∀ T_{k,1}' … T_{k,n_k}' ,t'~v_{n,1}' … v_{n,m}' ]
+      [c_1 : ∀Γ_P' ,∀ T_{1,1}' … T_{1,n_1}' ,~t'~v_{1,1}' … v_{1,m}' ;…;
+      c_k : ∀Γ_P' ,∀ T_{k,1}' … T_{k,n_k}' ,~t'~v_{k,1}' … v_{k,m}' ]
    
    respectively then
 
@@ -820,9 +820,9 @@ contains an inductive declaration.
       \begin{array}{l}
       E[Γ] ⊢ \even : \nat→\Prop\\
       E[Γ] ⊢ \odd : \nat→\Prop\\
-      E[Γ] ⊢ \even\_O : \even~O\\
-      E[Γ] ⊢ \even\_S : \forall~n:\nat, \odd~n → \even~(S~n)\\
-      E[Γ] ⊢ \odd\_S : \forall~n:\nat, \even~n → \odd~(S~n)
+      E[Γ] ⊢ \even\_\kw{O} : \even~\kw{O}\\
+      E[Γ] ⊢ \even\_\kw{S} : \forall~n:\nat,~\odd~n → \even~(\kw{S}~n)\\
+      E[Γ] ⊢ \odd\_\kw{S} : \forall~n:\nat,~\even~n → \odd~(\kw{S}~n)
       \end{array}
 
 
@@ -861,8 +861,8 @@ sort :math:`s`.
    :math:`A→ Set` and :math:`∀ A:\Prop,A→ \Prop` are arities.
 
 
-Type constructor
-++++++++++++++++
+Type of constructor
++++++++++++++++++++
 We say that T is a *type of constructor of I* in one of the following
 two cases:
 
@@ -943,7 +943,7 @@ condition* for a constant :math:`X` in the following cases:
    + Type ``A → (nat → nattree A) → nattree A`` of constructor ``node`` satisfies the
      positivity condition for ``nattree`` because:
 
-     - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 3)
+     - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 1)
 
      - ``nattree`` occurs only strictly positively in ``nat → nattree A`` ... (bullet 3 + 2)
 
@@ -1181,10 +1181,11 @@ a strongly normalizing reduction, we cannot accept any sort of
 recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
 
-For instance, assuming a parameter :g:`A:Set` exists in the local context,
-we want to build a function length of type :g:`list A -> nat` which computes
-the length of the list, such that :g:`(length (nil A)) = O` and :g:`(length
-(cons A a l)) = (S (length l))`. We want these equalities to be
+For instance, assuming a parameter :math:`A:\Set` exists in the local context,
+we want to build a function length of type :math:`\List~A → \nat` which computes
+the length of the list, such that :math:`(\kw{length}~(\kw{nil}~A)) = \kw{O}` and
+:math:`(\kw{length}~(\kw{cons}~A~a~l)) = (\kw{S}~(\kw{length}~l))`.
+We want these equalities to be
 recognized implicitly and taken into account in the conversion rule.
 
 From the logical point of view, we have built a type family by giving
@@ -1198,22 +1199,22 @@ In case the inductive definition is effectively a recursive one, we
 want to capture the extra property that we have built the smallest
 fixed point of this recursive equation. This says that we are only
 manipulating finite objects. This analysis provides induction
-principles. For instance, in order to prove :g:`∀ l:list A,(has_length A l
-(length l))` it is enough to prove:
+principles. For instance, in order to prove
+:math:`∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l))` it is enough to prove:
 
 
-+ :g:`(has_length A (nil A) (length (nil A)))`
-+ :g:`∀ a:A, ∀ l:list A, (has_length A l (length l)) →`
-  :g:`(has_length A (cons A a l) (length (cons A a l)))`
++ :math:`(\kw{has}\_\kw{length}~A~(\kw{nil}~A)~(\kw{length}~(\kw{nil}~A)))`
++ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l)) →`
+  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\kw{length}~(\cons~A~a~l)))`
 
 
 which given the conversion equalities satisfied by length is the same
 as proving:
 
 
-+ :g:`(has_length A (nil A) O)`
-+ :g:`∀ a:A, ∀ l:list A, (has_length A l (length l)) →`
-  :g:`(has_length A (cons A a l) (S (length l)))`
++ :math:`(\kw{has}\_\kw{length}~A~(\kw{nil}~A)~\kw{O})`
++ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l)) →`
+  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\kw{S}~(\kw{length}~l)))`
 
 
 One conceptually simple way to do that, following the basic scheme
@@ -1509,8 +1510,8 @@ definition :math:`\ind{r}{Γ_I}{Γ_C}` with :math:`Γ_C = [c_1 :C_1 ;…;c_n :C_
        E[Γ] ⊢ t : (\List ~\nat) \\
        E[Γ] ⊢ P : B \\
        [(\List ~\nat)|B] \\
-       E[Γ] ⊢ f_1 : {(\kw{nil} ~\nat)}^P \\
-       E[Γ] ⊢ f_2 : {(\kw{cons} ~\nat)}^P
+       E[Γ] ⊢ f_1 : \{(\kw{nil} ~\nat)\}^P \\
+       E[Γ] ⊢ f_2 : \{(\kw{cons} ~\nat)\}^P
      \end{array}
      ------------------------------------------------
      E[Γ] ⊢ \case(t,P,f_1 |f_2 ) : (P~t)
@@ -1547,14 +1548,14 @@ concrete syntax for a recursive set of mutually recursive declarations
 is (with :math:`Γ_i` contexts):
 
 .. math::
-   \fix~f_1 (Γ_1 ) :A_1 :=t_1 \with … \with~f_n (Γ_n ) :A_n :=t_n
+   \fix~f_1 (Γ_1 ) :A_1 :=t_1~\with … \with~f_n (Γ_n ) :A_n :=t_n
 
 
 The terms are obtained by projections from this set of declarations
 and are written
 
 .. math::
-   \fix~f_1 (Γ_1 ) :A_1 :=t_1 \with … \with~f_n (Γ_n ) :A_n :=t_n \for~f_i
+   \fix~f_1 (Γ_1 ) :A_1 :=t_1~\with … \with~f_n (Γ_n ) :A_n :=t_n~\for~f_i
 
 In the inference rules, we represent such a term by
 
@@ -1562,7 +1563,7 @@ In the inference rules, we represent such a term by
    \Fix~f_i\{f_1 :A_1':=t_1' … f_n :A_n':=t_n'\}
 
 with :math:`t_i'` (resp. :math:`A_i'`) representing the term :math:`t_i` abstracted (resp.
-generalized) with respect to the bindings in the context Γ_i , namely
+generalized) with respect to the bindings in the context :math:`Γ_i`, namely
 :math:`t_i'=λ Γ_i . t_i` and :math:`A_i'=∀ Γ_i , A_i`.
 
 
@@ -1590,14 +1591,14 @@ instance in the case of natural numbers, a proof of the induction
 principle of type
 
 .. math::
-   ∀ P:\nat→\Prop, (P~O)→(∀ n:\nat, (P~n)→(P~(\kw{S}~n)))→ ∀ n:\nat, (P~n)
+   ∀ P:\nat→\Prop,~(P~\kw{O})→(∀ n:\nat,~(P~n)→(P~(\kw{S}~n)))→ ∀ n:\nat,~(P~n)
 
 can be represented by the term:
 
 .. math::
    \begin{array}{l}
-   λ P:\nat→\Prop. λ f:(P~O). λ g:(∀ n:\nat, (P~n)→(P~(S~n))).\\
-   \Fix~h\{h:∀ n:\nat, (P~n):=λ n:\nat. \case(n,P,f | λp:\nat. (g~p~(h~p)))\}
+   λ P:\nat→\Prop.~λ f:(P~\kw{O}).~λ g:(∀ n:\nat,~(P~n)→(P~(\kw{S}~n))).\\
+   \Fix~h\{h:∀ n:\nat,~(P~\kw{n}):=λ n:\nat.~\case(n,P,f | λp:\nat.~(g~p~(h~p)))\}
    \end{array}
 
 Before accepting a fixpoint definition as being correctly typed, we
@@ -1684,7 +1685,7 @@ Let :math:`F` be the set of declarations:
 The reduction for fixpoints is:
 
 .. math::
-   (\Fix~f_i \{F\} a_1 …a_{k_i}) \triangleright_ι \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
+   (\Fix~f_i \{F\}~a_1 …a_{k_i}) \triangleright_ι \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
    
 when :math:`a_{k_i}` starts with a constructor. This last restriction is needed
 in order to keep strong normalization and corresponds to the reduction
@@ -1743,17 +1744,17 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
 
 .. math::
    \frac{\WF{E;c:U;E′;c′:=t:T;E″}{Γ}}
-        {\WF{E;c:U;E′;c′:=λ x:U. \subst{t}{c}{x}:∀x:U,\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}
+        {\WF{E;c:U;E′;c′:=λ x:U.~\subst{t}{c}{x}:∀x:U,~\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}
 	{\subst{Γ}{c}{(c~c′)}}}
 
    
 .. math::
    \frac{\WF{E;c:U;E′;c′:T;E″}{Γ}}
-        {\WF{E;c:U;E′;c′:∀ x:U,\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}{Γ{c/(c~c′)}}}
+        {\WF{E;c:U;E′;c′:∀ x:U,~\subst{T}{c}{x};\subst{E″}{c′}{(c′~c)}}{\subst{Γ}{c}{(c~c′)}}}
 	
 .. math::
    \frac{\WF{E;c:U;E′;\ind{p}{Γ_I}{Γ_C};E″}{Γ}}
-        {\WFTWOLINES{E;c:U;E′;\ind{p+1}{∀ x:U,\subst{Γ_I}{c}{x}}{∀ x:U,\subst{Γ_C}{c}{x}};
+        {\WFTWOLINES{E;c:U;E′;\ind{p+1}{∀ x:U,~\subst{Γ_I}{c}{x}}{∀ x:U,~\subst{Γ_C}{c}{x}};
 	  \subst{E″}{|Γ_I ,Γ_C |}{|Γ_I ,Γ_C | c}}
 	 {\subst{Γ}{|Γ_I ,Γ_C|}{|Γ_I ,Γ_C | c}}}
 
