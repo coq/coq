@@ -859,41 +859,41 @@ notations are given below. The optional :production:`scope` is described in
 
 .. productionlist:: coq
    notation      : [Local] Notation `string` := `term` [`modifiers`] [: `scope`].
-                 : | [Local] Infix `string` := `qualid` [`modifiers`] [: `scope`].
-                 : | [Local] Reserved Notation `string` [`modifiers`] .
-                 : | Inductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
-                 : | CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
-                 : | Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
-                 : | CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
-                 : | [Local] Declare Custom Entry `ident`.
+                 : [Local] Infix `string` := `qualid` [`modifiers`] [: `scope`].
+                 : [Local] Reserved Notation `string` [`modifiers`] .
+                 : Inductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
+                 : CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
+                 : Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
+                 : CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
+                 : [Local] Declare Custom Entry `ident`.
    decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
    modifiers     : at level `num`
                  : in custom `ident`
                  : in custom `ident` at level `num`
-                 : | `ident` , … , `ident` at level `num` [`binderinterp`]
-                 : | `ident` , … , `ident` at next level [`binderinterp`]
-                 : | `ident` `explicit_subentry`
-                 : | left associativity
-                 : | right associativity
-                 : | no associativity
-                 : | only parsing
-                 : | only printing
-                 : | format `string`
+                 : `ident` , … , `ident` at level `num` [`binderinterp`]
+                 : `ident` , … , `ident` at next level [`binderinterp`]
+                 : `ident` `explicit_subentry`
+                 : left associativity
+                 : right associativity
+                 : no associativity
+                 : only parsing
+                 : only printing
+                 : format `string`
    explicit_subentry : ident
-                 : | global
-                 : | bigint
-                 : | [strict] pattern [at level `num`]
-                 : | binder
-                 : | closed binder
-                 : | constr [`binderinterp`]
-                 : | constr at level `num` [`binderinterp`]
-                 : | constr at next level [`binderinterp`]
-                 : | custom [`binderinterp`]
-                 : | custom at level `num` [`binderinterp`]
-                 : | custom at next level [`binderinterp`]
+                 : global
+                 : bigint
+                 : [strict] pattern [at level `num`]
+                 : binder
+                 : closed binder
+                 : constr [`binderinterp`]
+                 : constr at level `num` [`binderinterp`]
+                 : constr at next level [`binderinterp`]
+                 : custom [`binderinterp`]
+                 : custom at level `num` [`binderinterp`]
+                 : custom at next level [`binderinterp`]
    binderinterp  : as ident
-                 : | as pattern
-                 : | as strict pattern
+                 : as pattern
+                 : as strict pattern
 
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.
@@ -1692,13 +1692,13 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
    tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
    prod_item            : `string` | `tactic_argument_type`(`ident`)
    tactic_level         : (at level `num`)
-   tactic_argument_type : ident | simple_intropattern | reference
-                        : | hyp | hyp_list | ne_hyp_list
-                        : | constr | uconstr | constr_list | ne_constr_list
-                        : | integer | integer_list | ne_integer_list
-                        : | int_or_var | int_or_var_list | ne_int_or_var_list
-                        : | tactic | tactic0 | tactic1 | tactic2 | tactic3
-                        : | tactic4 | tactic5
+   tactic_argument_type : `ident` | `simple_intropattern` | `reference`
+                        : `hyp` | `hyp_list` | `ne_hyp_list`
+                        : `constr` | `uconstr` | `constr_list` | `ne_constr_list`
+                        : `integer` | `integer_list` | `ne_integer_list`
+                        : `int_or_var` | `int_or_var_list` | `ne_int_or_var_list`
+                        : `tactic` | `tactic0` | `tactic1` | `tactic2` | `tactic3`
+                        : `tactic4` | `tactic5`
 
 .. cmd:: Tactic Notation {? (at level @level)} {+ @prod_item} := @tactic.
 

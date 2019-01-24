@@ -25,7 +25,7 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
      record_keyword : Record | Inductive | CoInductive
      record_body    : `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
      field          : `ident` [ `binders` ] : `type` [ where `notation` ]
-                    : | `ident` [ `binders` ] [: `type` ] := `term`
+                    : `ident` [ `binders` ] [: `type` ] := `term`
 
 .. cmd:: Record @ident @binders {? : @sort} := {? @ident} { {*; @ident @binders : @type } }
 
@@ -165,8 +165,8 @@ available:
 
   .. productionlist:: terms
      projection : `term` `.` ( `qualid` )
-          : | `term` `.` ( `qualid` `arg` … `arg` )
-          : | `term` `.` ( @`qualid` `term` … `term` )
+          : `term` `.` ( `qualid` `arg` … `arg` )
+          : `term` `.` ( @`qualid` `term` … `term` )
 
   Syntax of Record projections
 
@@ -818,14 +818,14 @@ together, as well as a means of massive abstraction.
 
   .. productionlist:: modules
     module_type       : `qualid`
-                      : | `module_type` with Definition `qualid` := `term`
-                      : | `module_type` with Module `qualid` := `qualid`
-                      : | `qualid` `qualid` … `qualid`
-                      : | !`qualid` `qualid` … `qualid`
+                      : `module_type` with Definition `qualid` := `term`
+                      : `module_type` with Module `qualid` := `qualid`
+                      : `qualid` `qualid` … `qualid`
+                      : !`qualid` `qualid` … `qualid`
     module_binding    : ( [Import|Export] `ident` … `ident` : `module_type` )
     module_bindings   : `module_binding` … `module_binding`
     module_expression : `qualid` … `qualid`
-                      : | !`qualid` … `qualid`
+                      : !`qualid` … `qualid`
 
   Syntax of modules
 
@@ -1814,10 +1814,10 @@ This syntax extension is given in the following grammar:
 
   .. productionlist:: explicit_apps
        term     : @ `qualid` `term` … `term`
-                : | @ `qualid`
-                : | `qualid` `argument` … `argument`
+                : @ `qualid`
+                : `qualid` `argument` … `argument`
        argument : `term`
-                : | (`ident` := `term`)
+                : (`ident` := `term`)
 
   Syntax for explicitly giving implicit arguments
 

@@ -33,10 +33,13 @@ extends the folklore notion of tactical) to combine those atomic
 tactics. This chapter is devoted to atomic tactics. The tactic
 language will be described in Chapter :ref:`ltac`.
 
+Common elements of tactics
+--------------------------
+
 .. _invocation-of-tactics:
 
 Invocation of tactics
--------------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 A tactic is applied as an ordinary command. It may be preceded by a
 goal selector (see Section :ref:`ltac-semantics`). If no selector is
@@ -44,9 +47,9 @@ specified, the default selector is used.
 
 .. _tactic_invocation_grammar:
 
-  .. productionlist:: `sentence`
-     tactic_invocation : toplevel_selector : tactic.
-                       : |tactic .
+  .. productionlist:: sentence
+     tactic_invocation : `toplevel_selector` : `tactic`.
+                       : `tactic`.
 
 .. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
@@ -71,29 +74,31 @@ specified, the default selector is used.
 Bindings list
 ~~~~~~~~~~~~~~~~~~~
 
-Tactics that take a term as argument may also support a bindings list,
-so as to instantiate some parameters of the term by name or position.
-The general form of a term equipped with a bindings list is ``term with
-bindings_list`` where ``bindings_list`` may be of two different forms:
+Tactics that take a term as an argument may also support a bindings list
+to instantiate some parameters of the term by name or position.
+The general form of a term with a bindings list is
+:n:`@term with @bindings_list` where :token:`bindings_list` can take two different forms:
 
 .. _bindings_list_grammar:
 
-  .. productionlist:: `bindings_list`
-     bindings_list : (ref := `term`) ... (ref := `term`)
+  .. productionlist:: bindings_list
+     ref           : `ident`
+                   : `num`
+     bindings_list : (`ref` := `term`) ... (`ref` := `term`)
                    : `term` ... `term`
 
-+ In a bindings list of the form :n:`{* (ref:= term)}`, :n:`ref` is either an
++ In a bindings list of the form :n:`{+ (@ref:= @term)}`, :n:`@ref` is either an
   :n:`@ident` or a :n:`@num`. The references are determined according to the type of
-  ``term``. If :n:`ref` is an identifier, this identifier has to be bound in the
-  type of ``term`` and the binding provides the tactic with an instance for the
-  parameter of this name. If :n:`ref` is some number ``n``, this number denotes
-  the ``n``-th non dependent premise of the ``term``, as determined by the type
-  of ``term``.
+  :n:`@term`. If :n:`@ref` is an identifier, this identifier has to be bound in the
+  type of :n:`@term` and the binding provides the tactic with an instance for the
+  parameter of this name. If :n:`@ref` is a number ``n``, it refers to
+  the ``n``-th non dependent premise of the :n:`@term`, as determined by the type
+  of :n:`@term`.
 
   .. exn:: No such binder.
      :undocumented:
 
-+ A bindings list can also be a simple list of terms :n:`{* term}`.
++ A bindings list can also be a simple list of terms :n:`{* @term}`.
   In that case the references to which these terms correspond are
   determined by the tactic. In case of :tacn:`induction`, :tacn:`destruct`, :tacn:`elim`
   and :tacn:`case`, the terms have to
@@ -105,6 +110,350 @@ bindings_list`` where ``bindings_list`` may be of two different forms:
   .. exn:: Not the right number of missing arguments.
      :undocumented:
 
+.. _intropatterns:
+
+Intro patterns
+~~~~~~~~~~~~~~
+
+Intro patterns let you specify the name to assign to variables and hypotheses
+introduced by tactics.  They also let you split an introduced hypothesis into
+multiple hypotheses or subgoals.  Common tactics that accept intro patterns
+include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
+
+.. productionlist::        coq
+   intropattern_list       : `intropattern` ... `intropattern`
+                           : `empty`
+   empty                   :
+   intropattern            : *
+                           : **
+                           : `simple_intropattern`
+   simple_intropattern     : `simple_intropattern_closed` [ % `term` ... % `term` ]
+   simple_intropattern_closed : `naming_intropattern`
+                              : _
+                              : `or_and_intropattern`
+                              : `equality_intropattern`
+   naming_intropattern     : `ident`
+                           : ?
+                           : ?`ident`
+   or_and_intropattern     : [ `intropattern_list` | ... | `intropattern_list` ]
+                           : ( `simple_intropattern` , ... , `simple_intropattern` )
+                           : ( `simple_intropattern` & ... & `simple_intropattern` )
+   equality_intropattern   : ->
+                           : <-
+                           : [= `intropattern_list` ]
+   or_and_intropattern_loc : `or_and_intropattern`
+                           : `ident`
+
+Note that the intro pattern syntax varies between tactics.
+Most tactics use :n:`@simple_intropattern` in the grammar.
+:tacn:`destruct`, :tacn:`edestruct`, :tacn:`induction`,
+:tacn:`einduction`, :tacn:`case`, :tacn:`ecase` and the various
+:tacn:`inversion` tactics use :n:`@or_and_intropattern_loc`, while
+:tacn:`intros` and :tacn:`eintros` use :n:`@intropattern_list`.
+The :n:`eqn:` construct in various tactics uses :n:`@naming_intropattern`.
+
+**Naming patterns**
+
+Use these elementary patterns to specify a name:
+
+* :n:`@ident` - use the specified name
+* :n:`?` - let Coq choose a name
+* :n:`?@ident` - generate a name that begins with :n:`@ident`
+* :n:`_` - discard the matched part (unless it is required for another
+  hypothesis)
+* if a disjunction pattern omits a name, such as :g:`[|H2]`, Coq will choose a name
+
+**Splitting patterns**
+
+The most common splitting patterns are:
+
+* split a hypothesis in the form :n:`A /\ B` into two
+  hypotheses :g:`H1: A` and :g:`H2: B` using the pattern :g:`(H1 & H2)` or
+  :g:`(H1, H2)` or :g:`[H1 H2]`.
+  :ref:`Example <intropattern_conj_ex>`.  This also works on :n:`A <-> B`, which
+  is just a notation representing :n:`(A -> B) /\ (B -> A)`.
+* split a hypothesis in the form :g:`A \/ B` into two
+  subgoals using the pattern :g:`[H1|H2]`.  The first subgoal will have the hypothesis
+  :g:`H1: A` and the second subgoal will have the hypothesis :g:`H2: B`.
+  :ref:`Example <intropattern_disj_ex>`
+* split a hypothesis in either of the forms :g:`A /\ B` or :g:`A \/ B` using the pattern :g:`[]`.
+
+Patterns can be nested: :n:`[[Ha|Hb] H]` can be used to split :n:`(A \/ B) /\ C`.
+
+Note that there is no equivalent to intro patterns for goals.  For a goal :g:`A /\ B`,
+use the :tacn:`split` tactic to replace the current goal with subgoals :g:`A` and :g:`B`.
+For a goal :g:`A \/ B`, use :tacn:`left` to replace the current goal with :g:`A`, or
+:tacn:`right` to replace the current goal with :g:`B`.
+
+* :n:`( {+, @simple_intropattern}` ) - matches
+  a product over an inductive type with a
+  :ref:`single constructor <intropattern_cons_note>`.
+  If the number of patterns
+  equals the number of constructor arguments, then it applies the patterns only to
+  the arguments, and
+  :n:`( {+, @simple_intropattern} )` is equivalent to :n:`[{+ @simple_intropattern}]`.
+  If the number of patterns equals the number of constructor arguments plus the number
+  of :n:`let-ins`, the patterns are applied to the arguments and :n:`let-in` variables.
+
+* :n:`( {+& @simple_intropattern} )` - matches a right-hand nested term that consists
+  of one or more nested binary inductive types such as :g:`a1 OP1 a2 OP2 ...`
+  (where the :g:`OPn` are right-associative).
+  (If the :g:`OPn` are left-associative, additional parentheses will be needed to make the
+  term right-hand nested, such as :g:`a1 OP1 (a2 OP2 ...)`.)
+  The splitting pattern can have more than 2 names, for example :g:`(H1 & H2 & H3)`
+  matches :g:`A /\ B /\ C`.
+  The inductive types must have a
+  :ref:`single constructor with two parameters <intropattern_cons_note>`.
+  :ref:`Example <intropattern_ampersand_ex>`
+
+* :n:`[ {+| @intropattern_list} ]` - splits an inductive type that has
+  :ref:`multiple constructors <intropattern_cons_note>`
+  such as :n:`A \/ B`
+  into multiple subgoals.  The number of :token:`intropattern_list` must be the same as the number of
+  constructors for the matched part.
+* :n:`[ {+ @intropattern} ]` - splits an inductive type that has a
+  :ref:`single constructor with multiple parameters <intropattern_cons_note>`
+  such as :n:`A /\ B` into multiple hypotheses.  Use :n:`[H1 [H2 H3]]` to match :g:`A /\ B /\ C`.
+* :n:`[]` - splits an inductive type:  If the inductive
+  type has multiple constructors, such as :n:`A \/ B`,
+  create one subgoal for each constructor.  If the inductive type has a single constructor with
+  multiple parameters, such as :n:`A /\ B`, split it into multiple hypotheses.
+
+**Equality patterns**
+
+These patterns can be used when the hypothesis is an equality:
+
+* :n:`->` - replaces the right-hand side of the hypothesis with the left-hand
+  side of the hypothesis in the conclusion of the goal; the hypothesis is
+  cleared; if the left-hand side of the hypothesis is a variable, it is
+  substituted everywhere in the context and the variable is removed.
+  :ref:`Example <intropattern_rarrow_ex>`
+* :n:`<-` - similar to :n:`->`, but replaces the left-hand side of the hypothesis
+  with the right-hand side of the hypothesis.
+* :n:`[= {*, @intropattern} ]` - If the product is over an equality type,
+  applies either :tacn:`injection` or :tacn:`discriminate`.
+  If :tacn:`injection` is applicable, the intropattern
+  is used on the hypotheses generated by :tacn:`injection`.  If the
+  number of patterns is smaller than the number of hypotheses generated, the
+  pattern :n:`?` is used to complete the list.
+  :ref:`Example <intropattern_inj_discr_ex>`
+
+**Other patterns**
+
+* :n:`*` - introduces one or more quantified variables from the result
+  until there are no more quantified variables.
+  :ref:`Example <intropattern_star_ex>`
+
+* :n:`**` - introduces one or more quantified variables or hypotheses from the result until there are
+  no more quantified variables or implications (:g:`->`).  :g:`intros **` is equivalent
+  to :g:`intros`.
+  :ref:`Example <intropattern_2stars_ex>`
+
+* :n:`@simple_intropattern_closed {* % @term}` - first applies each of the terms
+  with the :tacn:`apply ... in` tactic on the hypothesis to be introduced, then it uses
+  :n:`@simple_intropattern_closed`.
+  :ref:`Example <intropattern_injection_ex>`
+
+.. flag:: Bracketing Last Introduction Pattern
+
+   For :n:`intros @intropattern_list`, controls how to handle a
+   conjunctive pattern that doesn't give enough simple patterns to match
+   all the arguments in the constructor.  If set (the default), |Coq| generates
+   additional names to match the number of arguments.
+   Unsetting the option will put the additional hypotheses in the goal instead, behavior that is more
+   similar to |SSR|'s intro patterns.
+
+   .. deprecated:: 8.10
+
+.. _intropattern_cons_note:
+
+.. note::
+
+   :n:`A \/ B` and :n:`A /\ B` use infix notation to refer to the inductive
+   types :n:`or` and :n:`and`.
+   :n:`or` has multiple constructors (:n:`or_introl` and :n:`or_intror`),
+   while :n:`and` has a single constructor (:n:`conj`) with multiple parameters
+   (:n:`A` and :n:`B`).
+   These are defined in theories/Init/Logic.v.  The "where" clauses define the
+   infix notation for "or" and "and".
+
+   .. coqdoc::
+
+      Inductive or (A B:Prop) : Prop :=
+        | or_introl : A -> A \/ B
+        | or_intror : B -> A \/ B
+      where "A \/ B" := (or A B) : type_scope.
+
+      Inductive and (A B:Prop) : Prop :=
+        conj : A -> B -> A /\ B
+      where "A /\ B" := (and A B) : type_scope.
+
+.. note::
+
+   :n:`intros {+ p}` is not always equivalent to :n:`intros p; ... ; intros p`
+   if some of the :n:`p` are :g:`_`.  In the first form, all erasures are done
+   at once, while they're done sequentially for each tactic in the second form.
+   If the second matched term depends on the first matched term and the pattern
+   for both is :g:`_` (i.e., both will be erased), the first :n:`intros` in the second
+   form will fail because the second matched term still has the dependency on the first.
+
+Examples:
+
+.. _intropattern_conj_ex:
+
+   .. example:: intro pattern for /\\
+
+      .. coqtop:: reset none
+
+         Goal forall (A: Prop) (B: Prop), (A /\ B) -> True.
+
+      .. coqtop:: out
+
+         intros.
+
+      .. coqtop:: all
+
+         destruct H as (HA & HB).
+
+.. _intropattern_disj_ex:
+
+   .. example:: intro pattern for \\/
+
+      .. coqtop:: reset none
+
+         Goal forall (A: Prop) (B: Prop), (A \/ B) -> True.
+
+      .. coqtop:: out
+
+         intros.
+
+      .. coqtop:: all
+
+         destruct H as [HA|HB]. all: swap 1 2.
+
+.. _intropattern_rarrow_ex:
+
+   .. example:: -> intro pattern
+
+      .. coqtop:: reset none
+
+         Goal forall (x:nat) (y:nat) (z:nat), (x = y) -> (y = z) -> (x = z).
+
+      .. coqtop:: out
+
+         intros * H.
+
+      .. coqtop:: all
+
+         intros ->.
+
+.. _intropattern_inj_discr_ex:
+
+   .. example:: [=] intro pattern
+
+      The first :n:`intros [=]` uses :tacn:`injection` to strip :n:`(S ...)` from
+      both sides of the matched equality.  The second uses :tacn:`discriminate` on
+      the contradiction :n:`1 = 2` (internally represented as :n:`(S O) = (S (S O))`)
+      to complete the goal.
+
+      .. coqtop:: reset none
+
+         Goal forall (n m:nat),  (S n) = (S m) -> (S O)=(S (S O)) -> False.
+
+      .. coqtop:: out
+
+         intros *.
+
+      .. coqtop:: all
+
+         intros [= H].
+
+      .. coqtop:: all
+
+         intros [=].
+
+.. _intropattern_ampersand_ex:
+
+   .. example:: (A & B & ...) intro pattern
+
+      .. coqtop:: reset none
+
+         Variables (A : Prop) (B: nat -> Prop) (C: Prop).
+
+      .. coqtop:: out
+
+         Goal A /\ (exists x:nat, B x /\ C) -> True.
+
+      .. coqtop:: all
+
+         intros (a & x & b & c).
+
+.. _intropattern_star_ex:
+
+   .. example:: * intro pattern
+
+      .. coqtop:: reset out
+
+         Goal forall (A: Prop) (B: Prop), A -> B.
+
+      .. coqtop:: all
+
+         intros *.
+
+.. _intropattern_2stars_ex:
+
+   .. example:: ** pattern ("intros \**" is equivalent to "intros")
+
+      .. coqtop:: reset out
+
+         Goal forall (A: Prop) (B: Prop), A -> B.
+
+      .. coqtop:: all
+
+         intros **.
+
+   .. example:: compound intro pattern
+
+      .. coqtop:: reset out
+
+         Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
+
+      .. coqtop:: all
+
+         intros * [a | (_,c)] f.
+         all: swap 1 2.
+
+.. _intropattern_injection_ex:
+
+   .. example:: combined intro pattern using [=] -> and %
+
+      .. coqtop:: reset none
+
+         Require Import Coq.Lists.List.
+         Section IntroPatterns.
+         Variables (A : Type) (xs ys : list A).
+
+      .. coqtop:: out
+
+         Example ThreeIntroPatternsCombined :
+         S (length ys) = 1 -> xs ++ ys = xs.
+
+      .. coqtop:: all
+
+         intros [=->%length_zero_iff_nil].
+
+      * `intros` would add :g:`H : S (length ys) = 1`
+      * `intros [=]` would additionally apply :tacn:`injection` to :g:`H` to yield :g:`H0 : length ys = 0`
+      * `intros [=->%length_zero_iff_nil]` applies the theorem, making H the equality :g:`l=nil`,
+        which is then applied as for :g:`->`.
+
+      .. coqdoc::
+
+         Theorem length_zero_iff_nil (l : list A):
+            length l = 0 <-> l=nil.
+
+      The example is based on `Tej Chajed's coq-tricks <https://github.com/tchajed/coq-tricks/blob/8e6efe4971ed828ac8bdb5512c1f615d7d62691e/src/IntroPatterns.v>`_
+
 .. _occurrencessets:
 
 Occurrence sets and occurrence clauses
@@ -113,11 +462,11 @@ Occurrence sets and occurrence clauses
 An occurrence clause is a modifier to some tactics that obeys the
 following syntax:
 
-  .. productionlist:: `sentence`
+  .. productionlist:: sentence
      occurrence_clause : in `goal_occurrences`
-     goal_occurrences : [`ident` [`at_occurrences`], ... , ident [`at_occurrences`] [|- [* [`at_occurrences`]]]]
-                      :| * |- [* [`at_occurrences`]]
-                      :| *
+     goal_occurrences : [`ident` [`at_occurrences`], ... , `ident` [`at_occurrences`] [|- [* [`at_occurrences`]]]]
+                      : * |- [* [`at_occurrences`]]
+                      : *
      at_occurrences : at `occurrences`
      occurrences     : [-] `num` ... `num`
 
@@ -508,10 +857,10 @@ Applying theorems
       This works as :tacn:`apply ... in` but turns unresolved bindings into
       existential variables, if any, instead of failing.
 
-   .. tacv:: apply {+, @term {? with @bindings_list } } in @ident as @intro_pattern
+   .. tacv:: apply {+, @term {? with @bindings_list } } in @ident as @simple_intropattern
       :name: apply ... in ... as
 
-      This works as :tacn:`apply ... in` then applies the :token:`intro_pattern`
+      This works as :tacn:`apply ... in` then applies the :token:`simple_intropattern`
       to the hypothesis :token:`ident`.
 
    .. tacv:: simple apply @term in @ident
@@ -525,8 +874,8 @@ Applying theorems
       Tactic :n:`simple apply @term in @ident` does not
       either traverse tuples as :n:`apply @term in @ident` does.
 
-   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
-             {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @intro_pattern}
+   .. tacv:: {? simple} apply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
+             {? simple} eapply {+, @term {? with @bindings_list}} in @ident {? as @simple_intropattern}
 
       This summarizes the different syntactic variants of :n:`apply @term in @ident`
       and :n:`eapply @term in @ident`.
@@ -726,149 +1075,17 @@ Managing the local context
       .. exn:: No such hypothesis: @ident.
          :undocumented:
 
-.. tacn:: intros @intro_pattern_list
+.. tacn:: intros @intropattern_list
    :name: intros ...
 
-   This extension of the tactic :n:`intros` allows to apply tactics on the fly
-   on the variables or hypotheses which have been introduced. An
-   *introduction pattern list* :n:`@intro_pattern_list` is a list of
-   introduction patterns possibly containing the filling introduction
-   patterns `*` and `**`. An *introduction pattern* is either:
+   Introduces one or more variables or hypotheses from the goal by matching the
+   intro patterns.  See the description in :ref:`intropatterns`.
 
-   + a *naming introduction pattern*, i.e. either one of:
+.. tacn:: eintros @intropattern_list
+   :name: eintros
 
-     + the pattern :n:`?`
-
-     + the pattern :n:`?ident`
-
-     + an identifier
-
-   + an *action introduction pattern* which itself classifies into:
-
-     + a *disjunctive/conjunctive introduction pattern*, i.e. either one of
-
-       + a disjunction of lists of patterns
-         :n:`[@intro_pattern_list | ... | @intro_pattern_list]`
-
-       + a conjunction of patterns: :n:`({+, p})`
-
-       + a list of patterns
-         :n:`({+& p})`
-         for sequence of right-associative binary constructs
-
-     + an *equality introduction pattern*, i.e. either one of:
-
-       + a pattern for decomposing an equality: :n:`[= {+ p}]`
-       + the rewriting orientations: :n:`->` or :n:`<-`
-
-     + the on-the-fly application of lemmas: :n:`p{+ %term}` where :n:`p`
-       itself is not a pattern for on-the-fly application of lemmas (note:
-       syntax is in experimental stage)
-
-   + the wildcard: :n:`_`
-
-
-   Assuming a goal of type :g:`Q → P` (non-dependent product), or of type
-   :g:`forall x:T, P` (dependent product), the behavior of
-   :n:`intros p` is defined inductively over the structure of the introduction
-   pattern :n:`p`:
-
-   Introduction on :n:`?` performs the introduction, and lets Coq choose a fresh
-   name for the variable;
-
-   Introduction on :n:`?@ident` performs the introduction, and lets Coq choose a
-   fresh name for the variable based on :n:`@ident`;
-
-   Introduction on :n:`@ident` behaves as described in :tacn:`intro`
-
-   Introduction over a disjunction of list of patterns
-   :n:`[@intro_pattern_list | ... | @intro_pattern_list ]` expects the product
-   to be over an inductive type whose number of constructors is `n` (or more
-   generally over a type of conclusion an inductive type built from `n`
-   constructors, e.g. :g:`C -> A\/B` with `n=2` since :g:`A\/B` has `2`
-   constructors): it destructs the introduced hypothesis as :n:`destruct` (see
-   :tacn:`destruct`) would and applies on each generated subgoal the
-   corresponding tactic;
-
-   The introduction patterns in :n:`@intro_pattern_list` are expected to consume
-   no more than the number of arguments of the `i`-th constructor. If it
-   consumes less, then Coq completes the pattern so that all the arguments of
-   the constructors of the inductive type are introduced (for instance, the
-   list of patterns :n:`[ | ] H` applied on goal :g:`forall x:nat, x=0 -> 0=x`
-   behaves the same as the list of patterns :n:`[ | ? ] H`);
-
-   Introduction over a conjunction of patterns :n:`({+, p})` expects
-   the goal to be a product over an inductive type :g:`I` with a single
-   constructor that itself has at least `n` arguments: It performs a case
-   analysis over the hypothesis, as :n:`destruct` would, and applies the
-   patterns :n:`{+ p}` to the arguments of the constructor of :g:`I` (observe
-   that :n:`({+ p})` is an alternative notation for :n:`[{+ p}]`);
-
-   Introduction via :n:`({+& p})` is a shortcut for introduction via
-   :n:`(p,( ... ,( ..., p ) ... ))`; it expects the hypothesis to be a sequence of
-   right-associative binary inductive constructors such as :g:`conj` or
-   :g:`ex_intro`; for instance, a hypothesis with type
-   :g:`A /\(exists x, B /\ C /\ D)` can be introduced via pattern
-   :n:`(a & x & b & c & d)`;
-
-   If the product is over an equality type, then a pattern of the form
-   :n:`[= {+ p}]` applies either :tacn:`injection` or :tacn:`discriminate`
-   instead of :tacn:`destruct`; if :tacn:`injection` is applicable, the patterns
-   :n:`{+, p}` are used on the hypotheses generated by :tacn:`injection`; if the
-   number of patterns is smaller than the number of hypotheses generated, the
-   pattern :n:`?` is used to complete the list.
-
-   Introduction over ``->`` (respectively over ``<-``)
-   expects the hypothesis to be an equality and the right-hand-side
-   (respectively the left-hand-side) is replaced by the left-hand-side
-   (respectively the right-hand-side) in the conclusion of the goal;
-   the hypothesis itself is erased; if the term to substitute is a variable, it
-   is substituted also in the context of goal and the variable is removed too.
-
-   Introduction over a pattern :n:`p{+ %term}` first applies :n:`{+ term}`
-   on the hypothesis to be introduced (as in :n:`apply {+, term}`) prior to the
-   application of the introduction pattern :n:`p`;
-
-   Introduction on the wildcard depends on whether the product is dependent or not:
-   in the non-dependent case, it erases the corresponding hypothesis (i.e. it
-   behaves as an :tacn:`intro` followed by a :tacn:`clear`) while in the
-   dependent case, it succeeds and erases the variable only if the wildcard is part
-   of a more complex list of introduction patterns that also erases the hypotheses
-   depending on this variable;
-
-   Introduction over :n:`*` introduces all forthcoming quantified variables
-   appearing in a row; introduction over :n:`**` introduces all forthcoming
-   quantified variables or hypotheses until the goal is not any more a
-   quantification or an implication.
-
-   .. example::
-
-      .. coqtop:: reset all
-
-         Goal forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
-           intros * [a | (_,c)] f.
-
-.. note::
-
-   :n:`intros {+ p}` is not equivalent to :n:`intros p; ... ; intros p`
-   for the following reason: If one of the :n:`p` is a wildcard pattern, it
-   might succeed in the first case because the further hypotheses it
-   depends on are eventually erased too while it might fail in the second
-   case because of dependencies in hypotheses which are not yet
-   introduced (and a fortiori not yet erased).
-
-.. note::
-
-   In :n:`intros @intro_pattern_list`, if the last introduction pattern
-   is a disjunctive or conjunctive pattern
-   :n:`[{+| @intro_pattern_list}]`, the completion of :n:`@intro_pattern_list`
-   so that all the arguments of the i-th constructors of the corresponding
-   inductive type are introduced can be controlled with the following option:
-
-   .. flag:: Bracketing Last Introduction Pattern
-
-      Force completion, if needed, when the last introduction pattern is a
-      disjunctive or conjunctive pattern (on by default).
+   Works just like :tacn:`intros ...` except that it creates existential variables
+   for any unresolved variables rather than failing.
 
 .. tacn:: clear @ident
    :name: clear
@@ -1057,19 +1274,19 @@ Managing the local context
       used as a synonym of :tacn:`epose`, i.e. when the :token:`term` does
       not occur in the goal.
 
-.. tacn:: remember @term as @ident__1 {? eqn:@ident__2 }
+.. tacn:: remember @term as @ident__1 {? eqn:@naming_intropattern }
    :name: remember
 
-   This behaves as :n:`set (@ident__1 := @term) in *`, using a logical
+   This behaves as :n:`set (@ident := @term) in *`, using a logical
    (Leibniz’s) equality instead of a local definition.
-   If :n:`@ident__2` is provided, it will be the name of the new equation.
+   Use :n:`@naming_intropattern` to name or split up the new equation.
 
-   .. tacv:: remember @term as @ident__1 {? eqn:@ident__2 } in @goal_occurrences
+   .. tacv:: remember @term as @ident__1 {? eqn:@naming_intropattern } in @goal_occurrences
 
       This is a more general form of :tacn:`remember` that remembers the
       occurrences of :token:`term` specified by an occurrence set.
 
-   .. tacv:: eremember @term as @ident__1 {? eqn:@ident__2 } {? in @goal_occurrences }
+   .. tacv:: eremember @term as @ident__1 {? eqn:@naming_intropattern } {? in @goal_occurrences }
       :name: eremember
 
       While the different variants of :tacn:`remember` expect that no
@@ -1163,16 +1380,16 @@ Controlling the proof flow
          :name: Proof is not complete. (assert)
          :undocumented:
 
-   .. tacv:: assert @type as @intro_pattern
+   .. tacv:: assert @type as @simple_intropattern
 
-      If :n:`intro_pattern` is a naming introduction pattern (see :tacn:`intro`),
+      If :n:`simple_intropattern` is an intro pattern (see :ref:`intropatterns`),
       the hypothesis is named after this introduction pattern (in particular, if
-      :n:`intro_pattern` is :n:`@ident`, the tactic behaves like
-      :n:`assert (@ident : @type)`). If :n:`intro_pattern` is an action
+      :n:`simple_intropattern` is :n:`@ident`, the tactic behaves like
+      :n:`assert (@ident : @type)`). If :n:`simple_intropattern` is an action
       introduction pattern, the tactic behaves like :n:`assert @type` followed by
       the action done by this introduction pattern.
 
-   .. tacv:: assert @type as @intro_pattern by @tactic
+   .. tacv:: assert @type as @simple_intropattern by @tactic
 
       This combines the two previous variants of :tacn:`assert`.
 
@@ -1186,7 +1403,7 @@ Controlling the proof flow
       .. exn:: Variable @ident is already declared.
          :undocumented:
 
-.. tacv:: eassert @type as @intro_pattern by @tactic
+.. tacv:: eassert @type as @simple_intropattern by @tactic
    :name: eassert
 
    While the different variants of :tacn:`assert` expect that no existential
@@ -1194,16 +1411,16 @@ Controlling the proof flow
    This allows not to specify the asserted statement completeley before starting
    to prove it.
 
-.. tacv:: pose proof @term {? as @intro_pattern}
+.. tacv:: pose proof @term {? as @simple_intropattern}
    :name: pose proof
 
-   This tactic behaves like :n:`assert @type {? as @intro_pattern} by exact @term`
+   This tactic behaves like :n:`assert @type {? as @simple_intropattern} by exact @term`
    where :token:`type` is the type of :token:`term`. In particular,
    :n:`pose proof @term as @ident` behaves as :n:`assert (@ident := @term)`
-   and :n:`pose proof @term as @intro_pattern` is the same as applying the
-   :token:`intro_pattern` to :token:`term`.
+   and :n:`pose proof @term as @simple_intropattern` is the same as applying the
+   :token:`simple_intropattern` to :token:`term`.
 
-.. tacv:: epose proof @term {? as @intro_pattern}
+.. tacv:: epose proof @term {? as @simple_intropattern}
    :name: epose proof
 
    While :tacn:`pose proof` expects that no existential variables are generated by
@@ -1221,20 +1438,20 @@ Controlling the proof flow
    This behaves like :n:`enough (@ident : @type)` with the name :token:`ident` of
    the hypothesis generated by Coq.
 
-.. tacv:: enough @type as @intro_pattern
+.. tacv:: enough @type as @simple_intropattern
 
-   This behaves like :n:`enough @type` using :token:`intro_pattern` to name or
+   This behaves like :n:`enough @type` using :token:`simple_intropattern` to name or
    destruct the new hypothesis.
 
 .. tacv:: enough (@ident : @type) by @tactic
-          enough @type {? as @intro_pattern } by @tactic
+          enough @type {? as @simple_intropattern } by @tactic
 
    This behaves as above but with :token:`tactic` expected to solve the initial goal
    after the extra assumption :token:`type` is added and possibly destructed. If the
-   :n:`as @intro_pattern` clause generates more than one subgoal, :token:`tactic` is
+   :n:`as @simple_intropattern` clause generates more than one subgoal, :token:`tactic` is
    applied to all of them.
 
-.. tacv:: eenough @type {? as @intro_pattern } {? by @tactic }
+.. tacv:: eenough @type {? as @simple_intropattern } {? by @tactic }
           eenough (@ident : @type) {? by @tactic }
    :name: eenough; _
 
@@ -1250,8 +1467,8 @@ Controlling the proof flow
    subgoals: :g:`U -> T` and :g:`U`. The subgoal :g:`U -> T` comes first in the
    list of remaining subgoal to prove.
 
-.. tacv:: specialize (@ident {* @term}) {? as @intro_pattern}
-          specialize @ident with @bindings_list {? as @intro_pattern}
+.. tacv:: specialize (@ident {* @term}) {? as @simple_intropattern}
+          specialize @ident with @bindings_list {? as @simple_intropattern}
    :name: specialize; _
 
    This tactic works on local hypothesis :n:`@ident`. The
@@ -1264,7 +1481,7 @@ Controlling the proof flow
    uninstantiated arguments are inferred by unification if possible or left
    quantified in the hypothesis otherwise. With the :n:`as` clause, the local
    hypothesis :n:`@ident` is left unchanged and instead, the modified hypothesis
-   is introduced as specified by the :token:`intro_pattern`. The name :n:`@ident`
+   is introduced as specified by the :token:`simple_intropattern`. The name :n:`@ident`
    can also refer to a global lemma or hypothesis. In this case, for
    compatibility reasons, the behavior of :tacn:`specialize` is close to that of
    :tacn:`generalize`: the instantiated statement becomes an additional premise of
@@ -1477,11 +1694,11 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
       This is a shortcut for :n:`destruct @term; ...; destruct @term`.
 
-   .. tacv:: destruct @term as @disj_conj_intro_pattern
+   .. tacv:: destruct @term as @or_and_intropattern_loc
 
       This behaves as :n:`destruct @term` but uses the names
-      in :token:`disj_conj_intro_pattern` to name the variables introduced in the
-      context. The :token:`disj_conj_intro_pattern` must have the
+      in :token:`or_and_intropattern_loc` to name the variables introduced in the
+      context. The :token:`or_and_intropattern_loc` must have the
       form :n:`[p11 ... p1n | ... | pm1 ... pmn ]` with ``m`` being the
       number of constructors of the type of :token:`term`. Each variable
       introduced by :tacn:`destruct` in the context of the ``i``-th goal
@@ -1491,13 +1708,13 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       pattern (see :tacn:`intros`). This provides a concise notation for
       chaining destruction of a hypothesis.
 
-   .. tacv:: destruct @term eqn:@naming_intro_pattern
+   .. tacv:: destruct @term eqn:@naming_intropattern
       :name: destruct ... eqn:
 
       This behaves as :n:`destruct @term` but adds an equation
       between :token:`term` and the value that it takes in each of the
       possible cases. The name of the equation is specified
-      by :token:`naming_intro_pattern` (see :tacn:`intros`),
+      by :token:`naming_intropattern` (see :tacn:`intros`),
       in particular ``?`` can be used to let Coq generate a fresh name.
 
    .. tacv:: destruct @term with @bindings_list
@@ -1525,8 +1742,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       clause is an occurrence clause whose syntax and behavior is described
       in :ref:`occurrences sets <occurrencessets>`.
 
-   .. tacv:: destruct @term {? with @bindings_list } {? as @disj_conj_intro_pattern } {? eqn:@naming_intro_pattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
-             edestruct @term {? with @bindings_list } {? as @disj_conj_intro_pattern } {? eqn:@naming_intro_pattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
+   .. tacv:: destruct @term {? with @bindings_list } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
+             edestruct @term {? with @bindings_list } {? as @or_and_intropattern_loc } {? eqn:@naming_intropattern } {? using @term {? with @bindings_list } } {? in @goal_occurrences }
 
       These are the general forms of :tacn:`destruct` and :tacn:`edestruct`.
       They combine the effects of the ``with``, ``as``, ``eqn:``, ``using``,
@@ -1622,11 +1839,11 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
    Use in this case the variant :tacn:`elim ... with` below.
 
-.. tacv:: induction @term as @disj_conj_intro_pattern
+.. tacv:: induction @term as @or_and_intropattern_loc
 
    This behaves as :tacn:`induction` but uses the names in
-   :n:`@disj_conj_intro_pattern` to name the variables introduced in the
-   context. The :n:`@disj_conj_intro_pattern` must typically be of the form
+   :n:`@or_and_intropattern_loc` to name the variables introduced in the
+   context. The :n:`@or_and_intropattern_loc` must typically be of the form
    :n:`[ p` :sub:`11` :n:`... p` :sub:`1n` :n:`| ... | p`:sub:`m1` :n:`... p`:sub:`mn` :n:`]`
    with :n:`m` being the number of constructors of the type of :n:`@term`. Each
    variable introduced by induction in the context of the i-th goal gets its
@@ -1686,8 +1903,8 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
          induction y in x |-   *.
          Show 2.
 
-.. tacv:: induction @term with @bindings_list as @disj_conj_intro_pattern using @term with @bindings_list in @goal_occurrences
-          einduction @term with @bindings_list as @disj_conj_intro_pattern using @term with @bindings_list in @goal_occurrences
+.. tacv:: induction @term with @bindings_list as @or_and_intropattern_loc using @term with @bindings_list in @goal_occurrences
+          einduction @term with @bindings_list as @or_and_intropattern_loc using @term with @bindings_list in @goal_occurrences
 
    These are the most general forms of :tacn:`induction` and :tacn:`einduction`. It combines the
    effects of the with, as, using, and in clauses.
@@ -1898,7 +2115,7 @@ and an explanation of the underlying technique.
 .. exn:: Not the right number of induction arguments.
    :undocumented:
 
-.. tacv:: functional induction (@qualid {+ @term}) as @disj_conj_intro_pattern using @term with @bindings_list
+.. tacv:: functional induction (@qualid {+ @term}) as @simple_intropattern using @term with @bindings_list
 
    Similarly to :tacn:`induction` and :tacn:`elim`, this allows giving
    explicitly the name of the introduced variables, the induction principle, and
@@ -2053,18 +2270,18 @@ and an explanation of the underlying technique.
       .. exn:: goal does not satisfy the expected preconditions.
          :undocumented:
 
-   .. tacv:: injection @term {? with @bindings_list} as {+ @intro_pattern}
-             injection @num as {+ intro_pattern}
-             injection as {+ intro_pattern}
-             einjection @term {? with @bindings_list} as {+ intro_pattern}
-             einjection @num as {+ intro_pattern}
-             einjection as {+ intro_pattern}
+   .. tacv:: injection @term {? with @bindings_list} as {+ @simple_intropattern}
+             injection @num as {+ simple_intropattern}
+             injection as {+ simple_intropattern}
+             einjection @term {? with @bindings_list} as {+ simple_intropattern}
+             einjection @num as {+ simple_intropattern}
+             einjection as {+ simple_intropattern}
 
-      These variants apply :n:`intros {+ @intro_pattern}` after the call to
+      These variants apply :n:`intros {+ @simple_intropattern}` after the call to
       :tacn:`injection` or :tacn:`einjection` so that all equalities generated are moved in
-      the context of hypotheses. The number of :n:`@intro_pattern` must not exceed
+      the context of hypotheses. The number of :n:`@simple_intropattern` must not exceed
       the number of equalities newly generated. If it is smaller, fresh
-      names are automatically generated to adjust the list of :n:`@intro_pattern`
+      names are automatically generated to adjust the list of :n:`@simple_intropattern`
       to the number of new equalities. The original equality is erased if it
       corresponds to a hypothesis.
 
@@ -2118,10 +2335,10 @@ and an explanation of the underlying technique.
 
    This behaves as :n:`inversion` and then erases :n:`@ident` from the context.
 
-.. tacv:: inversion @ident as @intro_pattern
+.. tacv:: inversion @ident as @or_and_intropattern_loc
 
-   This generally behaves as inversion but using names in :n:`@intro_pattern`
-   for naming hypotheses. The :n:`@intro_pattern` must have the form
+   This generally behaves as inversion but using names in :n:`@or_and_intropattern_loc`
+   for naming hypotheses. The :n:`@or_and_intropattern_loc` must have the form
    :n:`[p`:sub:`11` :n:`... p`:sub:`1n` :n:`| ... | p`:sub:`m1` :n:`... p`:sub:`mn` :n:`]`
    with `m` being the number of constructors of the type of :n:`@ident`. Be
    careful that the list must be of length `m` even if ``inversion`` discards
@@ -2153,12 +2370,12 @@ and an explanation of the underlying technique.
          Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
          intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
 
-.. tacv:: inversion @num as @intro_pattern
+.. tacv:: inversion @num as @or_and_intropattern_loc
 
    This allows naming the hypotheses introduced by :n:`inversion @num` in the
    context.
 
-.. tacv:: inversion_clear @ident as @intro_pattern
+.. tacv:: inversion_clear @ident as @or_and_intropattern_loc
 
    This allows naming the hypotheses introduced by ``inversion_clear`` in the
    context. Notice that hypothesis names can be provided as if ``inversion``
@@ -2170,7 +2387,7 @@ and an explanation of the underlying technique.
    Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves as
    generalizing :n:`{+ @ident}`, and then performing ``inversion``.
 
-.. tacv:: inversion @ident as @intro_pattern in {+ @ident}
+.. tacv:: inversion @ident as @or_and_intropattern_loc in {+ @ident}
 
    This allows naming the hypotheses introduced in the context by
    :n:`inversion @ident in {+ @ident}`.
@@ -2180,7 +2397,7 @@ and an explanation of the underlying technique.
    Let :n:`{+ @ident}` be identifiers in the local context. This tactic behaves
    as generalizing :n:`{+ @ident}`, and then performing ``inversion_clear``.
 
-.. tacv:: inversion_clear @ident as @intro_pattern in {+ @ident}
+.. tacv:: inversion_clear @ident as @or_and_intropattern_loc in {+ @ident}
 
    This allows naming the hypotheses introduced in the context by
    :n:`inversion_clear @ident in {+ @ident}`.
@@ -2192,7 +2409,7 @@ and an explanation of the underlying technique.
    ``inversion`` and then substitutes :n:`@ident` for the corresponding
    :n:`@@term` in the goal.
 
-.. tacv:: dependent inversion @ident as @intro_pattern
+.. tacv:: dependent inversion @ident as @or_and_intropattern_loc
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident`.
@@ -2202,7 +2419,7 @@ and an explanation of the underlying technique.
    Like ``dependent inversion``, except that :n:`@ident` is cleared from the
    local context.
 
-.. tacv:: dependent inversion_clear @ident as @intro_pattern
+.. tacv:: dependent inversion_clear @ident as @or_and_intropattern_loc
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion_clear @ident`.
@@ -2216,7 +2433,7 @@ and an explanation of the underlying technique.
    then :n:`@term` must be of type :g:`I:forall (x:T), I x -> s'` where
    :g:`s'` is the type of the goal.
 
-.. tacv:: dependent inversion @ident as @intro_pattern with @term
+.. tacv:: dependent inversion @ident as @or_and_intropattern_loc with @term
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion @ident with @term`.
@@ -2226,7 +2443,7 @@ and an explanation of the underlying technique.
    Like :tacn:`dependent inversion ... with ...` with but clears :n:`@ident` from the
    local context.
 
-.. tacv:: dependent inversion_clear @ident as @intro_pattern with @term
+.. tacv:: dependent inversion_clear @ident as @or_and_intropattern_loc with @term
 
    This allows naming the hypotheses introduced in the context by
    :n:`dependent inversion_clear @ident with @term`.
@@ -2237,7 +2454,7 @@ and an explanation of the underlying technique.
    It is a very primitive inversion tactic that derives all the necessary
    equalities but it does not simplify the constraints as ``inversion`` does.
 
-.. tacv:: simple inversion @ident as @intro_pattern
+.. tacv:: simple inversion @ident as @or_and_intropattern_loc
 
    This allows naming the hypotheses introduced in the context by
    ``simple inversion``.
@@ -3586,15 +3803,15 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       the following. Beware, there is no operator precedence during parsing, one can
       check with :cmd:`Print HintDb` to verify the current cut expression:
 
-      .. productionlist:: `regexp`
-          e : ident      hint or instance identifier
-            :| _         any hint
-            :| e\|e′     disjunction
-            :| e e′      sequence
-            :| e *       Kleene star
-            :| emp       empty
-            :| eps       epsilon
-            :| ( e  )
+      .. productionlist:: regexp
+          e : `ident`    hint or instance identifier
+            : _          any hint
+            : `e` | `e`  disjunction
+            : `e` `e`    sequence
+            : `e` *      Kleene star
+            : emp        empty
+            : eps        epsilon
+            : ( `e` )
 
       The `emp` regexp does not match any search path while `eps`
       matches the empty path. During proof search, the path of
@@ -4299,15 +4516,15 @@ Automating
 
    .. _btauto_grammar:
 
-   .. productionlist:: `sentence`
-      t : x
-        :∣ true
-        :∣ false
-        :∣ orb t1 t2
-        :∣ andb t1 t2
-        :∣ xorb t1 t2
-        :∣ negb t
-        :∣ if t1 then t2 else t3
+   .. productionlist:: sentence
+      t : `x`
+        : true
+        : false
+        : orb `t` `t`
+        : andb `t` `t`
+        : xorb `t` `t`
+        : negb `t`
+        : if `t` then `t` else `t`
 
    Whenever the formula supplied is not a tautology, it also provides a
    counter-example.

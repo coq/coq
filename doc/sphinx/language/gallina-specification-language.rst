@@ -127,43 +127,43 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
 
 .. productionlist:: coq
    term             : forall `binders` , `term`
-                    : | fun `binders` => `term`
-                    : | fix `fix_bodies`
-                    : | cofix `cofix_bodies`
-                    : | let `ident` [`binders`] [: `term`] := `term` in `term`
-                    : | let fix `fix_body` in `term`
-                    : | let cofix `cofix_body` in `term`
-                    : | let ( [`name` , … , `name`] ) [`dep_ret_type`] := `term` in `term`
-                    : | let ' `pattern` [in `term`] := `term` [`return_type`] in `term`
-                    : | if `term` [`dep_ret_type`] then `term` else `term`
-                    : | `term` : `term`
-                    : | `term` <: `term`
-                    : | `term` :>
-                    : | `term` -> `term`
-                    : | `term` `arg` … `arg`
-                    : | @ `qualid` [`term` … `term`]
-                    : | `term` % `ident`
-                    : | match `match_item` , … , `match_item` [`return_type`] with
+                    : fun `binders` => `term`
+                    : fix `fix_bodies`
+                    : cofix `cofix_bodies`
+                    : let `ident` [`binders`] [: `term`] := `term` in `term`
+                    : let fix `fix_body` in `term`
+                    : let cofix `cofix_body` in `term`
+                    : let ( [`name` , … , `name`] ) [`dep_ret_type`] := `term` in `term`
+                    : let ' `pattern` [in `term`] := `term` [`return_type`] in `term`
+                    : if `term` [`dep_ret_type`] then `term` else `term`
+                    : `term` : `term`
+                    : `term` <: `term`
+                    : `term` :>
+                    : `term` -> `term`
+                    : `term` `arg` … `arg`
+                    : @ `qualid` [`term` … `term`]
+                    : `term` % `ident`
+                    : match `match_item` , … , `match_item` [`return_type`] with
                     :   [[|] `equation` | … | `equation`] end
-                    : | `qualid`
-                    : | `sort`
-                    : | `num`
-                    : | _
-                    : | ( `term` )
+                    : `qualid`
+                    : `sort`
+                    : `num`
+                    : _
+                    : ( `term` )
    arg              : `term`
-                    : | ( `ident` := `term` )
+                    : ( `ident` := `term` )
    binders          : `binder` … `binder`
    binder           : `name`
-                    : | ( `name` … `name` : `term` )
-                    : | ( `name` [: `term`] := `term` )
-                    : | ' `pattern`
+                    : ( `name` … `name` : `term` )
+                    : ( `name` [: `term`] := `term` )
+                    : ' `pattern`
    name             : `ident` | _
    qualid           : `ident` | `qualid` `access_ident`
    sort             : Prop | Set | Type
    fix_bodies       : `fix_body`
-                    : | `fix_body` with `fix_body` with … with `fix_body` for `ident`
+                    : `fix_body` with `fix_body` with … with `fix_body` for `ident`
    cofix_bodies     : `cofix_body`
-                    : | `cofix_body` with `cofix_body` with … with `cofix_body` for `ident`
+                    : `cofix_body` with `cofix_body` with … with `cofix_body` for `ident`
    fix_body         : `ident` `binders` [`annotation`] [: `term`] := `term`
    cofix_body       : `ident` [`binders`] [: `term`] := `term`
    annotation       : { struct `ident` }
@@ -173,13 +173,13 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    equation         : `mult_pattern` | … | `mult_pattern` => `term`
    mult_pattern     : `pattern` , … , `pattern`
    pattern          : `qualid` `pattern` … `pattern`
-                    : | @ `qualid` `pattern` … `pattern`
-                    : | `pattern` as `ident`
-                    : | `pattern` % `ident`
-                    : | `qualid`
-                    : | _
-                    : | `num`
-                    : | ( `or_pattern` , … , `or_pattern` )
+                    : @ `qualid` `pattern` … `pattern`
+                    : `pattern` as `ident`
+                    : `pattern` % `ident`
+                    : `qualid`
+                    : _
+                    : `num`
+                    : ( `or_pattern` , … , `or_pattern` )
    or_pattern       : `pattern` | … | `pattern`
 
 
@@ -524,38 +524,38 @@ The Vernacular
 .. productionlist:: coq
    decorated-sentence : [ `decoration` … `decoration` ] `sentence`
    sentence           : `assumption`
-                      : | `definition`
-                      : | `inductive`
-                      : | `fixpoint`
-                      : | `assertion` `proof`
+                      : `definition`
+                      : `inductive`
+                      : `fixpoint`
+                      : `assertion` `proof`
    assumption         : `assumption_keyword` `assums`.
    assumption_keyword : Axiom | Conjecture
-                      : | Parameter | Parameters
-                      : | Variable | Variables
-                      : | Hypothesis | Hypotheses
+                      : Parameter | Parameters
+                      : Variable | Variables
+                      : Hypothesis | Hypotheses
    assums             : `ident` … `ident` : `term`
-                      : | ( `ident` … `ident` : `term` ) … ( `ident` … `ident` : `term` )
+                      : ( `ident` … `ident` : `term` ) … ( `ident` … `ident` : `term` )
    definition         : [Local] Definition `ident` [`binders`] [: `term`] := `term` .
-                      : | Let `ident` [`binders`] [: `term`] := `term` .
+                      : Let `ident` [`binders`] [: `term`] := `term` .
    inductive          : Inductive `ind_body` with … with `ind_body` .
-                      : | CoInductive `ind_body` with … with `ind_body` .
+                      : CoInductive `ind_body` with … with `ind_body` .
    ind_body           : `ident` [`binders`] : `term` :=
                       : [[|] `ident` [`binders`] [:`term`] | … | `ident` [`binders`] [:`term`]]
    fixpoint           : Fixpoint `fix_body` with … with `fix_body` .
-                      : | CoFixpoint `cofix_body` with … with `cofix_body` .
+                      : CoFixpoint `cofix_body` with … with `cofix_body` .
    assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
    assertion_keyword  : Theorem | Lemma
-                      : | Remark | Fact
-                      : | Corollary | Proposition
-                      : | Definition | Example
+                      : Remark | Fact
+                      : Corollary | Proposition
+                      : Definition | Example
    proof              : Proof . … Qed .
-                      : | Proof . … Defined .
-                      : | Proof . … Admitted .
+                      : Proof . … Defined .
+                      : Proof . … Admitted .
    decoration : #[ `attributes` ]
    attributes : [`attribute`, … , `attribute`]
    attribute :  `ident`
-   :| `ident` = `string`
-   :| `ident` ( `attributes` )
+             : `ident` = `string`
+             : `ident` ( `attributes` )
 
 .. todo:: This use of … in this grammar is inconsistent
           What about removing the proof part of this grammar from this chapter

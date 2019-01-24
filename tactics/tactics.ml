@@ -98,7 +98,7 @@ let use_bracketing_last_or_and_intro_pattern () =
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optdepr  = true;
       optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);

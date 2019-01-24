@@ -104,18 +104,18 @@ subclass :token:`form` of the syntactic class :token:`term`. The syntax of
    a nice last column. Or even better, find a proper way to do this!
 
 .. productionlist::
-   form :   True                                           (True)
-        : | False                                          (False)
-        : | ~ `form`                                         (not)
-        : | `form` /\ `form`                                   (and)
-        : | `form` \/ `form`                                   (or)
-        : | `form` -> `form`                                   (primitive implication)
-        : | `form` <-> `form`                                  (iff)
-        : | forall `ident` : `type`, `form`                      (primitive for all)
-        : | exists `ident` [: `specif`], `form`                  (ex)
-        : | exists2 `ident` [: `specif`], `form` & `form`          (ex2)
-        : | `term` = `term`                                    (eq)
-        : | `term` = `term` :> `specif`                          (eq)
+   form : True                                           (True)
+        : False                                          (False)
+        : ~ `form`                                         (not)
+        : `form` /\ `form`                                   (and)
+        : `form` \/ `form`                                   (or)
+        : `form` -> `form`                                   (primitive implication)
+        : `form` <-> `form`                                  (iff)
+        : forall `ident` : `type`, `form`                      (primitive for all)
+        : exists `ident` [: `specif`], `form`                  (ex)
+        : exists2 `ident` [: `specif`], `form` & `form`          (ex2)
+        : `term` = `term`                                    (eq)
+        : `term` = `term` :> `specif`                          (eq)
 
 .. note::
 
@@ -287,13 +287,13 @@ the next section :ref:`specification`):
 
 .. productionlist::
    specif :  `specif` * `specif`                           (prod)
-          : | `specif` + `specif`                          (sum)
-          : | `specif` + { `specif` }                      (sumor)
-          : | { `specif` } + { `specif` }                  (sumbool)
-          : | { `ident` : `specif` | `form` }              (sig)
-          : | { `ident` : `specif` | `form` & `form` }       (sig2)
-          : | { `ident` : `specif` & `specif` }             (sigT)
-          : | { `ident` : `specif` & `specif` & `specif` }    (sigT2)
+          : `specif` + `specif`                          (sum)
+          : `specif` + { `specif` }                      (sumor)
+          : { `specif` } + { `specif` }                  (sumbool)
+          : { `ident` : `specif` | `form` }              (sig)
+          : { `ident` : `specif` | `form` & `form` }       (sig2)
+          : { `ident` : `specif` & `specif` }             (sigT)
+          : { `ident` : `specif` & `specif` & `specif` }    (sigT2)
   term : (`term`, `term`)                               (pair)
 
 
