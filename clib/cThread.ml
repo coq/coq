@@ -97,6 +97,9 @@ let thread_friendly_input_value ic =
     end
   with Unix.Unix_error _ | Sys_error _ -> raise End_of_file
 
+(* On the ocaml runtime used in some opam-for-windows version the
+ * [Thread.sigmask] API raises Invalid_argument "not implemented",
+ * hence we protect the call and turn the exception into a no-op *)
 let protect_sigalrm f x =
   begin try ignore(Thread.sigmask Unix.SIG_BLOCK [Sys.sigalrm])
   with Invalid_argument _ -> () end;
