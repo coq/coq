@@ -1,5 +1,5 @@
 { ocamlPackages, ssreflect, coq-ext-lib, simple-io }:
 {
-  buildInputs = [ ssreflect coq-ext-lib simple-io ]
-  ++ (with ocamlPackages; [ ocaml findlib ocamlbuild num ]);
+  buildInputs = with ocamlPackages; [ ocaml findlib ocamlbuild num ];
+  coqBuildInputs = [ ssreflect coq-ext-lib simple-io ];
 }

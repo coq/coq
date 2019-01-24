@@ -1,4 +1,4 @@
 { corn }:
 {
-  buildInputs = [ corn ];
+  coqBuildInputs = [ corn ];
 }

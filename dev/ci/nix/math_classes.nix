@@ -1,6 +1,6 @@
 { bignums }:
 
 {
-  buildInputs = [ bignums ];
+  coqBuildInputs = [ bignums ];
   configure = "./configure.sh";
 }

@@ -2,6 +2,7 @@
 , branch
 , wd
 , project ? "xyz"
+, withCoq ? true
 , bn ? "master"
 }:
 
@@ -75,10 +76,16 @@ else
 
 let prj = projects."${project}"; in
 
+let inherit (stdenv.lib) optional optionals; in
+
 stdenv.mkDerivation {
   name = "shell-for-${project}-in-${branch}";
 
-  buildInputs = [ coq ] ++ (prj.buildInputs or []);
+  buildInputs =
+    optional withCoq coq
+  ++ (prj.buildInputs or [])
+  ++ optionals withCoq (prj.coqBuildInputs or [])
+  ;
 
   configure = prj.configure or "true";
   make = prj.make or "make";

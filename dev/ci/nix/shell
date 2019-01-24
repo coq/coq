@@ -17,4 +17,10 @@ else
   BN=""
 fi
 
-nix-shell ./dev/ci/nix/ --show-trace --argstr wd $PWD --argstr branch $BRANCH $PROJECT $BN
+if [ "$NOCOQ" ]; then
+    NOCOQ="--arg withCoq false"
+else
+    NOCOQ=""
+fi
+
+nix-shell ./dev/ci/nix/ --show-trace --argstr wd $PWD --argstr branch $BRANCH $PROJECT $BN $NOCOQ
