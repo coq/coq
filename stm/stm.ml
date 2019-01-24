@@ -364,7 +364,6 @@ module VCS : sig
   val set_parsing_state : id -> Vernacstate.Parser.state -> unit
   val get_parsing_state : id -> Vernacstate.Parser.state option
   val get_proof_mode : id -> Pvernac.proof_mode option
-  val set_proof_mode : id -> Pvernac.proof_mode option -> unit
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : block_start:id -> block_stop:id -> vcs
@@ -572,6 +571,7 @@ end = struct (* {{{ *)
     (match Vernacprop.under_control x with
     | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
     | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
+    | VernacInstance (_,(({CAst.v=Name i},_),_,_),_,_) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
@@ -611,7 +611,6 @@ end = struct (* {{{ *)
     info.state <- new_state
 
   let get_proof_mode id = (get_info id).proof_mode
-  let set_proof_mode id pm = (get_info id).proof_mode <- pm
 
   let reached id =
     let info = get_info id in
@@ -3050,53 +3049,6 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
               VCS.set_parsing_state id parsing_state) new_ids;
           `Ok
 
-      (* Unknown: we execute it, check for open goals and propagate sideeff *)
-      | VtUnknown, VtNow ->
-          let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
-          if not (get_allow_nested_proofs ()) && in_proof then
-            "Commands which may open proofs are not allowed in a proof unless you turn option Nested Proofs Allowed on."
-            |> Pp.str
-            |> (fun s -> (UserError (None, s), Exninfo.null))
-            |> State.exn_on ~valid:Stateid.dummy newtip
-            |> Exninfo.iraise
-          else
-            let id = VCS.new_node ~id:newtip proof_mode () in
-          let head_id = VCS.get_branch_pos head in
-          let _st : unit = Reach.known_state ~doc ~cache:true head_id in (* ensure it is ok *)
-          let step () =
-            VCS.checkout VCS.Branch.master;
-            let mid = VCS.get_branch_pos VCS.Branch.master in
-            let _st' : unit = Reach.known_state ~doc ~cache:(VCS.is_interactive ()) mid in
-            let st = Vernacstate.freeze_interp_state ~marshallable:false in
-            ignore(stm_vernac_interp id st x);
-            (* Vernac x may or may not start a proof *)
-            if not in_proof && PG_compat.there_are_pending_proofs () then
-            begin
-              let bname = VCS.mk_branch_name x in
-              let opacity_of_produced_term = function
-                (* This AST is ambiguous, hence we check it dynamically *)
-                | VernacInstance (_,_ , None, _) -> GuaranteesOpacity
-                | _ -> Doesn'tGuaranteeOpacity in
-              VCS.commit id (Fork (x,bname,opacity_of_produced_term (Vernacprop.under_control x.expr),[]));
-              VCS.set_proof_mode id (Some (Vernacentries.get_default_proof_mode ()));
-              VCS.branch bname (`Proof (VCS.proof_nesting () + 1));
-            end else begin
-              begin match (VCS.get_branch head).VCS.kind with
-              | `Edit _ -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-              | `Master -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-              | `Proof _ ->
-                  VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-                  (* We hope it can be replayed, but we can't really know *)
-                  ignore(VCS.propagate_sideff ~action:(ReplayCommand x));
-              end;
-              VCS.checkout_shallowest_proof_branch ();
-            end in
-          State.define ~doc ~safe_id:head_id ~cache:true step id;
-          Backtrack.record (); `Ok
-
-      | VtUnknown, VtLater ->
-          anomaly(str"classifier: VtUnknown must imply VtNow.")
-
       | VtProofMode pm, VtNow ->
         let proof_mode = Pvernac.lookup_proof_mode pm in
         let id = VCS.new_node ~id:newtip proof_mode () in
@@ -3106,7 +3058,6 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 
       | VtProofMode _, VtLater ->
           anomaly(str"classifier: VtProofMode must imply VtNow.")
-
     end in
     let pr_rc rc = match rc with
       | `Ok -> Pp.(seq [str "newtip ("; str (Stateid.to_string (VCS.cur_tip ())); str ")"])

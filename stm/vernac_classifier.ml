@@ -21,7 +21,6 @@ let string_of_parallel = function
   | `No -> ""
 
 let string_of_vernac_type = function
-  | VtUnknown -> "Unknown"
   | VtStartProof _ -> "StartProof"
   | VtSideff _ -> "Sideff"
   | VtQed (VtKeep VtKeepAxiom) -> "Qed(admitted)"
@@ -61,7 +60,7 @@ let options_affecting_stm_scheduling =
   ]
 
 let classify_vernac e =
-  let static_classifier ~poly e = match e with
+  let static_classifier ~atts e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
@@ -97,15 +96,18 @@ let classify_vernac e =
       VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
 
     | VernacDefinition (_,({v=i},_),ProveBody _) ->
-       let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof(guarantee, idents_of_name i), VtLater
+      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
+      VtStartProof(guarantee, idents_of_name i), VtLater
     | VernacStartTheoremProof (_,l) ->
-        let ids = List.map (fun (({v=i}, _), _) -> i) l in
-       let guarantee = if poly then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-        VtStartProof (guarantee,ids), VtLater
+      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+      let ids = List.map (fun (({v=i}, _), _) -> i) l in
+      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
+      VtStartProof (guarantee,ids), VtLater
     | VernacFixpoint (discharge,l) ->
+      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
-         if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
+         if discharge = Decl_kinds.DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =
@@ -115,8 +117,9 @@ let classify_vernac e =
         then VtStartProof (guarantee,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (discharge,l) ->
+      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
-         if discharge = Decl_kinds.DoDischarge || poly then Doesn'tGuaranteeOpacity
+         if discharge = Decl_kinds.DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =
@@ -185,8 +188,12 @@ let classify_vernac e =
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *) -> VtSideff [], VtNow
     | VernacProofMode pm -> VtProofMode pm, VtNow
-    (* These are ambiguous *)
-    | VernacInstance _ -> VtUnknown, VtNow
+    | VernacInstance (_,((name,_),_,_),None,_) when not (Attributes.parse_drop_extra Attributes.program atts) ->
+      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
+      VtStartProof (guarantee, idents_of_name name.CAst.v), VtLater
+    | VernacInstance (_,((name,_),_,_),_,_) ->
+      VtSideff (idents_of_name name.CAst.v), VtLater
     (* Stm will install a new classifier to handle these *)
     | VernacBack _ | VernacAbortAll
     | VernacUndoTo _ | VernacUndo _
@@ -201,9 +208,8 @@ let classify_vernac e =
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
   let rec static_control_classifier v = v |> CAst.with_val (function
-    | VernacExpr (f, e) ->
-      let poly = Attributes.(parse_drop_extra polymorphic_nowarn f) in
-      static_classifier ~poly e
+    | VernacExpr (atts, e) ->
+      static_classifier ~atts e
     | VernacTimeout (_,e) -> static_control_classifier e
     | VernacTime (_,e) | VernacRedirect (_, e) ->
        static_control_classifier e
@@ -214,6 +220,6 @@ let classify_vernac e =
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtLater
-        | (VtStartProof _ | VtUnknown | VtProofMode _), _ -> VtQuery, VtLater))
+        | (VtStartProof _ | VtProofMode _), _ -> VtQuery, VtLater))
   in
   static_control_classifier e
