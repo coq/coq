@@ -17,3 +17,10 @@ build-system of that project: `configure`, `make`, and `clean`. Therefore, after
 changing the working directory to the root of the sources of that project, the
 contents of these variables can be evaluated to respectively set-up, build, and
 clean the project.
+
+## Variant: nocoq
+
+The dependencies of the third-party developments are split into `buildInputs`
+and `coqBuildInputs`. The second list gathers the Coq libraries. In case you
+only want the non-coq dependencies (because you want to use Coq from your `PATH`),
+set the environment variable `NOCOQ` to some non-empty value.

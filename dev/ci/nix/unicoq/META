@@ -1,0 +1,2 @@
+archive(native) = "unicoq.cmxa"
+plugin(native) = "unicoq.cmxs"
