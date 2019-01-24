@@ -1,9 +1,9 @@
 ; Default flags for all Coq libraries.
 (env
- (dev     (flags :standard -rectypes -w -9-27+40+60))
+ (dev     (flags :standard -rectypes -w -9-27+60))
  (release (flags :standard -rectypes)
           (ocamlopt_flags -O3 -unbox-closures))
- (ireport (flags :standard -rectypes -w -9-27-40+60)
+ (ireport (flags :standard -rectypes -w -9-27+60)
           (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report))
  (ocaml408
   (flags :standard -strict-sequence -strict-formats -short-paths -keep-locs -rectypes -w -9-27+40+60 -warn-error -5 -alert --deprecated)))
