@@ -2723,7 +2723,7 @@ If you need to learn a programming language, OCaml is the one that
 would help you with Coq the most.  Coq is written in OCaml and it
 borrows a lot of OCaml's syntax and style.
 
-http://caml.inria.fr/
+https://ocaml.org
 
 To learn more about Coq, I found the textbook "Software Foundations"
 readable.  It focuses on proving programs correct.  You can also look
