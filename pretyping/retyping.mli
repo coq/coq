@@ -10,13 +10,12 @@
 
 open Evd
 open Environ
-open EConstr
 
 (** This family of functions assumes its constr argument is known to be
-   well-typable. It does not type-check, just recompute the type
-   without any costly verifications. On non well-typable terms, it
-   either produces a wrong result or raise an anomaly. Use with care.
-   It doesn't handle predicative universes too. *)
+    well-typable. It does not type-check, just recompute the type
+    without any costly verifications. On non well-typable terms, it
+    either produces a wrong result or raise an anomaly. Use with care.
+    It doesn't handle predicative universes too. *)
 
 (** The "polyprop" optional argument is used by the extraction to
     disable "Prop-polymorphism", cf comment in [inductive.ml] *)
@@ -27,34 +26,58 @@ open EConstr
 type retype_error
 exception RetypeError of retype_error
 
-val get_type_of :
-  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
+module type S = sig
+  (** Retyping operations apply as well on constr and econstr, so we
+      use a parameterized module type. *)
 
-val get_sort_of :
-  ?polyprop:bool -> env -> evar_map -> types -> Sorts.t
+  type constr
+  type types
 
-(* When [truncation_style] is [true], tells if the type has been explicitly
-   truncated to Prop or (impredicative) Set; in particular, singleton type and
-   small inductive types, which have all eliminations to Type, are in Type *)
-val get_sort_family_of :
-  ?truncation_style:bool -> ?polyprop:bool -> env -> evar_map -> types -> Sorts.family
+  type 'a in_env
+  (** On Constr we only take an environment, on EConstr we also take an evar map. *)
 
-(** Makes an unsafe judgment from a constr *)
-val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
+  val get_type_of :
+    ?polyprop:bool -> ?lax:bool -> (constr -> types) in_env
 
-val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
-  constr array -> types
+  val get_sort_of :
+    ?polyprop:bool -> (types -> Sorts.t) in_env
+
+  (* When [truncation_style] is [true], tells if the type has been explicitly
+     truncated to Prop or (impredicative) Set; in particular, singleton type and
+     small inductive types, which have all eliminations to Type, are in Type. *)
+  val get_sort_family_of :
+    ?truncation_style:bool -> ?polyprop:bool -> (types -> Sorts.family) in_env
+
+  (** Makes an unsafe judgment from a constr. *)
+  val get_judgment_of : (constr -> (constr,types) Environ.punsafe_judgment) in_env
+
+  val type_of_global_reference_knowing_parameters : (constr -> constr array -> types) in_env
+
+  val sorts_of_context : ((constr,types) Context.Rel.pt -> Sorts.t list) in_env
+
+  val expand_projection : (Names.Projection.t -> constr -> constr list -> constr) in_env
+
+end
+
+(** Functions in Retyping operate on EConstr. *)
+include S with type constr := EConstr.constr
+           and type types := EConstr.types
+           and type 'a in_env = env -> evar_map -> 'a
+(* NB: can't use := for in_env until ocaml 4.06 (see https://github.com/ocaml/ocaml/pull/792) *)
 
 val type_of_global_reference_knowing_conclusion :
-  env -> evar_map -> constr -> types -> evar_map * types
+  env -> evar_map -> EConstr.constr -> EConstr.types -> evar_map * EConstr.types
+(** This modifies the evar map so there is no Constr version. *)
 
-val sorts_of_context : env -> evar_map -> rel_context -> Sorts.t list
-
-val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
+(** Functions in Retyping.C operate on Constr. *)
+module C : S with type constr := Constr.t
+              and type types := Constr.types
+              and type 'a in_env = env -> 'a
 
 val print_retype_error : retype_error -> Pp.t
 
-val relevance_of_term : env -> evar_map -> constr -> Sorts.relevance
-val relevance_of_type : env -> evar_map -> types -> Sorts.relevance
-val relevance_of_sort : ESorts.t -> Sorts.relevance
+(** Use Retypeops for relevance operations on Constr *)
+val relevance_of_term : env -> evar_map -> EConstr.constr -> Sorts.relevance
+val relevance_of_type : env -> evar_map -> EConstr.types -> Sorts.relevance
+val relevance_of_sort : EConstr.ESorts.t -> Sorts.relevance
 val relevance_of_sort_family : Sorts.family -> Sorts.relevance

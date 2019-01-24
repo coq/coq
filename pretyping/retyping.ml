@@ -296,3 +296,65 @@ let relevance_of_type env sigma t =
 let relevance_of_sort s = Sorts.relevance_of_sort (EConstr.Unsafe.to_sorts s)
 
 let relevance_of_sort_family f =  Sorts.relevance_of_sort_family f
+
+module type S = sig
+  type constr
+  type types
+  type 'a in_env
+
+  val get_type_of :
+    ?polyprop:bool -> ?lax:bool -> (constr -> types) in_env
+
+  val get_sort_of :
+    ?polyprop:bool -> (types -> Sorts.t) in_env
+
+  val get_sort_family_of :
+    ?truncation_style:bool -> ?polyprop:bool -> (types -> Sorts.family) in_env
+
+  val get_judgment_of : (constr -> (constr,types) Environ.punsafe_judgment) in_env
+
+  val type_of_global_reference_knowing_parameters : (constr -> constr array -> types) in_env
+
+  val sorts_of_context : ((constr,types) Context.Rel.pt -> Sorts.t list) in_env
+
+  val expand_projection : (Names.Projection.t -> constr -> constr list -> constr) in_env
+end
+
+type 'a in_env = env -> Evd.evar_map -> 'a
+
+module C = struct
+
+  type 'a in_env = env -> 'a
+  let mk = EConstr.of_constr
+  let out = EConstr.Unsafe.to_constr
+
+  let in_env f env =
+    f env (Evd.from_env env)
+
+  let get_type_of ?polyprop ?lax env c =
+    out (in_env (get_type_of ?polyprop ?lax) env (mk c))
+
+  let get_sort_of ?polyprop env t =
+    in_env (get_sort_of ?polyprop) env (mk t)
+
+  let get_sort_family_of ?truncation_style ?polyprop env t =
+    in_env (get_sort_family_of ?truncation_style ?polyprop) env (mk t)
+
+  let get_judgment_of env c =
+    let cast : type a b. (a,b) eq -> (a,a) punsafe_judgment -> (b,b) punsafe_judgment =
+      fun Refl x -> x
+    in
+    cast EConstr.Unsafe.eq (in_env get_judgment_of env (mk c))
+
+  let type_of_global_reference_knowing_parameters env c args =
+    let cast : type a b. (b,a) eq -> a array -> b array = fun Refl x -> x in
+    out (in_env type_of_global_reference_knowing_parameters env (mk c) (cast EConstr.Unsafe.eq args))
+
+  let sorts_of_context env ctx =
+    let cast : type a b. (b,a) eq -> (a,a) Context.Rel.pt -> (b,b) Context.Rel.pt = fun Refl x -> x in
+    in_env sorts_of_context env (cast EConstr.Unsafe.eq ctx)
+
+  let expand_projection env p c args =
+    let cast : type a b. (b,a) eq -> a list -> b list = fun Refl x -> x in
+    out (in_env expand_projection env p (mk c) (cast EConstr.Unsafe.eq args))
+end
