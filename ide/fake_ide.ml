@@ -241,6 +241,9 @@ let eval_print l coq =
   | [ Tok(_,"ADD"); Top [Tok(_,name)]; Tok(_,phrase) ] ->
       let eid, tip = add_sentence ~name phrase in
       after_add (base_eval_call (add ((phrase,eid),(tip,true))) coq)
+  | [ Tok(_,"FAILADD"); Tok(_,phrase) ] ->
+      let eid, tip = add_sentence phrase in
+      after_fail coq (base_eval_call ~fail:false (add ((phrase,eid),(tip,true))) coq)
   | [ Tok(_,"GOALS"); ] ->
       eval_call (goals ()) coq
   | [ Tok(_,"FAILGOALS"); ] ->
@@ -267,7 +270,8 @@ let eval_print l coq =
       prerr_endline "Quitting fake_ide";
       exit 0
   | Tok("#[^\n]*",_) :: _  -> ()
-  | _ -> error "syntax error"
+  | Tok(s,_) :: _ -> error ("syntax error at " ^ s)
+  | _ -> error ("syntax error")
 
 let grammar =
   let open Parser in
@@ -275,6 +279,7 @@ let grammar =
   let eat_phrase = eat_balanced '{' in
   Alt
     [ Seq [Item (eat_rex "ADD"); Opt (Item eat_id); Item eat_phrase]
+    ; Seq [Item (eat_rex "FAILADD"); Item eat_phrase]
     ; Seq [Item (eat_rex "EDIT_AT"); Item eat_id]
     ; Seq [Item (eat_rex "QUERY"); Opt (Item eat_id); Item eat_phrase]
     ; Seq [Item (eat_rex "WAIT")]
