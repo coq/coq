@@ -1445,6 +1445,16 @@ section constant.
 If tactic is ``move`` or ``case`` and an equation :token:`ident` is given, then clear
 (step 3) for :token:`d_item` is suppressed (see section :ref:`generation_of_equations_ssr`).
 
+Intro patterns (see section :ref:`introduction_ssr`)
+and the ``rewrite`` tactic (see section :ref:`rewriting_ssr`)
+let one place a :token:`clear_switch` in the middle of other items
+(namely identifiers, views and rewrite rules).  This can trigger the
+addition of proof context items to the ones being explicitly
+cleared, and in turn this can result in clear errors (e.g. if the
+context item automatically added occurs in the goal).  The
+relevant sections describe ways to avoid the unintended clear of
+context items.
+
 
 Matching for apply and exact
 ````````````````````````````
