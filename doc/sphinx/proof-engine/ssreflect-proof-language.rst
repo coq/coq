@@ -1601,7 +1601,7 @@ It interprets the top of the stack with the view :token:`term`.
 It is equivalent to :n:`move/@term`.
 
 A :token:`clear_switch` that immediately precedes an :token:`i_view`
-is complemented with the name of the view whenever the :token:`i_view`
+is complemented with the name of the view if an only if the :token:`i_view`
 is a simple proof context entry [#10]_.
 E.g. ``{}/v`` is equivalent to ``/v{v}``.
 This behavior can be avoided by separating the :token:`clear_switch`
@@ -1636,8 +1636,8 @@ Intro patterns
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
   A :token:`clear_switch` (even an empty one) immediately preceding an
-  :token:`ident` is complemented with that :token:`ident` if the identifier
-  is a simple proof context entry [#10]_.
+  :token:`ident` is complemented with that :token:`ident` if and only if
+  the identifier is a simple proof context entry [#10]_.
   As a consequence  by prefixing the
   :token:`ident` with ``{}`` one can *replace* a context entry.
   This behavior can be avoided by separating the :token:`clear_switch`
@@ -3077,7 +3077,7 @@ operation should be performed:
 
   A clear switch, even an empty one, is performed *after* the
   :token:`r_item` is actually processed and is complemented with the name of
-  the rewrite rule when it is a simple proof context entry [#10]_.
+  the rewrite rule if an only if it is a simple proof context entry [#10]_.
   As a consequence one can
   write ``rewrite {}H`` to rewrite with ``H`` and dispose ``H`` immediately
   afterwards.
