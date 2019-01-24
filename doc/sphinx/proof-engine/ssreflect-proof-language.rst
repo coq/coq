@@ -1604,6 +1604,9 @@ A :token:`clear_switch` that immediately precedes an :token:`i_view`
 is complemented with the name of the view whenever the :token:`i_view`
 is a simple proof context entry [#10]_.
 E.g. ``{}/v`` is equivalent to ``/v{v}``.
+This behavior can be avoided by separating the :token:`clear_switch`
+from the :token:`i_view` with the ``-`` intro pattern or by putting
+parentheses around the view.
 
 A :token:`clear_switch` that immediately precedes an :token:`i_view`
 is executed after the view application.
@@ -1637,6 +1640,8 @@ Intro patterns
   is a simple proof context entry [#10]_.
   As a consequence  by prefixing the
   :token:`ident` with ``{}`` one can *replace* a context entry.
+  This behavior can be avoided by separating the :token:`clear_switch`
+  from the :token:`ident` with the ``-`` intro pattern.
 ``>``
   pops every variable occurring in the rest of the stack.
   Type class instances are popped even if they don't occur
@@ -3076,6 +3081,7 @@ operation should be performed:
   As a consequence one can
   write ``rewrite {}H`` to rewrite with ``H`` and dispose ``H`` immediately
   afterwards.
+  This behavior can be avoided by putting parentheses around the rewrite rule.
 
 An :token:`r_item` can be:
 
