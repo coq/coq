@@ -771,8 +771,8 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
                 \evenO &:& \even~0\\
-                \evenS &:& \forall n, \odd~n → \even~(\kw{S}~n)\\
-                \oddS &:& \forall n, \even~n → \odd~(\kw{S}~n)
+                \evenS &:& \forall n, \odd~n → \even~(\nS~n)\\
+                \oddS &:& \forall n, \even~n → \odd~(\nS~n)
                           \end{array}\right]}
 
    which corresponds to the result of the |Coq| declaration:
@@ -820,9 +820,9 @@ contains an inductive declaration.
       \begin{array}{l}
       E[Γ] ⊢ \even : \nat→\Prop\\
       E[Γ] ⊢ \odd : \nat→\Prop\\
-      E[Γ] ⊢ \even\_\kw{O} : \even~\kw{O}\\
-      E[Γ] ⊢ \even\_\kw{S} : \forall~n:\nat,~\odd~n → \even~(\kw{S}~n)\\
-      E[Γ] ⊢ \odd\_\kw{S} : \forall~n:\nat,~\even~n → \odd~(\kw{S}~n)
+      E[Γ] ⊢ \evenO : \even~\nO\\
+      E[Γ] ⊢ \evenS : \forall~n:\nat,~\odd~n → \even~(\nS~n)\\
+      E[Γ] ⊢ \oddS : \forall~n:\nat,~\even~n → \odd~(\nS~n)
       \end{array}
 
 
@@ -1207,8 +1207,8 @@ ourselves to primitive recursive functions and functionals.
 
 For instance, assuming a parameter :math:`A:\Set` exists in the local context,
 we want to build a function length of type :math:`\List~A → \nat` which computes
-the length of the list, such that :math:`(\kw{length}~(\kw{nil}~A)) = \kw{O}` and
-:math:`(\kw{length}~(\kw{cons}~A~a~l)) = (\kw{S}~(\kw{length}~l))`.
+the length of the list, such that :math:`(\length~(\Nil~A)) = \nO` and
+:math:`(\length~(\cons~A~a~l)) = (\nS~(\length~l))`.
 We want these equalities to be
 recognized implicitly and taken into account in the conversion rule.
 
@@ -1224,21 +1224,21 @@ want to capture the extra property that we have built the smallest
 fixed point of this recursive equation. This says that we are only
 manipulating finite objects. This analysis provides induction
 principles. For instance, in order to prove
-:math:`∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l))` it is enough to prove:
+:math:`∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\length~l))` it is enough to prove:
 
 
-+ :math:`(\kw{has}\_\kw{length}~A~(\kw{nil}~A)~(\kw{length}~(\kw{nil}~A)))`
-+ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l)) →`
-  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\kw{length}~(\cons~A~a~l)))`
++ :math:`(\kw{has}\_\kw{length}~A~(\Nil~A)~(\length~(\Nil~A)))`
++ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\length~l)) →`
+  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\length~(\cons~A~a~l)))`
 
 
 which given the conversion equalities satisfied by length is the same
 as proving:
 
 
-+ :math:`(\kw{has}\_\kw{length}~A~(\kw{nil}~A)~\kw{O})`
-+ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\kw{length}~l)) →`
-  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\kw{S}~(\kw{length}~l)))`
++ :math:`(\kw{has}\_\kw{length}~A~(\Nil~A)~\nO)`
++ :math:`∀ a:A,~∀ l:\List~A,~(\kw{has}\_\kw{length}~A~l~(\length~l)) →`
+  :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\nS~(\length~l)))`
 
 
 One conceptually simple way to do that, following the basic scheme
@@ -1486,19 +1486,19 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
    According to the definition:
 
    .. math::
-      \{(\kw{nil}~\nat)\}^P ≡ \{(\kw{nil}~\nat) : (\List~\nat)\}^P ≡ (P~(\kw{nil}~\nat))
+      \{(\Nil~\nat)\}^P ≡ \{(\Nil~\nat) : (\List~\nat)\}^P ≡ (P~(\Nil~\nat))
 
    .. math::
 
       \begin{array}{rl}
-      \{(\kw{cons}~\nat)\}^P & ≡\{(\kw{cons}~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
-      & ≡∀ n:\nat, \{(\kw{cons}~\nat~n) : \List~\nat→\List~\nat)\}^P \\
-      & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\kw{cons}~\nat~n~l) : \List~\nat)\}^P \\
-      & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\kw{cons}~\nat~n~l)).
+      \{(\cons~\nat)\}^P & ≡\{(\cons~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
+      & ≡∀ n:\nat, \{(\cons~\nat~n) : \List~\nat→\List~\nat)\}^P \\
+      & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\cons~\nat~n~l) : \List~\nat)\}^P \\
+      & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\cons~\nat~n~l)).
       \end{array}
 
-   Given some :math:`P` then :math:`\{(\kw{nil}~\nat)\}^P` represents the expected type of :math:`f_1` ,
-   and :math:`\{(\kw{cons}~\nat)\}^P` represents the expected type of :math:`f_2`.
+   Given some :math:`P` then :math:`\{(\Nil~\nat)\}^P` represents the expected type of :math:`f_1` ,
+   and :math:`\{(\cons~\nat)\}^P` represents the expected type of :math:`f_2`.
 
 
 .. _Typing-rule:
@@ -1534,8 +1534,8 @@ definition :math:`\ind{r}{Γ_I}{Γ_C}` with :math:`Γ_C = [c_1 :C_1 ;…;c_n :C_
        E[Γ] ⊢ t : (\List ~\nat) \\
        E[Γ] ⊢ P : B \\
        [(\List ~\nat)|B] \\
-       E[Γ] ⊢ f_1 : \{(\kw{nil} ~\nat)\}^P \\
-       E[Γ] ⊢ f_2 : \{(\kw{cons} ~\nat)\}^P
+       E[Γ] ⊢ f_1 : \{(\Nil ~\nat)\}^P \\
+       E[Γ] ⊢ f_2 : \{(\cons ~\nat)\}^P
      \end{array}
      ------------------------------------------------
      E[Γ] ⊢ \case(t,P,f_1 |f_2 ) : (P~t)
@@ -1615,14 +1615,14 @@ instance in the case of natural numbers, a proof of the induction
 principle of type
 
 .. math::
-   ∀ P:\nat→\Prop,~(P~\kw{O})→(∀ n:\nat,~(P~n)→(P~(\kw{S}~n)))→ ∀ n:\nat,~(P~n)
+   ∀ P:\nat→\Prop,~(P~\nO)→(∀ n:\nat,~(P~n)→(P~(\nS~n)))→ ∀ n:\nat,~(P~n)
 
 can be represented by the term:
 
 .. math::
    \begin{array}{l}
-   λ P:\nat→\Prop.~λ f:(P~\kw{O}).~λ g:(∀ n:\nat,~(P~n)→(P~(\kw{S}~n))).\\
-   \Fix~h\{h:∀ n:\nat,~(P~\kw{n}):=λ n:\nat.~\case(n,P,f | λp:\nat.~(g~p~(h~p)))\}
+   λ P:\nat→\Prop.~λ f:(P~\nO).~λ g:(∀ n:\nat,~(P~n)→(P~(\nS~n))).\\
+   \Fix~h\{h:∀ n:\nat,~(P~n):=λ n:\nat.~\case(n,P,f | λp:\nat.~(g~p~(h~p)))\}
    \end{array}
 
 Before accepting a fixpoint definition as being correctly typed, we
