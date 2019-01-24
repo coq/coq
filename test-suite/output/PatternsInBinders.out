@@ -1,29 +1,20 @@
 swap = fun '(x, y) => (y, x)
      : A * B -> B * A
-
-swap is not universe polymorphic
 fun '(x, y) => (y, x)
      : A * B -> B * A
 forall '(x, y), swap (x, y) = (y, x)
      : Prop
 proj_informative = fun '(exist _ x _) => x : A
      : {x : A | P x} -> A
-
-proj_informative is not universe polymorphic
 foo = fun '(Bar n b tt p) => if b then n + p else n - p
      : Foo -> nat
-
-foo is not universe polymorphic
 baz = 
 fun '(Bar n1 _ tt p1) '(Bar _ _ tt _) => n1 + p1
      : Foo -> Foo -> nat
-
-baz is not universe polymorphic
 swap = 
 fun (A B : Type) '(x, y) => (y, x)
      : forall A B : Type, A * B -> B * A
 
-swap is not universe polymorphic
 Arguments A, B are implicit and maximally inserted
 Argument scopes are [type_scope type_scope _]
 fun (A B : Type) '(x, y) => swap (x, y) = (y, x)
@@ -42,8 +33,6 @@ both_z =
 fun pat : nat * nat =>
 let '(n, p) as x := pat return (F x) in (Z n, Z p) : F (n, p)
      : forall pat : nat * nat, F pat
-
-both_z is not universe polymorphic
 fun '(x, y) '(z, t) => swap (x, y) = (z, t)
      : A * B -> B * A -> Prop
 forall '(x, y) '(z, t), swap (x, y) = (z, t)
@@ -53,7 +42,6 @@ fun (pat : nat) '(x, y) => x + y = pat
 f = fun x : nat => x + x
      : nat -> nat
 
-f is not universe polymorphic
 Argument scope is [nat_scope]
 fun x : nat => x + x
      : nat -> nat

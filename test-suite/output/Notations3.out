@@ -232,7 +232,6 @@ fun l : list nat => match l with
                     end
      : list nat -> list nat
 
-foo is not universe polymorphic
 Argument scope is [list_scope]
 Notation
 "'exists' x .. y , p" := ex (fun x => .. (ex (fun y => p)) ..) : type_scope
@@ -263,9 +262,5 @@ myfoo01 tt
      : list (list nat)
 amatch = mmatch 0 (with 0 => 1| 1 => 2 end)
      : unit
-
-amatch is not universe polymorphic
 alist = [0; 1; 2]
      : list nat
-
-alist is not universe polymorphic

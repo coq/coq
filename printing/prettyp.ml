@@ -267,7 +267,6 @@ let print_name_infos ref =
        print_ref true ref None; blankline]
     else
       [] in
-  print_polymorphism ref @
   print_type_in_type ref @
   print_primitive ref @
   type_info_for_implicit @
@@ -838,6 +837,7 @@ let print_about_any ?loc env sigma k udecl =
     Dumpglob.add_glob ?loc ref;
       pr_infos_list
        (print_ref false ref udecl :: blankline ::
+        print_polymorphism ref @
 	print_name_infos ref @
 	(if Pp.ismt rb then [] else [rb]) @
 	print_opacity ref @
