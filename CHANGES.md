@@ -49,6 +49,9 @@ Notations
 - New command `String Notation` to register string syntax for custom
   inductive types.
 
+- Various bugs have been fixed (e.g. PR #9214 on removing spurious
+  parentheses on abbreviations shortening a strict prefix of an application).
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)
