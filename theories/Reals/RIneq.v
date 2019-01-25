@@ -1692,7 +1692,6 @@ Proof.
   exact H.
   now apply not_INR in H.
 Qed.
-Hint Resolve INR_eq: real.
 
 Lemma INR_le : forall n m:nat, INR n <= INR m -> (n <= m)%nat.
 Proof.
