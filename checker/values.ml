@@ -335,7 +335,7 @@ let v_compiled_lib =
 let v_obj = Dyn
 let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
-let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
+let v_libraryobjs = v_libobjs
 
 (** STM objects *)
 

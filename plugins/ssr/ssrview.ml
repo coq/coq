@@ -49,7 +49,7 @@ module AdaptorDb = struct
     let open Libobject in
     declare_object @@ global_object_nodischarge "VIEW_ADAPTOR_DB"
       ~cache:cache_adaptor
-      ~subst:(Some subst_adaptor)
+      ~subst:subst_adaptor
 
   let declare kind terms =
     List.iter (fun term -> Lib.add_anonymous_leaf (in_db (kind,term)))

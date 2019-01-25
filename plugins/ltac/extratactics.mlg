@@ -533,7 +533,7 @@ let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 let inTransitivity : bool * Constr.t -> obj =
   declare_object @@ global_object_nodischarge "TRANSITIVITY-STEPS"
     ~cache:cache_transitivity_lemma
-    ~subst:(Some subst_transitivity_lemma)
+    ~subst:subst_transitivity_lemma
 
 (* Main entry points *)
 

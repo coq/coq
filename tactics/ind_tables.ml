@@ -61,7 +61,7 @@ let discharge_scheme (_,(kind,l)) =
 let inScheme : string * (inductive * Constant.t) array -> obj =
   declare_object @@ superglobal_object "SCHEME"
     ~cache:cache_scheme
-    ~subst:(Some subst_scheme)
+    ~subst:subst_scheme
     ~discharge:discharge_scheme
 
 (**********************************************************************)

@@ -13,7 +13,7 @@ open Pp
 module Dyn = Dyn.Make ()
 
 type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+    Dispose | Substitute of 'a | Anticipate of 'a
 
 type object_name = Libnames.full_path * Names.KerName.t
 
@@ -34,7 +34,7 @@ let default_object s = {
   open_function = (fun _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
-  classify_function = (fun obj -> Keep obj);
+  classify_function = (fun obj -> Dispose);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x)}
 
@@ -78,7 +78,6 @@ let declare_object_full odecl =
   and classifier lobj = match odecl.classify_function (outfun lobj) with
   | Dispose -> Dispose
   | Substitute obj -> Substitute (infun obj)
-  | Keep obj -> Keep (infun obj)
   | Anticipate (obj) -> Anticipate (infun obj)
   and discharge (oname,lobj) =
     Option.map infun (odecl.discharge_function (oname,outfun lobj))
@@ -145,12 +144,8 @@ let global_object_nodischarge s ~cache ~subst =
   { (default_object s) with
     cache_function = cache;
     open_function = import;
-    subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
-        | Some subst -> subst;
-      );
-    classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+    subst_function = subst;
+    classify_function = fun o -> Substitute o;
   }
 
 let global_object s ~cache ~subst ~discharge =
@@ -161,12 +156,8 @@ let superglobal_object_nodischarge s ~cache ~subst =
   { (default_object s) with
     load_function = (fun _ x -> cache x);
     cache_function = cache;
-    subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
-        | Some subst -> subst;
-      );
-    classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+    subst_function = subst;
+    classify_function = fun o -> Substitute o;
   }
 
 let superglobal_object s ~cache ~subst ~discharge =

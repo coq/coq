@@ -396,7 +396,7 @@ let theory_to_obj : ring_info -> obj =
   let cache_th (name,th) = add_entry name th in
   declare_object @@ global_object_nodischarge "tactic-new-ring-theory"
     ~cache:cache_th
-    ~subst:(Some subst_th)
+    ~subst:subst_th
 
 let setoid_of_relation env evd a r =
   try
@@ -889,7 +889,7 @@ let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object @@ global_object_nodischarge "tactic-new-field-theory"
     ~cache:cache_th
-    ~subst:(Some subst_th)
+    ~subst:subst_th
 
 let field_equality evd r inv req =
   match EConstr.kind !evd req with

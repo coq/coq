@@ -57,7 +57,8 @@ let in_generalizable : bool * lident list option -> obj =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
-    classify_function = (fun (local, _ as obj) -> if local then Dispose else Keep obj)
+    subst_function = Libobject.ident_subst_function;
+    classify_function = (fun (local, _ as obj) -> if local then Dispose else Substitute obj);
   }
 
 let declare_generalizable ~local gen =

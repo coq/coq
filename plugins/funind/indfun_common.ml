@@ -301,7 +301,7 @@ let in_Function : function_info -> Libobject.obj =
   let open Libobject in
   declare_object @@ superglobal_object "FUNCTIONS_DB"
     ~cache:cache_Function
-    ~subst:(Some subst_Function)
+    ~subst:subst_Function
     ~discharge:discharge_Function
 
 

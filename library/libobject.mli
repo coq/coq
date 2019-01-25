@@ -34,8 +34,6 @@ open Mod_subst
      Dispose    - the object dies at the end of the module
      Substitute - meaning the object is substitutive and
                   the module name must be updated
-     Keep       - the object is not substitutive, but survives module
-                  closing
      Anticipate - this is for objects that have to be explicitly
                   managed by the [end_module] function (like Require
                   and Read markers)
@@ -64,7 +62,7 @@ open Mod_subst
 *)
 
 type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+    Dispose | Substitute of 'a | Anticipate of 'a
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
@@ -144,24 +142,24 @@ val local_object_nodischarge : string ->
 
 val global_object : string ->
   cache:(object_name * 'a -> unit) ->
-  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  subst:(Mod_subst.substitution * 'a -> 'a) ->
   discharge:(object_name * 'a -> 'a option) ->
   'a object_declaration
 
 val global_object_nodischarge : string ->
   cache:(object_name * 'a -> unit) ->
-  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  subst:(Mod_subst.substitution * 'a -> 'a) ->
   'a object_declaration
 
 val superglobal_object : string ->
   cache:(object_name * 'a -> unit) ->
-  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  subst:(Mod_subst.substitution * 'a -> 'a) ->
   discharge:(object_name * 'a -> 'a option) ->
   'a object_declaration
 
 val superglobal_object_nodischarge : string ->
   cache:(object_name * 'a -> unit) ->
-  subst:(Mod_subst.substitution * 'a -> 'a) option ->
+  subst:(Mod_subst.substitution * 'a -> 'a) ->
   'a object_declaration
 
 (** {6 Debug} *)

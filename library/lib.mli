@@ -44,7 +44,7 @@ val subst_objects : Mod_subst.substitution -> lib_objects -> lib_objects
    [Substitute], [Keep], [Anticipate] respectively.  The order of each
    returned list is the same as in the input list. *)
 val classify_segment :
-  library_segment -> lib_objects * lib_objects * Libobject.obj list
+  library_segment -> lib_objects * Libobject.obj list
 
 (** [segment_of_objects prefix objs] forms a list of Leafs *)
 val segment_of_objects :

@@ -105,7 +105,7 @@ type key_obj = key * key
 let inKeys : key_obj -> obj =
   declare_object @@ superglobal_object "KEYS"
     ~cache:cache_keys
-    ~subst:(Some subst_keys)
+    ~subst:subst_keys
     ~discharge:discharge_keys
 
 let declare_equiv_keys ref ref' =

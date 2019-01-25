@@ -35,7 +35,7 @@ let cache_token (_,s) = CLexer.add_keyword s
 let inToken : string -> obj =
   declare_object @@ global_object_nodischarge "TOKEN"
     ~cache:cache_token
-    ~subst:(Some Libobject.ident_subst_function)
+    ~subst:Libobject.ident_subst_function
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 

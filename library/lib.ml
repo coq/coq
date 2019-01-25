@@ -64,24 +64,22 @@ let subst_objects subst seg =
     node :: seg) [] seg)
 *)
 let classify_segment seg =
-  let rec clean ((substl,keepl,anticipl) as acc) = function
+  let rec clean ((substl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
 	let id = Names.Label.to_id (Names.KerName.label kn) in
 	  (match classify_object o with
 	     | Dispose -> clean acc stk
-	     | Keep o' ->
-		 clean (substl, (id,o')::keepl, anticipl) stk
 	     | Substitute o' ->
-		 clean ((id,o')::substl, keepl, anticipl) stk
+                 clean ((id,o')::substl, anticipl) stk
 	     | Anticipate o' ->
-		 clean (substl, keepl, o'::anticipl) stk)
+                 clean (substl, o'::anticipl) stk)
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
   in
-    clean ([],[],[]) (List.rev seg)
+    clean ([],[]) (List.rev seg)
 
 
 let segment_of_objects prefix =

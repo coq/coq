@@ -623,7 +623,7 @@ let lang () = !lang_ref
 let extr_lang : lang -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Lang"
     ~cache:(fun (_,l) -> lang_ref := l)
-    ~subst:None
+    ~subst:Libobject.ident_subst_function
 
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
@@ -649,7 +649,7 @@ let add_inline_entries b l =
 let inline_extraction : bool * GlobRef.t list -> obj =
   declare_object @@ superglobal_object "Extraction Inline"
     ~cache:(fun (_,(b,l)) -> add_inline_entries b l)
-    ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l))))
+    ~subst:(fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     ~discharge:(fun (_,x) -> Some x)
 
 (* Grammar entries. *)
@@ -681,7 +681,7 @@ let print_extraction_inline () =
 let reset_inline : unit -> obj =
   declare_object @@ superglobal_object_nodischarge "Reset Extraction Inline"
     ~cache:(fun (_,_)-> inline_table :=  empty_inline_table)
-    ~subst:None
+    ~subst:(Libobject.ident_subst_function)
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
@@ -726,7 +726,7 @@ let add_implicits r l =
 let implicit_extraction : GlobRef.t * int_or_id list -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Implicit"
     ~cache:(fun (_,(r,l)) -> add_implicits r l)
-    ~subst:(Some (fun (s,(r,l)) -> (fst (subst_global s r), l)))
+    ~subst:(fun (s,(r,l)) -> (fst (subst_global s r), l))
 
 (* Grammar entries. *)
 
@@ -775,7 +775,7 @@ let add_blacklist_entries l =
 let blacklist_extraction : string list -> obj =
   declare_object @@ superglobal_object_nodischarge "Extraction Blacklist"
     ~cache:(fun (_,l) -> add_blacklist_entries l)
-    ~subst:None
+    ~subst:Libobject.ident_subst_function
 
 (* Grammar entries. *)
 
@@ -793,7 +793,7 @@ let print_extraction_blacklist () =
 let reset_blacklist : unit -> obj =
   declare_object @@ superglobal_object_nodischarge "Reset Extraction Blacklist"
     ~cache:(fun (_,_)-> blacklist_table := Id.Set.empty)
-    ~subst:None
+    ~subst:Libobject.ident_subst_function
 
 let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 
@@ -839,12 +839,12 @@ let find_custom_match pv =
 let in_customs : GlobRef.t * string list * string -> obj =
   declare_object @@ superglobal_object_nodischarge "ML extractions"
     ~cache:(fun (_,(r,ids,s)) -> add_custom r ids s)
-    ~subst:(Some (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str)))
+    ~subst:(fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
 
 let in_custom_matchs : GlobRef.t * string -> obj =
   declare_object @@ superglobal_object_nodischarge "ML extractions custom matchs"
     ~cache:(fun (_,(r,s)) -> add_custom_match r s)
-    ~subst:(Some (fun (subs,(r,s)) -> (fst (subst_global subs r), s)))
+    ~subst:(fun (subs,(r,s)) -> (fst (subst_global subs r), s))
 
 (* Grammar entries. *)
 

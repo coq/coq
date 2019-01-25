@@ -271,7 +271,7 @@ type summary_disk = {
 module Dyn = Dyn.Make ()
 type obj = Dyn.t (* persistent dynamic objects *)
 type lib_objects = (Id.t * obj) list
-type library_objects = lib_objects * lib_objects
+type library_objects = lib_objects
 
 type library_disk = {
   md_compiled : Safe_typing.compiled_library;

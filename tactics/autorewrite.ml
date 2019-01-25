@@ -201,7 +201,7 @@ let inHintRewrite : string * HintDN.t -> Libobject.obj =
   let open Libobject in
   declare_object @@ superglobal_object_nodischarge "HINT_REWRITE"
     ~cache:cache_hintrewrite
-    ~subst:(Some subst_hintrewrite)
+    ~subst:subst_hintrewrite
 
 open Clenv
 

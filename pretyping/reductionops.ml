@@ -71,7 +71,7 @@ let subst_reduction_effect (subst,(con,funkey)) =
 let inReductionEffect : Constant.t * string -> obj =
   declare_object @@ global_object_nodischarge "REDUCTION-EFFECT"
     ~cache:cache_reduction_effect
-    ~subst:(Some subst_reduction_effect)
+    ~subst:subst_reduction_effect
 
 let declare_reduction_effect funkey f =
   if String.Map.mem funkey !effect_table then
