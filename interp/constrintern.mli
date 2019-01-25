@@ -113,26 +113,26 @@ val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * constr
 
 (** Accepting unresolved evars *)
 
-val interp_constr_evars : env -> evar_map ->
+val interp_constr_evars : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> evar_map * constr
 
-val interp_casted_constr_evars : env -> evar_map ->
+val interp_casted_constr_evars : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> types -> evar_map * constr
 
-val interp_type_evars : env -> evar_map ->
+val interp_type_evars : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> evar_map * types
 
 (** Accepting unresolved evars and giving back the manual implicit arguments *)
 
-val interp_constr_evars_impls : env -> evar_map ->
+val interp_constr_evars_impls : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
   evar_map * (constr * Impargs.manual_implicits)
 
-val interp_casted_constr_evars_impls : env -> evar_map ->
+val interp_casted_constr_evars_impls : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr -> types ->
   evar_map * (constr * Impargs.manual_implicits)
 
-val interp_type_evars_impls : env -> evar_map ->
+val interp_type_evars_impls : ?program_mode:bool -> env -> evar_map ->
   ?impls:internalization_env -> constr_expr ->
   evar_map * (types * Impargs.manual_implicits)
 
@@ -158,7 +158,7 @@ val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map *
 (** Interpret contexts: returns extended env and context *)
 
 val interp_context_evars :
-  ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
+  ?program_mode:bool -> ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 

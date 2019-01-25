@@ -96,7 +96,7 @@ Definition NTWhiskerR C D E (F F' : Functor D E) (T : NaturalTransformation F F'
   := Build_NaturalTransformation (F o G) (F' o G)
                                  (fun c => T (G c))
                                  admit.
-Global Class NTC_Composable A B (a : A) (b : B) (T : Type) (term : T) := {}.
+Class NTC_Composable A B (a : A) (b : B) (T : Type) (term : T) := {}.
 
 Definition NTC_Composable_term `{@NTC_Composable A B a b T term} := term.
 Notation "T 'o' U"

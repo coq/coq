@@ -89,7 +89,7 @@ Definition set_cat : PreCategory
   := @Build_PreCategory hSet
                         (fun x y => forall _ : x, y)%core
                         (fun _ _ _ f g x => f (g x))%core.
-Local Inductive minus1Trunc (A :Type) : Type := min1 : A -> minus1Trunc A.
+Inductive minus1Trunc (A :Type) : Type := min1 : A -> minus1Trunc A.
 Instance minus1Trunc_is_prop {A : Type} : IsHProp (minus1Trunc A) | 0. Admitted.
 Definition hexists {X} (P:X->Type):Type:= minus1Trunc (sigT  P).
 Definition isepi {X Y} `(f:X->Y) := forall Z: hSet,

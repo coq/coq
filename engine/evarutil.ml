@@ -337,6 +337,7 @@ type naming_mode =
   | KeepUserNameAndRenameExistingEvenSectionNames
   | KeepExistingNames
   | FailIfConflict
+  | ProgramNaming
 
 let push_rel_decl_to_named_context
   ?(hypnaming=KeepUserNameAndRenameExistingButSectionNames)
@@ -364,7 +365,7 @@ let push_rel_decl_to_named_context
         using this function. For now, we only attempt to preserve the
         old behaviour of Program, but ultimately, one should do something
         about this whole name generation problem. *)
-    if Flags.is_program_mode () then next_name_away na avoid
+    if hypnaming = ProgramNaming then next_name_away na avoid
     else
       (* id_of_name_using_hdchar only depends on the rel context which is empty
          here *)
@@ -372,7 +373,8 @@ let push_rel_decl_to_named_context
   in
   match extract_if_neq id na with
   | Some id0 when hypnaming = KeepUserNameAndRenameExistingEvenSectionNames ||
-                  hypnaming = KeepUserNameAndRenameExistingButSectionNames &&
+                  (hypnaming = KeepUserNameAndRenameExistingButSectionNames ||
+                   hypnaming = ProgramNaming) &&
                   not (is_section_variable id0) ->
       (* spiwack: if [id<>id0], rather than introducing a new
           binding named [id], we will keep [id0] (the name given

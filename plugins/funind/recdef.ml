@@ -1518,10 +1518,10 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let open CVars in
   let env = Global.env() in
   let evd = Evd.from_env env in
-  let evd, function_type = interp_type_evars env evd type_of_f in
+  let evd, function_type = interp_type_evars ~program_mode:false env evd type_of_f in
   let env = EConstr.push_named (Context.Named.Declaration.LocalAssum (function_name,function_type)) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
-  let evd, ty = interp_type_evars env evd ~impls:rec_impls eq in
+  let evd, ty = interp_type_evars ~program_mode:false env evd ~impls:rec_impls eq in
   let evd = Evd.minimize_universes evd in
   let equation_lemma_type = Reductionops.nf_betaiotazeta env evd (Evarutil.nf_evar evd ty) in
   let function_type = EConstr.to_constr ~abort_on_undefined_evars:false evd function_type in

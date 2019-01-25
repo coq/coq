@@ -21,7 +21,7 @@ open Glob_term
     type a product; it returns [j] if no coercion is applicable.
     resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
-val inh_app_fun : bool ->
+val inh_app_fun : program_mode:bool -> bool ->
   env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
 (** [inh_coerce_to_sort env isevars j] coerces [j] to a type; i.e. it
@@ -33,11 +33,11 @@ val inh_coerce_to_sort : ?loc:Loc.t ->
 (** [inh_coerce_to_base env isevars j] coerces [j] to its base type; i.e. it
     inserts a coercion into [j], if needed, in such a way it gets as
     type its base type (the notion depends on the coercion system) *)
-val inh_coerce_to_base : ?loc:Loc.t ->
+val inh_coerce_to_base : ?loc:Loc.t -> program_mode:bool ->
   env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
 (** [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
-val inh_coerce_to_prod : ?loc:Loc.t ->
+val inh_coerce_to_prod : ?loc:Loc.t -> program_mode:bool ->
   env -> evar_map -> types -> evar_map * types
 
 (** [inh_conv_coerce_to resolve_tc Loc.t env isevars j t] coerces [j] to an 
@@ -45,10 +45,10 @@ val inh_coerce_to_prod : ?loc:Loc.t ->
     a way [t] and [j.uj_type] are convertible; it fails if no coercion is
     applicable. resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
-val inh_conv_coerce_to : ?loc:Loc.t -> bool ->
+val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> bool ->
   env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
-val inh_conv_coerce_rigid_to : ?loc:Loc.t -> bool ->
+val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool ->bool ->
   env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
 (** [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]

@@ -34,17 +34,6 @@ val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
   Proofview.Goal.t -> 'a tactic
 (** The general version of refine. *)
 
-(** {7 Helper functions} *)
-
-val with_type : Environ.env -> Evd.evar_map ->
-  EConstr.constr -> EConstr.types -> Evd.evar_map * EConstr.constr
-(** [with_type env sigma c t] ensures that [c] is of type [t]
-    inserting a coercion if needed. *)
-
-val refine_casted : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> unit tactic
-(** Like {!refine} except the refined term is coerced to the conclusion of the
-    current goal. *)
-
 (** {7 Unification constraint handling} *)
 
 val solve_constraints : unit tactic

@@ -17,7 +17,7 @@ open Decl_kinds
 
 (** {6 Parameters/Assumptions} *)
 
-val do_assumptions : locality * polymorphic * assumption_object_kind ->
+val do_assumptions : program_mode:bool -> locality * polymorphic * assumption_object_kind ->
   Declaremods.inline -> (ident_decl list * constr_expr) with_coercion list -> bool
 
 (************************************************************************)

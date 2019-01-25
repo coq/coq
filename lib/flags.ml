@@ -107,12 +107,6 @@ let polymorphic_inductive_cumulativity = ref false
 let make_polymorphic_inductive_cumulativity b = polymorphic_inductive_cumulativity := b
 let is_polymorphic_inductive_cumulativity () = !polymorphic_inductive_cumulativity
 
-(** [program_mode] tells that Program mode has been activated, either
-    globally via [Set Program] or locally via the Program command prefix. *)
-
-let program_mode = ref false
-let is_program_mode () = !program_mode
-
 let warn = ref true
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x

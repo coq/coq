@@ -56,7 +56,8 @@ let eval_uconstrs ist cs =
     Pretyping.use_typeclasses = false;
     solve_unification_constraints = true;
     fail_evar = false;
-    expand_evars = true
+    expand_evars = true;
+    program_mode = false;
   } in
   let map c env sigma = c env sigma in
   List.map (fun c -> map (Tacinterp.type_uconstr ~flags ist c)) cs

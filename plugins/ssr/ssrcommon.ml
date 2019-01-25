@@ -243,7 +243,9 @@ let interp_refine ist gl rc =
     Pretyping.use_typeclasses = true;
     solve_unification_constraints = true;
     fail_evar = false;
-    expand_evars = true }
+    expand_evars = true;
+    program_mode = false;
+  }
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
 (*   ppdebug(lazy(str"sigma@interp_refine=" ++ pr_evar_map None sigma)); *)

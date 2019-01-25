@@ -41,26 +41,26 @@ let check_imps ~impsty ~impsbody =
   in
   if not b then warn_implicits_in_term ()
 
-let interp_definition pl bl poly red_option c ctypopt =
+let interp_definition ~program_mode pl bl poly red_option c ctypopt =
   let open EConstr in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   (* Build the parameters *)
-  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars env evd bl in
+  let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
-      (interp_type_evars_impls ~impls env_bl)
+      (interp_type_evars_impls ~program_mode ~impls env_bl)
       evd ctypopt
   in
   (* Build the body, and merge implicits from parameters and from type/body *)
   let evd, c, imps, tyopt =
     match tyopt with
     | None ->
-      let evd, (c, impsbody) = interp_constr_evars_impls ~impls env_bl evd c in
+      let evd, (c, impsbody) = interp_constr_evars_impls ~program_mode ~impls env_bl evd c in
       evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsbody, None
     | Some (ty, impsty) ->
-      let evd, (c, impsbody) = interp_casted_constr_evars_impls ~impls env_bl evd c ty in
+      let evd, (c, impsbody) = interp_casted_constr_evars_impls ~program_mode ~impls env_bl evd c ty in
       check_imps ~impsty ~impsbody;
       evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsty, Some ty
   in
@@ -85,14 +85,14 @@ let interp_definition pl bl poly red_option c ctypopt =
   let ce = definition_entry ?types:tyopt ~univs:uctx c in
   (ce, evd, decl, imps)
 
-let check_definition (ce, evd, _, imps) =
+let check_definition ~program_mode (ce, evd, _, imps) =
   let env = Global.env () in
-  check_evars_are_solved env evd;
+  check_evars_are_solved ~program_mode env evd;
   ce
 
 let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
   let (ce, evd, univdecl, imps as def) =
-    interp_definition univdecl bl (pi2 k) red_option c ctypopt
+    interp_definition ~program_mode univdecl bl (pi2 k) red_option c ctypopt
   in
     if program_mode then
       let env = Global.env () in
@@ -111,5 +111,5 @@ let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
       let univ_hook = Obligations.mk_univ_hook (fun _ _ l r -> Lemmas.call_hook ?hook l r) in
       ignore(Obligations.add_definition
           ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ~univ_hook obls)
-    else let ce = check_definition def in
+    else let ce = check_definition ~program_mode def in
       ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps ?hook)

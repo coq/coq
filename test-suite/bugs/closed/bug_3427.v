@@ -146,7 +146,7 @@ Section Univalence.
     := (equiv_path A B)^-1 f.
 End Univalence.
 
-Local Inductive minus1Trunc (A :Type) : Type :=
+Inductive minus1Trunc (A :Type) : Type :=
   min1 : A -> minus1Trunc A.
 
 Instance minus1Trunc_is_prop {A : Type} : IsHProp (minus1Trunc A) | 0.

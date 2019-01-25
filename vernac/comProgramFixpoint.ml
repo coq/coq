@@ -91,17 +91,17 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
-  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars env sigma bl in
+  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
-  let sigma, top_arity = interp_type_evars top_env sigma arityc in
+  let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
   let sigma, argtyp, letbinders, make = telescope sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (Name argname, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
-  let sigma, (rel, _) = interp_constr_evars_impls env sigma r in
+  let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
   let relty = Typing.unsafe_type_of env sigma rel in
   let relargty =
     let error () =
@@ -117,7 +117,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
           | _, _ -> error ()
       with e when CErrors.noncritical e -> error ()
   in
-  let sigma, measure = interp_casted_constr_evars binders_env sigma measure relargty in
+  let sigma, measure = interp_casted_constr_evars ~program_mode:true binders_env sigma measure relargty in
   let sigma, wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
@@ -176,7 +176,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
     let newimpls = Id.Map.singleton recname
         (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
          scopes @ [None]) in
-    interp_casted_constr_evars (push_rel_context ctx env) sigma
+    interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in

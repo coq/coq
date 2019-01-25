@@ -38,10 +38,10 @@ type t = {
   lvar : ltac_var_map;
 }
 
-let make env sigma lvar =
+let make ~hypnaming env sigma lvar =
   let get_extra env sigma =
     let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
-    Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context sigma d acc)
+    Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
       (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
   {
     static_env = env;
@@ -66,32 +66,32 @@ let ltac_interp_id { ltac_idents ; ltac_genargs } id =
 
 let ltac_interp_name lvar = Nameops.Name.map (ltac_interp_id lvar)
 
-let push_rel sigma d env =
+let push_rel ~hypnaming sigma d env =
   let d' = Context.Rel.Declaration.map_name (ltac_interp_name env.lvar) d in
   let env = {
     static_env = push_rel d env.static_env;
     renamed_env = push_rel d' env.renamed_env;
-    extra = lazy (push_rel_decl_to_named_context sigma d' (Lazy.force env.extra));
+    extra = lazy (push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   d', env
 
-let push_rel_context ?(force_names=false) sigma ctx env =
+let push_rel_context ~hypnaming ?(force_names=false) sigma ctx env =
   let open Context.Rel.Declaration in
   let ctx' = List.Smart.map (map_name (ltac_interp_name env.lvar)) ctx in
   let ctx' = if force_names then Namegen.name_context env.renamed_env sigma ctx' else ctx' in
   let env = {
     static_env = push_rel_context ctx env.static_env;
     renamed_env = push_rel_context ctx' env.renamed_env;
-    extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context sigma d acc) ctx' (Lazy.force env.extra));
+    extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d acc) ctx' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   ctx', env
 
-let push_rec_types sigma (lna,typarray) env =
+let push_rec_types ~hypnaming sigma (lna,typarray) env =
   let open Context.Rel.Declaration in
   let ctxt = Array.map2_i (fun i na t -> Context.Rel.Declaration.LocalAssum (na, lift i t)) lna typarray in
-  let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e in (e,d)) env ctxt in
+  let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e ~hypnaming in (e,d)) env ctxt in
   Array.map get_name ctx, env
 
 let new_evar env sigma ?src ?naming typ =

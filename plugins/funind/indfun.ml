@@ -166,7 +166,7 @@ let build_newrecursive
         let arityc = Constrexpr_ops.mkCProdN bl arityc in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
-        let evd, (_, (_, impls')) = Constrintern.interp_context_evars env evd bl in
+        let evd, (_, (_, impls')) = Constrintern.interp_context_evars ~program_mode:false env evd bl in
         let impl = Constrintern.compute_internalization_data env0 evd Constrintern.Recursive arity impls' in
         let open Context.Named.Declaration in
         (EConstr.push_named (LocalAssum (recname,arity)) env, Id.Map.add recname impl impls))

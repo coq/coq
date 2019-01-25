@@ -1155,7 +1155,9 @@ let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
   Pretyping.fail_evar = not with_evar;
-  Pretyping.expand_evars = true }
+  Pretyping.expand_evars = true;
+  Pretyping.program_mode = false;
+}
 
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)

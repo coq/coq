@@ -77,10 +77,6 @@ val verbosely : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
-(* Miscellaneus flags for vernac *)
-val program_mode : bool ref
-val is_program_mode : unit -> bool
-
 (** Global polymorphic inductive cumulativity flag. *)
 val make_polymorphic_inductive_cumulativity : bool -> unit
 val is_polymorphic_inductive_cumulativity : unit -> bool

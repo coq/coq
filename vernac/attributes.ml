@@ -125,11 +125,25 @@ let qualify_attribute qual (parser:'a attribute) : 'a attribute =
     let extra = if rem = [] then extra else (qual, VernacFlagList rem) :: extra in
     extra, v
 
+(** [program_mode] tells that Program mode has been activated, either
+    globally via [Set Program] or locally via the Program command prefix. *)
+
+let program_mode_option_name = ["Program";"Mode"]
+let program_mode = ref false
+
+let () = let open Goptions in
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "use of the program extension";
+      optkey   = program_mode_option_name;
+      optread  = (fun () -> !program_mode);
+      optwrite = (fun b -> program_mode:=b) }
+
 let program_opt = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
 
 let program = program_opt >>= function
   | Some b -> return b
-  | None -> return (Flags.is_program_mode())
+  | None -> return (!program_mode)
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 

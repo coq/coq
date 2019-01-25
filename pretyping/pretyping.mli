@@ -36,7 +36,8 @@ type inference_flags = {
   use_typeclasses : bool;
   solve_unification_constraints : bool;
   fail_evar : bool;
-  expand_evars : bool
+  expand_evars : bool;
+  program_mode : bool;
 }
 
 val default_inference_flags : bool -> inference_flags
@@ -101,7 +102,7 @@ val solve_remaining_evars : ?hook:inference_hook -> inference_flags ->
     reporting an appropriate error message *)
 
 val check_evars_are_solved :
-  env -> ?initial:evar_map -> (* current map: *) evar_map -> unit
+  program_mode:bool -> env -> ?initial:evar_map -> (* current map: *) evar_map -> unit
 
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)

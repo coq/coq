@@ -378,11 +378,11 @@ let is_patvar pat =
   | PatVar _ -> true
   | _ -> false
 
-let coerce_row typing_fun env sigma pats (tomatch,(na,indopt)) =
+let coerce_row ~program_mode typing_fun env sigma pats (tomatch,(na,indopt)) =
   let loc = loc_of_glob_constr tomatch in
   let sigma, tycon, realnames = find_tomatch_tycon !!env sigma loc indopt in
   let sigma, j = typing_fun tycon env sigma tomatch in
-  let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) !!env sigma j in
+  let sigma, j = Coercion.inh_coerce_to_base ?loc:(loc_of_glob_constr tomatch) ~program_mode !!env sigma j in
   let typ = nf_evar sigma j.uj_type in
   let env = make_return_predicate_ltac_lvar env sigma na tomatch j.uj_val in
   let sigma, t =
@@ -395,12 +395,12 @@ let coerce_row typing_fun env sigma pats (tomatch,(na,indopt)) =
   in
   ((env, sigma), (j.uj_val,t))
 
-let coerce_to_indtype typing_fun env sigma matx tomatchl =
+let coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl =
   let pats = List.map (fun r ->  r.patterns) matx in
   let matx' = match matrix_transpose pats with
     | [] -> List.map (fun _ -> []) tomatchl (* no patterns at all *)
     | m -> m in
-  let (env, sigma), tms = List.fold_left2_map (fun (env, sigma) -> coerce_row typing_fun env sigma) (env, sigma) matx' tomatchl in
+  let (env, sigma), tms = List.fold_left2_map (fun (env, sigma) -> coerce_row ~program_mode typing_fun env sigma) (env, sigma) matx' tomatchl in
   env, sigma, tms
 
 (************************************************************************)
@@ -410,7 +410,7 @@ let mkExistential ?(src=(Loc.tag Evar_kinds.InternalHole)) env sigma =
   let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible_alg in
   sigma, e
 
-let adjust_tomatch_to_pattern sigma pb ((current,typ),deps,dep) =
+let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
   (* Ideally, we could find a common inductive type to which both the
      term to match and the patterns coerce *)
   (* In practice, we coerce the term to match if it is not already an
@@ -435,7 +435,7 @@ let adjust_tomatch_to_pattern sigma pb ((current,typ),deps,dep) =
                 | None -> sigma, current
                 | Some sigma -> sigma, current
 	      else
-                let sigma, j = Coercion.inh_conv_coerce_to true !!(pb.env) sigma (make_judge current typ) indt in
+                let sigma, j = Coercion.inh_conv_coerce_to ~program_mode true !!(pb.env) sigma (make_judge current typ) indt in
                 sigma, j.uj_val
             in
             sigma, (current, try_find_ind !!(pb.env) sigma indt names))
@@ -468,10 +468,11 @@ let remove_current_pattern eqn =
 	    alias_stack = alias_of_pat pat :: eqn.alias_stack }
     | [] -> anomaly (Pp.str "Empty list of patterns.")
 
-let push_current_pattern sigma (cur,ty) eqn =
+let push_current_pattern ~program_mode sigma (cur,ty) eqn =
+  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
   match eqn.patterns with
     | pat::pats ->
-        let _,rhs_env = push_rel sigma (LocalDef (alias_of_pat pat,cur,ty)) eqn.rhs.rhs_env in
+        let _,rhs_env = push_rel ~hypnaming sigma (LocalDef (alias_of_pat pat,cur,ty)) eqn.rhs.rhs_env in
 	{ eqn with
             rhs = { eqn.rhs with rhs_env = rhs_env };
 	    patterns = pats }
@@ -562,16 +563,17 @@ let occur_in_rhs na rhs =
     | Name id -> Id.Set.mem id rhs.rhs_vars
 
 let is_dep_patt_in eqn pat = match DAst.get pat with
-  | PatVar name -> Flags.is_program_mode () || occur_in_rhs name eqn.rhs
+  | PatVar name -> occur_in_rhs name eqn.rhs
   | PatCstr _ -> true
 
-let mk_dep_patt_row (pats,_,eqn) =
-  List.map (is_dep_patt_in eqn) pats
+let mk_dep_patt_row ~program_mode (pats,_,eqn) =
+  if program_mode then List.map (fun _ -> true) pats
+  else List.map (is_dep_patt_in eqn) pats
 
-let dependencies_in_pure_rhs nargs eqns =
+let dependencies_in_pure_rhs ~program_mode nargs eqns =
   if List.is_empty eqns then
-    List.make nargs (not (Flags.is_program_mode ()))  (* Only "_" patts *) else
-  let deps_rows = List.map mk_dep_patt_row eqns in
+    List.make nargs (not program_mode)  (* Only "_" patts *) else
+  let deps_rows = List.map (mk_dep_patt_row ~program_mode) eqns in
   let deps_columns = matrix_transpose deps_rows in
   List.map (List.exists (fun x -> x)) deps_columns
 
@@ -585,10 +587,10 @@ let rec dep_in_tomatch sigma n = function
   | Abstract (_,d) :: l -> RelDecl.exists (fun c -> not (noccurn sigma n c)) d || dep_in_tomatch sigma (n+1) l
   | [] -> false
 
-let dependencies_in_rhs sigma nargs current tms eqns =
+let dependencies_in_rhs ~program_mode sigma nargs current tms eqns =
   match EConstr.kind sigma current with
   | Rel n when dep_in_tomatch sigma n tms -> List.make nargs true
-  | _ -> dependencies_in_pure_rhs nargs eqns
+  | _ -> dependencies_in_pure_rhs ~program_mode nargs eqns
 
 (* Computing the matrix of dependencies *)
 
@@ -788,9 +790,9 @@ let recover_and_adjust_alias_names (_,avoid) names sign =
   in
   List.split (aux (names,sign))
 
-let push_rels_eqn sigma sign eqn =
+let push_rels_eqn ~hypnaming sigma sign eqn =
   {eqn with
-     rhs = {eqn.rhs with rhs_env = snd (push_rel_context sigma sign eqn.rhs.rhs_env) } }
+     rhs = {eqn.rhs with rhs_env = snd (push_rel_context ~hypnaming sigma sign eqn.rhs.rhs_env) } }
 
 let push_rels_eqn_with_names sigma sign eqn =
   let subpats = List.rev (List.firstn (List.length sign) eqn.patterns) in
@@ -798,12 +800,12 @@ let push_rels_eqn_with_names sigma sign eqn =
   let sign = recover_initial_subpattern_names subpatnames sign in
   push_rels_eqn sigma sign eqn
 
-let push_generalized_decl_eqn env sigma n decl eqn =
+let push_generalized_decl_eqn ~hypnaming env sigma n decl eqn =
   match RelDecl.get_name decl with
   | Anonymous ->
-      push_rels_eqn sigma [decl] eqn
+      push_rels_eqn ~hypnaming sigma [decl] eqn
   | Name _ ->
-      push_rels_eqn sigma [RelDecl.set_name (RelDecl.get_name (Environ.lookup_rel n !!(eqn.rhs.rhs_env))) decl] eqn
+      push_rels_eqn ~hypnaming sigma [RelDecl.set_name (RelDecl.get_name (Environ.lookup_rel n !!(eqn.rhs.rhs_env))) decl] eqn
 
 let drop_alias_eqn eqn =
   { eqn with alias_stack = List.tl eqn.alias_stack }
@@ -1266,7 +1268,7 @@ let build_leaf sigma pb =
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
 (* spiwack: the [initial] argument keeps track whether the branch is a
    toplevel branch ([true]) or a deep one ([false]). *)
-let build_branch initial current realargs deps (realnames,curname) sigma pb arsign eqns const_info =
+let build_branch ~program_mode initial current realargs deps (realnames,curname) sigma pb arsign eqns const_info =
   (* We remember that we descend through constructor C *)
   let history =
     push_history_pattern const_info.cs_nargs (fst const_info.cs_cstr) pb.history in
@@ -1296,7 +1298,8 @@ let build_branch initial current realargs deps (realnames,curname) sigma pb arsi
   let typs' =
     List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 typs in
 
-  let typs,extenv = push_rel_context sigma typs pb.env in
+  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+  let typs,extenv = push_rel_context ~hypnaming sigma typs pb.env in
 
   let typs' =
     List.map (fun (c,d) ->
@@ -1306,7 +1309,7 @@ let build_branch initial current realargs deps (realnames,curname) sigma pb arsi
   (* generalization *)
   let dep_sign =
     find_dependencies_signature sigma
-      (dependencies_in_rhs sigma const_info.cs_nargs current pb.tomatch eqns)
+      (dependencies_in_rhs ~program_mode sigma const_info.cs_nargs current pb.tomatch eqns)
       (List.rev typs') in
 
   (* The dependent term to subst in the types of the remaining UnPushed
@@ -1375,7 +1378,7 @@ let build_branch initial current realargs deps (realnames,curname) sigma pb arsi
       tomatch = tomatch;
       pred = pred;
       history = history;
-      mat = List.map (push_rels_eqn_with_names sigma typs) submat }
+      mat = List.map (push_rels_eqn_with_names ~hypnaming sigma typs) submat }
 
 (**********************************************************************
  INVARIANT:
@@ -1390,181 +1393,187 @@ let build_branch initial current realargs deps (realnames,curname) sigma pb arsi
 
 (**********************************************************************)
 (* Main compiling descent *)
-let rec compile sigma pb =
-  match pb.tomatch with
-    | Pushed cur :: rest -> match_current sigma { pb with tomatch = rest } cur
-    | Alias (initial,x) :: rest -> compile_alias initial sigma pb x rest
-    | NonDepAlias :: rest -> compile_non_dep_alias sigma pb rest
-    | Abstract (i,d) :: rest -> compile_generalization sigma pb i d rest
-    | [] -> build_leaf sigma pb
+let compile ~program_mode sigma pb =
+  let rec compile sigma pb =
+    match pb.tomatch with
+      | Pushed cur :: rest -> match_current sigma { pb with tomatch = rest } cur
+      | Alias (initial,x) :: rest -> compile_alias initial sigma pb x rest
+      | NonDepAlias :: rest -> compile_non_dep_alias sigma pb rest
+      | Abstract (i,d) :: rest -> compile_generalization sigma pb i d rest
+      | [] -> build_leaf sigma pb
 
 (* Case splitting *)
-and match_current sigma pb (initial,tomatch) =
-  let sigma, tm = adjust_tomatch_to_pattern sigma pb tomatch in
-  let pb,tomatch = adjust_predicate_from_tomatch tomatch tm pb in
-  let ((current,typ),deps,dep) = tomatch in
-  match typ with
-    | NotInd (_,typ) ->
-        check_all_variables !!(pb.env) sigma typ pb.mat;
-        compile_all_variables initial tomatch sigma pb
-    | IsInd (_,(IndType(indf,realargs) as indt),names) ->
-	let mind,_ = dest_ind_family indf in
-        let mind = Tacred.check_privacy !!(pb.env) mind in
-        let cstrs = get_constructors !!(pb.env) indf in
-        let arsign, _ = get_arity !!(pb.env) indf in
-	let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
-        let no_cstr = Int.equal (Array.length cstrs) 0 in
-	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
+  and match_current sigma pb (initial,tomatch) =
+    let sigma, tm = adjust_tomatch_to_pattern ~program_mode sigma pb tomatch in
+    let pb,tomatch = adjust_predicate_from_tomatch tomatch tm pb in
+    let ((current,typ),deps,dep) = tomatch in
+    match typ with
+      | NotInd (_,typ) ->
+          check_all_variables !!(pb.env) sigma typ pb.mat;
           compile_all_variables initial tomatch sigma pb
+      | IsInd (_,(IndType(indf,realargs) as indt),names) ->
+	let mind,_ = dest_ind_family indf in
+          let mind = Tacred.check_privacy !!(pb.env) mind in
+          let cstrs = get_constructors !!(pb.env) indf in
+          let arsign, _ = get_arity !!(pb.env) indf in
+	let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in
+          let no_cstr = Int.equal (Array.length cstrs) 0 in
+	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt then
+            compile_all_variables initial tomatch sigma pb
 	else
 	  (* We generalize over terms depending on current term to match *)
-          let pb,deps = generalize_problem (names,dep) sigma pb deps in
+            let pb,deps = generalize_problem (names,dep) sigma pb deps in
 
 	  (* We compile branches *)
-          let fold_br sigma eqn cstr =
-            compile_branch initial current realargs (names,dep) deps sigma pb arsign eqn cstr
-          in
-          let sigma, brvals = Array.fold_left2_map fold_br sigma eqns cstrs in
+            let fold_br sigma eqn cstr =
+              compile_branch initial current realargs (names,dep) deps sigma pb arsign eqn cstr
+            in
+            let sigma, brvals = Array.fold_left2_map fold_br sigma eqns cstrs in
 	  (* We build the (elementary) case analysis *)
-          let depstocheck = current::binding_vars_of_inductive sigma typ in
-          let brvals,tomatch,pred,inst =
-            postprocess_dependencies sigma depstocheck
-              brvals pb.tomatch pb.pred deps cstrs in
-          let brvals = Array.map (fun (sign,body) ->
-            it_mkLambda_or_LetIn body sign) brvals in
+            let depstocheck = current::binding_vars_of_inductive sigma typ in
+            let brvals,tomatch,pred,inst =
+              postprocess_dependencies sigma depstocheck
+                brvals pb.tomatch pb.pred deps cstrs in
+            let brvals = Array.map (fun (sign,body) ->
+              it_mkLambda_or_LetIn body sign) brvals in
 	  let (pred,typ) =
-            find_predicate pb.caseloc pb.env sigma
+              find_predicate pb.caseloc pb.env sigma
 	      pred current indt (names,dep) tomatch in
-          let ci = make_case_info !!(pb.env) (fst mind) pb.casestyle in
-          let pred = nf_betaiota !!(pb.env) sigma pred in
+            let ci = make_case_info !!(pb.env) (fst mind) pb.casestyle in
+            let pred = nf_betaiota !!(pb.env) sigma pred in
 	  let case =
-            make_case_or_project !!(pb.env) sigma indf ci pred current brvals
+              make_case_or_project !!(pb.env) sigma indf ci pred current brvals
 	  in
-          let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
-          Typing.check_allowed_sort !!(pb.env) sigma mind current pred;
-          sigma, { uj_val = applist (case, inst);
-            uj_type = prod_applist sigma typ inst }
+            let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
+            Typing.check_allowed_sort !!(pb.env) sigma mind current pred;
+            sigma, { uj_val = applist (case, inst);
+              uj_type = prod_applist sigma typ inst }
 
 
-(* Building the sub-problem when all patterns are variables. Case
-   where [current] is an intially pushed term. *)
-and shift_problem ((current,t),_,na) sigma pb =
-  let ty = type_of_tomatch t in
-  let tomatch = lift_tomatch_stack 1 pb.tomatch in
-  let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
-  let env = Name.fold_left (fun env id -> hide_variable env Anonymous id) pb.env na in
-  let pb =
-    { pb with
-       env = snd (push_rel sigma (LocalDef (na,current,ty)) env);
-       tomatch = tomatch;
-       pred = lift_predicate 1 pred tomatch;
-       history = pop_history pb.history;
-       mat = List.map (push_current_pattern sigma (current,ty)) pb.mat } in
-  let sigma, j = compile sigma pb in
-  sigma, { uj_val = subst1 current j.uj_val;
-    uj_type = subst1 current j.uj_type }
-
-(* Building the sub-problem when all patterns are variables,
-   non-initial case. Variables which appear as subterms of constructor
-   are already introduced in the context, we avoid creating aliases to
-   themselves by treating this case specially. *)
-and pop_problem ((current,t),_,na) sigma pb =
-  let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
-  let pb =
-    { pb with
-       pred = pred;
-       history = pop_history pb.history;
-       mat = List.map push_noalias_current_pattern pb.mat } in
-  compile sigma pb
-
-(* Building the sub-problem when all patterns are variables. *)
-and compile_all_variables initial cur sigma pb =
-  if initial then shift_problem cur sigma pb
-  else pop_problem cur sigma pb
-
-(* Building the sub-problem when all patterns are variables *)
-and compile_branch initial current realargs names deps sigma pb arsign eqns cstr =
-  let sigma, sign, pb = build_branch initial current realargs deps names sigma pb arsign eqns cstr in
-  let sigma, j = compile sigma pb in
-  sigma, (sign, j.uj_val)
-
-(* Abstract over a declaration before continuing splitting *)
-and compile_generalization sigma pb i d rest =
-  let pb =
-    { pb with
-       env = snd (push_rel sigma d pb.env);
-       tomatch = rest;
-       mat = List.map (push_generalized_decl_eqn pb.env sigma i d) pb.mat } in
-  let sigma, j = compile sigma pb in
-  sigma, { uj_val = mkLambda_or_LetIn d j.uj_val;
-    uj_type = mkProd_wo_LetIn d j.uj_type }
-
-(* spiwack: the [initial] argument keeps track whether the alias has
-   been introduced by a toplevel branch ([true]) or a deep one
-   ([false]). *)
-and compile_alias initial sigma pb (na,orig,(expanded,expanded_typ)) rest =
-  let f c t =
-    let alias = LocalDef (na,c,t) in
+  (* Building the sub-problem when all patterns are variables. Case
+     where [current] is an intially pushed term. *)
+  and shift_problem ((current,t),_,na) sigma pb =
+    let ty = type_of_tomatch t in
+    let tomatch = lift_tomatch_stack 1 pb.tomatch in
+    let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
+    let env = Name.fold_left (fun env id -> hide_variable env Anonymous id) pb.env na in
+    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let pb =
       { pb with
-         env = snd (push_rel sigma alias pb.env);
-         tomatch = lift_tomatch_stack 1 rest;
-         pred = lift_predicate 1 pb.pred pb.tomatch;
-         history = pop_history_pattern pb.history;
-         mat = List.map (push_alias_eqn sigma alias) pb.mat } in
+         env = snd (push_rel ~hypnaming sigma (LocalDef (na,current,ty)) env);
+         tomatch = tomatch;
+         pred = lift_predicate 1 pred tomatch;
+         history = pop_history pb.history;
+         mat = List.map (push_current_pattern ~program_mode sigma (current,ty)) pb.mat } in
     let sigma, j = compile sigma pb in
-    sigma, { uj_val =
-        if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
-          subst1 c j.uj_val
-        else
-          mkLetIn (na,c,t,j.uj_val);
-      uj_type = subst1 c j.uj_type } in
-  (* spiwack: when an alias appears on a deep branch, its non-expanded
-     form is automatically a variable of the same name. We avoid
-     introducing such superfluous aliases so that refines are elegant. *)
-  let just_pop sigma =
+    sigma, { uj_val = subst1 current j.uj_val;
+      uj_type = subst1 current j.uj_type }
+
+  (* Building the sub-problem when all patterns are variables,
+     non-initial case. Variables which appear as subterms of constructor
+     are already introduced in the context, we avoid creating aliases to
+     themselves by treating this case specially. *)
+  and pop_problem ((current,t),_,na) sigma pb =
+    let pred = specialize_predicate_var (current,t,na) !!(pb.env) pb.tomatch pb.pred in
     let pb =
       { pb with
-        tomatch = rest;
-        history = pop_history_pattern pb.history;
-        mat = List.map drop_alias_eqn pb.mat } in
+         pred = pred;
+         history = pop_history pb.history;
+         mat = List.map push_noalias_current_pattern pb.mat } in
     compile sigma pb
-  in
-  (* If the "match" was orginally over a variable, as in "match x with
-     O => true | n => n end", we give preference to non-expansion in
-     the default clause (i.e. "match x with O => true | n => n end"
-     rather than "match x with O => true | S p => S p end";
-     computationally, this avoids reallocating constructors in cbv
-     evaluation; the drawback is that it might duplicate the instances
-     of the term to match when the corresponding variable is
-     substituted by a non-evaluated expression *)
-  if not (Flags.is_program_mode ()) && (isRel sigma orig || isVar sigma orig) then
-    (* Try to compile first using non expanded alias *)
-    try
+
+  (* Building the sub-problem when all patterns are variables. *)
+  and compile_all_variables initial cur sigma pb =
+    if initial then shift_problem cur sigma pb
+    else pop_problem cur sigma pb
+
+  (* Building the sub-problem when all patterns are variables *)
+  and compile_branch initial current realargs names deps sigma pb arsign eqns cstr =
+    let sigma, sign, pb = build_branch ~program_mode initial current realargs deps names sigma pb arsign eqns cstr in
+    let sigma, j = compile sigma pb in
+    sigma, (sign, j.uj_val)
+
+  (* Abstract over a declaration before continuing splitting *)
+  and compile_generalization sigma pb i d rest =
+    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+    let pb =
+      { pb with
+         env = snd (push_rel ~hypnaming sigma d pb.env);
+         tomatch = rest;
+         mat = List.map (push_generalized_decl_eqn ~hypnaming pb.env sigma i d) pb.mat } in
+    let sigma, j = compile sigma pb in
+    sigma, { uj_val = mkLambda_or_LetIn d j.uj_val;
+      uj_type = mkProd_wo_LetIn d j.uj_type }
+
+  (* spiwack: the [initial] argument keeps track whether the alias has
+     been introduced by a toplevel branch ([true]) or a deep one
+     ([false]). *)
+  and compile_alias initial sigma pb (na,orig,(expanded,expanded_typ)) rest =
+    let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+    let f c t =
+      let alias = LocalDef (na,c,t) in
+      let pb =
+        { pb with
+           env = snd (push_rel ~hypnaming sigma alias pb.env);
+           tomatch = lift_tomatch_stack 1 rest;
+           pred = lift_predicate 1 pb.pred pb.tomatch;
+           history = pop_history_pattern pb.history;
+           mat = List.map (push_alias_eqn ~hypnaming sigma alias) pb.mat } in
+      let sigma, j = compile sigma pb in
+      sigma, { uj_val =
+          if isRel sigma c || isVar sigma c || count_occurrences sigma (mkRel 1) j.uj_val <= 1 then
+            subst1 c j.uj_val
+          else
+            mkLetIn (na,c,t,j.uj_val);
+        uj_type = subst1 c j.uj_type } in
+    (* spiwack: when an alias appears on a deep branch, its non-expanded
+       form is automatically a variable of the same name. We avoid
+       introducing such superfluous aliases so that refines are elegant. *)
+    let just_pop sigma =
+      let pb =
+        { pb with
+          tomatch = rest;
+          history = pop_history_pattern pb.history;
+          mat = List.map drop_alias_eqn pb.mat } in
+      compile sigma pb
+    in
+    (* If the "match" was orginally over a variable, as in "match x with
+       O => true | n => n end", we give preference to non-expansion in
+       the default clause (i.e. "match x with O => true | n => n end"
+       rather than "match x with O => true | S p => S p end";
+       computationally, this avoids reallocating constructors in cbv
+       evaluation; the drawback is that it might duplicate the instances
+       of the term to match when the corresponding variable is
+       substituted by a non-evaluated expression *)
+    if not program_mode && (isRel sigma orig || isVar sigma orig) then
+      (* Try to compile first using non expanded alias *)
+      try
+        if initial then f orig (Retyping.get_type_of !!(pb.env) sigma orig)
+        else just_pop sigma
+      with e when precatchable_exception e ->
+      (* Try then to compile using expanded alias *)
+      (* Could be needed in case of dependent return clause *)
+      f expanded expanded_typ
+    else
+      (* Try to compile first using expanded alias *)
+      try f expanded expanded_typ
+      with e when precatchable_exception e ->
+      (* Try then to compile using non expanded alias *)
+      (* Could be needed in case of a recursive call which requires to
+         be on a variable for size reasons *)
       if initial then f orig (Retyping.get_type_of !!(pb.env) sigma orig)
       else just_pop sigma
-    with e when precatchable_exception e ->
-    (* Try then to compile using expanded alias *)
-    (* Could be needed in case of dependent return clause *)
-    f expanded expanded_typ
-  else
-    (* Try to compile first using expanded alias *)
-    try f expanded expanded_typ
-    with e when precatchable_exception e ->
-    (* Try then to compile using non expanded alias *)
-    (* Could be needed in case of a recursive call which requires to
-       be on a variable for size reasons *)
-    if initial then f orig (Retyping.get_type_of !!(pb.env) sigma orig)
-    else just_pop sigma
 
 
-(* Remember that a non-trivial pattern has been consumed *)
-and compile_non_dep_alias sigma pb rest =
-  let pb =
-    { pb with
-       tomatch = rest;
-       history = pop_history_pattern pb.history;
-       mat = List.map drop_alias_eqn pb.mat } in
+  (* Remember that a non-trivial pattern has been consumed *)
+  and compile_non_dep_alias sigma pb rest =
+    let pb =
+      { pb with
+         tomatch = rest;
+         history = pop_history_pattern pb.history;
+         mat = List.map drop_alias_eqn pb.mat } in
+    compile sigma pb
+  in
   compile sigma pb
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
@@ -1650,7 +1659,7 @@ let adjust_to_extended_env_and_remove_deps env extenv sigma subst t =
   (subst0, t0)
 
 let push_binder sigma d (k,env,subst) =
-  (k+1,snd (push_rel sigma d env),List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)
+  (k+1,snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env),List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)
 
 let rec list_assoc_in_triple x = function
     [] -> raise Not_found
@@ -1771,7 +1780,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
  * further explanations
  *)
 
-let build_inversion_problem loc env sigma tms t =
+let build_inversion_problem ~program_mode loc env sigma tms t =
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd !!env sigma t Anonymous) avoid in
     DAst.make @@ PatVar (Name id), ((id,t)::subst, Id.Set.add id avoid) in
@@ -1796,13 +1805,13 @@ let build_inversion_problem loc env sigma tms t =
         let patl = pat :: List.rev patl in
         let patl,sign = recover_and_adjust_alias_names acc patl sign in
 	let p = List.length patl in
-        let _,env' = push_rel_context sigma sign env in
+        let _,env' = push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma sign env in
 	let patl',acc_sign,acc = aux (n+p) env' (sign@acc_sign) tms acc in
 	List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
       let d = LocalAssum (alias_of_pat pat,typ) in
-      let patl,acc_sign,acc = aux (n+1) (snd (push_rel sigma d env)) (d::acc_sign) tms acc in
+      let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
   let avoid0 = GlobEnv.vars_of_env env in
   (* [patl] is a list of patterns revealing the substructure of
@@ -1820,7 +1829,7 @@ let build_inversion_problem loc env sigma tms t =
   let decls =
     List.map_i (fun i d -> (mkRel i, map_constr (lift i) d)) 1 sign in
 
-  let _,pb_env = push_rel_context sigma sign env in
+  let _,pb_env = push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma sign env in
   let decls =
     List.map (fun (c,d) -> (c,extract_inductive_data !!(pb_env) sigma d,d)) decls in
 
@@ -1881,7 +1890,7 @@ let build_inversion_problem loc env sigma tms t =
       caseloc   = loc;
       casestyle = RegularStyle;
       typing_function = build_tycon ?loc env pb_env s subst} in
-  let sigma, j = compile sigma pb in
+  let sigma, j = compile ~program_mode sigma pb in
   (sigma, j.uj_val)
 
 (* Here, [pred] is assumed to be in the context built from all *)
@@ -1934,9 +1943,9 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
     | _ -> assert false
   in List.rev (buildrec 0 (tomatchl,tmsign))
 
-let inh_conv_coerce_to_tycon ?loc env sigma j tycon =
+let inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon =
   match tycon with
-    | Some p -> Coercion.inh_conv_coerce_to ?loc true env sigma j p
+    | Some p -> Coercion.inh_conv_coerce_to ?loc ~program_mode true env sigma j p
     | None -> sigma, j
 
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
@@ -1953,7 +1962,7 @@ let dependent_rel_or_var sigma tm c =
   | Var id -> Termops.local_occur_var sigma id c
   | _ -> assert false
 
-let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
+let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs arsign c =
   let nar = List.fold_left (fun n sign -> Context.Rel.nhyps sign + n) 0 arsign in
   let (rel_subst,var_subst), len =
     List.fold_right2 (fun (tm, tmtype) sign (subst, len) ->
@@ -2006,7 +2015,8 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
   in
   assert (len == 0);
   let p = predicate 0 c in
-  let arsign,env' = List.fold_right_map (push_rel_context sigma) arsign env in
+  let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
+  let arsign,env' = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
   try let sigma' = fst (Typing.type_of !!env' sigma p) in
         Some (sigma', p, arsign)
   with e when precatchable_exception e -> None
@@ -2019,7 +2029,7 @@ let prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign c =
  * Each matched term is independently considered dependent or not.
  *)
 
-let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
+let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign tycon pred =
   let refresh_tycon sigma t =
     (* If we put the typing constraint in the term, it has to be
        refreshed to preserve the invariant that no algebraic universe
@@ -2041,10 +2051,10 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
              sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
-        let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
+        let sigma1,pred1 = build_inversion_problem loc ~program_mode env sigma tomatchs t in
         (* Optional second strategy: we abstract the tycon wrt to the dependencies *)
         let p2 =
-          prepare_predicate_from_arsign_tycon env sigma loc tomatchs arsign t in
+          prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs arsign t in
         (* Third strategy: we take the type constraint as it is; of course we could *)
         (* need something inbetween, abstracting some but not all of the dependencies *)
         (* the "inversion" strategy deals with that but unification may not be *)
@@ -2060,7 +2070,7 @@ let prepare_predicate ?loc typing_fun env sigma tomatchs arsign tycon pred =
     (* Some type annotation *)
     | Some rtntyp ->
       (* We extract the signature of the arity *)
-      let building_arsign,envar = List.fold_right_map (push_rel_context sigma) arsign env in
+      let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
       let sigma, newt = new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
@@ -2320,7 +2330,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
 	 in
          let sigma, ineqs = build_ineqs sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
-         let _signenv,_ = push_rel_context sigma rhs_rels' env in
+         let _signenv,_ = push_rel_context ~hypnaming:ProgramNaming sigma rhs_rels' env in
 	 let arity =
 	   let args, nargs =
 	     List.fold_right (fun (sign, c, (_, args), _) (allargs,n) ->
@@ -2340,7 +2350,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
            let eqs_rels, arity = decompose_prod_n_assum sigma neqs arity in
 	     eqs_rels @ neqs_rels @ rhs_rels', arity
 	 in
-         let _,rhs_env = push_rel_context sigma rhs_rels' env in
+         let _,rhs_env = push_rel_context ~hypnaming:ProgramNaming sigma rhs_rels' env in
          let sigma, j = typing_fun (mk_tycon tycon) rhs_env sigma eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
@@ -2518,10 +2528,10 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let env, sigma, tomatchs = coerce_to_indtype typing_function env sigma matx tomatchl in
+  let env, sigma, tomatchs = coerce_to_indtype ~program_mode:true typing_function env sigma matx tomatchl in
   let tycon = valcon_of_tycon tycon in
   let tomatchs, tomatchs_lets, tycon' = abstract_tomatch env sigma tomatchs tycon in
-  let _,env = push_rel_context sigma tomatchs_lets env in
+  let _,env = push_rel_context ~hypnaming:ProgramNaming sigma tomatchs_lets env in
   let len = List.length eqns in
   let sigma, sign, allnames, signlen, eqs, neqs, args =
     (* The arity signature *)
@@ -2540,7 +2550,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
       sigma, ev, lift nar ev
     | Some t ->
         let sigma, pred =
-          match prepare_predicate_from_arsign_tycon env sigma loc tomatchs sign t with
+          match prepare_predicate_from_arsign_tycon ~program_mode:true env sigma loc tomatchs sign t with
           | Some (evd, pred, arsign) -> evd, pred
           | None -> sigma, lift nar t
         in
@@ -2557,7 +2567,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   in
   let matx = List.rev matx in
   let _ = assert (Int.equal len (List.length lets)) in
-  let _,env = push_rel_context sigma lets env in
+  let _,env = push_rel_context ~hypnaming:ProgramNaming sigma lets env in
   let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
   let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
   let args = List.rev_map (lift len) args in
@@ -2604,7 +2614,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
       casestyle= style;
       typing_function = typing_function } in
 
-  let sigma, j = compile sigma pb in
+  let sigma, j = compile ~program_mode:true sigma pb in
     (* We check for unused patterns *)
     List.iter (check_unused_pattern !!env) matx;
     let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
@@ -2617,8 +2627,8 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases ?loc style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
-  if predopt == None && Flags.is_program_mode () && Program.is_program_cases () then
+let compile_cases ?loc ~program_mode style (typing_fun, sigma) tycon env (predopt, tomatchl, eqns) =
+  if predopt == None && program_mode && Program.is_program_cases () then
     compile_program_cases ?loc style (typing_fun, sigma)
       tycon env (predopt, tomatchl, eqns)
   else
@@ -2628,13 +2638,13 @@ let compile_cases ?loc style (typing_fun, sigma) tycon env (predopt, tomatchl, e
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let predenv, sigma, tomatchs = coerce_to_indtype typing_fun env sigma matx tomatchl in
+  let predenv, sigma, tomatchs = coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl in
 
   (* If an elimination predicate is provided, we check it is compatible
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
   let arsign = extract_arity_signature !!env tomatchs tomatchl in
-  let preds = prepare_predicate ?loc typing_fun predenv sigma tomatchs arsign tycon predopt in
+  let preds = prepare_predicate ?loc ~program_mode typing_fun predenv sigma tomatchs arsign tycon predopt in
 
   let compile_for_one_predicate (sigma,nal,pred) =
     (* We push the initial terms to match and push their alias to rhs' envs *)
@@ -2679,10 +2689,10 @@ let compile_cases ?loc style (typing_fun, sigma) tycon env (predopt, tomatchl, e
 	casestyle = style;
 	typing_function = typing_fun } in
 
-    let sigma, j = compile sigma pb in
+    let sigma, j = compile ~program_mode sigma pb in
 
     (* We coerce to the tycon (if an elim predicate was provided) *)
-    inh_conv_coerce_to_tycon ?loc !!env sigma j tycon
+    inh_conv_coerce_to_tycon ?loc ~program_mode !!env sigma j tycon
   in
 
   (* Return the term compiled with the first possible elimination  *)
