@@ -340,7 +340,7 @@ let start_proof id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c 
   | None -> standard_proof_terminator ?hook compute_guard
   | Some terminator -> terminator ?hook compute_guard
   in
-  let sign = 
+  let sign =
     match sign with
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()

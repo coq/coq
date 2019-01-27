@@ -489,6 +489,28 @@ let vernac_notation ~module_local =
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
 
+(* Default proof mode, to be set at the beginning of proofs for
+   programs that cannot be statically classified. *)
+let default_proof_mode = ref (Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
+let get_default_proof_mode () = !default_proof_mode
+
+let get_default_proof_mode_opt () = Pvernac.proof_mode_to_string !default_proof_mode
+let set_default_proof_mode_opt name =
+  default_proof_mode :=
+    match Pvernac.lookup_proof_mode name with
+    | Some pm -> pm
+    | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name))
+
+let proof_mode_opt_name = ["Default";"Proof";"Mode"]
+let () =
+  Goptions.declare_string_option Goptions.{
+    optdepr = false;
+    optname = "default proof mode" ;
+    optkey = proof_mode_opt_name;
+    optread = get_default_proof_mode_opt;
+    optwrite = set_default_proof_mode_opt;
+  }
+
 (***********)
 (* Gallina *)
 
@@ -2115,13 +2137,9 @@ exception End_of_input
 let vernac_load interp fname =
   if Proof_global.there_are_pending_proofs () then
     CErrors.user_err Pp.(str "Load is not supported inside proofs.");
-  let interp x =
-    let proof_mode = Proof_global.get_default_proof_mode_name () [@ocaml.warning "-3"] in
-    Proof_global.activate_proof_mode proof_mode [@ocaml.warning "-3"];
-    interp x in
-  let parse_sentence = Flags.with_option Flags.we_are_parsing
+  let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
     (fun po ->
-    match Pcoq.Entry.parse Pvernac.main_entry po with
+    match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
       | Some x -> x
       | None -> raise End_of_input) in
   let fname =
@@ -2132,7 +2150,15 @@ let vernac_load interp fname =
     let in_chan = open_utf8_file_in longfname in
     Pcoq.Parsable.make ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
   begin
-    try while true do interp (snd (parse_sentence input)) done
+    try while true do
+        let proof_mode =
+          if Proof_global.there_are_pending_proofs () then
+            Some (get_default_proof_mode ())
+          else
+            None
+        in
+        interp (snd (parse_sentence proof_mode input));
+      done
     with End_of_input -> ()
   end;
   (* If Load left a proof open, we fail too. *)
@@ -2312,8 +2338,7 @@ let interp ?proof ~atts ~st c =
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
     Option.iter vernac_set_end_tac tac;
     Option.iter vernac_set_used_variables using
-  | VernacProofMode mn -> unsupported_attributes atts;
-    Proof_global.set_proof_mode mn [@ocaml.warning "-3"]
+  | VernacProofMode mn -> unsupported_attributes atts; ()
 
   (* Extensions *)
   | VernacExtend (opn,args) ->

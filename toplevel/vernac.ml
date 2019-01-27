@@ -68,10 +68,8 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       if ntip <> `NewTip then
         anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
 
-      (* Due to bug #5363 we cannot use observe here as we should,
-         it otherwise reveals bugs *)
-      (* Stm.observe nsid; *)
-      let ndoc = if check then Stm.finish ~doc else doc in
+      (* Force the command  *)
+      let ndoc = if check then Stm.observe ~doc nsid else doc in
       let new_proof = Proof_global.give_me_the_proof_opt () in
       { state with doc = ndoc; sid = nsid; proof = new_proof; }
     with reraise ->
@@ -92,51 +90,37 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
   let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
 
-  let in_pa   = Pcoq.Parsable.make ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
-  let rstate  = ref state in
-  (* For beautify, list of parsed sids *)
-  let rids    = ref [] in
+  let in_pa =
+    Pcoq.Parsable.make ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
   let open State in
-  try
-    (* we go out of the following infinite loop when a End_of_input is
-     * raised, which means that we raised the end of the file being loaded *)
-    while true do
-      let { CAst.loc; _ } as ast =
-          Stm.parse_sentence ~doc:!rstate.doc !rstate.sid in_pa
-        (* If an error in parsing occurs, we propagate the exception
-           so the caller of load_vernac will take care of it. However,
-           in the future it could be possible that we want to handle
-           all the errors as feedback events, thus in this case we
-           should relay the exception here for convenience. A
-           possibility is shown below, however we may want to refactor
-           this code:
 
-        try Stm.parse_sentence !rsid in_pa
-        with
-        | any when not is_end_of_input any ->
-          let (e, info) = CErrors.push any in
-          let loc = Loc.get_loc info in
-          let msg = CErrors.iprint (e, info) in
-          Feedback.msg_error ?loc msg;
-          iraise (e, info)
-       *)
-      in
-      (* Printing of vernacs *)
-      Option.iter (vernac_echo ?loc) in_echo;
+  (* ids = For beautify, list of parsed sids *)
+  let rec loop state ids =
+    match
+      Stm.parse_sentence
+        ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa
+    with
+    | None ->
+        input_cleanup ();
+        state, ids, Pcoq.Parsable.comment_state in_pa
+    | Some (loc, ast) ->
+        let ast = CAst.make ~loc ast in
 
-      checknav_simple ast;
-      let state = Flags.silently (interp_vernac ~check ~interactive ~state:!rstate) ast in
-      rids := state.sid :: !rids;
-      rstate := state;
-    done;
-    input_cleanup ();
-    !rstate, !rids, Pcoq.Parsable.comment_state in_pa
+        (* Printing of AST for -compile-verbose *)
+        Option.iter (vernac_echo ~loc) in_echo;
+
+        checknav_simple ast;
+
+        let state =
+          Flags.silently (interp_vernac ~check ~interactive ~state) ast in
+
+        loop state (state.sid :: ids)
+  in
+  try loop state []
   with any ->   (* whatever the exception *)
     let (e, info) = CErrors.push any in
     input_cleanup ();
-    match e with
-    | Stm.End_of_input -> !rstate, !rids, Pcoq.Parsable.comment_state in_pa
-    | reraise -> iraise (e, info)
+    iraise (e, info)
 
 let process_expr ~state loc_ast =
   checknav_deep loc_ast;

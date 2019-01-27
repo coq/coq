@@ -27,6 +27,8 @@ let get exn = Exninfo.get exn state_id_info
 let equal = Int.equal
 let compare = Int.compare
 
+let print id = Pp.int id
+
 module Self = struct
  type t = int
  let compare = compare

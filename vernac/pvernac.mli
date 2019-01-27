@@ -14,6 +14,8 @@ open Vernacexpr
 
 val uvernac : gram_universe
 
+type proof_mode
+
 module Vernac_ :
   sig
     val gallina : vernac_expr Entry.t
@@ -24,13 +26,31 @@ module Vernac_ :
     val rec_definition : (fixpoint_expr * decl_notation list) Entry.t
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
+    val main_entry : (Loc.t * vernac_control) option Entry.t
     val red_expr : raw_red_expr Entry.t
     val hint_info : Hints.hint_info_expr Entry.t
   end
 
-(** The main entry: reads an optional vernac command *)
-val main_entry : (Loc.t * vernac_control) option Entry.t
+(* To be removed when the parser is made functional wrt the tactic
+ * non terminal *)
+module Unsafe : sig
+  (* To let third party grammar entries reuse Vernac_ and
+   * do something with the proof mode *)
+  val set_tactic_entry : proof_mode option -> unit
+end
 
-(** Handling of the proof mode entry *)
-val get_command_entry : unit -> vernac_expr Entry.t
-val set_command_entry : vernac_expr Entry.t -> unit
+(** The main entry: reads an optional vernac command *)
+val main_entry : proof_mode option -> (Loc.t * vernac_control) option Entry.t
+
+(** Grammar entry for tactics: proof mode(s).
+  By default Coq's grammar has an empty entry (non-terminal) for
+  tactics.  A plugin can register its non-terminal by providing a name
+  and a grammar entry.
+
+  For example the Ltac plugin register the "Classic" grammar
+  entry for parsing its tactics.
+  *)
+
+val register_proof_mode : string -> Vernacexpr.vernac_expr Entry.t -> proof_mode
+val lookup_proof_mode : string -> proof_mode option
+val proof_mode_to_string : proof_mode -> string

@@ -243,7 +243,7 @@ let set_prompt prompt =
 let parse_to_dot =
   let rec dot st = match Stream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
-    | Tok.EOI -> raise Stm.End_of_input
+    | Tok.EOI -> ()
     | _ -> dot st
   in
   Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
@@ -257,12 +257,12 @@ let rec discard_to_dot () =
     Pcoq.Entry.parse parse_to_dot top_buffer.tokens
   with
     | Gramlib.Plexing.Error _ | CLexer.Error.E _ -> discard_to_dot ()
-    | Stm.End_of_input -> raise Stm.End_of_input
     | e when CErrors.noncritical e -> ()
 
 let read_sentence ~state input =
   (* XXX: careful with ignoring the state Eugene!*)
-  try G_toplevel.parse_toplevel input
+  let open Vernac.State in
+  try Stm.parse_sentence ~doc:state.doc state.sid ~entry:G_toplevel.vernac_toplevel input
   with reraise ->
     let reraise = CErrors.push reraise in
     discard_to_dot ();
@@ -366,7 +366,6 @@ let top_goal_print ~doc c oldp newp =
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
 
-(* Careful to keep this loop tail-rec *)
 let rec vernac_loop ~state =
   let open CAst in
   let open Vernac.State in
@@ -379,26 +378,30 @@ let rec vernac_loop ~state =
   try
     let input = top_buffer.tokens in
     match read_sentence ~state input with
-    | {v=VernacBacktrack(bid,_,_)} ->
+    | Some { v = VernacBacktrack(bid,_,_) } ->
       let bid = Stateid.of_int bid in
       let doc, res = Stm.edit_at ~doc:state.doc bid in
       assert (res = `NewTip);
       let state = { state with doc; sid = bid } in
       vernac_loop ~state
 
-    | {v=VernacQuit} ->
+    | Some { v = VernacQuit } ->
       exit 0
-    | {v=VernacDrop} ->
+
+    | Some { v = VernacDrop } ->
       if Mltop.is_ocaml_top()
       then (drop_last_doc := Some state; state)
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
-    | {v=VernacControl c; loc} ->
+
+    | Some { v = VernacControl c; loc } ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
       top_goal_print ~doc:state.doc c state.proof nstate.proof;
       vernac_loop ~state:nstate
+
+    | None ->
+      top_stderr (fnl ()); exit 0
+
   with
-  | Stm.End_of_input ->
-    top_stderr (fnl ()); exit 0
   (* Exception printing should be done by the feedback listener,
      however this is not yet ready so we rely on the exception for
      now. *)

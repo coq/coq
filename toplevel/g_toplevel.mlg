@@ -21,7 +21,7 @@ type vernac_toplevel =
   | VernacControl of vernac_control
 
 module Toplevel_ : sig
-  val vernac_toplevel : vernac_toplevel CAst.t Entry.t
+  val vernac_toplevel : vernac_toplevel CAst.t option Entry.t
 end = struct
   let gec_vernac s = Entry.create ("toplevel:" ^ s)
   let vernac_toplevel = gec_vernac "vernac_toplevel"
@@ -34,14 +34,14 @@ open Toplevel_
 GRAMMAR EXTEND Gram
   GLOBAL: vernac_toplevel;
   vernac_toplevel: FIRST
-    [ [ IDENT "Drop"; "." -> { CAst.make VernacDrop }
-      | IDENT "Quit"; "." -> { CAst.make VernacQuit }
+    [ [ IDENT "Drop"; "." -> { Some (CAst.make VernacDrop) }
+      | IDENT "Quit"; "." -> { Some (CAst.make VernacQuit) }
       | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
-        { CAst.make (VernacBacktrack (n,m,p)) }
-      | cmd = Pvernac.main_entry ->
+        { Some (CAst.make (VernacBacktrack (n,m,p))) }
+      | cmd = Pvernac.Vernac_.main_entry ->
               { match cmd with
-              | None -> raise Stm.End_of_input
-              | Some (loc,c) -> CAst.make ~loc (VernacControl c) }
+              | None -> None
+              | Some (loc,c) -> Some (CAst.make ~loc (VernacControl c)) }
       ]
     ]
   ;
@@ -49,6 +49,8 @@ END
 
 {
 
-let parse_toplevel pa = Pcoq.Entry.parse vernac_toplevel pa
+let vernac_toplevel pm =
+  Pvernac.Unsafe.set_tactic_entry pm;
+  vernac_toplevel
 
 }
