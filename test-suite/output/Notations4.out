@@ -45,5 +45,9 @@ fun x : nat => (x.-1)%pred
      : Prop
 ##
      : Prop
+myAnd1 True True
+     : Prop
+r 2 3
+     : Prop
 Notation Cn := Foo.FooCn
 Expands to: Notation Top.J.Mfoo.Foo.Bar.Cn

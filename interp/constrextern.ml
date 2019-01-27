@@ -625,8 +625,13 @@ let explicitize inctx impl (cf,f) args =
 	  CApp ((ip,f),args1@args2)
     | None ->
       let args = exprec 1 (args,impl) in
-	if List.is_empty args then f.CAst.v else CApp ((None, f), args)
-  in
+        if List.is_empty args then f.CAst.v else
+          match f.CAst.v with
+          | CApp (g,args') ->
+              (* may happen with notations for a prefix of an n-ary
+                 application *)
+              CApp (g,args'@args)
+          | _ -> CApp ((None, f), args) in
     try expl ()
     with Expl -> 
       let f',us = match f with { CAst.v = CRef (f,us) } -> f,us | _ -> assert false in

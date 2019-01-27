@@ -165,6 +165,22 @@ Check ##.
 
 End H.
 
+(* Fixing bugs reported by G. Gonthier in #9207 *)
+
+Module I.
+
+Definition myAnd A B := A /\ B.
+Notation myAnd1 A := (myAnd A).
+Check myAnd1 True True.
+
+Set Warnings "-auto-template".
+
+Record Pnat := {inPnat :> nat -> Prop}.
+Axiom r : nat -> Pnat.
+Check r 2 3.
+
+End I.
+
 (* Fixing a bug reported by G. Gonthier in #9207 *)
 
 Module J.
