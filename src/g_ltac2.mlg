@@ -44,7 +44,7 @@ let lk_ident n strm = match stream_nth n strm with
 | _ -> None
 
 let lk_int n strm = match stream_nth n strm with
-| INT _ -> Some (n + 1)
+| NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
 | _ -> None
 
 let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident)
