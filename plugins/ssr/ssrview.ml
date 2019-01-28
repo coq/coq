@@ -142,7 +142,7 @@ let intern_constr_expr { Genintern.genv; ltacvars = vars } sigma ce =
    To allow for t being a notation, like "Notation foo x := ltac:(foo x)", we
    need to internalize t.
 *)
-let is_tac_in_term ?extra_scope { body; glob_env; interp_env } =
+let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
   Goal.(enter_one ~__LOC__ begin fun goal ->
     let genv = env goal in
     let sigma = sigma goal in
@@ -161,7 +161,7 @@ let is_tac_in_term ?extra_scope { body; glob_env; interp_env } =
     | Glob_term.GHole (_,_, Some x)
       when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
         -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
-    | _ -> tclUNIT (`Term (interp_env, g))
+    | _ -> tclUNIT (`Term (annotation, interp_env, g))
 end)
 
 (* To inject a constr into a glob_constr we use an Ltac variable *)
@@ -207,7 +207,7 @@ let tclKeepOpenConstr (_env, sigma, t) = Unsafe.tclEVARS sigma <*> tclUNIT t
 let tclADD_CLEAR_IF_ID (env, ist, t) x =
   Ssrprinters.ppdebug (lazy
     Pp.(str"tclADD_CLEAR_IF_ID: " ++ Printer.pr_econstr_env env ist t));
-  let hd, _ = EConstr.decompose_app ist t in
+  let hd, args = EConstr.decompose_app ist t in
   match EConstr.kind ist hd with
   | Constr.Var id when Ssrcommon.not_section_id id -> tclUNIT (x, [id])
   | _ -> tclUNIT (x,[])
@@ -280,8 +280,9 @@ let interp_view ~clear_if_id ist v p =
        else tclKeepOpenConstr ot >>= tclPAIR []
 
 (* we store in the state (v top), then (v1 (v2 top))... *)
-let pile_up_view ~clear_if_id (ist, v) =
+let pile_up_view ~clear_if_id (annotation, ist, v) =
   let ist = Ssrcommon.option_assert_get ist (Pp.str"not a term") in
+  let clear_if_id = clear_if_id && annotation <> `Parens in
   State.vsPUSH (fun p -> interp_view ~clear_if_id ist v p)
 
 let finalize_view s0 ?(simple_types=true) p =

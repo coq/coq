@@ -1445,6 +1445,16 @@ section constant.
 If tactic is ``move`` or ``case`` and an equation :token:`ident` is given, then clear
 (step 3) for :token:`d_item` is suppressed (see section :ref:`generation_of_equations_ssr`).
 
+Intro patterns (see section :ref:`introduction_ssr`)
+and the ``rewrite`` tactic (see section :ref:`rewriting_ssr`)
+let one place a :token:`clear_switch` in the middle of other items
+(namely identifiers, views and rewrite rules).  This can trigger the
+addition of proof context items to the ones being explicitly
+cleared, and in turn this can result in clear errors (e.g. if the
+context item automatically added occurs in the goal).  The
+relevant sections describe ways to avoid the unintended clear of
+context items.
+
 
 Matching for apply and exact
 ````````````````````````````
@@ -1572,6 +1582,9 @@ The :token:`i_pattern`\s can be seen as a variant of *intro patterns*
 (see :tacn:`intros`:) each performs an introduction operation, i.e., pops some
 variables or assumptions from the goal.
 
+Simplification items
+`````````````````````
+
 An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
 
 + ``//`` removes all the “trivial” subgoals that can be resolved by the
@@ -1583,18 +1596,32 @@ An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
   ``/= //``, i.e., ``simpl; try done``.
 
 
-When an :token:`s_item` bears a :token:`clear_switch`, then the
+When an :token:`s_item` immediately precedes a :token:`clear_switch`, then the
 :token:`clear_switch` is executed
 *after* the :token:`s_item`, e.g., ``{IHn}//`` will solve some subgoals,
 possibly using the fact ``IHn``, and will erase ``IHn`` from the context
 of the remaining subgoals.
 
+Views
+`````
+
 The first entry in the :token:`i_view` grammar rule, :n:`/@term`,
 represents a view (see section :ref:`views_and_reflection_ssr`).
 It interprets the top of the stack with the view :token:`term`.
-It is equivalent to ``move/term``. The optional flag ``{}`` can
-be used to signal that the :token:`term`, when it is a context entry,
-has to be cleared.
+It is equivalent to :n:`move/@term`.
+
+A :token:`clear_switch` that immediately precedes an :token:`i_view`
+is complemented with the name of the view if an only if the :token:`i_view`
+is a simple proof context entry [#10]_.
+E.g. ``{}/v`` is equivalent to ``/v{v}``.
+This behavior can be avoided by separating the :token:`clear_switch`
+from the :token:`i_view` with the ``-`` intro pattern or by putting
+parentheses around the view.
+
+A :token:`clear_switch` that immediately precedes an :token:`i_view`
+is executed after the view application.
+
+
 If the next :token:`i_item` is a view, then the view is
 applied to the assumption in top position once all the
 previous :token:`i_item` have been performed.
@@ -1608,6 +1635,9 @@ Notations can be used to name tactics,  for example::
 lets one write just ``/myop`` in the intro pattern. Note the scope
 annotation: views are interpreted opening the ``ssripat`` scope.
 
+Intro patterns
+``````````````
+
 |SSR| supports the following :token:`i_pattern`\s:
 
 :token:`ident`
@@ -1615,6 +1645,13 @@ annotation: views are interpreted opening the ``ssripat`` scope.
   a new constant, fact, or defined constant :token:`ident`, respectively.
   Note that defined constants cannot be introduced when δ-expansion is
   required to expose the top variable or assumption.
+  A :token:`clear_switch` (even an empty one) immediately preceding an
+  :token:`ident` is complemented with that :token:`ident` if and only if
+  the identifier is a simple proof context entry [#10]_.
+  As a consequence  by prefixing the
+  :token:`ident` with ``{}`` one can *replace* a context entry.
+  This behavior can be avoided by separating the :token:`clear_switch`
+  from the :token:`ident` with the ``-`` intro pattern.
 ``>``
   pops every variable occurring in the rest of the stack.
   Type class instances are popped even if they don't occur
@@ -1708,6 +1745,9 @@ annotation: views are interpreted opening the ``ssripat`` scope.
 Note that |SSR| does not support the syntax ``(ipat, …, ipat)`` for
 destructing intro-patterns.
 
+Clear switch
+````````````
+
 Clears are deferred until the end of the intro pattern.
 
 .. example::
@@ -1729,6 +1769,9 @@ is performed behind the scenes.
 
 Facts mentioned in a clear switch must be valid names in the proof
 context (excluding the section context).
+
+Branching and destructuring
+```````````````````````````
 
 The rules for interpreting branching and destructing :token:`i_pattern` are
 motivated by the fact that it would be pointless to have a branching
@@ -1753,6 +1796,9 @@ interpretation, e.g.:
 + ``case; case=> a b c.``
 
 are all equivalent.
+
+Block introduction
+``````````````````
 
 |SSR| supports the following :token:`i_block`\s:
 
@@ -3030,13 +3076,22 @@ operation should be performed:
   pattern. In its simplest form, it is a regular term. If no explicit
   redex switch is present the rewrite pattern to be matched is inferred
   from the :token:`r_item`.
-+ This optional term, or the :token:`r_item`, may be preceded by an occurrence
-  switch (see section :ref:`selectors_ssr`) or a clear item
-  (see section :ref:`discharge_ssr`),
-  these two possibilities being exclusive. An occurrence switch selects
++ This optional term, or the :token:`r_item`, may be preceded by an
+  :token:`occ_switch` (see section :ref:`selectors_ssr`) or a
+  :token:`clear_switch` (see section :ref:`discharge_ssr`),
+  these two possibilities being exclusive.
+
+  An occurrence switch selects
   the occurrences of the rewrite pattern which should be affected by the
   rewrite operation.
 
+  A clear switch, even an empty one, is performed *after* the
+  :token:`r_item` is actually processed and is complemented with the name of
+  the rewrite rule if an only if it is a simple proof context entry [#10]_.
+  As a consequence one can
+  write ``rewrite {}H`` to rewrite with ``H`` and dispose ``H`` immediately
+  afterwards.
+  This behavior can be avoided by putting parentheses around the rewrite rule.
 
 An :token:`r_item` can be:
 
@@ -3290,10 +3345,6 @@ The second subgoal is generated by the use of an anonymous lemma in
 the rewrite tactic. The effect of the tactic on the initial goal is to
 rewrite this lemma at the second occurrence of the first matching
 ``x + y + 0`` of the explicit rewrite redex ``_ + y + 0``.
-
-An empty occurrence switch ``{}`` is not interpreted as a valid occurrence
-switch. It has the effect of clearing the :token:`r_item` (when it is the name
-of a context entry).
 
 Occurrence selection and repetition
 ```````````````````````````````````
@@ -5520,3 +5571,5 @@ Settings
   in the metatheory
 .. [#9] The current state of the proof shall be displayed by the Show
   Proof command of |Coq| proof mode.
+.. [#10] A simple proof context entry is a naked identifier (i.e. not between
+  parentheses) designating a context entry that is not a section variable.

@@ -29,7 +29,7 @@ val allocc : ssrocc
 val hyp_id : ssrhyp -> Id.t
 val hyps_ids : ssrhyps -> Id.t list
 val check_hyp_exists : ('a, 'b) Context.Named.pt -> ssrhyp -> unit
-val test_hypname_exists : ('a, 'b) Context.Named.pt -> Id.t -> bool
+val test_hyp_exists : ('a, 'b) Context.Named.pt -> ssrhyp -> bool
 val check_hyps_uniq : Id.t list -> ssrhyps -> unit
 val not_section_id : Id.t -> bool
 val hyp_err : ?loc:Loc.t -> string -> Id.t -> 'a

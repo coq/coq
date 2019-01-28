@@ -19,8 +19,44 @@
 
 open Ssrast
 
+(* Atomic operations for the IPat machine. Use this if you are "patching" an
+ * ipat written by the user, since patching it at he AST level and then
+ * compiling it may have tricky effects, eg adding a clear in front of a view
+ * also has the effect of disposing the view (the compilation phase takes care
+ * of this, by using the compiled ipats you can be more precise *)
+type ssriop =
+  | IOpId of Names.Id.t
+  | IOpDrop
+  | IOpTemporay
+  | IOpInaccessible of string option
+  | IOpInaccessibleAll
+  | IOpAbstractVars of Names.Id.t list
+  | IOpFastNondep
+
+  | IOpInj of ssriops list
+
+  | IOpDispatchBlock of id_block
+  | IOpDispatchBranches of ssriops list
+
+  | IOpCaseBlock of id_block
+  | IOpCaseBranches of ssriops list
+
+  | IOpRewrite of ssrocc * ssrdir
+  | IOpView of ssrclear option * ssrview (* extra clears to be performed *)
+
+  | IOpClear of ssrclear * ssrhyp option
+  | IOpSimpl of ssrsimpl
+
+  | IOpEqGen of unit Proofview.tactic (* generation of eqn *)
+
+  | IOpNoop
+
+and ssriops = ssriop list
+
+val tclCompileIPats : ssripats -> ssriops
+
 (* The => tactical *)
-val tclIPAT : ssripats -> unit Proofview.tactic
+val tclIPAT : ssriops -> unit Proofview.tactic
 
 (* As above but with the SSR exception: first case is dispatch *)
 val tclIPATssr : ssripats -> unit Proofview.tactic

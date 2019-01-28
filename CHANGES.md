@@ -164,11 +164,23 @@ Misc
 SSReflect
 
 - New intro patterns:
-  - temporary introduction: => +
-  - block introduction: => [^ prefix ] [^~ suffix ]
-  - fast introduction: => >
-  - tactics as views: => /ltac:mytac
+  - temporary introduction: `=> +`
+  - block introduction: `=> [^ prefix ] [^~ suffix ]`
+  - fast introduction: `=> >`
+  - tactics as views: `=> /ltac:mytac`
+  - replace hypothesis: `=> {}H`
   See the reference manual for the actual documentation.
+
+- Clear discipline made consistent across the entire proof language.
+  Whenever a clear switch `{x..}` comes immediately before an existing proof
+  context entry (used as a view, as a rewrite rule or as name for a new
+  context entry) then such entry is cleared too.
+
+  E.g. The following sentences are elaborated as follows (when H is an existing
+  proof context entry):
+  - `=> {x..} H`       ->  `=> {x..H} H`
+  - `=> {x..} /H`      ->  `=> /v {x..H}`
+  - `rewrite {x..} H`  ->  `rewrite E {x..H}`
 
 Changes from 8.8.2 to 8.9+beta1
 ===============================

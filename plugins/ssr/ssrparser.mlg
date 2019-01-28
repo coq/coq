@@ -635,11 +635,10 @@ let rec map_ipat map_id map_ssrhyp map_ast_closure_term = function
   | IPatClear clr -> IPatClear (List.map map_ssrhyp clr)
   | IPatCase (Regular iorpat) -> IPatCase (Regular (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat))
   | IPatCase (Block(hat)) -> IPatCase (Block(map_block map_id hat))
-  | IPatDispatch (s, Regular iorpat) -> IPatDispatch (s, Regular (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat))
-  | IPatDispatch (s, Block (hat)) -> IPatDispatch (s, Block(map_block map_id hat))
+  | IPatDispatch (Regular iorpat) -> IPatDispatch (Regular (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat))
+  | IPatDispatch (Block (hat)) -> IPatDispatch (Block(map_block map_id hat))
   | IPatInj iorpat -> IPatInj (List.map (List.map (map_ipat map_id map_ssrhyp map_ast_closure_term)) iorpat)
-  | IPatView (clr,v) -> IPatView (clr,List.map map_ast_closure_term v)
-  | IPatEqGen _ -> assert false (*internal usage only *)
+  | IPatView v -> IPatView (List.map map_ast_closure_term v)
 and map_block map_id = function
   | Prefix id -> Prefix (map_id id)
   | SuffixId id -> SuffixId (map_id id)
@@ -715,22 +714,22 @@ let interp_ipat ist gl =
       if not (ltacvar id) then hyp :: hyps else
       add_intro_pattern_hyps CAst.(make ?loc (interp_introid ist gl id)) hyps in
     let clr' = List.fold_right add_hyps clr [] in
-    check_hyps_uniq [] clr'; IPatClear clr'
+    check_hyps_uniq [] clr';
+    IPatClear clr'
   | IPatCase(Regular iorpat) ->
       IPatCase(Regular(List.map (List.map interp) iorpat))
   | IPatCase(Block(hat)) -> IPatCase(Block(interp_block hat))
 
-  | IPatDispatch(s,Regular iorpat) ->
-      IPatDispatch(s,Regular (List.map (List.map interp) iorpat))
-  | IPatDispatch(s,Block(hat)) -> IPatDispatch(s,Block(interp_block hat))
+  | IPatDispatch(Regular iorpat) ->
+      IPatDispatch(Regular (List.map (List.map interp) iorpat))
+  | IPatDispatch(Block(hat)) -> IPatDispatch(Block(interp_block hat))
 
   | IPatInj iorpat -> IPatInj (List.map (List.map interp) iorpat)
   | IPatAbstractVars l ->
      IPatAbstractVars (List.map get_intro_id (List.map (interp_introid ist gl) l))
-  | IPatView (clr,l) -> IPatView (clr,List.map (fun x -> snd(interp_ast_closure_term ist
+  | IPatView l -> IPatView (List.map (fun x -> snd(interp_ast_closure_term ist
      gl x)) l)
   | (IPatSimpl _ | IPatAnon _ | IPatRewrite _ | IPatNoop | IPatFastNondep) as x -> x
-  | IPatEqGen _ -> assert false (*internal usage only *)
     in
   interp
 
@@ -765,10 +764,6 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
       | Some [], _ -> CErrors.user_err ~loc (str"occ_switch expected")
       | None, occ ->  [IPatRewrite (occ, R2L)]
       | Some clr, _ -> [IPatClear clr; IPatRewrite (allocc, R2L)] }
-  | [ ssrdocc(occ) ssrfwdview(v) ] -> { match occ with
-      | Some [], _ -> [IPatView (true,v)]
-      | Some cl, _ -> check_hyps_uniq [] cl; [IPatClear cl;IPatView (false,v)]
-      | _ -> CErrors.user_err ~loc (str"Only identifiers are allowed here") }
   | [ ssrdocc(occ) ] -> { match occ with
       | Some cl, _ -> check_hyps_uniq [] cl; [IPatClear cl]
       | _ -> CErrors.user_err ~loc (str"Only identifiers are allowed here") }
@@ -786,7 +781,7 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   | [ "-/" integer(n) "/=" ] -> { [IPatNoop;IPatSimpl(SimplCut (n,~-1))] }
   | [ "-/" integer(n) "/" integer (m) "=" ] ->
       { [IPatNoop;IPatSimpl(SimplCut(n,m))] }
-  | [ ssrfwdview(v) ] -> { [IPatView (false,v)] }
+  | [ ssrfwdview(v) ] -> { [IPatView v] }
   | [ "[" ":" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
   | [ "[:" ident_list(idl) "]" ] -> { [IPatAbstractVars idl] }
 END
@@ -875,11 +870,12 @@ ARGUMENT EXTEND ssripats_ne TYPED AS ssripat PRINTED BY { pr_ssripats }
 let check_ssrhpats loc w_binders ipats =
   let err_loc s = CErrors.user_err ~loc ~hdr:"ssreflect" s in
   let clr, ipats =
+    let opt_app = function None -> fun l -> Some l
+      | Some l1 -> fun l2 -> Some (l1 @ l2) in 
     let rec aux clr = function
-      | IPatClear cl :: tl -> aux (clr @ cl) tl
-(*      | IPatSimpl (cl, sim) :: tl -> clr @ cl, IPatSimpl ([], sim) :: tl *)
+      | IPatClear cl :: tl -> aux (opt_app clr cl) tl
       | tl -> clr, tl
-    in aux [] ipats in
+    in aux None ipats in
   let simpl, ipats = 
     match List.rev ipats with
     | IPatSimpl _ as s :: tl -> [s], List.rev tl
@@ -903,27 +899,29 @@ let check_ssrhpats loc w_binders ipats =
     in loop [] ipats in
   ((clr, ipat), binders), simpl
 
+let pr_clear_opt sep = function None -> mt () | Some x -> pr_clear sep x
+
 let pr_hpats (((clr, ipat), binders), simpl) =
-   pr_clear mt clr ++ pr_ipats ipat ++ pr_ipats binders ++ pr_ipats simpl
+   pr_clear_opt mt clr ++ pr_ipats ipat ++ pr_ipats binders ++ pr_ipats simpl
 let pr_ssrhpats _ _ _ = pr_hpats
 let pr_ssrhpats_wtransp _ _ _ (_, x) = pr_hpats x
 
 }
 
-ARGUMENT EXTEND ssrhpats TYPED AS (((ssrclear * ssripat) * ssripat) * ssripat)
+ARGUMENT EXTEND ssrhpats TYPED AS (((ssrclear option * ssripat) * ssripat) * ssripat)
 PRINTED BY { pr_ssrhpats }
   | [ ssripats(i) ] -> { check_ssrhpats loc true i }
 END
 
 ARGUMENT EXTEND ssrhpats_wtransp
-  TYPED AS (bool * (((ssrclear * ssripats) * ssripats) * ssripats))
+  TYPED AS (bool * (((ssrclear option * ssripats) * ssripats) * ssripats))
   PRINTED BY { pr_ssrhpats_wtransp }
   | [ ssripats(i) ] -> { false,check_ssrhpats loc true i }
   | [ ssripats(i) "@" ssripats(j) ] -> { true,check_ssrhpats loc true (i @ j) }
 END
 
 ARGUMENT EXTEND ssrhpats_nobs 
-TYPED AS (((ssrclear * ssripats) * ssripats) * ssripats) PRINTED BY { pr_ssrhpats }
+TYPED AS (((ssrclear option * ssripats) * ssripats) * ssripats) PRINTED BY { pr_ssrhpats }
   | [ ssripats(i) ] -> { check_ssrhpats loc false i }
 END
 
@@ -2051,7 +2049,7 @@ END
 (* We just add a numeric version that clears the n top assumptions. *)
 
 TACTIC EXTEND ssrclear
-  | [ "clear" natural(n) ] -> { tclIPAT (List.init n (fun _ -> IPatAnon Drop)) }
+  | [ "clear" natural(n) ] -> { tclIPAT (List.init n (fun _ -> IOpDrop)) }
 END
 
 (** The "move" tactic *)
@@ -2090,10 +2088,10 @@ let movearg_of_parsed_movearg (v,(eq,(dg,ip))) =
 
 TACTIC EXTEND ssrmove
 | [ "move" ssrmovearg(arg) ssrrpat(pat) ] ->
-  { ssrmovetac (movearg_of_parsed_movearg arg) <*> tclIPAT [pat] }
+  { ssrmovetac (movearg_of_parsed_movearg arg) <*> tclIPAT (tclCompileIPats [pat]) }
 | [ "move" ssrmovearg(arg) ssrclauses(clauses) ] ->
   { tclCLAUSES (ssrmovetac (movearg_of_parsed_movearg arg)) clauses }
-| [ "move" ssrrpat(pat) ] -> { tclIPAT [pat] }
+| [ "move" ssrrpat(pat) ] -> { tclIPAT (tclCompileIPats [pat]) }
 | [ "move" ] -> { ssrsmovetac }
 END
 
@@ -2632,7 +2630,11 @@ END
 
 {
 
-let augment_preclr clr1 (((clr0, x),y),z) = (((clr1 @ clr0, x),y),z)
+let augment_preclr clr1 (((clr0, x),y),z) =
+  let cl = match clr0 with
+    | None -> if clr1 = [] then None else Some clr1
+    | Some clr0 -> Some (clr1 @ clr0) in
+  (((cl, x),y),z)
 
 }
 

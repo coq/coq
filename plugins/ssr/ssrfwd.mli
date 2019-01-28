@@ -22,7 +22,7 @@ val ssrposetac : Id.t * (ssrfwdfmt * ast_closure_term) -> v82tac
 
 val havetac : ist ->
            bool *
-           ((((Ssrast.ssrclear * Ssrast.ssripat list) * Ssrast.ssripats) *
+           ((((Ssrast.ssrclear option * Ssrast.ssripat list) * Ssrast.ssripats) *
              Ssrast.ssripats) *
             (((Ssrast.ssrfwdkind * 'a) * ast_closure_term) *
              (bool * Tacinterp.Value.t option list))) ->
@@ -35,7 +35,7 @@ val basecuttac :
 
 val wlogtac :
   Ltac_plugin.Tacinterp.interp_sign ->
-  ((Ssrast.ssrhyps * Ssrast.ssripats) * 'a) * 'b ->
+  ((Ssrast.ssrclear option * Ssrast.ssripats) * 'a) * 'b ->
   (Ssrast.ssrhyps *
      ((Ssrast.ssrhyp_or_id * string) *
         Ssrmatching_plugin.Ssrmatching.cpattern option)
@@ -50,7 +50,7 @@ val wlogtac :
 
 val sufftac :
   Ssrast.ist ->
-  (((Ssrast.ssrhyps * Ssrast.ssripats) * Ssrast.ssripat list) *
+  (((Ssrast.ssrclear option * Ssrast.ssripats) * Ssrast.ssripat list) *
      Ssrast.ssripat list) *
     (('a *
         ast_closure_term) *

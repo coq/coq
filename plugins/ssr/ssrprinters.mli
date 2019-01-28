@@ -43,6 +43,7 @@ val pr_view2 : ast_closure_term list -> Pp.t
 val pr_ipat : ssripat -> Pp.t
 val pr_ipats : ssripats -> Pp.t
 val pr_iorpat : ssripatss -> Pp.t
+val pr_block : id_block -> Pp.t
 
 val pr_hyp : ssrhyp -> Pp.t
 val pr_hyps : ssrhyps -> Pp.t
