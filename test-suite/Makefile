@@ -307,7 +307,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	    echo "    $<...correctly prepared" ; \
 	  fi; \
 	} > "$@"
-	@echo "CHK $(shell basename $< .v)"
+	@echo "CHECK     $(shell basename $< .v)"
 	$(HIDE)$(coqchk) -norec TestSuite.$(shell basename $< .v) > $(shell dirname $<)/$(shell basename $< .v).chk.log 2>&1
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
@@ -326,7 +326,7 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHK $(shell basename $< .v)"
+	@echo "CHECK     $(shell basename $< .v)"
 	$(HIDE){ \
     opts="$(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-I $(shell dirname $<) -norec $(shell basename $< .v))"; \
 	  $(coqchk) -silent $(call get_set_impredicativity,$<) $$opts 2>&1; R=$$?; \
@@ -353,7 +353,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHK $(shell basename $< .v)"
+	@echo "CHECK     $(shell basename $< .v)"
 	$(HIDE){ \
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
@@ -377,7 +377,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHK $(shell basename $< .v)"
+	@echo "CHECK     $(shell basename $< .v)"
 	$(HIDE){ \
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
