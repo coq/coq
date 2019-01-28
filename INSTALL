@@ -113,9 +113,8 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    "./configure -help". The main options accepted are:
 
 -prefix <dir>
-	Binaries, library, man pages and Emacs mode will be respectively
-	installed in <dir>/bin, <dir>/lib/coq, <dir>/man and
-	<dir>/lib/emacs/site-lisp
+	Binaries, library, and man pages will be respectively
+	installed in <dir>/bin, <dir>/lib/coq, and <dir>/man
 
 -bindir <dir>                   (default: /usr/local/bin)
         Directory where the binaries will be installed
@@ -125,9 +124,6 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
 -mandir <dir>                   (default: /usr/local/share/man)
         Directory where the Coq manual pages will be installed
-
--emacslib <dir>			(default: /usr/local/lib/emacs/site-lisp)
-	Directory where the Coq Emacs mode will be installed
 
 -arch <value>			(default is the result of the command "arch")
 	An arbitrary architecture name for your machine (useful when
@@ -175,9 +171,9 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    it is recommended to compile in parallel, via make -jN where N is your number
    of cores.
 
-5- You can now install the Coq system. Executables, libraries, manual pages
-   and emacs mode are copied in some standard places of your system, defined at
-   configuration time (step 3). Just do
+5- You can now install the Coq system. Executables, libraries, and
+   manual pages are copied in some standard places of your system,
+   defined at configuration time (step 3). Just do
 
 	umask 022
        	make install
