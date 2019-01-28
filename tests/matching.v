@@ -50,3 +50,22 @@ match! reverse goal with
   check_id h' @i
 end.
 Abort.
+
+(* Check #79 *)
+Goal 2 = 3.
+  Control.plus
+    (fun ()
+     => lazy_match! goal with
+    | [ |- 2 = 3 ] => Control.zero (Tactic_failure None)
+    | [ |- 2 = _ ] => Control.zero (Tactic_failure (Some (Message.of_string "should not be printed")))
+     end)
+    (fun e
+     => match e with
+        | Tactic_failure c
+          => match c with
+             | None => ()
+             | _ => Control.zero e
+             end
+        | e => Control.zero e
+        end).
+Abort.
