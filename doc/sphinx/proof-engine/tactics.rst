@@ -3388,7 +3388,7 @@ Automation
    :name: auto
 
    This tactic implements a Prolog-like resolution procedure to solve the
-   current goal. It first tries to solve the goal using the assumption
+   current goal. It first tries to solve the goal using the :tacn:`assumption`
    tactic, then it reduces the goal to an atomic one using intros and
    introduces the newly generated hypotheses as hints. Then it looks at
    the list of tactics associated to the head symbol of the goal and
