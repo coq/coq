@@ -1719,13 +1719,11 @@ possible:
 .. math::
    :nowrap:
 
-   {\def\plus{\mathsf{plus}}
-    \def\tri{\triangleright_\iota}
-    \begin{eqnarray*}
-    \plus~(\nS~(\nS~\nO))~(\nS~\nO) & \tri & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
-                                   & \tri & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
-                                   & \tri & \nS~(\nS~(\nS~\nO))\\
-    \end{eqnarray*}}
+   \begin{eqnarray*}
+   \plus~(\nS~(\nS~\nO))~(\nS~\nO)~& \trii & \nS~(\plus~(\nS~\nO)~(\nS~\nO))\\
+                                   & \trii & \nS~(\nS~(\plus~\nO~(\nS~\nO)))\\
+                                   & \trii & \nS~(\nS~(\nS~\nO))\\
+   \end{eqnarray*}
 
 .. _Mutual-induction:
 
