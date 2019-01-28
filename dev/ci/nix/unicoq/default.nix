@@ -1,4 +1,10 @@
-{ stdenv, coq }:
+{ stdenv, writeText, coq }:
+
+let META = writeText "META" ''
+  archive(native) = "unicoq.cmxa"
+  plugin(native) = "unicoq.cmxs"
+''; in
+
 
 stdenv.mkDerivation {
   name = "coq${coq.coq-version}-unicoq-0.0-git";
@@ -12,8 +18,9 @@ stdenv.mkDerivation {
   installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
 
   postInstall = ''
+    cp ${META} META
     install -d $OCAMLFIND_DESTDIR
     ln -s $out/lib/coq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
-    install -m 0644 ${./META} src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
+    install -m 0644 META src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
   '';
 }
