@@ -175,6 +175,8 @@ Standard Library
 
 - The `Coq.Numbers.Cyclic.Int31` library is deprecated.
 
+- Added lemmas about `Z.testbit`, `Z.ones`, and `Z.modulo`.
+
 Universes
 
 - Added `Print Universes Subgraph` variant of `Print Universes`.

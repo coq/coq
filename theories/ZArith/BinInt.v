@@ -1259,6 +1259,30 @@ Proof.
  f_equal. now rewrite <- add_assoc, add_opp_diag_r, add_0_r.
 Qed.
 
+(** * [testbit] in terms of comparision. *)
+
+Lemma testbit_mod_pow2 a n i (H : 0 <= n)
+  : testbit (a mod 2 ^ n) i = ((i <? n) && testbit a i)%bool.
+Proof.
+  destruct (ltb_spec i n); rewrite
+    ?mod_pow2_bits_low, ?mod_pow2_bits_high by auto; auto.
+Qed.
+
+Lemma testbit_ones n i (H : 0 <= n)
+  : testbit (ones n) i = ((0 <=? i) && (i <? n))%bool.
+Proof.
+  destruct (leb_spec 0 i), (ltb_spec i n); cbn;
+    rewrite ?testbit_neg_r, ?ones_spec_low, ?ones_spec_high by auto; trivial.
+Qed.
+
+Lemma testbit_ones_nonneg n i (Hn : 0 <= n) (Hi: 0 <= i)
+  : testbit (ones n) i = (i <? n).
+Proof.
+  rewrite testbit_ones by auto.
+  destruct (leb_spec 0 i); cbn; solve
+   [ trivial | destruct (proj1 (Z.le_ngt _ _) Hi ltac:(eassumption)) ].
+Qed.
+
 End Z.
 
 Bind Scope Z_scope with Z.t Z.
