@@ -4,4 +4,4 @@ set -e
 
 export PATH=$BIN:$PATH
 
-${coqtop#"$BIN"} -compile misc/aux7704.v
+${coqc#"$BIN"} misc/aux7704.v

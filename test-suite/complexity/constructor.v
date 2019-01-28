@@ -214,3 +214,4 @@ Fixpoint expand (n : nat) : Prop :=
 
 Example Expand : expand 2500.
 Time constructor. (* ~0.45 secs *)
+Qed.

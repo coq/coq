@@ -8,3 +8,4 @@ Variable f : nat -> Prop.
 Goal forall U:Prop, f 100 <-> U.
 intros U.
 Timeout 5 Time setoid_replace U with False.
+Abort.

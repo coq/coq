@@ -163,14 +163,14 @@ and ``coqtop``, unless stated otherwise:
   is equivalent to runningRequire dirpath.
 :-require dirpath: Load |Coq| compiled library dirpath and import it.
   This is equivalent to running Require Import dirpath.
-:-batch: Exit just after argument parsing. Available for `coqtop` only.
-:-compile *file.v*: Compile file *file.v* into *file.vo*. This option
+:-batch: Exit just after argument parsing. Available for ``coqtop`` only.
+:-compile *file.v*: Deprecated; use ``coqc`` instead. Compile file *file.v* into *file.vo*. This option
   implies -batch (exit just after argument parsing). It is available only
-  for `coqtop`, as this behavior is the purpose of `coqc`.
-:-compile-verbose *file.v*: Same as -compile but also output the
+  for `coqtop`, as this behavior is the purpose of ``coqc``.
+:-compile-verbose *file.v*: Deprecated. Use ``coqc -verbose``. Same as -compile but also output the
   content of *file.v* as it is compiled.
 :-verbose: Output the content of the input file as it is compiled.
-  This option is available for `coqc` only; it is the counterpart of
+  This option is available for ``coqc`` only; it is the counterpart of
   -compile-verbose.
 :-w (all|none|w₁,…,wₙ): Configure the display of warnings. This
   option expects all, none or a comma-separated list of warning names or
@@ -211,11 +211,11 @@ and ``coqtop``, unless stated otherwise:
   (to be used by coqdoc, see :ref:`coqdoc`). By default, if *file.v* is being
   compiled, *file.glob* is used.
 :-no-glob: Disable the dumping of references for global names.
-:-image *file*: Set the binary image to be used by `coqc` to be *file*
+:-image *file*: Set the binary image to be used by ``coqc`` to be *file*
   instead of the standard one. Not of general use.
 :-bindir *directory*: Set the directory containing |Coq| binaries to be
-  used by `coqc`. It is equivalent to doing export COQBIN= *directory*
-  before launching `coqc`.
+  used by ``coqc``. It is equivalent to doing export COQBIN= *directory*
+  before launching ``coqc``.
 :-where: Print the location of |Coq|’s standard library and exit.
 :-config: Print the locations of |Coq|’s binaries, dependencies, and
   libraries, then exit.

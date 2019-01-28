@@ -11,3 +11,4 @@ Undo.
 simpl (0 + _).
 Show.
 Undo.
+Abort.

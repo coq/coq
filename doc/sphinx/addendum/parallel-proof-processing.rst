@@ -52,7 +52,7 @@ in interactive mode.
 It is not strictly mandatory in batch mode if it is not the first time
 the file is compiled and if the file itself did not change. When the
 proof does not begin with Proof using, the system records in an
-auxiliary file, produced along with the `.vo` file, the list of section
+auxiliary file, produced along with the ``.vo`` file, the list of section
 variables used.
 
 Automatic suggestion of proof annotations
@@ -154,22 +154,22 @@ to a worker process. The threshold can be configured with
 Batch mode
 ---------------
 
-When |Coq| is used as a batch compiler by running `coqc` or `coqtop`
--compile, it produces a `.vo` file for each `.v` file. A `.vo` file contains,
-among other things, theorem statements and proofs. Hence to produce a
-.vo |Coq| need to process all the proofs of the `.v` file.
+When |Coq| is used as a batch compiler by running ``coqc``, it produces
+a ``.vo`` file for each ``.v`` file. A ``.vo`` file contains, among other
+things, theorem statements and proofs. Hence to produce a .vo |Coq|
+need to process all the proofs of the ``.v`` file.
 
 The asynchronous processing of proofs can decouple the generation of a
-compiled file (like the `.vo` one) that can be loaded by ``Require`` from the
+compiled file (like the ``.vo`` one) that can be loaded by ``Require`` from the
 generation and checking of the proof objects. The ``-quick`` flag can be
-passed to `coqc` or `coqtop` to produce, quickly, `.vio` files.
-Alternatively, when using a Makefile produced by `coq_makefile`,
+passed to ``coqc`` or ``coqtop`` to produce, quickly, ``.vio`` files.
+Alternatively, when using a Makefile produced by ``coq_makefile``,
 the ``quick`` target can be used to compile all files using the ``-quick`` flag.
 
-A `.vio` file can be loaded using ``Require`` exactly as a `.vo` file but
+A ``.vio`` file can be loaded using ``Require`` exactly as a ``.vo`` file but
 proofs will not be available (the Print command produces an error).
 Moreover, some universe constraints might be missing, so universes
-inconsistencies might go unnoticed. A `.vio` file does not contain proof
+inconsistencies might go unnoticed. A ``.vio`` file does not contain proof
 objects, but proof tasks, i.e. what a worker process can transform
 into a proof object.
 
@@ -177,52 +177,52 @@ Compiling a set of files with the ``-quick`` flag allows one to work,
 interactively, on any file without waiting for all the proofs to be
 checked.
 
-When working interactively, one can fully check all the `.v` files by
-running `coqc` as usual.
+When working interactively, one can fully check all the ``.v`` files by
+running ``coqc`` as usual.
 
-Alternatively one can turn each `.vio` into the corresponding `.vo`. All
+Alternatively one can turn each ``.vio`` into the corresponding ``.vo``. All
 .vio files can be processed in parallel, hence this alternative might
 be faster. The command ``coqtop -schedule-vio2vo 2 a b c`` can be used to
-obtain a good scheduling for two workers to produce `a.vo`, `b.vo`, and
-`c.vo`. When using a Makefile produced by `coq_makefile`, the ``vio2vo`` target
-can be used for that purpose. Variable `J` should be set to the number
+obtain a good scheduling for two workers to produce ``a.vo``, ``b.vo``, and
+``c.vo``. When using a Makefile produced by ``coq_makefile``, the ``vio2vo`` target
+can be used for that purpose. Variable ``J`` should be set to the number
 of workers, e.g. ``make vio2vo J=2``. The only caveat is that, while the
-.vo files obtained from `.vio` files are complete (they contain all proof
+.vo files obtained from ``.vio`` files are complete (they contain all proof
 terms and universe constraints), the satisfiability of all universe
 constraints has not been checked globally (they are checked to be
 consistent for every single proof). Constraints will be checked when
-these `.vo` files are (recursively) loaded with ``Require``.
+these ``.vo`` files are (recursively) loaded with ``Require``.
 
 There is an extra, possibly even faster, alternative: just check the
-proof tasks stored in `.vio` files without producing the `.vo` files. This
+proof tasks stored in ``.vio`` files without producing the ``.vo`` files. This
 is possibly faster because all the proof tasks are independent, hence
 one can further partition the job to be done between workers. The
 ``coqtop -schedule-vio-checking 6 a b c`` command can be used to obtain a
-good scheduling for 6 workers to check all the proof tasks of `a.vio`,
-`b.vio`, and `c.vio`. Auxiliary files are used to predict how long a proof
+good scheduling for 6 workers to check all the proof tasks of ``a.vio``,
+``b.vio``, and ``c.vio``. Auxiliary files are used to predict how long a proof
 task will take, assuming it will take the same amount of time it took
 last time. When using a Makefile produced by coq_makefile, the
-``checkproofs`` target can be used to check all `.vio` files. Variable `J`
+``checkproofs`` target can be used to check all ``.vio`` files. Variable ``J``
 should be set to the number of workers, e.g. ``make checkproofs J=6``. As
-when converting `.vio` files to `.vo` files, universe constraints are not
+when converting ``.vio`` files to ``.vo`` files, universe constraints are not
 checked to be globally consistent. Hence this compilation mode is only
 useful for quick regression testing and on developments not making
-heavy use of the `Type` hierarchy.
+heavy use of the ``Type`` hierarchy.
 
 Limiting the number of parallel workers
 --------------------------------------------
 
 Many |Coq| processes may run on the same computer, and each of them may
-start many additional worker processes. The `coqworkmgr` utility lets
+start many additional worker processes. The ``coqworkmgr`` utility lets
 one limit the number of workers, globally.
 
 The utility accepts the ``-j`` argument to specify the maximum number of
-workers (defaults to 2). `coqworkmgr` automatically starts in the
+workers (defaults to 2). ``coqworkmgr`` automatically starts in the
 background and prints an environment variable assignment
 like ``COQWORKMGR_SOCKET=localhost:45634``. The user must set this variable
 in all the shells from which |Coq| processes will be started. If one
 uses just one terminal running the bash shell, then
 ``export ‘coqworkmgr -j 4‘`` will do the job.
 
-After that, all |Coq| processes, e.g. `coqide` and `coqc`, will respect the
+After that, all |Coq| processes, e.g. ``coqide`` and ``coqc``, will respect the
 limit, globally.

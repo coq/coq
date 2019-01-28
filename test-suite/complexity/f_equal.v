@@ -12,3 +12,4 @@ end.
 
 Goal stupid 23 = stupid 23.
 Timeout 5 Time f_equal.
+Abort.

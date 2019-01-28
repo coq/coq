@@ -1,1 +1,1 @@
-(* -*- coq-prog-args: ("-compile" "bugs/closed/PLACEHOLDER.v") -*- *)
+(* -*- coq-prog-args: ("bugs/closed/PLACEHOLDER.v") -*- *)

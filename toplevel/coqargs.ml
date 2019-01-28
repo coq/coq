@@ -323,6 +323,12 @@ let usage batch =
   then Usage.print_usage_coqc ()
   else Usage.print_usage_coqtop ()
 
+let deprecated_coqc_warning = CWarnings.(create
+    ~name:"deprecate-compile-arg"
+    ~category:"toplevel"
+    ~default:Enabled
+    (fun opt_name -> Pp.(seq [str "The option "; str opt_name; str" is deprecated, please use coqc."])))
+
 (* Main parsing routine *)
 let parse_args init_opts arglist : coq_cmdopts * string list =
   let args = ref arglist in
@@ -436,10 +442,12 @@ let parse_args init_opts arglist : coq_cmdopts * string list =
       Flags.compat_version := v;
       add_compat_require oval v
 
-    |"-compile" ->
+    |"-compile" as opt ->
+      deprecated_coqc_warning opt;
       add_compile oval false (next ())
 
-    |"-compile-verbose" ->
+    |"-compile-verbose" as opt ->
+      deprecated_coqc_warning opt;
       add_compile oval true (next ())
 
     |"-dump-glob" ->
@@ -519,7 +527,9 @@ let parse_args init_opts arglist : coq_cmdopts * string list =
         CWarnings.set_flags (CWarnings.normalize_flags_string w);
         oval
 
-    |"-o" -> { oval with compilation_output_name = Some (next()) }
+    |"-o" as opt ->
+      deprecated_coqc_warning opt;
+      { oval with compilation_output_name = Some (next()) }
 
     |"-bytecode-compiler" ->
       { oval with enable_VM = get_bool opt (next ()) }

@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-async-proofs" "no") -*- *)
 (* Set Printing Existential Instances. *)
 Unset Solve Unification Constraints.
 Axiom veeryyyyyyyyyyyyloooooooooooooonggidentifier : nat.

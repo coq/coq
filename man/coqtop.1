@@ -85,22 +85,6 @@ load Coq library
 and import it (Require Import path.)
 
 .TP
-.BI \-compile \ filename.v
-compile Coq file
-.I filename.v 
-(implies 
-.B \-batch
-)
-
-.TP
-.BI \-compile\-verbose \ filename.v
-verbosely compile Coq file
-.I filename.v
-(implies 
-.B \-batch
-)
-
-.TP
 .B \-where
 print Coq's standard library location and exit
 
@@ -125,8 +109,6 @@ batch mode (exits just after arguments parsing)
 .B \-boot
 boot mode (implies
 .B \-q
-and
-.B \-batch
 )
 
 .TP

@@ -10,7 +10,7 @@ In Coq source folder:
 opam switch 4.05.0+trunk+fp
 ./configure -local -debug
 make
-perf record -g bin/coqtop -compile file.v
+perf record -g bin/coqc file.v
 perf report -g fractal,callee --no-children
 
 To profile only part of a file, first load it using
@@ -96,7 +96,7 @@ https://github.com/mshinwell/opam-repo-dev
 
 ### For memory dump:
 
-CAMLRUNPARAM=T,mj bin/coqtop -compile file.v
+CAMLRUNPARAM=T,mj bin/coqc file.v
 
 In another terminal:
 
@@ -112,7 +112,7 @@ number of objects and third is the place where the objects where allocated.
 
 ### For complete memory graph:
 
-CAMLRUNPARAM=T,gr bin/coqtop -compile file.v
+CAMLRUNPARAM=T,gr bin/coqc file.v
 
 In another terminal:
 

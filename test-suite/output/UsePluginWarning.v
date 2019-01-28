@@ -1,5 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-w" "-extraction-logical-axiom") -*- *)
-
+(* -*- mode: coq; coq-prog-args: ("-w" "-extraction-logical-axiom") -*- *)
 Require Extraction.
 Axiom foo : Prop.
 

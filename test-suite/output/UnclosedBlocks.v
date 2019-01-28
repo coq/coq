@@ -1,4 +1,3 @@
-(* -*- mode: coq; coq-prog-args: ("-compile" "UnclosedBlocks.v") *)
 Module Foo.
   Module Closed.
   End Closed.
