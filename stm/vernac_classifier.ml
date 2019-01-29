@@ -161,7 +161,6 @@ let classify_vernac e =
     | VernacExistingClass _ | VernacExistingInstance _
     | VernacRegister _
     | VernacNameSectionHypSet _
-    | VernacDeclareCustomEntry _
     | VernacComments _
     | VernacDeclareInstance _ -> VtSideff [], VtLater
     (* Who knows *)
@@ -175,6 +174,7 @@ let classify_vernac e =
     | VernacDeclareModuleType ({v=id},bl,_,_) ->
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
+    | VernacDeclareCustomEntry _
     | VernacOpenCloseScope _ | VernacDeclareScope _
     | VernacDelimiters _ | VernacBindScope _
     | VernacInfix _ | VernacNotation _ | VernacNotationAddFormat _
