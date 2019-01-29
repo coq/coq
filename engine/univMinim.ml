@@ -268,7 +268,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
-let normalize_context_set g ctx us algs weak =
+let normalize_context_set ~lbound g ctx us algs weak =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
@@ -281,12 +281,12 @@ let normalize_context_set g ctx us algs weak =
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
-    let g = LSet.fold (fun v g -> UGraph.add_universe v false g)
+    let g = LSet.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g)
                            ctx UGraph.initial_universes
     in
     let add_soft u g =
       if not (Level.is_small u || LSet.mem u ctx)
-      then try UGraph.add_universe u false g with UGraph.AlreadyDeclared -> g
+      then try UGraph.add_universe ~lbound ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in
     let g = Constraint.fold

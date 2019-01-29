@@ -93,7 +93,8 @@ let check_conv_error error why cst poly f env a1 a2 =
      | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
 let check_polymorphic_instance error env auctx1 auctx2 =
-  if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
+  if not (UGraph.check_subtype ~lbound:(Environ.universes_lbound env)
+            (Environ.universes env) auctx2 auctx1) then
     error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
   else
     Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env

@@ -112,6 +112,7 @@ let add_module_parameter mbid mte inl =
 (** Queries on the global environment *)
 
 let universes () = universes (env())
+let universes_lbound () = universes_lbound (env())
 let named_context () = named_context (env())
 let named_context_val () = named_context_val (env())
 

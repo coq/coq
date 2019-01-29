@@ -25,9 +25,9 @@ type t
 
 val empty : t
 
-val make : UGraph.t -> t
+val make : lbound:Univ.Level.t -> UGraph.t -> t
 
-val make_with_initial_binders : UGraph.t -> lident list -> t
+val make_with_initial_binders : lbound:Univ.Level.t -> UGraph.t -> lident list -> t
 
 val is_empty : t -> bool
 

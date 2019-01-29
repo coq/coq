@@ -59,6 +59,7 @@ type globals = {
 
 type stratification = {
   env_universes : UGraph.t;
+  env_universes_lbound : Univ.Level.t;
   env_engagement : engagement
 }
 
@@ -117,6 +118,7 @@ let empty_env = {
   env_nb_rel = 0;
   env_stratification = {
     env_universes = UGraph.initial_universes;
+    env_universes_lbound = Univ.Level.prop;
     env_engagement = PredicativeSet };
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge;
@@ -251,6 +253,7 @@ let deactivated_guard env = not (typing_flags env).check_guarded
 let indices_matter env = env.env_typing_flags.indices_matter
 
 let universes env = env.env_stratification.env_universes
+let universes_lbound env = env.env_stratification.env_universes_lbound
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
@@ -369,29 +372,30 @@ let check_constraints c env =
 let push_constraints_to_env (_,univs) env =
   add_constraints univs env
 
-let add_universes strict ctx g =
+let add_universes ~lbound ~strict ctx g =
   let g = Array.fold_left
-            (fun g v -> UGraph.add_universe v strict g)
+            (fun g v -> UGraph.add_universe ~lbound ~strict v g)
 	    g (Univ.Instance.to_array (Univ.UContext.instance ctx))
   in
     UGraph.merge_constraints (Univ.UContext.constraints ctx) g
 			   
 let push_context ?(strict=false) ctx env =
-  map_universes (add_universes strict ctx) env
+  map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
 
-let add_universes_set strict ctx g =
+let add_universes_set ~lbound ~strict ctx g =
   let g = Univ.LSet.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
-	    (fun v g -> try UGraph.add_universe v strict g with UGraph.AlreadyDeclared -> g)
+            (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)
 	    (Univ.ContextSet.levels ctx) g
   in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set strict ctx) env
+  map_universes (add_universes_set ~lbound:(universes_lbound env) ~strict ctx) env
 
 let push_subgraph (levels,csts) env =
+  let lbound = universes_lbound env in
   let add_subgraph g =
-    let newg = Univ.LSet.fold (fun v g -> UGraph.add_universe v false g) levels g in
+    let newg = Univ.LSet.fold (fun v g -> UGraph.add_universe ~lbound ~strict:false v g) levels g in
     let newg = UGraph.merge_constraints csts newg in
     (if not (Univ.Constraint.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in

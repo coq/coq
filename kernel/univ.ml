@@ -844,9 +844,7 @@ struct
     else if Array.length y = 0 then x 
     else Array.append x y
 
-  let of_array a =
-    assert(Array.for_all (fun x -> not (Level.is_prop x)) a);
-    a
+  let of_array a = a
 
   let to_array a = a
 
