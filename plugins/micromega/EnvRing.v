@@ -19,6 +19,47 @@ Require Export Ring_theory.
 Local Open Scope positive_scope.
 Import RingSyntax.
 
+(** Definition of polynomial expressions *)
+#[universes(template)]
+Inductive PExpr {C} : Type :=
+| PEc : C -> PExpr
+| PEX : positive -> PExpr
+| PEadd : PExpr -> PExpr -> PExpr
+| PEsub : PExpr -> PExpr -> PExpr
+| PEmul : PExpr -> PExpr -> PExpr
+| PEopp : PExpr -> PExpr
+| PEpow : PExpr -> N -> PExpr.
+Arguments PExpr : clear implicits.
+
+ (* Definition of multivariable polynomials with coefficients in C :
+    Type [Pol] represents [X1 ... Xn].
+    The representation is Horner's where a [n] variable polynomial
+    (C[X1..Xn]) is seen as a polynomial on [X1] which coefficients
+    are polynomials with [n-1] variables (C[X2..Xn]).
+    There are several optimisations to make the repr compacter:
+    - [Pc c] is the constant polynomial of value c
+       == c*X1^0*..*Xn^0
+    - [Pinj j Q] is a polynomial constant w.r.t the [j] first variables.
+        variable indices are shifted of j in Q.
+       == X1^0 *..* Xj^0 * Q{X1 <- Xj+1;..; Xn-j <- Xn}
+    - [PX P i Q] is an optimised Horner form of P*X^i + Q
+        with P not the null polynomial
+       == P * X1^i + Q{X1 <- X2; ..; Xn-1 <- Xn}
+
+    In addition:
+    - polynomials of the form (PX (PX P i (Pc 0)) j Q) are forbidden
+      since they can be represented by the simpler form (PX P (i+j) Q)
+    - (Pinj i (Pinj j P)) is (Pinj (i+j) P)
+    - (Pinj i (Pc c)) is (Pc c)
+ *)
+
+#[universes(template)]
+Inductive Pol {C} : Type :=
+| Pc : C -> Pol
+| Pinj : positive -> Pol -> Pol
+| PX : Pol -> positive -> Pol -> Pol.
+Arguments Pol : clear implicits.
+
 Section MakeRingPol.
 
  (* Ring elements *)
@@ -96,33 +137,11 @@ Section MakeRingPol.
     match goal with |- ?t == _ => mul_permut_rec t end).
 
 
- (* Definition of multivariable polynomials with coefficients in C :
-    Type [Pol] represents [X1 ... Xn].
-    The representation is Horner's where a [n] variable polynomial
-    (C[X1..Xn]) is seen as a polynomial on [X1] which coefficients
-    are polynomials with [n-1] variables (C[X2..Xn]).
-    There are several optimisations to make the repr compacter:
-    - [Pc c] is the constant polynomial of value c
-       == c*X1^0*..*Xn^0
-    - [Pinj j Q] is a polynomial constant w.r.t the [j] first variables.
-        variable indices are shifted of j in Q.
-       == X1^0 *..* Xj^0 * Q{X1 <- Xj+1;..; Xn-j <- Xn}
-    - [PX P i Q] is an optimised Horner form of P*X^i + Q
-        with P not the null polynomial
-       == P * X1^i + Q{X1 <- X2; ..; Xn-1 <- Xn}
+ Notation PExpr := (PExpr C).
+ Notation Pol := (Pol C).
 
-    In addition:
-    - polynomials of the form (PX (PX P i (Pc 0)) j Q) are forbidden
-      since they can be represented by the simpler form (PX P (i+j) Q)
-    - (Pinj i (Pinj j P)) is (Pinj (i+j) P)
-    - (Pinj i (Pc c)) is (Pc c)
- *)
-
- #[universes(template)]
- Inductive Pol : Type :=
-  | Pc : C -> Pol
-  | Pinj : positive -> Pol -> Pol
-  | PX : Pol -> positive -> Pol -> Pol.
+ Implicit Types pe : PExpr.
+ Implicit Types P : Pol.
 
  Definition P0 := Pc cO.
  Definition P1 := Pc cI.
@@ -152,7 +171,7 @@ Section MakeRingPol.
   | _ => Pinj j P
   end.
 
- Definition mkPinj_pred j P:=
+ Definition mkPinj_pred j P :=
   match j with
   | xH => P
   | xO j => Pinj (Pos.pred_double j) P
@@ -937,18 +956,6 @@ Qed.
  auto; try reflexivity.
  rewrite <- IHm; auto.
  Qed.
-
- (** Definition of polynomial expressions *)
-
- #[universes(template)]
- Inductive PExpr : Type :=
-  | PEc : C -> PExpr
-  | PEX : positive -> PExpr
-  | PEadd : PExpr -> PExpr -> PExpr
-  | PEsub : PExpr -> PExpr -> PExpr
-  | PEmul : PExpr -> PExpr -> PExpr
-  | PEopp : PExpr -> PExpr
-  | PEpow : PExpr -> N -> PExpr.
 
  (** evaluation of polynomial expressions towards R *)
  Definition mk_X j := mkPinj_pred j mkX.

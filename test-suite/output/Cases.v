@@ -84,7 +84,6 @@ Print f.
 (* Was enhancement request #5142 (error message reported on the most
    general return clause heuristic) *)
 
-#[universes(template)]
 Inductive gadt : Type -> Type :=
 | gadtNat : nat -> gadt nat
 | gadtTy : forall T, T -> gadt T.

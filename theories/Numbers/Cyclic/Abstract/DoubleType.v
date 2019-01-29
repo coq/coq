@@ -18,45 +18,33 @@ Local Open Scope Z_scope.
 Definition base digits := Z.pow 2 (Zpos digits).
 Arguments base digits: simpl never.
 
-Section Carry.
+#[universes(template)]
+Variant carry (A : Type) :=
+| C0 : A -> carry A
+| C1 : A -> carry A.
 
- Variable A : Type.
-
- #[universes(template)]
- Variant carry :=
-  | C0 : A -> carry
-  | C1 : A -> carry.
-
- Definition interp_carry (sign:Z)(B:Z)(interp:A -> Z) c :=
+Definition interp_carry {A} (sign:Z)(B:Z)(interp:A -> Z) c :=
   match c with
   | C0 x => interp x
   | C1 x => sign*B + interp x
   end.
 
-End Carry.
-
-Section Zn2Z.
-
- Variable znz : Type.
-
- (** From a type [znz] representing a cyclic structure Z/nZ,
-     we produce a representation of Z/2nZ by pairs of elements of [znz]
-     (plus a special case for zero). High half of the new number comes
-     first.
+(** From a type [znz] representing a cyclic structure Z/nZ,
+    we produce a representation of Z/2nZ by pairs of elements of [znz]
+    (plus a special case for zero). High half of the new number comes
+    first.
  *)
+#[universes(template)]
+Variant zn2z {znz : Type} :=
+| W0 : zn2z
+| WW : znz -> znz -> zn2z.
+Arguments zn2z : clear implicits.
 
- #[universes(template)]
- Variant zn2z :=
-  | W0 : zn2z
-  | WW : znz -> znz -> zn2z.
-
- Definition zn2z_to_Z (wB:Z) (w_to_Z:znz->Z) (x:zn2z) :=
+Definition zn2z_to_Z znz (wB:Z) (w_to_Z:znz->Z) (x:zn2z znz) :=
   match x with
   | W0 => 0
   | WW xh xl => w_to_Z xh * wB + w_to_Z xl
   end.
-
-End Zn2Z.
 
 Arguments W0 {znz}.
 

@@ -45,20 +45,23 @@ Hint Transparent key : core.
 
 (** * Trees *)
 
-Section Elt.
-
-Variable elt : Type.
-
 (** * Trees
 
    The fifth field of [Node] is the height of the tree *)
 
 #[universes(template)]
-Inductive tree :=
+Inductive tree {elt : Type} :=
   | Leaf : tree
   | Node : tree -> key -> elt -> tree -> int -> tree.
+Arguments tree : clear implicits.
 
-Notation t := tree.
+Section Elt.
+
+Variable elt : Type.
+
+Notation t := (tree elt).
+
+Implicit Types m : t.
 
 (** * Basic functions on trees: height and cardinal *)
 
@@ -76,7 +79,7 @@ Fixpoint cardinal (m : t) : nat :=
 
 (** * Empty Map *)
 
-Definition empty := Leaf.
+Definition empty : t := Leaf.
 
 (** * Emptyness test *)
 
@@ -236,7 +239,6 @@ Fixpoint join l : key -> elt -> t -> t :=
     - [o] is the result of [find x m].
 *)
 
-#[universes(template)]
 Record triple := mktriple { t_left:t; t_opt:option elt; t_right:t }.
 Notation "<< l , b , r >>" := (mktriple l b r) (at level 9).
 
@@ -293,7 +295,6 @@ Variable cmp : elt->elt->bool.
 
 (** ** Enumeration of the elements of a tree *)
 
-#[universes(template)]
 Inductive enumeration :=
  | End : enumeration
  | More : key -> elt -> t -> enumeration -> enumeration.
@@ -338,6 +339,9 @@ Definition equal m1 m2 := equal_cont m1 equal_end (cons m2 End).
 
 End Elt.
 Notation t := tree.
+Arguments Leaf : clear implicits.
+Arguments Node [elt].
+
 Notation "<< l , b , r >>" := (mktriple l b r) (at level 9).
 Notation "t #l" := (t_left t) (at level 9, format "t '#l'").
 Notation "t #o" := (t_opt t) (at level 9, format "t '#o'").

@@ -94,7 +94,8 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
           c', Monomorphic Univ.ContextSet.empty, cst
         | Polymorphic uctx, Some ctx ->
           let () =
-            if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
+            if not (UGraph.check_subtype ~lbound:(Environ.universes_lbound env)
+                      (Environ.universes env) uctx ctx) then
               error_incorrect_with_constraint lab
           in
           (** Terms are compared in a context with De Bruijn universe indices *)

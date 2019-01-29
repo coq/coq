@@ -838,6 +838,8 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TemplatePolymorphic of MutInd.t (* A mutually inductive definition whose template polymorphism
+                                       on parameter universes has not been checked. *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -856,10 +858,13 @@ struct
         Constant.CanOrd.compare k1 k2
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
+    | TemplatePolymorphic m1, TemplatePolymorphic m2 ->
+        MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2 ->
         Constant.CanOrd.compare k1 k2
     | _ , Constant _ -> 1
     | _ , Positive _ -> 1
+    | _, TemplatePolymorphic _ -> 1
     | _ -> -1
 
   let compare x y =
@@ -914,6 +919,9 @@ let pr_assumptionset env sigma s =
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
       | Guarded kn ->
           hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+      | TemplatePolymorphic m ->
+          hov 2 (safe_pr_inductive env m ++ spc () ++
+                 strbrk"is assumed template polymorphic on all its universe parameters.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in

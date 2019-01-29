@@ -32,7 +32,6 @@ Variable phiCR_comm: forall (c:C)(x:R), x * [c] == [c] * x.
    with coefficients in C :
  *)
 
-#[universes(template)]
  Inductive Pol : Type :=
   | Pc : C -> Pol
   | PX : Pol -> positive -> positive -> Pol -> Pol. 

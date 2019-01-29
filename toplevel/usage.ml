@@ -73,6 +73,7 @@ let print_usage_common co command =
 \n  -sprop-cumulative      make sort SProp cumulative with the rest of the hierarchy\
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
+\n  -no-template-check     disable checking of universes constraints on universes parameterizing template polymorphic inductive types\
 \n  -mangle-names x        mangle auto-generated names using prefix x\
 \n  -set \"Foo Bar\"         enable Foo Bar (as Set Foo Bar. in a file)\
 \n  -set \"Foo Bar=value\"   set Foo Bar to value (value is interpreted according to Foo Bar's type)\

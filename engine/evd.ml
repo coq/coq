@@ -689,7 +689,7 @@ let empty = {
 }
 
 let from_env e = 
-  { empty with universes = UState.make (Environ.universes e) }
+  { empty with universes = UState.make ~lbound:(Environ.universes_lbound e) (Environ.universes e) }
 
 let from_ctx ctx = { empty with universes = ctx }
 

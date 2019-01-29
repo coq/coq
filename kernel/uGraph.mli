@@ -48,7 +48,7 @@ val enforce_leq_alg : Universe.t -> Universe.t -> t -> Constraint.t * t
 
 exception AlreadyDeclared
 
-val add_universe : Level.t -> bool -> t -> t
+val add_universe : Level.t -> lbound:Level.t -> strict:bool -> t -> t
 
 (** Add a universe without (Prop,Set) <= u *)
 val add_universe_unconstrained : Level.t -> t -> t
@@ -86,7 +86,7 @@ val constraints_for : kept:LSet.t -> t -> Constraint.t
 val domain : t -> LSet.t
 (** Known universes *)
 
-val check_subtype : AUContext.t check_function
+val check_subtype : lbound:Level.t -> AUContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
     [ctx1]. *)
 

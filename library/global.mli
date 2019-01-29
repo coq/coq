@@ -22,6 +22,7 @@ val env : unit -> Environ.env
 val env_is_initial : unit -> bool
 
 val universes : unit -> UGraph.t
+val universes_lbound : unit -> Univ.Level.t
 val named_context_val : unit -> Environ.named_context_val
 val named_context : unit -> Constr.named_context
 
@@ -129,6 +130,8 @@ val is_joined_environment : unit -> bool
 
 val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
+val is_template_checked : GlobRef.t -> bool
+val get_template_polymorphic_variables : GlobRef.t -> Univ.Level.t list
 val is_type_in_type : GlobRef.t -> bool
 
 val type_of_global_in_context : Environ.env -> 

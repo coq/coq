@@ -1323,7 +1323,6 @@ Proof. by move=> x y r2xy; apply/orP; right. Qed.
 
 (** Variant of simpl_pred specialised to the membership operator. **)
 
-#[universes(template)]
 Variant mem_pred T := Mem of pred T.
 
 (**
@@ -1464,7 +1463,6 @@ Implicit Types (mp : mem_pred T).
    Definition Acoll : collective_pred T := [pred x | ...].
  as the collective_pred_of_simpl is _not_ convertible to pred_of_simpl.  **)
 
-#[universes(template)]
 Structure registered_applicative_pred p := RegisteredApplicativePred {
   applicative_pred_value :> pred T;
   _ : applicative_pred_value = p
@@ -1473,21 +1471,18 @@ Definition ApplicativePred p := RegisteredApplicativePred (erefl p).
 Canonical applicative_pred_applicative sp :=
   ApplicativePred (applicative_pred_of_simpl sp).
 
-#[universes(template)]
 Structure manifest_simpl_pred p := ManifestSimplPred {
   simpl_pred_value :> simpl_pred T;
   _ : simpl_pred_value = SimplPred p
 }.
 Canonical expose_simpl_pred p := ManifestSimplPred (erefl (SimplPred p)).
 
-#[universes(template)]
 Structure manifest_mem_pred p := ManifestMemPred {
   mem_pred_value :> mem_pred T;
   _ : mem_pred_value = Mem [eta p]
 }.
 Canonical expose_mem_pred p := ManifestMemPred (erefl (Mem [eta p])).
 
-#[universes(template)]
 Structure applicative_mem_pred p :=
   ApplicativeMemPred {applicative_mem_pred_value :> manifest_mem_pred p}.
 Canonical check_applicative_mem_pred p (ap : registered_applicative_pred p) :=
@@ -1538,7 +1533,6 @@ End PredicateSimplification.
 
 (**  Qualifiers and keyed predicates.  **)
 
-#[universes(template)]
 Variant qualifier (q : nat) T := Qualifier of {pred T}.
 
 Coercion has_quality n T (q : qualifier n T) : {pred T} :=
@@ -1573,7 +1567,6 @@ Variable T : Type.
 Variant pred_key (p : {pred T}) := DefaultPredKey.
 
 Variable p : {pred T}.
-#[universes(template)]
 Structure keyed_pred (k : pred_key p) :=
   PackKeyedPred {unkey_pred :> {pred T}; _ : unkey_pred =i p}.
 
@@ -1605,7 +1598,6 @@ Section KeyedQualifier.
 
 Variables (T : Type) (n : nat) (q : qualifier n T).
 
-#[universes(template)]
 Structure keyed_qualifier (k : pred_key q) :=
   PackKeyedQualifier {unkey_qualifier; _ : unkey_qualifier = q}.
 Definition KeyedQualifier k := PackKeyedQualifier k (erefl q).

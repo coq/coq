@@ -1,6 +1,6 @@
 existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
 
-existT is template universe polymorphic
+existT is template universe polymorphic on sigT.u0 sigT.u1
 Argument A is implicit
 Argument scopes are [type_scope function_scope _ _]
 Expands to: Constructor Coq.Init.Specif.existT

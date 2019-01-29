@@ -15,5 +15,5 @@ open Univ
 val universes_of_constr : constr -> LSet.t
 [@@ocaml.deprecated "Use [Vars.universes_of_constr]"]
 
-val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t
+val restrict_universe_context : lbound:Univ.Level.t -> ContextSet.t -> LSet.t -> ContextSet.t
 [@@ocaml.deprecated "Use [UState.restrict_universe_context]"]

@@ -115,6 +115,7 @@ let add_module_parameter mbid mte inl =
 (** Queries on the global environment *)
 
 let universes () = universes (env())
+let universes_lbound () = universes_lbound (env())
 let named_context () = named_context (env())
 let named_context_val () = named_context_val (env())
 
@@ -165,6 +166,10 @@ let universes_of_global gr =
 let is_polymorphic r = Environ.is_polymorphic (env()) r
 
 let is_template_polymorphic r = is_template_polymorphic (env ()) r
+
+let is_template_checked r = is_template_checked (env ()) r
+
+let get_template_polymorphic_variables r = get_template_polymorphic_variables (env ()) r
 
 let is_type_in_type r = is_type_in_type (env ()) r
 

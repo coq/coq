@@ -53,7 +53,7 @@ Module Suboptimal.
 (** This test shows an example which exposes the [let] introduced by
     the pattern notation in binders. *)
 
-#[universes(template)] Inductive Fin (n:nat) := Z : Fin n.
+Inductive Fin (n:nat) := Z : Fin n.
 Definition F '(n,p) : Type := (Fin n * Fin p)%type.
 Definition both_z '(n,p) : F (n,p) := (Z _,Z _).
 Print both_z.

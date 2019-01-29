@@ -209,7 +209,6 @@ Register abstract_key as plugins.ssreflect.abstract_key.
 Register abstract as plugins.ssreflect.abstract.
 
 (**  Constants for tactic-views  **)
-#[universes(template)]
 Inductive external_view : Type := tactic_view of Type.
 
 (**

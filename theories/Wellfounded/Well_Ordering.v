@@ -14,17 +14,18 @@
 
 Require Import Eqdep.
 
+#[universes(template)]
+Inductive WO (A : Type) (B : A -> Type) : Type :=
+  sup : forall (a:A) (f:B a -> WO A B), WO A B.
+
 Section WellOrdering.
   Variable A : Type.
   Variable B : A -> Type.
 
-  #[universes(template)]
-  Inductive WO : Type :=
-    sup : forall (a:A) (f:B a -> WO), WO.
-
+  Notation WO := (WO A B).
 
   Inductive le_WO : WO -> WO -> Prop :=
-    le_sup : forall (a:A) (f:B a -> WO) (v:B a), le_WO (f v) (sup a f).
+    le_sup : forall (a:A) (f:B a -> WO) (v:B a), le_WO (f v) (sup _ _ a f).
 
   Theorem wf_WO : well_founded le_WO.
   Proof.

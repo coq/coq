@@ -33,3 +33,12 @@ val typecheck_inductive : env -> mutual_inductive_entry ->
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *
      Sorts.family list)
     array
+
+(* Utility function to compute the actual universe parameters
+   of a template polymorphic inductive *)
+val template_polymorphic_univs :
+  template_check:bool ->
+  Univ.ContextSet.t ->
+  Constr.rel_context ->
+  Univ.Universe.t ->
+  Univ.Level.t option list * Univ.LSet.t

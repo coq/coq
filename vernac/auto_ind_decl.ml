@@ -346,7 +346,7 @@ let build_beq_scheme mode kn =
           Vars.substl subst cores.(i)
         in
         create_input fix),
-       UState.make (Global.universes ())),
+       UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())),
       !eff
 
 let beq_scheme_kind = declare_mutual_scheme_object "_beq" build_beq_scheme
@@ -691,7 +691,7 @@ let make_bl_scheme mode mind =
   let lnonparrec,lnamesparrec = (* TODO subst *)
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
-  let ctx = UState.make (Global.universes ()) in
+  let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx bl_goal
@@ -821,7 +821,7 @@ let make_lb_scheme mode mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
-  let ctx = UState.make (Global.universes ()) in
+  let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
   let (ans, _, ctx) = Pfedit.build_by_tactic ~side_eff (Global.env()) ctx lb_goal
@@ -997,7 +997,7 @@ let make_eq_decidability mode mind =
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in
   let u = Univ.Instance.empty in
-  let ctx = UState.make (Global.universes ()) in
+  let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
