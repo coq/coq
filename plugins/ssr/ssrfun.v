@@ -391,18 +391,18 @@ Notation "@^~ x" := (fun f => f x) : fun_scope.
  Definitions and notation for explicit functions with simplification,
  i.e., which simpl and /= beta expand (this is complementary to nosimpl).  **)
 
+#[universes(template)]
+Variant simpl_fun (aT rT : Type) := SimplFun of aT -> rT.
+
 Section SimplFun.
 
 Variables aT rT : Type.
 
-#[universes(template)]
-Variant simpl_fun := SimplFun of aT -> rT.
-
-Definition fun_of_simpl f := fun x => let: SimplFun lam := f in lam x.
-
-Coercion fun_of_simpl : simpl_fun >-> Funclass.
+Definition fun_of_simpl (f : simpl_fun aT rT) := fun x => let: SimplFun lam := f in lam x.
 
 End SimplFun.
+
+Coercion fun_of_simpl : simpl_fun >-> Funclass.
 
 Notation "[ 'fun' : T => E ]" := (SimplFun (fun _ : T => E)) : fun_scope.
 Notation "[ 'fun' x => E ]" := (SimplFun (fun x => E)) : fun_scope.

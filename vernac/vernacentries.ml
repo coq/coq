@@ -606,6 +606,24 @@ let vernac_assumption ~atts discharge kind l nl =
             | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
+let set_template_check b =
+ let typing_flags = Environ.typing_flags (Global.env ()) in
+ Global.set_typing_flags { typing_flags with Declarations.check_template = b }
+
+let is_template_check () =
+  let typing_flags = Environ.typing_flags (Global.env ()) in
+  typing_flags.Declarations.check_template
+
+let () =
+  let tccheck =
+    { optdepr = true;
+      optname = "Template universe check";
+      optkey = ["Template"; "Check"];
+      optread = (fun () -> is_template_check ());
+      optwrite = (fun b -> set_template_check b)}
+  in
+    declare_bool_option tccheck
+
 let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref ~depr:false ~value:false
     ~name:"Polymorphic inductive cumulativity"
@@ -2538,7 +2556,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
     VtDefault(fun () ->
         vernac_hints ~atts dbnames hints)
   | VernacSyntacticDefinition (id,c,b) ->
-    VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
+     VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
   | VernacArguments (qid, args, more_implicits, nargs, bidi, flags) ->
     VtDefault(fun () ->
         with_section_locality ~atts (vernac_arguments qid args more_implicits nargs bidi flags))

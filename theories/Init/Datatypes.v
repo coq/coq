@@ -387,8 +387,10 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
 (** [identity A a] is the family of datatypes on [A] whose sole non-empty
     member is the singleton datatype [identity A a a] whose
     sole inhabitant is denoted [identity_refl A a] *)
+(** Beware: this inductive actually falls into [Prop], as the sole
+    constructor has no arguments and [-indices-matter] is not
+    activated in the standard library. *)
 
-#[universes(template)]
 Inductive identity (A:Type) (a:A) : A -> Type :=
   identity_refl : identity a a.
 Hint Resolve identity_refl: core.

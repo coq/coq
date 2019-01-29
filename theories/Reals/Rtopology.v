@@ -380,7 +380,6 @@ Proof.
   apply Rinv_0_lt_compat; prove_sup0.
 Qed.
 
-#[universes(template)]
 Record family : Type := mkfamily
   {ind : R -> Prop;
     f :> R -> R -> Prop;

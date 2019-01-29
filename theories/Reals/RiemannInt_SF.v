@@ -137,7 +137,6 @@ Definition IsStepFun (f:R -> R) (a b:R) : Type :=
   { l:Rlist & is_subdivision f a b l }.
 
 (** ** Class of step functions *)
-#[universes(template)]
 Record StepFun (a b:R) : Type := mkStepFun
   {fe :> R -> R; pre : IsStepFun fe a b}.
 

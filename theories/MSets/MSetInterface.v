@@ -439,7 +439,6 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
 
  Definition elt := E.t.
 
-#[universes(template)]
  Record t_ := Mkt {this :> M.t; is_ok : M.Ok this}.
  Definition t := t_.
  Arguments Mkt this {is_ok}.

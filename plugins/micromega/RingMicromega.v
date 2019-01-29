@@ -289,7 +289,6 @@ destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
  now apply (Rplus_nonneg_nonneg sor).
 Qed.
 
-#[universes(template)]
 Inductive Psatz : Type :=
 | PsatzIn : nat -> Psatz
 | PsatzSquare : PolC -> Psatz
@@ -892,7 +891,7 @@ Fixpoint xdenorm (jmp : positive) (p: Pol C) : PExpr C :=
     | Pc c => PEc c
     | Pinj j p => xdenorm  (Pos.add j jmp ) p
     | PX p j q   => PEadd
-      (PEmul (xdenorm jmp p) (PEpow (PEX _  jmp) (Npos j)))
+      (PEmul (xdenorm jmp p) (PEpow (PEX jmp) (Npos j)))
       (xdenorm (Pos.succ jmp) q)
   end.
 
@@ -961,7 +960,7 @@ Variable phi_C_of_S :   forall c,  phiS c =  phi (C_of_S c).
 Fixpoint map_PExpr (e : PExpr S) : PExpr C :=
   match e with
     | PEc c => PEc (C_of_S c)
-    | PEX _ p => PEX _ p
+    | PEX p => PEX p
     | PEadd e1 e2 => PEadd (map_PExpr e1) (map_PExpr e2)
     | PEsub e1 e2 => PEsub (map_PExpr e1) (map_PExpr e2)
     | PEmul e1 e2 => PEmul (map_PExpr e1) (map_PExpr e2)

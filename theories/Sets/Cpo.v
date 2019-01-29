@@ -100,11 +100,9 @@ Hint Resolve Totally_ordered_definition Upper_Bound_definition
 Section Specific_orders.
   Variable U : Type.
 
-  #[universes(template)]
   Record Cpo : Type := Definition_of_cpo
     {PO_of_cpo : PO U; Cpo_cond : Complete U PO_of_cpo}.
 
-  #[universes(template)]
   Record Chain : Type := Definition_of_chain
     {PO_of_chain : PO U;
     Chain_cond : Totally_ordered U PO_of_chain (@Carrier_of _ PO_of_chain)}.

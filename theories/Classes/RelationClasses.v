@@ -286,7 +286,6 @@ Local Open Scope list_scope.
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
 
 (* Note, we do not use [list Type] because it imposes unnecessary universe constraints *)
-#[universes(template)]
 Inductive Tlist : Type := Tnil : Tlist | Tcons : Type -> Tlist -> Tlist.
 Local Infix "::" := Tcons.
 

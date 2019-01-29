@@ -25,7 +25,7 @@ module UPairSet : CSet.S with type elt = (Level.t * Level.t)
     (a global one if there is one) and transitively saturate
     the constraints w.r.t to the equalities. *)
 
-val normalize_context_set : UGraph.t -> ContextSet.t ->
+val normalize_context_set : lbound:Univ.Level.t -> UGraph.t -> ContextSet.t ->
   universe_opt_subst (* The defined and undefined variables *) ->
   LSet.t (* univ variables that can be substituted by algebraics *) ->
   UPairSet.t (* weak equality constraints *) ->

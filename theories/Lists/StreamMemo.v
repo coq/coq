@@ -73,14 +73,17 @@ End MemoFunction.
     reused thanks to a temporary hiding of the dependency
     in a "container" [memo_val]. *)
 
+#[universes(template)]
+Inductive memo_val {A : nat -> Type} : Type :=
+  memo_mval: forall n, A n -> memo_val.
+Arguments memo_val : clear implicits.
+
 Section DependentMemoFunction.
 
 Variable A: nat -> Type.
 Variable f: forall n, A n.
 
-#[universes(template)]
-Inductive memo_val: Type :=
-  memo_mval: forall n, A n -> memo_val.
+Notation memo_val := (memo_val A).
 
 Fixpoint is_eq (n m : nat) : {n = m} + {True} :=
   match n, m return {n = m} + {True} with

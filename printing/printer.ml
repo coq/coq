@@ -854,6 +854,8 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TemplatePolymorphic of MutInd.t (* A mutually inductive definition whose template polymorphism
+                                       on parameter universes has not been checked. *)
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
 
 type context_object =
@@ -873,10 +875,13 @@ struct
         Constant.CanOrd.compare k1 k2
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
+    | TemplatePolymorphic m1, TemplatePolymorphic m2 ->
+        MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2 ->
         GlobRef.Ordered.compare k1 k2
     | _ , Constant _ -> 1
     | _ , Positive _ -> 1
+    | _, TemplatePolymorphic _ -> 1
     | _ -> -1
 
   let compare x y =
@@ -937,6 +942,9 @@ let pr_assumptionset env sigma s =
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
+      | TemplatePolymorphic m ->
+          hov 2 (safe_pr_inductive env m ++ spc () ++
+                 strbrk"is assumed template polymorphic on all its universe parameters.")
       | TypeInType gr ->
          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
     in
