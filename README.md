@@ -2,7 +2,6 @@
 
 [![GitLab][gitlab-badge]][gitlab-link]
 [![Azure Pipelines][azure-badge]][azure-link]
-[![Travis][travis-badge]][travis-link]
 [![Appveyor][appveyor-badge]][appveyor-link]
 [![Gitter][gitter-badge]][gitter-link]
 [![DOI][doi-badge]][doi-link]
@@ -12,9 +11,6 @@
 
 [azure-badge]: https://dev.azure.com/coq/coq/_apis/build/status/coq.coq?branchName=master
 [azure-link]: https://dev.azure.com/coq/coq/_build/latest?definitionId=1?branchName=master
-
-[travis-badge]: https://travis-ci.org/coq/coq.svg?branch=master
-[travis-link]: https://travis-ci.org/coq/coq/builds
 
 [appveyor-badge]: https://ci.appveyor.com/api/projects/status/eln43k05pa2vm908/branch/master?svg=true
 [appveyor-link]: https://ci.appveyor.com/project/coq/coq/branch/master

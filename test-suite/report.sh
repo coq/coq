@@ -24,21 +24,11 @@ cp summary.log "$SAVEDIR"/
 rm "$FAILED"
 
 # print info
-if [ -n "$TRAVIS" ] || [ -n "$APPVEYOR" ] || [ -n "$PRINT_LOGS" ]; then
+if [ -n "$APPVEYOR" ] || [ -n "$PRINT_LOGS" ]; then
     find logs/ -name '*.log' -not -name 'summary.log' -print0 | while IFS= read -r -d '' file; do
-        if [ -n "$TRAVIS" ]; then
-            # ${foo////.} replaces every / by . in $foo
-            printf 'travis_fold:start:coq.logs.%s\n' "${file////.}";
-        else printf '%s\n' "$file"
-        fi
-
+        printf '%s\n' "$file"
         cat "$file"
-
-        if [ -n "$TRAVIS" ]; then
-            # ${foo////.} replaces every / by . in $foo
-            printf 'travis_fold:end:coq.logs.%s\n' "${file////.}";
-        else printf '\n'
-        fi
+        printf '\n'
     done
     printed_logs=1
 fi

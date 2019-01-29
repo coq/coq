@@ -93,7 +93,7 @@ put the approriate label. Otherwise, they are expected to merge the PR using the
 
 When CI has a few failures which look spurious, restarting the corresponding
 jobs is a good way of ensuring this was indeed the case.
-To restart a job on Travis or on AppVeyor, you should connect using your GitHub
+To restart a job on AppVeyor, you should connect using your GitHub
 account; being part of the Coq organization on GitHub should give you the
 permission to do so.
 To restart a job on GitLab CI, you should sign into GitLab (this can be done
