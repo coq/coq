@@ -943,8 +943,8 @@ instance the infix symbol ``+``, can be used to denote distinct
 definitions of the additive operator. Depending on which interpretation
 scopes are currently open, the interpretation is different.
 Interpretation scopes can include an interpretation for numerals and
-strings. However, this is only made possible at the Objective Caml
-level.
+strings, either at the OCaml level or using :cmd:`Numeral Notation`
+or :cmd:`String Notation`.
 
 .. cmd:: Declare Scope @scope
 
@@ -1214,7 +1214,7 @@ Scopes` or :cmd:`Print Scope`.
 
 ``nat_scope``
   This scope includes the standard arithmetical operators and relations on type
-  nat. Positive numerals in this scope are mapped to their canonical
+  nat. Positive integer numerals in this scope are mapped to their canonical
   representent built from :g:`O` and :g:`S`. The scope is delimited by the key
   ``nat``, and bound to the type :g:`nat` (see above).
 
@@ -1238,20 +1238,19 @@ Scopes` or :cmd:`Print Scope`.
   This scope includes the standard arithmetical operators and relations on
   type :g:`Q` (rational numbers defined as fractions of an integer and a
   strictly positive integer modulo the equality of the numerator-
-  denominator cross-product). As for numerals, only 0 and 1 have an
-  interpretation in scope ``Q_scope`` (their interpretations are 0/1 and 1/1
-  respectively).
+  denominator cross-product) and comes with an interpretation for numerals
+  as closed terms of type :g:`Q`.
 
 ``Qc_scope``
   This scope includes the standard arithmetical operators and relations on the
   type :g:`Qc` of rational numbers defined as the type of irreducible
   fractions of an integer and a strictly positive integer.
 
-``real_scope``
+``R_scope``
   This scope includes the standard arithmetical operators and relations on
   type :g:`R` (axiomatic real numbers). It is delimited by the key ``R`` and comes
   with an interpretation for numerals using the :g:`IZR` morphism from binary
-  integer numbers to :g:`R`.
+  integer numbers to :g:`R` and :g:`Z.pow_pos` for potential exponent parts.
 
 ``bool_scope``
   This scope includes notations for the boolean operators. It is delimited by the
@@ -1458,6 +1457,8 @@ Numeral notations
      * :n:`Decimal.uint -> option @ident__1`
      * :n:`Z -> @ident__1`
      * :n:`Z -> option @ident__1`
+     * :n:`Decimal.decimal -> @ident__1`
+     * :n:`Decimal.decimal -> option @ident__1`
 
    And the printing function :n:`@ident__3` should have one of the
    following types:
@@ -1468,6 +1469,8 @@ Numeral notations
      * :n:`@ident__1 -> option Decimal.uint`
      * :n:`@ident__1 -> Z`
      * :n:`@ident__1 -> option Z`
+     * :n:`@ident__1 -> Decimal.decimal`
+     * :n:`@ident__1 -> option Decimal.decimal`
 
      When parsing, the application of the parsing function
      :n:`@ident__2` to the number will be fully reduced, and universes
@@ -1501,15 +1504,16 @@ Numeral notations
      The numeral notation registered for :token:`type` does not support
      the given numeral.  This error is given when the interpretation
      function returns :g:`None`, or if the interpretation is registered
-     for only non-negative integers, and the given numeral is negative.
+     only for integers or non-negative integers, and the given numeral
+     has a fractional or exponent part or is negative.
 
 
-   .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).
+   .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The parsing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
 
-   .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).
+   .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The printing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
