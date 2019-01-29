@@ -20,6 +20,7 @@ constructor;red;intros;subst;trivial.
 Qed.
 
 Instance Rops: (@Ring_ops R 0%R 1%R Rplus Rmult Rminus Ropp (@eq R)).
+Defined.
 
 Instance Rri : (Ring (Ro:=Rops)).
 constructor;

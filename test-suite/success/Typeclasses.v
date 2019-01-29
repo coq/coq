@@ -14,7 +14,7 @@ Module onlyclasses.
   Module RJung.
     Class Foo (x : nat).
       
-      Instance foo x : x = 2 -> Foo x.
+      Instance foo x : x = 2 -> Foo x := {}.
       Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
       Typeclasses eauto := debug.
       Check (_ : Foo 2).
@@ -63,7 +63,7 @@ End RefineVsNoTceauto.
 Module Leivantex2PR339.
   (** Was a bug preventing to find hints associated with no pattern *)
   Class Bar := {}.
-  Instance bar1 (t:Type) : Bar.
+  Instance bar1 (t:Type) : Bar := {}.
   Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
@@ -222,10 +222,10 @@ Module IterativeDeepening.
   Class B.
   Class C.
 
-  Instance: B -> A | 0.
-  Instance: C -> A | 0.
-  Instance: C -> B -> A | 0.
-  Instance: A -> A | 0.
+  Instance: B -> A | 0 := {}.
+  Instance: C -> A | 0 := {}.
+  Instance: C -> B -> A | 0 := {}.
+  Instance: A -> A | 0 := {}.
   
   Goal C -> A.
     intros.

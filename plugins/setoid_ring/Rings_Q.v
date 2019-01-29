@@ -15,6 +15,7 @@ Require Export Integral_domain.
 Require Import QArith.
 
 Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
+Defined.
 
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.

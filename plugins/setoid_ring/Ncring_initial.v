@@ -32,6 +32,7 @@ Lemma Zsth : Equivalence (@eq Z).
 Proof. exact Z.eq_equiv. Qed.
 
 Instance Zops:@Ring_ops Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z).
+Defined.
 
 Instance Zr: (@Ring _ _ _ _ _ _ _ _ Zops).
 Proof.

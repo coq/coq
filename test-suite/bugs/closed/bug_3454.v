@@ -32,14 +32,14 @@ Local Instance isequiv_tgt_compose A B
 : @IsEquiv (A -> {xy : B * B & fst xy = snd xy})
            (A -> B)
            (@compose A {xy : B * B & fst xy = snd xy} B
-                     (@compose {xy : B * B & fst xy = snd xy} _ B (@snd B B) pr1)).
+                     (@compose {xy : B * B & fst xy = snd xy} _ B (@snd B B) pr1)) := {}.
 (* Toplevel input, characters 220-223: *)
 (* Error: Cannot infer this placeholder. *)
 
 Local Instance isequiv_tgt_compose' A B
 : @IsEquiv (A -> {xy : B * B & fst xy = snd xy})
            (A -> B)
-           (@compose A {xy : B * B & fst xy = snd xy} B (@compose {xy : B * B & fst xy = snd xy} _ B (@snd _ _) pr1)).
+           (@compose A {xy : B * B & fst xy = snd xy} B (@compose {xy : B * B & fst xy = snd xy} _ B (@snd _ _) pr1)) := {}.
 (* Toplevel input, characters 221-232: *)
 (* Error: *)
 (* In environment *)
@@ -52,7 +52,7 @@ Local Instance isequiv_tgt_compose'' A B
 : @IsEquiv (A -> {xy : B * B & fst xy = snd xy})
            (A -> B)
            (@compose A {xy : B * B & fst xy = snd xy} B (@compose {xy : B * B & fst xy = snd xy} _ B (@snd _ _)
-                                                                  (fun s => s.(projT1)))).
+                                                                  (fun s => s.(projT1)))) := {}.
 (* Toplevel input, characters 15-241:
 Error:
 Cannot infer an internal placeholder of type "Type" in environment:

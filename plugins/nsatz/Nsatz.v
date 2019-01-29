@@ -452,6 +452,7 @@ constructor;red;intros;subst;trivial.
 Qed.
 
 Instance Rops: (@Ring_ops R 0%R 1%R Rplus Rmult Rminus Ropp (@eq R)).
+Defined.
 
 Instance Rri : (Ring (Ro:=Rops)).
 constructor;
@@ -468,6 +469,7 @@ Class can_compute_Z (z : Z) := dummy_can_compute_Z : True.
 Hint Extern 0 (can_compute_Z ?v) =>
   match isZcst v with true => exact I end : typeclass_instances.
 Instance reify_IZR z lvar {_ : can_compute_Z z} : reify (PEc z) lvar (IZR z).
+Defined.
 
 Lemma R_one_zero: 1%R <> 0%R.
 discrR.
@@ -484,6 +486,7 @@ exact Rmult_integral. exact R_one_zero. Defined.
 Require Import QArith.
 
 Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
+Defined.
 
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.
