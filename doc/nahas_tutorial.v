@@ -1,4 +1,3 @@
-
 (**
 Mike Nahas's Coq Tutorial
 
