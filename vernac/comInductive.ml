@@ -187,11 +187,6 @@ let extract_level env evd min tys =
       sign_level env evd (LocalAssum (Anonymous, concl) :: ctx)) tys
   in sup_list min sorts
 
-let is_flexible_sort evd u =
-  match Univ.Universe.level u with
-  | Some l -> Evd.is_flexible_level evd l
-  | None -> false
-
 (**********************************************************************)
 (* Tools for template polymorphic inductive types                         *)
 
@@ -319,10 +314,7 @@ let inductive_levels env evd poly arities inds =
         in
         let duu = Sorts.univ_of_sort du in
         let evd =
-          if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
-            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-              Evd.set_eq_sort env evd Prop du
-            else evd
+          if Univ.Universe.equal cu duu then evd
           else Evd.set_eq_sort env evd (Type cu) du
         in
           (evd, arity :: arities))
