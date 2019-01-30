@@ -253,7 +253,7 @@ let solve_constraints_system levels level_bounds =
   done;
   v
 
-let inductive_levels env evd poly arities inds =
+let inductive_levels env evd arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
   let levels = List.map (fun (x,(ctx,a)) ->
     if a = Prop then None
@@ -411,7 +411,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left make_conclusion_flexible sigma arityconcl in
-  let sigma, arities = inductive_levels env_ar_params sigma poly arities constructors in
+  let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
   let arities = List.map nf arities in
