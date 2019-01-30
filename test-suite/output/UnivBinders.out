@@ -112,16 +112,17 @@ insec@{v} = Type@{u} -> Type@{v}
 Inductive insecind@{k} : Type@{k+1} :=  inseccstr : Type@{k} -> insecind@{k}
 
 For inseccstr: Argument scope is [type_scope]
-insec@{u v} = Type@{u} -> Type@{v}
+insec@{u v} = 
+Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
-(* u v |=  *)
+(* u v |= Set <= u *)
 Inductive insecind@{u k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{u k}
 
 For inseccstr: Argument scope is [type_scope]
 insec2@{u} = Prop
      : Type@{Set+1}
-(* u |=  *)
+(* u |= Set <= u *)
 inmod@{u} = Type@{u}
      : Type@{u+1}
 (* u |=  *)

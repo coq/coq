@@ -1,4 +1,6 @@
 Prop < Set
+     < i
+     < j
 Set < i
     < j
 i < j

@@ -172,15 +172,15 @@ Module TemplateProp.
 
 End TemplateProp.
 
-Module PolyNoLowerProp.
+Module PolyLowerProp.
 
-  (** Check lowering of a general universe polymorphic inductive to Prop is _failing_ *)
+  (** Check lowering of a general universe polymorphic inductive to Prop is _succeeding_ *)
   
   Polymorphic Inductive Foo (A : Type) : Type := foo : A -> Foo A.
-  
-  Fail Check Foo True : Prop.
 
-End PolyNoLowerProp.
+  Check Foo True : Prop.
+
+End PolyLowerProp.
 
 (* Test building of elimination scheme with noth let-ins and
    non-recursively uniform parameters *)

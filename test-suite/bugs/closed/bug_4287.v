@@ -104,15 +104,15 @@ Qed.
 End Hurkens.
 
 Polymorphic Record box (T : Type) := wrap {unwrap : T}.
-
+Set Printing Universes.
 (* Here we instantiate to Set *)
 
-Fail Definition down (x : Type) : Prop := box x.
+Definition down (x : Type) : Prop := box x.
 Definition up (x : Prop) : Type := x.
 
-Fail Definition back A : up (down A) -> A := unwrap A.
+Definition back A : up (down A) -> A := unwrap A.
 
-Fail Definition forth A : A -> up (down A) := wrap A.
+Definition forth A : A -> up (down A) := wrap A.
 
 Definition id {A : Type} (a : A) := a.
 Definition setlt (A : Type@{i}) :=
@@ -122,6 +122,6 @@ Definition setle (B : Type@{i}) :=
   let foo (A : Type@{j}) := A in foo B.
 
 Fail Check @setlt@{j Prop}.
-Fail Definition foo := @setle@{j Prop}.
+Definition foo := @setle@{j Prop}.
 Check setlt@{Set i}.
 Check setlt@{Set j}.

@@ -3,14 +3,14 @@ Require Import TestSuite.admit.
 Set Universe Polymorphism.
 Generalizable All Variables.
 Reserved Notation "g 'o' f" (at level 40, left associativity).
-Inductive paths {A : Type} (a : A) : A -> Type :=
+Inductive paths@{i} {A : Type@{i}} (a : A) : A -> Type@{i} :=
   idpath : paths a a.
 Arguments idpath {A a} , [A] a.
 Notation "x = y" := (@paths _ x y) : type_scope.
 
-Class IsEquiv {A B : Type} (f : A -> B) := {}.
+Class IsEquiv@{i j k | Set <= i, Set <= j, Set <= k} {A : Type@{i}} {B : Type@{j}} (f : A -> B) : Type@{k} := {}.
 
-Class Contr_internal (A : Type) := BuildContr {
+Class Contr_internal@{i | Set <= i} (A : Type@{i}) := BuildContr {
                                        center : A ;
                                        contr : (forall y : A, center = y)
                                      }.
@@ -72,7 +72,7 @@ Arguments compose [!C s d d'] m1 m2 : rename.
 
 Infix "o" := compose : morphism_scope.
 Local Open Scope morphism_scope.
-
+Set Printing Universes.
 Class IsEpimorphism {C} {x y} (m : morphism C x y) :=
   is_epimorphism : forall z (m1 m2 : morphism C y z),
                      m1 o m = m2 o m

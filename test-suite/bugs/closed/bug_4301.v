@@ -9,5 +9,5 @@ Module Lower (X : Foo with Definition U := True : Type).
 End Lower.
 
 Module M : Foo.
-  Definition U := nat : Type@{i}.
+  Definition U := True : Type@{i}.
 End M.

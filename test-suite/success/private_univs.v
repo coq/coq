@@ -31,7 +31,7 @@ Proof.
   exact bar.
 Qed.
 
-Definition private_transitivity'@{i j|i < j} := private_transitivity@{i j}.
+Definition private_transitivity'@{i j|i < j, Set < j} := private_transitivity@{i j}.
 Fail Definition dummy@{i j|j <= i +} := private_transitivity@{i j}.
 
 Unset Private Polymorphic Universes.
