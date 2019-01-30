@@ -222,6 +222,10 @@ let lookup_constant kn env =
 let lookup_mind kn env =
   fst (Mindmap_env.find kn env.env_globals.env_inductives)
 
+let mind_context env mind =
+  let mib = lookup_mind mind env in
+  Declareops.inductive_polymorphic_context mib
+
 let lookup_mind_key kn env =
   Mindmap_env.find kn env.env_globals.env_inductives
 

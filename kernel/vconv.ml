@@ -86,17 +86,11 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
   match a1, a2 with
   | Aind ((mi,_i) as ind1) , Aind ind2 ->
     if eq_ind ind1 ind2 && compare_stack stk1 stk2 then
-      if Environ.polymorphic_ind ind1 env then
-        let mib = Environ.lookup_mind mi env in
-	let ulen = 
-          match mib.Declarations.mind_universes with
-          | Declarations.Monomorphic_ind ctx -> Univ.ContextSet.size ctx
-          | Declarations.Polymorphic_ind auctx -> Univ.AUContext.size auctx
-          | Declarations.Cumulative_ind cumi -> 
-            Univ.AUContext.size (Univ.ACumulativityInfo.univ_context cumi)
-        in
+      let ulen = Univ.AUContext.size (Environ.mind_context env mi) in
+      if ulen = 0 then
+        conv_stack env k stk1 stk2 cu
+      else
         match stk1 , stk2 with
-	| [], [] -> assert (Int.equal ulen 0); cu
         | Zapp args1 :: stk1' , Zapp args2 :: stk2' ->
           assert (ulen <= nargs args1);
           assert (ulen <= nargs args2);
@@ -108,8 +102,6 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           conv_arguments env ~from:ulen k args1 args2
 	    (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
-      else
-	conv_stack env k stk1 stk2 cu
     else raise NotConvertible
   | Aid ik1, Aid ik2 ->
     if Vmvalues.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
