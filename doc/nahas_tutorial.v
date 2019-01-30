@@ -1584,10 +1584,15 @@ that (Is_true (andb a true))".  We cannot just state that the
 "bool" exists.  You need to produce a value for "a" - called the
 witness - and then prove that the statement holds for the witness.
 
-The definition is:
+The definition and operator are:
 <<
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
+
+Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
+  (at level 200, x binder, right associativity,
+   format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'")
+  : type_scope.
 >>
 
 The proposition "ex P" should be read: "P is a function returning a
@@ -1597,44 +1602,12 @@ constructor for "ex P" takes the predicate "P" , the witness (called
 "x" here) and a proof of "P x" in order to return something of type
 "ex P".
 
-The type "ex" actually has two parameters: "A" and "P".  But, we can
-use "ex P" instead of "ex A P" because Coq can figure out what "A" is:
-it is just the type of the parameter to the function "P".  The same
-goes for the constructor "ex_intro": we can use "ex_intro P witness
-proof" instead of "ex_intro A P witness proof".
+"exists ..., ..." is an operator to provide a friendly notation.  For
+"and" and "or", we did the same with "/\" and "/\".  For existence,
+the usually operator is a capital E written backwards, but that's
+difficult to type, so Coq uses the word "exists".
 
-But what does it mean that "A"'s type is "Type"?  "Type" contains more
-of Coq's magic.  We saw early on that "proof_of_B" was a proof and had
-type "B", which was a proposition.  "B", since it was a proposition,
-had type "Prop".  But if types can have types, what type does "Prop"
-have?  The answer is "Type(1)".  The answer to your next N questions
-is that "Type(1)" has type "Type(2)".  "Type(2)" has type "Type(3)".
-Etc.
-
-Similarly, "true" had type "bool".  "bool" had type "Set".  And "Set" has
-type "Type(1)" (just like "Prop").
-
-Coq hides this infinite hierarchy from the user with the magic type
-"Type".  When you use "Type", Coq will determine if the value lies in
-"Prop", "Set", or any of the the "Type(...)" types.  The practice for
-new Coq code is to not use "Set" at all and just use "Prop" and
-"Type".  (Some older primitive types, like "nat" and "bool" still use
-"Set", so I wanted you to be familiar with it.)
-
-Now, for "and" and "or", we had an operator that allowed a friendly
-notation using "/\" and "\/".  The operator for existance is:
-<<
-Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
-  (at level 200, x binder, right associativity,
-   format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'")
-  : type_scope.
->>
-
-The operator for existance is usually a capital E written backwards,
-but that's difficult to type, so Coq uses the word "exists".
-
-Let's test this out with the easy theorem I already mentioned.  I'll
-do it first without the operator "exists".
+Let's test this out with the easy theorem I already mentioned.
 *)
 
 Definition basic_predicate
@@ -1750,7 +1723,7 @@ Here is a classic theorem of logic, showing the relationship between
 of type "ex".
 *)
 
-Theorem forall_exists : (forall P : Type->Prop,  (forall x, ~(P x)) -> ~(exists x, P x)).
+Theorem forall_exists : (forall P : Set->Prop,  (forall x, ~(P x)) -> ~(exists x, P x)).
 Proof.
   intros P.
   intros forall_x_not_Px.
@@ -1779,7 +1752,7 @@ Another good example of "exists" is proving that the implication goes
 the other way too.
 *)
 
-Theorem exists_forall : (forall P : Type->Prop,  ~(exists x, P x) -> (forall x, ~(P x))).
+Theorem exists_forall : (forall P : Set->Prop,  ~(exists x, P x) -> (forall x, ~(P x))).
 Proof.
   intros P.
   intros not_exists_x_Px.
@@ -1867,7 +1840,7 @@ Now that we have a concept of what "=" means in Coq, let's use it!
 
 (** *** Equality is symmetric *)
 
-Theorem thm_eq_sym : (forall x y : Type, x = y -> y = x).
+Theorem thm_eq_sym : (forall x y : Set, x = y -> y = x).
 Proof.
   intros x y.
   intros x_y.
@@ -1881,8 +1854,8 @@ constructor.  Let's look at the state before and after that call.
 
 Before, it is:
 <<
-  x : Type
-  y : Type
+  x : Set
+  y : Set
   x_y : x = y
   ============================
    y = x
@@ -1890,7 +1863,7 @@ Before, it is:
 
 And after:
 <<
-  x : Type
+  x : Set
   ============================
    x = x
 >>
@@ -1910,7 +1883,7 @@ equality: transitivity.
 
 (** *** Equality is transitive *)
 
-Theorem thm_eq_trans : (forall x y z: Type, x = y -> y = z -> x = z).
+Theorem thm_eq_trans : (forall x y z: Set, x = y -> y = z -> x = z).
 Proof.
   intros x y z.
   intros x_y y_z.
@@ -1930,7 +1903,7 @@ x_y" will go the other way, replacing "y" with "x".
 Let's see these tactics by proving transitivity again.
 *)
 
-Theorem thm_eq_trans__again : (forall x y z: Type, x = y -> y = z -> x = z).
+Theorem thm_eq_trans__again : (forall x y z: Set, x = y -> y = z -> x = z).
 Proof.
   intros x y z.
   intros x_y y_z.
@@ -2356,7 +2329,22 @@ a list takes a type called "A" and is either empty - constructed using
 "nil" - or a node containing a value of type "A" and a link to another
 list.
 
-There is an operator for building a list.
+In a number of earlier places, I've ignored the type "Type".  It hides
+some magic in Coq.  We saw early on that "proof_of_A" was a proof
+and had type "A", which was a proposition.  "A", since it was a
+proposition, had type "Prop".  But if types can have types, what type
+does "Prop" have?  The answer is "Type(1)".  The answer to your next N
+questions is that "Type(1)" has type "Type(2)".  "Type(2)" has type
+"Type(3)".  Etc.
+
+Similarly, "true" had type "bool".  "bool" had type "Set".  And "Set" has
+type "Type(1)" (just like "Prop").
+
+Coq hides this infinite hierarchy from the user with the magic type
+"Type".  When you use "Type", Coq will determine if the value lies in
+"Prop", "Set", or any of the the "Type(...)" types.
+
+Going back to lists, there is an operator for building a list.
 <<
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 >>
