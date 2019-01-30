@@ -207,6 +207,13 @@ Definition phi_inv : Z -> int31 := fun n =>
  | Zneg p => incr (complement_negative p)
  end.
 
+(** [phi_inv_nonneg] returns [None] if the [Z] is negative; this matches the old behavior of parsing int31 numerals *)
+Definition phi_inv_nonneg : Z -> option int31 := fun n =>
+ match n with
+ | Zneg _ => None
+ | _ => Some (phi_inv n)
+ end.
+
 (** [phi_inv2] is similar to [phi_inv] but returns a double word
     [zn2z int31] *)
 
@@ -493,4 +500,4 @@ Definition tail031 (i:int31) :=
 Register head031 as int31.head0.
 Register tail031 as int31.tail0.
 
-Numeral Notation int31 phi_inv phi : int31_scope.
+Numeral Notation int31 phi_inv_nonneg phi : int31_scope.

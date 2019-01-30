@@ -10,5 +10,5 @@ Check (add31 2 2).
 Check (2+2).
 Eval vm_compute in 2+2.
 Eval vm_compute in 65675757 * 565675998.
-Check -1.
+Fail Check -1.
 Close Scope int31_scope.
