@@ -442,7 +442,7 @@ let check_univ_decl ~poly uctx decl =
       (Univ.ContextSet.constraints uctx.uctx_local);
   ctx
 
-let restrict_universe_context (univs, csts) keep =
+let restrict_universe_context lbound (univs, csts) keep =
   let open Univ in
   let removed = LSet.diff univs keep in
   if LSet.is_empty removed then univs, csts
@@ -450,12 +450,12 @@ let restrict_universe_context (univs, csts) keep =
   let allunivs = Constraint.fold (fun (u,_,v) all -> LSet.add u (LSet.add v all)) csts univs in
   let g = UGraph.initial_universes in
   let g = LSet.fold (fun v g -> if Level.is_small v then g else
-                        UGraph.add_universe v ~lbound:Univ.Level.set ~strict:false g) allunivs g in
+                        UGraph.add_universe v ~lbound ~strict:false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
   let allkept = LSet.union (UGraph.domain UGraph.initial_universes) (LSet.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
   let csts = Constraint.filter (fun (l,d,r) ->
-      not ((Level.is_set l && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
+      not ((Level.equal l lbound && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
   (LSet.inter univs keep, csts)
 
 let restrict ctx vars =
@@ -463,7 +463,7 @@ let restrict ctx vars =
   let vars = Names.Id.Map.fold (fun na l vars -> Univ.LSet.add l vars)
       (fst ctx.uctx_names) vars
   in
-  let uctx' = restrict_universe_context ctx.uctx_local vars in
+  let uctx' = restrict_universe_context ctx.uctx_universes_lbound ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
 let demote_seff_univs entry uctx =

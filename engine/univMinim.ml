@@ -272,7 +272,7 @@ let normalize_context_set ~lbound g ctx us algs weak =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
-    Constraint.partition (fun (l,d,r) -> d == Le && Level.is_small l) csts
+    Constraint.partition (fun (l,d,r) -> d == Le && Level.equal l lbound) csts
   in
   let smallles = if get_set_minimization ()
     then Constraint.filter (fun (l,d,r) -> LSet.mem r ctx) smallles
@@ -299,7 +299,7 @@ let normalize_context_set ~lbound g ctx us algs weak =
   (* We ignore the trivial Prop/Set <= i constraints. *)
   let noneqs =
     Constraint.filter
-      (fun (l,d,r) -> not ((d == Le && Level.is_small l) ||
+      (fun (l,d,r) -> not ((d == Le && Level.equal l lbound) ||
                            (Level.is_prop l && d == Lt && Level.is_set r)))
       csts
   in
