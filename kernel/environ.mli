@@ -46,8 +46,12 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-type globals
-(** globals = constants + projections + inductive types + modules + module-types *)
+type globals = {
+  env_constants : constant_key Cmap_env.t;
+  env_inductives : mind_key Mindmap_env.t;
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body MPmap.t;
+}
 
 type stratification = {
   env_universes : UGraph.t;

@@ -969,28 +969,6 @@ let in_import : bool * ModPath.t -> obj =
 let import_module export mp =
   Lib.add_anonymous_leaf (in_import (export,mp))
 
-
-(** {6 Iterators} *)
-
-let iter_all_segments f =
-  let rec apply_obj prefix (id,obj) = match object_tag obj with
-    | "INCLUDE" ->
-      let objs = expand_aobjs (out_include obj) in
-      List.iter (apply_obj prefix) objs
-    | _ -> f (Lib.make_oname prefix id) obj
-  in
-  let apply_mod_obj _ (prefix,substobjs,keepobjs) =
-    List.iter (apply_obj prefix) substobjs;
-    List.iter (apply_obj prefix) keepobjs
-  in
-  let apply_node = function
-    | sp, Lib.Leaf o -> f sp o
-    | _ -> ()
-  in
-  MPmap.iter apply_mod_obj (ModObjs.all ());
-  List.iter apply_node (Lib.contents ())
-
-
 (** {6 Some types used to shorten declaremods.mli} *)
 
 type 'modast module_interpretor =

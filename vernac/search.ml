@@ -13,7 +13,6 @@ open Util
 open Names
 open Constr
 open Declarations
-open Libobject
 open Environ
 open Pattern
 open Libnames
@@ -69,35 +68,26 @@ let iter_hypothesis glnum (fn : GlobRef.t -> env -> constr -> unit) =
 
 (* General search over declarations *)
 let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
+  let open Environ in
   let env = Global.env () in
-  let iter_obj (sp, kn) lobj = match object_tag lobj with
-  | "VARIABLE" ->
-    begin try
-      let decl = Global.lookup_named (basename sp) in
-      fn (VarRef (NamedDecl.get_id decl)) env (NamedDecl.get_type decl)
-    with Not_found -> (* we are in a section *) () end
-  | "CONSTANT" ->
-    let cst = Global.constant_of_delta_kn kn in
-    let gr = ConstRef cst in
-    let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
-      fn gr env typ
-  | "INDUCTIVE" ->
-    let mind = Global.mind_of_delta_kn kn in
-    let mib = Global.lookup_mind mind in
-    let iter_packet i mip =
-      let ind = (mind, i) in
-      let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-      let i = (ind, u) in
-      let typ = Inductiveops.type_of_inductive env i in
-      let () = fn (IndRef ind) env typ in
-      let len = Array.length mip.mind_user_lc in
-      iter_constructors ind u fn env len
-    in
-    Array.iteri iter_packet mib.mind_packets
-  | _ -> ()
-  in
-  try Declaremods.iter_all_segments iter_obj
-  with Not_found -> ()
+  List.iter (fun decl ->
+      fn (VarRef (NamedDecl.get_id decl)) env (NamedDecl.get_type decl))
+    (Environ.named_context env);
+  Mindmap_env.iter (fun mind (mib,_) ->
+      let iter_packet i mip =
+        let ind = (mind, i) in
+        let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+        let i = (ind, u) in
+        let typ = Inductiveops.type_of_inductive env i in
+        let () = fn (IndRef ind) env typ in
+        let len = Array.length mip.mind_user_lc in
+        iter_constructors ind u fn env len
+      in
+      Array.iteri iter_packet mib.mind_packets)
+    env.env_globals.env_inductives;
+  Cmap_env.iter (fun cst (cb,_) ->
+      fn (ConstRef cst) env cb.const_type)
+    env.env_globals.env_constants
 
 let generic_search glnumopt fn =
   (match glnumopt with

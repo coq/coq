@@ -1,73 +1,73 @@
 false: bool
 true: bool
 negb: bool -> bool
-implb: bool -> bool -> bool
-orb: bool -> bool -> bool
-andb: bool -> bool -> bool
 xorb: bool -> bool -> bool
+implb: bool -> bool -> bool
+andb: bool -> bool -> bool
+orb: bool -> bool -> bool
 Nat.even: nat -> bool
 Nat.odd: nat -> bool
-Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
-Nat.testbit: nat -> nat -> bool
+Nat.leb: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
-Nat.two: nat
-Nat.one: nat
+Nat.testbit: nat -> nat -> bool
 Nat.zero: nat
 O: nat
-Nat.div2: nat -> nat
-Nat.log2: nat -> nat
-Nat.succ: nat -> nat
-Nat.sqrt: nat -> nat
-Nat.pred: nat -> nat
+Nat.two: nat
+Nat.one: nat
 Nat.double: nat -> nat
+Nat.pred: nat -> nat
+Nat.sqrt: nat -> nat
+Nat.div2: nat -> nat
 Nat.square: nat -> nat
+Nat.succ: nat -> nat
 S: nat -> nat
-Nat.ldiff: nat -> nat -> nat
+Nat.log2: nat -> nat
 Nat.tail_add: nat -> nat -> nat
-Nat.land: nat -> nat -> nat
 Nat.tail_mul: nat -> nat -> nat
-Nat.div: nat -> nat -> nat
+Nat.land: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
-Nat.gcd: nat -> nat -> nat
-Nat.modulo: nat -> nat -> nat
-Nat.max: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
 Nat.sub: nat -> nat -> nat
 Nat.mul: nat -> nat -> nat
-Nat.lxor: nat -> nat -> nat
-Nat.add: nat -> nat -> nat
-Nat.min: nat -> nat -> nat
+Nat.ldiff: nat -> nat -> nat
+Nat.max: nat -> nat -> nat
+Nat.modulo: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
 Nat.pow: nat -> nat -> nat
+Nat.min: nat -> nat -> nat
+Nat.add: nat -> nat -> nat
 Nat.of_uint: Decimal.uint -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
-Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
+Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 length: forall A : Type, list A -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
-Nat.div2: nat -> nat
-Nat.sqrt: nat -> nat
-Nat.log2: nat -> nat
-Nat.double: nat -> nat
-Nat.pred: nat -> nat
 Nat.square: nat -> nat
+Nat.double: nat -> nat
+Nat.sqrt: nat -> nat
 Nat.succ: nat -> nat
+Nat.div2: nat -> nat
+Nat.pred: nat -> nat
+Nat.log2: nat -> nat
 S: nat -> nat
-Nat.ldiff: nat -> nat -> nat
-Nat.pow: nat -> nat -> nat
-Nat.land: nat -> nat -> nat
-Nat.lxor: nat -> nat -> nat
-Nat.div: nat -> nat -> nat
-Nat.lor: nat -> nat -> nat
-Nat.tail_mul: nat -> nat -> nat
-Nat.modulo: nat -> nat -> nat
-Nat.sub: nat -> nat -> nat
 Nat.mul: nat -> nat -> nat
-Nat.gcd: nat -> nat -> nat
-Nat.max: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
+Nat.pow: nat -> nat -> nat
+Nat.tail_mul: nat -> nat -> nat
 Nat.tail_add: nat -> nat -> nat
-Nat.add: nat -> nat -> nat
+Nat.land: nat -> nat -> nat
 Nat.min: nat -> nat -> nat
+Nat.max: nat -> nat -> nat
+Nat.lor: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
+Nat.sub: nat -> nat -> nat
+Nat.modulo: nat -> nat -> nat
+Nat.ldiff: nat -> nat -> nat
+Nat.add: nat -> nat -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
@@ -75,8 +75,8 @@ Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 iff_refl: forall A : Prop, A <-> A
-le_n: forall n : nat, n <= n
 identity_refl: forall (A : Type) (a : A), identity a a
+le_n: forall n : nat, n <= n
 eq_refl: forall (A : Type) (x : A), x = x
 Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
 conj: forall A B : Prop, A -> B -> A /\ B
