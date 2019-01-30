@@ -923,6 +923,8 @@ let explain_not_match_error = function
     str "but expected" ++ spc() ++ h 0 (pr_auctx expect) ++
     (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
+  | IncompatibleVariance ->
+    str "incompatible variance information"
 
 let explain_signature_mismatch l spec why =
   str "Signature components for label " ++ Label.print l ++

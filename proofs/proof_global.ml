@@ -268,7 +268,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
         let used_univs_body = Vars.universes_of_constr body in
         let used_univs_typ = Vars.universes_of_constr typ in
         if allow_deferred then
-          let initunivs = UState.const_univ_entry ~poly initial_euctx in
+          let initunivs = UState.univ_entry ~poly initial_euctx in
           let ctx = constrain_variables universes in
           (* For vi2vo compilation proofs are computed now but we need to
              complement the univ constraints of the typ with the ones of
@@ -302,7 +302,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     else
       fun t p ->
         (* Already checked the univ_decl for the type universes when starting the proof. *)
-        let univctx = Entries.Monomorphic_const_entry (UState.context_set universes) in
+        let univctx = UState.univ_entry ~poly:false universes in
         let t = nf t in
         Future.from_val (univctx, t),
         Future.chain p (fun (pt,eff) ->

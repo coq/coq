@@ -364,7 +364,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
         let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
         let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
         (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-        let univs = Evd.const_univ_entry ~poly:false evd' in
+        let univs = Evd.univ_entry ~poly:false evd' in
         let ce = Declare.definition_entry ~univs value in
         ignore(
 	  Declare.declare_constant

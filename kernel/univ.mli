@@ -368,45 +368,6 @@ type 'a univ_abstracted = {
 
 val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
-(** Universe info for cumulative inductive types: A context of
-   universe levels with universe constraints, representing local
-   universe variables and constraints, together with an array of
-   Variance.t.
-
-    This data structure maintains the invariant that the variance
-   array has the same length as the universe instance. *)
-module CumulativityInfo :
-sig
-  type t
-
-  val make : UContext.t * Variance.t array -> t
-
-  val empty : t
-  val is_empty : t -> bool
-
-  val univ_context : t -> UContext.t
-  val variance : t -> Variance.t array
-
-  (** This function takes a universe context representing constraints
-     of an inductive and produces a CumulativityInfo.t with the
-     trivial subtyping relation. *)
-  val from_universe_context : UContext.t -> t
-
-  val leq_constraints : t -> Instance.t constraint_function
-  val eq_constraints : t -> Instance.t constraint_function
-end
-
-module ACumulativityInfo :
-sig
-  type t
-
-  val repr : t -> CumulativityInfo.t
-  val univ_context : t -> AUContext.t
-  val variance : t -> Variance.t array
-  val leq_constraints : t -> Instance.t constraint_function
-  val eq_constraints : t -> Instance.t constraint_function
-end
-
 (** Universe contexts (as sets) *)
 
 (** A set of universes with universe Constraint.t.
@@ -487,7 +448,6 @@ val make_instance_subst : Instance.t -> universe_level_subst
 val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
 val abstract_universes : Names.Name.t array -> UContext.t -> Instance.t * AUContext.t
-val abstract_cumulativity_info : Names.Name.t array -> CumulativityInfo.t -> Instance.t * ACumulativityInfo.t
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AUContext.t -> Instance.t
@@ -505,10 +465,8 @@ val pr_constraint_type : constraint_type -> Pp.t
 val pr_constraints : (Level.t -> Pp.t) -> Constraint.t -> Pp.t
 val pr_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
   UContext.t -> Pp.t
-val pr_cumulativity_info : (Level.t -> Pp.t) -> CumulativityInfo.t -> Pp.t
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
   AUContext.t -> Pp.t
-val pr_abstract_cumulativity_info : (Level.t -> Pp.t) -> ACumulativityInfo.t -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 val explain_universe_inconsistency : (Level.t -> Pp.t) ->
   univ_inconsistency -> Pp.t
@@ -524,5 +482,3 @@ val hcons_universe_set : LSet.t -> LSet.t
 val hcons_universe_context : UContext.t -> UContext.t
 val hcons_abstract_universe_context : AUContext.t -> AUContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t
-val hcons_cumulativity_info : CumulativityInfo.t -> CumulativityInfo.t
-val hcons_abstract_cumulativity_info : ACumulativityInfo.t -> ACumulativityInfo.t

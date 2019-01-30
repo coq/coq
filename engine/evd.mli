@@ -597,12 +597,12 @@ val universes : evar_map -> UGraph.t
     [Univ.ContextSet.to_context]. *)
 val to_universe_context : evar_map -> Univ.UContext.t
 
-val const_univ_entry : poly:bool -> evar_map -> Entries.constant_universes_entry
+val univ_entry : poly:bool -> evar_map -> Entries.universes_entry
 
-(** NB: [ind_univ_entry] cannot create cumulative entries. *)
-val ind_univ_entry : poly:bool -> evar_map -> Entries.inductive_universes
+val const_univ_entry : poly:bool -> evar_map -> Entries.universes_entry
+[@@ocaml.deprecated "Use [univ_entry]."]
 
-val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> Entries.constant_universes_entry
+val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> Entries.universes_entry
 
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map

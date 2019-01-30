@@ -103,7 +103,7 @@ let () =
 
 let define ~poly id internal sigma c t =
   let f = declare_constant ~internal in
-  let univs = Evd.const_univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma in
   let kn = f id
     (DefinitionEntry
       { const_entry_body = c;

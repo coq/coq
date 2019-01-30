@@ -153,7 +153,7 @@ let decl_constant na univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context univs vars in
-  let univs = Monomorphic_const_entry univs in
+  let univs = Monomorphic_entry univs in
   mkConst(declare_constant (Id.of_string na) 
             (DefinitionEntry (definition_entry ~opaque:true ~univs c),
 	     IsProof Lemma))

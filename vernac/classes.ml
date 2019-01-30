@@ -374,7 +374,7 @@ let context poly l =
   let univs =
     match ctx with
     | [] -> assert false
-    | [_] -> Evd.const_univ_entry ~poly sigma
+    | [_] -> Evd.univ_entry ~poly sigma
     | _::_::_ ->
       if Lib.sections_are_opened ()
       then
@@ -384,19 +384,19 @@ let context poly l =
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          if poly then Polymorphic_const_entry ([||], Univ.UContext.empty)
-          else Monomorphic_const_entry Univ.ContextSet.empty
+          if poly then Polymorphic_entry ([||], Univ.UContext.empty)
+          else Monomorphic_entry Univ.ContextSet.empty
         end
       else if poly then
         (* Multiple polymorphic axioms: they are all polymorphic the same way. *)
-        Evd.const_univ_entry ~poly sigma
+        Evd.univ_entry ~poly sigma
       else
         (* Multiple monomorphic axioms: declare universes separately
            to avoid redeclaring them. *)
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
-          Monomorphic_const_entry Univ.ContextSet.empty
+          Monomorphic_entry Univ.ContextSet.empty
         end
   in
   let fn status (id, b, t) =

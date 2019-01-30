@@ -557,7 +557,7 @@ let declare_mutual_definition l =
             mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
-  let univs = UState.const_univ_entry ~poly first.prg_ctx in
+  let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
@@ -656,9 +656,9 @@ let declare_obligation prg obl body ty uctx =
       if not opaque then add_hint (Locality.make_section_locality None) prg constant;
       definition_message obl.obl_name;
       let body = match uctx with
-        | Polymorphic_const_entry (_, uctx) ->
+        | Polymorphic_entry (_, uctx) ->
           Some (DefinedObl (constant, Univ.UContext.instance uctx))
-        | Monomorphic_const_entry _ ->
+        | Monomorphic_entry _ ->
           Some (TermObl (it_mkLambda_or_LetIn_or_clean (mkApp (mkConst constant, args)) ctx))
       in
       true, { obl with obl_body = body }
@@ -879,7 +879,7 @@ let obligation_terminator ?univ_hook name num guard auto pf =
       if pi2 prg.prg_kind then ctx
       else UState.union prg.prg_ctx ctx
     in
-    let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+    let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
     let obls = Array.copy obls in
     let () = obls.(num) <- obl in
@@ -1010,7 +1010,7 @@ and solve_obligation_by_tac prg obls i tac =
                 (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
         | None -> None
         | Some (t, ty, ctx) ->
-          let uctx = UState.const_univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+          let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
           let prg = {prg with prg_ctx = ctx} in
           let def, obl' = declare_obligation prg obl t ty uctx in
           obls.(i) <- obl';
@@ -1159,7 +1159,7 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-            let ctx = Monomorphic_const_entry (UState.context_set prg.prg_ctx) in
+            let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:true
               (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in

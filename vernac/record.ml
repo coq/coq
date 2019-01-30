@@ -277,8 +277,8 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
   let u = match ctx with
-    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
-    | Monomorphic_const_entry ctx -> Univ.Instance.empty
+    | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
+    | Monomorphic_entry ctx -> Univ.Instance.empty
   in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
   let r = mkIndU (indsp,u) in
@@ -369,17 +369,16 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 open Typeclasses
 
 
-let declare_structure finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
+let declare_structure ~cum finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
   let nparams = List.length params in
   let poly, ctx =
     match univs with
-    | Monomorphic_ind_entry ctx ->
-      false, Monomorphic_const_entry Univ.ContextSet.empty
-    | Polymorphic_ind_entry (nas, ctx) ->
-      true, Polymorphic_const_entry (nas, ctx)
-    | Cumulative_ind_entry (nas, cumi) ->
-      true, Polymorphic_const_entry (nas, Univ.CumulativityInfo.univ_context cumi)
+    | Monomorphic_entry ctx ->
+      false, Monomorphic_entry Univ.ContextSet.empty
+    | Polymorphic_entry (nas, ctx) ->
+      true, Polymorphic_entry (nas, ctx)
   in
+  let variance = if poly && cum then Some (InferCumulativity.dummy_variance ctx) else None in
   let binder_name =
     match name with
     | None ->
@@ -427,6 +426,7 @@ let declare_structure finite ubinders univs paramimpls params template ?(kind=St
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
+      mind_entry_variance = variance;
     }
   in
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
@@ -472,8 +472,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
 	(DefinitionEntry class_entry, IsDefinition Definition)
       in
       let inst, univs = match univs with
-        | Polymorphic_const_entry (_, uctx) -> Univ.UContext.instance uctx, univs
-        | Monomorphic_const_entry _ -> Univ.Instance.empty, Monomorphic_const_entry Univ.ContextSet.empty
+        | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
+        | Monomorphic_entry _ -> Univ.Instance.empty, Monomorphic_entry Univ.ContextSet.empty
       in
       let cstu = (cst, inst) in
       let inst_type = appvectc (mkConstU cstu)
@@ -496,18 +496,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       in
       [cref, [Name proj_name, sub, Some proj_cst]]
     | _ ->
-       let univs =
-         match univs with
-         | Polymorphic_const_entry (nas, univs) ->
-           if cum then
-             Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
-           else
-             Polymorphic_ind_entry (nas, univs)
-         | Monomorphic_const_entry univs ->
-           Monomorphic_ind_entry univs
-       in
       let record_data = [id, idbuild, arity, fieldimpls, fields, false, List.map (fun _ -> false) fields] in
-      let inds = declare_structure Declarations.BiFinite ubinders univs paramimpls
+      let inds = declare_structure ~cum Declarations.BiFinite ubinders univs paramimpls
         params template ~kind:Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri -> 
@@ -531,14 +521,14 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
   in
   let univs, ctx_context, fields =
     match univs with
-    | Polymorphic_const_entry (nas, univs) ->
+    | Polymorphic_entry (nas, univs) ->
       let usubst, auctx = Univ.abstract_universes nas univs in
       let usubst = Univ.make_instance_subst usubst in
       let map c = Vars.subst_univs_level_constr usubst c in
       let fields = Context.Rel.map map fields in
       let ctx_context = on_snd (fun d -> Context.Rel.map map d) ctx_context in
       auctx, ctx_context, fields
-    | Monomorphic_const_entry _ ->
+    | Monomorphic_entry _ ->
       Univ.AUContext.empty, ctx_context, fields
   in
   let map (impl, projs) =
@@ -670,21 +660,11 @@ let definition_structure udecl kind ~template cum poly finite records =
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
-      let univs =
-        match univs with
-        | Polymorphic_const_entry (nas, univs) ->
-          if cum then
-            Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context univs)
-          else
-            Polymorphic_ind_entry (nas, univs)
-        | Monomorphic_const_entry univs ->
-          Monomorphic_ind_entry univs
-      in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
       let coe = List.map (fun coe -> not (Option.is_empty coe)) coers in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
-    let inds = declare_structure finite ubinders univs implpars params template data in
+    let inds = declare_structure ~cum finite ubinders univs implpars params template data in
     List.map (fun ind -> IndRef ind) inds

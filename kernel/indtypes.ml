@@ -414,11 +414,7 @@ exception UndefinableExpansion
     a substitution of the form [params, x : ind params] *)
 let compute_projections (kn, i as ind) mib =
   let pkt = mib.mind_packets.(i) in
-  let u = match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.Instance.empty
-  | Polymorphic_ind auctx -> Univ.make_abstract_instance auctx
-  | Cumulative_ind acumi -> Univ.make_abstract_instance (Univ.ACumulativityInfo.univ_context acumi)
-  in
+  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
   let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
@@ -471,7 +467,7 @@ let compute_projections (kn, i as ind) mib =
     Array.of_list (List.rev labs),
     Array.of_list (List.rev pbs)
 
-let build_inductive env names prv univs paramsctxt kn isrecord isfinite inds nmr recargs =
+let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env inds in
@@ -529,6 +525,7 @@ let build_inductive env names prv univs paramsctxt kn isrecord isfinite inds nmr
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
       mind_universes = univs;
+      mind_variance = variance;
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }
@@ -563,7 +560,7 @@ let build_inductive env names prv univs paramsctxt kn isrecord isfinite inds nmr
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
+  let (env_ar_par, univs, variance, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
   (* Then check positivity conditions *)
   let chkpos = (Environ.typing_flags env).check_guarded in
   let names = Array.map_of_list (fun entry -> entry.mind_entry_typename, entry.mind_entry_consnames)
@@ -574,6 +571,6 @@ let check_inductive env kn mie =
       (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
-    build_inductive env names mie.mind_entry_private univs
+    build_inductive env names mie.mind_entry_private univs variance
       paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
       inds nmr recargs

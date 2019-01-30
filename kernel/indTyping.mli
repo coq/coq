@@ -16,6 +16,7 @@ open Declarations
     Returns:
     - environment with inductives + parameters in rel context
     - abstracted universes
+    - checked variance info
     - parameters
     - for each inductive,
       (arity * constructors) (with params)
@@ -24,7 +25,7 @@ open Declarations
  *)
 val typecheck_inductive : env -> mutual_inductive_entry ->
   env
-  * abstract_inductive_universes
+  * universes * Univ.Variance.t array option
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *

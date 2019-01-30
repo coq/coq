@@ -457,15 +457,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
           userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
   in
-  let univs =
-    match uctx with
-    | Polymorphic_const_entry (nas, uctx) ->
-      if cum then
-        Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context uctx)
-      else Polymorphic_ind_entry (nas, uctx)
-    | Monomorphic_const_entry uctx ->
-      Monomorphic_ind_entry uctx
-  in
+  let variance = if poly && cum then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -473,7 +465,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
       mind_entry_finite = finite;
       mind_entry_inds = entries;
       mind_entry_private = if prv then Some false else None;
-      mind_entry_universes = univs;
+      mind_entry_universes = uctx;
+      mind_entry_variance = variance;
     }
   in
   (if poly && cum then

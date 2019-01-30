@@ -86,10 +86,7 @@ let print_ref reduce ref udecl =
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
       let mind = Environ.lookup_mind ind env in
-      begin match mind.Declarations.mind_universes with
-        | Declarations.Monomorphic_ind _ | Declarations.Polymorphic_ind _ -> None
-        | Declarations.Cumulative_ind cumi -> Some (Univ.ACumulativityInfo.variance cumi)
-      end
+      mind.Declarations.mind_variance
   in
   let inst =
     if Global.is_polymorphic ref
@@ -98,7 +95,7 @@ let print_ref reduce ref udecl =
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
   hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
-           Printer.pr_abstract_universe_ctx sigma ?variance univs ~priv)
+         Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -562,11 +559,11 @@ let print_constant with_values sep sp udecl =
     | OpaqueDef o ->
       let body_uctxs = Opaqueproof.force_constraints otab o in
       match cb.const_universes with
-      | Monomorphic_const ctx ->
-        Monomorphic_const (ContextSet.union body_uctxs ctx)
-      | Polymorphic_const ctx ->
+      | Monomorphic ctx ->
+        Monomorphic (ContextSet.union body_uctxs ctx)
+      | Polymorphic ctx ->
         assert(ContextSet.is_empty body_uctxs);
-        Polymorphic_const ctx
+        Polymorphic ctx
   in
   let ctx =
     UState.of_binders
@@ -580,11 +577,11 @@ let print_constant with_values sep sp udecl =
 	str"*** [ " ++
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs
+        Printer.pr_universes sigma univs ?priv:cb.const_private_poly_univs
     | Some (c, ctx) ->
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_constant_universes sigma univs ~priv:cb.const_private_poly_univs)
+        Printer.pr_universes sigma univs ?priv:cb.const_private_poly_univs)
 
 let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++

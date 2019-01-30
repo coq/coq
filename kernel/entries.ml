@@ -16,6 +16,12 @@ open Constr
    constants/axioms, mutual inductive definitions, modules and module
    types *)
 
+type universes_entry =
+  | Monomorphic_entry of Univ.ContextSet.t
+  | Polymorphic_entry of Name.t array * Univ.UContext.t
+
+type 'a in_universes_entry = 'a * universes_entry
+
 (** {6 Declaration of inductive types. } *)
 
 (** Assume the following definition in concrete syntax:
@@ -27,11 +33,6 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 [mind_entry_arity] is [Ai], defined in context [x1:X1;...;xn:Xn];
 [mind_entry_lc] is [Ti1;...;Tini], defined in context [[A'1;...;A'p;x1:X1;...;xn:Xn]] where [A'i] is [Ai] generalized over [[x1:X1;...;xn:Xn]].
 *)
-
-type inductive_universes =
-  | Monomorphic_ind_entry of Univ.ContextSet.t
-  | Polymorphic_ind_entry of Name.t array * Univ.UContext.t
-  | Cumulative_ind_entry of Name.t array * Univ.CumulativityInfo.t
 
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
@@ -48,7 +49,8 @@ type mutual_inductive_entry = {
   mind_entry_finite : Declarations.recursivity_kind;
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
-  mind_entry_universes : inductive_universes;
+  mind_entry_universes : universes_entry;
+  mind_entry_variance : Univ.Variance.t array option;
   (* universe constraints and the constraints for subtyping of
      inductive types in the block. *)
   mind_entry_private : bool option;
@@ -58,12 +60,6 @@ type mutual_inductive_entry = {
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
-type constant_universes_entry =
-  | Monomorphic_const_entry of Univ.ContextSet.t
-  | Polymorphic_const_entry of Name.t array * Univ.UContext.t
-
-type 'a in_constant_universes_entry = 'a * constant_universes_entry
-
 type 'a definition_entry = {
   const_entry_body   : 'a const_entry_body;
   (* List of section variables *)
@@ -71,7 +67,7 @@ type 'a definition_entry = {
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
-  const_entry_universes   : constant_universes_entry;
+  const_entry_universes   : universes_entry;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
@@ -85,7 +81,7 @@ type section_def_entry = {
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 
-    Constr.named_context option * types in_constant_universes_entry * inline
+    Constr.named_context option * types in_universes_entry * inline
 
 type primitive_entry = {
   prim_entry_type : types option;

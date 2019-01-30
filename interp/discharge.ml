@@ -76,18 +76,16 @@ let process_inductive info modlist mib =
   let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
   let subst, ind_univs =
     match mib.mind_universes with
-    | Monomorphic_ind ctx -> Univ.empty_level_subst, Monomorphic_ind_entry ctx
-    | Polymorphic_ind auctx ->
+    | Monomorphic ctx -> Univ.empty_level_subst, Monomorphic_entry ctx
+    | Polymorphic auctx ->
       let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
       let nas = Univ.AUContext.names auctx in
       let auctx = Univ.AUContext.repr auctx in
-      subst, Polymorphic_ind_entry (nas, auctx)
-    | Cumulative_ind cumi ->
-      let auctx = Univ.ACumulativityInfo.univ_context cumi in
-      let subst, auctx = Lib.discharge_abstract_universe_context info auctx in
-      let nas = Univ.AUContext.names auctx in
-      let auctx = Univ.AUContext.repr auctx in
-      subst, Cumulative_ind_entry (nas, Univ.CumulativityInfo.from_universe_context auctx)
+      subst, Polymorphic_entry (nas, auctx)
+  in
+  let variance = match mib.mind_variance with
+    | None -> None
+    | Some _ -> Some (InferCumulativity.dummy_variance ind_univs)
   in
   let discharge c = Vars.subst_univs_level_constr subst (expmod_constr modlist c) in
   let inds =
@@ -114,6 +112,7 @@ let process_inductive info modlist mib =
     mind_entry_params = params';
     mind_entry_inds = inds';
     mind_entry_private = mib.mind_private;
+    mind_entry_variance = variance;
     mind_entry_universes = ind_univs
   }
 

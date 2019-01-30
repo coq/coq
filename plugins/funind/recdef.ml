@@ -1547,7 +1547,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref =
-    let univs = Entries.Monomorphic_const_entry (Evd.universe_context_set evd) in
+    let univs = Evd.univ_entry ~poly:false evd in
     declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~univs res
   in
   (* Refresh the global universes, now including those of _F *)

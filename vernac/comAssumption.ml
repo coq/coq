@@ -46,8 +46,8 @@ let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ide
 match local with
 | Discharge when Lib.sections_are_opened () ->
   let ctx = match ctx with
-    | Monomorphic_const_entry ctx -> ctx
-    | Polymorphic_const_entry (_, ctx) -> Univ.ContextSet.of_context ctx
+    | Monomorphic_entry ctx -> ctx
+    | Polymorphic_entry (_, ctx) -> Univ.ContextSet.of_context ctx
   in
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
@@ -79,8 +79,8 @@ match local with
   let () = if do_instance then Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = match ctx with
-    | Polymorphic_const_entry (_, ctx) -> Univ.UContext.instance ctx
-    | Monomorphic_const_entry _ -> Univ.Instance.empty
+    | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
+    | Monomorphic_entry _ -> Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())
 
@@ -90,10 +90,10 @@ let interp_assumption ~program_mode sigma env impls c =
 
 (* When monomorphic the universe constraints are declared with the first declaration only. *)
 let next_uctx =
-  let empty_uctx = Monomorphic_const_entry Univ.ContextSet.empty in
+  let empty_uctx = Monomorphic_entry Univ.ContextSet.empty in
   function
-  | Polymorphic_const_entry _ as uctx -> uctx
-  | Monomorphic_const_entry _ -> empty_uctx
+  | Polymorphic_entry _ as uctx -> uctx
+  | Monomorphic_entry _ -> empty_uctx
 
 let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =

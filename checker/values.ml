@@ -112,7 +112,6 @@ let v_variance = v_enum "variance" 3
 
 let v_instance = Annot ("instance", Array v_level)
 let v_abs_context = v_tuple "abstract_universe_context" [|Array v_name; v_cstrs|]
-let v_abs_cum_info = v_tuple "cumulativity_info" [|v_abs_context; Array v_variance|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
 (** kernel/term *)
@@ -226,14 +225,14 @@ let v_cst_def =
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool; v_bool|]
 
-let v_const_univs = v_sum "constant_universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
+let v_univs = v_sum "universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
     v_constr;
     Any;
-    v_const_univs;
+    v_univs;
     Opt v_context_set;
     v_bool;
     v_typing_flags|]
@@ -276,10 +275,6 @@ let v_record_info =
   v_sum "record_info" 2
     [| [| Array (v_tuple "record" [| v_id; Array v_id; Array v_constr |]) |] |]
 
-let v_ind_pack_univs = 
-  v_sum "abstract_inductive_universes" 0
-    [|[|v_context_set|]; [|v_abs_context|]; [|v_abs_cum_info|]|]
-
 let v_ind_pack = v_tuple "mutual_inductive_body"
   [|Array v_one_ind;
     v_record_info;
@@ -289,7 +284,8 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Int;
     Int;
     v_rctxt;
-    v_ind_pack_univs; (* universes *)
+    v_univs; (* universes *)
+    Opt (Array v_variance);
     Opt v_bool;
     v_typing_flags|]
 
