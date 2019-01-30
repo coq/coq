@@ -538,9 +538,13 @@ let do_universe poly l =
   in
   let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
-      Univ.LSet.empty l, Univ.Constraint.empty
+      Univ.LSet.empty l
   in
-  let () = declare_universe_context poly ctx in
+  let cst = Univ.LSet.fold (fun l acc ->
+      if poly then Univ.Constraint.add (Univ.Level.set, Univ.Le, l) acc
+      else Univ.Constraint.add (Univ.Level.set, Univ.Lt, l) acc) ctx Univ.Constraint.empty
+  in
+  let () = declare_universe_context poly (ctx, cst) in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   Lib.add_anonymous_leaf (input_univ_names (src, l))
 
