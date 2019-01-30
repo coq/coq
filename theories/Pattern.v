@@ -125,7 +125,7 @@ Ltac2 lazy_goal_match0 rev pats :=
     in
     Control.plus cur next
   end in
-  interp pats ().
+  Control.once (fun () => interp pats) ().
 
 Ltac2 multi_goal_match0 rev pats :=
   let rec interp m := match m with
