@@ -522,7 +522,7 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
       λ x:\Type(1).(f~x) \triangleright_η f
    
    because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
-   convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
+   convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1)`.
 
 
 .. _convertibility:
@@ -1376,7 +1376,7 @@ the proof of :g:`or A B` is not accepted:
 From the computational point of view, the structure of the proof of
 :g:`(or A B)` in this term is needed for computing the boolean value.
 
-In general, if :math:`I` has type :math:`\Prop` then :math:`P` cannot have type :math:`I→\Set,` because
+In general, if :math:`I` has type :math:`\Prop` then :math:`P` cannot have type :math:`I→\Set`, because
 it will mean to build an informative proof of type :math:`(P~m)` doing a case
 analysis over a non-computational object that will disappear in the
 extracted program. But the other way is safe with respect to our
