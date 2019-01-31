@@ -1766,12 +1766,12 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
 .. math::
    \frac{\WF{E;~c:U;~E′;~c′:=t:T;~E″}{Γ}}
         {\WF{E;~c:U;~E′;~c′:=λ x:U.~\subst{t}{c}{x}:∀x:U,~\subst{T}{c}{x};~\subst{E″}{c′}{(c′~c)}}
-	{\subst{Γ}{c}{(c~c′)}}}
+        {\subst{Γ}{c′}{(c′~c)}}}
 
    
 .. math::
    \frac{\WF{E;~c:U;~E′;~c′:T;~E″}{Γ}}
-        {\WF{E;~c:U;~E′;~c′:∀ x:U,~\subst{T}{c}{x};~\subst{E″}{c′}{(c′~c)}}{\subst{Γ}{c}{(c~c′)}}}
+        {\WF{E;~c:U;~E′;~c′:∀ x:U,~\subst{T}{c}{x};~\subst{E″}{c′}{(c′~c)}}{\subst{Γ}{c′}{(c′~c)}}}
 	
 .. math::
    \frac{\WF{E;~c:U;~E′;~\ind{p}{Γ_I}{Γ_C};~E″}{Γ}}
