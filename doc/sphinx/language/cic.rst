@@ -1557,7 +1557,7 @@ The ι-contraction of this term is :math:`(f_i~a_1 … a_m )` leading to the
 general reduction rule:
 
 .. math::
-   \case((c_{p_i}~q_1 … q_r~a_1 … a_m ),P,f_1 |… |f_n ) \triangleright_ι (f_i~a_1 … a_m )
+   \case((c_{p_i}~q_1 … q_r~a_1 … a_m ),P,f_1 |… |f_l ) \triangleright_ι (f_i~a_1 … a_m )
 
 
 .. _Fixpoint-definitions:
