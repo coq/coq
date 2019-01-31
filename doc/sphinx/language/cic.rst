@@ -1267,7 +1267,7 @@ The |Coq| term for this proof
 will be written:
 
 .. math::
-   \Match~m~\with~(c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | … | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n \kwend
+   \Match~m~\with~(c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | … | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n~\kwend
 
 In this expression, if :math:`m` eventually happens to evaluate to
 :math:`(c_i~u_1 … u_{p_i})` then the expression will behave as specified in its :math:`i`-th branch
