@@ -84,7 +84,7 @@ implemented using *algebraic
 universes*. An algebraic universe :math:`u` is either a variable (a qualified
 identifier with a number) or a successor of an algebraic universe (an
 expression :math:`u+1`), or an upper bound of algebraic universes (an
-expression :math:`\max(u 1 ,...,u n )`), or the base universe (the expression
+expression :math:`\max(u_1 ,...,u_n )`), or the base universe (the expression
 :math:`0`) which corresponds, in the arity of template polymorphic inductive
 types (see Section
 :ref:`well-formed-inductive-definitions`),
