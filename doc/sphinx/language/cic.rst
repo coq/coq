@@ -1634,7 +1634,7 @@ Given a variable :math:`y` of an inductively defined type in a declaration
 :math:`[c_1 :C_1 ;~…;~c_n :C_n ]`, the terms structurally smaller than :math:`y` are:
 
 
-+ :math:`(t~u)` and :math:`λ x:u .~t` when :math:`t` is structurally smaller than :math:`y`.
++ :math:`(t~u)` and :math:`λ x:U .~t` when :math:`t` is structurally smaller than :math:`y`.
 + :math:`\case(c,P,f_1 … f_n)` when each :math:`f_i` is structurally smaller than :math:`y`.
   If :math:`c` is :math:`y` or is structurally smaller than :math:`y`, its type is an inductive
   definition :math:`I_p` part of the inductive declaration corresponding to :math:`y`.
