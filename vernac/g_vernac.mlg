@@ -693,13 +693,15 @@ GRAMMAR EXTEND Gram
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
             { VernacSetStrategy l }
       (* Canonical structure *)
-      | IDENT "Canonical"; IDENT "Structure"; qid = global ->
-          { VernacCanonical CAst.(make ~loc @@ AN qid) }
+      | IDENT "Canonical"; IDENT "Structure"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
+          { match ud with
+           | None ->
+             VernacCanonical CAst.(make ~loc @@ AN qid)
+           | Some (u,d) ->
+             let s = coerce_reference_to_id qid in
+             VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make (Name s)),u),d) }
       | IDENT "Canonical"; IDENT "Structure"; ntn = by_notation ->
           { VernacCanonical CAst.(make ~loc @@ ByNotation ntn) }
-      | IDENT "Canonical"; IDENT "Structure"; qid = global; u = OPT univ_decl; d = def_body ->
-          { let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make (Name s)),u),d) }
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; u = OPT univ_decl; d = def_body ->
