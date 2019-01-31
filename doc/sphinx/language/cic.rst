@@ -618,9 +618,9 @@ a *subtyping* relation inductively defined by:
 #. if :math:`\ind{p}{Γ_I}{Γ_C}` is a universe polymorphic and cumulative
    (see Chapter :ref:`polymorphicuniverses`) inductive type (see below)
    and
-   :math:`(t : ∀Γ_P ,∀Γ_{\mathit{Arr}(t)}, \Sort)∈Γ_I`
+   :math:`(t : ∀Γ_P ,∀Γ_{\mathit{Arr}(t)}, S)∈Γ_I`
    and
-   :math:`(t' : ∀Γ_P' ,∀Γ_{\mathit{Arr}(t)}', \Sort')∈Γ_I`
+   :math:`(t' : ∀Γ_P' ,∀Γ_{\mathit{Arr}(t)}', S')∈Γ_I`
    are two different instances of *the same* inductive type (differing only in
    universe levels) with constructors
 
