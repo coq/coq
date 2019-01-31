@@ -514,12 +514,12 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    then
 
    .. math::
-      λ x:\Type(1),(f~x) : ∀ x:\Type(1),\Type(1)
+      λ x:\Type(1).(f~x) : ∀ x:\Type(1),\Type(1)
    
    We could not allow
 
    .. math::
-      λ x:\Type(1),(f~x) \triangleright_η f
+      λ x:\Type(1).(f~x) \triangleright_η f
    
    because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
