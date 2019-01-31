@@ -1574,7 +1574,7 @@ The typing rule is the expected one for a fixpoint.
 .. inference:: Fix
 	       
    (E[Γ] ⊢ A_i : s_i )_{i=1… n}
-   (E[Γ,f_1 :A_1 ,…,f_n :A_n ] ⊢ t_i : A_i )_{i=1… n}
+   (E[Γ;f_1 :A_1 ;…;f_n :A_n ] ⊢ t_i : A_i )_{i=1… n}
    -------------------------------------------------------
    E[Γ] ⊢ \Fix~f_i\{f_1 :A_1 :=t_1 … f_n :A_n :=t_n \} : A_i
 
@@ -1752,8 +1752,8 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
 .. math::
    \frac{\WF{E;c:U;E′;\ind{p}{Γ_I}{Γ_C};E″}{Γ}}
         {\WFTWOLINES{E;c:U;E′;\ind{p+1}{∀ x:U,~\subst{Γ_I}{c}{x}}{∀ x:U,~\subst{Γ_C}{c}{x}};
-	  \subst{E″}{|Γ_I ,Γ_C |}{|Γ_I ,Γ_C | c}}
-	 {\subst{Γ}{|Γ_I ,Γ_C|}{|Γ_I ,Γ_C | c}}}
+          \subst{E″}{|Γ_I ;Γ_C |}{|Γ_I ;Γ_C | c}}
+         {\subst{Γ}{|Γ_I ;Γ_C|}{|Γ_I ;Γ_C | c}}}
 
 One can similarly modify a global declaration by generalizing it over
 a previously defined constant :math:`c′`. Below, if :math:`Γ` is a context of the form
