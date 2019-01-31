@@ -36,7 +36,7 @@ Numeral Notation Decimal.int Decimal.int_of_int Decimal.int_of_int
   : dec_int_scope.
 
 (* Parsing / printing of [nat] numbers *)
-Numeral Notation nat Nat.of_uint Nat.to_uint : nat_scope (abstract after 5000).
+Numeral Notation nat Nat.of_uint Nat.to_uint : nat_scope (abstract after 5001).
 
 (* Default substrings not considered by queries like SearchAbout *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".
