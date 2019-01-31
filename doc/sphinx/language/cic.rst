@@ -353,7 +353,7 @@ following rules.
    \WTEG{∀ x:T,~U}{s}
    \WTE{\Gamma::(x:T)}{t}{U}
    ------------------------------------
-   \WTEG{\lb x:T\mto t}{∀ x:T,~U}
+   \WTEG{λ x:T\mto t}{∀ x:T,~U}
 
 .. inference:: App
 
