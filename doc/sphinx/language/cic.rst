@@ -328,7 +328,7 @@ following rules.
 .. inference:: Prod-Prop
 
    \WTEG{T}{s}
-   s \in {\Sort}
+   s \in \Sort
    \WTE{\Gamma::(x:T)}{U}{\Prop}
    -----------------------------
    \WTEG{\forall~x:T,U}{\Prop}
@@ -1865,7 +1865,7 @@ in the sort :math:`\Set`, which is extended to a domain in any sort:
 .. inference:: ProdImp
 
    E[Γ] ⊢ T : s
-   s ∈ {\Sort}
+   s ∈ \Sort
    E[Γ::(x:T)] ⊢ U : \Set
    ---------------------
    E[Γ] ⊢ ∀ x:T,U : \Set
