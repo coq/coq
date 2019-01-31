@@ -989,8 +989,8 @@ the Type hierarchy.
 .. example::
 
    It is well known that the existential quantifier can be encoded as an
-   inductive definition. The following declaration introduces the second-
-   order existential quantifier :math:`∃ X.P(X)`.
+   inductive definition. The following declaration introduces the
+   second-order existential quantifier :math:`∃ X.P(X)`.
 
    .. coqtop:: in
 
@@ -1387,8 +1387,8 @@ of a computational object.
 In the same spirit, elimination on :math:`P` of type :math:`I→\Type` cannot be allowed
 because it trivially implies the elimination on :math:`P` of type :math:`I→ \Set` by
 cumulativity. It also implies that there are two proofs of the same
-property which are provably different, contradicting the proof-
-irrelevance property which is sometimes a useful axiom:
+property which are provably different, contradicting the
+proof-irrelevance property which is sometimes a useful axiom:
 
 .. example::
 
