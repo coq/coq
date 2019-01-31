@@ -2200,12 +2200,86 @@ _RULE_: If there is a hypothesis "<name>" of a created type
      AND that hypothesis is used in the subgoal,
      AND the type has a recursive definition,
      Then you can try the tactic "elim <name>.".
-
-
-Now that we know how to use induction, let's do a difficult proof.
-Let's prove that "n + m = m + n".
 *)
 
+*)
+(** *** Induction tactic *)
+(**
+Just as the "case" tactic has a similar "destruct" tactic, the "elim"
+tactic has a similar "induction" tactic.  Let's look at the previous
+proof, but using this new tactic.
+*)
+Theorem plus_n_O__again : (forall n, n + O = n).
+Proof.
+  intros n.
+  induction n as [|n' inductive_hypothesis].
+    (** base case *)
+    simpl.
+    exact (eq_refl O).
+
+    (** inductive case *)
+    simpl.
+    rewrite inductive_hypothesis.
+    exact (eq_refl (S n')).
+Qed.
+(**
+So, the "induction" tactic does the same thing as "elim.", except the
+names of the created variables are listed in the tactic, rather than
+being assigned later using "intros" in the inductive case of the proof.
+
+The "induction" command creates 2 subgoals, one for the base case and
+another for the inductive case, and after the "as" keyword, there are
+2 lists of variable names, one for the base case and one for the
+inductive case.  Those lists are separated by verical bars ('|')
+inside the square brackets.  The base case doesn't create any
+variables, so its list is empty.  The inductive case creates two
+variables, and they are named "n'" and "inductive_hypothesis".
+
+I said the "induction" command was similar to "destruct" and, if the
+type "destruct"ed has more than one constructor, the "destruct"
+command will create a subgoals for each constructor and the command
+needs a list of variable names for each constructor.  For example, the
+type "or" has two constructors.  Recall that something of type "or A
+B" can be created by "or_introl proof_of_A" or "or_intror proof_of_B".
+If I "destruct" an "or A B", it will create two subgoals and the
+"destruct" needs to have a list of variables for each.  To
+demonstrate this, I'll redo the proof that or commutes.
+
+*)
+
+Theorem or_commutes__again : (forall A B, A \/ B -> B \/ A).
+Proof.
+  intros A B.
+  intros A_or_B.
+  destruct A_or_B as [proof_of_A | proof_of_B].
+    (** suppose A_or_B is (or_introl proof_of_A) *)
+    refine (or_intror _).
+      exact proof_of_A.
+
+    (** suppose A_or_B is (or_intror proof_of_B) *)
+    refine (or_introl _).
+      exact proof_of_B.
+Qed.
+
+(**
+In my proofs, I like to use "case" and "elim" and only use "destruct"
+for types with a single constructor.  However, some people prefer to
+use "destruct" and "induction" for every proof.  The writers of Coq
+are talking about removing this duplication and may remove "case" and
+"elim" in the future.
+
+If you want to use "destruct" and "induction", it is helpful to use
+the Vernacular command "Print", which prints out a definition and
+shows you how many constructors there are and which variables you need
+to name for each one.
+*)
+Print or.
+Print nat_ind.
+(**
+
+Now we return to proofs on induction using "nat".  And let's do a
+difficult proof.  Let's prove that "n + m = m + n".
+*)
 (** *** Addition is Symmetric *)
 Theorem plus_sym: (forall n m, n + m = m + n).
 Proof.
