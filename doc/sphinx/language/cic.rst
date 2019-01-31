@@ -930,7 +930,6 @@ condition* for a constant :math:`X` in the following cases:
       Inductive nattree (A:Type) : Type :=
       | leaf : nattree A
       | node : A -> (nat -> nattree A) -> nattree A.
-      End TreeExample.
 
    Then every instantiated constructor of ``nattree A`` satisfies the nested positivity
    condition for ``nattree``:
