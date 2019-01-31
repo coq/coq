@@ -1082,7 +1082,7 @@ provided that the following side conditions hold:
 
     + :math:`Γ_{P′}` is the context obtained from :math:`Γ_P` by replacing each :math:`P_l` that is
       an arity with :math:`P_l'` for :math:`1≤ l ≤ r` (notice that :math:`P_l` arity implies :math:`P_l'`
-      arity since :math:`(E[] ⊢ P_l' ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1} )`;
+      arity since :math:`E[] ⊢ P_l' ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}`);
     + there are sorts :math:`s_i` , for :math:`1 ≤ i ≤ k` such that, for
       :math:`Γ_{I'} = [I_1 :∀ Γ_{P'} ,(A_1)_{/s_1} ;…;I_k :∀ Γ_{P'} ,(A_k)_{/s_k}]`
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
@@ -1491,8 +1491,8 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
 
       \begin{array}{rl}
       \{(\cons~\nat)\}^P & ≡\{(\cons~\nat) : (\nat→\List~\nat→\List~\nat)\}^P \\
-      & ≡∀ n:\nat, \{(\cons~\nat~n) : \List~\nat→\List~\nat)\}^P \\
-      & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\cons~\nat~n~l) : \List~\nat)\}^P \\
+      & ≡∀ n:\nat, \{(\cons~\nat~n) : (\List~\nat→\List~\nat)\}^P \\
+      & ≡∀ n:\nat, ∀ l:\List~\nat, \{(\cons~\nat~n~l) : (\List~\nat)\}^P \\
       & ≡∀ n:\nat, ∀ l:\List~\nat,(P~(\cons~\nat~n~l)).
       \end{array}
 
