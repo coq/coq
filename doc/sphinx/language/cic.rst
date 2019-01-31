@@ -1309,7 +1309,7 @@ inference rules, we use a more compact notation:
 
 .. _Allowed-elimination-sorts:
 
-**Allowed elimination sorts.** An important question for building the typing rule for match is what
+**Allowed elimination sorts.** An important question for building the typing rule for :math:`\Match` is what
 can be the type of :math:`λ a x . P` with respect to the type of :math:`m`. If :math:`m:I`
 and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that one can use
 :math:`λ a x . P` with :math:`m` in the above match-construct.
