@@ -186,7 +186,7 @@ object :math:`P~t` of type :math:`\Prop`, namely a proposition.
 
 Furthermore :g:`forall x:nat, P x` will represent the type of functions
 which associate to each natural number :math:`n` an object of type :math:`(P~n)` and
-consequently represent the type of proofs of the formula “:math:`∀ x. P(x`)”.
+consequently represent the type of proofs of the formula “:math:`∀ x. P(x)`”.
 
 
 .. _Typing-rules:
