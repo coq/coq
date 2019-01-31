@@ -331,7 +331,7 @@ following rules.
    s \in \Sort
    \WTE{\Gamma::(x:T)}{U}{\Prop}
    -----------------------------
-   \WTEG{\forall~x:T,U}{\Prop}
+   \WTEG{∀~x:T,U}{\Prop}
 
 .. inference:: Prod-Set
 
@@ -339,25 +339,25 @@ following rules.
    s \in \{\Prop, \Set\}
    \WTE{\Gamma::(x:T)}{U}{\Set}
    ----------------------------
-   \WTEG{\forall~x:T,U}{\Set}
+   \WTEG{∀~x:T,U}{\Set}
 
 .. inference:: Prod-Type
 
    \WTEG{T}{\Type(i)}
    \WTE{\Gamma::(x:T)}{U}{\Type(i)}
    --------------------------------
-   \WTEG{\forall~x:T,U}{\Type(i)}
+   \WTEG{∀~x:T,U}{\Type(i)}
 
 .. inference:: Lam
 
-   \WTEG{\forall~x:T,U}{s}
+   \WTEG{∀~x:T,U}{s}
    \WTE{\Gamma::(x:T)}{t}{U}
    ------------------------------------
-   \WTEG{\lb x:T\mto t}{\forall x:T, U}
+   \WTEG{\lb x:T\mto t}{∀ x:T, U}
 
 .. inference:: App
 
-   \WTEG{t}{\forall~x:U,T}
+   \WTEG{t}{∀~x:U,T}
    \WTEG{u}{U}
    ------------------------------
    \WTEG{(t\ u)}{\subst{T}{x}{u}}
@@ -726,8 +726,8 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
 
    .. math::
       \ind{1}{[\List:\Set→\Set]}{\left[\begin{array}{rcl}
-      \Nil & : & \forall A:\Set,\List~A \\
-      \cons & : & \forall A:\Set, A→ \List~A→ \List~A
+      \Nil & : & ∀ A:\Set,\List~A \\
+      \cons & : & ∀ A:\Set, A→ \List~A→ \List~A
       \end{array}
       \right]}
 
@@ -771,8 +771,8 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
                                       \odd&:&\nat → \Prop \end{array}\right]}
        {\left[\begin{array}{rcl}
                 \evenO &:& \even~0\\
-                \evenS &:& \forall n, \odd~n → \even~(\nS~n)\\
-                \oddS &:& \forall n, \even~n → \odd~(\nS~n)
+                \evenS &:& ∀ n, \odd~n → \even~(\nS~n)\\
+                \oddS &:& ∀ n, \even~n → \odd~(\nS~n)
                           \end{array}\right]}
 
    which corresponds to the result of the |Coq| declaration:
@@ -821,8 +821,8 @@ contains an inductive declaration.
       E[Γ] ⊢ \even : \nat→\Prop\\
       E[Γ] ⊢ \odd : \nat→\Prop\\
       E[Γ] ⊢ \evenO : \even~\nO\\
-      E[Γ] ⊢ \evenS : \forall~n:\nat,~\odd~n → \even~(\nS~n)\\
-      E[Γ] ⊢ \oddS : \forall~n:\nat,~\even~n → \odd~(\nS~n)
+      E[Γ] ⊢ \evenS : ∀~n:\nat,~\odd~n → \even~(\nS~n)\\
+      E[Γ] ⊢ \oddS : ∀~n:\nat,~\even~n → \odd~(\nS~n)
       \end{array}
 
 
@@ -1450,7 +1450,7 @@ corresponding to the :math:`c:C` constructor.
 .. math::
    \begin{array}{ll}
    \{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)\}^P &\equiv (P~t_1\ldots ~t_p~c) \\
-   \{c:\forall~x:T,C\}^P &\equiv \forall~x:T,\{(c~x):C\}^P 
+   \{c:∀~x:T,C\}^P &\equiv ∀~x:T,\{(c~x):C\}^P
    \end{array}
 
 We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:`c`.
@@ -1477,9 +1477,9 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
       :nowrap:
 
       \begin{eqnarray*}
-        P & = & \lambda~l~.~P^\prime\\
+        P & = & λ~l~.~P^\prime\\
         f_1 & = & t_1\\
-        f_2 & = & \lambda~(hd:\nat)~.~\lambda~(tl:\List~\nat)~.~t_2
+        f_2 & = & λ~(hd:\nat)~.~λ~(tl:\List~\nat)~.~t_2
       \end{eqnarray*}
 
    According to the definition:
