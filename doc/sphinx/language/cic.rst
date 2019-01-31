@@ -519,7 +519,7 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
    We could not allow
 
    .. math::
-      λ x:Type(1),(f~x) \triangleright_η f
+      λ x:\Type(1),(f~x) \triangleright_η f
    
    because the type of the reduced term :math:`∀ x:\Type(2),\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),\Type(1).`
@@ -858,7 +858,7 @@ sort :math:`s`.
 
 .. example::
 
-   :math:`A→ Set` and :math:`∀ A:\Prop,A→ \Prop` are arities.
+   :math:`A→ \Set` and :math:`∀ A:\Prop,A→ \Prop` are arities.
 
 
 Type of constructor
@@ -872,7 +872,7 @@ two cases:
 .. example::
 
    :math:`\nat` and :math:`\nat→\nat` are types of constructor of :math:`\nat`.
-   :math:`∀ A:Type,\List~A` and :math:`∀ A:Type,A→\List~A→\List~A` are types of constructor of :math:`\List`.
+   :math:`∀ A:\Type,\List~A` and :math:`∀ A:\Type,A→\List~A→\List~A` are types of constructor of :math:`\List`.
 
 .. _positivity:
 
@@ -1027,7 +1027,7 @@ in :math:`\Type`.
 .. flag:: Auto Template Polymorphism
 
    This option, enabled by default, makes every inductive type declared
-   at level :math:`Type` (without annotations or hiding it behind a
+   at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic.
 
    This can be prevented using the ``notemplate`` attribute.
@@ -1347,7 +1347,7 @@ sort :math:`\Prop`.
 	       
    ~
    ---------------
-   [I:Prop|I→Prop]
+   [I:\Prop|I→\Prop]
 
 
 :math:`\Prop` is the type of logical propositions, the proofs of properties :math:`P` in
@@ -1376,7 +1376,7 @@ the proof of :g:`or A B` is not accepted:
 From the computational point of view, the structure of the proof of
 :g:`(or A B)` in this term is needed for computing the boolean value.
 
-In general, if :math:`I` has type :math:`\Prop` then :math:`P` cannot have type :math:`I→Set,` because
+In general, if :math:`I` has type :math:`\Prop` then :math:`P` cannot have type :math:`I→\Set,` because
 it will mean to build an informative proof of type :math:`(P~m)` doing a case
 analysis over a non-computational object that will disappear in the
 extracted program. But the other way is safe with respect to our
@@ -1384,8 +1384,8 @@ interpretation we can have :math:`I` a computational object and :math:`P` a
 non-computational one, it just corresponds to proving a logical property
 of a computational object.
 
-In the same spirit, elimination on :math:`P` of type :math:`I→Type` cannot be allowed
-because it trivially implies the elimination on :math:`P` of type :math:`I→ Set` by
+In the same spirit, elimination on :math:`P` of type :math:`I→\Type` cannot be allowed
+because it trivially implies the elimination on :math:`P` of type :math:`I→ \Set` by
 cumulativity. It also implies that there are two proofs of the same
 property which are provably different, contradicting the proof-
 irrelevance property which is sometimes a useful axiom:
@@ -1397,7 +1397,7 @@ irrelevance property which is sometimes a useful axiom:
       Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
 The elimination of an inductive definition of type :math:`\Prop` on a predicate
-:math:`P` of type :math:`I→ Type` leads to a paradox when applied to impredicative
+:math:`P` of type :math:`I→ \Type` leads to a paradox when applied to impredicative
 inductive definition like the second-order existential quantifier
 :g:`exProp` defined above, because it gives access to the two projections on
 this type.
@@ -1413,7 +1413,7 @@ this type.
    I~\kw{is an empty or singleton definition}
    s ∈ \Sort
    -------------------------------------
-   [I:Prop|I→ s]
+   [I:\Prop|I→ s]
 
 A *singleton definition* has only one constructor and all the
 arguments of this constructor have type :math:`\Prop`. In that case, there is a
@@ -1866,9 +1866,9 @@ in the sort :math:`\Set`, which is extended to a domain in any sort:
 
    E[Γ] ⊢ T : s
    s ∈ {\Sort}
-   E[Γ::(x:T)] ⊢ U : Set
+   E[Γ::(x:T)] ⊢ U : \Set
    ---------------------
-   E[Γ] ⊢ ∀ x:T,U : Set
+   E[Γ] ⊢ ∀ x:T,U : \Set
 
 This extension has consequences on the inductive definitions which are
 allowed. In the impredicative system, one can build so-called *large
@@ -1883,15 +1883,15 @@ impredicative system for sort :math:`\Set` become:
 
 .. inference:: Set1
 
-   s ∈ \{Prop, Set\}
+   s ∈ \{\Prop, \Set\}
    -----------------
-   [I:Set|I→ s]
+   [I:\Set|I→ s]
 
 .. inference:: Set2
 
    I~\kw{is a small inductive definition}
    s ∈ \{\Type(i)\}
    ----------------
-   [I:Set|I→ s]
+   [I:\Set|I→ s]
 
 
