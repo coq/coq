@@ -1205,7 +1205,7 @@ recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
 
 For instance, assuming a parameter :math:`A:\Set` exists in the local context,
-we want to build a function length of type :math:`\List~A → \nat` which computes
+we want to build a function :math:`\length` of type :math:`\List~A → \nat` which computes
 the length of the list, such that :math:`(\length~(\Nil~A)) = \nO` and
 :math:`(\length~(\cons~A~a~l)) = (\nS~(\length~l))`.
 We want these equalities to be
@@ -1231,7 +1231,7 @@ principles. For instance, in order to prove
   :math:`(\kw{has}\_\kw{length}~A~(\cons~A~a~l)~(\length~(\cons~A~a~l)))`
 
 
-which given the conversion equalities satisfied by length is the same
+which given the conversion equalities satisfied by :math:`\length` is the same
 as proving:
 
 
