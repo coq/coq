@@ -172,7 +172,7 @@ implicative proposition, to denote :math:`\nat →\Prop` which is the type of
 unary predicates over the natural numbers, etc.
 
 Let us assume that ``mult`` is a function of type :math:`\nat→\nat→\nat` and ``eqnat`` a
-predicate of type \nat→\nat→ \Prop. The λ-abstraction can serve to build
+predicate of type :math:`\nat→\nat→ \Prop`. The λ-abstraction can serve to build
 “ordinary” functions as in :math:`λ x:\nat.(\kw{mult}~x~x)` (i.e.
 :g:`fun x:nat => mult x x`
 in |Coq| notation) but may build also predicates over the natural
@@ -406,7 +406,7 @@ can decide if two programs are *intentionally* equal (one says
 
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
-instance the identity function over a given type T can be written
+instance the identity function over a given type :math:`T` can be written
 :math:`λx:T.~x`. In any global environment :math:`E` and local context
 :math:`Γ`, we want to identify any object :math:`a` (of type
 :math:`T`) with the application :math:`((λ x:T.~x)~a)`.  We define for
@@ -601,8 +601,8 @@ Subtyping rules
 -------------------
 
 At the moment, we did not take into account one rule between universes
-which says that any term in a universe of index i is also a term in
-the universe of index i+1 (this is the *cumulativity* rule of |Cic|).
+which says that any term in a universe of index :math:`i` is also a term in
+the universe of index :math:`i+1` (this is the *cumulativity* rule of |Cic|).
 This property extends the equivalence relation of convertibility into
 a *subtyping* relation inductively defined by:
 
@@ -717,8 +717,8 @@ for any :math:`p` there always exists :math:`Γ_P =[a_1 :A_1 ;…;a_p :A_p ]` su
 each :math:`T` in :math:`(t:T)∈Γ_I \cup Γ_C` can be written as: :math:`∀Γ_P , T'` where :math:`Γ_P` is
 called the *context of parameters*. Furthermore, we must have that
 each :math:`T` in :math:`(t:T)∈Γ_I` can be written as: :math:`∀Γ_P,∀Γ_{\mathit{Arr}(t)}, S` where
-:math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type t and :math:`S` is called
-the sort of the inductive type t (not to be confused with :math:`\Sort` which is the set of sorts).
+:math:`Γ_{\mathit{Arr}(t)}` is called the *Arity* of the inductive type :math:`t` and :math:`S` is called
+the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` which is the set of sorts).
 
 .. example::
 
@@ -792,7 +792,7 @@ the sort of the inductive type t (not to be confused with :math:`\Sort` which is
 Types of inductive objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We have to give the type of constants in a global environment E which
+We have to give the type of constants in a global environment :math:`E` which
 contains an inductive declaration.
 
 .. inference:: Ind
@@ -863,7 +863,7 @@ sort :math:`s`.
 
 Type of constructor
 +++++++++++++++++++
-We say that T is a *type of constructor of I* in one of the following
+We say that :math:`T` is a *type of constructor of* :math:`I` in one of the following
 two cases:
 
 + :math:`T` is :math:`(I~t_1 … t_n )`
@@ -1275,7 +1275,7 @@ and it will reduce to :math:`f_i` where the :math:`x_{i1} …x_{ip_i}` are repla
 :math:`u_1 … u_{p_i}` according to the ι-reduction.
 
 Actually, for type checking a :math:`\Match…\with…\kwend` expression we also need
-to know the predicate P to be proved by case analysis. In the general
+to know the predicate :math:`P` to be proved by case analysis. In the general
 case where :math:`I` is an inductively defined :math:`n`-ary relation, :math:`P` is a predicate
 over :math:`n+1` arguments: the :math:`n` first ones correspond to the arguments of :math:`I`
 (parameters excluded), and the last one corresponds to object :math:`m`. |Coq|
