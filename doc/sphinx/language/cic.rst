@@ -1469,7 +1469,7 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
    can be represented in abstract syntax as
 
    .. math::
-      \case(t,P,f 1 | f 2 )
+      \case(t,P,f_1 | f_2 )
 
    where
 
