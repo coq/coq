@@ -40,7 +40,7 @@ Notation zero := (D0 Nil).
 
 (** For signed integers, we use two constructors [Pos] and [Neg]. *)
 
-Inductive int := Pos (d:uint) | Neg (d:uint).
+Variant int := Pos (d:uint) | Neg (d:uint).
 
 Declare Scope dec_uint_scope.
 Delimit Scope dec_uint_scope with uint.
@@ -49,6 +49,9 @@ Bind Scope dec_uint_scope with uint.
 Declare Scope dec_int_scope.
 Delimit Scope dec_int_scope with int.
 Bind Scope dec_int_scope with int.
+
+Register uint as num.uint.type.
+Register int as num.int.type.
 
 (** This representation favors simplicity over canonicity.
     For normalizing numbers, we need to remove head zero digits,
