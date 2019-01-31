@@ -294,7 +294,7 @@ pkg:opam:
   variables:
     # By default we use coq.cachix.org as an extra substituter but this can be overridden
     EXTRA_SUBSTITUTERS: https://coq.cachix.org
-    EXTRA_PUBLIC_KEYS: coq.cachix.org-1:Jgt0DwGAUo+wpxCM52k2V+E0hLoOzFPzvg94F65agtI=
+    EXTRA_PUBLIC_KEYS: coq.cachix.org-1:5QW/wwEnD+l2jvN6QRbRRsa4hBHG3QiQQ26cxu1F5tI=
     # The following variables should not be overridden
     GIT_STRATEGY: none
     NIXOS_PUBLIC_KEY: cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
