@@ -83,6 +83,14 @@ Tactics
   foo : database`). When the database name is omitted, the hint is added to the
   core database (as previously), but a deprecation warning is emitted.
 
+- There are now tactics in `PreOmega.v` called
+  `Z.div_mod_to_equations`, `Z.quot_rem_to_equations`, and
+  `Z.to_euclidean_division_equations` (which combines the `div_mod`
+  and `quot_rem` variants) which allow `lia`, `nia`, `romega`, etc to
+  support `Z.div` and `Z.modulo` (`Z.quot` and `Z.rem`, respectively),
+  by posing the specifying equation for `Z.div` and `Z.modulo` before
+  replacing them with atoms.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
