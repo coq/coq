@@ -23,7 +23,8 @@ Contents
    :caption: Preamble
 
    self
-   credits
+   history
+   changes
 
 .. toctree::
    :caption: The language

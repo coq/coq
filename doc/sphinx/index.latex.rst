@@ -15,7 +15,9 @@ Introduction
    Company-Coq :cite:`Pit16`
    (see https://github.com/cpitclaudel/company-coq).
 
-.. include:: credits.rst
+.. include:: history.rst
+
+.. include:: changes.rst
 
 ------------
 The language
