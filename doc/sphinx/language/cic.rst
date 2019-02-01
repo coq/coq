@@ -51,7 +51,7 @@ function types over these data types.
 Consequently they also have a type. Because assuming simply that :math:`\Set`
 has type :math:`\Set` leads to an inconsistent theory :cite:`Coq86`, the language of
 |Cic| has infinitely many sorts. There are, in addition to :math:`\Set` and :math:`\Prop`
-a hierarchy of universes :math:`\Type(i)` for any integer :math:`i`.
+a hierarchy of universes :math:`\Type(i)` for any integer :math:`i ≥ 1`.
 
 Like :math:`\Set`, all of the sorts :math:`\Type(i)` contain small sets such as
 booleans, natural numbers, as well as products, subsets and function
