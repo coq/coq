@@ -112,15 +112,16 @@ methodology.
 
 .. [#years] At the time of writting, i.e. 1995.
 
-Brief summary of the versions up to 5.10
-----------------------------------------
+Versions 1 to 5
+---------------
 
 .. note::
    This summary was written in 1995 together with the previous
-   section and formed the initial version of the Credits chapter
-   (that has since then been appended to, at each new release).
-   A more comprehensive description of these early versions is
-   available in the next few sections, which were written in 2015.
+   section and formed the initial version of the Credits chapter.
+
+   A more comprehensive description of these early versions is available
+   in the following subsections, which come from a document written in
+   September 2015 by Gérard Huet, Thierry Coquand and Christine Paulin.
 
 A first implementation of CoC was started in 1984 by G. Huet and T.
 Coquand. Its implementation language was CAML, a functional programming
@@ -205,17 +206,7 @@ definitions of “inversion predicates”.
 |
 
 Version 1
----------
-
-.. note::
-
-   These additional notes come from a document written
-   in September 2015 by Gérard Huet, Thierry Coquand and Christine Paulin
-   to accompany their public release of the archive of versions 1.10 to 6.2
-   of Coq and of its CONSTR ancestor. CONSTR, then Coq, was designed and
-   implemented in the Formel team, joint between the INRIA Rocquencourt
-   laboratory and the Ecole Normale Supérieure of Paris, from 1984
-   onwards.
+~~~~~~~~~
 
 This software is a prototype type-checker for a higher-order logical
 formalism known as the Theory of Constructions, presented in his PhD
@@ -257,7 +248,7 @@ an increasing integer function, a challenge for constructive mathematics.
 She also encoded the majority voting algorithm of Boyer and Moore.
 
 Version 2
----------
+~~~~~~~~~
 
 The formal system, now renamed as the *Calculus of Constructions*, was
 presented with a proof of consistency and comparisons with proof
@@ -297,7 +288,7 @@ as *Induction Principles Formalized in the Calculus of
 Constructions* :cite:`H88`.
 
 Version 3
----------
+~~~~~~~~~
 
 This version saw the beginning of proof automation, with a search
 algorithm inspired from PROLOG and the applicative logic programming
@@ -319,7 +310,7 @@ in 1986-87, where he developed a variant implementation in SML, with
 which he wrote some developments on fixpoints in Scott's domains.
 
 Version 4
----------
+~~~~~~~~~
 
 This version saw the beginning of program extraction from proofs, with
 two varieties of the type ``Prop`` of propositions, indicating
@@ -493,7 +484,7 @@ the European Basic Research Action Logical Frameworks In Sophia
 Antipolis in May 1990.
 
 Version 5
----------
+~~~~~~~~~
 
 At the end of 1989, Version 5.1 was started, and renamed as the system
 Coq for the Calculus of Inductive Constructions. It was then ported to
@@ -520,8 +511,11 @@ files, allow a more precise tracking of the software developments.
 | Thierry Coquand, Gérard Huet and Christine Paulin-Mohring.
 |
 
+Versions 6
+----------
+
 Version 6.1
------------
+~~~~~~~~~~~
 
 The present version 6.1 of |Coq| is based on the V5.10 architecture. It
 was ported to the new language Objective Caml by Bruno Barras. The
@@ -558,7 +552,7 @@ Barras.
 |
 
 Version 6.2
------------
+~~~~~~~~~~~
 
 In version 6.2 of |Coq|, the parsing is done using camlp4, a preprocessor
 and pretty-printer for CAML designed by Daniel de Rauglaudre at INRIA.
@@ -603,7 +597,7 @@ Loiseleur.
 |
 
 Version 6.3
------------
+~~~~~~~~~~~
 
 The main changes in version V6.3 were the introduction of a few new
 tactics and the extension of the guard condition for fixpoint
