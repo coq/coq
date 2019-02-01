@@ -49,3 +49,4 @@ Goal
    ))))
 .
 Timeout 2 Time try refine (refl_equal _).
+Abort.

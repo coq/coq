@@ -10,12 +10,12 @@ R=$?
 times
 $coqc -R misc/deps/lib lib misc/deps/lib/foo.v 2>&1
 $coqc -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/foo.v 2>&1
-$coqtop -R misc/deps/lib lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1
+$coqc -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1
 S=$?
 if [ $R = 0 ] && [ $S = 0 ]; then
-    printf "coqdep and coqtop agree\n"
+    printf "coqdep and coqc agree\n"
     exit 0
 else
-    printf "coqdep and coqtop disagree\n"
+    printf "coqdep and coqc disagree\n"
     exit 1
 fi

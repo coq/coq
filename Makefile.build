@@ -198,7 +198,7 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
-BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -compile
+BOOTCOQC=$(TIMER) $(COQTOPBEST) -boot $(COQOPTS) -w -deprecate-compile-arg -compile
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES)

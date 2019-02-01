@@ -32,8 +32,9 @@ let verbose = ref false
 let rec make_compilation_args = function
   | [] -> []
   | file :: fl ->
-      (if !verbose then "-compile-verbose" else "-compile")
-      :: file :: (make_compilation_args fl)
+    "-w" :: "-deprecate-compile-arg"
+    :: (if !verbose then "-compile-verbose" else "-compile")
+    :: file :: (make_compilation_args fl)
 
 (* compilation of files [files] with command [command] and args [args] *)
 
@@ -61,16 +62,28 @@ let usage () =
 (* parsing of the command line *)
 let extra_arg_needed = ref true
 
+let deprecated_coqc_warning = CWarnings.(create
+    ~name:"deprecate-compile-arg"
+    ~category:"toplevel"
+    ~default:Enabled
+    (fun opt_name -> Pp.(seq [str "The option "; str opt_name; str" is deprecated."])))
+
 let parse_args () =
   let rec parse (cfiles,args) = function
     | [] ->
 	List.rev cfiles, List.rev args
     | ("-verbose" | "--verbose") :: rem ->
 	verbose := true ; parse (cfiles,args) rem
-    | "-image" :: f :: rem -> image := f; parse (cfiles,args) rem
+    | "-image" :: f :: rem ->
+      deprecated_coqc_warning "-image";
+      image := f; parse (cfiles,args) rem
     | "-image" :: [] ->	usage ()
-    | "-byte" :: rem -> use_bytecode := true; parse (cfiles,args) rem
-    | "-opt" :: rem -> use_bytecode := false; parse (cfiles,args) rem
+    | "-byte" :: rem ->
+      deprecated_coqc_warning "-byte";
+      use_bytecode := true; parse (cfiles,args) rem
+    | "-opt" :: rem ->
+      deprecated_coqc_warning "-opt";
+      use_bytecode := false; parse (cfiles,args) rem
 
 (* Informative options *)
 
@@ -87,7 +100,7 @@ let parse_args () =
         Envars.set_coqlib ~fail:(fun x -> x);
         Envars.print_config stdout Coq_config.all_src_dirs;
         exit 0
-      
+
     | ("-print-version" | "--print-version") :: _ ->
         Usage.machine_readable_version 0
 
@@ -97,7 +110,7 @@ let parse_args () =
       |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-profile"|"-echo" |"-quiet"
       |"-silent"|"-m"|"-beautify"|"-strict-implicit"
-      |"-impredicative-set"|"-vm"
+      |"-impredicative-set"|"-vm"|"-test-mode"|"-emacs"
       |"-indices-matter"|"-quick"|"-type-in-type"
       |"-async-proofs-always-delegate"|"-async-proofs-never-reopen-branch"
       |"-stm-debug"
@@ -108,22 +121,28 @@ let parse_args () =
 
     | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"|"-color"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
-      |"-load-ml-source"|"-require"|"-load-ml-object"
+      |"-load-ml-source"|"-require"|"-load-ml-object"|"-async-proofs-cache"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib"|"-top"|"-topfile"
       |"-async-proofs-j" |"-async-proofs-private-flags" |"-async-proofs" |"-w"
-      |"-o"|"-profile-ltac-cutoff"|"-mangle-names"|"-bytecode-compiler"|"-native-compiler"
+      |"-profile-ltac-cutoff"|"-mangle-names"|"-bytecode-compiler"|"-native-compiler"
       as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
+    | "-o" :: rem->
+        begin
+          match rem with
+            | s :: rem' -> parse (cfiles,s::"-o"::args) rem'
+            | []        -> usage ()
+        end
     | ("-I"|"-include" as o) :: s :: rem -> parse (cfiles,s::o::args) rem
 
 (* Options for coqtop : c) options with 1 argument and possibly more *)
 
     | ("-R"|"-Q" as o) :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
-    | ("-schedule-vio-checking"
+    | ("-schedule-vio-checking"|"-vio2vo"
       |"-check-vio-tasks" | "-schedule-vio2vo" as o) :: s :: rem ->
         let nodash, rem =
           CList.split_when (fun x -> String.length x > 1 && x.[0] = '-') rem in

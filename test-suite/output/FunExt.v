@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-async-proofs" "no") -*- *)
 Require Import FunctionalExtensionality.
 
 (* Basic example *)

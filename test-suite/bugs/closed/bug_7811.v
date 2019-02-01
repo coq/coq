@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-top" "atomic" "-Q" "." "iris" "-R" "." "stdpp") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-top" "atomic" "-Q" "." "iris" "-R" "." "stdpp") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 140 lines to 26 lines, then from 141 lines to 27 lines, then from 142 lines to 27 lines, then from 272 lines to 61 lines, then from 291 lines to 94 lines, then from 678 lines to 142 lines, then from 418 lines to 161 lines, then from 538 lines to 189 lines, then from 840 lines to 493 lines, then from 751 lines to 567 lines, then from 913 lines to 649 lines, then from 875 lines to 666 lines, then from 784 lines to 568 lines, then from 655 lines to 173 lines, then from 317 lines to 94 lines, then from 172 lines to 86 lines, then from 102 lines to 86 lines, then from 130 lines to 86 lines, then from 332 lines to 112 lines, then from 279 lines to 111 lines, then from 3996 lines to 5697 lines, then from 153 lines to 117 lines, then from 146 lines to 108 lines, then from 124 lines to 108 lines *)
 (* coqc version 8.8.0 (May 2018) compiled on May 2 2018 16:49:46 with OCaml 4.02.3
    coqtop version 8.8.0 (May 2018) *)

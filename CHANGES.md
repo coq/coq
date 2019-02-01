@@ -22,6 +22,11 @@ Coqide
 
 Coqtop
 
+- the use of `coqtop` as a compiler has been deprecated, in favor of
+  `coqc`. Consequently option `-compile` will stop to be accepted in
+  the next release. `coqtop` is now reserved to interactive
+  use. (@ejgallego #9095)
+
 - new option -topfile filename, which will set the current module name
   (à la -top) based on the filename passed, taking into account the
   proper -R/-Q options. For example, given -R Foo foolib using

@@ -1,4 +1,3 @@
-
 Goal True /\ True.
 Proof.
   split.

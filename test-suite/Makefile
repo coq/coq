@@ -38,14 +38,15 @@ LIB := ..
 BIN := $(shell cd ..; pwd)/bin/
 COQFLAGS?=
 
-coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -batch -test-mode -R prerequisite TestSuite $(COQFLAGS)
+coqc_boot := $(BIN)coqc -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite $(COQFLAGS)
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
+coqtop := $(BIN)coqtop -batch -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte
 
-coqtopload := $(coqtop) -async-proofs-cache force -load-vernac-source
-coqtopcompile := $(coqtop) -async-proofs-cache force -compile
+coqc_interactive := $(coqc) -async-proofs-cache force
+coqc_boot_interactive := $(coqc_boot) -async-proofs-cache force
 coqdep := $(BIN)coqdep -coqlib $(LIB)
 
 VERBOSE?=
@@ -60,11 +61,7 @@ SINGLE_QUOTE="
 #" # double up on the quotes, in a comment, to appease the emacs syntax highlighter
 # wrap the arguments in parens, but only if they exist
 get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
-# get the command to use with this set of arguments; if there's -compile, use coqc, else use coqtop
-has_profile_ltac_or_compile_flag = $(filter "-profile-ltac-cutoff" "-profile-ltac" "-compile",$(call get_coq_prog_args,$(1)))
-get_command_based_on_flags = $(if $(call has_profile_ltac_or_compile_flag,$(1)),$(coqtopcompile),$(coqtopload))
 get_set_impredicativity= $(filter "-impredicative-set",$(call get_coq_prog_args,$(1)))
-
 
 bogomips:=
 ifneq (,$(wildcard /proc/cpuinfo))
@@ -209,7 +206,7 @@ $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 	@echo "TEST      $<  $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...still active"; \
@@ -231,7 +228,7 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -297,7 +294,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be prepared" ; \
@@ -316,7 +313,7 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v)): %.v
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods)"; \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -342,7 +339,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -367,7 +364,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -392,7 +389,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  output=$*.out.real; \
-	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	  $(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -431,7 +428,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
 	  tmpexpected=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	  $(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -486,7 +483,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(call get_command_based_on_flags,"$<") "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
+	  res=`$(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
@@ -517,7 +514,7 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtopcompile) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  $(coqc) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	      echo $(log_success); \
 	      echo "    $<...still wished"; \
@@ -531,7 +528,7 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v $(PREREQUISITELOG
 # Additional dependencies for module tests
 $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.vo
 modules/%.vo: modules/%.v
-	$(HIDE)$(coqtop) -R modules Mods -compile $<
+	$(HIDE)$(coqc) -R modules Mods $<
 
 #######################################################################
 # Miscellaneous tests
@@ -550,7 +547,7 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	  echo $(call log_intro,$<); \
 	  export BIN="$(BIN)"; \
 	  export coqc="$(coqc)"; \
-	  export coqtop="$(coqtop)"; \
+	  export coqtop="$(coqc_boot)"; \
 	  export coqdep="$(coqdep)"; \
 	  export coqtopbyte="$(coqtopbyte)"; \
 	  "$<" 2>&1; R=$$?; times; \
@@ -591,7 +588,7 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  $(coqc) -quick -R vio vio $* 2>&1 && \
-	  $(coqtop) -R vio vio -vio2vo $*.vio 2>&1 && \
+	  $(coqc) -R vio vio -vio2vo $*.vio 2>&1 && \
 	  $(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
