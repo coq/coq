@@ -333,8 +333,8 @@ need something of type A" or, because A is a proposition, "we need a
 proof of A".  Now, the previous command moved a proof of A into the
 context and called it "proof_of_A".  So, an hypothesis in our context
 (which are all things we know to exist) has a type that matches our
-subgoal (which is we want to create), so we have an exact match.  The
-tactic "exact proof_of_A" solves the subgoal (and the proof).
+subgoal (which is what we want to create), so we have an exact match.
+The tactic "exact proof_of_A" solves the subgoal (and the proof).
 
 Ta-da!  Your first proof!
 
@@ -568,8 +568,8 @@ function that takes two arguments, one of type A and one of type B,
 and returns a value of type C.  The type of the function is "A->B->C"
 and a call to it looks like "A_imp_B_imp_C something_of_type_A
 something_of_type_B".  Notice that there are no parentheses needed -
-you just put the arguments next to the name of the function.
-E.g. "function arg1 arg2" This is a style common in functional
+you just put the arguments next to the name of the function.  For
+example, "function arg1 arg2". This is a style common in functional
 programming languages.  For those familiar with imperative languages,
 like C, C++, and Java, it will feel odd not to have parentheses and
 commas to denote the arguments.
@@ -683,10 +683,9 @@ have been named "Provable" and "Unprovable" (or "AlwaysProvable"
 and "NeverProvable").  The lower-case ones act like what you're
 accustomed to.
 
-Since we've been playing with Props, let's do some proofs with (the badly
-named) "True" and "False" and we'll come back to the lower-case "true"
-and "false" later.
-*)
+Since we've been playing with Props, let's do some proofs with (the
+imperfectly named) "True" and "False" and we'll come back to the
+lower-case "true" and "false" later.  *)
 
 (** ** Capital-T True and Capital-F False *)
 (** *** True is provable *)
@@ -778,7 +777,7 @@ familiar with using the tactic "intros" to remove "->" at the front of
 the subgoal.  The command "intros proof_of_False" does just that.
 
 
-After that, it's goes as usual.  "intros"s at the start and "exact" at
+After that, it goes as usual.  "intros"s at the start and "exact" at
 the end.  It feels weird to have an hypothesis labeled
 "proof_of_False" doesn't it?  It's weird because we know False has no
 proofs, so that hypothesis can never exist.  Wouldn't it be better if
