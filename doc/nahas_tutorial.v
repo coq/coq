@@ -74,7 +74,7 @@ the command-line version of Coq.  It is also available at
 http://coq.inria.fr/download The Linux package is usually called
 "coq".  To use it in Emacs, you have to also download and install the
 "Proof General" Emacs mode.  Is is available at
-http://proofgeneral.inf.ed.ac.uk/ Linux package managers include some
+https://proofgeneral.github.io/ Linux package managers include some
 version of it.  (Debian/Ubuntu/Mint calls it "proofgeneral".
 Fedora/CentOS might call it "emacs-common-proofgeneral".  Arch might
 call it "proofgeneral".)
