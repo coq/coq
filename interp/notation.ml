@@ -499,7 +499,9 @@ module InnerPrimToken = struct
     | StringInterp f, StringInterp f' -> f == f'
     | _ -> false
 
-  let ofNumeral s n = match s with
+  let ofNumeral s n =
+    let n = String.(concat "" (split_on_char '_' n)) in
+    match s with
     | SPlus -> Bigint.of_string n
     | SMinus -> Bigint.neg (Bigint.of_string n)
 
@@ -770,7 +772,7 @@ let coquint_of_rawnum uint str =
   let nil = mkConstruct (uint,1) in
   let rec do_chars s i acc =
     if i < 0 then acc
-    else
+    else if s.[i] == '_' then do_chars s (i-1) acc else
       let dg = mkConstruct (uint, digit_of_char s.[i]) in
       do_chars s (i-1) (mkApp(dg,[|acc|]))
   in
