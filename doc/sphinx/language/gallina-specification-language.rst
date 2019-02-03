@@ -77,7 +77,8 @@ Identifiers and access identifiers
 Numerals
   Numerals are sequences of digits with a potential fractional part
   and exponent. Integers are numerals without fractional nor exponent
-  part and optionally preceded by a minus sign.
+  part and optionally preceded by a minus sign. Underscores ``_`` can
+  be used as comments in numerals.
 
   .. productionlist:: coq
      digit   : 0..9

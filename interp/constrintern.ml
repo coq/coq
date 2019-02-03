@@ -1487,7 +1487,7 @@ let alias_of als = match als.alias_ids with
 
 let is_zero s =
   let rec aux i =
-    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
+    Int.equal (String.length s) i || ((s.[i] == '0' || s.[i] == '_') && aux (i+1))
   in aux 0
 let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
 

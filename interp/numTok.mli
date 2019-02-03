@@ -1,7 +1,7 @@
 type t = {
-  int : string;  (** \[0-9\]+ *)
-  frac : string;  (** empty or \[0-9\]+ *)
-  exp : string  (** empty or \[eE\]\[+-\]?\[0-9\]+ *)
+  int : string;  (** \[0-9\]\[0-9_\]* *)
+  frac : string;  (** empty or \[0-9_\]+ *)
+  exp : string  (** empty or \[eE\]\[+-\]?\[0-9\]\[0-9_\]* *)
 }
 
 val equal : t -> t -> bool

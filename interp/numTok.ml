@@ -20,15 +20,15 @@ let parse =
     set !buff len x;
     succ len in
   let get_buff len = Bytes.sub_string !buff 0 len in
-  (* reads [0-9]* *)
+  (* reads [0-9_]* *)
   let rec number len s = match Stream.peek s with
-    | Some (('0'..'9') as c) -> Stream.junk s; number (store len c) s
+    | Some (('0'..'9' | '_') as c) -> Stream.junk s; number (store len c) s
     | _ -> len in
   fun s ->
   let i = get_buff (number 0 s) in
   let f =
     match Stream.npeek 2 s with
-    | '.' :: (('0'..'9') as c) :: _ ->
+    | '.' :: (('0'..'9' | '_') as c) :: _ ->
        Stream.junk s; Stream.junk s; get_buff (number (store 0 c) s)
     | _ -> "" in
   let e =
