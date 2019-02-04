@@ -271,8 +271,13 @@ let exec_ifile f =
   match Array.length Sys.argv with
   | 1 -> f stdin
   | 2 ->
-    let ic = open_in Sys.argv.(1) in
-    (try f ic with _ -> close_in ic)
+    let in_file = Sys.argv.(1) in
+    begin try
+      let ic = open_in in_file in
+      (try f ic
+       with _ -> eprintf "Error: exec_ifile@\n%!"; close_in ic)
+      with _ -> eprintf "Error: cannot open input file %s@\n%!" in_file
+    end
   | _ -> eprintf "Error: wrong number of arguments@\n%!"; exit 1
 
 let _ =

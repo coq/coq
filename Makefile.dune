@@ -40,7 +40,7 @@ help:
 
 voboot:
 	dune build $(DUNEOPT) @vodeps
-	dune exec coq_dune $(BUILD_CONTEXT)/.vfiles.d
+	dune exec ./tools/coq_dune.exe $(BUILD_CONTEXT)/.vfiles.d
 
 states: voboot
 	dune build $(DUNEOPT) theories/Init/Prelude.vo
