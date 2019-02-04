@@ -16,12 +16,9 @@ We are currently running tests on the following platforms:
   `./configure`. It should allow complying with this discipline
   without pain.
 
-- AppVeyor is used to test the compilation of Coq and run the test-suite on
-  Windows.
-
 - Azure Pipelines is used to test the compilation of Coq and run the
-  test-suite on Windows and on macOS. It is expected to replace
-  appveyor eventually.
+  test-suite on Windows and on macOS. It is expected to be used to build
+  macOS and Windows packages eventually.
 
 You can anticipate the results of most of these tests prior to submitting your
 PR by running GitLab CI on your private branches. To do so follow these steps:
