@@ -78,6 +78,9 @@ sig
     (** Map all terms in a given declaration. *)
     val map_constr : ('c -> 'c) -> ('c, 'c) pt -> ('c, 'c) pt
 
+    (** Map all terms, with an heterogeneous function. *)
+    val map_constr_het : ('a -> 'b) -> ('a, 'a) pt -> ('b, 'b) pt
+
     (** Perform a given action on all terms in a given declaration. *)
     val iter_constr : ('c -> unit) -> ('c, 'c) pt -> unit
 
