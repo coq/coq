@@ -30,8 +30,6 @@
 # Trick to avoid getting review requests
 # each time someone adds an overlay
 
-/appveyor.yml          @coq/ci-maintainers
-/dev/ci/appveyor.*     @coq/ci-maintainers
 /dev/ci/*.bat          @coq/ci-maintainers
 
 *.nix             @coq/nix-maintainers

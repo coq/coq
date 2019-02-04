@@ -143,7 +143,7 @@ fi
 # Sanity check: PR has an outdated version of CI
 
 BASE_COMMIT=$(echo "$PRDATA" | jq -r '.base.sha')
-CI_FILES=(".gitlab-ci.yml" "appveyor.yml")
+CI_FILES=(".gitlab-ci.yml" "azure-pipelines.yml")
 
 if ! git diff --quiet "$BASE_COMMIT" "$LOCAL_BRANCH_COMMIT" -- "${CI_FILES[@]}"
 then
