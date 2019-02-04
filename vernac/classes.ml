@@ -376,9 +376,11 @@ let context poly l =
     | [] -> assert false
     | [_] -> Evd.const_univ_entry ~poly sigma
     | _::_::_ ->
-      (* TODO: explain this little belly dance *)
       if Lib.sections_are_opened ()
       then
+        (* More than 1 variable in a section: we can't associate
+           universes to any specific variable so we declare them
+           separately. *)
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
@@ -386,8 +388,11 @@ let context poly l =
           else Monomorphic_const_entry Univ.ContextSet.empty
         end
       else if poly then
+        (* Multiple polymorphic axioms: they are all polymorphic the same way. *)
         Evd.const_univ_entry ~poly sigma
       else
+        (* Multiple monomorphic axioms: declare universes separately
+           to avoid redeclaring them. *)
         begin
           let uctx = Evd.universe_context_set sigma in
           Declare.declare_universe_context poly uctx;
