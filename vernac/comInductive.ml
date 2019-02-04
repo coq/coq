@@ -83,10 +83,9 @@ type structured_one_inductive_expr = {
 type structured_inductive_expr =
   local_binder_expr list * structured_one_inductive_expr list
 
-let minductive_message warn = function
+let minductive_message = function
   | []  -> user_err Pp.(str "No inductive definition.")
-  | [x] -> (Id.print x ++ str " is defined" ++
-            if warn then str " as a non-primitive record" else mt())
+  | [x] -> (Id.print x ++ str " is defined")
   | l   -> hov 0  (prlist_with_sep pr_comma Id.print l ++
                      spc () ++ str "are defined")
 
@@ -531,6 +530,12 @@ let is_recursive mie =
       List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
   | _ -> false
 
+let warn_non_primitive_record =
+  CWarnings.create ~name:"non-primitive-record" ~category:"record"
+         (fun indsp ->
+          (hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (IndRef indsp) ++
+                    strbrk" could not be defined as a primitive record")))
+
 let declare_mutual_inductive_with_eliminations mie pl impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
@@ -545,6 +550,8 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
+  if match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false
+  then warn_non_primitive_record (mind,0);
   Declare.declare_univ_binders (IndRef (mind,0)) pl;
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
@@ -556,8 +563,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
                     (ConstructRef (ind, succ j)) impls)
                 constrimpls)
       impls;
-  let warn_prim = match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false in
-  Flags.if_verbose Feedback.msg_info (minductive_message warn_prim names);
+  Flags.if_verbose Feedback.msg_info (minductive_message names);
   if mie.mind_entry_private == None
   then declare_default_schemes mind;
   mind
