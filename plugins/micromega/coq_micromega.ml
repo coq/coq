@@ -846,7 +846,7 @@ struct
      match env with
       | [] -> ([v],n)
       | e::l ->
-         if EConstr.eq_constr sigma e v
+         if EConstr.eq_constr_nounivs sigma e v
          then (env,n)
          else
           let (env,n) = _add l ( n+1) v in
