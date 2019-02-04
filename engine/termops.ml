@@ -38,7 +38,7 @@ let set_print_constr f = term_printer := f
 
 module EvMap = Evar.Map
 
-let pr_evar_suggested_name evk sigma =
+let evar_suggested_name evk sigma =
   let open Evd in
   let base_id evk' evi =
   match evar_ident evk' sigma with
@@ -67,7 +67,7 @@ let pr_existential_key sigma evk =
 let open Evd in
 match evar_ident evk sigma with
 | None ->
-  str "?" ++ Id.print (pr_evar_suggested_name evk sigma)
+  str "?" ++ Id.print (evar_suggested_name evk sigma)
 | Some id ->
   str "?" ++ Id.print id
 

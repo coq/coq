@@ -739,7 +739,7 @@ and detype_r d flags avoid env sigma t =
       let id,l =
         try
           let id = match Evd.evar_ident evk sigma with
-          | None -> Termops.pr_evar_suggested_name evk sigma
+          | None -> Termops.evar_suggested_name evk sigma
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in

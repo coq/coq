@@ -598,6 +598,20 @@ let explain_var_not_found env id =
   spc () ++ str "was not found" ++
   spc () ++ str "in the current" ++ spc () ++ str "environment" ++ str "."
 
+
+let explain_evar_not_found env sigma id =
+  let undef = Evar.Map.domain (Evd.undefined_map sigma) in
+  let all_undef_evars = Evar.Set.elements undef in
+  let f ev = Id.equal id (Termops.evar_suggested_name ev sigma) in
+  if List.exists f all_undef_evars then
+    (* The name is used for printing but is not user-given *)
+    str "?" ++ Id.print id ++
+    strbrk " is a generated name. Only user-given names for existential variables" ++
+    strbrk " can be referenced. To give a user name to an existential variable," ++
+    strbrk " introduce it with the ?[name] syntax."
+  else
+    str "Unknown existential variable."
+
 let explain_wrong_case_info env (ind,u) ci =
   let pi = pr_inductive env ind in
   if eq_ind ci.ci_ind ind then
@@ -812,6 +826,7 @@ let explain_pretype_error env sigma err =
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evk,exp) -> explain_unsolvable_implicit env sigma evk exp
   | VarNotFound id -> explain_var_not_found env id
+  | EvarNotFound id -> explain_evar_not_found env sigma id
   | UnexpectedType (actual,expect) ->
     let env, actual, expect = contract2 env sigma actual expect in
     explain_unexpected_type env sigma actual expect
@@ -833,6 +848,7 @@ let explain_pretype_error env sigma err =
   | TypingError t -> explain_type_error env sigma t
   | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
   | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
+
 (* Module errors *)
 
 open Modops

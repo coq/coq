@@ -486,8 +486,7 @@ let rec pretype k0 resolve_tc (tycon : type_constraint) (env : GlobEnv.t) (sigma
       let id = interp_ltac_id env id in
       let evk =
         try Evd.evar_key id sigma
-        with Not_found ->
-          user_err ?loc  (str "Unknown existential variable.") in
+        with Not_found -> error_evar_not_found ?loc !!env sigma id in
       let hyps = evar_filtered_context (Evd.find sigma evk) in
       let sigma, args = pretype_instance k0 resolve_tc env sigma loc hyps evk inst in
       let c = mkEvar (evk, args) in
