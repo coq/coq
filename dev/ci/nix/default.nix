@@ -43,10 +43,16 @@ let stdpp = coqPackages.stdpp.overrideAttrs (o: {
     src = fetchTarball "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2";
   }); in
 
+let iris = (coqPackages.iris.override { inherit coq stdpp; })
+  .overrideAttrs (o: {
+    src = fetchTarball "https://gitlab.mpi-sws.org/iris/iris/-/archive/master/iris-master.tar.bz2";
+    propagatedBuildInputs = [ stdpp ];
+  }); in
+
 let unicoq = callPackage ./unicoq { inherit coq; }; in
 
 let callPackage = newScope { inherit coq
-  bignums coq-ext-lib coqprime corn math-classes
+  bignums coq-ext-lib coqprime corn iris math-classes
   mathcomp simple-io ssreflect stdpp unicoq;
 }; in
 
@@ -67,6 +73,7 @@ let projects = {
   GeoCoq = callPackage ./GeoCoq.nix {};
   HoTT = callPackage ./HoTT.nix {};
   iris = callPackage ./iris.nix {};
+  lambda-rust = callPackage ./lambda-rust.nix {};
   math_classes = callPackage ./math_classes.nix {};
   mathcomp = {};
   mtac2 = callPackage ./mtac2.nix {};
