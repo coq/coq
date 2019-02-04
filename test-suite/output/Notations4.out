@@ -51,3 +51,5 @@ r 2 3
      : Prop
 Notation Cn := Foo.FooCn
 Expands to: Notation Notations4.J.Mfoo.Foo.Bar.Cn
+let v := 0%test17 in v : myint63
+     : myint63

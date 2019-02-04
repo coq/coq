@@ -1182,6 +1182,12 @@ open Pputils
           hov 2
             (keyword "Register Inline" ++ spc() ++ pr_qualid qid)
         )
+      | VernacPrimitive(id,r,typopt) ->
+         hov 2
+             (keyword "Primitive" ++ spc() ++ pr_lident id ++
+                (Option.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
+                str ":=" ++ spc() ++
+                str (CPrimitives.op_or_type_to_string r))
       | VernacComments l ->
         return (
           hov 2

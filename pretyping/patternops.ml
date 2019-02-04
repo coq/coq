@@ -61,9 +61,11 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
   Int.equal i1 i2 && rec_declaration_eq f1 f2
 | PProj (p1, t1), PProj (p2, t2) ->
    Projection.equal p1 p2 && constr_pattern_eq t1 t2
+| PInt i1, PInt i2 ->
+   Uint63.equal i1 i2
 | (PRef _ | PVar _ | PEvar _ | PRel _ | PApp _ | PSoApp _
    | PLambda _ | PProd _ | PLetIn _ | PSort _ | PMeta _
-   | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _), _ -> false
+   | PIf _ | PCase _ | PFix _ | PCoFix _ | PProj _ | PInt _), _ -> false
 (** FIXME: fixpoint and cofixpoint should be relativized to pattern *)
 
 and pattern_eq (i1, j1, p1) (i2, j2, p2) =
@@ -90,7 +92,8 @@ let rec occur_meta_pattern = function
       (occur_meta_pattern c) ||
       (List.exists (fun (_,_,p) -> occur_meta_pattern p) br)
   | PMeta _ | PSoApp _ -> true
-  | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
+  | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _
+    | PInt _ -> false
 
 let rec occurn_pattern n = function
   | PRel p -> Int.equal n p
@@ -111,7 +114,7 @@ let rec occurn_pattern n = function
       (List.exists (fun (_,_,p) -> occurn_pattern n p) br)
   | PMeta _ | PSoApp _ -> true
   | PEvar (_,args) -> Array.exists (occurn_pattern n) args
-  | PVar _ | PRef _ | PSort _ -> false
+  | PVar _ | PRef _ | PSort _ | PInt _ -> false
   | PFix (_,(_,tl,bl)) ->
      Array.exists (occurn_pattern n) tl || Array.exists (occurn_pattern (n+Array.length tl)) bl
   | PCoFix (_,(_,tl,bl)) ->
@@ -134,7 +137,7 @@ let rec head_pattern_bound t =
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
-    | PCoFix _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
+    | PCoFix _ | PInt _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
 
 let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Const (sp,_) -> ConstRef sp
@@ -209,7 +212,8 @@ let pattern_of_constr env sigma t =
        let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
        let env' = Array.fold_left2 push env lna tl in
        PCoFix (ln,(lna,Array.map (pattern_of_constr env) tl,
-                  Array.map (pattern_of_constr env') bl)) in
+                  Array.map (pattern_of_constr env') bl))
+    | Int i -> PInt i in
   pattern_of_constr env t
 
 (* To process patterns, we need a translation without typing at all. *)
@@ -231,7 +235,7 @@ let map_pattern_with_binders g f l = function
      let l' = Array.fold_left (fun l na -> g na l) l lna in
      PCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
   (* Non recursive *)
-  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x
+  | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ | PInt _ as x) -> x
 
 let error_instantiate_pattern id l =
   let is = match l with
@@ -287,7 +291,8 @@ let rec subst_pattern subst pat =
           pattern_of_constr env evd t.Univ.univ_abstracted_value)
   | PVar _
   | PEvar _
-  | PRel _ -> pat
+  | PRel _
+  | PInt _ -> pat
   | PProj (p,c) -> 
       let p' = Projection.map (subst_mind subst) p in
       let c' = subst_pattern subst c in
@@ -488,6 +493,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       let names = Array.map (fun id -> Name id) ids in
       PCoFix (n, (names, tl, cl))
 
+  | GInt i -> PInt i
   | GPatVar _ | GIf _ | GLetTuple _ | GCases _ | GEvar _ ->
       err ?loc (Pp.str "Non supported pattern."))
 

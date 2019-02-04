@@ -36,6 +36,7 @@ type cbv_value =
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor Univ.puniverses * cbv_value array
+  | PRIMITIVE of CPrimitives.t * Constr.t * cbv_value array
 
 and cbv_stack =
   | TOP

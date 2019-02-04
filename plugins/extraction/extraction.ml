@@ -304,9 +304,9 @@ let rec extract_type env sg db j c args =
 	   | (Info, TypeScheme) ->
                let mlt = extract_type_app env sg db (r, type_sign env sg typ) args in
                (match (lookup_constant kn env).const_body with
-		  | Undef _ | OpaqueDef _ -> mlt
-                  | Def _ when is_custom (ConstRef kn) -> mlt
-		  | Def lbody ->
+                 | Undef _ | OpaqueDef _ | Primitive _ -> mlt
+                 | Def _ when is_custom (ConstRef kn) -> mlt
+                 | Def lbody ->
                       let newc = applistc (get_body lbody) args in
                       let mlt' = extract_type env sg db j newc [] in
 		      (* ML type abbreviations interact badly with Coq *)
@@ -318,7 +318,7 @@ let rec extract_type env sg db j c args =
 	   | (Info, Default) ->
                (* Not an ML type, for example [(c:forall X, X->X) Type nat] *)
                (match (lookup_constant kn env).const_body with
-		  | Undef _  | OpaqueDef _ -> Tunknown (* Brutal approx ... *)
+                 | Undef _  | OpaqueDef _ | Primitive _ -> Tunknown (* Brutal approx ... *)
 		  | Def lbody ->
 		      (* We try to reduce. *)
                       let newc = applistc (get_body lbody) args in
@@ -346,7 +346,7 @@ let rec extract_type env sg db j c args =
             | (Info, TypeScheme) ->
               extract_type_app env sg db (r, type_sign env sg ty) args
             | (Info, Default) -> Tunknown))
-    | Cast _ | LetIn _ | Construct _ -> assert false
+    | Cast _ | LetIn _ | Construct _ | Int _ -> assert false
 
 (*s Auxiliary function dealing with type application.
   Precondition: [r] is a type scheme represented by the signature [s],
@@ -564,7 +564,7 @@ and mlt_env env r = match r with
   | ConstRef kn ->
      let cb = Environ.lookup_constant kn env in
      match cb.const_body with
-     | Undef _ | OpaqueDef _ -> None
+     | Undef _ | OpaqueDef _ | Primitive _ -> None
      | Def l_body ->
         match lookup_typedef kn cb with
         | Some _ as o -> o
@@ -683,6 +683,7 @@ let rec extract_term env sg mle mlt c args =
        let vty = extract_type env sg [] 0 ty [] in
        let extract_var mlt = put_magic (mlt,vty) (MLglob (VarRef v)) in
        extract_app env sg mle mlt extract_var args
+    | Int i -> assert (args = []); MLuint i
     | Ind _ | Prod _ | Sort _ -> assert false
 
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *)
@@ -1063,7 +1064,7 @@ let extract_constant env kn cb =
     | (Logic,Default) -> warn_log (); Dterm (r, MLdummy Kprop, Tdummy Kprop)
     | (Info,TypeScheme) ->
         (match cb.const_body with
-	  | Undef _ -> warn_info (); mk_typ_ax ()
+          | Primitive _ | Undef _ -> warn_info (); mk_typ_ax ()
 	  | Def c ->
              (match Recordops.find_primitive_projection kn with
               | None -> mk_typ (get_body c)
@@ -1079,7 +1080,7 @@ let extract_constant env kn cb =
             else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
-	  | Undef _ -> warn_info (); mk_ax ()
+          | Primitive _ | Undef _ -> warn_info (); mk_ax ()
 	  | Def c ->
              (match Recordops.find_primitive_projection kn with
               | None -> mk_def (get_body c)
@@ -1107,7 +1108,7 @@ let extract_constant_spec env kn cb =
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
 	(match cb.const_body with
-	  | Undef _ | OpaqueDef _ -> Stype (r, vl, None)
+          | Undef _ | OpaqueDef _ | Primitive _ -> Stype (r, vl, None)
 	  | Def body ->
 	      let db = db_from_sign s in
               let body = get_body body in

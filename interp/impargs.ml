@@ -225,7 +225,7 @@ let rec is_rigid_head sigma t = match kind sigma t with
         | Fix ((fi,i),_) -> is_rigid_head sigma (args.(fi.(i)))
         | _ -> is_rigid_head sigma f)
   | Lambda _ | LetIn _ | Construct _ | CoFix _ | Fix _
-  | Prod _ | Meta _ | Cast _ -> assert false
+  | Prod _ | Meta _ | Cast _ | Int _ -> assert false
 
 let is_rigid env sigma t =
   let open Context.Rel.Declaration in

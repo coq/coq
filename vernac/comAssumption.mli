@@ -33,3 +33,5 @@ val declare_assumption : coercion_flag -> assumption_kind ->
   UnivNames.universe_binders -> Impargs.manual_implicits ->
   bool (** implicit *) -> Declaremods.inline -> variable CAst.t ->
   GlobRef.t * Univ.Instance.t * bool
+
+val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit

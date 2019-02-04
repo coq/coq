@@ -330,6 +330,19 @@ let subst_proj_repr sub p =
 let subst_proj sub p =
   Projection.map (subst_mind sub) p
 
+let subst_retro_action subst action =
+  let open Retroknowledge in
+  match action with
+  | Register_ind(prim,ind) ->
+    let ind' = subst_ind subst ind in
+    if ind == ind' then action else Register_ind(prim, ind')
+  | Register_type(prim,c) ->
+    let c' = subst_constant subst c in
+    if c == c' then action else Register_type(prim, c')
+  | Register_inline(c) ->
+    let c' = subst_constant subst c in
+    if c == c' then action else Register_inline(c')
+
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"

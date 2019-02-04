@@ -69,6 +69,14 @@ let locate_int () =
     }, mkRefC q_int, mkRefC q_uint)
   else None
 
+let locate_int63 () =
+  let int63n = "num.int63.type" in
+  if Coqlib.has_ref int63n
+  then
+    let q_int63 = qualid_of_ref int63n in
+    Some (mkRefC q_int63)
+  else None
+
 let has_type f ty =
   let (sigma, env) = Pfedit.get_current_context () in
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
@@ -79,17 +87,18 @@ let type_error_to f ty =
   CErrors.user_err
     (pr_qualid f ++ str " should go from Decimal.int to " ++
      pr_qualid ty ++ str " or (option " ++ pr_qualid ty ++ str ")." ++
-     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).")
+     fnl () ++ str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).")
 
 let type_error_of g ty =
   CErrors.user_err
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
-     str "Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).")
+     str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).")
 
 let vernac_numeral_notation local ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
+  let int63_ty = locate_int63 () in
   let tyc = Smartlocate.global_inductive_with_alias ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
@@ -111,6 +120,10 @@ let vernac_numeral_notation local ty f g scope opts =
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type f (arrow cZ cty) -> Z z_pos_ty, Direct
     | Some (z_pos_ty, cZ) when has_type f (arrow cZ (opt cty)) -> Z z_pos_ty, Option
+    | _ ->
+    match int63_ty with
+    | Some cint63 when has_type f (arrow cint63 cty) -> Int63, Direct
+    | Some cint63 when has_type f (arrow cint63 (opt cty)) -> Int63, Option
     | _ -> type_error_to f ty
   in
   (* Check the type of g *)
@@ -124,6 +137,10 @@ let vernac_numeral_notation local ty f g scope opts =
     match z_pos_ty with
     | Some (z_pos_ty, cZ) when has_type g (arrow cty cZ) -> Z z_pos_ty, Direct
     | Some (z_pos_ty, cZ) when has_type g (arrow cty (opt cZ)) -> Z z_pos_ty, Option
+    | _ ->
+    match int63_ty with
+    | Some cint63 when has_type g (arrow cty cint63) -> Int63, Direct
+    | Some cint63 when has_type g (arrow cty (opt cint63)) -> Int63, Option
     | _ -> type_error_of g ty
   in
   let o = { to_kind; to_ty; of_kind; of_ty;

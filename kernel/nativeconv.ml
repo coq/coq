@@ -34,6 +34,8 @@ let rec conv_val env pb lvl v1 v2 cu =
 	conv_accu env pb lvl k1 k2 cu
     | Vconst i1, Vconst i2 -> 
 	if Int.equal i1 i2 then cu else raise NotConvertible
+    | Vint64 i1, Vint64 i2 ->
+      if Int64.equal i1 i2 then cu else raise NotConvertible
     | Vblock b1, Vblock b2 ->
 	let n1 = block_size b1 in
         let n2 = block_size b2 in
@@ -47,7 +49,7 @@ let rec conv_val env pb lvl v1 v2 cu =
 	    aux lvl max b1 b2 (i+1) cu
 	in
 	aux lvl (n1-1) b1 b2 0 cu
-    | Vaccu _, _ | Vconst _, _ | Vblock _, _ -> raise NotConvertible
+    | Vaccu _, _ | Vconst _, _ | Vint64 _, _ | Vblock _, _ -> raise NotConvertible
 
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in

@@ -89,9 +89,11 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   glob_sort_eq s1 s2
 | NCast (t1, c1), NCast (t2, c2) ->
   (eq_notation_constr vars) t1 t2 && cast_type_eq (eq_notation_constr vars) c1 c2
+| NInt i1, NInt i2 ->
+   Uint63.equal i1 i2
 | (NRef _ | NVar _ | NApp _ | NHole _ | NList _ | NLambda _ | NProd _
   | NBinderList _ | NLetIn _ | NCases _ | NLetTuple _ | NIf _
-  | NRec _ | NSort _ | NCast _ ), _ -> false
+  | NRec _ | NSort _ | NCast _ | NInt _), _ -> false
 
 (**********************************************************************)
 (* Re-interpret a notation as a glob_constr, taking care of binders   *)
@@ -220,6 +222,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef x -> GRef (x,None)
+  | NInt i -> GInt i
 
 let glob_constr_of_notation_constr ?loc x =
   let rec aux () x =
@@ -435,6 +438,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (c,k) -> NCast (aux c,map_cast_type aux k)
   | GSort s -> NSort s
+  | GInt i -> NInt i
   | GHole (w,naming,arg) ->
      if arg != None then has_ltac := true;
      NHole (w, naming, arg)
@@ -623,6 +627,7 @@ let rec subst_notation_constr subst bound raw =
 	  NRec (fk,idl,dll',tl',bl')
 
   | NSort _ -> raw
+  | NInt _ -> raw
 
   | NHole (knd, naming, solve) ->
     let nknd = match knd with
@@ -1189,6 +1194,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
     match_cast (match_in u alp metas) (match_in u alp metas sigma t1 t2) c1 c2
   | GSort (GType _), NSort (GType _) when not u -> sigma
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma
+  | GInt i1, NInt i2 when Uint63.equal i1 i2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 
@@ -1216,7 +1222,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
-     | GCast _ ), _ -> raise No_match
+     | GCast _ | GInt _ ), _ -> raise No_match
 
 and match_in u = match_ true u
 

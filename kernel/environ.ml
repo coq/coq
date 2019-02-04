@@ -119,7 +119,7 @@ let empty_env = {
     env_universes = UGraph.initial_universes;
     env_engagement = PredicativeSet };
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
-  retroknowledge = Retroknowledge.initial_retroknowledge;
+  retroknowledge = Retroknowledge.empty;
   indirect_pterms = Opaqueproof.empty_opaquetab }
 
 
@@ -450,7 +450,10 @@ let constant_type env (kn,u) =
   let csts = Univ.AUContext.instantiate u uctx in
   (subst_instance_constr u cb.const_type, csts)
 
-type const_evaluation_result = NoBody | Opaque
+type const_evaluation_result =
+  | NoBody
+  | Opaque
+  | IsPrimitive of CPrimitives.t
 
 exception NotEvaluableConst of const_evaluation_result
 
@@ -461,14 +464,14 @@ let constant_value_and_type env (kn, u) =
   let b' = match cb.const_body with
     | Def l_body -> Some (subst_instance_constr u (Mod_subst.force_constr l_body))
     | OpaqueDef _ -> None
-    | Undef _ -> None
+    | Undef _ | Primitive _ -> None
   in
   b', subst_instance_constr u cb.const_type, cst
 
 let body_of_constant_body env cb =
   let otab = opaque_tables env in
   match cb.const_body with
-  | Undef _ ->
+  | Undef _ | Primitive _ ->
      None
   | Def c ->
      Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
@@ -492,6 +495,7 @@ let constant_value_in env (kn,u) =
 	subst_instance_constr u b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive p))
 
 let constant_opt_value_in env cst =
   try Some (constant_value_in env cst)
@@ -503,7 +507,13 @@ let evaluable_constant kn env =
     match cb.const_body with
     | Def _ -> true
     | OpaqueDef _ -> false
-    | Undef _ -> false
+    | Undef _ | Primitive _ -> false
+
+let is_primitive env c =
+  let cb = lookup_constant c env in
+  match cb.Declarations.const_body with
+  | Declarations.Primitive _ -> true
+  | _ -> false
 
 let polymorphic_constant cst env =
   Declareops.constant_is_polymorphic (lookup_constant cst env)
@@ -743,29 +753,4 @@ let is_type_in_type env r =
   | IndRef ind -> type_in_type_ind ind env
   | ConstructRef cstr -> type_in_type_ind (inductive_of_constructor cstr) env
 
-(*spiwack: the following functions assemble the pieces of the retroknowledge
-   note that the "consistent" register function is available in the module
-   Safetyping, Environ only synchronizes the proactive and the reactive parts*)
-
-open Retroknowledge
-
-(* lifting of the "get" functions works also for "mem"*)
-let retroknowledge f env =
-  f env.retroknowledge
-
-let registered env field =
-    retroknowledge mem env field
-
-let register_one env field entry =
-  { env with retroknowledge = Retroknowledge.add_field env.retroknowledge field entry }
-
-(* [register env field entry] may register several fields when needed *)
-let register env field gr =
-  match field with
-  | KInt31 Int31Type ->
-    let i31c = match gr with
-      | GlobRef.IndRef i31t -> GlobRef.ConstructRef (i31t, 1)
-      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type.")
-    in
-    register_one (register_one env (KInt31 Int31Constructor) i31c) field gr
-  | field -> register_one env field gr
+let set_retroknowledge env r = { env with retroknowledge = r }

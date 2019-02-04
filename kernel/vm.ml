@@ -7,7 +7,6 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-
 open Vmvalues
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"
@@ -170,7 +169,7 @@ let rec apply_stack a stk v =
 let apply_whd k whd =
   let v = val_of_rel k in
   match whd with
-  | Vprod _ | Vconstr_const _ | Vconstr_block _ -> assert false
+  | Vprod _ | Vconstr_const _ | Vconstr_block _ | Vint64 _ -> assert false
   | Vfun f -> reduce_fun k f
   | Vfix(f, None) -> 
       push_ra stop;

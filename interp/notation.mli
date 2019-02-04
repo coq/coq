@@ -127,6 +127,7 @@ type target_kind =
   | Int of int_ty (* Coq.Init.Decimal.int + uint *)
   | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
+  | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
 
 type string_target_kind =
   | ListByte
@@ -320,3 +321,6 @@ val entry_has_ident : notation_entry_level -> bool
 (** Rem: printing rules for primitive token are canonical *)
 
 val with_notation_protection : ('a -> 'b) -> 'a -> 'b
+
+(** Conversion from bigint to int63 *)
+val int63_of_pos_bigint : Bigint.bigint -> Uint63.t

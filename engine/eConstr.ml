@@ -73,6 +73,7 @@ let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
 let mkArrow t1 t2 = of_kind (Prod (Anonymous, t1, t2))
+let mkInt i = of_kind (Int i)
 
 let mkRef (gr,u) = let open GlobRef in match gr with
   | ConstRef c -> mkConstU (c,u)
@@ -81,6 +82,7 @@ let mkRef (gr,u) = let open GlobRef in match gr with
   | VarRef x -> mkVar x
 
 let applist (f, arg) = mkApp (f, Array.of_list arg)
+let applistc f arg = mkApp (f, Array.of_list arg)
 
 let isRel sigma c = match kind sigma c with Rel _ -> true | _ -> false
 let isVar sigma c = match kind sigma c with Var _ -> true | _ -> false
@@ -328,7 +330,7 @@ let iter_with_full_binders sigma g f n c =
   let open Context.Rel.Declaration in
   match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _ | Int _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c

@@ -82,6 +82,7 @@ and ppwhd whd =
   | Vcofix _ -> print_string "cofix"
   | Vconstr_const i -> print_string "C(";print_int i;print_string")"
   | Vconstr_block b -> ppvblock b
+  | Vint64 i -> printf "int64(%LiL)" i
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s

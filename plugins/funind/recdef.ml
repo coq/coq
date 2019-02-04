@@ -306,6 +306,7 @@ let check_not_nested sigma forbidden e =
   let rec check_not_nested e =  
     match EConstr.kind sigma e with 
       | Rel _ -> ()
+      | Int _ -> ()
       | Var x ->
         if Id.List.mem x forbidden
         then user_err ~hdr:"Recdef.check_not_nested"
@@ -487,7 +488,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
           | _ -> anomaly (Pp.str "travel_aux : unexpected "++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ Pp.str ".")
       end
     | Cast(t,_,_) -> travel jinfo continuation_tac {expr_info with info=t} g
-    | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
+    | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ | Int _ ->
       let new_continuation_tac = 
 	jinfo.otherS () expr_info continuation_tac in
       new_continuation_tac expr_info g
@@ -1294,6 +1295,7 @@ let is_opaque_constant c =
     | Declarations.OpaqueDef _ -> Proof_global.Opaque
     | Declarations.Undef _ -> Proof_global.Opaque
     | Declarations.Def _ -> Proof_global.Transparent
+    | Declarations.Primitive _ -> Proof_global.Opaque
 
 let open_new_goal build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)

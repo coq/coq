@@ -804,7 +804,7 @@ let rec subterm_specif renv stack t =
        | Not_subterm -> Not_subterm)
 
     | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _ | Ind _
-      | Construct _ | CoFix _ -> Not_subterm
+      | Construct _ | CoFix _ | Int _ -> Not_subterm
 
 
       (* Other terms are not subterms *)
@@ -1008,7 +1008,7 @@ let check_one_fix renv recpos trees def =
 		    check_rec_call renv stack (Term.applist(c,l))
             end
 
-	| Sort _ ->
+        | Sort _ | Int _ ->
           assert (List.is_empty l)
 
         (* l is not checked because it is considered as the meta's context *)
@@ -1194,7 +1194,8 @@ let check_one_cofix env nbfix def deftype =
         | Evar _ ->
 	    List.iter (check_rec_call env alreadygrd n tree vlra) args
         | Rel _ | Var _ | Sort _ | Cast _ | Prod _ | LetIn _ | App _ | Const _
-          | Ind _ | Fix _ | Proj _ -> raise (CoFixGuardError (env,NotGuardedForm t)) in
+          | Ind _ | Fix _ | Proj _ | Int _ ->
+           raise (CoFixGuardError (env,NotGuardedForm t)) in
 
   let ((mind, _),_) = codomain_is_coind env deftype in
   let vlra = lookup_subterms env mind in

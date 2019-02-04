@@ -152,8 +152,10 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Namegen.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, t1), GCast (c2, t2) ->
     f c1 c2 && cast_type_eq f t1 t2
+  | GInt i1, GInt i2 -> Uint63.equal i1 i2
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
-     GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GCast _ ), _ -> false
+     GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GCast _ |
+     GInt _), _ -> false
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 
@@ -214,7 +216,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
       let comp1 = f c in
       let comp2 = map_cast_type f k in
       GCast (comp1,comp2)
-  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) as x -> x
+  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _) as x -> x
   )
 
 let map_glob_constr = map_glob_constr_left_to_right
@@ -246,9 +248,8 @@ let fold_glob_constr f acc = DAst.with_val (function
     let acc = match k with
       | CastConv t | CastVM t | CastNative t -> f acc t | CastCoerce -> acc in
     f acc c
-  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
+  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _) -> acc
   )
-
 let fold_return_type_with_binders f g v acc (na,tyopt) =
   Option.fold_left (f (Name.fold_right g na v)) acc tyopt
 
@@ -289,7 +290,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     let acc = match k with
       | CastConv t | CastVM t | CastNative t -> f v acc t | CastCoerce -> acc in
     f v acc c
-  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc))
+  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _) -> acc))
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 

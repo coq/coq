@@ -763,12 +763,13 @@ let build_proof
 	      end
 	  | Cast(t,_,_) ->
 	      build_proof do_finalize {dyn_infos with info = t} g
-	  | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ ->
+          | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ | Int _ ->
 	      do_finalize dyn_infos g
 	  | App(_,_) ->
 	      let f,args = decompose_app sigma dyn_infos.info in
 	      begin
 		match EConstr.kind sigma f with
+      | Int _ -> user_err Pp.(str "integer cannot be applied")
 		  | App _ -> assert false (* we have collected all the app in decompose_app *)
 		  | Proj _ -> assert false (*FIXME*)
 		  | Var _ | Construct _ | Rel _ | Evar _ | Meta _  | Ind _ | Sort _ | Prod _ ->

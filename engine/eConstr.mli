@@ -124,10 +124,12 @@ val mkCase : case_info * t * t * t array -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> t -> t
+val mkInt : Uint63.t -> t
 
 val mkRef : GlobRef.t * EInstance.t -> t
 
 val applist : t * t list -> t
+val applistc : t -> t list -> t
 
 val mkProd_or_LetIn : rel_declaration -> t -> t
 val mkLambda_or_LetIn : rel_declaration -> t -> t

@@ -66,6 +66,7 @@ let mk_mtb mp sign delta =
 
 let rec check_module env mp mb =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
+  let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
   let (_:module_signature) =
     check_signature env mb.mod_type mb.mod_mp mb.mod_delta
   in

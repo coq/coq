@@ -87,9 +87,16 @@ type inline = int option (* inlining level, None for no inlining *)
 type parameter_entry = 
     Constr.named_context option * types in_constant_universes_entry * inline
 
+type primitive_entry = {
+  prim_entry_type : types option;
+  prim_entry_univs : Univ.ContextSet.t; (* always monomorphic *)
+  prim_entry_content : CPrimitives.op_or_type;
+}
+
 type 'a constant_entry =
   | DefinitionEntry of 'a definition_entry
   | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 (** {6 Modules } *)
 

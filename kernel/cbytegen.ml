@@ -17,7 +17,6 @@ open Names
 open Vmvalues
 open Cbytecodes
 open Cemitcodes
-open Cinstr
 open Clambda
 open Constr
 open Declarations
@@ -96,6 +95,48 @@ open Environ
 (*                                                                        *)
 (* In Cfxe_t accumulators, we need to store [fcofixi] for testing         *)
 (* conversion of cofixpoints (which is intentional).                      *)
+
+module Fv_elem =
+struct
+type t = fv_elem
+
+let compare e1 e2 = match e1, e2 with
+| FVnamed id1, FVnamed id2 -> Id.compare id1 id2
+| FVnamed _, (FVrel _ | FVuniv_var _ | FVevar _) -> -1
+| FVrel _, FVnamed _ -> 1
+| FVrel r1, FVrel r2 -> Int.compare r1 r2
+| FVrel _, (FVuniv_var _ | FVevar _) -> -1
+| FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
+| FVuniv_var _, (FVnamed _ | FVrel _) -> 1
+| FVuniv_var _, FVevar _ -> -1
+| FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
+| FVevar e1, FVevar e2 -> Evar.compare e1 e2
+
+end
+
+module FvMap = Map.Make(Fv_elem)
+
+(*spiwack: both type have been moved from Cbytegen because I needed then
+  for the retroknowledge *)
+type vm_env = {
+    size : int;              (* longueur de la liste [n] *)
+    fv_rev : fv_elem list;   (* [fvn; ... ;fv1] *)
+    fv_fwd : int FvMap.t;    (* reverse mapping *)
+  }
+
+
+type comp_env = {
+    arity : int;                 (* arity of the current function, 0 if none *)
+    nb_uni_stack : int ;         (* number of universes on the stack,      *)
+                                 (* universes are always at the bottom.    *)
+    nb_stack : int;              (* number of variables on the stack       *)
+    in_stack : int list;         (* position in the stack                  *)
+    nb_rec : int;                (* number of mutually recursive functions *)
+    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
+                                 (*  de point fix ou de cofix              *)
+    offset : int;
+    in_env : vm_env ref          (* The free variables of the expression   *)
+  }
 
 module Config = struct
   let stack_threshold = 256 (* see byterun/coq_memory.h *)
@@ -391,7 +432,6 @@ let init_fun_code () = fun_code := []
 
 (* Compilation of constructors and inductive types *)
 
-(* Inv: arity > 0 *)
 
 (*
 If [tag] hits the OCaml limitation for non constant constructors, we switch to
@@ -437,7 +477,7 @@ let comp_app comp_fun comp_arg cenv f args sz cont =
          comp_fun cenv f (sz + nargs)
 	   (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
   | None ->
-      if nargs < 4 then
+      if nargs <= 4 then
         comp_args comp_arg cenv args sz
           (Kpush :: (comp_fun cenv f (sz+nargs) (Kapply nargs :: cont)))
       else
@@ -476,15 +516,6 @@ let rec get_alias env kn =
 	| BCalias kn' -> get_alias env kn'
 	| _ -> kn)
 
-(* spiwack: additional function which allow different part of compilation of the
-      31-bit integers *)
-
-let make_areconst n else_lbl cont =
-  if n <= 0 then
-    cont
-  else
-    Kareconst (n, else_lbl)::cont
-
 (* sz is the size of the local stack *)
 let rec compile_lam env cenv lam sz cont =
   set_max_stack_size sz;
@@ -494,6 +525,8 @@ let rec compile_lam env cenv lam sz cont =
   | Lint i -> compile_structured_constant cenv (Const_b0 i) sz cont
 
   | Lval v -> compile_structured_constant cenv (Const_val v) sz cont
+
+  | Luint i -> compile_structured_constant cenv (Const_uint i) sz cont
 
   | Lproj (p,arg) ->
      compile_lam env cenv arg sz (Kproj p :: cont)
@@ -629,6 +662,17 @@ let rec compile_lam env cenv lam sz cont =
       compile_fv cenv fv.fv_rev sz
 	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
+  | Lif(t, bt, bf) ->
+      let branch, cont = make_branch cont in
+      let lbl_true =  Label.create() in
+      let lbl_false = Label.create() in
+      compile_lam env cenv t sz
+        (Kswitch([|lbl_true;lbl_false|],[||]) ::
+         Klabel lbl_false ::
+         compile_lam env cenv bf sz
+           (branch ::
+            Klabel lbl_true ::
+            compile_lam env cenv bt sz cont))
 
   | Lcase(ci,rtbl,t,a,branches) ->
       let ind = ci.ci_ind in
@@ -729,41 +773,9 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
-  | Lprim (kn, ar, op, args) ->
-    op_compilation env ar op kn cenv args sz cont
+  | Lprim (kn, op, args) ->
+    comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
 
-  | Luint v ->
-     (match v with
-     | UintVal i -> compile_structured_constant cenv (Const_b0 (Uint31.to_int i)) sz cont
-     | UintDigits ds ->
-       let nargs = Array.length ds in
-       if Int.equal nargs 31 then
-         let (escape,labeled_cont) = make_branch cont in
-         let else_lbl = Label.create() in
-         comp_args (compile_lam env) cenv ds sz
-           ( Kisconst else_lbl::Kareconst(30,else_lbl)::Kcompint31::escape::Klabel else_lbl::Kmakeblock(31, 1)::labeled_cont)
-       else
-         let code_construct cont = (* spiwack: variant of the global code_construct
-                                             which handles dynamic compilation of
-                                             integers *)
-           let f_cont =
-             let else_lbl = Label.create () in
-             [Kacc 0; Kpop 1; Kisconst else_lbl; Kareconst(30,else_lbl);
-              Kcompint31; Kreturn 0; Klabel else_lbl; Kmakeblock(31, 1); Kreturn 0]
-           in
-           let lbl = Label.create() in
-           fun_code := [Ksequence (add_grab 31 lbl f_cont,!fun_code)];
-           Kclosure(lbl,0) :: cont
-         in
-         comp_app (fun _ _ _ cont -> code_construct cont)
-           (compile_lam env) cenv () ds sz cont
-     | UintDecomp t ->
-       let escape_lbl, labeled_cont = label_code cont in
-       compile_lam env  cenv t sz ((Kisconst escape_lbl)::Kdecompint31::labeled_cont))
-
-
-(* spiwack : compilation of constants with their arguments.
-   Makes a special treatment with 31-bit integer addition *)
 and compile_get_global cenv (kn,u) sz cont =
   set_max_stack_size sz;
   if Univ.Instance.is_empty u then
@@ -799,43 +811,6 @@ and compile_constant env cenv kn u args sz cont =
     in
     comp_app (fun _ _ _ cont -> Kgetglobal kn :: cont)
       compile_arg cenv () all sz cont
-
-(*template for n-ary operation, invariant: n>=1,
-  the operations does the following :
-  1/ checks if all the arguments are constants (i.e. non-block values)
-  2/ if they are, uses the "op" instruction to execute
-  3/ if at least one is not, branches to the normal behavior:
-      Kgetglobal (get_alias !global_env kn) *)
-and op_compilation env n op =
-  let code_construct cenv kn sz cont =
-     let f_cont =
-         let else_lbl = Label.create () in
-         Kareconst(n, else_lbl):: Kacc 0:: Kpop 1::
-          op:: Kreturn 0:: Klabel else_lbl::
-         (* works as comp_app with nargs = n and tailcall cont [Kreturn 0]*)
-          compile_get_global cenv kn sz (
-            Kappterm(n, n):: []) (* = discard_dead_code [Kreturn 0] *)
-     in
-     let lbl = Label.create () in
-     fun_code := [Ksequence (add_grab n lbl f_cont, !fun_code)];
-     Kclosure(lbl, 0)::cont
-  in
-  fun kn cenv args sz cont ->
-  let nargs = Array.length args in
-  if Int.equal nargs n then (*if it is a fully applied addition*)
-    let (escape, labeled_cont) = make_branch cont in
-    let else_lbl = Label.create () in
-    assert (n < 4);
-    comp_args (compile_lam env) cenv args sz
-      (Kisconst else_lbl::(make_areconst (n-1) else_lbl
-         (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
-         (op::escape::Klabel else_lbl::Kpush::
-         (* works as comp_app with nargs < 4 and non-tailcall cont*)
-         compile_get_global cenv kn (sz+n) (Kapply n::labeled_cont))))
-  else
-    comp_app (fun cenv _ sz cont -> code_construct cenv kn sz cont)
-      (compile_lam env) cenv () args sz cont
-
 
 let is_univ_copy max u =
   let u = Univ.Instance.to_array u in
@@ -903,7 +878,7 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
     fn msg; None
 
 let compile_constant_body ~fail_on_error env univs = function
-  | Undef _ | OpaqueDef _ -> Some BCconstant
+  | Undef _ | OpaqueDef _ | Primitive _ -> Some BCconstant
   | Def sb ->
       let body = Mod_subst.force_constr sb in
       let instance_size =
@@ -923,41 +898,3 @@ let compile_constant_body ~fail_on_error env univs = function
 (* Shortcut of the previous function used during module strengthening *)
 
 let compile_alias kn = BCalias (Constant.make1 (Constant.canonical kn))
-
-(*(* template compilation for 2ary operation, it probably possible
-   to make a generic such function with arity abstracted *)
-let op2_compilation op =
-  let code_construct normal cont =  (*kn cont =*)
-     let f_cont =
-         let else_lbl = Label.create () in
-         Kareconst(2, else_lbl):: Kacc 0:: Kpop 1::
-          op:: Kreturn 0:: Klabel else_lbl::
-         (* works as comp_app with nargs = 2 and tailcall cont [Kreturn 0]*)
-          (*Kgetglobal (get_alias !global_env kn):: *)
-          normal::
-          Kappterm(2, 2):: [] (* = discard_dead_code [Kreturn 0] *)
-     in
-     let lbl = Label.create () in
-     fun_code := [Ksequence (add_grab 2 lbl f_cont, !fun_code)];
-     Kclosure(lbl, 0)::cont
-  in
-  fun normal fc _ cenv args sz cont ->
-  if not fc then raise Not_found else
-  let nargs = Array.length args in
-  if nargs=2 then (*if it is a fully applied addition*)
-    let (escape, labeled_cont) = make_branch cont in
-    let else_lbl = Label.create () in
-      comp_args compile_constr cenv args sz
-	(Kisconst else_lbl::(make_areconst 1  else_lbl
-           (*Kaddint31::escape::Klabel else_lbl::Kpush::*)
-           (op::escape::Klabel else_lbl::Kpush::
-           (* works as comp_app with nargs = 2 and non-tailcall cont*)
-           (*Kgetglobal (get_alias !global_env kn):: *)
-           normal::
-           Kapply 2::labeled_cont)))
-  else if nargs=0 then
-    code_construct normal cont
-  else
-    comp_app (fun _ _ _ cont -> code_construct normal cont)
-      compile_constr cenv () args sz cont *)
-

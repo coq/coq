@@ -78,8 +78,13 @@ val mk_const : tag -> t
 val mk_block : tag -> t array -> t
 
 val mk_bool : bool -> t
+[@@ocaml.inline always]
+
 val mk_int : int -> t
-val mk_uint : Uint31.t -> t
+[@@ocaml.inline always]
+
+val mk_uint : Uint63.t -> t
+[@@ocaml.inline always]
 
 val napply : t -> t array -> t
 (* Functions over accumulators *)
@@ -90,6 +95,8 @@ val args_of_accu : accumulator -> t array
 val accu_nargs : accumulator -> int
 
 val cast_accu : t -> accumulator
+[@@ocaml.inline always]
+
 (* Functions over block: i.e constructors *)
     
 type block
@@ -106,6 +113,7 @@ type kind_of_value =
   | Vaccu of accumulator
   | Vfun of (t -> t)
   | Vconst of int
+  | Vint64 of int64
   | Vblock of block
 
 val kind_of_value : t -> kind_of_value
@@ -136,51 +144,90 @@ val l_or  : t -> t -> t -> t
 
 val addc      : t -> t -> t -> t
 val subc      : t -> t -> t -> t
-val addcarryc : t -> t -> t -> t
-val subcarryc : t -> t -> t -> t
+val addCarryC : t -> t -> t -> t
+val subCarryC : t -> t -> t -> t
 
 val mulc    : t -> t -> t -> t
 val diveucl : t -> t -> t -> t
 
 val div21     : t -> t -> t -> t -> t
-val addmuldiv : t -> t -> t -> t -> t
+val addMulDiv : t -> t -> t -> t -> t
 
 val eq      : t -> t -> t -> t
 val lt      : t -> t -> t -> t
 val le      : t -> t -> t -> t
 val compare : t -> t -> t -> t 
 
+val print : t -> t
+
 (* Function without check *)
 val no_check_head0 : t -> t
+[@@ocaml.inline always]
+
 val no_check_tail0 : t -> t
+[@@ocaml.inline always]
 
 val no_check_add : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_sub : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_mul : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_div : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_rem : t -> t -> t
+[@@ocaml.inline always]
 
 val no_check_l_sr  : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_l_sl  : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_l_and : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_l_xor : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_l_or  : t -> t -> t
+[@@ocaml.inline always]
 
 val no_check_addc      : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_subc      : t -> t -> t
-val no_check_addcarryc : t -> t -> t
-val no_check_subcarryc : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_addCarryC : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_subCarryC : t -> t -> t
+[@@ocaml.inline always]
 
 val no_check_mulc    : t -> t -> t
+[@@ocaml.inline always]
+
 val no_check_diveucl : t -> t -> t
+[@@ocaml.inline always]
 
 val no_check_div21     : t -> t -> t -> t
-val no_check_addmuldiv : t -> t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_addMulDiv : t -> t -> t -> t
+[@@ocaml.inline always]
 
 val no_check_eq      : t -> t -> t
-val no_check_lt      : t -> t -> t
-val no_check_le      : t -> t -> t
-val no_check_compare : t -> t -> t 
+[@@ocaml.inline always]
 
-val mk_I31_accu : t
-val decomp_uint : t -> t -> t
+val no_check_lt      : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_le      : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_compare : t -> t -> t

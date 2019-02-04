@@ -1,3 +1,4 @@
+(** Representation of data allocated on the OCaml heap. *)
 type data =
 | Int of int
 | Ptr of int
@@ -6,6 +7,7 @@ type data =
 
 type obj =
 | Struct of int * data array (* tag × data *)
+| Int63 of Uint63.t (* Primitive integer *)
 | String of string
 
 module LargeArray :

@@ -57,7 +57,7 @@ let find_rectype_a env c =
   let (t, l) = decompose_appvect (whd_all env c) in
   match kind t with
   | Ind ind -> (ind, l)
-  | _ -> assert false
+  | _ -> raise Not_found
 
 (* Instantiate inductives and parameters in constructor type *)
 
@@ -75,25 +75,18 @@ let type_constructor mind mib u typ params =
 
 
 let construct_of_constr const env tag typ =
-  let ((mind,_ as ind), u) as indu, allargs = find_rectype_a env typ in
-  (* spiwack : here be a branch for specific decompilation handled by retroknowledge *)
-  try
-    if const then
-      ((Retroknowledge.get_vm_decompile_constant_info env.retroknowledge (GlobRef.IndRef ind) tag),
-       typ) (*spiwack: this may need to be changed in case there are parameters in the
-	               type which may cause a constant value to have an arity.
-	               (type_constructor seems to be all about parameters actually)
-	               but it shouldn't really matter since constant values don't use
-	               their ctyp in the rest of the code.*)
-    else
-      raise Not_found (* No retroknowledge function (yet) for block decompilation *)
-  with Not_found ->
+  let (t, allargs) = decompose_appvect (whd_all env typ) in
+  match Constr.kind t with
+  | Ind ((mind,_ as ind), u as indu) ->
     let mib,mip = lookup_mind_specif env ind in
     let nparams = mib.mind_nparams in
     let i = invert_tag const tag mip.mind_reloc_tbl in
     let params = Array.sub allargs 0 nparams in
     let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
-      (mkApp(mkConstructUi(indu,i), params), ctyp)
+    (mkApp(mkConstructUi(indu,i), params), ctyp)
+  | _ ->
+     assert (Constr.equal t (Typeops.type_of_int env));
+      (mkInt (Uint63.of_int tag), t)
 
 let construct_of_constr_const env tag typ =
   fst (construct_of_constr true env tag typ)
@@ -169,6 +162,7 @@ and nf_whd env sigma whd typ =
       let capp,ctyp = construct_of_constr_block env tag typ in
       let args = nf_bargs env sigma b ofs ctyp in
       mkApp(capp,args)
+  | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vatom_stk(Aid idkey, stk) ->
       constr_type_of_idkey env sigma idkey stk
   | Vatom_stk(Aind ((mi,i) as ind), stk) ->
@@ -344,9 +338,9 @@ and nf_fun env sigma f typ =
   let name,dom,codom =
     try decompose_prod env typ
     with DestKO ->
-      (* 27/2/13: Turned this into an anomaly *)
       CErrors.anomaly
-        (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+        Pp.(strbrk "Returned a functional value in type " ++
+            Termops.Internal.print_constr_env env sigma (EConstr.of_constr typ))
   in
   let body = nf_val (push_rel (LocalAssum (name,dom)) env) sigma vb codom in
   mkLambda(name,dom,body)

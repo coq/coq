@@ -574,6 +574,7 @@ type target_kind =
   | Int of int_ty (* Coq.Init.Decimal.int + uint *)
   | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
+  | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
 
 type string_target_kind =
   | ListByte
@@ -637,6 +638,7 @@ let rec constr_of_glob env sigma g = match DAst.get g with
       let sigma,c = constr_of_glob env sigma gc in
       let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in
       sigma,mkApp (c, Array.of_list cl)
+  | Glob_term.GInt i -> sigma, mkInt i
   | _ ->
       raise NotAValidPrimToken
 
@@ -649,6 +651,7 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
   | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
   | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
+  | Int i -> DAst.make ?loc (Glob_term.GInt i)
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
 let no_such_prim_token uninterpreted_token_kind ?loc ty =
@@ -682,6 +685,16 @@ let uninterp to_raw o (Glob_term.AnyGlobConstr n) =
   | NotAValidPrimToken -> None (* all other functions except big2raw *)
 
 end
+
+(** Conversion from bigint to int63 *)
+let rec int63_of_pos_bigint i =
+  let open Bigint in
+  if equal i zero then Uint63.of_int 0
+  else
+    let (quo,rem) = div2_with_rest i in
+    if rem then Uint63.add (Uint63.of_int 1)
+      (Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo))
+    else Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo)
 
 module Numeral = struct
 (** * Numeral notation *)
@@ -838,6 +851,32 @@ let bigint_of_z z = match Constr.kind z with
       end
   | _ -> raise NotAValidPrimToken
 
+(** Now, [Int63] from/to bigint *)
+
+let int63_of_pos_bigint ?loc n =
+  let i = int63_of_pos_bigint n in
+  mkInt i
+
+let error_negative ?loc =
+  CErrors.user_err ?loc ~hdr:"interp_int63" (Pp.str "int63 are only non-negative numbers.")
+
+let error_overflow ?loc n =
+  CErrors.user_err ?loc ~hdr:"interp_int63" Pp.(str "overflow in int63 literal: " ++ str (Bigint.to_string n))
+
+let interp_int63 ?loc n =
+  let open Bigint in
+  if is_pos_or_zero n
+  then
+    if less_than n (pow two 63)
+    then int63_of_pos_bigint ?loc n
+    else error_overflow ?loc n
+  else error_negative ?loc
+
+let bigint_of_int63 c =
+  match Constr.kind c with
+  | Int i -> Bigint.of_string (Uint63.to_string i)
+  | _ -> raise NotAValidPrimToken
+
 let big2raw n =
   if Bigint.is_pos_or_zero n then (Bigint.to_string n, true)
   else (Bigint.to_string (Bigint.neg n), false)
@@ -856,6 +895,7 @@ let interp o ?loc n =
     | UInt uint_ty when snd n -> coquint_of_rawnum uint_ty (fst n)
     | UInt _ (* n <= 0 *) -> no_such_prim_token "number" ?loc o.ty_name
     | Z z_pos_ty -> z_of_bigint z_pos_ty (raw2big n)
+    | Int63 -> interp_int63 ?loc (raw2big n)
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -877,6 +917,7 @@ let uninterp o n =
       | (Int _, c) -> rawnum_of_coqint c
       | (UInt _, c) -> (rawnum_of_coquint c, true)
       | (Z _, c) -> big2raw (bigint_of_z c)
+      | (Int63, c) -> big2raw (bigint_of_int63 c)
     end o n
 end
 

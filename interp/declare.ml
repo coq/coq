@@ -442,6 +442,9 @@ let assumption_message id =
   discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
   Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is declared")
 
+let register_message id =
+  Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is registered")
+
 (** Monomorphic universes need to survive sections. *)
 
 let input_universe_context : Univ.ContextSet.t -> Libobject.obj =

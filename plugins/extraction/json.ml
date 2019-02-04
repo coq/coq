@@ -155,6 +155,10 @@ let rec json_expr env = function
       ("value", json_expr env a)
     ]
   | MLaxiom -> json_dict [("what", json_str "expr:axiom")]
+  | MLuint i -> json_dict [
+      ("what", json_str "expr:int");
+      ("int", json_str (Uint63.to_string i))
+    ]
 
 and json_one_pat env (ids,p,t) =
   let ids', env' = push_vars (List.rev_map id_of_mlid ids) env in json_dict [

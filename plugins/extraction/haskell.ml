@@ -214,6 +214,8 @@ let rec pp_expr par env args =
     | MLmagic a ->
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
+    | MLuint _ ->
+      pp_par par (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
 
 and pp_cons_pat par r ppl =
   pp_par par

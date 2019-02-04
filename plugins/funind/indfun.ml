@@ -201,7 +201,7 @@ let is_rec names =
   let check_id id names =  Id.Set.mem id names in
   let rec lookup names gt = match DAst.get gt with
     | GVar(id) -> check_id id names
-    | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ | GInt _ -> false
     | GCast(b,_) -> lookup names b
     | GRec _ -> error "GRec not handled"
     | GIf(b,_,lhs,rhs) ->

@@ -20,8 +20,8 @@
  (libraries coq.vernac))
 
 (library
- (name int31_syntax_plugin)
- (public_name coq.plugins.int31_syntax)
- (synopsis "Coq syntax plugin: int31")
- (modules int31_syntax)
+ (name int63_syntax_plugin)
+ (public_name coq.plugins.int63_syntax)
+ (synopsis "Coq syntax plugin: int63")
+ (modules int63_syntax)
  (libraries coq.vernac))

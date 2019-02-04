@@ -175,11 +175,8 @@ let with_global f =
   let (a, ctx) = f (env ()) (current_dirpath ()) in
     push_context_set false ctx; a
 
-(* spiwack: register/unregister functions for retroknowledge *)
-let register field value =
-  globalize0 (Safe_typing.register field value)
-
 let register_inline c = globalize0 (Safe_typing.register_inline c)
+let register_inductive c r = globalize0 (Safe_typing.register_inductive c r)
 
 let set_strategy k l =
   globalize0 (Safe_typing.set_strategy k l)

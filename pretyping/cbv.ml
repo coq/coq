@@ -38,6 +38,10 @@ open Esubst
  *          the bindings S, and then applied to args. Here again,
  *          weak reduction.
  *  CONSTR(c,args) is the constructor [c] applied to [args].
+ *  PRIMITIVE(cop,args) represent a particial application of
+ *          a primitive, or a fully applied primitive
+ *          which does not reduce.
+ *          cop is the constr representing op.
  *
  *)
 type cbv_value =
@@ -48,6 +52,7 @@ type cbv_value =
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor Univ.puniverses * cbv_value array
+  | PRIMITIVE of CPrimitives.t * constr * cbv_value array
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -90,6 +95,9 @@ let rec shift_value n = function
       COFIXP (cofix,subs_shft (n,s), Array.map (shift_value n) args)
   | CONSTR (c,args) ->
       CONSTR (c, Array.map (shift_value n) args)
+  | PRIMITIVE(op,c,args) ->
+      PRIMITIVE(op,c,Array.map (shift_value n) args)
+
 let shift_value n v =
   if Int.equal n 0 then v else shift_value n v
 
@@ -109,10 +117,11 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
   let n = Array.length bds in
   subs_cons(Array.init n make_body, env), bds.(i)
 
-let make_constr_ref n = function
+let make_constr_ref n k t =
+  match k with
   | RelKey p -> mkRel (n+p)
-  | VarKey id -> mkVar id
-  | ConstKey cst -> mkConstU cst
+  | VarKey id -> t
+  | ConstKey cst -> t
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
@@ -136,7 +145,7 @@ let mkSTACK = function
 
 type cbv_infos = {
   env : Environ.env;
-  tab : cbv_value KeyTable.t;
+  tab : cbv_value Declarations.constant_def KeyTable.t;
   reds : RedFlags.reds;
   sigma : Evd.evar_map
 }
@@ -159,7 +168,8 @@ let strip_appl head stack =
     | FIXP (fix,env,app) -> (FIXP(fix,env,[||]), stack_app app stack)
     | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[||]), stack_app app stack)
     | CONSTR (c,app) -> (CONSTR(c,[||]), stack_app app stack)
-    | _ -> (head, stack)
+    | PRIMITIVE(op,c,app) -> (PRIMITIVE(op,c,[||]), stack_app app stack)
+    | VAL _ | STACK _ | CBN _ | LAM _ -> (head, stack)
 
 
 (* Tests if fixpoint reduction is possible. *)
@@ -188,6 +198,60 @@ let get_debug_cbv = Goptions.declare_bool_option_and_ref
     ~value:false
     ~name:"cbv visited constants display"
     ~key:["Debug";"Cbv"]
+
+(* Reduction of primitives *)
+
+open Primred
+
+module VNativeEntries =
+  struct
+
+    type elem = cbv_value
+    type args = cbv_value array
+    type evd = unit
+
+    let get = Array.get
+
+    let get_int () e =
+      match e with
+      | VAL(_, ci) ->
+          (match kind ci with
+          | Int i -> i
+          | _ -> raise Primred.NativeDestKO)
+      | _ -> raise Primred.NativeDestKO
+
+    let mkInt env i = VAL(0, mkInt i)
+
+    let mkBool env b =
+      let (ct,cf) = get_bool_constructors env in
+      CONSTR(Univ.in_punivs (if b then ct else cf), [||])
+
+    let int_ty env = VAL(0, mkConst @@ get_int_type env)
+
+    let mkCarry env b e =
+      let (c0,c1) = get_carry_constructors env in
+      CONSTR(Univ.in_punivs (if b then c1 else c0), [|int_ty env;e|])
+
+    let mkIntPair env e1 e2 =
+      let int_ty = int_ty env in
+      let c = get_pair_constructor env in
+      CONSTR(Univ.in_punivs c, [|int_ty;int_ty;e1;e2|])
+
+    let mkLt env =
+      let (_eq,lt,_gt) = get_cmp_constructors env in
+      CONSTR(Univ.in_punivs lt, [||])
+
+    let mkEq env =
+      let (eq,_lt,_gt) = get_cmp_constructors env in
+      CONSTR(Univ.in_punivs eq, [||])
+
+    let mkGt env =
+      let (_eq,_lt,gt) = get_cmp_constructors env in
+      CONSTR(Univ.in_punivs gt, [||])
+
+  end
+
+module VredNative = RedNative(VNativeEntries)
 
 let debug_pr_key = function
   | ConstKey (sp,_) -> Names.Constant.print sp
@@ -225,6 +289,8 @@ and reify_value = function (* reduction under binders *)
     mkApp (apply_env env cofix, Array.map reify_value args)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map reify_value args)
+  | PRIMITIVE(op,c,args) ->
+      mkApp(c, Array.map reify_value args)
 
 and apply_env env t =
   match kind t with
@@ -277,14 +343,14 @@ let rec norm_head info env t stack =
         | Inl (0,v)      -> strip_appl v stack
         | Inl (n,v)      -> strip_appl (shift_value n v) stack
         | Inr (n,None)   -> (VAL(0, mkRel n), stack)
-        | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p))
+        | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p) t)
 
-  | Var id -> norm_head_ref 0 info env stack (VarKey id)
+  | Var id -> norm_head_ref 0 info env stack (VarKey id) t
 
   | Const sp ->
     Reductionops.reduction_effect_hook info.env info.sigma
       (fst sp) (lazy (reify_stack t stack));
-    norm_head_ref 0 info env stack (ConstKey sp)
+    norm_head_ref 0 info env stack (ConstKey sp) t
 
   | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
@@ -315,22 +381,23 @@ let rec norm_head info env t stack =
   | Construct c -> (CONSTR(c, [||]), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _ | Int _) -> (VAL(0, t), stack)
   | Prod _ -> (CBN(t,env), stack)
 
-and norm_head_ref k info env stack normt =
+and norm_head_ref k info env stack normt t =
   if red_set_ref info.reds normt then
     match cbv_value_cache info normt with
-      | Some body ->
+      | Declarations.Def body ->
          if get_debug_cbv () then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
          strip_appl (shift_value k body) stack
-      | None ->
+      | Declarations.Primitive op -> (PRIMITIVE(op,t,[||]),stack)
+      | Declarations.OpaqueDef _ | Declarations.Undef _ ->
          if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
-         (VAL(0,make_constr_ref k normt),stack)
+         (VAL(0,make_constr_ref k normt t),stack)
   else
     begin
       if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
-      (VAL(0,make_constr_ref k normt),stack)
+      (VAL(0,make_constr_ref k normt t),stack)
     end
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
@@ -392,32 +459,58 @@ and cbv_stack_value info env = function
     | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl)
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
 
+    (* primitive apply to arguments *)
+    | (PRIMITIVE(op,c,[||]), APP(appl,stk)) ->
+      let nargs = CPrimitives.arity op in
+      let len = Array.length appl in
+      if nargs <= len then
+        let args =
+          if len = nargs then appl
+          else Array.sub appl 0 nargs in
+        let stk =
+          if nargs < len then
+            stack_app (Array.sub appl nargs (len - nargs)) stk
+          else stk in
+        match VredNative.red_prim info.env () op args with
+        | Some (CONSTR (c, args)) ->
+          (* args must be moved to the stack to allow future reductions *)
+          cbv_stack_value info env (CONSTR(c, [||]), stack_app args stk)
+        | Some v ->  cbv_stack_value info env (v,stk)
+        | None -> mkSTACK(PRIMITIVE(op,c,args), stk)
+      else (* partical application *)
+              (assert (stk = TOP);
+               PRIMITIVE(op,c,appl))
+
     (* definitely a value *)
     | (head,stk) -> mkSTACK(head, stk)
 
-and cbv_value_cache info ref = match KeyTable.find info.tab ref with
-| v -> Some v
-| exception Not_found ->
-  try
-    let body = match ref with
-    | RelKey n ->
-      let open Context.Rel.Declaration in
-      begin match Environ.lookup_rel n info.env with
-      | LocalDef (_, c, _) -> lift n c
-      | LocalAssum _ -> raise Not_found
-      end
-    | VarKey id ->
-      let open Context.Named.Declaration in
-      begin match Environ.lookup_named id info.env with
-      | LocalDef (_, c, _) -> c
-      | LocalAssum _ -> raise Not_found
-      end
-    | ConstKey cst -> Environ.constant_value_in info.env cst
+and cbv_value_cache info ref =
+  try KeyTable.find info.tab ref with
+    Not_found ->
+    let v =
+      try
+        let body = match ref with
+          | RelKey n ->
+            let open Context.Rel.Declaration in
+            begin match Environ.lookup_rel n info.env with
+              | LocalDef (_, c, _) -> lift n c
+              | LocalAssum _ -> raise Not_found
+            end
+          | VarKey id ->
+            let open Context.Named.Declaration in
+            begin match Environ.lookup_named id info.env with
+              | LocalDef (_, c, _) -> c
+              | LocalAssum _ -> raise Not_found
+            end
+          | ConstKey cst -> Environ.constant_value_in info.env cst
+        in
+        let v = cbv_stack_term info TOP (subs_id 0) body in
+        Declarations.Def v
+      with
+      | Environ.NotEvaluableConst (Environ.IsPrimitive op) -> Declarations.Primitive op
+      | Not_found | Environ.NotEvaluableConst _ -> Declarations.Undef None
     in
-    let v = cbv_stack_term info TOP (subs_id 0) body in
-    let () = KeyTable.add info.tab ref v in
-    Some v
-  with Not_found | Environ.NotEvaluableConst _ -> None
+    KeyTable.add info.tab ref v; v
 
 (* When we are sure t will never produce a redex with its stack, we
  * normalize (even under binders) the applied terms and we build the
@@ -471,6 +564,8 @@ and cbv_norm_value info = function (* reduction under binders *)
          Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map (cbv_norm_value info) args)
+  | PRIMITIVE(op,c,args) ->
+      mkApp(c,Array.map (cbv_norm_value info) args)
 
 (* with profiling *)
 let cbv_norm infos constr =

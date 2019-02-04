@@ -1,0 +1,16 @@
+2
+     : int
+9223372036854775807
+     : int
+2 + 2
+     : int
+2 + 2
+     : int
+     = 4
+     : int
+     = 37151199385380486
+     : int
+The command has indeed failed with message:
+int63 are only non-negative numbers.
+The command has indeed failed with message:
+overflow in int63 literal: 9223372036854775808

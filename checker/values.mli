@@ -38,6 +38,8 @@ type value =
   | Proxy of value ref
   (** Same as the inner value, used to define recursive types *)
 
+  | Uint63
+
 (** NB: List and Opt have their own constructors to make it easy to
    define eg [let rec foo = List foo]. *)
 

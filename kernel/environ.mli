@@ -195,11 +195,15 @@ val type_in_type_constant : Constant.t -> env -> bool
 
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
-   [c] is opaque and [NotEvaluableConst NoBody] if it has no
-   body and [NotEvaluableConst IsProj] if [c] is a projection 
+   [c] is opaque, [NotEvaluableConst NoBody] if it has no
+   body, [NotEvaluableConst IsProj] if [c] is a projection,
+   [NotEvaluableConst (IsPrimitive p)] if [c] is primitive [p]
    and [Not_found] if it does not exist in [env] *)
 
-type const_evaluation_result = NoBody | Opaque
+type const_evaluation_result =
+  | NoBody
+  | Opaque
+  | IsPrimitive of CPrimitives.t
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
@@ -222,6 +226,8 @@ val body_of_constant_body : env -> constant_body -> (Constr.constr * Univ.AUCont
 val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
 val constant_opt_value_in : env -> Constant.t puniverses -> constr option
+
+val is_primitive : env -> Constant.t -> bool
 
 (** {6 Primitive projections} *)
 
@@ -334,13 +340,8 @@ val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
 val is_type_in_type : env -> GlobRef.t -> bool
 
-open Retroknowledge
-(** functions manipulating the retroknowledge 
-    @author spiwack *)
-
-val registered : env -> field -> bool
-
-val register : env -> field -> GlobRef.t -> env
-
 (** Native compiler *)
 val no_link_info : link_info
+
+(** Primitives *)
+val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env

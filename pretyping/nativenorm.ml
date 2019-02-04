@@ -120,13 +120,6 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
   let mib,mip = lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
   let params = Array.sub allargs 0 nparams in
-  try
-    if const then
-      let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(0)) params in
-      Retroknowledge.get_vm_decompile_constant_info env.retroknowledge (GlobRef.IndRef ind) tag, ctyp
-    else
-      raise Not_found
-  with Not_found ->
   let i = invert_tag const tag mip.mind_reloc_tbl in
   let ctyp = type_constructor mind mib u (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstructU((ind,i),u), params), ctyp)
@@ -137,7 +130,9 @@ let construct_of_constr const env sigma tag typ =
   match EConstr.kind_upto sigma t with
   | Ind (ind,u) -> 
       construct_of_constr_notnative const env tag ind u l
-  | _ -> assert false
+  | _ ->
+    assert (Constr.equal t (Typeops.type_of_int env));
+    (mkInt (Uint63.of_int tag), t)
 
 let construct_of_constr_const env sigma tag typ =
   fst (construct_of_constr true env sigma tag typ)
@@ -208,6 +203,7 @@ let rec nf_val env sigma v typ =
       let body = nf_val env sigma (f (mk_rel_accu lvl)) codom in
       mkLambda(name,dom,body)
   | Vconst n -> construct_of_constr_const env sigma n typ
+  | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vblock b ->
       let capp,ctyp = construct_of_constr_block env sigma (block_tag b) typ in
       let args = nf_bargs env sigma b ctyp in

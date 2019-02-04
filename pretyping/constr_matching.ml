@@ -410,9 +410,10 @@ let matches_core env sigma allow_bound_rels
 
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
          Array.fold_left2 (sorec ctx env) subst args1 args2
+      | PInt i1, Int i2 when Uint63.equal i1 i2 -> subst
       | (PRef _ | PVar _ | PRel _ | PApp _ | PProj _ | PLambda _
          | PProd _ | PLetIn _ | PSort _ | PIf _ | PCase _
-         | PFix _ | PCoFix _| PEvar _), _ -> raise PatternMatchingFailure
+         | PFix _ | PCoFix _| PEvar _ | PInt _), _ -> raise PatternMatchingFailure
 
   in
   sorec [] env ((Id.Map.empty,Id.Set.empty), Id.Map.empty) pat c
@@ -530,7 +531,7 @@ let sub_match ?(closed=true) env sigma pat c =
       aux env term mk_ctx next
     with Retyping.RetypeError _ -> next ()
     end
-  | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
+  | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ | Int _ ->
     next ()
   in
   here next

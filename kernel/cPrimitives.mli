@@ -9,33 +9,62 @@
 (************************************************************************)
 
 type t =
-  | Int31head0
-  | Int31tail0
-  | Int31add
-  | Int31sub
-  | Int31mul
-  | Int31div
-  | Int31mod
-(*
-  | Int31lsr
-  | Int31lsl
- *)
-  | Int31land
-  | Int31lor
-  | Int31lxor
-  | Int31addc
-  | Int31subc
-  | Int31addcarryc
-  | Int31subcarryc
-  | Int31mulc
-  | Int31diveucl
-  | Int31div21
-  | Int31addmuldiv
-  | Int31eq
-  | Int31lt
-  | Int31le
-  | Int31compare
+  | Int63head0
+  | Int63tail0
+  | Int63add
+  | Int63sub
+  | Int63mul
+  | Int63div
+  | Int63mod
+  | Int63lsr
+  | Int63lsl
+  | Int63land
+  | Int63lor
+  | Int63lxor
+  | Int63addc
+  | Int63subc
+  | Int63addCarryC
+  | Int63subCarryC
+  | Int63mulc
+  | Int63diveucl
+  | Int63div21
+  | Int63addMulDiv
+  | Int63eq
+  | Int63lt
+  | Int63le
+  | Int63compare
+
+val equal : t -> t -> bool
+
+type arg_kind =
+  | Kparam (* not needed for the elavuation of the primitive*)
+  | Kwhnf  (* need to be reduced in whnf before reducing the primitive *)
+  | Karg   (* no need to be reduced in whnf *)
+
+type args_red = arg_kind list
 
 val hash : t -> int
 
 val to_string : t -> string
+
+val arity : t -> int
+
+val kind : t -> args_red
+
+(** Special Entries for Register **)
+
+type prim_ind =
+  | PIT_bool
+  | PIT_carry
+  | PIT_pair
+  | PIT_cmp
+
+type prim_type =
+  | PT_int63
+
+type op_or_type =
+  | OT_op of t
+  | OT_type of prim_type
+
+val prim_ind_to_string : prim_ind -> string
+val op_or_type_to_string : op_or_type -> string

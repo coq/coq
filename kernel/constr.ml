@@ -101,6 +101,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
+  | Int       of Uint63.t
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
 type t = (t, t, Sorts.t, Instance.t) kind_of_term
@@ -232,6 +233,9 @@ let mkRef (gr,u) = let open GlobRef in match gr with
   | IndRef ind -> mkIndU (ind,u)
   | ConstructRef c -> mkConstructU (c,u)
   | VarRef x -> mkVar x
+
+(* Constructs a primitive integer *)
+let mkInt i = Int i
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
@@ -438,7 +442,7 @@ let decompose_appvect c =
 
 let fold f acc c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> acc
+    | Construct _ | Int _) -> acc
   | Cast (c,_,t) -> f (f acc c) t
   | Prod (_,t,c) -> f (f acc t) c
   | Lambda (_,t,c) -> f (f acc t) c
@@ -458,7 +462,7 @@ let fold f acc c = match kind c with
 
 let iter f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _ | Int _) -> ()
   | Cast (c,_,t) -> f c; f t
   | Prod (_,t,c) -> f t; f c
   | Lambda (_,t,c) -> f t; f c
@@ -478,7 +482,7 @@ let iter f c = match kind c with
 
 let iter_with_binders g f n c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> ()
+    | Construct _ | Int _) -> ()
   | Cast (c,_,t) -> f n c; f n t
   | Prod (_,t,c) -> f n t; f (g n) c
   | Lambda (_,t,c) -> f n t; f (g n) c
@@ -504,7 +508,7 @@ let iter_with_binders g f n c = match kind c with
 let fold_constr_with_binders g f n acc c =
   match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> acc
+    | Construct _ | Int _) -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (_na,t,c) -> f (g  n) (f n acc t) c
   | Lambda (_na,t,c) -> f (g  n) (f n acc t) c
@@ -600,7 +604,7 @@ let map_return_predicate_with_full_binders g f l ci p =
 
 let map_gen userview f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
+    | Construct _ | Int _) -> c
   | Cast (b,k,t) ->
       let b' = f b in
       let t' = f t in
@@ -665,7 +669,7 @@ let map = map_gen false
 
 let fold_map f accu c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> accu, c
+    | Construct _ | Int _) -> accu, c
   | Cast (b,k,t) ->
       let accu, b' = f accu b in
       let accu, t' = f accu t in
@@ -725,7 +729,7 @@ let fold_map f accu c = match kind c with
 
 let map_with_binders g f l c0 = match kind c0 with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c0
+    | Construct _ | Int _) -> c0
   | Cast (c, k, t) ->
     let c' = f l c in
     let t' = f l t in
@@ -802,7 +806,7 @@ let lift n = liftn n 1
 let fold_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
   match kind c with
-  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _ -> acc
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
   | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
   | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
@@ -843,6 +847,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
+  | Int i1, Int i2 -> Uint63.equal i1 i2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
@@ -869,7 +874,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
     Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
-    | CoFix _), _ -> false
+    | CoFix _ | Int _), _ -> false
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -1044,6 +1049,8 @@ let constr_ord_int f t1 t2 =
         ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
     | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
+    | Proj _, _ -> -1 | _, Proj _ -> 1
+    | Int i1, Int i2 -> Uint63.compare i1 i2
 
 let rec compare m n=
   constr_ord_int compare m n
@@ -1127,9 +1134,10 @@ let hasheq t1 t2 =
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
+    | Int i1, Int i2 -> i1 == i2
     | (Rel _ | Meta _ | Var _ | Sort _ | Cast _ | Prod _ | Lambda _ | LetIn _
       | App _ | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _
-      | Fix _ | CoFix _), _ -> false
+      | Fix _ | CoFix _ | Int _), _ -> false
 
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
@@ -1190,10 +1198,6 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Evar (e,l) ->
 	let l, hl = hash_term_array l in
 	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
-      | Proj (p,c) ->
-        let c, hc = sh_rec c in
-	let p' = Projection.hcons p in
-	  (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
       | Const (c,u) ->
 	let c' = sh_con c in
 	let u', hu = sh_instance u in
@@ -1232,6 +1236,13 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(t, combinesmall 15 n)
       | Rel n ->
 	(t, combinesmall 16 n)
+      | Proj (p,c) ->
+        let c, hc = sh_rec c in
+        let p' = Projection.hcons p in
+          (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
+      | Int i ->
+        let (h,l) = Uint63.to_int2 i in
+        (t, combinesmall 18 (combine h l))
 
   and sh_rec t =
     let (y, h) = hash_term t in
@@ -1277,8 +1288,6 @@ let rec hash t =
     | App (Cast(c, _, _),l) -> hash (mkApp (c,l))
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
-    | Proj (p,c) ->
-      combinesmall 17 (combine (Projection.hash p) (hash c))
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
     | Const (c,u) ->
@@ -1295,6 +1304,9 @@ let rec hash t =
        combinesmall 14 (combine (hash_term_array bl) (hash_term_array tl))
     | Meta n -> combinesmall 15 n
     | Rel n -> combinesmall 16 n
+    | Proj (p,c) ->
+      combinesmall 17 (combine (Projection.hash p) (hash c))
+    | Int i -> combinesmall 18 (Uint63.hash i)
 
 and hash_term_array t =
   Array.fold_left (fun acc t -> combine (hash t) acc) 0 t
@@ -1425,3 +1437,4 @@ let rec debug_print c =
            Name.print na ++ str":" ++ debug_print ty ++
            cut() ++ str":=" ++ debug_print bd) (Array.to_list fixl)) ++
          str"}")
+  | Int i -> str"Int("++str (Uint63.to_string i) ++ str")"

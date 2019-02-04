@@ -338,6 +338,13 @@ $(COQPP): $(COQPPCMO) coqpp/coqpp_main.ml
 	$(HIDE)$(OCAMLC) -I coqpp $^ -linkall -o $@
 
 ###########################################################################
+# Specific rules for Uint63
+###########################################################################
+kernel/uint63.ml: kernel/write_uint63.ml kernel/uint63_x86.ml kernel/uint63_amd64.ml
+	$(SHOW)'WRITE $@'
+	$(HIDE)(cd kernel && ocaml unix.cma $(shell basename $<))
+
+###########################################################################
 # Main targets (coqtop.opt, coqtop.byte)
 ###########################################################################
 
@@ -504,7 +511,7 @@ $(FAKEIDEBYTE): $(FAKEIDECMO) | $(IDETOPBYTE)
 
 # votour: a small vo explorer (based on the checker)
 
-VOTOURCMO:=clib/cObj.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo
+VOTOURCMO:=clib/cObj.cmo kernel/uint63.cmo checker/analyze.cmo checker/values.cmo checker/votour.cmo
 
 bin/votour: $(call bestobj, $(VOTOURCMO))
 	$(SHOW)'OCAMLBEST -o $@'

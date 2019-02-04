@@ -144,6 +144,8 @@ val subst_constant :
 val subst_proj_repr : substitution -> Projection.Repr.t -> Projection.Repr.t
 val subst_proj : substitution -> Projection.t -> Projection.t
 
+val subst_retro_action : substitution -> Retroknowledge.action -> Retroknowledge.action
+
 (** Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"

@@ -74,6 +74,7 @@ val declare_mind : mutual_inductive_entry -> Libobject.object_name * bool
 
 val definition_message : Id.t -> unit
 val assumption_message : Id.t -> unit
+val register_message : Id.t -> unit
 val fixpoint_message : int array option -> Id.t list -> unit
 val cofixpoint_message : Id.t list -> unit
 val recursive_message : bool (** true = fixpoint *) ->

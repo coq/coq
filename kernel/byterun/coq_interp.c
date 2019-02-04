@@ -23,6 +23,12 @@
 #include "coq_memory.h" 
 #include "coq_values.h" 
 
+#ifdef ARCH_SIXTYFOUR
+#include "coq_uint63_native.h"
+#else
+#include "coq_uint63_emul.h"
+#endif
+
 /* spiwack: I append here a few macros for value/number manipulation */
 #define uint32_of_value(val) (((uint32_t)(val)) >> 1)
 #define value_of_uint32(i)   ((value)((((uint32_t)(i)) << 1) | 1))
@@ -154,6 +160,38 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define JUMPTBL_BASE_REG asm("39")
 #endif
 #endif
+
+#define CheckInt1() do{                            \
+    if (Is_uint63(accu)) pc++;			   \
+    else{					   \
+      *--sp=accu;				   \
+      accu = Field(coq_global_data, *pc++);	   \
+      goto apply1;				   \
+    }						   \
+  }while(0)
+
+#define CheckInt2() do{    			   \
+    if (Is_uint63(accu) && Is_uint63(sp[0])) pc++;	   \
+    else{					   \
+      *--sp=accu;				   \
+      accu = Field(coq_global_data, *pc++);	   \
+      goto apply2;				   \
+    }						   \
+  }while(0)
+
+
+
+#define CheckInt3() do{						      \
+    if (Is_uint63(accu) && Is_uint63(sp[0]) && Is_uint63(sp[1]) ) pc++;     \
+    else{							      \
+      *--sp=accu;						      \
+      accu = Field(coq_global_data, *pc++);			      \
+      goto apply3;						      \
+    }								      \
+  }while(0)
+
+#define AllocCarry(cond) Alloc_small(accu, 1, (cond)? coq_tag_C1 : coq_tag_C0)
+#define AllocPair() Alloc_small(accu, 2, coq_tag_pair)
 
 /* For signal handling, we hijack some code from the caml runtime */
 
@@ -372,8 +410,10 @@ value coq_interprete
 	goto check_stack;
       }
       Instruct(APPLY1) {
-	value arg1 = sp[0];
+        value arg1;
+      apply1:
 	print_instr("APPLY1");
+        arg1 = sp[0];
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = (value)pc;
@@ -388,10 +428,14 @@ value coq_interprete
 	coq_extra_args = 0;
 	goto check_stack;
       }
+
       Instruct(APPLY2) {
-	value arg1 = sp[0];
-	value arg2 = sp[1];
+        value arg1;
+        value arg2;
+      apply2:
 	print_instr("APPLY2");
+        arg1 = sp[0];
+        arg2 = sp[1];
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -403,11 +447,16 @@ value coq_interprete
 	coq_extra_args = 1;
 	goto check_stack;
       }
+
       Instruct(APPLY3) {
-	value arg1 = sp[0];
-	value arg2 = sp[1];
-	value arg3 = sp[2];
+        value arg1;
+        value arg2;
+        value arg3;
+      apply3:
 	print_instr("APPLY3");
+        arg1 = sp[0];
+        arg2 = sp[1];
+        arg3 = sp[2];
 	sp -= 3;
 	sp[0] = arg1;
 	sp[1] = arg2;
@@ -420,7 +469,28 @@ value coq_interprete
 	coq_extra_args = 2;
 	goto check_stack;
       }
-      /* Stack checks */
+
+       Instruct(APPLY4) {
+        value arg1 = sp[0];
+        value arg2 = sp[1];
+        value arg3 = sp[2];
+        value arg4 = sp[3];
+        print_instr("APPLY4");
+        sp -= 3;
+        sp[0] = arg1;
+        sp[1] = arg2;
+        sp[2] = arg3;
+        sp[3] = arg4;
+        sp[4] = (value)pc;
+        sp[5] = coq_env;
+        sp[6] = Val_long(coq_extra_args);
+        pc = Code_val(accu);
+        coq_env = accu;
+        coq_extra_args = 3;
+        goto check_stack;
+      }
+
+     /* Stack checks */
       
     check_stack:
       print_instr("check_stack");
@@ -1127,7 +1197,6 @@ value coq_interprete
 	Next;
       }
 
-      /* spiwack: code for interpreting compiled integers */
       Instruct(BRANCH) {
 	/* unconditional branching */
         print_instr("BRANCH");
@@ -1136,337 +1205,338 @@ value coq_interprete
         Next;
       }
 
-      Instruct(ADDINT31) {
+      Instruct(CHECKADDINT63){
+        print_instr("CHECKADDINT63");
+        CheckInt2();
+      }
+      Instruct(ADDINT63) {
         /* Adds the integer in the accumulator with 
            the one ontop of the stack (which is poped)*/
-        print_instr("ADDINT31");
-        accu = 
-           (value)((uint32_t) accu + (uint32_t) *sp++ - 1); 
-        /* nota,unlike CaML we don't want
-           to have a different behavior depending on the 
-           architecture. Thus we cast the operand to uint32 */
+        print_instr("ADDINT63");
+        accu = uint63_add(accu, *sp++);
         Next;
       }
 
-      Instruct (ADDCINT31) {
-	print_instr("ADDCINT31");
+      Instruct (CHECKADDCINT63) {
+        print_instr("CHECKADDCINT63");
+        CheckInt2();
 	/* returns the sum with a carry */
-	uint32_t s;
-	s = (uint32_t)accu + (uint32_t)*sp++ - 1;
-        if( (uint32_t)s < (uint32_t)accu ) {
-          /* carry */
-	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
-	}
-	else {
-	  /*no carry */
-	  Alloc_small(accu, 1, 1);
-	}
-	Field(accu, 0)=(value)s;
+        value s;
+        s = uint63_add(accu, *sp++);
+        AllocCarry(uint63_lt(s,accu));
+        Field(accu, 0) = s;
 	Next;
       }
 
-      Instruct (ADDCARRYCINT31) {
-	print_instr("ADDCARRYCINT31");
+      Instruct (CHECKADDCARRYCINT63) {
+        print_instr("ADDCARRYCINT63");
+        CheckInt2();
 	/* returns the sum plus one with a carry */
-	uint32_t s;
-	s = (uint32_t)accu + (uint32_t)*sp++ + 1;
-        if( (uint32_t)s <= (uint32_t)accu ) {
-          /* carry */
-	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
-	}
-	else {
-	  /*no carry */
-	  Alloc_small(accu, 1, 1);
-	}
-	Field(accu, 0)=(value)s;
+        value s;
+        s = uint63_addcarry(accu, *sp++);
+        AllocCarry(uint63_leq(s, accu));
+        Field(accu, 0) = s;
 	Next;
       }
 
-      Instruct (SUBINT31) {
-	print_instr("SUBINT31");
+      Instruct (CHECKSUBINT63) {
+        print_instr("CHECKSUBINT63");
+        CheckInt2();
+      }
+      Instruct (SUBINT63) {
+        print_instr("SUBINT63");
 	/* returns the subtraction */
-	accu = 
-	  (value)((uint32_t) accu - (uint32_t) *sp++ + 1); 
+        accu = uint63_sub(accu, *sp++);
         Next;
       }
 
-      Instruct (SUBCINT31) {
-	print_instr("SUBCINT31");
+      Instruct (CHECKSUBCINT63) {
+        print_instr("SUBCINT63");
+        CheckInt2();
 	/* returns the subtraction with a carry */
-	uint32_t b;
-	uint32_t s;
-	b = (uint32_t)*sp++;
-	s = (uint32_t)accu - b + 1;
-        if( (uint32_t)accu < b ) {
-          /* carry */
-	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
-	}
-	else {
-	  /*no carry */
-	  Alloc_small(accu, 1, 1);
-	}
-	Field(accu, 0)=(value)s;
+        value b;
+        value s;
+        b = *sp++;
+        s = uint63_sub(accu,b);
+        AllocCarry(uint63_lt(accu,b));
+        Field(accu, 0) = s;
 	Next;
       }
 
-      Instruct (SUBCARRYCINT31) {
-	print_instr("SUBCARRYCINT31");
+      Instruct (CHECKSUBCARRYCINT63) {
+        print_instr("SUBCARRYCINT63");
+        CheckInt2();
 	/* returns the subtraction minus one with a carry */
-	uint32_t b;
-	uint32_t s;
-	b = (uint32_t)*sp++;
-	s = (value)((uint32_t)accu - b - 1);
-        if( (uint32_t)accu <= b ) {
-          /* carry */
-	  Alloc_small(accu, 1, 2); /* ( _ , arity, tag ) */
-	}
-	else {
-	  /*no carry */
-	  Alloc_small(accu, 1, 1);
-	}
-	Field(accu, 0)=(value)s;
+        value b;
+        value s;
+        b = *sp++;
+        s = uint63_subcarry(accu,b);
+        AllocCarry(uint63_leq(accu,b));
+        Field(accu, 0) = s;
 	Next;
       }
 
-      Instruct (MULINT31) {
+      Instruct (CHECKMULINT63) {
+        print_instr("MULINT63");
+        CheckInt2();
 	/* returns the multiplication */
-	print_instr("MULINT31");
-        accu = 
-	  value_of_uint32((uint32_of_value(accu)) * (uint32_of_value(*sp++)));
+        accu = uint63_mul(accu,*sp++);
 	Next;
       }
 
-      Instruct (MULCINT31) {
-        /*returns the multiplication on a double size word
-          (special case for 0) */
-        print_instr("MULCINT31");
-	uint64_t p;
+      Instruct (CHECKMULCINT63) {
+        /*returns the multiplication on a pair */
+        print_instr("MULCINT63");
+        CheckInt2();
         /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
-        p = UI64_of_value (accu) * UI64_of_uint32 ((*sp++)^1);
-	if (p == 0) {
-	  accu = (value)1;
-	}
-	else {
-          /* the output type is supposed to have a constant constructor
-	     and a non-constant constructor (in that order), the tag
-	     of the non-constant constructor is then 1 */
-	  Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-	  /*unsigned shift*/
-	  Field(accu, 0) = (value)((p >> 31)|1) ;  /*higher part*/
-	  Field(accu, 1) = (value)((uint32_t)p|1); /*lower part*/
-	}
-	Next;
+        /* TODO: implement
+        p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
+        AllocPair(); */
+        /* Field(accu, 0) = (value)(I64_lsr(p,31)|1) ; */ /*higher part*/
+        /* Field(accu, 1) = (value)(I64_to_int32(p)|1); */ /*lower part*/
+        value x = accu;
+        AllocPair();
+        Field(accu, 1) = uint63_mulc(x, *sp++, &Field(accu, 0));
+        Next;
       }
 
-      Instruct (DIV21INT31) {
-	print_instr("DIV21INT31");
-	/* spiwack: takes three int31 (the two first ones represent an
-                    int62) and performs the euclidian division of the
-                    int62 by the int31 */
-        uint64_t bigint;
-        bigint = UI64_of_value(accu);
-        bigint = (bigint << 31) | UI64_of_value(*sp++);
-        uint64_t divisor;
-        divisor = UI64_of_value(*sp++);
-        Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-        if (divisor == 0) {
-          Field(accu, 0) = 1; /* 2*0+1 */
-          Field(accu, 1) = 1; /* 2*0+1 */
-	}
-	else {
-	  uint64_t quo, mod;
-	  quo = bigint / divisor;
-	  mod = bigint % divisor;
-          Field(accu, 0) = value_of_uint32((uint32_t)(quo));
-	  Field(accu, 1) = value_of_uint32((uint32_t)(mod));
-	}
-	Next;
-      }
-
-      Instruct (DIVINT31) {
-	print_instr("DIVINT31");
+      Instruct(CHECKDIVINT63) {
+        print_instr("CHEKDIVINT63");
+        CheckInt2();
         /* spiwack: a priori no need of the NON_STANDARD_DIV_MOD flag
                     since it probably only concerns negative number.
                     needs to be checked at this point */
-        uint32_t divisor;
-        divisor = uint32_of_value(*sp++);
-        if (divisor == 0) { 
+        value divisor;
+        divisor = *sp++;
+        if (uint63_eq0(divisor)) {
+          accu = divisor;
+	}
+	else {
+          accu = uint63_div(accu, divisor);
+        }
+	Next;
+      }
+
+      Instruct(CHECKMODINT63) {
+        print_instr("CHEKMODINT63");
+        CheckInt2();
+        value divisor;
+        divisor = *sp++;
+        if (uint63_eq0(divisor)) {
+          accu = divisor;
+	}
+        else {
+          accu = uint63_mod(accu,divisor);
+	}
+	Next;
+      }
+
+      Instruct (CHECKDIVEUCLINT63) {
+        print_instr("DIVEUCLINT63");
+        CheckInt2();
+        /* spiwack: a priori no need of the NON_STANDARD_DIV_MOD flag
+                    since it probably only concerns negative number.
+                    needs to be checked at this point */
+        value divisor;
+        divisor = *sp++;
+        if (uint63_eq0(divisor)) {
           Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-	  Field(accu, 0) = 1; /* 2*0+1 */
-          Field(accu, 1) = 1; /* 2*0+1 */
+          Field(accu, 0) = divisor;
+          Field(accu, 1) = divisor;
         }
         else {
-          uint32_t modulus;
-          modulus = uint32_of_value(accu);
+          value modulus;
+          modulus = accu;
           Alloc_small(accu, 2, 1); /* ( _ , arity, tag ) */
-	  Field(accu, 0) = value_of_uint32(modulus/divisor);
-          Field(accu, 1) = value_of_uint32(modulus%divisor);
+          Field(accu, 0) = uint63_div(modulus,divisor);
+          Field(accu, 1) = uint63_mod(modulus,divisor);
         }
 	Next;
       }
 
-      Instruct (ADDMULDIVINT31) {
-        print_instr("ADDMULDIVINT31");
-        /* higher level shift (does shifts and cycles and such) */
-        uint32_t shiftby;
-        shiftby = uint32_of_value(accu);
-        if (shiftby > 31) {
-          if (shiftby < 62) {
-            sp++;
-	    accu = (value)(((((uint32_t)*sp++)^1) << (shiftby - 31)) | 1);
-          }
-          else {
-            sp+=2;
-            accu = (value)(1);
-          }
+      Instruct (CHECKDIV21INT63) {
+        print_instr("DIV21INT63");
+        CheckInt3();
+        /* spiwack: takes three int31 (the two first ones represent an
+                    int62) and performs the euclidian division of the
+                    int62 by the int31 */
+        /* TODO: implement this
+        bigint = UI64_of_value(accu);
+        bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
+        uint64 divisor;
+        divisor = UI64_of_value(*sp++);
+        Alloc_small(accu, 2, 1); */ /* ( _ , arity, tag ) */
+        /* if (I64_is_zero (divisor)) {
+           Field(accu, 0) = 1; */ /* 2*0+1 */
+        /* Field(accu, 1) = 1; */ /* 2*0+1 */
+        /* }
+        else {
+          uint64 quo, mod;
+          I64_udivmod(bigint, divisor, &quo, &mod);
+          Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
+          Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
+        } */
+        value bigint; /* TODO: fix */
+        bigint = *sp++; /* TODO: take accu into account */
+        value divisor;
+        divisor = *sp++;
+        if (uint63_eq0(divisor)) {
+          Alloc_small(accu, 2, 1);
+          Field(accu, 0) = divisor;
+          Field(accu, 1) = divisor;
 	}
-        else{
-        /* *sp = 2*x+1 --> accu = 2^(shiftby+1)*x */
-	  accu = (value)((((uint32_t)*sp++)^1) << shiftby);
-        /* accu = 2^(shiftby+1)*x --> 2^(shifby+1)*x+2*y/2^(31-shiftby)+1 */
-        accu = (value)((accu | (((uint32_t)(*sp++)) >> (31-shiftby)))|1);
+        else {
+          value quo, mod;
+          mod = uint63_div21(accu, bigint, divisor, &quo);
+          Alloc_small(accu, 2, 1);
+          Field(accu, 0) = quo;
+          Field(accu, 1) = mod;
 	}
         Next;
       }
 
-      Instruct (COMPAREINT31) {
-	/* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
-	/* assumes Inductive _ : _ := Eq | Lt | Gt */
-	print_instr("COMPAREINT31");
-	if ((uint32_t)accu == (uint32_t)*sp) {
-	  accu = 1;  /* 2*0+1 */
-	  sp++;
-	}
-	else{if ((uint32_t)accu < (uint32_t)(*sp++)) {
-	  accu = 3;  /* 2*1+1 */
-	}
-	else{
-	  accu = 5;   /* 2*2+1 */
-	}}
-        Next;
-      }
- 
-      Instruct (HEAD0INT31) {
-	int r = 0;
-        uint32_t x;
-        print_instr("HEAD0INT31");
-	x = (uint32_t) accu;
-        if (!(x & 0xFFFF0000)) { x <<= 16; r += 16; }
-        if (!(x & 0xFF000000)) { x <<= 8;  r += 8; }
-        if (!(x & 0xF0000000)) { x <<= 4;  r += 4; }
-        if (!(x & 0xC0000000)) { x <<= 2;  r += 2; }
-        if (!(x & 0x80000000)) { x <<=1;   r += 1; }
-        if (!(x & 0x80000000)) {           r += 1; }
-        accu = value_of_uint32(r);
-        Next;
-      }
-        
-      Instruct (TAIL0INT31) {
-	int r = 0;
-        uint32_t x;
-        print_instr("TAIL0INT31");
-	x = (((uint32_t) accu >> 1) | 0x80000000);
-        if (!(x & 0xFFFF)) { x >>= 16; r += 16; }
-        if (!(x & 0x00FF)) { x >>= 8;  r += 8; }
-        if (!(x & 0x000F)) { x >>= 4;  r += 4; }
-        if (!(x & 0x0003)) { x >>= 2;  r += 2; }
-        if (!(x & 0x0001)) { x >>=1;   r += 1; }
-        if (!(x & 0x0001)) {           r += 1; }
-        accu = value_of_uint32(r);
+      Instruct(CHECKLXORINT63) {
+        print_instr("CHECKLXORINT63");
+        CheckInt2();
+        accu = uint63_lxor(accu,*sp++);
         Next;
       }
 
-      Instruct (ISCONST) {
-        /* Branches if the accu does not contain a constant
-           (i.e., a non-block value) */
-        print_instr("ISCONST");
-        if ((accu & 1) == 0) /* last bit is 0 -> it is a block */
-	  pc +=  *pc;
-        else
-	  pc++;
+      Instruct(CHECKLORINT63) {
+        print_instr("CHECKLORINT63");
+        CheckInt2();
+        accu = uint63_lor(accu,*sp++);
         Next;
-
       }
 
-      Instruct (ARECONST) {
-        /* Branches if the n first values on the stack are not
-           all constansts */
-        print_instr("ARECONST");
-        int i, n, ok;
-        ok = 1;
-        n = *pc++;
-        for(i=0; i < n; i++) {
-          if ((sp[i] & 1) == 0) {
-	    ok = 0;
-            break;
-          }
+      Instruct(CHECKLANDINT63) {
+        print_instr("CHECKLANDINT63");
+        CheckInt2();
+        accu = uint63_land(accu,*sp++);
+        Next;
+      }
+
+      Instruct(CHECKLSLINT63) {
+        print_instr("CHECKLSLINT63");
+        CheckInt2();
+        value p = *sp++;
+        accu = uint63_lsl(accu,p);
+        Next;
+      }
+
+      Instruct(CHECKLSRINT63) {
+        print_instr("CHECKLSRINT63");
+        CheckInt2();
+        value p = *sp++;
+        accu = uint63_lsr(accu,p);
+        Next;
+      }
+
+      Instruct(CHECKLSLINT63CONST1) {
+        print_instr("CHECKLSLINT63CONST1");
+        if (Is_uint63(accu)) {
+          pc++;
+          accu = uint63_lsl1(accu);
+          Next;
+        } else {
+          *--sp = uint63_one();
+          *--sp = accu;
+          accu = Field(coq_global_data, *pc++);
+          goto apply2;
         }
-        if(ok) pc++; else pc += *pc;
-        Next;
       }
 
-      Instruct (COMPINT31) {
-        /* makes an 31-bit integer out of the accumulator and
-           the 30 first values of the stack 
-           and put it in the accumulator (the accumulator then the 
-           topmost get to be the heavier bits) */
-        print_instr("COMPINT31");
-        int i;
-        /*accu=accu or accu = (value)((unsigned long)1-accu) if bool
-	               is used for the bits */
-        for(i=0; i < 30; i++) {
-	  accu = (value) ((((uint32_t)accu-1) << 1) | *sp++);
-          /* -1 removes the tag bit, << 1 multiplies the value by 2, 
-              | *sp++ pops the last value and add it (no carry involved)
-	      not that it reintroduces a tag bit */
-          /* alternative, if bool is used for the bits :
-	     accu = (value) ((((unsigned long)accu) << 1) & !*sp++); */
+      Instruct(CHECKLSRINT63CONST1) {
+        print_instr("CHECKLSRINT63CONST1");
+        if (Is_uint63(accu)) {
+          pc++;
+          accu = uint63_lsr1(accu);
+          Next;
+        } else {
+          *--sp = uint63_one();
+          *--sp = accu;
+          accu = Field(coq_global_data, *pc++);
+          goto apply2;
         }
+      }
+
+      Instruct (CHECKADDMULDIVINT63) {
+        print_instr("CHECKADDMULDIVINT63");
+        CheckInt3();
+        value x;
+        value y;
+        x = *sp++;
+        y = *sp++;
+        accu = uint63_addmuldiv(accu,x,y);
         Next;
       }
 
-      Instruct (DECOMPINT31) {
-        /* builds a block out of a 31-bit integer (from the accumulator), 
-           used before cases */
-        int i;
-	value block;
-	print_instr("DECOMPINT31");
-        Alloc_small(block, 31, 1); // Alloc_small(*, size, tag)
-        for(i = 30; i >= 0; i--) {
-          Field(block, i) = (value)(accu & 3); /* two last bits of the accumulator */
-          //Field(block, i) = 3;
-          accu = (value) ((uint32_t)accu >> 1) | 1;  /* last bit must be a one */
-        };
-	accu = block;
+      Instruct (CHECKEQINT63) {
+        print_instr("CHECKEQINT63");
+        CheckInt2();
+        accu = uint63_eq(accu,*sp++) ? coq_true : coq_false;
         Next;
       }
 
-      Instruct (ORINT31) {
-	/* returns the bitwise or */
-	print_instr("ORINT31");
-        accu =
-	  value_of_uint32((uint32_of_value(accu)) | (uint32_of_value(*sp++)));
+     Instruct (CHECKLTINT63) {
+        print_instr("CHECKLTINT63");
+        CheckInt2();
+     }
+     Instruct (LTINT63) {
+       print_instr("LTINT63");
+       accu = uint63_lt(accu,*sp++) ? coq_true : coq_false;
+       Next;
+     }
+
+     Instruct (CHECKLEINT63) {
+       print_instr("CHECKLEINT63");
+       CheckInt2();
+     }
+     Instruct (LEINT63) {
+       print_instr("LEINT63");
+       accu = uint63_leq(accu,*sp++) ? coq_true : coq_false;
+       Next;
+     }
+
+     Instruct (CHECKCOMPAREINT63) {
+        /* returns Eq if equal, Lt if accu is less than *sp, Gt otherwise */
+        /* assumes Inductive _ : _ := Eq | Lt | Gt */
+        print_instr("CHECKCOMPAREINT63");
+        CheckInt2();
+        if (uint63_eq(accu,*sp)) {
+          accu = coq_Eq;
+          sp++;
+        }
+        else accu = uint63_lt(accu,*sp++) ? coq_Lt : coq_Gt;
+        Next;
+      }
+
+      Instruct (CHECKHEAD0INT63) {
+        print_instr("CHECKHEAD0INT63");
+        CheckInt1();
+        accu = uint63_head0(accu);
+        Next;
+      }
+
+      Instruct (CHECKTAIL0INT63) {
+        print_instr("CHECKTAIL0INT63");
+        CheckInt1();
+        accu = uint63_tail0(accu);
+        Next;
+      }
+
+      Instruct (ISINT){
+        print_instr("ISINT");
+        accu = (Is_uint63(accu)) ? coq_true : coq_false;
 	Next;
       }
 
-      Instruct (ANDINT31) {
-	/* returns the bitwise and */
-	print_instr("ANDINT31");
-        accu =
-	  value_of_uint32((uint32_of_value(accu)) & (uint32_of_value(*sp++)));
+      Instruct (AREINT2){
+        print_instr("AREINT2");
+        accu = (Is_uint63(accu) && Is_uint63(sp[0])) ? coq_true : coq_false;
+        sp++;
 	Next;
       }
-
-      Instruct (XORINT31) {
-	/* returns the bitwise xor */
-	print_instr("XORINT31");
-        accu =
-	  value_of_uint32((uint32_of_value(accu)) ^ (uint32_of_value(*sp++)));
-	Next;
-      }
-
-      /*  /spiwack   */
-
 
 
 /* Debugging and machine control */

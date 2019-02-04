@@ -1497,12 +1497,12 @@ Numeral notations
      for only non-negative integers, and the given numeral is negative.
 
 
-   .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).
+   .. exn:: @ident should go from Decimal.int to @type or (option @type). Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The parsing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.
 
-   .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z could be used (you may need to require BinNums or Decimal first).
+   .. exn:: @ident should go from @type to Decimal.int or (option Decimal.int).  Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).
 
      The printing function given to the :cmd:`Numeral Notation`
      vernacular is not of the right type.

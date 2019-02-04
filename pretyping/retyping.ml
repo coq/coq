@@ -143,6 +143,7 @@ let retype ?(polyprop=true) sigma =
 	 with Invalid_argument _ -> retype_error BadRecursiveType)
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
+    | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
 
   and sort_of env t =
     match EConstr.kind sigma t with

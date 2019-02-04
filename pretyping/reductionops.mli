@@ -77,6 +77,7 @@ module Stack : sig
   | Case of case_info * 'a * 'a array * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
+  | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
   | Cst of cst_member
            * int (* current foccussed arg *)
            * int list (* remaining args *)

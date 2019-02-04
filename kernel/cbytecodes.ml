@@ -16,6 +16,7 @@
 
 open Names
 open Vmvalues
+open Constr
 
 module Label =
   struct
@@ -25,7 +26,6 @@ module Label =
     let create () = incr counter; !counter
     let reset_label_counter () = counter := no
   end
-
 
 type instruction =
   | Klabel of Label.t
@@ -59,46 +59,9 @@ type instruction =
   | Ksequence of bytecodes * bytecodes
   | Kproj of Projection.Repr.t
   | Kensurestackcapacity of int
-(* spiwack: instructions concerning integers *)
   | Kbranch of Label.t                  (* jump to label *)
-  | Kaddint31                           (* adds the int31 in the accu
-                                           and the one ontop of the stack *)
-  | Kaddcint31                          (* makes the sum and keeps the carry *)
-  | Kaddcarrycint31                     (* sum +1, keeps the carry *)
-  | Ksubint31                           (* subtraction modulo *)
-  | Ksubcint31                          (* subtraction, keeps the carry *)
-  | Ksubcarrycint31                      (* subtraction -1, keeps the carry *)
-  | Kmulint31                           (* multiplication modulo *)
-  | Kmulcint31                          (* multiplication, result in two
-					   int31, for exact computation *)
-  | Kdiv21int31                          (* divides a double size integer
-                                           (represented by an int31 in the
-					   accumulator and one on the top of
-					   the stack) by an int31. The result
-					   is a pair of the quotient and the
-					   rest.
-					   If the divisor is 0, it returns
-					   0. *)
-  | Kdivint31                           (* euclidian division (returns a pair
-					   quotient,rest) *)
-  | Kaddmuldivint31                     (* generic operation for shifting and
-					   cycling. Takes 3 int31 i j and s,
-					   and returns x*2^s+y/(2^(31-s) *)
-  | Kcompareint31                       (* unsigned comparison of int31
-					   cf COMPAREINT31 in
-					   kernel/byterun/coq_interp.c
-					   for more info *)
-  | Khead0int31                         (* Give the numbers of 0 in head of a in31*)
-  | Ktail0int31                         (* Give the numbers of 0 in tail of a in31
-                                           ie low bits *)
-  | Kisconst of Label.t                 (* conditional jump *)
-  | Kareconst of int*Label.t            (* conditional jump *)
-  | Kcompint31                          (* dynamic compilation of int31 *)
-  | Kdecompint31                        (* dynamic decompilation of int31 *)
-  | Klorint31                            (* bitwise operations: or and xor *)
-  | Klandint31
-  | Klxorint31
-(* /spiwack *)
+  | Kprim of CPrimitives.t * pconstant option
+  | Kareint of int
 
 and bytecodes = instruction list
 
@@ -109,53 +72,6 @@ type fv_elem =
   | FVevar of Evar.t
 
 type fv = fv_elem array
-
-(* spiwack: this exception is expected to be raised by function expecting
-            closed terms. *)
-exception NotClosed
-
-
-module Fv_elem =
-struct
-type t = fv_elem
-
-let compare e1 e2 = match e1, e2 with
-| FVnamed id1, FVnamed id2 -> Id.compare id1 id2
-| FVnamed _, (FVrel _ | FVuniv_var _ | FVevar _) -> -1
-| FVrel _, FVnamed _ -> 1
-| FVrel r1, FVrel r2 -> Int.compare r1 r2
-| FVrel _, (FVuniv_var _ | FVevar _) -> -1
-| FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
-| FVuniv_var _i1, (FVnamed _ | FVrel _) -> 1
-| FVuniv_var _i1, FVevar _ -> -1
-| FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
-| FVevar e1, FVevar e2 -> Evar.compare e1 e2
-
-end
-
-module FvMap = Map.Make(Fv_elem)
-
-(*spiwack: both type have been moved from Cbytegen because I needed then
-  for the retroknowledge *)
-type vm_env = {
-    size : int;              (* longueur de la liste [n] *)
-    fv_rev : fv_elem list;   (* [fvn; ... ;fv1] *)
-    fv_fwd : int FvMap.t;    (* reverse mapping *)
-  }
-
-
-type comp_env = {
-    arity : int;                 (* arity of the current function, 0 if none *)
-    nb_uni_stack : int ;         (* number of universes on the stack,      *)
-                                 (* universes are always at the bottom.    *)
-    nb_stack : int;              (* number of variables on the stack       *)
-    in_stack : int list;         (* position in the stack                  *)
-    nb_rec : int;                (* number of mutually recursive functions *)
-    pos_rec  : instruction list; (* instruction d'acces pour les variables *)
-                                 (*  de point fix ou de cofix              *)
-    offset : int;
-    in_env : vm_env ref          (* The free variables of the expression   *)
-  }
 
 (* --- Pretty print *)
 open Pp
@@ -228,28 +144,10 @@ let rec pp_instr i =
 
   | Kensurestackcapacity size -> str "growstack " ++ int size
 
-  | Kaddint31 -> str "addint31"
-  | Kaddcint31 -> str "addcint31"
-  | Kaddcarrycint31 -> str "addcarrycint31"
-  | Ksubint31 -> str "subint31"
-  | Ksubcint31 -> str "subcint31"
-  | Ksubcarrycint31 -> str "subcarrycint31"
-  | Kmulint31 -> str "mulint31"
-  | Kmulcint31 -> str "mulcint31"
-  | Kdiv21int31 -> str "div21int31"
-  | Kdivint31 -> str "divint31"
-  | Kcompareint31 -> str "compareint31"
-  | Khead0int31 -> str "head0int31"
-  | Ktail0int31 -> str "tail0int31"
-  | Kaddmuldivint31 -> str "addmuldivint31"
-  | Kisconst lbl -> str "isconst " ++ int lbl
-  | Kareconst(n,lbl) -> str "areconst " ++ int n ++ spc () ++ int lbl
-  | Kcompint31 -> str "compint31"
-  | Kdecompint31 -> str "decompint"
-  | Klorint31 -> str "lorint31"
-  | Klandint31 -> str "landint31"
-  | Klxorint31 -> str "lxorint31"
+  | Kprim (op, id) -> str (CPrimitives.to_string op) ++ str " " ++
+        (match id with Some (id,_u) -> Constant.print id | None -> str "")
 
+  | Kareint n -> str "areint " ++ int n
 
 and pp_bytecodes c =
   match c with

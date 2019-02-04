@@ -34,6 +34,7 @@ type value =
   | Dyn
 
   | Proxy of value ref
+  | Uint63
 
 let fix (f : value -> value) : value =
   let self = ref Any in
@@ -151,7 +152,8 @@ let rec v_constr =
     [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
-    [|v_proj;v_constr|] (* Proj *)
+    [|v_proj;v_constr|]; (* Proj *)
+    [|Uint63|] (* Int *)
   |])
 
 and v_prec = Tuple ("prec_declaration",
@@ -214,9 +216,12 @@ let v_oracle =
 let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
+let v_primitive =
+  v_enum "primitive" 25
+
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
+    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]; [|v_primitive|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool; v_bool|]
@@ -288,6 +293,20 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Opt v_bool;
     v_typing_flags|]
 
+let v_prim_ind = v_enum "prim_ind" 4
+
+let v_prim_type = v_enum "prim_type" 1
+
+let v_retro_action =
+  v_sum "retro_action" 0 [|
+    [|v_prim_ind; v_ind|];
+    [|v_prim_type; v_cst|];
+    [|v_cst|];
+  |]
+
+let v_retroknowledge =
+  v_sum "module_retroknowledge" 1 [|[|List v_retro_action|]|]
+
 let rec v_mae =
   Sum ("module_alg_expr",0,
   [|[|v_mp|];         (* SEBident *)
@@ -318,7 +337,7 @@ and v_impl =
 and v_noimpl = v_unit
 and v_module =
   Tuple ("module_body",
-         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;Any|])
+         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_retroknowledge|])
 and v_modtype =
   Tuple ("module_type_body",
          [|v_mp;v_noimpl;v_sign;Opt v_mexpr;v_context_set;v_resolver;v_unit|])

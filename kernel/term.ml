@@ -379,4 +379,4 @@ let kind_of_type t = match kind t with
   | (Rel _ | Meta _ | Var _ | Evar _ | Const _ 
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
-  | (Lambda _ | Construct _) -> failwith "Not a type"
+  | (Lambda _ | Construct _ | Int _) -> failwith "Not a type"
