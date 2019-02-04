@@ -45,7 +45,7 @@ let parse_goal_selector = function
   | "!" -> SelectAlreadyFocused
   | "all" -> SelectAll
   | i ->
-      let err_msg = "The default selector must be \"all\" or a natural number." in
+      let err_msg = "The default selector must be \"all\", \"!\" or a natural number." in
       begin try
               let i = int_of_string i in
               if i < 0 then CErrors.user_err Pp.(str err_msg);
