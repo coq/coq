@@ -19,7 +19,7 @@ let vo_magic = 8991
 let state_magic = 58991
 let distributed_exec =
   ["coqtop.opt"; "coqidetop.opt"; "coqqueryworker.opt"; "coqproofworker.opt"; "coqtacticworker.opt";
-   "coqc";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep"]
+   "coqc.opt";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep"]
 
 let verbose = ref false (* for debugging this script *)
 

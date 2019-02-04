@@ -60,6 +60,7 @@ type execution_phase =
   | LoadingPrelude
   | LoadingRcFile
   | InteractiveLoop
+  | CompilationPhase
 
 val in_phase : phase:execution_phase -> ('a -> 'b) -> 'a -> 'b
 

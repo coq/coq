@@ -48,11 +48,6 @@ let print_usage_common co command =
 \n  -lv f	                 (idem)\
 \n  -load-vernac-object f  load Coq object file f.vo\
 \n  -require path          load Coq library path and import it (Require Import path.)\
-\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
-\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
-\n                         into fi.vo\
-\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
-\n                         proofs in each fi.vio\
 \n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
@@ -67,7 +62,7 @@ let print_usage_common co command =
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
-\n  -boot                  boot mode (implies -q and -batch)\
+\n  -boot                  boot mode (allows to overload the `Coq` library prefix)\
 \n  -bt                    print backtraces (requires configure debug flag)\
 \n  -debug                 debug mode (implies -bt)\
 \n  -diffs (on|off|removed) highlight differences between proof steps\
@@ -84,8 +79,8 @@ let print_usage_common co command =
 \n                         (use environment variable\
 \n                          OCAML_GC_STATS=\"/tmp/gclog.txt\"\
 \n                          for full Gc stats dump)\
-\n  -bytecode-compiler (yes|no) controls the vm_compute machinery\
-\n  -native-compiler (yes|no|ondemand) controls the native_compute machinery\
+\n  -bytecode-compiler (yes|no)        enable the vm_compute reduction machine\
+\n  -native-compiler (yes|no|ondemand) enable the native_compute reduction machine\
 \n  -h, -help, --help      print this list of options\
 \n";
   List.iter (fun (name, text) ->
@@ -102,7 +97,7 @@ let print_usage_coqtop () =
   output_string stderr "\n\
 coqtop specific options:\
 \n\
-\n  -batch                 batch mode (exits just after arguments parsing)\
+\n  -batch                 batch mode (exits just after argument parsing)\
 \n\
 \nDeprecated options [use coqc instead]:\
 \n\
@@ -120,6 +115,15 @@ coqc specific options:\
 \n\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -verbose               compile and output the input file\
+\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
+\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
+\n                         into fi.vo\
+\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
+\n                         proofs in each fi.vio\
+\n\
+\nUndocumented:\
+\n  -vio2vo                [see manual]\
+\n  -check-vio-tasks       [see manual]\
 \n\
 \nDeprecated options:\
 \n\
@@ -127,6 +131,7 @@ coqc specific options:\
 \n  -opt                   run the native-code version of Coq\
 \n  -byte                  run the bytecode version of Coq\
 \n  -t                     keep temporary files\
+\n  -outputstate file      save summary state in file \
 \n";
   flush stderr ;
   exit 1

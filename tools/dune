@@ -16,13 +16,6 @@
  (libraries coq.lib))
 
 (executable
- (name coqc)
- (public_name coqc)
- (package coq)
- (modules coqc)
- (libraries coq.toplevel))
-
-(executable
  (name coqworkmgr)
  (public_name coqworkmgr)
  (package coq)

@@ -58,11 +58,6 @@ let inputstate opts =
     let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
     States.intern_state fname) opts.inputstate
 
-let outputstate opts =
-  Option.iter (fun ostate_file ->
-    let fname = CUnix.make_suffix ostate_file ".coq" in
-    States.extern_state fname) opts.outputstate
-
 (******************************************************************************)
 (* Fatal Errors                                                               *)
 (******************************************************************************)
@@ -102,7 +97,7 @@ let init_color opts =
     else
       false
   in
-  if Proof_diffs.show_diffs () && not term_color && not opts.batch_mode then
+  if Proof_diffs.show_diffs () && not term_color then
     (prerr_endline "Error: -diffs requires enabling -color"; exit 1);
   Topfmt.init_terminal_output ~color:term_color
 
@@ -148,115 +143,113 @@ let init_gc () =
              Gc.space_overhead = 120}
 
 (** Main init routine *)
-let init_toplevel init_opts custom_init arglist =
+let init_toplevel ~help ~init custom_init arglist =
   (* Coq's init process, phase 1:
      OCaml parameters, basic structures, and IO
    *)
   CProfile.init_profile ();
   init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
 
   Lib.init();
 
   (* Coq's init process, phase 2:
      Basic Coq environment, load-path, plugins.
    *)
-  let res = begin
-    try
-      let opts,extras = parse_args init_opts arglist in
-      memory_stat := opts.memory_stat;
+  let opts, extras = parse_args ~help ~init arglist in
+  memory_stat := opts.memory_stat;
 
-      (* If we have been spawned by the Spawn module, this has to be done
-       * early since the master waits us to connect back *)
-      Spawned.init_channels ();
-      Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-      if opts.print_where then begin
-        print_endline (Envars.coqlib ());
-        exit (exitcode opts)
-      end;
-      if opts.print_config then begin
-        Envars.print_config stdout Coq_config.all_src_dirs;
-        exit (exitcode opts)
-      end;
-      if opts.print_tags then begin
-        print_style_tags opts;
-        exit (exitcode opts)
-      end;
-      if opts.filter_opts then begin
-        print_string (String.concat "\n" extras);
-        exit 0;
-      end;
-      let top_lp = Coqinit.toplevel_init_load_path () in
-      List.iter Mltop.add_coq_path top_lp;
-      let opts, extras = custom_init ~opts extras in
-      if not (CList.is_empty extras) then begin
-        prerr_endline ("Don't know what to do with "^String.concat " " extras);
-        prerr_endline "See -help for the list of supported options";
-        exit 1
-      end;
-      Flags.if_verbose print_header ();
-      Mltop.init_known_plugins ();
-      Global.set_engagement opts.impredicative_set;
-      Global.set_indices_matter opts.indices_matter;
-      Global.set_VM opts.enable_VM;
-      Global.set_native_compiler opts.enable_native_compiler;
+  (* If we have been spawned by the Spawn module, this has to be done
+   * early since the master waits us to connect back *)
+  Spawned.init_channels ();
+  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  if opts.print_where then begin
+    print_endline (Envars.coqlib ());
+    exit (exitcode opts)
+  end;
+  if opts.print_config then begin
+    Envars.print_config stdout Coq_config.all_src_dirs;
+    exit (exitcode opts)
+  end;
+  if opts.print_tags then begin
+    print_style_tags opts;
+    exit (exitcode opts)
+  end;
+  if opts.filter_opts then begin
+    print_string (String.concat "\n" extras);
+    exit 0;
+  end;
+  let top_lp = Coqinit.toplevel_init_load_path () in
+  List.iter Mltop.add_coq_path top_lp;
+  let opts, extras = custom_init ~opts extras in
+  Flags.if_verbose print_header ();
+  Mltop.init_known_plugins ();
 
-      (* Allow the user to load an arbitrary state here *)
-      inputstate opts;
+  Global.set_engagement opts.impredicative_set;
+  Global.set_indices_matter opts.indices_matter;
+  Global.set_VM opts.enable_VM;
+  Global.set_native_compiler opts.enable_native_compiler;
 
-      (* This state will be shared by all the documents *)
-      Stm.init_core ();
+  (* Allow the user to load an arbitrary state here *)
+  inputstate opts;
 
-      (* Coq init process, phase 3: Stm initialization, backtracking state.
+  (* This state will be shared by all the documents *)
+  Stm.init_core ();
 
-         It is essential that the module system is in a consistent
-         state before we take the first snapshot. This was not
-         guaranteed in the past, but now is thanks to the STM API.
+  (* Coq init process, phase 3: Stm initialization, backtracking state.
 
-         We split the codepath here depending whether coqtop is called
-         in interactive mode or not.  *)
+     It is essential that the module system is in a consistent
+     state before we take the first snapshot. This was not
+     guaranteed in the past, but now is thanks to the STM API.
+  *)
+  opts, extras
 
-      (* The condition for starting the interactive mode is a bit
-         convoluted, we should really refactor batch/compilation_mode
-         more. *)
-      if (not opts.batch_mode
-          || CList.(is_empty opts.compile_list && is_empty opts.vio_files && is_empty opts.vio_tasks))
-      (* Interactive *)
-      then begin
-        let iload_path = build_load_path opts in
-        let require_libs = require_libs opts in
-        let stm_options = opts.stm_flags in
-        let open Vernac.State in
-        let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
-            Stm.new_doc
-            Stm.{ doc_type = Interactive opts.toplevel_name;
-                  iload_path; require_libs; stm_options;
-                } in
-        let state = { doc; sid; proof = None; time = opts.time } in
-        Some (Ccompile.load_init_vernaculars opts ~state), opts
-      (* Non interactive: we perform a sequence of compilation steps *)
-      end else begin
-        Ccompile.compile_files opts;
-        (* Careful this will modify the load-path and state so after
-           this point some stuff may not be safe anymore. *)
-        Ccompile.do_vio opts;
-        (* Allow the user to output an arbitrary state *)
-        outputstate opts;
-        None, opts
-      end;
-    with any ->
-      flush_all();
-      fatal_error_exn any
-  end in
-  Feedback.del_feeder init_feeder;
-  res
+type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
 
 type custom_toplevel =
-  { init : opts:coq_cmdopts -> string list -> coq_cmdopts * string list
-  ; run : opts:coq_cmdopts -> state:Vernac.State.t -> unit
-  ; opts : Coqargs.coq_cmdopts
+  { init : init_fn
+  ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
+  ; opts : Coqargs.t
   }
+
+
+let init_toploop opts =
+  let iload_path = build_load_path opts in
+  let require_libs = require_libs opts in
+  let stm_options = opts.stm_flags in
+  let open Vernac.State in
+  let doc, sid =
+    Stm.(new_doc
+           { doc_type = Interactive opts.toplevel_name;
+             iload_path; require_libs; stm_options;
+           }) in
+  let state = { doc; sid; proof = None; time = opts.time } in
+  Ccompile.load_init_vernaculars opts ~state, opts
+
+(* To remove in 8.11 *)
+let call_coqc args =
+  let remove str arr = Array.(of_list List.(filter (fun l -> not String.(equal l str)) (to_list arr))) in
+  let coqc_name = Filename.remove_extension (System.get_toplevel_path "coqc") in
+  let args = remove "-compile" args in
+  Unix.execv coqc_name args
+
+let deprecated_coqc_warning = CWarnings.(create
+    ~name:"deprecate-compile-arg"
+    ~category:"toplevel"
+    ~default:Enabled
+    (fun opt_name -> Pp.(seq [str "The option "; str opt_name; str" is deprecated, please use coqc."])))
+
+let rec coqc_deprecated_check args acc extras =
+  match extras with
+  | [] -> acc
+  | "-o" :: _ :: rem ->
+    deprecated_coqc_warning "-o";
+    coqc_deprecated_check args acc rem
+  | ("-compile"|"-compile-verbose") :: file :: rem ->
+    deprecated_coqc_warning "-compile";
+    call_coqc args
+  | x :: rem ->
+    coqc_deprecated_check args (x::acc) rem
 
 let coqtop_init ~opts extra =
   init_color opts;
@@ -266,20 +259,28 @@ let coqtop_init ~opts extra =
 let coqtop_toplevel =
   { init = coqtop_init
   ; run = Coqloop.loop
-  ; opts = Coqargs.default_opts
+  ; opts = Coqargs.default
   }
 
 let start_coq custom =
-  match init_toplevel custom.opts custom.init (List.tl (Array.to_list Sys.argv)) with
-  (* Batch mode *)
-  | Some state, opts when not opts.batch_mode ->
-    custom.run ~opts ~state;
-    exit 1
-  | _ , opts ->
-    flush_all();
-    if opts.output_context then begin
-      let sigma, env = Pfedit.get_current_context () in
-      Feedback.msg_notice (Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
-    end;
-    CProfile.print_profile ();
-    exit 0
+  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
+  (* Init phase *)
+  let state, opts =
+    try
+      let opts, extras =
+        init_toplevel
+          ~help:Usage.print_usage_coqtop ~init:default custom.init
+          (List.tl (Array.to_list Sys.argv)) in
+      let extras = coqc_deprecated_check Sys.argv [] extras in
+      if not (CList.is_empty extras) then begin
+        prerr_endline ("Don't know what to do with "^String.concat " " extras);
+        prerr_endline "See -help for the list of supported options";
+        exit 1
+      end;
+      init_toploop opts
+    with any ->
+      flush_all();
+      fatal_error_exn any in
+  Feedback.del_feeder init_feeder;
+  if not opts.batch then custom.run ~opts ~state;
+  exit 0

@@ -42,7 +42,7 @@ coqc_boot := $(BIN)coqc -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestS
 coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
-coqtop := $(BIN)coqtop -batch -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite
+coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte
 
 coqc_interactive := $(coqc) -async-proofs-cache force

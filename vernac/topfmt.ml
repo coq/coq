@@ -335,6 +335,7 @@ type execution_phase =
   | LoadingPrelude
   | LoadingRcFile
   | InteractiveLoop
+  | CompilationPhase
 
 let default_phase = ref InteractiveLoop
 
@@ -373,7 +374,9 @@ let pr_phase ?loc () =
      Some (str "While loading initial state:" ++ Option.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc)
   | _, Some loc -> Some (pr_loc loc)
   | ParsingCommandLine, _
-  | Initialization, _ -> None
+  | Initialization, _
+  | CompilationPhase, _ ->
+    None
   | InteractiveLoop, _ ->
      (* Note: interactive messages such as "foo is defined" are not located *)
      None
