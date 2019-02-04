@@ -67,8 +67,8 @@ Section Bool_eq_dec.
   Proof.
     intros x y; case (exists_beq_eq x y).
     intros b; case b; intro H.
-      left; apply beq_eq; assumption.
-      right; apply beq_false_not_eq; assumption.
+    - left; apply beq_eq; assumption.
+    - right; apply beq_false_not_eq; assumption.
   Defined.
 
 End Bool_eq_dec.

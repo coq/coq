@@ -85,10 +85,12 @@ Qed.
 Instance Acc_rel_morphism {A:Type} :
  Proper (relation_equivalence ==> Logic.eq ==> iff) (@Acc A).
 Proof.
- apply proper_sym_impl_iff_2. red; now symmetry. red; now symmetry.
- intros R R' EQ a a' Ha WF. subst a'.
- induction WF as [x _ WF']. constructor.
- intros y Ryx. now apply WF', EQ.
+  apply proper_sym_impl_iff_2.
+  - red; now symmetry.
+  - red; now symmetry.
+  - intros R R' EQ a a' Ha WF. subst a'.
+    induction WF as [x _ WF']. constructor.
+    intros y Ryx. now apply WF', EQ.
 Qed.
 
 (** Equivalent relations are simultaneously well-founded or not *)

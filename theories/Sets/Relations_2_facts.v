@@ -53,8 +53,8 @@ Theorem Rstar_contains_Rplus :
 Proof.
 intros U R; red.
 intros x y H'; elim H'.
-generalize Rstar_contains_R; intro T; red in T; auto with sets.
-intros x0 y0 z H'0 H'1 H'2; apply Rstar_n with y0; auto with sets.
+- generalize Rstar_contains_R; intro T; red in T; auto with sets.
+- intros x0 y0 z H'0 H'1 H'2; apply Rstar_n with y0; auto with sets.
 Qed.
 
 Theorem Rstar_transitive :
@@ -79,9 +79,9 @@ Proof.
 generalize Rstar_contains_R; intro T; red in T.
 intros U R; unfold same_relation, contains.
 split; intros x y H'; elim H'; auto with sets.
-generalize Rstar_transitive; intro T1; red in T1.
-intros x0 y0 z H'0 H'1 H'2 H'3; apply T1 with y0; auto with sets.
-intros x0 y0 z H'0 H'1 H'2; apply Rstar1_n with y0; auto with sets.
+- generalize Rstar_transitive; intro T1; red in T1.
+  intros x0 y0 z H'0 H'1 H'2 H'3; apply T1 with y0; auto with sets.
+- intros x0 y0 z H'0 H'1 H'2; apply Rstar1_n with y0; auto with sets.
 Qed.
 
 Theorem Rsym_imp_Rstarsym :
@@ -121,12 +121,12 @@ Proof.
 generalize Rstar_contains_Rplus; intro T; red in T.
 generalize Rstar_transitive; intro T1; red in T1.
 intros U R x y z H'; elim H'.
-intros x0 H'0; elim H'0.
-intros x1 y0 H'1; exists y0; auto with sets.
-intros x1 y0 z0 H'1 H'2 H'3; exists y0; auto with sets.
-intros x0 y0 z0 H'0 H'1 H'2 H'3; exists y0.
-split; [ try assumption | idtac ].
-apply T1 with z0; auto with sets.
+- intros x0 H'0; elim H'0.
+  + intros x1 y0 H'1; exists y0; auto with sets.
+  + intros x1 y0 z0 H'1 H'2 H'3; exists y0; auto with sets.
+- intros x0 y0 z0 H'0 H'1 H'2 H'3; exists y0.
+  split; [ try assumption | idtac ].
+  apply T1 with z0; auto with sets.
 Qed.
 
 Theorem Lemma1 :
@@ -137,17 +137,17 @@ Theorem Lemma1 :
      forall a:U, R x a ->  exists z : _, Rstar U R a z /\ R b z.
 Proof.
 intros U R H' x b H'0; elim H'0.
-intros x0 a H'1; exists a; auto with sets.
-intros x0 y z H'1 H'2 H'3 a H'4.
-red in H'.
-specialize H' with (x := x0) (a := a) (b := y); lapply H';
- [ intro H'8; lapply H'8;
-    [ intro H'9; try exact H'9; clear H'8 H' | clear H'8 H' ]
- | clear H' ]; auto with sets.
-elim H'9.
-intros t H'5; elim H'5; intros H'6 H'7; try exact H'6; clear H'5.
-elim (H'3 t); auto with sets.
-intros z1 H'5; elim H'5; intros H'8 H'10; try exact H'8; clear H'5.
-exists z1; split; [ idtac | assumption ].
-apply Rstar_n with t; auto with sets.
+- intros x0 a H'1; exists a; auto with sets.
+- intros x0 y z H'1 H'2 H'3 a H'4.
+  red in H'.
+  specialize H' with (x := x0) (a := a) (b := y); lapply H';
+    [ intro H'8; lapply H'8;
+      [ intro H'9; try exact H'9; clear H'8 H' | clear H'8 H' ]
+    | clear H' ]; auto with sets.
+  elim H'9.
+  intros t H'5; elim H'5; intros H'6 H'7; try exact H'6; clear H'5.
+  elim (H'3 t); auto with sets.
+  intros z1 H'5; elim H'5; intros H'8 H'10; try exact H'8; clear H'5.
+  exists z1; split; [ idtac | assumption ].
+  apply Rstar_n with t; auto with sets.
 Qed.

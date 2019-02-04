@@ -158,8 +158,10 @@ Module HasEqDec2Bool (E:Eq)(F:HasEqDec E) <: HasEqBool E.
  Lemma eqb_eq : forall x y, eqb x y = true <-> E.eq x y.
  Proof.
   intros x y. unfold eqb. destruct F.eq_dec as [EQ|NEQ].
-  auto with *.
-  split. discriminate. intro EQ; elim NEQ; auto.
+  - auto with *.
+  - split.
+    + discriminate.
+    + intro EQ; elim NEQ; auto.
  Qed.
 End HasEqDec2Bool.
 
@@ -168,8 +170,8 @@ Module HasEqBool2Dec (E:Eq)(F:HasEqBool E) <: HasEqDec E.
  Proof.
   intros x y. assert (H:=F.eqb_eq x y).
   destruct (F.eqb x y); [left|right].
-  apply -> H; auto.
-  intro EQ. apply H in EQ. discriminate.
+  - apply -> H; auto.
+  - intro EQ. apply H in EQ. discriminate.
  Defined.
 End HasEqBool2Dec.
 

@@ -103,8 +103,8 @@ Section Ensembles_facts.
     forall (A:Ensemble U) (x y:U), In U (Add U A x) y -> In U A y \/ x = y.
   Proof.
     intros A x y H'; induction H'.
-      left; assumption.
-      right; apply Singleton_inv; assumption.
+    - left; assumption.
+    - right; apply Singleton_inv; assumption.
   Qed.
 
   Lemma Intersection_inv :

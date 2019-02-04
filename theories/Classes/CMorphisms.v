@@ -164,7 +164,11 @@ Section Relations.
 
   Lemma pointwise_pointwise {B} (R : crelation B) :
     relation_equivalence (pointwise_relation R) (@eq A ==> R).
-  Proof. intros. split. simpl_crelation. firstorder. Qed.
+  Proof.
+    intros. split.
+    - simpl_crelation.
+    - firstorder.
+  Qed.
   
   (** Subcrelations induce a morphism on the identity. *)
   
@@ -265,8 +269,8 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     assert(R x0 x0).
-    transitivity y0... symmetry...
-    transitivity (y x0)...
+    - transitivity y0... symmetry...
+    - transitivity (y x0)...
   Qed.
 
   Unset Strict Universe Declaration.
@@ -339,10 +343,11 @@ Section GenericInstances.
 
   Next Obligation.
   Proof with auto.
-    split. intros ; transitivity x0...
-    intros.
-    transitivity y...
-    symmetry...
+    split.
+    - intros ; transitivity x0...
+    - intros.
+      transitivity y...
+      symmetry...
   Qed.
 
   (** Every Transitive crelation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof to get an [R y z] goal. *)
@@ -364,9 +369,9 @@ Section GenericInstances.
   Next Obligation.
   Proof with auto.
     split ; intros.
-    transitivity x0... transitivity x... symmetry...
+    - transitivity x0... transitivity x... symmetry...
 
-    transitivity y... transitivity y0... symmetry...
+    - transitivity y... transitivity y0... symmetry...
   Qed.
 
   Lemma symmetric_equiv_flip `(Symmetric A R) : relation_equivalence R (flip R).
@@ -397,8 +402,8 @@ Section GenericInstances.
     intros A B R R' HRR' S S' HSS' f g. 
     unfold respectful , relation_equivalence in *; simpl in *.
     split ; intros H x y Hxy.
-    apply (fst (HSS' _ _)). apply H. now apply (snd (HRR' _ _)). 
-    apply (snd (HSS' _ _)). apply H. now apply (fst (HRR' _ _)). 
+    - apply (fst (HSS' _ _)). apply H. now apply (snd (HRR' _ _)).
+    - apply (snd (HSS' _ _)). apply H. now apply (fst (HRR' _ _)).
   Qed.
 
   (** [R] is Reflexive, hence we can build the needed proof. *)
@@ -500,8 +505,8 @@ Instance proper_proper : Proper (relation_equivalence ==> eq ==> iffT) (@Proper 
 Proof.
   intros A R R' HRR' x y <-. red in HRR'.
   split ; red ; intros. 
-  now apply (fst (HRR' _ _)). 
-  now apply (snd (HRR' _ _)).
+  - now apply (fst (HRR' _ _)).
+  - now apply (snd (HRR' _ _)).
 Qed.
 
 Ltac proper_reflexive :=
@@ -636,9 +641,9 @@ intros.
 apply proper_sym_arrow_iffT_2; auto with *.
 intros x x' Hx y y' Hy Hr.
 transitivity x.
-generalize (partial_order_equivalence x x'); compute; intuition.
-transitivity y; auto.
-generalize (partial_order_equivalence y y'); compute; intuition.
+- generalize (partial_order_equivalence x x'); compute; intuition.
+- transitivity y; auto.
+  generalize (partial_order_equivalence y y'); compute; intuition.
 Qed.
 
 (** From a [PartialOrder] to the corresponding [StrictOrder]:
@@ -649,13 +654,13 @@ Lemma PartialOrder_StrictOrder `(PartialOrder A eqA R) :
   StrictOrder (relation_conjunction R (complement eqA)).
 Proof.
 split; compute.
-intros x (_,Hx). apply Hx, Equivalence_Reflexive.
-intros x y z (Hxy,Hxy') (Hyz,Hyz'). split.
-apply PreOrder_Transitive with y; assumption.
-intro Hxz.
-apply Hxy'.
-apply partial_order_antisym; auto.
-rewrite Hxz. auto.
+- intros x (_,Hx). apply Hx, Equivalence_Reflexive.
+- intros x y z (Hxy,Hxy') (Hyz,Hyz'). split.
+  + apply PreOrder_Transitive with y; assumption.
+  + intro Hxz.
+    apply Hxy'.
+    apply partial_order_antisym; auto.
+    rewrite Hxz. auto.
 Qed.
 
 (** From a [StrictOrder] to the corresponding [PartialOrder]:
@@ -667,12 +672,12 @@ Lemma StrictOrder_PreOrder
  PreOrder (relation_disjunction R eqA).
 Proof.
 split.
-intros x. right. reflexivity.
-intros x y z [Hxy|Hxy] [Hyz|Hyz].
-left. transitivity y; auto.
-left. rewrite <- Hyz; auto.
-left. rewrite Hxy; auto.
-right. transitivity y; auto.
+- intros x. right. reflexivity.
+- intros x y z [Hxy|Hxy] [Hyz|Hyz].
+  + left. transitivity y; auto.
+  + left. rewrite <- Hyz; auto.
+  + left. rewrite Hxy; auto.
+  + right. transitivity y; auto.
 Qed.
 
 Hint Extern 4 (PreOrder (relation_disjunction _ _)) => 

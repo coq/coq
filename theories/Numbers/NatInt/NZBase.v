@@ -49,8 +49,8 @@ bidirectional induction steps *)
 Theorem succ_inj_wd : forall n1 n2, S n1 == S n2 <-> n1 == n2.
 Proof.
 intros; split.
-apply succ_inj.
-intros. now f_equiv.
+- apply succ_inj.
+- intros. now f_equiv.
 Qed.
 
 Theorem succ_inj_wd_neg : forall n m, S n ~= S m <-> n ~= m.
@@ -72,9 +72,9 @@ Theorem central_induction :
       forall n, A n.
 Proof.
 intros z Base Step; revert Base; pattern z; apply bi_induction.
-solve_proper.
-intro; now apply bi_induction.
-intro; pose proof (Step n); tauto.
+- solve_proper.
+- intro; now apply bi_induction.
+- intro; pose proof (Step n); tauto.
 Qed.
 
 End CentralInduction.

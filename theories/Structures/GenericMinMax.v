@@ -47,8 +47,8 @@ Module GenericMinMax (Import O:OrderedTypeFull') <: HasMinMax O.
  intros H H'.
  apply (StrictOrder_Irreflexive x).
  rewrite le_lteq in *; destruct H as [H|H].
- transitivity y; auto.
- rewrite H in H'; auto.
+ - transitivity y; auto.
+ - rewrite H in H'; auto.
  Qed.
 
  Lemma max_l x y : y<=x -> max x y == x.
@@ -142,8 +142,8 @@ Proof.
  intros Eqf Lef x y.
  destruct (max_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (max_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
- assert (f x <= f y) by (apply Lef; order). order.
- assert (f y <= f x) by (apply Lef; order). order.
+ - assert (f x <= f y) by (apply Lef; order). order.
+ - assert (f y <= f x) by (apply Lef; order). order.
 Qed.
 
 (** *** Semi-lattice algebraic properties of [max] *)
@@ -194,7 +194,11 @@ Proof.
 Qed.
 
 Lemma max_le_iff n m p : p <= max n m <-> p <= n \/ p <= m.
-Proof. split. apply max_le. solve_max. Qed.
+Proof.
+  split.
+  - apply max_le.
+  - solve_max.
+Qed.
 
 Lemma max_lt_iff n m p : p < max n m <-> p < n \/ p < m.
 Proof.
@@ -282,8 +286,8 @@ Proof.
  intros Eqf Lef x y.
  destruct (min_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (min_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
- assert (f x <= f y) by (apply Lef; order). order.
- assert (f y <= f x) by (apply Lef; order). order.
+ - assert (f x <= f y) by (apply Lef; order). order.
+ - assert (f y <= f x) by (apply Lef; order). order.
 Qed.
 
 Lemma min_id n : min n n == n.
@@ -330,7 +334,11 @@ Proof.
 Qed.
 
 Lemma min_le_iff n m p : min n m <= p <-> n <= p \/ m <= p.
-Proof. split. apply min_le. solve_min. Qed.
+Proof.
+  split.
+  - apply min_le.
+  - solve_min.
+Qed.
 
 Lemma min_lt_iff n m p : min n m < p <-> n < p \/ m < p.
 Proof.
@@ -377,16 +385,16 @@ Lemma min_max_absorption n m : max n (min n m) == n.
 Proof.
  intros.
  destruct (min_spec n m) as [(C,E)|(C,E)]; rewrite E.
- apply max_l. order.
- destruct (max_spec n m); intuition; order.
+ - apply max_l. order.
+ - destruct (max_spec n m); intuition; order.
 Qed.
 
 Lemma max_min_absorption n m : min n (max n m) == n.
 Proof.
  intros.
  destruct (max_spec n m) as [(C,E)|(C,E)]; rewrite E.
- destruct (min_spec n m) as [(C',E')|(C',E')]; auto. order.
- apply min_l; auto. order.
+ - destruct (min_spec n m) as [(C',E')|(C',E')]; auto. order.
+ - apply min_l; auto. order.
 Qed.
 
 (** Distributivity *)
@@ -395,16 +403,16 @@ Lemma max_min_distr n m p :
  max n (min m p) == min (max n m) (max n p).
 Proof.
  symmetry. apply min_mono.
- eauto with *.
- repeat red; intros. apply max_le_compat_l; auto.
+ - eauto with *.
+ - repeat red; intros. apply max_le_compat_l; auto.
 Qed.
 
 Lemma min_max_distr n m p :
  min n (max m p) == max (min n m) (min n p).
 Proof.
  symmetry. apply max_mono.
- eauto with *.
- repeat red; intros. apply min_le_compat_l; auto.
+ - eauto with *.
+ - repeat red; intros. apply min_le_compat_l; auto.
 Qed.
 
 (** Modularity *)
@@ -415,8 +423,8 @@ Proof.
  rewrite <- max_min_distr.
  destruct (max_spec n p) as [(C,E)|(C,E)]; rewrite E; auto with *.
  destruct (min_spec m n) as [(C',E')|(C',E')]; rewrite E'.
- rewrite 2 max_l; try order. rewrite min_le_iff; auto.
- rewrite 2 max_l; try order. rewrite min_le_iff; auto.
+ - rewrite 2 max_l; try order. rewrite min_le_iff; auto.
+ - rewrite 2 max_l; try order. rewrite min_le_iff; auto.
 Qed.
 
 Lemma min_max_modular n m p :
@@ -425,8 +433,8 @@ Proof.
  intros. rewrite <- min_max_distr.
  destruct (min_spec n p) as [(C,E)|(C,E)]; rewrite E; auto with *.
  destruct (max_spec m n) as [(C',E')|(C',E')]; rewrite E'.
- rewrite 2 min_l; try order. rewrite max_le_iff; right; order.
- rewrite 2 min_l; try order. rewrite max_le_iff; auto.
+ - rewrite 2 min_l; try order. rewrite max_le_iff; right; order.
+ - rewrite 2 min_l; try order. rewrite max_le_iff; auto.
 Qed.
 
 (** Disassociativity *)
@@ -448,8 +456,8 @@ Proof.
  intros Eqf Lef x y.
  destruct (min_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (max_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
- assert (f y <= f x) by (apply Lef; order). order.
- assert (f x <= f y) by (apply Lef; order). order.
+ - assert (f y <= f x) by (apply Lef; order). order.
+ - assert (f x <= f y) by (apply Lef; order). order.
 Qed.
 
 Lemma min_max_antimono f :
@@ -460,8 +468,8 @@ Proof.
  intros Eqf Lef x y.
  destruct (max_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (min_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
- assert (f y <= f x) by (apply Lef; order). order.
- assert (f x <= f y) by (apply Lef; order). order.
+ - assert (f y <= f x) by (apply Lef; order). order.
+ - assert (f x <= f y) by (apply Lef; order). order.
 Qed.
 
 End MinMaxLogicalProperties.
@@ -479,12 +487,12 @@ Lemma max_case_strong n m (P:t -> Type) :
 Proof.
 intros Compat Hl Hr.
 destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
-assert (n<=m) by (rewrite le_lteq; auto).
-apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
-assert (n<=m) by (rewrite le_lteq; auto).
-apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
-assert (m<=n) by (rewrite le_lteq; auto).
-apply (Compat n), Hl; auto. symmetry; apply max_l; auto.
+- assert (n<=m) by (rewrite le_lteq; auto).
+  apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
+- assert (n<=m) by (rewrite le_lteq; auto).
+  apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
+- assert (m<=n) by (rewrite le_lteq; auto).
+  apply (Compat n), Hl; auto. symmetry; apply max_l; auto.
 Defined.
 
 Lemma max_case n m (P:t -> Type) :
@@ -508,12 +516,12 @@ Lemma min_case_strong n m (P:O.t -> Type) :
 Proof.
 intros Compat Hl Hr.
 destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
-assert (n<=m) by (rewrite le_lteq; auto).
-apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
-assert (n<=m) by (rewrite le_lteq; auto).
-apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
-assert (m<=n) by (rewrite le_lteq; auto).
-apply (Compat m), Hr; auto. symmetry; apply min_r; auto.
+- assert (n<=m) by (rewrite le_lteq; auto).
+  apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
+- assert (n<=m) by (rewrite le_lteq; auto).
+  apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
+- assert (m<=n) by (rewrite le_lteq; auto).
+  apply (Compat m), Hr; auto. symmetry; apply min_r; auto.
 Defined.
 
 Lemma min_case n m (P:O.t -> Type) :
@@ -624,11 +632,11 @@ Module TOMaxEqDec_to_Compare
  Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
  intros; unfold compare; repeat destruct eq_dec; auto; constructor.
- destruct (lt_total x y); auto.
- absurd (x==y); auto. transitivity (max x y); auto.
- symmetry. apply max_l. rewrite le_lteq; intuition.
- destruct (lt_total y x); auto.
- absurd (max x y == y); auto. apply max_r; rewrite le_lteq; intuition.
+ - destruct (lt_total x y); auto.
+   absurd (x==y); auto. transitivity (max x y); auto.
+   symmetry. apply max_l. rewrite le_lteq; intuition.
+ - destruct (lt_total y x); auto.
+   absurd (max x y == y); auto. apply max_r; rewrite le_lteq; intuition.
  Qed.
 
 End TOMaxEqDec_to_Compare.

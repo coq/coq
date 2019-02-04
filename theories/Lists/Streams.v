@@ -92,20 +92,20 @@ Qed.
 
 Theorem sym_EqSt : forall s1 s2:Stream, EqSt s1 s2 -> EqSt s2 s1.
 coinduction Eq_sym.
-case H; intros; symmetry ; assumption.
-case H; intros; assumption.
++ case H; intros; symmetry ; assumption.
++ case H; intros; assumption.
 Qed.
 
 
 Theorem trans_EqSt :
  forall s1 s2 s3:Stream, EqSt s1 s2 -> EqSt s2 s3 -> EqSt s1 s3.
 coinduction Eq_trans.
-transitivity (hd s2).
-case H; intros; assumption.
-case H0; intros; assumption.
-apply (Eq_trans (tl s1) (tl s2) (tl s3)).
-case H; trivial with datatypes.
-case H0; trivial with datatypes.
+- transitivity (hd s2).
+  + case H; intros; assumption.
+  + case H0; intros; assumption.
+- apply (Eq_trans (tl s1) (tl s2) (tl s3)).
+  + case H; trivial with datatypes.
+  + case H0; trivial with datatypes.
 Qed.
 
 (** The definition given is equivalent to require the elements at each
@@ -114,20 +114,20 @@ Qed.
 Theorem eqst_ntheq :
  forall (n:nat) (s1 s2:Stream), EqSt s1 s2 -> Str_nth n s1 = Str_nth n s2.
 unfold Str_nth; simple induction n.
-intros s1 s2 H; case H; trivial with datatypes.
-intros m hypind.
-simpl.
-intros s1 s2 H.
-apply hypind.
-case H; trivial with datatypes.
+- intros s1 s2 H; case H; trivial with datatypes.
+- intros m hypind.
+  simpl.
+  intros s1 s2 H.
+  apply hypind.
+  case H; trivial with datatypes.
 Qed.
 
 Theorem ntheq_eqst :
  forall s1 s2:Stream,
    (forall n:nat, Str_nth n s1 = Str_nth n s2) -> EqSt s1 s2.
 coinduction Equiv2.
-apply (H 0).
-intros n; apply (H (S n)).
+- apply (H 0).
+- intros n; apply (H (S n)).
 Qed.
 
 Section Stream_Properties.
@@ -150,11 +150,11 @@ CoInductive ForAll (x: Stream) : Prop :=
 Lemma ForAll_Str_nth_tl : forall m x, ForAll x -> ForAll (Str_nth_tl m x).
 Proof.
 induction m.
- tauto.
-intros x [_ H].
-simpl.
-apply IHm.
-assumption.
+- tauto.
+- intros x [_ H].
+  simpl.
+  apply IHm.
+  assumption.
 Qed.
 
 Section Co_Induction_ForAll.
@@ -179,10 +179,10 @@ CoFixpoint map (s:Stream A) : Stream B := Cons (f (hd s)) (map (tl s)).
 Lemma Str_nth_tl_map : forall n s, Str_nth_tl n (map s)= map (Str_nth_tl n s).
 Proof.
 induction n.
-reflexivity.
-simpl.
-intros s.
-apply IHn.
+- reflexivity.
+- simpl.
+  intros s.
+  apply IHn.
 Qed.
 
 Lemma Str_nth_map : forall n s, Str_nth n (map s)= f (Str_nth n s).
@@ -228,11 +228,11 @@ Lemma Str_nth_tl_zipWith : forall n (a:Stream A) (b:Stream B),
  Str_nth_tl n (zipWith a b)= zipWith (Str_nth_tl n a) (Str_nth_tl n b).
 Proof.
 induction n.
-reflexivity.
-intros [x xs] [y ys].
-unfold Str_nth in *.
-simpl in *.
-apply IHn.
+- reflexivity.
+- intros [x xs] [y ys].
+  unfold Str_nth in *.
+  simpl in *.
+  apply IHn.
 Qed.
 
 Lemma Str_nth_zipWith : forall n (a:Stream A) (b:Stream B), Str_nth n (zipWith a

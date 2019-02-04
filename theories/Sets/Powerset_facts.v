@@ -84,8 +84,8 @@ Section Sets_as_an_algebra.
     forall x y:U, Union U (Singleton U x) (Singleton U y) = Couple U x y.
   Proof.
     intros x y; apply Extensionality_Ensembles; split; red.
-    intros x0 H'; elim H'; (intros x1 H'0; elim H'0; auto with sets).
-    intros x0 H'; elim H'; auto with sets.
+    - intros x0 H'; elim H'; (intros x1 H'0; elim H'0; auto with sets).
+    - intros x0 H'; elim H'; auto with sets.
   Qed.
 
   Theorem Triple_as_union :
@@ -94,10 +94,10 @@ Section Sets_as_an_algebra.
       Triple U x y z.
   Proof.
     intros x y z; apply Extensionality_Ensembles; split; red.
-    intros x0 H'; elim H'.
-    intros x1 H'0; elim H'0; (intros x2 H'1; elim H'1; auto with sets).
-    intros x1 H'0; elim H'0; auto with sets.
-    intros x0 H'; elim H'; auto with sets.
+    - intros x0 H'; elim H'.
+      + intros x1 H'0; elim H'0; (intros x2 H'1; elim H'1; auto with sets).
+      + intros x1 H'0; elim H'0; auto with sets.
+    - intros x0 H'; elim H'; auto with sets.
   Qed.
 
   Theorem Triple_as_Couple : forall x y:U, Couple U x y = Triple U x x y.
@@ -132,10 +132,10 @@ Section Sets_as_an_algebra.
     intros A B C.
     apply Extensionality_Ensembles.
     split; red; intros x H'.
-    elim H'.
-    intros x0 H'0 H'1; generalize H'0.
-    elim H'1; auto with sets.
-    elim H'; intros x0 H'0; elim H'0; auto with sets.
+    - elim H'.
+      intros x0 H'0 H'1; generalize H'0.
+      elim H'1; auto with sets.
+    - elim H'; intros x0 H'0; elim H'0; auto with sets.
   Qed.
 
   Lemma Distributivity_l
@@ -157,13 +157,13 @@ Section Sets_as_an_algebra.
     intros A B C.
     apply Extensionality_Ensembles.
     split; red; intros x H'.
-    elim H'; auto with sets.
-    intros x0 H'0; elim H'0; auto with sets.
-    elim H'.
-    intros x0 H'0; elim H'0; auto with sets.
-    intros x1 H'1 H'2; try exact H'2.
-    generalize H'1.
-    elim H'2; auto with sets.
+    - elim H'; auto with sets.
+      intros x0 H'0; elim H'0; auto with sets.
+    - elim H'.
+      intros x0 H'0; elim H'0; auto with sets.
+      intros x1 H'1 H'2; try exact H'2.
+      generalize H'1.
+      elim H'2; auto with sets.
   Qed.
 
   Theorem Union_add :
@@ -188,11 +188,11 @@ Section Sets_as_an_algebra.
     intros X x H'; unfold Subtract.
     apply Extensionality_Ensembles.
     split; red; auto with sets.
-    intros x0 H'0; elim H'0; auto with sets.
-    intros x0 H'0; apply Setminus_intro; auto with sets.
-    red; intro H'1; elim H'1.
-    lapply (Singleton_inv U x x0); auto with sets.
-    intro H'4; apply H'; rewrite H'4; auto with sets.
+    - intros x0 H'0; elim H'0; auto with sets.
+    - intros x0 H'0; apply Setminus_intro; auto with sets.
+      red; intro H'1; elim H'1.
+      lapply (Singleton_inv U x x0); auto with sets.
+      intro H'4; apply H'; rewrite H'4; auto with sets.
   Qed.
 
   Lemma singlx : forall x y:U, In U (Add U (Empty_set U) x) y -> x = y.
@@ -320,7 +320,9 @@ Section Sets_as_an_algebra.
     Setminus A s1 (Union A s2 s3) = Setminus A (Setminus A s1 s2) s3.
   Proof.
     intros. apply Extensionality_Ensembles. split.
-    * intros x H. inversion H. constructor. intuition. contradict H1. intuition.
+    * intros x H. inversion H. constructor.
+      -- intuition.
+      -- contradict H1. intuition.
     * intros x H. inversion H. inversion H0. constructor; intuition. inversion H4; intuition.
   Qed.
 

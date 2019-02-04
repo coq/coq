@@ -22,14 +22,16 @@ Ltac nzsimpl' := autorewrite with nz nz'.
 
 Theorem add_0_r : forall n, n + 0 == n.
 Proof.
-nzinduct n. now nzsimpl.
-intro. nzsimpl. now rewrite succ_inj_wd.
+  nzinduct n.
+  - now nzsimpl.
+  - intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
 Theorem add_succ_r : forall n m, n + S m == S (n + m).
 Proof.
-intros n m; nzinduct n. now nzsimpl.
-intro. nzsimpl. now rewrite succ_inj_wd.
+  intros n m; nzinduct n.
+  - now nzsimpl.
+  - intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
 Theorem add_succ_comm : forall n m, S n + m == n + S m.
@@ -41,8 +43,9 @@ Hint Rewrite add_0_r add_succ_r : nz.
 
 Theorem add_comm : forall n m, n + m == m + n.
 Proof.
-intros n m; nzinduct n. now nzsimpl.
-intro. nzsimpl. now rewrite succ_inj_wd.
+  intros n m; nzinduct n.
+  - now nzsimpl.
+  - intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
 Theorem add_1_l : forall n, 1 + n == S n.
@@ -59,14 +62,16 @@ Hint Rewrite add_1_l add_1_r : nz.
 
 Theorem add_assoc : forall n m p, n + (m + p) == (n + m) + p.
 Proof.
-intros n m p; nzinduct n. now nzsimpl.
-intro. nzsimpl. now rewrite succ_inj_wd.
+  intros n m p; nzinduct n.
+  - now nzsimpl.
+  - intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
 Theorem add_cancel_l : forall n m p, p + n == p + m <-> n == m.
 Proof.
-intros n m p; nzinduct p. now nzsimpl.
-intro p. nzsimpl. now rewrite succ_inj_wd.
+intros n m p; nzinduct p.
+- now nzsimpl.
+- intro p. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
 Theorem add_cancel_r : forall n m p, n + p == m + p <-> n == m.

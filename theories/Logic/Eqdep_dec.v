@@ -66,9 +66,9 @@ Section EqdepDec.
     intros.
     unfold nu.
     destruct (eq_dec y) as [Heq|Hneq].
-    reflexivity.
+    - reflexivity.
 
-    case Hneq; trivial.
+    - case Hneq; trivial.
   Qed.
 
 
@@ -118,15 +118,15 @@ Section EqdepDec.
   Proof.
     intros.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
-    simpl.
-    destruct (eq_dec x) as [Heq|Hneq].
-    elim Heq using K_dec_on; trivial.
+    - simpl.
+      destruct (eq_dec x) as [Heq|Hneq].
+      + elim Heq using K_dec_on; trivial.
 
-    intros.
-    case Hneq; trivial.
+      + intros.
+        case Hneq; trivial.
 
-    case H.
-    reflexivity.
+    - case H.
+      reflexivity.
   Qed.
 
 End EqdepDec.
@@ -163,8 +163,8 @@ Theorem K_dec_type :
 Proof.
   intros A eq_dec x P H p.
   elim p using K_dec; intros.
-  case (eq_dec x0 y); [left|right]; assumption.
-  trivial.
+  - case (eq_dec x0 y); [left|right]; assumption.
+  - trivial.
 Qed.
 
 Theorem K_dec_set :
@@ -260,8 +260,8 @@ Module DecidableEqDep (M:DecidableType).
   Proof.
     intros.
     apply inj_right_pair with (A:=U).
-    intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
-    assumption.
+    - intros x0 y0; case (eq_dec x0 y0); [left|right]; assumption.
+    - assumption.
   Qed.
 
 End DecidableEqDep.

@@ -39,9 +39,9 @@ Section WellOrdering.
     intros.
     apply (H v0 y0).
     cut (f = f1).
-    intros E; rewrite E; auto.
-    symmetry .
-    apply (inj_pair2 A (fun a0:A => B a0 -> WO) a0 f1 f H5).
+    - intros E; rewrite E; auto.
+    - symmetry .
+      apply (inj_pair2 A (fun a0:A => B a0 -> WO) a0 f1 f H5).
   Qed.
 
 End WellOrdering.

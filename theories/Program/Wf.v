@@ -97,15 +97,15 @@ Section Measure_well_founded.
   Proof with auto.
     unfold well_founded.
     cut (forall (a: M) (a0: T), m a0 = a -> Acc MR a0).
-      intros.
+    + intros.
       apply (H (m a))...
-    apply (@well_founded_ind M R wf (fun mm => forall a, m a = mm -> Acc MR a)).
-    intros.
-    apply Acc_intro.
-    intros.
-    unfold MR in H1.
-    rewrite H0 in H1.
-    apply (H (m y))...
+    + apply (@well_founded_ind M R wf (fun mm => forall a, m a = mm -> Acc MR a)).
+      intros.
+      apply Acc_intro.
+      intros.
+      unfold MR in H1.
+      rewrite H0 in H1.
+      apply (H (m y))...
   Defined.
 
 End Measure_well_founded.
@@ -245,8 +245,8 @@ Module WfExtensionality.
     intros ; apply Fix_eq ; auto.
     intros.
     assert(f = g).
-    extensionality y ; apply H.
-    rewrite H0 ; auto.
+    - extensionality y ; apply H.
+    - rewrite H0 ; auto.
   Qed.
 
   (** Tactic to unfold once a definition based on [Fix_sub]. *)
