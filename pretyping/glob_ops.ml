@@ -514,12 +514,11 @@ let rec cases_pattern_of_glob_constr na c =
   ) c
 
 open Declarations
-open Term
 open Context
 
 (* Keep only patterns which are not bound to a local definitions *)
-let drop_local_defs typi args =
-    let (decls,_) = decompose_prod_assum typi in
+let drop_local_defs params decls args =
+    let decls = List.skipn (Rel.length params) (List.rev decls) in
     let rec aux decls args =
       match decls, args with
       | [], [] -> []
@@ -531,7 +530,7 @@ let drop_local_defs typi args =
          end
       | Rel.Declaration.LocalAssum _ :: decls, a :: args -> a :: aux decls args
       | _ -> assert false in
-    aux (List.rev decls) args
+    aux decls args
 
 let add_patterns_for_params_remove_local_defs (ind,j) l =
   let (mib,mip) = Global.lookup_inductive ind in
@@ -540,9 +539,8 @@ let add_patterns_for_params_remove_local_defs (ind,j) l =
     if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
       (* Optimisation *) l
     else
-      let typi = mip.mind_nf_lc.(j-1) in
-      let (_,typi) = decompose_prod_n_assum (Rel.length mib.mind_params_ctxt) typi in
-      drop_local_defs typi l in
+      let (ctx, _) = mip.mind_nf_lc.(j - 1) in
+      drop_local_defs mib.mind_params_ctxt ctx l in
   Util.List.addn nparams (DAst.make @@ PatVar Anonymous) l
 
 let add_alias ?loc na c =

@@ -1044,7 +1044,9 @@ let fake_match_projection env p =
   let indu = mkIndU (ind,u) in
   let ctx, paramslet =
     let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((fst ind, mib.mind_ntypes - i - 1), u)) in
-    let rctx, _ = decompose_prod_assum (Vars.substl subst mip.mind_nf_lc.(0)) in
+    let (ctx, cty) = mip.mind_nf_lc.(0) in
+    let cty = Term.it_mkProd_or_LetIn cty ctx in
+    let rctx, _ = decompose_prod_assum (Vars.substl subst cty) in
     List.chop mip.mind_consnrealdecls.(0) rctx
   in
   let ci_pp_info = { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in

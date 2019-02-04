@@ -139,4 +139,4 @@ val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
 
 val lambda_implicit_lift : int -> constr -> constr
 
-val abstract_mind_lc : int -> Int.t -> constr array -> constr array
+val abstract_mind_lc : int -> Int.t -> (rel_context * constr) array -> constr array

@@ -106,22 +106,24 @@ let match_with_one_constructor sigma style onlybinary allow_rec t =
         && (Int.equal mip.mind_nrealargs 0)
       then
 	if is_strict_conjunction style (* strict conjunction *) then
-	  let ctx =
-	    (prod_assum sigma (snd
-	      (decompose_prod_n_assum sigma mib.mind_nparams (EConstr.of_constr mip.mind_nf_lc.(0))))) in
+          let (ctx, _) = mip.mind_nf_lc.(0) in
+          let ctx = List.skipn (Context.Rel.length mib.mind_params_ctxt) (List.rev ctx) in
 	  if
+            (* Constructor has a type of the form
+              c : forall (a_0 ... a_n : Type) (x_0 : A_0) ... (x_n : A_n). T **)
 	    List.for_all
 	      (fun decl -> let c = RelDecl.get_type decl in
 	                   is_local_assum decl &&
-			   isRel sigma c &&
-                           Int.equal (destRel sigma c) mib.mind_nparams) ctx
+                           Constr.isRel c &&
+                           Int.equal (Constr.destRel c) mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
 	else
+          let ctx, cty = mip.mind_nf_lc.(0) in
+          let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
           let ctyp = whd_beta_prod sigma
-            (Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt)
-                       (EConstr.of_constr mip.mind_nf_lc.(0)) args) in
+            (Termops.prod_applist_assum sigma (Context.Rel.length mib.mind_params_ctxt) cty args) in
 	  let cargs = List.map RelDecl.get_type (prod_assum sigma ctyp) in
 	  if not (is_lax_conjunction style) || has_nodep_prod sigma ctyp then
 	    (* Record or non strict conjunction *)
@@ -165,12 +167,13 @@ let is_tuple sigma t =
    it is strict if it has the form
    "Inductive I A1 ... An := C1 (_:A1) | ... | Cn : (_:An)" *)
 
-let test_strict_disjunction n lc =
-  let open Term in
-  Array.for_all_i (fun i c ->
-    match (prod_assum (snd (decompose_prod_n_assum n c))) with
-    | [LocalAssum (_,c)] -> Constr.isRel c && Int.equal (Constr.destRel c) (n - i)
-    | _ -> false) 0 lc
+let test_strict_disjunction (mib, mip) =
+  let n = List.length mib.mind_params_ctxt in
+  let check i (ctx, _) = match List.skipn n (List.rev ctx) with
+  | [LocalAssum (_, c)] -> Constr.isRel c && Int.equal (Constr.destRel c) (n - i)
+  | _ -> false
+  in
+  Array.for_all_i check 0 mip.mind_nf_lc
 
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
   let (hdapp,args) = decompose_app sigma t in
@@ -183,14 +186,16 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
         && (Int.equal mip.mind_nrealargs 0)
       then
 	if strict then
-	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
+          if test_strict_disjunction (mib, mip) then
 	    Some (hdapp,args)
 	  else
 	    None
 	else
-	  let cargs =
-	    Array.map (fun ar -> pi2 (destProd sigma (prod_applist sigma (EConstr.of_constr ar) args)))
-	      mip.mind_nf_lc in
+          let map (ctx, cty) =
+            let ar = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
+            pi2 (destProd sigma (prod_applist sigma ar args))
+          in
+          let cargs = Array.map map mip.mind_nf_lc in
 	  Some (hdapp,Array.to_list cargs)
       else
 	None
@@ -225,10 +230,8 @@ let match_with_unit_or_eq_type sigma t =
   match EConstr.kind sigma hdapp with
     | Ind (ind , _) ->
         let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-        let zero_args c = Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
-	if Int.equal nconstr 1 && zero_args constr_types.(0) then
+        if Int.equal nconstr 1 && Int.equal mip.mind_consnrealargs.(0) 0 then
 	  Some hdapp
 	else
 	  None
@@ -308,11 +311,13 @@ let match_with_equation env sigma t =
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 1 then
-          if is_matching env sigma coq_refl_leibniz1_pattern (EConstr.of_constr constr_types.(0)) then
+          let (ctx, cty) = constr_types.(0) in
+          let cty = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
+          if is_matching env sigma coq_refl_leibniz1_pattern cty then
 	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
-	  else if is_matching env sigma coq_refl_leibniz2_pattern (EConstr.of_constr constr_types.(0)) then
+          else if is_matching env sigma coq_refl_leibniz2_pattern cty then
 	    None, hdapp, PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-	  else if is_matching env sigma coq_refl_jm_pattern (EConstr.of_constr constr_types.(0)) then
+          else if is_matching env sigma coq_refl_jm_pattern cty then
 	    None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
 	  else raise NoEquationFound
         else raise NoEquationFound
@@ -378,8 +383,9 @@ let match_with_nodep_ind sigma t =
   | Ind (ind, _)  ->
      let (mib,mip) = Global.lookup_inductive ind in
      if Array.length (mib.mind_packets)>1 then None else
-       let nodep_constr c =
-         has_nodep_prod_after (Context.Rel.length mib.mind_params_ctxt) sigma (EConstr.of_constr c) in
+       let nodep_constr (ctx, cty) =
+        let c = EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx) in
+         has_nodep_prod_after (Context.Rel.length mib.mind_params_ctxt) sigma c in
        if Array.for_all nodep_constr mip.mind_nf_lc then
          let params=
            if Int.equal mip.mind_nrealargs 0 then args else
@@ -400,7 +406,7 @@ let match_with_sigma_type sigma t =
         && (Int.equal mip.mind_nrealargs 0)
         && (Int.equal (Array.length mip.mind_consnames)1)
         && has_nodep_prod_after (Context.Rel.length mib.mind_params_ctxt + 1) sigma
-             (EConstr.of_constr mip.mind_nf_lc.(0))
+             (let (ctx, cty) = mip.mind_nf_lc.(0) in EConstr.of_constr (Term.it_mkProd_or_LetIn cty ctx))
      then
        (*allowing only 1 existential*)
        Some (hdapp,args)

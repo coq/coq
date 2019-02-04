@@ -251,7 +251,11 @@ let constrained_type_of_constructor (_cstr,u as cstru) (mib,_mip as ind) =
 
 let arities_of_specif (kn,u) (mib,mip) =
   let specif = mip.mind_nf_lc in
-    Array.map (constructor_instantiate kn u mib) specif
+  let map (ctx, c) =
+    let cty = Term.it_mkProd_or_LetIn c ctx in
+    constructor_instantiate kn u mib cty
+  in
+  Array.map map specif
 
 let arities_of_constructors ind specif =
   arities_of_specif (fst (fst ind), snd ind) specif
@@ -342,7 +346,8 @@ let is_correct_arity env c pj ind specif params =
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
 let build_branches_type (ind,u) (_,mip as specif) params p =
-  let build_one_branch i cty =
+  let build_one_branch i (ctx, c) =
+    let cty = Term.it_mkProd_or_LetIn c ctx in
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
     let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
@@ -597,6 +602,7 @@ let lambda_implicit_lift n a =
 (* This removes global parameters of the inductive types in lc (for
    nested inductive types only ) *)
 let abstract_mind_lc ntyps npars lc =
+  let lc = Array.map (fun (ctx, c) -> Term.it_mkProd_or_LetIn c ctx) lc in
   if Int.equal npars 0 then
     lc
   else

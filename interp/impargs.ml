@@ -452,9 +452,10 @@ let compute_mib_implicits flags kn =
     let ind = (kn,i) in
     let ar, _ = Typeops.type_of_global_in_context env (IndRef ind) in
     ((IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
-     Array.mapi (fun j c ->
+     Array.mapi (fun j (ctx, cty) ->
+      let c = of_constr (Term.it_mkProd_or_LetIn cty ctx) in
        (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
-       (Array.map of_constr mip.mind_nf_lc))
+       mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
 

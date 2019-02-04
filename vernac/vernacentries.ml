@@ -16,7 +16,6 @@ open CAst
 open Util
 open Names
 open Nameops
-open Term
 open Tacmach
 open Constrintern
 open Prettyp
@@ -32,6 +31,7 @@ open Lemmas
 open Locality
 open Attributes
 
+module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (** TODO: make this function independent of Ltac *)
@@ -133,22 +133,23 @@ let show_intro all =
 *)
     
 let make_cases_aux glob_ref =
+  let open Declarations in
   match glob_ref with
     | Globnames.IndRef ind ->
-	let {Declarations.mind_nparams = np} , {Declarations.mind_nf_lc = tarr} = Global.lookup_inductive ind in
+      let mib, mip = Global.lookup_inductive ind in
 	Util.Array.fold_right_i
-	  (fun i typ l ->
-	     let al = List.rev (fst (decompose_prod typ)) in
-	     let al = Util.List.skipn np al in
+          (fun i (ctx, _) l ->
+             let al = Util.List.skipn (List.length mib.mind_params_ctxt) (List.rev ctx) in
 	     let rec rename avoid = function
 	       | [] -> []
-	       | (n,_)::l ->
+               | RelDecl.LocalDef _ :: l -> "_" :: rename avoid l
+               | RelDecl.LocalAssum (n, _)::l ->
 		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
 		   Id.to_string n' :: rename (Id.Set.add n' avoid) l in
 	     let al' = rename Id.Set.empty al in
 	     let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
 	     (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
-	  tarr []
+          mip.mind_nf_lc []
     | _ -> raise Not_found
 
 let make_cases s =
