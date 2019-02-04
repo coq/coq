@@ -39,11 +39,15 @@ let corn = (coqPackages.corn.override { inherit coq bignums math-classes; })
     src = fetchTarball "https://github.com/coq-community/corn/archive/master.tar.gz";
   }); in
 
+let stdpp = coqPackages.stdpp.overrideAttrs (o: {
+    src = fetchTarball "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2";
+  }); in
+
 let unicoq = callPackage ./unicoq { inherit coq; }; in
 
 let callPackage = newScope { inherit coq
   bignums coq-ext-lib coqprime corn math-classes
-  mathcomp simple-io ssreflect unicoq;
+  mathcomp simple-io ssreflect stdpp unicoq;
 }; in
 
 # Environments for building CI libraries with this Coq
@@ -62,6 +66,7 @@ let projects = {
   formal-topology = callPackage ./formal-topology.nix {};
   GeoCoq = callPackage ./GeoCoq.nix {};
   HoTT = callPackage ./HoTT.nix {};
+  iris = callPackage ./iris.nix {};
   math_classes = callPackage ./math_classes.nix {};
   mathcomp = {};
   mtac2 = callPackage ./mtac2.nix {};

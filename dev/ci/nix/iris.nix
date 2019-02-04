@@ -1,0 +1,4 @@
+{ stdpp }:
+{
+  coqBuildInputs = [ stdpp ];
+}
