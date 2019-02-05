@@ -52,7 +52,7 @@ module Vernac_ =
 
     let () =
       let open Extend in
-      let act_vernac v loc = Some (loc, v) in
+      let act_vernac v loc = Some CAst.(make ~loc v) in
       let act_eoi _ loc = None in
       let rule = [
         Rule (Next (Stop, Atoken Tok.EOI), act_eoi);

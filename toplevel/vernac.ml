@@ -101,20 +101,18 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
         ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa
     with
     | None ->
-        input_cleanup ();
-        state, ids, Pcoq.Parsable.comment_state in_pa
-    | Some (loc, ast) ->
-        let ast = CAst.make ~loc ast in
+      input_cleanup ();
+      state, ids, Pcoq.Parsable.comment_state in_pa
+    | Some ast ->
+      (* Printing of AST for -compile-verbose *)
+      Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;
 
-        (* Printing of AST for -compile-verbose *)
-        Option.iter (vernac_echo ~loc) in_echo;
+      checknav_simple ast;
 
-        checknav_simple ast;
+      let state =
+        Flags.silently (interp_vernac ~check ~interactive ~state) ast in
 
-        let state =
-          Flags.silently (interp_vernac ~check ~interactive ~state) ast in
-
-        loop state (state.sid :: ids)
+      loop state (state.sid :: ids)
   in
   try loop state []
   with any ->   (* whatever the exception *)
