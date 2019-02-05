@@ -6,5 +6,5 @@
 
 (rule
  (targets coq_jumptbl.h)
- (deps (:h-file coq_instruct.h))
- (action (run ./make_jumptbl.sh %{h-file} %{targets})))
+ (deps (:h-file coq_instruct.h) make_jumptbl.sh)
+ (action (bash "./make_jumptbl.sh %{h-file} %{targets}")))

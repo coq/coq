@@ -8,8 +8,8 @@
 
 (rule
  (targets copcodes.ml)
- (deps (:h-file byterun/coq_instruct.h) make-opcodes)
- (action (run ./make_opcodes.sh %{h-file} %{targets})))
+ (deps (:h-file byterun/coq_instruct.h) make-opcodes make_opcodes.sh)
+ (action (bash "./make_opcodes.sh %{h-file} %{targets}")))
 
 (executable
   (name write_uint63)

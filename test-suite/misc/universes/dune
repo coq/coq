@@ -5,4 +5,4 @@
    (source_tree ../../../plugins))
  (action
    (with-outputs-to all_stdlib.v
-    (run ./build_all_stdlib.sh))))
+    (bash "./build_all_stdlib.sh"))))
