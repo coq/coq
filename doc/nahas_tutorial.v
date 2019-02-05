@@ -159,23 +159,23 @@ proof, which takes 3 steps.  Lastly, the "Qed" command ends the proof.
 
 (NOTE: Instead of "Theorem", you may also see proofs that start with
 "Lemma", "Remark", "Fact", "Corollary", and "Proposition", which all
-mean the _SAME_ thing.  I think it is good style to only use "Theorem".
-Instead of "Qed", you may also see proofs that end with "Admitted" or
+mean the _SAME_ thing.  In my proofs, I only use "Theorem".  Instead
+of "Qed", you may also see proofs that end with "Admitted" or
 "Defined", but these mean _DIFFERENT_ things.  Use "Qed" for now.)
 
 
 Coq uses 3 different "languages" and you can see them all here in this
 proof.
-  - The "vernacular" language manages definitions,
-    and each of its commands starts with a capital letter:
+  - The "vernacular" language manages definitions and top-level
+    interactions.  Each of its commands starts with a capital letter:
     "Theorem", "Proof", and "Qed".
-  - The "tactics" language is used to write proofs,
-    and its commands start with a lower-case letter:
-    "intros" and "exact".
-  - The "Gallina" language is used to express what you want to prove,
-    and its expressions use lots of operators and parentheses:
-     "(forall A : Prop, A -> A)".
-
+  - The "tactics" language is used to write proofs.  Its commands start
+    with a lower-case letter: "intros" and "exact".
+  - The unnamed language of Coq terms is used to express what you want
+    to prove.  Its expressions use lots of operators and
+    parentheses: "(forall A : Prop, A -> A)".  (Technically, this
+    language is a subset of the vernacular language, but it is useful to
+    think of it as its own thing.)
 
 Now, let's take a look inside this proof!  Since it probably has
 scrolled off the screen, I'll reproduce it.
