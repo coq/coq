@@ -73,10 +73,18 @@ type grammar =
   { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
     glexer : L.te Plexing.lexer }
 
+let egram =
+  {gtokens = Hashtbl.create 301; glexer = L.lexer }
+
+let tokens con =
+  let list = ref [] in
+  Hashtbl.iter
+    (fun (p_con, p_prm) c -> if p_con = con then list := (p_prm, !c) :: !list)
+    egram.gtokens;
+  !list
+
 type g_entry =
-  { egram : grammar;
-    ename : string;
-    elocal : bool;
+  { ename : string;
     mutable estart : int -> parser_t;
     mutable econtinue : int -> int -> Obj.t -> parser_t;
     mutable edesc : g_desc }
@@ -359,7 +367,7 @@ let levels_of_rules ~warning entry position rules =
                (fun lev (symbols, action) ->
                   let symbols = List.map (change_to_self entry) symbols in
                   let (e1, symbols) = get_initial entry symbols in
-                  insert_tokens entry.egram symbols;
+                  insert_tokens egram symbols;
                   insert_level ~warning entry.ename e1 symbols action lev)
                lev level
            in
@@ -467,7 +475,7 @@ let rec delete_rule_in_suffix entry symbols =
       begin match delete_rule_in_tree entry symbols lev.lsuffix with
         Some (dsl, t) ->
           begin match dsl with
-            Some dsl -> List.iter (decr_keyw_use entry.egram) dsl
+            Some dsl -> List.iter (decr_keyw_use egram) dsl
           | None -> ()
           end;
           begin match t with
@@ -490,7 +498,7 @@ let rec delete_rule_in_prefix entry symbols =
       begin match delete_rule_in_tree entry symbols lev.lprefix with
         Some (dsl, t) ->
           begin match dsl with
-            Some dsl -> List.iter (decr_keyw_use entry.egram) dsl
+            Some dsl -> List.iter (decr_keyw_use egram) dsl
           | None -> ()
           end;
           begin match t with
@@ -564,13 +572,13 @@ let rec print_symbol ppf =
   | Stoken (con, prm) when con <> "" && prm <> "" ->
       fprintf ppf "%s@ %a" con print_str prm
   | Snterml (e, l) ->
-      fprintf ppf "%s%s@ LEVEL@ %a" e.ename (if e.elocal then "*" else "")
+      fprintf ppf "%s%s@ LEVEL@ %a" e.ename ""
         print_str l
   | Snterm _ | Snext | Sself | Stoken _ | Stree _ as s ->
       print_symbol1 ppf s
 and print_symbol1 ppf =
   function
-  | Snterm e -> fprintf ppf "%s%s" e.ename (if e.elocal then "*" else "")
+  | Snterm e -> fprintf ppf "%s%s" e.ename ""
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
   | Stoken ("", s) -> print_str ppf s
@@ -646,7 +654,7 @@ let name_of_symbol entry =
     Snterm e -> "[" ^ e.ename ^ "]"
   | Snterml (e, l) -> "[" ^ e.ename ^ " level " ^ l ^ "]"
   | Sself | Snext -> "[" ^ entry.ename ^ "]"
-  | Stoken tok -> entry.egram.glexer.Plexing.tok_text tok
+  | Stoken tok -> egram.glexer.Plexing.tok_text tok
   | _ -> "???"
 
 let rec get_token_list entry rev_tokl last_tok tree =
@@ -690,7 +698,7 @@ and name_of_tree_failed entry =
           List.fold_left
             (fun s tok ->
                (if s = "" then "" else s ^ " ") ^
-               entry.egram.glexer.Plexing.tok_text tok)
+               egram.glexer.Plexing.tok_text tok)
             "" (List.rev (last_tok :: rev_tokl))
       end
   | DeadEnd | LocAct (_, _) -> "???"
@@ -903,7 +911,7 @@ and parser_cont p1 entry nlevn alevn s son bp a (strm__ : _ Stream.t) =
 and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
   let plast =
     let n = List.length rev_tokl + 1 in
-    let tematch = token_ematch entry.egram last_tok in
+    let tematch = token_ematch egram last_tok in
     let ps strm =
       match peek_nth n strm with
         Some tok ->
@@ -921,7 +929,7 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
   match List.rev rev_tokl with
     [] -> (fun (strm__ : _ Stream.t) -> plast strm__)
   | tok :: tokl ->
-      let tematch = token_ematch entry.egram tok in
+      let tematch = token_ematch egram tok in
       let ps strm =
         match peek_nth 1 strm with
           Some tok -> tematch tok
@@ -932,7 +940,7 @@ and parser_of_token_list entry s son p1 p2 rev_tokl last_tok =
           function
             [] -> plast
           | tok :: tokl ->
-              let tematch = token_ematch entry.egram tok in
+              let tematch = token_ematch egram tok in
               let ps strm =
                 match peek_nth n strm with
                   Some tok -> tematch tok
@@ -1068,7 +1076,7 @@ and parser_of_symbol entry nlevn =
   | Snext -> (fun (strm__ : _ Stream.t) -> entry.estart nlevn strm__)
   | Stoken tok -> parser_of_token entry tok
 and parser_of_token entry tok =
-  let f = entry.egram.glexer.Plexing.tok_match tok in
+  let f = egram.glexer.Plexing.tok_match tok in
   fun strm ->
     match Stream.peek strm with
       Some tok -> let r = f tok in Stream.junk strm; Obj.repr r
@@ -1194,17 +1202,6 @@ let delete_rule entry sl =
 
 (* Normal interface *)
 
-let create_toktab () = Hashtbl.create 301
-let gcreate glexer =
-  {gtokens = create_toktab (); glexer = glexer }
-
-let tokens g con =
-  let list = ref [] in
-  Hashtbl.iter
-    (fun (p_con, p_prm) c -> if p_con = con then list := (p_prm, !c) :: !list)
-    g.gtokens;
-  !list
-
 type parsable =
   { pa_chr_strm : char Stream.t;
     pa_tok_strm : L.te Stream.t;
@@ -1250,16 +1247,14 @@ let clear_entry e =
     Dlevels _ -> e.edesc <- Dlevels []
   | Dparser _ -> ()
 
-    let gram = gcreate L.lexer
     let parsable cs =
       let (ts, lf) = L.lexer.Plexing.tok_func cs in
       {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
-    let tokens = tokens gram
     module Entry =
       struct
         type 'a e = g_entry
         let create n =
-          {egram = gram; ename = n; elocal = false; estart = empty_entry n;
+          { ename = n; estart = empty_entry n;
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dlevels []}
@@ -1270,7 +1265,7 @@ let clear_entry e =
           Obj.magic (e.estart 0 ts : Obj.t)
         let name e = e.ename
         let of_parser n (p : te Stream.t -> 'a) : 'a e =
-          {egram = gram; ename = n; elocal = false;
+          { ename = n;
            estart = (fun _ -> (Obj.magic p : te Stream.t -> Obj.t));
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
