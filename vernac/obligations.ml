@@ -921,15 +921,15 @@ let obligation_hook prg obl num auto ctx' _ gr =
     | (true, Evar_kinds.Define true) ->
        if not transparent then err_not_transp ()
     | _ -> ()
-in
+  in
   let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let inst, ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let evd = Evd.from_env (Global.env ()) in
-      let ctx' = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx')) in
-      Univ.Instance.empty, Evd.evar_universe_context ctx'
+      let ctx = UState.make (Global.universes ()) in
+      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
+      Univ.Instance.empty, ctx'
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
       let uctx = UState.context ctx' in
