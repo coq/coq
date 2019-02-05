@@ -536,9 +536,13 @@ let build_inductive env names prv univs paramsctxt kn isrecord isfinite inds nmr
   let record_info = match isrecord with
   | Some (Some rid) ->
     let is_record pkt =
-      List.exists (Sorts.family_equal Sorts.InType) pkt.mind_kelim
-      && Array.length pkt.mind_consnames == 1
-      && pkt.mind_consnrealargs.(0) > 0
+      if Array.length pkt.mind_consnames != 1 then
+        user_err ~hdr:"build_inductive"
+          Pp.(str "Primitive records must have exactly one constructor.")
+      else if pkt.mind_consnrealargs.(0) = 0 then
+        user_err ~hdr:"build_inductive"
+          Pp.(str "Primitive records must have at least one constructor argument.")
+      else List.exists (Sorts.family_equal Sorts.InType) pkt.mind_kelim
     in
     (** The elimination criterion ensures that all projections can be defined. *)
     if Array.for_all is_record packets then
