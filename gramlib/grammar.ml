@@ -65,46 +65,48 @@ module type S =
 module GMake (L : GLexerType) =
 struct
 
-type 'a parser_t = 'a Stream.t -> Obj.t
+type te = L.te
 
-type 'te grammar =
+type parser_t = L.te Stream.t -> Obj.t
+
+type grammar =
   { gtokens : (Plexing.pattern, int ref) Hashtbl.t;
-    glexer : 'te Plexing.lexer }
+    glexer : L.te Plexing.lexer }
 
-type 'te g_entry =
-  { egram : 'te grammar;
+type g_entry =
+  { egram : grammar;
     ename : string;
     elocal : bool;
-    mutable estart : int -> 'te parser_t;
-    mutable econtinue : int -> int -> Obj.t -> 'te parser_t;
-    mutable edesc : 'te g_desc }
-and 'te g_desc =
-    Dlevels of 'te g_level list
-  | Dparser of 'te parser_t
-and 'te g_level =
+    mutable estart : int -> parser_t;
+    mutable econtinue : int -> int -> Obj.t -> parser_t;
+    mutable edesc : g_desc }
+and g_desc =
+    Dlevels of g_level list
+  | Dparser of parser_t
+and g_level =
   { assoc : g_assoc;
     lname : string option;
-    lsuffix : 'te g_tree;
-    lprefix : 'te g_tree }
-and 'te g_symbol =
-  | Snterm of 'te g_entry
-  | Snterml of 'te g_entry * string
-  | Slist0 of 'te g_symbol
-  | Slist0sep of 'te g_symbol * 'te g_symbol * bool
-  | Slist1 of 'te g_symbol
-  | Slist1sep of 'te g_symbol * 'te g_symbol * bool
-  | Sopt of 'te g_symbol
+    lsuffix : g_tree;
+    lprefix : g_tree }
+and g_symbol =
+  | Snterm of g_entry
+  | Snterml of g_entry * string
+  | Slist0 of g_symbol
+  | Slist0sep of g_symbol * g_symbol * bool
+  | Slist1 of g_symbol
+  | Slist1sep of g_symbol * g_symbol * bool
+  | Sopt of g_symbol
   | Sself
   | Snext
   | Stoken of Plexing.pattern
-  | Stree of 'te g_tree
+  | Stree of g_tree
 and g_action = Obj.t
-and 'te g_tree =
-    Node of 'te g_node
+and g_tree =
+    Node of g_node
   | LocAct of g_action * g_action list
   | DeadEnd
-and 'te g_node =
-  { node : 'te g_symbol; son : 'te g_tree; brother : 'te g_tree }
+and g_node =
+  { node : g_symbol; son : g_tree; brother : g_tree }
 
 let rec derive_eps =
   function
@@ -1203,9 +1205,9 @@ let tokens g con =
     g.gtokens;
   !list
 
-type 'te gen_parsable =
+type parsable =
   { pa_chr_strm : char Stream.t;
-    pa_tok_strm : 'te Stream.t;
+    pa_tok_strm : L.te Stream.t;
     pa_loc_func : Plexing.location_function }
 
 let parse_parsable entry p =
@@ -1248,8 +1250,6 @@ let clear_entry e =
     Dlevels _ -> e.edesc <- Dlevels []
   | Dparser _ -> ()
 
-    type te = L.te
-    type parsable = te gen_parsable
     let gram = gcreate L.lexer
     let parsable cs =
       let (ts, lf) = L.lexer.Plexing.tok_func cs in
@@ -1257,13 +1257,13 @@ let clear_entry e =
     let tokens = tokens gram
     module Entry =
       struct
-        type 'a e = te g_entry
+        type 'a e = g_entry
         let create n =
           {egram = gram; ename = n; elocal = false; estart = empty_entry n;
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dlevels []}
-        external obj : 'a e -> te g_entry = "%identity"
+        external obj : 'a e -> g_entry = "%identity"
         let parse (e : 'a e) p : 'a =
           Obj.magic (parse_parsable e p : Obj.t)
         let parse_token_stream (e : 'a e) ts : 'a =
@@ -1277,7 +1277,7 @@ let clear_entry e =
            edesc = Dparser (Obj.magic p : te Stream.t -> Obj.t)}
         let print ppf e = fprintf ppf "%a@." print_entry (obj e)
       end
-    type ('self, 'a) ty_symbol = te g_symbol
+    type ('self, 'a) ty_symbol = g_symbol
     type ('self, 'f, 'r) ty_rule = ('self, Obj.t) ty_symbol list
     type 'a ty_production = ('a, Obj.t, Obj.t) ty_rule * g_action
     let s_nterm e = Snterm e
