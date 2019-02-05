@@ -246,6 +246,10 @@ val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
    raises [Not_found] if the required path is not found *)
 val lookup_mind : MutInd.t -> env -> mutual_inductive_body
 
+(** The universe context associated to the inductive, empty if not
+    polymorphic *)
+val mind_context : env -> MutInd.t -> Univ.AUContext.t
+
 (** New-style polymorphism *)
 val polymorphic_ind  : inductive -> env -> bool
 val polymorphic_pind : pinductive -> env -> bool
