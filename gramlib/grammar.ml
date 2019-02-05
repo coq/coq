@@ -156,13 +156,6 @@ let rec u_rule : type s a r. (s, a, r) ty_rule -> g_symbol list -> g_symbol list
 | TStop -> accu
 | TNext (r, t) -> u_rule r (u_symbol t :: accu)
 
-let u_production = function
-| TProd (r, act) -> (u_rule r [], gramext_action act)
-
-let u_extend rl =
-  let map (lvl, assoc, prods) = (lvl, assoc, List.map u_production prods) in
-  List.map map rl
-
 let rec derive_eps =
   function
     Slist0 _ -> true
@@ -220,8 +213,8 @@ let insert_tree ~warning entry_name gsymbols action tree =
                 "some rule has been masked" in
               warn_fn msg
           end;
-          LocAct (action, old_action :: action_list)
-        | DeadEnd -> LocAct (action, [])
+          LocAct (gramext_action action, old_action :: action_list)
+        | DeadEnd -> LocAct (gramext_action action, [])
   and insert_in_tree s sl tree =
     match try_insert s sl tree with
       Some t -> t
@@ -252,8 +245,8 @@ let insert_tree ~warning entry_name gsymbols action tree =
 let srules ~warning rl =
   let t =
     List.fold_left
-      (fun tree (symbols, action) -> insert_tree ~warning "" symbols action tree)
-      DeadEnd (List.map u_production rl)
+      (fun tree (TProd (symbols, action)) -> insert_tree ~warning "" (u_rule symbols []) action tree)
+      DeadEnd rl
   in
   Ttree t
 
@@ -357,10 +350,15 @@ let get_level ~warning entry position levs =
         lev :: levs -> [], change_lev ~warning lev "<top>", levs
       | [] -> [], empty_lev, []
 
-let change_to_self entry =
+(** FIXME *)
+let change_to_self0 (entry : g_entry) (type s) (type a) : (s, a) ty_symbol -> (s, a) ty_symbol =
   function
-    Snterm e when e == entry -> Sself
-  | x -> x
+    Tnterm e when e == entry -> (Obj.magic Tself)
+  | x -> (Obj.magic x)
+
+let rec change_to_self : type s a r. g_entry -> (s, a, r) ty_rule -> (s, a, r) ty_rule = fun e r -> match r with
+| TStop -> TStop
+| TNext (r, t) -> TNext (change_to_self e r, change_to_self0 e t)
 
 let get_initial entry =
   function
@@ -402,8 +400,9 @@ let levels_of_rules ~warning entry position rules =
         flush stderr;
         failwith "Grammar.extend"
   in
-  if rules = [] then elev
-  else
+  match rules with
+  | [] -> elev
+  | _ ->
     let (levs1, make_lev, levs2) = get_level ~warning entry position elev in
     let (levs, _) =
       List.fold_left
@@ -411,8 +410,9 @@ let levels_of_rules ~warning entry position rules =
            let lev = make_lev lname assoc in
            let lev =
              List.fold_left
-               (fun lev (symbols, action) ->
-                  let symbols = List.map (change_to_self entry) symbols in
+               (fun lev (TProd (symbols, action)) ->
+                  let symbols = change_to_self entry symbols in
+                  let symbols = u_rule symbols [] in
                   let (e1, symbols) = get_initial entry symbols in
                   insert_tokens egram symbols;
                   insert_level ~warning entry.ename e1 symbols action lev)
@@ -1223,7 +1223,7 @@ let init_entry_functions entry =
        entry.econtinue <- f; f lev bp a strm)
 
 let extend_entry ~warning entry position rules =
-    let elev = Gramext.levels_of_rules ~warning entry position rules in
+    let elev = levels_of_rules ~warning entry position rules in
     entry.edesc <- Dlevels elev; init_entry_functions entry
 
 (* Deleting a rule *)
@@ -1336,7 +1336,7 @@ let clear_entry e =
         (r :
          (string option * Gramext.g_assoc option * 'a ty_production list)
            list) =
-      extend_entry ~warning e pos (u_extend r)
+      extend_entry ~warning e pos r
     let safe_delete_rule e r = delete_rule e (u_rule r [])
 
 end
