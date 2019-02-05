@@ -197,32 +197,19 @@ let keep_true_projections projs kinds =
   let filter (p, (_, b)) = if b then Some p else None in
   List.map_filter filter (List.combine projs kinds)
 
-let cs_pattern_of_constr env t =
+let rec cs_pattern_of_constr env t =
   match kind t with
-      App (f,vargs) ->
-	begin
-	  try Const_cs (global_of_constr f) , None, Array.to_list vargs
-          with
-          | Not_found when isProj f ->
-              let p, c = destProj f in
-              let { Environ.uj_type = ty } = Typeops.infer env c in
-              let _, params = Inductive.find_rectype env ty in
-              Const_cs (ConstRef (Projection.constant p)), None,
-              params @ [c] @ Array.to_list vargs
-          | e when CErrors.noncritical e -> raise Not_found
-	end
-    | Rel n -> Default_cs, Some n, []
-    | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
-    | Proj (p, c) ->
-      let { Environ.uj_type = ty } = Typeops.infer env c in
-      let _, params = Inductive.find_rectype env ty in
-      Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
-    | Sort s -> Sort_cs (Sorts.family s), None, []
-    | _ ->
-	begin
-	  try Const_cs (global_of_constr t) , None, []
-          with e when CErrors.noncritical e -> raise Not_found
-	end
+  | App (f,vargs) ->
+    let patt, n, args = cs_pattern_of_constr env f in
+    patt, n, args @ Array.to_list vargs
+  | Rel n -> Default_cs, Some n, []
+  | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
+  | Proj (p, c) ->
+    let { Environ.uj_type = ty } = Typeops.infer env c in
+    let _, params = Inductive.find_rectype env ty in
+    Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
+  | Sort s -> Sort_cs (Sorts.family s), None, []
+  | _ -> Const_cs (global_of_constr t) , None, []
 
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
