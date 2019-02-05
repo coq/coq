@@ -19,9 +19,6 @@ type pattern = string * string
 -      The way tokens patterns are interpreted to parse tokens is done
        by the lexer, function [tok_match] below. *)
 
-exception Error of string
-    (** A lexing error exception to be used by lexers. *)
-
 (** Lexer type *)
 
 type 'te lexer =
