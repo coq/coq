@@ -5,6 +5,66 @@
 open Gramext
 open Format
 
+(* Functorial interface *)
+
+module type GLexerType = sig type te val lexer : te Plexing.lexer end
+
+module type S =
+  sig
+    type te
+    type parsable
+    val parsable : char Stream.t -> parsable
+    val tokens : string -> (string * int) list
+    module Entry :
+      sig
+        type 'a e
+        val create : string -> 'a e
+        val parse : 'a e -> parsable -> 'a
+        val name : 'a e -> string
+        val of_parser : string -> (te Stream.t -> 'a) -> 'a e
+        val parse_token_stream : 'a e -> te Stream.t -> 'a
+        val print : Format.formatter -> 'a e -> unit
+      end
+    type ('self, 'a) ty_symbol
+    type ('self, 'f, 'r) ty_rule
+    type 'a ty_production
+    val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
+    val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
+    val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+    val s_list0sep :
+      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+        ('self, 'a list) ty_symbol
+    val s_list1 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+    val s_list1sep :
+      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
+        ('self, 'a list) ty_symbol
+    val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
+    val s_self : ('self, 'self) ty_symbol
+    val s_next : ('self, 'self) ty_symbol
+    val s_token : Plexing.pattern -> ('self, string) ty_symbol
+    val s_rules : warning:(string -> unit) option -> 'a ty_production list -> ('self, 'a) ty_symbol
+    val r_stop : ('self, 'r, 'r) ty_rule
+    val r_next :
+      ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
+        ('self, 'b -> 'a, 'r) ty_rule
+    val production : ('a, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_production
+    module Unsafe :
+      sig
+        val clear_entry : 'a Entry.e -> unit
+      end
+    val safe_extend : warning:(string -> unit) option ->
+      'a Entry.e -> Gramext.position option ->
+        (string option * Gramext.g_assoc option * 'a ty_production list)
+          list ->
+        unit
+    val safe_delete_rule : 'a Entry.e -> ('a, 'r, 'f) ty_rule -> unit
+  end
+
+(* Implementation *)
+
+module GMake (L : GLexerType) =
+struct
+
 type 'a parser_t = 'a Stream.t -> Obj.t
 
 type 'te grammar =
@@ -1188,63 +1248,6 @@ let clear_entry e =
     Dlevels _ -> e.edesc <- Dlevels []
   | Dparser _ -> ()
 
-(* Functorial interface *)
-
-module type GLexerType = sig type te val lexer : te Plexing.lexer end
-
-module type S =
-  sig
-    type te
-    type parsable
-    val parsable : char Stream.t -> parsable
-    val tokens : string -> (string * int) list
-    module Entry :
-      sig
-        type 'a e
-        val create : string -> 'a e
-        val parse : 'a e -> parsable -> 'a
-        val name : 'a e -> string
-        val of_parser : string -> (te Stream.t -> 'a) -> 'a e
-        val parse_token_stream : 'a e -> te Stream.t -> 'a
-        val print : Format.formatter -> 'a e -> unit
-      end
-    type ('self, 'a) ty_symbol
-    type ('self, 'f, 'r) ty_rule
-    type 'a ty_production
-    val s_nterm : 'a Entry.e -> ('self, 'a) ty_symbol
-    val s_nterml : 'a Entry.e -> string -> ('self, 'a) ty_symbol
-    val s_list0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
-    val s_list0sep :
-      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
-        ('self, 'a list) ty_symbol
-    val s_list1 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
-    val s_list1sep :
-      ('self, 'a) ty_symbol -> ('self, 'b) ty_symbol -> bool ->
-        ('self, 'a list) ty_symbol
-    val s_opt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
-    val s_self : ('self, 'self) ty_symbol
-    val s_next : ('self, 'self) ty_symbol
-    val s_token : Plexing.pattern -> ('self, string) ty_symbol
-    val s_rules : warning:(string -> unit) option -> 'a ty_production list -> ('self, 'a) ty_symbol
-    val r_stop : ('self, 'r, 'r) ty_rule
-    val r_next :
-      ('self, 'a, 'r) ty_rule -> ('self, 'b) ty_symbol ->
-        ('self, 'b -> 'a, 'r) ty_rule
-    val production : ('a, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_production
-    module Unsafe :
-      sig
-        val clear_entry : 'a Entry.e -> unit
-      end
-    val safe_extend : warning:(string -> unit) option ->
-      'a Entry.e -> Gramext.position option ->
-        (string option * Gramext.g_assoc option * 'a ty_production list)
-          list ->
-        unit
-    val safe_delete_rule : 'a Entry.e -> ('a, 'r, 'f) ty_rule -> unit
-  end
-
-module GMake (L : GLexerType) =
-  struct
     type te = L.te
     type parsable = te gen_parsable
     let gram = gcreate L.lexer
@@ -1303,4 +1306,5 @@ module GMake (L : GLexerType) =
            list) =
       extend_entry ~warning e pos (Obj.magic r)
     let safe_delete_rule e r = delete_rule (Entry.obj e) r
-  end
+
+end
