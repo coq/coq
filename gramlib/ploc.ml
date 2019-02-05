@@ -6,17 +6,16 @@ open Loc
 
 let make_unlined (bp, ep) =
   {fname = InFile ""; line_nb = 1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
-   bp = bp; ep = ep; comm = ""; ecomm = ""}
+   bp = bp; ep = ep; }
 
 let dummy =
   {fname = InFile ""; line_nb = 1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
-   bp = 0; ep = 0; comm = ""; ecomm = ""}
+   bp = 0; ep = 0; }
 
 (* *)
 
 let sub loc sh len = {loc with bp = loc.bp + sh; ep = loc.bp + sh + len}
 let after loc sh len = {loc with bp = loc.ep + sh; ep = loc.ep + sh + len}
-let with_comment loc comm = {loc with comm = comm}
 
 exception Exc of Loc.t * exn
 
