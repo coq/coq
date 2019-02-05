@@ -237,6 +237,10 @@ OPT:=
 BESTOBJ:=.cmo
 BESTLIB:=.cma
 BESTDYN:=.cma
+
+# needed while booting if non -local
+CAML_LD_LIBRARY_PATH := $(PWD)/kernel/byterun:$(CAML_LD_LIBRARY_PATH)
+export CAML_LD_LIBRARY_PATH
 endif
 
 define bestobj
@@ -408,12 +412,12 @@ grammar/%.cmi: grammar/%.mli
 
 .PHONY: coqbinaries coqbyte
 
-coqbinaries: $(TOPBINOPT) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
-coqbyte: $(TOPBYTE) $(CHICKENBYTE)
+coqbinaries: $(TOPBIN) $(COQC) $(COQTOPEXE) $(CHICKEN) $(CSDPCERT) $(FAKEIDE)
+coqbyte: $(TOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 
 # Special rule for coqtop, we imitate `ocamlopt` can delete the target
 # to avoid #7666
-$(COQTOPEXE): $(TOPBINOPT:.opt=.$(BEST))
+$(COQTOPEXE): $(TOPBIN)
 	rm -f $@ && cp $< $@
 
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
@@ -435,12 +439,12 @@ COQTOP_BYTE=topbin/coqtop_byte_bin.ml
 
 # Special rule for coqtop.byte
 # VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
-$(COQTOPBYTE): $(LINKCMO) $(LIBCOQRUN) $(COQTOP_BYTE)
+$(COQTOPBYTE): $(COQTOP_BYTE) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(OCAMLC) -linkall -linkpkg -I lib -I vernac -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) -package camlp5.gramlib,compiler-libs.toplevel \
-			 $(LINKCMO) $(BYTEFLAGS) $(COQTOP_BYTE) -o $@
+			 $(LINKCMO) $(BYTEFLAGS) $< -o $@
 
 # For coqc
 COQCCMO:=clib/clib.cma lib/lib.cma toplevel/usage.cmo tools/coqc.cmo
@@ -567,7 +571,7 @@ $(COQWORKMGRBYTE): $(COQWORKMGRCMO)
 
 FAKEIDECMO:=clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma ide/document.cmo tools/fake_ide.cmo
 
-$(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOP)
+$(FAKEIDE): $(call bestobj, $(FAKEIDECMO)) | $(IDETOPEXE)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I ide -I ide/protocol -package str -package dynlink)
 

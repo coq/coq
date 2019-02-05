@@ -31,7 +31,10 @@ vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst the
 
 GLOBFILES:=$(ALLVO:.vo=.glob)
 ifdef NATIVECOMPUTE
-NATIVEFILES := $(call vo_to_cm,$(ALLVO)) $(call vo_to_obj,$(ALLVO))
+NATIVEFILES := $(call vo_to_cm,$(ALLVO))
+ifeq ($(BEST),opt)
+NATIVEFILES += $(call vo_to_obj,$(ALLVO))
+endif
 else
 NATIVEFILES :=
 endif
@@ -39,5 +42,5 @@ LIBFILES:=$(ALLVO) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:
-# mode: makefile
+# mode: makefile-gmake
 # End:
