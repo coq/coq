@@ -645,6 +645,21 @@ we go, you'll see the tight relationship in Coq between proofs and
 code.
 
 
+At this point, I want to emphasize that Coq proofs are not normally
+this tedious or verbose.  The proofs I've shown and the proofs I will
+show are demonstrating the mechanics of how Coq works.  I'm using
+simple familiar types to make the mechanics' operations clear to you.
+Coq's tactic language contains commands for automatic theorem proving
+and for defining macros.  Almost all the proofs in this tutorial are
+simple enough to dispatch with a single Coq tactic.  But when you
+prove more complicated statements, you'll need all the commands I'm
+teaching in this tutorial.
+
+This helps explain why most Coq proofs are backwards.  Once a
+goal has been transformed into simple enough subgoals, those
+subgoals can each be proved by automation.
+
+
 So far, we've only worked with proofs, propositions, and Prop.  Let's
 add some more types!
 *)
