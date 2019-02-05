@@ -116,6 +116,53 @@ and g_tree =
 and g_node =
   { node : g_symbol; son : g_tree; brother : g_tree }
 
+external gramext_action : 'a -> g_action = "%identity"
+external app : Obj.t -> 'a = "%identity"
+
+type ('self, 'a) ty_symbol =
+| Ttoken : Plexing.pattern -> ('self, string) ty_symbol
+| Tlist1 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+| Tlist1sep : ('self, 'a) ty_symbol * ('self, _) ty_symbol * bool -> ('self, 'a list) ty_symbol
+| Tlist0 : ('self, 'a) ty_symbol -> ('self, 'a list) ty_symbol
+| Tlist0sep : ('self, 'a) ty_symbol * ('self, _) ty_symbol * bool -> ('self, 'a list) ty_symbol
+| Topt : ('self, 'a) ty_symbol -> ('self, 'a option) ty_symbol
+| Tself : ('self, 'self) ty_symbol
+| Tnext : ('self, 'self) ty_symbol
+| Tnterm : g_entry -> ('self, 'a) ty_symbol
+| Tnterml : g_entry * string -> ('self, 'a) ty_symbol
+| Ttree : g_tree -> ('self, 'a) ty_symbol
+
+and ('self, _, 'r) ty_rule =
+| TStop : ('self, 'r, 'r) ty_rule
+| TNext : ('self, 'a, 'r) ty_rule * ('self, 'b) ty_symbol -> ('self, 'b -> 'a, 'r) ty_rule
+
+type 'a ty_production =
+| TProd : ('a, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_production
+
+let rec u_symbol : type s a. (s, a) ty_symbol -> g_symbol = function
+| Ttoken t -> Stoken t
+| Tlist1 t -> Slist1 (u_symbol t)
+| Tlist1sep (t, s, b) -> Slist1sep (u_symbol t, u_symbol s, b)
+| Tlist0 t -> Slist0 (u_symbol t)
+| Tlist0sep (t, s, b) -> Slist0sep (u_symbol t, u_symbol s, b)
+| Topt t -> Sopt (u_symbol t)
+| Tself -> Sself
+| Tnext -> Snext
+| Tnterm e -> Snterm e
+| Tnterml (e, n) -> Snterml (e, n)
+| Ttree t -> Stree t
+
+let rec u_rule : type s a r. (s, a, r) ty_rule -> g_symbol list -> g_symbol list = fun r accu -> match r with
+| TStop -> accu
+| TNext (r, t) -> u_rule r (u_symbol t :: accu)
+
+let u_production = function
+| TProd (r, act) -> (u_rule r [], gramext_action act)
+
+let u_extend rl =
+  let map (lvl, assoc, prods) = (lvl, assoc, List.map u_production prods) in
+  List.map map rl
+
 let rec derive_eps =
   function
     Slist0 _ -> true
@@ -206,9 +253,9 @@ let srules ~warning rl =
   let t =
     List.fold_left
       (fun tree (symbols, action) -> insert_tree ~warning "" symbols action tree)
-      DeadEnd rl
+      DeadEnd (List.map u_production rl)
   in
-  Stree t
+  Ttree t
 
 let is_level_labelled n lev =
   match lev.lname with
@@ -522,8 +569,6 @@ let delete_rule_in_level_list entry symbols levs =
       delete_rule_in_suffix entry symbols levs
   | _ -> delete_rule_in_prefix entry symbols levs
 
-external gramext_action : 'a -> g_action = "%identity"
-
 let rec flatten_tree =
   function
     DeadEnd -> []
@@ -739,8 +784,6 @@ let tree_failed entry prev_symb_result prev_symb tree =
 let symb_failed entry prev_symb_result prev_symb symb =
   let tree = Node {node = symb; brother = DeadEnd; son = DeadEnd} in
   tree_failed entry prev_symb_result prev_symb tree
-
-external app : Obj.t -> 'a = "%identity"
 
 let is_level_labelled n lev =
   match lev.lname with
@@ -1258,7 +1301,6 @@ let clear_entry e =
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dlevels []}
-        external obj : 'a e -> g_entry = "%identity"
         let parse (e : 'a e) p : 'a =
           Obj.magic (parse_parsable e p : Obj.t)
         let parse_token_stream (e : 'a e) ts : 'a =
@@ -1270,36 +1312,31 @@ let clear_entry e =
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dparser (Obj.magic p : te Stream.t -> Obj.t)}
-        let print ppf e = fprintf ppf "%a@." print_entry (obj e)
+        let print ppf e = fprintf ppf "%a@." print_entry e
       end
-    type ('self, 'a) ty_symbol = g_symbol
-    type ('self, 'f, 'r) ty_rule = ('self, Obj.t) ty_symbol list
-    type 'a ty_production = ('a, Obj.t, Obj.t) ty_rule * g_action
-    let s_nterm e = Snterm e
-    let s_nterml e l = Snterml (e, l)
-    let s_list0 s = Slist0 s
-    let s_list0sep s sep b = Slist0sep (s, sep, b)
-    let s_list1 s = Slist1 s
-    let s_list1sep s sep b = Slist1sep (s, sep, b)
-    let s_opt s = Sopt s
-    let s_self = Sself
-    let s_next = Snext
-    let s_token tok = Stoken tok
-    let s_rules ~warning (t : Obj.t ty_production list) = srules ~warning (Obj.magic t)
-    let r_stop = []
-    let r_next r s = r @ [s]
-    let production
-        (p : ('a, 'f, Loc.t -> 'a) ty_rule * 'f) : 'a ty_production =
-      Obj.magic p
+    let s_nterm e = Tnterm e
+    let s_nterml e l = Tnterml (e, l)
+    let s_list0 s = Tlist0 s
+    let s_list0sep s sep b = Tlist0sep (s, sep, b)
+    let s_list1 s = Tlist1 s
+    let s_list1sep s sep b = Tlist1sep (s, sep, b)
+    let s_opt s = Topt s
+    let s_self = Tself
+    let s_next = Tnext
+    let s_token tok = Ttoken tok
+    let s_rules ~warning (t : 'a ty_production list) = srules ~warning t
+    let r_stop = TStop
+    let r_next r s = TNext (r, s)
+    let production (p, act) = TProd (p, act)
     module Unsafe =
       struct
         let clear_entry = clear_entry
       end
-    let safe_extend ~warning e pos
+    let safe_extend ~warning (e : 'a Entry.e) pos
         (r :
-         (string option * Gramext.g_assoc option * Obj.t ty_production list)
+         (string option * Gramext.g_assoc option * 'a ty_production list)
            list) =
-      extend_entry ~warning e pos (Obj.magic r)
-    let safe_delete_rule e r = delete_rule (Entry.obj e) r
+      extend_entry ~warning e pos (u_extend r)
+    let safe_delete_rule e r = delete_rule e (u_rule r [])
 
 end
