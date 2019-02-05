@@ -3307,12 +3307,29 @@ the conversion in hypotheses :n:`{+ @ident}`.
    :name: fold
 
    This tactic applies to any goal. The term :n:`@term` is reduced using the
-   ``red`` tactic. Every occurrence of the resulting :n:`@term` in the goal is
-   then replaced by :n:`@term`.
+   :tacn:`red` tactic. Every occurrence of the resulting :n:`@term` in the goal is
+   then replaced by :n:`@term`. This tactic is particularly useful when a fixpoint
+   definition has been wrongfully unfolded, making the goal very hard to read.
+   On the other hand, when an unfolded function applied to its argument has been
+   reduced, the :tacn:`fold` tactic won't do anything.
 
-.. tacv:: fold {+ @term}
+   .. example::
 
-   Equivalent to :n:`fold @term ; ... ; fold @term`.
+      .. coqtop:: all
+
+         Goal ~0=0.
+         unfold not.
+         Fail progress fold not.
+         pattern (0 = 0).
+         fold not.
+
+      .. coqtop:: none
+
+         Abort.
+
+   .. tacv:: fold {+ @term}
+
+      Equivalent to :n:`fold @term ; ... ; fold @term`.
 
 .. tacn:: pattern @term
    :name: pattern
