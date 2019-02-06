@@ -128,11 +128,13 @@ module Make(T : Task) () = struct
         | ("-emacs"|"-emacs-U"|"-batch")::tl ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
-        | ("-async-proofs" |"-vio2vo" | "-o"
-          |"-load-vernac-source" |"-l" |"-load-vernac-source-verbose" |"-lv"
-          |"-compile" |"-compile-verbose"
-          |"-async-proofs-cache"
-          |"-async-proofs-worker-priority" |"-worker-id") :: _ :: tl ->
+        | ( "-async-proofs" | "-vio2vo" | "-o"
+          | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
+          | "-compile" | "-compile-verbose"
+          | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
+          | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
+          | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
+          | "-async-proofs-worker-priority" | "-worker-id") :: _ :: tl ->
           set_slave_opt tl
         (* We need to pass some options with one argument *)
         | ( "-I" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir" | "-compat"
