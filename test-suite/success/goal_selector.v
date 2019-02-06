@@ -13,13 +13,15 @@ Goal two false /\ two true /\ two false /\ two true /\ two true /\ two true.
 Proof.
   do 2 dup.
   - repeat split.
-    2, 4-99, 100-3:idtac.
+    Fail 7:idtac.
+    Fail 2-1:idtac.
+    1,2,4-6:idtac.
     2-5:exact One.
     par:exact Zero.
   - repeat split.
     3-6:swap 1 4.
     1-5:swap 1 5.
-    0-4:exact One.
+    1-4:exact One.
     all:exact Zero.
   - repeat split.
     1, 3:exact Zero.
@@ -34,7 +36,7 @@ Qed.
 
 Goal True -> True.
 Proof.
-  intros y; only 1-2 : repeat idtac.
+  intros y.
   1-1:match goal with y : _ |- _ => let x := y in idtac x end.
   Fail 1-1:let x := y in idtac x.
   1:let x := y in idtac x.
