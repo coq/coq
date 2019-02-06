@@ -100,9 +100,6 @@ INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% \
 	configure.cmx toplevel/coqtop_byte_bin.cmx plugins/extraction/big.cmx, \
 	$(filter %.cmx, $(GRAMMLFILES:.ml=.cmx)) $(MLFILES:.ml=.cmx)))
 
-foo:
-	@echo $(INSTALLCMX)
-
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
