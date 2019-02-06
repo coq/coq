@@ -4495,8 +4495,11 @@ let induction_gen clear_flag isrec with_evars elim
      declaring the induction argument as a new local variable *)
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
+      let avoid = match eqname with
+        | Some {CAst.v=IntroIdentifier id} -> Id.Set.singleton id
+        | _ -> Id.Set.empty in
       let x = id_of_name_using_hdchar env evd t Anonymous in
-      new_fresh_id Id.Set.empty x gl in
+      new_fresh_id avoid x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
     pose_induction_arg_then
       isrec with_evars info_arg elim id arg t inhyps cls
