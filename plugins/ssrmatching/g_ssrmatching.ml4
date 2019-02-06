@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* (c) Copyright 2006-2015 Microsoft Corporation and Inria.             *)
+
 open Ltac_plugin
 open Genarg
 open Pcoq
