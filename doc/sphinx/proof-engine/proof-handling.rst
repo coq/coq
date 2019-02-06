@@ -346,10 +346,45 @@ Navigation in the proof tree
 
          Goals are just existential variables and existential variables do not
          get a name by default. You can give a name to a goal by using :n:`refine ?[@ident]`.
+         You may also wrap this in an Ltac-definition like:
+
+         .. coqtop:: in
+
+            Ltac name_goal name := refine ?[name].
 
       .. seealso:: :ref:`existential-variables`
 
       .. example::
+
+         This first example uses the Ltac definition above, and the named goals
+         only serve for documentation.
+
+         .. coqtop:: all
+
+            Goal forall n, n + 0 = n.
+            Proof.
+            induction n; [ name_goal base | name_goal step ].
+            [base]: {
+
+         .. coqtop:: all
+
+            reflexivity.
+
+         .. coqtop:: in
+
+            }
+
+         .. coqtop:: all
+
+            [step]: {
+
+         .. coqtop:: all
+
+            simpl.
+            f_equal.
+            assumption.
+            }
+            Qed.
 
          This can also be a way of focusing on a shelved goal, for instance:
 
