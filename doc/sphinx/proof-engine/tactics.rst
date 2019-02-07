@@ -2493,7 +2493,7 @@ and an explanation of the underlying technique.
    Let us consider the relation Le over natural numbers and the following
    variables:
 
-   .. coqtop:: all
+   .. coqtop:: all reset
 
       Inductive Le : nat -> nat -> Set :=
       | LeO : forall n:nat, Le 0 n
