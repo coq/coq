@@ -1585,7 +1585,7 @@ let locate_notation prglob ntn scope =
     str "Notation" ++ fnl () ++
     prlist_with_sep fnl (fun (ntn,l) ->
       let scope = find_default ntn scopes in
-      prlist
+      prlist_with_sep fnl
 	(fun (sc,r,(_,df)) ->
 	  hov 0 (
 	    pr_notation_info prglob df r ++
