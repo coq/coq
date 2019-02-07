@@ -4,8 +4,6 @@
 
 type pattern = string * string
 
-exception Error of string
-
 type location_function = int -> Loc.t
 type 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
 

@@ -663,13 +663,8 @@ let init_entry_functions entry =
        entry.econtinue <- f; f lev bp a strm)
 
 let extend_entry ~warning entry position rules =
-  try
     let elev = Gramext.levels_of_rules ~warning entry position rules in
     entry.edesc <- Dlevels elev; init_entry_functions entry
-  with Plexing.Error s ->
-    Printf.eprintf "Lexer initialization error:\n- %s\n" s;
-    flush stderr;
-    failwith "Grammar.extend"
 
 (* Deleting a rule *)
 
