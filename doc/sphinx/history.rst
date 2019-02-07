@@ -721,8 +721,8 @@ J.-F. Monin from France Telecom R & D.
 | Hugo Herbelin & Christine Paulin
 |
 
-Changes in 7.0 and 7.1
-~~~~~~~~~~~~~~~~~~~~~~
+Details of changes in 7.0 and 7.1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Notes:
 
@@ -1106,8 +1106,8 @@ New user contributions
   [Stalmarck] (Laurent Théry, Pierre Letouzey, Sophia-Antipolis)
 
 
-Changes in 7.2
-~~~~~~~~~~~~~~
+Details of changes in 7.2
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Language
 
@@ -1174,8 +1174,8 @@ Incompatibilities
 - New behaviour of Intuition/Tauto may exceptionally lead to incompatibilities
 
 
-Changes in 7.3
-~~~~~~~~~~~~~~
+Details of changes in 7.3
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Language
 
@@ -1286,8 +1286,8 @@ Misc
     LetTac (#1402)
 
 
-Changes in 7.4
-~~~~~~~~~~~~~~
+Details of changes in 7.4
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Symbolic notations
 
