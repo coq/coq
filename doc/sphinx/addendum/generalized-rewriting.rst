@@ -121,7 +121,7 @@ parameters is any term :math:`f \, t_1 \ldots t_n`.
    morphism parametric over ``A`` that respects the relation instance
    ``(set_eq A)``. The latter condition is proved by showing:
 
-   .. coqtop:: in
+   .. coqdoc::
 
      forall (A: Type) (S1 S1' S2 S2': list A),
        set_eq A S1 S1' ->
@@ -205,7 +205,7 @@ Adding new relations and morphisms
 
    For Leibniz equality, we may declare:
 
-   .. coqtop:: in
+   .. coqdoc::
 
      Add Parametric Relation (A : Type) : A (@eq A)
        [reflexivity proved by @refl_equal A]
@@ -274,7 +274,7 @@ following command.
    (maximally inserted) implicit arguments. If ``A`` is always set as
    maximally implicit in the previous example, one can write:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Add Parametric Relation A : (set A) eq_set
         reflexivity proved by eq_set_refl
@@ -282,13 +282,8 @@ following command.
         transitivity proved by eq_set_trans
         as eq_set_rel.
 
-   .. coqtop:: in
-
       Add Parametric Morphism A : (@union A) with
         signature eq_set ==> eq_set ==> eq_set as union_mor.
-
-   .. coqtop:: in
-
       Proof. exact (@union_compat A). Qed.
 
    We proceed now by proving a simple lemma performing a rewrite step and
@@ -300,7 +295,7 @@ following command.
    .. coqtop:: in
 
       Goal forall (S : set nat),
-        eq_set (union (union S empty) S) (union S S).
+        eq_set (union (union S (empty nat)) S) (union S S).
 
    .. coqtop:: in
 
@@ -486,7 +481,7 @@ registered as parametric relations and morphisms.
 
 .. example:: First class setoids
 
-   .. coqtop:: in
+   .. coqtop:: in reset
 
       Require Import Relation_Definitions Setoid.
 
@@ -623,6 +618,10 @@ declared as morphisms in the ``Classes.Morphisms_Prop`` module. For
 example, to declare that universal quantification is a morphism for
 logical equivalence:
 
+.. coqtop:: none
+
+   Require Import Morphisms.
+
 .. coqtop:: in
 
    Instance all_iff_morphism (A : Type) :
@@ -631,6 +630,10 @@ logical equivalence:
 .. coqtop:: all
 
    Proof. simpl_relation.
+
+.. coqtop:: none
+
+   Abort.
 
 One then has to show that if two predicates are equivalent at every
 point, their universal quantifications are equivalent. Once we have
@@ -650,7 +653,7 @@ functional arguments (or whatever subrelation of the pointwise
 extension). For example, one could declare the ``map`` combinator on lists
 as a morphism:
 
-.. coqtop:: in
+.. coqdoc::
 
    Instance map_morphism `{Equivalence A eqA, Equivalence B eqB} :
             Proper ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) (@map A B).
