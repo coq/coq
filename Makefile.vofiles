@@ -42,7 +42,10 @@ GLOBFILES:=$(ALLVO:.$(VO)=.glob)
 endif
 
 ifdef NATIVECOMPUTE
-NATIVEFILES := $(call vo_to_cm,$(ALLVO)) $(call vo_to_obj,$(ALLVO))
+NATIVEFILES := $(call vo_to_cm,$(ALLVO))
+ifeq ($(BEST),opt)
+NATIVEFILES += $(call vo_to_obj,$(ALLVO))
+endif
 else
 NATIVEFILES :=
 endif
@@ -50,5 +53,5 @@ LIBFILES:=$(ALLVO:.$(VO)=.vo) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:
-# mode: makefile
+# mode: makefile-gmake
 # End:

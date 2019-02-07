@@ -11,7 +11,7 @@ coq_makefile -f _CoqProject -o Makefile
 
 make clean
 
-make src/evil_plugin.cmxs
+make src/evil_plugin.cma
 
 if make; then
     >&2 echo 'Should have failed!'

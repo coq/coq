@@ -75,10 +75,12 @@ endif
 # for Declare ML Module files.
 
 ifeq ($(BEST),opt)
+TOPBIN:=$(TOPBINOPT)
 COQTOPBEST:=$(COQTOPEXE)
 DYNOBJ:=.cmxs
 DYNLIB:=.cmxs
 else
+TOPBIN:=$(TOPBYTE)
 COQTOPBEST:=$(COQTOPBYTE)
 DYNOBJ:=.cmo
 DYNLIB:=.cma

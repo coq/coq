@@ -68,7 +68,7 @@ endif
 
 install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBINOPT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQC) $(CHICKEN) $(COQTOPEXE) $(TOPBIN) $(FULLBINDIR)
 
 install-byte: install-coqide-byte
 	$(MKDIR) $(FULLBINDIR)
@@ -100,18 +100,15 @@ INSTALLCMX = $(sort $(filter-out checker/% ide/% tools/% dev/% \
 	configure.cmx toplevel/coqtop_byte_bin.cmx plugins/extraction/big.cmx, \
 	$(filter %.cmx, $(GRAMMLFILES:.ml=.cmx)) $(MLFILES:.ml=.cmx)))
 
-foo:
-	@echo $(INSTALLCMX)
-
 install-devfiles:
 	$(MKDIR) $(FULLBINDIR)
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)           # Regular CMI files
+	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
+ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMX)           # To avoid warning 58 "-opaque"
 	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.cmx) # For static linking of plugins
 	$(INSTALLSH)  $(FULLCOQLIB) $(PLUGINSCMO:.cmo=.o)   # For static linking of plugins
-	$(INSTALLSH)  $(FULLCOQLIB) $(TOOLS_HELPERS)
-ifeq ($(BEST),opt)
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif
 
