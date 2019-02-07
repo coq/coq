@@ -146,7 +146,7 @@ Propositional Connectives
 
 First, we find propositional calculus connectives:
 
-.. coqtop:: in
+.. coqdoc::
 
   Inductive True : Prop := I.
   Inductive False :  Prop := .
@@ -236,7 +236,7 @@ Finally, a few easy lemmas are provided.
   single: eq_rect (term)
   single: eq_rect_r (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Theorem absurd : forall A C:Prop, A -> ~ A -> C.
   Section equality.
@@ -270,6 +270,10 @@ For instance ``f_equal3`` is defined the following way.
    forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B)
      (x1 y1:A1) (x2 y2:A2) (x3 y3:A3),
      x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
+
+.. coqtop:: none
+
+   Abort.
 
 .. _datatypes:
 
@@ -465,7 +469,7 @@ Intuitionistic Type Theory.
   single: Choice2 (term)
   single: bool_choice (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Lemma Choice :
    forall (S S':Set) (R:S -> S' -> Prop),
@@ -506,7 +510,7 @@ realizability interpretation.
   single: absurd_set (term)
   single: and_rect (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Definition except := False_rec.
   Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
@@ -531,7 +535,7 @@ section :tacn:`refine`). This scope is opened by default.
   The following example is not part of the standard library, but it
   shows the usage of the notations:
 
-  .. coqtop:: in
+  .. coqtop:: in reset
 
     Fixpoint even (n:nat) : bool :=
      match n with
@@ -558,7 +562,7 @@ section :tacn:`refine`). This scope is opened by default.
 
 Now comes the content of module ``Peano``:
 
-.. coqtop:: in
+.. coqdoc::
   
   Theorem eq_S : forall x y:nat, x = y -> S x = S y.
   Definition pred (n:nat) : nat :=
@@ -610,7 +614,7 @@ Finally, it gives the definition of the usual orderings ``le``,
 
   Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n
-  | le_S : forall m:nat, n <= m -> n <= (S m).
+  | le_S : forall m:nat, n <= m -> n <= (S m)
   where "n <= m" := (le n m) : nat_scope.
   Definition lt (n m:nat) := S n <= m.
   Definition ge (n m:nat) := m <= n.
@@ -625,7 +629,7 @@ induction principle.
   single: nat_case (term)
   single: nat_double_ind (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Theorem nat_case :
    forall (n:nat) (P:nat -> Prop), 
@@ -652,7 +656,7 @@ well-founded induction, in module ``Wf.v``.
    single: Acc_rect (term)
    single: well_founded (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Section Well_founded.
   Variable A : Type.
@@ -681,7 +685,7 @@ fixpoint equation can be proved.
   single: Fix_F_inv (term)
   single: Fix_F_eq (term)
 
-.. coqtop:: in
+.. coqdoc::
 
   Section FixPoint.
   Variable P : A -> Type.
@@ -715,7 +719,7 @@ of equality:
 .. coqtop:: in
 
    Inductive identity (A:Type) (a:A) : A -> Type :=
-     identity_refl : identity a a.
+     identity_refl : identity A a a.
 
 Some properties of ``identity`` are proved in the module ``Logic_Type``, which also
 provides the definition of ``Type`` level negation:
