@@ -44,25 +44,20 @@ Leibniz equality on some type. An example implementation is:
       eqb_leibniz x y H :=
             match x, y return x = y with tt, tt => eq_refl tt end }.
 
-If one does not give all the members in the Instance declaration, Coq
-enters the proof-mode and the user is asked to build inhabitants of
-the remaining fields, e.g.:
+Using :cmd:`Program Instance`, if one does not give all the members in
+the Instance declaration, Coq generates obligations for the remaining
+fields, e.g.:
 
 .. coqtop:: in
 
-   Instance eq_bool : EqDec bool :=
+   Require Import Program.Tactics.
+   Program Instance eq_bool : EqDec bool :=
    { eqb x y := if x then y else negb y }.
 
 .. coqtop:: all
 
-   Proof. intros x y H.
-
-.. coqtop:: all
-
-   destruct x ; destruct y ; (discriminate || reflexivity).
-
-.. coqtop:: all
-
+   Next Obligation.
+     destruct x ; destruct y ; (discriminate || reflexivity).
    Defined.
 
 One has to take care that the transparency of every field is
@@ -131,14 +126,14 @@ the constraints as a binding context before the instance, e.g.:
 
 .. coqtop:: in
 
-   Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
+   Program Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
    { eqb x y := match x, y with
                 | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
                 end }.
 
 .. coqtop:: none
 
-   Abort.
+   Admit Obligations.
 
 These instances are used just as well as lemmas in the instance hint
 database.
@@ -157,13 +152,13 @@ vernacular, except it accepts any binding context as argument. For example:
 
      Context `{EA : EqDec A}.
 
-     Global Instance option_eqb : EqDec (option A) :=
+     Global Program Instance option_eqb : EqDec (option A) :=
      { eqb x y := match x, y with
             | Some x, Some y => eqb x y
             | None, None => true
             | _, _ => false
             end }.
-     Admitted.
+   Admit Obligations.
 
    End EqDec_defs.
 
