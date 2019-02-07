@@ -321,7 +321,7 @@ pkg:nix:deploy:
     url: https://coq.cachix.org
   before_script:
     # Install Cachix as documented at https://github.com/cachix/cachix
-    - nix-env -iA cachix -f https://cachix.org/api/v1/install
+    - nix-env -iA cachix --prebuilt-only -f https://cachix.org/api/v1/install
   only:
     - master
     - /^v.*\..*$/
