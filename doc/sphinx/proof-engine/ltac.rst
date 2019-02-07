@@ -602,7 +602,7 @@ Failing
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: all fail
 
          Goal True.
          Proof. fail. Abort.
