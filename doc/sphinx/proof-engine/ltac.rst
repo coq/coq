@@ -859,6 +859,10 @@ We can carry out pattern matching on terms with:
          Goal True.
          f (3+4).
 
+      .. coqtop:: none
+
+         Abort.
+
 .. _ltac-match-goal:
 
 Pattern matching on goals
@@ -1025,6 +1029,10 @@ Counting the goals
       .. coqtop:: all
 
          all:pr_numgoals.
+
+      .. coqtop:: none
+
+         Abort.
 
 Testing boolean expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
