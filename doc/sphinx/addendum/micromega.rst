@@ -124,7 +124,7 @@ and checked to be :math:`-1`.
    that :tacn:`omega` does not solve, such as the following so-called *omega
    nightmare* :cite:`TheOmegaPaper`.
 
-.. coqtop:: in
+.. coqdoc::
 
    Goal forall x y,
      27 <= 11 * x + 13 * y <= 45 ->
@@ -234,7 +234,8 @@ proof by abstracting monomials by variables.
    To illustrate the working of the tactic, consider we wish to prove the
    following Coq goal:
 
-.. coqtop:: all
+.. needs csdp
+.. coqdoc::
 
    Require Import ZArith Psatz.
    Open Scope Z_scope.
