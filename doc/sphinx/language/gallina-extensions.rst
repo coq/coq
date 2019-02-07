@@ -1970,6 +1970,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Lemma is_law_S : is_law S.
 
+      .. coqtop:: none
+
+         Abort.
+
    .. note::
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
@@ -2019,10 +2023,10 @@ or :g:`m` to the type :g:`nat` of natural numbers).
        Implicit Types m n : nat.
 
        Lemma cons_inj_nat : forall m n l, n :: l = m :: l -> n = m.
-
-       intros m n.
+       Proof. intros m n. Abort.
 
        Lemma cons_inj_bool : forall (m n:bool) l, n :: l = m :: l -> n = m.
+       Abort.
 
 .. cmdv:: Implicit Type @ident : @type
 
