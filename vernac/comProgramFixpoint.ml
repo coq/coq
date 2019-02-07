@@ -1,3 +1,13 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 open Pp
 open CErrors
 open Util
@@ -262,10 +272,10 @@ let do_program_recursive local poly fixkind fixl ntns =
   let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
     let def =
-      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedLambda_or_LetIn (EConstr.of_constr def) rec_sign)
+      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign)
     and typ =
       (* Worrying... *)
-      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedProd_or_LetIn (EConstr.of_constr typ) rec_sign)
+      EConstr.to_constr ~abort_on_undefined_evars:false evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign)
     in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
@@ -279,6 +289,9 @@ let do_program_recursive local poly fixkind fixl ntns =
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
   let () = if not cofix then begin
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
+      (* XXX: are we allowed to have evars here? *)
+      let fixtypes = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixtypes in
+      let fixdefs = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixdefs in
       let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
         Array.of_list fixtypes,
         Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
