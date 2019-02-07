@@ -218,7 +218,7 @@ let add_vo_path ~recursive lp =
     let () = match lp.has_ml with
       | AddNoML -> ()
       | AddTopML -> add_ml_dir unix_path
-      | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs in
+      | AddRecML -> List.iter (fun (lp,_) -> add_ml_dir lp) dirs; add_ml_dir unix_path in
     let add (path, dir) =
       Loadpath.add_load_path path ~implicit dir in
     let () = List.iter add dirs in
