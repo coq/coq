@@ -813,7 +813,7 @@ let zoom_fit sn =
   let space = script#misc#allocation.Gtk.width in
   let cols = script#right_margin_position in
   let pango_ctx = script#misc#pango_context in
-  let layout = pango_ctx#create_layout in
+  let layout = pango_ctx#create_layout#as_layout in
   let fsize = Pango.Font.get_size (Pango.Font.from_string text_font#get) in
   Pango.Layout.set_text layout (String.make cols 'X');
   let tlen = fst (Pango.Layout.get_pixel_size layout) in

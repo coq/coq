@@ -484,7 +484,7 @@ object (self)
     stick tab_length self self#set_tab_width;
     stick auto_complete self self#set_auto_complete;
 
-    let cb ft = self#misc#modify_font (Pango.Font.from_string ft) in
+    let cb ft = self#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font self cb;
 
     ()

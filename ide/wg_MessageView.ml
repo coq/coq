@@ -62,7 +62,7 @@ let message_view () : message_view =
   let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed ~callback:cb in
   let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
-  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  let cb ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   stick text_font view cb;
 
   (* Inserts at point, advances the mark *)
