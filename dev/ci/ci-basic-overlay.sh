@@ -242,8 +242,8 @@
 ########################################################################
 # ext-lib
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${ext_lib_CI_REF:=a9c138921fb8c2601e64f1a1702a689120d456f3}"
+# Latest commit on master as of Nov 13, 2018
+: "${ext_lib_CI_REF:=e49214f49e467b01b01682ba499441074218672b}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 

@@ -115,8 +115,14 @@ val add_global_univ : t -> Univ.Level.t -> t
   Turn the variable [l] flexible, and algebraic if [algebraic] is true
   and [l] can be. That is if there are no strict upper constraints on
   [l] and and it does not appear in the instance of any non-algebraic
-  universe. Otherwise the variable is just made flexible. *)
+  universe. Otherwise the variable is just made flexible.
+
+    If [l] is already algebraic it will remain so even with [algebraic:false]. *)
 val make_flexible_variable : t -> algebraic:bool -> Univ.Level.t -> t
+
+val make_nonalgebraic_variable : t -> Univ.Level.t -> t
+(** Make the level non algebraic. Undefined behaviour on
+   already-defined algebraics. *)
 
 (** Turn all undefined flexible algebraic variables into simply flexible
    ones. Can be used in case the variables might appear in universe instances
