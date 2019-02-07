@@ -118,7 +118,7 @@ power of :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear
 goals that :tacn:`omega` and :tacn:`romega` do not solve, such as the following
 so-called *omega nightmare* :cite:`TheOmegaPaper`.
 
-.. coqtop:: in
+.. coqdoc::
 
    Goal forall x y,
      27 <= 11 * x + 13 * y <= 45 ->
@@ -229,7 +229,8 @@ that might miss a refutation.
 To illustrate the working of the tactic, consider we wish to prove the
 following Coq goal:
 
-.. coqtop:: all
+.. needs csdp
+.. coqdoc::
 
   Require Import ZArith Psatz.
   Open Scope Z_scope.
