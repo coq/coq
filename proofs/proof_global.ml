@@ -53,11 +53,12 @@ let default_proof_mode = ref (find_proof_mode "No")
 let get_default_proof_mode_name () =
   (CEphemeron.default !default_proof_mode standard).name
 
+let proof_mode_opt_name = ["Default";"Proof";"Mode"]
 let _ =
   Goptions.(declare_string_option {
     optdepr = false;
     optname = "default proof mode" ;
-    optkey = ["Default";"Proof";"Mode"] ;
+    optkey = proof_mode_opt_name ;
     optread = begin fun () ->
       (CEphemeron.default !default_proof_mode standard).name
     end;

@@ -170,6 +170,8 @@ val register_proof_mode : proof_mode -> unit
 (* Can't make this deprecated due to limitations of camlp5 *)
 (* [@@ocaml.deprecated "the current proof mode API is deprecated, use with care, see PR #459 and #566 "] *)
 
+val proof_mode_opt_name : string list
+
 val get_default_proof_mode_name : unit -> proof_mode_name
 [@@ocaml.deprecated "the current proof mode API is deprecated, use with care, see PR #459 and #566 "]
 
@@ -183,4 +185,3 @@ val activate_proof_mode : proof_mode_name -> unit
 
 val disactivate_current_proof_mode : unit -> unit
 [@@ocaml.deprecated "the current proof mode API is deprecated, use with care, see PR #459 and #566 "]
-
