@@ -559,11 +559,11 @@ Settings
    This flag allows to switch the behavior of instance declarations made through
    the Instance command.
 
-   + When it is on (the default), instances that have unsolved holes in
+   + When it is off (the default), they fail with an error instead.
+
+   + When it is on, instances that have unsolved holes in
      their proof-term silently open the proof mode with the remaining
      obligations to prove.
-
-   + When it is off, they fail with an error instead.
 
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
