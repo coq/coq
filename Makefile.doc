@@ -54,6 +54,7 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 
 doc: refman stdlib
 
+SPHINX_DEPS ?=
 ifndef QUICK
 SPHINX_DEPS := coq
 endif
