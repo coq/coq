@@ -92,7 +92,11 @@
 ### These steps are the same for all releases (beta, final, patch-level) ###
 
 - [ ] Send an e-mail on Coqdev announcing that the tag has been put so that
-  package managers can start preparing package updates.
+  package managers can start preparing package updates (including a
+  `coq-bignums` compatible version).
+- [ ] Ping **@erikmd** to update the Docker images in `coqorg/coq`
+  (requires `coq-bignums` in `extra-dev` for a beta / in `released`
+  for a final release).
 - [ ] Draft a release on GitHub.
 - [ ] Get **@maximedenes** to sign the Windows and MacOS packages and
   upload them on GitHub.
