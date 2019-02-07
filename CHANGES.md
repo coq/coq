@@ -3,6 +3,9 @@ Changes from 8.9.0 to 8.9.1
 
 - Fix Makefile.checker which used a non-portable sed invocation.
 
+- The algorithm computing implicit arguments now behaves uniformly for primitive
+  projection and application nodes (bug #9508).
+
 Changes from 8.9+beta1 to 8.9.0
 ===============================
 
