@@ -41,7 +41,7 @@ GRAMMAR EXTEND Gram
       | cmd = Pvernac.Vernac_.main_entry ->
               { match cmd with
               | None -> None
-              | Some (loc,c) -> Some (CAst.make ~loc (VernacControl c)) }
+              | Some {CAst.loc; v} -> Some (CAst.make ?loc (VernacControl v)) }
       ]
     ]
   ;

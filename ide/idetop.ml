@@ -93,23 +93,22 @@ let add ((s,eid),(sid,verbose)) =
   let pa = Pcoq.Parsable.make (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s is not an empty string *)
-  | Some (loc, ast) ->
-  let loc_ast = CAst.make ~loc ast in
-  ide_cmd_checks ~last_valid:sid loc_ast;
-  let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose loc_ast in
-  set_doc doc;
-  let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
-  ide_cmd_warns ~id:newid loc_ast;
-  (* TODO: the "" parameter is a leftover of the times the protocol
-   * used to include stderr/stdout output.
-   *
-   * Currently, we force all the output meant for the to go via the
-   * feedback mechanism, and we don't manipulate stderr/stdout, which
-   * are left to the client's discrection. The parameter is still there
-   * as not to break the core protocol for this minor change, but it should
-   * be removed in the next version of the protocol.
-   *)
-  newid, (rc, "")
+  | Some ast ->
+    ide_cmd_checks ~last_valid:sid ast;
+    let doc, newid, rc = Stm.add ~doc ~ontop:sid verbose ast in
+    set_doc doc;
+    let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+    ide_cmd_warns ~id:newid ast;
+    (* TODO: the "" parameter is a leftover of the times the protocol
+     * used to include stderr/stdout output.
+     *
+     * Currently, we force all the output meant for the to go via the
+     * feedback mechanism, and we don't manipulate stderr/stdout, which
+     * are left to the client's discrection. The parameter is still there
+     * as not to break the core protocol for this minor change, but it should
+     * be removed in the next version of the protocol.
+    *)
+    newid, (rc, "")
 
 let edit_at id =
   let doc = get_doc () in
@@ -136,9 +135,9 @@ let annotate phrase =
   let pa = Pcoq.Parsable.make (Stream.of_string phrase) in
   match Stm.parse_sentence ~doc (Stm.get_current_state ~doc) ~entry:Pvernac.main_entry pa with
   | None -> Richpp.richpp_of_pp 78 (Pp.mt ())
-  | Some (_, ast) ->
-  (* XXX: Width should be a parameter of annotate... *)
-  Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
+  | Some ast ->
+    (* XXX: Width should be a parameter of annotate... *)
+    Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast.CAst.v)
 
 (** Goal display *)
 

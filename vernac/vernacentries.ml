@@ -2150,7 +2150,7 @@ let vernac_load interp fname =
           else
             None
         in
-        interp (snd (parse_sentence proof_mode input));
+        interp (parse_sentence proof_mode input).CAst.v;
       done
     with End_of_input -> ()
   end;

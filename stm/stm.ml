@@ -3197,12 +3197,12 @@ let query ~doc ~at ~route s =
       let rec loop () =
         match parse_sentence ~doc at ~entry:Pvernac.main_entry s with
         | None -> ()
-        | Some (loc, ast) ->
-           let indentation, strlen = compute_indentation ~loc at in
+        | Some {CAst.loc; v=ast} ->
+           let indentation, strlen = compute_indentation ?loc at in
            let st = State.get_cached at in
            let aast = {
              verbose = true; indentation; strlen;
-             loc = Some loc; expr = ast } in
+             loc; expr = ast } in
            ignore(stm_vernac_interp ~route at st aast);
            loop ()
       in
