@@ -190,7 +190,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Ind _ | Sort _ -> Rigid false
     | Proj (p, c) ->
       let cst = Projection.constant p in
-      let rigid = not (is_transparent_constant flags.open_ts cst) in
+      let rigid = not (TransparentState.is_transparent_constant flags.open_ts cst) in
         if rigid then aux c
         else (* if the evar appears rigidly in c then this elimination
                 cannot reduce and we have a rigid occurrence, otherwise
@@ -208,7 +208,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
     | Const (c,_) ->
-      if is_transparent_constant flags.open_ts c then Reducible
+      if TransparentState.is_transparent_constant flags.open_ts c then Reducible
       else Rigid false
     | Prod (_, b, t) ->
       let b' = aux b and t' = aux t in
@@ -789,7 +789,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         and f3 i = miller true (sp1,al1) appr1 appr2 i
         and f4 i = miller false (sp2,al2) appr2 appr1 i
         and f5 i =
-          (** We ensure failure of consuming the stacks does not
+          (* We ensure failure of consuming the stacks does not
              propagate an error about unification of the stacks while
              the heads themselves cannot be unified, so we return
              NotSameHead. *)
@@ -934,7 +934,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	     let c = nf_evar i c1 in
              let na = Nameops.Name.pick na1 na2 in
              evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2);
-           (** When in modulo_betaiota = false case, lambda's are not reduced *)
+           (* When in modulo_betaiota = false case, lambda's are not reduced *)
            (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
 
     | Flexible ev1, Rigid -> flex_rigid true ev1 appr1 appr2
@@ -1014,7 +1014,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Int _, Int _ ->
           rigids env evd sk1 term1 sk2 term2
 
-        | Evar (sp1,al1), Evar (sp2,al2) -> (** Frozen evars *)
+        | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
           if Evar.equal sp1 sp2 then
             match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
             |None, Success i' ->
@@ -1341,7 +1341,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let instance = List.map mkVar vars in
   let rhs = nf_evar evd rhs in
   if not (noccur_evar env_rhs evd evk rhs) then raise (TypingFailed evd);
-  (** Ensure that any progress made by Typing.e_solve_evars will not contradict
+  (* Ensure that any progress made by Typing.e_solve_evars will not contradict
       the solution we are trying to build here by adding the problem as a constraint. *)
   let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkEvar (evk,args),rhs) evd in
   let prc env evd c = Termops.Internal.print_constr_env env evd c in
@@ -1393,9 +1393,9 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                                    str" of type: " ++ prc env_evar evd evty ++
                                    str " for " ++ prc env_rhs evd c);
           let instance = Filter.filter_list filter instance in
-          (** Allow any type lower than the variable's type as the
-              abstracted subterm might have a smaller type, which could be
-              crucial to make the surrounding context typecheck. *)
+          (* Allow any type lower than the variable's type as the
+             abstracted subterm might have a smaller type, which could be
+             crucial to make the surrounding context typecheck. *)
           let evd, evty =
             if isArity evd evty then
               refresh_universes ~status:Evd.univ_flexible (Some true)
@@ -1419,12 +1419,12 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
 
   let evd, rhs' = set_holes env_rhs evd rhs subst in
   let rhs' = nf_evar evd rhs' in
-  (** Thin evars making the term typable in env_evar *)
+  (* Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
   if !debug_ho_unification then
     (Feedback.msg_debug Pp.(str"solve_evars on: " ++ prc env_evar evd rhs');
-     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) evd));
+     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
   let evd,rhs' =
     try !solve_evars env_evar evd rhs'
     with e when Pretype_errors.precatchable_exception e ->
@@ -1434,7 +1434,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   (* We instantiate the evars of which the value is forced by typing *)
   if !debug_ho_unification then
     (Feedback.msg_debug Pp.(str"after solve_evars: " ++ prc env_evar evd rhs');
-     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) evd));
+     Feedback.msg_debug Pp.(str"evars: " ++ pr_evar_map (Some 0) env_evar evd));
 
   let rec abstract_free_holes evd = function
    | (id,idty,c,cty,evsref,_,_)::l ->
@@ -1483,7 +1483,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      in force_instantiation evd !evsref
    | [] ->
      if Evd.is_defined evd evk then
-       (** Can happen due to dependencies: instantiating evars in the arguments of evk might
+       (* Can happen due to dependencies: instantiating evars in the arguments of evk might
            instantiate evk itself. *)
        (if !debug_ho_unification then
           begin
@@ -1501,7 +1501,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
            if !debug_ho_unification then
              Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++
                                       prc evenv evd rhs');
-         (** solve_evars is not commuting with nf_evar, because restricting
+         (* solve_evars is not commuting with nf_evar, because restricting
              an evar might provide a more specific type. *)
           let evd, _ = !solve_evars evenv evd rhs' in
           if !debug_ho_unification then
@@ -1591,7 +1591,7 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
      let f flags ontype env evd pbty x y =
        let reds =
          match ontype with
-         | TypeUnification -> full_transparent_state
+         | TypeUnification -> TransparentState.full
          | TermUnification -> flags.open_ts
        in is_fconv ~reds pbty env evd x y
      in

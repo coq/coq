@@ -19,7 +19,7 @@ open Locus
 type unify_flags = Evarsolve.unify_flags
 
 (** The default subterm transparent state is no unfoldings *)
-val default_flags_of : ?subterm_ts:transparent_state -> transparent_state -> unify_flags
+val default_flags_of : ?subterm_ts:TransparentState.t -> TransparentState.t -> unify_flags
 
 type unify_fun = unify_flags ->
   env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
@@ -36,7 +36,7 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 
 (** Theses functions allow to pass arbitrary flags to the unifier and can delay constraints.
     In case the flags are not specified, they default to
-    [default_flags_of full_transparent_state] currently.
+    [default_flags_of TransparentState.full] currently.
 
     In case of success, the two terms are hence unifiable only if the remaining constraints
     can be solved or [check_problems_are_solved] is true.
@@ -53,9 +53,10 @@ val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_m
 [@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
 (** The same function resolving evars by side-effect and
    catching the exception *)
-val conv : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+
+val conv : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
 [@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
-val cumul : env -> ?ts:transparent_state -> evar_map -> constr -> constr -> evar_map option
+val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
 [@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
 
 (** This function also calls [solve_unif_constraints_with_heuristics] to resolve any remaining
