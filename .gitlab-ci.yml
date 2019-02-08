@@ -357,7 +357,7 @@ doc:refman:deploy:
     variables:
       - $DOCUMENTATION_DEPLOY_KEY
   dependencies:
-    - doc:refman:dune
+    - doc:refman
   before_script:
     - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
     - eval $(ssh-agent -s)
@@ -369,12 +369,14 @@ doc:refman:deploy:
     - git config --global user.email "coqbot@users.noreply.github.com"
   script:
     - git clone git@github.com:coq/doc.git _deploy
-    - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman # NB: won’t work if branch name has ‘/’ in it
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
-    - cp -rv _build/default/doc/sphinx_build/html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cd _deploy/$CI_COMMIT_REF_NAME/refman
-    - git add .
-    - git commit -m "User manual of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
+    - cp -rv _install_ci/share/doc/coq/sphinx/html _deploy/$CI_COMMIT_REF_NAME/refman
+    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cd _deploy/$CI_COMMIT_REF_NAME/
+    - git add refman stdlib
+    - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
     - git push # TODO: rebase and retry on failure
 
 doc:ml-api:odoc:
