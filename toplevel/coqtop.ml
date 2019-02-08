@@ -188,7 +188,7 @@ let init_toplevel ~help ~init custom_init arglist =
   Global.set_engagement opts.impredicative_set;
   Global.set_indices_matter opts.indices_matter;
   Global.set_VM opts.enable_VM;
-  Global.set_native_compiler opts.enable_native_compiler;
+  Global.set_native_compiler (match opts.native_compiler with NativeOff -> false | NativeOn _ -> true);
 
   (* Allow the user to load an arbitrary state here *)
   inputstate opts;

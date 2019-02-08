@@ -33,6 +33,8 @@ let set_type_in_type () =
 
 type color = [`ON | `AUTO | `OFF]
 
+type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+
 type t = {
 
   load_init   : bool;
@@ -54,8 +56,7 @@ type t = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter : bool;
   enable_VM : bool;
-  enable_native_compiler : bool;
-  output_native_objects : bool;
+  native_compiler : native_compiler;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
@@ -80,6 +81,11 @@ type t = {
 
 let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
 
+let default_native =
+  if Coq_config.native_compiler
+  then NativeOn {ondemand=true}
+  else NativeOff
+
 let default = {
 
   load_init   = true;
@@ -100,8 +106,7 @@ let default = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
   enable_VM = true;
-  enable_native_compiler = Coq_config.native_compiler;
-  output_native_objects = false;
+  native_compiler = default_native;
 
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
@@ -417,14 +422,14 @@ let parse_args ~help ~init arglist : t * string list =
       produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
       a separate flag, and the "ondemand" value removed. Once this is done, use
       [get_bool] here. *)
-      let (enable,precompile) =
+      let native_compiler =
         match (next ()) with
-        | ("yes" | "on") -> true, true
-        | "ondemand" -> true, false
-        | ("no" | "off") -> false, false
+        | ("yes" | "on") -> NativeOn {ondemand=false}
+        | "ondemand" -> NativeOn {ondemand=true}
+        | ("no" | "off") -> NativeOff
         | _ -> prerr_endline ("Error: (yes|no|ondemand) expected after option -native-compiler"); exit 1
       in
-      { oval with output_native_objects = precompile; enable_native_compiler = enable }
+      { oval with native_compiler }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
