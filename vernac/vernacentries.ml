@@ -2377,6 +2377,8 @@ let locate_if_not_already ?loc (e, info) =
 exception HasNotFailed
 exception HasFailed of Pp.t
 
+let test_mode = ref false
+
 (* XXX STATE: this type hints that restoring the state should be the
    caller's responsibility *)
 let with_fail st b f =
@@ -2402,7 +2404,7 @@ let with_fail st b f =
       | HasNotFailed ->
           user_err ~hdr:"Fail" (str "The command has not failed!")
       | HasFailed msg ->
-          if not !Flags.quiet || !Flags.test_mode then Feedback.msg_info
+          if not !Flags.quiet || !test_mode then Feedback.msg_info
             (str "The command has indeed failed with message:" ++ fnl () ++ msg)
       | _ -> assert false
   end

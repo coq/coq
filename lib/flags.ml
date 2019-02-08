@@ -43,8 +43,6 @@ let with_options ol f x =
 
 let record_aux_file = ref false
 
-let test_mode = ref false
-
 let async_proofs_worker_id = ref "master"
 let async_proofs_is_worker () = !async_proofs_worker_id <> "master"
 

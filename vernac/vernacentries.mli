@@ -41,3 +41,7 @@ val command_focus : unit Proof.focus_kind
 
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
+
+(* Flag set when the test-suite is called. Its only effect to display
+   verbose information for `Fail` *)
+val test_mode : bool ref

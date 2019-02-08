@@ -35,10 +35,6 @@
     be eventually removed by cleanups such as PR#1103 *)
 val record_aux_file : bool ref
 
-(* Flag set when the test-suite is called. Its only effect to display
-   verbose information for `Fail` *)
-val test_mode : bool ref
-
 (** Async-related flags *)
 val async_proofs_worker_id : string ref
 val async_proofs_is_worker : unit -> bool
