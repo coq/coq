@@ -62,7 +62,7 @@ let print_usage_common co command =
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
-\n  -boot                  boot mode (allows to overload the `Coq` library prefix)\
+\n  -boot                  boot mode (allows to overload the `Coq` library prefix, implies -q)\
 \n  -bt                    print backtraces (requires configure debug flag)\
 \n  -debug                 debug mode (implies -bt)\
 \n  -diffs (on|off|removed) highlight differences between proof steps\

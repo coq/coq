@@ -110,11 +110,11 @@ let set_user_coqlib path = coqlib := Some path
 
 (** coqlib is now computed once during coqtop initialization *)
 
-let set_coqlib ~fail =
+let set_coqlib ~boot ~fail =
   match !coqlib with
   | Some _ -> ()
   | None ->
-    let lib = if !Flags.boot then coqroot else guess_coqlib fail in
+    let lib = if boot then coqroot else guess_coqlib fail in
     coqlib := Some lib
 
 let coqlib () = Option.default "" !coqlib

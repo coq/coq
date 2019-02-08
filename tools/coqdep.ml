@@ -530,7 +530,8 @@ let coqdep () =
     add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
   end else begin
-    Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
+    (* option_boot is actually always false in this branch *)
+    Envars.set_coqlib ~boot:!option_boot ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir_import add_coqlib_known (coqlib//"plugins") ["Coq"];

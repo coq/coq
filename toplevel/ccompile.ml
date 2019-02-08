@@ -109,6 +109,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VoDoc long_f_dot_vo;
+                allow_coq_overwrite = opts.boot;
                 iload_path; require_libs; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.time } in
@@ -159,6 +160,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VioDoc long_f_dot_vio;
+                allow_coq_overwrite = opts.boot;
                 iload_path; require_libs; stm_options;
               } in
 

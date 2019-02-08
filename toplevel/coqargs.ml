@@ -35,6 +35,8 @@ type color = [`ON | `AUTO | `OFF]
 
 type t = {
 
+  boot : bool;
+
   load_init   : bool;
   load_rcfile : bool;
   rcfile      : string option;
@@ -80,6 +82,8 @@ type t = {
 let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
 
 let default = {
+
+  boot = false;
 
   load_init   = true;
   load_rcfile = true;
@@ -232,9 +236,9 @@ let usage_no_coqlib = CWarnings.create ~name:"usage-no-coqlib" ~category:"filesy
 
 exception NoCoqLib
 
-let usage help =
+let usage ~boot help =
   begin
-    try Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib)
+    try Envars.set_coqlib ~boot ~fail:(fun x -> raise NoCoqLib)
     with NoCoqLib -> usage_no_coqlib ()
   end;
   let lp = Coqinit.toplevel_init_load_path () in
@@ -436,7 +440,7 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with batch = true }
     |"-test-mode" -> Flags.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
-    |"-boot" -> Flags.boot := true; { oval with load_rcfile = false; }
+    |"-boot" -> { oval with boot = true; load_rcfile = false; }
     |"-bt" -> Backtrace.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> { oval with print_config = true }
@@ -468,7 +472,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-type-in-type" -> set_type_in_type (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> { oval with print_where = true }
-    |"-h"|"-H"|"-?"|"-help"|"--help" -> usage help; oval
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ~boot:oval.boot help; oval
     |"-v"|"--version" -> Usage.version (exitcode oval)
     |"-print-version"|"--print-version" ->
       Usage.machine_readable_version (exitcode oval)
