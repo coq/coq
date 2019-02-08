@@ -96,6 +96,9 @@ let compile opts copts ~echo ~f_in ~f_out =
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.stm_flags in
+  let output_native_objects = match opts.native_compiler with
+    | NativeOff -> false | NativeOn {ondemand} -> not ondemand
+  in
   match copts.compilation_mode with
   | BuildVo ->
       Flags.record_aux_file := true;
@@ -126,7 +129,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
-      Library.save_library_to ldir long_f_dot_vo (Global.opaque_tables ());
+      Library.save_library_to ~output_native_objects ldir long_f_dot_vo (Global.opaque_tables ());
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
@@ -170,7 +173,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
-      let _doc = Stm.snapshot_vio ~doc ldir long_f_dot_vio in
+      let () = ignore (Stm.snapshot_vio ~doc ~output_native_objects ldir long_f_dot_vio) in
       Stm.reset_task_queue ()
 
   | Vio2Vo ->

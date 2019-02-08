@@ -657,7 +657,7 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to ?todo dir f otab =
+let save_library_to ?todo ~output_native_objects dir f otab =
   let except = match todo with
     | None ->
         (* XXX *)
@@ -668,7 +668,7 @@ let save_library_to ?todo dir f otab =
         assert(Filename.check_suffix f ".vio");
         List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
-  let cenv, seg, ast = Declaremods.end_library ~except dir in
+  let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
   let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
   let tasks, utab, dtab =
     match todo with
@@ -716,7 +716,7 @@ let save_library_to ?todo dir f otab =
     System.marshal_out_segment f' ch (opaque_table : seg_proofs);
     close_out ch;
     (* Writing native code files *)
-    if !Flags.output_native_objects then
+    if output_native_objects then
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Nativelib.compile_library dir ast fn) then
 	user_err Pp.(str "Could not compile the library to native code.")

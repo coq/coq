@@ -12,6 +12,8 @@ type color = [`ON | `AUTO | `OFF]
 
 val default_toplevel : Names.DirPath.t
 
+type native_compiler = NativeOff | NativeOn of { ondemand : bool }
+
 type t = {
 
   boot : bool;
@@ -34,7 +36,8 @@ type t = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter : bool;
   enable_VM : bool;
-  enable_native_compiler : bool;
+  native_compiler : native_compiler;
+
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;

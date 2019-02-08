@@ -116,8 +116,5 @@ let inline_level = ref default_inline_level
 let set_inline_level = (:=) inline_level
 let get_inline_level () = !inline_level
 
-(* Native code compilation for conversion and normalization *)
-let output_native_objects = ref false
-
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0
