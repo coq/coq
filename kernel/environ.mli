@@ -317,6 +317,10 @@ type ('constr, 'types) punsafe_judgment = {
   uj_val : 'constr;
   uj_type : 'types }
 
+val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) punsafe_judgment
+val on_judgment_value : ('c -> 'c) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
+val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
+
 type unsafe_judgment = (constr, types) punsafe_judgment
 
 val make_judge : 'constr -> 'types -> ('constr, 'types) punsafe_judgment

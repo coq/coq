@@ -144,3 +144,43 @@ let error_unsatisfied_constraints env c =
 
 let error_undeclared_universe env l =
   raise (TypeError (env, UndeclaredUniverse l))
+
+let map_pguard_error f = function
+| NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody
+| RecursionNotOnInductiveType c -> RecursionNotOnInductiveType (f c)
+| RecursionOnIllegalTerm (n, (env, c), l1, l2) -> RecursionOnIllegalTerm (n, (env, f c), l1, l2)
+| NotEnoughArgumentsForFixCall n -> NotEnoughArgumentsForFixCall n
+| CodomainNotInductiveType c -> CodomainNotInductiveType (f c)
+| NestedRecursiveOccurrences -> NestedRecursiveOccurrences
+| UnguardedRecursiveCall c -> UnguardedRecursiveCall (f c)
+| RecCallInTypeOfAbstraction c -> RecCallInTypeOfAbstraction (f c)
+| RecCallInNonRecArgOfConstructor c -> RecCallInNonRecArgOfConstructor (f c)
+| RecCallInTypeOfDef c -> RecCallInTypeOfDef (f c)
+| RecCallInCaseFun c -> RecCallInCaseFun (f c)
+| RecCallInCaseArg c -> RecCallInCaseArg (f c)
+| RecCallInCasePred c -> RecCallInCasePred (f c)
+| NotGuardedForm c -> NotGuardedForm (f c)
+| ReturnPredicateNotCoInductive c -> ReturnPredicateNotCoInductive (f c)
+
+let map_ptype_error f = function
+| UnboundRel n -> UnboundRel n
+| UnboundVar id -> UnboundVar id
+| NotAType j -> NotAType (on_judgment f j)
+| BadAssumption j -> BadAssumption (on_judgment f j)
+| ReferenceVariables (id, c) -> ReferenceVariables (id, f c)
+| ElimArity (pi, dl, c, j, ar) -> ElimArity (pi, dl, f c, on_judgment f j, ar)
+| CaseNotInductive j -> CaseNotInductive (on_judgment f j)
+| WrongCaseInfo (pi, ci) -> WrongCaseInfo (pi, ci)
+| NumberBranches (j, n) -> NumberBranches (on_judgment f j, n)
+| IllFormedBranch (c, pc, t1, t2) -> IllFormedBranch (f c, pc, f t1, f t2)
+| Generalization ((na, t), j) -> Generalization ((na, f t), on_judgment f j)
+| ActualType (j, t) -> ActualType (on_judgment f j, f t)
+| CantApplyBadType ((n, c1, c2), j, vj) ->
+  CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
+| CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
+| IllFormedRecBody (ge, na, n, env, jv) ->
+  IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)
+| IllTypedRecBody (n, na, jv, t) ->
+  IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
+| UnsatisfiedConstraints g -> UnsatisfiedConstraints g
+| UndeclaredUniverse l -> UndeclaredUniverse l

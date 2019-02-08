@@ -682,6 +682,10 @@ type ('constr, 'types) punsafe_judgment = {
   uj_val : 'constr;
   uj_type : 'types }
 
+let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
+let on_judgment_value f j = { j with uj_val = f j.uj_val }
+let on_judgment_type f j = { j with uj_type = f j.uj_type }
+
 type unsafe_judgment = (constr, types) punsafe_judgment
 
 let make_judge v tj =

@@ -244,10 +244,10 @@ let judge_of_type u =
       uj_type = EConstr.mkType uu }
 
 let judge_of_relative env v =
-  Termops.on_judgment EConstr.of_constr (judge_of_relative env v)
+  Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
 
 let judge_of_variable env id =
-  Termops.on_judgment EConstr.of_constr (judge_of_variable env id)
+  Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
 
 let judge_of_projection env sigma p cj =
   let pty = lookup_projection p env in
@@ -307,7 +307,7 @@ let type_of_constructor env sigma ((ind,_ as ctor),u) =
   sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.ConstructRef ctor)))
 
 let judge_of_int env v =
-  Termops.on_judgment EConstr.of_constr (judge_of_int env v)
+  Environ.on_judgment EConstr.of_constr (judge_of_int env v)
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)

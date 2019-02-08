@@ -58,7 +58,7 @@ let process_vernac_interp_error exn = match fst exn with
 	mt() in
     wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
-      let te = Himsg.map_ptype_error EConstr.of_constr te in
+      let te = map_ptype_error EConstr.of_constr te in
       wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
   | PretypeError(ctx,sigma,te) ->
       wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)

@@ -295,8 +295,11 @@ val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid option
 (** Combinators on judgments *)
 
 val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) punsafe_judgment
+[@@ocaml.deprecated "Use [Environ.on_judgment]."]
 val on_judgment_value : ('c -> 'c) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
+[@@ocaml.deprecated "Use [Environ.on_judgment_value]."]
 val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
+[@@ocaml.deprecated "Use [Environ.on_judgment_type]."]
 
 (** {5 Debug pretty-printers} *)
 

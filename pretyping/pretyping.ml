@@ -103,6 +103,12 @@ let search_guard ?loc env possible_indexes fixdefs =
 	 user_err ?loc ~hdr:"search_guard" (Pp.str errmsg)
      with Found indexes -> indexes)
 
+let esearch_guard ?loc env sigma indexes fix =
+  let fix = nf_fix sigma fix in
+  try search_guard ?loc env indexes fix
+  with TypeError (env,err) ->
+    raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
+
 (* To force universe name declaration before use *)
 
 let is_strict_universe_declarations =
@@ -597,11 +603,8 @@ let rec pretype ~program_mode k0 resolve_tc (tycon : type_constraint) (env : Glo
 			     vn)
 	  in
 	  let fixdecls = (names,ftys,fdefs) in
-          let indexes =
-            search_guard
-              ?loc !!env possible_indexes (nf_fix sigma fixdecls)
-          in
-	    make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
+          let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
+          make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	| GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in
 	  let cofix = (i, fixdecls) in
