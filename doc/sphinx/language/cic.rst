@@ -1424,7 +1424,7 @@ corresponding to the :math:`c:C` constructor.
 
 .. math::
    \begin{array}{ll}
-   \{c:(I~p_1\ldots p_r\ t_1 \ldots t_s)\}^P &\equiv (P~t_1\ldots ~t_s~c) \\
+   \{c:(I~q_1\ldots q_r\ t_1 \ldots t_s)\}^P &\equiv (P~t_1\ldots ~t_s~c) \\
    \{c:∀ x:T,~C\}^P &\equiv ∀ x:T,~\{(c~x):C\}^P
    \end{array}
 
