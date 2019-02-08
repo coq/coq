@@ -97,6 +97,9 @@ Tactics
 
 - Ltac backtraces can be turned on using the "Ltac Backtrace" option.
 
+- The syntax of the `autoapply` tactic was fixed to conform with preexisting
+  documentation: it now takes a `with` clause instead of a `using` clause.
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
