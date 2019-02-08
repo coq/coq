@@ -132,7 +132,7 @@ the following rules.
    which maps elements of :math:`T` to the expression :math:`u`.
 #. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
    (:g:`t u` in |Coq| concrete
-   syntax). The term :math:`(t~u)` reads as “t applied to u”.
+   syntax). The term :math:`(t~u)` reads as “:math:`t` applied to :math:`u`”.
 #. if :math:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
    terms then :math:`\letin{x}{t:T}{u}` is
    a term which denotes the term :math:`u` where the variable :math:`x` is locally bound
@@ -1642,7 +1642,7 @@ Given a variable :math:`y` of an inductively defined type in a declaration
   and can consequently be written :math:`λ y_1 :B_1' .~… λ y_m :B_m'.~g_i`. (:math:`B_i'` is
   obtained from :math:`B_i` by substituting parameters for variables) the variables
   :math:`y_j` occurring in :math:`g_i` corresponding to recursive arguments :math:`B_i` (the
-  ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
+  ones in which one of the :math:`I_l` occurs) are structurally smaller than :math:`y`.
 
 
 The following definitions are correct, we enter them using the :cmd:`Fixpoint`
