@@ -1725,7 +1725,7 @@ One can modify a global declaration by generalizing it over a
 previously assumed constant :math:`c`. For doing that, we need to modify the
 reference to the global declaration in the subsequent global
 environment and local context by explicitly applying this constant to
-the constant :math:`c'`.
+the constant :math:`c`.
 
 Below, if :math:`Γ` is a context of the form :math:`[y_1 :A_1 ;~…;~y_n :A_n]`, we write
 :math:`∀x:U,~\subst{Γ}{c}{x}` to mean
@@ -1755,7 +1755,7 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
          {\subst{Γ}{|Γ_I ;Γ_C|}{|Γ_I ;Γ_C | c}}}
 
 One can similarly modify a global declaration by generalizing it over
-a previously defined constant :math:`c′`. Below, if :math:`Γ` is a context of the form
+a previously defined constant :math:`c`. Below, if :math:`Γ` is a context of the form
 :math:`[y_1 :A_1 ;~…;~y_n :A_n]`, we write :math:`\subst{Γ}{c}{u}` to mean
 :math:`[y_1 :\subst{A_1} {c}{u};~…;~y_n:\subst{A_n} {c}{u}]`.
 
