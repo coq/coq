@@ -7,6 +7,7 @@ if [ "$CI_PULL_REQUEST" = "7819" ] || [ "$CI_BRANCH" = "$_OVERLAY_BRANCH" ]; the
     mtac2_CI_REF="PR7819-overlay"
     mtac2_CI_GITURL=https://github.com/mattam82/Mtac2
 
-    Equations_CI_REF="PR7819-overlay"
+    equations_CI_GITURL=https://github.com/mattam82/Coq-Equations
+    equations_CI_REF="PR7819-overlay"
 
 fi
