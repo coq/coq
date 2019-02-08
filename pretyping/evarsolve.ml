@@ -26,9 +26,9 @@ open Pretype_errors
 
 type unify_flags = {
   modulo_betaiota: bool;
-  open_ts : transparent_state;
-  closed_ts : transparent_state;
-  subterm_ts : transparent_state;
+  open_ts : TransparentState.t;
+  closed_ts : TransparentState.t;
+  subterm_ts : TransparentState.t;
   frozen_evars : Evar.Set.t;
   allow_K_at_toplevel : bool;
   with_cs : bool }
@@ -1442,8 +1442,8 @@ let occur_evar_upto_types sigma n c =
   try occur_rec c; false with Occur -> true
 
 let instantiate_evar unify flags evd evk body =
-  (** Check instance freezing the evar to be defined, as
-      checking could involve the same evar definition problem again otherwise *)
+  (* Check instance freezing the evar to be defined, as
+     checking could involve the same evar definition problem again otherwise *)
   let flags = { flags with frozen_evars = Evar.Set.add evk flags.frozen_evars } in
   let evd' = check_evar_instance unify flags evd evk body in
   Evd.define evk body evd'
