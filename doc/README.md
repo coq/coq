@@ -9,8 +9,10 @@ The Coq documentation includes
 The documentation of the latest released version is available on the Coq
 web site at [coq.inria.fr/documentation](http://coq.inria.fr/documentation).
 
-Additionally, you can view the documentation for the current master version at
-<https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman>.
+Additionally, you can view the reference manual for the development version
+at <https://coq.github.io/doc/master/refman/>, and the documentation of the
+standard library for the development version at
+<https://coq.github.io/doc/master/stdlib/>.
 
 The reference manual is written is reStructuredText and compiled
 using Sphinx. See [`sphinx/README.rst`](sphinx/README.rst)
