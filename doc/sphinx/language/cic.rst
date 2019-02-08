@@ -216,7 +216,7 @@ For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`
 enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
 the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
 notation :math:`[]` denotes the empty local context. By :math:`Γ_1 ; Γ_2` we mean
-concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2` .
+concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2`.
 
 
 .. _Global-environment:
@@ -545,7 +545,7 @@ i.e. :math:`u_1` is :math:`λ x:T.~u_1'` and :math:`u_2 x` is
 recursively convertible to :math:`u_1'`, or, symmetrically,
 :math:`u_2` is :math:`λx:T.~u_2'`
 and :math:`u_1 x` is recursively convertible to :math:`u_2'`. We then write
-:math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2` .
+:math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2`.
 
 Apart from this we consider two instances of polymorphic and
 cumulative (see Chapter :ref:`polymorphicuniverses`) inductive types
@@ -1064,7 +1064,7 @@ hypotheses of :math:`C_k`) are exactly applied to :math:`p_1 … p_m` (:math:`m`
 of *recursively uniform parameters* and the :math:`p−m` remaining parameters
 are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r`, with
 :math:`0≤ r≤ m`, be a (possibly) partial instantiation of the recursively
-uniform parameters of :math:`Γ_P` . We have:
+uniform parameters of :math:`Γ_P`. We have:
 
 .. inference:: Ind-Family
 
