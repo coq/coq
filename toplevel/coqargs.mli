@@ -14,6 +14,8 @@ val default_toplevel : Names.DirPath.t
 
 type t = {
 
+  boot : bool;
+
   load_init   : bool;
   load_rcfile : bool;
   rcfile      : string option;

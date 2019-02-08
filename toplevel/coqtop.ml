@@ -162,7 +162,7 @@ let init_toplevel ~help ~init custom_init arglist =
   (* If we have been spawned by the Spawn module, this has to be done
    * early since the master waits us to connect back *)
   Spawned.init_channels ();
-  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  Envars.set_coqlib ~boot:opts.boot ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
   if opts.print_where then begin
     print_endline (Envars.coqlib ());
     exit (exitcode opts)
@@ -221,6 +221,7 @@ let init_toploop opts =
   let doc, sid =
     Stm.(new_doc
            { doc_type = Interactive opts.toplevel_name;
+             allow_coq_overwrite = true; (* irrelevant *)
              iload_path; require_libs; stm_options;
            }) in
   let state = { doc; sid; proof = None; time = opts.time } in

@@ -31,8 +31,6 @@
 
 (** Command-line flags  *)
 
-val boot : bool ref
-
 (** Set by coqtop to tell the kernel to output to the aux file; will
     be eventually removed by cleanups such as PR#1103 *)
 val record_aux_file : bool ref

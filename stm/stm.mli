@@ -67,6 +67,10 @@ type stm_init_options = {
      some point. *)
   doc_type     : stm_doc_type;
 
+  (* Allow compiling modules in the Coq prefix. Irrelevant in
+     interactive mode. *)
+  allow_coq_overwrite : bool;
+
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
   iload_path   : Mltop.coq_path list;

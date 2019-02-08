@@ -431,7 +431,7 @@ let _ =
 
   check_overlapping_include project;
 
-  Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
+  Envars.set_coqlib ~boot:false ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
   
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file (prog :: args) project;

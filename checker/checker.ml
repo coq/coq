@@ -319,6 +319,8 @@ let explain_exn = function
 let deprecated flag =
   Feedback.msg_warning (str "Deprecated flag " ++ quote (str flag))
 
+let boot_opt = ref false
+
 let parse_args argv =
   let rec parse = function
     | [] -> ()
@@ -348,14 +350,14 @@ let parse_args argv =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
+        Envars.set_coqlib ~boot:!boot_opt ~fail:(fun x -> CErrors.user_err Pp.(str x));
         print_endline (Envars.coqlib ());
         exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
     | ("-v"|"--version") :: _ -> version ()
-    | "-boot" :: rem -> Flags.boot := true; parse rem
+    | "-boot" :: rem -> boot_opt := true; parse rem
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
     | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem
@@ -384,7 +386,7 @@ let init_with_argv argv =
   try
     parse_args argv;
     if !Flags.debug then Printexc.record_backtrace true;
-    Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
+    Envars.set_coqlib ~boot:!boot_opt ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();
     init_load_path ();
     make_senv ()

@@ -41,8 +41,6 @@ let with_options ol f x =
     let () = List.iter2 (:=) ol vl in
     Exninfo.iraise reraise
 
-let boot = ref false
-
 let record_aux_file = ref false
 
 let test_mode = ref false
