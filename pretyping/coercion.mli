@@ -58,7 +58,8 @@ val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool ->bool ->
     is coercible to an object of type [t'] adding evar constraints if needed;
     it fails if no coercion exists *)
 val inh_conv_coerces_to : ?loc:Loc.t ->
-  env -> evar_map -> types -> types -> evar_map
+  env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  types -> types -> evar_map
 
 (** [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
     pattern [pat] typed in [ind1] into a pattern typed in [ind2];
