@@ -542,7 +542,7 @@ exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangle
 … \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and
 :math:`u_2` are identical, or they are convertible up to η-expansion,
 i.e. :math:`u_1` is :math:`λ x:T.~u_1'` and :math:`u_2 x` is
-recursively convertible to :math:`u_1'` , or, symmetrically,
+recursively convertible to :math:`u_1'`, or, symmetrically,
 :math:`u_2` is :math:`λx:T.~u_2'`
 and :math:`u_1 x` is recursively convertible to :math:`u_2'`. We then write
 :math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2` .
@@ -1062,7 +1062,7 @@ longest prefix of parameters such that the :math:`m` first arguments of all
 occurrences of all :math:`I_j` in all :math:`C_k` (even the occurrences in the
 hypotheses of :math:`C_k`) are exactly applied to :math:`p_1 … p_m` (:math:`m` is the number
 of *recursively uniform parameters* and the :math:`p−m` remaining parameters
-are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r` , with
+are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r`, with
 :math:`0≤ r≤ m`, be a (possibly) partial instantiation of the recursively
 uniform parameters of :math:`Γ_P` . We have:
 
@@ -1083,7 +1083,7 @@ provided that the following side conditions hold:
     + :math:`Γ_{P′}` is the context obtained from :math:`Γ_P` by replacing each :math:`P_l` that is
       an arity with :math:`P_l'` for :math:`1≤ l ≤ r` (notice that :math:`P_l` arity implies :math:`P_l'`
       arity since :math:`E[] ⊢ P_l' ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}`);
-    + there are sorts :math:`s_i` , for :math:`1 ≤ i ≤ k` such that, for
+    + there are sorts :math:`s_i`, for :math:`1 ≤ i ≤ k` such that, for
       :math:`Γ_{I'} = [I_1 :∀ Γ_{P'} ,(A_1)_{/s_1} ;~…;~I_k :∀ Γ_{P'} ,(A_k)_{/s_k}]`
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
     + the sorts :math:`s_i` are such that all eliminations, to
@@ -1496,7 +1496,7 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
       & ≡∀ n:\nat,~∀ l:\List~\nat,~(P~(\cons~\nat~n~l)).
       \end{array}
 
-   Given some :math:`P` then :math:`\{(\Nil~\nat)\}^P` represents the expected type of :math:`f_1` ,
+   Given some :math:`P` then :math:`\{(\Nil~\nat)\}^P` represents the expected type of :math:`f_1`,
    and :math:`\{(\cons~\nat)\}^P` represents the expected type of :math:`f_2`.
 
 
@@ -1636,7 +1636,7 @@ fixpoints is extended and becomes
 
 
 where :math:`k_i` are positive integers. Each :math:`k_i` represents the index of
-parameter of :math:`f_i` , on which :math:`f_i` is decreasing. Each :math:`A_i` should be a
+parameter of :math:`f_i`, on which :math:`f_i` is decreasing. Each :math:`A_i` should be a
 type (reducible to a term) starting with at least :math:`k_i` products
 :math:`∀ y_1 :B_1 ,~… ∀ y_{k_i} :B_{k_i} ,~A_i'` and :math:`B_{k_i}` an inductive type.
 
