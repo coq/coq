@@ -1441,7 +1441,7 @@ elimination on any sort is allowed.
 **Type of branches.**
 Let :math:`c` be a term of type :math:`C`, we assume :math:`C` is a type of constructor for an
 inductive type :math:`I`. Let :math:`P` be a term that represents the property to be
-proved. We assume :math:`r` is the number of parameters and :math:`p` is the number of
+proved. We assume :math:`r` is the number of parameters and :math:`s` is the number of
 arguments.
 
 We define a new type :math:`\{c:C\}^P` which represents the type of the branch
@@ -1449,7 +1449,7 @@ corresponding to the :math:`c:C` constructor.
 
 .. math::
    \begin{array}{ll}
-   \{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)\}^P &\equiv (P~t_1\ldots ~t_p~c) \\
+   \{c:(I~p_1\ldots p_r\ t_1 \ldots t_s)\}^P &\equiv (P~t_1\ldots ~t_s~c) \\
    \{c:∀ x:T,~C\}^P &\equiv ∀ x:T,~\{(c~x):C\}^P
    \end{array}
 
