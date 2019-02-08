@@ -1632,7 +1632,7 @@ should be an inductive definition. For doing this, the syntax of
 fixpoints is extended and becomes
 
 .. math::
-   \Fix~f_i\{f_1/k_1 :A_1':=t_1' … f_n/k_n :A_n':=t_n'\}
+   \Fix~f_i\{f_1/k_1 :A_1:=t_1 … f_n/k_n :A_n:=t_n\}
 
 
 where :math:`k_i` are positive integers. Each :math:`k_i` represents the index of
