@@ -1623,7 +1623,7 @@ The definition of being structurally smaller is a bit technical. One
 needs first to define the notion of *recursive arguments of a
 constructor*. For an inductive definition :math:`\ind{r}{Γ_I}{Γ_C}`, if the
 type of a constructor :math:`c` has the form
-:math:`∀ p_1 :P_1 ,~… ∀ p_r :P_r,~∀ x_1:T_1,~… ∀ x_r :T_r,~(I_j~p_1 … p_r~t_1 … t_s )`,
+:math:`∀ p_1 :P_1 ,~… ∀ p_r :P_r,~∀ x_1:T_1,~… ∀ x_m :T_m,~(I_j~p_1 … p_r~t_1 … t_s )`,
 then the recursive
 arguments will correspond to :math:`T_i` in which one of the :math:`I_l` occurs.
 
@@ -1638,8 +1638,8 @@ Given a variable :math:`y` of an inductively defined type in a declaration
   If :math:`c` is :math:`y` or is structurally smaller than :math:`y`, its type is an inductive
   definition :math:`I_p` part of the inductive declaration corresponding to :math:`y`.
   Each :math:`f_i` corresponds to a type of constructor
-  :math:`C_q ≡ ∀ p_1 :P_1 ,~…,∀ p_r :P_r ,~∀ y_1 :B_1 ,~… ∀ y_k :B_k ,~(I~a_1 … a_k )`
-  and can consequently be written :math:`λ y_1 :B_1' .~… λ y_k :B_k'.~g_i`. (:math:`B_i'` is
+  :math:`C_q ≡ ∀ p_1 :P_1 ,~…,∀ p_r :P_r ,~∀ y_1 :B_1 ,~… ∀ y_m :B_m ,~(I~p_1 … p_r~t_1 … t_s )`
+  and can consequently be written :math:`λ y_1 :B_1' .~… λ y_m :B_m'.~g_i`. (:math:`B_i'` is
   obtained from :math:`B_i` by substituting parameters for variables) the variables
   :math:`y_j` occurring in :math:`g_i` corresponding to recursive arguments :math:`B_i` (the
   ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
