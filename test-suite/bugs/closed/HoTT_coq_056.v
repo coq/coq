@@ -82,7 +82,7 @@ Notation "F ^op" := (OppositeFunctor F) : functor_scope.
 Definition FunctorProduct' C D C' D' (F : Functor C D) (F' : Functor C' D') : Functor (C * C') (D * D')
   := admit.
 
-Global Class FunctorApplicationInterpretable
+Class FunctorApplicationInterpretable
        {C D} (F : Functor C D)
        {argsT : Type} (args : argsT)
        {T : Type} (rtn : T)

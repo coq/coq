@@ -137,26 +137,6 @@ let refine ~typecheck f =
   in
   Proofview.Goal.enter (make_refine_enter ~typecheck f)
 
-(** Useful definitions *)
-
-let with_type env evd c t =
-  let my_type = Retyping.get_type_of env evd c in
-  let j = Environ.make_judge c my_type in
-  let (evd,j') =
-    Coercion.inh_conv_coerce_to true env evd j t
-  in
-  evd , j'.Environ.uj_val
-
-let refine_casted ~typecheck f = Proofview.Goal.enter begin fun gl ->
-  let concl = Proofview.Goal.concl gl in
-  let env = Proofview.Goal.env gl in
-  let f h =
-    let (h, c) = f h in
-    with_type env h c concl
-  in
-  refine ~typecheck f
-end
-
 (** {7 solve_constraints}
 
   Ensure no remaining unification problems are left. Run at every "." by default. *)

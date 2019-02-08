@@ -514,9 +514,9 @@ let () =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ?hook k l =
+let start_proof_and_print ~program_mode ?hook k l =
   let inference_hook =
-    if Flags.is_program_mode () then
+    if program_mode then
       let hook env sigma ev =
         let tac = !Obligations.default_tactic in
         let evi = Evd.find sigma ev in
@@ -536,7 +536,7 @@ let start_proof_and_print ?hook k l =
       in Some hook
     else None
   in
-  start_proof_com ?inference_hook ?hook k l
+  start_proof_com ~program_mode ?inference_hook ?hook k l
 
 let vernac_definition_hook p = function
 | Coercion ->
@@ -549,7 +549,6 @@ let vernac_definition_hook p = function
 
 let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   let open DefAttributes in
-  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let () =
@@ -560,7 +559,7 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
       | Discharge -> Dumpglob.dump_definition lid true "var"
       | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
-  let program_mode = Flags.is_program_mode () in
+  let program_mode = atts.program in
   let name =
     match id with
     | Anonymous -> fresh_name_for_anonymous_theorem ()
@@ -568,7 +567,7 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-      start_proof_and_print (local, atts.polymorphic, DefinitionBody kind)
+      start_proof_and_print ~program_mode (local, atts.polymorphic, DefinitionBody kind)
         ?hook [(CAst.make ?loc name, pl), (bl, t)]
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
@@ -581,11 +580,10 @@ let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def =
 
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
-  let atts = parse atts in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print (local, atts.polymorphic, Proof kind) l
+  start_proof_and_print ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l
 
 let vernac_end_proof ?proof = function
   | Admitted          -> save_proof ?proof Admitted
@@ -600,7 +598,6 @@ let vernac_exact_proof c =
 
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
-  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
   let kind = local, atts.polymorphic, kind in
@@ -609,7 +606,7 @@ let vernac_assumption ~atts discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions kind nl l in
+  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let should_treat_as_cumulative cum poly =
@@ -675,9 +672,7 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo finite indl =
-  let open DefAttributes in
-  let atts, template = Attributes.(parse_with_extra template atts) in
-  let atts = parse atts in
+  let template, poly = Attributes.(parse Notations.(template ++ polymorphic) atts) in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -708,7 +703,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
-    vernac_record ~template udecl cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl cum (Class true) poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -731,7 +726,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl cum kind atts.polymorphic finite recordl
+    vernac_record ~template udecl cum kind poly finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let check_kind ((_, _, _, kind, _), _) = match kind with
@@ -755,9 +750,9 @@ let vernac_inductive ~atts cum lo finite indl =
     | RecordDecl _ -> assert false (* ruled out above *)
     in
     let indl = List.map unpack indl in
-    let is_cumulative = should_treat_as_cumulative cum atts.polymorphic in
+    let is_cumulative = should_treat_as_cumulative cum poly in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative atts.polymorphic lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative poly lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
@@ -773,12 +768,11 @@ let vernac_inductive ~atts cum lo finite indl =
 
 let vernac_fixpoint ~atts discharge l =
   let open DefAttributes in
-  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   (* XXX: Switch to the attribute system and match on ~atts *)
-  let do_fixpoint = if Flags.is_program_mode () then
+  let do_fixpoint = if atts.program then
       ComProgramFixpoint.do_fixpoint
     else
       ComFixpoint.do_fixpoint
@@ -787,11 +781,10 @@ let vernac_fixpoint ~atts discharge l =
 
 let vernac_cofixpoint ~atts discharge l =
   let open DefAttributes in
-  let atts = parse atts in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  let do_cofixpoint = if Flags.is_program_mode () then
+  let do_cofixpoint = if atts.program then
       ComProgramFixpoint.do_cofixpoint
     else
       ComFixpoint.do_cofixpoint
@@ -1029,18 +1022,16 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 let vernac_instance ~atts sup inst props pri =
   let open DefAttributes in
-  let atts = parse atts in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
-  let program_mode = Flags.is_program_mode () in
+  let program_mode = atts.program in
   ignore(Classes.new_instance ~program_mode ~global atts.polymorphic sup inst props pri)
 
 let vernac_declare_instance ~atts sup inst pri =
   let open DefAttributes in
-  let atts = parse atts in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
-  Classes.declare_new_instance ~global atts.polymorphic sup inst pri
+  Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
 let vernac_context ~poly l =
   if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
@@ -1571,14 +1562,6 @@ let () =
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "use of the program extension";
-      optkey   = ["Program";"Mode"];
-      optread  = (fun () -> !Flags.program_mode);
-      optwrite = (fun b -> Flags.program_mode:=b) }
 
 let () =
   declare_bool_option
@@ -2189,6 +2172,11 @@ let with_module_locality ~atts f =
   let module_local = make_module_locality local in
   f ~module_local
 
+let with_def_attributes ~atts f =
+  let atts = DefAttributes.parse atts in
+  if atts.DefAttributes.program then Obligations.check_program_libraries ();
+  f ~atts
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -2232,15 +2220,15 @@ let interp ?proof ~atts ~st c =
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->
-      vernac_definition ~atts discharge kind lid d
-  | VernacStartTheoremProof (k,l) -> vernac_start_proof ~atts k l
+      with_def_attributes ~atts vernac_definition discharge kind lid d
+  | VernacStartTheoremProof (k,l) -> with_def_attributes vernac_start_proof ~atts k l
   | VernacEndProof e -> unsupported_attributes atts; vernac_end_proof ?proof e
   | VernacExactProof c -> unsupported_attributes atts; vernac_exact_proof c
   | VernacAssumption ((discharge,kind),nl,l) ->
-      vernac_assumption ~atts discharge kind l nl
+      with_def_attributes vernac_assumption ~atts discharge kind l nl
   | VernacInductive (cum, priv, finite, l) -> vernac_inductive ~atts cum priv finite l
-  | VernacFixpoint (discharge, l) -> vernac_fixpoint ~atts discharge l
-  | VernacCoFixpoint (discharge, l) -> vernac_cofixpoint ~atts discharge l
+  | VernacFixpoint (discharge, l) -> with_def_attributes vernac_fixpoint ~atts discharge l
+  | VernacCoFixpoint (discharge, l) -> with_def_attributes vernac_cofixpoint ~atts discharge l
   | VernacScheme l -> unsupported_attributes atts; vernac_scheme l
   | VernacCombinedScheme (id, l) -> unsupported_attributes atts; vernac_combined_scheme id l
   | VernacUniverse l -> vernac_universe ~poly:(only_polymorphism atts) l
@@ -2271,9 +2259,9 @@ let interp ?proof ~atts ~st c =
 
   (* Type classes *)
   | VernacInstance (sup, inst, props, info) ->
-      vernac_instance ~atts sup inst props info
+      with_def_attributes vernac_instance ~atts sup inst props info
   | VernacDeclareInstance (sup, inst, info) ->
-      vernac_declare_instance ~atts sup inst info
+    with_def_attributes vernac_declare_instance ~atts sup inst info
   | VernacContext sup -> vernac_context ~poly:(only_polymorphism atts) sup
   | VernacExistingInstance insts -> with_section_locality ~atts vernac_existing_instance insts
   | VernacExistingClass id -> unsupported_attributes atts; vernac_existing_class id
@@ -2423,7 +2411,6 @@ let with_fail st b f =
   end
 
 let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
-  let orig_program_mode = Flags.is_program_mode () in
   let rec control = function
   | VernacExpr (atts, v) ->
     aux ~atts v
@@ -2445,21 +2432,13 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
       vernac_load control fname
 
     | c ->
-      let program = let open Attributes in
-        parse_drop_extra program_opt atts
-      in
       (* NB: we keep polymorphism and program in the attributes, we're
          just parsing them to do our option magic. *)
-      Option.iter Obligations.set_program_mode program;
       try
         vernac_timeout begin fun () ->
           if verbosely
           then Flags.verbosely (interp ?proof ~atts ~st) c
           else Flags.silently  (interp ?proof ~atts ~st) c;
-          (* If the command is `(Un)Set Program Mode` or `(Un)Set Universe Polymorphism`,
-             we should not restore the previous state of the flag... *)
-          if Option.has_some program then
-            Flags.program_mode := orig_program_mode;
           end
         with
         | reraise when
@@ -2470,7 +2449,6 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} =
             let e = CErrors.push reraise in
             let e = locate_if_not_already ?loc e in
             let () = restore_timeout () in
-            Flags.program_mode := orig_program_mode;
             iraise e
   in
   if verbosely

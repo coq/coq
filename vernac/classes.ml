@@ -82,14 +82,14 @@ let mismatched_props env n m = Implicit_quantifiers.mismatched_ctx_inst_err env 
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
-let type_ctx_instance env sigma ctx inst subst =
+let type_ctx_instance ~program_mode env sigma ctx inst subst =
   let open Vars in
   let rec aux (sigma, subst, instctx) l = function
     decl :: ctx ->
       let t' = substl subst (RelDecl.get_type decl) in
       let (sigma, c'), l =
 	match decl with
-        | LocalAssum _ -> interp_casted_constr_evars env sigma (List.hd l) t', List.tl l
+        | LocalAssum _ -> interp_casted_constr_evars ~program_mode env sigma (List.hd l) t', List.tl l
         | LocalDef (_,b,_) -> (sigma, substl subst b), l
       in
       let d = RelDecl.get_name decl, Some c', t' in
@@ -206,7 +206,7 @@ let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode ct
     | None ->
       (if List.is_empty k.cl_props then Some (Inl subst) else None), sigma
     | Some (Inr term) ->
-      let sigma, c = interp_casted_constr_evars env' sigma term cty in
+      let sigma, c = interp_casted_constr_evars ~program_mode env' sigma term cty in
       Some (Inr (c, subst)), sigma
     | Some (Inl props) ->
       let get_id qid = CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid in
@@ -237,7 +237,7 @@ let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode ct
         unbound_method env' k.cl_impl (get_id n)
       | _ ->
         let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
-        let sigma, res = type_ctx_instance (push_rel_context ctx' env') sigma kcl_props props subst in
+        let sigma, res = type_ctx_instance ~program_mode (push_rel_context ctx' env') sigma kcl_props props subst in
         Some (Inl res), sigma
   in
   let term, termtype =
@@ -276,7 +276,7 @@ let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode ct
   else CErrors.user_err Pp.(str "Unsolved obligations remaining.");
   id
 
-let interp_instance_context env ctx ?(generalize=false) pl bk cl =
+let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass, ids =
     match bk with
@@ -295,8 +295,8 @@ let interp_instance_context env ctx ?(generalize=false) pl bk cl =
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
     else tclass
   in
-  let sigma, (impls, ((env', ctx), imps)) = interp_context_evars env sigma ctx in
-  let sigma, (c', imps') = interp_type_evars_impls ~impls env' sigma tclass in
+  let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
+  let sigma, (c', imps') = interp_type_evars_impls ~program_mode ~impls env' sigma tclass in
   let len = Context.Rel.nhyps ctx in
   let imps = imps @ Impargs.lift_implicits len imps' in
   let ctx', c = decompose_prod_assum sigma c' in
@@ -324,7 +324,7 @@ let new_instance ?(global=false) ?(refine= !refine_instance) ~program_mode
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context env ~generalize ctx pl bk cl
+    interp_instance_context ~program_mode env ~generalize ctx pl bk cl
   in
   let id =
     match instid with
@@ -337,11 +337,11 @@ let new_instance ?(global=false) ?(refine= !refine_instance) ~program_mode
   do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
-let declare_new_instance ?(global=false) poly ctx (instid, bk, cl) pri =
+let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context env ctx pl bk cl
+    interp_instance_context ~program_mode env ctx pl bk cl
   in
   do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
 
@@ -361,7 +361,7 @@ let named_of_rel_context l =
 let context poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, (_, ((env', fullctx), impls)) = interp_context_evars env sigma l in
+  let sigma, (_, ((env', fullctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = Evd.minimize_universes sigma in
   let ce t = Pretyping.check_evars env (Evd.from_env env) sigma t in

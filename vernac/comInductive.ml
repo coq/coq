@@ -162,7 +162,7 @@ let interp_cstrs env sigma impls mldata arity ind =
   let sigma, (ctyps'', cimpls) =
     on_snd List.split @@
     List.fold_left_map (fun sigma l ->
-        interp_type_evars_impls env sigma ~impls l) sigma ctyps' in
+        interp_type_evars_impls ~program_mode:false env sigma ~impls l) sigma ctyps' in
   sigma, (cnames, ctyps'', cimpls)
 
 let sign_level env evd sign =
@@ -358,9 +358,9 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
   let sigma, udecl = interp_univ_decl_opt env0 udecl in
   let sigma, (uimpls, ((env_uparams, ctx_uparams), useruimpls)) =
-    interp_context_evars env0 sigma uparamsl in
+    interp_context_evars ~program_mode:false env0 sigma uparamsl in
   let sigma, (impls, ((env_params, ctx_params), userimpls)) =
-    interp_context_evars ~impl_env:uimpls env_uparams sigma paramsl
+    interp_context_evars ~program_mode:false ~impl_env:uimpls env_uparams sigma paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 

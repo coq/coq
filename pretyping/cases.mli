@@ -40,7 +40,7 @@ val irrefutable : env -> cases_pattern -> bool
 (** {6 Compilation primitive. } *)
 
 val compile_cases :
-  ?loc:Loc.t -> case_style ->
+  ?loc:Loc.t -> program_mode:bool -> case_style ->
   (type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) * evar_map ->
   type_constraint ->
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
@@ -111,9 +111,9 @@ type 'a pattern_matching_problem =
       casestyle : case_style;
       typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
-val compile : evar_map -> 'a pattern_matching_problem -> evar_map * unsafe_judgment
+val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem -> evar_map * unsafe_judgment
 
-val prepare_predicate : ?loc:Loc.t ->
+val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
            (type_constraint ->
             GlobEnv.t -> Evd.evar_map -> glob_constr -> Evd.evar_map * unsafe_judgment) ->
            GlobEnv.t ->

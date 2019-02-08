@@ -38,6 +38,7 @@ type naming_mode =
   | KeepUserNameAndRenameExistingEvenSectionNames
   | KeepExistingNames
   | FailIfConflict
+  | ProgramNaming
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->

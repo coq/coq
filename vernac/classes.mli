@@ -55,6 +55,7 @@ val new_instance :
 
 val declare_new_instance :
   ?global:bool (** Not global by default. *) ->
+  program_mode:bool ->
   Decl_kinds.polymorphic ->
   local_binder_expr list ->
   ident_decl * Decl_kinds.binding_kind * constr_expr ->

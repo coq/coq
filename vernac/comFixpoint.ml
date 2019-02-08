@@ -116,21 +116,23 @@ type structured_fixpoint_expr = {
   fix_type : constr_expr
 }
 
-let interp_fix_context ~cofix env sigma fix =
+let interp_fix_context ~program_mode ~cofix env sigma fix =
   let before, after = if not cofix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
-  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars env sigma before in
-  let sigma, (impl_env', ((env'', ctx'), imps')) = interp_context_evars ~impl_env ~shift:(Context.Rel.nhyps ctx) env' sigma after in
+  let sigma, (impl_env, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma before in
+  let sigma, (impl_env', ((env'', ctx'), imps')) =
+    interp_context_evars ~program_mode ~impl_env ~shift:(Context.Rel.nhyps ctx) env' sigma after
+  in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
   sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
-let interp_fix_ccl sigma impls (env,_) fix =
-  interp_type_evars_impls ~impls env sigma fix.fix_type
+let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
+  interp_type_evars_impls ~program_mode ~impls env sigma fix.fix_type
 
-let interp_fix_body env_rec sigma impls (_,ctx) fix ccl =
+let interp_fix_body ~program_mode env_rec sigma impls (_,ctx) fix ccl =
   let open EConstr in
   Option.cata (fun body ->
     let env = push_rel_context ctx env_rec in
-    let sigma, body = interp_casted_constr_evars env sigma ~impls body ccl in
+    let sigma, body = interp_casted_constr_evars ~program_mode env sigma ~impls body ccl in
     sigma, Some (it_mkLambda_or_LetIn body ctx)) (sigma, None) fix.fix_body
 
 let build_fix_type (_,ctx) ccl = EConstr.it_mkProd_or_LetIn ccl ctx
@@ -184,11 +186,11 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   let sigma, decl = interp_univ_decl_opt env all_universes in
   let sigma, (fixctxs, fiximppairs, fixannots) =
     on_snd List.split3 @@
-      List.fold_left_map (fun sigma -> interp_fix_context env sigma ~cofix) sigma fixl in
+      List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma ~cofix) sigma fixl in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
   let sigma, (fixccls,fixcclimps) =
     on_snd List.split @@
-      List.fold_left3_map interp_fix_ccl sigma fixctximpenvs fixctxs fixl in
+      List.fold_left3_map (interp_fix_ccl ~program_mode) sigma fixctximpenvs fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (fun c -> nf_evar sigma c) fixtypes in
   let fiximps = List.map3
@@ -220,7 +222,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
       List.fold_left4_map
-        (fun sigma fixctximpenv -> interp_fix_body env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
+        (fun sigma fixctximpenv -> interp_fix_body ~program_mode env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
         sigma fixctximpenvs fixctxs fixl fixccls)
       () in
 
@@ -239,7 +241,7 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
   end
 
 let ground_fixpoint env evd (fixnames,fixdefs,fixtypes) =
-  check_evars_are_solved env evd;
+  check_evars_are_solved ~program_mode:false env evd;
   let fixdefs = List.map (fun c -> Option.map EConstr.(to_constr evd) c) fixdefs in
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixdefs,fixtypes)

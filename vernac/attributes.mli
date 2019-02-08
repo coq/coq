@@ -53,7 +53,7 @@ val template : bool option attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
 
-val program_opt : bool option attribute
+val program_mode_option_name : string list
 (** For internal use when messing with the global option. *)
 
 val only_locality : vernac_flags -> bool option

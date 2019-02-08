@@ -126,6 +126,10 @@ Vernacular commands
    class will have to be changed into `Instance foo : C := {}.` or
    `Instance foo : C. Proof. Qed.`.
 
+- Option `Program Mode` now means that the `Program` attribute is enabled
+  for all commands that support it. In particular, it does not have any effect
+  on tactics anymore. May cause some incompatibilities.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

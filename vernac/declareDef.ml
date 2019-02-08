@@ -57,7 +57,7 @@ let declare_fix ?(opaque = false) (_,poly,_ as kind) pl univs f ((def,_),eff) t 
 
 let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in
-  if not allow_evars then Pretyping.check_evars_are_solved env sigma
+  if not allow_evars then Pretyping.check_evars_are_solved ~program_mode:false env sigma
 
 let prepare_definition ~allow_evars ?opaque ?inline ~poly sigma udecl ~types ~body =
   check_definition_evars ~allow_evars sigma;

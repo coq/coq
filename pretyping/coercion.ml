@@ -393,7 +393,7 @@ let apply_coercion env sigma p hj typ_cl =
   with NoCoercion as e -> raise e
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
-let inh_app_fun_core env evd j =
+let inh_app_fun_core ~program_mode env evd j =
   let t = whd_all env evd j.uj_type in
     match EConstr.kind evd t with
     | Prod (_,_,_) -> (evd,j)
@@ -404,25 +404,25 @@ let inh_app_fun_core env evd j =
       	try let t,p =
 	  lookup_path_to_fun_from env evd j.uj_type in
 	    apply_coercion env evd p j t
-	with Not_found | NoCoercion ->
-          if Flags.is_program_mode () then
-	  try
-	    let evdref = ref evd in
-	    let coercef, t = mu env evdref t in
-	    let res = { uj_val = app_opt env evdref coercef j.uj_val; uj_type = t } in
-	      (!evdref, res)
-	  with NoSubtacCoercion | NoCoercion ->
-	    (evd,j)
-          else raise NoCoercion
+       with Not_found | NoCoercion ->
+         if program_mode then
+           try
+             let evdref = ref evd in
+             let coercef, t = mu env evdref t in
+             let res = { uj_val = app_opt env evdref coercef j.uj_val; uj_type = t } in
+             (!evdref, res)
+           with NoSubtacCoercion | NoCoercion ->
+             (evd,j)
+         else raise NoCoercion
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
-let inh_app_fun resolve_tc env evd j =
-  try inh_app_fun_core env evd j
+let inh_app_fun ~program_mode resolve_tc env evd j =
+  try inh_app_fun_core ~program_mode env evd j
   with
   | NoCoercion when not resolve_tc
     || not (get_use_typeclasses_for_conversion ()) -> (evd, j)
   | NoCoercion ->
-    try inh_app_fun_core env (saturate_evd env evd) j
+    try inh_app_fun_core ~program_mode env (saturate_evd env evd) j
     with NoCoercion -> (evd, j)
 
 let type_judgment env sigma j =
@@ -449,8 +449,8 @@ let inh_coerce_to_sort ?loc env evd j =
     | _ ->
 	inh_tosort_force ?loc env evd j
 
-let inh_coerce_to_base ?loc env evd j =
-  if Flags.is_program_mode () then
+let inh_coerce_to_base ?loc ~program_mode env evd j =
+  if program_mode then
     let evdref = ref evd in
     let ct, typ' = mu env evdref j.uj_type in
     let res =
@@ -459,8 +459,8 @@ let inh_coerce_to_base ?loc env evd j =
     in !evdref, res
   else (evd, j)
 
-let inh_coerce_to_prod ?loc env evd t =
-  if Flags.is_program_mode () then
+let inh_coerce_to_prod ?loc ~program_mode env evd t =
+  if program_mode then
     let evdref = ref evd in
     let _, typ' = mu env evdref t in
       !evdref, typ'
@@ -520,13 +520,13 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly env evd cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly env evd cj t =
   let (evd', val') =
     try
       inh_conv_coerce_to_fail ?loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
     with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
-	if Flags.is_program_mode () then
+        if program_mode then
 	  coerce_itf ?loc env evd (Some cj.uj_val) cj.uj_type t
 	else raise NoSubtacCoercion
       with
@@ -545,9 +545,11 @@ let inh_conv_coerce_to_gen ?loc resolve_tc rigidonly env evd cj t =
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
 
-let inh_conv_coerce_to ?loc resolve_tc = inh_conv_coerce_to_gen ?loc resolve_tc false
+let inh_conv_coerce_to ?loc ~program_mode resolve_tc =
+  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false
 
-let inh_conv_coerce_rigid_to ?loc resolve_tc = inh_conv_coerce_to_gen resolve_tc ?loc true
+let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc =
+  inh_conv_coerce_to_gen ~program_mode resolve_tc ?loc true
 
 let inh_conv_coerces_to ?loc env evd t t' =
   try

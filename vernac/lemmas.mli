@@ -31,7 +31,7 @@ val start_proof_univs : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.eva
   ?univ_hook:(UState.t option -> declaration_hook) -> EConstr.types -> unit
 
 val start_proof_com :
-  ?inference_hook:Pretyping.inference_hook ->
+  program_mode:bool -> ?inference_hook:Pretyping.inference_hook ->
   ?hook:declaration_hook -> goal_kind -> Vernacexpr.proof_expr list ->
   unit
 

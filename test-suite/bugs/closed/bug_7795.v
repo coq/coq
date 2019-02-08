@@ -52,6 +52,8 @@ Definition hh:
          false = true.
 Admitted.
 
+Require Import Program.
+
 Set Program Mode. (* removing this line prevents the bug *)
 Obligation Tactic := repeat t_base.
 

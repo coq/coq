@@ -417,14 +417,14 @@ let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
           | None -> p,(true,[])
           | Some tac -> Proof.run_tactic Global.(env ()) tac p))
 
-let start_proof_com ?inference_hook ?hook kind thms =
+let start_proof_com ~program_mode ?inference_hook ?hook kind thms =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-    let evd, (impls, ((env, ctx), imps)) = interp_context_evars env0 evd bl in
-    let evd, (t', imps') = interp_type_evars_impls ~impls env evd t in
-    let flags = all_and_fail_flags in
+    let evd, (impls, ((env, ctx), imps)) = interp_context_evars ~program_mode env0 evd bl in
+    let evd, (t', imps') = interp_type_evars_impls ~program_mode ~impls env evd t in
+    let flags = { all_and_fail_flags with program_mode } in
     let hook = inference_hook in
     let evd = solve_remaining_evars ?hook flags env evd in
     let ids = List.map RelDecl.get_name ctx in

@@ -544,7 +544,9 @@ let constr_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
   fail_evar = true;
-  expand_evars = true }
+  expand_evars = true;
+  program_mode = false;
+}
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
@@ -558,19 +560,25 @@ let open_constr_use_classes_flags () = {
   use_typeclasses = true;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = true }
+  expand_evars = true;
+  program_mode = false;
+}
 
 let open_constr_no_classes_flags () = {
   use_typeclasses = false;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = true }
+  expand_evars = true;
+  program_mode = false;
+}
 
 let pure_open_constr_flags = {
   use_typeclasses = false;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = false }
+  expand_evars = false;
+  program_mode = false;
+}
 
 (* Interprets an open constr *)
 let interp_open_constr ?(expected_type=WithoutTypeConstraint) ?(flags=open_constr_no_classes_flags ()) ist env sigma c =

@@ -1269,7 +1269,7 @@ let is_mimick_head sigma ts f =
 
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
-  let (evd',j') = inh_conv_coerce_rigid_to true env evd j tycon in
+  let (evd',j') = inh_conv_coerce_rigid_to ~program_mode:false true env evd j tycon in
   let evd' = Evarconv.solve_unif_constraints_with_heuristics env evd' in
   let evd' = Evd.map_metas_fvalue (fun c -> nf_evar evd' c) evd' in
     (evd',j'.uj_val)

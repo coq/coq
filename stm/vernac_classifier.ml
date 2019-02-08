@@ -56,6 +56,7 @@ let options_affecting_stm_scheduling =
   [ Attributes.universe_polymorphism_option_name;
     stm_allow_nested_proofs_option_name;
     Vernacentries.proof_mode_opt_name;
+    Attributes.program_mode_option_name;
   ]
 
 let classify_vernac e =
