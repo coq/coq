@@ -33,6 +33,8 @@ type t = {
   indices_matter : bool;
   enable_VM : bool;
   enable_native_compiler : bool;
+  output_native_objects : bool;
+
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;

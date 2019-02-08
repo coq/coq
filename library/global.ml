@@ -143,7 +143,8 @@ let mind_of_delta_kn kn =
 (** Operations on libraries *)
 
 let start_library dir = globalize (Safe_typing.start_library dir)
-let export ?except s = Safe_typing.export ?except (safe_env ()) s
+let export ?except ~output_native_objects s =
+  Safe_typing.export ?except ~output_native_objects (safe_env ()) s
 let import c u d = globalize (Safe_typing.import c u d)
 
 

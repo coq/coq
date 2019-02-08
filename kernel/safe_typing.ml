@@ -1114,7 +1114,7 @@ let start_library dir senv =
     modvariant = LIBRARY;
     required = senv.required }
 
-let export ?except senv dir =
+let export ?except ~output_native_objects senv dir =
   let senv =
     try join_safe_environment ?except senv
     with e ->
@@ -1136,7 +1136,7 @@ let export ?except senv dir =
     }
   in
   let ast, symbols =
-    if !Flags.output_native_objects then
+    if output_native_objects then
       Nativelibrary.dump_library mp dir senv.env str
     else [], Nativecode.empty_symbols
   in

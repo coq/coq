@@ -55,6 +55,7 @@ type t = {
   indices_matter : bool;
   enable_VM : bool;
   enable_native_compiler : bool;
+  output_native_objects : bool;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
@@ -100,6 +101,8 @@ let default = {
   indices_matter = false;
   enable_VM = true;
   enable_native_compiler = Coq_config.native_compiler;
+  output_native_objects = false;
+
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   diffs_set    = false;
@@ -421,8 +424,7 @@ let parse_args ~help ~init arglist : t * string list =
         | ("no" | "off") -> false, false
         | _ -> prerr_endline ("Error: (yes|no|ondemand) expected after option -native-compiler"); exit 1
       in
-      Flags.output_native_objects := precompile;
-      { oval with enable_native_compiler = enable }
+      { oval with output_native_objects = precompile; enable_native_compiler = enable }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
