@@ -954,7 +954,8 @@ let constr_flags () =
     use_typeclasses = true;
     solve_unification_constraints = true;
     fail_evar = true;
-    expand_evars = true
+    expand_evars = true;
+    program_mode = false;
   }
 
 let open_constr_no_classes_flags () =
@@ -963,7 +964,8 @@ let open_constr_no_classes_flags () =
   use_typeclasses = false;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = true
+  expand_evars = true;
+  program_mode = false;
   }
 
 (** Embed all Ltac2 data into Values *)

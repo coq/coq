@@ -22,7 +22,9 @@ let tactic_infer_flags with_evar = {
   Pretyping.use_typeclasses = true;
   Pretyping.solve_unification_constraints = true;
   Pretyping.fail_evar = not with_evar;
-  Pretyping.expand_evars = true }
+  Pretyping.expand_evars = true;
+  Pretyping.program_mode = false;
+}
 
 (** FIXME: export a better interface in Tactics *)
 let delayed_of_tactic tac env sigma =
