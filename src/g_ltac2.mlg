@@ -884,7 +884,7 @@ END
 {
 
 let classify_ltac2 = function
-| StrSyn _ -> Vernacextend.(VtUnknown, VtNow)
+| StrSyn _ -> Vernacextend.(VtSideff [], VtNow)
 | StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernacextend.classify_as_sideeff
 
 }
