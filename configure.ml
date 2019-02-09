@@ -153,6 +153,7 @@ let numeric_prefix_list s =
   match string_split '.' (String.sub s 0 !i) with
   | [v] -> [v;"0";"0"]
   | [v1;v2] -> [v1;v2;"0"]
+  | [v1;v2;""] -> [v1;v2;"0"] (* e.g. because it ends with ".beta" *)
   | v -> v
 
 (** Combined existence and directory tests *)
@@ -229,7 +230,6 @@ type preferences = {
   docdir : string option;
   coqdocdir : string option;
   ocamlfindcmd : string option;
-  lablgtkdir : string option;
   arch : string option;
   natdynlink : bool;
   coqide : ide option;
@@ -266,7 +266,6 @@ let default = {
   docdir = None;
   coqdocdir = None;
   ocamlfindcmd = None;
-  lablgtkdir = None;
   arch = None;
   natdynlink = true;
   coqide = None;
@@ -371,8 +370,6 @@ let args_options = Arg.align [
     "<dir> Where to install Coqdoc style files";
   "-ocamlfind", arg_string_option (fun p ocamlfindcmd -> { p with ocamlfindcmd }),
     "<dir> Specifies the ocamlfind command to use";
-  "-lablgtkdir", arg_string_option (fun p lablgtkdir -> { p with lablgtkdir }),
-    "<dir> Specifies the path to the Lablgtk library";
   "-flambda-opts", arg_string_list ' ' (fun p flambda_flags -> { p with flambda_flags }),
     "<flags> Specifies additional flags to be passed to the flambda optimizing compiler";
   "-arch", arg_string_option (fun p arch -> { p with arch }),
@@ -702,63 +699,29 @@ let numlib =
 
 (** * lablgtk3 and CoqIDE *)
 
-type source = Manual | OCamlFind | Stdlib
-
-let get_source = function
-| Manual -> "manually provided"
-| OCamlFind -> "via ocamlfind"
-| Stdlib -> "in OCaml library"
-
-(** Is some location a suitable LablGtk2 installation ? *)
-
-let check_lablgtkdir ?(fatal=false) src dir =
-  let yell msg = if fatal then die msg else (warn "%s" msg; false) in
-  let msg = get_source src in
-  if not (dir_exists dir) then
-    yell (sprintf "No such directory '%s' (%s)." dir msg)
-  else if not (Sys.file_exists (dir/"gSourceView2.cmi") || Sys.file_exists (dir/"gSourceView3.cmi")) then
-    yell (sprintf "Incomplete LablGtk2 (%s): no %s/gSourceView2.cmi." msg dir)
-  else if not (Sys.file_exists (dir/"glib.mli")) then
-    yell (sprintf "Incomplete LablGtk2 (%s): no %s/glib.mli." msg dir)
-  else true
-
-(** Detect and/or verify the Lablgtk2 location *)
+(** Detect and/or verify the Lablgtk3 location *)
 
 let get_lablgtkdir () =
-  match !prefs.lablgtkdir with
-  | Some dir ->
-    let msg = Manual in
-    if check_lablgtkdir ~fatal:true msg dir then dir, msg
-    else "", msg
-  | None ->
-    let msg = OCamlFind in
-    let d1,_ = tryrun camlexec.find ["query";"lablgtk3.sourceview3"] in
-    if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
-    else
-      (* In debian wheezy, ocamlfind knows only of lablgtk3 *)
-      let d2,_ = tryrun camlexec.find ["query";"lablgtk3"] in
-      if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
-      else
-        let msg = Stdlib in
-        let d3 = camllib^"/lablgtk3" in
-        if check_lablgtkdir msg d3 then d3, msg
-        else "", msg
+  tryrun camlexec.find ["query";"lablgtk3-sourceview3"]
 
 (** Detect and/or verify the Lablgtk2 version *)
 
-let check_lablgtk_version src dir = match src with
-| Manual | Stdlib ->
-  warn "Could not check the version of lablgtk3.\nMake sure your version is at least 3.0.0.";
-  (true, "an unknown version")
-| OCamlFind ->
+let check_lablgtk_version () =
   let v, _ = tryrun camlexec.find ["query"; "-format"; "%v"; "lablgtk3"] in
-  try
-    let vi = List.map s2i (numeric_prefix_list v) in
+  (true, v)
+
+(* ejgallego: we wait to do version checks until an official release is out *)
+(*  try
+    let vi = numeric_prefix_list v in
+    (* Temporary hack *)
+    if vi = ["3";"0";"beta3"] then (false, v) else
+    let vi = List.map s2i vi in
     if vi < [3; 0; 0] then
       (false, v)
     else
       (true, v)
   with _ -> (false, v)
+*)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
 
@@ -781,19 +744,19 @@ let lablgtkdir = ref ""
 let check_coqide () =
   if !prefs.coqide = Some No then set_ide No "CoqIde manually disabled";
   let dir, via = get_lablgtkdir () in
-  if dir = "" then set_ide No "LablGtk3 not found";
-  let (ok, version) = check_lablgtk_version via dir in
-  let found = sprintf "LablGtk3 found (%s, %s)" (get_source via) version in
-  if not ok then set_ide No (found^", but too old (required >= 3.0, found " ^ version ^ ")");
-  (* We're now sure to produce at least one kind of coqide *)
-  lablgtkdir := shorten_camllib dir;
-  if !prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
-  if best_compiler<>"opt" then set_ide Byte (found^", but no native compiler");
-  if not (Sys.file_exists (dir/"gtkThread.cmx")) then
-    set_ide Byte (found^", but no native LablGtk2");
-  if not (Sys.file_exists (camllib/"threads"/"threads.cmxa")) then
-    set_ide Byte (found^", but no native threads");
-  set_ide Opt (found^", with native threads")
+  if dir = ""
+  then set_ide No "LablGtk3 not found"
+  else
+    let (ok, version) = check_lablgtk_version () in
+    let found = sprintf "LablGtk3 found (%s)" version in
+    if not ok then set_ide No (found^", but too old (required >= 3.0, found " ^ version ^ ")");
+    (* We're now sure to produce at least one kind of coqide *)
+    lablgtkdir := shorten_camllib dir;
+    if !prefs.coqide = Some Byte then set_ide Byte (found^", bytecode requested");
+    if best_compiler <> "opt" then set_ide Byte (found^", but no native compiler");
+    if not (Sys.file_exists (camllib/"threads"/"threads.cmxa")) then
+      set_ide Byte (found^", but no native threads");
+    set_ide Opt (found^", with native threads")
 
 let coqide =
   try check_coqide ()
@@ -801,19 +764,16 @@ let coqide =
 
 (** System-specific CoqIde flags *)
 
-let lablgtkincludes = ref ""
 let idearchflags = ref ""
 let idearchfile = ref ""
 let idecdepsflags = ref ""
 let idearchdef = ref "X11"
 
 let coqide_flags () =
-  if !lablgtkdir <> "" then lablgtkincludes := sprintf "-I %S" !lablgtkdir;
   match coqide, arch with
     | "opt", "Darwin" when !prefs.macintegration ->
       let osxdir,_ = tryrun camlexec.find ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
-        lablgtkincludes := sprintf "%s -I %S" !lablgtkincludes osxdir;
         idearchflags := "lablgtkosx.cma";
         idearchdef := "QUARTZ"
       end
@@ -1196,7 +1156,6 @@ let write_makefile f =
   pr "# Unix systems and no profiling: strip\n";
   pr "STRIP=%s\n\n" strip;
   pr "# LablGTK\n";
-  pr "COQIDEINCLUDES=%s\n\n" !lablgtkincludes;
   pr "# CoqIde (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
   pr "IDEFLAGS=%s\n" !idearchflags;

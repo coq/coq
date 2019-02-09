@@ -1,0 +1,76 @@
+diff/patch file created on Wed, Feb 20, 2019 11:29:48 AM with:
+difftar-folder.sh tarballs/lablgtk-3.0.beta4.tar.gz lablgtk-3.0.beta4 1
+TARFILE= tarballs/lablgtk-3.0.beta4.tar.gz
+FOLDER= lablgtk-3.0.beta4
+TARSTRIP= 1
+TARPREFIX= lablgtk-3.0.beta4/
+ORIGFOLDER= lablgtk-3.0.beta4.orig
+--- lablgtk-3.0.beta4.orig/src/glib.ml	2019-02-11 07:08:17.000000000 +0100
++++ lablgtk-3.0.beta4/src/glib.ml	2019-02-20 11:28:28.439137100 +0100
+@@ -72,6 +72,8 @@
+   type id
+   external channel_of_descr : Unix.file_descr -> channel
+     = "ml_g_io_channel_unix_new"
++  external channel_of_descr_socket : Unix.file_descr -> channel
++    = "ml_g_io_channel_unix_new_socket"
+   external remove : id -> unit = "ml_g_source_remove"
+   external add_watch :
+     cond:condition list -> callback:(condition list -> bool) -> ?prio:int -> channel -> id
+--- lablgtk-3.0.beta4.orig/src/glib.mli	2019-02-11 07:08:17.000000000 +0100
++++ lablgtk-3.0.beta4/src/glib.mli	2019-02-20 11:28:28.423592200 +0100
+@@ -75,6 +75,7 @@
+   type condition = [ `ERR | `HUP | `IN | `NVAL | `OUT | `PRI]
+   type id
+   val channel_of_descr : Unix.file_descr -> channel
++  val channel_of_descr_socket : Unix.file_descr -> channel
+   val add_watch :
+     cond:condition list -> callback:(condition list -> bool) -> ?prio:int -> channel -> id
+   val remove : id -> unit
+--- lablgtk-3.0.beta4.orig/src/ml_glib.c	2019-02-11 07:08:17.000000000 +0100
++++ lablgtk-3.0.beta4/src/ml_glib.c	2019-02-20 11:28:28.455395900 +0100
+@@ -25,6 +25,8 @@
+ #include <string.h>
+ #include <locale.h>
+ #ifdef _WIN32
++/* to kill a #warning: include winsock2.h before windows.h */
++#include <winsock2.h>
+ #include "win32.h"
+ #include <wtypes.h>
+ #include <io.h>
+@@ -38,6 +40,11 @@
+ #include <caml/callback.h>
+ #include <caml/threads.h>
+ 
++#ifdef _WIN32
++/* for Socket_val */
++#include <caml/unixsupport.h>
++#endif
++
+ #include "wrappers.h"
+ #include "ml_glib.h"
+ #include "glib_tags.h"
+@@ -326,14 +333,23 @@
+ 
+ #ifndef _WIN32
+ ML_1 (g_io_channel_unix_new, Int_val, Val_GIOChannel_noref)
++CAMLprim value ml_g_io_channel_unix_new_socket (value arg1) {
++  return Val_GIOChannel_noref (g_io_channel_unix_new (Int_val (arg1))); 
++}
+ 
+ #else
+ CAMLprim value ml_g_io_channel_unix_new(value wh)
+ {
+   return Val_GIOChannel_noref
+-    (g_io_channel_unix_new
++    (g_io_channel_win32_new_fd
+      (_open_osfhandle((long)*(HANDLE*)Data_custom_val(wh), O_BINARY)));
+ }
++
++CAMLprim value ml_g_io_channel_unix_new_socket(value wh)
++{
++  return Val_GIOChannel_noref
++    (g_io_channel_win32_new_socket(Socket_val(wh)));
++}
+ #endif
+ 
+ static gboolean ml_g_io_channel_watch(GIOChannel *s, GIOCondition c,

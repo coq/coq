@@ -17,7 +17,6 @@
 
 ## Coqide-related variables set by ./configure in config/Makefile
 
-#COQIDEINCLUDES : something like -I +lablgtk3
 #HASCOQIDE : opt / byte / no
 #IDEFLAGS : some extra cma, for instance
 #IDEOPTCDEPS : on windows, ide/ide_win32_stubs.o ide/coq_icon.o
@@ -41,7 +40,11 @@ COQIDEINAPP:=$(COQIDEAPP)/Contents/MacOS/coqide
 
 IDESRCDIRS:= $(CORESRCDIRS) ide ide/protocol
 
-COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
+ifeq ($(HASCOQIDE),no)
+COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS))
+else
+COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) -package lablgtk3-sourceview3
+endif
 
 IDEDEPS:=config/config.cma clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
 IDECMA:=ide/ide.cma
@@ -56,11 +59,11 @@ IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_
 
 ## GTK for Coqide MacOS bundle
 
-GTKSHARE=$(shell pkg-config --variable=prefix gtk+-2.0)/share
-GTKBIN=$(shell pkg-config --variable=prefix gtk+-2.0)/bin
-GTKLIBS=$(shell pkg-config --variable=libdir gtk+-2.0)
-PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
-SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-2.0)/share
+GTKSHARE=$(shell pkg-config --variable=prefix gtk+-3.0)/share
+GTKBIN=$(shell pkg-config --variable=prefix gtk+-3.0)/bin
+GTKLIBS=$(shell pkg-config --variable=libdir gtk+-3.0)
+PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-3.0)/bin
+SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-3.0)/share
 
 ###########################################################################
 # CoqIde special targets
@@ -98,7 +101,7 @@ ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 -linkall $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -108,7 +111,7 @@ endif
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	       -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
 	@rm -f $@

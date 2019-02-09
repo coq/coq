@@ -9,7 +9,6 @@ Config_lexer
 Utf8_convert
 Preferences
 Project_file
-Topfmt
 Ideutils
 Coq
 Coq_lex

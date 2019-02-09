@@ -742,7 +742,7 @@ function make_fontconfig {
 ##### ICONV #####
 
 function make_libiconv {
-  build_conf_make_inst  http://ftp.gnu.org/pub/gnu/libiconv  libiconv-1.14  tar.gz  true
+  build_conf_make_inst  http://ftp.gnu.org/pub/gnu/libiconv  libiconv-1.15  tar.gz  true
 }
 
 ##### UNISTRING #####
@@ -816,7 +816,9 @@ function make_glib {
   make_gettext
   make_libffi
   make_libpcre
+
   build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/glib/2.57  glib-2.57.1  tar.xz  true
+
 }
 
 ##### ATK #####
@@ -824,7 +826,7 @@ function make_glib {
 function make_atk {
   make_gettext
   make_glib
-  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/atk/2.29  atk-2.29.1  tar.xz  true
+  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/atk/2.30  atk-2.30.0  tar.xz  true
 }
 
 ##### PIXBUF #####
@@ -837,7 +839,7 @@ function make_gdk-pixbuf {
   # CONFIGURE PARAMETERS
   # --with-included-loaders=yes statically links the image file format handlers
   # This avoids "Cannot open pixbuf loader module file '/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache': No such file or directory"
-  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.36  gdk-pixbuf-2.36.12  tar.xz  true  --with-included-loaders=yes
+  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.38  gdk-pixbuf-2.38.0  tar.xz  true  --with-included-loaders=yes
 }
 
 ##### CAIRO #####
@@ -848,7 +850,7 @@ function make_cairo {
   make_glib
   make_pixman
   make_fontconfig
-  build_conf_make_inst  http://cairographics.org/releases  rcairo-1.15.13  tar.xz  true
+  build_conf_make_inst  http://cairographics.org/releases  rcairo-1.16.2  tar.xz  true
 }
 
 ##### PANGO #####
@@ -857,37 +859,23 @@ function make_pango {
   make_cairo
   make_glib
   make_fontconfig
-  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/pango/1.42  pango-1.42.1  tar.xz  true
-}
-
-##### GTK2 #####
-
-function patch_gtk2 {
-  rm gtk/gtk.def
-}
-
-function make_gtk2 {
-  # Cygwin packet dependencies: gtk-update-icon-cache
-  if [ "$GTK_FROM_SOURCES" == "Y" ]; then
-    make_glib
-    make_atk
-    make_pango
-    make_gdk-pixbuf
-    make_cairo
-    build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/2.24  gtk+-2.24.32  tar.xz  patch_gtk2
-  fi
+  build_conf_make_inst  http://ftp.gnome.org/pub/GNOME/sources/pango/1.42  pango-1.42.4  tar.xz  true
 }
 
 ##### GTK3 #####
 
 function make_gtk3 {
-  make_glib
-  make_atk
-  make_pango
-  make_gdk-pixbuf
-  make_cairo
-  make_libepoxy
-  build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/3.22  gtk+-3.22.30  tar.xz  true
+
+  if [ "$GTK_FROM_SOURCES" == "Y" ]; then
+
+      make_glib
+      make_atk
+      make_pango
+      make_gdk-pixbuf
+      make_cairo
+      make_libepoxy
+      build_conf_make_inst  http://ftp.gnome.org/pub/gnome/sources/gtk+/3.24  gtk+-3.24.5  tar.xz  true
+  fi
 
   # make all incl. tests and examples runs through fine
   # make install fails with issue with
@@ -918,17 +906,17 @@ function make_libxml2 {
   fi
 }
 
-##### GTK-SOURCEVIEW2 #####
+##### GTK-SOURCEVIEW3 #####
 
-function make_gtk_sourceview2 {
+function make_gtk_sourceview3 {
   # Cygwin packet dependencies: intltool
   # gtksourceview-2.11.2 requires GTK2
   # gtksourceview-2.91.9 requires GTK3
   # => We use gtksourceview-2.11.2 which seems to be the newest GTK2 based one
   if [ "$GTK_FROM_SOURCES" == "Y" ]; then
-    make_gtk2
+    make_gtk3
     make_libxml2
-    build_conf_make_inst  https://download.gnome.org/sources/gtksourceview/2.11  gtksourceview-2.11.2  tar.bz2  true
+    build_conf_make_inst  https://download.gnome.org/sources/gtksourceview/3.24  gtksourceview-3.24.9  tar.bz2  true
   fi
 }
 
@@ -1018,7 +1006,7 @@ function make_ln {
 
 function make_ocaml {
   get_flex_dll_link_bin
-  if build_prep https://github.com/ocaml/ocaml/archive 4.07.0 tar.gz 1 ocaml-4.07.0 ; then
+  if build_prep https://github.com/ocaml/ocaml/archive 4.07.1 tar.gz 1 ocaml-4.07.1 ; then
     # See README.win32.adoc
     cp config/m-nt.h byterun/caml/m.h
     cp config/s-nt.h byterun/caml/s.h
@@ -1073,7 +1061,6 @@ function make_ocaml {
 
 function make_ocaml_tools {
   make_findlib
-  # make_camlp5
 }
 
 ##### OCAML EXTRA LIBRARIES #####
@@ -1081,8 +1068,7 @@ function make_ocaml_tools {
 function make_ocaml_libs {
   make_num
   make_findlib
-  make_lablgtk
-  # make_stdint
+  # make_lablgtk
 }
 
 ##### Ocaml num library #####
@@ -1130,6 +1116,20 @@ function make_findlib {
   fi
 }
 
+##### Dune build system #####
+
+function make_dune {
+  make_ocaml
+
+  if build_prep https://github.com/ocaml/dune/archive/ 1.6.3 tar.gz 1 ; then
+
+    log2 make release
+    log2 make install
+
+    build_post
+  fi
+}
+
 ##### MENHIR Ocaml Parser Generator #####
 
 function make_menhir {
@@ -1144,108 +1144,50 @@ function make_menhir {
   fi
 }
 
-##### CAMLP4 Ocaml Preprocessor #####
-
-function make_camlp4 {
-  # OCaml up to 4.01 includes camlp4, from 4.02 it isn't included
-  # Check if command camlp4 exists, if not build camlp4
-  if ! command camlp4 ; then
-    make_ocaml
-    make_findlib
-    if build_prep https://github.com/ocaml/camlp4/archive 4.06+2 tar.gz 1 camlp4-4.06+2 ; then
-      # See https://github.com/ocaml/camlp4/issues/41#issuecomment-112018910
-      logn configure ./configure
-      # Note: camlp4 doesn't support -j 8, so don't pass MAKE_OPT
-      log2 make all
-      log2 make install
-      log2 make clean
-      build_post
-    fi
-  fi
-}
-
-##### CAMLP5 Ocaml Preprocessor #####
-
-function make_camlp5 {
-  make_ocaml
-  make_findlib
-
-  if build_prep https://github.com/camlp5/camlp5/archive rel706 tar.gz 1 camlp5-rel706; then
-    logn configure ./configure
-    # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
-    sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
-    # shellcheck disable=SC2086
-    log1 make world.opt $MAKE_OPT
-    log2 make install
-    # For some reason gramlib.a is not copied, but it is required by Coq
-    cp lib/gramlib.a "$PREFIXOCAML/libocaml/camlp5/"
-    # For some reason META is not copied, but it is required by coq_makefile
-    log2 make -C etc META
-    mkdir -p "$PREFIXOCAML/libocaml/site-lib/camlp5/"
-    cp etc/META "$PREFIXOCAML/libocaml/site-lib/camlp5/"
-    log2 make clean
-    build_post
-  fi
-}
-
 ##### LABLGTK Ocaml GTK binding #####
 
 # Note: when rebuilding lablgtk by deleting the .finished file,
 # also delete <root>\usr\x86_64-w64-mingw32\sys-root\mingw\lib\site-lib
 # Otherwise make install fails
 
-function make_lablgtk {
-  make_ocaml
-  make_findlib
-  # make_camlp4 # required by lablgtk-2.18.3 and lablgtk-2.18.5
-  make_gtk2
-  make_gtk_sourceview2
-  if build_prep https://forge.ocamlcore.org/frs/download.php/1726 lablgtk-2.18.6 tar.gz 1 ; then
+function make_ocaml_cairo2 {
+
+  if build_prep https://github.com/Chris00/ocaml-cairo/archive  0.6  tar.gz  1 ; then
+
     # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
-    cp "/bin/$TARGET_ARCH-pkg-config"  bin_special/pkg-config
-    logn configure ./configure --build="$BUILD" --host="$HOST" --target="$TARGET" --prefix="$PREFIXOCAML"
+    cp "/bin/$TARGET_ARCH-pkg-config.exe" bin_special/pkg-config.exe
 
-    # lablgtk shows occasional errors with -j, so don't pass $MAKE_OPT
+    log2 dune build cairo2.install
+    log2 dune install cairo2
 
-    # lablgtk binary needs to be stripped - otherwise flexdll goes wild
-    # Fix version 1: explicit strip after failed build - this randomly fails in CI
-    # See https://sympa.inria.fr/sympa/arc/caml-list/2015-10/msg00204.html
-    # logn make-world-pre make world || true
-    # $TARGET_ARCH-strip.exe --strip-unneeded src/dlllablgtk2.dll
-
-    # Fix version 2: Strip by passing linker argument rather than explicit call to strip
-    # See https://github.com/alainfrisch/flexdll/issues/6
-    # Argument to ocamlmklib: -ldopt "-link -Wl,-s"
-    # -ldopt is the okamlmklib linker prefix option
-    # -link is the flexlink linker prefix option
-    # -Wl, is the gcc (linker driver) linker prefix option
-    # -s is the gnu linker option for stripping symbols
-    # These changes are included in dev/build/windows/patches_coq/lablgtk-2.18.3.patch
-
-    log2 make world
-
-    # lablgtk does not escape FINDLIBDIR path, which can contain backslashes
-    sed -i "s|^FINDLIBDIR=.*|FINDLIBDIR=$PREFIXOCAML/libocaml/site-lib|" config.make
-
-    log2 make install
-    log2 make clean
+    log2 dune clean
     build_post
+
   fi
 }
 
-##### Ocaml Stdint #####
-
-function make_stdint {
+function make_lablgtk {
   make_ocaml
   make_findlib
-  if build_prep https://github.com/andrenth/ocaml-stdint/archive 0.3.0 tar.gz 1 Stdint-0.3.0; then
-    # Note: the setup gets the proper install path from ocamlfind, but for whatever reason it wants
-    # to create an empty folder in some folder which defaults to C:\Program Files.
-    # The --preifx overrides this. Id didn't see any files created in /tmp/extra.
-    log_1_3 ocaml setup.ml -configure --prefix /tmp/extra
-    log_1_3 ocaml setup.ml -build
-    log_1_3 ocaml setup.ml -install
-    log_1_3 ocaml setup.ml -clean
+  make_dune
+  make_gtk3
+  make_gtk_sourceview3
+  make_ocaml_cairo2
+
+  if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
+
+    # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
+    cp "/bin/$TARGET_ARCH-pkg-config.exe" bin_special/pkg-config.exe
+
+    # lablgtk3 includes more packages that are not relevant for Coq,
+    # such as gtkspell
+    log2 dune build -p lablgtk3
+    log2 dune install lablgtk3
+
+    log2 dune build -p lablgtk3-sourceview3
+    log2 dune install lablgtk3-sourceview3
+
+    log2 dune clean
     build_post
   fi
 }
@@ -1351,10 +1293,7 @@ function copq_coq_gtk {
     else
       COQSHARE="$PREFIXCOQ/share/"
     fi
-    if [[ ! $COQ_VERSION == 8.4* ]] ; then
-      mv "$COQSHARE"*.lang "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
-      mv "$COQSHARE"*.xml  "$PREFIXCOQ/share/gtksourceview-2.0/styles"
-    fi
+
     mkdir -p "$PREFIXCOQ/ide"
     mv "$COQSHARE"*.png  "$PREFIXCOQ/ide"
     rmdir "$PREFIXCOQ/share/coq" || true
@@ -1383,8 +1322,8 @@ function make_coq {
   make_ocaml
   make_num
   make_findlib
-  # make_camlp5
-  make_lablgtk
+  # Windows build needs tweaks for the GTK3 build
+  # make_lablgtk
   if
     case $COQ_VERSION in
       # e.g. git-v8.6 => download from https://github.com/coq/coq/archive/v8.6.zip
@@ -1436,12 +1375,15 @@ function make_coq {
     fi
 
     log2 make install
-    log1 copy_coq_dlls
+
+    # XXX: Disabled until GTK3 support is back to the build
+    # log1 copy_coq_dlls
+    # log1 copq_coq_gtk
+
     if [ "$INSTALLOCAML" == "Y" ]; then
       copy_coq_objects
     fi
 
-    log1 copq_coq_gtk
     log1 copy_coq_license
 
     # make clean seems to be broken for 8.5pl2
