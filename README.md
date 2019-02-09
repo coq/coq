@@ -93,9 +93,11 @@ To be effective, bug reports should mention the OCaml version used
 to compile and run Coq, the Coq version (`coqtop -v`), the configuration
 used, and include a complete source example leading to the bug.
 
-## Contributing
+## Contributing to Coq
 
 Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
+
+Information about the next release is at https://github.com/coq/coq/wiki/Release-Plan
 
 ## Supporting Coq
 
