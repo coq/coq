@@ -793,7 +793,7 @@ Types of inductive objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have to give the type of constants in a global environment :math:`E` which
-contains an inductive declaration.
+contains an inductive definition.
 
 .. inference:: Ind
 	       
@@ -833,7 +833,7 @@ contains an inductive declaration.
 Well-formed inductive definitions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We cannot accept any inductive declaration because some of them lead
+We cannot accept any inductive definition because some of them lead
 to inconsistent systems. We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
@@ -898,7 +898,7 @@ cases:
 + :math:`T` converts to :math:`∀ x:U,~V` and :math:`X` does not occur in type :math:`U` but occurs
   strictly positively in type :math:`V`
 + :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
-  inductive declaration of the form
+  inductive definition of the form
   
   .. math::
      \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_n}
@@ -914,7 +914,7 @@ Nested Positivity
 The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
 condition* for a constant :math:`X` in the following cases:
 
-+ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive definition with :math:`m`
++ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive type with :math:`m`
   parameters and :math:`X` does not occur in any :math:`u_i`
 + :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the nested positivity condition for :math:`X`
@@ -981,8 +981,8 @@ provided that the following side conditions hold:
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative
-sort :math:`\Prop` but may fail to define inductive definition on sort :math:`\Set` and
-generate constraints between universes for inductive definitions in
+sort :math:`\Prop` but may fail to define inductive type on sort :math:`\Set` and
+generate constraints between universes for inductive types in
 the Type hierarchy.
 
 
@@ -1214,7 +1214,7 @@ recognized implicitly and taken into account in the conversion rule.
 From the logical point of view, we have built a type family by giving
 a set of constructors. We want to capture the fact that we do not have
 any other way to build an object in this type. So when trying to prove
-a property about an object :math:`m` in an inductive definition it is enough
+a property about an object :math:`m` in an inductive type it is enough
 to enumerate all the cases where :math:`m` starts with a different
 constructor.
 
@@ -1320,7 +1320,7 @@ and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that 
 **Notations.** The :math:`[I:A|B]` is defined as the smallest relation satisfying the
 following rules: We write :math:`[I|B]` for :math:`[I:A|B]` where :math:`A` is the type of :math:`I`.
 
-The case of inductive definitions in sorts :math:`\Set` or :math:`\Type` is simple.
+The case of inductive types in sorts :math:`\Set` or :math:`\Type` is simple.
 There is no restriction on the sort of the predicate to be eliminated.
 
 .. inference:: Prod
@@ -1396,7 +1396,7 @@ proof-irrelevance property which is sometimes a useful axiom:
 
       Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
-The elimination of an inductive definition of type :math:`\Prop` on a predicate
+The elimination of an inductive type of sort :math:`\Prop` on a predicate
 :math:`P` of type :math:`I→ \Type` leads to a paradox when applied to impredicative
 inductive definition like the second-order existential quantifier
 :g:`exProp` defined above, because it gives access to the two projections on
@@ -1628,7 +1628,7 @@ Before accepting a fixpoint definition as being correctly typed, we
 check that the definition is “guarded”. A precise analysis of this
 notion can be found in :cite:`Gim94`. The first stage is to precise on which
 argument the fixpoint will be decreasing. The type of this argument
-should be an inductive definition. For doing this, the syntax of
+should be an inductive type. For doing this, the syntax of
 fixpoints is extended and becomes
 
 .. math::
@@ -1661,7 +1661,7 @@ Given a variable :math:`y` of an inductively defined type in a declaration
 + :math:`(t~u)` and :math:`λ x:U .~t` when :math:`t` is structurally smaller than :math:`y`.
 + :math:`\case(c,P,f_1 … f_n)` when each :math:`f_i` is structurally smaller than :math:`y`.
   If :math:`c` is :math:`y` or is structurally smaller than :math:`y`, its type is an inductive
-  definition :math:`I_p` part of the inductive declaration corresponding to :math:`y`.
+  type :math:`I_p` part of the inductive definition corresponding to :math:`y`.
   Each :math:`f_i` corresponds to a type of constructor
   :math:`C_q ≡ ∀ p_1 :P_1 ,~…,∀ p_r :P_r ,~∀ y_1 :B_1 ,~… ∀ y_m :B_m ,~(I~p_1 … p_r~t_1 … t_s )`
   and can consequently be written :math:`λ y_1 :B_1' .~… λ y_m :B_m'.~g_i`. (:math:`B_i'` is
