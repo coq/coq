@@ -591,10 +591,8 @@ END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrfwdview;
   ssrfwdview: [
-    [  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr ->
-            { [mk_ast_closure_term `None c] }
-    |  test_not_ssrslashnum; "/"; c = Pcoq.Constr.constr; w = ssrfwdview ->
-                    { (mk_ast_closure_term `None c) :: w } ]];
+    [  test_not_ssrslashnum; "/"; c = ast_closure_term -> { [c] }
+    |  test_not_ssrslashnum; "/"; c = ast_closure_term; w = ssrfwdview -> { c :: w } ]];
 END
 
 (* ipats *)
