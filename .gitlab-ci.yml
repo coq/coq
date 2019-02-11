@@ -524,7 +524,6 @@ validate:quick:
 
 library:ci-bedrock2:
   <<: *ci-template
-  allow_failure: true
 
 library:ci-color:
   <<: *ci-template-flambda
