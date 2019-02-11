@@ -1,10 +1,10 @@
 load_printer threads.cma
 load_printer str.cma
-load_printer gramlib.cma
 load_printer config.cma
 load_printer clib.cma
 load_printer dynlink.cma
 load_printer lib.cma
+load_printer gramlib.cma
 load_printer byterun.cma
 load_printer kernel.cma
 load_printer library.cma
