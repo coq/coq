@@ -20,9 +20,9 @@ There are types for functions (or programs), there are atomic types
 (especially datatypes)... but also types for proofs and types for the
 types themselves. Especially, any object handled in the formalism must
 belong to a type. For instance, universal quantification is relative
-to a type and takes the form “*for all x of type T, P*”. The expression
-“x of type T” is written :g:`x:T`. Informally, :g:`x:T` can be thought as
-“x belongs to T”.
+to a type and takes the form “*for all x of type* :math:`T`, :math:`P`”. The expression
+“:math:`x` *of type* :math:`T`” is written “:math:`x:T`”. Informally, “:math:`x:T`” can be thought as
+“:math:`x` *belongs to* :math:`T`”.
 
 The types of types are *sorts*. Types and sorts are themselves terms
 so that terms, types and sorts are all components of a common
