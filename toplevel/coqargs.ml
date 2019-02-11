@@ -13,6 +13,9 @@ let fatal_error exn =
   let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
   exit exit_code
 
+let error_wrong_arg msg =
+  prerr_endline msg; exit 1
+
 let error_missing_arg s =
   prerr_endline ("Error: extra argument expected after option "^s);
   prerr_endline "See -help for the syntax of supported options";
@@ -169,7 +172,8 @@ let set_color opts = function
 | "yes" | "on" -> { opts with color = `ON }
 | "no" | "off" -> { opts with color = `OFF }
 | "auto" -> { opts with color = `AUTO }
-| _ -> prerr_endline ("Error: on/off/auto expected after option color"); exit 1
+| _ ->
+  error_wrong_arg ("Error: on/off/auto expected after option color")
 
 let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
@@ -187,26 +191,26 @@ let exitcode opts = if opts.filter_opts then 2 else 0
 let get_bool opt = function
   | "yes" | "on" -> true
   | "no" | "off" -> false
-  | _ -> prerr_endline ("Error: yes/no expected after option "^opt); exit 1
+  | _ ->
+    error_wrong_arg ("Error: yes/no expected after option "^opt)
 
 let get_int opt n =
   try int_of_string n
   with Failure _ ->
-    prerr_endline ("Error: integer expected after option "^opt); exit 1
+    error_wrong_arg ("Error: integer expected after option "^opt)
 
 let get_float opt n =
   try float_of_string n
   with Failure _ ->
-    prerr_endline ("Error: float expected after option "^opt); exit 1
+    error_wrong_arg ("Error: float expected after option "^opt)
 
 let get_host_port opt s =
   match String.split_on_char ':' s with
   | [host; portr; portw] ->
-       Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
+    Some (Spawned.Socket(host, int_of_string portr, int_of_string portw))
   | ["stdfds"] -> Some Spawned.AnonPipe
   | _ ->
-     prerr_endline ("Error: host:portr:portw or stdfds expected after option "^opt);
-     exit 1
+    error_wrong_arg ("Error: host:portr:portw or stdfds expected after option "^opt)
 
 let get_error_resilience opt = function
   | "on" | "all" | "yes" -> `All
@@ -216,17 +220,20 @@ let get_error_resilience opt = function
 let get_priority opt s =
   try CoqworkmgrApi.priority_of_string s
   with Invalid_argument _ ->
-    prerr_endline ("Error: low/high expected after "^opt); exit 1
+    error_wrong_arg ("Error: low/high expected after "^opt)
 
 let get_async_proofs_mode opt = let open Stm.AsyncOpts in function
   | "no" | "off" -> APoff
   | "yes" | "on" -> APon
   | "lazy" -> APonLazy
-  | _ -> prerr_endline ("Error: on/off/lazy expected after "^opt); exit 1
+  | _ ->
+    error_wrong_arg ("Error: on/off/lazy expected after "^opt)
 
 let get_cache opt = function
   | "force" -> Some Stm.AsyncOpts.Force
-  | _ -> prerr_endline ("Error: force expected after "^opt); exit 1
+  | _ ->
+    error_wrong_arg ("Error: force expected after "^opt)
+
 
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
@@ -313,8 +320,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-async-proofs-tac-j" ->
       let j = get_int opt (next ()) in
       if j <= 0 then begin
-        prerr_endline ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1");
-        exit 1;
+        error_wrong_arg ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1")
       end;
       { oval with stm_flags = { oval.stm_flags with
         Stm.AsyncOpts.async_proofs_n_tacworkers = j
@@ -436,7 +442,8 @@ let parse_args ~help ~init arglist : t * string list =
         | ("yes" | "on") -> NativeOn {ondemand=false}
         | "ondemand" -> NativeOn {ondemand=true}
         | ("no" | "off") -> NativeOff
-        | _ -> prerr_endline ("Error: (yes|no|ondemand) expected after option -native-compiler"); exit 1
+        | _ ->
+          error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler")
       in
       { oval with native_compiler }
 
@@ -461,7 +468,7 @@ let parse_args ~help ~init arglist : t * string list =
                   if List.exists (fun x -> opt = x) ["off"; "on"; "removed"] then
                     Proof_diffs.write_diffs_option opt
                   else
-                    (prerr_endline ("Error: on|off|removed expected after -diffs"); exit 1);
+                    error_wrong_arg "Error: on|off|removed expected after -diffs";
                   { oval with diffs_set = true }
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
