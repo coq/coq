@@ -37,7 +37,7 @@ In addition to these user-defined classes, we have two built-in classes:
   * ``Funclass``, the class of functions; its objects are all the terms with a functional
     type, i.e. of form :g:`forall x:A,B`.
 
-Formally, the syntax of a classes is defined as:
+Formally, the syntax of classes is defined as:
 
 .. productionlist::
    class: `qualid`
@@ -289,7 +289,7 @@ by extending the existing :cmd:`Record` macro. Its new syntax is:
 
    The first identifier :token:`ident` is the name of the defined record and
    :token:`sort` is its type. The optional identifier after ``:=`` is the name
-   of the constuctor (it will be :n:`Build_@ident` if not given).
+   of the constructor (it will be :n:`Build_@ident` if not given).
    The other identifiers are the names of the fields, and :token:`term`
    are their respective types. If ``:>`` is used instead of ``:`` in
    the declaration of a field, then the name of this field is automatically
@@ -365,7 +365,7 @@ We first give an example of coercion between atomic inductive types
 
 .. warning::
 
-  Note that ``Check true=O`` would fail. This is "normal" behavior of
+  Note that ``Check (true = O)`` would fail. This is "normal" behavior of
   coercions. To validate ``true=O``, the coercion is searched from
   ``nat`` to ``bool``. There is none.
 
