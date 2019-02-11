@@ -35,6 +35,3 @@ val after : Loc.t -> int -> int -> Loc.t
    (** [Ploc.after loc sh len] is the location just after loc (starting at
        the end position of [loc]) shifted with [sh] characters and of length
        [len]. *)
-
-val with_comment : Loc.t -> string -> Loc.t
-   (** Change the comment part of the given location *)

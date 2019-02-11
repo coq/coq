@@ -22,8 +22,6 @@ type t = {
   bol_pos_last : int; (** position of the beginning of end line *)
   bp : int; (** start position *)
   ep : int; (** end position *)
-  comm : string; (** start comment *)
-  ecomm : string (** end comment *)
 }
 
 (** {5 Location manipulation} *)
