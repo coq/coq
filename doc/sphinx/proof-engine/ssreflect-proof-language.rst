@@ -2762,14 +2762,14 @@ typeclass inference.
 
      Goal True.
 
-+ .. coqtop:: in undo
+  .. coqdoc::
 
      have foo : ty.
 
   Full inference for ``ty``. The first subgoal demands a
   proof of such instantiated statement.
 
-+ .. coqdoc::
+  .. coqdoc::
 
      have foo : ty := .
 
@@ -2778,13 +2778,13 @@ typeclass inference.
   statement. Note that no proof term follows ``:=``, hence two subgoals are
   generated.
 
-+ .. coqtop:: in undo
+  .. coqdoc::
 
      have foo : ty := t.
 
   No inference for ``ty`` and ``t``.
 
-+ .. coqtop:: in undo
+  .. coqdoc::
 
      have foo := t.
 
@@ -4586,13 +4586,18 @@ disjunction.
 
      Lemma test a : P (a || a) -> True.
 
-  .. coqtop:: all undo
+  .. coqtop:: all
 
      move=> HPa; move/P2Q: HPa => HQa.
 
   or more directly:
 
-  .. coqtop:: all undo
+  .. coqtop:: none
+
+     Abort.
+     Lemma test a : P (a || a) -> True.
+
+  .. coqtop:: all
 
      move/P2Q=> HQa.
 
@@ -4890,11 +4895,15 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
      Lemma test (b1 b2 : bool) : if (b1 && b2) then b1 else ~~(b1||b2).
 
-  .. coqtop:: all undo
+  .. coqtop:: all
 
      case: (@andE b1 b2).
 
-  .. coqtop:: all undo
+  .. coqtop:: none
+
+     Lemma test (b1 b2 : bool) : if (b1 && b2) then b1 else ~~(b1||b2).
+
+  .. coqtop:: all
 
      case: (@andP b1 b2).
 
