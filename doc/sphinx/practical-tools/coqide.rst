@@ -284,15 +284,18 @@ and place it in the same folder as ``coqide.keys``. On Linux, this would be
 the folder ``~/.config/coq``. The file `coqide.bindings` should contain one
 binding per line, in the form ``\key value``, followed by an optional priority
 integer. (The key and value should not contain any space character.)
-Here is an example configuration file:
 
-```
-\par ||
-\pi π 1
-\le ≤ 1
-\lambda λ 2
-\lambdas λs
-```
+.. example::
+
+   Here is an example configuration file:
+
+   ::
+
+     \par ||
+     \pi π 1
+     \le ≤ 1
+     \lambda λ 2
+     \lambdas λs
 
 Above, the priority number 1 on ``\pi`` indicates that the prefix ``\p``
 should resolve to ``\pi``, and not to something else (e.g. ``\par``).
@@ -309,7 +312,7 @@ Each of the file tokens provided may consists of one of:
  -  the token ``local``, which resolves to the `coqide.bindings` file
     stored in the user configuration directory.
 
-.. remark::
+.. warning::
 
    If a filename other than the first one includes a "~" to refer
    to the home directory, it won't be expanded properly. To work around that
