@@ -32,7 +32,7 @@ let is_keyword =
   build_table
     [ "About"; "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "Compute"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
-      "Export"; "Fact"; "Fix"; "Fixpoint"; "Function"; "Generalizable"; "Global"; "Grammar";
+      "Export"; "Fact"; "Fix"; "Fixpoint"; "From"; "Function"; "Generalizable"; "Global"; "Grammar";
       "Guarded"; "Goal"; "Hint"; "Debug"; "On";
       "Hypothesis"; "Hypotheses";
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Constructors"; "Rewrite";
