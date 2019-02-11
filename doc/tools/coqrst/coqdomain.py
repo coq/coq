@@ -30,7 +30,7 @@ from sphinx import addnodes
 from sphinx.roles import XRefRole
 from sphinx.errors import ExtensionError
 from sphinx.util.nodes import set_source_info, set_role_source_info, make_refnode
-from sphinx.util.logging import getLogger
+from sphinx.util.logging import getLogger, get_node_location
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.domains.std import token_xrefs
@@ -38,7 +38,7 @@ from sphinx.ext import mathbase
 
 from . import coqdoc
 from .repl import ansicolors
-from .repl.coqtop import CoqTop
+from .repl.coqtop import CoqTop, CoqTopError
 from .notations.sphinx import sphinxify
 from .notations.plain import stringify_with_ellipses
 
@@ -864,6 +864,36 @@ class CoqtopBlocksTransform(Transform):
                 blocks.append(re.sub("^", "    ", output, flags=re.MULTILINE) + "\n")
         return '\n'.join(blocks)
 
+    def add_coq_output_1(self, repl, node):
+        options = node['coqtop_options']
+        opt_reset, opt_fail, opt_input, opt_output = self.parse_options(options)
+
+        pairs = []
+
+        if opt_reset:
+            repl.sendone("Reset Initial.")
+            repl.sendone("Set Coqtop Exit On Error.")
+        if opt_fail:
+            repl.sendone("Unset Coqtop Exit On Error.")
+        for sentence in self.split_sentences(node.rawsource):
+            pairs.append((sentence, repl.sendone(sentence)))
+        if opt_fail:
+            repl.sendone("Set Coqtop Exit On Error.")
+
+        dli = nodes.definition_list_item()
+        for sentence, output in pairs:
+            # Use Coqdoq to highlight input
+            in_chunks = highlight_using_coqdoc(sentence)
+            dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(opt_input))
+            # Parse ANSI sequences to highlight output
+            out_chunks = AnsiColorsParser().colorize_str(output)
+            dli += nodes.definition(output, *out_chunks, classes=self.block_classes(opt_output, output))
+        node.clear()
+        node.rawsource = self.make_rawsource(pairs, opt_input, opt_output)
+        node['classes'].extend(self.block_classes(opt_input or opt_output))
+        node += nodes.inline('', '', classes=['coqtop-reset'] * opt_reset)
+        node += nodes.definition_list(node.rawsource, dli)
+
     def add_coqtop_output(self):
         """Add coqtop's responses to a Sphinx AST
 
@@ -871,33 +901,19 @@ class CoqtopBlocksTransform(Transform):
         with CoqTop(color=True) as repl:
             repl.sendone("Set Coqtop Exit On Error.")
             for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
-                options = node['coqtop_options']
-                opt_reset, opt_fail, opt_input, opt_output = self.parse_options(options)
-
-                if opt_reset:
-                    repl.sendone("Reset Initial.")
-                    repl.sendone("Set Coqtop Exit On Error.")
-                if opt_fail:
-                    repl.sendone("Unset Coqtop Exit On Error.")
-                pairs = []
-                for sentence in self.split_sentences(node.rawsource):
-                    pairs.append((sentence, repl.sendone(sentence)))
-                if opt_fail:
-                    repl.sendone("Set Coqtop Exit On Error.")
-
-                dli = nodes.definition_list_item()
-                for sentence, output in pairs:
-                    # Use Coqdoq to highlight input
-                    in_chunks = highlight_using_coqdoc(sentence)
-                    dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(opt_input))
-                    # Parse ANSI sequences to highlight output
-                    out_chunks = AnsiColorsParser().colorize_str(output)
-                    dli += nodes.definition(output, *out_chunks, classes=self.block_classes(opt_output, output))
-                node.clear()
-                node.rawsource = self.make_rawsource(pairs, opt_input, opt_output)
-                node['classes'].extend(self.block_classes(opt_input or opt_output))
-                node += nodes.inline('', '', classes=['coqtop-reset'] * opt_reset)
-                node += nodes.definition_list(node.rawsource, dli)
+                try:
+                    self.add_coq_output_1(repl, node)
+                except CoqTopError as err:
+                    import textwrap
+                    MSG = ("{}: Error while sending the following to coqtop:\n{}" +
+                           "\n  coqtop output:\n{}" +
+                           "\n  Full error text:\n{}")
+                    indent = "    "
+                    loc = get_node_location(node)
+                    le = textwrap.indent(str(err.last_sentence), indent)
+                    bef = textwrap.indent(str(err.before), indent)
+                    fe = textwrap.indent(str(err.err), indent)
+                    raise ExtensionError(MSG.format(loc, le, bef, fe))
 
     @staticmethod
     def merge_coqtop_classes(kept_node, discarded_node):
