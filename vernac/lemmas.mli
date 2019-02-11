@@ -71,4 +71,14 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {6 ... } *)
 
-val save_proof : ?proof:Proof_global.closed_proof -> pstate:Proof_global.t -> Vernacexpr.proof_end -> Proof_global.t option
+val save_proof_admitted
+  :  ?proof:Proof_global.closed_proof
+  -> pstate:Proof_global.t
+  -> unit
+
+val save_proof_proved
+  :  ?proof:Proof_global.closed_proof
+  -> ?pstate:Proof_global.t
+  -> opaque:Proof_global.opacity_flag
+  -> idopt:Names.lident option
+  -> Proof_global.t option
