@@ -311,8 +311,13 @@ let parse_args ~help ~init arglist : t * string list =
       }}
 
     |"-async-proofs-tac-j" ->
+      let j = get_int opt (next ()) in
+      if j <= 0 then begin
+        prerr_endline ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1");
+        exit 1;
+      end;
       { oval with stm_flags = { oval.stm_flags with
-        Stm.AsyncOpts.async_proofs_n_tacworkers = (get_int opt (next ()))
+        Stm.AsyncOpts.async_proofs_n_tacworkers = j
       }}
 
     |"-async-proofs-worker-priority" ->
