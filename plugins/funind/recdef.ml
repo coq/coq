@@ -71,7 +71,7 @@ let declare_fun f_id kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
     ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
-let defined pstate = Lemmas.save_proof ~pstate (Vernacexpr.(Proved (Proof_global.Transparent,None)))
+let defined pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None
 
 let def_of_const t =
    match (Constr.kind t) with
@@ -1367,7 +1367,7 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	       )
       		 g)
     in
-    let _pstate = Lemmas.save_proof ~pstate (Vernacexpr.Proved(opacity,None)) in
+    let _pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None in
     ()
   in
   let pstate = Lemmas.start_proof ~ontop:(Some pstate)
@@ -1400,8 +1400,6 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
     Some (fst @@ by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
   with UserError _ ->
     defined pstate
-
-
 
 let com_terminate
     tcc_lemma_name
@@ -1501,7 +1499,7 @@ let (com_eqn : int -> Id.t ->
        )) pstate in
      (* (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-    let _ = Flags.silently (fun () -> Lemmas.save_proof ~pstate (Vernacexpr.Proved(opacity,None))) () in
+    let _ = Flags.silently (fun () -> Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None) () in
     ()
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
 

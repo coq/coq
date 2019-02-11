@@ -468,60 +468,64 @@ let () =
       optread  = (fun () -> !keep_admitted_vars);
       optwrite = (fun b -> keep_admitted_vars := b) }
 
-let save_proof ?proof ~pstate = function
-  | Vernacexpr.Admitted ->
-      let pe =
-        let open Proof_global in
-        match proof with
-        | Some ({ id; entries; persistence = k; universes }, _) ->
-            if List.length entries <> 1 then
-              user_err Pp.(str "Admitted does not support multiple statements");
-            let { const_entry_secctx; const_entry_type } = List.hd entries in
-            if const_entry_type = None then
-              user_err Pp.(str "Admitted requires an explicit statement");
-            let typ = Option.get const_entry_type in
-            let ctx = UState.univ_entry ~poly:(pi2 k) universes in
-            let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
-            Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
-        | None ->
-            let pftree = Proof_global.give_me_the_proof pstate in
-            let gk = Proof_global.get_current_persistence pstate in
-            let Proof.{ name; poly; entry } = Proof.data pftree in
-            let typ = match Proofview.initial_goals entry with
-              | [typ] -> snd typ
-              | _ ->
-                CErrors.anomaly
-                  ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
-            in
-            let typ = EConstr.Unsafe.to_constr typ in
-            let universes = Proof.((data pftree).initial_euctx) in
-            (* This will warn if the proof is complete *)
-            let pproofs, _univs =
-              Proof_global.return_proof ~allow_partial:true pstate in
-            let sec_vars =
-              if not !keep_admitted_vars then None
-              else match Proof_global.get_used_variables pstate, pproofs with
-              | Some _ as x, _ -> x
-              | None, (pproof, _) :: _ ->
-                  let env = Global.env () in
-                  let ids_typ = Environ.global_vars_set env typ in
-                  let ids_def = Environ.global_vars_set env pproof in
-                  Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
-              | _ -> None in
-            let decl = Proof_global.get_universe_decl pstate in
-            let ctx = UState.check_univ_decl ~poly universes decl in
-            Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
+let save_proof_admitted ?proof ~pstate =
+  let pe =
+    let open Proof_global in
+    match proof with
+    | Some ({ id; entries; persistence = k; universes }, _) ->
+      if List.length entries <> 1 then
+        user_err Pp.(str "Admitted does not support multiple statements");
+      let { const_entry_secctx; const_entry_type } = List.hd entries in
+      if const_entry_type = None then
+        user_err Pp.(str "Admitted requires an explicit statement");
+      let typ = Option.get const_entry_type in
+      let ctx = UState.univ_entry ~poly:(pi2 k) universes in
+      let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
+      Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
+    | None ->
+      let pftree = Proof_global.give_me_the_proof pstate in
+      let gk = Proof_global.get_current_persistence pstate in
+      let Proof.{ name; poly; entry } = Proof.data pftree in
+      let typ = match Proofview.initial_goals entry with
+        | [typ] -> snd typ
+        | _ ->
+          CErrors.anomaly
+            ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
       in
-    Proof_global.apply_terminator (Proof_global.get_terminator pstate) pe;
-    Some pstate
-  | Vernacexpr.Proved (opaque,idopt) ->
-      let (proof_obj,terminator) =
-        match proof with
-        | None ->
-          Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pstate
-        | Some proof -> proof
-      in
-      (* if the proof is given explicitly, nothing has to be deleted *)
-      let pstate = if Option.is_empty proof then Proof_global.discard_current pstate else Some pstate in
-      Proof_global.(apply_terminator terminator (Proved (opaque,idopt,proof_obj)));
-      pstate
+      let typ = EConstr.Unsafe.to_constr typ in
+      let universes = Proof.((data pftree).initial_euctx) in
+      (* This will warn if the proof is complete *)
+      let pproofs, _univs =
+        Proof_global.return_proof ~allow_partial:true pstate in
+      let sec_vars =
+        if not !keep_admitted_vars then None
+        else match Proof_global.get_used_variables pstate, pproofs with
+          | Some _ as x, _ -> x
+          | None, (pproof, _) :: _ ->
+            let env = Global.env () in
+            let ids_typ = Environ.global_vars_set env typ in
+            let ids_def = Environ.global_vars_set env pproof in
+            Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
+          | _ -> None in
+      let decl = Proof_global.get_universe_decl pstate in
+      let ctx = UState.check_univ_decl ~poly universes decl in
+      Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
+  in
+  Proof_global.apply_terminator (Proof_global.get_terminator pstate) pe
+
+let save_proof_proved ?proof ?pstate ~opaque ~idopt =
+  (* Invariant (uh) *)
+  if Option.is_empty pstate && Option.is_empty proof then
+    user_err (str "No focused proof (No proof-editing in progress).");
+  let (proof_obj,terminator) =
+    match proof with
+    | None ->
+      (* XXX uh! *)
+      let pstate = Option.get pstate in
+      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pstate
+    | Some proof -> proof
+  in
+  (* if the proof is given explicitly, nothing has to be deleted *)
+  let pstate = if Option.is_empty proof then Proof_global.discard_current Option.(get pstate) else pstate in
+  Proof_global.(apply_terminator terminator (Proved (opaque,idopt,proof_obj)));
+  pstate

@@ -615,15 +615,18 @@ let vernac_start_proof ~atts ~pstate kind l =
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   Some (start_proof_and_print ~pstate ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
 
-let vernac_end_proof ~pstate ?proof = function
-  | Admitted          -> save_proof ~pstate ?proof Admitted
-  | Proved (_,_) as e -> save_proof ~pstate ?proof e
+let vernac_end_proof ?pstate ?proof = function
+  | Admitted ->
+    vernac_require_open_proof ~pstate (save_proof_admitted ?proof);
+    pstate
+  | Proved (opaque,idopt) ->
+    save_proof_proved ?pstate ?proof ~opaque ~idopt
 
 let vernac_exact_proof ~pstate c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
   let pstate, status = Pfedit.by (Tactics.exact_proof c) pstate in
-  let pstate = save_proof ~pstate (Vernacexpr.(Proved(Proof_global.Opaque,None))) in
+  let pstate = save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 
@@ -2297,7 +2300,7 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
     with_def_attributes ~atts vernac_start_proof ~pstate k l
   | VernacEndProof e ->
     unsupported_attributes atts;
-    vernac_require_open_proof ~pstate (vernac_end_proof ?proof e)
+    vernac_end_proof ?proof ?pstate e
   | VernacExactProof c ->
     unsupported_attributes atts;
     vernac_require_open_proof ~pstate (vernac_exact_proof c)
