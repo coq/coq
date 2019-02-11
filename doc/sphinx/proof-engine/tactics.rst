@@ -755,39 +755,59 @@ Applying theorems
 
    A solution is to ``apply (Rtrans n m p)`` or ``(Rtrans n m)``.
 
-   .. coqtop:: all undo
+   .. coqtop:: all
 
       apply (Rtrans n m p).
 
    Note that ``n`` can be inferred from the goal, so the following would work
    too.
 
-   .. coqtop:: in undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: in
 
       apply (Rtrans _ m).
 
    More elegantly, ``apply Rtrans with (y:=m)`` allows only mentioning the
    unknown m:
 
-   .. coqtop:: in undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: in
 
       apply Rtrans with (y := m).
 
    Another solution is to mention the proof of ``(R x y)`` in ``Rtrans``
 
-   .. coqtop:: all undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: all
 
       apply Rtrans with (1 := Rnm).
 
    ... or the proof of ``(R y z)``.
 
-   .. coqtop:: all undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: all
 
       apply Rtrans with (2 := Rmp).
 
    On the opposite, one can use ``eapply`` which postpones the problem of
    finding ``m``. Then one can apply the hypotheses ``Rnm`` and ``Rmp``. This
    instantiates the existential variable and completes the proof.
+
+   .. coqtop:: none
+
+      Abort. Goal R n p.
 
    .. coqtop:: all
 
