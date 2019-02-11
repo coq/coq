@@ -105,7 +105,8 @@ let show_proof ~pstate =
   (* We print nothing if there are no goals left *)
   with
   | Pfedit.NoSuchGoal
-  | Option.IsNone -> mt ()
+  | Option.IsNone ->
+    user_err (str "No goals to show.")
 
 let show_top_evars ~pstate =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
@@ -2143,7 +2144,8 @@ let vernac_show ~pstate =
       | ShowProof -> show_proof ~pstate
       | ShowMatch id -> show_match id
       | ShowScript -> assert false  (* Only the stm knows the script *)
-      | _ -> mt ()
+      | _ ->
+        user_err (str "This command requires an open proof.")
     end
   (* Show functions that require a proof state *)
   | Some pstate ->
