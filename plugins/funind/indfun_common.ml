@@ -129,7 +129,7 @@ let get_locality = function
 | Local -> true
 | Global -> false
 
-let save with_clean id const ?hook (locality,_,kind) =
+let save with_clean id const ?hook uctx (locality,_,kind) =
   let fix_exn = Future.fix_exn_of const.const_entry_body in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
@@ -144,7 +144,7 @@ let save with_clean id const ?hook (locality,_,kind) =
 	(locality, ConstRef kn)
   in
   if with_clean then Proof_global.discard_current ();
-  Lemmas.call_hook ?hook ~fix_exn l r;
+  Lemmas.call_hook ?hook ~fix_exn uctx [] l r;
   definition_message id
 
 let with_full_print f a =

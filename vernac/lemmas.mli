@@ -13,22 +13,35 @@ open Decl_kinds
 
 type declaration_hook
 
-val mk_hook : (Decl_kinds.locality -> GlobRef.t -> unit) -> declaration_hook
-val call_hook :
-  ?hook:declaration_hook -> ?fix_exn:Future.fix_exn ->
-  Decl_kinds.locality -> GlobRef.t -> unit
+(* Hooks allow users of the API to perform arbitrary actions at
+ * proof/definition saving time. For example, to register a constant
+ * as a Coercion, perform some cleanup, update the search database,
+ * etc...
+ *
+ * Here, we use an extended hook type suitable for obligations /
+ * equations.
+ *)
+(** [hook_type] passes to the client:
+    - [ustate]: universe constraints obtained when the term was closed
+    - [(n1,t1),...(nm,tm)]: association list between obligation
+        name and the corresponding defined term (might be a constant,
+        but also an arbitrary term in the Expand case of obligations)
+    - [locality]: Locality of the original declaration
+    - [ref]: identifier of the origianl declaration
+ *)
+type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
+
+val mk_hook : hook_type -> declaration_hook
+val call_hook
+  :  ?hook:declaration_hook
+  -> ?fix_exn:Future.fix_exn
+  -> hook_type
 
 val start_proof : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
   ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> Proof_global.proof_terminator) ->
   ?sign:Environ.named_context_val ->
   ?compute_guard:Proof_global.lemma_possible_guards ->
   ?hook:declaration_hook ->  EConstr.types -> unit
-
-val start_proof_univs : Id.t -> ?pl:UState.universe_decl -> goal_kind -> Evd.evar_map ->
-  ?terminator:(?univ_hook:(UState.t option -> declaration_hook) -> Proof_global.lemma_possible_guards -> Proof_global.proof_terminator) ->
-  ?sign:Environ.named_context_val ->
-  ?compute_guard:Proof_global.lemma_possible_guards ->
-  ?univ_hook:(UState.t option -> declaration_hook) -> EConstr.types -> unit
 
 val start_proof_com :
   program_mode:bool -> ?inference_hook:Pretyping.inference_hook ->
@@ -42,11 +55,6 @@ val start_proof_with_initialization :
   (Id.t (* name of thm *) *
      (EConstr.types (* type of thm *) * (Name.t list (* names to pre-introduce *) * Impargs.manual_explicitation list))) list ->
   int list option -> unit
-
-val universe_proof_terminator :
-  ?univ_hook:(UState.t option -> declaration_hook) ->
-  Proof_global.lemma_possible_guards ->
-  Proof_global.proof_terminator
 
 val standard_proof_terminator :
   ?hook:declaration_hook -> Proof_global.lemma_possible_guards ->

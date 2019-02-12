@@ -1989,7 +1989,7 @@ let add_morphism_infer atts m n =
 	Decl_kinds.DefinitionBody Decl_kinds.Instance 
       in
       let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-      let hook _ = function
+      let hook _ _ _ = function
 	| Globnames.ConstRef cst ->
 	  add_instance (Typeclasses.new_instance 
 			  (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info

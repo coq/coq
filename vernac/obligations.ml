@@ -20,15 +20,6 @@ open Pp
 open CErrors
 open Util
 
-type univ_declaration_hook = UState.t -> (Id.t * constr) list -> Decl_kinds.locality -> GlobRef.t -> unit
-let mk_univ_hook f = f
-let call_univ_hook ?univ_hook ?fix_exn uctx trans l c =
-  try Option.iter (fun hook -> hook uctx trans l c) univ_hook
-  with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    let e = Option.cata (fun fix -> fix e) e fix_exn in
-    iraise e
-
 module NamedDecl = Context.Named.Declaration
 
 let get_fix_exn, stm_get_fix_exn = Hook.make ()
@@ -321,7 +312,7 @@ type program_info_aux = {
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;
-  prg_hook : univ_declaration_hook option;
+  prg_hook : Lemmas.declaration_hook option;
   prg_opaque : bool;
   prg_sign: named_context_val;
 }
@@ -482,9 +473,9 @@ let declare_definition prg =
   let ce = definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
-  let hook = Lemmas.mk_hook (fun l r -> call_univ_hook ?univ_hook:prg.prg_hook ~fix_exn uctx obls l r; ()) in
+  let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition prg.prg_name
-    prg.prg_kind ce ubinders prg.prg_implicits ~hook
+    prg.prg_kind ce ubinders prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -559,14 +550,16 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
-    fixnames fixdecls fixtypes fiximps in
-    (* Declare notations *)
-    List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
-    Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
-    let gr = List.hd kns in
-    call_univ_hook ?univ_hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
-    List.iter progmap_remove l; gr
+  let kns = List.map4
+      (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
+      fixnames fixdecls fixtypes fiximps
+  in
+  (* Declare notations *)
+  List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
+  Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
+  let gr = List.hd kns in
+  Lemmas.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
+  List.iter progmap_remove l; gr
 
 let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
@@ -663,7 +656,7 @@ let declare_obligation prg obl body ty uctx =
       in
       true, { obl with obl_body = body }
 
-let init_prog_info ?(opaque = false) ?univ_hook sign n udecl b t ctx deps fixkind
+let init_prog_info ?(opaque = false) ?hook sign n udecl b t ctx deps fixkind
                    notations obls impls kind reduce =
   let obls', b =
     match b with
@@ -689,7 +682,7 @@ let init_prog_info ?(opaque = false) ?univ_hook sign n udecl b t ctx deps fixkin
       prg_obligations = (obls', Array.length obls');
       prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
       prg_implicits = impls; prg_kind = kind; prg_reduce = reduce; 
-      prg_hook = univ_hook; prg_opaque = opaque;
+      prg_hook = hook; prg_opaque = opaque;
       prg_sign = sign }
 
 let map_cardinal m =
@@ -844,9 +837,9 @@ let solve_by_tac ?loc name evi t poly ctx =
     warn_solve_errored ?loc err;
     None
 
-let obligation_terminator ?univ_hook name num guard auto pf =
+let obligation_terminator ?hook name num guard auto pf =
   let open Proof_global in
-  let term = Lemmas.universe_proof_terminator ?univ_hook guard in
+  let term = Lemmas.standard_proof_terminator ?hook guard in
   match pf with
   | Admitted _ -> apply_terminator term pf
   | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
@@ -912,7 +905,7 @@ let obligation_terminator ?univ_hook name num guard auto pf =
   | Proved (_, _, _ ) ->
     CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")
 
-let obligation_hook prg obl num auto ctx' _ gr =
+let obligation_hook prg obl num auto ctx' _ _ gr =
   let obls, rem = prg.prg_obligations in
   let cst = match gr with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
@@ -922,7 +915,6 @@ let obligation_hook prg obl num auto ctx' _ gr =
        if not transparent then err_not_transp ()
     | _ -> ()
   in
-  let ctx' = match ctx' with None -> prg.prg_ctx | Some ctx' -> ctx' in
   let inst, ctx' =
     if not (pi2 prg.prg_kind) (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
@@ -969,11 +961,11 @@ let rec solve_obligation prg num tac =
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
-  let terminator ?univ_hook guard =
+  let terminator ?hook guard =
     Proof_global.make_terminator
-      (obligation_terminator ?univ_hook prg.prg_name num guard auto) in
-  let univ_hook ctx = Lemmas.mk_hook (obligation_hook prg obl num auto ctx) in
-  let () = Lemmas.start_proof_univs ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~univ_hook in
+      (obligation_terminator ?hook prg.prg_name num guard auto) in
+  let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
+  let () = Lemmas.start_proof ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
   let _ = Pfedit.by !default_tactic in
   Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
 
@@ -1110,10 +1102,10 @@ let show_term n =
 
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
-    ?(reduce=reduce) ?univ_hook ?(opaque = false) obls =
+    ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
-  let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce ?univ_hook in
+  let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -1130,13 +1122,13 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ?(kind=Global,false,Definition) ?(reduce=reduce)
-    ?univ_hook ?(opaque = false) notations fixkind =
+    ?hook ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
      let prg = init_prog_info sign ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
-       notations obls imps kind reduce ?univ_hook
+       notations obls imps kind reduce ?hook
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->

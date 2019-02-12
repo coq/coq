@@ -94,22 +94,24 @@ let do_definition ~program_mode ?hook ident k univdecl bl red_option c ctypopt =
   let (ce, evd, univdecl, imps as def) =
     interp_definition ~program_mode univdecl bl (pi2 k) red_option c ctypopt
   in
-    if program_mode then
-      let env = Global.env () in
-      let (c,ctx), sideff = Future.force ce.const_entry_body in
-      assert(Safe_typing.empty_private_constants = sideff);
-      assert(Univ.ContextSet.is_empty ctx);
-      let typ = match ce.const_entry_type with
-        | Some t -> t
-        | None -> EConstr.to_constr ~abort_on_undefined_evars:false evd (Retyping.get_type_of env evd (EConstr.of_constr c))
-      in
-      Obligations.check_evars env evd;
-      let obls, _, c, cty =
-        Obligations.eterm_obligations env ident evd 0 c typ
-      in
-      let ctx = Evd.evar_universe_context evd in
-      let univ_hook = Obligations.mk_univ_hook (fun _ _ l r -> Lemmas.call_hook ?hook l r) in
-      ignore(Obligations.add_definition
-          ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ~univ_hook obls)
-    else let ce = check_definition ~program_mode def in
-      ignore(DeclareDef.declare_definition ident k ce (Evd.universe_binders evd) imps ?hook)
+  if program_mode then
+    let env = Global.env () in
+    let (c,ctx), sideff = Future.force ce.const_entry_body in
+    assert(Safe_typing.empty_private_constants = sideff);
+    assert(Univ.ContextSet.is_empty ctx);
+    let typ = match ce.const_entry_type with
+      | Some t -> t
+      | None -> EConstr.to_constr ~abort_on_undefined_evars:false evd (Retyping.get_type_of env evd (EConstr.of_constr c))
+    in
+    Obligations.check_evars env evd;
+    let obls, _, c, cty =
+      Obligations.eterm_obligations env ident evd 0 c typ
+    in
+    let ctx = Evd.evar_universe_context evd in
+    ignore(Obligations.add_definition
+             ident ~term:c cty ctx ~univdecl ~implicits:imps ~kind:k ?hook obls)
+  else
+    let ce = check_definition ~program_mode def in
+    let uctx = Evd.evar_universe_context evd in
+    let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+    ignore(DeclareDef.declare_definition ident k ?hook_data ce (Evd.universe_binders evd) imps )
