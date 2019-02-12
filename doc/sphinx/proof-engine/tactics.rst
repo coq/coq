@@ -3178,129 +3178,140 @@ Automation
 
    This tactic implements a Prolog-like resolution procedure to solve the
    current goal. It first tries to solve the goal using the :tacn:`assumption`
-   tactic, then it reduces the goal to an atomic one using intros and
+   tactic, then it reduces the goal to an atomic one using :tacn:`intros` and
    introduces the newly generated hypotheses as hints. Then it looks at
    the list of tactics associated to the head symbol of the goal and
    tries to apply one of them (starting from the tactics with lower
    cost). This process is recursively applied to the generated subgoals.
 
-   By default, auto only uses the hypotheses of the current goal and the
-   hints of the database named core.
+   By default, :tacn:`auto` only uses the hypotheses of the current goal and
+   the hints of the database named ``core``.
 
-.. tacv:: auto @num
+   .. warning::
 
-   Forces the search depth to be :token:`num`. The maximal search depth
-   is 5 by default.
+      :tacn:`auto` uses a weaker version of :tacn:`apply` that is closer to
+      :tacn:`simple apply` so it is expected that sometimes :tacn:`auto` will
+      fail even if applying manually one of the hints would succeed.
 
-.. tacv:: auto with {+ @ident}
+   .. tacv:: auto @num
 
-   Uses the hint databases :n:`{+ @ident}` in addition to the database core.
+      Forces the search depth to be :token:`num`. The maximal search depth
+      is 5 by default.
+
+   .. tacv:: auto with {+ @ident}
+
+      Uses the hint databases :n:`{+ @ident}` in addition to the database ``core``.
+
+      .. note::
+
+         Use the fake database `nocore` if you want to *not* use the `core`
+         database.
+
+   .. tacv:: auto with *
+
+      Uses all existing hint databases. Using this variant is highly discouraged
+      in finished scripts since it is both slower and less robust than the variant
+      where the required databases are explicitly listed.
 
    .. seealso::
       :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>` for the list of
       pre-defined databases and the way to create or extend a database.
 
-.. tacv:: auto with *
+   .. tacv:: auto using {+ @ident__i} {? with {+ @ident } }
 
-   Uses all existing hint databases.
+      Uses lemmas :n:`@ident__i` in addition to hints. If :n:`@ident` is an
+      inductive type, it is the collection of its constructors which are added
+      as hints.
 
-   .. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
+      .. note::
 
-.. tacv:: auto using {+ @ident__i} {? with {+ @ident } }
+         The hints passed through the `using` clause are used in the same
+         way as if they were passed through a hint database. Consequently,
+         they use a weaker version of :tacn:`apply` and :n:`auto using @ident`
+         may fail where :n:`apply @ident` succeeds.
 
-   Uses lemmas :n:`@ident__i` in addition to hints. If :n:`@ident` is an
-   inductive type, it is the collection of its constructors which are added
-   as hints.
+         Given that this can be seen as counter-intuitive, it could be useful
+         to have an option to use full-blown :tacn:`apply` for lemmas passed
+         through the `using` clause. Contributions welcome!
 
-.. tacv:: info_auto
+   .. tacv:: info_auto
 
-   Behaves like auto but shows the tactics it uses to solve the goal. This
-   variant is very useful for getting a better understanding of automation, or
-   to know what lemmas/assumptions were used.
+      Behaves like :tacn:`auto` but shows the tactics it uses to solve the goal. This
+      variant is very useful for getting a better understanding of automation, or
+      to know what lemmas/assumptions were used.
 
-.. tacv:: debug auto
-   :name: debug auto
+   .. tacv:: debug auto
+      :name: debug auto
 
-   Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
-   including failing paths.
+      Behaves like :tacn:`auto` but shows the tactics it tries to solve the goal,
+      including failing paths.
 
-.. tacv:: {? info_}auto {? @num} {? using {+ @lemma}} {? with {+ @ident}}
+   .. tacv:: {? info_}auto {? @num} {? using {+ @lemma}} {? with {+ @ident}}
 
-  This is the most general form, combining the various options.
+      This is the most general form, combining the various options.
 
 .. tacv:: trivial
    :name: trivial
 
-   This tactic is a restriction of auto that is not recursive
+   This tactic is a restriction of :tacn:`auto` that is not recursive
    and tries only hints that cost `0`. Typically it solves trivial
    equalities like :g:`X=X`.
 
-.. tacv:: trivial with {+ @ident}
-   :undocumented:
-
-.. tacv:: trivial with *
-   :undocumented:
-
-.. tacv:: trivial using {+ @lemma}
-   :undocumented:
-
-.. tacv:: debug trivial
-   :name: debug trivial
-   :undocumented:
-
-.. tacv:: info_trivial
-   :name: info_trivial
-   :undocumented:
-
-.. tacv:: {? info_}trivial {? using {+ @lemma}} {? with {+ @ident}}
-   :undocumented:
+   .. tacv:: trivial with {+ @ident}
+             trivial with *
+             trivial using {+ @lemma}
+             debug trivial
+             info_trivial
+             {? info_}trivial {? using {+ @lemma}} {? with {+ @ident}}
+      :name: _; _; _; debug trivial; info_trivial; _
+      :undocumented:
 
 .. note::
-  :tacn:`auto` either solves completely the goal or else leaves it
-  intact. :tacn:`auto` and :tacn:`trivial` never fail.
-
-The following options enable printing of informative or debug information for
-the :tacn:`auto` and :tacn:`trivial` tactics:
+  :tacn:`auto` and :tacn:`trivial` either solve completely the goal or
+  else succeed without changing the goal. Use :g:`solve [ auto ]` and
+  :g:`solve [ trivial ]` if you would prefer these tactics to fail when
+  they do not manage to solve the goal.
 
 .. flag:: Info Auto
           Debug Auto
           Info Trivial
           Debug Trivial
-   :undocumented:
 
-.. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
+   These options enable printing of informative or debug information for
+   the :tacn:`auto` and :tacn:`trivial` tactics.
 
 .. tacn:: eauto
    :name: eauto
 
    This tactic generalizes :tacn:`auto`. While :tacn:`auto` does not try
    resolution hints which would leave existential variables in the goal,
-   :tacn:`eauto` does try them (informally speaking, it usessimple :tacn:`eapply`
-   where :tacn:`auto` uses simple :tacn:`apply`). As a consequence, :tacn:`eauto`
+   :tacn:`eauto` does try them (informally speaking, it internally uses a tactic
+   close to :tacn:`simple eapply` instead of a tactic close to :tacn:`simple apply`
+   in the case of :tacn:`auto`). As a consequence, :tacn:`eauto`
    can solve such a goal:
 
    .. example::
 
       .. coqtop:: all
 
-         Hint Resolve ex_intro.
+         Hint Resolve ex_intro : core.
          Goal forall P:nat -> Prop, P 0 -> exists n, P n.
          eauto.
 
       Note that ``ex_intro`` should be declared as a hint.
 
 
-.. tacv:: {? info_}eauto {? @num} {? using {+ @lemma}} {? with {+ @ident}}
+   .. tacv:: {? info_}eauto {? @num} {? using {+ @lemma}} {? with {+ @ident}}
 
-   The various options for :tacn:`eauto` are the same as for :tacn:`auto`.
+      The various options for :tacn:`eauto` are the same as for :tacn:`auto`.
 
-:tacn:`eauto` also obeys the following options:
+   :tacn:`eauto` also obeys the following options:
 
-.. flag:: Info Eauto
-          Debug Eauto
-          :undocumented:
+   .. flag:: Info Eauto
+             Debug Eauto
+      :undocumented:
 
-.. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
+   .. seealso:: :ref:`The Hints Databases for auto and eauto <thehintsdatabasesforautoandeauto>`
 
 
 .. tacn:: autounfold with {+ @ident}
