@@ -198,7 +198,10 @@ TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))
 #   TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
-BOOTCOQC=$(TIMER) $(COQC) -boot $(COQOPTS)
+# Beware this depends on the makefile being in a particular dir, we
+# should pass an absolute path here but windows is tricky
+# c.f. https://github.com/coq/coq/pull/9560
+BOOTCOQC=$(TIMER) $(COQC) -coqlib . -boot $(COQOPTS)
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES)

@@ -132,7 +132,7 @@ after_script:
   dependencies:
     - not-a-real-job
   script:
-    - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/" COQBOOT=no'
+    - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/"'
     - make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= refman
     - make install-doc-sphinx
   artifacts:

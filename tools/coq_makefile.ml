@@ -424,15 +424,15 @@ let _ =
   end;
 
   let project = ensure_root_dir project in
-  
+
   if project.install_kind <> (Some CoqProject_file.NoInstall) then begin
     warn_install_at_root_directory project;
   end;
 
   check_overlapping_include project;
 
-  Envars.set_coqlib ~boot:false ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
-  
+  Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
+
   let ocm = Option.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file (prog :: args) project;
   close_out ocm;

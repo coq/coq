@@ -13,7 +13,7 @@
   (source_tree tools)
   (env_var SPHINXWARNOPT))
  (action
-  (run sphinx-build -j4 %{env:SPHINXWARNOPT=-W} -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
+  (run env COQLIB=%{project_root} sphinx-build -j4 %{env:SPHINXWARNOPT=-W} -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
 
 (alias
  (name refman-html)
