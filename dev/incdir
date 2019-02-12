@@ -1,0 +1,16 @@
+#cd".";;
+#directory "parsing";;
+#directory "interp";;
+#directory "toplevel";;
+#directory "library";;
+#directory "kernel";;
+#directory "gramlib";;
+#directory "engine";;
+#directory "pretyping";;
+#directory "lib";;
+#directory "proofs";;
+#directory "tactics";;
+#directory "printing";;
+#directory "grammar";;
+#directory "stm";;
+#directory "vernac";;

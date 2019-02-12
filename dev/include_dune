@@ -2,8 +2,9 @@
 
 (* Typical usage :
 
-   $ coqtop.byte    # or even better : rlwrap coqtop.byte
+   $ dune exec coqtop.byte # or even better : rlwrap coqtop.byte
    Coq < Drop.
+   # #directory "dev";;
    # #use "include";;
 
    Alternatively, you can avoid typing #use "include" after each Drop
@@ -15,7 +16,7 @@
 *)
 
 #cd ".";;
-#use "incdir";;
+#use "incdir_dune";;
 #use "base_include";;
-#use "inc_ltac";;
+#use "inc_ltac_dune";;
 #use "include_printers";;

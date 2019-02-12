@@ -1,0 +1,55 @@
+#install_printer  (* pp_stdcmds *) pp;;
+#install_printer  (* pattern *) pppattern;;
+#install_printer  (* glob_constr *) ppglob_constr;;
+#install_printer  (* open constr *) ppopenconstr;;
+#install_printer  (* constr *) ppconstr;;
+#install_printer  (* econstr *) ppeconstr;;
+#install_printer  (* constr_substituted *) ppsconstr;;
+#install_printer  (* constraints *)  ppconstraints;;
+#install_printer  (* univ constraints *)  ppuniverseconstraints;;
+#install_printer  (* universe *)  ppuni;;
+#install_printer  (* universes *)  ppuniverses;;
+#install_printer  (* univ level *) ppuni_level;;
+#install_printer  (* univ context *) ppuniverse_context;;
+#install_printer  (* univ context future *) ppuniverse_context_future;;
+#install_printer  (* univ context set *) ppuniverse_context_set;;
+#install_printer  (* univ set *) ppuniverse_set;;
+#install_printer  (* univ instance *) ppuniverse_instance;;
+#install_printer  (* univ subst *) ppuniverse_subst;;
+#install_printer  (* univ full subst *) ppuniverse_level_subst;;
+#install_printer  (* univ opt subst *) ppuniverse_opt_subst;;
+#install_printer  (* evar univ ctx *) ppevar_universe_context;;
+#install_printer  (* inductive *) ppind;;
+#install_printer  (* 'a scheme_kind *) ppscheme;;
+#install_printer  (* type_judgement *) pptype;;
+#install_printer  (* judgement *) ppj;;
+#install_printer  (* id set *) ppidset;;
+#install_printer  (* int set *) ppintset;;
+
+#install_printer  (* Reductionops stcak of unfolded constants *) pp_cst_stack_t;;
+#install_printer  (* Reductionops machine stack *) pp_stack_t;;
+
+(*#install_printer  (* hint_db *)  print_hint_db;;*)
+(*#install_printer  (* hints_path *)  pphintspath;;*)
+#install_printer  (* goal *)  ppgoal;;
+(*#install_printer  (* sigma goal *)  ppsigmagoal;;*)
+#install_printer  (* proof *)  pproof;;
+#install_printer  (* Goal.goal *)  ppgoalgoal;;
+#install_printer  (* proofview *)  ppproofview;;
+#install_printer  (* metaset.t *) ppmetas;;
+#install_printer  (* evar *)  ppevar;;
+#install_printer  (* evar_map *)  ppevm;;
+#install_printer  (* Evar.Set.t *) ppexistentialset;;
+#install_printer  (* clenv *) ppclenv;;
+#install_printer  (* env *) ppenv;;
+#install_printer  (* Hint_db.t *) pphintdb;;
+#install_printer  (* named_context_val *) ppnamedcontextval;;
+
+#install_printer  (* tactic *) pptac;;
+#install_printer  (* object *) ppobj;;
+#install_printer  (* global_reference *) ppglobal;;
+#install_printer  (* generic_argument *) pp_generic_argument;;
+
+#install_printer  (* fconstr *) ppfconstr;;
+
+#install_printer (* Future.computation *) ppfuture;;

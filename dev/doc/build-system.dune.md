@@ -106,6 +106,16 @@ refined, so you need to build enough of Coq once to use this target
 [it will then correctly compute the deps and rebuild if you call the
 script again] This will be fixed in the future.
 
+## Dropping from coqtop:
+
+The following sequence is recommended:
+```
+dune exec coqtop.byte
+> Drop.
+# #directory "dev";;
+# #use "include_dune";;
+```
+
 ## Compositionality, developer and release modes.
 
 By default [in "developer mode"], Dune will compose all the packages
