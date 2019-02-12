@@ -33,9 +33,8 @@ val interp :
 
 val make_cases : string -> string list list
 
-(* XXX STATE: this type hints that restoring the state should be the
-   caller's responsibility *)
-val with_fail : st:Vernacstate.t -> bool -> (unit -> Proof_global.t option) -> Proof_global.t option
+(** [with_fail ~st f] runs [f ()] and expects it to fail, otherwise it fails. *)
+val with_fail : st:Vernacstate.t -> (unit -> 'a) -> unit
 
 val command_focus : unit Proof.focus_kind
 

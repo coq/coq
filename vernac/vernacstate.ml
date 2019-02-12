@@ -75,8 +75,6 @@ let make_shallow st =
 (* Compatibility module *)
 module Proof_global = struct
 
-  let with_fail ~st f = f ()
-
   let get () = !s_proof
   let set x = s_proof := x
 

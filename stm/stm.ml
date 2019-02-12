@@ -2064,6 +2064,12 @@ end = struct (* {{{ *)
 
   module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask) ()
 
+  let stm_fail ~st fail f =
+    if fail then
+      Vernacentries.with_fail ~st f
+    else
+      f ()
+
   let vernac_interp ~solve ~abstract ~cancel_switch nworkers safe_id id
     { indentation; verbose; loc; expr = e; strlen } : unit
   =
@@ -2075,7 +2081,7 @@ end = struct (* {{{ *)
         | e -> e, time, batch, fail in
       find ~time:false ~batch:false ~fail:false e in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
-    Vernacstate.Proof_global.with_fail ~st (fun () ->
+    stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
     Vernacstate.Proof_global.with_current_proof (fun _ p ->
