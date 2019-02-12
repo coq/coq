@@ -756,6 +756,7 @@ let show_extraction ~pstate =
     | Some pstate -> pstate
   in
   init ~inner:true false false;
+  Lemmas.pf_fold (fun pstate ->
   let prf = Proof_global.give_me_the_proof pstate in
   let sigma, env = Pfedit.get_current_context pstate in
   let trms = Proof.partial_proof prf in
@@ -768,3 +769,4 @@ let show_extraction ~pstate =
     print_one_decl [] mp decl
   in
   Feedback.msg_notice (Pp.prlist_with_sep Pp.fnl extr_term trms)
+  ) pstate

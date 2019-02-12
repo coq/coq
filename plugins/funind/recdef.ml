@@ -33,7 +33,6 @@ open Declare
 open Decl_kinds
 open Tacred
 open Goal
-open Pfedit
 open Glob_term
 open Pretyping
 open Termops
@@ -1282,7 +1281,7 @@ let clear_goals sigma =
 
 
 let build_new_goal_type pstate =
-  let sigma, sub_gls_types = get_current_subgoals_types pstate in
+  let sigma, sub_gls_types = Lemmas.pf_fold get_current_subgoals_types pstate in
   (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sigma sub_gls_types in
   (* Pp.msgnl (str "sub_gls_types2 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
@@ -1299,7 +1298,7 @@ let is_opaque_constant c =
 
 let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
-  let current_proof_name = Proof_global.get_current_proof_name pstate in
+  let current_proof_name = Lemmas.pf_fold Proof_global.get_current_proof_name pstate in
   let name = match goal_name with
     | Some s -> s
     | None   ->
@@ -1376,9 +1375,9 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
     sigma gls_type ~hook:(Lemmas.mk_hook hook) in
   let pstate = if Indfun_common.is_strict_tcc  ()
   then
-    fst @@ by (Proofview.V82.tactic (tclIDTAC)) pstate
+    fst @@ Lemmas.by (Proofview.V82.tactic (tclIDTAC)) pstate
   else 
-    fst @@ by (Proofview.V82.tactic begin
+    fst @@ Lemmas.by (Proofview.V82.tactic begin
 	fun g ->
 	  tclTHEN
 	    (decompose_and_tac)
@@ -1397,7 +1396,7 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
             g end) pstate
   in
   try
-    Some (fst @@ by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
+    Some (fst @@ Lemmas.by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
   with UserError _ ->
     defined pstate
 
@@ -1416,8 +1415,8 @@ let com_terminate
     let pstate = Lemmas.start_proof ~ontop:None thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook in
-    let pstate = fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
-    fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
+    let pstate = fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
+    fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
                                    input_type relation rec_arg_num ))) pstate
   in
   let pstate = start_proof Global.(env ()) ctx tclIDTAC tclIDTAC in
@@ -1469,7 +1468,7 @@ let (com_eqn : int -> Id.t ->
        ~sign:(Environ.named_context_val env)
        evd
        (EConstr.of_constr equation_lemma_type) in
-    let pstate = fst @@ by
+    let pstate = fst @@ Lemmas.by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
 	     prove_eq (fun _ -> tclIDTAC)
@@ -1505,7 +1504,7 @@ let (com_eqn : int -> Id.t ->
 
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
-    generate_induction_principle using_lemmas : Proof_global.t option =
+    generate_induction_principle using_lemmas : Lemmas.t option =
   let open Term in
   let open Constr in
   let open CVars in

@@ -15,10 +15,6 @@
 type t
 val get_current_proof_name : t -> Names.Id.t
 val get_current_persistence : t -> Decl_kinds.goal_kind
-val get_all_proof_names : t -> Names.Id.t list
-
-val discard : Names.lident -> t -> t option
-val discard_current : t -> t option
 
 val give_me_the_proof : t -> Proof.t
 val compact_the_proof : t -> t
@@ -40,19 +36,7 @@ type proof_object = {
 
 type opacity_flag = Opaque | Transparent
 
-type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry *
-                UState.t
-  | Proved of opacity_flag *
-              Names.lident option *
-              proof_object
-type proof_terminator
-type closed_proof = proof_object * proof_terminator
-
-val make_terminator : (proof_ending -> unit) -> proof_terminator
-val apply_terminator : proof_terminator -> proof_ending -> unit
-
-(** [start_proof ~ontop id str pl goals terminator] starts a proof of name
+(** [start_proof id str pl goals] starts a proof of name
    [id] with goals [goals] (a list of pairs of environment and
    conclusion); [str] describes what kind of theorem/definition this
    is; [terminator] is used at the end of the proof to close the proof
@@ -60,16 +44,22 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
    morphism). The proof is started in the evar map [sigma] (which can
    typically contain universe constraints), and with universe bindings
    pl. *)
-val start_proof : ontop:t option ->
-  Evd.evar_map -> Names.Id.t -> ?pl:UState.universe_decl ->
-  Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->
-    proof_terminator -> t
+val start_proof
+  :  Evd.evar_map
+  -> Names.Id.t
+  -> ?pl:UState.universe_decl
+  -> Decl_kinds.goal_kind
+  -> (Environ.env * EConstr.types) list
+  -> t
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
-val start_dependent_proof : ontop:t option ->
-  Names.Id.t -> ?pl:UState.universe_decl -> Decl_kinds.goal_kind ->
-  Proofview.telescope -> proof_terminator -> t
+val start_dependent_proof
+  :  Names.Id.t
+  -> ?pl:UState.universe_decl
+  -> Decl_kinds.goal_kind
+  -> Proofview.telescope
+  -> t
 
 (** Update the proofs global environment after a side-effecting command
   (e.g. a sublemma definition) has been run inside it. Assumes
@@ -78,7 +68,7 @@ val update_global_env : t -> t
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> t -> closed_proof
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> t -> proof_object
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The former is supposed to be
@@ -90,12 +80,8 @@ type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * USt
  * is allowed (no error), and a warn is given if the proof is complete. *)
 val return_proof : ?allow_partial:bool -> t -> closed_proof_output
 val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> t ->
-  closed_proof_output Future.computation -> closed_proof
+  closed_proof_output Future.computation -> proof_object
 
-(** Gets the current terminator without checking that the proof has
-    been completed. Useful for the likes of [Admitted]. *)
-val get_terminator : t -> proof_terminator
-val set_terminator : proof_terminator -> t -> t
 val get_open_goals : t -> int
 
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
@@ -103,6 +89,7 @@ val get_open_goals : t -> int
     The return boolean is set to [false] if an unsafe tactic has been used. *)
 val with_current_proof :
   (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
+
 val simple_with_current_proof :
   (unit Proofview.tactic -> Proof.t -> Proof.t) -> t -> t
 
@@ -119,5 +106,3 @@ val get_used_variables : t -> Constr.named_context option
 
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : t -> UState.universe_decl
-
-val copy_terminators : src:t -> tgt:t -> t

@@ -1965,7 +1965,7 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer ~pstate atts m n : Proof_global.t option =
+let add_morphism_infer ~pstate atts m n : Lemmas.t option =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   (* NB: atts.program is ignored, program mode automatically set by vernacentries *)
@@ -2001,7 +2001,7 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
       Flags.silently
         (fun () ->
            let pstate = Lemmas.start_proof ~ontop:pstate ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
-           Some (fst Pfedit.(by (Tacinterp.interp tac) pstate))) ()
+           Some (fst Lemmas.(by (Tacinterp.interp tac) pstate))) ()
 
 let add_morphism ~pstate atts binders m s n =
   init_setoid ();

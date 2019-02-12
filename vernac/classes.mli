@@ -40,7 +40,7 @@ val declare_instance_constant :
   unit
 
 val new_instance :
-  pstate:Proof_global.t option ->
+  pstate:Lemmas.t option ->
   ?global:bool (** Not global by default. *) ->
   ?refine:bool (** Allow refinement *) ->
   program_mode:bool ->
@@ -53,7 +53,7 @@ val new_instance :
   ?hook:(GlobRef.t -> unit) ->
   Hints.hint_info_expr ->
   (* May open a proof *)
-  Id.t * Proof_global.t option
+  Id.t * Lemmas.t option
 
 val declare_new_instance :
   ?global:bool (** Not global by default. *) ->
@@ -77,7 +77,7 @@ val id_of_class : typeclass -> Id.t
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
 val context
-  :  pstate:Proof_global.t option
+  :  pstate:Lemmas.t option
   -> Decl_kinds.polymorphic
   -> local_binder_expr list
   -> bool

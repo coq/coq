@@ -98,7 +98,8 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl }
     { obligation (num, None, None) tac }
 | ![ proof ] [ "Next" "Obligation" "of" ident(name) withtac(tac) ] ->
     { next_obligation (Some name) tac }
-| ![ proof ] [ "Next" "Obligation" withtac(tac) ] -> { next_obligation None tac }
+| ![ proof ] [ "Next" "Obligation" withtac(tac) ] ->
+    { next_obligation None tac }
 END
 
 VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF

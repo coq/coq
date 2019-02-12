@@ -35,50 +35,21 @@ type proof_object = {
 
 type opacity_flag = Opaque | Transparent
 
-type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
-  | Proved of opacity_flag *
-              lident option *
-              proof_object
-
-type proof_terminator = proof_ending -> unit
-type closed_proof = proof_object * proof_terminator
-
-type pstate = {
-  terminator : proof_terminator CEphemeron.key;
-  endline_tactic : Genarg.glob_generic_argument option;
-  section_vars : Constr.named_context option;
-  proof : Proof.t;
-  universe_decl: UState.universe_decl;
-  strength : Decl_kinds.goal_kind;
-}
-
-(* The head of [t] is the actual current proof, the other ones are
-   to be resumed when the current proof is closed or aborted. *)
-type t = pstate * pstate list
-
-let pstate_map f (pf, pfl) = (f pf, List.map f pfl)
-
-let make_terminator f = f
-let apply_terminator f = f
-
-(* combinators for the current_proof lists *)
-let push ~ontop a =
-  match ontop with
-  | None -> a , []
-  | Some (l,ls) -> a, (l :: ls)
+type t =
+  { endline_tactic : Genarg.glob_generic_argument option
+  ; section_vars : Constr.named_context option
+  ; proof : Proof.t
+  ; universe_decl: UState.universe_decl
+  ; strength : Decl_kinds.goal_kind
+  }
 
 (*** Proof Global manipulation ***)
 
-let get_all_proof_names (pf : t) =
-  let (pn, pns) = pstate_map Proof.(function pf -> (data pf.proof).name) pf in
-  pn :: pns
+let give_me_the_proof ps = ps.proof
+let get_current_proof_name ps = (Proof.data ps.proof).Proof.name
+let get_current_persistence ps = ps.strength
 
-let give_me_the_proof (ps,_) = ps.proof
-let get_current_proof_name (ps,_) = (Proof.data ps.proof).Proof.name
-let get_current_persistence (ps,_) = ps.strength
-
-let with_current_proof f (ps, psl) =
+let with_current_proof f ps =
   let et =
     match ps.endline_tactic with
     | None -> Proofview.tclUNIT ()
@@ -91,7 +62,7 @@ let with_current_proof f (ps, psl) =
   in
   let (newpr,ret) = f et ps.proof in
   let ps = { ps with proof = newpr } in
-  (ps, psl), ret
+  ps, ret
 
 let simple_with_current_proof f pf =
   let p, () = with_current_proof (fun t p -> f t p , ()) pf in p
@@ -99,22 +70,10 @@ let simple_with_current_proof f pf =
 let compact_the_proof pf = simple_with_current_proof (fun _ -> Proof.compact) pf
 
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
-let set_endline_tactic tac (ps, psl) =
-  { ps with endline_tactic = Some tac }, psl
+let set_endline_tactic tac ps =
+  { ps with endline_tactic = Some tac }
 
-let pf_name_eq id ps =
-  let Proof.{ name } = Proof.data ps.proof in
-  Id.equal name id
-
-let discard {CAst.loc;v=id} (ps, psl) =
-  match List.filter (fun pf -> not (pf_name_eq id pf)) (ps :: psl) with
-  | [] -> None
-  | ps :: psl -> Some (ps, psl)
-
-let discard_current (ps, psl) =
-  if List.is_empty psl then None else Some List.(hd psl, tl psl)
-
-(** [start_proof sigma id pl str goals terminator] starts a proof of name
+(** [start_proof sigma id pl str goals] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
     conclusion); [str] describes what kind of theorem/definition this
     is (spiwack: for potential printing, I believe is used only by
@@ -122,30 +81,28 @@ let discard_current (ps, psl) =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof ~ontop sigma name ?(pl=UState.default_univ_decl) kind goals terminator =
+let start_proof sigma name ?(pl=UState.default_univ_decl) kind goals =
   let initial_state = {
-    terminator = CEphemeron.create terminator;
     proof = Proof.start ~name ~poly:(pi2 kind) sigma goals;
     endline_tactic = None;
     section_vars = None;
     universe_decl = pl;
     strength = kind } in
-  push ~ontop initial_state
+  initial_state
 
-let start_dependent_proof ~ontop name ?(pl=UState.default_univ_decl) kind goals terminator =
+let start_dependent_proof name ?(pl=UState.default_univ_decl) kind goals =
   let initial_state = {
-    terminator = CEphemeron.create terminator;
     proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals;
     endline_tactic = None;
     section_vars = None;
     universe_decl = pl;
     strength = kind } in
-  push ~ontop initial_state
+  initial_state
 
-let get_used_variables (pf,_) = pf.section_vars
-let get_universe_decl (pf,_) = pf.universe_decl
+let get_used_variables pf = pf.section_vars
+let get_universe_decl pf = pf.universe_decl
 
-let set_used_variables (ps,psl) l =
+let set_used_variables ps l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
@@ -169,9 +126,9 @@ let set_used_variables (ps,psl) l =
   if not (Option.is_empty ps.section_vars) then
     CErrors.user_err Pp.(str "Used section variables can be declared only once");
   (* EJGA: This is always empty thus we should modify the type *)
-  (ctx, []), ({ ps with section_vars = Some ctx}, psl)
+  (ctx, []), { ps with section_vars = Some ctx}
 
-let get_open_goals (ps, _) =
+let get_open_goals ps =
   let Proof.{ goals; stack; shelf } = Proof.data ps.proof in
   List.length goals +
   List.fold_left (+) 0
@@ -194,7 +151,7 @@ let private_poly_univs =
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) ps =
-  let { section_vars; proof; terminator; universe_decl; strength } = ps in
+  let { section_vars; proof; universe_decl; strength } = ps in
   let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
@@ -289,10 +246,9 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
   { id = name; entries = entries; persistence = strength;
-    universes },
-  fun pr_ending -> CEphemeron.get terminator pr_ending
+    universes }
 
-let return_proof ?(allow_partial=false) (ps,_) =
+let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in
  if allow_partial then begin
   let proofs = Proof.partial_proof proof in
@@ -321,31 +277,20 @@ let return_proof ?(allow_partial=false) (ps,_) =
     List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
-let close_future_proof ~opaque ~feedback_id (ps, psl) proof =
+let close_future_proof ~opaque ~feedback_id ps proof =
   close_proof ~opaque ~keep_body_ucst_separate:true ~feedback_id ~now:false proof ps
 
-let close_proof ~opaque ~keep_body_ucst_separate fix_exn (ps, psl) =
+let close_proof ~opaque ~keep_body_ucst_separate fix_exn ps =
   close_proof ~opaque ~keep_body_ucst_separate ~now:true
-    (Future.from_val ~fix_exn (return_proof (ps,psl))) ps
-
-(** Gets the current terminator without checking that the proof has
-    been completed. Useful for the likes of [Admitted]. *)
-let get_terminator (ps, _) = CEphemeron.get ps.terminator
-let set_terminator hook (ps, psl) =
-  { ps with terminator = CEphemeron.create hook }, psl
-
-let copy_terminators ~src ~tgt =
-  let (ps, psl), (ts,tsl) = src, tgt in
-  assert(List.length psl = List.length tsl);
-  {ts with terminator = ps.terminator}, List.map2 (fun op p -> { p with terminator = op.terminator }) psl tsl
+    (Future.from_val ~fix_exn (return_proof ps)) ps
 
 let update_global_env (pf : t) =
   let res, () =
   with_current_proof (fun _ p ->
-     Proof.in_proof p (fun sigma ->
-       let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-       let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
-         (p, ()))) pf
+        Proof.in_proof p (fun sigma ->
+            let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+            let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
+            (p, ()))) pf
   in res
 
 (* XXX: This hook is used to provide a better error w.r.t. bullets,

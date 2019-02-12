@@ -807,7 +807,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
            (Decl_kinds.Global,false,((Decl_kinds.Proof Decl_kinds.Theorem)))
            !evd
            typ in
-         let pstate = fst @@ Pfedit.by
+         let pstate = fst @@ Lemmas.by
 		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
                                                       (proving_tac i))) pstate in
          let _ = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
@@ -867,7 +867,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
          let pstate = Lemmas.start_proof ~ontop:None lem_id
            (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
          (fst lemmas_types_infos.(i)) in
-         let pstate = fst (Pfedit.by
+         let pstate = fst (Lemmas.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
               (proving_tac i))) pstate) in
          let _pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None in

@@ -376,7 +376,7 @@ let () = declare_int_option {
 
 let vernac_solve ~pstate n info tcom b =
   let open Goal_select in
-  let pstate, status = Proof_global.with_current_proof (fun etac p ->
+  let pstate, status = Lemmas.with_current_proof (fun etac p ->
       let with_end_tac = if b then Some etac else None in
       let global = match n with SelectAll | SelectList _ -> true | _ -> false in
       let info = Option.append info !print_info_trace in

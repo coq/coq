@@ -187,15 +187,15 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
                 Tactics.New.reduce_after_refine;
               ]
             in
-            let pstate, _ = Pfedit.by init_refine pstate in
+            let pstate, _ = Lemmas.by init_refine pstate in
             pstate
           else
-            let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
+            let pstate, _ = Lemmas.by (Tactics.auto_intros_tac ids) pstate in
             pstate
         in
         match tac with
         | Some tac ->
-          let pstate, _ = Pfedit.by tac pstate in
+          let pstate, _ = Lemmas.by tac pstate in
           pstate
         | None ->
           pstate) ())

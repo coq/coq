@@ -41,6 +41,19 @@ Coqlib:
   command then enables to locate the registered constant through its name. The
   name resolution is dynamic.
 
+Proof state:
+
+- Handling of proof state has been fully functionalized, thus it is
+  not possible to call global functions such as `get_current_context ()`.
+
+  The main type for functions that need to handle proof state is
+  `Lemmas.t`, for proofs that intend to associate a constant.
+
+  Unfortunately this change was not possible to do in a
+  backwards-compatible way, but in most case the api changes are
+  straightforward as functions have moved and gained an extra argument
+  but preserve the old naming.
+
 Macros:
 
 - The RAW_TYPED AS and GLOB_TYPED AS stanzas of the ARGUMENT EXTEND macro are

@@ -147,10 +147,10 @@ END
 VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
 | ![ proof ] [ "Cmd9" ] ->
   { fun ~pstate ->
-    Option.iter (fun (pstate : Proof_global.t) ->
+    Option.iter (Lemmas.pf_fold (fun (pstate : Proof_global.t) ->
         let sigma, env = Pfedit.get_current_context pstate in
         let pprf = Proof.partial_proof Proof_global.(give_me_the_proof pstate) in
         Feedback.msg_notice
-          (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)) pstate;
+          (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf))) pstate;
     pstate }
 END

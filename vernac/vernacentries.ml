@@ -59,12 +59,12 @@ let vernac_require_open_proof ~pstate f =
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_current_context p
+  | Some p -> Lemmas.pf_fold Pfedit.get_current_context p
 
 let get_current_or_goal_context ~pstate glnum =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_goal_context p glnum
+  | Some p -> pf_fold Pfedit.get_goal_context p glnum
 
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
@@ -98,8 +98,8 @@ let show_proof ~pstate =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   try
     let pstate = Option.get pstate in
-    let p = Proof_global.give_me_the_proof pstate in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let p = pf_fold Proof_global.give_me_the_proof pstate in
+    let sigma, env = pf_fold Pfedit.get_current_context pstate in
     let pprf = Proof.partial_proof p in
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
@@ -110,12 +110,12 @@ let show_proof ~pstate =
 
 let show_top_evars ~pstate =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
-  let pfts = Proof_global.give_me_the_proof pstate in
+  let pfts = pf_fold Proof_global.give_me_the_proof pstate in
   let Proof.{goals;shelf;given_up;sigma} = Proof.data pfts in
   pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
 let show_universes ~pstate =
-  let pfts = Proof_global.give_me_the_proof pstate in
+  let pfts = pf_fold Proof_global.give_me_the_proof pstate in
   let Proof.{goals;sigma} = Proof.data pfts in
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
@@ -124,7 +124,7 @@ let show_universes ~pstate =
 (* Simulate the Intro(s) tactic *)
 let show_intro ~pstate all =
   let open EConstr in
-  let pf = Proof_global.give_me_the_proof pstate in
+  let pf = pf_fold Proof_global.give_me_the_proof pstate in
   let Proof.{goals;sigma} = Proof.data pf in
   if not (List.is_empty goals) then begin
     let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
@@ -616,7 +616,7 @@ let vernac_start_proof ~atts ~pstate kind l =
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   Some (start_proof_and_print ~pstate ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
 
-let vernac_end_proof ?pstate ?proof = function
+let vernac_end_proof ?pstate ?proof = let open Vernacexpr in function
   | Admitted ->
     vernac_require_open_proof ~pstate (save_proof_admitted ?proof);
     pstate
@@ -626,7 +626,7 @@ let vernac_end_proof ?pstate ?proof = function
 let vernac_exact_proof ~pstate c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  let pstate, status = Pfedit.by (Tactics.exact_proof c) pstate in
+  let pstate, status = Lemmas.by (Tactics.exact_proof c) pstate in
   let pstate = save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
@@ -806,7 +806,7 @@ let vernac_inductive ~atts cum lo finite indl =
       in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
     *)
 
-let vernac_fixpoint ~atts ~pstate discharge l : Proof_global.t option =
+let vernac_fixpoint ~atts ~pstate discharge l : Lemmas.t option =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -1095,19 +1095,20 @@ let focus_command_cond = Proof.no_cond command_focus
      there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
 
-let vernac_solve_existential ~pstate i e = Pfedit.instantiate_nth_evar_com i e pstate
+let vernac_solve_existential ~pstate i e =
+  pf_map Pfedit.(instantiate_nth_evar_com i e) pstate
 
 let vernac_set_end_tac ~pstate tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
-  Proof_global.set_endline_tactic tac pstate
+  pf_map Proof_global.(set_endline_tactic tac) pstate
 
-let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
+let vernac_set_used_variables ~(pstate : Lemmas.t) e : Lemmas.t =
   let env = Global.env () in
   let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
   let tys =
-    List.map snd (initial_goals (Proof_global.give_me_the_proof pstate)) in
+    List.map snd (initial_goals (Lemmas.pf_fold Proof_global.give_me_the_proof pstate)) in
   let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
@@ -1116,8 +1117,8 @@ let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
       user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ Id.print id))
     l;
-  let _, pstate = Proof_global.set_used_variables pstate l in
-  fst @@ Proof_global.with_current_proof begin fun _ p ->
+  let pstate = Lemmas.pf_map (fun pstate -> let _, pstate = Proof_global.set_used_variables pstate l in pstate) pstate in
+  fst @@ Lemmas.with_current_proof begin fun _ p ->
     (p, ())
   end pstate
 
@@ -1794,8 +1795,8 @@ let get_current_context_of_args ~pstate =
     let env = Global.env () in Evd.(from_env env, env)
   | Some pstate ->
     function
-    | Some n -> Pfedit.get_goal_context pstate n
-    | None -> Pfedit.get_current_context pstate
+    | Some n -> pf_fold Pfedit.get_goal_context pstate n
+    | None -> pf_fold Pfedit.get_current_context pstate
 
 let query_command_selector ?loc = function
   | None -> None
@@ -1860,7 +1861,7 @@ let vernac_global_check c =
 
 
 let get_nth_goal ~pstate n =
-  let pf = Proof_global.give_me_the_proof pstate in
+  let pf = pf_fold Proof_global.give_me_the_proof pstate in
   let Proof.{goals;sigma} = Proof.data pf in
   let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
@@ -1895,7 +1896,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let sigma, env = pf_fold Pfedit.get_current_context pstate in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
@@ -1903,7 +1904,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~(pstate : Proof_global.t option) ~atts =
+let vernac_print ~(pstate : Lemmas.t option) ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTables -> print_tables ()
@@ -1935,9 +1936,9 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintHintGoal ->
      begin match pstate with
      | Some pstate ->
-        Hints.pr_applicable_hint pstate
+       pf_fold Hints.pr_applicable_hint pstate
      | None ->
-        str "No proof in progress"
+       str "No proof in progress"
      end
   | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
   | PrintHintDb -> Hints.pr_searchtable env sigma
@@ -2091,7 +2092,7 @@ let vernac_register ~pstate qid r =
 (* Proof management *)
 
 let vernac_focus gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -2101,12 +2102,12 @@ let vernac_focus gln =
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.simple_with_current_proof
+  Lemmas.simple_with_current_proof
     (fun _ p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused ~pstate =
-  let p = Proof_global.give_me_the_proof pstate in
+  let p = pf_fold Proof_global.give_me_the_proof pstate in
   if Proof.unfocused p then
     str"The proof is indeed fully unfocused."
   else
@@ -2120,7 +2121,7 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
@@ -2129,14 +2130,14 @@ let vernac_subproof gln =
              (str "Brackets do not support multi-goal selectors."))
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet : Proof_bullet.t) =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     Proof_bullet.put p bullet)
 
-let vernac_show ~pstate =
+let vernac_show ~(pstate : Lemmas.t option) =
   match pstate with
   (* Show functions that don't require a proof state *)
   | None ->
@@ -2151,7 +2152,7 @@ let vernac_show ~pstate =
   | Some pstate ->
     begin function
     | ShowGoal goalref ->
-      let proof = Proof_global.give_me_the_proof pstate in
+      let proof = pf_fold Proof_global.give_me_the_proof pstate in
       begin match goalref with
         | OpenSubgoals -> pr_open_subgoals ~proof
         | NthGoal n -> pr_nth_open_subgoal ~proof n
@@ -2160,7 +2161,7 @@ let vernac_show ~pstate =
     | ShowExistentials -> show_top_evars ~pstate
     | ShowUniverses -> show_universes ~pstate
     | ShowProofNames ->
-      pr_sequence Id.print (Proof_global.get_all_proof_names pstate)
+      pr_sequence Id.print (Lemmas.get_all_proof_names pstate)
     | ShowIntros all -> show_intro ~pstate all
     | ShowProof -> show_proof ~pstate:(Some pstate)
     | ShowMatch id -> show_match id
@@ -2168,7 +2169,7 @@ let vernac_show ~pstate =
     end
 
 let vernac_check_guard ~pstate =
-  let pts = Proof_global.give_me_the_proof pstate in
+  let pts = pf_fold Proof_global.give_me_the_proof pstate in
   let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try
@@ -2242,7 +2243,7 @@ let with_def_attributes ~atts f =
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let interp ?proof ~atts ~st c : Proof_global.t option =
+let interp ?proof ~atts ~st c : Lemmas.t option =
   let pstate = st.Vernacstate.proof in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2640,7 +2641,7 @@ let with_fail ~st f =
     | _ -> assert false
 
 
-let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Proof_global.t option =
+let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Lemmas.t option =
   let rec control ~st = function
   | VernacExpr (atts, v) ->
     aux ~atts ~st v
@@ -2656,7 +2657,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Proof_global.t option =
     let header = if batch then Topfmt.pr_cmd_header com else Pp.mt () in
     System.with_time ~batch ~header (control ~st) v;
 
-  and aux ~atts ~st : _ -> Proof_global.t option =
+  and aux ~atts ~st : _ -> Lemmas.t option =
     function
 
     | VernacLoad (_,fname) ->
@@ -2668,7 +2669,7 @@ let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Proof_global.t option =
          just parsing them to do our option magic. *)
       try
         vernac_timeout begin fun st ->
-          let pstate : Proof_global.t option =
+          let pstate : Lemmas.t option =
             if verbosely
             then Flags.verbosely (interp ?proof ~atts ~st) c
             else Flags.silently  (interp ?proof ~atts ~st) c

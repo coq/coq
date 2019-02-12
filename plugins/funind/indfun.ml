@@ -635,8 +635,8 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   fixpoint_exprl_with_new_bl
   
 
-let do_generate_principle ~pstate pconstants on_error register_built interactive_proof
-    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.t option =
+let do_generate_principle ~(pstate : Lemmas.t option) pconstants on_error register_built interactive_proof
+    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Lemmas.t option =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let pstate, _is_struct =
     match fixpoint_exprl with
@@ -842,7 +842,7 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
 
 
 let make_graph ~pstate (f_ref : GlobRef.t) =
-  let sigma, env = Option.cata Pfedit.get_current_context
+  let sigma, env = Option.cata (fun p -> Lemmas.pf_fold Pfedit.get_current_context p)
       (let e = Global.env () in Evd.from_env e, e) pstate in
   let c,c_body =
     match f_ref with

@@ -122,13 +122,12 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
-  let terminator = Proof_global.make_terminator (fun _ -> ()) in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = Proof_global.start_proof ~ontop:None evd id goal_kind goals terminator in
+  let pf = Proof_global.start_proof evd id goal_kind goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in
-    let { entries; universes } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
+    let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
       let univs = UState.demote_seff_univs entry universes in

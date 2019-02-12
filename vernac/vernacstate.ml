@@ -30,7 +30,7 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.t option; (* proof state *)
+  proof   : Lemmas.t option;       (* proof state *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
@@ -91,6 +91,7 @@ module Proof_global = struct
     end
 
   open Proof_global
+  open Lemmas
 
   let cc f = match !s_proof with
     | None -> raise NoCurrentProof
@@ -101,15 +102,17 @@ module Proof_global = struct
     | Some x -> s_proof := Some (f x)
 
   let there_are_pending_proofs () = !s_proof <> None
-  let get_open_goals () = cc get_open_goals
+  let get_open_goals () = cc (pf_fold get_open_goals)
 
   let set_terminator x = dd (set_terminator x)
-  let give_me_the_proof_opt () = Option.map give_me_the_proof !s_proof
-  let give_me_the_proof () = cc give_me_the_proof
-  let get_current_proof_name () = cc get_current_proof_name
+  let give_me_the_proof_opt () = Option.map (pf_fold give_me_the_proof) !s_proof
+  let give_me_the_proof () = cc (pf_fold give_me_the_proof)
+  let get_current_proof_name () = cc (pf_fold get_current_proof_name)
 
   let simple_with_current_proof f =
     dd (simple_with_current_proof f)
+
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
 
   let with_current_proof f =
     let pf, res = cc (with_current_proof f) in
@@ -118,18 +121,24 @@ module Proof_global = struct
   let install_state s = s_proof := Some s
 
   let return_proof ?allow_partial () =
-    cc (return_proof ?allow_partial)
+    cc (pf_fold (return_proof ?allow_partial))
 
   let close_future_proof ~opaque ~feedback_id pf =
-    cc (fun st -> close_future_proof ~opaque ~feedback_id st pf)
+    cc (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
+                  (* XXX: Careful with the eta expansion here, the STM
+                     needs it as not to force the Ephemeron! *)
+                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
-    cc (close_proof ~opaque ~keep_body_ucst_separate f)
+    cc (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
+                  (* XXX: Careful with the eta expansion here, the STM
+                     needs it as not to force the Ephemeron! *)
+                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
 
   let discard_all () = s_proof := None
-  let update_global_env () = dd update_global_env
+  let update_global_env () = dd (pf_map update_global_env)
 
-  let get_current_context () = cc Pfedit.get_current_context
+  let get_current_context () = cc (pf_fold Pfedit.get_current_context)
 
   let get_all_proof_names () =
     try cc get_all_proof_names

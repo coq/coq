@@ -994,7 +994,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
     evd
   lemma_type
   in
-  let pstate,_ = Pfedit.by (Proofview.V82.tactic prove_replacement) pstate in
+  let pstate,_ = Lemmas.by (Proofview.V82.tactic prove_replacement) pstate in
   let pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
   pstate, evd
 
