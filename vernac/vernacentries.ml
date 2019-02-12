@@ -44,27 +44,27 @@ let vernac_pperr_endline pp =
 
 (* Misc *)
 
-let there_are_pending_proofs ~pstate =
-  not Option.(is_empty pstate)
+let there_are_pending_proofs ~ontop =
+  not Option.(is_empty ontop)
 
-let check_no_pending_proof ~pstate =
-  if there_are_pending_proofs ~pstate then
+let check_no_pending_proof ~ontop =
+  if there_are_pending_proofs ~ontop then
     user_err Pp.(str "Command not supported (Open proofs remain)")
 
-let vernac_require_open_proof ~pstate f =
-  match pstate with
-  | Some pstate -> f ~pstate
+let vernac_require_open_lemma ~ontop f =
+  match ontop with
+  | Some lemma -> f ~lemma
   | None -> user_err Pp.(str "Command not supported (No proof-editing in progress)")
 
-let get_current_or_global_context ~pstate =
-  match pstate with
+let get_current_or_global_context ~ontop =
+  match ontop with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_current_context p
+  | Some p -> Lemmas.pf_fold Pfedit.get_current_context p
 
-let get_goal_or_global_context ~pstate glnum =
-  match pstate with
+let get_goal_or_global_context ~ontop glnum =
+  match ontop with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_goal_context p glnum
+  | Some p -> pf_fold Pfedit.get_goal_context p glnum
 
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
@@ -94,12 +94,12 @@ end
 (*******************)
 (* "Show" commands *)
 
-let show_proof ~pstate =
+let show_proof ~ontop =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   try
-    let pstate = Option.get pstate in
-    let p = Proof_global.give_me_the_proof pstate in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let lemma = Option.get ontop in
+    let p = pf_fold Proof_global.give_me_the_proof lemma in
+    let sigma, env = pf_fold Pfedit.get_current_context lemma in
     let pprf = Proof.partial_proof p in
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
@@ -108,23 +108,23 @@ let show_proof ~pstate =
   | Option.IsNone ->
     user_err (str "No goals to show.")
 
-let show_top_evars ~pstate =
+let show_top_evars ~lemma =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
-  let pfts = Proof_global.give_me_the_proof pstate in
+  let pfts = pf_fold Proof_global.give_me_the_proof lemma in
   let Proof.{goals;shelf;given_up;sigma} = Proof.data pfts in
   pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
-let show_universes ~pstate =
-  let pfts = Proof_global.give_me_the_proof pstate in
+let show_universes ~lemma =
+  let pfts = pf_fold Proof_global.give_me_the_proof lemma in
   let Proof.{goals;sigma} = Proof.data pfts in
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   Termops.pr_evar_universe_context (Evd.evar_universe_context sigma) ++ fnl () ++
   str "Normalized constraints: " ++ Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx
 
 (* Simulate the Intro(s) tactic *)
-let show_intro ~pstate all =
+let show_intro ~lemma all =
   let open EConstr in
-  let pf = Proof_global.give_me_the_proof pstate in
+  let pf = pf_fold Proof_global.give_me_the_proof lemma in
   let Proof.{goals;sigma} = Proof.data pf in
   if not (List.is_empty goals) then begin
     let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
@@ -253,7 +253,7 @@ let print_modtype qid =
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
-let print_namespace ~pstate ns =
+let print_namespace ~ontop ns =
   let ns = List.rev (Names.DirPath.repr ns) in
   (* [match_dirpath], [match_modulpath] are helpers for [matches]
      which checks whether a constant is in the namespace [ns]. *)
@@ -301,10 +301,10 @@ let print_namespace ~pstate ns =
     let qn = (qualified_minus (List.length ns) mp)@[Names.Label.to_id lbl] in
     print_list Id.print qn
   in
-  let print_constant ~pstate k body =
+  let print_constant ~ontop k body =
     (* FIXME: universes *)
     let t = body.Declarations.const_type in
-    let sigma, env = get_current_or_global_context ~pstate in
+    let sigma, env = get_current_or_global_context ~ontop in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type_env env sigma t
   in
   let matches mp = match match_modulepath ns mp with
@@ -314,7 +314,7 @@ let print_namespace ~pstate ns =
     Environ.fold_constants (fun c body acc ->
         let kn = Constant.user c in
         if matches (KerName.modpath kn)
-        then acc++fnl()++hov 2 (print_constant ~pstate kn body)
+        then acc++fnl()++hov 2 (print_constant ~ontop kn body)
         else acc)
       (Global.env ()) (str"")
   in
@@ -544,7 +544,7 @@ let () =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ~program_mode ~pstate ?hook k l =
+let start_proof_and_print ~program_mode ~ontop ?hook k l =
   let inference_hook =
     if program_mode then
       let hook env sigma ev =
@@ -566,7 +566,7 @@ let start_proof_and_print ~program_mode ~pstate ?hook k l =
       in Some hook
     else None
   in
-  start_proof_com ~program_mode ~ontop:pstate ?inference_hook ?hook k l
+  start_lemma_com ~program_mode ~ontop ?inference_hook ?hook k l
 
 let vernac_definition_hook p = function
 | Coercion ->
@@ -577,7 +577,7 @@ let vernac_definition_hook p = function
   Some (Class.add_subclass_hook p)
 | _ -> None
 
-let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
+let vernac_definition ~atts ~ontop discharge kind ({loc;v=id}, pl) def =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
@@ -592,47 +592,47 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
   let program_mode = atts.program in
   let name =
     match id with
-    | Anonymous -> fresh_name_for_anonymous_theorem ~pstate
+    | Anonymous -> fresh_name_for_anonymous_theorem ~ontop
     | Name n -> n
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-      Some (start_proof_and_print ~program_mode ~pstate (local, atts.polymorphic, DefinitionBody kind)
+      Some (start_proof_and_print ~program_mode ~ontop (local, atts.polymorphic, DefinitionBody kind)
               ?hook [(CAst.make ?loc name, pl), (bl, t)])
     | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
         | Some r ->
-          let sigma, env = get_current_or_global_context ~pstate in
+          let sigma, env = get_current_or_global_context ~ontop in
           Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~ontop:pstate ~program_mode name
+      ComDefinition.do_definition ~ontop ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
-      pstate
+      ontop
   )
 
-let vernac_start_proof ~atts ~pstate kind l =
+let vernac_start_proof ~atts ~ontop kind l =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  Some (start_proof_and_print ~pstate ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
+  Some (start_proof_and_print ~ontop ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
 
-let vernac_end_proof ?pstate ?proof = function
+let vernac_end_proof ?ontop ?proof = let open Vernacexpr in function
   | Admitted ->
-    vernac_require_open_proof ~pstate (save_proof_admitted ?proof);
-    pstate
+    vernac_require_open_lemma ~ontop (save_lemma_admitted ?proof);
+    ontop
   | Proved (opaque,idopt) ->
-    save_proof_proved ?pstate ?proof ~opaque ~idopt
+    save_lemma_proved ?lemma:ontop ?proof ~opaque ~idopt
 
-let vernac_exact_proof ~pstate c =
+let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  let pstate, status = Pfedit.by (Tactics.exact_proof c) pstate in
-  let pstate = save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
+  let lemma, status = Lemmas.by (Tactics.exact_proof c) lemma in
+  let lemma = save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
-  pstate
+  lemma
 
-let vernac_assumption ~atts ~pstate discharge kind l nl =
+let vernac_assumption ~atts ~ontop discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
@@ -642,7 +642,7 @@ let vernac_assumption ~atts ~pstate discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~pstate ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~ontop ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -807,7 +807,7 @@ let vernac_inductive ~atts cum lo finite indl =
       in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
     *)
 
-let vernac_fixpoint ~atts ~pstate discharge l : Proof_global.t option =
+let vernac_fixpoint ~atts ~ontop discharge l : Lemmas.t option =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -816,11 +816,11 @@ let vernac_fixpoint ~atts ~pstate discharge l : Proof_global.t option =
   let do_fixpoint = if atts.program then
       fun local sign l -> ComProgramFixpoint.do_fixpoint local sign l; None
     else
-      ComFixpoint.do_fixpoint ~ontop:pstate
+      ComFixpoint.do_fixpoint ~ontop
   in
   do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts ~pstate discharge l =
+let vernac_cofixpoint ~atts ~ontop discharge l =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -828,7 +828,7 @@ let vernac_cofixpoint ~atts ~pstate discharge l =
   let do_cofixpoint = if atts.program then
       fun local sign l -> ComProgramFixpoint.do_cofixpoint local sign l; None
     else
-      ComFixpoint.do_cofixpoint ~ontop:pstate
+      ComFixpoint.do_cofixpoint ~ontop
   in
   do_cofixpoint local atts.polymorphic l
 
@@ -886,14 +886,14 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
 
-let vernac_define_module ~pstate export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
+let vernac_define_module ~ontop export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mexpr_ast_l with
     | [] ->
-       check_no_pending_proof ~pstate;
+       check_no_pending_proof ~ontop;
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -933,13 +933,13 @@ let vernac_end_module export {loc;v=id} =
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
   Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
 
-let vernac_declare_module_type ~pstate {loc;v=id} binders_ast mty_sign mty_ast_l =
+let vernac_declare_module_type ~ontop {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
 
   match mty_ast_l with
     | [] ->
-       check_no_pending_proof ~pstate;
+       check_no_pending_proof ~ontop;
        let binders_ast,argsexport =
 	 List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -986,8 +986,8 @@ let vernac_include l =
 
 (* Sections *)
 
-let vernac_begin_section ~pstate ({v=id} as lid) =
-  check_no_pending_proof ~pstate;
+let vernac_begin_section ~ontop ({v=id} as lid) =
+  check_no_pending_proof ~ontop;
   Dumpglob.dump_definition lid true "sec";
   Lib.open_section id
 
@@ -1000,8 +1000,8 @@ let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 
 (* Dispatcher of the "End" command *)
 
-let vernac_end_segment ~pstate ({v=id} as lid) =
-  check_no_pending_proof ~pstate;
+let vernac_end_segment ~ontop ({v=id} as lid) =
+  check_no_pending_proof ~ontop;
   match Lib.find_opening_node id with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
   | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
@@ -1061,12 +1061,12 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance ~atts sup inst props pri =
+let vernac_instance ~atts ~ontop sup inst props pri =
   let open DefAttributes in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
   let program_mode = atts.program in
-  Classes.new_instance ~program_mode ~global atts.polymorphic sup inst props pri
+  Classes.new_instance ~ontop ~program_mode ~global atts.polymorphic sup inst props pri
 
 let vernac_declare_instance ~atts sup inst pri =
   let open DefAttributes in
@@ -1074,8 +1074,8 @@ let vernac_declare_instance ~atts sup inst pri =
   Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
-let vernac_context ~pstate ~poly l =
-  if not (ComAssumption.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~ontop ~poly l =
+  if not (ComAssumption.context ~ontop poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -1096,34 +1096,34 @@ let focus_command_cond = Proof.no_cond command_focus
      there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
 
-let vernac_solve_existential ~pstate n com =
-  Proof_global.simple_with_current_proof (fun _ p ->
+let vernac_solve_existential ~lemma n com =
+  Lemmas.simple_with_current_proof (fun _ p ->
       let intern env sigma = Constrintern.intern_constr env sigma com in
-      Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
+      Proof.V82.instantiate_evar (Global.env ()) n intern p) lemma
 
-let vernac_set_end_tac ~pstate tac =
+let vernac_set_end_tac ~lemma tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
-  Proof_global.set_endline_tactic tac pstate
+  pf_map Proof_global.(set_endline_tactic tac) lemma
 
-let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
+let vernac_set_used_variables ~(lemma : Lemmas.t) e : Lemmas.t =
   let env = Global.env () in
   let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
   let tys =
-    List.map snd (initial_goals (Proof_global.give_me_the_proof pstate)) in
+    List.map snd (initial_goals (Lemmas.pf_fold Proof_global.give_me_the_proof lemma)) in
   let tys = List.map EConstr.Unsafe.to_constr tys in
   let l = Proof_using.process_expr env e tys in
   let vars = Environ.named_context env in
-  List.iter (fun id -> 
+  List.iter (fun id ->
     if not (List.exists (NamedDecl.get_id %> Id.equal id) vars) then
       user_err ~hdr:"vernac_set_used_variables"
         (str "Unknown variable: " ++ Id.print id))
     l;
-  let _, pstate = Proof_global.set_used_variables pstate l in
-  fst @@ Proof_global.with_current_proof begin fun _ p ->
+  let lemma = Lemmas.pf_map (fun pstate -> let _, pstate = Proof_global.set_used_variables pstate l in pstate) lemma in
+  fst @@ Lemmas.with_current_proof begin fun _ p ->
     (p, ())
-  end pstate
+  end lemma
 
 (*****************************)
 (* Auxiliary file management *)
@@ -1759,14 +1759,14 @@ let vernac_print_option key =
   try print_option_value key
   with Not_found -> error_undeclared_key key
 
-let get_current_context_of_args ~pstate =
-  match pstate with
+let get_current_context_of_args ~ontop =
+  match ontop with
   | None -> fun _ ->
     let env = Global.env () in Evd.(from_env env, env)
-  | Some pstate ->
+  | Some lemma ->
     function
-    | Some n -> Pfedit.get_goal_context pstate n
-    | None -> Pfedit.get_current_context pstate
+    | Some n -> pf_fold Pfedit.get_goal_context lemma n
+    | None -> pf_fold Pfedit.get_current_context lemma
 
 let query_command_selector ?loc = function
   | None -> None
@@ -1774,9 +1774,9 @@ let query_command_selector ?loc = function
   | _ -> user_err ?loc ~hdr:"query_command_selector"
       (str "Query commands only support the single numbered goal selector.")
 
-let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
+let vernac_check_may_eval ~ontop ~atts redexp glopt rc =
   let glopt = query_command_selector glopt in
-  let sigma, env = get_current_context_of_args ~pstate glopt in
+  let sigma, env = get_current_context_of_args ~ontop glopt in
   let sigma, c = interp_open_constr env sigma rc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   Evarconv.check_problems_are_solved env sigma;
@@ -1830,8 +1830,8 @@ let vernac_global_check c =
   pr_universe_ctx_set sigma uctx
 
 
-let get_nth_goal ~pstate n =
-  let pf = Proof_global.give_me_the_proof pstate in
+let get_nth_goal ~lemmas n =
+  let pf = pf_fold Proof_global.give_me_the_proof lemmas in
   let Proof.{goals;sigma} = Proof.data pf in
   let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
@@ -1841,22 +1841,22 @@ exception NoHyp
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
    goal. Precondition: there must be at least one current goal. *)
-let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
+let print_about_hyp_globs ~ontop ?loc ref_or_by_not udecl glopt =
   let open Context.Named.Declaration in
   try
     (* Fallback early to globals *)
-    let pstate = match pstate with
+    let lemmas = match ontop with
       | None -> raise Not_found
-      | Some pstate -> pstate
+      | Some lemmas -> lemmas
     in
     (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
       match glnumopt, ref_or_by_not.v with
       | None,AN qid when qualid_is_ident qid -> (* goal number not given, catch any failure *)
-         (try get_nth_goal ~pstate 1, qualid_basename qid with _ -> raise NoHyp)
+         (try get_nth_goal ~lemmas 1, qualid_basename qid with _ -> raise NoHyp)
       | Some n,AN qid when qualid_is_ident qid ->  (* goal number given, catch if wong *)
-         (try get_nth_goal ~pstate n, qualid_basename qid
+         (try get_nth_goal ~lemmas n, qualid_basename qid
 	  with
 	    Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
                           (str "No such goal: " ++ int n ++ str "."))
@@ -1866,16 +1866,16 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let sigma, env = pf_fold Pfedit.get_current_context lemmas in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
 	 ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found ->
-    let sigma, env = get_current_or_global_context ~pstate in
+    let sigma, env = get_current_or_global_context ~ontop in
     print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~(pstate : Proof_global.t option) ~atts =
-  let sigma, env = get_current_or_global_context ~pstate in
+let vernac_print ~(ontop : Lemmas.t option) ~atts =
+  let sigma, env = get_current_or_global_context ~ontop in
   function
   | PrintTables -> print_tables ()
   | PrintFullContext-> print_full_context_typ env sigma
@@ -1886,7 +1886,7 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintModules -> print_modules ()
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
-  | PrintNamespace ns -> print_namespace ~pstate ns
+  | PrintNamespace ns -> print_namespace ~ontop ns
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
@@ -1904,11 +1904,11 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintUniverses (sort, subgraph, dst) -> print_universes ~sort ~subgraph dst
   | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal ->
-     begin match pstate with
+     begin match ontop with
      | Some pstate ->
-        Hints.pr_applicable_hint pstate
+       pf_fold Hints.pr_applicable_hint pstate
      | None ->
-        str "No proof in progress"
+       str "No proof in progress"
      end
   | PrintHintDbName s -> Hints.pr_hint_db_by_name env sigma s
   | PrintHintDb -> Hints.pr_searchtable env sigma
@@ -1919,7 +1919,7 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintVisibility s ->
     Notation.pr_visibility (Constrextern.without_symbols (pr_lglob_constr_env env)) s
   | PrintAbout (ref_or_by_not,udecl,glnumopt) ->
-    print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
+    print_about_hyp_globs ~ontop ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
     dump_global qid;
     print_impargs qid
@@ -1984,16 +1984,16 @@ let () =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
-let vernac_search ~pstate ~atts s gopt r =
+let vernac_search ~ontop ~atts s gopt r =
   let gopt = query_command_selector gopt in
   let r = interp_search_restriction r in
   let env,gopt =
     match gopt with | None ->
       (* 1st goal by default if it exists, otherwise no goal at all *)
-      (try snd (get_goal_or_global_context ~pstate 1) , Some 1
+      (try snd (get_goal_or_global_context ~ontop 1) , Some 1
        with _ -> Global.env (),None)
     (* if goal selector is given and wrong, then let exceptions be raised. *)
-    | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
+    | Some g -> snd (get_goal_or_global_context ~ontop g) , Some g
   in
   let get_pattern c = snd (intern_constr_pattern env Evd.(from_env env) c) in
   let pr_search ref env c =
@@ -2008,21 +2008,21 @@ let vernac_search ~pstate ~atts s gopt r =
   in
   match s with
   | SearchPattern c ->
-      (Search.search_pattern ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_pattern ?ontop gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
-      (Search.search_rewrite ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_rewrite ?ontop gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
-      (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
+      (Search.search_by_head ?ontop gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchAbout sl ->
-      (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
+      (Search.search_about ?ontop gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
        Search.prioritize_search) pr_search
 
-let vernac_locate ~pstate = function
+let vernac_locate ~ontop = function
   | LocateAny {v=AN qid}  -> print_located_qualid qid
   | LocateTerm {v=AN qid} -> print_located_term qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
-    let _, env = get_current_or_global_context ~pstate in
+    let _, env = get_current_or_global_context ~ontop in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
   | LocateLibrary qid -> print_located_library qid
@@ -2030,9 +2030,9 @@ let vernac_locate ~pstate = function
   | LocateOther (s, qid) -> print_located_other s qid
   | LocateFile f -> locate_file f
 
-let vernac_register ~pstate qid r =
+let vernac_register ~ontop qid r =
   let gr = Smartlocate.global_with_alias qid in
-  if there_are_pending_proofs ~pstate then
+  if there_are_pending_proofs ~ontop then
     user_err Pp.(str "Cannot register a primitive while in proof editing mode.");
   match r with
   | RegisterInline ->
@@ -2062,7 +2062,7 @@ let vernac_register ~pstate qid r =
 (* Proof management *)
 
 let vernac_focus gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -2072,12 +2072,12 @@ let vernac_focus gln =
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.simple_with_current_proof
+  Lemmas.simple_with_current_proof
     (fun _ p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
-let vernac_unfocused ~pstate =
-  let p = Proof_global.give_me_the_proof pstate in
+let vernac_unfocused ~lemma =
+  let p = pf_fold Proof_global.give_me_the_proof lemma in
   if Proof.unfocused p then
     str"The proof is indeed fully unfocused."
   else
@@ -2091,7 +2091,7 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
@@ -2100,46 +2100,46 @@ let vernac_subproof gln =
              (str "Brackets do not support multi-goal selectors."))
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet : Proof_bullet.t) =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Lemmas.simple_with_current_proof (fun _ p ->
     Proof_bullet.put p bullet)
 
-let vernac_show ~pstate =
-  match pstate with
+let vernac_show ~(ontop : Lemmas.t option) =
+  match ontop with
   (* Show functions that don't require a proof state *)
   | None ->
     begin function
-      | ShowProof -> show_proof ~pstate
+      | ShowProof -> show_proof ~ontop
       | ShowMatch id -> show_match id
       | ShowScript -> assert false  (* Only the stm knows the script *)
       | _ ->
         user_err (str "This command requires an open proof.")
     end
   (* Show functions that require a proof state *)
-  | Some pstate ->
+  | Some lemma ->
     begin function
     | ShowGoal goalref ->
-      let proof = Proof_global.give_me_the_proof pstate in
+      let proof = pf_fold Proof_global.give_me_the_proof lemma in
       begin match goalref with
         | OpenSubgoals -> pr_open_subgoals ~proof
         | NthGoal n -> pr_nth_open_subgoal ~proof n
         | GoalId id -> pr_goal_by_id ~proof id
       end
-    | ShowExistentials -> show_top_evars ~pstate
-    | ShowUniverses -> show_universes ~pstate
+    | ShowExistentials -> show_top_evars ~lemma
+    | ShowUniverses -> show_universes ~lemma
     | ShowProofNames ->
-      pr_sequence Id.print (Proof_global.get_all_proof_names pstate)
-    | ShowIntros all -> show_intro ~pstate all
-    | ShowProof -> show_proof ~pstate:(Some pstate)
+      pr_sequence Id.print (Lemmas.get_all_proof_names lemma)
+    | ShowIntros all -> show_intro ~lemma all
+    | ShowProof -> show_proof ~ontop:(Some lemma)
     | ShowMatch id -> show_match id
     | ShowScript -> assert false  (* Only the stm knows the script *)
     end
 
-let vernac_check_guard ~pstate =
-  let pts = Proof_global.give_me_the_proof pstate in
+let vernac_check_guard ~lemma =
+  let pts = pf_fold Proof_global.give_me_the_proof lemma in
   let pfterm = List.hd (Proof.partial_proof pts) in
   let message =
     try
@@ -2228,8 +2228,8 @@ exception End_of_input
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
-  let pstate = st.Vernacstate.proof in
+let rec interp_expr ?proof ~atts ~st c : Lemmas.t option =
+  let ontop = st.Vernacstate.lemmas in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
 
@@ -2257,305 +2257,305 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
     with_module_locality ~atts vernac_syntax_extension infix sl;
-    pstate
+    ontop
   | VernacDeclareScope sc ->
     with_module_locality ~atts vernac_declare_scope sc;
-    pstate
+    ontop
   | VernacDelimiters (sc,lr) ->
     with_module_locality ~atts vernac_delimiters sc lr;
-    pstate
+    ontop
   | VernacBindScope (sc,rl) ->
     with_module_locality ~atts vernac_bind_scope sc rl;
-    pstate
+    ontop
   | VernacOpenCloseScope (b, s) ->
     with_section_locality ~atts vernac_open_close_scope (b,s);
-    pstate
+    ontop
   | VernacInfix (mv,qid,sc) ->
     with_module_locality ~atts vernac_infix mv qid sc;
-    pstate
+    ontop
   | VernacNotation (c,infpl,sc) ->
     with_module_locality ~atts vernac_notation c infpl sc;
-    pstate
+    ontop
   | VernacNotationAddFormat(n,k,v) ->
     unsupported_attributes atts;
     Metasyntax.add_notation_extra_printing_rule n k v;
-    pstate
+    ontop
   | VernacDeclareCustomEntry s ->
     with_module_locality ~atts vernac_custom_entry s;
-    pstate
+    ontop
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->
-    with_def_attributes ~atts vernac_definition ~pstate discharge kind lid d
+    with_def_attributes ~atts vernac_definition ~ontop discharge kind lid d
   | VernacStartTheoremProof (k,l) ->
-    with_def_attributes ~atts vernac_start_proof ~pstate k l
+    with_def_attributes ~atts vernac_start_proof ~ontop k l
   | VernacEndProof e ->
     unsupported_attributes atts;
-    vernac_end_proof ?proof ?pstate e
+    vernac_end_proof ?proof ?ontop e
   | VernacExactProof c ->
     unsupported_attributes atts;
-    vernac_require_open_proof ~pstate (vernac_exact_proof c)
+    vernac_require_open_lemma ~ontop (vernac_exact_proof c)
   | VernacAssumption ((discharge,kind),nl,l) ->
-    with_def_attributes ~atts vernac_assumption ~pstate discharge kind l nl;
-    pstate
+    with_def_attributes ~atts vernac_assumption ~ontop discharge kind l nl;
+    ontop
   | VernacInductive (cum, priv, finite, l) ->
     vernac_inductive ~atts cum priv finite l;
-    pstate
+    ontop
   | VernacFixpoint (discharge, l) ->
-    with_def_attributes ~atts vernac_fixpoint ~pstate discharge l
+    with_def_attributes ~atts vernac_fixpoint ~ontop discharge l
   | VernacCoFixpoint (discharge, l) ->
-    with_def_attributes ~atts vernac_cofixpoint ~pstate discharge l
+    with_def_attributes ~atts vernac_cofixpoint ~ontop discharge l
   | VernacScheme l ->
     unsupported_attributes atts;
     vernac_scheme l;
-    pstate
+    ontop
   | VernacCombinedScheme (id, l) ->
     unsupported_attributes atts;
     vernac_combined_scheme id l;
-    pstate
+    ontop
   | VernacUniverse l ->
     vernac_universe ~poly:(only_polymorphism atts) l;
-    pstate
+    ontop
   | VernacConstraint l ->
     vernac_constraint ~poly:(only_polymorphism atts) l;
-    pstate
+    ontop
 
   (* Modules *)
   | VernacDeclareModule (export,lid,bl,mtyo) ->
     unsupported_attributes atts;
     vernac_declare_module export lid bl mtyo;
-    pstate
+    ontop
   | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
     unsupported_attributes atts;
-    vernac_define_module ~pstate export lid bl mtys mexprl;
-    pstate
+    vernac_define_module ~ontop export lid bl mtys mexprl;
+    ontop
   | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
     unsupported_attributes atts;
-    vernac_declare_module_type ~pstate lid bl mtys mtyo;
-    pstate
+    vernac_declare_module_type ~ontop lid bl mtys mtyo;
+    ontop
   | VernacInclude in_asts ->
     unsupported_attributes atts;
     vernac_include in_asts;
-    pstate
+    ontop
   (* Gallina extensions *)
   | VernacBeginSection lid ->
     unsupported_attributes atts;
-    vernac_begin_section ~pstate lid;
-    pstate
+    vernac_begin_section ~ontop lid;
+    ontop
 
   | VernacEndSegment lid ->
     unsupported_attributes atts;
-    vernac_end_segment ~pstate lid;
-    pstate
+    vernac_end_segment ~ontop lid;
+    ontop
 
   | VernacNameSectionHypSet (lid, set) ->
     unsupported_attributes atts;
     vernac_name_sec_hyp lid set;
-    pstate
+    ontop
 
   | VernacRequire (from, export, qidl) ->
     unsupported_attributes atts;
     vernac_require from export qidl;
-    pstate
+    ontop
   | VernacImport (export,qidl) ->
     unsupported_attributes atts;
     vernac_import export qidl;
-    pstate
+    ontop
   | VernacCanonical qid ->
     unsupported_attributes atts;
     vernac_canonical qid;
-    pstate
+    ontop
   | VernacCoercion (r,s,t) ->
     vernac_coercion ~atts r s t;
-    pstate
+    ontop
   | VernacIdentityCoercion ({v=id},s,t) ->
     vernac_identity_coercion ~atts id s t;
-    pstate
+    ontop
 
   (* Type classes *)
   | VernacInstance (sup, inst, props, info) ->
-    snd @@ with_def_attributes ~atts (vernac_instance ~pstate sup inst props info)
+    snd @@ with_def_attributes ~atts (vernac_instance ~ontop sup inst props info)
   | VernacDeclareInstance (sup, inst, info) ->
     with_def_attributes ~atts vernac_declare_instance sup inst info;
-    pstate
+    ontop
   | VernacContext sup ->
-    let () = vernac_context ~pstate ~poly:(only_polymorphism atts) sup in
-    pstate
+    let () = vernac_context ~ontop ~poly:(only_polymorphism atts) sup in
+    ontop
   | VernacExistingInstance insts ->
     with_section_locality ~atts vernac_existing_instance insts;
-    pstate
+    ontop
   | VernacExistingClass id ->
     unsupported_attributes atts;
     vernac_existing_class id;
-    pstate
+    ontop
 
   (* Solving *)
   | VernacSolveExistential (n,c) ->
     unsupported_attributes atts;
-    Some (vernac_require_open_proof ~pstate (vernac_solve_existential n c))
+    Some (vernac_require_open_lemma ~ontop (vernac_solve_existential n c))
 
   (* Auxiliary file and library management *)
   | VernacAddLoadPath (isrec,s,alias) ->
     unsupported_attributes atts;
     vernac_add_loadpath isrec s alias;
-    pstate
+    ontop
   | VernacRemoveLoadPath s ->
     unsupported_attributes atts;
     vernac_remove_loadpath s;
-    pstate
+    ontop
   | VernacAddMLPath (isrec,s) ->
     unsupported_attributes atts;
     vernac_add_ml_path isrec s;
-    pstate
+    ontop
   | VernacDeclareMLModule l ->
     with_locality ~atts vernac_declare_ml_module l;
-    pstate
+    ontop
   | VernacChdir s ->
     unsupported_attributes atts;
     vernac_chdir s;
-    pstate
+    ontop
 
   (* State management *)
   | VernacWriteState s ->
     unsupported_attributes atts;
     vernac_write_state s;
-    pstate
+    ontop
   | VernacRestoreState s ->
     unsupported_attributes atts;
     vernac_restore_state s;
-    pstate
+    ontop
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->
     with_module_locality ~atts vernac_create_hintdb dbname b;
-    pstate
+    ontop
   | VernacRemoveHints (dbnames,ids) ->
     with_module_locality ~atts vernac_remove_hints dbnames ids;
-    pstate
+    ontop
   | VernacHints (dbnames,hints) ->
     vernac_hints ~atts dbnames hints;
-    pstate
+    ontop
   | VernacSyntacticDefinition (id,c,b) ->
     with_module_locality ~atts vernac_syntactic_definition id c b;
-    pstate
+    ontop
   | VernacArguments (qid, args, more_implicits, nargs, flags) ->
     with_section_locality ~atts vernac_arguments qid args more_implicits nargs flags;
-    pstate
+    ontop
   | VernacReserve bl ->
     unsupported_attributes atts;
     vernac_reserve bl;
-    pstate
+    ontop
   | VernacGeneralizable gen ->
     with_locality ~atts vernac_generalizable gen;
-    pstate
+    ontop
   | VernacSetOpacity qidl ->
     with_locality ~atts vernac_set_opacity qidl;
-    pstate
+    ontop
   | VernacSetStrategy l ->
     with_locality ~atts vernac_set_strategy l;
-    pstate
+    ontop
   | VernacSetOption (export, key,v) ->
     vernac_set_option ~local:(only_locality atts) export key v;
-    pstate
+    ontop
   | VernacRemoveOption (key,v) ->
     unsupported_attributes atts;
     vernac_remove_option key v;
-    pstate
+    ontop
   | VernacAddOption (key,v) ->
     unsupported_attributes atts;
     vernac_add_option key v;
-    pstate
+    ontop
   | VernacMemOption (key,v) ->
     unsupported_attributes atts;
     vernac_mem_option key v;
-    pstate
+    ontop
   | VernacPrintOption key ->
     unsupported_attributes atts;
     vernac_print_option key;
-    pstate
+    ontop
   | VernacCheckMayEval (r,g,c) ->
     Feedback.msg_notice @@
-      vernac_check_may_eval ~pstate ~atts r g c;
-    pstate
+      vernac_check_may_eval ~ontop ~atts r g c;
+    ontop
   | VernacDeclareReduction (s,r) ->
     with_locality ~atts vernac_declare_reduction s r;
-    pstate
+    ontop
   | VernacGlobalCheck c ->
     unsupported_attributes atts;
     Feedback.msg_notice @@ vernac_global_check c;
-    pstate
+    ontop
   | VernacPrint p ->
-    Feedback.msg_notice @@ vernac_print ~pstate ~atts p;
-    pstate
+    Feedback.msg_notice @@ vernac_print ~ontop ~atts p;
+    ontop
   | VernacSearch (s,g,r) ->
     unsupported_attributes atts;
-    vernac_search ~pstate ~atts s g r;
-    pstate
+    vernac_search ~ontop ~atts s g r;
+    ontop
   | VernacLocate l -> unsupported_attributes atts;
-    Feedback.msg_notice @@ vernac_locate ~pstate l;
-    pstate
+    Feedback.msg_notice @@ vernac_locate ~ontop l;
+    ontop
   | VernacRegister (qid, r) ->
     unsupported_attributes atts;
-    vernac_register ~pstate qid r;
-    pstate
+    vernac_register ~ontop qid r;
+    ontop
   | VernacPrimitive (id, prim, typopt) ->
     unsupported_attributes atts;
     ComAssumption.do_primitive id prim typopt;
-    pstate
+    ontop
   | VernacComments l ->
     unsupported_attributes atts;
     Flags.if_verbose Feedback.msg_info (str "Comments ok\n");
-    pstate
+    ontop
 
   (* Proof management *)
   | VernacFocus n ->
     unsupported_attributes atts;
-    Option.map (vernac_focus n) pstate
+    Option.map (vernac_focus n) ontop
   | VernacUnfocus ->
     unsupported_attributes atts;
-    Option.map (vernac_unfocus ()) pstate
+    Option.map (vernac_unfocus ()) ontop
   | VernacUnfocused ->
     unsupported_attributes atts;
-    Option.iter (fun pstate -> Feedback.msg_notice @@ vernac_unfocused ~pstate) pstate;
-    pstate
+    Option.iter (fun lemma -> Feedback.msg_notice @@ vernac_unfocused ~lemma) ontop;
+    ontop
   | VernacBullet b ->
     unsupported_attributes atts;
-    Option.map (vernac_bullet b) pstate
+    Option.map (vernac_bullet b) ontop
   | VernacSubproof n ->
     unsupported_attributes atts;
-    Option.map (vernac_subproof n) pstate
+    Option.map (vernac_subproof n) ontop
   | VernacEndSubproof ->
     unsupported_attributes atts;
-    Option.map (vernac_end_subproof ()) pstate
+    Option.map (vernac_end_subproof ()) ontop
   | VernacShow s ->
     unsupported_attributes atts;
-    Feedback.msg_notice @@ vernac_show ~pstate s;
-    pstate
+    Feedback.msg_notice @@ vernac_show ~ontop s;
+    ontop
   | VernacCheckGuard ->
     unsupported_attributes atts;
     Feedback.msg_notice @@
-      vernac_require_open_proof ~pstate (vernac_check_guard);
-    pstate
+      vernac_require_open_lemma ~ontop (vernac_check_guard);
+    ontop
   | VernacProof (tac, using) ->
     unsupported_attributes atts;
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
     let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
-    let pstate =
-      vernac_require_open_proof ~pstate (fun ~pstate ->
-          let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
-          Option.cata (vernac_set_used_variables ~pstate) pstate using)
-    in Some pstate
+    let lemma =
+      vernac_require_open_lemma ~ontop (fun ~lemma ->
+          let ontop = Option.cata (vernac_set_end_tac ~lemma) lemma tac in
+          Option.cata (vernac_set_used_variables ~lemma) ontop using)
+    in Some lemma
   | VernacProofMode mn ->
     unsupported_attributes atts;
-    pstate
+    ontop
 
   (* Extensions *)
   | VernacExtend (opn,args) ->
     (* XXX: Here we are returning the state! :) *)
     let st : Vernacstate.t = Vernacextend.call ~atts opn args ~st in
-    st.Vernacstate.proof
+    st.Vernacstate.lemmas
 
 (* XXX: This won't properly set the proof mode, as of today, it is
    controlled by the STM. Thus, we would need access information from
@@ -2564,8 +2564,8 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
    without a considerable amount of refactoring.
  *)
 and vernac_load ?proof ~verbosely ~st fname =
-  let pstate = st.Vernacstate.proof in
-  if there_are_pending_proofs ~pstate then
+  let ontop = st.Vernacstate.lemmas in
+  if there_are_pending_proofs ~ontop then
     CErrors.user_err Pp.(str "Load is not supported inside proofs.");
   (* Open the file *)
   let fname =
@@ -2582,29 +2582,29 @@ and vernac_load ?proof ~verbosely ~st fname =
     match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
       | Some x -> x
       | None -> raise End_of_input) in
-  let rec load_loop ~pstate =
+  let rec load_loop ~ontop =
     try
-      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in
-      let pstate =
-        v_mod (interp_control ?proof ~st:{ st with Vernacstate.proof = pstate })
+      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) ontop in
+      let ontop =
+        v_mod (interp_control ?proof ~st:{ st with Vernacstate.lemmas = ontop })
           (parse_sentence proof_mode input) in
-      load_loop ~pstate
+      load_loop ~ontop
     with
       End_of_input ->
-      pstate
+      ontop
   in
-  let pstate = load_loop ~pstate in
+  let ontop = load_loop ~ontop in
   (* If Load left a proof open, we fail too. *)
-  if there_are_pending_proofs ~pstate then
+  if there_are_pending_proofs ~ontop then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  pstate
+  ontop
 
 and interp_control ?proof ~st = function
   | { v=VernacExpr (atts, cmd) } ->
     interp_expr ?proof ~atts ~st cmd
   | { v=VernacFail v } ->
     with_fail ~st (fun () -> interp_control ?proof ~st v);
-    st.Vernacstate.proof
+    st.Vernacstate.lemmas
   | { v=VernacTimeout (timeout,v) } ->
     vernac_timeout ~timeout (interp_control ?proof ~st) v
   | { v=VernacRedirect (s, v) } ->
@@ -2626,8 +2626,8 @@ let interp ?(verbosely=true) ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let pstate = v_mod (interp_control ?proof ~st) cmd in
-      Vernacstate.Proof_global.set pstate [@ocaml.warning "-3"];
+      let ontop = v_mod (interp_control ?proof ~st) cmd in
+      Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
   with exn ->

@@ -267,7 +267,7 @@ let declare_fixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx
         fixdefs) in
     let evd = Evd.from_ctx ctx in
     Some
-    (Lemmas.start_proof_with_initialization ~ontop (local,poly,DefinitionBody Fixpoint)
+    (Lemmas.start_lemma_with_initialization ~ontop (local,poly,DefinitionBody Fixpoint)
       evd pl (Some(false,indexes,init_tac)) thms None)
   else begin
     (* We shortcut the proof process *)
@@ -305,7 +305,7 @@ let declare_cofixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,c
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
     let evd = Evd.from_ctx ctx in
-    Some (Lemmas.start_proof_with_initialization ~ontop (Global,poly, DefinitionBody CoFixpoint)
+    Some (Lemmas.start_lemma_with_initialization ~ontop (Global,poly, DefinitionBody CoFixpoint)
             evd pl (Some(true,[],init_tac)) thms None)
   else begin
     (* We shortcut the proof process *)

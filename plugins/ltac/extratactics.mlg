@@ -917,7 +917,7 @@ END
 VERNAC COMMAND EXTEND GrabEvars
 | ![ proof ] [ "Grab" "Existential" "Variables" ]
   => { classify_as_proofstep }
-  -> { fun ~pstate -> Option.map (Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p)) pstate }
+  -> { fun ~ontop -> Option.map (Lemmas.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p)) ontop }
 END
 
 (* Shelves all the goals under focus. *)
@@ -949,7 +949,7 @@ END
 VERNAC COMMAND EXTEND Unshelve
 | ![ proof ] [ "Unshelve" ]
   => { classify_as_proofstep }
-  -> { fun ~pstate -> Option.map (Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p)) pstate  }
+  -> { fun ~ontop -> Option.map (Lemmas.simple_with_current_proof (fun _ p  -> Proof.unshelve p)) ontop  }
 END
 
 (* Gives up on the goals under focus: the goals are considered solved,
@@ -1101,7 +1101,7 @@ END
 
 VERNAC COMMAND EXTEND OptimizeProof
 | ![ proof ] [ "Optimize" "Proof" ] => { classify_as_proofstep } ->
-  { fun ~pstate -> Option.map Proof_global.compact_the_proof pstate }
+  { fun ~ontop -> Option.map Lemmas.(pf_map Proof_global.compact_the_proof) ontop }
 | [ "Optimize" "Heap" ] => { classify_as_proofstep } ->
   { Gc.compact () }
 END

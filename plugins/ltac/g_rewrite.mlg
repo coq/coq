@@ -313,9 +313,10 @@ VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
 | ![ proof ] [ "Print" "Rewrite" "HintDb" preident(s) ] ->
   { (* This command should not use the proof env, keeping previous
        behavior as requested in review. *)
-    fun ~pstate ->
-      let sigma, env = Option.cata Pfedit.get_current_context
-          (let e = Global.env () in Evd.from_env e, e) pstate in
+    fun ~ontop ->
+      let sigma, env = Option.cata
+          (Lemmas.pf_fold Pfedit.get_current_context)
+          (let e = Global.env () in Evd.from_env e, e) ontop in
     Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s);
-    pstate }
+    ontop }
 END

@@ -17,7 +17,7 @@ open Constrexpr
 (** {6 Definitions/Let} *)
 
 val do_definition
-  :  ontop:Proof_global.t option
+  :  ontop:Lemmas.t option
   -> program_mode:bool
   -> ?hook:Lemmas.declaration_hook
   -> Id.t

@@ -48,14 +48,14 @@ let simple_goal sigma g gs =
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | `Expired | `Error _ | `Valid None -> `Not
-  | `Valid (Some { Vernacstate.proof }) ->
-    Option.cata (fun proof ->
+  | `Valid (Some { Vernacstate.lemmas }) ->
+    Option.cata (Lemmas.pf_fold (fun proof ->
         let proof = Proof_global.give_me_the_proof proof in
         let Proof.{ goals=focused; stack=r1; shelf=r2; given_up=r3; sigma } = Proof.data proof in
         let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ r2 @ r3 in
         if List.for_all (fun x -> simple_goal sigma x rest) focused
         then `Simple focused
-        else `Not) `Not proof
+        else `Not)) `Not lemmas
 
 type 'a until = [ `Stop | `Found of static_block_declaration | `Cont of 'a ]
 

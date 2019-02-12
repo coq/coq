@@ -21,7 +21,7 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.t option; (* proof state *)
+  lemmas  : Lemmas.t option;       (* proofs of lemmas currently opened *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
@@ -37,6 +37,7 @@ val invalidate_cache : unit -> unit
 module Proof_global : sig
 
   open Proof_global
+  open Lemmas
 
   (* Low-level stuff *)
   val get : unit -> t option
@@ -50,7 +51,7 @@ module Proof_global : sig
   val there_are_pending_proofs : unit -> bool
   val get_open_goals : unit -> int
 
-  val set_terminator : proof_terminator -> unit
+  val set_terminator : Lemmas.proof_terminator -> unit
   val give_me_the_proof : unit -> Proof.t
   val give_me_the_proof_opt : unit -> Proof.t option
   val get_current_proof_name : unit -> Names.Id.t
@@ -64,6 +65,8 @@ module Proof_global : sig
   val install_state : t -> unit
 
   val return_proof : ?allow_partial:bool -> unit -> closed_proof_output
+
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
 
   val close_future_proof :
     opaque:opacity_flag ->

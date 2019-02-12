@@ -22,7 +22,10 @@ let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Ent
     (which can contain references to [f]) in the context extended by
     [f:=?x]. When the proof ends, [f] is defined as the value of [?x]
     and [lemma] as the proof. *)
-let start_deriving f suchthat lemma =
+let start_deriving ~ontop f suchthat name : Lemmas.t option =
+
+  if Option.has_some ontop then
+    CErrors.user_err Pp.(str "Derive cannot be used inside an ongoing proof.");
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -48,7 +51,6 @@ let start_deriving f suchthat lemma =
 
     (* The terminator handles the registering of constants when the proof is closed. *)
     let terminator com =
-      let open Proof_global in
       (* Extracts the relevant information from the proof. [Admitted]
          and [Save] result in user errors. [opaque] is [true] if the
          proof was concluded by [Qed], and [false] if [Defined]. [f_def]
@@ -56,10 +58,10 @@ let start_deriving f suchthat lemma =
          [suchthat], respectively. *)
       let (opaque,f_def,lemma_def) =
         match com with
-        | Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
-        | Proved (_,Some _,_) ->
+        | Lemmas.Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
+        | Lemmas.Proved (_,Some _,_) ->
             CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.")
-        | Proved (opaque, None, obj) ->
+        | Lemmas.Proved (opaque, None, obj) ->
             match Proof_global.(obj.entries) with
             | [_;f_def;lemma_def] ->
                 opaque <> Proof_global.Transparent , f_def , lemma_def
@@ -97,11 +99,12 @@ let start_deriving f suchthat lemma =
         Entries.DefinitionEntry lemma_def ,
         Decl_kinds.(IsProof Proposition)
       in
-      ignore (Declare.declare_constant lemma lemma_def)
-      in
+      ignore (Declare.declare_constant name lemma_def)
+  in
 
-  let terminator = Proof_global.make_terminator terminator in
-  let pstate = Proof_global.start_dependent_proof ~ontop:None lemma kind goals terminator in
-  fst @@ Proof_global.with_current_proof begin fun _ p ->
-    Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
-  end pstate
+  let terminator ?hook _ = Lemmas.make_terminator terminator in
+  let lemma = Lemmas.start_dependent_lemma ~ontop:None name kind goals ~terminator in
+  let lemma = fst @@ Lemmas.with_current_proof begin fun _ p ->
+      Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
+    end lemma in
+  Some lemma

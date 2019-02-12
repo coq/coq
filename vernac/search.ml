@@ -59,16 +59,17 @@ let iter_constructors indsp u fn env nconstr =
 let iter_named_context_name_type f =
   List.iter (fun decl -> f (NamedDecl.get_id decl) (NamedDecl.get_type decl))
 
-let get_current_or_goal_context ?pstate glnum =
-  match pstate with
+let get_current_or_goal_context ?ontop glnum =
+  match ontop with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_goal_context p glnum
+  | Some p ->
+    Lemmas.pf_fold (fun p -> Pfedit.get_goal_context p glnum) p
 
 (* General search over hypothesis of a goal *)
-let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =
+let iter_hypothesis ?ontop glnum (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
   let iter_hyp idh typ = fn (VarRef idh) env typ in
-  let evmap,e = get_current_or_goal_context ?pstate glnum in
+  let evmap,e = get_current_or_goal_context ?ontop glnum in
   let pfctxt = named_context e in
   iter_named_context_name_type iter_hyp pfctxt
 
@@ -104,10 +105,10 @@ let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   try Declaremods.iter_all_segments iter_obj
   with Not_found -> ()
 
-let generic_search ?pstate glnumopt fn =
+let generic_search ?ontop glnumopt fn =
   (match glnumopt with
   | None -> ()
-  | Some glnum -> iter_hypothesis ?pstate glnum fn);
+  | Some glnum -> iter_hypothesis ?ontop glnum fn);
   iter_declarations fn
 
 (** This module defines a preference on constrs in the form of a
@@ -226,7 +227,7 @@ let search_about_filter query gr env typ = match query with
 
 (** SearchPattern *)
 
-let search_pattern ?pstate gopt pat mods pr_search =
+let search_pattern ?ontop gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
@@ -236,7 +237,7 @@ let search_pattern ?pstate gopt pat mods pr_search =
   let iter ref env typ =
     if filter ref env typ then pr_search ref env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search ?ontop gopt iter
 
 (** SearchRewrite *)
 
@@ -248,7 +249,7 @@ let rewrite_pat1 pat =
 let rewrite_pat2 pat =
   PApp (PRef (eq ()), [| PMeta None; PMeta None; pat |])
 
-let search_rewrite ?pstate gopt pat mods pr_search =
+let search_rewrite ?ontop gopt pat mods pr_search =
   let pat1 = rewrite_pat1 pat in
   let pat2 = rewrite_pat2 pat in
   let blacklist_filter = blacklist_filter_aux () in
@@ -261,11 +262,11 @@ let search_rewrite ?pstate gopt pat mods pr_search =
   let iter ref env typ =
     if filter ref env typ then pr_search ref env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search ?ontop gopt iter
 
 (** Search *)
 
-let search_by_head ?pstate gopt pat mods pr_search =
+let search_by_head ?ontop gopt pat mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     module_filter mods ref env typ &&
@@ -275,11 +276,11 @@ let search_by_head ?pstate gopt pat mods pr_search =
   let iter ref env typ =
     if filter ref env typ then pr_search ref env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search ?ontop gopt iter
 
 (** SearchAbout *)
 
-let search_about ?pstate gopt items mods pr_search =
+let search_about ?ontop gopt items mods pr_search =
   let blacklist_filter = blacklist_filter_aux () in
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
@@ -291,7 +292,7 @@ let search_about ?pstate gopt items mods pr_search =
   let iter ref env typ =
     if filter ref env typ then pr_search ref env typ
   in
-  generic_search ?pstate gopt iter
+  generic_search ?ontop gopt iter
 
 type search_constraint =
   | Name_Pattern of Str.regexp
@@ -306,7 +307,7 @@ type 'a coq_object = {
   coq_object_object : 'a;
 }
 
-let interface_search ?pstate =
+let interface_search ?ontop =
   let rec extract_flags name tpe subtpe mods blacklist = function
   | [] -> (name, tpe, subtpe, mods, blacklist)
   | (Name_Pattern regexp, b) :: l ->
@@ -376,7 +377,7 @@ let interface_search ?pstate =
   let iter ref env typ =
     if filter_function ref env typ then print_function ref env typ
   in
-  let () = generic_search ?pstate glnum iter in
+  let () = generic_search ?ontop glnum iter in
   !ans
 
 let blacklist_filter ref env typ =

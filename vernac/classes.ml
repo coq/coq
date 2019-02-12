@@ -360,7 +360,7 @@ let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps (ConstRef cst)
 
-let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
+let declare_instance_open ~ontop env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
   if program_mode then
     let hook _ _ vis gr =
@@ -383,7 +383,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
     let ctx = Evd.evar_universe_context sigma in
     let _progress = Obligations.add_definition id ?term:constr
               ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls in
-    pstate
+    ontop
   else
     Some Flags.(silently (fun () ->
         (* spiwack: it is hard to reorder the actions to do
@@ -392,11 +392,11 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
            the refinement manually.*)
         let gls = List.rev (Evd.future_goals sigma) in
         let sigma = Evd.reset_future_goals sigma in
-        let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma (EConstr.of_constr termtype)
+        let lemma = Lemmas.start_lemma ~ontop id ~pl:decl kind sigma (EConstr.of_constr termtype)
           ~hook:(Lemmas.mk_hook
              (fun _ _ _ -> instance_hook k pri global imps ?hook)) in
         (* spiwack: I don't know what to do with the status here. *)
-        let pstate =
+        let lemma =
           if not (Option.is_empty term) then
             let init_refine =
               Tacticals.New.tclTHENLIST [
@@ -405,20 +405,17 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
                 Tactics.New.reduce_after_refine;
               ]
             in
-            let pstate, _ = Pfedit.by init_refine pstate in
-            pstate
+            fst @@ Lemmas.by init_refine lemma
           else
-            let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
-            pstate
+            fst @@ Lemmas.by (Tactics.auto_intros_tac ids) lemma
         in
         match tac with
         | Some tac ->
-          let pstate, _ = Pfedit.by tac pstate in
-          pstate
+          fst @@ Lemmas.by tac lemma
         | None ->
-          pstate) ())
+          lemma) ())
 
-let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance ~ontop env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -498,14 +495,14 @@ let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
   let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
-  let pstate =
+  let ontop =
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
       (declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype;
        None)
     else if program_mode || refine || Option.is_empty props then
-      declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
+      declare_instance_open ~ontop env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
-  id, pstate
+  id, ontop
 
 let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
@@ -549,7 +546,7 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
 
-let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mode
+let new_instance ~ontop ?(global=false) ?(refine= !refine_instance) ~program_mode
     poly ctx (instid, bk, cl) props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -565,7 +562,7 @@ let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mo
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
+  do_instance ~ontop env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
 let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =

@@ -179,5 +179,8 @@ END
 
 VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY
 | ![ proof ] [ "Show" "Extraction" ]
-  -> { fun ~pstate -> let () = show_extraction ~pstate in pstate }
+  -> { fun ~ontop ->
+       let pstate = Option.map Lemmas.(pf_fold (fun x -> x)) ontop in
+       let () = show_extraction ~pstate in
+       ontop }
 END

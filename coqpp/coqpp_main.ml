@@ -360,7 +360,7 @@ let print_atts_right fmt = function
 let print_body_wrapper fmt r =
   match r.vernac_state with
   | Some "proof" ->
-    fprintf fmt "let proof = (%a) ~pstate:st.Vernacstate.proof in { st with Vernacstate.proof }" print_code r.vernac_body
+    fprintf fmt "let lemmas = (%a) ~ontop:st.Vernacstate.lemmas in { st with Vernacstate.lemmas }" print_code r.vernac_body
   | None ->
     fprintf fmt "let () = %a in st" print_code r.vernac_body
   | Some x ->

@@ -228,30 +228,35 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 | ![ proof ] ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
    => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
-    { fun ~pstate ->
+    { fun ~ontop ->
       begin
         try
-          Functional_principles_types.build_scheme fas; pstate
+          Functional_principles_types.build_scheme fas;
+          ontop
         with
         | Functional_principles_types.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                let pstate = make_graph ~pstate (Smartlocate.global_with_alias fun_name) in
-                try Functional_principles_types.build_scheme fas; pstate
+                let ontop = make_graph ~ontop (Smartlocate.global_with_alias fun_name) in
+                try
+                  Functional_principles_types.build_scheme fas;
+                  ontop
                 with
                 | Functional_principles_types.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
-                  warning_error names e; pstate
+                  warning_error names e;
+                  ontop
               end
 	      | _ -> assert false (* we can only have non empty  list *)
           end
         | e when CErrors.noncritical e ->
           let names = List.map (fun (_,na,_) -> na) fas in
-          warning_error names e; pstate
+          warning_error names e;
+          ontop
       end
     }
 END

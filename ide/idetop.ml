@@ -339,8 +339,8 @@ let import_search_constraint = function
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =
-  let pstate = Vernacstate.Proof_global.get () in
-  List.map export_coq_object (Search.interface_search ?pstate (
+  let ontop = Vernacstate.Proof_global.get () in
+  List.map export_coq_object (Search.interface_search ?ontop (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
   [@@ocaml.warning "-3"]

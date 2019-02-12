@@ -14,7 +14,7 @@ open Decl_kinds
 val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
 
 val declare_definition
-  :  ontop:Proof_global.t option
+  :  ontop:Lemmas.t option
   -> Id.t
   -> definition_kind
   -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
@@ -24,7 +24,7 @@ val declare_definition
   -> GlobRef.t
 
 val declare_fix
-  :  ontop:Proof_global.t option
+  :  ontop:Lemmas.t option
   -> ?opaque:bool
   -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
   -> definition_kind

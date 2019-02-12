@@ -30,16 +30,16 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.t option; (* proof state *)
+  lemmas  : Lemmas.t option;       (* proofs of lemmas currently opened *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
 let s_cache = ref None
-let s_proof = ref None
+let s_lemmas = ref None
 
 let invalidate_cache () =
   s_cache := None;
-  s_proof := None
+  s_lemmas := None
 
 let update_cache rf v =
   rf := Some v; v
@@ -55,14 +55,14 @@ let do_if_not_cached rf f v =
 
 let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (States.freeze ~marshallable);
-    proof  = !s_proof;
+    lemmas = !s_lemmas;
     shallow = false;
     parsing = Parser.cur_state ();
   }
 
-let unfreeze_interp_state { system; proof; parsing } =
+let unfreeze_interp_state { system; lemmas; parsing } =
   do_if_not_cached s_cache States.unfreeze system;
-  s_proof := proof;
+  s_lemmas := lemmas;
   Pcoq.unfreeze parsing
 
 let make_shallow st =
@@ -75,11 +75,11 @@ let make_shallow st =
 (* Compatibility module *)
 module Proof_global = struct
 
-  let get () = !s_proof
-  let set x = s_proof := x
+  let get () = !s_lemmas
+  let set x = s_lemmas := x
 
   let freeze ~marshallable:_ = get ()
-  let unfreeze x = s_proof := Some x
+  let unfreeze x = s_lemmas := Some x
 
   exception NoCurrentProof
 
@@ -91,45 +91,54 @@ module Proof_global = struct
     end
 
   open Proof_global
+  open Lemmas
 
-  let cc f = match !s_proof with
+  let cc f = match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some x -> f x
 
-  let dd f = match !s_proof with
+  let dd f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> s_proof := Some (f x)
+    | Some x -> s_lemmas := Some (f x)
 
-  let there_are_pending_proofs () = !s_proof <> None
-  let get_open_goals () = cc get_open_goals
+  let there_are_pending_proofs () = !s_lemmas <> None
+  let get_open_goals () = cc (pf_fold get_open_goals)
 
   let set_terminator x = dd (set_terminator x)
-  let give_me_the_proof_opt () = Option.map give_me_the_proof !s_proof
-  let give_me_the_proof () = cc give_me_the_proof
-  let get_current_proof_name () = cc get_current_proof_name
+  let give_me_the_proof_opt () = Option.map (pf_fold give_me_the_proof) !s_lemmas
+  let give_me_the_proof () = cc (pf_fold give_me_the_proof)
+  let get_current_proof_name () = cc (pf_fold get_current_proof_name)
 
   let simple_with_current_proof f =
     dd (simple_with_current_proof f)
 
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
+
   let with_current_proof f =
     let pf, res = cc (with_current_proof f) in
-    s_proof := Some pf; res
+    s_lemmas := Some pf; res
 
-  let install_state s = s_proof := Some s
+  let install_state s = s_lemmas := Some s
 
   let return_proof ?allow_partial () =
-    cc (return_proof ?allow_partial)
+    cc (pf_fold (return_proof ?allow_partial))
 
   let close_future_proof ~opaque ~feedback_id pf =
-    cc (fun st -> close_future_proof ~opaque ~feedback_id st pf)
+    cc (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
+                  (* XXX: Careful with the eta expansion here, the STM
+                     needs it as not to force the Ephemeron! *)
+                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
-    cc (close_proof ~opaque ~keep_body_ucst_separate f)
+    cc (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
+                  (* XXX: Careful with the eta expansion here, the STM
+                     needs it as not to force the Ephemeron! *)
+                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
 
-  let discard_all () = s_proof := None
-  let update_global_env () = dd update_global_env
+  let discard_all () = s_lemmas := None
+  let update_global_env () = dd (pf_map update_global_env)
 
-  let get_current_context () = cc Pfedit.get_current_context
+  let get_current_context () = cc (pf_fold Pfedit.get_current_context)
 
   let get_all_proof_names () =
     try cc get_all_proof_names

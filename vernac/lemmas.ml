@@ -46,6 +46,71 @@ let call_hook ?hook ?fix_exn uctx trans l c =
     let e = Option.cata (fun fix -> fix e) e fix_exn in
     iraise e
 
+(* Support for terminators and proofs with an associated constant
+   [that can be saved] *)
+
+type proof_ending =
+  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
+  | Proved of Proof_global.opacity_flag *
+              lident option *
+              Proof_global.proof_object
+
+type proof_terminator = proof_ending -> unit
+
+let make_terminator f = f
+let apply_terminator f = f
+
+(* Proofs with a save constant function *)
+type pstate =
+  { proof : Proof_global.t
+  ; terminator : proof_terminator CEphemeron.key
+  }
+
+type t = pstate * pstate list
+
+let pf_map f ( { proof; terminator}, psl) = ( { proof = f proof; terminator } , psl)
+let pf_fold f (ps, _) = f ps.proof
+let pstate_map f (pf, pfl) = (f pf, List.map f pfl)
+
+let with_current_proof f ( { proof; terminator}, psl) =
+  let proof, res = Proof_global.with_current_proof f proof in
+  ({ proof; terminator }, psl), res
+
+let simple_with_current_proof f ps =
+  fst @@ with_current_proof (fun t p -> f t p, ()) ps
+
+let get_all_proof_names (pf : t) =
+  let prj x = Proof_global.(give_me_the_proof x) in
+  let (pn, pns) = pstate_map Proof.(function pf -> (data (prj pf.proof)).name) pf in
+  pn :: pns
+
+let by tac ({ proof; terminator}, psl) =
+  let proof, res = Pfedit.by tac proof in
+  ({ proof; terminator} , psl), res
+
+(** Gets the current terminator without checking that the proof has
+    been completed. Useful for the likes of [Admitted]. *)
+let get_terminator (ps, _) = CEphemeron.get ps.terminator
+let set_terminator hook (ps, psl) =
+  { ps with terminator = CEphemeron.create hook }, psl
+
+let copy_terminators ~src ~tgt =
+  let (ps, psl), (ts,tsl) = src, tgt in
+  assert(List.length psl = List.length tsl);
+  {ts with terminator = ps.terminator}, List.map2 (fun op p -> { p with terminator = op.terminator }) psl tsl
+
+let pf_name_eq id ps =
+  let Proof.{ name } = Proof.data (Proof_global.give_me_the_proof ps.proof) in
+  Id.equal name id
+
+let discard {CAst.loc;v=id} (ps, psl) =
+  match List.filter (fun pf -> not (pf_name_eq id pf)) (ps :: psl) with
+  | [] -> None
+  | ps :: psl -> Some (ps, psl)
+
+let discard_current (ps, psl) =
+  if List.is_empty psl then None else Some List.(hd psl, tl psl)
+
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm uctx = function
@@ -213,10 +278,10 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let fresh_name_for_anonymous_theorem ~pstate =
-  let avoid = match pstate with
+let fresh_name_for_anonymous_theorem ~ontop =
+  let avoid = match ontop with
   | None -> Id.Set.empty
-  | Some pstate -> Id.Set.of_list (Proof_global.get_all_proof_names pstate)
+  | Some ontop -> Id.Set.of_list (get_all_proof_names ontop)
   in
   next_global_ident_away default_thm_id avoid
 
@@ -288,7 +353,6 @@ let check_anonymity id save_ident =
     user_err Pp.(str "This command can only be used for unnamed theorem.")
 
 (* Admitted *)
-
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
                    (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
@@ -335,7 +399,12 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c =
+let push ~ontop a =
+  match ontop with
+  | None -> a , []
+  | Some (l,ls) -> a, (l :: ls)
+
+let start_lemma ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c =
   let terminator = match terminator with
   | None -> standard_proof_terminator ?hook compute_guard
   | Some terminator -> terminator ?hook compute_guard
@@ -346,7 +415,18 @@ let start_proof ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?
     | None -> initialize_named_context_for_proof ()
   in
   let goals = [ Global.env_of_context sign , c ] in
-  Proof_global.start_proof ~ontop sigma id ?pl kind goals terminator
+  let proof = Proof_global.start_proof sigma id ?pl kind goals in
+  let terminator = CEphemeron.create terminator in
+  push ~ontop { proof ; terminator }
+
+let start_dependent_lemma ~ontop id ?pl kind ?terminator ?sign ?(compute_guard=[]) ?hook telescope =
+  let terminator = match terminator with
+  | None -> standard_proof_terminator ?hook compute_guard
+  | Some terminator -> terminator ?hook compute_guard
+  in
+  let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
+  let terminator = CEphemeron.create terminator in
+  push ~ontop { proof ; terminator }
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -362,7 +442,7 @@ let rec_tac_initializer finite guard thms snl =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms snl =
+let start_lemma_with_initialization ~ontop ?hook kind sigma decl recguard thms snl =
   let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
@@ -394,14 +474,14 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
-      let pstate = start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
-      let pstate, _ = Proof_global.with_current_proof (fun _ p ->
+      let pstate = start_lemma ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
+      let pstate, _ = with_current_proof (fun _ p ->
           match init_tac with
           | None -> p,(true,[])
           | Some tac -> Proof.run_tactic Global.(env ()) tac p) pstate in
       pstate
 
-let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
+let start_lemma_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
@@ -433,7 +513,7 @@ let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-  start_proof_with_initialization ~ontop ?hook kind evd decl recguard thms snl
+  start_lemma_with_initialization ~ontop ?hook kind evd decl recguard thms snl
 
 (* Saving a proof *)
 
@@ -448,7 +528,8 @@ let () =
       optread  = (fun () -> !keep_admitted_vars);
       optwrite = (fun b -> keep_admitted_vars := b) }
 
-let save_proof_admitted ?proof ~pstate =
+let save_lemma_admitted ?proof ~(lemma : t) =
+  let pstate, _ = lemma in
   let pe =
     let open Proof_global in
     match proof with
@@ -463,8 +544,8 @@ let save_proof_admitted ?proof ~pstate =
       let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
       Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
     | None ->
-      let pftree = Proof_global.give_me_the_proof pstate in
-      let gk = Proof_global.get_current_persistence pstate in
+      let pftree = Proof_global.give_me_the_proof pstate.proof in
+      let gk = Proof_global.get_current_persistence pstate.proof in
       let Proof.{ name; poly; entry } = Proof.data pftree in
       let typ = match Proofview.initial_goals entry with
         | [typ] -> snd typ
@@ -476,10 +557,10 @@ let save_proof_admitted ?proof ~pstate =
       let universes = Proof.((data pftree).initial_euctx) in
       (* This will warn if the proof is complete *)
       let pproofs, _univs =
-        Proof_global.return_proof ~allow_partial:true pstate in
+        Proof_global.return_proof ~allow_partial:true pstate.proof in
       let sec_vars =
         if not !keep_admitted_vars then None
-        else match Proof_global.get_used_variables pstate, pproofs with
+        else match Proof_global.get_used_variables pstate.proof, pproofs with
           | Some _ as x, _ -> x
           | None, (pproof, _) :: _ ->
             let env = Global.env () in
@@ -487,26 +568,26 @@ let save_proof_admitted ?proof ~pstate =
             let ids_def = Environ.global_vars_set env pproof in
             Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
           | _ -> None in
-      let decl = Proof_global.get_universe_decl pstate in
+      let decl = Proof_global.get_universe_decl pstate.proof in
       let ctx = UState.check_univ_decl ~poly universes decl in
       Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
   in
-  Proof_global.apply_terminator (Proof_global.get_terminator pstate) pe
+  CEphemeron.get pstate.terminator pe
 
-let save_proof_proved ?proof ?pstate ~opaque ~idopt =
+let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   (* Invariant (uh) *)
-  if Option.is_empty pstate && Option.is_empty proof then
+  if Option.is_empty lemma && Option.is_empty proof then
     user_err (str "No focused proof (No proof-editing in progress).");
   let (proof_obj,terminator) =
     match proof with
     | None ->
       (* XXX: The close_proof and proof state API should be refactored
          so it is possible to insert proofs properly into the state *)
-      let pstate = Option.get pstate in
-      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pstate
+      let { proof; terminator }, _ = Option.get lemma in
+      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, CEphemeron.get terminator
     | Some proof -> proof
   in
   (* if the proof is given explicitly, nothing has to be deleted *)
-  let pstate = if Option.is_empty proof then Proof_global.discard_current Option.(get pstate) else pstate in
-  Proof_global.(apply_terminator terminator (Proved (opaque,idopt,proof_obj)));
-  pstate
+  let lemma = if Option.is_empty proof then discard_current Option.(get lemma) else lemma in
+  terminator (Proved (opaque,idopt,proof_obj));
+  lemma

@@ -34,7 +34,6 @@ open Declare
 open Decl_kinds
 open Tacred
 open Goal
-open Pfedit
 open Glob_term
 open Pretyping
 open Termops
@@ -72,7 +71,7 @@ let declare_fun f_id kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
     ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
-let defined pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None
+let defined lemma = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None
 
 let def_of_const t =
    match (Constr.kind t) with
@@ -1282,7 +1281,7 @@ let clear_goals sigma =
 
 
 let build_new_goal_type pstate =
-  let sigma, sub_gls_types = get_current_subgoals_types pstate in
+  let sigma, sub_gls_types = Lemmas.pf_fold get_current_subgoals_types pstate in
   (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sigma sub_gls_types in
   (* Pp.msgnl (str "sub_gls_types2 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
@@ -1297,9 +1296,9 @@ let is_opaque_constant c =
     | Declarations.Def _ -> Proof_global.Transparent
     | Declarations.Primitive _ -> Proof_global.Opaque
 
-let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
+let open_new_goal ~ontop build_proof sigma using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
-  let current_proof_name = Proof_global.get_current_proof_name pstate in
+  let current_proof_name = Lemmas.pf_fold Proof_global.get_current_proof_name ontop in
   let name = match goal_name with
     | Some s -> s
     | None   ->
@@ -1323,7 +1322,7 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
     let lid = ref [] in
     let h_num = ref (-1) in
     let env = Global.env () in
-    let pstate = build_proof env (Evd.from_env env)
+    let lemma = build_proof env (Evd.from_env env)
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
            observe_tclTHENLIST (fun _ _ -> str "")
@@ -1367,18 +1366,18 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	       )
       		 g)
     in
-    let _pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None in
+    let _ontop = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:opacity ~idopt:None in
     ()
   in
-  let pstate = Lemmas.start_proof ~ontop:(Some pstate)
+  let ontop = Lemmas.start_lemma ~ontop:(Some ontop)
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
     sigma gls_type ~hook:(Lemmas.mk_hook hook) in
-  let pstate = if Indfun_common.is_strict_tcc  ()
+  let ontop = if Indfun_common.is_strict_tcc  ()
   then
-    fst @@ by (Proofview.V82.tactic (tclIDTAC)) pstate
+    fst @@ Lemmas.by (Proofview.V82.tactic (tclIDTAC)) ontop
   else 
-    fst @@ by (Proofview.V82.tactic begin
+    fst @@ Lemmas.by (Proofview.V82.tactic begin
 	fun g ->
 	  tclTHEN
 	    (decompose_and_tac)
@@ -1394,12 +1393,12 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	 	     )
 	 	     using_lemmas)
 	       ) tclIDTAC)
-            g end) pstate
+            g end) ontop
   in
   try
-    Some (fst @@ by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
+    Some (fst @@ Lemmas.by (Proofview.V82.tactic tclIDTAC) ontop) (* raises UserError _ if the proof is complete *)
   with UserError _ ->
-    defined pstate
+    defined ontop
 
 let com_terminate
     tcc_lemma_name
@@ -1413,25 +1412,25 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
-    let pstate = Lemmas.start_proof ~ontop:None thm_name
+    let pstate = Lemmas.start_lemma ~ontop:None thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook in
-    let pstate = fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
-    fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
+    let pstate = fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
+    fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
                                    input_type relation rec_arg_num ))) pstate
   in
-  let pstate = start_proof Global.(env ()) ctx tclIDTAC tclIDTAC in
+  let ontop = start_proof Global.(env ()) ctx tclIDTAC tclIDTAC in
   try
-    let sigma, new_goal_type = build_new_goal_type pstate in
+    let sigma, new_goal_type = build_new_goal_type ontop in
     let sigma = Evd.from_ctx (Evd.evar_universe_context sigma) in
-    open_new_goal pstate start_proof sigma
+    open_new_goal ~ontop start_proof sigma
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type)
   with EmptySubgoals ->
     (* a non recursive function declared with measure ! *)
     tcc_lemma_ref := Not_needed;
-    defined pstate
+    defined ontop
 
 let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
   (cont_tactic:Id.t list -> tactic) g =
@@ -1459,9 +1458,9 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let pstate = Lemmas.start_proof ~ontop:None eq_name (Global, false, Proof Lemma) ~sign evd
+    let lemma = Lemmas.start_lemma ~ontop:None eq_name (Global, false, Proof Lemma) ~sign evd
        (EConstr.of_constr equation_lemma_type) in
-    let pstate = fst @@ by
+    let lemma = fst @@ Lemmas.by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
 	     prove_eq (fun _ -> tclIDTAC)
@@ -1488,16 +1487,16 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 		ih = Id.of_string "______";
 	       }
 	  )
-       )) pstate in
+       )) lemma in
      (* (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-    let _ = Flags.silently (fun () -> Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None) () in
+    let _ = Flags.silently (fun () -> Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:opacity ~idopt:None) () in
     ()
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
 
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
-    generate_induction_principle using_lemmas : Proof_global.t option =
+    generate_induction_principle using_lemmas : Lemmas.t option =
   let open Term in
   let open Constr in
   let open CVars in

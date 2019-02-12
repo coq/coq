@@ -52,6 +52,30 @@ Coqlib:
   command then enables to locate the registered constant through its name. The
   name resolution is dynamic.
 
+Proof state:
+
+- Handling of proof state has been fully functionalized, thus it is
+  not possible to call global functions such as `get_current_context ()`.
+
+  The main type for functions that need to handle proof state is
+  `Proof_global.t`.
+
+  Unfortunately, this change was not possible to do in a
+  backwards-compatible way, but in most case the api changes are
+  straightforward, with functions taking and returning an extra
+  argument.
+
+  Proofs that are attached to a top-level constant (such as lemmas)
+  are represented by `Lemmas.t`, as they do contain additional
+  information related to the constant declaration. Note that
+  `Lemmas.t` is usually to be understood as a (never-empty) stack of
+  in-progress proofs about constants.
+
+  Plugins that require access to the information about currently
+  opened lemmas can add the `![proof]` attribute to their `mlg`
+  entry. That will make the type of the provided function a
+  transformer of states `ontop:Lemmas.t option -> Lemmas.t option`.
+
 Macros:
 
 - The RAW_TYPED AS and GLOB_TYPED AS stanzas of the ARGUMENT EXTEND macro are
