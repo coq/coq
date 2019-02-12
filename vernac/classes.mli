@@ -43,7 +43,7 @@ val new_instance :
   ?hook:(GlobRef.t -> unit) ->
   Hints.hint_info_expr ->
   (* May open a proof *)
-  Id.t * Proof_global.t option
+  Id.t * Lemmas.t option
 
 val declare_new_instance :
   ?global:bool (** Not global by default. *) ->

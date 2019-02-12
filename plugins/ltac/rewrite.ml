@@ -1965,7 +1965,6 @@ let add_setoid atts binders a aeq t n =
      (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
      (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
 
-
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
@@ -1975,7 +1974,7 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer atts m n : Proof_global.t option =
+let add_morphism_infer atts m n : Lemmas.t option =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
@@ -2009,8 +2008,8 @@ let add_morphism_infer atts m n : Proof_global.t option =
       let hook = Lemmas.mk_hook hook in
       Flags.silently
         (fun () ->
-           let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
-           Some (fst Pfedit.(by (Tacinterp.interp tac) pstate))) ()
+           let lemma = Lemmas.start_lemma ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+           Some (fst (Lemmas.by (Tacinterp.interp tac) lemma))) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();
@@ -2022,11 +2021,11 @@ let add_morphism atts binders m s n =
              [cHole; s; m]))
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let _, pstate = new_instance ~program_mode:atts.program ~global:atts.global atts.polymorphic
+  let _, lemma = new_instance ~program_mode:atts.program ~global:atts.global atts.polymorphic
       binders instance None
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in
-  Option.get pstate (* no instance body -> always open proof *)
+  Option.get lemma (* no instance body -> always open proof *)
 
 (** Bind to "rewrite" too *)
 

@@ -1518,7 +1518,7 @@ let pr_hint_term env sigma cl =
 (* print all hints that apply to the concl of the current goal *)
 let pr_applicable_hint pf =
   let env = Global.env () in
-  let pts = Proof_global.give_me_the_proof pf in
+  let pts = Proof_global.get_proof pf in
   let Proof.{goals;sigma} = Proof.data pts in
   match goals with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")

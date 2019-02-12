@@ -839,7 +839,8 @@ let solve_by_tac ?loc name evi t poly ctx =
 
 let obligation_terminator ?hook name num guard auto pf =
   let open Proof_global in
-  let term = Lemmas.standard_proof_terminator ?hook guard in
+  let open Lemmas in
+  let term = standard_proof_terminator ?hook guard in
   match pf with
   | Admitted _ -> apply_terminator term pf
   | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
@@ -962,13 +963,13 @@ let rec solve_obligation prg num tac =
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator ?hook guard =
-    Proof_global.make_terminator
+    Lemmas.make_terminator
       (obligation_terminator prg.prg_name num guard ?hook auto) in
   let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
-  let pstate = Lemmas.start_proof ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
-  let pstate = fst @@ Pfedit.by !default_tactic pstate in
-  let pstate = Option.cata (fun tac -> Proof_global.set_endline_tactic tac pstate) pstate tac in
-  pstate
+  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
+  let lemma = fst @@ Lemmas.by !default_tactic lemma in
+  let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
+  lemma
 
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in
