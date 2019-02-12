@@ -259,8 +259,6 @@ let parse_cl () =
 	"           Coq parts are written between 2 horizontal lines";
 	"-small", Arg.Set small,
 	"           Coq parts are written in small font";
-	"-boot", Arg.Set boot,
-	"            Launch coqtop with the -boot option"
       ]
       (fun s -> files := s :: !files)
       "coq-tex [options] file ..."
@@ -279,7 +277,6 @@ let find_coqtop () =
 let _ =
   parse_cl ();
   if !image = "" then image := Filename.quote (find_coqtop ());
-  if !boot then image := !image ^ " -boot";
   if Sys.command (!image ^ " -batch -silent") <> 0 then begin
     Printf.printf "Error: ";
     let _ = Sys.command (!image ^ " -batch") in

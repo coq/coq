@@ -186,7 +186,7 @@ let pp_vo_dep dir fmt vo =
   (* We explicitly include the location of coqlib to avoid tricky issues with coqlib location *)
   let libflag = "-coqlib %{project_root}" in
   (* The final build rule *)
-  let action = sprintf "(chdir %%{project_root} (run coqc -boot %s %s %s %s))" libflag eflag cflag source in
+  let action = sprintf "(chdir %%{project_root} (run coqc -q %s %s %s %s))" libflag eflag cflag source in
   let all_targets = gen_coqc_targets vo in
   pp_rule fmt all_targets deps action
 
