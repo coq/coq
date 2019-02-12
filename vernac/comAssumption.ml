@@ -41,7 +41,7 @@ let should_axiom_into_instance = function
     true
   | Global | Local -> !axiom_into_instance
 
-let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
+let declare_assumption ~pstate is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
 match local with
 | Discharge when Lib.sections_are_opened () ->
   let ctx = match ctx with
@@ -51,12 +51,11 @@ match local with
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
-  (* XXX *)
-  (* let () =
-   *   if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
-   *   Feedback.msg_info (str"Variable" ++ spc () ++ Id.print ident ++
-   *   strbrk " is not visible from current goals")
-   * in *)
+  let () =
+    if not !Flags.quiet && Option.has_some pstate then
+    Feedback.msg_info Pp.(str"Variable" ++ spc () ++ Id.print ident ++
+    strbrk " is not visible from current goals")
+  in
   let r = VarRef ident in
   let () = maybe_declare_manual_implicits true r imps in
   let () = Typeclasses.declare_instance None true r in
@@ -96,11 +95,11 @@ let next_uctx =
   | Polymorphic_entry _ as uctx -> uctx
   | Monomorphic_entry _ -> empty_uctx
 
-let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
+let declare_assumptions ~pstate idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-        declare_assumption is_coe k (c,uctx) pl imps false nl id in
+        declare_assumption ~pstate is_coe k (c,uctx) pl imps false nl id in
       (ref',u')::refs, status' && status, next_uctx uctx)
       ([],true,uctx) idl
   in
@@ -132,7 +131,7 @@ let process_assumptions_udecls kind l =
   in
   udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
 
-let do_assumptions ~program_mode kind nl l =
+let do_assumptions ~pstate ~program_mode kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let udecl, l = process_assumptions_udecls kind l in
@@ -172,7 +171,7 @@ let do_assumptions ~program_mode kind nl l =
   let ubinders = Evd.universe_binders sigma in
   pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
       let t = replace_vars subst t in
-      let refs, status' = declare_assumptions idl is_coe kind (t,uctx) ubinders imps nl in
+      let refs, status' = declare_assumptions ~pstate idl is_coe kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
           (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs

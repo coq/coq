@@ -76,4 +76,8 @@ val id_of_class : typeclass -> Id.t
 
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
-val context : Decl_kinds.polymorphic -> local_binder_expr list -> bool
+val context
+  :  pstate:Proof_global.t option
+  -> Decl_kinds.polymorphic
+  -> local_binder_expr list
+  -> bool

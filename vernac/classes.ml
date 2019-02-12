@@ -371,7 +371,7 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let context poly l =
+let context ~pstate poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, (_, ((env', fullctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
@@ -439,7 +439,7 @@ let context poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (ComAssumption.declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
+        pi3 (ComAssumption.declare_assumption ~pstate false decl (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in

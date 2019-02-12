@@ -631,7 +631,7 @@ let vernac_exact_proof ~pstate c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 
-let vernac_assumption ~atts discharge kind l nl =
+let vernac_assumption ~atts ~pstate discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
@@ -641,7 +641,7 @@ let vernac_assumption ~atts discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~pstate ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -1073,8 +1073,8 @@ let vernac_declare_instance ~atts sup inst pri =
   Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
-let vernac_context ~poly l =
-  if not (Classes.context poly l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~pstate ~poly l =
+  if not (Classes.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -2307,7 +2307,7 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
     unsupported_attributes atts;
     vernac_require_open_proof ~pstate (vernac_exact_proof c)
   | VernacAssumption ((discharge,kind),nl,l) ->
-    with_def_attributes ~atts vernac_assumption discharge kind l nl;
+    with_def_attributes ~atts vernac_assumption ~pstate discharge kind l nl;
     pstate
   | VernacInductive (cum, priv, finite, l) ->
     vernac_inductive ~atts cum priv finite l;
@@ -2390,7 +2390,7 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
     with_def_attributes ~atts vernac_declare_instance sup inst info;
     pstate
   | VernacContext sup ->
-    let () = vernac_context ~poly:(only_polymorphism atts) sup in
+    let () = vernac_context ~pstate ~poly:(only_polymorphism atts) sup in
     pstate
   | VernacExistingInstance insts ->
     with_section_locality ~atts vernac_existing_instance insts;
