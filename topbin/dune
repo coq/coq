@@ -21,6 +21,15 @@
  (link_flags -linkall))
 
 (executable
+ (name coqtop_utop_bin)
+ ; (public_name coqtop_utop.byte)
+ ; (package coq)
+ (modules coqtop_utop_bin)
+ (libraries utop coq.toplevel)
+ (modes byte)
+ (link_flags -linkall -w -31))
+
+(executable
  (name coqc_bin)
  (public_name coqc)
  (package coq)
@@ -41,7 +50,7 @@
  (names coqqueryworker_bin coqtacticworker_bin coqproofworker_bin)
  (public_names coqqueryworker.opt coqtacticworker.opt coqproofworker.opt)
  (package coq)
- (modules :standard \ coqtop_byte_bin coqtop_bin coqc_bin)
+ (modules :standard \ coqtop_byte_bin coqtop_utop_bin coqtop_bin coqc_bin)
  (libraries coq.toplevel)
  (link_flags -linkall))
 

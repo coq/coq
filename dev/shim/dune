@@ -36,6 +36,25 @@
     (run chmod +x %{targets})))))
 
 (rule
+ (targets utop-prelude)
+ (deps
+  %{project_root}/topbin/coqtop_utop_bin.exe
+  %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
+  %{lib:coq.plugins.ltac:ltac_plugin.cma}
+  %{lib:coq.plugins.tauto:tauto_plugin.cma}
+  %{lib:coq.plugins.string_notation:string_notation_plugin.cma}
+  %{lib:coq.plugins.numeral_notation:numeral_notation_plugin.cma}
+  %{lib:coq.plugins.cc:cc_plugin.cma}
+  %{lib:coq.plugins.firstorder:ground_plugin.cma}
+  %{project_root}/theories/Init/Prelude.vo)
+ (action
+  (with-stdout-to utop-prelude
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{project_root}/topbin/coqtop_utop_bin.exe -coqlib $(pwd)/%{project_root}\" \\$@")
+    (run chmod +x %{targets})))))
+
+(rule
  (targets coqide-prelude)
  (deps
   %{bin:coqqueryworker.opt}
