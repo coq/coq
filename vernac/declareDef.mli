@@ -15,8 +15,9 @@ val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
 
 val declare_definition
   :  ontop:Lemmas.t option
-  -> Id.t -> definition_kind
-  -> ?hook:Lemmas.declaration_hook
+  -> Id.t
+  -> definition_kind
+  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
   -> Safe_typing.private_constants Entries.definition_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
@@ -24,7 +25,9 @@ val declare_definition
 
 val declare_fix
   :  ontop:Lemmas.t option
-  -> ?opaque:bool -> definition_kind
+  -> ?opaque:bool
+  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
+  -> definition_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry
   -> Id.t

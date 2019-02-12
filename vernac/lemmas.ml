@@ -34,10 +34,13 @@ open Impargs
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-type declaration_hook = Decl_kinds.locality -> GlobRef.t -> unit
+type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
+type declaration_hook = hook_type
+
 let mk_hook hook = hook
-let call_hook ?hook ?fix_exn l c =
-  try Option.iter (fun hook -> hook l c) hook
+
+let call_hook ?hook ?fix_exn uctx trans l c =
+  try Option.iter (fun hook -> hook uctx trans l c) hook
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     let e = Option.cata (fun fix -> fix e) e fix_exn in
@@ -241,7 +244,7 @@ let look_for_possibly_mutual_statements sigma = function
 
 (* Saving a goal *)
 
-let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
+let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   try
     let const = adjust_guardness_conditions const do_guard in
@@ -270,7 +273,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook =
           gr
     in
     definition_message id;
-    call_hook ?hook locality r
+    call_hook ?hook universes [] locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
@@ -357,7 +360,7 @@ let warn_let_as_axiom =
                    (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
                                 spc () ++ strbrk "declared as an axiom.")
 
-let admit ?hook (id,k,e) pl () =
+let admit ?hook ctx (id,k,e) pl () =
   let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
   let () = match k with
   | Global, _, _ -> ()
@@ -365,16 +368,15 @@ let admit ?hook (id,k,e) pl () =
   in
   let () = assumption_message id in
   Declare.declare_univ_binders (ConstRef kn) pl;
-  call_hook ?hook Global (ConstRef kn)
+  call_hook ?hook ctx [] Global (ConstRef kn)
 
 (* Starting a goal *)
 
-let universe_proof_terminator ?univ_hook compute_guard =
+let standard_proof_terminator ?(hook : declaration_hook option) compute_guard =
   let open Proof_global in
   CEphemeron.create begin function
   | Admitted (id,k,pe,ctx) ->
-    let hook = Option.map (fun univ_hook -> univ_hook (Some ctx)) univ_hook in
-    admit ?hook (id,k,pe) (UState.universe_binders ctx) ();
+    let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
     Feedback.feedback Feedback.AddedAxiom
   | Proved (opaque,idopt, { id; entries=[const]; persistence; universes } ) ->
     let is_opaque, export_seff = match opaque with
@@ -385,15 +387,11 @@ let universe_proof_terminator ?univ_hook compute_guard =
     let id = match idopt with
       | None -> id
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    let hook = Option.map (fun univ_hook -> univ_hook (Some universes)) univ_hook in
-    save ~export_seff id const universes compute_guard persistence hook
+    let () = save ~export_seff id const universes compute_guard persistence hook universes in
+    ()
   | Proved (opaque,idopt, _ ) ->
-    CErrors.anomaly Pp.(str "[universe_proof_terminator] close_proof returned more than one proof term")
+    CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
   end
-
-let standard_proof_terminator ?hook compute_guard =
-  let univ_hook = Option.map (fun hook _ -> hook) hook in
-  universe_proof_terminator ?univ_hook compute_guard
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -430,21 +428,6 @@ let start_dependent_proof ~ontop id ?pl kind ?terminator ?sign ?(compute_guard=[
   let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
   push ~ontop { proof ; terminator }
 
-let start_proof_univs ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?univ_hook c =
-  let terminator = match terminator with
-  | None ->
-    universe_proof_terminator ?univ_hook compute_guard
-  | Some terminator -> terminator ?univ_hook compute_guard
-  in
-  let sign =
-    match sign with
-    | Some sign -> sign
-    | None -> initialize_named_context_for_proof ()
-  in
-  let goals = [ Global.env_of_context sign , c ] in
-  let proof = Proof_global.start_proof sigma id ?pl kind goals in
-  push ~ontop { proof ; terminator }
-
 let rec_tac_initializer finite guard thms snl =
   if finite then
     match List.map (fun (id,(t,_)) -> (id,t)) thms with
@@ -477,11 +460,7 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
   match thms with
   | [] -> anomaly (Pp.str "No proof to start.")
   | (id,(t,(_,imps)))::other_thms ->
-      let hook ctx strength ref =
-        let ctx = match ctx with
-        | None -> UState.empty
-        | Some ctx -> ctx
-        in
+      let hook ctx _ strength ref =
         let other_thms_data =
           if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
@@ -494,9 +473,9 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-          call_hook ?hook strength ref) thms_data in
+          call_hook ?hook ctx [] strength ref) thms_data in
       let (pstate : t) =
-        start_proof_univs ~ontop id ~pl:decl kind sigma t ~univ_hook:(fun ctx -> mk_hook (hook ctx)) ~compute_guard:guard in
+        start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
       let pstate, _ = with_current_proof (fun _ p ->
           match init_tac with
           | None -> p,(true,[])

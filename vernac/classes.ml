@@ -161,10 +161,10 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         in obls, Some constr, typ
       | None -> [||], None, termtype
     in
-    let univ_hook = Obligations.mk_univ_hook hook in
+    let hook = Lemmas.mk_hook hook in
     let ctx = Evd.evar_universe_context sigma in
     let _progress = Obligations.add_definition id ?term:constr
-              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~univ_hook obls in
+              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls in
     pstate
   else
     Some Flags.(silently (fun () ->
@@ -176,7 +176,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         let sigma = Evd.reset_future_goals sigma in
         let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma (EConstr.of_constr termtype)
           ~hook:(Lemmas.mk_hook
-             (fun _ -> instance_hook k pri global imps ?hook)) in
+             (fun _ _ _ -> instance_hook k pri global imps ?hook)) in
         (* spiwack: I don't know what to do with the status here. *)
         let pstate =
           if not (Option.is_empty term) then
