@@ -439,7 +439,7 @@ let context ~pstate poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (ComAssumption.declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
+        pi3 (ComAssumption.declare_assumption ~pstate false decl (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in

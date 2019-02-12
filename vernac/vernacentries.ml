@@ -632,7 +632,7 @@ let vernac_exact_proof ~pstate c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 
-let vernac_assumption ~atts discharge kind l nl =
+let vernac_assumption ~atts ~pstate discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
@@ -642,7 +642,7 @@ let vernac_assumption ~atts discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~pstate ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -2280,7 +2280,7 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
     unsupported_attributes atts;
     vernac_require_open_proof ~pstate (vernac_exact_proof c)
   | VernacAssumption ((discharge,kind),nl,l) ->
-    with_def_attributes ~atts vernac_assumption discharge kind l nl;
+    with_def_attributes ~atts vernac_assumption ~pstate discharge kind l nl;
     pstate
   | VernacInductive (cum, priv, finite, l) ->
     vernac_inductive ~atts cum priv finite l;
