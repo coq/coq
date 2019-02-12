@@ -1845,11 +1845,11 @@ Module OrdProperties (M:S).
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
   apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto with *.
-  intros; destruct x; destruct y; destruct p.
+  intros; destruct x as [t e]; destruct y as [t0 e0]; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
-  assert (~ltk (t1,e0) (k,e1)).
+  assert (~ltk (t0,e0) (k,e1)).
    unfold gtb, O.ltk in *; simpl in *.
-   destruct (E.compare k t1); intuition; try discriminate; ME.order.
+   destruct (E.compare k t0); intuition; try discriminate; ME.order.
   unfold O.ltk in *; simpl in *; ME.order.
   Qed.
 
@@ -1867,7 +1867,7 @@ Module OrdProperties (M:S).
   intros.
   rewrite filter_InA in H1; auto with *; destruct H1.
   rewrite leb_1 in H2.
-  destruct y; unfold O.ltk in *; simpl in *.
+  destruct y as [t0 e0]; unfold O.ltk in *; simpl in *.
   rewrite <- elements_mapsto_iff in H1.
   assert (~E.eq x t0).
    contradict H.
@@ -1884,7 +1884,7 @@ Module OrdProperties (M:S).
   rewrite filter_InA in H4; auto with *; destruct H4.
   rewrite leb_1 in H4.
   unfold O.ltk in *; simpl in *; ME.order.
-  red; intros a; destruct a.
+  red; intros a; destruct a as [t0 e0].
   rewrite InA_app_iff, InA_cons, 2 filter_InA,
     <-2 elements_mapsto_iff, leb_1, gtb_1,
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
@@ -1910,7 +1910,7 @@ Module OrdProperties (M:S).
   apply ME.lt_eq with x; auto.
   apply H; firstorder.
   inversion H3.
-  red; intros a; destruct a.
+  red; intros a; destruct a as [t0 e0].
   rewrite InA_app_iff, InA_cons, InA_nil, <- 2 elements_mapsto_iff,
    find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
    add_mapsto_iff by (auto with *).
@@ -1939,7 +1939,7 @@ Module OrdProperties (M:S).
   apply ME.eq_lt with x; auto.
   apply H; firstorder.
   inversion H3.
-  red; intros a; destruct a.
+  red; intros a; destruct a as [t0 e0].
   rewrite InA_cons, <- 2 elements_mapsto_iff,
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
     add_mapsto_iff by (auto with *).

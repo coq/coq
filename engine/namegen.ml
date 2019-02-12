@@ -62,27 +62,30 @@ let default_generated_non_letter_string = "x"
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let is_imported_modpath = function
-  | MPfile dp ->
-    let rec find_prefix = function
-      |MPfile dp1 -> not (DirPath.equal dp1 dp)
-      |MPdot(mp,_) -> find_prefix mp
-      |MPbound(_) -> false
-    in find_prefix (Lib.current_mp ())
-  | _ -> false
+(* A global is "prefix" iff it was defined in a prefix of the current
+   module. eg if we're currently building module F.M, constant F.x is
+   prefix but G.x and F.N.x aren't. *)
 
-let is_imported_ref = function
-  | VarRef _ -> false
+let is_prefix_global_modpath mp =
+  (* is mp a prefix of cur? *)
+  let rec is_prefixed cur = ModPath.equal cur mp || match cur with
+    | MPfile _ | MPbound _ -> false
+    | MPdot (cur,_) -> is_prefixed cur
+  in
+  is_prefixed (Lib.current_mp())
+
+let is_prefix_global_ref = function
+  | VarRef _ -> true
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
-      let mp = MutInd.modpath kn in is_imported_modpath mp
+      let mp = MutInd.modpath kn in is_prefix_global_modpath mp
   | ConstRef kn ->
-      let mp = Constant.modpath kn in is_imported_modpath mp
+      let mp = Constant.modpath kn in is_prefix_global_modpath mp
 
-let is_global id =
+let is_prefix_global id =
   try
     let ref = Nametab.locate (qualid_of_ident id) in
-    not (is_imported_ref ref)
+    is_prefix_global_ref ref
   with Not_found ->
     false
 
@@ -311,7 +314,7 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
 
 let next_ident_away_in_goal id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let bad id = Id.Set.mem id avoid || (is_prefix_global id && not (is_section_variable id)) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -329,7 +332,7 @@ let next_name_away_in_goal na avoid =
 
 let next_global_ident_away id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || is_global id in
+  let bad id = Id.Set.mem id avoid || is_prefix_global id in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,

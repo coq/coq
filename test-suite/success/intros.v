@@ -152,3 +152,54 @@ Definition d := ltac:(intro x; exact (x*x)).
 Definition d' : nat -> _ := ltac:(intros;exact 0).
 
 End Evar.
+
+(* alpha renaming vs import *)
+Require Relations_1 Hurkens. (* some arbitrary modules with few dependencies *)
+Import Relations_1. (* defines Relation *)
+Import Hurkens.Generic. (* defines V *)
+
+Check Relation. Check V.
+
+(* of course no alpha renaming for unknown things *)
+Fail Check x.
+Goal forall x : Prop, x.
+Proof. intros until x. Abort.
+
+(* also no alpha renaming for things from a different file (including
+   from a submodule of a different file) *)
+Goal forall Relation : Prop, Relation.
+Proof. intros until Relation. Abort.
+
+Goal forall V : Prop, V.
+Proof. intros until V. Abort.
+
+(* alpha renaming happens when a constant comes from earlier in the
+   current module *)
+Definition x := Prop.
+Goal forall x : Prop, x.
+Proof. Fail intros until x. Abort.
+
+Module M.
+  (* definitions from a supermodule of the current module also count *)
+  Goal forall x : Prop, x.
+  Proof. Fail intros until x. Abort.
+
+  Definition y := Prop.
+End M.
+Import M.
+
+(* definitions from sibling modules don't count *)
+Goal forall y : Prop, y.
+Proof. intros until y. Abort.
+Module N.
+  Goal forall y : Prop, y.
+  Proof. intros until y. Abort.
+End N.
+
+Section Sec.
+  Variable y : Prop.
+
+  (* variables cause alpha renaming *)
+  Goal forall y : Prop, y.
+  Proof. Fail intros until y. Abort.
+End Sec.

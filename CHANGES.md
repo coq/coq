@@ -44,6 +44,10 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+- Stopped alpha renaming variables to avoid imported globals
+  (previously collisions with globals imported from a file's toplevel
+  module were allowed but not for submodules)
+
 Kernel
 
 - Added primitive integers
