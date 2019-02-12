@@ -36,8 +36,6 @@ val invalidate_cache : unit -> unit
 (* Compatibility module *)
 module Proof_global : sig
 
-  val with_fail : st:t -> (unit -> unit) -> unit
-
   open Proof_global
 
   (* Low-level stuff *)
