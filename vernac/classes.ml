@@ -378,11 +378,11 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-  let pstate = Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
+  let lemma = Lemmas.start_lemma id ~pl:decl kind sigma (EConstr.of_constr termtype)
       ~hook:(Lemmas.mk_hook
                (fun _ _ _ -> instance_hook pri global imps ?hook)) in
   (* spiwack: I don't know what to do with the status here. *)
-  let pstate =
+  let lemma =
     if not (Option.is_empty term) then
       let init_refine =
         Tacticals.New.tclTHENLIST [
@@ -391,18 +391,18 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
           Tactics.New.reduce_after_refine;
         ]
       in
-      let pstate, _ = Pfedit.by init_refine pstate in
-      pstate
+      let lemma, _ = Lemmas.by init_refine lemma in
+      lemma
     else
-      let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
-      pstate
+      let lemma, _ = Lemmas.by (Tactics.auto_intros_tac ids) lemma in
+      lemma
   in
   match tac with
   | Some tac ->
-    let pstate, _ = Pfedit.by tac pstate in
-    pstate
+    let lemma, _ = Lemmas.by tac lemma in
+    lemma
   | None ->
-    pstate
+    lemma
 
 let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
@@ -483,7 +483,7 @@ let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ct
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
-  let pstate =
+  let lemma =
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
       let term = to_constr sigma (Option.get term) in
       (declare_instance_constant pri global imps ?hook id decl poly sigma term termtype;
@@ -492,15 +492,15 @@ let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ct
       (declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype;
        None)
     else if Option.is_empty props then
-      let pstate =
+      let lemma =
         Flags.silently (fun () ->
             declare_instance_open sigma ?hook ~tac ~global ~poly
               id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
           ()
       in
-      Some pstate
+      Some lemma
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
-  id, pstate
+  id, lemma
 
 let interp_instance_context ~program_mode env ctx ?(generalize=false) pl tclass =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in

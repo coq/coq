@@ -990,7 +990,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       ]
   in
   (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
-  let pstate = Lemmas.start_proof
+  let lemma = Lemmas.start_lemma
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
@@ -999,11 +999,9 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
     evd
   lemma_type
   in
-  let pstate,_ = Pfedit.by (Proofview.V82.tactic prove_replacement) pstate in
-  let ontop = Proof_global.push ~ontop:None pstate in
-  ignore(Lemmas.save_proof_proved ?proof:None ~ontop ~opaque:Proof_global.Transparent ~idopt:None);
+  let lemma,_ = Lemmas.by (Proofview.V82.tactic prove_replacement) lemma in
+  let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
   evd
-
 
 let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num all_funs g =
   let equation_lemma =
@@ -1725,11 +1723,3 @@ let prove_principle_for_gen
 
     ]
     gl
-
-
-
-
-
-
-
-

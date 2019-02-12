@@ -31,8 +31,8 @@ val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
 val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
-val new_instance :
-  ?global:bool (** Not global by default. *)
+val new_instance
+  :  ?global:bool (** Not global by default. *)
   -> program_mode:bool
   -> Decl_kinds.polymorphic
   -> name_decl
@@ -43,7 +43,7 @@ val new_instance :
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
-  -> Id.t * Proof_global.t option (* May open a proof *)
+  -> Id.t * Lemmas.t option (* May open a proof *)
 
 val declare_new_instance
   : ?global:bool (** Not global by default. *)

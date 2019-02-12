@@ -267,7 +267,7 @@ let declare_fixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximp
         fixdefs) in
     let evd = Evd.from_ctx ctx in
     Some
-    (Lemmas.start_proof_with_initialization (local,poly,DefinitionBody Fixpoint)
+    (Lemmas.start_lemma_with_initialization (local,poly,DefinitionBody Fixpoint)
       evd pl (Some(false,indexes,init_tac)) thms None)
   else begin
     (* We shortcut the proof process *)
@@ -295,7 +295,7 @@ let declare_fixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximp
   pstate
 
 let declare_cofixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
-  let pstate =
+  let lemma =
   if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -305,7 +305,7 @@ let declare_cofixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fixi
       Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
         fixdefs) in
     let evd = Evd.from_ctx ctx in
-    Some (Lemmas.start_proof_with_initialization (Global,poly, DefinitionBody CoFixpoint)
+    Some (Lemmas.start_lemma_with_initialization (Global,poly, DefinitionBody CoFixpoint)
             evd pl (Some(true,[],init_tac)) thms None)
   else begin
     (* We shortcut the proof process *)
@@ -327,7 +327,7 @@ let declare_cofixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fixi
   end in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
-  pstate
+  lemma
 
 let extract_decreasing_argument ~structonly = function { CAst.v = v } -> match v with
   | CStructRec na -> na
