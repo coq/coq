@@ -67,8 +67,6 @@ to get your changes reviewed and pulled into the Coq source repository.
 
 Documentation for getting started with the Coq sources is located in various
 files in [`dev/doc`](dev/doc) (for example, [debugging.md](dev/doc/debugging.md)).
-For further help with the Coq sources, feel free to join
-the [Coq Gitter chat](https://gitter.im/coq/coq) and ask questions.
 
 Please make pull requests against the `master` branch.
 
@@ -127,6 +125,13 @@ the comments and tags are only used to organize pull requests.
 To learn more about the merging process, you can read the
 [merging documentation for Coq maintainers](dev/doc/MERGING.md).
 
+[rebase-label]: https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22
+[fixing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22
+[benchmarking-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22
+[testing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22
+
+[jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
+
 ## Documentation
 
 Currently the process for contributing to the documentation is the same as
@@ -151,6 +156,15 @@ You may also contribute to the informal documentation available in
 [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki), and the
 [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ). Both of these are
 editable by anyone with a GitHub account.
+
+## Where to get help (with the Coq source code, or anything else)
+
+We have a Discourse forum (see in particular the [Coq development category][])
+and a [Gitter chat][]. Feel free to join any of them and ask questions.
+People are generally happy to help and very reactive.
+
+[Coq development category]: https://coq.discourse.group/c/coq-development
+[Gitter chat]: https://gitter.im/coq/coq
 
 ## Following the development
 
@@ -190,14 +204,9 @@ find a list of packages waiting for a maintainer [here](https://github.com/coq-c
 You can also propose a package that is not listed. Find out more about
 coq-community in [the manifesto's README](https://github.com/coq-community/manifesto).
 
-Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites)
-which has a helpful community of Coq users.
+Ask and answer questions on our [Discourse forum][], on [Stack Exchange][],
+and on the [Coq IRC channel][].
 
-Hang out on the Coq IRC channel, `irc://irc.freenode.net/#coq`, and help answer questions.
-
-[rebase-label]: https://github.com/coq/coq/pulls?utf8=%E2%9C%93&q=is%3Aopen%20is%3Apr%20label%3A%22needs%3A%20rebase%22
-[fixing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+fixing%22
-[benchmarking-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+benchmarking%22
-[testing-label]: https://github.com/coq/coq/pulls?q=is%3Aopen+is%3Apr+label%3A%22needs%3A+testing%22
-
-[jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
+[Discourse forum]: https://coq.discourse.group/
+[Stack Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
+[Coq IRC channel]: irc://irc.freenode.net/#coq
