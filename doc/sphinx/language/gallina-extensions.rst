@@ -1924,9 +1924,10 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-.. cmd:: Canonical Structure @qualid
+.. cmd:: Canonical {? Structure } @qualid
 
-   This command declares :token:`qualid` as a canonical structure.
+   This command declares :token:`qualid` as a canonical instance of a
+   structure (a record).
 
    Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
    structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
@@ -1961,7 +1962,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Definition nat_setoid : Setoid := Build_Setoid eq_nat_equiv.
 
-         Canonical Structure nat_setoid.
+         Canonical nat_setoid.
 
       Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
       and :g:`B` can be synthesized in the next statement.
@@ -1974,11 +1975,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-   .. cmdv:: Canonical Structure @ident {? : @type } := @term
+   .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
 
       This is equivalent to a regular definition of :token:`ident` followed by the
-      declaration :n:`Canonical Structure @ident`.
-
+      declaration :n:`Canonical @ident`.
 
 .. cmd:: Print Canonical Projections
 
