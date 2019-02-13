@@ -1,7 +1,8 @@
 # Contributing to Coq
 
 Thank you for your interest in contributing to Coq! There are many ways to
-contribute, and we appreciate all of them.
+contribute, and we appreciate all of them. Please make sure you read and
+abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Bug Reports
 
