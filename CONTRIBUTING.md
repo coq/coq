@@ -30,7 +30,8 @@ account). You can file a bug for any of the following:
 
 It would help if you search the existing issues before reporting a bug. This
 can be difficult, so consider it extra credit. We don't mind duplicate bug
-reports.
+reports. If unsure, you are always very welcome to ask on Discourse or Gitter
+before, after, or while writting a bug report
 
 When it applies, it's extremely helpful for bug reports to include sample
 code, and much better if the code is self-contained and complete. It's not
