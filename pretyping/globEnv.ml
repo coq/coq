@@ -183,7 +183,7 @@ let interp_ltac_id env id = ltac_interp_id env.lvar id
 module ConstrInterpObj =
 struct
   type ('r, 'g, 't) obj =
-    unbound_ltac_var_map -> env -> Evd.evar_map -> types -> 'g -> constr * Evd.evar_map
+    unbound_ltac_var_map -> bool -> env -> Evd.evar_map -> types -> 'g -> constr * Evd.evar_map
   let name = "constr_interp"
   let default _ = None
 end
@@ -192,8 +192,8 @@ module ConstrInterp = Genarg.Register(ConstrInterpObj)
 
 let register_constr_interp0 = ConstrInterp.register0
 
-let interp_glob_genarg env sigma ty arg =
+let interp_glob_genarg env poly sigma ty arg =
   let open Genarg in
   let GenArg (Glbwit tag, arg) = arg in
   let interp = ConstrInterp.obj tag in
-  interp env.lvar.ltac_genargs env.renamed_env sigma ty arg
+  interp env.lvar.ltac_genargs poly env.renamed_env sigma ty arg

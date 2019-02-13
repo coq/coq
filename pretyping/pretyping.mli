@@ -38,6 +38,7 @@ type inference_flags = {
   fail_evar : bool;
   expand_evars : bool;
   program_mode : bool;
+  polymorphic : bool;
 }
 
 val default_inference_flags : bool -> inference_flags
