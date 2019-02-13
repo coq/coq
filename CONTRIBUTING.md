@@ -43,6 +43,13 @@ extra credit, then you can use the
 [Coq bug minimizer](https://github.com/JasonGross/coq-tools) (specifically,
 the bug minimizer is the `find-bug.py` script in that repo).
 
+### Triaging bug reports
+
+Triaging bug reports (adding labels, closing outdated / resolved bugs)
+requires to be granted some permissions. You may request members of the
+**@coq/core** team to add you to the contributors team. They can do so using
+this link: <https://github.com/orgs/coq/teams/contributors/members?add=true>.
+
 ## Pull requests
 
 **Beginner's guide to hacking Coq: [`dev/doc/README.md`](dev/doc/README.md)** \
