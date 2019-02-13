@@ -11,11 +11,8 @@ SAVEDIR="logs"
 rm -rf "$SAVEDIR"
 mkdir "$SAVEDIR"
 
-# keep this synced with test-suite/Makefile
-FAILMARK="==========> FAILURE <=========="
-
 FAILED=$(mktemp /tmp/coq-check-XXXXXX)
-find . '(' -name '*.log' -exec grep "$FAILMARK" -q '{}' ';' -print0 ')' > "$FAILED"
+find . '(' -name '*.log' -exec grep -q -F "Error!" '{}' ';' -print0 ')' > "$FAILED"
 
 rsync -a --from0 --files-from="$FAILED" . "$SAVEDIR"
 cp summary.log "$SAVEDIR"/
