@@ -66,12 +66,6 @@ let pstates = ref ([] : pstate list)
 (* combinators for the current_proof lists *)
 let push a l = l := a::!l
 
-exception NoSuchProof
-let () = CErrors.register_handler begin function
-  | NoSuchProof -> CErrors.user_err Pp.(str "No such proof.")
-  | _ -> raise CErrors.Unhandled
-end
-
 exception NoCurrentProof
 let () = CErrors.register_handler begin function
   | NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof (No proof-editing in progress).")
@@ -91,6 +85,7 @@ let cur_pstate () =
 let give_me_the_proof () = (cur_pstate ()).proof
 let give_me_the_proof_opt () = try Some (give_me_the_proof ()) with | NoCurrentProof -> None
 let get_current_proof_name () = (Proof.data (cur_pstate ()).proof).Proof.name
+let get_current_persistence () = (cur_pstate ()).strength
 
 let with_current_proof f =
   match !pstates with
@@ -385,15 +380,6 @@ let set_terminator hook =
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: ps -> pstates := { p with terminator = CEphemeron.create hook } :: ps
-
-module V82 = struct
-  let get_current_initial_conclusions () =
-  let { proof; strength } = cur_pstate () in
-  let Proof.{ name; entry } = Proof.data proof in
-  let initial = Proofview.initial_goals entry in
-  let goals = List.map (fun (o, c) -> c) initial in
-  name, (goals, strength)
-end
 
 let freeze ~marshallable =
   if marshallable then CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")

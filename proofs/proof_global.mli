@@ -17,6 +17,7 @@ val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
 
 val get_current_proof_name : unit -> Names.Id.t
+val get_current_persistence : unit -> Decl_kinds.goal_kind
 val get_all_proof_names : unit -> Names.Id.t list
 
 val discard : Names.lident -> unit
@@ -104,8 +105,6 @@ val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t ->
 val get_terminator : unit -> proof_terminator
 val set_terminator : proof_terminator -> unit
 
-exception NoSuchProof
-
 val get_open_goals : unit -> int
 
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
@@ -128,11 +127,6 @@ val get_used_variables : unit -> Constr.named_context option
 
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : unit -> UState.universe_decl
-
-module V82 : sig
-  val get_current_initial_conclusions : unit -> Names.Id.t *(EConstr.types list *
-  Decl_kinds.goal_kind)
-end
 
 val freeze : marshallable:bool -> t
 val unfreeze : t -> unit

@@ -596,7 +596,7 @@ plugin:ci-elpi:
 plugin:ci-equations:
   <<: *ci-template
 
-plugin:ci-fiat-parsers:
+plugin:ci-fiat_parsers:
   <<: *ci-template
 
 plugin:ci-ltac2:

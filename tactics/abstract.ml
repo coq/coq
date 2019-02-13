@@ -11,7 +11,6 @@
 module CVars = Vars
 
 open Util
-open Names
 open Termops
 open EConstr
 open Decl_kinds
@@ -87,10 +86,26 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
+let name_op_to_name ~name_op ~name ~goal_kind suffix =
+  match name_op with
+  | Some s -> s, goal_kind
+  | None -> Nameops.add_suffix name suffix, goal_kind
+
+let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
+  Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (name, poly) ->
+  (* This is important: The [Global] and [Proof Theorem] parts of the
+     goal_kind are not relevant here as build_constant_by_tactic does
+     use the noop terminator; but beware if some day we remove the
+     redundancy on constrant declaration. This opens up an interesting
+     question, how does abstract behave when discharge is local for example?
+  *)
+  let goal_kind, suffix = if opaque
+    then (Global,poly,Proof Theorem), "_subproof"
+    else (Global,poly,DefinitionBody Definition), "_subterm" in
+  let id, goal_kind = name_op_to_name ~name_op ~name ~goal_kind suffix in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -126,7 +141,7 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~goal_kind:gk id ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~goal_kind id ectx secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -170,26 +185,8 @@ let cache_term_by_tactic_then ~opaque ?(goal_type=None) id gk tac tacK =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) tac
   end
 
-let abstract_subproof ~opaque id gk tac =
-  cache_term_by_tactic_then ~opaque id gk tac (fun lem args -> Tactics.exact_no_check (applist (lem, args)))
-
-let anon_id = Id.of_string "anonymous"
-
-let name_op_to_name name_op object_kind suffix =
-  let open Proof_global in
-  let default_gk = (Global, false, object_kind) in
-  let name, gk = match Proof_global.V82.get_current_initial_conclusions () with
-  | (id, (_, gk)) -> Some id, gk
-  | exception NoCurrentProof -> None, default_gk
-  in
-  match name_op with
-  | Some s -> s, gk
-  | None ->
-    let name = Option.default anon_id name in
-    Nameops.add_suffix name suffix, gk
+let abstract_subproof ~opaque tac =
+  cache_term_by_tactic_then ~opaque tac (fun lem args -> Tactics.exact_no_check (applist (lem, args)))
 
 let tclABSTRACT ?(opaque=true) name_op tac =
-  let s, gk = if opaque
-    then name_op_to_name name_op (Proof Theorem) "_subproof"
-    else name_op_to_name name_op (DefinitionBody Definition) "_subterm" in
-  abstract_subproof ~opaque s gk tac
+  abstract_subproof ~opaque ~name_op tac
