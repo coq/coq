@@ -29,7 +29,8 @@ let tactic_infer_flags with_evar = {
 (** FIXME: export a better interface in Tactics *)
 let delayed_of_tactic tac env sigma =
   let _, pv = Proofview.init sigma [] in
-  let c, pv, _, _ = Proofview.apply env tac pv in
+  let name, poly = Id.of_string "ltac2_delayed", false in
+  let c, pv, _, _ = Proofview.apply ~name ~poly env tac pv in
   (sigma, c)
 
 let delayed_of_thunk r tac env sigma =
