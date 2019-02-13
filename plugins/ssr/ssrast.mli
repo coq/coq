@@ -137,6 +137,9 @@ type 'tac ssrhint = bool * 'tac option list
 type 'tac fwdbinders =
         bool * (ssrhpats * ((ssrfwdfmt * ast_closure_term) * 'tac ssrhint))
 
+type 'tac ffwbinders =
+  (ssrhpats * ((ssrfwdfmt * ast_closure_term) * 'tac ssrhint))
+
 type clause =
   (ssrclear * ((ssrhyp_or_id * string) *
               Ssrmatching_plugin.Ssrmatching.cpattern option) option)
