@@ -10,6 +10,17 @@ SCRIPT_DIR = path.dirname(path.abspath(__file__))
 if __name__ == "__main__" and __package__ is None:
     sys.path.append(path.dirname(SCRIPT_DIR))
 
+SPHINX_DIR = path.join(SCRIPT_DIR, "../../sphinx/")
+README_TEMPLATE_PATH = path.join(SPHINX_DIR, "README.template.rst")
+
+if len(sys.argv) == 1:
+    README_PATH = path.join(SPHINX_DIR, "README.rst")
+elif len(sys.argv) == 2:
+    README_PATH = sys.argv[1]
+else:
+    print ("usage: {} [FILE]".format(sys.argv[0]))
+    sys.exit(1)
+
 import sphinx
 from coqrst import coqdomain
 
@@ -22,10 +33,6 @@ def format_docstring(template, obj, *strs):
     docstring = obj.__doc__.strip()
     strs = strs + (FIRST_LINE_BLANKS.sub(r"\1\n", docstring),)
     return template.format(*strs)
-
-SPHINX_DIR = path.join(SCRIPT_DIR, "../../sphinx/")
-README_PATH = path.join(SPHINX_DIR, "README.rst")
-README_TEMPLATE_PATH = path.join(SPHINX_DIR, "README.template.rst")
 
 def notation_symbol(d):
     return " :black_nib:" if issubclass(d, coqdomain.NotationObject) else ""
