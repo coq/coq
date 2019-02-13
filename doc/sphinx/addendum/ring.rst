@@ -197,7 +197,7 @@ be either Leibniz equality, or any relation declared as a setoid (see
 :ref:`tactics-enabled-on-user-provided-relations`).
 The definitions of ring and semiring (see module ``Ring_theory``) are:
 
-.. coqtop:: in
+.. coqdoc::
 
     Record ring_theory : Prop := mk_rt {
       Radd_0_l    : forall x, 0 + x == x;
@@ -235,7 +235,7 @@ coefficients could be the rational numbers, upon which the ring
 operations can be implemented. The fact that there exists a morphism
 is defined by the following properties:
 
-.. coqtop:: in 
+.. coqdoc::
 
     Record ring_morph : Prop := mkmorph {
       morph0    : [cO] == 0;
@@ -285,13 +285,14 @@ following property:
 
 .. coqtop:: in
 
+    Require Import Reals.
     Section POWER.
       Variable Cpow : Set.
       Variable Cp_phi : N -> Cpow.
       Variable rpow : R -> Cpow -> R.
     
       Record power_theory : Prop := mkpow_th {
-        rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
+        rpow_pow_N : forall r n, rpow r (Cp_phi n) = pow_N 1%R Rmult r n
       }.
     
     End POWER.
@@ -422,7 +423,7 @@ The interested reader is strongly advised to have a look at the
 file ``Ring_polynom.v``. Here a type for polynomials is defined:
 
 
-.. coqtop:: in
+.. coqdoc::
 
     Inductive PExpr : Type :=
       | PEc : C -> PExpr
@@ -437,7 +438,7 @@ file ``Ring_polynom.v``. Here a type for polynomials is defined:
 Polynomials in normal form are defined as:
 
 
-.. coqtop:: in
+.. coqdoc::
 
     Inductive Pol : Type :=
       | Pc : C -> Pol 
@@ -454,7 +455,7 @@ polynomial to an element of the concrete ring, and the second one that
 does the same for normal forms:
 
 
-.. coqtop:: in
+.. coqdoc::
 
 
     Definition PEeval : list R -> PExpr -> R := [...].
@@ -465,7 +466,7 @@ A function to normalize polynomials is defined, and the big theorem is
 its correctness w.r.t interpretation, that is:
 
 
-.. coqtop:: in
+.. coqdoc::
 
     Definition norm : PExpr -> Pol := [...].
     Lemma Pphi_dev_ok :
@@ -616,7 +617,7 @@ also supported. The equality can be either Leibniz equality, or any
 relation declared as a setoid (see :ref:`tactics-enabled-on-user-provided-relations`). The definition of
 fields and semifields is:
 
-.. coqtop:: in
+.. coqdoc::
 
     Record field_theory : Prop := mk_field {
       F_R : ring_theory rO rI radd rmul rsub ropp req;
@@ -636,7 +637,7 @@ fields and semifields is:
 The result of the normalization process is a fraction represented by
 the following type:
 
-.. coqtop:: in
+.. coqdoc::
 
     Record linear : Type := mk_linear {
       num : PExpr C;
@@ -690,7 +691,7 @@ for |Coq|’s type checker. Let us see why:
          x + 3 + y + y * z = x + 3 + y + z * y.
   intros; rewrite (Zmult_comm y z); reflexivity.
   Save foo.
-  Print  foo.
+  Print foo.
 
 At each step of rewriting, the whole context is duplicated in the
 proof term. Then, a tactic that does hundreds of rewriting generates

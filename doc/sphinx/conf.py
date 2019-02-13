@@ -28,7 +28,7 @@ from shutil import copyfile
 import sphinx
 
 # Increase recursion limit for sphinx
-sys.setrecursionlimit(1500)
+sys.setrecursionlimit(3000)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

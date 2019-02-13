@@ -181,7 +181,7 @@ rules. Some simple left factorization work has to be done. Here is an example.
 .. coqtop:: all
 
    Notation "x < y" := (lt x y) (at level 70).
-   Notation "x < y < z" := (x < y /\ y < z) (at level 70).
+   Fail Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 
 In order to factorize the left part of the rules, the subexpression
 referred to by ``y`` has to be at the same level in both rules. However the
@@ -486,7 +486,7 @@ Sometimes, for the sake of factorization of rules, a binder has to be
 parsed as a term. This is typically the case for a notation such as
 the following:
 
-.. coqtop:: in
+.. coqdoc::
 
    Notation "{ x : A | P }" := (sig (fun x : A => P))
        (at level 0, x at level 99 as ident).
@@ -788,9 +788,9 @@ main grammar, or from another custom entry as is the case in
 to indicate that ``e`` has to be parsed at level ``2`` of the grammar
 associated to the custom entry ``expr``. The level can be omitted, as in
 
-.. coqtop:: in
+.. coqdoc::
 
-   Notation "[ e ]" := e (e custom expr)`.
+   Notation "[ e ]" := e (e custom expr).
 
 in which case Coq tries to infer it.
 
@@ -1058,7 +1058,7 @@ Binding arguments of a constant to an interpretation scope
    in the scope delimited by the key ``F`` (``Rfun_scope``) and the last
    argument in the scope delimited by the key ``R`` (``R_scope``).
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Arguments plus_fct (f1 f2)%F x%R.
 
@@ -1066,7 +1066,7 @@ Binding arguments of a constant to an interpretation scope
    parentheses. In the following example arguments A and B are marked as
    maximally inserted implicit arguments and are put into the type_scope scope.
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Arguments respectful {A B}%type (R R')%signature _ _.
 
@@ -1148,7 +1148,7 @@ Binding types of arguments to an interpretation scope
    can be bound to an interpretation scope. The command to do it is
    :n:`Bind Scope @scope with @class`
 
-   .. coqtop:: in
+   .. coqtop:: in reset
 
       Parameter U : Set.
       Bind Scope U_scope with U.

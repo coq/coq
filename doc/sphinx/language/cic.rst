@@ -782,7 +782,7 @@ the sort of the inductive type :math:`t` (not to be confused with :math:`\Sort` 
       Inductive even : nat -> Prop :=
       | even_O : even 0
       | even_S : forall n, odd n -> even (S n)
-      with odd : nat -> prop :=
+      with odd : nat -> Prop :=
       | odd_S : forall n, even n -> odd (S n).
 
 
@@ -929,7 +929,7 @@ condition* for a constant :math:`X` in the following cases:
 
       Inductive nattree (A:Type) : Type :=
       | leaf : nattree A
-      | node : A -> (nat -> nattree A) -> nattree A.
+      | natnode : A -> (nat -> nattree A) -> nattree A.
 
    Then every instantiated constructor of ``nattree A`` satisfies the nested positivity
    condition for ``nattree``:
@@ -939,7 +939,7 @@ condition* for a constant :math:`X` in the following cases:
      type of that constructor (primarily because ``nattree`` does not have any (real)
      arguments) ... (bullet 1)
 
-   + Type ``A → (nat → nattree A) → nattree A`` of constructor ``node`` satisfies the
+   + Type ``A → (nat → nattree A) → nattree A`` of constructor ``natnode`` satisfies the
      positivity condition for ``nattree`` because:
 
      - ``nattree`` occurs only strictly positively in ``A`` ... (bullet 1)

@@ -59,7 +59,7 @@ pattern matching. Consider for example the function that computes the
 maximum of two natural numbers. We can write it in primitive syntax
 by:
 
-.. coqtop:: in undo
+.. coqtop:: in
 
    Fixpoint max (n m:nat) {struct m} : nat :=
      match n with
@@ -75,7 +75,7 @@ Multiple patterns
 
 Using multiple patterns in the definition of ``max`` lets us write:
 
-.. coqtop:: in undo
+.. coqtop:: in reset
 
    Fixpoint max (n m:nat) {struct m} : nat :=
        match n, m with
@@ -103,7 +103,7 @@ Aliasing subpatterns
 
 We can also use :n:`as @ident` to associate a name to a sub-pattern:
 
-.. coqtop:: in undo
+.. coqtop:: in reset
 
    Fixpoint max (n m:nat) {struct n} : nat :=
      match n, m with
@@ -128,10 +128,14 @@ Here is now an example of nested patterns:
 
 This is compiled into:
 
-.. coqtop:: all undo
+.. coqtop:: all
 
    Unset Printing Matching.
    Print even.
+
+.. coqtop:: none
+
+   Set Printing Matching.
 
 In the previous examples patterns do not conflict with, but sometimes
 it is comfortable to write patterns that admit a non trivial
@@ -139,7 +143,7 @@ superposition. Consider the boolean function :g:`lef` that given two
 natural numbers yields :g:`true` if the first one is less or equal than the
 second one and :g:`false` otherwise. We can write it as follows:
 
-.. coqtop:: in undo
+.. coqtop:: in
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
@@ -158,7 +162,7 @@ is matched by the first pattern, and so :g:`(lef O O)` yields true.
 
 Another way to write this function is:
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
@@ -191,7 +195,7 @@ Multiple patterns that share the same right-hand-side can be
 factorized using the notation :n:`{+| @mult_pattern}`. For
 instance, :g:`max` can be rewritten as follows:
 
-.. coqtop:: in undo
+.. coqtop:: in reset
 
    Fixpoint max (n m:nat) {struct m} : nat :=
      match n, m with
@@ -269,7 +273,7 @@ When we use parameters in patterns there is an error message:
    Set Asymmetric Patterns.
    Check (fun l:List nat =>
      match l with
-     | nil => nil
+     | nil => nil _
      | cons _ l' => l'
      end).
    Unset Asymmetric Patterns.
@@ -325,7 +329,7 @@ Understanding dependencies in patterns
 
 We can define the function length over :g:`listn` by:
 
-.. coqtop:: in
+.. coqdoc::
 
    Definition length (n:nat) (l:listn n) := n.
 
@@ -366,6 +370,10 @@ different types and we need to provide the elimination predicate:
      | niln => l'
      | consn n' a y => consn (n' + m) a (concat n' y m l')
      end.
+
+.. coqtop:: none
+
+   Reset concat.
 
 The elimination predicate is :g:`fun (n:nat) (l:listn n) => listn (n+m)`.
 In general if :g:`m` has type :g:`(I q1 … qr t1 … ts)` where :g:`q1, …, qr`
@@ -503,7 +511,7 @@ can also be caught in the matching.
 
 .. example::
 
-   .. coqtop:: in
+   .. coqtop:: in reset
 
       Inductive list : nat -> Set :=
       | nil : list 0

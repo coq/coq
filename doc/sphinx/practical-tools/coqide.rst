@@ -230,10 +230,12 @@ mathematical symbols ∀ and ∃, you may define:
 
 .. coqtop:: in
 
-  Notation "∀ x : T, P" :=
-  (forall x : T, P) (at level 200, x ident).
-  Notation "∃ x : T, P" :=
-  (exists x : T, P) (at level 200, x ident).
+   Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+     (at level 200, x binder, y binder, right associativity)
+     : type_scope.
+   Notation "∃ x .. y , P" := (exists x, .. (exists y, P) ..)
+     (at level 200, x binder, y binder, right associativity)
+     : type_scope.
 
 There exists a small set of such notations already defined, in the
 file `utf8.v` of Coq library, so you may enable them just by
