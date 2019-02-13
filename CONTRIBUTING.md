@@ -180,6 +180,14 @@ around Coq. If your external development is mature enough, you may consider
 submitting it for addition to our CI tests. Refer to
 [`dev/ci/README-users.md`](dev/ci/README-users.md) for more information.
 
+Some Coq packages are not maintained by their authors anymore even if they
+were useful (for instance because they changed jobs). The coq-community
+organization is a place for people to take over the maintenance of such
+useful packages. If you want to contribute by becoming a maintainer, you can
+find a list of packages waiting for a maintainer [here](https://github.com/coq-community/manifesto/issues?q=is%3Aissue+is%3Aopen+label%3Amaintainer-wanted).
+You can also propose a package that is not listed. Find out more about
+coq-community in [the manifesto's README](https://github.com/coq-community/manifesto).
+
 Ask and answer questions on [Stack Exchange](https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites)
 which has a helpful community of Coq users.
 
