@@ -143,7 +143,8 @@ let conclPattern concl pat tac =
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
      let sigma = Tacmach.New.project gl in
-       constr_bindings env sigma >>= fun constr_bindings ->
+     constr_bindings env sigma >>= fun constr_bindings ->
+     Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
      let open Genarg in
      let open Geninterp in
      let inj c = match val_tag (topwit Stdarg.wit_constr) with
@@ -152,7 +153,9 @@ let conclPattern concl pat tac =
      in
      let fold id c accu = Id.Map.add id (inj c) accu in
      let lfun = Id.Map.fold fold constr_bindings Id.Map.empty in
-     let ist = { lfun; extra = TacStore.empty } in
+     let ist = { lfun
+               ; poly
+               ; extra = TacStore.empty } in
      match tac with
      | GenArg (Glbwit wit, tac) ->
       Ftactic.run (Geninterp.interp wit ist tac) (fun _ -> Proofview.tclUNIT ())

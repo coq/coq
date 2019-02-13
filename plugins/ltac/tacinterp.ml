@@ -138,9 +138,10 @@ let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
 
 (* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign = Geninterp.interp_sign = {
-  lfun : value Id.Map.t;
-  extra : TacStore.t }
+type interp_sign = Geninterp.interp_sign =
+  { lfun : value Id.Map.t
+  ; poly : bool
+  ; extra : TacStore.t }
 
 let extract_trace ist =
   if is_traced () then match TacStore.get ist.extra f_trace with
@@ -544,7 +545,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
   let (_, dummy_proofview) = Proofview.init sigma [] in
 
   (* Again this is called at times with no open proof! *)
-  let name, poly = Id.of_string "tacinterp", false in
+  let name, poly = Id.of_string "tacinterp", ist.poly in
   let (trace,_,_,_) = Proofview.apply ~name ~poly env (push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist) dummy_proofview in
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) term
@@ -561,11 +562,13 @@ let constr_flags () = {
   fail_evar = true;
   expand_evars = true;
   program_mode = false;
+  polymorphic = false;
 }
 
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
-  interp_gen kind ist false (constr_flags ()) env sigma c
+  let flags = { (constr_flags ()) with polymorphic = ist.Geninterp.poly } in
+  interp_gen kind ist false flags env sigma c
 
 let interp_constr = interp_constr_gen WithoutTypeConstraint
 
@@ -577,6 +580,7 @@ let open_constr_use_classes_flags () = {
   fail_evar = false;
   expand_evars = true;
   program_mode = false;
+  polymorphic = false;
 }
 
 let open_constr_no_classes_flags () = {
@@ -585,6 +589,7 @@ let open_constr_no_classes_flags () = {
   fail_evar = false;
   expand_evars = true;
   program_mode = false;
+  polymorphic = false;
 }
 
 let pure_open_constr_flags = {
@@ -593,6 +598,7 @@ let pure_open_constr_flags = {
   fail_evar = false;
   expand_evars = false;
   program_mode = false;
+  polymorphic = false;
 }
 
 (* Interprets an open constr *)
@@ -1016,6 +1022,7 @@ let type_uconstr ?(flags = (constr_flags ()))
     ltac_idents = closure.idents;
     ltac_genargs = Id.Map.empty;
   } in
+  let flags = { flags with polymorphic = ist.Geninterp.poly } in
   understand_ltac flags env sigma vars expected_type term
   end
 
@@ -1141,6 +1148,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
   (* For extensions *)
   | TacAlias {loc; v=(s,l)} ->
       let alias = Tacenv.interp_alias s in
+      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let (>>=) = Ftactic.bind in
       let interp_vars = Ftactic.List.map (fun v -> interp_tacarg ist v) l in
       let tac l =
@@ -1148,8 +1156,9 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
         let lfun = List.fold_right2 addvar alias.Tacenv.alias_args l ist.lfun in
         Ftactic.lift (push_trace (loc,LtacNotationCall s) ist) >>= fun trace ->
         let ist = {
-          lfun = lfun;
-          extra = TacStore.set ist.extra f_trace trace; } in
+          lfun
+        ; poly
+        ; extra = TacStore.set ist.extra f_trace trace } in
         val_interp ist alias.Tacenv.alias_body >>= fun v ->
         Ftactic.lift (tactic_of_value ist v)
       in
@@ -1202,12 +1211,13 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       if mustbetac then Ftactic.return (coerce_to_tactic loc id v) else Ftactic.return v
       end
   | ArgArg (loc,r) ->
+      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let ids = extract_ids [] ist.lfun Id.Set.empty in
       let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
       push_trace loc_info ist >>= fun trace ->
       let extra = TacStore.set extra f_trace trace in
-      let ist = { lfun = Id.Map.empty; extra = extra; } in
+      let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
       Profile_ltac.do_profile "interp_ltac_reference" trace ~count_call:false
         (val_interp ~appl ist (Tacenv.interp_ltac r))
@@ -1255,6 +1265,7 @@ and interp_tacarg ist arg : Val.t Ftactic.t =
 
 (* Interprets an application node *)
 and interp_app loc ist fv largs : Val.t Ftactic.t =
+  Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
   let fail = Tacticals.New.tclZEROMSG (str "Illegal tactic application.") in
   if has_type fv (topwit wit_tacvalue) then
@@ -1272,9 +1283,11 @@ and interp_app loc ist fv largs : Val.t Ftactic.t =
       if List.is_empty lvar then
         begin wrap_error
             begin
-              let ist = {
-                lfun = newlfun;
-                extra = TacStore.set ist.extra f_trace []; } in
+              let ist =
+                { lfun = newlfun
+                ; poly
+                ; extra = TacStore.set ist.extra f_trace []
+                } in
               Profile_ltac.do_profile "interp_app" trace ~count_call:false
                 (catch_error_tac trace (val_interp ist body)) >>= fun v ->
               Ftactic.return (name_vfun (push_appl appl largs) v)
@@ -1312,8 +1325,10 @@ and tactic_of_value ist vle =
   if has_type vle (topwit wit_tacvalue) then
   match to_tacvalue vle with
   | VFun (appl,trace,lfun,[],t) ->
+    Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let ist = {
         lfun = lfun;
+        poly;
         extra = TacStore.set ist.extra f_trace []; } in
       let tac = name_if_glob appl (eval_tactic ist t) in
       Profile_ltac.do_profile "tactic_of_value" trace (catch_error_tac trace tac)
@@ -1383,6 +1398,7 @@ and interp_letin ist llc u =
 (** [interp_match_success lz ist succ] interprets a single matching success
     (of type {!Tactic_matching.t}). *)
 and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
+  Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   let (>>=) = Ftactic.bind in
   let lctxt = Id.Map.map interp_context context in
   let hyp_subst = Id.Map.map Value.of_constr terms in
@@ -1391,9 +1407,11 @@ and interp_match_success ist { Tactic_matching.subst ; context ; terms ; lhs } =
   val_interp ist lhs >>= fun v ->
   if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
   | VFun (appl,trace,lfun,[],t) ->
-      let ist = {
-        lfun = lfun;
-        extra = TacStore.set ist.extra f_trace trace; } in
+      let ist =
+        { lfun = lfun
+        ; poly
+        ; extra = TacStore.set ist.extra f_trace trace
+        } in
       let tac = eval_tactic ist t in
       let dummy = VFun (appl,extract_trace ist, Id.Map.empty, [], TacId []) in
       catch_error_tac trace (tac <*> Ftactic.return (of_tacvalue dummy))
@@ -1867,7 +1885,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
 
 let default_ist () =
   let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
-  { lfun = Id.Map.empty; extra = extra }
+  { lfun = Id.Map.empty; poly = false; extra = extra }
 
 let eval_tactic t =
   Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
@@ -1907,11 +1925,12 @@ end
 
 
 let interp_tac_gen lfun avoid_ids debug t =
+  Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
-  let ist = { lfun = lfun; extra = extra } in
+  let ist = { lfun; poly; extra } in
   let ltacvars = Id.Map.domain lfun in
   interp_tactic ist
     (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
@@ -2052,13 +2071,15 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval lfun env sigma ty tac =
+  let eval lfun poly env sigma ty tac =
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
-    let ist = { lfun = lfun; extra; } in
+    let ist = { lfun; poly; extra; } in
     let tac = interp_tactic ist tac in
-    (* XXX: This depends on the global state which is bad; the hooking
-       mechanism should be modified. *)
-    let name, poly = Id.of_string "ltac_gen", false in
+    (* EJGA: We sould also pass the proof name if desired, for now
+       poly seems like enough to get reasonable behavior in practice
+     *)
+    let name, poly = Id.of_string "ltac_gen", poly in
+    let name, poly = Id.of_string "ltac_gen", poly in
     let (c, sigma) = Pfedit.refine_by_tactic ~name ~poly env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in

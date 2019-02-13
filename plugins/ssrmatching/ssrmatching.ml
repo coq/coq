@@ -1261,7 +1261,7 @@ let pf_fill_occ_term gl occ t =
   cl, t
 
 let cpattern_of_id id =
-  ' ', (DAst.make @@ GRef (VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; extra = Tacinterp.TacStore.empty })
+  ' ', (DAst.make @@ GRef (VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
 
 let is_wildcard ((_, (l, r), _) : cpattern) : bool = match DAst.get l, r with
   | _, Some { CAst.v = CHole _ } | GHole _, None -> true

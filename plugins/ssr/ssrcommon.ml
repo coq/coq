@@ -245,6 +245,7 @@ let interp_refine ist gl rc =
     fail_evar = false;
     expand_evars = true;
     program_mode = false;
+    polymorphic = false;
   }
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
@@ -1166,7 +1167,7 @@ let genstac (gens, clr) =
   tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
-  ?(ist=Geninterp.({ lfun = Id.Map.empty; extra = Tacinterp.TacStore.empty })) gl
+  ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
 =
   let gl, ctx = pull_ctx gl in
   push_ctxs ctx

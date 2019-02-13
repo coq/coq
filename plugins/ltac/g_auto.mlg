@@ -58,6 +58,7 @@ let eval_uconstrs ist cs =
     fail_evar = false;
     expand_evars = true;
     program_mode = false;
+    polymorphic = false;
   } in
   let map c env sigma = c env sigma in
   List.map (fun c -> map (Tacinterp.type_uconstr ~flags ist c)) cs

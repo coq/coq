@@ -82,9 +82,10 @@ let register_val0 wit tag =
 
 (** Interpretation functions *)
 
-type interp_sign = {
-  lfun : Val.t Id.Map.t;
-  extra : TacStore.t }
+type interp_sign =
+  { lfun : Val.t Id.Map.t
+  ; poly : bool
+  ; extra : TacStore.t }
 
 type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 

@@ -19,7 +19,7 @@ open Evarutil
 
 val register_constr_interp0 :
   ('r, 'g, 't) Genarg.genarg_type ->
-    (unbound_ltac_var_map -> env -> evar_map -> types -> 'g -> constr * evar_map) -> unit
+    (unbound_ltac_var_map -> bool -> env -> evar_map -> types -> 'g -> constr * evar_map) -> unit
 
 (** {6 Pretyping name management} *)
 
@@ -85,5 +85,5 @@ val interp_ltac_id : t -> Id.t -> Id.t
 (** Interpreting a generic argument, typically a "ltac:(...)", taking
     into account the possible renaming *)
 
-val interp_glob_genarg : t -> evar_map -> constr ->
+val interp_glob_genarg : t -> bool -> evar_map -> constr ->
   Genarg.glob_generic_argument -> constr * evar_map
