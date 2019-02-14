@@ -2957,6 +2957,12 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
       This applies the :tacn:`change` tactic not to the goal but to the hypothesis :n:`@ident`.
 
+   .. tacv:: now_show @term
+
+      This is a synonym of :n:`change @term`. It can be used to
+      make some proof steps explicit when refactoring a proof script
+      to make it readable.
+
    .. seealso:: :ref:`Performing computations <performingcomputations>`
 
 .. _performingcomputations:
