@@ -345,22 +345,11 @@ let tclBREAK = Proof.break
 
 exception NoSuchGoals of int
 
-(* This hook returns a string to be appended to the usual message.
-   Primarily used to add a suggestion about the right bullet to use to
-   focus the next goal, if applicable. *)
-let nosuchgoals_hook:(int -> Pp.t) ref = ref (fun n -> mt ())
-let set_nosuchgoals_hook f = nosuchgoals_hook := f
-
-
-
-(* This uses the hook above *)
 let _ = CErrors.register_handler begin function
   | NoSuchGoals n ->
-    let suffix = !nosuchgoals_hook n in
-    CErrors.user_err 
-      (str "No such " ++ str (String.plural n "goal") ++ str "." ++
-       pr_non_empty_arg (fun x -> x) suffix)
-      | _ -> raise CErrors.Unhandled
+    CErrors.user_err
+      (str "No such " ++ str (String.plural n "goal") ++ str ".")
+  | _ -> raise CErrors.Unhandled
 end
 
 (** [tclFOCUS_gen nosuchgoal i j t] applies [t] in a context where
