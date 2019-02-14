@@ -52,18 +52,31 @@ type proof_ending =
               lident option *
               Proof_global.proof_object
 
-type proof_terminator = proof_ending -> unit
-
-let make_terminator f = f
-let apply_terminator f = f
+type proof_terminator = (proof_ending -> unit) CEphemeron.key
 
 (* Proofs with a save constant function *)
 type pstate =
   { proof : Proof_global.t
-  ; terminator : proof_terminator CEphemeron.key
+  ; terminator : proof_terminator
   }
 
 type t = pstate * pstate list
+
+(* To be removed *)
+module Internal = struct
+
+let make_terminator f = CEphemeron.create f
+let apply_terminator f = CEphemeron.get f
+
+(** Gets the current terminator without checking that the proof has
+    been completed. Useful for the likes of [Admitted]. *)
+let get_terminator (ps, _) = ps.terminator
+
+let copy_terminators ~src ~tgt =
+  let (ps, psl), (ts,tsl) = src, tgt in
+  assert(List.length psl = List.length tsl);
+  {ts with terminator = ps.terminator}, List.map2 (fun op p -> { p with terminator = op.terminator }) psl tsl
+end
 
 let pf_map f ( { proof; terminator}, psl) = ( { proof = f proof; terminator } , psl)
 let pf_fold f (ps, _) = f ps.proof
@@ -84,17 +97,6 @@ let get_all_proof_names (pf : t) =
 let by tac ({ proof; terminator}, psl) =
   let proof, res = Pfedit.by tac proof in
   ({ proof; terminator} , psl), res
-
-(** Gets the current terminator without checking that the proof has
-    been completed. Useful for the likes of [Admitted]. *)
-let get_terminator (ps, _) = CEphemeron.get ps.terminator
-let set_terminator hook (ps, psl) =
-  { ps with terminator = CEphemeron.create hook }, psl
-
-let copy_terminators ~src ~tgt =
-  let (ps, psl), (ts,tsl) = src, tgt in
-  assert(List.length psl = List.length tsl);
-  {ts with terminator = ps.terminator}, List.map2 (fun op p -> { p with terminator = op.terminator }) psl tsl
 
 let pf_name_eq id ps =
   let Proof.{ name } = Proof.data (Proof_global.give_me_the_proof ps.proof) in
@@ -369,7 +371,7 @@ let admit ?hook (id,k,e) pl () =
 
 let universe_proof_terminator ?univ_hook compute_guard =
   let open Proof_global in
-  make_terminator begin function
+  CEphemeron.create begin function
   | Admitted (id,k,pe,ctx) ->
     let hook = Option.map (fun univ_hook -> univ_hook (Some ctx)) univ_hook in
     admit ?hook (id,k,pe) (UState.universe_binders ctx) ();
@@ -418,7 +420,6 @@ let start_proof ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?
   in
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma id ?pl kind goals in
-  let terminator = CEphemeron.create terminator in
   push ~ontop { proof ; terminator }
 
 let start_dependent_proof ~ontop id ?pl kind ?terminator ?sign ?(compute_guard=[]) ?hook telescope =
@@ -427,7 +428,6 @@ let start_dependent_proof ~ontop id ?pl kind ?terminator ?sign ?(compute_guard=[
   | Some terminator -> terminator ?hook compute_guard
   in
   let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
-  let terminator = CEphemeron.create terminator in
   push ~ontop { proof ; terminator }
 
 let start_proof_univs ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?univ_hook c =
@@ -443,7 +443,6 @@ let start_proof_univs ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard
   in
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma id ?pl kind goals in
-  let terminator = CEphemeron.create terminator in
   push ~ontop { proof ; terminator }
 
 let rec_tac_initializer finite guard thms snl =
@@ -606,10 +605,10 @@ let save_proof_proved ?proof ?pstate ~opaque ~idopt =
     | None ->
       (* XXX uh! *)
       let { proof; terminator }, _ = Option.get pstate in
-      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, CEphemeron.get terminator
+      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, terminator
     | Some proof -> proof
   in
   (* if the proof is given explicitly, nothing has to be deleted *)
   let pstate = if Option.is_empty proof then discard_current Option.(get pstate) else pstate in
-  terminator (Proved (opaque,idopt,proof_obj));
+  CEphemeron.get terminator (Proved (opaque,idopt,proof_obj));
   pstate
