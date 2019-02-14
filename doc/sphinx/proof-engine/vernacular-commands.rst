@@ -1227,3 +1227,15 @@ Exposing constants to OCaml libraries
 
    Due to its internal nature, this command is not for general use. It is meant
    to appear only in standard libraries and in support libraries of plug-ins.
+
+   As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,
+   the constant is exposed to the kernel. For instance, the `Int63` module
+   features the following declaration:
+
+   .. coqdoc::
+
+      Register bool as kernel.ind_bool.
+
+   This makes the kernel aware of what is the type of boolean values. This
+   information is used for instance to define the return type of the
+   :g:`#int63_eq` primitive.
