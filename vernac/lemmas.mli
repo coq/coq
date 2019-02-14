@@ -148,7 +148,14 @@ type proof_ending =
               Names.lident option *
               Proof_global.proof_object
 
-val make_terminator : (proof_ending -> unit) -> proof_terminator
-val apply_terminator : proof_terminator -> proof_ending -> unit
-val get_terminator : t -> proof_terminator
-val set_terminator : proof_terminator -> t -> t
+(** This stuff is internal and will be removed in the future.  *)
+module Internal : sig
+
+  (** Only needed due to the Proof_global compatibility layer. *)
+  val get_terminator : t -> proof_terminator
+
+  (** Only needed by obligations, should be reified soon *)
+  val make_terminator : (proof_ending -> unit) -> proof_terminator
+  val apply_terminator : proof_terminator -> proof_ending -> unit
+
+end
