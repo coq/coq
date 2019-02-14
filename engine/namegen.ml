@@ -329,7 +329,7 @@ let next_name_away_in_goal na avoid =
 
 let next_global_ident_away id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || is_global id in
+  let bad id = Id.Set.mem id avoid || Global.exists_objlabel (Label.of_id id) in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,
