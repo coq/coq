@@ -320,6 +320,24 @@ let next_name_away_in_goal na avoid =
     | Anonymous -> default_non_dependent_ident in
   next_ident_away_in_goal id avoid
 
+(** Check whether [id] is already defined in the current namespaces,
+    i.e., in any of the enclosing sections in the current module path. *)
+let is_defined_here id =
+  (* Check if [path.id] is defined *)
+  let exists path =
+    match make_qualid (DirPath.make path) id |> Nametab.locate with
+    | exception Not_found -> false
+    | _ -> true
+  in
+  let short = Lib.cwd_except_section () |> DirPath.repr in
+  let long = Lib.cwd () |> DirPath.repr in
+  (* Test every path between [short], the current module path,
+     and [long], the current module-and-section path. *)
+  let rec loop path =
+    exists path
+    || not (List.equal Id.equal path short) && loop (List.tl path)
+  in loop long
+
 (* 3- Looks for next fresh name outside a list that is moreover valid
    as a global identifier; the legacy algorithm is that if the name is
    already used in the list, one looks for a name of same base with
@@ -329,7 +347,7 @@ let next_name_away_in_goal na avoid =
 
 let next_global_ident_away id avoid =
   let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || is_global id in
+  let bad id = Id.Set.mem id avoid || is_defined_here id in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,
