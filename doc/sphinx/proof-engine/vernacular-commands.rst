@@ -1240,6 +1240,8 @@ Exposing constants to OCaml libraries
    information is used for instance to define the return type of the
    :g:`#int63_eq` primitive.
 
+   .. seealso:: :ref:`primitive-integers`
+
 Inlining hints for the fast reduction machines
 ----------------------------------------------------------------
 
