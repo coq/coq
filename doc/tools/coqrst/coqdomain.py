@@ -560,7 +560,7 @@ class CoqtopDirective(Directive):
 
     Example::
 
-       .. coqtop:: in undo
+       .. coqtop:: in reset
 
           Print nat.
           Definition a := 1.
@@ -580,7 +580,6 @@ class CoqtopDirective(Directive):
     - Behavior options
 
       - ``reset``: Send a ``Reset Initial`` command before running this block
-      - ``undo``: Reset state after executing. Not compatible with ``reset``.
 
     ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
@@ -829,20 +828,17 @@ class CoqtopBlocksTransform(Transform):
     @staticmethod
     def parse_options(options):
         """Parse options according to the description in CoqtopDirective."""
-        opt_undo = 'undo' in options
         opt_reset = 'reset' in options
         opt_all, opt_none = 'all' in options, 'none' in options
         opt_input, opt_output = opt_all or 'in' in options, opt_all or 'out' in options
 
-        unexpected_options = list(set(options) - set(('reset', 'undo', 'all', 'none', 'in', 'out')))
+        unexpected_options = list(set(options) - set(('reset', 'all', 'none', 'in', 'out')))
         if unexpected_options:
             raise ValueError("Unexpected options for .. coqtop:: {}".format(unexpected_options))
         elif (opt_input or opt_output) and opt_none:
             raise ValueError("Inconsistent options for .. coqtop:: ‘none’ with ‘in’, ‘out’, or ‘all’")
-        elif opt_reset and opt_undo:
-            raise ValueError("Inconsistent options for .. coqtop:: ‘undo’ with ‘reset’")
 
-        return opt_undo, opt_reset, opt_input and not opt_none, opt_output and not opt_none
+        return opt_reset, opt_input and not opt_none, opt_output and not opt_none
 
     @staticmethod
     def block_classes(should_show, contents=None):
@@ -873,15 +869,13 @@ class CoqtopBlocksTransform(Transform):
         with CoqTop(color=True) as repl:
             for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
                 options = node['coqtop_options']
-                opt_undo, opt_reset, opt_input, opt_output = self.parse_options(options)
+                opt_reset, opt_input, opt_output = self.parse_options(options)
 
                 if opt_reset:
                     repl.sendone("Reset Initial.")
                 pairs = []
                 for sentence in self.split_sentences(node.rawsource):
                     pairs.append((sentence, repl.sendone(sentence)))
-                if opt_undo:
-                    repl.sendone("Undo {}.".format(len(pairs)))
 
                 dli = nodes.definition_list_item()
                 for sentence, output in pairs:

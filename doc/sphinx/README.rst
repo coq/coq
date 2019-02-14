@@ -214,7 +214,7 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
 
     Example::
 
-       .. coqtop:: in undo
+       .. coqtop:: in reset
 
           Print nat.
           Definition a := 1.
@@ -234,7 +234,6 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
     - Behavior options
 
       - ``reset``: Send a ``Reset Initial`` command before running this block
-      - ``undo``: Reset state after executing. Not compatible with ``reset``.
 
     ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
