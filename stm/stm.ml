@@ -1770,14 +1770,17 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_proof ~allow_partial:true () in
         `OK_ADMITTED
       else begin
-      (* The original terminator, a hook, has not been saved in the .vio*)
-      PG_compat.set_terminator (Lemmas.standard_proof_terminator []);
-
       let opaque = Proof_global.Opaque in
-      let proof =
+
+      (* The original terminator, a hook, has not been saved in the .vio*)
+      let pterm, _invalid_terminator =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
+
+      let proof = pterm , Lemmas.standard_proof_terminator [] in
+
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
+
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false start;
       (* STATE SPEC:
        * - start: First non-expired state! [This looks very fishy]
