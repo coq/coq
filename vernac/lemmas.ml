@@ -54,21 +54,30 @@ type proof_ending =
               lident option *
               Proof_global.proof_object
 
-type proof_terminator = proof_ending -> unit
-
-let make_terminator f = f
-let apply_terminator f = f
+type proof_terminator = (proof_ending -> unit) CEphemeron.key
 
 (* Proofs with a save constant function *)
 type t =
   { proof : Proof_global.t
-  ; terminator : proof_terminator CEphemeron.key
+  ; terminator : proof_terminator
   }
 
 let pf_map f { proof; terminator} = { proof = f proof; terminator }
 let pf_fold f ps = f ps.proof
 
 let set_endline_tactic t = pf_map (Proof_global.set_endline_tactic t)
+
+(* To be removed *)
+module Internal = struct
+
+let make_terminator f = CEphemeron.create f
+let apply_terminator f = CEphemeron.get f
+
+(** Gets the current terminator without checking that the proof has
+    been completed. Useful for the likes of [Admitted]. *)
+let get_terminator ps = ps.terminator
+
+end
 
 let with_proof f { proof; terminator } =
   let proof, res = Proof_global.with_proof f proof in
@@ -79,11 +88,6 @@ let simple_with_proof f ps = fst @@ with_proof (fun t p -> f t p, ()) ps
 let by tac { proof; terminator } =
   let proof, res = Pfedit.by tac proof in
   { proof; terminator}, res
-
-(** Gets the current terminator without checking that the proof has
-    been completed. Useful for the likes of [Admitted]. *)
-let get_terminator ps = CEphemeron.get ps.terminator
-let set_terminator hook ps = { ps with terminator = CEphemeron.create hook }
 
 (* Support for mutually proved theorems *)
 
@@ -333,7 +337,7 @@ let admit ?hook ctx (id,k,e) pl () =
 
 let standard_proof_terminator ?(hook : declaration_hook option) compute_guard =
   let open Proof_global in
-  make_terminator begin function
+  CEphemeron.create begin function
   | Admitted (id,k,pe,ctx) ->
     let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
     Feedback.feedback Feedback.AddedAxiom
@@ -406,7 +410,6 @@ let start_lemma id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c 
   in
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma id ?pl kind goals in
-  let terminator = CEphemeron.create terminator in
   { proof ; terminator }
 
 let start_dependent_lemma id ?pl kind ?terminator ?sign ?(compute_guard=[]) ?hook telescope =
@@ -415,7 +418,6 @@ let start_dependent_lemma id ?pl kind ?terminator ?sign ?(compute_guard=[]) ?hoo
   | Some terminator -> terminator ?hook compute_guard
   in
   let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
-  let terminator = CEphemeron.create terminator in
   { proof ; terminator }
 
 let rec_tac_initializer finite guard thms snl =
@@ -573,7 +575,7 @@ let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
       (* XXX: The close_proof and proof state API should be refactored
          so it is possible to insert proofs properly into the state *)
       let { proof; terminator } = Option.get lemma in
-      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, CEphemeron.get terminator
+      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, terminator
     | Some proof -> proof
   in
-  terminator (Proved (opaque,idopt,proof_obj))
+  CEphemeron.get terminator (Proved (opaque,idopt,proof_obj))

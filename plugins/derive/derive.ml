@@ -99,7 +99,7 @@ let start_deriving f suchthat name : Lemmas.t =
       ignore (Declare.declare_constant name lemma_def)
   in
 
-  let terminator ?hook _ = Lemmas.make_terminator terminator in
+  let terminator ?hook _ = Lemmas.Internal.make_terminator terminator in
   let lemma = Lemmas.start_dependent_lemma name kind goals ~terminator in
   Lemmas.simple_with_proof begin fun _ p ->
     Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
