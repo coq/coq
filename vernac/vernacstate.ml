@@ -114,14 +114,9 @@ module Proof_global = struct
     | None -> raise NoCurrentProof
     | Some x -> s_lemmas := Some (Stack.map_top_pstate ~f x)
 
-  let dd_lemma f = match !s_lemmas with
-    | None -> raise NoCurrentProof
-    | Some x -> s_lemmas := Some (Stack.map_top ~f x)
-
   let there_are_pending_proofs () = !s_lemmas <> None
   let get_open_goals () = cc get_open_goals
 
-  let set_terminator x = dd_lemma (set_terminator x)
   let give_me_the_proof_opt () = Option.map (Stack.with_top_pstate ~f:get_proof) !s_lemmas
   let give_me_the_proof () = cc get_proof
   let get_current_proof_name () = cc get_proof_name
@@ -143,11 +138,11 @@ module Proof_global = struct
 
   let close_future_proof ~opaque ~feedback_id pf =
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
-                        get_terminator pt)
+                        Internal.get_terminator pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
     cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
-                        get_terminator pt)
+                        Internal.get_terminator pt)
 
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (update_global_env)

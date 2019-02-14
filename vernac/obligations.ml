@@ -844,7 +844,7 @@ let obligation_terminator ?hook name num guard auto pf =
   let open Lemmas in
   let term = standard_proof_terminator ?hook guard in
   match pf with
-  | Admitted _ -> apply_terminator term pf
+  | Admitted _ -> Internal.apply_terminator term pf
   | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
     let env = Global.env () in
     let ty = entry.Entries.const_entry_type in
@@ -965,7 +965,7 @@ let rec solve_obligation prg num tac =
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator ?hook guard =
-    Lemmas.make_terminator
+    Lemmas.Internal.make_terminator
       (obligation_terminator prg.prg_name num guard ?hook auto) in
   let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
   let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in

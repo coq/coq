@@ -41,7 +41,6 @@ module Proof_global : sig
   val there_are_pending_proofs : unit -> bool
   val get_open_goals : unit -> int
 
-  val set_terminator : Lemmas.proof_terminator -> unit
   val give_me_the_proof : unit -> Proof.t
   val give_me_the_proof_opt : unit -> Proof.t option
   val get_current_proof_name : unit -> Names.Id.t
