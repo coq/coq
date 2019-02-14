@@ -882,7 +882,7 @@ class CoqtopBlocksTransform(Transform):
 
         dli = nodes.definition_list_item()
         for sentence, output in pairs:
-            # Use Coqdoq to highlight input
+            # Use Coqdoc to highlight input
             in_chunks = highlight_using_coqdoc(sentence)
             dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(opt_input))
             # Parse ANSI sequences to highlight output
