@@ -102,7 +102,7 @@ let start_deriving ~ontop f suchthat name : Lemmas.t option =
       ignore (Declare.declare_constant name lemma_def)
   in
 
-  let terminator ?hook _ = Lemmas.make_terminator terminator in
+  let terminator ?hook _ = Lemmas.Internal.make_terminator terminator in
   let lemma = Lemmas.start_dependent_lemma ~ontop:None name kind goals ~terminator in
   let lemma = fst @@ Lemmas.with_current_proof begin fun _ p ->
       Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p

@@ -104,7 +104,6 @@ module Proof_global = struct
   let there_are_pending_proofs () = !s_lemmas <> None
   let get_open_goals () = cc (pf_fold get_open_goals)
 
-  let set_terminator x = dd (set_terminator x)
   let give_me_the_proof_opt () = Option.map (pf_fold give_me_the_proof) !s_lemmas
   let give_me_the_proof () = cc (pf_fold give_me_the_proof)
   let get_current_proof_name () = cc (pf_fold get_current_proof_name)
@@ -125,15 +124,11 @@ module Proof_global = struct
 
   let close_future_proof ~opaque ~feedback_id pf =
     cc (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
-                  (* XXX: Careful with the eta expansion here, the STM
-                     needs it as not to force the Ephemeron! *)
-                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
+                  Internal.get_terminator pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
     cc (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
-                  (* XXX: Careful with the eta expansion here, the STM
-                     needs it as not to force the Ephemeron! *)
-                  Lemmas.(make_terminator (fun pe -> apply_terminator (get_terminator pt) pe)))
+                  Internal.get_terminator pt)
 
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (pf_map update_global_env)
@@ -149,6 +144,6 @@ module Proof_global = struct
     | None, None -> None
     | Some _ , None -> None
     | None, Some x -> Some x
-    | Some src, Some tgt -> Some (copy_terminators ~src ~tgt)
+    | Some src, Some tgt -> Some (Internal.copy_terminators ~src ~tgt)
 
 end
