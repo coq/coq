@@ -1239,3 +1239,14 @@ Exposing constants to OCaml libraries
    This makes the kernel aware of what is the type of boolean values. This
    information is used for instance to define the return type of the
    :g:`#int63_eq` primitive.
+
+Inlining hints for the fast reduction machines
+----------------------------------------------------------------
+
+.. cmd:: Register Inline @qualid
+
+   This command gives as a hint to the reduction machines (VM and native) that
+   the body of the constant :n:`@qualid` should be inlined in the generated code.
+
+   Due to its internal nature, this command is not for general use. It is meant
+   to appear only in standard libraries and in support libraries of plug-ins.
