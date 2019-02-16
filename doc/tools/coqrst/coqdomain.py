@@ -570,7 +570,7 @@ class CoqtopDirective(Directive):
 
     Here is a list of permissible options:
 
-    - Display options
+    - Display options (choose exactly one)
 
       - ``all``: Display input and output
       - ``in``: Display only input
@@ -589,8 +589,8 @@ class CoqtopDirective(Directive):
     reST source file).  Use the ``reset`` option to reset Coq's state.
     """
     has_content = True
-    required_arguments = 0
-    optional_arguments = 1
+    required_arguments = 1
+    optional_arguments = 0
     final_argument_whitespace = True
     option_spec = { 'name': directives.unchanged }
     directive_name = "coqtop"
@@ -599,10 +599,8 @@ class CoqtopDirective(Directive):
         # Uses a ‘container’ instead of a ‘literal_block’ to disable
         # Pygments-based post-processing (we could also set rawsource to '')
         content = '\n'.join(self.content)
-        args = self.arguments[0].split() if self.arguments else ['in']
-        if 'all' in args:
-            args.extend(['in', 'out'])
-        node = nodes.container(content, coqtop_options = list(set(args)),
+        args = self.arguments[0].split()
+        node = nodes.container(content, coqtop_options = set(args),
                                classes=['coqtop', 'literal-block'])
         self.add_name(node)
         return [node]
@@ -829,22 +827,41 @@ class CoqtopBlocksTransform(Transform):
         return re.split(r"(?<=(?<!\.)\.)\s+", source)
 
     @staticmethod
-    def parse_options(options):
+    def parse_options(node):
         """Parse options according to the description in CoqtopDirective."""
+
+        options = node['coqtop_options']
+
+        # Behavior options
         opt_reset = 'reset' in options
         opt_fail = 'fail' in options
         opt_restart = 'restart' in options
         opt_abort = 'abort' in options
-        opt_all, opt_none = 'all' in options, 'none' in options
-        opt_input, opt_output = opt_all or 'in' in options, opt_all or 'out' in options
+        options = options - set(('reset', 'fail', 'restart', 'abort'))
 
-        unexpected_options = list(set(options) - set(('reset', 'fail', 'restart', 'abort', 'all', 'none', 'in', 'out')))
+        unexpected_options = list(options - set(('all', 'none', 'in', 'out')))
         if unexpected_options:
-            raise ValueError("Unexpected options for .. coqtop:: {}".format(unexpected_options))
-        elif (opt_input or opt_output) and opt_none:
-            raise ValueError("Inconsistent options for .. coqtop:: ‘none’ with ‘in’, ‘out’, or ‘all’")
+            loc = get_node_location(node)
+            raise ExtensionError("{}: Unexpected options for .. coqtop:: {}".format(loc,unexpected_options))
 
-        return opt_reset, opt_fail, opt_restart, opt_abort, opt_input and not opt_none, opt_output and not opt_none
+        # Display options
+        if len(options) != 1:
+            loc = get_node_location(node)
+            raise ExtensionError("{}: Exactly one display option must be passed to .. coqtop::".format(loc))
+
+        opt_all = 'all' in options
+        opt_none = 'none' in options
+        opt_input = 'in' in options
+        opt_output = 'out' in options
+
+        return {
+            'reset': opt_reset,
+            'fail': opt_fail,
+            'restart': opt_restart,
+            'abort': opt_abort,
+            'input': opt_input or opt_all,
+            'output': opt_output or opt_all
+        }
 
     @staticmethod
     def block_classes(should_show, contents=None):
@@ -869,37 +886,36 @@ class CoqtopBlocksTransform(Transform):
         return '\n'.join(blocks)
 
     def add_coq_output_1(self, repl, node):
-        options = node['coqtop_options']
-        opt_reset, opt_fail, opt_restart, opt_abort, opt_input, opt_output = self.parse_options(options)
+        options = self.parse_options(node)
 
         pairs = []
 
-        if opt_restart:
+        if options['restart']:
             repl.sendone("Restart.")
-        if opt_reset:
+        if options['reset']:
             repl.sendone("Reset Initial.")
             repl.sendone("Set Coqtop Exit On Error.")
-        if opt_fail:
+        if options['fail']:
             repl.sendone("Unset Coqtop Exit On Error.")
         for sentence in self.split_sentences(node.rawsource):
             pairs.append((sentence, repl.sendone(sentence)))
-        if opt_abort:
+        if options['abort']:
             repl.sendone("Abort All.")
-        if opt_fail:
+        if options['fail']:
             repl.sendone("Set Coqtop Exit On Error.")
 
         dli = nodes.definition_list_item()
         for sentence, output in pairs:
             # Use Coqdoc to highlight input
             in_chunks = highlight_using_coqdoc(sentence)
-            dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(opt_input))
+            dli += nodes.term(sentence, '', *in_chunks, classes=self.block_classes(options['input']))
             # Parse ANSI sequences to highlight output
             out_chunks = AnsiColorsParser().colorize_str(output)
-            dli += nodes.definition(output, *out_chunks, classes=self.block_classes(opt_output, output))
+            dli += nodes.definition(output, *out_chunks, classes=self.block_classes(options['output'], output))
         node.clear()
-        node.rawsource = self.make_rawsource(pairs, opt_input, opt_output)
-        node['classes'].extend(self.block_classes(opt_input or opt_output))
-        node += nodes.inline('', '', classes=['coqtop-reset'] * opt_reset)
+        node.rawsource = self.make_rawsource(pairs, options['input'], options['output'])
+        node['classes'].extend(self.block_classes(options['input'] or options['output']))
+        node += nodes.inline('', '', classes=['coqtop-reset'] * options['reset'])
         node += nodes.definition_list(node.rawsource, dli)
 
     def add_coqtop_output(self):

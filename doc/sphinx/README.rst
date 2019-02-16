@@ -224,7 +224,7 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
 
     Here is a list of permissible options:
 
-    - Display options
+    - Display options (choose exactly one)
 
       - ``all``: Display input and output
       - ``in``: Display only input

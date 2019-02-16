@@ -215,7 +215,7 @@ construct differs from the latter in that
 
   .. example::
 
-    .. coqtop:: reset
+    .. coqtop:: reset none
 
        From Coq Require Import ssreflect.
        Set Implicit Arguments.
@@ -275,7 +275,7 @@ example, the null and all list function(al)s can be defined as follows:
 
 .. example::
 
-    .. coqtop:: reset
+    .. coqtop:: reset none
 
        From Coq Require Import ssreflect.
        Set Implicit Arguments.
@@ -376,7 +376,7 @@ expressions such as
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -401,7 +401,7 @@ each point of use, e.g., the above definition can be written:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -464,7 +464,7 @@ defined by the following declaration:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -518,7 +518,7 @@ For example, the tactic :tacn:`pose <pose (ssreflect)>` supoprts parameters:
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -639,7 +639,7 @@ The tactic:
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -690,7 +690,7 @@ conditions:
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -711,7 +711,7 @@ conditions:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -732,7 +732,7 @@ Moreover:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -752,7 +752,7 @@ Moreover:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -785,7 +785,7 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -806,7 +806,7 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -827,7 +827,7 @@ An *occurrence switch* can be:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -858,7 +858,7 @@ selection.
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -875,7 +875,7 @@ only one occurrence of the selected term.
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -906,7 +906,7 @@ context of a goal thanks to the ``in`` tactical.
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
 
@@ -922,7 +922,7 @@ context of a goal thanks to the ``in`` tactical.
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
 
@@ -1038,7 +1038,7 @@ constants to the goal.
 
    For example, the proof of [#3]_
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -1100,7 +1100,7 @@ The ``:`` tactical is used to operate on an element in the context.
    to encapsulate the inductive step in a single
    command:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -1253,7 +1253,7 @@ The elim tactic
 
    .. example::
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -1293,7 +1293,7 @@ existential metavariables of sort :g:`Prop`.
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -1473,7 +1473,7 @@ context to interpret wildcards; in particular it can accommodate the
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -1748,7 +1748,7 @@ Clears are deferred until the end of the intro pattern.
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect ssrbool.
       Set Implicit Arguments.
@@ -1809,7 +1809,7 @@ Block introduction
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -1862,7 +1862,7 @@ deal with the possible parameters of the constants introduced.
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -1881,7 +1881,7 @@ under fresh |SSR| names.
 
 .. example::
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -1948,7 +1948,7 @@ be substituted.
       Here is a small example on lists. We define first a function which
       adds an element at the end of a given list.
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -2250,7 +2250,7 @@ to the others.
    Here is a small example on lists. We define first a function which
    adds an element at the end of a given list.
 
-   .. coqtop:: reset
+   .. coqtop:: reset none
 
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
@@ -2369,7 +2369,7 @@ between standard Ltac in and the |SSR| tactical in.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2444,7 +2444,7 @@ the holes are abstracted in term.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2458,7 +2458,7 @@ the holes are abstracted in term.
 
   The invokation of ``have`` is equivalent to:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2476,7 +2476,7 @@ tactic:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2529,7 +2529,7 @@ the further use of the intermediate step. For instance,
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2557,7 +2557,7 @@ destruction of existential assumptions like in the tactic:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2584,7 +2584,7 @@ term for the intermediate lemma, using tactics of the form:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2605,7 +2605,7 @@ After the :token:`i_pattern`, a list of binders is allowed.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      From Coq Require Import Omega.
@@ -2893,7 +2893,7 @@ pattern will be used to process its instance.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
@@ -2942,7 +2942,7 @@ illustrated in the following example.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -2961,7 +2961,7 @@ illustrated in the following example.
   the pattern ``id (addx x)``, that would produce the following first
   subgoal
 
-  .. coqtop:: none reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect Omega.
      Set Implicit Arguments.
@@ -3095,7 +3095,7 @@ An :token:`r_item` can be:
 
   .. example::
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect.
         Set Implicit Arguments.
@@ -3119,7 +3119,7 @@ An :token:`r_item` can be:
         Definition f := fun x y => x + y.
         Lemma test x y : x + y = f y x.
 
-     .. coqtop:: fail
+     .. coqtop:: all fail
 
         rewrite -[f y]/(y + _).
 
@@ -3214,7 +3214,7 @@ proof of basic results on natural numbers arithmetic.
 .. example::
 
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3250,7 +3250,7 @@ side of the equality the user wants to rewrite.
 .. example::
 
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3270,7 +3270,7 @@ the equality.
 .. example::
 
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3293,7 +3293,7 @@ Occurrence switches and redex switches
 .. example::
 
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3322,7 +3322,7 @@ repetition.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3352,7 +3352,7 @@ rewrite operations prescribed by the rules on the current goal.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3486,7 +3486,7 @@ Anyway this tactic is *not* equivalent to
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3502,7 +3502,7 @@ Anyway this tactic is *not* equivalent to
 
   while the other tactic results in
 
-  .. coqtop:: restart abort
+  .. coqtop:: all restart abort
 
      rewrite (_ : forall x, x * 0 = 0).
 
@@ -3536,7 +3536,7 @@ cases:
 
   .. example::
 
-    .. coqtop:: reset
+    .. coqtop:: reset none
 
        From Coq Require Import ssreflect.
        Set Implicit Arguments.
@@ -3594,7 +3594,7 @@ corresponding new goals will be generated.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrfun ssrbool.
      Set Implicit Arguments.
@@ -3673,7 +3673,7 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrfun ssrbool.
      From Coq Require Import List.
@@ -3697,7 +3697,7 @@ definition.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -3807,7 +3807,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -3834,7 +3834,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -3857,7 +3857,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -3878,7 +3878,7 @@ which the function is supplied:
 
    .. example::
 
-      .. coqtop:: reset
+      .. coqtop:: reset none
 
          From Coq Require Import ssreflect.
          Set Implicit Arguments.
@@ -4058,7 +4058,7 @@ parentheses are required around more complex patterns.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4097,7 +4097,7 @@ Contextual patterns in rewrite
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4261,7 +4261,7 @@ generation (see section :ref:`generation_of_equations_ssr`).
    The following script illustrates a toy example of this feature. Let us
    define a function adding an element at the end of a list:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect List.
      Set Implicit Arguments.
@@ -4336,7 +4336,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   Here is a toy example illustrating this feature.
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect FunInd.
      Set Implicit Arguments.
@@ -4363,7 +4363,7 @@ Here is an example of a regular, but nontrivial, eliminator.
      elim/plus_ind: {z}_.
      elim/plus_ind: z / _.
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect FunInd.
      Set Implicit Arguments.
@@ -4388,7 +4388,7 @@ Here is an example of a regular, but nontrivial, eliminator.
   ``plus (plus x y) z`` thus instantiating the last ``_`` with ``z``.
   Note that the tactic:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect FunInd.
      Set Implicit Arguments.
@@ -4418,7 +4418,7 @@ Here is an example of a truncated eliminator:
 
   Consider the goal:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect FunInd.
      Set Implicit Arguments.
@@ -4482,7 +4482,7 @@ disjunction.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4503,7 +4503,7 @@ disjunction.
   This operation is so common that the tactic shell has specific
   syntax for it. The following scripts:
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4538,7 +4538,7 @@ equation name generation mechanism (see section :ref:`generation_of_equations_ss
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4571,7 +4571,7 @@ relevant for the current goal.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4615,7 +4615,7 @@ assumption to some given arguments.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4644,7 +4644,7 @@ bookkeeping steps.
    The following example use the ``~~`` prenex notation for boolean negation:
 
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4700,7 +4700,7 @@ analysis:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
      Set Implicit Arguments.
@@ -4717,7 +4717,7 @@ analysis
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4807,7 +4807,7 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4848,7 +4848,7 @@ The view mechanism is compatible with reflect predicates.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4966,7 +4966,7 @@ but they also allow complex transformation, involving negations.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -4999,7 +4999,7 @@ actually uses its propositional interpretation.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5061,7 +5061,7 @@ In this context, the identity view can be used when no view has to be applied:
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5077,7 +5077,7 @@ In this context, the identity view can be used when no view has to be applied:
   The same goal can be decomposed in several ways, and the user may
   choose the most convenient interpretation.
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5153,7 +5153,7 @@ pass a given hypothesis to a lemma.
 
 .. example::
 
-  .. coqtop:: reset
+  .. coqtop:: reset none
 
      From Coq Require Import ssreflect ssrbool.
      Set Implicit Arguments.
@@ -5212,7 +5212,7 @@ equivalences are indeed taken into account, otherwise only single
      looks for any notation that contains fragment as a substring. If the
      ``ssrbool.v`` library is imported, the command: ``Search "~~".`` answers :
 
-     .. coqtop:: reset
+     .. coqtop:: reset none
 
         From Coq Require Import ssreflect ssrbool.
         Set Implicit Arguments.

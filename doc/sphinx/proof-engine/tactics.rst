@@ -2532,6 +2532,7 @@ and an explanation of the underlying technique.
    not clear the equalities:
 
    .. coqtop:: none restart
+
       intros.
 
    .. coqtop:: all
