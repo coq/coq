@@ -8,7 +8,7 @@ abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Bug reports are enormously useful to identify issues with Coq; we can't fix
 what we don't know about. To report a bug, please open an issue in the
-[Coq issue tracker](https://github.com/coq/coq/issues) (you'll need a GitHub
+[Coq issue tracker][] (you'll need a GitHub
 account). You can file a bug for any of the following:
 
 - An anomaly. These are always considered bugs, so Coq will even ask you to
@@ -22,7 +22,7 @@ account). You can file a bug for any of the following:
 - An error message that wasn't as helpful as you'd like. Bonus points for
   suggesting what information would have helped you.
 - Bugs in CoqIDE should also be filed in the
-  [Coq issue tracker](https://github.com/coq/coq/issues).
+  [Coq issue tracker][].
   Bugs in the Emacs plugin should be filed against
   [ProofGeneral](https://github.com/ProofGeneral/PG/issues), or against
   [company-coq](https://github.com/cpitclaudel/company-coq/issues) if they are
@@ -30,8 +30,8 @@ account). You can file a bug for any of the following:
 
 It would help if you search the existing issues before reporting a bug. This
 can be difficult, so consider it extra credit. We don't mind duplicate bug
-reports. If unsure, you are always very welcome to ask on Discourse or Gitter
-before, after, or while writting a bug report
+reports. If unsure, you are always very welcome to ask on our [Discourse forum][]
+or [Gitter chat][] before, after, or while writting a bug report
 
 When it applies, it's extremely helpful for bug reports to include sample
 code, and much better if the code is self-contained and complete. It's not
@@ -159,26 +159,23 @@ editable by anyone with a GitHub account.
 
 ## Where to get help (with the Coq source code, or anything else)
 
-We have a Discourse forum (see in particular the [Coq development category][])
+We have a [Discourse forum][] (see in particular the [Coq development category][])
 and a [Gitter chat][]. Feel free to join any of them and ask questions.
 People are generally happy to help and very reactive.
 
 [Coq development category]: https://coq.discourse.group/c/coq-development
-[Gitter chat]: https://gitter.im/coq/coq
 
-## Following the development
+## Watching the repository
 
-If you want to follow the development activity around Coq, you are encouraged
-to subscribe to the [Coqdev mailing list](https://sympa.inria.fr/sympa/info/coqdev).
-This mailing list has reasonably low traffic.
-
-You may also choose to use GitHub feature to
-["watch" this repository](https://github.com/coq/coq/subscription), but be
-advised that this means receiving a very large number of notifications.
-GitHub gives [some advice](https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive)
-on how to configure your e-mail client to filter these notifications.
-A possible alternative is to deactivate e-mail notifications and manage your
-GitHub web notifications using a tool such as [Octobox](http://octobox.io/).
+["Watching" this repository](https://github.com/coq/coq/subscription)
+can result in a very large number of notifications. We advise that if
+you do, either [confifure your mailbox](https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive)
+to handle incoming notifications efficiently, or you read your
+notifications within a web browser. You can configure how you receive
+notifications in [your GitHub settings](https://github.com/settings/notifications),
+you can use the GitHub interface to mark as read, save for later or
+mute threads.  You can also manage your GitHub web notifications using
+a tool such as [Octobox](http://octobox.io/).
 
 ## Contributing outside this repository
 
@@ -205,8 +202,9 @@ You can also propose a package that is not listed. Find out more about
 coq-community in [the manifesto's README](https://github.com/coq-community/manifesto).
 
 Ask and answer questions on our [Discourse forum][], on [Stack Exchange][],
-and on the [Coq IRC channel][].
+and on the Coq IRC channel (`irc://irc.freenode.net/#coq`).
 
+[Coq issue tracker]: https://github.com/coq/coq/issues
 [Discourse forum]: https://coq.discourse.group/
+[Gitter chat]: https://gitter.im/coq/coq
 [Stack Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
-[Coq IRC channel]: irc://irc.freenode.net/#coq
