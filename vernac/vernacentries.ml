@@ -618,8 +618,7 @@ let vernac_start_proof ~atts ~pstate kind l =
 
 let vernac_end_proof ?pstate ?proof = let open Vernacexpr in function
   | Admitted ->
-    vernac_require_open_proof ~pstate (save_proof_admitted ?proof);
-    pstate
+    vernac_require_open_proof ~pstate (save_proof_admitted ?proof)
   | Proved (opaque,idopt) ->
     save_proof_proved ?pstate ?proof ~opaque ~idopt
 

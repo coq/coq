@@ -116,7 +116,7 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 val save_proof_admitted
   :  ?proof:(Proof_global.proof_object * proof_terminator)
   -> pstate:t
-  -> unit
+  -> t option
 
 val save_proof_proved
   :  ?proof:(Proof_global.proof_object * proof_terminator)

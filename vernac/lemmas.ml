@@ -551,9 +551,10 @@ let () =
       optwrite = (fun b -> keep_admitted_vars := b) }
 
 let save_proof_admitted ?proof ~(pstate : t) =
+  let open Proof_global in
+  let ret_pstate = discard_current pstate in
   let pstate, _ = pstate in
   let pe =
-    let open Proof_global in
     match proof with
     | Some ({ id; entries; persistence = k; universes }, _) ->
       if List.length entries <> 1 then
@@ -594,7 +595,8 @@ let save_proof_admitted ?proof ~(pstate : t) =
       let ctx = UState.check_univ_decl ~poly universes decl in
       Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
   in
-  CEphemeron.get pstate.terminator pe
+  CEphemeron.get pstate.terminator pe;
+  ret_pstate
 
 let save_proof_proved ?proof ?pstate ~opaque ~idopt =
   (* Invariant (uh) *)
