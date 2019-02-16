@@ -120,7 +120,7 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 val save_lemma_admitted
   :  ?proof:(Proof_global.proof_object * proof_terminator)
   -> lemma:t
-  -> unit
+  -> t option
 
 val save_lemma_proved
   :  ?proof:(Proof_global.proof_object * proof_terminator)

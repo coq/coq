@@ -529,6 +529,7 @@ let () =
       optwrite = (fun b -> keep_admitted_vars := b) }
 
 let save_lemma_admitted ?proof ~(lemma : t) =
+  let ret_ontop = discard_current lemma in
   let pstate, _ = lemma in
   let pe =
     let open Proof_global in
@@ -572,7 +573,8 @@ let save_lemma_admitted ?proof ~(lemma : t) =
       let ctx = UState.check_univ_decl ~poly universes decl in
       Admitted(name,gk,(sec_vars, (typ, ctx), None), universes)
   in
-  CEphemeron.get pstate.terminator pe
+  CEphemeron.get pstate.terminator pe;
+  ret_ontop
 
 let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   (* Invariant (uh) *)

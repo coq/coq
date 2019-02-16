@@ -619,8 +619,7 @@ let vernac_start_proof ~atts ~ontop kind l =
 
 let vernac_end_proof ?ontop ?proof = let open Vernacexpr in function
   | Admitted ->
-    vernac_require_open_lemma ~ontop (save_lemma_admitted ?proof);
-    ontop
+    vernac_require_open_lemma ~ontop (save_lemma_admitted ?proof)
   | Proved (opaque,idopt) ->
     save_lemma_proved ?lemma:ontop ?proof ~opaque ~idopt
 
