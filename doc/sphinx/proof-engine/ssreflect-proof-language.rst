@@ -4847,7 +4847,7 @@ For instance, the following lemma:
 
 .. coqdoc::
 
-     Lemma andP: forall b1 b2, reflect (b1 /\ b2) (b1 && b2).
+   Lemma andP: forall b1 b2, reflect (b1 /\ b2) (b1 && b2).
 
 relates the boolean conjunction to the logical one ``/\``. Note that in
 ``andP``, ``b1`` and ``b2`` are two boolean variables and the
@@ -4901,7 +4901,7 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
   .. coqtop:: none
 
-     Lemma test (b1 b2 : bool) : if (b1 && b2) then b1 else ~~(b1||b2).
+     Restart.
 
   .. coqtop:: all
 
