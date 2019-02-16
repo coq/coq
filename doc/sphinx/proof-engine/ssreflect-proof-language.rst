@@ -652,11 +652,7 @@ The tactic:
       Lemma test x :  f x + f x = f x.
       set t := f _.
 
-   .. coqtop:: none
-
-      Undo.
-
-   .. coqtop:: all
+   .. coqtop:: all restart
 
       set t := {2}(f _).
 
@@ -1989,19 +1985,17 @@ be substituted.
          Lemma test l : (length l) * 2 = length (l ++ l).
          case: (lastP l).
 
-      Applied to the same goal, the command:
-      ``case: l / (lastP l).``
-      generates the same subgoals but ``l`` has been cleared from both contexts.
+      Applied to the same goal, the tactc ``case: l / (lastP l)``
+      generates the same subgoals but ``l`` has been cleared from both contexts:
 
-      Again applied to the same goal, the command.
+      .. coqtop:: all restart
 
-      .. coqtop:: none
+         case: l / (lastP l).
 
-         Abort.
+      Again applied to the same goal:
 
-      .. coqtop:: all
+      .. coqtop:: all restart abort
 
-         Lemma test l : (length l) * 2 = length (l ++ l).
          case: {1 3}l / (lastP l).
 
       Note that selected occurrences on the left of the ``/``
@@ -2014,10 +2008,6 @@ be substituted.
    command:
 
    .. example::
-
-      .. coqtop:: none
-
-         Abort.
 
       .. coqtop:: all
 
@@ -2634,7 +2624,7 @@ Since the :token:`i_pattern` can be omitted, to avoid ambiguity,
 bound variables can be surrounded
 with parentheses even if no type is specified:
 
-.. coqdoc::
+.. coqtop:: all restart
 
    have (x) : 2 * x = x + x by omega.
 
@@ -2648,13 +2638,8 @@ copying the goal itself.
 
 .. example::
 
-  .. coqtop:: none
+  .. coqtop:: all restart abort
 
-     Abort All.
-
-  .. coqtop:: all
-
-     Lemma test : True.
      have suff H : 2 + 2 = 3; last first.
 
   Note that H is introduced in the second goal.
@@ -2675,10 +2660,9 @@ context entry name.
 
   .. coqtop:: none
 
-     Abort All.
      Set Printing Depth 15.
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Inductive Ord n := Sub x of x < n.
      Notation "'I_ n" := (Ord n) (at level 8, n at level 2, format "''I_' n").
@@ -2694,11 +2678,7 @@ For this purpose the ``[: name ]`` intro pattern and the tactic
 
 .. example::
 
-  .. coqtop:: none
-
-     Abort All.
-
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; omega.
@@ -2711,11 +2691,7 @@ with have and an explicit term, they must be used as follows:
 
 .. example::
 
-  .. coqtop:: none
-
-     Abort All.
-
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
@@ -2734,11 +2710,7 @@ makes use of it).
 
 .. example::
 
-  .. coqtop:: none
-
-     Abort All.
-
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; omega.
@@ -2755,19 +2727,19 @@ typeclass inference.
 
   .. coqtop:: none
 
-     Abort All.
-
      Axiom ty : Type.
      Axiom t : ty.
 
      Goal True.
 
-  .. coqdoc::
+  .. coqtop:: all
 
      have foo : ty.
 
   Full inference for ``ty``. The first subgoal demands a
   proof of such instantiated statement.
+
+  .. A strange bug prevents using the coqtop directive here
 
   .. coqdoc::
 
@@ -2778,13 +2750,13 @@ typeclass inference.
   statement. Note that no proof term follows ``:=``, hence two subgoals are
   generated.
 
-  .. coqdoc::
+  .. coqtop:: all restart
 
      have foo : ty := t.
 
   No inference for ``ty`` and ``t``.
 
-  .. coqdoc::
+  .. coqtop:: all restart abort
 
      have foo := t.
 
@@ -2833,10 +2805,9 @@ The ``have`` modifier can follow the ``suff`` tactic.
 
   .. coqtop:: none
 
-     Abort All.
      Axioms G P : Prop.
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test : G.
      suff have H : P.
@@ -2900,10 +2871,6 @@ proof that quotient and reminder of natural number euclidean division
 are unique.
 
 .. example::
-
-  .. coqtop:: none
-
-     Abort All.
 
   .. coqtop:: all
 
@@ -3135,7 +3102,7 @@ An :token:`r_item` can be:
         Unset Strict Implicit.
         Unset Printing Implicit Defensive.
 
-     .. coqtop:: all
+     .. coqtop:: all abort
 
         Definition double x := x + x.
         Definition ddouble x := double (double x).
@@ -3147,21 +3114,16 @@ An :token:`r_item` can be:
      The |SSR| terms containing holes are *not* typed as
      abstractions in this context. Hence the following script fails.
 
-     .. coqtop:: none
-
-        Abort.
-
      .. coqtop:: all
 
         Definition f := fun x y => x + y.
         Lemma test x y : x + y = f y x.
-        Fail rewrite -[f y]/(y + _).
+
+     .. coqtop:: fail
+
+        rewrite -[f y]/(y + _).
 
      but the following script succeeds
-
-     .. coqtop:: none
-
-        Restart.
 
      .. coqtop:: all
 
@@ -3399,7 +3361,7 @@ rewrite operations prescribed by the rules on the current goal.
 
      Section Test.
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Variables (a b c : nat).
      Hypothesis eqab : a = b.
@@ -3412,10 +3374,6 @@ rewrite operations prescribed by the rules on the current goal.
   gathered in the tuple passed to the rewrite tactic. This multirule
   ``(eqab, eqac)`` is actually a |Coq| term and we can name it with a
   definition:
-
-  .. coqtop:: none
-
-     Abort.
 
   .. coqtop:: all
 
@@ -3433,7 +3391,7 @@ literal matches have priority.
 
 .. example::
 
-   .. coqtop:: all
+   .. coqtop:: all abort
 
       Definition d := a.
       Hypotheses eqd0 : d = 0.
@@ -3450,11 +3408,7 @@ repeated anew.
 
 .. example::
 
-  .. coqtop:: none
-
-     Abort.
-
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Hypothesis eq_adda_b : forall x, x + a = b.
      Hypothesis eq_adda_c : forall x, x + a = c.
@@ -3476,10 +3430,6 @@ the direction of a rule subset, using a special dedicated syntax: the
 tactic rewrite ``(=~ multi1)`` is equivalent to ``rewrite multi1_rev``.
 
 .. example::
-
-  .. coqtop:: none
-
-     Abort.
 
   .. coqtop:: all
 
@@ -3552,11 +3502,7 @@ Anyway this tactic is *not* equivalent to
 
   while the other tactic results in
 
-  .. coqtop:: none
-
-     Undo.
-
-  .. coqtop:: all
+  .. coqtop:: restart abort
 
      rewrite (_ : forall x, x * 0 = 0).
 
@@ -3613,13 +3559,9 @@ cases:
     there is no occurrence of the head symbol ``f`` of the rewrite rule in the
     goal.
 
-    .. coqtop:: none
+    .. coqtop:: all restart fail
 
-       Undo.
-
-    .. coqtop:: all
-
-       Fail rewrite H.
+       rewrite H.
 
     Rewriting with ``H`` first requires unfolding the occurrences of
     ``f``
@@ -3627,21 +3569,13 @@ cases:
     occurrence), using tactic ``rewrite /f`` (for a global replacement of
     f by g) or ``rewrite pattern/f``, for a finer selection.
 
-    .. coqtop:: none
-
-       Undo.
-
-    .. coqtop:: all
+    .. coqtop:: all restart
 
        rewrite /f H.
 
     alternatively one can override the pattern inferred from ``H``
 
-    .. coqtop:: none
-
-       Undo.
-
-    .. coqtop:: all
+    .. coqtop:: all restart
 
        rewrite [f _]H.
 
@@ -3668,7 +3602,7 @@ corresponding new goals will be generated.
      Unset Printing Implicit Defensive.
      Set Warnings "-notation-overridden".
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Axiom leq : nat -> nat -> bool.
      Notation "m <= n" := (leq m n) : nat_scope.
@@ -3690,10 +3624,6 @@ corresponding new goals will be generated.
 
   As in :ref:`apply_ssr`, the ``ssrautoprop`` tactic is used to try to
   solve the existential variable.
-
-  .. coqtop:: none
-
-     Abort.
 
   .. coqtop:: all
 
@@ -4592,12 +4522,7 @@ disjunction.
 
   or more directly:
 
-  .. coqtop:: none
-
-     Abort.
-     Lemma test a : P (a || a) -> True.
-
-  .. coqtop:: all
+  .. coqtop:: all restart
 
      move/P2Q=> HQa.
 
@@ -4931,16 +4856,12 @@ The view mechanism is compatible with reflect predicates.
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test (a b : bool) (Ha : a) (Hb : b) : a /\ b.
      apply/andP.
 
   Conversely
-
-  .. coqtop:: none
-
-     Abort.
 
   .. coqtop:: all
 

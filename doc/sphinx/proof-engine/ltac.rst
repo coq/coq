@@ -701,7 +701,7 @@ tactic
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: all abort
 
          Ltac time_constr1 tac :=
            let eval_early := match goal with _ => restart_timer "(depth 1)" end in
@@ -716,7 +716,6 @@ tactic
                         let y := time_constr1 ltac:(fun _ => eval compute in x) in
                         y) in
            pose v.
-         Abort.
 
 Local definitions
 ~~~~~~~~~~~~~~~~~
@@ -847,7 +846,7 @@ We can carry out pattern matching on terms with:
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: all abort
 
          Ltac f x :=
            match x with
@@ -858,10 +857,6 @@ We can carry out pattern matching on terms with:
            end.
          Goal True.
          f (3+4).
-
-      .. coqtop:: none
-
-         Abort.
 
 .. _ltac-match-goal:
 
@@ -1026,13 +1021,9 @@ Counting the goals
          Goal True /\ True /\ True.
          split;[|split].
 
-      .. coqtop:: all
+      .. coqtop:: all abort
 
          all:pr_numgoals.
-
-      .. coqtop:: none
-
-         Abort.
 
 Testing boolean expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1318,10 +1309,10 @@ performance issue.
 
 .. coqtop:: all
 
-  Set Ltac Profiling.
-  tac.
-  Show Ltac Profile.
-  Show Ltac Profile "omega".
+   Set Ltac Profiling.
+   tac.
+   Show Ltac Profile.
+   Show Ltac Profile "omega".
 
 .. coqtop:: in
 

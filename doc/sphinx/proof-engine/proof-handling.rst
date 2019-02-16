@@ -529,15 +529,11 @@ Requesting information
 
       .. example::
 
-         .. coqtop:: all
+         .. coqtop:: all abort
 
             Goal exists n, n = 0.
             eexists ?[n].
             Show n.
-
-         .. coqtop:: none
-
-            Abort.
 
    .. cmdv:: Show Script
       :name: Show Script
@@ -739,13 +735,9 @@ Notes:
 
       split.
 
-    .. coqtop:: all
+    .. coqtop:: all abort
 
       2: split.
-
-    .. coqtop:: none
-
-      Abort.
 
   ..
 
@@ -759,13 +751,9 @@ Notes:
 
        intros n.
 
-    .. coqtop:: all
+    .. coqtop:: all abort
 
       intros m.
-
-    .. coqtop:: none
-
-      Abort.
 
 This screen shot shows the result of applying a :tacn:`split` tactic that replaces one goal
 with 2 goals.  Notice that the goal ``P 1`` is not highlighted at all after

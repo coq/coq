@@ -264,16 +264,12 @@ arguments. The theorem are names ``f_equal2``, ``f_equal3``,
 ``f_equal4`` and ``f_equal5``.
 For instance ``f_equal3`` is defined the following way.
 
-.. coqtop:: in
+.. coqtop:: in abort
   
   Theorem f_equal3 :
    forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B)
      (x1 y1:A1) (x2 y2:A2) (x3 y3:A3),
      x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
-
-.. coqtop:: none
-
-   Abort.
 
 .. _datatypes:
 
