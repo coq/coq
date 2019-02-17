@@ -24,6 +24,7 @@ let tactic_infer_flags with_evar = {
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true;
   Pretyping.program_mode = false;
+  Pretyping.polymorphic = false;
 }
 
 (** FIXME: export a better interface in Tactics *)
