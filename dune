@@ -42,3 +42,5 @@
  (name runtest)
  (package coqide-server)
  (deps test-suite/summary.log))
+
+; (dirs (:standard _build_ci))
