@@ -10,7 +10,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2019-01-28-V1"
+  CACHEKEY: "bionic_coq-V2019-02-17-V1"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -100,6 +100,7 @@ after_script:
     - set +e
   variables:
     OPAM_SWITCH: edge
+    OPAM_VARIANT: "+flambda"
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -109,7 +110,7 @@ after_script:
 .dune-ci-template: &dune-ci-template
   stage: test
   dependencies:
-    - build:egde:dune:dev
+    - build:edge+flambda:dune:dev
   script:
     - set -e
     - echo 'start:coq.test'
@@ -118,6 +119,7 @@ after_script:
     - set +e
   variables: &dune-ci-template-vars
     OPAM_SWITCH: edge
+    OPAM_VARIANT: "+flambda"
   artifacts: &dune-ci-template-artifacts
     name: "$CI_JOB_NAME"
     expire_in: 1 month
@@ -222,12 +224,6 @@ build:base+32bit:
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
 
-build:edge:
-  <<: *build-template
-  variables:
-    OPAM_SWITCH: edge
-    COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
-
 build:edge+flambda:
   <<: *build-template
   variables:
@@ -236,7 +232,7 @@ build:edge+flambda:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt -flambda-opts "
     COQ_EXTRA_CONF_QUOTE: "-O3 -unbox-closures"
 
-build:egde:dune:dev:
+build:edge+flambda:dune:dev:
   <<: *dune-template
 
 build:base+async:
@@ -282,12 +278,14 @@ pkg:opam:
   dependencies: []
   script:
     - set -e
-    - opam pin add coq .
-    - opam pin add coqide-server .
-    - opam pin add coqide .
+    - opam pin add --kind=path coq.$COQ_VERSION .
+    - opam pin add --kind=path coqide-server.$COQ_VERSION .
+    - opam pin add --kind=path coqide.$COQ_VERSION .
     - set +e
   variables:
-    OPAM_SWITCH: edge
+    COQ_VERSION: "8.10"
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
 
 .nix-template: &nix-template
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
@@ -401,13 +399,6 @@ test-suite:base+32bit:
   variables:
     OPAM_VARIANT: "+32bit"
 
-test-suite:edge:
-  <<: *test-suite-template
-  dependencies:
-    - build:edge
-  variables:
-    OPAM_SWITCH: edge
-
 test-suite:edge+flambda:
   <<: *test-suite-template
   dependencies:
@@ -419,10 +410,11 @@ test-suite:edge+flambda:
 test-suite:egde:dune:dev:
   stage: test
   dependencies:
-    - build:egde:dune:dev
+    - build:edge+flambda:dune:dev
   script: make -f Makefile.dune test-suite
   variables:
     OPAM_SWITCH: edge
+    OPAM_VARIANT: "+flambda"
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
@@ -498,13 +490,6 @@ validate:base+32bit:
     - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
-
-validate:edge:
-  <<: *validate-template
-  dependencies:
-    - build:edge
-  variables:
-    OPAM_SWITCH: edge
 
 validate:edge+flambda:
   <<: *validate-template
