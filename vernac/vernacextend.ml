@@ -169,7 +169,7 @@ let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args vernac_comm
     | Some Refl -> untype_command ty (f v) args
   end
 
-let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, a) Extend.symbol =
+let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Extend.norec, a) Extend.symbol =
   let open Extend in function
 | TUlist1 l -> Alist1 (untype_user_symbol l)
 | TUlist1sep (l, s) -> Alist1sep (untype_user_symbol l, Atoken (CLexer.terminal s))

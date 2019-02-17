@@ -102,8 +102,7 @@ let tokenize_string s =
   let st = CLexer.get_lexer_state () in
   try
     let istr = Stream.of_string s in
-    let lexer = CLexer.make_lexer ~diff_mode:true in
-    let lex = lexer.Gramlib.Plexing.tok_func istr in
+    let lex = CLexer.LexerDiff.tok_func istr in
     let toks = stream_tok [] (fst lex) in
     CLexer.set_lexer_state st;
     toks

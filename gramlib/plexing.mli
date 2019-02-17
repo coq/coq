@@ -8,27 +8,21 @@
    grammars (see module [Grammar]). It also provides some useful functions
    to create lexers. *)
 
-type pattern = string * string option
-    (* Type for values used by the generated code of the EXTEND
-       statement to represent terminals in entry rules.
--      The first string is the constructor name (must start with
-       an uppercase character). When it is empty, the second string
-       is supposed to be a keyword.
--      The second component is the constructor parameter. None if it
-       has no parameter (corresponding to the 'wildcard' pattern).
--      The way tokens patterns are interpreted to parse tokens is done
-       by the lexer, function [tok_match] below. *)
-
 (** Lexer type *)
 
-type 'te lexer =
-  { tok_func : 'te lexer_func;
-    tok_using : pattern -> unit;
-    tok_removing : pattern -> unit;
-    tok_match : pattern -> 'te -> string;
-    tok_text : pattern -> string;
-  }
-and 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function
+type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function
 and location_function = int -> Loc.t
   (** The type of a function giving the location of a token in the
       source from the token number in the stream (starting from zero). *)
+
+module type Lexer = sig
+  type te
+  type 'c pattern
+  val tok_pattern_eq : 'a pattern -> 'b pattern -> ('a, 'b) Util.eq option
+  val tok_pattern_strings : 'c pattern -> string * string option
+  val tok_func : te lexer_func
+  val tok_using : 'c pattern -> unit
+  val tok_removing : 'c pattern -> unit
+  val tok_match : 'c pattern -> te -> 'c
+  val tok_text : 'c pattern -> string
+end

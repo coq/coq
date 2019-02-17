@@ -10,7 +10,7 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Gramlib.Grammar.GMake(CLexer).Entry.e
+type 'a entry = 'a Gramlib.Grammar.GMake(CLexer.Lexer).Entry.e
 
 type side = Left | Right
 
@@ -44,7 +44,7 @@ type simple_constr_prod_entry_key =
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
-type binder_entry_kind = ETBinderOpen | ETBinderClosed of Tok.pattern list
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of string Tok.p list
 
 type binder_target = ForBinder | ForTerm
 
@@ -54,7 +54,7 @@ type constr_prod_entry_key =
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdConstrList of (production_level * production_position) * Tok.pattern list (* Parsed as non-empty list of constr *)
+  | ETProdConstrList of (production_level * production_position) * string Tok.p list (* Parsed as non-empty list of constr *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
 (** {5 AST for user-provided entries} *)
@@ -79,30 +79,34 @@ type ('a,'b,'c) ty_user_symbol =
 
 (** {5 Type-safe grammar extension} *)
 
-type ('self, 'a) symbol =
-| Atoken : Tok.pattern -> ('self, string) symbol
-| Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist1sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
-| Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol
-| Alist0sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
-| Aopt : ('self, 'a) symbol -> ('self, 'a option) symbol
-| Aself : ('self, 'self) symbol
-| Anext : ('self, 'self) symbol
-| Aentry : 'a entry -> ('self, 'a) symbol
-| Aentryl : 'a entry * string -> ('self, 'a) symbol
-| Arules : 'a rules list -> ('self, 'a) symbol
+type norec = NoRec    (* just two *)
+type mayrec = MayRec  (* incompatible types *)
 
-and ('self, _, 'r) rule =
-| Stop : ('self, 'r, 'r) rule
-| Next : ('self, 'a, 'r) rule * ('self, 'b) symbol -> ('self, 'b -> 'a, 'r) rule
+type ('self, 'trec, 'a) symbol =
+| Atoken : 'c Tok.p -> ('self, norec, 'c) symbol
+| Alist1 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
+| Alist1sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
+              -> ('self, 'trec, 'a list) symbol
+| Alist0 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
+| Alist0sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
+              -> ('self, 'trec, 'a list) symbol
+| Aopt : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a option) symbol
+| Aself : ('self, mayrec, 'self) symbol
+| Anext : ('self, mayrec, 'self) symbol
+| Aentry : 'a entry -> ('self, norec, 'a) symbol
+| Aentryl : 'a entry * string -> ('self, norec, 'a) symbol
+| Arules : 'a rules list -> ('self, norec, 'a) symbol
 
-and ('a, 'r) norec_rule = { norec_rule : 's. ('s, 'a, 'r) rule }
+and ('self, 'trec, _, 'r) rule =
+| Stop : ('self, norec, 'r, 'r) rule
+| Next : ('self, _, 'a, 'r) rule * ('self, _, 'b) symbol -> ('self, mayrec, 'b -> 'a, 'r) rule
+| NextNoRec : ('self, norec, 'a, 'r) rule * ('self, norec, 'b) symbol -> ('self, norec, 'b -> 'a, 'r) rule
 
 and 'a rules =
-| Rules : ('act, Loc.t -> 'a) norec_rule * 'act -> 'a rules
+| Rules : (_, norec, 'act, Loc.t -> 'a) rule * 'act -> 'a rules
 
 type 'a production_rule =
-| Rule : ('a, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
+| Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
 
 type 'a single_extend_statement =
   string option *

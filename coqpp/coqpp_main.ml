@@ -214,9 +214,20 @@ let print_fun fmt (vars, body) =
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise
     violates value restriction *)
-let print_tok fmt (k,o) =
-  let print_pat fmt = print_opt fmt print_string in
-  fprintf fmt "(%a,%a)" print_string k print_pat o
+let print_tok fmt =
+let print_pat fmt = print_opt fmt print_string in
+function
+| "", Some s -> fprintf fmt "Tok.PKEYWORD (%a)" print_string s
+| "IDENT", s -> fprintf fmt "Tok.PIDENT (%a)" print_pat s
+| "PATTERNIDENT", s -> fprintf fmt "Tok.PPATTERNIDENT (%a)" print_pat s
+| "FIELD", s -> fprintf fmt "Tok.PFIELD (%a)" print_pat s
+| "INT", s -> fprintf fmt "Tok.PINT (%a)" print_pat s
+| "STRING", s -> fprintf fmt "Tok.PSTRING (%a)" print_pat s
+| "LEFTQMARK", None -> fprintf fmt "Tok.PLEFTQMARK"
+| "BULLET", s -> fprintf fmt "Tok.PBULLET (%a)" print_pat s
+| "QUOTATION", Some s -> fprintf fmt "Tok.PQUOTATION %a" print_string s
+| "EOI", None -> fprintf fmt "Tok.PEOI"
+| _ -> failwith "Tok.of_pattern: not a constructor"
 
 let rec print_prod fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
@@ -225,12 +236,13 @@ let rec print_prod fmt p =
 
 and print_extrule fmt (tkn, vars, body) =
   let tkn = List.rev tkn in
-  fprintf fmt "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" print_symbols tkn print_fun (vars, body)
+  fprintf fmt "@[Extend.Rule@ (@[%a@],@ @[(%a)@])@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
 
-and print_symbols fmt = function
+and print_symbols ~norec fmt = function
 | [] -> fprintf fmt "Extend.Stop"
 | tkn :: tkns ->
-  fprintf fmt "Extend.Next @[(%a,@ %a)@]" print_symbols tkns print_symbol tkn
+  let c = if norec then "Extend.NextNoRec" else "Extend.Next" in
+  fprintf fmt "%s @[(%a,@ %a)@]" c (print_symbols ~norec) tkns print_symbol tkn
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
@@ -257,7 +269,7 @@ and print_symbol fmt tkn = match tkn with
   let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
     let tkn = List.rev tkn in
-    fprintf fmt "Extend.Rules @[({ Extend.norec_rule = %a },@ (%a))@]" print_symbols tkn print_fun (vars, body)
+    fprintf fmt "Extend.Rules @[(%a,@ (%a))@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
   fprintf fmt "(Extend.Arules %a)" pr (List.rev rules)

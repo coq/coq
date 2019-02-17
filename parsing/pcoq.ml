@@ -17,7 +17,7 @@ open Gramlib
 (** The parser of Coq *)
 module G : sig
 
-  include Grammar.S with type te = Tok.t
+  include Grammar.S with type te = Tok.t and type 'c pattern = 'c Tok.p
 
 (* where Grammar.S
 
@@ -67,7 +67,7 @@ module type S =
 
 end with type 'a Entry.e = 'a Extend.entry = struct
 
-  include Grammar.GMake(CLexer)
+  include Grammar.GMake(CLexer.Lexer)
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
@@ -107,7 +107,7 @@ end
 module Entry =
 struct
 
-  type 'a t = 'a Grammar.GMake(CLexer).Entry.e
+  type 'a t = 'a Grammar.GMake(CLexer.Lexer).Entry.e
 
   let create = G.Entry.create
   let parse = G.entry_parse
@@ -116,15 +116,6 @@ struct
   let name = G.Entry.name
   let parse_token_stream = G.Entry.parse_token_stream
 
-end
-
-module Symbols : sig
-  val slist0sep : ('s, 'a) G.ty_symbol -> ('s, 'b) G.ty_symbol -> ('s, 'a list) G.ty_symbol
-  val slist1sep : ('s, 'a) G.ty_symbol -> ('s, 'b) G.ty_symbol -> ('s, 'a list) G.ty_symbol
-end = struct
-
-  let slist0sep x y = G.s_list0sep x y false
-  let slist1sep x y = G.s_list1sep x y false
 end
 
 (** Grammar extensions *)
@@ -140,43 +131,73 @@ end
 
 (** Binding general entry keys to symbol *)
 
-type ('s, 'a, 'r) casted_rule = Casted : ('s, 'b, 'r) G.ty_rule * ('a -> 'b) -> ('s, 'a, 'r) casted_rule
+type ('s, 'trec, 'a, 'r) casted_rule =
+| CastedRNo : ('s, G.ty_norec, 'b, 'r) G.ty_rule * ('a -> 'b) -> ('s, norec, 'a, 'r) casted_rule
+| CastedRMay : ('s, G.ty_mayrec, 'b, 'r) G.ty_rule * ('a -> 'b) -> ('s, mayrec, 'a, 'r) casted_rule
 
-let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> (s, a) G.ty_symbol = function
-| Atoken t -> G.s_token t
-| Alist1 s -> G.s_list1 (symbol_of_prod_entry_key s)
+type ('s, 'trec, 'a) casted_symbol =
+| CastedSNo : ('s, G.ty_norec, 'a) G.ty_symbol -> ('s, norec, 'a) casted_symbol
+| CastedSMay : ('s, G.ty_mayrec, 'a) G.ty_symbol -> ('s, mayrec, 'a) casted_symbol
+
+let rec symbol_of_prod_entry_key : type s tr a. (s, tr, a) symbol -> (s, tr, a) casted_symbol =
+function
+| Atoken t -> CastedSNo (G.s_token t)
+| Alist1 s ->
+    begin match symbol_of_prod_entry_key s with
+    | CastedSNo s -> CastedSNo (G.s_list1 s)
+    | CastedSMay s -> CastedSMay (G.s_list1 s) end
 | Alist1sep (s,sep) ->
-    Symbols.slist1sep (symbol_of_prod_entry_key s) (symbol_of_prod_entry_key sep)
-| Alist0 s -> G.s_list0 (symbol_of_prod_entry_key s)
+    let CastedSNo sep = symbol_of_prod_entry_key sep in
+    begin match symbol_of_prod_entry_key s with
+    | CastedSNo s -> CastedSNo (G.s_list1sep s sep false)
+    | CastedSMay s -> CastedSMay (G.s_list1sep s sep false) end
+| Alist0 s ->
+    begin match symbol_of_prod_entry_key s with
+    | CastedSNo s -> CastedSNo (G.s_list0 s)
+    | CastedSMay s -> CastedSMay (G.s_list0 s) end
 | Alist0sep (s,sep) ->
-    Symbols.slist0sep (symbol_of_prod_entry_key s) (symbol_of_prod_entry_key sep)
-| Aopt s -> G.s_opt (symbol_of_prod_entry_key s)
-| Aself -> G.s_self
-| Anext -> G.s_next
-| Aentry e -> G.s_nterm e
-| Aentryl (e, n) -> G.s_nterml e n
+    let CastedSNo sep = symbol_of_prod_entry_key sep in
+    begin match symbol_of_prod_entry_key s with
+    | CastedSNo s -> CastedSNo (G.s_list0sep s sep false)
+    | CastedSMay s -> CastedSMay (G.s_list0sep s sep false) end
+| Aopt s ->
+    begin match symbol_of_prod_entry_key s with
+    | CastedSNo s -> CastedSNo (G.s_opt s)
+    | CastedSMay s -> CastedSMay (G.s_opt s) end
+| Aself -> CastedSMay G.s_self
+| Anext -> CastedSMay G.s_next
+| Aentry e -> CastedSNo (G.s_nterm e)
+| Aentryl (e, n) -> CastedSNo (G.s_nterml e n)
 | Arules rs ->
   let warning msg = Feedback.msg_warning Pp.(str msg) in
-  G.s_rules ~warning:(Some warning) (List.map symbol_of_rules rs)
+  CastedSNo (G.s_rules ~warning:(Some warning) (List.map symbol_of_rules rs))
 
-and symbol_of_rule : type s a r. (s, a, Loc.t -> r) Extend.rule -> (s, a, Loc.t -> r) casted_rule = function
-| Stop -> Casted (G.r_stop, fun act loc -> act loc)
+and symbol_of_rule : type s tr a r. (s, tr, a, Loc.t -> r) Extend.rule -> (s, tr, a, Loc.t -> r) casted_rule = function
+| Stop -> CastedRNo (G.r_stop, fun act loc -> act loc)
 | Next (r, s) ->
-  let Casted (r, cast) = symbol_of_rule r in
-  Casted (G.r_next r (symbol_of_prod_entry_key s), (fun act x -> cast (act x)))
+  begin match symbol_of_rule r, symbol_of_prod_entry_key s with
+  | CastedRNo (r, cast), CastedSNo s -> CastedRMay (G.r_next r s, (fun act x -> cast (act x)))
+  | CastedRNo (r, cast), CastedSMay s -> CastedRMay (G.r_next r s, (fun act x -> cast (act x)))
+  | CastedRMay (r, cast), CastedSNo s -> CastedRMay (G.r_next r s, (fun act x -> cast (act x)))
+  | CastedRMay (r, cast), CastedSMay s -> CastedRMay (G.r_next r s, (fun act x -> cast (act x))) end
+| NextNoRec (r, s) ->
+  let CastedRNo (r, cast) = symbol_of_rule r in
+  let CastedSNo s = symbol_of_prod_entry_key s in
+  CastedRNo (G.r_next_norec r s, (fun act x -> cast (act x)))
 
-and symbol_of_rules : type a. a Extend.rules -> a G.ty_production = function
+and symbol_of_rules : type a. a Extend.rules -> a G.ty_rules = function
 | Rules (r, act) ->
-  let Casted (symb, cast) = symbol_of_rule r.norec_rule in
-  G.production (symb, cast act)
+  let CastedRNo (symb, cast) = symbol_of_rule r in
+  G.rules (symb, cast act)
 
 (** FIXME: This is a hack around a deficient camlp5 API *)
-type 'a any_production = AnyProduction : ('a, 'f, Loc.t -> 'a) G.ty_rule * 'f -> 'a any_production
+type 'a any_production = AnyProduction : ('a, 'tr, 'f, Loc.t -> 'a) G.ty_rule * 'f -> 'a any_production
 
 let of_coq_production_rule : type a. a Extend.production_rule -> a any_production = function
 | Rule (toks, act) ->
-  let Casted (symb, cast) = symbol_of_rule toks in
-  AnyProduction (symb, cast act)
+  match symbol_of_rule toks with
+  | CastedRNo (symb, cast) -> AnyProduction (symb, cast act)
+  | CastedRMay (symb, cast) -> AnyProduction (symb, cast act)
 
 let of_coq_single_extend_statement (lvl, assoc, rule) =
   (lvl, assoc, List.map of_coq_production_rule rule)
@@ -288,7 +309,7 @@ let make_rule r = [None, None, r]
 
 let eoi_entry en =
   let e = Entry.create ((Gram.Entry.name en) ^ "_eoi") in
-  let symbs = G.r_next (G.r_next G.r_stop (G.s_nterm en)) (G.s_token Tok.pattern_for_EOI) in
+  let symbs = G.r_next (G.r_next G.r_stop (G.s_nterm en)) (G.s_token Tok.PEOI) in
   let act = fun _ x loc -> x in
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   Gram.safe_extend ~warning:(Some warning) e None (make_rule [G.production (symbs, act)]);
@@ -425,8 +446,11 @@ module Module =
     let module_expr = Entry.create "module_expr"
     let module_type = Entry.create "module_type"
   end
-let epsilon_value f e =
-  let r = G.production (G.r_next G.r_stop (symbol_of_prod_entry_key e), (fun x _ -> f x)) in
+let epsilon_value (type s tr a) f (e : (s, tr, a) symbol) =
+  let r =
+    match symbol_of_prod_entry_key e with
+    | CastedSNo s -> G.production (G.r_next G.r_stop s, (fun x _ -> f x))
+    | CastedSMay s -> G.production (G.r_next G.r_stop s, (fun x _ -> f x)) in
   let ext = [None, None, [r]] in
   let entry = Gram.entry_create "epsilon" in
   let warning msg = Feedback.msg_warning Pp.(str msg) in

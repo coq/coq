@@ -203,7 +203,7 @@ module Module :
     val module_type : module_ast Entry.t
   end
 
-val epsilon_value : ('a -> 'self) -> ('self, 'a) Extend.symbol -> 'self option
+val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Extend.symbol -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
 
