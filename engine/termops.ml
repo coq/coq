@@ -1417,11 +1417,9 @@ let prod_applist_assum sigma n c l =
     | _ -> anomaly (Pp.str "Not enough prod/let's.") in
   app n [] c l
 
-(* Combinators on judgments *)
-
-let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
-let on_judgment_value f j = { j with uj_val = f j.uj_val }
-let on_judgment_type f j = { j with uj_type = f j.uj_type }
+let on_judgment = Environ.on_judgment
+let on_judgment_value = Environ.on_judgment_value
+let on_judgment_type = Environ.on_judgment_type
 
 (* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k non let-in
      variables skips let-in's; let-in's in the middle are put in ctx2 *)

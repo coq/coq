@@ -44,6 +44,8 @@ val explain_module_internalization_error :
   Modintern.module_internalization_error -> Pp.t
 
 val map_pguard_error : ('c -> 'd) -> 'c pguard_error -> 'd pguard_error
+[@@ocaml.deprecated "Use [Type_errors.map_pguard_error]."]
 val map_ptype_error : ('c -> 'd) -> ('c, 'c) ptype_error -> ('d, 'd) ptype_error
+[@@ocaml.deprecated "Use [Type_errors.map_ptype_error]."]
 
 val explain_prim_token_notation_error : string -> env -> Evd.evar_map -> Notation.prim_token_notation_error -> Pp.t

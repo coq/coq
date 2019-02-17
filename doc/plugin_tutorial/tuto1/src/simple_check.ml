@@ -6,7 +6,7 @@ let simple_check1 value_with_constraints =
 (* The point of renaming is to make sure the bound names printed by Check
    can be re-used in `apply with` tactics that use bound names to
    refer to arguments. *)
-    let j = Termops.on_judgment EConstr.of_constr
+    let j = Environ.on_judgment EConstr.of_constr
       (Arguments_renaming.rename_typing (Global.env())
          (EConstr.to_constr evd evalue)) in
     let {Environ.uj_type=x}=j in x

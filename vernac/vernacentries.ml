@@ -1785,7 +1785,7 @@ let vernac_check_may_eval ~atts redexp glopt rc =
     else
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)
-      Termops.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
+      Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
   let pp = match redexp with
     | None ->

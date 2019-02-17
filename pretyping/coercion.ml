@@ -434,7 +434,7 @@ let inh_tosort_force ?loc env evd j =
   try
     let t,p = lookup_path_to_sort_from env evd j.uj_type in
     let evd,j1 = apply_coercion env evd p j t in
-    let j2 = on_judgment_type (whd_evar evd) j1 in
+    let j2 = Environ.on_judgment_type (whd_evar evd) j1 in
       (evd,type_judgment env evd j2)
   with Not_found | NoCoercion ->
     error_not_a_type ?loc env evd j
