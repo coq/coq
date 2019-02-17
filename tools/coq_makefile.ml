@@ -123,9 +123,10 @@ let read_whole_file s =
 let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" else s
 
 let generate_makefile oc conf_file local_file args project =
+  let coqlib = Envars.coqlib () in
   let makefile_template =
-    let template = "/tools/CoqMakefile.in" in
-    Envars.coqlib () ^ template in
+    let template = Filename.concat "tools" "CoqMakefile.in" in
+    Filename.concat coqlib template in
   let s = read_whole_file makefile_template in
   let s = List.fold_left
     (* We use global_substitute to avoid running into backslash issues due to \1 etc. *)
@@ -260,7 +261,7 @@ let generate_conf_doc oc { defs; q_includes; r_includes } =
          eprintf "Warning: in %s\n" destination;
          destination
       end else "$(INSTALLDEFAULTROOT)"
-    else String.concat "/" gcd in
+    else String.concat Filename.dir_sep gcd in
   Printf.fprintf oc "COQMF_INSTALLCOQDOCROOT = %s\n" (quote root)
 
 let generate_conf_defs oc { defs; extra_args } =
@@ -343,15 +344,13 @@ let chop_prefix p f =
   let len_f = String.length f in
   String.sub f len_p (len_f - len_p)
 
-let clean_path p =
-  Str.global_replace (Str.regexp_string "//") "/" p
-
 let destination_of { ml_includes; q_includes; r_includes; } file =
   let file_dir = CUnix.canonical_path_name (Filename.dirname file) in
   let includes = q_includes @ r_includes in
   let mk_destination logic canonical_path =
-    clean_path (physical_dir_of_logical_dir logic ^ "/" ^
-                chop_prefix canonical_path file_dir ^ "/") in
+    Filename.concat
+      (physical_dir_of_logical_dir logic)
+      (chop_prefix canonical_path file_dir) in
   let candidates =
     CList.map_filter (fun {thing={ canonical_path }, logic} ->
       if is_prefix canonical_path file_dir then
@@ -368,8 +367,9 @@ let destination_of { ml_includes; q_includes; r_includes; } file =
      with
         | [{thing={ canonical_path }, logic}], {thing={ canonical_path = p }} ->
             let destination =
-              clean_path (physical_dir_of_logical_dir logic ^ "/" ^
-                          chop_prefix p file_dir ^ "/") in
+              Filename.concat
+                (physical_dir_of_logical_dir logic)
+                (chop_prefix p file_dir) in
             Printf.printf "%s" (quote destination)
         | _ -> () (* skip *)
         | exception Not_found -> () (* skip *)

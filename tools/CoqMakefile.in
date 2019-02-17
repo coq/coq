@@ -187,7 +187,7 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
-COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)$(d)")
+COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
 
 CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS)
 
@@ -216,9 +216,9 @@ endif
 
 concat_path = $(if $(1),$(1)/$(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(2)),$(2)),$(2))
 
-COQLIBINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)user-contrib)
-COQDOCINSTALL = $(call concat_path,$(DESTDIR),$(DOCDIR)user-contrib)
-COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)toploop)
+COQLIBINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)/user-contrib)
+COQDOCINSTALL = $(call concat_path,$(DESTDIR),$(DOCDIR)/user-contrib)
+COQTOPINSTALL = $(call concat_path,$(DESTDIR),$(COQLIB)/toploop)
 
 # Files #######################################################################
 #
