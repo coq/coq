@@ -138,4 +138,5 @@ val select_impargs_size : int -> implicits_list list -> implicit_status list
 val select_stronger_impargs : implicits_list list -> implicit_status list
 
 val explicitation_eq : Constrexpr.explicitation -> Constrexpr.explicitation -> bool
+  [@@ocaml.deprecated "Use Constrexpr_ops.explicitation_eq instead (since 8.10)"]
 (** Equality on [explicitation]. *)

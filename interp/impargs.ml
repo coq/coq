@@ -120,12 +120,7 @@ let argument_position_eq p1 p2 = match p1, p2 with
 | Hyp h1, Hyp h2 -> Int.equal h1 h2
 | _ -> false
 
-let explicitation_eq ex1 ex2 = match ex1, ex2 with
-| ExplByPos (i1, id1), ExplByPos (i2, id2) ->
-  Int.equal i1 i2 && Option.equal Id.equal id1 id2
-| ExplByName id1, ExplByName id2 ->
-  Id.equal id1 id2
-| _ -> false
+let explicitation_eq = Constrexpr_ops.explicitation_eq
 
 type implicit_explanation =
   | DepRigid of argument_position
@@ -380,7 +375,7 @@ let flatten_explicitations l autoimps =
     | (Name id,_)::imps ->
        let value, l' =
          try
-           let eq = explicitation_eq in
+           let eq = Constrexpr_ops.explicitation_eq in
            let flags = List.assoc_f eq (ExplByName id) l in
            Some (Some id, flags), List.remove_assoc_f eq (ExplByName id) l
          with Not_found -> assoc_by_pos k l
