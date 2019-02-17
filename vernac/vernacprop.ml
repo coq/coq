@@ -17,14 +17,14 @@ let rec under_control = function
   | VernacExpr (_, c) -> c
   | VernacRedirect (_,{CAst.v=c})
   | VernacTime (_,{CAst.v=c})
-  | VernacFail c
-  | VernacTimeout (_,c) -> under_control c
+  | VernacFail {CAst.v=c}
+  | VernacTimeout (_,{CAst.v=c}) -> under_control c
 
 let rec has_Fail = function
   | VernacExpr _ -> false
   | VernacRedirect (_,{CAst.v=c})
   | VernacTime (_,{CAst.v=c})
-  | VernacTimeout (_,c) -> has_Fail c
+  | VernacTimeout (_,{CAst.v=c}) -> has_Fail c
   | VernacFail _ -> true
 
 (* Navigation commands are allowed in a coqtop session but not in a .v file *)
@@ -41,7 +41,7 @@ let is_navigation_vernac c =
 let rec is_deep_navigation_vernac = function
   | VernacTime (_,{CAst.v=c}) -> is_deep_navigation_vernac c
   | VernacRedirect (_, {CAst.v=c})
-  | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
+  | VernacTimeout (_,{CAst.v=c}) | VernacFail {CAst.v=c} -> is_navigation_vernac c
   | VernacExpr _ -> false
 
 (* NB: Reset is now allowed again as asked by A. Chlipala *)
