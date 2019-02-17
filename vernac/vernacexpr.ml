@@ -405,11 +405,5 @@ type vernac_control =
      the flag is used to print differently in `-time` vs `Time foo` *)
   | VernacTime of bool * vernac_control CAst.t
   | VernacRedirect of string * vernac_control CAst.t
-  | VernacTimeout of int * vernac_control
-  | VernacFail of vernac_control
-
-(** Deprecated *)
-
-type vernac_implicit_status = Impargs.implicit_kind =
-  | Implicit [@ocaml.deprecated] | MaximallyImplicit [@ocaml.deprecated] | NotImplicit [@ocaml.deprecated]
-[@@ocaml.deprecated "Use [Impargs.implicit_kind]"]
+  | VernacTimeout of int * vernac_control CAst.t
+  | VernacFail of vernac_control CAst.t

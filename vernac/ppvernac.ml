@@ -1277,9 +1277,9 @@ let pr_vernac_attributes =
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
     | VernacRedirect (s, {v}) ->
       return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
-    | VernacTimeout(n,v) ->
+    | VernacTimeout(n,{v}) ->
       return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)
-    | VernacFail v ->
+    | VernacFail {v} ->
       return (keyword "Fail" ++ spc() ++ pr_vernac_control v)
 
     let pr_vernac v =

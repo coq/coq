@@ -2152,46 +2152,7 @@ let vernac_check_guard ~pstate =
       (str ("Condition violated: ") ++s)
   in message
 
-exception End_of_input
-
-(* XXX: This won't properly set the proof mode, as of today, it is
-   controlled by the STM. Thus, we would need access information from
-   the classifier. The proper fix is to move it to the STM, however,
-   the way the proof mode is set there makes the task non trivial
-   without a considerable amount of refactoring.
- *)
-let vernac_load ~st interp fname =
-  let pstate = st.Vernacstate.proof in
-  if there_are_pending_proofs ~pstate then
-    CErrors.user_err Pp.(str "Load is not supported inside proofs.");
-  let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
-    (fun po ->
-    match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
-      | Some x -> x
-      | None -> raise End_of_input) in
-  let fname =
-    Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
-  let fname = CUnix.make_suffix fname ".v" in
-  let input =
-    let longfname = Loadpath.locate_file fname in
-    let in_chan = open_utf8_file_in longfname in
-    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile longfname)) (Stream.of_channel in_chan) in
-  let rec load_loop ~pstate =
-    try
-      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in
-      let pstate = interp ~st:{ st with Vernacstate.proof = pstate }
-          (parse_sentence proof_mode input).CAst.v in
-      load_loop ~pstate
-    with
-      End_of_input ->
-      pstate
-  in
-  let pstate = load_loop ~pstate in
-  (* If Load left a proof open, we fail too. *)
-  if there_are_pending_proofs ~pstate then
-    CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  pstate
-
+(* Attributes *)
 let with_locality ~atts f =
   let local = Attributes.(parse locality atts) in
   f ~local
@@ -2211,17 +2172,68 @@ let with_def_attributes ~atts f =
   if atts.DefAttributes.program then Obligations.check_program_libraries ();
   f ~atts
 
+(** A global default timeout, controlled by option "Set Default Timeout n".
+    Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
+
+let default_timeout = ref None
+
+(* Timeout *)
+let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
+  match !default_timeout, timeout with
+  | _, Some n
+  | Some n, None ->
+    Control.timeout n f x Timeout
+  | None, None ->
+    f x
+
+(* Fail *)
+exception HasNotFailed
+exception HasFailed of Pp.t
+
+let test_mode = ref false
+
+(* XXX STATE: this type hints that restoring the state should be the
+   caller's responsibility *)
+let with_fail ~st f =
+  try
+    (* If the command actually works, ignore its effects on the state.
+       * Note that error has to be printed in the right state, hence
+       * within the purified function *)
+    try let _ = f () in raise HasNotFailed
+    with
+    | HasNotFailed as e -> raise e
+    | e ->
+      let e = CErrors.push e in
+      raise (HasFailed (CErrors.iprint
+                          (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
+  with e when CErrors.noncritical e ->
+    (* Restore the previous state XXX Careful here with the cache! *)
+    Vernacstate.invalidate_cache ();
+    Vernacstate.unfreeze_interp_state st;
+    let (e, _) = CErrors.push e in
+    match e with
+    | HasNotFailed ->
+      user_err ~hdr:"Fail" (str "The command has not failed!")
+    | HasFailed msg ->
+      if not !Flags.quiet || !test_mode then Feedback.msg_info
+          (str "The command has indeed failed with message:" ++ fnl () ++ msg)
+    | _ -> assert false
+
+let locate_if_not_already ?loc (e, info) =
+  match Loc.get_loc info with
+  | None   -> (e, Option.cata (Loc.add_loc info) info loc)
+  | Some l -> (e, info)
+
+exception End_of_input
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let interp ?proof ~atts ~st c : Proof_global.t option =
+let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
   let pstate = st.Vernacstate.proof in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
-
-  (* Loading a file requires access to the control interpreter *)
-  | VernacLoad _ -> assert false
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
   | VernacAbortAll    -> CErrors.user_err  (str "AbortAll cannot be used through the Load command")
@@ -2237,6 +2249,12 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
 
   (* This one is possible to handle here *)
   | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
+
+  (* Loading a file requires access to the control interpreter so
+     [vernac_load] is mutually-recursive with [interp_expr] *)
+  | VernacLoad (verbosely,fname) ->
+    unsupported_attributes atts;
+    vernac_load ?proof ~verbosely ~st fname
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
@@ -2544,10 +2562,61 @@ let interp ?proof ~atts ~st c : Proof_global.t option =
     let st : Vernacstate.t = Vernacextend.call ~atts opn args ~st in
     st.Vernacstate.proof
 
-(** A global default timeout, controlled by option "Set Default Timeout n".
-    Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
+(* XXX: This won't properly set the proof mode, as of today, it is
+   controlled by the STM. Thus, we would need access information from
+   the classifier. The proper fix is to move it to the STM, however,
+   the way the proof mode is set there makes the task non trivial
+   without a considerable amount of refactoring.
+ *)
+and vernac_load ?proof ~verbosely ~st fname =
+  let pstate = st.Vernacstate.proof in
+  if there_are_pending_proofs ~pstate then
+    CErrors.user_err Pp.(str "Load is not supported inside proofs.");
+  (* Open the file *)
+  let fname =
+    Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
+  let fname = CUnix.make_suffix fname ".v" in
+  let input =
+    let longfname = Loadpath.locate_file fname in
+    let in_chan = open_utf8_file_in longfname in
+    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile longfname)) (Stream.of_channel in_chan) in
+  (* Parsing loop *)
+  let v_mod = if verbosely then Flags.verbosely else Flags.silently in
+  let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
+    (fun po ->
+    match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
+      | Some x -> x
+      | None -> raise End_of_input) in
+  let rec load_loop ~pstate =
+    try
+      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in
+      let pstate =
+        v_mod (interp_control ?proof ~st:{ st with Vernacstate.proof = pstate })
+          (parse_sentence proof_mode input) in
+      load_loop ~pstate
+    with
+      End_of_input ->
+      pstate
+  in
+  let pstate = load_loop ~pstate in
+  (* If Load left a proof open, we fail too. *)
+  if there_are_pending_proofs ~pstate then
+    CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
+  pstate
 
-let default_timeout = ref None
+and interp_control ?proof ~st = function
+  | { v=VernacExpr (atts, cmd) } ->
+    interp_expr ?proof ~atts ~st cmd
+  | { v=VernacFail v } ->
+    with_fail ~st (fun () -> interp_control ?proof ~st v);
+    st.Vernacstate.proof
+  | { v=VernacTimeout (timeout,v) } ->
+    vernac_timeout ~timeout (interp_control ?proof ~st) v
+  | { v=VernacRedirect (s, v) } ->
+    Topfmt.with_output_to_file s (interp_control ?proof ~st) v
+  | { v=VernacTime (batch, cmd) }->
+    let header = if batch then Topfmt.pr_cmd_header cmd else Pp.mt () in
+    System.with_time ~batch ~header (interp_control ?proof ~st) cmd
 
 let () =
   declare_int_option
@@ -2557,121 +2626,17 @@ let () =
       optread  = (fun () -> !default_timeout);
       optwrite = ((:=) default_timeout) }
 
-(** When interpreting a command, the current timeout is initially
-    the default one, but may be modified locally by a Timeout command. *)
-
-let current_timeout = ref None
-
-let vernac_timeout (f : 'a -> 'b) (x : 'a) : 'b =
-  match !current_timeout, !default_timeout with
-    | Some n, _
-    | None, Some n ->
-      let f v =
-        let res = f v in
-        current_timeout := None;
-        res
-      in
-      Control.timeout n f x Timeout
-    | None, None ->
-      f x
-
-let restore_timeout () = current_timeout := None
-
-let locate_if_not_already ?loc (e, info) =
-  match Loc.get_loc info with
-  | None   -> (e, Option.cata (Loc.add_loc info) info loc)
-  | Some l -> (e, info)
-
-exception HasNotFailed
-exception HasFailed of Pp.t
-
-let test_mode = ref false
-
-(* XXX STATE: this type hints that restoring the state should be the
-   caller's responsibility *)
-let with_fail ~st f =
-  try
-    (* If the command actually works, ignore its effects on the state.
-       * Note that error has to be printed in the right state, hence
-       * within the purified function *)
-    try let _ = f () in raise HasNotFailed
-    with
-    | HasNotFailed as e -> raise e
-    | e ->
-      let e = CErrors.push e in
-      raise (HasFailed (CErrors.iprint
-                          (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
-  with e when CErrors.noncritical e ->
-    (* Restore the previous state XXX Careful here with the cache! *)
-    Vernacstate.invalidate_cache ();
-    Vernacstate.unfreeze_interp_state st;
-    let (e, _) = CErrors.push e in
-    match e with
-    | HasNotFailed ->
-      user_err ~hdr:"Fail" (str "The command has not failed!")
-    | HasFailed msg ->
-      if not !Flags.quiet || !test_mode then Feedback.msg_info
-          (str "The command has indeed failed with message:" ++ fnl () ++ msg)
-    | _ -> assert false
-
-let interp ?(verbosely=true) ?proof ~st {CAst.loc;v=c} : Proof_global.t option =
-  let rec control ~st = function
-  | VernacExpr (atts, v) ->
-    aux ~atts ~st v
-  | VernacFail v ->
-    with_fail ~st (fun () -> ignore(control ~st v));
-    st.Vernacstate.proof
-  | VernacTimeout (n,v) ->
-    current_timeout := Some n;
-    control ~st v
-  | VernacRedirect (s, {v}) ->
-    Topfmt.with_output_to_file s (control ~st) v
-  | VernacTime (batch, ({v} as com)) ->
-    let header = if batch then Topfmt.pr_cmd_header com else Pp.mt () in
-    System.with_time ~batch ~header (control ~st) v;
-
-  and aux ~atts ~st : _ -> Proof_global.t option =
-    function
-
-    | VernacLoad (_,fname) ->
-      unsupported_attributes atts;
-      vernac_load ~st control fname
-
-    | c ->
-      (* NB: we keep polymorphism and program in the attributes, we're
-         just parsing them to do our option magic. *)
-      try
-        vernac_timeout begin fun st ->
-          let pstate : Proof_global.t option =
-            if verbosely
-            then Flags.verbosely (interp ?proof ~atts ~st) c
-            else Flags.silently  (interp ?proof ~atts ~st) c
-          in
-          pstate
-          end st
-      with
-      | reraise when
-          (match reraise with
-           | Timeout -> true
-           | e -> CErrors.noncritical e)
-        ->
-        let e = CErrors.push reraise in
-        let e = locate_if_not_already ?loc e in
-        let () = restore_timeout () in
-        iraise e
-  in
-  if verbosely
-  then Flags.verbosely (control ~st) c
-  else (control ~st) c
-
 (* Be careful with the cache here in case of an exception. *)
-let interp ?verbosely ?proof ~st cmd =
+let interp ?(verbosely=true) ?proof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
-  try
-    let pstate = interp ?verbosely ?proof ~st cmd in
-    Vernacstate.Proof_global.set pstate;
-    Vernacstate.freeze_interp_state ~marshallable:false
+  try vernac_timeout (fun st ->
+      let v_mod = if verbosely then Flags.verbosely else Flags.silently in
+      let pstate = v_mod (interp_control ?proof ~st) cmd in
+      Vernacstate.Proof_global.set pstate;
+      Vernacstate.freeze_interp_state ~marshallable:false
+    ) st
   with exn ->
     let exn = CErrors.push exn in
+    let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.invalidate_cache ();
     iraise exn
