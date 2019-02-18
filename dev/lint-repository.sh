@@ -9,10 +9,17 @@
 
 CODE=0
 
-# We assume that all merge commits are from the main branch
+if [[ $(git log -n 1 --pretty='format:%s') == "Bot merge"* ]]; then
+    # The FIRST parent of bot merges is from the PR, the second is
+    # current master
+    head=$(git rev-parse HEAD~)
+else
+    head=$(git rev-parse HEAD)
+fi
+
+# We assume that all non-bot merge commits are from the main branch
 # For Coq it is extremely rare for this assumption to be broken
-read -r base < <(git log -n 1 --merges --pretty='format:%H')
-head=$(git rev-parse HEAD)
+read -r base < <(git log -n 1 --merges --pretty='format:%H' "$head")
 
 dev/lint-commits.sh "$base" "$head" || CODE=1
 
