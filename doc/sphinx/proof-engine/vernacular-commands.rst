@@ -1250,3 +1250,17 @@ Inlining hints for the fast reduction machines
 
    Due to its internal nature, this command is not for general use. It is meant
    to appear only in standard libraries and in support libraries of plug-ins.
+
+Registering primitive operations
+--------------------------------
+
+.. cmd:: Primitive @ident__1 := #@ident__2.
+
+   Declares :n:`@ident__1` as the primitive operator :n:`#@ident__2`. When
+   running this command, the type of the primitive should be already known by
+   the kernel (this is achieved through this command for primitive types and
+   through the :cmd:`Register` command with the :g:`kernel` name-space for other
+   types).
+
+   Due to its internal nature, this command is not for general use. It is meant
+   to appear only in standard libraries and in support libraries of plug-ins.
