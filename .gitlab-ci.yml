@@ -436,7 +436,7 @@ test-suite:edge+trunk+make:
     - make -j "$NJOBS" world
     - make -j "$NJOBS" test-suite UNIT_TESTS=
   variables:
-    OPAM_SWITCH: edge
+    OPAM_SWITCH: base
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: always
@@ -462,7 +462,7 @@ test-suite:edge+trunk+dune:
     - export COQ_UNIT_TEST=noop
     - dune runtest --profile=ocaml409
   variables:
-    OPAM_SWITCH: edge
+    OPAM_SWITCH: base
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: always
