@@ -194,6 +194,8 @@ Misc
 
 - Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.
 
+- Removed option "Printing Primitive Projection Compatibility"
+
 SSReflect
 
 - New intro patterns:

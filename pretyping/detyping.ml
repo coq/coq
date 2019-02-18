@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Pp
 open CErrors
 open Util
@@ -174,16 +172,6 @@ let () = declare_bool_option
 	    optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
 	    optread  = print_primproj_params;
 	    optwrite = (:=) print_primproj_params_value }
-
-let print_primproj_compatibility_value = ref false
-let print_primproj_compatibility () = !print_primproj_compatibility_value
-
-let () = declare_bool_option
-	  { optdepr  = false;
-	    optname  = "backwards-compatible printing of primitive projections";
-	    optkey   = ["Printing";"Primitive";"Projection";"Compatibility"];
-	    optread  = print_primproj_compatibility;
-	    optwrite = (:=) print_primproj_compatibility_value }
 
 	  
 (* Auxiliary function for MutCase printing *)
@@ -702,30 +690,12 @@ and detype_r d flags avoid env sigma t =
 	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
 		[detype d flags avoid env sigma c])
       else 
-	if print_primproj_compatibility () && Projection.unfolded p then
-          (* Print the compatibility match version *)
-	  let c' = 
-	    try 
-              let ind = Projection.inductive p in
-              let bodies = Inductiveops.legacy_match_projection (snd env) ind in
-              let body = bodies.(Projection.arg p) in
-	      let ty = Retyping.get_type_of (snd env) sigma c in
-	      let ((ind,u), args) = Inductiveops.find_mrectype (snd env) sigma ty in
-	      let body' = strip_lam_assum body in
-	      let u = EInstance.kind sigma u in
-	      let body' = CVars.subst_instance_constr u body' in
-	      let body' = EConstr.of_constr body' in
-		substl (c :: List.rev args) body'
-	    with Retyping.RetypeError _ | Not_found -> 
-	      anomaly (str"Cannot detype an unfolded primitive projection.")
-	  in DAst.get (detype d flags avoid env sigma c')
-	else
-	  if print_primproj_params () then
-	    try
-	      let c = Retyping.expand_projection (snd env) sigma p c [] in
-              DAst.get (detype d flags avoid env sigma c)
-	    with Retyping.RetypeError _ -> noparams ()
-	  else noparams ()
+        if print_primproj_params () then
+          try
+            let c = Retyping.expand_projection (snd env) sigma p c [] in
+            DAst.get (detype d flags avoid env sigma c)
+          with Retyping.RetypeError _ -> noparams ()
+        else noparams ()
 
     | Evar (evk,cl) ->
         let bound_to_itself_or_letin decl c =

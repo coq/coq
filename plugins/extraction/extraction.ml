@@ -1032,6 +1032,55 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types)
 
+(** Because of automatic unboxing the easy way [mk_def c] on the
+   constant body of primitive projections doesn't work. We pretend
+   that they are implemented by matches until someone figures out how
+   to clean it up (test with #4710 when working on this). *)
+let fake_match_projection env p =
+  let ind = Projection.Repr.inductive p in
+  let proj_arg = Projection.Repr.arg p in
+  let mib, mip = Inductive.lookup_mind_specif env ind in
+  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+  let indu = mkIndU (ind,u) in
+  let ctx, paramslet =
+    let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((fst ind, mib.mind_ntypes - i - 1), u)) in
+    let rctx, _ = decompose_prod_assum (Vars.substl subst mip.mind_nf_lc.(0)) in
+    List.chop mip.mind_consnrealdecls.(0) rctx
+  in
+  let ci_pp_info = { ind_tags = []; cstr_tags = [|Context.Rel.to_tags ctx|]; style = LetStyle } in
+  let ci = {
+    ci_ind = ind;
+    ci_npar = mib.mind_nparams;
+    ci_cstr_ndecls = mip.mind_consnrealdecls;
+    ci_cstr_nargs = mip.mind_consnrealargs;
+    ci_pp_info;
+  }
+  in
+  let x = match mib.mind_record with
+    | NotRecord | FakeRecord -> assert false
+    | PrimRecord info -> Name (pi1 info.(snd ind))
+  in
+  let indty = mkApp (indu, Context.Rel.to_extended_vect mkRel 0 paramslet) in
+  let rec fold arg j subst = function
+    | [] -> assert false
+    | LocalAssum (na,ty) :: rem ->
+      let ty = Vars.substl subst (liftn 1 j ty) in
+      if arg != proj_arg then
+        let lab = match na with Name id -> Label.of_id id | Anonymous -> assert false in
+        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
+        fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
+      else
+        let p = mkLambda (x, lift 1 indty, liftn 1 2 ty) in
+        let branch = lift 1 (it_mkLambda_or_LetIn (mkRel (List.length ctx - (j-1))) ctx) in
+        let body = mkCase (ci, p, mkRel 1, [|branch|]) in
+        it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
+    | LocalDef (_,c,t) :: rem ->
+      let c = liftn 1 j c in
+      let c1 = Vars.substl subst c in
+      fold arg (j+1) (c1::subst) rem
+  in
+  fold 0 1 [] (List.rev ctx)
+
 let extract_constant env kn cb =
   let sg = Evd.from_env env in
   let r = ConstRef kn in
@@ -1069,10 +1118,7 @@ let extract_constant env kn cb =
              (match Recordops.find_primitive_projection kn with
               | None -> mk_typ (get_body c)
               | Some p ->
-                let p = Projection.make p false in
-                let ind = Projection.inductive p in
-                let bodies = Inductiveops.legacy_match_projection env ind in
-                let body = bodies.(Projection.arg p) in
+                let body = fake_match_projection env p in
                 mk_typ (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;
@@ -1085,10 +1131,7 @@ let extract_constant env kn cb =
              (match Recordops.find_primitive_projection kn with
               | None -> mk_def (get_body c)
               | Some p ->
-                let p = Projection.make p false in
-                let ind = Projection.inductive p in
-                let bodies = Inductiveops.legacy_match_projection env ind in
-                let body = bodies.(Projection.arg p) in
+                let body = fake_match_projection env p in
                 mk_def (EConstr.of_constr body))
 	  | OpaqueDef c ->
 	    add_opaque r;

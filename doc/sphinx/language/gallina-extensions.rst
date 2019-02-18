@@ -247,11 +247,6 @@ Primitive Projections
    printing time (even though they are absent in the actual AST manipulated
    by the kernel).
 
-.. flag:: Printing Primitive Projection Compatibility
-
-   This compatibility option (on by default) governs the
-   printing of pattern matching over primitive records.
-
 Primitive Record Types
 ++++++++++++++++++++++
 
@@ -297,8 +292,8 @@ the folded version delta-reduces to the unfolded version. This allows to
 precisely mimic the usual unfolding rules of constants. Projections
 obey the usual ``simpl`` flags of the ``Arguments`` command in particular.
 There is currently no way to input unfolded primitive projections at the
-user-level, and one must use the :flag:`Printing Primitive Projection Compatibility`
-to display unfolded primitive projections as matches and distinguish them from folded ones.
+user-level, and there is no way to display unfolded projections differently
+from folded ones.
 
 
 Compatibility Projections and :g:`match`
