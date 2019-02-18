@@ -416,8 +416,6 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
   let primitive =
     !primitive_flag &&
     List.for_all (fun (_,_,_,_,fields,_,_) -> List.exists is_local_assum fields) record_data
-    (* will warn_non_primitive_record in declare_projections if we try
-       to declare a 0-field record *)
   in
   let mie =
     { mind_entry_params = params;
@@ -431,7 +429,9 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
   in
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders impls in
+  let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders impls
+      ~primitive_expected:!primitive_flag
+  in
   let map i (_, _, _, fieldimpls, fields, is_coe, coers) =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
