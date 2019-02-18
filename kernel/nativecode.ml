@@ -1851,11 +1851,7 @@ and compile_named env sigma univ auxdefs id =
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
 let compile_constant env sigma prefix ~interactive con cb =
-     let no_univs =
-       match cb.const_universes with
-       | Monomorphic_const _ -> true
-       | Polymorphic_const ctx -> Int.equal (Univ.AUContext.size ctx) 0
-     in
+    let no_univs = 0 = Univ.AUContext.size (Declareops.constant_polymorphic_context cb) in
     begin match cb.const_body with
     | Def t ->
       let t = Mod_subst.force_constr t in

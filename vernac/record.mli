@@ -16,7 +16,7 @@ val primitive_flag : bool ref
 
 val declare_projections :
   inductive ->
-  Entries.constant_universes_entry ->
+  Entries.universes_entry ->
   ?kind:Decl_kinds.definition_object_kind ->
   Id.t ->
   bool list ->

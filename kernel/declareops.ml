@@ -49,12 +49,24 @@ let hcons_template_arity ar =
       (* List.Smart.map (Option.Smart.map Univ.hcons_univ_level) ar.template_param_levels; *)
     template_level = Univ.hcons_univ ar.template_level }
 
+let universes_context = function
+  | Monomorphic _ -> Univ.AUContext.empty
+  | Polymorphic ctx -> ctx
+
+let abstract_universes = function
+  | Entries.Monomorphic_entry ctx ->
+    Univ.empty_level_subst, Monomorphic ctx
+  | Entries.Polymorphic_entry (nas, ctx) ->
+    let (inst, auctx) = Univ.abstract_universes nas ctx in
+    let inst = Univ.make_instance_subst inst in
+    (inst, Polymorphic auctx)
+
 (** {6 Constants } *)
 
 let constant_is_polymorphic cb =
   match cb.const_universes with
-  | Monomorphic_const _ -> false
-  | Polymorphic_const _ -> true
+  | Monomorphic _ -> false
+  | Polymorphic _ -> true
 
 
 let constant_has_body cb = match cb.const_body with
@@ -62,9 +74,7 @@ let constant_has_body cb = match cb.const_body with
   | Def _ | OpaqueDef _ -> true
 
 let constant_polymorphic_context cb =
-  match cb.const_universes with
-  | Monomorphic_const _ -> Univ.AUContext.empty
-  | Polymorphic_const ctx -> ctx
+  universes_context cb.const_universes
 
 let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
@@ -126,12 +136,12 @@ let hcons_const_def = function
     Def (from_val (Constr.hcons constr))
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
-let hcons_const_universes cbu =
+let hcons_universes cbu =
   match cbu with
-  | Monomorphic_const ctx -> 
-    Monomorphic_const (Univ.hcons_universe_context_set ctx)
-  | Polymorphic_const ctx ->
-    Polymorphic_const (Univ.hcons_abstract_universe_context ctx)
+  | Monomorphic ctx ->
+    Monomorphic (Univ.hcons_universe_context_set ctx)
+  | Polymorphic ctx ->
+    Polymorphic (Univ.hcons_abstract_universe_context ctx)
 
 let hcons_const_private_univs = function
   | None -> None
@@ -141,7 +151,7 @@ let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = Constr.hcons cb.const_type;
-    const_universes = hcons_const_universes cb.const_universes;
+    const_universes = hcons_universes cb.const_universes;
     const_private_poly_univs = hcons_const_private_univs cb.const_private_poly_univs;
   }
 
@@ -239,27 +249,21 @@ let subst_mind_body sub mib =
       Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets ;
     mind_universes = mib.mind_universes;
+    mind_variance = mib.mind_variance;
     mind_private = mib.mind_private;
     mind_typing_flags = mib.mind_typing_flags;
   }
 
 let inductive_polymorphic_context mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> Univ.AUContext.empty
-  | Polymorphic_ind ctx -> ctx
-  | Cumulative_ind cumi -> Univ.ACumulativityInfo.univ_context cumi
+  universes_context mib.mind_universes
 
 let inductive_is_polymorphic mib =
   match mib.mind_universes with
-  | Monomorphic_ind _ -> false
-  | Polymorphic_ind _ctx -> true
-  | Cumulative_ind _cumi -> true
+  | Monomorphic _ -> false
+  | Polymorphic _ctx -> true
 
 let inductive_is_cumulative mib =
-  match mib.mind_universes with
-  | Monomorphic_ind _ -> false
-  | Polymorphic_ind _ctx -> false
-  | Cumulative_ind _cumi -> true
+  Option.has_some mib.mind_variance
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_record with
@@ -306,17 +310,11 @@ let hcons_mind_packet oib =
     mind_user_lc = user;
     mind_nf_lc = nf }
 
-let hcons_mind_universes miu =
-  match miu with
-  | Monomorphic_ind ctx -> Monomorphic_ind (Univ.hcons_universe_context_set ctx)
-  | Polymorphic_ind ctx -> Polymorphic_ind (Univ.hcons_abstract_universe_context ctx)
-  | Cumulative_ind cui -> Cumulative_ind (Univ.hcons_abstract_cumulativity_info cui)
-
 let hcons_mind mib =
   { mib with
     mind_packets = Array.Smart.map hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_universes = hcons_mind_universes mib.mind_universes }
+    mind_universes = hcons_universes mib.mind_universes }
 
 (** Hashconsing of modules *)
 

@@ -28,11 +28,8 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | PrimRecord data -> Some (Some (Array.map pi1 data))
   in
   let mind_entry_universes = match mb.mind_universes with
-    | Monomorphic_ind univs -> Monomorphic_ind_entry univs
-    | Polymorphic_ind auctx -> Polymorphic_ind_entry (AUContext.names auctx, AUContext.repr auctx)
-    | Cumulative_ind auctx ->
-      Cumulative_ind_entry (AUContext.names (ACumulativityInfo.univ_context auctx),
-                            ACumulativityInfo.repr auctx)
+    | Monomorphic univs -> Monomorphic_entry univs
+    | Polymorphic auctx -> Polymorphic_entry (AUContext.names auctx, AUContext.repr auctx)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity, mind_entry_template = match ind.mind_arity with
@@ -64,6 +61,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_params = mb.mind_params_ctxt;
     mind_entry_inds;
     mind_entry_universes;
+    mind_entry_variance = mb.mind_variance;
     mind_entry_private = mb.mind_private;
   }
 
@@ -135,7 +133,8 @@ let check_same_record r1 r2 = match r1, r2 with
 let check_inductive env mind mb =
   let entry = to_entry mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
-        mind_nparams; mind_nparams_rec; mind_params_ctxt; mind_universes;
+        mind_nparams; mind_nparams_rec; mind_params_ctxt;
+        mind_universes; mind_variance;
         mind_private; mind_typing_flags; }
     =
     (* Locally set the oracle for further typechecking *)
@@ -157,6 +156,7 @@ let check_inductive env mind mb =
 
   check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
+  ignore mind_variance; (* Indtypes did the necessary checking *)
   ignore mind_private; (* passed through Indtypes *)
 
   ignore mind_typing_flags;

@@ -92,11 +92,25 @@ let check_conv_error error why cst poly f env a1 a2 =
   with NotConvertible -> error why
      | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
-let check_polymorphic_instance error env auctx1 auctx2 =
-  if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
-    error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
-  else
-    Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env
+let check_universes error env u1 u2 =
+  match u1, u2 with
+  | Monomorphic _, Monomorphic _ -> env
+  | Polymorphic auctx1, Polymorphic auctx2 ->
+    if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
+      error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
+    else
+      Environ.push_context ~strict:false (Univ.AUContext.repr auctx2) env
+  | Monomorphic _, Polymorphic _ -> error (PolymorphicStatusExpected true)
+  | Polymorphic _, Monomorphic _ -> error (PolymorphicStatusExpected false)
+
+let check_variance error v1 v2 =
+  match v1, v2 with
+  | None, None -> ()
+  | Some v1, Some v2 ->
+    if not (Array.for_all2 Variance.check_subtype v2 v1) then
+      error IncompatibleVariance
+  | None, Some _ -> error (CumulativeStatusExpected true)
+  | Some _, None -> error (CumulativeStatusExpected false)
 
 (* for now we do not allow reorderings *)
 
@@ -110,29 +124,9 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       | IndType ((_,0), mib) -> Declareops.subst_mind_body subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
-  let env, inst =
-    match mib1.mind_universes, mib2.mind_universes with
-    | Monomorphic_ind _, Monomorphic_ind _ -> env, Univ.Instance.empty
-    | Polymorphic_ind auctx, Polymorphic_ind auctx' ->
-      let env = check_polymorphic_instance error env auctx auctx' in
-      env, Univ.make_abstract_instance auctx'
-    | Cumulative_ind cumi, Cumulative_ind cumi' ->
-      (** Currently there is no way to control variance of inductive types, but
-          just in case we require that they are in a subtyping relation. *)
-      let () =
-        let v = ACumulativityInfo.variance cumi in
-        let v' = ACumulativityInfo.variance cumi' in
-        if not (Array.for_all2 Variance.check_subtype v' v) then
-          CErrors.anomaly Pp.(str "Variance of " ++ KerName.print kn1 ++
-            str " is not compatible with the one of " ++ KerName.print kn2)
-      in
-      let auctx = Univ.ACumulativityInfo.univ_context cumi in
-      let auctx' = Univ.ACumulativityInfo.univ_context cumi' in
-      let env = check_polymorphic_instance error env auctx auctx' in
-      env, Univ.make_abstract_instance auctx'
-    | _ -> error 
-             (CumulativeStatusExpected (Declareops.inductive_is_cumulative mib2))
-  in
+  let env = check_universes error env mib1.mind_universes mib2.mind_universes in
+  let () = check_variance error mib1.mind_variance mib2.mind_variance in
+  let inst = make_abstract_instance (Declareops.inductive_polymorphic_context mib1) in
   let mib2 =  Declareops.subst_mind_body subst2 mib2 in
   let check_inductive_type cst name t1 t2 =
     check_conv (NotConvertibleInductiveField name)
@@ -235,17 +229,8 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
       let cb1 = Declareops.subst_const_body subst1 cb1 in
       let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking universes *)
-      let poly, env =
-        match cb1.const_universes, cb2.const_universes with
-        | Monomorphic_const _, Monomorphic_const _ ->
-          false, env
-        | Polymorphic_const auctx1, Polymorphic_const auctx2 ->
-          true, check_polymorphic_instance error env auctx1 auctx2
-        | Monomorphic_const _, Polymorphic_const _ ->
-          error (PolymorphicStatusExpected true)
-        | Polymorphic_const _, Monomorphic_const _ ->
-          error (PolymorphicStatusExpected false)
-      in
+      let env = check_universes error env cb1.const_universes cb2.const_universes in
+      let poly = Declareops.constant_is_polymorphic cb1 in
       (* Now check types *)
       let typ1 = cb1.const_type in
       let typ2 = cb2.const_type in

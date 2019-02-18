@@ -312,8 +312,8 @@ let universes_of_private eff =
     | `Opaque (_, ctx) -> ctx :: acc
     in
     match eff.seff_body.const_universes with
-    | Monomorphic_const ctx -> ctx :: acc
-    | Polymorphic_const _ -> acc
+    | Monomorphic ctx -> ctx :: acc
+    | Polymorphic _ -> acc
   in
   List.fold_left fold [] (side_effects_of_private_constants eff)
 
@@ -465,7 +465,7 @@ let labels_of_mib mib =
 
 let globalize_constant_universes env cb =
   match cb.const_universes with
-  | Monomorphic_const cstrs ->
+  | Monomorphic cstrs ->
     Now (false, cstrs) ::
     (match cb.const_body with
      | (Undef _ | Def _ | Primitive _) -> []
@@ -476,15 +476,14 @@ let globalize_constant_universes env cb =
             match Future.peek_val fc with
              | None -> [Later fc]
              | Some c -> [Now (false, c)])
-  | Polymorphic_const _ ->
+  | Polymorphic _ ->
     [Now (true, Univ.ContextSet.empty)]
       
 let globalize_mind_universes mb =
   match mb.mind_universes with
-  | Monomorphic_ind ctx ->
+  | Monomorphic ctx ->
     [Now (false, ctx)]
-  | Polymorphic_ind _ -> [Now (true, Univ.ContextSet.empty)]
-  | Cumulative_ind _ -> [Now (true, Univ.ContextSet.empty)]
+  | Polymorphic _ -> [Now (true, Univ.ContextSet.empty)]
 
 let constraints_of_sfb env sfb = 
   match sfb with
@@ -612,13 +611,13 @@ let inline_side_effects env body side_eff =
       | _ -> assert false
       in
       match cb.const_universes with
-      | Monomorphic_const univs ->
+      | Monomorphic univs ->
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c, b, ty, opaque) :: args)
-      | Polymorphic_const _ ->
+      | Polymorphic _ ->
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -700,10 +699,10 @@ let constant_entry_of_side_effect cb u =
   let open Entries in
   let univs =
     match cb.const_universes with
-    | Monomorphic_const uctx ->
-      Monomorphic_const_entry uctx
-    | Polymorphic_const auctx ->
-      Polymorphic_const_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
+    | Monomorphic uctx ->
+      Monomorphic_entry uctx
+    | Polymorphic auctx ->
+      Polymorphic_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
   in
   let pt =
     match cb.const_body, u with
@@ -756,8 +755,8 @@ let export_side_effects mb env c =
         let { seff_constant = kn; seff_body = cb ; _ } = eff in
         let env = Environ.add_constant kn cb env in
         match cb.const_universes with
-        | Polymorphic_const _ -> env
-        | Monomorphic_const ctx ->
+        | Polymorphic _ -> env
+        | Monomorphic ctx ->
           let ctx = match eff.seff_env with
           | `Nothing -> ctx
           | `Opaque(_, ctx') -> Univ.ContextSet.union ctx' ctx

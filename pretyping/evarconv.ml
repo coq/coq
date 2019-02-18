@@ -468,17 +468,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
           let mind = Environ.lookup_mind mi env in
           let open Declarations in
-          begin match mind.mind_universes with
-            | Monomorphic_ind _ -> assert false
-            | Polymorphic_ind _ -> check_strict evd u u'
-            | Cumulative_ind cumi ->
+          begin match mind.mind_variance with
+            | None -> check_strict evd u u'
+            | Some variances ->
               let nparamsaplied = Stack.args_size sk in
               let nparamsaplied' = Stack.args_size sk' in
               let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
               if not (Int.equal nparamsaplied needed && Int.equal nparamsaplied' needed)
               then check_strict evd u u'
               else
-                compare_cumulative_instances evd (Univ.ACumulativityInfo.variance cumi) u u'
+                compare_cumulative_instances evd variances u u'
           end
       | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
       | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
@@ -488,10 +487,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
           let mind = Environ.lookup_mind mi env in
           let open Declarations in
-          begin match mind.mind_universes with
-            | Monomorphic_ind _ -> assert false
-            | Polymorphic_ind _ -> check_strict evd u u'
-            | Cumulative_ind cumi ->
+          begin match mind.mind_variance with
+            | None -> check_strict evd u u'
+            | Some variances ->
               let nparamsaplied = Stack.args_size sk in
               let nparamsaplied' = Stack.args_size sk' in
               let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in

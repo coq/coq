@@ -209,7 +209,7 @@ let pr_universe_ctx sigma ?variance c =
   else
     mt()
 
-let pr_abstract_universe_ctx sigma ?variance c ~priv =
+let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
   let priv = Option.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
@@ -221,23 +221,9 @@ let pr_abstract_universe_ctx sigma ?variance c ~priv =
   else
     mt()
 
-let pr_constant_universes sigma ~priv = function
-  | Declarations.Monomorphic_const ctx -> pr_universe_ctx_set sigma ctx
-  | Declarations.Polymorphic_const ctx -> pr_abstract_universe_ctx sigma ctx ~priv
-
-let pr_cumulativity_info sigma cumi =
-  if !Detyping.print_universes 
-  && not (Univ.UContext.is_empty (Univ.CumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_cumulativity_info (Termops.pr_evd_level sigma) cumi))
-  else
-    mt()
-
-let pr_abstract_cumulativity_info sigma cumi =
-  if !Detyping.print_universes
-  && not (Univ.AUContext.is_empty (Univ.ACumulativityInfo.univ_context cumi)) then
-    fnl()++pr_in_comment (v 0 (Univ.pr_abstract_cumulativity_info (Termops.pr_evd_level sigma) cumi))
-  else
-    mt()
+let pr_universes sigma ?variance ?priv = function
+  | Declarations.Monomorphic ctx -> pr_universe_ctx_set sigma ctx
+  | Declarations.Polymorphic ctx -> pr_abstract_universe_ctx sigma ?variance ?priv ctx
 
 (**********************************************************************)
 (* Global references *)

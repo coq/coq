@@ -15,6 +15,10 @@ open Univ
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+val universes_context : universes -> AUContext.t
+
+val abstract_universes : Entries.universes_entry -> Univ.universe_level_subst * universes
+
 (** {6 Arities} *)
 
 val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->

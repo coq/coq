@@ -20,7 +20,7 @@ type inline = bool
 type result = {
   cook_body : constr Mod_subst.substituted constant_def;
   cook_type : types;
-  cook_universes : constant_universes;
+  cook_universes : universes;
   cook_private_univs : Univ.ContextSet.t option;
   cook_inline : inline;
   cook_context : Constr.named_context option;

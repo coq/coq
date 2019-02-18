@@ -111,6 +111,7 @@ type signature_mismatch_error =
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : Univ.AUContext.t; expect : Univ.AUContext.t }
+  | IncompatibleVariance
 
 type module_typing_error =
   | SignatureMismatch of

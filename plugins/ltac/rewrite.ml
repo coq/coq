@@ -1889,7 +1889,7 @@ let declare_projection n instance_id r =
     in it_mkProd_or_LetIn ccl ctx
   in
   let typ = it_mkProd_or_LetIn typ ctx in
-  let univs = Evd.const_univ_entry ~poly sigma in
+  let univs = Evd.univ_entry ~poly sigma in
   let typ = EConstr.to_constr sigma typ in
   let term = EConstr.to_constr sigma term in
   let cst = 
@@ -1975,7 +1975,7 @@ let add_morphism_infer atts m n =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
     if Lib.is_modtype () then
-      let uctx = UState.const_univ_entry ~poly:atts.polymorphic uctx in
+      let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
 				(Entries.ParameterEntry 
                                  (None,(instance,uctx),None),

@@ -65,23 +65,15 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       Feedback.feedback ~id:state_id Feedback.Complete)
 
-let abstract_constant_universes = function
-  | Monomorphic_const_entry uctx ->
-    Univ.empty_level_subst, Monomorphic_const uctx
-  | Polymorphic_const_entry (nas, uctx) ->
-    let sbst, auctx = Univ.abstract_universes nas uctx in
-    let sbst = Univ.make_instance_subst sbst in
-    sbst, Polymorphic_const auctx
-
 let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   match dcl with
     | ParameterEntry (ctx,(t,uctx),nl) ->
       let env = match uctx with
-        | Monomorphic_const_entry uctx -> push_context_set ~strict:true uctx env
-        | Polymorphic_const_entry (_, uctx) -> push_context ~strict:false uctx env
+        | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
+        | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
       in
       let j = infer env t in
-      let usubst, univs = abstract_constant_universes uctx in
+      let usubst, univs = Declareops.abstract_universes uctx in
       let c = Typeops.assumption_of_judgment env j in
       let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
       {
@@ -115,7 +107,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         | CPrimitives.OT_type _ -> Undef None in
       { Cooking.cook_body = cd;
         cook_type = ty;
-        cook_universes = Monomorphic_const uctxt;
+        cook_universes = Monomorphic uctxt;
         cook_private_univs = None;
         cook_inline = false;
         cook_context = None
@@ -134,7 +126,7 @@ the polymorphic case
   *)
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true;
-                       const_entry_universes = Monomorphic_const_entry univs; _ } as c) ->
+                       const_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id ; _ } = c in
       let tyj = infer_type env typ in
@@ -165,7 +157,7 @@ the polymorphic case
       {
         Cooking.cook_body = def;
         cook_type = typ;
-        cook_universes = Monomorphic_const univs;
+        cook_universes = Monomorphic univs;
         cook_private_univs = None;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -183,11 +175,11 @@ the polymorphic case
         body, Univ.ContextSet.union ctx ctx'
       in
       let env, usubst, univs, private_univs = match c.const_entry_universes with
-      | Monomorphic_const_entry univs ->
+      | Monomorphic_entry univs ->
         let ctx = Univ.ContextSet.union univs ctx in
         let env = push_context_set ~strict:true ctx env in
-        env, Univ.empty_level_subst, Monomorphic_const ctx, None
-      | Polymorphic_const_entry (nas, uctx) ->
+        env, Univ.empty_level_subst, Monomorphic ctx, None
+      | Polymorphic_entry (nas, uctx) ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
         let env = push_context ~strict:false uctx env in
@@ -200,7 +192,7 @@ the polymorphic case
           if Univ.ContextSet.is_empty ctx then env, None
           else CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
         in
-        env, sbst, Polymorphic_const auctx, local
+        env, sbst, Polymorphic auctx, local
       in
       let j = infer env body in
       let typ = match typ with
@@ -342,7 +334,7 @@ let translate_local_def env _id centry =
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_const_entry Univ.ContextSet.empty;
+    const_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
     const_entry_opaque = false;
     const_entry_inline_code = false;
   } in
@@ -360,8 +352,8 @@ let translate_local_def env _id centry =
        record_aux env ids_typ ids_def
   end;
   let () = match decl.cook_universes with
-  | Monomorphic_const ctx -> assert (Univ.ContextSet.is_empty ctx)
-  | Polymorphic_const _ -> assert false
+  | Monomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+  | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c

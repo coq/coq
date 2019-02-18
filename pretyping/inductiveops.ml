@@ -453,12 +453,7 @@ let build_branch_type env sigma dep p cs =
 let compute_projections env (kn, i as ind) =
   let open Term in
   let mib = Environ.lookup_mind kn env in
-  let u = match mib.mind_universes with
-  | Monomorphic_ind _ -> Instance.empty
-  | Polymorphic_ind auctx -> make_abstract_instance auctx
-  | Cumulative_ind acumi ->
-    make_abstract_instance (ACumulativityInfo.univ_context acumi)
-  in
+  let u = make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let x = match mib.mind_record with
   | NotRecord | FakeRecord ->
     anomaly Pp.(str "Trying to build primitive projections for a non-primitive record")

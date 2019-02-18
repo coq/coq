@@ -41,33 +41,31 @@ let variance_pb cv_pb var =
   | CONV, Covariant -> Invariant
   | CUMUL, Covariant -> Covariant
 
-let infer_cumulative_ind_instance cv_pb cumi variances u =
+let infer_cumulative_ind_instance cv_pb mind_variance variances u =
   Array.fold_left2 (fun variances varu u ->
       match LMap.find u variances with
       | exception Not_found -> variances
       | varu' ->
         LMap.set u (Variance.sup varu' (variance_pb cv_pb varu)) variances)
-    variances (ACumulativityInfo.variance cumi) (Instance.to_array u)
+    variances mind_variance (Instance.to_array u)
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
   let mind = Environ.lookup_mind (fst ind) env in
-  match mind.mind_universes with
-  | Monomorphic_ind _ -> assert (Instance.is_empty u); variances
-  | Polymorphic_ind _ -> infer_generic_instance_eq variances u
-  | Cumulative_ind cumi ->
+  match mind.mind_variance with
+  | None -> infer_generic_instance_eq variances u
+  | Some mind_variance ->
     if not (Int.equal (inductive_cumulativity_arguments (mind,snd ind)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_cumulative_ind_instance cv_pb cumi variances u
+    else infer_cumulative_ind_instance cv_pb mind_variance variances u
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   let mind = Environ.lookup_mind mi env in
-  match mind.mind_universes with
-  | Monomorphic_ind _ -> assert (Instance.is_empty u); variances
-  | Polymorphic_ind _ -> infer_generic_instance_eq variances u
-  | Cumulative_ind cumi ->
+  match mind.mind_variance with
+  | None -> infer_generic_instance_eq variances u
+  | Some _ ->
     if not (Int.equal (constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
     then infer_generic_instance_eq variances u
-    else infer_cumulative_ind_instance CONV cumi variances u
+    else variances (* constructors are convertible at common supertype *)
 
 let infer_sort cv_pb variances s =
   match cv_pb with
@@ -189,12 +187,14 @@ let infer_inductive env mie =
   let { mind_entry_params = params;
         mind_entry_inds = entries; } = mie
   in
-  let univs =
-    match mie.mind_entry_universes with
-    | Monomorphic_ind_entry _
-    | Polymorphic_ind_entry _ as univs -> univs
-    | Cumulative_ind_entry (nas, cumi) ->
-      let uctx = CumulativityInfo.univ_context cumi in
+  let variances =
+    match mie.mind_entry_variance with
+    | None -> None
+    | Some _ ->
+      let uctx = match mie.mind_entry_universes with
+        | Monomorphic_entry _ -> assert false
+        | Polymorphic_entry (_,uctx) -> uctx
+      in
       let uarray = Instance.to_array @@ UContext.instance uctx in
       let env = Environ.push_context uctx env in
       let variances =
@@ -212,6 +212,10 @@ let infer_inductive env mie =
           entries
       in
       let variances = Array.map (fun u -> LMap.find u variances) uarray in
-      Cumulative_ind_entry (nas, CumulativityInfo.make (uctx, variances))
+      Some variances
   in
-  { mie with mind_entry_universes = univs }
+  { mie with mind_entry_variance = variances }
+
+let dummy_variance = let open Entries in function
+  | Monomorphic_entry _ -> assert false
+  | Polymorphic_entry (_,uctx) -> Array.make (UContext.size uctx) Variance.Irrelevant

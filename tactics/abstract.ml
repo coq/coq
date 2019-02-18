@@ -162,8 +162,8 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let cst = Impargs.with_implicit_protection cst () in
   let inst = match const.Entries.const_entry_universes with
-  | Entries.Monomorphic_const_entry _ -> EInstance.empty
-  | Entries.Polymorphic_const_entry (_, ctx) ->
+  | Entries.Monomorphic_entry _ -> EInstance.empty
+  | Entries.Polymorphic_entry (_, ctx) ->
     (* We mimick what the kernel does, that is ensuring that no additional
        constraints appear in the body of polymorphic constants. Ideally this
        should be enforced statically. *)

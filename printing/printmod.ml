@@ -126,10 +126,7 @@ let print_mutual_inductive env mind mib udecl =
   hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
            (print_one_inductive env sigma mib) inds ++
-         match mib.mind_universes with
-         | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
-         | Cumulative_ind cumi ->
-           Printer.pr_abstract_cumulativity_info sigma cumi)
+         Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes)
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -178,10 +175,7 @@ let print_record env mind mib udecl =
         (fun (id,b,c) ->
           Id.print id ++ str (if b then " : " else " := ") ++
           Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }" ++
-    match mib.mind_universes with
-    | Monomorphic_ind _ | Polymorphic_ind _ -> str ""
-    | Cumulative_ind cumi ->
-      Printer.pr_abstract_cumulativity_info sigma cumi
+    Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes
   )
 
 let pr_mutual_inductive_body env mind mib udecl =
@@ -302,7 +296,7 @@ let print_body is_impl extent env mp (l,body) =
 		hov 2 (str ":= " ++
                        Printer.pr_lconstr_env env sigma (Mod_subst.force_constr l))
 	      | _ -> mt ()) ++ str "." ++
-            Printer.pr_abstract_universe_ctx sigma ctx ~priv:cb.const_private_poly_univs)
+            Printer.pr_abstract_universe_ctx sigma ctx ?priv:cb.const_private_poly_univs)
     | SFBmind mib ->
       match extent with
       | WithContents ->

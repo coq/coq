@@ -143,7 +143,7 @@ let declare_constant_common id cst =
   update_tables c;
   c
 
-let default_univ_entry = Monomorphic_const_entry Univ.ContextSet.empty
+let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) ?(eff=Safe_typing.empty_private_constants) body =
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
@@ -156,8 +156,8 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let is_poly de = match de.const_entry_universes with
-  | Monomorphic_const_entry _ -> false
-  | Polymorphic_const_entry _ -> true
+  | Monomorphic_entry _ -> false
+  | Polymorphic_entry _ -> true
   in
   let in_section = Lib.sections_are_opened () in
   let export, decl = (* We deal with side effects *)
@@ -217,8 +217,8 @@ let cache_variable ((sp,_),o) =
          section-local definition, but it's not enforced by typing *)
       let (body, uctx), () = Future.force de.const_entry_body in
       let poly, univs = match de.const_entry_universes with
-      | Monomorphic_const_entry uctx -> false, uctx
-      | Polymorphic_const_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
+      | Monomorphic_entry uctx -> false, uctx
+      | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
       let univs = Univ.ContextSet.union uctx univs in
       (* We must declare the universe constraints before type-checking the
@@ -328,21 +328,15 @@ let dummy_inductive_entry m = {
   mind_entry_record = None;
   mind_entry_finite = Declarations.BiFinite;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
-  mind_entry_universes = Monomorphic_ind_entry Univ.ContextSet.empty;
+  mind_entry_universes = default_univ_entry;
+  mind_entry_variance = None;
   mind_entry_private = None;
 }
 
 (* reinfer subtyping constraints for inductive after section is dischared. *)
-let infer_inductive_subtyping mind_ent =
-  match mind_ent.mind_entry_universes with
-  | Monomorphic_ind_entry _ | Polymorphic_ind_entry _ ->
-    mind_ent
-  | Cumulative_ind_entry (_, cumi) ->
-    begin
-      let env = Global.env () in
-      (* let (env'', typed_params) = Typeops.infer_local_decls env' (mind_ent.mind_entry_params) in *)
-        InferCumulativity.infer_inductive env mind_ent
-    end
+let rebuild_inductive mind_ent =
+  let env = Global.env () in
+  InferCumulativity.infer_inductive env mind_ent
 
 let inInductive : mutual_inductive_entry -> obj =
   declare_object {(default_object "INDUCTIVE") with
@@ -352,25 +346,19 @@ let inInductive : mutual_inductive_entry -> obj =
     classify_function = (fun a -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
-    rebuild_function = infer_inductive_subtyping }
+    rebuild_function = rebuild_inductive }
 
 let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
   let id = Label.to_id label in
-  let univs = match univs with
-    | Monomorphic_ind_entry _ ->
+  let univs, u = match univs with
+    | Monomorphic_entry _ ->
       (* Global constraints already defined through the inductive *)
-      Monomorphic_const_entry Univ.ContextSet.empty
-    | Polymorphic_ind_entry (nas, ctx) ->
-      Polymorphic_const_entry (nas, ctx)
-    | Cumulative_ind_entry (nas, ctx) ->
-      Polymorphic_const_entry (nas, Univ.CumulativityInfo.univ_context ctx)
+      default_univ_entry, Univ.Instance.empty
+    | Polymorphic_entry (nas, ctx) ->
+      Polymorphic_entry (nas, ctx), Univ.UContext.instance ctx
   in
-  let term, types = match univs with
-    | Monomorphic_const_entry _ -> term, types
-    | Polymorphic_const_entry (_, ctx) ->
-      let u = Univ.UContext.instance ctx in
-      Vars.subst_instance_constr u term, Vars.subst_instance_constr u types
-  in
+  let term = Vars.subst_instance_constr u term in
+  let types = Vars.subst_instance_constr u types in
   let entry = definition_entry ~types ~univs term in
   let cst = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
   let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in

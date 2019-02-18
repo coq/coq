@@ -230,10 +230,10 @@ let save_remaining_recthms (locality,p,kind) norm univs body opaq i (id,(t_i,(_,
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let univs = match univs with
-            | Polymorphic_const_entry (_, univs) ->
+            | Polymorphic_entry (_, univs) ->
               (* What is going on here? *)
               Univ.ContextSet.of_context univs
-            | Monomorphic_const_entry univs -> univs
+            | Monomorphic_entry univs -> univs
           in
           let c = SectionLocalAssum ((t_i, univs),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
@@ -476,7 +476,7 @@ let save_proof ?proof = function
             if const_entry_type = None then
               user_err Pp.(str "Admitted requires an explicit statement");
             let typ = Option.get const_entry_type in
-            let ctx = UState.const_univ_entry ~poly:(pi2 k) universes in
+            let ctx = UState.univ_entry ~poly:(pi2 k) universes in
             let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
             Admitted(id, k, (sec_vars, (typ, ctx), None), universes)
         | None ->

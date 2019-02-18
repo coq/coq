@@ -53,9 +53,9 @@ type 'a constant_def =
   | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
   | Primitive of CPrimitives.t            (** or a primitive operation *)
 
-type constant_universes =
-  | Monomorphic_const of Univ.ContextSet.t
-  | Polymorphic_const of Univ.AUContext.t
+type universes =
+  | Monomorphic of Univ.ContextSet.t
+  | Polymorphic of Univ.AUContext.t
 
 (** The [typing_flags] are instructions to the type-checker which
     modify its behaviour. The typing flags used in the type-checking
@@ -92,7 +92,7 @@ type constant_body = {
     const_body : Constr.t Mod_subst.substituted constant_def;
     const_type : types;
     const_body_code : Cemitcodes.to_patch_substituted option;
-    const_universes : constant_universes;
+    const_universes : universes;
     const_private_poly_univs : Univ.ContextSet.t option;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
@@ -185,11 +185,6 @@ type one_inductive_body = {
     mind_reloc_tbl :  Vmvalues.reloc_table;
   }
 
-type abstract_inductive_universes =
-  | Monomorphic_ind of Univ.ContextSet.t
-  | Polymorphic_ind of Univ.AUContext.t
-  | Cumulative_ind of Univ.ACumulativityInfo.t
-
 type recursivity_kind =
   | Finite (** = inductive *)
   | CoFinite (** = coinductive *)
@@ -213,7 +208,9 @@ type mutual_inductive_body = {
 
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)
 
-    mind_universes : abstract_inductive_universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
+    mind_universes : universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
+
+    mind_variance : Univ.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
 
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 

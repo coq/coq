@@ -10,3 +10,5 @@
 
 val infer_inductive : Environ.env -> Entries.mutual_inductive_entry ->
   Entries.mutual_inductive_entry
+
+val dummy_variance : Entries.universes_entry -> Univ.Variance.t array

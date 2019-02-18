@@ -100,24 +100,16 @@ let constraints ctx = snd ctx.uctx_local
 
 let context ctx = ContextSet.to_context ctx.uctx_local
 
-let const_univ_entry ~poly uctx =
+let univ_entry ~poly uctx =
   let open Entries in
   if poly then
     let (binders, _) = uctx.uctx_names in
     let uctx = context uctx in
     let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
-    Polymorphic_const_entry (nas, uctx)
-  else Monomorphic_const_entry (context_set uctx)
+    Polymorphic_entry (nas, uctx)
+  else Monomorphic_entry (context_set uctx)
 
-(* does not support cumulativity since you need more info *)
-let ind_univ_entry ~poly uctx =
-  let open Entries in
-  if poly then
-    let (binders, _) = uctx.uctx_names in
-    let uctx = context uctx in
-    let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
-    Polymorphic_ind_entry (nas, uctx)
-  else Monomorphic_ind_entry (context_set uctx)
+let const_univ_entry = univ_entry
 
 let of_context_set ctx = { empty with uctx_local = ctx }
 
@@ -422,10 +414,10 @@ let check_univ_decl ~poly uctx decl =
       let (binders, _) = uctx.uctx_names in
       let uctx = universe_context ~names ~extensible uctx in
       let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
-      Entries.Polymorphic_const_entry (nas, uctx)
+      Entries.Polymorphic_entry (nas, uctx)
     else
       let () = check_universe_context_set ~names ~extensible uctx in
-      Entries.Monomorphic_const_entry uctx.uctx_local
+      Entries.Monomorphic_entry uctx.uctx_local
   in
   if not decl.univdecl_extensible_constraints then
     check_implication uctx
@@ -458,8 +450,8 @@ let restrict ctx vars =
 let demote_seff_univs entry uctx =
   let open Entries in
   match entry.const_entry_universes with
-  | Polymorphic_const_entry _ -> uctx
-  | Monomorphic_const_entry (univs, _) ->
+  | Polymorphic_entry _ -> uctx
+  | Monomorphic_entry (univs, _) ->
     let seff = LSet.union uctx.uctx_seff_univs univs in
     { uctx with uctx_seff_univs = seff }
 

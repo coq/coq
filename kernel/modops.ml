@@ -50,6 +50,7 @@ type signature_mismatch_error =
   | IncompatibleUniverses of Univ.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : Univ.AUContext.t; expect : Univ.AUContext.t }
+  | IncompatibleVariance
 
 type module_typing_error =
   | SignatureMismatch of
@@ -325,11 +326,7 @@ let strengthen_const mp_from l cb resolver =
   |_ ->
     let kn = KerName.make mp_from l in
     let con = constant_of_delta_kn resolver kn in
-    let u =
-      match cb.const_universes with
-      | Monomorphic_const _ -> Univ.Instance.empty
-      | Polymorphic_const ctx -> Univ.make_abstract_instance ctx
-    in
+    let u = Univ.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
         const_body = Def (Mod_subst.from_val (mkConstU (con,u)));
         const_private_poly_univs = None;

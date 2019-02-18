@@ -881,11 +881,7 @@ let compile_constant_body ~fail_on_error env univs = function
   | Undef _ | OpaqueDef _ | Primitive _ -> Some BCconstant
   | Def sb ->
       let body = Mod_subst.force_constr sb in
-      let instance_size =
-        match univs with
-        | Monomorphic_const _ -> 0
-        | Polymorphic_const univ -> Univ.AUContext.size univ
-      in
+      let instance_size = Univ.AUContext.size (Declareops.universes_context univs) in
       match kind body with
 	| Const (kn',u) when is_univ_copy instance_size u ->
 	    (* we use the canonical name of the constant*)

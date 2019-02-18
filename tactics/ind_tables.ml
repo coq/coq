@@ -121,7 +121,7 @@ let define internal id c poly univs =
   let id = compute_name internal id in
   let ctx = UState.minimize univs in
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
-  let univs = UState.const_univ_entry ~poly ctx in
+  let univs = UState.univ_entry ~poly ctx in
   let entry = {
     const_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),
