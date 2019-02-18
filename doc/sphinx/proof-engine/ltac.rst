@@ -1162,6 +1162,15 @@ Printing |Ltac| tactics
 Debugging |Ltac| tactics
 ------------------------
 
+Backtraces
+~~~~~~~~~~
+
+.. flag:: Ltac Backtrace
+
+   Setting this flag displays a backtrace on Ltac failures that can be useful
+   to find out what went wrong. It is disabled by default for performance
+   reasons.
+
 Info trace
 ~~~~~~~~~~
 

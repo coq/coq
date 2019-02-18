@@ -1,3 +1,5 @@
+Set Ltac Backtrace.
+
 Ltac foo x := idtac x.
 Ltac bar x := fun y _ => idtac x y.
 Ltac baz := foo.
