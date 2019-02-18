@@ -9,11 +9,15 @@
 (************************************************************************)
 
 val invfun :
-  Tactypes.quantified_hypothesis ->
-  Names.GlobRef.t option ->
-  Evar.t Evd.sigma -> Evar.t list Evd.sigma
+     Tactypes.quantified_hypothesis
+  -> Names.GlobRef.t option
+  -> Evar.t Evd.sigma
+  -> Evar.t list Evd.sigma
+
 val derive_correctness :
-  (Evd.evar_map ref ->
-   (Constr.pconstant * Sorts.family) list ->
-   'a Entries.definition_entry list) ->
-   Constr.pconstant list -> Names.inductive list -> unit
+     (   Evd.evar_map ref
+      -> (Constr.pconstant * Sorts.family) list
+      -> 'a Entries.definition_entry list)
+  -> Constr.pconstant list
+  -> Names.inductive list
+  -> unit

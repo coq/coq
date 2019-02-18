@@ -12,29 +12,33 @@ open Names
 open Constr
 
 val generate_functional_principle :
-  Evd.evar_map ref -> 
-  (* do we accept interactive proving *)
-  bool ->
-  (* induction principle on rel *)
-  types ->
-  (* *)
-  Sorts.t array option ->
-  (* Name of the new principle *)
-  (Id.t) option ->
-  (* the compute functions to use   *)
-  pconstant array ->
-  (* We prove the nth- principle *)
-  int  ->
-  (* The tactic to use to make the proof w.r
+     Evd.evar_map ref
+  -> (* do we accept interactive proving *)
+     bool
+  -> (* induction principle on rel *)
+     types
+  -> (* *)
+     Sorts.t array option
+  -> (* Name of the new principle *)
+     Id.t option
+  -> (* the compute functions to use   *)
+     pconstant array
+  -> (* We prove the nth- principle *)
+     int
+  -> (   (* The tactic to use to make the proof w.r
      the number of params
   *)
-  (EConstr.constr array -> int -> Tacmach.tactic) ->
-  unit
+         EConstr.constr array
+      -> int
+      -> Tacmach.tactic)
+  -> unit
 
 exception No_graph_found
 
-val make_scheme :   Evd.evar_map ref ->
- (pconstant*Sorts.family) list -> Safe_typing.private_constants Entries.definition_entry list
+val make_scheme :
+     Evd.evar_map ref
+  -> (pconstant * Sorts.family) list
+  -> Safe_typing.private_constants Entries.definition_entry list
 
-val build_scheme : (Id.t*Libnames.qualid*Sorts.family) list ->  unit
-val build_case_scheme : (Id.t*Libnames.qualid*Sorts.family)  ->  unit
+val build_scheme : (Id.t * Libnames.qualid * Sorts.family) list -> unit
+val build_case_scheme : Id.t * Libnames.qualid * Sorts.family -> unit
