@@ -130,6 +130,9 @@ Vernacular commands
   for all commands that support it. In particular, it does not have any effect
   on tactics anymore. May cause some incompatibilities.
 
+- The algorithm computing implicit arguments now behaves uniformly for primitive
+  projection and application nodes (bug #9508).
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
