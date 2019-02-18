@@ -48,9 +48,9 @@ type var_internalization_data =
       (* type of the "free" variable, for coqdoc, e.g. while typing the
          constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
 
-    Id.t list *
+    (Id.t * Id.t) list *
       (* impargs to automatically add to the variable, e.g. for "JMeq A a B b"
-         in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
+         in implicit mode, this is [(arg_1,A);(arg_2,B)] and this adds (arg_1:=A) and (arg_2:=B) *)
 
     Impargs.implicit_status list * (* signature of impargs of the variable *)
     Notation_term.scope_name option list (* subscopes of the args of the variable *)

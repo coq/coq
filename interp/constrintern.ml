@@ -57,8 +57,8 @@ type var_internalization_data =
        constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
     var_internalization_type *
     (* impargs to automatically add to the variable, e.g. for "JMeq A a B b"
-       in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
-    Id.t list *
+       in implicit mode, this is [(arg_1,A);(arg_2,B)] and this adds (arg_1:=A) and (arg_2:=B) *)
+    (Id.t * Id.t) list *
     (* signature of impargs of the variable *)
     Impargs.implicit_status list *
     (* subscopes of the args of the variable *)
@@ -197,9 +197,11 @@ let empty_internalization_env = Id.Map.empty
 let compute_explicitable_implicit imps = function
   | Inductive (params,_) ->
       (* In inductive types, the parameters are fixed implicit arguments *)
+      assert (List.length params <= List.length imps);
       let sub_impl,_ = List.chop (List.length params) imps in
-      let sub_impl' = List.filter is_status_implicit sub_impl in
-      List.map name_of_implicit sub_impl'
+      List.map_filter
+        (fun (imp,param) -> if is_status_implicit imp then Some (name_of_implicit imp,param) else None)
+        (List.combine sub_impl (List.rev params))
   | Recursive | Method | Variable ->
       (* Unable to know in advance what the implicit arguments will be *)
       []
@@ -934,8 +936,9 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] registered with implicit arguments *)
   try
     let ty,expl_impls,impls,argsc = Id.Map.find id env.impls in
-    let expl_impls = List.map
-      (fun id -> CAst.make ?loc @@ CRef (qualid_of_ident ?loc id,None), Some (make ?loc @@ ExplByName id)) expl_impls in
+    let expl_impls =
+      List.map (fun (arg,param) -> CAst.make ?loc @@ CRef (qualid_of_ident ?loc param,None),
+                                   Some (make ?loc @@ ExplByName arg)) expl_impls in
     let tys = string_of_ty ty in
     Dumpglob.dump_reference ?loc "<>" (Id.to_string id) tys;
     gvar (loc,id) us, make_implicits_list impls, argsc, expl_impls
