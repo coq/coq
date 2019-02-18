@@ -142,6 +142,7 @@ exclude_patterns = [
     'introduction.rst',
     'refman-preamble.rst',
     'README.rst',
+    'README.gen.rst',
     'README.template.rst'
 ] + ["*.{}.rst".format(fmt) for fmt in SUPPORTED_FORMATS]
 
