@@ -609,6 +609,11 @@ let vernac_assumption ~atts discharge kind l nl =
   let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
+let is_polymorphic_inductive_cumulativity =
+  declare_bool_option_and_ref ~depr:false ~value:false
+    ~name:"Polymorphic inductive cumulativity"
+    ~key:["Polymorphic"; "Inductive"; "Cumulativity"]
+
 let should_treat_as_cumulative cum poly =
   match cum with
   | Some VernacCumulative ->
@@ -617,7 +622,7 @@ let should_treat_as_cumulative cum poly =
   | Some VernacNonCumulative ->
     if poly then false
     else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
-  | None -> poly && Flags.is_polymorphic_inductive_cumulativity ()
+  | None -> poly && is_polymorphic_inductive_cumulativity ()
 
 let get_uniform_inductive_parameters =
   Goptions.declare_bool_option_and_ref
@@ -1562,14 +1567,6 @@ let () =
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "Polymorphic inductive cumulativity";
-      optkey   = ["Polymorphic"; "Inductive"; "Cumulativity"];
-      optread  = Flags.is_polymorphic_inductive_cumulativity;
-      optwrite = Flags.make_polymorphic_inductive_cumulativity }
 
 let () =
   declare_int_option
