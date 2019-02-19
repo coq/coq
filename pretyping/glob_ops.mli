@@ -89,6 +89,7 @@ val map_pattern : (glob_constr -> glob_constr) ->
 
 (** Conversion from glob_constr to cases pattern, if possible
 
+    Evaluation is forced.
     Take the current alias as parameter,
     @raise Not_found if translation is impossible *)
 val cases_pattern_of_glob_constr : Name.t -> 'a glob_constr_g -> 'a cases_pattern_g

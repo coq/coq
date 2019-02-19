@@ -485,7 +485,11 @@ let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
 | _ -> false
 
-let rec cases_pattern_of_glob_constr na = DAst.map (function
+let rec cases_pattern_of_glob_constr na c =
+  (* Forcing evaluation to ensure that the possible raising of
+     Not_found is not delayed *)
+  let c = DAst.force c in
+  DAst.map (function
   | GVar id ->
     begin match na with
     | Name _ ->
@@ -498,6 +502,8 @@ let rec cases_pattern_of_glob_constr na = DAst.map (function
   | GApp (c, l) ->
     begin match DAst.get c with
     | GRef (ConstructRef cstr,_) ->
+      let nparams = Inductiveops.inductive_nparams (fst cstr) in
+      let _,l = List.chop nparams l in
       PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
     | _ -> raise Not_found
     end
@@ -505,7 +511,7 @@ let rec cases_pattern_of_glob_constr na = DAst.map (function
      (* A canonical encoding of aliases *)
      DAst.get (cases_pattern_of_glob_constr na' b)
   | _ -> raise Not_found
-  )
+  ) c
 
 open Declarations
 open Term

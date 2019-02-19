@@ -21,6 +21,7 @@ val get_thunk : ('a, 'b) thunk -> 'a
 
 val make : ?loc:Loc.t -> 'a -> ('a, 'b) t
 val delay : ?loc:Loc.t -> (unit -> 'a) -> ('a, [ `thunk ]) t
+val force : ('a, 'b) t -> ('a, 'b) t
 
 val map : ('a -> 'b) -> ('a, 'c) t -> ('b, 'c) t
 val map_with_loc : (?loc:Loc.t -> 'a -> 'b) -> ('a, 'c) t -> ('b, 'c) t

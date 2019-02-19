@@ -321,12 +321,10 @@ let build_constructors_of_type ind' argl =
 		    construct
 		in
 		let argl =
-		  if List.is_empty argl
-		  then
- 		    Array.to_list
-		      (Array.init (cst_narg - npar) (fun _ -> mkGHole ())
-		      )
-		  else argl
+                  if List.is_empty argl then
+                    List.make cst_narg (mkGHole ())
+                  else
+                    List.make npar (mkGHole ()) @ argl
 		in
 		let pat_as_term =
 		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)

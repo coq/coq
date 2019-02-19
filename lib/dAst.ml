@@ -30,6 +30,8 @@ let make ?loc v = CAst.make ?loc (Value v)
 
 let delay ?loc v = CAst.make ?loc (Thunk (Lazy.from_fun v))
 
+let force x = CAst.make ?loc:x.CAst.loc (Value (get_thunk x.v))
+
 let map f n = CAst.map (fun x -> map_thunk f x) n
 
 let map_with_loc f n =

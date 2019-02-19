@@ -53,3 +53,23 @@ Notation Cn := Foo.FooCn
 Expands to: Notation Notations4.J.Mfoo.Foo.Bar.Cn
 let v := 0%test17 in v : myint63
      : myint63
+fun y : nat => # (x, z) |-> y & y
+     : forall y : nat,
+       (?T1 * ?T2 -> ?T1 * ?T2 * nat) * (?T * ?T0 -> ?T * ?T0 * nat)
+where
+?T : [y : nat  pat : ?T * ?T0  p0 : ?T * ?T0  p := p0 : ?T * ?T0
+     |- Type] (pat, p0, p cannot be used)
+?T0 : [y : nat  pat : ?T * ?T0  p0 : ?T * ?T0  p := p0 : ?T * ?T0
+      |- Type] (pat, p0, p cannot be used)
+?T1 : [y : nat  pat : ?T1 * ?T2  p0 : ?T1 * ?T2  p := p0 : ?T1 * ?T2
+      |- Type] (pat, p0, p cannot be used)
+?T2 : [y : nat  pat : ?T1 * ?T2  p0 : ?T1 * ?T2  p := p0 : ?T1 * ?T2
+      |- Type] (pat, p0, p cannot be used)
+fun y : nat => # (x, z) |-> (x + y) & (y + z)
+     : forall y : nat,
+       (nat * ?T -> nat * ?T * nat) * (?T0 * nat -> ?T0 * nat * nat)
+where
+?T : [y : nat  pat : nat * ?T  p0 : nat * ?T  p := p0 : nat * ?T
+     |- Type] (pat, p0, p cannot be used)
+?T0 : [y : nat  pat : ?T0 * nat  p0 : ?T0 * nat  p := p0 : ?T0 * nat
+      |- Type] (pat, p0, p cannot be used)

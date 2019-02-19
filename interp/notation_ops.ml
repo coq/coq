@@ -908,11 +908,8 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     (* TODO: look at the consequences for alp *)
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
-let force_cases_pattern c =
-  DAst.make ?loc:c.CAst.loc (DAst.get c)
-
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
-  let pat = try force_cases_pattern (cases_pattern_of_glob_constr Anonymous c) with Not_found -> raise No_match in
+  let pat = try cases_pattern_of_glob_constr Anonymous c with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
     let patl' = Id.List.assoc var binders in
