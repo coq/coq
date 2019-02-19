@@ -921,16 +921,30 @@ let check_one_fix renv recpos trees def =
               end
 		
         | Case (ci,p,c_0,lrest) ->
-            List.iter (check_rec_call renv []) (c_0::p::l);
-            (* compute the recarg information for the arguments of
-               each branch *)
-            let case_spec = branches_specif renv 
-	      (lazy_subterm_specif renv [] c_0) ci in
-	    let stack' = push_stack_closures renv l stack in
-            let stack' = filter_stack_domain renv.env p stack' in
-              Array.iteri (fun k br' -> 
-			     let stack_br = push_stack_args case_spec.(k) stack' in
-			     check_rec_call renv stack_br br') lrest
+            begin try
+              List.iter (check_rec_call renv []) (c_0::p::l);
+              (* compute the recarg info for the arguments of each branch *)
+              let case_spec =
+                branches_specif renv (lazy_subterm_specif renv [] c_0) ci in
+              let stack' = push_stack_closures renv l stack in
+              let stack' = filter_stack_domain renv.env p stack' in
+              lrest |> Array.iteri (fun k br' ->
+                let stack_br = push_stack_args case_spec.(k) stack' in
+                check_rec_call renv stack_br br')
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the match away by looking for a
+                 constructor in c_0 (we unfold definitions too) *)
+              let c_0 = whd_all renv.env c_0 in
+              let hd, _ = decompose_app c_0 in
+              match kind hd with
+              | Construct _ ->
+                  (* the call to whd_betaiotazeta will reduce the
+                     apparent iota redex away *)
+                  check_rec_call renv []
+                    (Term.applist (mkCase (ci,p,c_0,lrest), l))
+              | _ -> Exninfo.iraise exn
+            end
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
