@@ -51,6 +51,7 @@ type ('constr, 'types) ptype_error =
   | ReferenceVariables of Id.t * 'constr
   | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
       * (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
+  | CasePrivate of inductive
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int

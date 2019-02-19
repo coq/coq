@@ -385,6 +385,7 @@ let type_case_branches env (pind,largs) pj c =
 
 let check_case_info env (indsp,u) r ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
+  if is_private spec then raise (TypeError (env, CasePrivate indsp));
   if
     not (eq_ind indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||

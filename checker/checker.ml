@@ -268,6 +268,7 @@ let explain_exn = function
       | BadAssumption _ -> str"BadAssumption"
       | ReferenceVariables _ -> str"ReferenceVariables"
       | ElimArity _ -> str"ElimArity"
+      | CasePrivate _ -> str"CasePrivate"
       | CaseNotInductive _ -> str"CaseNotInductive"
       | WrongCaseInfo _ -> str"WrongCaseInfo"
       | NumberBranches _ -> str"NumberBranches"

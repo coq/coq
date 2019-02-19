@@ -247,6 +247,11 @@ let explain_elim_arity env sigma ind c pj okinds =
     str "in the inductive type" ++ spc () ++ quote pi ++ str ":") ++
   fnl () ++ msg
 
+let explain_case_private env sigma ind =
+  let env = make_all_name_different env sigma in
+  let pi = pr_inductive env ind in
+  str "Case analysis on private inductive " ++ pi ++ str " not allowed."
+
 let explain_case_not_inductive env sigma cj =
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma cj.uj_val in
@@ -754,6 +759,7 @@ let explain_type_error env sigma err =
       explain_reference_variables sigma id c
   | ElimArity (ind, c, pj, okinds) ->
       explain_elim_arity env sigma ind c pj okinds
+  | CasePrivate ind -> explain_case_private env sigma ind
   | CaseNotInductive cj ->
       explain_case_not_inductive env sigma cj
   | NumberBranches (cj, n) ->

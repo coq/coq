@@ -50,6 +50,7 @@ type ('constr, 'types) ptype_error =
   | ReferenceVariables of Id.t * 'constr
   | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
       * (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
+  | CasePrivate of inductive
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -183,6 +184,7 @@ let map_ptype_error f = function
 | BadAssumption j -> BadAssumption (on_judgment f j)
 | ReferenceVariables (id, c) -> ReferenceVariables (id, f c)
 | ElimArity (pi, c, j, ar) -> ElimArity (pi, f c, on_judgment f j, ar)
+| CasePrivate ind -> CasePrivate ind
 | CaseNotInductive j -> CaseNotInductive (on_judgment f j)
 | WrongCaseInfo (pi, ci) -> WrongCaseInfo (pi, ci)
 | NumberBranches (j, n) -> NumberBranches (on_judgment f j, n)
