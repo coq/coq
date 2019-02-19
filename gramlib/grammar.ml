@@ -1368,6 +1368,9 @@ let parse_parsable entry p =
   let get_loc () =
     try
       let cnt = Stream.count ts in
+      (* Ensure that the token at location cnt has been peeked so that
+         the location function knows about it *)
+      let _ = Stream.peek ts in
       let loc = fun_loc cnt in
       if !token_count - 1 <= cnt then loc
       else Loc.merge loc (fun_loc (!token_count - 1))
