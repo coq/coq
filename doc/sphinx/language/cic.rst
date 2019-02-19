@@ -965,7 +965,7 @@ such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;~…;~I_k :∀ Γ_P ,A_k]`
    \WFE{Γ_P}
    (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
    ------------------------------------------
-   \WF{E;~\ind{p}{Γ_I}{Γ_C}}{Γ}
+   \WF{E;~\ind{p}{Γ_I}{Γ_C}}{}
    
 
 provided that the following side conditions hold:
@@ -975,7 +975,7 @@ provided that the following side conditions hold:
       context of parameters,
     + for :math:`j=1… k` we have that :math:`A_j` is an arity of sort :math:`s_j` and :math:`I_j ∉ E`,
     + for :math:`i=1… n` we have that :math:`C_i` is a type of constructor of :math:`I_{q_i}` which
-      satisfies the positivity condition for :math:`I_1 … I_k` and :math:`c_i ∉ Γ_I ∪ E`.
+      satisfies the positivity condition for :math:`I_1 … I_k` and :math:`c_i ∉  E`.
 
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
