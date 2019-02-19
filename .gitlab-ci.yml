@@ -662,5 +662,5 @@ plugin:plugin-tutorial:
 plugin:ci-quickchick:
   extends: .ci-template-flambda
 
-plugin:ci-relation-algebra:
+plugin:ci-relation_algebra:
   extends: .ci-template

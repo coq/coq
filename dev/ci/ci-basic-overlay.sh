@@ -254,7 +254,7 @@
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
 ########################################################################
-# relation-algebra
+# relation_algebra
 ########################################################################
 : "${relation_algebra_CI_REF:=master}"
 : "${relation_algebra_CI_GITURL:=https://github.com/damien-pous/relation-algebra}"
