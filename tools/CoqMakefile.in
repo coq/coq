@@ -38,6 +38,7 @@ DOCDIR            := $(COQMF_DOCDIR)
 OCAMLFIND         := $(COQMF_OCAMLFIND)
 CAMLFLAGS         := $(COQMF_CAMLFLAGS)
 HASNATDYNLINK     := $(COQMF_HASNATDYNLINK)
+OCAMLWARN         := $(COQMF_WARN)
 
 @CONF_FILE@: @PROJECT_FILE@
 	@COQ_MAKEFILE_INVOCATION@
@@ -190,9 +191,9 @@ COQMAKEFILE_VERSION:=@COQ_VERSION@
 COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
 
 CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS)
-
 # ocamldoc fails with unknown argument otherwise
-CAMLDOCFLAGS=$(filter-out -annot, $(filter-out -bin-annot, $(CAMLFLAGS)))
+CAMLDOCFLAGS:=$(filter-out -annot, $(filter-out -bin-annot, $(CAMLFLAGS)))
+CAMLFLAGS+=$(OCAMLWARN)
 
 ifneq (,$(TIMING))
 TIMING_ARG=-time
