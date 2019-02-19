@@ -749,9 +749,9 @@ Applying theorems
    The direct application of ``Rtrans`` with ``apply`` fails because no value
    for ``y`` in ``Rtrans`` is found by ``apply``:
 
-   .. coqtop:: all
+   .. coqtop:: all fail
 
-      Fail apply Rtrans.
+      apply Rtrans.
 
    A solution is to ``apply (Rtrans n m p)`` or ``(Rtrans n m)``.
 
@@ -762,42 +762,26 @@ Applying theorems
    Note that ``n`` can be inferred from the goal, so the following would work
    too.
 
-   .. coqtop:: none
-
-      Abort. Goal R n p.
-
-   .. coqtop:: in
+   .. coqtop:: in restart
 
       apply (Rtrans _ m).
 
    More elegantly, ``apply Rtrans with (y:=m)`` allows only mentioning the
    unknown m:
 
-   .. coqtop:: none
-
-      Abort. Goal R n p.
-
-   .. coqtop:: in
+   .. coqtop:: in restart
 
       apply Rtrans with (y := m).
 
    Another solution is to mention the proof of ``(R x y)`` in ``Rtrans``
 
-   .. coqtop:: none
-
-      Abort. Goal R n p.
-
-   .. coqtop:: all
+   .. coqtop:: all restart
 
       apply Rtrans with (1 := Rnm).
 
    ... or the proof of ``(R y z)``.
 
-   .. coqtop:: none
-
-      Abort. Goal R n p.
-
-   .. coqtop:: all
+   .. coqtop:: all restart
 
       apply Rtrans with (2 := Rmp).
 
@@ -805,11 +789,7 @@ Applying theorems
    finding ``m``. Then one can apply the hypotheses ``Rnm`` and ``Rmp``. This
    instantiates the existential variable and completes the proof.
 
-   .. coqtop:: none
-
-      Abort. Goal R n p.
-
-   .. coqtop:: all
+   .. coqtop:: all restart abort
 
       eapply Rtrans.
 
@@ -2528,11 +2508,10 @@ and an explanation of the underlying technique.
       Variable P : nat -> nat -> Prop.
       Variable Q : forall n m:nat, Le n m -> Prop.
       Goal forall n m, Le (S n) m -> P n m.
-      intros.
 
    .. coqtop:: out
 
-      Show.
+      intros.
 
    To prove the goal, we may need to reason by cases on :g:`H` and to derive
    that :g:`m` is necessarily of the form :g:`(S m0)` for certain :g:`m0` and that
@@ -2552,10 +2531,8 @@ and an explanation of the underlying technique.
    context to use it after. In that case we can use :tacn:`inversion` that does
    not clear the equalities:
 
-   .. coqtop:: none
+   .. coqtop:: none restart
 
-      Abort.
-      Goal forall n m, Le (S n) m -> P n m.
       intros.
 
    .. coqtop:: all
@@ -2572,11 +2549,10 @@ and an explanation of the underlying technique.
 
       Abort.
       Goal forall n m (H:Le (S n) m), Q (S n) m H.
-      intros.
 
    .. coqtop:: out
 
-      Show.
+      intros.
 
    As :g:`H` occurs in the goal, we may want to reason by cases on its
    structure and so, we would like inversion tactics to substitute :g:`H` by
@@ -3345,17 +3321,13 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    .. example::
 
-      .. coqtop:: all
+      .. coqtop:: all abort
 
          Goal ~0=0.
          unfold not.
          Fail progress fold not.
          pattern (0 = 0).
          fold not.
-
-      .. coqtop:: none
-
-         Abort.
 
    .. tacv:: fold {+ @term}
 

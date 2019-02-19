@@ -366,6 +366,11 @@ let top_goal_print ~doc c oldp newp =
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
 
+let exit_on_error =
+  let open Goptions in
+  declare_bool_option_and_ref ~depr:false ~name:"coqtop-exit-on-error" ~key:["Coqtop";"Exit";"On";"Error"]
+    ~value:false
+
 let rec vernac_loop ~state =
   let open CAst in
   let open Vernac.State in
@@ -410,6 +415,7 @@ let rec vernac_loop ~state =
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
+    if exit_on_error () then exit 1;
     vernac_loop ~state
 
 let rec loop ~state =

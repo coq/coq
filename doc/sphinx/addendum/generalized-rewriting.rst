@@ -627,13 +627,9 @@ logical equivalence:
    Instance all_iff_morphism (A : Type) :
             Proper (pointwise_relation A iff ==> iff) (@all A).
 
-.. coqtop:: all
+.. coqtop:: all abort
 
    Proof. simpl_relation.
-
-.. coqtop:: none
-
-   Abort.
 
 One then has to show that if two predicates are equivalent at every
 point, their universal quantifications are equivalent. Once we have

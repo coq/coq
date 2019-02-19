@@ -20,6 +20,14 @@ import re
 
 import pexpect
 
+
+class CoqTopError(Exception):
+    def __init__(self, err, last_sentence, before):
+        super().__init__()
+        self.err = err
+        self.before = before
+        self.last_sentence = last_sentence
+
 class CoqTop:
     """Create an instance of coqtop.
 
@@ -63,7 +71,7 @@ class CoqTop:
         self.coqtop.kill(9)
 
     def next_prompt(self):
-        "Wait for the next coqtop prompt, and return the output preceeding it."
+        """Wait for the next coqtop prompt, and return the output preceeding it."""
         self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 10)
         return self.coqtop.before
 
@@ -75,13 +83,11 @@ class CoqTop:
         """
         # Suppress newlines, but not spaces: they are significant in notations
         sentence = re.sub(r"[\r\n]+", " ", sentence).strip()
-        self.coqtop.sendline(sentence)
         try:
+            self.coqtop.sendline(sentence)
             output = self.next_prompt()
-        except:
-            print("Error while sending the following sentence to coqtop: {}".format(sentence))
-            raise
-        # print("Got {}".format(repr(output)))
+        except Exception as err:
+            raise CoqTopError(err, sentence, self.coqtop.before)
         return output
 
 def sendmany(*sentences):

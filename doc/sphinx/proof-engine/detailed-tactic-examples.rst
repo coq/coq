@@ -53,7 +53,7 @@ rule of thumb, all the variables that appear inside constructors in
 the indices of the hypothesis should be generalized. This is exactly
 what the ``generalize_eqs_vars`` variant does:
 
-.. coqtop:: all
+.. coqtop:: all abort
 
    generalize_eqs_vars H.
    induction H.
@@ -65,7 +65,7 @@ as well in this case, e.g.:
 
 .. coqtop:: none
 
-   Abort.
+   Require Import Coq.Program.Equality.
 
 .. coqtop:: in
 
@@ -88,11 +88,7 @@ automatically do such simplifications (which may involve the axiom K).
 This is what the ``simplify_dep_elim`` tactic from ``Coq.Program.Equality``
 does. For example, we might simplify the previous goals considerably:
 
-.. coqtop:: all
-
-   Require Import Coq.Program.Equality.
-
-.. coqtop:: all
+.. coqtop:: all abort
 
    induction p ; simplify_dep_elim.
 
@@ -105,10 +101,6 @@ are ``dependent induction`` and ``dependent destruction`` that do induction or
 simply case analysis on the generalized hypothesis. For example we can
 redo what we’ve done manually with dependent destruction:
 
-.. coqtop:: none
-
-   Abort.
-
 .. coqtop:: in
 
    Lemma ex : forall n m:nat, Le (S n) m -> P n m.
@@ -117,7 +109,7 @@ redo what we’ve done manually with dependent destruction:
 
    intros n m H.
 
-.. coqtop:: all
+.. coqtop:: all abort
 
    dependent destruction H.
 
@@ -125,10 +117,6 @@ This gives essentially the same result as inversion. Now if the
 destructed hypothesis actually appeared in the goal, the tactic would
 still be able to invert it, contrary to dependent inversion. Consider
 the following example on vectors:
-
-.. coqtop:: none
-
-   Abort.
 
 .. coqtop:: in
 
@@ -230,28 +218,20 @@ name. A term is either an application of:
 
 Once we have this datatype we want to do proofs on it, like weakening:
 
-.. coqtop:: in
+.. coqtop:: in abort
 
    Lemma weakening : forall G D tau, term (G ; D) tau -> 
                      forall tau', term (G , tau' ; D) tau.
-
-.. coqtop:: none
-
-   Abort.
 
 The problem here is that we can’t just use induction on the typing
 derivation because it will forget about the ``G ; D`` constraint appearing
 in the instance. A solution would be to rewrite the goal as:
 
-.. coqtop:: in
+.. coqtop:: in abort
 
    Lemma weakening' : forall G' tau, term G' tau ->
                       forall G D, (G ; D) = G' ->
                       forall tau', term (G, tau' ; D) tau.
-
-.. coqtop:: none
-
-   Abort.
 
 With this proper separation of the index from the instance and the
 right induction loading (putting ``G`` and ``D`` after the inducted-on

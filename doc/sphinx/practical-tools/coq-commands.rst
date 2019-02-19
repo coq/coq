@@ -34,6 +34,11 @@ allow dynamic linking of tactics). You can switch to the OCaml toplevel
 with the command ``Drop.``, and come back to the |Coq|
 toplevel with the command ``Coqloop.loop();;``.
 
+.. flag:: Coqtop Exit On Error
+
+   This option, off by default, causes coqtop to exit with status code
+   ``1`` if a command produces an error instead of recovering from it.
+
 Batch compilation (coqc)
 ------------------------
 

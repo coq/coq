@@ -265,7 +265,7 @@ Tips and tricks
 Nested lemmas
 -------------
 
-The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas::
+The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
 
    .. coqtop:: all
 
@@ -275,7 +275,7 @@ The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  
 
       Lemma l2: 2 + 2 <> 1.
 
-Add either ``undo`` to the first block or ``reset`` to the second block to avoid nesting lemmas.
+Add either ``abort`` to the first block or ``reset`` to the second block to avoid nesting lemmas.
 
 Abbreviations and macros
 ------------------------

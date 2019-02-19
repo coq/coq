@@ -214,17 +214,17 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
 
     Example::
 
-       .. coqtop:: in undo
+       .. coqtop:: in reset
 
           Print nat.
           Definition a := 1.
 
     The blank line after the directive is required.  If you begin a proof,
-    include an ``Abort`` afterwards to reset coqtop for the next example.
+    use the ``abort`` option to reset coqtop for the next example.
 
     Here is a list of permissible options:
 
-    - Display options
+    - Display options (choose exactly one)
 
       - ``all``: Display input and output
       - ``in``: Display only input
@@ -234,7 +234,9 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
     - Behavior options
 
       - ``reset``: Send a ``Reset Initial`` command before running this block
-      - ``undo``: Reset state after executing. Not compatible with ``reset``.
+      - ``fail``: Don't die if a command fails
+      - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
+      - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
 
     ``coqtop``\ 's state is preserved across consecutive ``.. coqtop::`` blocks
     of the same document (``coqrst`` creates a single ``coqtop`` process per
@@ -508,7 +510,7 @@ Tips and tricks
 Nested lemmas
 -------------
 
-The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas::
+The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  That is, the following will create two nested lemmas (which by default results in a failure)::
 
    .. coqtop:: all
 
@@ -518,7 +520,7 @@ The ``.. coqtop::`` directive does *not* reset Coq after running its contents.  
 
       Lemma l2: 2 + 2 <> 1.
 
-Add either ``undo`` to the first block or ``reset`` to the second block to avoid nesting lemmas.
+Add either ``abort`` to the first block or ``reset`` to the second block to avoid nesting lemmas.
 
 Abbreviations and macros
 ------------------------

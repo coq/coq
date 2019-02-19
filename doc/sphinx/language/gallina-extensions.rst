@@ -1962,13 +1962,9 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       Thanks to :g:`nat_setoid` declared as canonical, the implicit arguments :g:`A`
       and :g:`B` can be synthesized in the next statement.
 
-      .. coqtop:: all
+      .. coqtop:: all abort
 
          Lemma is_law_S : is_law S.
-
-      .. coqtop:: none
-
-         Abort.
 
    .. note::
       If a same field occurs in several canonical structures, then
