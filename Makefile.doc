@@ -31,7 +31,7 @@ DVIPS:=dvips
 HTMLSTYLE:=coqremote
 
 # Sphinx-related variables
-SPHINXENV:=COQBIN="$(CURDIR)/bin/"
+SPHINXENV:=COQBIN="$(CURDIR)/bin/" COQLIB="$(CURDIR)"
 SPHINXOPTS= -j4
 SPHINXWARNERROR ?= 1
 ifeq ($(SPHINXWARNERROR),1)

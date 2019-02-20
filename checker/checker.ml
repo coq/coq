@@ -350,9 +350,9 @@ let parse_args argv =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        Envars.set_coqlib ~boot:!boot_opt ~fail:(fun x -> CErrors.user_err Pp.(str x));
-        print_endline (Envars.coqlib ());
-        exit 0
+      Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
+      print_endline (Envars.coqlib ());
+      exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
@@ -386,7 +386,7 @@ let init_with_argv argv =
   try
     parse_args argv;
     if !Flags.debug then Printexc.record_backtrace true;
-    Envars.set_coqlib ~boot:!boot_opt ~fail:(fun x -> CErrors.user_err Pp.(str x));
+    Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();
     init_load_path ();
     make_senv ()
