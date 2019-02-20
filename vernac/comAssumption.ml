@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open CErrors
 open Util
 open Vars
@@ -54,7 +53,7 @@ match local with
   let () = assumption_message ident in
   let () =
     if not !Flags.quiet && Proof_global.there_are_pending_proofs () then
-    Feedback.msg_info (str"Variable" ++ spc () ++ Id.print ident ++
+    Feedback.msg_info Pp.(str"Variable" ++ spc () ++ Id.print ident ++
     strbrk " is not visible from current goals")
   in
   let r = VarRef ident in
@@ -203,4 +202,4 @@ let do_primitive id prim typopt =
               }
   in
   let _kn = declare_constant id.CAst.v (PrimitiveEntry entry,IsPrimitive) in
-  register_message id.CAst.v
+  Flags.if_verbose Feedback.msg_info Pp.(Id.print id.CAst.v ++ str " is declared")
