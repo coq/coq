@@ -291,7 +291,7 @@ let is_constructor qid =
   let id = Id.to_string id in
   assert (String.length id > 0);
   match id with
-  | "true" | "false" -> true (** built-in constructors *)
+  | "true" | "false" -> true (* built-in constructors *)
   | _ ->
     match id.[0] with
     | 'A'..'Z' -> true

@@ -272,7 +272,7 @@ let pr_glbexpr_gen lvl c =
     paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_glbexpr E0) cl)))
   | GTacExt (tag, arg) ->
     let tpe = interp_ml_object tag in
-    hov 0 (tpe.ml_print (Global.env ()) arg) (** FIXME *)
+    hov 0 (tpe.ml_print (Global.env ()) arg) (* FIXME *)
   | GTacPrm (prm, args) ->
     let args = match args with
     | [] -> mt ()
@@ -379,7 +379,7 @@ let rec pr_valexpr env sigma v t = match kind t with
     else match repr with
     | GTydDef None -> str "<abstr>"
     | GTydDef (Some _) ->
-      (** Shouldn't happen thanks to kind *)
+      (* Shouldn't happen thanks to kind *)
       assert false
     | GTydAlg alg ->
       if Valexpr.is_int v then

@@ -404,6 +404,8 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_ext Value.val_projection p;
       Value.of_constr c;
     |]
+  | Int _ ->
+    assert false
   end
 end
 
@@ -753,7 +755,7 @@ let () = define1 "hyp" ident begin fun id ->
     let mem = try ignore (Environ.lookup_named id env); true with Not_found -> false in
     if mem then return (Value.of_constr (EConstr.mkVar id))
     else Tacticals.New.tclZEROMSG
-      (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (** FIXME: Do something more sensible *)
+      (str "Hypothesis " ++ quote (Id.print id) ++ str " not found") (* FIXME: Do something more sensible *)
   end
 end
 
@@ -1082,7 +1084,7 @@ let () =
 
 let () =
   let intern self ist tac =
-    (** Prevent inner calls to Ltac2 values *)
+    (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ist = { ist with Genintern.extra } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
@@ -1113,7 +1115,7 @@ let () =
 let () =
   let open Ltac_plugin in
   let intern self ist tac =
-    (** Prevent inner calls to Ltac2 values *)
+    (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ist = { ist with Genintern.extra } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
@@ -1300,7 +1302,7 @@ end
 
 let () = add_scope "tactic" begin function
 | [] ->
-  (** Default to level 5 parsing *)
+  (* Default to level 5 parsing *)
   let scope = Extend.Aentryl (tac2expr, "5") in
   let act tac = tac in
   Tac2entries.ScopeRule (scope, act)
@@ -1407,7 +1409,7 @@ let rec make_seq_rule = function
   let Seqrule (r, c) = make_seq_rule rem in
   let r = { norec_rule = Next (r.norec_rule, scope.any_symbol) } in
   let f = match tok with
-  | SexprStr _ -> None (** Leave out mere strings *)
+  | SexprStr _ -> None (* Leave out mere strings *)
   | _ -> Some f
   in
   Seqrule (r, CvCns (c, f))

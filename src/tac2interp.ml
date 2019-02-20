@@ -114,7 +114,7 @@ let rec interp (ist : environment) = function
   | Name id -> { env_ist = Id.Map.add id cls accu.env_ist }
   in
   let ist = List.fold_left fold ist fixs in
-  (** Hack to make a cycle imperatively in the environment *)
+  (* Hack to make a cycle imperatively in the environment *)
   let iter (_, e, _) = e.clos_env <- ist.env_ist in
   let () = List.iter iter fixs in
   interp ist e
