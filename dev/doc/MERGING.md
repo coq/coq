@@ -37,6 +37,9 @@ When maintainers receive a review request, they are expected to:
   REVIEWERS(*) have approved the PR, the assignee is expected to follow the merging
   process described below.
 
+To know what files you are a code owner of in a large PR, you can run
+`dev/tools/check-owners-pr.sh xxxx`. Results are unfortunately imperfect.
+
 When a PR received lots of comments or if the PR has not been opened for long
 and the assignee thinks that some other developers might want to comment,
 it is recommended that they announce their intention to merge and wait a full
