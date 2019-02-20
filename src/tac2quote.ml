@@ -233,9 +233,9 @@ let abstract_vars loc vars tac =
   let na, tac = match def with
   | None -> (Anonymous, tac)
   | Some id0 ->
-      (** Trick: in order not to shadow a variable nor to choose an arbitrary
-          name, we reuse one which is going to be shadowed by the matched
-          variables anyways. *)
+      (* Trick: in order not to shadow a variable nor to choose an arbitrary
+         name, we reuse one which is going to be shadowed by the matched
+         variables anyways. *)
       let build_bindings (n, accu) na = match na with
       | Anonymous -> (n + 1, accu)
       | Name _ ->
@@ -263,7 +263,7 @@ let of_conversion {loc;v=c} = match c with
   let vars = pattern_vars pat in
   let pat = of_option ?loc of_pattern (Some pat) in
   let c = of_constr c in
-  (** Order is critical here *)
+  (* Order is critical here *)
   let vars = List.map (fun id -> Name id) (Id.Set.elements vars) in
   let c = abstract_vars loc vars c in
   of_tuple [pat; c]
@@ -388,7 +388,7 @@ let of_constr_matching {loc;v=m} =
       (knd, pat, na)
     in
     let vars = pattern_vars pat in
-    (** Order of elements is crucial here! *)
+    (* Order of elements is crucial here! *)
     let vars = Id.Set.elements vars in
     let vars = List.map (fun id -> Name id) vars in
     let e = abstract_vars loc vars tac in
@@ -429,7 +429,7 @@ let of_goal_matching {loc;v=gm} =
     let hyps = List.map (fun ({CAst.v=na}, _, _, _) -> na) hyps_pats in
     let map (_, na, _, _) = na in
     let hctx = List.map map hyps_pats in
-    (** Order of elements is crucial here! *)
+    (* Order of elements is crucial here! *)
     let vars = Id.Set.elements vars in
     let subst = List.map (fun id -> Name id) vars in
     (r, hyps, hctx, subst, concl_ctx)

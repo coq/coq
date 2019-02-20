@@ -349,12 +349,12 @@ let to_fun1 r0 r1 f = to_closure f
 let rec apply : type a. a arity -> a -> valexpr list -> valexpr Proofview.tactic =
   fun arity f args -> match args, arity with
   | [], arity -> Proofview.tclUNIT (ValCls (MLTactic (arity, f)))
-  (** A few hardcoded cases for efficiency *)
+  (* A few hardcoded cases for efficiency *)
   | [a0], OneAty -> f a0
   | [a0; a1], AddAty OneAty -> f a0 a1
   | [a0; a1; a2], AddAty (AddAty OneAty) -> f a0 a1 a2
   | [a0; a1; a2; a3], AddAty (AddAty (AddAty OneAty)) -> f a0 a1 a2 a3
-  (** Generic cases *)
+  (* Generic cases *)
   | a :: args, OneAty ->
     f a >>= fun f ->
     let MLTactic (arity, f) = to_closure f in

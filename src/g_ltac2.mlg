@@ -384,7 +384,7 @@ GRAMMAR EXTEND Gram
   ;
 END
 
-(** Quotation scopes used by notations *)
+(* Quotation scopes used by notations *)
 
 {
 
@@ -866,8 +866,8 @@ end
 
 {
 
-let pr_ltac2entry _ = mt () (** FIXME *)
-let pr_ltac2expr _ = mt () (** FIXME *)
+let pr_ltac2entry _ = mt () (* FIXME *)
+let pr_ltac2expr _ = mt () (* FIXME *)
 
 }
 

@@ -111,7 +111,7 @@ let push_typedef visibility sp kn (_, def) = match def with
 | GTydDef _ ->
   Tac2env.push_type visibility sp kn
 | GTydAlg { galg_constructors = cstrs } ->
-  (** Register constructors *)
+  (* Register constructors *)
   let iter (c, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
@@ -120,7 +120,7 @@ let push_typedef visibility sp kn (_, def) = match def with
   Tac2env.push_type visibility sp kn;
   List.iter iter cstrs
 | GTydRec fields ->
-  (** Register fields *)
+  (* Register fields *)
   let iter (c, _, _) =
     let spc = change_sp_label sp c in
     let knc = change_kn_label kn c in
@@ -140,7 +140,7 @@ let define_typedef kn (params, def as qdef) = match def with
 | GTydDef _ ->
   Tac2env.define_type kn qdef
 | GTydAlg { galg_constructors = cstrs } ->
-  (** Define constructors *)
+  (* Define constructors *)
   let constant = ref 0 in
   let nonconstant = ref 0 in
   let iter (c, args) =
@@ -157,7 +157,7 @@ let define_typedef kn (params, def as qdef) = match def with
   Tac2env.define_type kn qdef;
   List.iter iter cstrs
 | GTydRec fs ->
-  (** Define projections *)
+  (* Define projections *)
   let iter i (id, mut, t) =
     let knp = change_kn_label kn id in
     let proj = {
@@ -297,7 +297,7 @@ let inline_rec_tactic tactics =
       let loc = pat.loc in
       (Id.Set.add id avoid, CAst.make ?loc id :: ans)
     in
-    (** Fresh variables to abstract over the function patterns *)
+    (* Fresh variables to abstract over the function patterns *)
     let _, vars = List.fold_left fold_var (avoid, []) pat in
     let map_body ({loc;v=id}, _, e) = CAst.(make ?loc @@ CPatVar (Name id)), e in
     let bnd = List.map map_body tactics in
@@ -656,13 +656,13 @@ let inTac2Abbreviation : abbreviation -> obj =
 
 let register_notation ?(local = false) tkn lev body = match tkn, lev with
 | [SexprRec (_, {loc;v=Some id}, [])], None ->
-  (** Tactic abbreviation *)
+  (* Tactic abbreviation *)
   let () = check_lowercase CAst.(make ?loc id) in
   let body = Tac2intern.globalize Id.Set.empty body in
   let abbr = { abbr_body = body } in
   ignore (Lib.add_leaf id (inTac2Abbreviation abbr))
 | _ ->
-  (** Check that the tokens make sense *)
+  (* Check that the tokens make sense *)
   let entries = List.map ParseToken.parse_token tkn in
   let fold accu tok = match tok with
   | TacTerm _ -> accu
@@ -670,7 +670,7 @@ let register_notation ?(local = false) tkn lev body = match tkn, lev with
   | TacNonTerm (Anonymous, _) -> accu
   in
   let ids = List.fold_left fold Id.Set.empty entries in
-  (** Globalize so that names are absolute *)
+  (* Globalize so that names are absolute *)
   let body = Tac2intern.globalize ids body in
   let lev = match lev with Some _ -> lev | None -> Some 5 in
   let ext = {
@@ -758,9 +758,9 @@ let perform_eval e =
   | Goal_select.SelectList l -> Proofview.tclFOCUSLIST l v
   | Goal_select.SelectId id -> Proofview.tclFOCUSID id v
   | Goal_select.SelectAll -> v
-  | Goal_select.SelectAlreadyFocused -> assert false (** TODO **)
+  | Goal_select.SelectAlreadyFocused -> assert false (* TODO **)
   in
-  (** HACK: the API doesn't allow to return a value *)
+  (* HACK: the API doesn't allow to return a value *)
   let ans = ref None in
   let tac = (v >>= fun r -> ans := Some r; Proofview.tclUNIT ()) in
   let (proof, _) = Proof.run_tactic (Global.env ()) tac proof in

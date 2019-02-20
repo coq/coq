@@ -141,7 +141,7 @@ let empty_env () = {
 }
 
 let env_name env =
-  (** Generate names according to a provided environment *)
+  (* Generate names according to a provided environment *)
   let mk num =
     let base = num mod 26 in
     let rem = num / 26 in
@@ -267,7 +267,6 @@ let fresh_reftype env (kn : KerName.t or_tuple) =
   (subst, t)
 
 (** First-order unification algorithm *)
-
 let is_unfoldable kn = match snd (Tac2env.interp_type kn) with
 | GTydDef (Some _) -> true
 | GTydDef None | GTydAlg _ | GTydRec _ | GTydOpn -> false
@@ -485,7 +484,7 @@ let check_elt_empty loc env t = match kind env t with
 
 let check_unit ?loc t =
   let env = empty_env () in
-  (** Should not matter, t should be closed. *)
+  (* Should not matter, t should be closed. *)
   let t = fresh_type_scheme env t in
   let maybe_unit = match kind env t with
   | GTypVar _ -> true
@@ -618,7 +617,7 @@ let expand_pattern avoid bnd =
   let fold (avoid, bnd) (pat, t) =
     let na, expand = match pat.v with
     | CPatVar na ->
-      (** Don't expand variable patterns *)
+      (* Don't expand variable patterns *)
       na, None
     | _ ->
       let id = fresh_var avoid in
@@ -691,7 +690,7 @@ let rec intern_rec env {loc;v=e} = match e with
   in
   let e = Tac2env.interp_alias kn in
   let map arg =
-    (** Thunk alias arguments *)
+    (* Thunk alias arguments *)
     let loc = arg.loc in
     let t_unit = CAst.make ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
     let var = CAst.make ?loc @@ CPatCnv (CAst.make ?loc @@ CPatVar Anonymous, t_unit) in
@@ -782,8 +781,8 @@ let rec intern_rec env {loc;v=e} = match e with
     intern_rec env e
   in
   let obj = interp_ml_object tag in
-  (** External objects do not have access to the named context because this is
-      not stable by dynamic semantics. *)
+  (* External objects do not have access to the named context because this is
+     not stable by dynamic semantics. *)
   let genv = Global.env_of_context Environ.empty_named_context_val in
   let ist = empty_glob_sign genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
@@ -907,7 +906,7 @@ and intern_case env loc e pl =
       | CPatVar Anonymous ->
         let () = check_redundant_clause rem in
         let (br', brT) = intern_rec env br in
-        (** Fill all remaining branches *)
+        (* Fill all remaining branches *)
         let fill (ncst, narg) arity =
           if Int.equal arity 0 then
             let () =
@@ -951,7 +950,7 @@ and intern_case env loc e pl =
           if not (Int.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
         in
         let fold env id tpe =
-          (** Instantiate all arguments *)
+          (* Instantiate all arguments *)
           let subst n = GTypVar subst.(n) in
           let tpe = subst_type subst tpe in
           push_name id (monomorphic tpe) env
@@ -1005,7 +1004,7 @@ and intern_case env loc e pl =
         let get = function
         | GPatVar na -> na
         | GPatRef _ ->
-          user_err ?loc (str "TODO: Unhandled match case") (** FIXME *)
+          user_err ?loc (str "TODO: Unhandled match case") (* FIXME *)
         in
         let loc = pat.loc in
         let knc = match knc with
@@ -1024,7 +1023,7 @@ and intern_case env loc e pl =
           if not (Int.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
         in
         let fold env id tpe =
-          (** Instantiate all arguments *)
+          (* Instantiate all arguments *)
           let subst n = GTypVar subst.(n) in
           let tpe = subst_type subst tpe in
           push_name id (monomorphic tpe) env
@@ -1089,7 +1088,7 @@ and intern_record env loc fs =
   | _ -> assert false
   in
   let subst = Array.init params (fun _ -> fresh_id env) in
-  (** Set the answer [args] imperatively *)
+  (* Set the answer [args] imperatively *)
   let args = Array.make (List.length typdef) None in
   let iter (loc, pinfo, e) =
     if KerName.equal kn pinfo.pdata_type then
@@ -1145,14 +1144,14 @@ let intern ~strict e =
 
 let intern_typedef self (ids, t) : glb_quant_typedef =
   let env = { (empty_env ()) with env_rec = self } in
-  (** Initialize type parameters *)
+  (* Initialize type parameters *)
   let map id = get_alias id env in
   let ids = List.map map ids in
   let count = ref (List.length ids) in
   let vars = ref UF.Map.empty in
   let iter n id = vars := UF.Map.add id (GTypVar n) !vars in
   let () = List.iteri iter ids in
-  (** Do not accept unbound type variables *)
+  (* Do not accept unbound type variables *)
   let env = { env with env_opn = false } in
   let intern t =
     let t = intern_type env t in
@@ -1195,7 +1194,7 @@ let intern_open_type t =
 let check_subtype t1 t2 =
   let env = empty_env () in
   let t1 = fresh_type_scheme env t1 in
-  (** We build a substitution mimicking rigid variable by using dummy tuples *)
+  (* We build a substitution mimicking rigid variable by using dummy tuples *)
   let rigid i = GTypRef (Tuple (i + 1), []) in
   let (n, t2) = t2 in
   let subst = Array.init n rigid in
@@ -1507,7 +1506,7 @@ let () =
   let intern ist tac =
     let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
-      (** Only happens when Ltac2 is called from a constr or ltac1 quotation *)
+      (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
       let env = empty_env () in
       if !Ltac_plugin.Tacintern.strict_check then env
       else { env with env_str = false }
@@ -1526,7 +1525,7 @@ let () =
   let intern ist (loc, id) =
     let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
-      (** Only happens when Ltac2 is called from a constr or ltac1 quotation *)
+      (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
       let env = empty_env () in
       if !Ltac_plugin.Tacintern.strict_check then env
       else { env with env_str = false }
