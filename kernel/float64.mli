@@ -87,3 +87,6 @@ val hash : t -> int
 
 (** Total order relation over float values. Behaves like [Pervasives.compare].*)
 val total_compare : t -> t -> int
+
+val is_float64 : Obj.t -> bool
+[@@ocaml.inline always]

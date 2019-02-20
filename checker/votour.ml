@@ -101,6 +101,7 @@ struct
         in
         fold 0 1 (fun size -> let () = LargeArray.set !sizes p size in k size)
       | Int63 _ -> k 0
+      | Float64 _ -> k 0
       | String s ->
         let size = 2 + (String.length s / ws) in
         let () = LargeArray.set !sizes p size in
@@ -118,6 +119,7 @@ struct
     match LargeArray.get !memory p with
     | Struct (tag, os) -> BLOCK (tag, os)
     | Int63 _ -> OTHER (* TODO: pretty-print int63 values *)
+    | Float64 _ -> OTHER (* TODO: pretty-print float64 values *)
     | String s -> STRING s
 
   let input ch =
@@ -156,6 +158,7 @@ let rec get_name ?(extra=false) = function
   |Dyn -> "<dynamic>"
   | Proxy v -> get_name ~extra !v
   | Uint63 -> "Uint63"
+  | Float64 -> "Float64"
 
 (** For tuples, its quite handy to display the inner 1st string (if any).
     Cf. [structure_body] for instance *)
@@ -261,6 +264,7 @@ let rec get_children v o pos = match v with
   |Fail s -> raise Forbidden
   | Proxy v -> get_children !v o pos
   | Uint63 -> raise Exit
+  | Float64 -> raise Exit
 
 let get_children v o pos =
   try get_children v o pos

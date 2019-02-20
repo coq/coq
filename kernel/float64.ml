@@ -35,6 +35,9 @@ let abs = abs_float
 
 type float_comparison = FEq | FLt | FGt | FNotComparable
 
+(* inspired by lib/util.ml; see also #10471 *)
+let pervasives_compare = compare
+
 let compare x y =
   if x < y then FLt
   else
@@ -137,5 +140,9 @@ let hash =
 let total_compare f1 f2 =
   (* pervasives_compare considers all NaNs as equal, which is fine here,
      but also considers -0. and +0. as equal *)
-  if f1 = 0. && f2 = 0. then Util.pervasives_compare (1. /. f1) (1. /. f2)
-  else Util.pervasives_compare f1 f2
+  if f1 = 0. && f2 = 0. then pervasives_compare (1. /. f1) (1. /. f2)
+  else pervasives_compare f1 f2
+
+let is_float64 t =
+  Obj.tag t = Obj.double_tag
+[@@ocaml.inline always]
