@@ -33,6 +33,7 @@ CI_TARGETS= \
     ci-iris-lambda-rust \
     ci-math-classes \
     ci-math-comp \
+    ci-metacoq \
     ci-mtac2 \
     ci-paramcoq \
     ci-perennial \
@@ -71,6 +72,8 @@ ci-fiat-crypto: ci-coqprime ci-rewriter
 
 ci-simple-io: ci-ext-lib
 ci-quickchick: ci-ext-lib ci-simple-io
+
+ci-metacoq: ci-equations
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
