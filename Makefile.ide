@@ -70,7 +70,7 @@ SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-2.0)/share
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
 # target to build CoqIde (native version) and the stuff needed to lauch it
-coqide: coqide-files coqide-opt theories/Init/Prelude.$(VO)
+coqide: coqide-files coqide-opt theories/Init/Prelude.$(VO) $(TOPBIN)
 
 # target to build CoqIde (in native and byte versions), and no more
 # NB: this target is used in the opam package coq-coqide
