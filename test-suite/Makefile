@@ -34,20 +34,24 @@ include ../Makefile.common
 
 # Default value when called from a freshly compiled Coq, but can be
 # easily overridden
-LIB := ..
+
 BIN := $(shell cd ..; pwd)/bin/
 COQFLAGS?=
 
-coqc_boot := $(BIN)coqc -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite $(COQFLAGS)
-coqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite $(COQFLAGS)
-coqchk := $(BIN)coqchk -coqlib $(LIB) -R prerequisite TestSuite
-coqdoc := $(BIN)coqdoc
-coqtop := $(BIN)coqtop -coqlib $(LIB) -boot -q -test-mode -R prerequisite TestSuite
-coqtopbyte := $(BIN)coqtop.byte
+ifeq ($(COQLIB),)
+  # This method of setting `pwd` won't work on win32 OCaml
+  COQLIB := $(shell cd ..; pwd)
+endif
+export COQLIB
 
-coqc_interactive := $(coqc) -async-proofs-cache force
-coqc_boot_interactive := $(coqc_boot) -async-proofs-cache force
-coqdep := $(BIN)coqdep -coqlib $(LIB)
+coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
+coqchk := $(BIN)coqchk -R prerequisite TestSuite
+coqdoc := $(BIN)coqdoc
+coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
+coqtopbyte := $(BIN)coqtop.byte -q
+
+coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
+coqdep := $(BIN)coqdep
 
 VERBOSE?=
 SHOW := $(if $(VERBOSE),@true,@echo)
@@ -398,7 +402,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  output=$*.out.real; \
-	  $(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	  $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -437,7 +441,7 @@ $(addsuffix .log,$(wildcard output-modulo-time/*.v)): %.v.log: %.v %.out
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
 	  tmpexpected=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
+	  $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -492,7 +496,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(coqc_boot_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
+	  res=`$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
@@ -556,7 +560,7 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	  echo $(call log_intro,$<); \
 	  export BIN="$(BIN)"; \
 	  export coqc="$(coqc)"; \
-	  export coqtop="$(coqc_boot)"; \
+	  export coqtop="$(coqc)"; \
 	  export coqdep="$(coqdep)"; \
 	  export coqtopbyte="$(coqtopbyte)"; \
 	  "$<" 2>&1; R=$$?; times; \
@@ -578,7 +582,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
+	  $(BIN)fake_ide "$<" "-q -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

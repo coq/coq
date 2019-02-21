@@ -76,7 +76,7 @@ quickopt: voboot
 	dune build $(DUNEOPT) $(QUICKOPT_TARGETS)
 
 test-suite: voboot
-	dune runtest $(DUNEOPT)
+	dune runtest --no-buffer $(DUNEOPT)
 
 refman-html: voboot
 	dune build @refman-html

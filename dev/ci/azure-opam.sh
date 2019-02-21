@@ -10,4 +10,4 @@ bash opam64/install.sh
 
 opam init default -a -y "https://github.com/fdopen/opam-repository-mingw.git#opam2" -c $OPAM_VARIANT --disable-sandboxing
 eval "$(opam env)"
-opam install -y num ocamlfind ounit
+opam install -y num ocamlfind dune ounit
