@@ -3,13 +3,16 @@
  (synopsis "The Coq Kernel")
  (public_name coq.kernel)
  (wrapped false)
- (modules (:standard \ uint63_x86 uint63_amd64 write_uint63))
+ (modules (:standard \ genOpcodeFiles uint63_x86 uint63_amd64 write_uint63))
  (libraries lib byterun))
+
+(executable
+  (name genOpcodeFiles)
+  (modules genOpcodeFiles))
 
 (rule
  (targets copcodes.ml)
- (deps (:h-file byterun/coq_instruct.h) make-opcodes make_opcodes.sh)
- (action (bash "./make_opcodes.sh %{h-file} %{targets}")))
+ (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copml))))
 
 (executable
   (name write_uint63)
