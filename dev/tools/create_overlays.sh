@@ -42,7 +42,7 @@ OVERLAY_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 OVERLAY_FILE=$(mktemp overlay-XXXX)
 
 # Create the overlay file
-printf 'if [ "$CI_PULL_REQUEST" = "%s" ] || [ "$CI_BRANCH" = "%s" ]; then \n\n' "$PR_NUMBER" "$OVERLAY_BRANCH" > "$OVERLAY_FILE"
+printf 'if [ "$CI_PULL_REQUEST" = "%s" ] || [ "$CI_BRANCH" = "%s" ]; then\n\n' "$PR_NUMBER" "$OVERLAY_BRANCH" > "$OVERLAY_FILE"
 
 # We first try to build the contribs
 while test $# -gt 0
