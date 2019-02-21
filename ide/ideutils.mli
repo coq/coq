@@ -13,7 +13,6 @@ val warning : string -> unit
 
 val cb : GData.clipboard
 
-val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 

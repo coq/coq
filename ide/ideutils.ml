@@ -458,15 +458,6 @@ let browse prerr url =
   in
   run_command (fun _ -> ()) finally com
 
-let doc_url () =
-  if doc_url#get = use_default_doc_url || doc_url#get = ""
-  then
-    let addr = List.fold_left Filename.concat (Envars.docdir ())
-      ["html";"refman";"index.html"]
-    in
-    if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
-  else doc_url#get
-
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
     lazy (
@@ -476,13 +467,7 @@ let url_for_keyword =
             (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
             (Minilib.coqide_data_dirs ())) "index_urls.txt" in
             open_in index_urls
-          with Not_found ->
-            let doc_url = doc_url () in
-            let n = String.length doc_url in
-              if n > 8 && String.sub doc_url 0 7 = "file://" then
-                open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
-              else
-                raise Exit
+          with Not_found -> raise Exit
         in
           try while true do
             let s = input_line cin in
@@ -503,7 +488,7 @@ let url_for_keyword =
 let browse_keyword prerr text =
   try
     let u = Lazy.force url_for_keyword text in
-    browse prerr (doc_url() ^ u)
+    browse prerr (Coq_config.wwwrefman ^ u)
   with Not_found -> prerr ("No documentation found for \""^text^"\".\n")
 
 let rec is_valid (s : Pp.t) = match Pp.repr s with
