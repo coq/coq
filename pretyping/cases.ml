@@ -426,7 +426,7 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
       let tm1 = List.map (fun eqn -> List.hd eqn.patterns) pb.mat in
       (match find_row_ind tm1 with
         | None -> sigma, (current, tmtyp)
-	| Some (_,(ind,_)) ->
+        | Some (loc,(ind,_)) ->
             let sigma, indt = inductive_template !!(pb.env) sigma None ind in
             let sigma, current =
               if List.is_empty deps && isEvar sigma typ then
@@ -435,7 +435,7 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
                 | None -> sigma, current
                 | Some sigma -> sigma, current
 	      else
-                let sigma, j = Coercion.inh_conv_coerce_to ~program_mode true !!(pb.env) sigma (make_judge current typ) indt in
+                let sigma, j = Coercion.inh_conv_coerce_to ?loc ~program_mode true !!(pb.env) sigma (make_judge current typ) indt in
                 sigma, j.uj_val
             in
             sigma, (current, try_find_ind !!(pb.env) sigma indt names))
