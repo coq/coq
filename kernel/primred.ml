@@ -44,10 +44,6 @@ let add_retroknowledge env action =
         { retro with retro_cmp = Some r }
     in
     set_retroknowledge env retro
-  | Register_inline(c) ->
-    let (cb,r) = lookup_constant_key c env in
-    let cb = {cb with Declarations.const_inline_code = true} in
-    add_constant_key c cb !(fst r) env
 
 let get_int_type env =
   match env.retroknowledge.retro_int63 with

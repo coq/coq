@@ -38,4 +38,3 @@ let empty = {
 type action =
   | Register_ind of CPrimitives.prim_ind * inductive
   | Register_type of CPrimitives.prim_type * Constant.t
-  | Register_inline of Constant.t
