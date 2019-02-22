@@ -408,18 +408,17 @@ struct
   let filter_range f s =
     filter (fun x _ -> f x = 0) s
 
-  (* Not as efficient as the original version *)
   let update k f m =
-    try
-      match f (Some (find k m)) with
-      | None -> remove k m
-      | Some v ->
-        let m = remove k m in
-        add k v m
-    with Not_found ->
-      match f None with
-      | None -> m
-      | Some v -> add k v m
+    let aux = function
+      | None -> (match f None with
+          | None -> None
+          | Some v -> Some (Map.singleton k v))
+      | Some m ->
+        let m = Map.update k f m in
+        if Map.is_empty m then None
+        else Some m
+    in
+    Int.Map.update (M.hash k) aux m
 
   module Unsafe =
   struct
