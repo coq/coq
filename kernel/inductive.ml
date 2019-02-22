@@ -959,19 +959,33 @@ let check_one_fix renv recpos trees def =
            then f is guarded with respect to S in (g a1 ... am).
            Eduardo 7/9/98 *)
         | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-            List.iter (check_rec_call renv []) l;
-            Array.iter (check_rec_call renv []) typarray;
             let decrArg = recindxs.(i) in
-            let renv' = push_fix_renv renv recdef in
-	    let stack' = push_stack_closures renv l stack in
-              Array.iteri
-                (fun j body ->
-                   if Int.equal i j && (List.length stack' > decrArg) then
-		     let recArg = List.nth stack' decrArg in
-	             let arg_sp = stack_element_specif recArg in
-	             check_nested_fix_body renv' (decrArg+1) arg_sp body
-                   else check_rec_call renv' [] body)
-                bodies
+            begin try
+              List.iter (check_rec_call renv []) l;
+              Array.iter (check_rec_call renv []) typarray;
+              let renv' = push_fix_renv renv recdef in
+              let stack' = push_stack_closures renv l stack in
+              bodies |> Array.iteri (fun j body ->
+                if Int.equal i j && (List.length stack' > decrArg) then
+                  let recArg = List.nth stack' decrArg in
+                  let arg_sp = stack_element_specif recArg in
+                  check_nested_fix_body renv' (decrArg+1) arg_sp body
+                else check_rec_call renv' [] body)
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the fix away by looking for a
+                 constructor in l[decrArg] (we unfold definitions too) *)
+              if List.length l <= decrArg then Exninfo.iraise exn;
+              let recArg = List.nth l decrArg in
+              let recArg = whd_all renv.env recArg in
+              let hd, _ = decompose_app recArg in
+              match kind hd with
+              | Construct _ ->
+                  let before, after = CList.(firstn decrArg l, skipn (decrArg+1) l) in
+                  check_rec_call renv []
+                    (Term.applist (mkFix ((recindxs,i),recdef), (before @ recArg :: after)))
+              | _ -> Exninfo.iraise exn
+            end
 
         | Const (kn,_u as cu) ->
             if evaluable_constant kn renv.env then
