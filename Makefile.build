@@ -550,11 +550,11 @@ $(CSDPCERTBYTE): $(CSDPCERTCMO)
 
 .PHONY: validate check test-suite $(ALLSTDLIB).v
 
-VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
+VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m -coqlib .
 
 validate: $(CHICKEN) | $(ALLVO:.$(VO)=.vo)
 	$(SHOW)'COQCHK <theories & plugins>'
-	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
+	$(HIDE)$(CHICKEN) $(VALIDOPTS) $(ALLMODS)
 
 $(ALLSTDLIB).v:
 	$(SHOW)'MAKE $(notdir $@)'
@@ -828,7 +828,7 @@ theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
 	$(HIDE)$(BOOTCOQC) $< $(TIMING_ARG) $(TIMING_EXTRA)
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
-	$(HIDE)$(CHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
+	$(HIDE)$(CHICKEN) $(VALIDOPTS) -norec $(call vo_to_mod,$@) \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
 

@@ -189,6 +189,7 @@ let print_usage_channel co command =
 \n  -admit module          load module and dependencies without checking\
 \n  -norec module          check module but admit dependencies without checking\
 \n\
+\n  -coqlib dir            set coqchk's standard library location\
 \n  -where                 print coqchk's standard library location and exit\
 \n  -v                     print coqchk version and exit\
 \n  -boot                  boot mode\
