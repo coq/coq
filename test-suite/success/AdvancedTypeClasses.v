@@ -71,7 +71,7 @@ Variable Inhabited: term -> Prop.
 Variable Inhabited_correct: forall `{interp_pair p}, Inhabited (repr p) -> p.
 
 Lemma L : Prop * A -> bool * (Type -> Set) .
-apply (Inhabited_correct _ _).
+apply Inhabited_correct.
 change (Inhabited (Fun (Prod PROP (Var A)) (Prod Bool (Fun TYPE SET)))).
 Admitted.
 
