@@ -409,6 +409,7 @@ let set_kw =
 let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
   | ("Local" space+)? "Ltac"
+  | "From"
   | "Require"
   | "Import"
   | "Export"
