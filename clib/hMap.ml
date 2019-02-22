@@ -408,6 +408,19 @@ struct
   let filter_range f s =
     filter (fun x _ -> f x = 0) s
 
+  (* Not as efficient as the original version *)
+  let update k f m =
+    try
+      match f (Some (find k m)) with
+      | None -> remove k m
+      | Some v ->
+        let m = remove k m in
+        add k v m
+    with Not_found ->
+      match f None with
+      | None -> m
+      | Some v -> add k v m
+
   module Unsafe =
   struct
     let map f s =
