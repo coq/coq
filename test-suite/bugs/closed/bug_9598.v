@@ -21,3 +21,16 @@ Module fixpoint.
   Fixpoint rec_ko (x : nat) : nat := fst (alias_K 0 (rec_ko x)).
 
 End fixpoint.
+
+Module primproj.
+
+  Set Primitive Projections.
+
+  Inductive pair := K { fst : nat; snd : nat }.
+
+  Definition alias_K a b := K a b.
+
+  Fixpoint rec (x : nat) : nat := fst (K 0 (rec x)).
+  Fixpoint rec_ko (x : nat) : nat := fst (alias_K 0 (rec_ko x)).
+
+End primproj.
