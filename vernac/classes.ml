@@ -234,7 +234,7 @@ let do_instance env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode ct
       in
       match rest with
       | (n, _) :: _ ->
-        unbound_method env' k.cl_impl (get_id n)
+        unbound_method env' sigma k.cl_impl (get_id n)
       | _ ->
         let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
         let sigma, res = type_ctx_instance ~program_mode (push_rel_context ctx' env') sigma kcl_props props subst in

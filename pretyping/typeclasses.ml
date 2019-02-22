@@ -124,12 +124,14 @@ let typeclass_univ_instance (cl, u) =
 
 let class_info c =
   try GlobRef.Map.find c !classes
-  with Not_found -> not_a_class (Global.env()) (EConstr.of_constr (printable_constr_of_global c))
+  with Not_found ->
+    let env = Global.env() in
+    not_a_class env (Evd.from_env env) (EConstr.of_constr (printable_constr_of_global c))
 
 let global_class_of_constr env sigma c =
   try let gr, u = Termops.global_of_constr sigma c in
-	class_info gr, u
-  with Not_found -> not_a_class env c
+    GlobRef.Map.find gr !classes, u
+  with Not_found -> not_a_class env sigma c
 
 let dest_class_app env sigma c =
   let cl, args = EConstr.decompose_app sigma c in

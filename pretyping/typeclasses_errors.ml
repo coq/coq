@@ -20,10 +20,10 @@ type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of GlobRef.t * lident (* Class name, method *)
 
-exception TypeClassError of env * typeclass_error
+exception TypeClassError of env * Evd.evar_map * typeclass_error
 
-let typeclass_error env err = raise (TypeClassError (env, err))
+let typeclass_error env sigma err = raise (TypeClassError (env, sigma, err))
 
-let not_a_class env c = typeclass_error env (NotAClass c)
+let not_a_class env sigma c = typeclass_error env sigma (NotAClass c)
 
-let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
+let unbound_method env sigma cid id = typeclass_error env sigma (UnboundMethod (cid, id))
