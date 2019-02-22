@@ -64,6 +64,9 @@ Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
          now transitivity y.
   Qed.
 
+Arguments equiv_symmetric {A R} sa x y.
+Arguments equiv_transitive {A R} sa x y z.
+
 (** Use the [substitute] command which substitutes an equivalence in every hypothesis. *)
 
 Ltac setoid_subst H :=

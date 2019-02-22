@@ -116,7 +116,7 @@ Vernacular commands
   avoid conflicts with explicitly named binders.
 
 - Computation of implicit arguments now properly handles local definitions in the
-  binders for an `Instance`.
+  binders for an `Instance`, and can be mixed with implicit binders `{x : T}`.
 
 - `Declare Instance` now requires an instance name.
 

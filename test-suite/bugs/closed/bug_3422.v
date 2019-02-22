@@ -175,6 +175,7 @@ Global Instance isisomorphism_compose'
        `{@IsIsomorphism (C -> D) F F' T}
 : @IsIsomorphism (C -> D) F F'' (T' o T)%natural_transformation
   := @isisomorphism_compose (C -> D) _ _ T' _ _ T _.
+Arguments isisomorphism_compose' {C D F' F''} T' {F} T {H H0}.
 
 Section lemmas.
   Local Open Scope natural_transformation_scope.
