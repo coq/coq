@@ -1015,9 +1015,22 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
-        | Proj (_p, c) ->
-           List.iter (check_rec_call renv []) l;
-           check_rec_call renv [] c
+        | Proj (p, c) ->
+            begin try
+              List.iter (check_rec_call renv []) l;
+              check_rec_call renv [] c
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the proj away by looking for a
+                 constructor in c (we unfold definitions too) *)
+              let c = whd_all renv.env c in
+              let hd, _ = decompose_app c in
+              match kind hd with
+              | Construct _ ->
+                  check_rec_call renv []
+                    (Term.applist (mkProj(Projection.unfold p,c), l))
+              | _ -> Exninfo.iraise exn
+            end
 
         | Var id ->
             begin
