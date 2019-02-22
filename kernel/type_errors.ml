@@ -55,6 +55,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
   | ActualType of ('constr, 'types) punsafe_judgment * 'types
+  | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of
       (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
@@ -120,6 +121,9 @@ let error_generalization env nvar c =
 let error_actual_type env j expty =
   raise (TypeError (env, ActualType (j,expty)))
 
+let error_incorrect_primitive env p t =
+  raise (TypeError (env, IncorrectPrimitive (p, t)))
+
 let error_cant_apply_not_functional env rator randl =
   raise (TypeError (env, CantApplyNonFunctional (rator,randl)))
 
@@ -175,6 +179,7 @@ let map_ptype_error f = function
 | IllFormedBranch (c, pc, t1, t2) -> IllFormedBranch (f c, pc, f t1, f t2)
 | Generalization ((na, t), j) -> Generalization ((na, f t), on_judgment f j)
 | ActualType (j, t) -> ActualType (on_judgment f j, f t)
+| IncorrectPrimitive (p, t) -> IncorrectPrimitive ({p with uj_type=f p.uj_type}, f t)
 | CantApplyBadType ((n, c1, c2), j, vj) ->
   CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
 | CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)

@@ -339,6 +339,20 @@ let explain_actual_type env sigma j t reason =
   str "while it is expected to have type" ++ brk(1,1) ++ pt ++
   ppreason ++ str ".")
 
+let explain_incorrect_primitive env sigma j exp =
+  let env = make_all_name_different env sigma in
+  let {uj_val=p;uj_type=t} = j in
+  let t = Reductionops.nf_betaiota env sigma t in
+  let exp = Reductionops.nf_betaiota env sigma exp in
+  (* Actually print *)
+  let pe = pr_ne_context_of (str "In environment") env sigma in
+  let (pt, pct) = pr_explicit env sigma exp t in
+  pe ++
+  hov 0 (
+  str "The primitive" ++ brk(1,1) ++ str (CPrimitives.op_or_type_to_string p) ++ spc () ++
+  str "has type" ++ brk(1,1) ++ pct ++ spc () ++
+  str "while it is expected to have type" ++ brk(1,1) ++ pt ++ str ".")
+
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar env sigma randl in
   let actualtyp = Reductionops.nf_betaiota env sigma actualtyp in
@@ -720,7 +734,9 @@ let explain_type_error env sigma err =
   | Generalization (nvar, c) ->
       explain_generalization env sigma nvar c
   | ActualType (j, pt) ->
-      explain_actual_type env sigma j pt None
+    explain_actual_type env sigma j pt None
+  | IncorrectPrimitive (j, t) ->
+    explain_incorrect_primitive env sigma j t
   | CantApplyBadType (t, rator, randl) ->
       explain_cant_apply_bad_type env sigma t rator randl
   | CantApplyNonFunctional (rator, randl) ->

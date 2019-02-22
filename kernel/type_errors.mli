@@ -56,6 +56,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
   | ActualType of ('constr, 'types) punsafe_judgment * 'types
+  | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
   | CantApplyBadType of
       (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
@@ -111,6 +112,8 @@ val error_ill_formed_branch : env -> constr -> pconstructor -> constr -> constr 
 val error_generalization : env -> Name.t * types -> unsafe_judgment -> 'a
 
 val error_actual_type : env -> unsafe_judgment -> types -> 'a
+
+val error_incorrect_primitive : env -> (CPrimitives.op_or_type,types) punsafe_judgment -> types -> 'a
 
 val error_cant_apply_not_functional :
   env -> unsafe_judgment -> unsafe_judgment array -> 'a

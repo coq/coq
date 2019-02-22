@@ -273,6 +273,7 @@ let explain_exn = function
       | IllFormedBranch _ -> str"IllFormedBranch"
       | Generalization _ -> str"Generalization"
       | ActualType _ -> str"ActualType"
+      | IncorrectPrimitive _ -> str"IncorrectPrimitive"
       | CantApplyBadType ((n,a,b),{uj_val = hd; uj_type = hdty},args) ->
         let pp_arg i judge =
           hv 1 (str"arg " ++ int (i+1) ++ str"= " ++
