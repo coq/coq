@@ -1,23 +1,5 @@
-
 (* File to include to get some Coq facilities under the ocaml toplevel.
    This file is loaded by include *)
-
-#cd".";;
-#directory "parsing";;
-#directory "interp";;
-#directory "toplevel";;
-#directory "library";;
-#directory "kernel";;
-#directory "gramlib";;
-#directory "engine";;
-#directory "pretyping";;
-#directory "lib";;
-#directory "proofs";;
-#directory "tactics";;
-#directory "printing";;
-#directory "grammar";;
-#directory "stm";;
-#directory "vernac";;
 
 #use "top_printers.ml";;
 #use "vm_printers.ml";;
@@ -137,7 +119,6 @@ open Proof_global
 open Redexpr
 open Refiner
 open Tacmach
-open Tactic_debug
 
 open Hints
 open Auto
@@ -146,15 +127,9 @@ open Contradiction
 open Eauto
 open Elim
 open Equality
-open Evar_tactics
-open Extraargs
-open Extratactics
 open Hipattern
 open Inv
 open Leminv
-open Tacsubst
-open Tacintern
-open Tacinterp
 open Tacticals
 open Tactics
 open Eqschemes
