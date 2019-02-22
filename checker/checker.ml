@@ -192,7 +192,6 @@ let print_usage_channel co command =
 \n  -coqlib dir            set coqchk's standard library location\
 \n  -where                 print coqchk's standard library location and exit\
 \n  -v                     print coqchk version and exit\
-\n  -boot                  boot mode\
 \n  -o, --output-context   print the list of assumptions\
 \n  -m, --memory           print the maximum heap size\
 \n  -silent                disable trace of constants being checked\
@@ -320,8 +319,6 @@ let explain_exn = function
 let deprecated flag =
   Feedback.msg_warning (str "Deprecated flag " ++ quote (str flag))
 
-let boot_opt = ref false
-
 let parse_args argv =
   let rec parse = function
     | [] -> ()
@@ -358,7 +355,6 @@ let parse_args argv =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
     | ("-v"|"--version") :: _ -> version ()
-    | "-boot" :: rem -> boot_opt := true; parse rem
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
     | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem

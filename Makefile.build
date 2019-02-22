@@ -201,7 +201,7 @@ COQOPTS=$(NATIVECOMPUTE) $(COQWARNERROR) $(COQUSERFLAGS)
 # Beware this depends on the makefile being in a particular dir, we
 # should pass an absolute path here but windows is tricky
 # c.f. https://github.com/coq/coq/pull/9560
-BOOTCOQC=$(TIMER) $(COQC) -coqlib . -boot $(COQOPTS)
+BOOTCOQC=$(TIMER) $(COQC) -coqlib . -q $(COQOPTS)
 
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES)

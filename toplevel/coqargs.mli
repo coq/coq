@@ -16,8 +16,6 @@ type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
 type t = {
 
-  boot : bool;
-
   load_init   : bool;
   load_rcfile : bool;
   rcfile      : string option;

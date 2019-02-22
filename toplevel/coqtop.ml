@@ -221,7 +221,6 @@ let init_toploop opts =
   let doc, sid =
     Stm.(new_doc
            { doc_type = Interactive opts.toplevel_name;
-             allow_coq_overwrite = true; (* irrelevant *)
              iload_path; require_libs; stm_options;
            }) in
   let state = { doc; sid; proof = None; time = opts.time } in

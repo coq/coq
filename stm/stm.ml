@@ -2647,10 +2647,6 @@ type stm_init_options = {
      some point. *)
   doc_type     : stm_doc_type;
 
-  (* Allow compiling modules in the Coq prefix. Irrelevant in
-     interactive mode. *)
-  allow_coq_overwrite : bool;
-
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
   iload_path   : Mltop.coq_path list;
@@ -2678,16 +2674,6 @@ let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
 
-let check_coq_overwriting ~allow_coq_overwrite p =
-  if not allow_coq_overwrite then
-  let l = DirPath.repr p in
-  let id, l = match l with id::l -> id,l | [] -> assert false in
-  let is_empty = match l with [] -> true | _ -> false in
-  if not is_empty && Id.equal (CList.last l) Libnames.coq_root then
-    user_err
-      (str "Cannot build module " ++ DirPath.print p ++ str "." ++ spc () ++
-      str "it starts with prefix \"Coq\" which is reserved for the Coq library.")
-
 let dirpath_of_file f =
   let ldir0 =
     try
@@ -2700,7 +2686,7 @@ let dirpath_of_file f =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
-let new_doc { doc_type ; allow_coq_overwrite; iload_path; require_libs; stm_options } =
+let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let load_objs libs =
     let rq_file (dir, from, exp) =
@@ -2735,14 +2721,12 @@ let new_doc { doc_type ; allow_coq_overwrite; iload_path; require_libs; stm_opti
 
     | VoDoc f ->
       let ldir = dirpath_of_file f in
-      check_coq_overwriting ~allow_coq_overwrite ldir;
       let () = Flags.verbosely Declaremods.start_library ldir in
       VCS.set_ldir ldir;
       set_compilation_hints f
 
     | VioDoc f ->
       let ldir = dirpath_of_file f in
-      check_coq_overwriting ~allow_coq_overwrite ldir;
       let () = Flags.verbosely Declaremods.start_library ldir in
       VCS.set_ldir ldir;
       set_compilation_hints f
