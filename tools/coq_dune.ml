@@ -57,11 +57,6 @@ module Aux = struct
       | x::xs, y::ys -> let r = f x y in if r = 0 then lc xs ys else r
     in lc
 
-  let rec pp_list pp sep fmt l = match l with
-    | []  -> ()
-    | [l] -> fprintf fmt "%a" pp l
-    | x::xs -> fprintf fmt "%a%a%a" pp x sep () (pp_list pp sep) xs
-
   let rec pmap f l = match l with
     | []  -> []
     | x :: xs ->
@@ -70,7 +65,7 @@ module Aux = struct
         | Some r -> r :: pmap f xs
       end
 
-  let sep fmt () = fprintf fmt "@;"
+  let pp_sep fmt () = fprintf fmt "@;"
 
   (* Creation of paths, aware of the platform separator. *)
   let bpath l = String.concat Filename.dir_sep l
@@ -154,13 +149,13 @@ let gen_sub n =
 
 let pp_rule fmt targets deps action =
   (* Special printing of the first rule *)
-  let ppl = pp_list pp_print_string sep in
+  let ppl = pp_print_list ~pp_sep pp_print_string in
   let pp_deps fmt l = match l with
     | [] ->
       ()
     | x :: xs ->
-      fprintf fmt "(:pp-file %s)%a" x sep ();
-      pp_list pp_print_string sep fmt xs
+      fprintf fmt "(:pp-file %s)%a" x pp_sep ();
+      pp_print_list ~pp_sep pp_print_string fmt xs
   in
   fprintf fmt
     "@[(rule@\n @[(targets @[%a@])@\n(deps @[%a@])@\n(action @[%a@])@])@]@\n"
@@ -204,7 +199,7 @@ let out_install fmt dir ff =
   let ff = List.concat @@ pmap (function | VO vo -> Some (gen_coqc_targets vo) | _ -> None) ff in
   let pp_ispec fmt tg = fprintf fmt "(%s as coq/%s)" tg (bpath [itarget;tg]) in
   fprintf fmt "(install@\n @[(section lib_root)@\n(package coq)@\n(files @[%a@])@])@\n"
-    (pp_list pp_ispec sep) ff
+    (pp_print_list ~pp_sep pp_ispec) ff
 
 (* For each directory, we must record two things, the build rules and
    the install specification. *)

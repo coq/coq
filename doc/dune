@@ -15,6 +15,19 @@
  (action
   (run env COQLIB=%{project_root} sphinx-build -j4 %{env:SPHINXWARNOPT=-W} -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
 
+(include refman-install.inc)
+
+(rule
+ (targets refman-install.gen)
+ (action
+  (with-stdout-to %{targets}
+    (run %{project_root}/tools/gen_install.exe coq-refman doc sphinx_build/html refman/html))))
+
+(alias
+ (name refman-html)
+ (action
+  (diff refman-install.inc refman-install.gen)))
+
 (alias
  (name refman-html)
  (deps sphinx_build))

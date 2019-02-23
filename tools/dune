@@ -46,3 +46,7 @@
  (package coq)
  (modules coq_tex coq_dune)
  (libraries str))
+
+(executable
+ (name gen_install)
+ (modules gen_install))

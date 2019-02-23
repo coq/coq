@@ -87,7 +87,7 @@ test-suite: voboot
 	dune runtest --no-buffer $(DUNEOPT)
 
 refman-html: voboot
-	dune build @refman-html
+	dune build $(DUNEOPT) @refman-html
 
 stdlib-html: voboot
 	dune build @stdlib-html
