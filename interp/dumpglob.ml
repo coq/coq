@@ -12,13 +12,13 @@ open Util
 
 (* Dump of globalization (to be used by coqdoc) *)
 
-let glob_file = ref Pervasives.stdout
+let glob_file = ref Stdlib.stdout
 
 let open_glob_file f =
-  glob_file := Pervasives.open_out f
+  glob_file := Stdlib.open_out f
 
 let close_glob_file () =
-  Pervasives.close_out !glob_file
+  Stdlib.close_out !glob_file
 
 type glob_output_t =
     | NoGlob
@@ -37,7 +37,7 @@ let dump_to_dotglob () = glob_output := MultFiles
 
 let dump_into_file f =
   if String.equal f "stdout" then
-    (glob_output := StdOut; glob_file := Pervasives.stdout)
+    (glob_output := StdOut; glob_file := Stdlib.stdout)
   else
     (glob_output := File f; open_glob_file f)
 
@@ -45,7 +45,7 @@ let feedback_glob () = glob_output := Feedback
 
 let dump_string s =
   if dump () && !glob_output != Feedback then 
-    Pervasives.output_string !glob_file s
+    Stdlib.output_string !glob_file s
 
 let start_dump_glob ~vfile ~vofile =
   match !glob_output with

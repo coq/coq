@@ -876,7 +876,7 @@ and print_level : type s. _ -> _ -> s ex_symbols list -> _ =
       (fun sep (ExS rule) ->
          fprintf ppf "%t%a" sep print_rule rule;
          fun ppf -> fprintf ppf "%a| " pp_print_space ())
-      (fun ppf -> ()) rules
+      (fun ppf -> ()) rules ppf
   in
   fprintf ppf " ]@]"
 
@@ -901,7 +901,7 @@ let print_levels ppf elev =
          fprintf ppf "@]@;<1 2>";
          print_level ppf pp_force_newline rules;
          fun ppf -> fprintf ppf "@,| ")
-      (fun ppf -> ()) elev
+      (fun ppf -> ()) elev ppf
   in
   ()
 

@@ -94,7 +94,7 @@ let rich_pp width ppcmds =
     print_close_tag = ignore;
   } in
 
-  pp_set_formatter_tag_functions ft tag_functions;
+  pp_set_formatter_tag_functions ft tag_functions [@ocaml.alert "-deprecated"];
   pp_set_mark_tags ft true;
 
   (* Setting the formatter *)
@@ -107,9 +107,9 @@ let rich_pp width ppcmds =
   (* The whole output must be a valid document. To that
      end, we nest the document inside <pp> tags. *)
   pp_open_box ft 0;
-  pp_open_tag ft "pp";
+  pp_open_tag ft "pp" [@ocaml.alert "-deprecated"];
   Pp.(pp_with ft ppcmds);
-  pp_close_tag ft ();
+  pp_close_tag ft () [@ocaml.alert "-deprecated"];
   pp_close_box ft ();
 
   (* Get the resulting XML tree. *)

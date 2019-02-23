@@ -13,9 +13,9 @@ open Index
 
 (*s Low level output *)
 
-let output_char c = Pervasives.output_char !out_channel c
+let output_char c = Stdlib.output_char !out_channel c
 
-let output_string s = Pervasives.output_string !out_channel s
+let output_string s = Stdlib.output_string !out_channel s
 
 let printf s = Printf.fprintf !out_channel s
 
@@ -527,13 +527,13 @@ module Html = struct
   let header () =
     if !header_trailer then
       if !header_file_spec then
-	let cin = Pervasives.open_in !header_file in
+        let cin = Stdlib.open_in !header_file in
 	  try
 	    while true do
-	      let s = Pervasives.input_line cin in
+              let s = Stdlib.input_line cin in
 		printf "%s\n" s
 	    done
-	  with End_of_file -> Pervasives.close_in cin
+          with End_of_file -> Stdlib.close_in cin
       else
 	begin
 	  printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
@@ -548,13 +548,13 @@ module Html = struct
 
   let trailer () =
     if !header_trailer && !footer_file_spec then
-	let cin = Pervasives.open_in !footer_file in
+        let cin = Stdlib.open_in !footer_file in
 	  try
 	    while true do
-	      let s = Pervasives.input_line cin in
+              let s = Stdlib.input_line cin in
 		printf "%s\n" s
 	    done
-	  with End_of_file -> Pervasives.close_in cin
+          with End_of_file -> Stdlib.close_in cin
     else
       begin
         if !index && (get_module false) <> "Index" then

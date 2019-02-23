@@ -199,7 +199,7 @@ let pp_with ft pp =
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
     | Ppcmd_tag(tag, s)       -> pp_open_tag  ft tag;
                                  pp_cmd s;
-                                 pp_close_tag ft ()
+                                 pp_close_tag ft () [@@ocaml.warning "-3"] (* deprecated, but requires 4.08! *)
   in
   try pp_cmd pp
   with reraise ->

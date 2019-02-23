@@ -278,7 +278,7 @@ and op = |Eq | Ge | Gt
 
 exception Strict
 
-let is_strict c = Pervasives.(=) c.op  Gt
+let is_strict c = Stdlib.(=) c.op  Gt
 
 let eval_op = function
   | Eq -> (=/)
@@ -785,7 +785,7 @@ module ProofFormat =  struct
       let rec xid_of_hyp i l' =
         match l' with
         | [] -> failwith (Printf.sprintf "id_of_hyp %i %s" hyp (string_of_int_list l))
-        | hyp'::l' -> if Pervasives.(=) hyp hyp' then i else xid_of_hyp (i+1) l' in
+        | hyp'::l' -> if Stdlib.(=) hyp hyp' then i else xid_of_hyp (i+1) l' in
       xid_of_hyp 0 l
 
   end
@@ -873,7 +873,7 @@ module ProofFormat =  struct
        let (p,o) = eval_prf_rule (fun i -> IMap.find i env) prf in
        if is_unsat (p,o) then true
        else
-         if Pervasives.(=) rst Done
+         if Stdlib.(=) rst Done
          then
            begin
              Printf.fprintf stdout "Last inference %a %s\n" LinPoly.pp p (string_of_op o);

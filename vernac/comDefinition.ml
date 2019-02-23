@@ -34,7 +34,7 @@ let check_imps ~impsty ~impsbody =
     try
       List.for_all (fun (key, (va:bool*bool*bool)) ->
           (* Pervasives.(=) is OK for this type *)
-          Pervasives.(=) (List.assoc_f Constrexpr_ops.explicitation_eq key impsty) va)
+          Stdlib.(=) (List.assoc_f Constrexpr_ops.explicitation_eq key impsty) va)
         impsbody
     with Not_found -> false
   in

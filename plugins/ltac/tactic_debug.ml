@@ -160,7 +160,7 @@ let rec prompt level =
   begin
     let open Proofview.NonLogical in
     Proofview.NonLogical.print_notice (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
-    if Pervasives.(!batch) then return (DebugOn (level+1)) else
+    if Stdlib.(!batch) then return (DebugOn (level+1)) else
     let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
       begin function (e, info) -> match e with

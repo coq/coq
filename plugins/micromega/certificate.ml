@@ -93,7 +93,7 @@ let dev_form n_spec  p =
 
 let rec fixpoint f x =
   let y' = f x in
-  if Pervasives.(=) y' x then y'
+  if Stdlib.(=) y' x then y'
   else fixpoint f y'
 
 let  rec_simpl_cone n_spec e = 

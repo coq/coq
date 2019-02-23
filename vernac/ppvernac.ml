@@ -372,7 +372,7 @@ open Pputils
     | (c,(idl,t))::l ->
       match factorize l with
         | (xl,((c', t') as r))::l'
-            when (c : bool) == c' && Pervasives.(=) t t' ->
+            when (c : bool) == c' && Stdlib.(=) t t' ->
           (* FIXME: we need equality on constr_expr *)
           (idl@xl,r)::l'
         | l' -> (idl,(c,t))::l'

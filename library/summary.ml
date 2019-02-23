@@ -153,7 +153,7 @@ let (!) r =
     CEphemeron.get (fst !r)
 
 let ref ?(freeze=fun x -> x) ~name init =
-  let r = Pervasives.ref (CEphemeron.create init, name) in
+  let r = Stdlib.ref (CEphemeron.create init, name) in
   declare_summary name
     { freeze_function = (fun ~marshallable -> freeze !r);
       unfreeze_function = ((:=) r);

@@ -519,7 +519,7 @@ let read_recursive_format sl fmt =
     let sl = skip_var_in_recursive_format fmt in
     try split_format_at_ldots [] sl with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
   let rec get_tail = function
-    | (loc,a) :: sepfmt, (_,b) :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
+    | (loc,a) :: sepfmt, (_,b) :: fmt when Stdlib.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
     | [], tail -> skip_var_in_recursive_format tail
     | (loc,_) :: _, ([] | (_,UnpTerminal _) :: _)-> error_not_same ?loc ()
     | _, (loc,_)::_ -> error_not_same ?loc () in
@@ -953,7 +953,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | None, None -> typs
     | Some _, None -> typs
     | None, Some ytyp -> (x,ytyp)::typs
-    | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
+    | Some xtyp, Some ytyp when Stdlib.(=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
 	user_err 
 	  (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++

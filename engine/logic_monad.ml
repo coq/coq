@@ -41,7 +41,7 @@ let _ = CErrors.register_handler begin function
   | Timeout -> CErrors.user_err ~hdr:"Some timeout function" (Pp.str"Timeout!")
   | Exception e -> CErrors.print e
   | TacticFailure e -> CErrors.print e
-  | _ -> Pervasives.raise CErrors.Unhandled
+  | _ -> Stdlib.raise CErrors.Unhandled
 end
 
 (** {6 Non-logical layer} *)
@@ -70,11 +70,11 @@ struct
     let map f a = (); fun () -> f (a ())
   end)
 
-  type 'a ref = 'a Pervasives.ref
+  type 'a ref = 'a Stdlib.ref
 
   let ignore a = (); fun () -> ignore (a ())
 
-  let ref a = (); fun () -> Pervasives.ref a
+  let ref a = (); fun () -> Stdlib.ref a
 
   (** [Pervasives.(:=)] *)
   let (:=) r a = (); fun () -> r := a
@@ -93,7 +93,7 @@ struct
         let (src, info) = CErrors.push src in
         h (e, info) ()
 
-  let read_line = fun () -> try Pervasives.read_line () with e ->
+  let read_line = fun () -> try Stdlib.read_line () with e ->
     let (e, info) = CErrors.push e in raise ~info e ()
 
   let print_char = fun c -> (); fun () -> print_char c

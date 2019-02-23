@@ -1585,7 +1585,7 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
   let is_proof_compatible (old_cl:'cst clause) (prf,prover) (new_cl:'cst clause) =
     let hyps_idx = prover.hyps prf in
     let hyps = selecti hyps_idx old_cl in
-      is_sublist Pervasives.(=) hyps new_cl in
+      is_sublist Stdlib.(=) hyps new_cl in
 
 
 
@@ -1953,7 +1953,7 @@ open Persistent_cache
 
 module Cache = PHashtable(struct
   type t = (provername * micromega_polys)
-  let equal = Pervasives.(=)
+  let equal = Stdlib.(=)
   let hash  = Hashtbl.hash
 end)
 

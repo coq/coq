@@ -10,7 +10,7 @@
 
 open Genredexpr
 
-let union_consts l1 l2 = Util.List.union Pervasives.(=) l1 l2 (* FIXME *)
+let union_consts l1 l2 = Util.List.union Stdlib.(=) l1 l2 (* FIXME *)
 
 let make_red_flag l =
   let rec add_flag red = function

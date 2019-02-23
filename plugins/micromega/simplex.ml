@@ -651,7 +651,7 @@ let integer_solver lp =
        match find_cut (!nb mod 2) env cr (*x*) sol vm rst tbl with
        | None -> None
        | Some(cr,((v,op),cut)) ->
-          if Pervasives.(=) op Eq
+          if Stdlib.(=) op Eq
           then (* This is a contradiction *)
             Some(Step(vr,CutPrf cut, Done))
           else

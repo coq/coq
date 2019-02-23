@@ -68,7 +68,7 @@ and 'a computation = 'a comput ref
 let unnamed = "unnamed"
 
 let create ?(name=unnamed) ?(uuid=UUID.fresh ()) f x =
-  ref (Ongoing (name, CEphemeron.create (uuid, f, Pervasives.ref x)))
+  ref (Ongoing (name, CEphemeron.create (uuid, f, Stdlib.ref x)))
 let get x =
   match !x with
   | Finished v -> unnamed, UUID.invalid, id, ref (Val v)

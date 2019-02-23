@@ -376,7 +376,7 @@ let get_local_profiling_results () = List.hd Local.(!stack)
    own. *)
 module DData = struct
     type t = Feedback.doc_id * Stateid.t
-    let compare x y = Pervasives.compare x y
+    let compare x y = Stdlib.compare x y
 end
 
 module SM = Map.Make(DData)
