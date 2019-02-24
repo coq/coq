@@ -393,7 +393,9 @@ let rec pretty_rename evar_map term = function
         ppdebug(lazy Pp.(str"under: cannot pretty-rename all bound variables with destLambda"));
         term
 
-let undertac ist varnames ((dir,mult),_ as rule) =
+let overtac gl = ssr_n_tac "over" ~-1 gl
+
+let undertac ist varnames ((dir,mult),_ as rule) hint =
   if mult <> Ssrequality.nomult then
     Ssrcommon.errorstrm Pp.(str"Multiplicity not supported");
 
@@ -418,5 +420,15 @@ let undertac ist varnames ((dir,mult),_ as rule) =
     ppdebug(lazy Pp.(str"under: to:" ++ pr_econstr_env env evar_map new_t));
     evar_map, new_t
   in
-  Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
-  intro_lock varnames
+  let undertacs =
+    if hint = nohint then
+      Proofview.tclUNIT ()
+    else
+      Proofview.tclDISPATCH
+        ((List.map (function None -> Proofview.V82.tactic overtac
+                           | Some e -> ssrevaltac ist e <*>
+                                         Proofview.V82.tactic overtac)
+            (if hint = nullhint then [None] else snd hint)) @ [Proofview.tclUNIT ()])
+  in
+  (Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
+     intro_lock varnames <*> undertacs)

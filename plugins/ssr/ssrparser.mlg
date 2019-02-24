@@ -2651,8 +2651,8 @@ TACTIC EXTEND ssrgenhave2
 END
 
 TACTIC EXTEND under
-  | [ "under" ne_ident_list(names) ":" ssrrwarg(r) ] ->
-    { Ssrfwd.undertac ist names r }
+  | [ "under" ne_ident_list(names) ":" ssrrwarg(r) ssrhint(hint) ] ->
+    { Ssrfwd.undertac ist names r hint }
 END
 
 {
