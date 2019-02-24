@@ -1,139 +1,192 @@
 Require Import ssreflect.
 
-Axiom admit : False.
+(* under <names>: {occs}[patt]<lemma>.
+   under <names>: {occs}[patt]<lemma> by tac1.
+   under <names>: {occs}[patt]<lemma> by [tac1 | ...].
+ *)
 
-(** Testing over for the 1-var case *)
-Lemma test_over_1_1 : forall i : nat, False.
-intros.
-evar (I : Type); evar (R : Type); evar (x2 : I -> R).
-assert (H : i + 2 * i - i = x2 i).
-  unfold x2 in *; clear x2;
-  unfold R in *; clear R;
-  unfold I in *; clear I.
-  apply Under_from_eq.
-  Fail done.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
-  over.
-  case: admit.
-Qed.
+Axiom daemon : False. Ltac myadmit := case: daemon.
 
-Lemma test_over_1_2 : forall i : nat, False.
-intros.
-evar (I : Type); evar (R : Type); evar (x2 : I -> R).
-assert (H : i + 2 * i - i = x2 i).
-  unfold x2 in *; clear x2;
-  unfold R in *; clear R;
-  unfold I in *; clear I.
-  apply Under_from_eq.
-  Fail done.
+Module Mocks.
 
-  by rewrite over.
-  case: admit.
-Qed.
+(* Mock bigop.v definitions to test the behavior of under with bigops
+   without requiring mathcomp *)
 
-(** Testing over for the 2-var case *)
+Variant bigbody (R I : Type) : Type :=
+  BigBody : forall (_ : I) (_ : forall (_ : R) (_ : R), R) (_ : bool) (_ : R), bigbody R I.
 
-Lemma test_over_2_1 : forall i j : nat, False.
-intros.
-evar (I : Type); evar (J : Type); evar (R : Type); evar (x2 : I -> J -> R).
-assert (H : i + 2 * j - i = x2 i j).
-  unfold x2 in *; clear x2;
-  unfold R in *; clear R;
-  unfold J in *; clear J;
-  unfold I in *; clear I.
-  apply Under_from_eq.
-  Fail done.
+Parameter bigop :
+  forall (R I : Type) (_ : R) (_ : list I) (_ : forall _ : I, bigbody R I), R.
 
-  Fail over. (* Bug: doesn't work so we have to make a beta-expansion by hand *)
-  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j). (* todo: automate? *)
-  over.
-  case: admit.
-Qed.
+Definition eqfun :=
+  fun (A B : Type) (f g : forall _ : B, A) => forall x : B, @eq A (f x) (g x).
 
-Lemma test_over_2_2 : forall i j : nat, False.
-intros.
-evar (I : Type); evar (J : Type); evar (R : Type); evar (x2 : I -> J -> R).
-assert (H : i + 2 * j - i = x2 i j).
-  unfold x2 in *; clear x2;
-  unfold R in *; clear R;
-  unfold J in *; clear J;
-  unfold I in *; clear I.
-  apply Under_from_eq.
-  Fail done.
+Definition pred := fun T : Type => forall _ : T, bool.
 
-  rewrite over.
-  Fail done. (* Bug: doesn't work so we have to make a beta-expansion by hand *)
-  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j). (* todo: automate? *)
-  done.
-  case: admit.
-Qed.
+Section Defix.
+Variables (T : Type) (n : nat) (f : forall _ : T, T) (x : T).
+Fixpoint loop (m : nat) : T :=
+  match m return T with
+  | O => x
+  | S i => f (loop i)
+  end.
+Definition iter := loop n.
+End Defix.
 
-(** Testing under for the 1-var case *)
+Definition addn := nosimpl plus.
+Definition subn := nosimpl minus.
+Definition muln := nosimpl mult.
 
-Inductive body :=
- mk_body : bool -> nat -> nat -> body.
+Fixpoint seq_iota (m n : nat) {struct n} : list nat :=
+  match n return (list nat) with
+  | O => @nil nat
+  | S n' => @cons nat m (seq_iota (S m) n')
+  end.
 
-Axiom big : (nat -> body) -> nat.
+Definition index_iota := fun m n : nat => seq_iota m (subn n m).
 
-Axiom eq_big :
- forall P Q F G,
-(forall x, P x = Q x :> bool) ->
- (forall x, (P x =true -> F x = G x : Type)) ->
-  big (fun x => mk_body (P x) (F x) x) = big (fun toto => mk_body (Q toto) (F toto) toto).
+Parameter eq_bigl :
+  forall (R : Type) (idx : R) (op : forall (_ : R) (_ : R), R) (I : Type)
+         (r : list I) (P1 P2 : pred I) (F : forall _ : I, R) (_ : @eqfun bool I P1 P2),
+    @eq R (@bigop R I idx r (fun i : I => @BigBody R I i op (P1 i) (F i)))
+        (@bigop R I idx r (fun i : I => @BigBody R I i op (P2 i) (F i))).
 
-Axiom leb : nat -> nat -> bool.
+Parameter eq_big :
+  forall (R : Type) (idx : R) (op : forall (_ : R) (_ : R), R) (I : Type)
+         (r : list I) (P1 P2 : pred I) (F1 F2 : forall _ : I, R) (_ : @eqfun bool I P1 P2)
+         (_ : forall (i : I) (_ : is_true (P1 i)), @eq R (F1 i) (F2 i)),
+    @eq R (@bigop R I idx r (fun i : I => @BigBody R I i op (P1 i) (F1 i)))
+        (@bigop R I idx r (fun i : I => @BigBody R I i op (P2 i) (F2 i))).
 
-Axiom addnC : forall p q : nat, p + q = q + p.
+Parameter eq_bigr :
+  forall (R : Type) (idx : R) (op : forall (_ : R) (_ : R), R) (I : Type)
+         (r : list I) (P : pred I) (F1 F2 : forall _ : I, R)
+         (_ : forall (i : I) (_ : is_true (P i)), @eq R (F1 i) (F2 i)),
+    @eq R (@bigop R I idx r (fun i : I => @BigBody R I i op (P i) (F1 i)))
+        (@bigop R I idx r (fun i : I => @BigBody R I i op (P i) (F2 i))).
 
-Lemma test_under_eq_big :
-  (big (fun x => mk_body (leb x 3) (S x + x) x))
- = 3.
+Parameter big_const_nat :
+  forall (R : Type) (idx : R) (op : forall (_ : R) (_ : R), R) (m n : nat) (x : R),
+    @eq R (@bigop R nat idx (index_iota m n) (fun i : nat => @BigBody R nat i op true x))
+        (@iter R (subn n m) (op x) idx).
+
+Delimit Scope bool_scope with B.
+Open Scope bool_scope.
+
+Delimit Scope N_scope with num.
+Delimit Scope nat_scope with N.
+
+Delimit Scope big_scope with BIG.
+Open Scope big_scope.
+
+Reserved Notation "~~ b" (at level 35, right associativity).
+Notation "~~ b" := (negb b) : bool_scope.
+
+Reserved Notation "\big [ op / idx ]_ ( m <= i < n | P ) F"
+  (at level 36, F at level 36, op, idx at level 10, m, i, n at level 50,
+           format "'[' \big [ op / idx ]_ ( m  <=  i  <  n  |  P )  F ']'").
+Reserved Notation "\big [ op / idx ]_ ( m <= i < n ) F"
+  (at level 36, F at level 36, op, idx at level 10, i, m, n at level 50,
+           format "'[' \big [ op / idx ]_ ( m  <=  i  <  n ) '/  '  F ']'").
+
+Reserved Notation "\sum_ ( m <= i < n | P ) F"
+  (at level 41, F at level 41, i, m, n at level 50,
+           format "'[' \sum_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
+Reserved Notation "\sum_ ( m <= i < n ) F"
+  (at level 41, F at level 41, i, m, n at level 50,
+           format "'[' \sum_ ( m  <=  i  <  n ) '/  '  F ']'").
+
+Notation "\big [ op / idx ]_ ( m <= i < n | P ) F" :=
+  (bigop idx (index_iota m n) (fun i : nat => BigBody i op P%B F))
+     : big_scope.
+Notation "\big [ op / idx ]_ ( m <= i < n ) F" :=
+  (bigop idx (index_iota m n) (fun i : nat => BigBody i op true F))
+     : big_scope.
+
+Local Notation "+%N" := addn (at level 0, only parsing).
+
+Notation "\sum_ ( m <= i < n | P ) F" :=
+  (\big[+%N/0%N]_(m <= i < n | P%B) F%N) : nat_scope.
+Notation "\sum_ ( m <= i < n ) F" :=
+  (\big[+%N/0%N]_(m <= i < n) F%N) : nat_scope.
+
+Fixpoint odd n := if n is S n' then ~~ odd n' else false.
+
+Parameter addnC : forall m n : nat, m + n = n + m.
+Parameter mulnC : forall m n : nat, m * n = n * m.
+Parameter addnA : forall x y z : nat, x + (y + z) = ((x + y) + z).
+Parameter mulnA : forall x y z : nat, x * (y * z) = ((x * y) * z).
+
+Parameter iter_addn_0 : forall m n : nat, @eq nat (@iter nat n (addn m) O) (muln m n).
+
+Notation "x == y" := (Nat.eqb x y)
+  (at level 70, no associativity) : bool_scope.
+End Mocks.
+
+Import Mocks.
+
+(*****************************************************************************)
+
+Lemma test_big_nested_1 (F G : nat -> nat) (m n : nat) :
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd (j * 1)) (i + j) =
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
 Proof.
- Set Debug Ssreflect.
- under i : {1}[in LHS]eq_big.
-
-  { over. }
-  { move=> Pi; by rewrite addnC over. }
-
- rewrite /=.
-
- case: admit.
-Qed.
-Unset Debug Ssreflect.
-
-(** 2-var test
-
-Erik: Note that this axiomatization does not faithfully follow that of
-mathcomp’s implementation of matrices. We may want to refine this test
-once [eq_mx] has been integrated in mathcomp. *)
-
-Axiom I_ : nat -> Type.
-
-(* Inductive matrix (R : Type) (m n : nat) : Type := Matrix (_ : list (I_ m * I_ n * R)). *)
-Inductive matrix (R : Type) (m n : nat) : Type := Matrix (_ : I_ m -> I_ n -> R).
-
-Axiom mx_of_fun : forall (R : Type) (m n : nat),
-  unit -> (I_ m -> I_ n -> R) -> matrix R m n.
-
-Axiom eq_mx : forall (R : Type) m n (k : unit) (F1 F2 : I_ m -> I_ n -> R),
-  (forall foo bar, F1 foo bar = F2 foo bar) ->
-  (mx_of_fun R m n k (fun a b => F1 a b)) = (mx_of_fun R m n k (fun c d => F2 c d)).
-Arguments eq_mx [R m n k F1] F2 _.
-
-Definition fun_of_mx (R : Type) (m n : nat) (M : matrix R m n) :=
-  let: Matrix _ _ _ F := M in F.
-
-Coercion fun_of_mx : matrix >-> Funclass.
-
-Definition addmx : forall (m n : nat) (A B : matrix nat m n), matrix nat m n :=
-  fun m n A B => mx_of_fun nat m n tt (fun x y => A x y + B x y).
-Arguments addmx [m n].
-
-Lemma test_under_eq_mx (m n : nat) (A B C : matrix nat m n) :
-  addmx (addmx A B) C = addmx C (addmx A B).
-Proof.
-(* Set Debug Ssreflect. *)
-under i j : [addmx C _ in RHS]eq_mx.
-  by rewrite addnC over.
+(* in interactive mode *)
+under i Hi: eq_bigr.
+  under j Hj: eq_big.
+  { by rewrite mulnC /= addnC /= over. }
+  { by rewrite addnC over. }
+  over.
 done.
+Qed.
+
+Lemma test_big_nested_2 (F G : nat -> nat) (m n : nat) :
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd (j * 1)) (i + j) =
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
+Proof.
+(* in one-liner mode *)
+under i I: eq_bigr by under j J: eq_big by [rewrite mulnC /= addnC|rewrite addnC].
+done.
+Qed.
+
+Lemma test_big_patt1 (F G : nat -> nat) (n : nat) :
+  \sum_(0 <= i < n) (F i + G i) = \sum_(0 <= i < n) (G i + F i) + 0.
+Proof.
+under i Hi: [in RHS]eq_bigr.
+  rewrite addnC.
+  over.
+done.
+Qed.
+
+Lemma test_big_patt2 (F G : nat -> nat) (n : nat) :
+  \sum_(0 <= i < n) (F i + F i) =
+  \sum_(0 <= i < n) 0 + \sum_(0 <= i < n) (F i * 2).
+Proof.
+under i Hi: [X in _ = _ + X]eq_bigr.
+  (* the proof is not idiomatic as mathcomp lemmas are not available here *)
+  rewrite mulnC /= addnA -plus_n_O.
+  over.
+by rewrite big_const_nat iter_addn_0.
+Qed.
+
+Lemma test_big_occs (F G : nat -> nat) (n : nat) :
+  \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0).
+Proof.
+under i Hi: {2}[in RHS]eq_bigr.
+  by rewrite mulnC /= over.
+by rewrite big_const_nat iter_addn_0.
+Qed.
+
+(* Solely used, one such renaming is useless in practice, but it works anyway *)
+Lemma test_big_cosmetic (F G : nat -> nat) (m n : nat) :
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd (j * 1)) (i + j) =
+  \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
+Proof.
+under a A: [RHS]eq_bigr by under b B: eq_bigr by []. (* renaming bound vars *)
+simpl.
+myadmit.
 Qed.

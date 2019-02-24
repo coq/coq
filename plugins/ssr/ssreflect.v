@@ -502,27 +502,7 @@ Lemma abstract_context T (P : T -> Type) x :
 Proof. by move=> /(_ P); apply. Qed.
 
 (*****************************************************************************)
-(* Syntax proposal for the under tactic:
-
-under i: eq_bigr by []. (* renaming *)
-
-under i: eq_bigr.
-  by rewrite addnC over.
-(* oneliner version *)
-under i: eq_bigr by rewrite adnnC.
-
-under i: lem => /andP [H1 H2].
-  by rewrite addnC over.
-(* oneliner version *)
-under i: lem by move => /andP [H1 H2]; rewrite addnC.
-
-(* 2-var version *)
-under i j: {2}[in RHS]eq_mx.
-(* ... *)
-
-(* nested version *)
-under i: eq_bigr=> ?; under j: eq_bigl.
- *)
+(* Constants for under, to rewrite under binders using "Leibniz eta lemmas". *)
 
 Module Type UNDER.
 Parameter Under :
@@ -539,9 +519,9 @@ Parameter over_done :
   forall (T : Type) (x : T), @Over T x x.
 (* We need both hints below, otherwise the test-suite does not pass *)
 Hint Extern 0 (@Over _ _ _) => solve [ apply over_done ] : core.
-(* => for test_under_eq_big *)
+(* => for [test-suite/ssr/under.v:test_big_nested_1] *)
 Hint Resolve over_done : core.
-(* => for test_over_1_1 *)
+(* => for [test-suite/ssr/over.v:test_over_1_1] *)
 
 (** [under_done]: for Ltac-style over *)
 Parameter under_done :
@@ -573,8 +553,8 @@ Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 Ltac over :=
   solve [ apply Under.under_done | by rewrite over ].
 
-(* The 2 variants below wouldn't work for the [test_over_2_1] test
-   (2-var case with evars)
+(* The 2 variants below wouldn't work on [test-suite/ssr/over.v:test_over_2_1]
+   (2-var test case with evars).
 
 Ltac over :=
   exact: Under.under_done.
