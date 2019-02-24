@@ -25,8 +25,6 @@ val compact_the_proof : t -> t
     function which takes a [proof_object] together with a [proof_end]
     (i.e. an proof ending command) and registers the appropriate
     values. *)
-type lemma_possible_guards = int list list
-
 type proof_object = {
   id : Names.Id.t;
   entries : Safe_typing.private_constants Entries.definition_entry list;

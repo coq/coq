@@ -87,7 +87,7 @@ val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * UState.universe_decl * UState.t *
   (Constr.rel_context * Impargs.manual_implicits * int option) list ->
-  Proof_global.lemma_possible_guards -> decl_notation list ->
+  Lemmas.lemma_possible_guards -> decl_notation list ->
   Lemmas.t option
 
 val declare_cofixpoint :

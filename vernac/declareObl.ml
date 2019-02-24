@@ -487,13 +487,13 @@ let dependencies obls n =
     obls;
   !res
 
-let obligation_terminator name num guard auto pf =
+let obligation_terminator name num auto pf =
   let open Proof_global in
   let open Lemmas in
-  let term = Lemmas.standard_proof_terminator guard in
+  let term = Lemmas.standard_proof_terminator in
   match pf with
   | Admitted _ -> Internal.apply_terminator term pf
-  | Proved (opq, id, {entries = [entry]; universes = uctx}, hook) -> (
+  | Proved (opq, id, {entries = [entry]; universes = uctx}, hook, compute_guard) -> (
     let env = Global.env () in
     let entry =
       Safe_typing.inline_private_constants_in_definition_entry env entry
@@ -552,7 +552,7 @@ let obligation_terminator name num guard auto pf =
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e)) )
-  | Proved (_, _, _, _) ->
+  | Proved (_, _, _, _, _) ->
     CErrors.anomaly
       Pp.(
         str
