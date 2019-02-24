@@ -500,3 +500,53 @@ Hint View for apply/ iffRLn|2 iffLRn|2 iffRL|2 iffLR|2.
 Lemma abstract_context T (P : T -> Type) x :
   (forall Q, Q = P -> Q x) -> P x.
 Proof. by move=> /(_ P); apply. Qed.
+
+(*****************************************************************************)
+(* Syntax proposal for the under tactic:
+
+under i: eq_bigr by []. (* renaming *)
+
+under i: eq_bigr.
+  by rewrite addnC over.
+(* oneliner version *)
+under i: eq_bigr by rewrite adnnC.
+
+under i: lem => /andP [H1 H2].
+  by rewrite addnC over.
+(* oneliner version *)
+under i: lem by move => /andP [H1 H2]; rewrite addnC.
+
+(* 2-var version *)
+under i j: {2}[in RHS]eq_mx.
+(* ... *)
+
+(* nested version *)
+under i: eq_bigr=> ?; under j: eq_bigl.
+ *)
+
+Module Type UNDER.
+Parameter Under :
+  forall (R : Type), R -> R -> Prop.
+Parameter Under_from_eq :
+  forall (T : Type) (x y : T),
+  @Under T x y -> x = y.
+Parameter over :
+  forall (T : Type) (x : T),
+  @Under T x x <-> True.
+Notation "''Under[' x ]" := (@Under _ x _)
+  (at level 8, format "''Under['  x  ]").
+End UNDER.
+
+Module Export Under : UNDER.
+Definition Under := @eq.
+Definition Under_done := @refl_equal.
+Lemma Under_from_eq (T : Type) (x y : T) :
+  @Under T x y -> x = y.
+Proof. easy. Qed.
+Lemma over (T : Type) (x : T) :
+  @Under T x x <-> True.
+Proof. easy. Qed.
+End Under.
+
+Register Under as plugins.ssreflect.Under.
+Register Under_from_eq as plugins.ssreflect.Under_from_eq.
