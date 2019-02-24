@@ -38,29 +38,22 @@ module NamedDecl = Context.Named.Declaration
 
 type lemma_possible_guards = int list list
 
-type proof_ending =
-  | Admitted of
-      Names.Id.t *
-      Decl_kinds.goal_kind *
-      Entries.parameter_entry *
-      UState.t *
-      DeclareDef.Hook.t option
+module Proof_ending = struct
 
-  | Proved of
-      Proof_global.opacity_flag *
-      lident option *
-      Proof_global.proof_object *
-      DeclareDef.Hook.t option *
-      lemma_possible_guards
+  type t =
+    | Regular
+    | End_obligation of DeclareObl.obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
 
-type proof_terminator = (proof_ending -> unit) CEphemeron.key
+end
 
 (* Proofs with a save constant function *)
 type t =
   { proof : Proof_global.t
-  ; terminator : proof_terminator
   ; hook : DeclareDef.Hook.t option
   ; compute_guard : lemma_possible_guards
+  ; proof_ending : Proof_ending.t CEphemeron.key
+  (* This could be improved and the CEphemeron removed *)
   }
 
 let pf_map f pf = { pf with proof = f pf.proof }
@@ -71,12 +64,9 @@ let set_endline_tactic t = pf_map (Proof_global.set_endline_tactic t)
 (* To be removed *)
 module Internal = struct
 
-let make_terminator f = CEphemeron.create f
-let apply_terminator f = CEphemeron.get f
-
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-let get_info ps = ps.terminator, ps.hook, ps.compute_guard
+let get_info ps = ps.hook, ps.compute_guard, ps.proof_ending
 
 end
 (* Internal *)
@@ -209,7 +199,6 @@ let look_for_possibly_mutual_statements sigma = function
   | [] -> anomaly (Pp.str "Empty list of theorems.")
 
 (* Saving a goal *)
-
 let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes =
   let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
   try
@@ -316,15 +305,14 @@ let admit ?hook ctx (id,k,e) pl () =
   Declare.declare_univ_binders (ConstRef kn) pl;
   DeclareDef.Hook.call ?hook ctx [] (Global local) (ConstRef kn)
 
-(* Starting a goal *)
+let finish_admitted id k pe ctx hook =
+  let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
+  Feedback.feedback Feedback.AddedAxiom
 
-let standard_proof_terminator =
+let finish_proved opaque idopt po hook compute_guard =
   let open Proof_global in
-  Internal.make_terminator begin function
-  | Admitted (id,k,pe,ctx,hook) ->
-    let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
-    Feedback.feedback Feedback.AddedAxiom
-  | Proved (opaque,idopt, { id; entries=[const]; persistence; universes }, hook, compute_guard ) ->
+  match po with
+  | { id; entries=[const]; persistence; universes } ->
     let is_opaque, export_seff = match opaque with
       | Transparent -> false, true
       | Opaque      -> true, false
@@ -335,9 +323,8 @@ let standard_proof_terminator =
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
     let () = save ~export_seff id const universes compute_guard persistence hook universes in
     ()
-  | Proved (opaque,idopt, _, hook,_) ->
-    CErrors.anomaly Pp.(str "[universe_proof_terminator] close_proof returned more than one proof term")
-  end
+  | _ ->
+    CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -382,14 +369,17 @@ module Stack = struct
 
 end
 
-let start_lemma id ?pl kind sigma ?(terminator=standard_proof_terminator) ?(sign=initialize_named_context_for_proof()) ?(compute_guard=[]) ?hook c =
+(* Starting a goal *)
+let start_lemma id ?pl kind sigma ?(proof_ending = Proof_ending.Regular)
+    ?(sign=initialize_named_context_for_proof()) ?(compute_guard=[]) ?hook c =
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma id ?pl kind goals in
-  { proof ; terminator; hook; compute_guard }
+  { proof ; hook; compute_guard; proof_ending = CEphemeron.create proof_ending }
 
-let start_dependent_lemma id ?pl kind ?(terminator=standard_proof_terminator) ?sign ?(compute_guard=[]) ?hook telescope =
+let start_dependent_lemma id ?pl kind ?(proof_ending = Proof_ending.Regular)
+    ?(compute_guard=[]) ?hook telescope =
   let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
-  { proof; terminator; hook; compute_guard }
+  { proof; hook; compute_guard; proof_ending = CEphemeron.create proof_ending }
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -480,23 +470,17 @@ let start_lemma_com ~program_mode ?inference_hook ?hook kind thms =
   start_lemma_with_initialization ?hook kind evd decl recguard thms snl
 
 (* Saving a proof *)
-
-let keep_admitted_vars = ref true
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optname  = "keep section variables in admitted proofs";
-      optkey   = ["Keep"; "Admitted"; "Variables"];
-      optread  = (fun () -> !keep_admitted_vars);
-      optwrite = (fun b -> keep_admitted_vars := b) }
+let get_keep_admitted_vars =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"keep section variables in admitted proofs"
+    ~key:["Keep"; "Admitted"; "Variables"]
+    ~value:true
 
 let save_lemma_admitted ?proof ~(lemma : t) =
-  let pe =
     let open Proof_global in
     match proof with
-    | Some ({ id; entries; persistence = k; universes }, (_, hook, _)) ->
+    | Some ({ id; entries; persistence = k; universes }, (hook, _, _)) ->
       if List.length entries <> 1 then
         user_err Pp.(str "Admitted does not support multiple statements");
       let { const_entry_secctx; const_entry_type } = List.hd entries in
@@ -504,8 +488,8 @@ let save_lemma_admitted ?proof ~(lemma : t) =
         user_err Pp.(str "Admitted requires an explicit statement");
       let typ = Option.get const_entry_type in
       let ctx = UState.univ_entry ~poly:(pi2 k) universes in
-      let sec_vars = if !keep_admitted_vars then const_entry_secctx else None in
-      Admitted(id, k, (sec_vars, (typ, ctx), None), universes, hook)
+      let sec_vars = if get_keep_admitted_vars () then const_entry_secctx else None in
+      finish_admitted id k (sec_vars, (typ, ctx), None) universes hook
     | None ->
       let pftree = Proof_global.get_proof lemma.proof in
       let gk = Proof_global.get_persistence lemma.proof in
@@ -522,7 +506,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
       let pproofs, _univs =
         Proof_global.return_proof ~allow_partial:true lemma.proof in
       let sec_vars =
-        if not !keep_admitted_vars then None
+        if not (get_keep_admitted_vars ()) then None
         else match Proof_global.get_used_variables lemma.proof, pproofs with
           | Some _ as x, _ -> x
           | None, (pproof, _) :: _ ->
@@ -533,13 +517,64 @@ let save_lemma_admitted ?proof ~(lemma : t) =
           | _ -> None in
       let decl = Proof_global.get_universe_decl lemma.proof in
       let ctx = UState.check_univ_decl ~poly universes decl in
-      Admitted(name,gk,(sec_vars, (typ, ctx), None), universes, lemma.hook)
+      finish_admitted name gk (sec_vars, (typ, ctx), None) universes lemma.hook
+
+(************************************************************************)
+(* Saving a lemma-like constant                                         *)
+(************************************************************************)
+
+type proof_info = DeclareDef.Hook.t option * lemma_possible_guards * Proof_ending.t CEphemeron.key
+
+let default_info = None, [], CEphemeron.create Proof_ending.Regular
+
+let finish_derive ~f ~name ~idopt ~opaque ~entries =
+  (* Extracts the relevant information from the proof. [Admitted] and
+     [Save] result in user errors. [opaque] is [true] if the proof was
+     concluded by [Qed], and [false] if [Defined]. [f_def] and
+     [lemma_def] correspond to the proof of [f] and of [suchthat],
+     respectively. *)
+
+  if Option.has_some idopt then
+    CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.");
+
+  let opaque, f_def, lemma_def =
+    match entries with
+    | [_;f_def;lemma_def] ->
+      opaque <> Proof_global.Transparent , f_def , lemma_def
+    | _ -> assert false
   in
-  CEphemeron.get lemma.terminator pe
-
-type proof_info = proof_terminator * DeclareDef.Hook.t option * lemma_possible_guards
-
-let default_info = standard_proof_terminator, None, []
+  (* The opacity of [f_def] is adjusted to be [false], as it
+     must. Then [f] is declared in the global environment. *)
+  let f_def = { f_def with Entries.const_entry_opaque = false } in
+  let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
+  let f_kn = Declare.declare_constant f f_def in
+  let f_kn_term = mkConst f_kn in
+  (* In the type and body of the proof of [suchthat] there can be
+     references to the variable [f]. It needs to be replaced by
+     references to the constant [f] declared above. This substitution
+     performs this precise action. *)
+  let substf c = Vars.replace_vars [f,f_kn_term] c in
+  (* Extracts the type of the proof of [suchthat]. *)
+  let lemma_pretype =
+    match Entries.(lemma_def.const_entry_type) with
+    | Some t -> t
+    | None -> assert false (* Proof_global always sets type here. *)
+  in
+  (* The references of [f] are subsituted appropriately. *)
+  let lemma_type = substf lemma_pretype in
+  (* The same is done in the body of the proof. *)
+  let lemma_body = Future.chain Entries.(lemma_def.const_entry_body) (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
+  let lemma_def = let open Entries in
+    { lemma_def with
+      const_entry_body = lemma_body ;
+      const_entry_type = Some lemma_type ;
+      const_entry_opaque = opaque ; }
+  in
+  let lemma_def =
+    Entries.DefinitionEntry lemma_def ,
+    Decl_kinds.(IsProof Proposition)
+  in
+  ignore (Declare.declare_constant name lemma_def)
 
 let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   (* Invariant (uh) *)
@@ -550,10 +585,18 @@ let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
     | None ->
       (* XXX: The close_proof and proof state API should be refactored
          so it is possible to insert proofs properly into the state *)
-      let { proof; terminator; hook; compute_guard } = Option.get lemma in
-      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, (terminator, hook, compute_guard)
+      let { proof; hook; compute_guard; proof_ending } = Option.get lemma in
+      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, (hook, compute_guard, proof_ending)
     | Some (proof, info) ->
       proof, info
   in
-  let terminator, hook, compute_guard = proof_info in
-  CEphemeron.get terminator (Proved (opaque,idopt,proof_obj,hook,compute_guard))
+  let hook, compute_guard, proof_ending = proof_info in
+  let open Proof_global in
+  let open Proof_ending in
+  match CEphemeron.default proof_ending Regular with
+  | Regular ->
+    finish_proved opaque idopt proof_obj hook compute_guard
+  | End_obligation oinfo ->
+    DeclareObl.obligation_terminator opaque proof_obj.entries proof_obj.universes oinfo
+  | End_derive { f ; name } ->
+    finish_derive ~f ~name ~idopt ~opaque ~entries:proof_obj.entries

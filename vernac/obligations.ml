@@ -471,7 +471,7 @@ let obligation_hook prg obl num auto ctx' _ _ gr =
   if pred rem > 0 then begin
     let deps = dependencies obls num in
     if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) None deps)
+      ignore (auto (Some prg.prg_name) deps None)
   end
 
 let rec solve_obligation prg num tac =
@@ -490,11 +490,10 @@ let rec solve_obligation prg num tac =
   let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
-  let auto n tac oblset = auto_solve_obligations n ~oblset tac in
-  let terminator = Lemmas.Internal.make_terminator
-      (obligation_terminator prg.prg_name num auto) in
+  let auto n oblset tac = auto_solve_obligations n ~oblset tac in
+  let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
   let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
-  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
+  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~proof_ending ~hook in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma

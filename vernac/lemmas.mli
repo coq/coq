@@ -11,9 +11,8 @@
 open Names
 open Decl_kinds
 
-(* Proofs that define a constant + terminators *)
+(* Proofs that define a constant *)
 type t
-type proof_terminator
 type lemma_possible_guards = int list list
 
 module Stack : sig
@@ -38,8 +37,6 @@ module Stack : sig
 
 end
 
-val standard_proof_terminator : proof_terminator
-
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
 val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
@@ -48,12 +45,21 @@ val by : unit Proofview.tactic -> t -> t * bool
 
 (* Start of high-level proofs with an associated constant *)
 
+module Proof_ending : sig
+
+  type t =
+    | Regular
+    | End_obligation of DeclareObl.obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+
+end
+
 val start_lemma
   :  Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
   -> Evd.evar_map
-  -> ?terminator:proof_terminator
+  -> ?proof_ending:Proof_ending.t
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
@@ -64,8 +70,7 @@ val start_dependent_lemma
   :  Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
-  -> ?terminator:proof_terminator
-  -> ?sign:Environ.named_context_val
+  -> ?proof_ending:Proof_ending.t
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
   -> Proofview.telescope
@@ -112,29 +117,8 @@ val save_lemma_proved
   -> idopt:Names.lident option
   -> unit
 
-(* API to build a terminator, should go away *)
-type proof_ending =
-  | Admitted of
-      Names.Id.t *
-      Decl_kinds.goal_kind *
-      Entries.parameter_entry *
-      UState.t *
-      DeclareDef.Hook.t option
-  | Proved of
-      Proof_global.opacity_flag *
-      lident option *
-      Proof_global.proof_object *
-      DeclareDef.Hook.t option *
-      lemma_possible_guards
-
-(** This stuff is internal and will be removed in the future.  *)
+(* To be removed *)
 module Internal : sig
-
   (** Only needed due to the Proof_global compatibility layer. *)
   val get_info : t -> proof_info
-
-  (** Only needed by obligations, should be reified soon *)
-  val make_terminator : (proof_ending -> unit) -> proof_terminator
-  val apply_terminator : proof_terminator -> proof_ending -> unit
-
 end

@@ -14,9 +14,9 @@ Proof_using
 Egramcoq
 Metasyntax
 DeclareDef
-Lemmas
 DeclareObl
 Canonical
+Lemmas
 Class
 Auto_ind_decl
 Search

@@ -486,13 +486,16 @@ let dependencies obls n =
     obls;
   !res
 
-let obligation_terminator name num auto pf =
+type obligation_qed_info =
+  { name : Id.t
+  ; num : int
+  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
+  }
+
+let obligation_terminator opq entries uctx { name; num; auto } =
   let open Proof_global in
-  let open Lemmas in
-  let term = Lemmas.standard_proof_terminator in
-  match pf with
-  | Admitted _ -> Internal.apply_terminator term pf
-  | Proved (opq, id, { entries=[entry]; universes=uctx }, hook, compute_guard ) -> begin
+  match entries with
+  | [entry] ->
     let env = Global.env () in
     let ty = entry.Entries.const_entry_type in
     let body, eff = Future.force entry.const_entry_body in
@@ -539,18 +542,20 @@ let obligation_terminator name num auto pf =
         if defined then UState.make (Global.universes ())
         else ctx
     in
-    let prg = { prg with prg_ctx } in
-    try
+    let prg = {prg with prg_ctx} in
+    begin try
       ignore (update_obls prg obls (pred rem));
       if pred rem > 0 then
-        begin
-          let deps = dependencies obls num in
-          if not (Int.Set.is_empty deps) then
-            ignore (auto (Some name) None deps)
-        end
+        let deps = dependencies obls num in
+        if not (Int.Set.is_empty deps) then
+          ignore (auto (Some name) deps None)
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
-  end
-  | Proved (_, _, _,_,_) ->
-    CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")
+    end
+  | _ ->
+    CErrors.anomaly
+      Pp.(
+        str
+          "[obligation_terminator] close_proof returned more than one proof \
+           term")
