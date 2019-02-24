@@ -65,8 +65,7 @@ module Stack : sig
 end
 
 val standard_proof_terminator
-  :  ?hook:declaration_hook
-  -> Proof_global.lemma_possible_guards
+  :  Proof_global.lemma_possible_guards
   -> proof_terminator
 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
@@ -82,7 +81,7 @@ val start_lemma
   -> ?pl:UState.universe_decl
   -> goal_kind
   -> Evd.evar_map
-  -> ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> proof_terminator)
+  -> ?terminator:(Proof_global.lemma_possible_guards -> proof_terminator)
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:Proof_global.lemma_possible_guards
   -> ?hook:declaration_hook
@@ -93,7 +92,7 @@ val start_dependent_lemma
   :  Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
-  -> ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> proof_terminator)
+  -> ?terminator:(Proof_global.lemma_possible_guards -> proof_terminator)
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:Proof_global.lemma_possible_guards
   -> ?hook:declaration_hook
@@ -126,12 +125,12 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 (** {6 Saving proofs } *)
 
 val save_lemma_admitted
-  :  ?proof:(Proof_global.proof_object * proof_terminator)
+  :  ?proof:(Proof_global.proof_object * proof_terminator * declaration_hook option)
   -> lemma:t
   -> unit
 
 val save_lemma_proved
-  :  ?proof:(Proof_global.proof_object * proof_terminator)
+  :  ?proof:(Proof_global.proof_object * proof_terminator * declaration_hook option)
   -> ?lemma:t
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
@@ -139,16 +138,24 @@ val save_lemma_proved
 
 (* API to build a terminator, should go away *)
 type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
-  | Proved of Proof_global.opacity_flag *
-              Names.lident option *
-              Proof_global.proof_object
+  | Admitted of
+      Names.Id.t *
+      Decl_kinds.goal_kind *
+      Entries.parameter_entry *
+      UState.t *
+      declaration_hook option
+  | Proved of
+      Proof_global.opacity_flag *
+      lident option *
+      Proof_global.proof_object *
+      declaration_hook option
 
 (** This stuff is internal and will be removed in the future.  *)
 module Internal : sig
 
   (** Only needed due to the Proof_global compatibility layer. *)
   val get_terminator : t -> proof_terminator
+  val get_hook : t -> declaration_hook option
 
   (** Only needed by obligations, should be reified soon *)
   val make_terminator : (proof_ending -> unit) -> proof_terminator
