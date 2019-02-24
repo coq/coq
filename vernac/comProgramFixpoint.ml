@@ -229,7 +229,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)
-  let hook = Lemmas.mk_hook (hook sigma) in
+  let hook = DeclareDef.Hook.make (hook sigma) in
   Obligations.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
     Obligations.eterm_obligations env recname sigma 0 def typ

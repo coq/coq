@@ -2006,7 +2006,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
       declare_projection n instance_id (ConstRef cst)
     | _ -> assert false
   in
-  let hook = Lemmas.mk_hook hook in
+  let hook = DeclareDef.Hook.make hook in
   Flags.silently
     (fun () ->
        let lemma = Lemmas.start_lemma ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in

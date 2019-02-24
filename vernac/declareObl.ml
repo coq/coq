@@ -50,7 +50,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_kind : definition_kind
   ; prg_reduce : constr -> constr
-  ; prg_hook : Lemmas.declaration_hook option
+  ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
   ; prg_sign : named_context_val }
 
@@ -451,7 +451,7 @@ let declare_mutual_definition l =
     first.prg_notations;
   Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
   let gr = List.hd kns in
-  Lemmas.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
+  DeclareDef.Hook.call ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
   List.iter progmap_remove l;
   gr
 

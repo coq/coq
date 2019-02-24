@@ -33,18 +33,6 @@ open Impargs
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
-type declaration_hook = hook_type CEphemeron.key
-
-let mk_hook hook = CEphemeron.create hook
-
-let call_hook ?hook ?fix_exn uctx trans l c =
-  try Option.iter (fun hook -> CEphemeron.get hook uctx trans l c) hook
-  with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    let e = Option.cata (fun fix -> fix e) e fix_exn in
-    iraise e
-
 (* Support for terminators and proofs with an associated constant
    [that can be saved] *)
 
@@ -56,13 +44,13 @@ type proof_ending =
       Decl_kinds.goal_kind *
       Entries.parameter_entry *
       UState.t *
-      declaration_hook option
+      DeclareDef.Hook.t option
 
   | Proved of
       Proof_global.opacity_flag *
       lident option *
       Proof_global.proof_object *
-      declaration_hook option *
+      DeclareDef.Hook.t option *
       lemma_possible_guards
 
 type proof_terminator = (proof_ending -> unit) CEphemeron.key
@@ -71,7 +59,7 @@ type proof_terminator = (proof_ending -> unit) CEphemeron.key
 type t =
   { proof : Proof_global.t
   ; terminator : proof_terminator
-  ; hook : declaration_hook option
+  ; hook : DeclareDef.Hook.t option
   ; compute_guard : lemma_possible_guards
   }
 
@@ -247,7 +235,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
           gr
     in
     definition_message id;
-    call_hook ~fix_exn ?hook universes [] locality r
+    DeclareDef.Hook.call ~fix_exn ?hook universes [] locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
@@ -326,7 +314,7 @@ let admit ?hook ctx (id,k,e) pl () =
   let kn = declare_constant id ~local (ParameterEntry e, IsAssumption Conjectural) in
   let () = assumption_message id in
   Declare.declare_univ_binders (ConstRef kn) pl;
-  call_hook ?hook ctx [] (Global local) (ConstRef kn)
+  DeclareDef.Hook.call ?hook ctx [] (Global local) (ConstRef kn)
 
 (* Starting a goal *)
 
@@ -448,8 +436,8 @@ let start_lemma_with_initialization ?hook kind sigma decl recguard thms snl =
         let thms_data = (ref,imps)::other_thms_data in
         List.iter (fun (ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-          call_hook ?hook ctx [] strength ref) thms_data in
-      let hook = mk_hook hook in
+          DeclareDef.Hook.call ?hook ctx [] strength ref) thms_data in
+      let hook = DeclareDef.Hook.make hook in
       let lemma = start_lemma id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
       let lemma = pf_map (Proof_global.map_proof (fun p ->
           match init_tac with
@@ -549,7 +537,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
   in
   CEphemeron.get lemma.terminator pe
 
-type proof_info = proof_terminator * declaration_hook option * lemma_possible_guards
+type proof_info = proof_terminator * DeclareDef.Hook.t option * lemma_possible_guards
 
 let default_info = standard_proof_terminator, None, []
 

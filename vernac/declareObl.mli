@@ -44,7 +44,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_kind : Decl_kinds.definition_kind
   ; prg_reduce : constr -> constr
-  ; prg_hook : Lemmas.declaration_hook option
+  ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
   ; prg_sign : Environ.named_context_val }
 

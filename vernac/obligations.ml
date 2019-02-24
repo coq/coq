@@ -493,7 +493,7 @@ let rec solve_obligation prg num tac =
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator = Lemmas.Internal.make_terminator
       (obligation_terminator prg.prg_name num auto) in
-  let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
+  let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
   let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
