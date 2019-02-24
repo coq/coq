@@ -59,4 +59,5 @@ val sufftac :
 
 val undertac :
   Ltac_plugin.Tacinterp.interp_sign ->
-  Names.Id.t list -> Ssrequality.ssrrwarg -> unit Proofview.tactic
+  Names.Id.t list -> Ssrequality.ssrrwarg ->
+  Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint -> unit Proofview.tactic
