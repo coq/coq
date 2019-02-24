@@ -571,7 +571,7 @@ let vernac_definition_hook p = function
 | Coercion ->
   Some (Class.add_coercion_hook p)
 | CanonicalStructure ->
-  Some (Lemmas.mk_hook (fun _ _ _ -> Recordops.declare_canonical_structure))
+  Some (DeclareDef.mk_hook (fun _ _ _ -> Recordops.declare_canonical_structure))
 | SubClass ->
   Some (Class.add_subclass_hook p)
 | _ -> None
@@ -604,7 +604,7 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
         | Some r ->
           let sigma, env = get_current_or_global_context ~pstate in
           Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~ontop:pstate ~program_mode name
+      ComDefinition.do_definition ~ontop:Option.(has_some pstate) ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
       pstate
   )

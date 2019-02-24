@@ -20,6 +20,6 @@ let packed_declare_definition ~poly ident value_with_constraints =
   let sigma = Evd.from_ctx ctx in
   let k = (Decl_kinds.Global, poly, Decl_kinds.Definition) in
   let udecl = UState.default_univ_decl in
-  ignore (edeclare ~ontop:None ident k ~opaque:false sigma udecl body None [])
+  ignore (edeclare ~ontop:false ident k ~opaque:false sigma udecl body None [])
 
 (* But this definition cannot be undone by Reset ident *)

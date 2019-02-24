@@ -14,6 +14,21 @@ open Entries
 open Globnames
 open Impargs
 
+(* Hooks naturally belong here as they apply to both definitions and
+   lemmas *)
+type hook_type = UState.t -> (Names.Id.t * Constr.t) list -> Decl_kinds.locality -> Names.GlobRef.t -> unit
+type declaration_hook = hook_type CEphemeron.key
+
+let mk_hook hook = CEphemeron.create hook
+
+let call_hook ?hook ?fix_exn uctx trans l c =
+  try Option.iter (fun hook -> CEphemeron.get hook uctx trans l c) hook
+  with e when CErrors.noncritical e ->
+    let e = CErrors.push e in
+    let e = Option.cata (fun fix -> fix e) e fix_exn in
+    Util.iraise e
+
+(* Locality stuff *)
 let warn_definition_not_visible =
   CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
     Pp.(fun ident ->
@@ -38,7 +53,7 @@ let declare_definition ~ontop ident (local, p, k) ?hook_data ce pl imps =
   let gr = match local with
   | Discharge when Lib.sections_are_opened () ->
       let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in
-      let () = if Option.has_some ontop then warn_definition_not_visible ident in
+      let () = if ontop then warn_definition_not_visible ident in
       VarRef ident
   | Discharge | Local | Global ->
       let local = get_locality ident ~kind:"definition" local in
@@ -53,7 +68,7 @@ let declare_definition ~ontop ident (local, p, k) ?hook_data ce pl imps =
     match hook_data with
     | None -> ()
     | Some (hook, uctx, extra_defs) ->
-      Lemmas.call_hook ~fix_exn ~hook uctx extra_defs local gr
+      call_hook ~fix_exn ~hook uctx extra_defs local gr
   end;
   gr
 

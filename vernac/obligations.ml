@@ -497,7 +497,7 @@ let rec solve_obligation ~ontop prg num tac =
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator = Lemmas.Internal.make_terminator
       (obligation_terminator prg.prg_name num auto) in
-  let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
+  let hook = DeclareDef.mk_hook (obligation_hook prg obl num auto) in
   let pstate = Lemmas.start_proof ~ontop ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
   let pstate = fst @@ Lemmas.by !default_tactic pstate in
   let pstate = Option.cata (fun tac -> Lemmas.pf_map Proof_global.(set_endline_tactic tac) pstate) pstate tac in
@@ -643,7 +643,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
-    let cst = DeclareObl.declare_definition ~ontop:None prg in
+    let cst = DeclareObl.declare_definition ~ontop:false prg in
     Defined cst)
   else (
     let len = Array.length obls in

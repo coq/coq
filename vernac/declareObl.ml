@@ -49,7 +49,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_kind : definition_kind
   ; prg_reduce : constr -> constr
-  ; prg_hook : Lemmas.declaration_hook option
+  ; prg_hook : DeclareDef.declaration_hook option
   ; prg_opaque : bool
   ; prg_sign : named_context_val }
 
@@ -442,7 +442,7 @@ let declare_mutual_definition l =
   let fix_exn = Hook.get get_fix_exn () in
   let kns =
     List.map4
-      (DeclareDef.declare_fix ~ontop:None ~opaque (local, poly, kind)
+      (DeclareDef.declare_fix ~ontop:false ~opaque (local, poly, kind)
          UnivNames.empty_binders univs)
       fixnames fixdecls fixtypes fiximps
   in
@@ -452,7 +452,7 @@ let declare_mutual_definition l =
     first.prg_notations;
   Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
   let gr = List.hd kns in
-  Lemmas.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
+  DeclareDef.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
   List.iter progmap_remove l;
   gr
 
@@ -464,7 +464,7 @@ let update_obls prg obls rem =
   else
     match prg'.prg_deps with
     | [] ->
-      let kn = declare_definition ~ontop:None prg' in
+      let kn = declare_definition ~ontop:false prg' in
       progmap_remove prg';
       Defined kn
     | l ->

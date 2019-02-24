@@ -161,7 +161,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         in obls, Some constr, typ
       | None -> [||], None, termtype
     in
-    let hook = Lemmas.mk_hook hook in
+    let hook = DeclareDef.mk_hook hook in
     let ctx = Evd.evar_universe_context sigma in
     let _progress = Obligations.add_definition id ?term:constr
               ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls in
@@ -175,7 +175,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         let gls = List.rev (Evd.future_goals sigma) in
         let sigma = Evd.reset_future_goals sigma in
         let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma (EConstr.of_constr termtype)
-          ~hook:(Lemmas.mk_hook
+          ~hook:(DeclareDef.mk_hook
              (fun _ _ _ -> instance_hook k pri global imps ?hook)) in
         (* spiwack: I don't know what to do with the status here. *)
         let pstate =
@@ -444,7 +444,7 @@ let context ~pstate poly l =
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition ~ontop:pstate id decl entry UnivNames.empty_binders [] in
+        let _gr = DeclareDef.declare_definition ~ontop:(Option.has_some pstate) id decl entry UnivNames.empty_binders [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
 	status && nstatus

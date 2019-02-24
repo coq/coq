@@ -11,33 +11,6 @@
 open Names
 open Decl_kinds
 
-(* Declaration hooks *)
-type declaration_hook
-
-(* Hooks allow users of the API to perform arbitrary actions at
- * proof/definition saving time. For example, to register a constant
- * as a Coercion, perform some cleanup, update the search database,
- * etc...
- *
- * Here, we use an extended hook type suitable for obligations /
- * equations.
- *)
-(** [hook_type] passes to the client:
-    - [ustate]: universe constraints obtained when the term was closed
-    - [(n1,t1),...(nm,tm)]: association list between obligation
-        name and the corresponding defined term (might be a constant,
-        but also an arbitrary term in the Expand case of obligations)
-    - [locality]: Locality of the original declaration
-    - [ref]: identifier of the origianl declaration
- *)
-type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
-
-val mk_hook : hook_type -> declaration_hook
-val call_hook
-  :  ?hook:declaration_hook
-  -> ?fix_exn:Future.fix_exn
-  -> hook_type
-
 (* Proofs that define a constant + terminators *)
 type t
 type proof_terminator
@@ -72,7 +45,7 @@ val start_proof
   -> ?terminator:proof_terminator
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
-  -> ?hook:declaration_hook
+  -> ?hook:DeclareDef.declaration_hook
   -> EConstr.types
   -> t
 
@@ -84,7 +57,7 @@ val start_dependent_proof
   -> ?terminator:proof_terminator
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
-  -> ?hook:declaration_hook
+  -> ?hook:DeclareDef.declaration_hook
   -> Proofview.telescope
   -> t
 
@@ -92,12 +65,12 @@ val start_proof_com
   :  program_mode:bool
   -> ontop:t option
   -> ?inference_hook:Pretyping.inference_hook
-  -> ?hook:declaration_hook -> goal_kind -> Vernacexpr.proof_expr list
+  -> ?hook:DeclareDef.declaration_hook -> goal_kind -> Vernacexpr.proof_expr list
   -> t
 
 val start_proof_with_initialization
   :  ontop:t option
-  -> ?hook:declaration_hook
+  -> ?hook:DeclareDef.declaration_hook
   -> goal_kind -> Evd.evar_map -> UState.universe_decl
   -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
   -> (Id.t (* name of thm *) *
@@ -138,12 +111,12 @@ type proof_ending =
       Decl_kinds.goal_kind *
       Entries.parameter_entry *
       UState.t *
-      declaration_hook option
+      DeclareDef.declaration_hook option
   | Proved of
       Proof_global.opacity_flag *
       lident option *
       Proof_global.proof_object *
-      declaration_hook option *
+      DeclareDef.declaration_hook option *
       lemma_possible_guards
 
 (** This stuff is internal and will be removed in the future.  *)

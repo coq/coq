@@ -1372,7 +1372,7 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
   let pstate = Lemmas.start_proof ~ontop:(Some pstate)
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
-    sigma gls_type ~hook:(Lemmas.mk_hook hook) in
+    sigma gls_type ~hook:(DeclareDef.mk_hook hook) in
   let pstate = if Indfun_common.is_strict_tcc  ()
   then
     fst @@ Lemmas.by (Proofview.V82.tactic (tclIDTAC)) pstate
@@ -1599,5 +1599,5 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
           term_id
           using_lemmas
           (List.length res_vars)
-          evd (Lemmas.mk_hook hook)
+          evd (DeclareDef.mk_hook hook)
       in pstate) ()

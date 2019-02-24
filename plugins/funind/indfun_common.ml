@@ -143,7 +143,7 @@ let save id const ?hook uctx (locality,_,kind) =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	(locality, ConstRef kn)
   in
-  Lemmas.call_hook ?hook ~fix_exn uctx [] l r;
+  DeclareDef.call_hook ?hook ~fix_exn uctx [] l r;
   definition_message id
 
 let with_full_print f a =

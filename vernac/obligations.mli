@@ -51,7 +51,7 @@ val add_definition
   -> ?kind:Decl_kinds.definition_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
-  -> ?hook:Lemmas.declaration_hook
+  -> ?hook:DeclareDef.declaration_hook
   -> ?opaque:bool
   -> obligation_info
   -> DeclareObl.progress
@@ -64,7 +64,7 @@ val add_mutual_definitions :
   ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(constr -> constr) ->
-  ?hook:Lemmas.declaration_hook -> ?opaque:bool ->
+  ?hook:DeclareDef.declaration_hook -> ?opaque:bool ->
   DeclareObl.notations ->
   DeclareObl.fixpoint_kind -> unit
 

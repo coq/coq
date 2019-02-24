@@ -227,7 +227,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)
-  let hook = Lemmas.mk_hook (hook sigma) in
+  let hook = DeclareDef.mk_hook (hook sigma) in
   (* XXX: Grounding non-ground terms here... bad bad *)
   let fullcoqc = EConstr.to_constr ~abort_on_undefined_evars:false sigma def in
   let fullctyp = EConstr.to_constr sigma typ in

@@ -44,7 +44,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_kind : Decl_kinds.definition_kind
   ; prg_reduce : constr -> constr
-  ; prg_hook : Lemmas.declaration_hook option
+  ; prg_hook : DeclareDef.declaration_hook option
   ; prg_opaque : bool
   ; prg_sign : Environ.named_context_val }
 
@@ -60,7 +60,7 @@ val declare_obligation :
 module ProgMap : CMap.ExtS with type key = Id.t and module Set := Id.Set
 
 val declare_definition :
-  ontop:Lemmas.t option -> program_info -> Names.GlobRef.t
+  ontop:bool -> program_info -> Names.GlobRef.t
 
 val obligation_terminator :
      Id.t

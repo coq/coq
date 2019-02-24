@@ -17,9 +17,9 @@ open Constrexpr
 (** {6 Definitions/Let} *)
 
 val do_definition
-  :  ontop:Lemmas.t option
+  :  ontop:bool
   -> program_mode:bool
-  -> ?hook:Lemmas.declaration_hook
+  -> ?hook:DeclareDef.declaration_hook
   -> Id.t
   -> definition_kind
   -> universe_decl_expr option

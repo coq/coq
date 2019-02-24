@@ -11,22 +11,50 @@
 open Names
 open Decl_kinds
 
+(** Declaration hooks *)
+type declaration_hook
+
+(* Hooks allow users of the API to perform arbitrary actions at
+ * proof/definition saving time. For example, to register a constant
+ * as a Coercion, perform some cleanup, update the search database,
+ * etc...
+ *
+ * Here, we use an extended hook type suitable for obligations /
+ * equations.
+ *)
+(** [hook_type] passes to the client:
+    - [ustate]: universe constraints obtained when the term was closed
+    - [(n1,t1),...(nm,tm)]: association list between obligation
+        name and the corresponding defined term (might be a constant,
+        but also an arbitrary term in the Expand case of obligations)
+    - [locality]: Locality of the original declaration
+    - [ref]: identifier of the origianl declaration
+ *)
+type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
+
+val mk_hook : hook_type -> declaration_hook
+val call_hook
+  :  ?hook:declaration_hook
+  -> ?fix_exn:Future.fix_exn
+  -> hook_type
+
+(* Locality  *)
 val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
 
 val declare_definition
-  :  ontop:Lemmas.t option
+  :  ontop:bool
   -> Id.t
   -> definition_kind
-  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
+  -> ?hook_data:(declaration_hook * UState.t * (Id.t * Constr.t) list)
   -> Safe_typing.private_constants Entries.definition_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
   -> GlobRef.t
 
 val declare_fix
-  :  ontop:Lemmas.t option
+  :  ontop:bool
   -> ?opaque:bool
-  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
+  -> ?hook_data:(declaration_hook * UState.t * (Id.t * Constr.t) list)
   -> definition_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry

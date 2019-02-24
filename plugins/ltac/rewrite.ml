@@ -1997,7 +1997,7 @@ let add_morphism_infer ~pstate atts m n : Lemmas.t option =
           declare_projection n instance_id (ConstRef cst)
         | _ -> assert false
       in
-      let hook = Lemmas.mk_hook hook in
+      let hook = DeclareDef.mk_hook hook in
       Flags.silently
         (fun () ->
            let pstate = Lemmas.start_proof ~ontop:pstate ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
