@@ -837,13 +837,13 @@ let solve_by_tac ?loc name evi t poly ctx =
     warn_solve_errored ?loc err;
     None
 
-let obligation_terminator ?hook name num guard auto pf =
+let obligation_terminator name num guard auto pf =
   let open Proof_global in
   let open Lemmas in
-  let term = Lemmas.standard_proof_terminator ?hook guard in
+  let term = Lemmas.standard_proof_terminator guard in
   match pf with
   | Admitted _ -> Internal.apply_terminator term pf
-  | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
+  | Proved (opq, id, { entries=[entry]; universes=uctx }, hook ) -> begin
     let env = Global.env () in
     let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
     let ty = entry.Entries.const_entry_type in
@@ -903,7 +903,7 @@ let obligation_terminator ?hook name num guard auto pf =
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
   end
-  | Proved (_, _, _ ) ->
+  | Proved (_, _, _,_ ) ->
     CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")
 
 let obligation_hook prg obl num auto ctx' _ _ gr =
@@ -962,9 +962,9 @@ let rec solve_obligation ~ontop prg num tac =
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
-  let terminator ?hook guard =
+  let terminator guard =
     Lemmas.Internal.make_terminator
-      (obligation_terminator ?hook prg.prg_name num guard auto) in
+      (obligation_terminator prg.prg_name num guard auto) in
   let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
   let pstate = Lemmas.start_proof ~ontop ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
   let pstate = fst @@ Lemmas.by !default_tactic pstate in

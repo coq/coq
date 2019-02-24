@@ -55,9 +55,9 @@ let start_deriving f suchthat lemma : Lemmas.t =
       let (opaque,f_def,lemma_def) =
         match com with
         | Lemmas.Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
-        | Lemmas.Proved (_,Some _,_) ->
+        | Lemmas.Proved (_,Some _,_, _) ->
             CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.")
-        | Lemmas.Proved (opaque, None, obj) ->
+        | Lemmas.Proved (opaque, None, obj,_) ->
             match Proof_global.(obj.entries) with
             | [_;f_def;lemma_def] ->
                 opaque <> Proof_global.Transparent , f_def , lemma_def

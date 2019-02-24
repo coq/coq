@@ -65,7 +65,7 @@ module Proof_global : sig
 
   val return_proof : ?allow_partial:bool -> unit -> closed_proof_output
 
-  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator * Lemmas.declaration_hook option
 
   val close_future_proof :
     opaque:opacity_flag ->

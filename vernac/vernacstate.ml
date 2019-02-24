@@ -111,7 +111,7 @@ module Proof_global = struct
   let simple_with_current_proof f =
     dd (simple_with_current_proof f)
 
-  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator * Lemmas.declaration_hook option
 
   let with_current_proof f =
     let pf, res = cc (with_current_proof f) in
@@ -124,11 +124,11 @@ module Proof_global = struct
 
   let close_future_proof ~opaque ~feedback_id pf =
     cc (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
-                  Internal.get_terminator pt)
+                  Internal.get_terminator pt, Internal.get_hook pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
     cc (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
-                  Internal.get_terminator pt)
+                  Internal.get_terminator pt, Internal.get_hook pt)
 
   let discard_all () = s_proof := None
   let update_global_env () = dd (pf_map update_global_env)
