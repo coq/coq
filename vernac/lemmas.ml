@@ -243,7 +243,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
           gr
     in
     definition_message id;
-    call_hook ?hook universes [] locality r
+    call_hook ~fix_exn ?hook universes [] locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
