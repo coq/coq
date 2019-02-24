@@ -475,7 +475,7 @@ let obligation_hook prg obl num auto ctx' _ _ gr =
   if pred rem > 0 then begin
     let deps = dependencies obls num in
     if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) None deps)
+      ignore (auto (Some prg.prg_name) deps None)
   end
 
 let rec solve_obligation ~ontop prg num tac =
@@ -494,11 +494,10 @@ let rec solve_obligation ~ontop prg num tac =
   let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
-  let auto n tac oblset = auto_solve_obligations n ~oblset tac in
-  let terminator = Lemmas.Internal.make_terminator
-      (obligation_terminator prg.prg_name num auto) in
+  let auto n oblset tac = auto_solve_obligations n ~oblset tac in
+  let obligation_qed_info = DeclareObl.{name = prg.prg_name; num; auto} in
   let hook = DeclareDef.mk_hook (obligation_hook prg obl num auto) in
-  let pstate = Lemmas.start_proof ~ontop ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
+  let pstate = Lemmas.start_proof ~ontop ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~obligation_qed_info ~hook in
   let pstate = fst @@ Lemmas.by !default_tactic pstate in
   let pstate = Option.cata (fun tac -> Lemmas.pf_map Proof_global.(set_endline_tactic tac) pstate) pstate tac in
   pstate

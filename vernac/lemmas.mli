@@ -11,12 +11,9 @@
 open Names
 open Decl_kinds
 
-(* Proofs that define a constant + terminators *)
+(* Proofs that define a constant *)
 type t
-type proof_terminator
 type lemma_possible_guards = int list list
-
-val standard_proof_terminator : proof_terminator
 
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
 val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
@@ -42,7 +39,7 @@ val start_proof
   -> ?pl:UState.universe_decl
   -> goal_kind
   -> Evd.evar_map
-  -> ?terminator:proof_terminator
+  -> ?obligation_qed_info:DeclareObl.obligation_qed_info
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.declaration_hook
@@ -54,7 +51,7 @@ val start_dependent_proof
   -> Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
-  -> ?terminator:proof_terminator
+  -> ?obligation_qed_info:DeclareObl.obligation_qed_info
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.declaration_hook
@@ -104,30 +101,11 @@ val save_proof_proved
   -> idopt:Names.lident option
   -> t option
 
-(* API to build a terminator, should go away *)
-type proof_ending =
-  | Admitted of
-      Names.Id.t *
-      Decl_kinds.goal_kind *
-      Entries.parameter_entry *
-      UState.t *
-      DeclareDef.declaration_hook option
-  | Proved of
-      Proof_global.opacity_flag *
-      lident option *
-      Proof_global.proof_object *
-      DeclareDef.declaration_hook option *
-      lemma_possible_guards
-
-(** This stuff is internal and will be removed in the future.  *)
+(* To be removed *)
 module Internal : sig
 
   (** Only needed due to the Proof_global compatibility layer. *)
   val get_info : t -> proof_info
-
-  (** Only needed by obligations, should be reified soon *)
-  val make_terminator : (proof_ending -> unit) -> proof_terminator
-  val apply_terminator : proof_terminator -> proof_ending -> unit
 
   val copy_info : src:t -> tgt:t -> t
   (** Gets the current info without checking that the proof has been

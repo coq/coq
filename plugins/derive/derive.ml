@@ -8,14 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Constr
 open Context.Named.Declaration
-
-let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Entries.const_entry_body)
-    : Safe_typing.private_constants Entries.const_entry_body =
-  Future.chain x begin fun ((b,ctx),fx) ->
-    (f b , ctx) , fx
-  end
 
 (** [start_deriving f suchthat lemma] starts a proof of [suchthat]
     (which can contain references to [f]) in the context extended by
@@ -45,61 +38,7 @@ let start_deriving f suchthat lemma : Lemmas.t =
         TNil sigma))))))
     in
 
-    (* The terminator handles the registering of constants when the proof is closed. *)
-    let terminator com =
-      (* Extracts the relevant information from the proof. [Admitted]
-         and [Save] result in user errors. [opaque] is [true] if the
-         proof was concluded by [Qed], and [false] if [Defined]. [f_def]
-         and [lemma_def] correspond to the proof of [f] and of
-         [suchthat], respectively. *)
-      let (opaque,f_def,lemma_def) =
-        match com with
-        | Lemmas.Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
-        | Lemmas.Proved (_,Some _,_,_,_) ->
-            CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.")
-        | Lemmas.Proved (opaque, None, obj,_,_) ->
-            match Proof_global.(obj.entries) with
-            | [_;f_def;lemma_def] ->
-                opaque <> Proof_global.Transparent , f_def , lemma_def
-            | _ -> assert false
-      in
-      (* The opacity of [f_def] is adjusted to be [false], as it
-         must. Then [f] is declared in the global environment. *)
-      let f_def = { f_def with Entries.const_entry_opaque = false } in
-      let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
-      let f_kn = Declare.declare_constant f f_def in
-      let f_kn_term = mkConst f_kn in
-      (* In the type and body of the proof of [suchthat] there can be
-         references to the variable [f]. It needs to be replaced by
-         references to the constant [f] declared above. This substitution
-         performs this precise action. *)
-      let substf c = Vars.replace_vars [f,f_kn_term] c in
-      (* Extracts the type of the proof of [suchthat]. *)
-      let lemma_pretype =
-        match Entries.(lemma_def.const_entry_type) with
-        | Some t -> t
-        | None -> assert false (* Proof_global always sets type here. *)
-      in
-      (* The references of [f] are subsituted appropriately. *)
-      let lemma_type = substf lemma_pretype in
-      (* The same is done in the body of the proof. *)
-      let lemma_body =
-        map_const_entry_body substf Entries.(lemma_def.const_entry_body)
-      in
-      let lemma_def = let open Entries in { lemma_def with
-        const_entry_body = lemma_body ;
-        const_entry_type = Some lemma_type ;
-        const_entry_opaque = opaque ; }
-      in
-      let lemma_def =
-        Entries.DefinitionEntry lemma_def ,
-        Decl_kinds.(IsProof Proposition)
-      in
-      ignore (Declare.declare_constant lemma lemma_def)
-      in
-
-  let terminator = Lemmas.Internal.make_terminator terminator in
-  let pstate = Lemmas.start_dependent_proof ~ontop:None lemma kind goals ~terminator in
+  let pstate = Lemmas.start_dependent_proof ~ontop:None lemma kind goals in
   fst @@ Lemmas.with_current_proof begin fun _ p ->
     Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
   end pstate

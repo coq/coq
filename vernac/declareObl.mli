@@ -62,14 +62,6 @@ module ProgMap : CMap.ExtS with type key = Id.t and module Set := Id.Set
 val declare_definition :
   ontop:bool -> program_info -> Names.GlobRef.t
 
-val obligation_terminator :
-     Id.t
-  -> int
-  -> (ProgMap.key option -> 'a option -> Int.Set.t -> 'b)
-  -> Lemmas.proof_ending
-  -> unit
-(** [obligation_terminator] part 2 of saving an obligation *)
-
 type progress =
   (* Resolution status of a program *)
   | Remain of int
@@ -78,6 +70,19 @@ type progress =
   (* Dependent on other definitions *)
   | Defined of GlobRef.t
   (* Defined as id *)
+
+type obligation_qed_info =
+  { name : Id.t
+  ; num : int
+  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
+  }
+
+val obligation_terminator
+  :  Proof_global.opacity_flag
+  -> Safe_typing.private_constants Entries.definition_entry list
+  -> UState.t
+  -> obligation_qed_info -> unit
+(** [obligation_terminator] part 2 of saving an obligation *)
 
 val update_obls :
      program_info

@@ -487,13 +487,16 @@ let dependencies obls n =
     obls;
   !res
 
-let obligation_terminator name num auto pf =
+type obligation_qed_info =
+  { name : Id.t
+  ; num : int
+  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
+  }
+
+let obligation_terminator opq entries uctx { name; num; auto } =
   let open Proof_global in
-  let open Lemmas in
-  let term = Lemmas.standard_proof_terminator in
-  match pf with
-  | Admitted _ -> Internal.apply_terminator term pf
-  | Proved (opq, id, {entries = [entry]; universes = uctx}, hook, compute_guard) -> (
+  match entries with
+  | [entry] ->
     let env = Global.env () in
     let entry =
       Safe_typing.inline_private_constants_in_definition_entry env entry
@@ -544,15 +547,17 @@ let obligation_terminator name num auto pf =
       else ctx
     in
     let prg = {prg with prg_ctx} in
-    try
+    begin try
       ignore (update_obls prg obls (pred rem));
       if pred rem > 0 then
         let deps = dependencies obls num in
-        if not (Int.Set.is_empty deps) then ignore (auto (Some name) None deps)
+        if not (Int.Set.is_empty deps) then
+          ignore (auto (Some name) deps None)
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
-      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e)) )
-  | Proved (_, _, _, _, _) ->
+      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
+    end
+  | _ ->
     CErrors.anomaly
       Pp.(
         str
