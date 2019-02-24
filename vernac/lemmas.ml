@@ -283,7 +283,7 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
           gr
     in
     definition_message id;
-    call_hook ?hook universes [] locality r
+    call_hook ~fix_exn ?hook universes [] locality r
   with e when CErrors.noncritical e ->
     let e = CErrors.push e in
     iraise (fix_exn e)
@@ -384,7 +384,7 @@ let admit ?hook ctx (id,k,e) pl () =
 
 let standard_proof_terminator compute_guard =
   let open Proof_global in
-  CEphemeron.create begin function
+  Internal.make_terminator begin function
   | Admitted (id,k,pe,ctx,hook) ->
     let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
     Feedback.feedback Feedback.AddedAxiom
@@ -585,7 +585,7 @@ let save_proof_admitted ?proof ~(pstate : t) =
       let ctx = UState.check_univ_decl ~poly universes decl in
       Admitted(name,gk,(sec_vars, (typ, ctx), None), universes, pstate.hook)
   in
-  CEphemeron.get pstate.terminator pe;
+  Internal.apply_terminator pstate.terminator pe;
   ret_pstate
 
 let save_proof_proved ?proof ?pstate ~opaque ~idopt =
@@ -603,5 +603,5 @@ let save_proof_proved ?proof ?pstate ~opaque ~idopt =
   in
   (* if the proof is given explicitly, nothing has to be deleted *)
   let pstate = if Option.is_empty proof then discard_current Option.(get pstate) else pstate in
-  CEphemeron.get terminator (Proved (opaque,idopt,proof_obj,hook));
+  Internal.apply_terminator terminator (Proved (opaque,idopt,proof_obj,hook));
   pstate

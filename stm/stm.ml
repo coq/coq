@@ -198,7 +198,7 @@ let mkTransCmd cast cids ceff cqueue =
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
-                     Obligations.program_tcc_summary_tag
+                     DeclareObl.program_tcc_summary_tag
 
 type cached_state =
   | EmptyState
@@ -875,7 +875,7 @@ end = struct (* {{{ *)
     Lemmas.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    Obligations.program_info Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
+    DeclareObl.program_info CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
 
   type partial_state =
     [ `Full of Vernacstate.t
@@ -3366,7 +3366,7 @@ let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
-let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
+let () = Hook.set DeclareObl.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs
 let backup () = VCS.backup ()

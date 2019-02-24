@@ -19,6 +19,7 @@ Auto_ind_decl
 Search
 Indschemes
 DeclareDef
+DeclareObl
 Obligations
 ComDefinition
 ComAssumption

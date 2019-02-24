@@ -249,7 +249,7 @@ let collect_evars_of_term evd c ty =
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
 let do_program_recursive local poly fixkind fixl ntns =
-  let cofix = fixkind = Obligations.IsCoFixpoint in
+  let cofix = fixkind = DeclareObl.IsCoFixpoint in
   let (env, rec_sign, pl, evd), fix, info =
     interp_recursive ~cofix ~program_mode:true fixl ntns
   in
@@ -294,8 +294,8 @@ let do_program_recursive local poly fixkind fixl ntns =
   end in
   let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | Obligations.IsFixpoint _ -> (local, poly, Fixpoint)
-  | Obligations.IsCoFixpoint -> (local, poly, CoFixpoint)
+  | DeclareObl.IsFixpoint _ -> (local, poly, Fixpoint)
+  | DeclareObl.IsCoFixpoint -> (local, poly, CoFixpoint)
   in
   Obligations.add_mutual_definitions defs ~kind ~univdecl:pl ctx ntns fixkind
 
@@ -317,7 +317,7 @@ let do_program_fixpoint local poly l =
 
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
         let fixl,ntns = extract_fixpoint_components true l in
-        let fixkind = Obligations.IsFixpoint g in
+        let fixkind = DeclareObl.IsFixpoint g in
           do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->
@@ -342,5 +342,5 @@ let do_fixpoint local poly l =
 
 let do_cofixpoint local poly l =
   let fixl,ntns = extract_cofixpoint_components l in
-  do_program_recursive local poly Obligations.IsCoFixpoint fixl ntns;
+  do_program_recursive local poly DeclareObl.IsCoFixpoint fixl ntns;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
