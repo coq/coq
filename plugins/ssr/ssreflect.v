@@ -571,6 +571,14 @@ Register Under as plugins.ssreflect.Under.
 Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
 Ltac over :=
-  by apply Under.under_done.
-(* [exact: Under.under_done] woud be more satisfying,
-   but issue with 2-var test-suite (test_over_2_2) *)
+  solve [ apply Under.under_done | by rewrite over ].
+
+(* The 2 variants below wouldn't work for the [test_over_2_1] test
+   (2-var case with evars)
+
+Ltac over :=
+  exact: Under.under_done.
+
+Ltac over :=
+  by rewrite over.
+ *)
