@@ -56,9 +56,9 @@ let start_deriving f suchthat name : Lemmas.t =
       let (opaque,f_def,lemma_def) =
         match com with
         | Lemmas.Admitted _ -> CErrors.user_err Pp.(str "Admitted isn't supported in Derive.")
-        | Lemmas.Proved (_,Some _,_, _) ->
+        | Lemmas.Proved (_,Some _,_,_,_) ->
             CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.")
-        | Lemmas.Proved (opaque, None, obj,_) ->
+        | Lemmas.Proved (opaque, None, obj,_,_) ->
             match Proof_global.(obj.entries) with
             | [_;f_def;lemma_def] ->
                 opaque <> Proof_global.Transparent , f_def , lemma_def
@@ -99,7 +99,7 @@ let start_deriving f suchthat name : Lemmas.t =
       ignore (Declare.declare_constant name lemma_def)
   in
 
-  let terminator ?hook _ = Lemmas.Internal.make_terminator terminator in
+  let terminator = Lemmas.Internal.make_terminator terminator in
   let lemma = Lemmas.start_dependent_lemma name kind goals ~terminator in
   Lemmas.pf_map (Proof_global.map_proof begin fun p ->
     Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p

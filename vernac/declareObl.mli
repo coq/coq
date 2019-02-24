@@ -62,9 +62,8 @@ module ProgMap : CMap.ExtS with type key = Id.t and module Set := Id.Set
 val declare_definition : program_info -> Names.GlobRef.t
 
 val obligation_terminator :
-     ProgMap.key
+     Id.t
   -> int
-  -> Proof_global.lemma_possible_guards
   -> (ProgMap.key option -> 'a option -> Int.Set.t -> 'b)
   -> Lemmas.proof_ending
   -> unit

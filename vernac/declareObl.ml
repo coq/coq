@@ -486,13 +486,13 @@ let dependencies obls n =
     obls;
   !res
 
-let obligation_terminator name num guard auto pf =
+let obligation_terminator name num auto pf =
   let open Proof_global in
   let open Lemmas in
-  let term = standard_proof_terminator guard in
+  let term = Lemmas.standard_proof_terminator in
   match pf with
   | Admitted _ -> Internal.apply_terminator term pf
-  | Proved (opq, id, { entries=[entry]; universes=uctx }, hook ) -> begin
+  | Proved (opq, id, { entries=[entry]; universes=uctx }, hook, compute_guard ) -> begin
     let env = Global.env () in
     let ty = entry.Entries.const_entry_type in
     let body, eff = Future.force entry.const_entry_body in
@@ -552,5 +552,5 @@ let obligation_terminator name num guard auto pf =
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
   end
-  | Proved (_, _, _,_ ) ->
+  | Proved (_, _, _,_,_) ->
     CErrors.anomaly Pp.(str "[obligation_terminator] close_proof returned more than one proof term")

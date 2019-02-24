@@ -24,9 +24,6 @@ module NamedDecl = Context.Named.Declaration
 
 (*** Proof Global Environment ***)
 
-(* Extra info on proofs. *)
-type lemma_possible_guards = int list list
-
 type proof_object = {
   id : Names.Id.t;
   entries : Evd.side_effects Entries.definition_entry list;

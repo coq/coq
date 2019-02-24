@@ -1532,15 +1532,12 @@ end = struct (* {{{ *)
           (* Unfortunately close_future_proof and friends are not pure so we need
              to set the state manually here *)
           State.unfreeze st;
-          let pobject, _terminator, _hook =
+          let pobject, _info =
             PG_compat.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
-
-          let terminator = (* The one sent by master is an InvalidKey *)
-            Lemmas.(standard_proof_terminator []) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_vernac_interp stop
-            ~proof:(pobject, terminator, None) st
+            ~proof:(pobject, Lemmas.default_info) st
             { verbose = false; indentation = 0; strlen = 0;
               expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
         ignore(Future.join checked_proof);
@@ -1677,10 +1674,10 @@ end = struct (* {{{ *)
       let opaque = Proof_global.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
-      let pterm, _invalid_terminator, _hook =
+      let pterm, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
 
-      let proof = pterm , Lemmas.standard_proof_terminator [], None in
+      let proof = pterm, Lemmas.default_info in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
@@ -1735,7 +1732,7 @@ end = struct (* {{{ *)
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK (po,_,_) ->
+    | `OK (po,_) ->
         let con =
           Nametab.locate_constant
             (Libnames.qualid_of_ident po.Proof_global.id) in
