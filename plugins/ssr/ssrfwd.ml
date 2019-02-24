@@ -360,6 +360,7 @@ let rec intro_lock names = Proofview.Goal.enter begin fun gl ->
   | Term.AtomicType _ ->
       let t = Reductionops.whd_all env sigma c in
       match EConstr.kind_of_type sigma t with
+      | Term.ProdType _ -> aux t
       | Term.AtomicType(hd, args) when
           Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
           Array.length args = 3 && is_app_evar sigma args.(2) ->
