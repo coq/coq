@@ -318,8 +318,8 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
-let start ~name ~poly sigma goals =
-  let entry, proofview = Proofview.init sigma goals in
+let start ~name ~poly sigma goal =
+  let entry, proofview = Proofview.init sigma [goal] in
   let pr = {
     proofview;
     entry;
@@ -331,23 +331,7 @@ let start ~name ~poly sigma goals =
     ; name
     ; poly
   } in
-  _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
-
-let dependent_start ~name ~poly goals =
-  let entry, proofview = Proofview.dependent_init goals in
-  let pr = {
-    proofview;
-    entry;
-    focus_stack = [] ;
-    shelf = [] ;
-    given_up = [];
-    initial_euctx =
-      Evd.evar_universe_context (snd (Proofview.proofview proofview))
-    ; name
-    ; poly
-  } in
-  let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
-  _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
+  _focus end_of_stack (Obj.repr ()) 1 1 pr
 
 type open_error_reason =
   | UnfinishedProof

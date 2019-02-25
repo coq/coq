@@ -358,20 +358,17 @@ let finish_admitted id k pe ctx hook =
 
 let finish_proved opaque idopt po hook compute_guard =
   let open Proof_global in
-  match po with
-  | { id; entries=[const]; persistence; universes } ->
-    let is_opaque, export_seff = match opaque with
-      | Transparent -> false, true
-      | Opaque      -> true, false
-    in
-    assert (is_opaque == const.const_entry_opaque);
-    let id = match idopt with
-      | None -> id
-      | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    let () = save ~export_seff id const universes compute_guard persistence hook universes in
-    ()
-  | _ ->
-    CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
+  let { entry; id; persistence; universes } = po in
+  let is_opaque, export_seff = match opaque with
+    | Transparent -> false, true
+    | Opaque      -> true, false
+  in
+  assert (is_opaque == entry.const_entry_opaque);
+  let id = match idopt with
+    | None -> id
+    | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
+  let () = save ~export_seff id entry universes compute_guard persistence hook universes in
+  ()
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -388,13 +385,9 @@ let push ~ontop a =
 
 (* Starting a goal *)
 let start_proof ~ontop id ?pl kind sigma ?obligation_qed_info ?(sign=initialize_named_context_for_proof()) ?(compute_guard=[]) ?hook c =
-  let goals = [ Global.env_of_context sign , c ] in
+  let goals = Global.env_of_context sign, c in
   let proof = Proof_global.start_proof sigma id ?pl kind goals in
   push ~ontop { proof ; hook; compute_guard; obligation_qed_info }
-
-let start_dependent_proof ~ontop id ?pl kind ?obligation_qed_info ?sign ?(compute_guard=[]) ?hook telescope =
-  let proof = Proof_global.start_dependent_proof id ?pl kind telescope in
-  push ~ontop { proof; hook; compute_guard; obligation_qed_info }
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -499,10 +492,8 @@ let save_proof_admitted ?proof ~(pstate : t) =
   let pstate, _ = pstate in
   let () =
     match proof with
-    | Some ({ id; entries; persistence = k; universes }, (hook, _, _)) ->
-      if List.length entries <> 1 then
-        user_err Pp.(str "Admitted does not support multiple statements");
-      let { const_entry_secctx; const_entry_type } = List.hd entries in
+    | Some ({ id; entry; persistence = k; universes }, (hook, _, _)) ->
+      let { const_entry_secctx; const_entry_type } = entry in
       if const_entry_type = None then
         user_err Pp.(str "Admitted requires an explicit statement");
       let typ = Option.get const_entry_type in
@@ -528,12 +519,12 @@ let save_proof_admitted ?proof ~(pstate : t) =
         if not (get_keep_admitted_vars ()) then None
         else match Proof_global.get_used_variables pstate.proof, pproofs with
           | Some _ as x, _ -> x
-          | None, (pproof, _) :: _ ->
+          | None, (pproof, _) ->
             let env = Global.env () in
             let ids_typ = Environ.global_vars_set env typ in
             let ids_def = Environ.global_vars_set env pproof in
             Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
-          | _ -> None in
+      in
       let decl = Proof_global.get_universe_decl pstate.proof in
       let ctx = UState.check_univ_decl ~poly universes decl in
       finish_admitted name gk (sec_vars, (typ, ctx), None) universes pstate.hook
@@ -563,7 +554,7 @@ let save_proof_proved ?proof ?pstate ~opaque ~idopt =
   let () = match obligation_qed_info with
   | Some obligation_qed_info ->
     let open Proof_global in
-    DeclareObl.obligation_terminator opaque proof_obj.entries proof_obj.universes obligation_qed_info
+    DeclareObl.obligation_terminator opaque proof_obj.entry proof_obj.universes obligation_qed_info
   | None ->
     finish_proved opaque idopt proof_obj hook compute_guard
   in

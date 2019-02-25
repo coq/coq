@@ -79,7 +79,7 @@ type obligation_qed_info =
 
 val obligation_terminator
   :  Proof_global.opacity_flag
-  -> Safe_typing.private_constants Entries.definition_entry list
+  -> Safe_typing.private_constants Entries.definition_entry
   -> UState.t
   -> obligation_qed_info -> unit
 (** [obligation_terminator] part 2 of saving an obligation *)

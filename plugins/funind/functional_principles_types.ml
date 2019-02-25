@@ -321,13 +321,9 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (* 	end; *)
 
   let open Proof_global in
-  let { id; entries; persistence } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) pstate in
-  match entries with
-  | [entry] ->
-    let pstate = Lemmas.discard_current pstate in
-    (id,(entry,persistence)), hook, pstate
-  | _ ->
-    CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
+  let { id; entry; persistence } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) pstate in
+  let pstate = Lemmas.discard_current pstate in
+  (id,(entry,persistence)), hook, pstate
 
 let generate_functional_principle (evd: Evd.evar_map ref)
     interactive_proof

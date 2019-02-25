@@ -2591,9 +2591,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   match keep with
                   | VtDrop -> None
                   | VtKeep VtKeepAxiom ->
-                      let ctx = UState.empty in
-                      let fp = Future.from_val ([],ctx) in
-                      qed.fproof <- Some (fp, ref false); None
+                    qed.fproof <- None; None
                   | VtKeep opaque ->
                     let opaque = let open Proof_global in  match opaque with
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent

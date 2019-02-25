@@ -25,7 +25,7 @@ module NamedDecl = Context.Named.Declaration
 
 type proof_object = {
   id : Names.Id.t;
-  entries : Safe_typing.private_constants Entries.definition_entry list;
+  entry : Safe_typing.private_constants Entries.definition_entry;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
@@ -78,18 +78,9 @@ let set_endline_tactic tac ps =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma name ?(pl=UState.default_univ_decl) kind goals =
+let start_proof sigma name ?(pl=UState.default_univ_decl) kind goal =
   let initial_state = {
-    proof = Proof.start ~name ~poly:(pi2 kind) sigma goals;
-    endline_tactic = None;
-    section_vars = None;
-    universe_decl = pl;
-    strength = kind } in
-  initial_state
-
-let start_dependent_proof name ?(pl=UState.default_univ_decl) kind goals =
-  let initial_state = {
-    proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals;
+    proof = Proof.start ~name ~poly:(pi2 kind) sigma goal;
     endline_tactic = None;
     section_vars = None;
     universe_decl = pl;
@@ -132,7 +123,12 @@ let get_open_goals ps =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
   List.length shelf
 
-type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
+let take_single_proof l = match l with
+  | [p] -> p
+  | _ ->
+    CErrors.anomaly Pp.(str "proof engine returned more than one proof term")
+
+type closed_proof_output = (Constr.t * Safe_typing.private_constants) * UState.t
 
 let private_poly_univs =
   let b = ref true in
@@ -241,38 +237,31 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       const_entry_opaque = opaque;
       const_entry_universes = univs; }
   in
-  let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { id = name; entries = entries; persistence = strength;
-    universes }
+  let goal = take_single_proof @@ Proofview.initial_goals entry in
+  let entry = entry_fn fpl goal in
+  { id = name; entry; persistence = strength;  universes }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in
  if allow_partial then begin
-  let proofs = Proof.partial_proof proof in
   let Proof.{sigma=evd} = Proof.data proof in
   let eff = Evd.eval_side_effects evd in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
-  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
-    proofs, Evd.evar_universe_context evd
+  let proof = take_single_proof @@ Proof.partial_proof proof in
+  let proof = EConstr.Unsafe.to_constr proof, eff in
+  proof, Evd.evar_universe_context evd
  end else
   let Proof.{name=pid;entry} = Proof.data proof in
-  let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
   let proof_opt c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
     | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
-  let proofs =
-    List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
-    proofs, Evd.evar_universe_context evd
+  let proof,_ = take_single_proof @@ Proofview.initial_goals entry in
+  let proof = proof_opt proof, eff in
+  proof, Evd.evar_universe_context evd
 
 let close_future_proof ~opaque ~feedback_id ps proof =
   close_proof ~opaque ~keep_body_ucst_separate:true ~feedback_id ~now:false proof ps

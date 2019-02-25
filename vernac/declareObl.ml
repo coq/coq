@@ -493,61 +493,59 @@ type obligation_qed_info =
   ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
   }
 
-let obligation_terminator opq entries uctx { name; num; auto } =
+let obligation_terminator opq entry uctx { name; num; auto } =
   let open Proof_global in
-  match entries with
-  | [entry] ->
-    let env = Global.env () in
-    let entry =
-      Safe_typing.inline_private_constants_in_definition_entry env entry
-    in
-    let ty = entry.Entries.const_entry_type in
-    let (body, cstr), () = Future.force entry.Entries.const_entry_body in
-    let sigma = Evd.from_ctx uctx in
-    let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
-    Inductiveops.control_only_guard (Global.env ()) sigma
-      (EConstr.of_constr body);
-    (* Declare the obligation ourselves and drop the hook *)
-    let prg = CEphemeron.get (ProgMap.find name !from_prg) in
-    (* Ensure universes are substituted properly in body and type *)
-    let body = EConstr.to_constr sigma (EConstr.of_constr body) in
-    let ty =
-      Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty
-    in
-    let ctx = Evd.evar_universe_context sigma in
-    let obls, rem = prg.prg_obligations in
-    let obl = obls.(num) in
-    let status =
-      match (obl.obl_status, opq) with
-      | (_, Evar_kinds.Expand), Opaque -> err_not_transp ()
-      | (true, _), Opaque -> err_not_transp ()
-      | (false, _), Opaque -> Evar_kinds.Define true
-      | (_, Evar_kinds.Define true), Transparent -> Evar_kinds.Define false
-      | (_, status), Transparent -> status
-    in
-    let obl = {obl with obl_status = (false, status)} in
-    let ctx = if pi2 prg.prg_kind then ctx else UState.union prg.prg_ctx ctx in
-    let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
-    let defined, obl = declare_obligation prg obl body ty uctx in
-    let obls = Array.copy obls in
-    let () = obls.(num) <- obl in
-    let prg_ctx =
-      if pi2 prg.prg_kind then
-        (* Polymorphic *)
-        (* We merge the new universes and constraints of the
-           polymorphic obligation with the existing ones *)
-        UState.union prg.prg_ctx ctx
-      else if
-        (* The first obligation, if defined,
-           declares the univs of the constant,
-           each subsequent obligation declares its own additional
-           universes and constraints if any *)
-        defined
-      then UState.make (Global.universes ())
-      else ctx
-    in
-    let prg = {prg with prg_ctx} in
-    begin try
+  let env = Global.env () in
+  let entry =
+    Safe_typing.inline_private_constants_in_definition_entry env entry
+  in
+  let ty = entry.Entries.const_entry_type in
+  let (body, cstr), () = Future.force entry.Entries.const_entry_body in
+  let sigma = Evd.from_ctx uctx in
+  let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
+  Inductiveops.control_only_guard (Global.env ()) sigma
+    (EConstr.of_constr body);
+  (* Declare the obligation ourselves and drop the hook *)
+  let prg = CEphemeron.get (ProgMap.find name !from_prg) in
+  (* Ensure universes are substituted properly in body and type *)
+  let body = EConstr.to_constr sigma (EConstr.of_constr body) in
+  let ty =
+    Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty
+  in
+  let ctx = Evd.evar_universe_context sigma in
+  let obls, rem = prg.prg_obligations in
+  let obl = obls.(num) in
+  let status =
+    match (obl.obl_status, opq) with
+    | (_, Evar_kinds.Expand), Opaque -> err_not_transp ()
+    | (true, _), Opaque -> err_not_transp ()
+    | (false, _), Opaque -> Evar_kinds.Define true
+    | (_, Evar_kinds.Define true), Transparent -> Evar_kinds.Define false
+    | (_, status), Transparent -> status
+  in
+  let obl = {obl with obl_status = (false, status)} in
+  let ctx = if pi2 prg.prg_kind then ctx else UState.union prg.prg_ctx ctx in
+  let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+  let defined, obl = declare_obligation prg obl body ty uctx in
+  let obls = Array.copy obls in
+  let () = obls.(num) <- obl in
+  let prg_ctx =
+    if pi2 prg.prg_kind then
+      (* Polymorphic *)
+      (* We merge the new universes and constraints of the
+         polymorphic obligation with the existing ones *)
+      UState.union prg.prg_ctx ctx
+    else if
+      (* The first obligation, if defined,
+         declares the univs of the constant,
+         each subsequent obligation declares its own additional
+         universes and constraints if any *)
+      defined
+    then UState.make (Global.universes ())
+    else ctx
+  in
+  let prg = {prg with prg_ctx} in
+  begin try
       ignore (update_obls prg obls (pred rem));
       if pred rem > 0 then
         let deps = dependencies obls num in
@@ -556,10 +554,4 @@ let obligation_terminator opq entries uctx { name; num; auto } =
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
-    end
-  | _ ->
-    CErrors.anomaly
-      Pp.(
-        str
-          "[obligation_terminator] close_proof returned more than one proof \
-           term")
+  end

@@ -46,18 +46,6 @@ val start_proof
   -> EConstr.types
   -> t
 
-val start_dependent_proof
-  :  ontop:t option
-  -> Id.t
-  -> ?pl:UState.universe_decl
-  -> goal_kind
-  -> ?obligation_qed_info:DeclareObl.obligation_qed_info
-  -> ?sign:Environ.named_context_val
-  -> ?compute_guard:lemma_possible_guards
-  -> ?hook:DeclareDef.declaration_hook
-  -> Proofview.telescope
-  -> t
-
 val start_proof_com
   :  program_mode:bool
   -> ontop:t option

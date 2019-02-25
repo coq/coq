@@ -20,43 +20,28 @@ val give_me_the_proof : t -> Proof.t
 val compact_the_proof : t -> t
 
 (** When a proof is closed, it is reified into a [proof_object], where
-    [id] is the name of the proof, [entries] the list of the proof terms
-    (in a form suitable for definitions). Together with the [terminator]
-    function which takes a [proof_object] together with a [proof_end]
-    (i.e. an proof ending command) and registers the appropriate
-    values. *)
+   [id] is the name of the proof, [entry] the proof term (in a form
+   suitable for definitions). *)
 type proof_object = {
   id : Names.Id.t;
-  entries : Safe_typing.private_constants Entries.definition_entry list;
+  entry : Safe_typing.private_constants Entries.definition_entry;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
 
 type opacity_flag = Opaque | Transparent
 
-(** [start_proof id str pl goals] starts a proof of name
-   [id] with goals [goals] (a list of pairs of environment and
-   conclusion); [str] describes what kind of theorem/definition this
-   is; [terminator] is used at the end of the proof to close the proof
-   (e.g. to declare the built constructions as a coercion or a setoid
-   morphism). The proof is started in the evar map [sigma] (which can
-   typically contain universe constraints), and with universe bindings
-   pl. *)
+(** [start_proof id str pl goals] starts a proof of name [id] with
+   goal [goal] (a pair of environment and conclusion); [str] describes
+   what kind of theorem/definition this is. The proof is started in
+   the evar map [sigma] (which can typically contain universe
+   constraints), and with universe bindings pl. *)
 val start_proof
   :  Evd.evar_map
   -> Names.Id.t
   -> ?pl:UState.universe_decl
   -> Decl_kinds.goal_kind
-  -> (Environ.env * EConstr.types) list
-  -> t
-
-(** Like [start_proof] except that there may be dependencies between
-    initial goals. *)
-val start_dependent_proof
-  :  Names.Id.t
-  -> ?pl:UState.universe_decl
-  -> Decl_kinds.goal_kind
-  -> Proofview.telescope
+  -> Environ.env * EConstr.types
   -> t
 
 (** Update the proofs global environment after a side-effecting command
@@ -72,7 +57,7 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.
  * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
+type closed_proof_output = (Constr.t * Safe_typing.private_constants) * UState.t
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)

@@ -108,12 +108,7 @@ val map_structured_proof : t -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goa
 val start
   :  name:Names.Id.t
   -> poly:bool
-  -> Evd.evar_map -> (Environ.env * EConstr.types) list -> t
-
-val dependent_start
-  :  name:Names.Id.t
-  -> poly:bool
-  -> Proofview.telescope -> t
+  -> Evd.evar_map -> Environ.env * EConstr.types -> t
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)

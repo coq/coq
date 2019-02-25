@@ -122,18 +122,14 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
-  let goals = [ (Global.env_of_context sign , typ) ] in
+  let goals = Global.env_of_context sign, typ in
   let pf = Proof_global.start_proof evd id goal_kind goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in
-    let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
-    match entries with
-    | [entry] ->
-      let univs = UState.demote_seff_univs entry universes in
-      entry, status, univs
-    | _ ->
-      CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
+    let { entry; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
+    let univs = UState.demote_seff_univs entry universes in
+    entry, status, univs
   with reraise ->
     let reraise = CErrors.push reraise in
     iraise reraise
@@ -162,7 +158,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the existing goals *)
   let prev_future_goals = save_future_goals sigma in
   (* Start a proof *)
-  let prf = Proof.start ~name ~poly sigma [env, ty] in
+  let prf = Proof.start ~name ~poly sigma (env, ty) in
   let (prf, _) =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
