@@ -550,8 +550,33 @@ End Under.
 Register Under as plugins.ssreflect.Under.
 Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
+Ltac beta_expand c e :=
+  match e with
+  | ?G ?z =>
+    let T := type of z in
+    match c with
+    | context f [z] =>
+      let b := constr:(fun x : T => ltac:(let r := context f [x] in refine r)) in
+      rewrite -{1}[c]/(b z); beta_expand b G
+    | (* constante *) _ =>
+      let b := constr:(fun x : T => ltac:(exact c)) in
+      rewrite -{1}[c]/(b z); beta_expand b G
+    end
+  | ?G => idtac
+  end.
+
+Ltac unify_helper :=
+  move=> *;
+  lazymatch goal with
+  | [ |- @Under _ ?c ?e ] =>
+    beta_expand c e
+  end.
+
 Ltac over :=
-  solve [ apply Under.under_done | by rewrite over ].
+  solve [ apply Under.under_done
+        | by rewrite over
+        | unify_helper; eapply Under.under_done
+        ].
 
 (* The 2 variants below wouldn't work on [test-suite/ssr/over.v:test_over_2_1]
    (2-var test case with evars).
