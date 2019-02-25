@@ -21,7 +21,10 @@ tools/CoqMakefile.in whitespace=blank-at-eol
 *.c whitespace=blank-at-eol,tab-in-indent
 *.css whitespace=blank-at-eol,tab-in-indent
 *.dtd whitespace=blank-at-eol,tab-in-indent
+dune* whitespace=blank-at-eol,tab-in-indent
+*.dune whitespace=blank-at-eol,tab-in-indent
 *.el whitespace=blank-at-eol,tab-in-indent
+*.fake whitespace=blank-at-eol,tab-in-indent
 *.g whitespace=blank-at-eol,tab-in-indent
 *.h whitespace=blank-at-eol,tab-in-indent
 *.html whitespace=blank-at-eol,tab-in-indent
@@ -32,12 +35,13 @@ tools/CoqMakefile.in whitespace=blank-at-eol
 *.md whitespace=blank-at-eol,tab-in-indent
 *.merlin whitespace=blank-at-eol,tab-in-indent
 *.ml whitespace=blank-at-eol,tab-in-indent
-*.ml4 whitespace=blank-at-eol,tab-in-indent
+*.mlg whitespace=blank-at-eol,tab-in-indent
 *.mli whitespace=blank-at-eol,tab-in-indent
 *.mll whitespace=blank-at-eol,tab-in-indent
 *.mllib whitespace=blank-at-eol,tab-in-indent
 *.mlp whitespace=blank-at-eol,tab-in-indent
 *.mlpack whitespace=blank-at-eol,tab-in-indent
+*.nix whitespace=blank-at-eol,tab-in-indent
 *.nsh whitespace=blank-at-eol,tab-in-indent
 *.nsi whitespace=blank-at-eol,tab-in-indent
 *.py whitespace=blank-at-eol,tab-in-indent
@@ -50,6 +54,10 @@ tools/CoqMakefile.in whitespace=blank-at-eol
 *.v whitespace=blank-at-eol,tab-in-indent
 *.xml whitespace=blank-at-eol,tab-in-indent
 *.yml whitespace=blank-at-eol,tab-in-indent
+
+.gitattributes whitespace=blank-at-eol,tab-in-indent
+_CoqProject whitespace=blank-at-eol,tab-in-indent
+Dockerfile whitespace=blank-at-eol,tab-in-indent
 
 # CR is desired for these Windows files.
 *.bat whitespace=cr-at-eol,blank-at-eol,tab-in-indent
