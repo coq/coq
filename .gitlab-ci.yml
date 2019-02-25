@@ -355,25 +355,29 @@ doc:refman:deploy:
     variables:
       - $DOCUMENTATION_DEPLOY_KEY
   dependencies:
+    - doc:ml-api:odoc
+    - doc:refman:dune
     - doc:refman
   before_script:
     - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
     - eval $(ssh-agent -s)
-    - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
     - git config --global user.name "coqbot"
     - git config --global user.email "coqbot@users.noreply.github.com"
   script:
+    - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/api
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
-    - cp -rv _install_ci/share/doc/coq/sphinx/html _deploy/$CI_COMMIT_REF_NAME/refman
+    - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
+    - cp -rv _build/default/doc/sphinx_build/html _deploy/$CI_COMMIT_REF_NAME/refman
     - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
-    - git add refman stdlib
+    - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
     - git push # TODO: rebase and retry on failure
 
