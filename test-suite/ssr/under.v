@@ -149,3 +149,22 @@ under i: eq_bigr by move/eqP=>{1}->. (* the 2nd occ should not be touched *)
 simpl.
 myadmit.
 Qed.
+
+Lemma test_foo (f1 f2 : nat -> nat) (f_eq : forall n, f1 n = f2 n)
+      (G : (nat -> nat) -> nat)
+      (Lem : forall f1 f2 : nat -> nat,
+          True ->
+          (forall n, f1 n = f2 n) ->
+          False = False ->
+          G f1 = G f2) :
+  G f1 = G f2.
+Proof.
+(*
+under x: Lem.
+- done.
+- rewrite f_eq; over.
+- done.
+ *)
+under x: Lem by [done|rewrite f_eq|done].
+done.
+Qed.
