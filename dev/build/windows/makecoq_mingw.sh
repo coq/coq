@@ -965,7 +965,7 @@ function get_flex_dll_link_bin {
 # Build flexdll and flexlink from sources after building OCaml
 
 function make_flex_dll_link {
-  if build_prep https://github.com/alainfrisch/flexdll/releases/download/0.37/ flexdll-bin-0.37 zip ; then
+  if build_prep https://github.com/alainfrisch/flexdll/archive 0.37 tar.gz 1 flexdll-0.37 ; then
     if [ "$TARGET_ARCH" == "i686-w64-mingw32" ]; then
       # shellcheck disable=SC2086
       log1 make $MAKE_OPT build_mingw flexlink.exe
@@ -1068,7 +1068,7 @@ function make_ocaml_tools {
 function make_ocaml_libs {
   make_num
   make_findlib
-  # make_lablgtk
+  make_lablgtk
 }
 
 ##### Ocaml num library #####
@@ -1121,7 +1121,7 @@ function make_findlib {
 function make_dune {
   make_ocaml
 
-  if build_prep https://github.com/ocaml/dune/archive/ 1.6.3 tar.gz 1 ; then
+  if build_prep https://github.com/ocaml/dune/archive/ 1.6.3 tar.gz 1 dune-1.6.3 ; then
 
     log2 make release
     log2 make install
@@ -1152,10 +1152,10 @@ function make_menhir {
 
 function make_ocaml_cairo2 {
 
-  if build_prep https://github.com/Chris00/ocaml-cairo/archive  0.6  tar.gz  1 ; then
+  if build_prep https://github.com/Chris00/ocaml-cairo/archive 0.6 tar.gz 1 ocaml_cairo2-0.6; then
 
-    # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
-    cp "/bin/$TARGET_ARCH-pkg-config.exe" bin_special/pkg-config.exe
+    # configure should be fixed to search for $TARGET_ARCH-pkg-config
+    cp "/bin/$TARGET_ARCH-pkg-config" bin_special/pkg-config
 
     log2 dune build cairo2.install
     log2 dune install cairo2
@@ -1176,8 +1176,8 @@ function make_lablgtk {
 
   if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
 
-    # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
-    cp "/bin/$TARGET_ARCH-pkg-config.exe" bin_special/pkg-config.exe
+    # configure should be fixed to search for $TARGET_ARCH-pkg-config
+    cp "/bin/$TARGET_ARCH-pkg-config" bin_special/pkg-config
 
     # lablgtk3 includes more packages that are not relevant for Coq,
     # such as gtkspell
@@ -1212,42 +1212,44 @@ function copy_coq_dlls {
   # Select all missing DLLs from the module list, right click "copy filenames"
   # Delay loaded DLLs from Windows can be ignored (hour-glass icon at begin of line)
   # Do this recursively until there are no further missing DLLs (File close + reopen)
-  # For running this quickly, just do "cd coq-<ver> ; call copy_coq_dlls ; cd .." at the end of this script.
+  # For running this quickly, just do "cd coq-<ver> ; copy_coq_dlls ; cd .." at the end of this script.
   # Do the same for coqc and ocamlc (usually doesn't result in additional files)
 
-  copy_coq_dll LIBATK-1.0-0.DLL
   copy_coq_dll LIBCAIRO-2.DLL
-  copy_coq_dll LIBEXPAT-1.DLL
-  copy_coq_dll LIBFFI-6.DLL
   copy_coq_dll LIBFONTCONFIG-1.DLL
   copy_coq_dll LIBFREETYPE-6.DLL
-  copy_coq_dll LIBGDK-WIN32-2.0-0.DLL
+  copy_coq_dll LIBGDK-3-0.DLL
   copy_coq_dll LIBGDK_PIXBUF-2.0-0.DLL
-  copy_coq_dll LIBGIO-2.0-0.DLL
   copy_coq_dll LIBGLIB-2.0-0.DLL
-  copy_coq_dll LIBGMODULE-2.0-0.DLL
   copy_coq_dll LIBGOBJECT-2.0-0.DLL
-  copy_coq_dll LIBGTK-WIN32-2.0-0.DLL
-  copy_coq_dll LIBINTL-8.DLL
+  copy_coq_dll LIBGTK-3-0.DLL
+  copy_coq_dll LIBGTKSOURCEVIEW-3.0-1.DLL
   copy_coq_dll LIBPANGO-1.0-0.DLL
+  copy_coq_dll LIBATK-1.0-0.DLL
+  copy_coq_dll LIBBZ2-1.DLL
+  copy_coq_dll LIBCAIRO-GOBJECT-2.DLL
+  copy_coq_dll LIBEPOXY-0.DLL
+  copy_coq_dll LIBEXPAT-1.DLL
+  copy_coq_dll LIBFFI-6.DLL
+  copy_coq_dll LIBGIO-2.0-0.DLL
+  copy_coq_dll LIBGMODULE-2.0-0.DLL
+  copy_coq_dll LIBINTL-8.DLL
   copy_coq_dll LIBPANGOCAIRO-1.0-0.DLL
   copy_coq_dll LIBPANGOWIN32-1.0-0.DLL
-  copy_coq_dll libpcre-1.dll
+  copy_coq_dll LIBPCRE-1.DLL
   copy_coq_dll LIBPIXMAN-1-0.DLL
   copy_coq_dll LIBPNG16-16.DLL
   copy_coq_dll LIBXML2-2.DLL
   copy_coq_dll ZLIB1.DLL
+  copy_coq_dll ICONV.DLL
+  copy_coq_dll LIBLZMA-5.DLL
+  copy_coq_dll LIBPANGOFT2-1.0-0.DLL
+  copy_coq_dll LIBHARFBUZZ-0.DLL
 
   # Depends on if GTK is built from sources
   if [ "$GTK_FROM_SOURCES" == "Y" ]; then
-    copy_coq_dll libiconv-2.dll
-  else
-    copy_coq_dll ICONV.DLL
-    copy_coq_dll LIBBZ2-1.DLL
-    copy_coq_dll LIBGTKSOURCEVIEW-2.0-0.DLL
-    copy_coq_dll LIBHARFBUZZ-0.DLL
-    copy_coq_dll LIBLZMA-5.DLL
-    copy_coq_dll LIBPANGOFT2-1.0-0.DLL
+    echo "Building GTK from sources is currently not supported"
+    exit 1
   fi;
 
   # Architecture dependent files
@@ -1277,14 +1279,14 @@ function copy_coq_objects {
 
 # Copy required GTK config and suport files
 
-function copq_coq_gtk {
-  echo 'gtk-theme-name = "MS-Windows"'     >  "$PREFIX/etc/gtk-2.0/gtkrc"
-  echo 'gtk-fallback-icon-theme = "Tango"' >> "$PREFIX/etc/gtk-2.0/gtkrc"
+function copy_coq_gtk {
+  echo 'gtk-theme-name = "Default"'     >  "$PREFIX/etc/gtk-3.0/gtkrc"
+  echo 'gtk-fallback-icon-theme = "Tango"' >> "$PREFIX/etc/gtk-3.0/gtkrc"
 
   if [ "$INSTALLMODE" == "absolute" ] || [ "$INSTALLMODE" == "relocatable" ]; then
-    install_glob "$PREFIX/etc/gtk-2.0" '*'                            "$PREFIXCOQ/gtk-2.0"
-    install_glob "$PREFIX/share/gtksourceview-2.0/language-specs" '*' "$PREFIXCOQ/share/gtksourceview-2.0/language-specs"
-    install_glob "$PREFIX/share/gtksourceview-2.0/styles" '*'         "$PREFIXCOQ/share/gtksourceview-2.0/styles"
+    install_glob "$PREFIX/etc/gtk-3.0" '*'                            "$PREFIXCOQ/gtk-3.0"
+    install_glob "$PREFIX/share/gtksourceview-3.0/language-specs" '*' "$PREFIXCOQ/share/gtksourceview-3.0/language-specs"
+    install_glob "$PREFIX/share/gtksourceview-3.0/styles" '*'         "$PREFIXCOQ/share/gtksourceview-3.0/styles"
     install_rec  "$PREFIX/share/themes" '*'                           "$PREFIXCOQ/share/themes"
 
     # This below item look like a bug in make install
@@ -1322,8 +1324,7 @@ function make_coq {
   make_ocaml
   make_num
   make_findlib
-  # Windows build needs tweaks for the GTK3 build
-  # make_lablgtk
+  make_lablgtk
   if
     case $COQ_VERSION in
       # e.g. git-v8.6 => download from https://github.com/coq/coq/archive/v8.6.zip
@@ -1375,10 +1376,8 @@ function make_coq {
     fi
 
     log2 make install
-
-    # XXX: Disabled until GTK3 support is back to the build
-    # log1 copy_coq_dlls
-    # log1 copq_coq_gtk
+    log1 copy_coq_dlls
+    log1 copy_coq_gtk
 
     if [ "$INSTALLOCAML" == "Y" ]; then
       copy_coq_objects
