@@ -528,27 +528,6 @@ Parameter under_done :
   forall (T : Type) (x : T), @Under T x x.
 Notation "''Under[' x ]" := (@Under _ x _)
   (at level 8, format "''Under['  x  ]").
-End UNDER.
-
-Module Export Under : UNDER.
-Definition Under := @eq.
-Lemma Under_from_eq (T : Type) (x y : T) :
-  @Under T x y -> x = y.
-Proof. by []. Qed.
-Definition Over := Under.
-Lemma over :
-  forall (T : Type) (x : T) (y : T), @Under T x y = @Over T x y.
-Proof. by []. Qed.
-Lemma over_done :
-  forall (T : Type) (x : T), @Over T x x.
-Proof. by []. Qed.
-Lemma under_done :
-  forall (T : Type) (x : T), @Under T x x.
-Proof. by []. Qed.
-End Under.
-
-Register Under as plugins.ssreflect.Under.
-Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
 Ltac beta_expand c e :=
   match e with
@@ -571,6 +550,27 @@ Ltac unify_helper :=
   | [ |- @Under _ ?c ?e ] =>
     beta_expand c e
   end.
+End UNDER.
+
+Module Export Under : UNDER.
+Definition Under := @eq.
+Lemma Under_from_eq (T : Type) (x y : T) :
+  @Under T x y -> x = y.
+Proof. by []. Qed.
+Definition Over := Under.
+Lemma over :
+  forall (T : Type) (x : T) (y : T), @Under T x y = @Over T x y.
+Proof. by []. Qed.
+Lemma over_done :
+  forall (T : Type) (x : T), @Over T x x.
+Proof. by []. Qed.
+Lemma under_done :
+  forall (T : Type) (x : T), @Under T x x.
+Proof. by []. Qed.
+End Under.
+
+Register Under as plugins.ssreflect.Under.
+Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
 Ltac over :=
   solve [ apply Under.under_done
