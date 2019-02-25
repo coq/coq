@@ -45,8 +45,6 @@ assert (H : i + 2 * j - i = x2 i j).
   apply Under_from_eq.
   Fail done.
 
-  Fail over. (* Bug: doesn't work so we have to make a beta-expansion by hand *)
-  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j). (* todo: automate? *)
   over.
   myadmit.
 Qed.
@@ -64,7 +62,8 @@ assert (H : i + 2 * j - i = x2 i j).
 
   rewrite over.
   Fail done. (* Bug: doesn't work so we have to make a beta-expansion by hand *)
-  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j). (* todo: automate? *)
+  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j).
+  (* cf. [plugins/ssr/ssreflect.v:unify_helper] *)
   done.
   myadmit.
 Qed.
