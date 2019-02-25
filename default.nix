@@ -84,6 +84,8 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
+  enableParallelBuilding = true;
+
   buildFlags = [ "world" "byte" ] ++ optional buildDoc "doc-html";
 
   installTargets =
