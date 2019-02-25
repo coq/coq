@@ -88,8 +88,8 @@ Proof.
 (* in interactive mode *)
 under i Hi: eq_bigr.
   under j Hj: eq_big.
-  { by rewrite muln1 over. }
-  { by rewrite addnC over. }
+  { rewrite muln1. over. }
+  { rewrite addnC. over. }
   over.
 done.
 Qed.
@@ -107,8 +107,7 @@ Lemma test_big_patt1 (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (F i + G i) = \sum_(0 <= i < n) (G i + F i) + 0.
 Proof.
 under i Hi: [in RHS]eq_bigr.
-  rewrite addnC.
-  over.
+  by rewrite addnC over.
 done.
 Qed.
 
@@ -116,17 +115,14 @@ Lemma test_big_patt2 (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (F i + F i) =
   \sum_(0 <= i < n) 0 + \sum_(0 <= i < n) (F i * 2).
 Proof.
-under i Hi: [X in _ = _ + X]eq_bigr.
-  rewrite mulnS muln1.
-  over.
+under i Hi: [X in _ = _ + X]eq_bigr by rewrite mulnS muln1.
 by rewrite big_const_nat iter_addn_0.
 Qed.
 
 Lemma test_big_occs (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0).
 Proof.
-under i Hi: {2}[in RHS]eq_bigr.
-  by rewrite muln0 /= over.
+under i Hi: {2}[in RHS]eq_bigr by rewrite muln0.
 by rewrite big_const_nat iter_addn_0.
 Qed.
 

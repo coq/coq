@@ -519,7 +519,7 @@ Parameter over_done :
   forall (T : Type) (x : T), @Over T x x.
 (* We need both hints below, otherwise the test-suite does not pass *)
 Hint Extern 0 (@Over _ _ _) => solve [ apply over_done ] : core.
-(* => for [test-suite/ssr/under.v:test_big_nested_1] *)
+(* => for [test-suite/ssr/under.v:test_big_patt1] *)
 Hint Resolve over_done : core.
 (* => for [test-suite/ssr/over.v:test_over_1_1] *)
 
