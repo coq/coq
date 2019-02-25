@@ -396,6 +396,18 @@ let rec pretty_rename evar_map term = function
 
 let overtac gl = ssr_n_tac "over" ~-1 gl
 
+let check_numgoals ?(minus = 0) nh =
+  Proofview.numgoals >>= fun ng ->
+  if nh <> ng then
+    let errmsg =
+      str"Incorrect number of hints" ++ spc() ++
+        str"(expected "++int (ng - minus)++str(String.plural ng " tactic") ++
+        str", was given "++ int (nh - minus)++str")."
+    in
+    CErrors.user_err errmsg
+  else
+    Proofview.tclUNIT ()
+
 let undertac ist varnames ((dir,mult),_ as rule) hint =
   if mult <> Ssrequality.nomult then
     Ssrcommon.errorstrm Pp.(str"Multiplicity not supported");
@@ -426,12 +438,14 @@ let undertac ist varnames ((dir,mult),_ as rule) hint =
       Proofview.tclUNIT ()
     else
       let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
-      Proofview.tclDISPATCH
-        ((List.map (function None -> Proofview.V82.tactic overtac
-                           | Some e -> ssrevaltac ist e <*>
-                                         Proofview.V82.tactic overtac)
-            (if hint = nullhint then [None] else snd hint))
-         @ [betaiota])
+      let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
+      check_numgoals ~minus:1 nh <*>
+        Proofview.tclDISPATCH
+          ((List.map (function None -> Proofview.V82.tactic overtac
+                             | Some e -> ssrevaltac ist e <*>
+                                           Proofview.V82.tactic overtac)
+              (if hint = nullhint then [None] else snd hint))
+           @ [betaiota])
   in
   (Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
      intro_lock varnames <*> undertacs)
