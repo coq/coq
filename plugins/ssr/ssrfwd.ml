@@ -425,11 +425,13 @@ let undertac ist varnames ((dir,mult),_ as rule) hint =
     if hint = nohint then
       Proofview.tclUNIT ()
     else
+      let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
       Proofview.tclDISPATCH
         ((List.map (function None -> Proofview.V82.tactic overtac
                            | Some e -> ssrevaltac ist e <*>
                                          Proofview.V82.tactic overtac)
-            (if hint = nullhint then [None] else snd hint)) @ [Proofview.tclUNIT ()])
+            (if hint = nullhint then [None] else snd hint))
+         @ [betaiota])
   in
   (Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
      intro_lock varnames <*> undertacs)

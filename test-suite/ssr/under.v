@@ -132,7 +132,6 @@ Lemma test_big_cosmetic (F G : nat -> nat) (m n : nat) :
   \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
 Proof.
 under a A: [RHS]eq_bigr by under b B: eq_bigr by []. (* renaming bound vars *)
-simpl.
 myadmit.
 Qed.
 
@@ -140,9 +139,7 @@ Lemma test_big_andb (F : nat -> nat) (m n : nat) :
   \sum_(0 <= i < 5 | odd i && (i == 1)) i = 1.
 Proof.
 under i: eq_bigl by rewrite andb_idl; first by move/eqP->.
-simpl.
 under i: eq_bigr by move/eqP=>{1}->. (* the 2nd occ should not be touched *)
-simpl.
 myadmit.
 Qed.
 
