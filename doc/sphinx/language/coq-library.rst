@@ -606,7 +606,10 @@ Finally, it gives the definition of the usual orderings ``le``,
   single: ge (term)
   single: gt (term)
 
-.. coqtop:: in
+.. This emits a notation already used warning but it won't be shown to
+   the user.
+
+.. coqtop:: in warn
 
   Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n

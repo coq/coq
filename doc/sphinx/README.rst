@@ -234,7 +234,8 @@ In addition to the objects above, the ``coqrst`` Sphinx plugin defines the follo
     - Behavior options
 
       - ``reset``: Send a ``Reset Initial`` command before running this block
-      - ``fail``: Don't die if a command fails
+      - ``fail``: Don't die if a command fails, implies ``warn`` (so no need to put both)
+      - ``warn``: Don't die if a command emits a warning
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
 

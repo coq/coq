@@ -378,7 +378,7 @@ Examples:
 
       .. coqtop:: reset none
 
-         Variables (A : Prop) (B: nat -> Prop) (C: Prop).
+         Parameters (A : Prop) (B: nat -> Prop) (C: Prop).
 
       .. coqtop:: out
 
@@ -730,15 +730,15 @@ Applying theorems
 
    .. coqtop:: reset in
 
-      Variable R : nat -> nat -> Prop.
+      Parameter R : nat -> nat -> Prop.
 
-      Hypothesis Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
+      Axiom Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
 
-      Variables n m p : nat.
+      Parameters n m p : nat.
 
-      Hypothesis Rnm : R n m.
+      Axiom Rnm : R n m.
 
-      Hypothesis Rmp : R m p.
+      Axiom Rmp : R m p.
 
    Consider the goal ``(R n p)`` provable using the transitivity of ``R``:
 
@@ -3683,11 +3683,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       Local is useless since hints do not survive anyway to the closure of
       sections.
 
-   .. cmdv:: Local Hint @hint_definition
-
-      Idem for the core database.
-
-   .. cmdv:: Hint Resolve @term {? | {? @num} {? @pattern}}
+   .. cmdv:: Hint Resolve @term {? | {? @num} {? @pattern}} : @ident
       :name: Hint Resolve
 
       This command adds :n:`simple apply @term` to the hint list with the head
@@ -3706,16 +3702,16 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       typical example of a hint that is used only by :tacn:`eauto` is a transitivity
       lemma.
 
-   .. exn:: @term cannot be used as a hint
+      .. exn:: @term cannot be used as a hint
 
-      The head symbol of the type of :n:`@term` is a bound variable such that
-      this tactic cannot be associated to a constant.
+         The head symbol of the type of :n:`@term` is a bound variable
+         such that this tactic cannot be associated to a constant.
 
-   .. cmdv:: Hint Resolve {+ @term}
+   .. cmdv:: Hint Resolve {+ @term} : @ident
 
       Adds each :n:`Hint Resolve @term`.
 
-   .. cmdv:: Hint Resolve -> @term
+   .. cmdv:: Hint Resolve -> @term : @ident
 
       Adds the left-to-right implication of an equivalence as a hint (informally
       the hint will be used as :n:`apply <- @term`, although as mentionned
@@ -3726,7 +3722,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
       Adds the right-to-left implication of an equivalence  as a hint.
 
-   .. cmdv:: Hint Immediate @term
+   .. cmdv:: Hint Immediate @term : @ident
       :name: Hint Immediate
 
       This command adds :n:`simple apply @term; trivial` to the hint list associated
@@ -3742,37 +3738,37 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
    .. exn:: @term cannot be used as a hint
       :undocumented:
 
-   .. cmdv:: Immediate {+ @term}
+   .. cmdv:: Immediate {+ @term} : @ident
 
       Adds each :n:`Hint Immediate @term`.
 
-   .. cmdv:: Hint Constructors @ident
+   .. cmdv:: Hint Constructors @qualid : @ident
       :name: Hint Constructors
 
-      If :n:`@ident` is an inductive type, this command adds all its constructors as
+      If :token:`qualid` is an inductive type, this command adds all its constructors as
       hints of type ``Resolve``. Then, when the conclusion of current goal has the form
-      :n:`(@ident ...)`, :tacn:`auto` will try to apply each constructor.
+      :n:`(@qualid ...)`, :tacn:`auto` will try to apply each constructor.
 
-   .. exn:: @ident is not an inductive type
-      :undocumented:
+      .. exn:: @qualid is not an inductive type
+         :undocumented:
 
-   .. cmdv:: Hint Constructors {+ @ident}
+   .. cmdv:: Hint Constructors {+ @qualid} : @ident
 
-      Adds each :n:`Hint Constructors @ident`.
+      Extends the previous command for several inductive types.
 
-   .. cmdv:: Hint Unfold @qualid
+   .. cmdv:: Hint Unfold @qualid : @ident
       :name: Hint Unfold
 
       This adds the tactic :n:`unfold @qualid` to the hint list that will only be
-      used when the head constant of the goal is :n:`@ident`.
+      used when the head constant of the goal is :token:`qualid`.
       Its cost is 4.
 
-   .. cmdv:: Hint Unfold {+ @ident}
+   .. cmdv:: Hint Unfold {+ @qualid}
 
-      Adds each :n:`Hint Unfold @ident`.
+      Extends the previous command for several defined constants.
 
-   .. cmdv:: Hint Transparent {+ @qualid}
-             Hint Opaque {+ @qualid}
+   .. cmdv:: Hint Transparent {+ @qualid} : @ident
+             Hint Opaque {+ @qualid} : @ident
       :name: Hint Transparent; Hint Opaque
 
       This adds transparency hints to the database, making :n:`@qualid`
@@ -3781,8 +3777,8 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       discrimination network to relax or constrain it in the case of discriminated
       databases.
 
-   .. cmdv:: Hint Variables %( Transparent %| Opaque %)
-             Hint Constants %( Transparent %| Opaque %)
+   .. cmdv:: Hint Variables %( Transparent %| Opaque %) : @ident
+             Hint Constants %( Transparent %| Opaque %) : @ident
       :name: Hint Variables; Hint Constants
 
       This sets the transparency flag used during unification of
@@ -3790,7 +3786,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       overwritting the existing settings of opacity. It is advised
       to use this just after a :cmd:`Create HintDb` command.
 
-   .. cmdv:: Hint Extern @num {? @pattern} => @tactic
+   .. cmdv:: Hint Extern @num {? @pattern} => @tactic : @ident
       :name: Hint Extern
 
       This hint type is to extend :tacn:`auto` with tactics other than :tacn:`apply` and
@@ -3801,7 +3797,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
          .. coqtop:: in
 
-            Hint Extern 4 (~(_ = _)) => discriminate.
+            Hint Extern 4 (~(_ = _)) => discriminate : core.
 
          Now, when the head of the goal is a disequality, ``auto`` will try
          discriminate if it does not manage to solve the goal with hints with a
@@ -3820,7 +3816,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
             Goal forall a b:list (nat * nat), {a = b} + {a <> b}.
             Info 1 auto with eqdec.
 
-   .. cmdv:: Hint Cut @regexp
+   .. cmdv:: Hint Cut @regexp : @ident
       :name: Hint Cut
 
       .. warning::
@@ -3854,7 +3850,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       semantics of ``Hint Cut e`` is to set the cut expression to ``c | e``, the
       initial cut expression being `emp`.
 
-   .. cmdv:: Hint Mode @qualid {* (+ | ! | -)}
+   .. cmdv:: Hint Mode @qualid {* (+ | ! | -)} : @ident
       :name: Hint Mode
 
       This sets an optional mode of use of the identifier :n:`@qualid`. When

@@ -2902,6 +2902,7 @@ pattern will be used to process its instance.
 
      Axiom P : nat -> Prop.
      Axioms eqn leqn : nat -> nat -> bool.
+     Declare Scope this_scope.
      Notation "a != b" := (eqn a b) (at level 70) : this_scope.
      Notation "a <= b" := (leqn a b) (at level 70) : this_scope.
      Open Scope this_scope.

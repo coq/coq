@@ -580,7 +580,8 @@ class CoqtopDirective(Directive):
     - Behavior options
 
       - ``reset``: Send a ``Reset Initial`` command before running this block
-      - ``fail``: Don't die if a command fails
+      - ``fail``: Don't die if a command fails, implies ``warn`` (so no need to put both)
+      - ``warn``: Don't die if a command emits a warning
       - ``restart``: Send a ``Restart`` command before running this block (only works in proof mode)
       - ``abort``: Send an ``Abort All`` command after running this block (leaves all pending proofs if any)
 
@@ -835,11 +836,12 @@ class CoqtopBlocksTransform(Transform):
         # Behavior options
         opt_reset = 'reset' in options
         opt_fail = 'fail' in options
+        opt_warn = 'warn' in options
         opt_restart = 'restart' in options
         opt_abort = 'abort' in options
-        options = options - set(('reset', 'fail', 'restart', 'abort'))
+        options = options - {'reset', 'fail', 'warn', 'restart', 'abort'}
 
-        unexpected_options = list(options - set(('all', 'none', 'in', 'out')))
+        unexpected_options = list(options - {'all', 'none', 'in', 'out'})
         if unexpected_options:
             loc = get_node_location(node)
             raise ExtensionError("{}: Unexpected options for .. coqtop:: {}".format(loc,unexpected_options))
@@ -857,6 +859,9 @@ class CoqtopBlocksTransform(Transform):
         return {
             'reset': opt_reset,
             'fail': opt_fail,
+            # if errors are allowed, then warnings too
+            # and they should be displayed as warnings, not errors
+            'warn': opt_warn or opt_fail,
             'restart': opt_restart,
             'abort': opt_abort,
             'input': opt_input or opt_all,
@@ -891,18 +896,22 @@ class CoqtopBlocksTransform(Transform):
         pairs = []
 
         if options['restart']:
-            repl.sendone("Restart.")
+            repl.sendone('Restart.')
         if options['reset']:
-            repl.sendone("Reset Initial.")
-            repl.sendone("Set Coqtop Exit On Error.")
+            repl.sendone('Reset Initial.')
+            repl.send_initial_options()
         if options['fail']:
-            repl.sendone("Unset Coqtop Exit On Error.")
+            repl.sendone('Unset Coqtop Exit On Error.')
+        if options['warn']:
+            repl.sendone('Set Warnings "default".')
         for sentence in self.split_sentences(node.rawsource):
             pairs.append((sentence, repl.sendone(sentence)))
         if options['abort']:
-            repl.sendone("Abort All.")
+            repl.sendone('Abort All.')
         if options['fail']:
-            repl.sendone("Set Coqtop Exit On Error.")
+            repl.sendone('Set Coqtop Exit On Error.')
+        if options['warn']:
+            repl.sendone('Set Warnings "+default".')
 
         dli = nodes.definition_list_item()
         for sentence, output in pairs:
@@ -923,7 +932,7 @@ class CoqtopBlocksTransform(Transform):
 
         Finds nodes to process using is_coqtop_block."""
         with CoqTop(color=True) as repl:
-            repl.sendone("Set Coqtop Exit On Error.")
+            repl.send_initial_options()
             for node in self.document.traverse(CoqtopBlocksTransform.is_coqtop_block):
                 try:
                     self.add_coq_output_1(repl, node)

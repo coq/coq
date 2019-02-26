@@ -87,6 +87,11 @@ class CoqTop:
             raise CoqTopError(err, sentence, self.coqtop.before)
         return output
 
+    def send_initial_options(self):
+        """Options to send when starting the toplevel and after a Reset Initial."""
+        self.sendone('Set Coqtop Exit On Error.')
+        self.sendone('Set Warnings "+default".')
+
 def sendmany(*sentences):
     """A small demo: send each sentence in sentences and print the output"""
     with CoqTop() as coqtop:
