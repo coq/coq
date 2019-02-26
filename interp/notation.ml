@@ -595,6 +595,7 @@ type numeral_notation_obj = (target_kind, numnot_option) prim_token_notation_obj
 type string_notation_obj = (string_target_kind, unit) prim_token_notation_obj
 
 module PrimTokenNotation = struct
+
 (** * Code shared between Numeral notation and String notation *)
 (** Reduction
 
@@ -610,16 +611,14 @@ module PrimTokenNotation = struct
 
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
-  let sigma,t = Typing.type_of env sigma c in
-  let c' = Vnorm.cbv_vm env sigma c t in
+  let c' =
+    if Coq_config.bytecode_compiler then
+      let sigma,t = Typing.type_of env sigma c in
+      Vnorm.cbv_vm env sigma c t
+    else
+      Tacred.compute env sigma c
+  in
   EConstr.Unsafe.to_constr c'
-
-(* For testing with "compute" instead of "vm_compute" :
-let eval_constr env sigma (c : Constr.t) =
-  let c = EConstr.of_constr c in
-  let c' = Tacred.compute env sigma c in
-  EConstr.Unsafe.to_constr c'
-*)
 
 let eval_constr_app env sigma c1 c2 =
   eval_constr env sigma (mkApp (c1,[| c2 |]))
