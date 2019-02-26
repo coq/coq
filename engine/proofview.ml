@@ -899,8 +899,8 @@ module Progress = struct
 
   (** Equality function on goals *)
   let goal_equal evars1 gl1 evars2 gl2 =
-    let evi1 = Evd.find evars1 (drop_state gl1) in
-    let evi2 = Evd.find evars2 (drop_state gl2) in
+    let evi1 = Evd.find evars1 gl1 in
+    let evi2 = Evd.find evars2 gl2 in
     eq_evar_info evars1 evars2 evi1 evi2
 
 end
@@ -918,7 +918,7 @@ let tclPROGRESS t =
   let test =
     quick_test ||
     Util.List.for_all2eq begin fun i f ->
-      Progress.goal_equal initial.solution i final.solution f
+      Progress.goal_equal initial.solution (drop_state i) final.solution (drop_state f)
     end initial.comb final.comb
   in
   if not test then

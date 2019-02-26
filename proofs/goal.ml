@@ -89,18 +89,9 @@ module V82 = struct
     | None -> sigma
     | Some id -> Evd.rename evk' id sigma
 
-  (* Parts of the progress tactical *)
-  let same_goal evars1 gl1 evars2 gl2 =
-    let evi1 = Evd.find evars1 gl1 in
-    let evi2 = Evd.find evars2 gl2 in
-    let c1 = EConstr.Unsafe.to_constr evi1.Evd.evar_concl in
-    let c2 = EConstr.Unsafe.to_constr evi2.Evd.evar_concl in
-    Constr.equal c1 c2 &&
-    Environ.eq_named_context_val evi1.Evd.evar_hyps evi2.Evd.evar_hyps
-
   let weak_progress glss gls =
     match glss.Evd.it with
-    | [ g ] -> not (same_goal glss.Evd.sigma g gls.Evd.sigma gls.Evd.it)
+    | [ g ] -> not (Proofview.Progress.goal_equal glss.Evd.sigma g gls.Evd.sigma gls.Evd.it)
     | _ -> true
 
   let progress glss gls =
