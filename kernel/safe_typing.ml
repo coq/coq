@@ -1194,39 +1194,46 @@ let register_inline kn senv =
   let cb = {cb with const_inline_code = true} in
   let env = add_constant kn cb env in { senv with env}
 
-let check_register_ind (mind,i) r env =
-  let mb = Environ.lookup_mind mind env in
-  let check_if b s =
+let check_register_ind ind r env =
+  let (mb,ob as spec) = Inductive.lookup_mind_specif env ind in
+  let check_if b msg =
     if not b then
-      CErrors.user_err ~hdr:"check_register_ind" (Pp.str s) in
-  check_if (Int.equal (Array.length mb.mind_packets) 1) "A non mutual inductive is expected";
-  let ob = mb.mind_packets.(i) in
+      CErrors.user_err ~hdr:"check_register_ind" msg in
+  check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected");
+  let is_monomorphic = function Monomorphic _ -> true | Polymorphic _ -> false in
+  check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected");
+  check_if (not @@ Inductive.is_private spec) Pp.(str "A non-private inductive type is expected");
+  let check_nparams n =
+    check_if (Int.equal mb.mind_nparams n) Pp.(str "An inductive type with " ++ int n ++ str " parameters is expected")
+  in
   let check_nconstr n =
     check_if (Int.equal (Array.length ob.mind_consnames) n)
-      ("an inductive type with "^(string_of_int n)^" constructors is expected")
+      Pp.(str "an inductive type with " ++ int n ++ str " constructors is expected")
   in
   let check_name pos s =
     check_if (Id.equal ob.mind_consnames.(pos) (Id.of_string s))
-      ("the "^(string_of_int (pos + 1))^
-       "th constructor does not have the expected name: " ^ s) in
+      Pp.(str"the " ++ int (pos + 1) ++ str
+       "th constructor does not have the expected name: " ++ str s) in
   let check_type pos t =
     check_if (Constr.equal t ob.mind_user_lc.(pos))
-      ("the "^(string_of_int (pos + 1))^
+      Pp.(str"the " ++ int (pos + 1) ++ str
        "th constructor does not have the expected type") in
   let check_type_cte pos = check_type pos (Constr.mkRel 1) in
   match r with
   | CPrimitives.PIT_bool ->
+    check_nparams 0;
     check_nconstr 2;
     check_name 0 "true";
     check_type_cte 0;
     check_name 1 "false";
     check_type_cte 1
   | CPrimitives.PIT_carry ->
+    check_nparams 1;
     check_nconstr 2;
     let test_type pos =
       let c = ob.mind_user_lc.(pos) in
-      let s = "the "^(string_of_int (pos + 1))^
-              "th constructor does not have the expected type" in
+      let s = Pp.(str"the " ++ int (pos + 1) ++ str
+              "th constructor does not have the expected type") in
       check_if (Constr.isProd c) s;
       let (_,d,cd) = Constr.destProd c in
       check_if (Constr.is_Type d) s;
@@ -1240,11 +1247,11 @@ let check_register_ind (mind,i) r env =
     check_name 1 "C1";
     test_type 1;
   | CPrimitives.PIT_pair ->
+    check_nparams 2;
     check_nconstr 1;
     check_name 0 "pair";
     let c = ob.mind_user_lc.(0) in
-    let s =  "the "^(string_of_int 1)^
-             "th constructor does not have the expected type" in
+    let s =  Pp.str "the constructor does not have the expected type" in
     begin match Term.decompose_prod c with
       | ([_,b;_,a;_,_B;_,_A], codom) ->
         check_if (is_Type _A) s;
@@ -1255,6 +1262,7 @@ let check_register_ind (mind,i) r env =
       | _ -> check_if false s
     end
   | CPrimitives.PIT_cmp ->
+    check_nparams 0;
     check_nconstr 3;
     check_name 0 "Eq";
     check_type_cte 0;
