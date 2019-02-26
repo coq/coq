@@ -353,7 +353,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   in
   let names = ref [new_princ_name] in
   let hook =
-    fun  new_principle_type _ _  -> 
+    fun new_principle_type _ _ _ _  ->
     if Option.is_empty sorts
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
@@ -385,7 +385,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   (* Pr  1278 :
      Don't forget to close the goal if an error is raised !!!!
   *)
-  save false new_princ_name entry g_kind ~hook
+  let uctx = Evd.evar_universe_context sigma in
+  save false new_princ_name entry ~hook uctx g_kind
   with e when CErrors.noncritical e ->
     begin
       begin
@@ -539,7 +540,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	this_block_funs
 	0
 	(prove_princ_for_struct evd false 0 (Array.of_list (List.map fst funs)))
-	(fun _ _ _ -> ())
+        (fun _ _ _ _ _ -> ())
     with e when CErrors.noncritical e ->
        begin
 	 begin
@@ -614,7 +615,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 		 this_block_funs
 		 !i
 		 (prove_princ_for_struct evd false !i (Array.of_list (List.map fst funs)))
-		 (fun _ _ _ -> ())
+                 (fun _ _ _ _ _ -> ())
 	     in
 	     const
 	 with Found_type i ->

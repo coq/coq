@@ -302,7 +302,7 @@ let try_add_new_identity_coercion id ~local poly ~source ~target =
 let try_add_new_coercion_with_source ref ~local poly ~source =
   try_add_new_coercion_core ref ~local poly (Some source) None false
 
-let add_coercion_hook poly local ref =
+let add_coercion_hook poly _uctx _trans local ref =
   let local = match local with
   | Discharge
   | Local -> true
@@ -314,7 +314,7 @@ let add_coercion_hook poly local ref =
 
 let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)
 
-let add_subclass_hook poly local ref =
+let add_subclass_hook poly _uctx _trans local ref =
   let stre = match local with
   | Local -> true
   | Global -> false

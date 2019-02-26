@@ -161,10 +161,10 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         in obls, Some constr, typ
       | None -> [||], None, termtype
     in
-    let univ_hook = Obligations.mk_univ_hook hook in
+    let hook = Lemmas.mk_hook hook in
     let ctx = Evd.evar_universe_context sigma in
     ignore (Obligations.add_definition id ?term:constr
-              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~univ_hook obls)
+              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls)
   else
     Flags.silently (fun () ->
         (* spiwack: it is hard to reorder the actions to do
@@ -175,7 +175,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
         let sigma = Evd.reset_future_goals sigma in
         Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
           ~hook:(Lemmas.mk_hook
-             (fun _ -> instance_hook k pri global imps ?hook));
+             (fun _ _ _ -> instance_hook k pri global imps ?hook));
         (* spiwack: I don't know what to do with the status here. *)
         if not (Option.is_empty term) then
           let init_refine =
