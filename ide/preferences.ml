@@ -692,7 +692,7 @@ let configure ?(apply=(fun () -> ())) parent =
   let cmd_coqtop =
     string
       ~f:(fun s -> cmd_coqtop#set (if s = "AUTO" then None else Some s))
-      "       coqtop" (match cmd_coqtop#get with |None -> "AUTO" | Some x -> x) in
+      "    coqidetop" (match cmd_coqtop#get with |None -> "AUTO" | Some x -> x) in
   let cmd_coqc = pstring "       coqc" cmd_coqc in
   let cmd_make = pstring "       make" cmd_make in
   let cmd_coqmakefile = pstring "coqmakefile" cmd_coqmakefile in

@@ -119,7 +119,7 @@ let rec filter_coq_opts args =
 
 and asks_for_coqtop args =
   let pb_mes = GWindow.message_dialog
-    ~message:"Failed to load coqtop. Reset the preference to default ?"
+    ~message:"Failed to load coqidetop. Reset the preference to default ?"
     ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
   match pb_mes#run () with
     | `YES ->
@@ -130,7 +130,7 @@ and asks_for_coqtop args =
     | `DELETE_EVENT | `NO ->
       let () = pb_mes#destroy () in
       let cmd_sel = GWindow.file_selection
-	~title:"Coqtop to execute (edit your preference then)"
+        ~title:"coqidetop to execute (edit your preference then)"
 	~filename:(coqtop_path ()) ~urgency_hint:true () in
       match cmd_sel#run () with
 	| `OK ->
@@ -419,7 +419,7 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
     let title = "Warning" in
     let icon = (warn_image ())#coerce in
     let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
-    let ans = GToolbox.question_box ~title ~buttons ~icon "Coqtop died badly." in
+    let ans = GToolbox.question_box ~title ~buttons ~icon "coqidetop died badly." in
     if ans = 2 then (!save_all (); GtkMain.Main.quit ())
     else if ans = 3 then GtkMain.Main.quit ()
   | Planned -> ()
