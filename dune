@@ -8,6 +8,13 @@
  (ocaml409
   (flags :standard -strict-sequence -strict-formats -keep-locs -rectypes -w -9-27+40+60 -warn-error -5 -alert --deprecated)))
 
+; Information about flags for release mode:
+;
+; In #9665 we tried to add (c_flags -O3) to the release setup,
+; unfortunately the resulting VM seems to be slower [5% slower on
+; fourcolor, thus we keep the default C flags for now, which seem to
+; be -O2.
+
 ; The _ profile could help factoring the above, however it doesn't
 ; seem to work like we'd expect/like:
 ;
