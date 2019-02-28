@@ -1182,10 +1182,10 @@ let build_ui () =
     item "Help" ~label:"_Help";
     item "Browse Coq Manual" ~label:"Browse Coq _Manual"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#default_route#add_string (doc_url ()));
+        browse notebook#current_term.messages#default_route#add_string Coq_config.wwwrefman);
     item "Browse Coq Library" ~label:"Browse Coq _Library"
       ~callback:(fun _ ->
-        browse notebook#current_term.messages#default_route#add_string library_url#get);
+        browse notebook#current_term.messages#default_route#add_string Coq_config.wwwstdlib);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ -> on_current_term (fun sn ->
         browse_keyword sn.messages#default_route#add_string (get_current_word sn)));

@@ -366,33 +366,6 @@ let text_font =
   in
   new preference ~name:["text_font"] ~init ~repr:Repr.(string)
 
-let is_standard_doc_url url =
-  let wwwcompatprefix = "http://www.lix.polytechnique.fr/coq/" in
-  let n = String.length Coq_config.wwwcoq in
-  let n' = String.length Coq_config.wwwrefman in
-  url = Coq_config.localwwwrefman ||
-  url = Coq_config.wwwrefman ||
-  url = wwwcompatprefix ^ String.sub Coq_config.wwwrefman n (n'-n)
-
-let doc_url =
-object
-  inherit [string] preference
-    ~name:["doc_url"] ~init:Coq_config.wwwrefman ~repr:Repr.(string)
-    as super
-
-  method! set v =
-    if not (is_standard_doc_url v) &&
-      v <> use_default_doc_url &&
-      (* Extra hack to support links to last released doc version *)
-      v <> Coq_config.wwwcoq ^ "doc" &&
-      v <> Coq_config.wwwcoq ^ "doc/"
-    then super#set v
-
-end
-
-let library_url =
-  new preference ~name:["library_url"] ~init:Coq_config.wwwstdlib ~repr:Repr.(string)
-
 let show_toolbar =
   new preference ~name:["show_toolbar"] ~init:true ~repr:Repr.(bool)
 
@@ -948,32 +921,6 @@ let configure ?(apply=(fun () -> ())) parent =
                    else cmd_browse#get])
       cmd_browse#get
   in
-  let doc_url =
-    let predefined = [
-      "file://"^(List.fold_left Filename.concat (Envars.docdir ()) ["refman";"html"]);
-      Coq_config.wwwrefman;
-      use_default_doc_url
-    ] in
-    combo
-      "Manual URL"
-      ~f:doc_url#set
-      ~new_allowed: true
-      (predefined@[if List.mem doc_url#get predefined then ""
-                   else doc_url#get])
-      doc_url#get in
-  let library_url =
-    let predefined = [
-      "file://"^(List.fold_left Filename.concat (Envars.docdir ()) ["stdlib";"html"]);
-      Coq_config.wwwstdlib
-    ] in
-    combo
-      "Library URL"
-      ~f:(fun s -> library_url#set s)
-      ~new_allowed: true
-      (predefined@[if List.mem library_url#get predefined then ""
-                   else library_url#get])
-      library_url#get
-  in
   let automatic_tactics =
     strings
       ~f:automatic_tactics#set
@@ -1039,7 +986,7 @@ let configure ?(apply=(fun () -> ())) parent =
      Section("Appearance", Some `PREFERENCES, [window_width; window_height]);
      Section("Externals", None,
 	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
-	      cmd_print;cmd_editor;cmd_browse;doc_url;library_url]);
+              cmd_print;cmd_editor;cmd_browse]);
      Section("Tactics Wizard", None,
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,

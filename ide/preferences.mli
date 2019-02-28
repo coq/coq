@@ -74,8 +74,6 @@ val modifiers_valid : string preference
 val cmd_browse : string preference
 val cmd_editor : string preference
 val text_font : string preference
-val doc_url : string preference
-val library_url : string preference
 val show_toolbar : bool preference
 val contextual_menus_on_goal : bool preference
 val window_width : int preference
