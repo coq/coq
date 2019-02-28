@@ -61,9 +61,12 @@ do
     _CONTRIB_GITURL="https://github.com/$DEVELOPER_NAME/$_CONTRIB_GITSUFFIX"
     _CONTRIB_GITPUSHURL="git@github.com:$DEVELOPER_NAME/${_CONTRIB_GITSUFFIX}.git"
 
-    # This should work better: for example we should be able not to
-    # build but just to checkout.
-    make ci-$_CONTRIB_NAME || true
+    # Just setup the git repos so we can add remote/create branch
+    # -n will run the CI script but the inner make calls do nothing
+    # Developments not using make will still try to compile (eg flock with remake)
+    # May error as it will do nothing for a rule producing Makefile.coq
+    # with coq_makefile but will try to recurse with -f Makefile.coq
+    make -n ci-$_CONTRIB_NAME >/dev/null 2>&1 || true
     setup_contrib_git $_CONTRIB_DIR $_CONTRIB_GITPUSHURL
 
     echo "    ${_CONTRIB_NAME}_CI_REF=$OVERLAY_BRANCH" >> $OVERLAY_FILE
