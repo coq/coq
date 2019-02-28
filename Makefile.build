@@ -11,6 +11,9 @@
 # This makefile is normally called by the main Makefile after setting
 # some variables.
 
+# Cleanup environment (avoids filling it up)
+unexport $(COQ_EXPORTED)
+
 ###########################################################################
 # User-customizable variables
 ###########################################################################
@@ -859,6 +862,18 @@ $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT
 
 ###########################################################################
 
+
+# Useful to check that the exported variables are within the win32 limits
+
+printenv-real:
+	@env
+	@echo
+	@echo -n "Maxsize (win32 limit is 8k) : "
+	@env | wc -L
+	@echo -n "Total (win32 limit is 32k) : "
+	@env | wc -m
+
+
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
 Makefile $(wildcard Makefile.*) config/Makefile : ;
@@ -873,5 +888,5 @@ Makefile $(wildcard Makefile.*) config/Makefile : ;
 
 # For emacs:
 # Local Variables:
-# mode: makefile
+# mode: makefile-gmake
 # End:
