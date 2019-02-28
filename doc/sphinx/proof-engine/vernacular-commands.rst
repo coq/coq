@@ -1213,10 +1213,19 @@ Controlling the locality of commands
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
      category.
 
+.. _internal-registration-commands:
+
+Internal registration commands
+--------------------------------
+
+Due to their internal nature, the commands that are presented in this section
+are not for general use. They are meant to appear only in standard libraries and
+in support libraries of plug-ins.
+
 .. _exposing-constants-to-ocaml-libraries:
 
 Exposing constants to OCaml libraries
-----------------------------------------------------------------
+````````````````````````````````````````````````````````````````
 
 .. cmd:: Register @qualid__1 as @qualid__2
 
@@ -1225,5 +1234,35 @@ Exposing constants to OCaml libraries
    calling :n:`Coqlib.lib_ref "@qualid__2"`; i.e., there is no need to known
    where is the constant defined (file, module, library, etc.).
 
-   Due to its internal nature, this command is not for general use. It is meant
-   to appear only in standard libraries and in support libraries of plug-ins.
+   As a special case, when the first segment of :n:`@qualid__2` is :g:`kernel`,
+   the constant is exposed to the kernel. For instance, the `Int63` module
+   features the following declaration:
+
+   .. coqdoc::
+
+      Register bool as kernel.ind_bool.
+
+   This makes the kernel aware of what is the type of boolean values. This
+   information is used for instance to define the return type of the
+   :g:`#int63_eq` primitive.
+
+   .. seealso:: :ref:`primitive-integers`
+
+Inlining hints for the fast reduction machines
+````````````````````````````````````````````````````````````````
+
+.. cmd:: Register Inline @qualid
+
+   This command gives as a hint to the reduction machines (VM and native) that
+   the body of the constant :n:`@qualid` should be inlined in the generated code.
+
+Registering primitive operations
+````````````````````````````````
+
+.. cmd:: Primitive @ident__1 := #@ident__2.
+
+   Declares :n:`@ident__1` as the primitive operator :n:`#@ident__2`. When
+   running this command, the type of the primitive should be already known by
+   the kernel (this is achieved through this command for primitive types and
+   through the :cmd:`Register` command with the :g:`kernel` name-space for other
+   types).

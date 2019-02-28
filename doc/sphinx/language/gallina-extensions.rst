@@ -2260,3 +2260,52 @@ expression as described in :ref:`ltac`.
 This construction is useful when one wants to define complicated terms
 using highly automated tactics without resorting to writing the proof-term
 by means of the interactive proof engine.
+
+.. _primitive-integers:
+
+Primitive Integers
+--------------------------------
+
+The language of terms features 63-bit machine integers as values. The type of
+such a value is *axiomatized*; it is declared through the following sentence
+(excerpt from the :g:`Int63` module):
+
+.. coqdoc::
+
+   Primitive int := #int63_type.
+
+This type is equipped with a few operators, that must be similarly declared.
+For instance, equality of two primitive integers can be decided using the :g:`Int63.eqb` function,
+declared and specified as follows:
+
+.. coqdoc::
+
+   Primitive eqb := #int63_eq.
+   Notation "m '==' n" := (eqb m n) (at level 70, no associativity) : int63_scope.
+
+   Axiom eqb_correct : forall i j, (i == j)%int63 = true -> i = j.
+
+The complete set of such operators can be obtained looking at the :g:`Int63` module.
+
+These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
+:g:`Print Assumptions` command, as in the following example.
+
+.. coqtop:: in reset
+
+   From Coq Require Import Int63.
+   Lemma one_minus_one_is_zero : (1 - 1 = 0)%int63.
+   Proof. apply eqb_correct; vm_compute; reflexivity. Qed.
+
+.. coqtop:: all
+
+   Print Assumptions one_minus_one_is_zero.
+
+The reduction machines (:tacn:`vm_compute`, :tacn:`native_compute`) implement
+dedicated, efficient, rules to reduce the applications of these primitive
+operations.
+
+These primitives, when extracted to OCaml (see :ref:`extraction`), are mapped to
+types and functions of a :g:`Uint63` module. Said module is not produced by
+extraction. Instead, it has to be provided by the user (if they want to compile
+or execute the extracted code). For instance, an implementation of this module
+can be taken from the kernel of Coq.
