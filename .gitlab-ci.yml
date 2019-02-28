@@ -346,6 +346,16 @@ doc:refman:dune:
     paths:
       - _build/default/doc/sphinx_build/html
 
+doc:stdlib:dune:
+  <<: *dune-ci-template
+  variables:
+    <<: *dune-ci-template-vars
+    DUNE_TARGET: stdlib-html
+  artifacts:
+    <<: *dune-ci-template-artifacts
+    paths:
+      - _build/default/doc/stdlib/html
+
 doc:refman:deploy:
   stage: deploy
   environment:
@@ -357,7 +367,7 @@ doc:refman:deploy:
   dependencies:
     - doc:ml-api:odoc
     - doc:refman:dune
-    - doc:refman
+    - doc:stdlib:dune
   before_script:
     - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
     - eval $(ssh-agent -s)
@@ -375,7 +385,7 @@ doc:refman:deploy:
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/sphinx_build/html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"

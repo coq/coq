@@ -1,0 +1,36 @@
+; This is an ad-hoc rule to ease the migration, it should be handled
+; natively by Dune in the future.
+(rule
+ (targets index-list.html)
+ (deps
+   make-library-index index-list.html.template hidden-files
+   (source_tree %{project_root}/theories)
+   (source_tree %{project_root}/plugins))
+ (action
+  (chdir %{project_root}
+   ; On windows run will fail
+   (bash "doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files"))))
+
+(rule
+  (targets html)
+  (deps
+   ; This will be replaced soon by `theories/**/*.v` soon, thanks to rgrinberg
+   (source_tree %{project_root}/theories)
+   (source_tree %{project_root}/plugins)
+   (:header %{project_root}/doc/common/styles/html/coqremote/header.html)
+   (:footer %{project_root}/doc/common/styles/html/coqremote/footer.html)
+   ; For .glob files, should be gone when Coq Dune is smarter.
+   (package coq))
+ (action
+  (progn
+   (run mkdir -p html)
+   (bash "%{bin:coqdoc} -q -d html --with-header %{header} --with-footer %{footer} --multi-index --html -g -R %{project_root}/theories Coq -R %{project_root}/plugins Coq $(find %{project_root}/theories %{project_root}/plugins -name *.v)")
+   (run mv html/index.html html/genindex.html)
+   (with-stdout-to
+     _index.html
+    (progn (cat %{header}) (cat index-list.html) (cat %{footer})))
+   (run cp _index.html html/index.html))))
+
+(alias
+ (name stdlib-html)
+ (deps html))

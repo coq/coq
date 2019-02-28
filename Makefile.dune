@@ -4,7 +4,8 @@
 .PHONY: help voboot states world watch check          # Main developer targets
 .PHONY: coq coqide coqide-server                      # Package targets
 .PHONY: quickbyte quickopt                            # Partial / quick developer targets
-.PHONY: test-suite refman-html apidoc release         # Accesory targets
+.PHONY: refman-html stdlib-html apidoc                # Documentation targets
+.PHONY: test-suite release                            # Accesory targets
 .PHONY: ocheck trunk ireport clean                    # Maintenance targets
 
 # use DUNEOPT=--display=short for a more verbose build
@@ -29,6 +30,7 @@ help:
 	@echo ""
 	@echo "  - test-suite:  run Coq's test suite"
 	@echo "  - refman-html: build Coq's reference manual [HTML version]"
+	@echo "  - stdlib-html: build Coq's Stdlib documentation [HTML version]"
 	@echo "  - apidoc:      build ML API documentation"
 	@echo "  - release:     build Coq in release mode"
 	@echo ""
@@ -80,6 +82,9 @@ test-suite: voboot
 
 refman-html: voboot
 	dune build @refman-html
+
+stdlib-html: voboot
+	dune build @stdlib-html
 
 apidoc: voboot
 	dune build $(DUNEOPT) @doc
