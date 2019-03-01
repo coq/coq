@@ -1,3 +1,0 @@
-$1=="enum" {n=0; next; }
-           {printf("(* THIS FILE IS GENERATED. DON'T EDIT. *)\n\n");
-           for (i = 1; i <= NF; i++) {printf("let op%s = %d\n", $i, n++);}}

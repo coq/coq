@@ -316,11 +316,21 @@ $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN)
 	cd $(dir $(LIBCOQRUN)) && \
 	$(OCAMLFIND) ocamlmklib -oc $(COQRUN) $(notdir $(BYTERUN))
 
-kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h kernel/byterun/make_jumptbl.sh
-	kernel/byterun/make_jumptbl.sh $< $@
+kernel/genOpcodeFiles.exe: kernel/genOpcodeFiles.ml
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) -o $@ $<
 
-kernel/copcodes.ml: kernel/byterun/coq_instruct.h kernel/make_opcodes.sh kernel/make-opcodes
-	kernel/make_opcodes.sh $< $@
+kernel/byterun/coq_instruct.h: kernel/genOpcodeFiles.exe
+	$(SHOW)'WRITE $@'
+	$(HIDE)$< enum > $@
+
+kernel/byterun/coq_jumptbl.h: kernel/genOpcodeFiles.exe
+	$(SHOW)'WRITE $@'
+	$(HIDE)$< jump > $@
+
+kernel/copcodes.ml: kernel/genOpcodeFiles.exe
+	$(SHOW)'WRITE $@'
+	$(HIDE)$< copml > $@
 
 %.o: %.c
 	$(SHOW)'OCAMLC    $<'
