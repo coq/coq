@@ -400,7 +400,7 @@ let check_numgoals ?(minus = 0) nh =
   Proofview.numgoals >>= fun ng ->
   if nh <> ng then
     let errmsg =
-      str"Incorrect number of hints" ++ spc() ++
+      str"Incorrect number of tactics" ++ spc() ++
         str"(expected "++int (ng - minus)++str(String.plural ng " tactic") ++
         str", was given "++ int (nh - minus)++str")."
     in
@@ -439,6 +439,9 @@ let undertac ist varnames ((dir,mult),_ as rule) hint =
     else
       let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
       let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
+      (* Usefulness of check_numgoals: tclDISPATCH would be enough,
+         except for the error message w.r.t. the number of
+         provided/expected tactics, as the last one is implied *)
       check_numgoals ~minus:1 nh <*>
         Proofview.tclDISPATCH
           ((List.map (function None -> overtac
