@@ -457,7 +457,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-batch" ->
       Flags.quiet := true;
       { oval with batch = true }
-    |"-test-mode" -> Flags.test_mode := true; oval
+    |"-test-mode" -> Vernacentries.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-boot" ->
       warn_deprecated_boot ();
