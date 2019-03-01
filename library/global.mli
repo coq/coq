@@ -134,7 +134,7 @@ val constr_of_global_in_context : Environ.env ->
 
 val type_of_global_in_context : Environ.env -> 
   GlobRef.t -> Constr.types * Univ.AUContext.t
-  [@@ocaml.deprecated "alias of [Typeops.type_of_global]"]
+  [@@ocaml.deprecated "alias of [Typeops.type_of_global_in_context]"]
 
 (** Returns the universe context of the global reference (whatever its polymorphic status is). *)
 val universes_of_global : GlobRef.t -> Univ.AUContext.t
