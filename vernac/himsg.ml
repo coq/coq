@@ -138,7 +138,7 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     in
     let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) ()
     in
-    Ppconstr.pr_lconstr_expr ct1, Ppconstr.pr_lconstr_expr ct2
+    Ppconstr.pr_lconstr_expr env sigma ct1, Ppconstr.pr_lconstr_expr env sigma ct2
 
 let explicit_flags =
   let open Constrextern in
@@ -1091,13 +1091,14 @@ let explain_unbound_method env sigma cid { CAst.v = id } =
   str "Unbound method name " ++ Id.print (id) ++ spc () ++
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
-let pr_constr_exprs exprs =
+let pr_constr_exprs env sigma exprs =
   hv 0 (List.fold_right
-	 (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr d ++ pps)
+         (fun d pps -> ws 2 ++ Ppconstr.pr_constr_expr env sigma d ++ pps)
          exprs (mt ()))
 
 let explain_mismatched_contexts env c i j =
-  let pm, pn = with_diffs (pr_rel_context env (Evd.from_env env) j) (pr_constr_exprs i) in
+  let sigma = Evd.from_env env in
+  let pm, pn = with_diffs (pr_rel_context env sigma j) (pr_constr_exprs env sigma i) in
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
     hov 1 (str"Expected:" ++ brk (1, 1) ++ pm) ++
     fnl () ++ brk (1,1) ++

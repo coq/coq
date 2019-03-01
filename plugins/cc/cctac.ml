@@ -433,7 +433,7 @@ let cc_tactic depth additionnal_terms =
 	debug (fun () -> Pp.str "Goal solved, generating proof ...");
 	match reason with
 	  Discrimination (i,ipac,j,jpac) ->
-	    let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
+            let p=build_proof (Tacmach.New.pf_env gl) sigma uf (`Discr (i,ipac,j,jpac)) in
 	    let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
 	    discriminate_tac cstr p
 	| Incomplete ->
@@ -462,7 +462,8 @@ let cc_tactic depth additionnal_terms =
 		 Pp.str "  replacing metavariables by arbitrary terms.");
 	    Tacticals.New.tclFAIL 0 (str "Incomplete")
 	| Contradiction dis ->
-	    let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
+      let env = Proofview.Goal.env gl in
+            let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
 	    let ta=term uf dis.lhs and tb=term uf dis.rhs in
 	    match dis.rule with
 	      Goal -> proof_tac p

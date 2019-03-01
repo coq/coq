@@ -877,11 +877,9 @@ struct
     * This is the big generic function for expression parsers.
     *)
 
-  let parse_expr sigma parse_constant parse_exp ops_spec env term =
+  let parse_expr cenv sigma parse_constant parse_exp ops_spec env term =
     if debug
-    then (
-      let _, env = Pfedit.get_current_context () in
-      Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env env sigma term));
+    then Feedback.msg_debug (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env cenv sigma term);
 
 (*
     let constant_or_variable env term =
@@ -1000,8 +998,7 @@ struct
     |  _ -> raise ParseError
 
 
-  let rconstant sigma term =
-    let _, env = Pfedit.get_current_context () in
+  let rconstant env sigma term =
     if debug
     then Feedback.msg_debug (Pp.str "rconstant: " ++ Printer.pr_leconstr_env env sigma term ++ fnl ());
     let res = rconstant sigma term in
@@ -1010,7 +1007,7 @@ struct
       res
 
 
-  let parse_zexpr sigma =  parse_expr sigma
+  let parse_zexpr env sigma =  parse_expr env sigma
     (zconstant sigma)
     (fun expr x ->
       let exp = (parse_z sigma x) in
@@ -1019,7 +1016,7 @@ struct
           |   _     ->  Mc.PEpow(expr, Mc.Z.to_N exp))
     zop_spec
 
-  let parse_qexpr sigma =  parse_expr sigma
+  let parse_qexpr env sigma = parse_expr env sigma
    (qconstant sigma)
     (fun expr x ->
       let exp = parse_z sigma x in
@@ -1034,8 +1031,8 @@ struct
                         Mc.PEpow(expr,exp))
    qop_spec
 
-  let parse_rexpr sigma =  parse_expr sigma
-   (rconstant sigma)
+  let parse_rexpr env sigma = parse_expr env sigma
+   (rconstant env sigma)
    (fun expr x ->
       let exp = Mc.N.of_nat (parse_nat sigma x) in
         Mc.PEpow(expr,exp))
@@ -1048,8 +1045,8 @@ struct
     match EConstr.kind sigma cstr with
     | App(op,args) ->
        let (op,lhs,rhs) = parse_op gl (op,args) in
-       let (e1,env) = parse_expr sigma env lhs in
-       let (e2,env) = parse_expr sigma env rhs in
+       let (e1,env) = parse_expr gl.env sigma env lhs in
+       let (e2,env) = parse_expr gl.env sigma env rhs in
         ({Mc.flhs = e1; Mc.fop = op;Mc.frhs = e2},env)
     |  _ -> failwith "error : parse_arith(2)"
 

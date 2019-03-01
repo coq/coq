@@ -20,8 +20,8 @@ val pr_lname : lname -> Pp.t
 val pr_or_var : ('a -> Pp.t) -> 'a Locus.or_var -> Pp.t
 val pr_or_by_notation : ('a -> Pp.t) -> 'a Constrexpr.or_by_notation -> Pp.t
 
-val pr_raw_generic : Environ.env -> rlevel generic_argument -> Pp.t
-val pr_glb_generic : Environ.env -> glevel generic_argument -> Pp.t
+val pr_raw_generic : Environ.env -> Evd.evar_map -> rlevel generic_argument -> Pp.t
+val pr_glb_generic : Environ.env -> Evd.evar_map -> glevel generic_argument -> Pp.t
 
 (* The comments interface is imperative due to the printer not
    threading it, this could be solved using a better data

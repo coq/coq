@@ -24,8 +24,8 @@ type 'a with_level =
     printer : 'a }
 
 type printer_result =
-| PrinterBasic of (unit -> Pp.t)
-| PrinterNeedsLevel of (Notation_gram.tolerability -> Pp.t) with_level
+| PrinterBasic of (Environ.env -> Evd.evar_map -> Pp.t)
+| PrinterNeedsLevel of (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t) with_level
 
 type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
 
@@ -120,8 +120,8 @@ struct
   | ExtraArg tag ->
     let name = ArgT.repr tag in
     let printer = {
-      raw = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
-      glb = (fun _ -> PrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
+      raw = (fun _ -> PrinterBasic (fun env sigma -> str "<genarg:" ++ str name ++ str ">"));
+      glb = (fun _ -> PrinterBasic (fun env sigma -> str "<genarg:" ++ str name ++ str ">"));
       top = (fun _ -> TopPrinterBasic (fun () -> str "<genarg:" ++ str name ++ str ">"));
     } in
     Some printer

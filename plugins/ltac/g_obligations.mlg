@@ -162,9 +162,9 @@ END
 
 (* Declare a printer for the content of Program tactics *)
 let () =
-  let printer _ _ _ = function
+  let printer env sigma _ _ _ = function
   | None -> mt ()
-  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic tac
+  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic env sigma tac
   in
   Pptactic.declare_extra_vernac_genarg_pprule wit_withtac printer
 

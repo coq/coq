@@ -14,4 +14,6 @@ open Notation
 
 (** * Numeral notation *)
 
-val vernac_numeral_notation : locality_flag -> qualid -> qualid -> qualid -> Notation_term.scope_name -> numnot_option -> unit
+val vernac_numeral_notation : Environ.env -> Evd.evar_map -> locality_flag ->
+                              qualid -> qualid -> qualid ->
+                              Notation_term.scope_name -> numnot_option -> unit

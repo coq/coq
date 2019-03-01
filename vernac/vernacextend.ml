@@ -235,7 +235,7 @@ type 'a argument_rule =
 | Arg_rules of 'a Extend.production_rule list
 
 type 'a vernac_argument = {
-  arg_printer : 'a -> Pp.t;
+  arg_printer : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
   arg_parsing : 'a argument_rule;
 }
 
@@ -251,6 +251,6 @@ let vernac_argument_extend ~name arg =
     e
   in
   let pr = arg.arg_printer in
-  let pr x = Genprint.PrinterBasic (fun () -> pr x) in
+  let pr x = Genprint.PrinterBasic (fun env sigma -> pr env sigma x) in
   let () = Genprint.register_vernac_print0 wit pr in
   (wit, entry)

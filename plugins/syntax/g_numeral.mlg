@@ -37,5 +37,6 @@ END
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) numnotoption(o) ] ->
-    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
+    { let (sigma, env) = Pfedit.get_current_context () in
+      vernac_numeral_notation env sigma (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
 END

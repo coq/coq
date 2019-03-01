@@ -32,8 +32,7 @@ let q_option () = qualid_of_ref "core.option.type"
 let q_list () = qualid_of_ref "core.list.type"
 let q_byte () = qualid_of_ref "core.byte.type"
 
-let has_type f ty =
-  let (sigma, env) = Pfedit.get_current_context () in
+let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
@@ -48,7 +47,7 @@ let type_error_of g ty =
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).")
 
-let vernac_string_notation local ty f g scope =
+let vernac_string_notation env sigma local ty f g scope =
   let app x y = mkAppC (x,[y]) in
   let cref q = mkRefC q in
   let cbyte = cref (q_byte ()) in
@@ -66,18 +65,18 @@ let vernac_string_notation local ty f g scope =
   let constructors = get_constructors tyc in
   (* Check the type of f *)
   let to_kind =
-    if has_type f (arrow clist_byte cty) then ListByte, Direct
-    else if has_type f (arrow clist_byte (opt cty)) then ListByte, Option
-    else if has_type f (arrow cbyte cty) then Byte, Direct
-    else if has_type f (arrow cbyte (opt cty)) then Byte, Option
+    if has_type env sigma f (arrow clist_byte cty) then ListByte, Direct
+    else if has_type env sigma f (arrow clist_byte (opt cty)) then ListByte, Option
+    else if has_type env sigma f (arrow cbyte cty) then Byte, Direct
+    else if has_type env sigma f (arrow cbyte (opt cty)) then Byte, Option
     else type_error_to f ty
   in
   (* Check the type of g *)
   let of_kind =
-    if has_type g (arrow cty clist_byte) then ListByte, Direct
-    else if has_type g (arrow cty (opt clist_byte)) then ListByte, Option
-    else if has_type g (arrow cty cbyte) then Byte, Direct
-    else if has_type g (arrow cty (opt cbyte)) then Byte, Option
+    if has_type env sigma g (arrow cty clist_byte) then ListByte, Direct
+    else if has_type env sigma g (arrow cty (opt clist_byte)) then ListByte, Option
+    else if has_type env sigma g (arrow cty cbyte) then Byte, Direct
+    else if has_type env sigma g (arrow cty (opt cbyte)) then Byte, Option
     else type_error_of g ty
   in
   let o = { to_kind = to_kind;

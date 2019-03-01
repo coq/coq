@@ -45,10 +45,6 @@ let observe_tac s tac g = observe_tac_stream (str s) tac g
   *)
 
 
-let pr_leconstr_fp =
-  let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_leconstr_env env sigma
-
 let debug_queue = Stack.create ()
 
 let rec print_debug_queue e = 
@@ -164,7 +160,7 @@ let rec incompatible_constructor_terms sigma t1 t2 =
 	List.exists2 (incompatible_constructor_terms sigma) arg1 arg2
     )
 
-let is_incompatible_eq sigma t =
+let is_incompatible_eq env sigma t =
   let res =
     try
       match EConstr.kind sigma t with
@@ -176,7 +172,7 @@ let is_incompatible_eq sigma t =
 	| _ -> false
     with e when CErrors.noncritical e -> false
   in
-  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_fp t);
+  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_env env sigma t);
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
@@ -480,7 +476,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 (* 		    ); *)
 	    raise TOREMOVE;  (* False -> .. useless *)
 	  end
-	else if is_incompatible_eq sigma t_x then raise TOREMOVE (* t_x := C1 ... =  C2 ... *)
+        else if is_incompatible_eq env sigma t_x then raise TOREMOVE (* t_x := C1 ... =  C2 ... *)
 	else if eq_constr sigma t_x coq_True  (* Trivial => we remove this precons *)
 	then
 (* 	    observe (str "In "++Ppconstr.pr_id hyp_id++  *)
@@ -726,7 +722,7 @@ let build_proof
 					  (treat_new_case
 					     ptes_infos
                                              nb_instantiate_partial
-					     (build_proof do_finalize)
+                                             (build_proof env sigma do_finalize)
 					     t
 					     dyn_infos)
 					  g'
@@ -737,7 +733,7 @@ let build_proof
 		    ]
 		    g
 	      in
-	      build_proof do_finalize_t {dyn_infos with info = t} g
+              build_proof env sigma do_finalize_t {dyn_infos with info = t} g
           | Lambda(n,t,b) ->
 	      begin
 		match EConstr.kind sigma (pf_concl g) with
@@ -753,7 +749,7 @@ let build_proof
 			   in
 			   let new_infos = {dyn_infos with info = new_term} in
 			   let do_prove new_hyps =
-			     build_proof do_finalize
+                             build_proof env sigma do_finalize
 			       {new_infos with
 			       	  rec_hyps = new_hyps;
 				  nb_rec_hyps  = List.length new_hyps
@@ -766,7 +762,7 @@ let build_proof
 		      do_finalize dyn_infos g
 	      end
 	  | Cast(t,_,_) ->
-	      build_proof do_finalize {dyn_infos with info = t} g
+              build_proof env sigma do_finalize {dyn_infos with info = t} g
           | Const _ | Var _ | Meta _ | Evar _ | Sort _ | Construct _ | Ind _ | Int _ ->
 	      do_finalize dyn_infos g
 	  | App(_,_) ->
@@ -782,7 +778,7 @@ let build_proof
 			    info = (f,args)
 			}
 		      in
-		      build_proof_args do_finalize new_infos  g
+                      build_proof_args env sigma do_finalize new_infos  g
 		  | Const (c,_) when not (List.mem_f Constant.equal c fnames) ->
 		      let new_infos =
 			{ dyn_infos with
@@ -790,13 +786,13 @@ let build_proof
 			}
 		      in
 (* 		      Pp.msgnl (str "proving in " ++ pr_lconstr_env (pf_env g) dyn_infos.info); *)
-		      build_proof_args do_finalize new_infos g
+                      build_proof_args env sigma do_finalize new_infos g
 		  | Const _ ->
 		      do_finalize dyn_infos  g
 		  | Lambda _ ->
 		      let new_term =
                         Reductionops.nf_beta env sigma dyn_infos.info in
-		      build_proof do_finalize {dyn_infos with info = new_term}
+                      build_proof env sigma do_finalize {dyn_infos with info = new_term}
 			g
 		  | LetIn _ ->
 		      let new_infos =
@@ -809,11 +805,11 @@ let build_proof
 			     h_reduce_with_zeta (Locusops.onHyp hyp_id))
 			   dyn_infos.rec_hyps;
 			 h_reduce_with_zeta Locusops.onConcl;
-			 build_proof do_finalize new_infos
+                         build_proof env sigma do_finalize new_infos
 			]
 			g
 		  | Cast(b,_,_) ->
-		      build_proof do_finalize {dyn_infos with info = b } g
+                      build_proof env sigma do_finalize {dyn_infos with info = b } g
 		  | Case _ | Fix _ | CoFix _ ->
 		      let new_finalize dyn_infos =
 			let new_infos =
@@ -821,9 +817,9 @@ let build_proof
 			      info = dyn_infos.info,args
 			  }
 			in
-			build_proof_args do_finalize new_infos
+                        build_proof_args env sigma do_finalize new_infos
 		      in
-		      build_proof new_finalize {dyn_infos  with info = f } g
+                      build_proof env sigma new_finalize {dyn_infos  with info = f } g
 	      end
 	  | Fix _ | CoFix _ ->
 	      user_err Pp.(str ( "Anonymous local (co)fixpoints are not handled yet"))
@@ -843,13 +839,13 @@ let build_proof
 		   (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id))
 		   dyn_infos.rec_hyps;
 		 h_reduce_with_zeta Locusops.onConcl;
-		 build_proof do_finalize new_infos
+                 build_proof env sigma do_finalize new_infos
 		] g
 	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
-  and build_proof do_finalize dyn_infos g =
+  and build_proof env sigma do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac_stream (str "build_proof with " ++ pr_leconstr_fp dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
-  and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
+    observe_tac_stream (str "build_proof with " ++ pr_leconstr_env env sigma dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
+  and build_proof_args env sigma do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
       let tac : tactic =
@@ -865,12 +861,12 @@ let build_proof
 	      let do_finalize dyn_infos =
 		let new_arg = dyn_infos.info in
 		(* 		tclTRYD *)
-		(build_proof_args
+                (build_proof_args env sigma
 		   do_finalize
 		   {dyn_infos with info = (mkApp(f_args',[|new_arg|])), args}
 		)
 	      in
-	      build_proof do_finalize
+              build_proof env sigma do_finalize
 		{dyn_infos with info = arg }
 		g
       in
@@ -882,7 +878,10 @@ let build_proof
 		      finish_proof dyn_infos)
   in
     (* observe_tac "build_proof" *)
-  (build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos)
+  fun g ->
+    let env = pf_env g in
+    let sigma = project g in
+    build_proof env sigma (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos g
 
 
 

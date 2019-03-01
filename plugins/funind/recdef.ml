@@ -58,10 +58,6 @@ let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global
 let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
 let arith_Lt  = ["Coq"; "Arith";"Lt"]
 
-let pr_leconstr_rd =
-  let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_leconstr_env env sigma
-
 let coq_init_constant s =
   EConstr.of_constr (
     UnivGen.constr_of_monomorphic_global @@
@@ -303,7 +299,7 @@ let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
 (* [check_not_nested forbidden e] checks that [e] does not contains any variable 
    of [forbidden]
 *)
-let check_not_nested sigma forbidden e =
+let check_not_nested env sigma forbidden e =
   let rec check_not_nested e =  
     match EConstr.kind sigma e with 
       | Rel _ -> ()
@@ -330,7 +326,6 @@ let check_not_nested sigma forbidden e =
   try 
     check_not_nested e 
   with UserError(_,p) -> 
-    let _, env = Pfedit.get_current_context () in
     user_err ~hdr:"_" (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p)
 
 (* ['a info] contains the local information for traveling *)
@@ -446,7 +441,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
     | Prod _ -> 
       begin
 	try
-	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
+          check_not_nested (pf_env g) sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
           user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
@@ -454,7 +449,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
     | Lambda(n,t,b) ->
       begin
 	try
-	  check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
+          check_not_nested (pf_env g) sigma (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info g
 	with e when CErrors.noncritical e ->
           user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env (pf_env g) sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
@@ -507,10 +502,11 @@ and travel_args jinfo is_final continuation_tac infos =
       in
       travel jinfo new_continuation_tac 
 	{infos with info=arg;is_final=false} 
-and travel jinfo continuation_tac expr_info = 
-  observe_tac 
-    (str jinfo.message ++ pr_leconstr_rd expr_info.info)
-    (travel_aux jinfo continuation_tac expr_info)
+and travel jinfo continuation_tac expr_info =
+  fun g ->
+  observe_tac
+    (str jinfo.message ++ Printer.pr_leconstr_env (pf_env g) (project g) expr_info.info)
+    (travel_aux jinfo continuation_tac expr_info) g
 
 (* Termination proof *) 
 
@@ -652,7 +648,7 @@ let terminate_letin (na,b,t,e) expr_info continuation_tac info g =
   let new_forbidden = 
     let forbid = 
       try 
-	check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) b;
+        check_not_nested (pf_env g) sigma (expr_info.f_id::expr_info.forbidden_ids) b;
 	true
       with e when CErrors.noncritical e -> false
     in
@@ -711,7 +707,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let sigma = project g in
   let f_is_present =
     try
-      check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids) a;
+      check_not_nested (pf_env g) sigma (expr_info.f_id::expr_info.forbidden_ids) a;
       false
     with e when CErrors.noncritical e ->
       true
@@ -740,7 +736,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     
 let terminate_app_rec (f,args) expr_info continuation_tac _ g =
   let sigma = project g in
-  List.iter (check_not_nested sigma (expr_info.f_id::expr_info.forbidden_ids))
+  List.iter (check_not_nested (pf_env g) sigma (expr_info.f_id::expr_info.forbidden_ids))
     args;
   begin
     try 
@@ -987,13 +983,19 @@ let rec intros_values_eq expr_info acc =
     ))
 
 let equation_others _ expr_info continuation_tac infos = 
+  fun g ->
+  let env = pf_env g in
+  let sigma = project g in
   if expr_info.is_final && expr_info.is_main_branch 
-  then 
-    observe_tac (str "equation_others (cont_tac +intros) " ++ pr_leconstr_rd expr_info.info)
+  then
+    observe_tac (str "equation_others (cont_tac +intros) " ++ Printer.pr_leconstr_env env sigma expr_info.info)
 		(tclTHEN 
       (continuation_tac infos) 
-      (observe_tac (str "intros_values_eq equation_others "  ++ pr_leconstr_rd expr_info.info) (intros_values_eq expr_info [])))
-  else observe_tac (str "equation_others (cont_tac) " ++ pr_leconstr_rd expr_info.info) (continuation_tac infos)
+      (fun g ->
+       let env = pf_env g in
+       let sigma = project g in
+       observe_tac (str "intros_values_eq equation_others "  ++ Printer.pr_leconstr_env env sigma expr_info.info) (intros_values_eq expr_info []) g)) g
+  else observe_tac (str "equation_others (cont_tac) " ++ Printer.pr_leconstr_env env sigma expr_info.info) (continuation_tac infos) g
 
 let equation_app f_and_args expr_info continuation_tac infos = 
     if expr_info.is_final && expr_info.is_main_branch 
@@ -1417,7 +1419,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
-    let evd, env = Pfedit.get_current_context () in
+    let evd, env = Pfedit.get_current_context () in (* XXX *)
     Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook;
@@ -1469,7 +1471,7 @@ let (com_eqn : int -> Id.t ->
 	| ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
-    let evd, env = Pfedit.get_current_context () in
+    let evd, env = Pfedit.get_current_context () in (* XXX *)
     let evd = Evd.from_ctx (Evd.evar_universe_context evd) in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in

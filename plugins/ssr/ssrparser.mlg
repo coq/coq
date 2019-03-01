@@ -74,11 +74,11 @@ let frozen_lexer = CLexer.get_keyword_state () ;;
 
 let tacltop = (5,Notation_gram.E)
 
-let pr_ssrtacarg _ _ prt = prt tacltop
+let pr_ssrtacarg env sigma _ _ prt = prt env sigma tacltop
 
 }
 
-ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY { pr_ssrtacarg }
+ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
 | [ "YouShouldNotTypeThis" ] -> { CErrors.anomaly (Pp.str "Grammar placeholder match") }
 END
 GRAMMAR EXTEND Gram
@@ -89,12 +89,12 @@ END
 {
 
 (* Lexically closed tactic for tacticals. *)
-let pr_ssrtclarg _ _ prt tac = prt tacltop tac
+let pr_ssrtclarg env sigma _ _ prt tac = prt env sigma tacltop tac
 
 }
 
 ARGUMENT EXTEND ssrtclarg TYPED AS ssrtacarg
-    PRINTED BY { pr_ssrtclarg }
+    PRINTED BY { pr_ssrtclarg env sigma }
 | [ ssrtacarg(tac) ] -> { tac }
 END
 
@@ -109,7 +109,7 @@ let add_genarg tag pr =
   let glob ist x = (ist, x) in
   let subst _ x = x in
   let interp ist x = Ftactic.return (Geninterp.Val.Dyn (tag, x)) in
-  let gen_pr _ _ _ = pr in
+  let gen_pr env sigma _ _ _ = pr env sigma in
   let () = Genintern.register_intern0 wit glob in
   let () = Genintern.register_subst0 wit subst in
   let () = Geninterp.register_interp0 wit interp in
@@ -146,7 +146,7 @@ let pr_list = prlist_with_sep
 
 let pr_ssrhyp _ _ _ = pr_hyp
 
-let wit_ssrhyprep = add_genarg "ssrhyprep" pr_hyp
+let wit_ssrhyprep = add_genarg "ssrhyprep" (fun env sigma -> pr_hyp)
 
 let intern_hyp ist (SsrHyp (loc, id) as hyp) =
   let _ = Tacintern.intern_genarg ist (in_gen (rawwit wit_var) CAst.(make ?loc id)) in
@@ -168,7 +168,7 @@ END
 let pr_hoi = hoik pr_hyp
 let pr_ssrhoi _ _ _ = pr_hoi
 
-let wit_ssrhoirep = add_genarg "ssrhoirep" pr_hoi
+let wit_ssrhoirep = add_genarg "ssrhoirep" (fun env sigma -> pr_hoi)
 
 let intern_ssrhoi ist = function
   | Hyp h -> Hyp (intern_hyp ist h)
@@ -212,13 +212,13 @@ END
 
 let pr_rwdir = function L2R -> mt() | R2L -> str "-"
 
-let wit_ssrdir = add_genarg "ssrdir" pr_dir
+let wit_ssrdir = add_genarg "ssrdir" (fun env sigma -> pr_dir)
 
 (** Simpl switch *)
 
 let pr_ssrsimpl _ _ _ = pr_simpl
 
-let wit_ssrsimplrep = add_genarg "ssrsimplrep" pr_simpl
+let wit_ssrsimplrep = add_genarg "ssrsimplrep" (fun env sigma -> pr_simpl)
 
 let test_ssrslashnum b1 b2 strm =
   match Util.stream_nth 0 strm with
@@ -413,7 +413,7 @@ END
 
 let pr_mmod = function May -> str "?" | Must -> str "!" | Once -> mt ()
 
-let wit_ssrmmod = add_genarg "ssrmmod" pr_mmod
+let wit_ssrmmod = add_genarg "ssrmmod" (fun env sigma -> pr_mmod)
 let ssrmmod = Pcoq.create_generic_entry Pcoq.utactic "ssrmmod" (Genarg.rawwit wit_ssrmmod);;
 
 }
@@ -643,7 +643,7 @@ and map_block map_id = function
   | SuffixNum _ as x -> x
 
 type ssripatrep = ssripat
-let wit_ssripatrep = add_genarg "ssripatrep" pr_ipat
+let wit_ssripatrep = add_genarg "ssripatrep" (fun env sigma -> pr_ipat)
 
 let pr_ssripat _ _ _ = pr_ipat
 let pr_ssripats _ _ _ = pr_ipats
@@ -950,13 +950,13 @@ END
 
 {
 
-let pr_ssrintrosarg _ _ prt (tac, ipats) =
-  prt tacltop tac ++ pr_intros spc ipats
+let pr_ssrintrosarg env sigma _ _ prt (tac, ipats) =
+  prt env sigma tacltop tac ++ pr_intros spc ipats
 
 }
 
 ARGUMENT EXTEND ssrintrosarg TYPED AS (tactic * ssrintros)
-   PRINTED BY { pr_ssrintrosarg }
+   PRINTED BY { pr_ssrintrosarg env sigma }
 | [ "YouShouldNotTypeThis" ssrtacarg(arg) ssrintros_ne(ipats) ] -> { arg, ipats }
 END
 
@@ -1007,22 +1007,22 @@ GRAMMAR EXTEND Gram
 
 {
 
-let pr_ortacs prt = 
+let pr_ortacs env sigma prt =
   let rec pr_rec = function
   | [None]           -> spc() ++ str "|" ++ spc()
   | None :: tacs     -> spc() ++ str "|" ++ pr_rec tacs
-  | Some tac :: tacs -> spc() ++ str "| " ++ prt tacltop tac ++  pr_rec tacs
+  | Some tac :: tacs -> spc() ++ str "| " ++ prt env sigma tacltop tac ++  pr_rec tacs
   | []                -> mt() in
   function
   | [None]           -> spc()
   | None :: tacs     -> pr_rec tacs
-  | Some tac :: tacs -> prt tacltop tac ++ pr_rec tacs
+  | Some tac :: tacs -> prt env sigma tacltop tac ++ pr_rec tacs
   | []                -> mt()
-let pr_ssrortacs _ _ = pr_ortacs
+let pr_ssrortacs env sigma _ _ = pr_ortacs env sigma
 
 }
 
-ARGUMENT EXTEND ssrortacs TYPED AS tactic option list PRINTED BY { pr_ssrortacs }
+ARGUMENT EXTEND ssrortacs TYPED AS tactic option list PRINTED BY { pr_ssrortacs env sigma }
 | [ ssrtacarg(tac) "|" ssrortacs(tacs) ] -> { Some tac :: tacs }
 | [ ssrtacarg(tac) "|" ] -> { [Some tac; None] }
 | [ ssrtacarg(tac) ] -> { [Some tac] }
@@ -1032,34 +1032,34 @@ END
 
 {
 
-let pr_hintarg prt = function
-  | true, tacs -> hv 0 (str "[ " ++ pr_ortacs prt tacs ++ str " ]")
-  | false, [Some tac] -> prt tacltop tac
+let pr_hintarg env sigma prt = function
+  | true, tacs -> hv 0 (str "[ " ++ pr_ortacs env sigma prt tacs ++ str " ]")
+  | false, [Some tac] -> prt env sigma tacltop tac
   | _, _ -> mt()
 
-let pr_ssrhintarg _ _ = pr_hintarg
+let pr_ssrhintarg env sigma _ _ = pr_hintarg env sigma
 
 }
 
-ARGUMENT EXTEND ssrhintarg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintarg }
+ARGUMENT EXTEND ssrhintarg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintarg env sigma }
 | [ "[" "]" ] -> { nullhint }
 | [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
 | [ ssrtacarg(arg) ] -> { mk_hint arg }
 END
 
-ARGUMENT EXTEND ssrortacarg TYPED AS ssrhintarg PRINTED BY { pr_ssrhintarg }
+ARGUMENT EXTEND ssrortacarg TYPED AS ssrhintarg PRINTED BY { pr_ssrhintarg env sigma }
 | [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
 END
 
 {
 
-let pr_hint prt arg =
-  if arg = nohint then mt() else str "by " ++ pr_hintarg prt arg
-let pr_ssrhint _ _ = pr_hint
+let pr_hint env sigma prt arg =
+  if arg = nohint then mt() else str "by " ++ pr_hintarg env sigma prt arg
+let pr_ssrhint env sigma _ _ = pr_hint env sigma
 
 }
 
-ARGUMENT EXTEND ssrhint TYPED AS ssrhintarg PRINTED BY { pr_ssrhint }
+ARGUMENT EXTEND ssrhint TYPED AS ssrhintarg PRINTED BY { pr_ssrhint env sigma }
 | [ ]                       -> { nohint }
 END
 (** The "in" pseudo-tactical *)
@@ -1117,7 +1117,7 @@ let pr_clseq = function
   | InHypsSeq       -> str " |-"
   | InAllHyps       -> str "* |-"
 
-let wit_ssrclseq = add_genarg "ssrclseq" pr_clseq
+let wit_ssrclseq = add_genarg "ssrclseq" (fun env sigma -> pr_clseq)
 let pr_clausehyps = pr_list pr_spc pr_wgen
 let pr_ssrclausehyps _ _ _ = pr_clausehyps
 
@@ -1220,7 +1220,7 @@ let pr_fwdkind = function
   | FwdHint (s,_) -> str (s ^ " ") | _ -> str " :=" ++ spc ()
 let pr_fwdfmt (fk, _ : ssrfwdfmt) = pr_fwdkind fk
 
-let wit_ssrfwdfmt = add_genarg "ssrfwdfmt" pr_fwdfmt
+let wit_ssrfwdfmt = add_genarg "ssrfwdfmt" (fun env sigma -> pr_fwdfmt)
 
 (* type ssrfwd = ssrfwdfmt * ssrterm *)
 
@@ -1283,11 +1283,11 @@ END
 
 {
 
-let pr_ssrbvar prc _ _ v = prc v
+let pr_ssrbvar env sigma prc _ _ v = prc env sigma v
 
 }
 
-ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY { pr_ssrbvar }
+ARGUMENT EXTEND ssrbvar TYPED AS constr PRINTED BY { pr_ssrbvar env sigma }
 | [ ident(id) ] -> { mkCVar ~loc id }
 | [ "_" ] -> { mkCHole (Some loc) }
 END
@@ -1299,11 +1299,11 @@ let bvar_lname = let open CAst in function
     CAst.make ?loc:qid.CAst.loc @@ Name (qualid_basename qid)
   | { loc = loc } -> CAst.make ?loc Anonymous
 
-let pr_ssrbinder prc _ _ (_, c) = prc c
+let pr_ssrbinder env sigma prc _ _ (_, c) = prc env sigma c
 
 }
 
-ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinder }
+ARGUMENT EXTEND ssrbinder TYPED AS (ssrfwdfmt * constr) PRINTED BY { pr_ssrbinder env sigma }
  | [ ssrbvar(bv) ] ->
    { let { CAst.loc=xloc } as x = bvar_lname bv in
      (FwdPose, [BFvar]),
@@ -1474,11 +1474,11 @@ END
 
 {
 
-let pr_ssrhavefwd _ _ prt (fwd, hint) = pr_fwd fwd ++ pr_hint prt hint
+let pr_ssrhavefwd env sigma _ _ prt (fwd, hint) = pr_fwd fwd ++ pr_hint env sigma prt hint
 
 }
 
-ARGUMENT EXTEND ssrhavefwd TYPED AS (ssrfwd * ssrhint) PRINTED BY { pr_ssrhavefwd }
+ARGUMENT EXTEND ssrhavefwd TYPED AS (ssrfwd * ssrhint) PRINTED BY { pr_ssrhavefwd env sigma }
 | [ ":" ast_closure_lterm(t) ssrhint(hint) ] -> { mkFwdHint ":" t, hint }
 | [ ":" ast_closure_lterm(t) ":=" ast_closure_lterm(c) ] -> { mkFwdCast FwdHave ~loc t ~c, nohint }
 | [ ":" ast_closure_lterm(t) ":=" ] -> { mkFwdHintNoTC ":" t, nohint }
@@ -1503,14 +1503,14 @@ let binder_to_intro_id = CAst.(List.map (function
   | (FwdPose, [BFdef]), { v = CLetIn ({v=Anonymous},_,_,_) } -> [IPatAnon (One None)]
   | _ -> anomaly "ssrbinder is not a binder"))
 
-let pr_ssrhavefwdwbinders _ _ prt (tr,((hpats, (fwd, hint)))) =
-  pr_hpats hpats ++ pr_fwd fwd ++ pr_hint prt hint
+let pr_ssrhavefwdwbinders env sigma _ _ prt (tr,((hpats, (fwd, hint)))) =
+  pr_hpats hpats ++ pr_fwd fwd ++ pr_hint env sigma prt hint
 
 }
 
 ARGUMENT EXTEND ssrhavefwdwbinders
   TYPED AS (bool * (ssrhpats * (ssrfwd * ssrhint)))
-  PRINTED BY { pr_ssrhavefwdwbinders }
+  PRINTED BY { pr_ssrhavefwdwbinders env sigma }
 | [ ssrhpats_wtransp(trpats) ssrbinder_list(bs) ssrhavefwd(fwd) ] ->
   { let tr, pats = trpats in
     let ((clr, pats), binders), simpl = pats in
@@ -1522,14 +1522,14 @@ END
 
 {
 
-let pr_ssrdoarg prc _ prt (((n, m), tac), clauses) =
-  pr_index n ++ pr_mmod m ++ pr_hintarg prt tac ++ pr_clauses clauses
+let pr_ssrdoarg env sigma prc _ prt (((n, m), tac), clauses) =
+  pr_index n ++ pr_mmod m ++ pr_hintarg env sigma prt tac ++ pr_clauses clauses
 
 }
 
 ARGUMENT EXTEND ssrdoarg
   TYPED AS (((ssrindex * ssrmmod) * ssrhintarg) * ssrclauses)
-  PRINTED BY { pr_ssrdoarg }
+  PRINTED BY { pr_ssrdoarg env sigma }
 | [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
@@ -1537,22 +1537,22 @@ END
 
 (* type ssrseqarg = ssrindex * (ssrtacarg * ssrtac option) *)
 
-let pr_seqtacarg prt = function
+let pr_seqtacarg env sigma prt = function
   | (is_first, []), _ -> str (if is_first then "first" else "last")
   | tac, Some dtac ->
-    hv 0 (pr_hintarg prt tac ++ spc() ++ str "|| " ++ prt tacltop dtac)
-  | tac, _ -> pr_hintarg prt tac
+    hv 0 (pr_hintarg env sigma prt tac ++ spc() ++ str "|| " ++ prt env sigma tacltop dtac)
+  | tac, _ -> pr_hintarg env sigma prt tac
 
-let pr_ssrseqarg _ _ prt = function
-  | ArgArg 0, tac -> pr_seqtacarg prt tac
-  | i, tac -> pr_index i ++ str " " ++ pr_seqtacarg prt tac
+let pr_ssrseqarg env sigma _ _ prt = function
+  | ArgArg 0, tac -> pr_seqtacarg env sigma prt tac
+  | i, tac -> pr_index i ++ str " " ++ pr_seqtacarg env sigma prt tac
 
 }
 
 (* We must parse the index separately to resolve the conflict with *)
 (* an unindexed tactic.                                            *)
 ARGUMENT EXTEND ssrseqarg TYPED AS (ssrindex * (ssrhintarg * tactic option))
-                          PRINTED BY { pr_ssrseqarg }
+                          PRINTED BY { pr_ssrseqarg env sigma }
 | [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
@@ -2278,7 +2278,7 @@ let pr_rwkind = function
   | RWdef -> str "/"
   | RWeq -> mt ()
 
-let wit_ssrrwkind = add_genarg "ssrrwkind" pr_rwkind
+let wit_ssrrwkind = add_genarg "ssrrwkind" (fun env sigma -> pr_rwkind)
 
 let pr_rule = function
   | RWred s, _ -> pr_simpl s
@@ -2520,13 +2520,13 @@ END
 
 {
 
-let pr_ssrsufffwdwbinders _ _ prt (hpats, (fwd, hint)) =
-  pr_hpats hpats ++ pr_fwd fwd ++ pr_hint prt hint
+let pr_ssrsufffwdwbinders env sigma _ _ prt (hpats, (fwd, hint)) =
+  pr_hpats hpats ++ pr_fwd fwd ++ pr_hint env sigma prt hint
 
 }
 
 ARGUMENT EXTEND ssrsufffwd
-  TYPED AS (ssrhpats * (ssrfwd * ssrhint)) PRINTED BY { pr_ssrsufffwdwbinders }
+  TYPED AS (ssrhpats * (ssrfwd * ssrhint)) PRINTED BY { pr_ssrsufffwdwbinders env sigma }
 | [ ssrhpats(pats) ssrbinder_list(bs)  ":" ast_closure_lterm(t) ssrhint(hint) ] ->
   { let ((clr, pats), binders), simpl = pats in
     let allbs = intro_id_to_binder binders @ bs in

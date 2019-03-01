@@ -169,7 +169,7 @@ val find_instances : state -> (quant_eq * int array) list
 
 val execute : bool -> state -> explanation option
 
-val pr_idx_term : forest -> int -> Pp.t
+val pr_idx_term : Environ.env -> Evd.evar_map -> forest -> int -> Pp.t
 
 val empty_forest: unit -> forest
 

@@ -145,31 +145,30 @@ END
 
 let pr_occurrences = pr_occurrences () () ()
 
-let pr_gen prc _prlc _prtac c = prc c
+let pr_gen env sigma prc _prlc _prtac x = prc env sigma x
 
-let pr_globc _prc _prlc _prtac (_,glob) =
-  let _, env = Pfedit.get_current_context () in
+let pr_globc env sigma _prc _prlc _prtac (_,glob) =
   Printer.pr_glob_constr_env env glob
 
 let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 
 let glob_glob = Tacintern.intern_constr
 
-let pr_lconstr _ prc _ c = prc c
+let pr_lconstr env sigma _ prc _ c = prc env sigma c
 
 let subst_glob = Tacsubst.subst_glob_constr_and_expr
 
 }
 
 ARGUMENT EXTEND glob
-    PRINTED BY { pr_globc }
+    PRINTED BY { pr_globc env sigma }
 
      INTERPRETED BY { interp_glob }
      GLOBALIZED BY { glob_glob }
      SUBSTITUTED BY { subst_glob }
 
-     RAW_PRINTED BY { pr_gen }
-     GLOB_PRINTED BY { pr_gen }
+     RAW_PRINTED BY { pr_gen env sigma }
+     GLOB_PRINTED BY { pr_gen env sigma }
 | [ constr(c) ] -> { c }
 END
 
@@ -181,20 +180,20 @@ let l_constr = Pcoq.Constr.lconstr
 
 ARGUMENT EXTEND lconstr
     TYPED AS constr
-    PRINTED BY { pr_lconstr }
+    PRINTED BY { pr_lconstr env sigma }
 | [ l_constr(c) ] -> { c }
 END
 
 ARGUMENT EXTEND lglob
   TYPED AS glob
-    PRINTED BY { pr_globc }
+    PRINTED BY { pr_globc env sigma }
 
      INTERPRETED BY { interp_glob }
      GLOBALIZED BY { glob_glob }
      SUBSTITUTED BY { subst_glob }
 
-     RAW_PRINTED BY { pr_gen }
-     GLOB_PRINTED BY { pr_gen }
+     RAW_PRINTED BY { pr_gen env sigma }
+     GLOB_PRINTED BY { pr_gen env sigma }
 | [ lconstr(c) ] -> { c }
 END
 
@@ -207,7 +206,7 @@ let interp_casted_constr ist gl c =
 
 ARGUMENT EXTEND casted_constr
   TYPED AS constr
-  PRINTED BY { pr_gen }
+  PRINTED BY { pr_gen env sigma }
   INTERPRETED BY { interp_casted_constr }
 | [ constr(c) ] -> { c }
 END
@@ -296,23 +295,23 @@ END
 
 {
 
-let pr_by_arg_tac _prc _prlc prtac opt_c =
+let pr_by_arg_tac env sigma _prc _prlc prtac opt_c =
   match opt_c with
     | None -> mt ()
-    | Some t -> hov 2 (str "by" ++ spc () ++ prtac (3,Notation_gram.E) t)
+    | Some t -> hov 2 (str "by" ++ spc () ++ prtac env sigma (3,Notation_gram.E) t)
 
 }
 
 ARGUMENT EXTEND by_arg_tac
   TYPED AS tactic option
-  PRINTED BY { pr_by_arg_tac }
+  PRINTED BY { pr_by_arg_tac env sigma }
 | [ "by" tactic3(c) ] -> { Some c }
 | [ ] -> { None }
 END
 
 {
 
-let pr_by_arg_tac prtac opt_c = pr_by_arg_tac () () prtac opt_c
+let pr_by_arg_tac env sigma prtac opt_c = pr_by_arg_tac env sigma () () prtac opt_c
 
 let pr_in_clause _ _ _ cl = Pptactic.pr_in_clause Pputils.pr_lident cl
 let pr_in_top_clause _ _ _ cl = Pptactic.pr_in_clause Id.print cl

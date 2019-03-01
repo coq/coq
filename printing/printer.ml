@@ -78,9 +78,9 @@ let () =
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
 let pr_econstr_n_core goal_concl_style env sigma n t =
-  pr_constr_expr_n n (extern_constr goal_concl_style env sigma t)
+  pr_constr_expr_n env sigma n (extern_constr goal_concl_style env sigma t)
 let pr_econstr_core goal_concl_style env sigma t =
-  pr_constr_expr (extern_constr goal_concl_style env sigma t)
+  pr_constr_expr env sigma (extern_constr goal_concl_style env sigma t)
 let pr_leconstr_core = Proof_diffs.pr_leconstr_core
 
 let pr_constr_n_env env sigma n c = pr_econstr_n_core false env sigma n (EConstr.of_constr c)
@@ -108,7 +108,7 @@ let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
 let pr_etype_core goal_concl_style env sigma t =
-  pr_constr_expr (extern_type goal_concl_style env sigma t)
+  pr_constr_expr env sigma (extern_type goal_concl_style env sigma t)
 let pr_letype_core = Proof_diffs.pr_letype_core
 
 let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr c)
@@ -122,19 +122,19 @@ let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
 
 let pr_lglob_constr_env env c =
-  pr_lconstr_expr (extern_glob_constr (Termops.vars_of_env env) c)
+  pr_lconstr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
 let pr_glob_constr_env env c =
-  pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
+  pr_constr_expr env (Evd.from_env env) (extern_glob_constr (Termops.vars_of_env env) c)
 
 let pr_closed_glob_n_env env sigma n c =
-  pr_constr_expr_n n (extern_closed_glob false env sigma c)
+  pr_constr_expr_n env sigma n (extern_closed_glob false env sigma c)
 let pr_closed_glob_env env sigma c =
-  pr_constr_expr (extern_closed_glob false env sigma c)
+  pr_constr_expr env sigma (extern_closed_glob false env sigma c)
 
 let pr_lconstr_pattern_env env sigma c =
-  pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
+  pr_lconstr_pattern_expr env sigma (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
 let pr_constr_pattern_env env sigma c =
-  pr_constr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
+  pr_constr_pattern_expr env sigma (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
 
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Names.Id.Set.empty t)
@@ -142,7 +142,7 @@ let pr_cases_pattern t =
 let pr_sort sigma s = pr_glob_sort (extern_sort sigma s)
 
 let () = Termops.Internal.set_print_constr
-  (fun env sigma t -> pr_lconstr_expr (extern_constr ~lax:true false env sigma t))
+  (fun env sigma t -> pr_lconstr_expr env sigma (extern_constr ~lax:true false env sigma t))
 
 let pr_in_comment x = str "(* " ++ x ++ str " *)"
 
@@ -335,7 +335,7 @@ let pr_named_context env sigma ne_context =
 
 let pr_rel_context env sigma rel_context =
   let rel_context = List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) rel_context in
-  pr_binders (extern_rel_context None env sigma rel_context)
+  pr_binders env sigma (extern_rel_context None env sigma rel_context)
 
 let pr_rel_context_of env sigma =
   pr_rel_context env sigma (rel_context env)

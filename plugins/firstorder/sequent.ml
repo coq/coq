@@ -235,7 +235,7 @@ let print_cmap map=
       str "| " ++
       prlist Printer.pr_global l ++
       str " : " ++
-      Ppconstr.pr_constr_expr xc ++
+      Ppconstr.pr_constr_expr env sigma xc ++
       cut () ++
       s in
     (v 0

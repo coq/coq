@@ -493,7 +493,7 @@ let print_ast fmt arg =
   let pr fmt () =
     fprintf fmt "Vernacextend.vernac_argument_extend ~name:%a @[{@\n\
       Vernacextend.arg_parsing = %a;@\n\
-      Vernacextend.arg_printer = %a;@\n}@]"
+      Vernacextend.arg_printer = fun env sigma -> %a;@\n}@]"
       print_string name print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in
@@ -579,7 +579,7 @@ let print_ast fmt arg =
       Tacentries.arg_intern = @[%a@];@\n\
       Tacentries.arg_subst = @[%a@];@\n\
       Tacentries.arg_interp = @[%a@];@\n\
-      Tacentries.arg_printer = @[((%a), (%a), (%a))@];@\n}@]"
+      Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
       print_string name
       VernacArgumentExt.print_rules (name, arg.argext_rules)
       pr_tag arg.argext_type

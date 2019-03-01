@@ -83,8 +83,8 @@ val update_Function : function_info -> unit
 
 
 (** debugging *)
-val pr_info : function_info -> Pp.t
-val pr_table : unit -> Pp.t
+val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
+val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 
 
 (* val function_debug : bool ref  *)

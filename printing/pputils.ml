@@ -60,50 +60,52 @@ let pr_or_by_notation f = let open Constrexpr in CAst.with_val (function
 
 let hov_if_not_empty n p = if Pp.ismt p then p else hov n p
 
-let rec pr_raw_generic env (GenArg (Rawwit wit, x)) =
+let rec pr_raw_generic env sigma (GenArg (Rawwit wit, x)) =
   match wit with
     | ListArg wit ->
-      let map x = pr_raw_generic env (in_gen (rawwit wit) x) in
+      let map x = pr_raw_generic env sigma (in_gen (rawwit wit) x) in
       let ans = pr_sequence map x in
       hov_if_not_empty 0 ans
     | OptArg wit ->
       let ans = match x with
         | None -> mt ()
-        | Some x -> pr_raw_generic env (in_gen (rawwit wit) x)
+        | Some x -> pr_raw_generic env sigma (in_gen (rawwit wit) x)
       in
       hov_if_not_empty 0 ans
     | PairArg (wit1, wit2) ->
       let p, q = x in
       let p = in_gen (rawwit wit1) p in
       let q = in_gen (rawwit wit2) q in
-      hov_if_not_empty 0 (pr_sequence (pr_raw_generic env) [p; q])
+      hov_if_not_empty 0 (pr_sequence (pr_raw_generic env sigma) [p; q])
     | ExtraArg s ->
        let open Genprint in
        match generic_raw_print (in_gen (rawwit wit) x) with
-       | PrinterBasic pp -> pp ()
-       | PrinterNeedsLevel { default_ensure_surrounded; printer } -> printer default_ensure_surrounded
+       | PrinterBasic pp -> pp env sigma
+       | PrinterNeedsLevel { default_ensure_surrounded; printer } ->
+         printer env sigma default_ensure_surrounded
 
 
-let rec pr_glb_generic env (GenArg (Glbwit wit, x)) =
+let rec pr_glb_generic env sigma (GenArg (Glbwit wit, x)) =
   match wit with
     | ListArg wit ->
-      let map x = pr_glb_generic env (in_gen (glbwit wit) x) in
+      let map x = pr_glb_generic env sigma (in_gen (glbwit wit) x) in
       let ans = pr_sequence map x in
       hov_if_not_empty 0 ans
     | OptArg wit ->
       let ans = match x with
         | None -> mt ()
-        | Some x -> pr_glb_generic env (in_gen (glbwit wit) x)
+        | Some x -> pr_glb_generic env sigma (in_gen (glbwit wit) x)
       in
       hov_if_not_empty 0 ans
     | PairArg (wit1, wit2) ->
       let p, q = x in
       let p = in_gen (glbwit wit1) p in
       let q = in_gen (glbwit wit2) q in
-      let ans = pr_sequence (pr_glb_generic env) [p; q] in
+      let ans = pr_sequence (pr_glb_generic env sigma) [p; q] in
       hov_if_not_empty 0 ans
     | ExtraArg s ->
        let open Genprint in
        match generic_glb_print (in_gen (glbwit wit) x) with
-       | PrinterBasic pp -> pp ()
-       | PrinterNeedsLevel { default_ensure_surrounded; printer } -> printer default_ensure_surrounded
+       | PrinterBasic pp -> pp env sigma
+       | PrinterNeedsLevel { default_ensure_surrounded; printer } ->
+         printer env sigma default_ensure_surrounded
