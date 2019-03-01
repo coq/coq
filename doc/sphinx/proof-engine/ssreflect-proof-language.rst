@@ -2094,9 +2094,9 @@ into a closing one (similar to :tacn:`now`). Its general syntax is:
    :name: by
    :undocumented:
 
-The Ltac expression :n:`by [@tactic | [@tactic | …]` is equivalent to
-:n:`[by @tactic | by @tactic | ...]` and this form should be preferred
-to the former.
+The Ltac expression :n:`by [@tactic | @tactic | …]` is equivalent to
+:n:`do [done | by @tactic | by @tactic | …]`, which corresponds to the
+standard Ltac expression :n:`first [done | @tactic; done | @tactic; done | …]`.
 
 In the script provided as example in section :ref:`indentation_ssr`, the
 paragraph corresponding to each sub-case ends with a tactic line prefixed
