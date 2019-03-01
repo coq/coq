@@ -4,10 +4,11 @@ Axiom daemon : False. Ltac myadmit := case: daemon.
 
 (** Testing over for the 1-var case *)
 
-Lemma test_over_1_1 : forall i : nat, False.
+Lemma test_over_1_1 : False.
 intros.
 evar (I : Type); evar (R : Type); evar (x2 : I -> R).
-assert (H : i + 2 * i - i = x2 i).
+assert (H : forall i : nat, i + 2 * i - i = x2 i).
+  intros i.
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold I in *; clear I.
@@ -18,10 +19,11 @@ assert (H : i + 2 * i - i = x2 i).
   myadmit.
 Qed.
 
-Lemma test_over_1_2 : forall i : nat, False.
+Lemma test_over_1_2 : False.
 intros.
 evar (I : Type); evar (R : Type); evar (x2 : I -> R).
-assert (H : i + 2 * i - i = x2 i).
+assert (H : forall i : nat, i + 2 * i - i = x2 i).
+  intros i.
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold I in *; clear I.
@@ -34,10 +36,11 @@ Qed.
 
 (** Testing over for the 2-var case *)
 
-Lemma test_over_2_1 : forall i j : nat, False.
+Lemma test_over_2_1 : False.
 intros.
 evar (I : Type); evar (J : Type); evar (R : Type); evar (x2 : I -> J -> R).
-assert (H : i + 2 * j - i = x2 i j).
+assert (H : forall i j, i + 2 * j - i = x2 i j).
+  intros i j.
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold J in *; clear J;
@@ -49,10 +52,11 @@ assert (H : i + 2 * j - i = x2 i j).
   myadmit.
 Qed.
 
-Lemma test_over_2_2 : forall i j : nat, False.
+Lemma test_over_2_2 : False.
 intros.
 evar (I : Type); evar (J : Type); evar (R : Type); evar (x2 : I -> J -> R).
-assert (H : i + 2 * j - i = x2 i j).
+assert (H : forall i j : nat, i + 2 * j - i = x2 i j).
+  intros i j.
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold J in *; clear J;
@@ -61,9 +65,6 @@ assert (H : i + 2 * j - i = x2 i j).
   Fail done.
 
   rewrite over.
-  Fail done. (* Bug: doesn't work so we have to make a beta-expansion by hand *)
-  rewrite -[i + 2 * j - i]/((fun x y => x + 2 * y - x) i j).
-  (* cf. [plugins/ssr/ssreflect.v:unify_helper] *)
   done.
   myadmit.
 Qed.
