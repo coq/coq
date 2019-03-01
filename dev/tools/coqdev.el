@@ -80,9 +80,8 @@ Note that this function is executed before _Coqproject is read if it exists."
     (when dir
       (unless coq-prog-args
         (setq coq-prog-args
-              `("-coqlib" ,dir "-R" ,(concat dir "plugins")
-                "Coq" "-R" ,(concat dir "theories")
-                "Coq")))
+              `("-coqlib" ,dir
+                "-topfile" ,buffer-file-name)))
       (setq-local coq-prog-name (concat dir "bin/coqtop")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
