@@ -1737,9 +1737,8 @@ Intro patterns
   for each :token:`ident`.  Its type has to be fixed later on by using the
   ``abstract`` tactic.  Before then the type displayed is ``<hidden>``.
 
-
 Note that |SSR| does not support the syntax ``(ipat, …, ipat)`` for
-destructing intro-patterns.
+destructing intro patterns.
 
 Clear switch
 ````````````
@@ -3626,7 +3625,7 @@ corresponding new goals will be generated.
   As in :ref:`apply_ssr`, the ``ssrautoprop`` tactic is used to try to
   solve the existential variable.
 
-  .. coqtop:: all
+  .. coqtop:: all abort
 
      Lemma test (x : 'I_2) y (H : y < 2) : Some x = insub 2 y.
      rewrite insubT.
@@ -3637,6 +3636,230 @@ rewriting rule is stated using Leibniz equality (as opposed to setoid
 relations). It will be extended to other rewriting relations in the
 future.
 
+.. _under_over_ssr:
+
+A convenience under tactic
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Goals involving objects defined with higher-order functions often
+require "rewriting under binders". While setoid rewriting is a
+possible approach in this case, it is common to use regular rewriting
+along with dedicated extensionality lemmas. This may cause some
+practical issues during the development of the corresponding scripts,
+notably as we might be forced to provide the rewrite tactic with
+complete terms, as shown by the simple example below.
+
+.. example::
+
+   .. coqtop:: reset none
+
+      From Coq Require Import ssreflect.
+      Set Implicit Arguments.
+      Unset Strict Implicit.
+      Unset Printing Implicit Defensive.
+
+   .. coqtop:: in
+
+      Axiom subnn : forall n : nat, n - n = 0.
+      Parameter G : (nat -> nat) -> nat -> nat.
+      Axiom eq_G :
+        forall F1 F2 : nat -> nat,
+        (forall n : nat, F1 n = F2 n) ->
+        forall n : nat, G F1 n = G F2 n.
+
+   .. coqtop:: all
+
+      Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
+
+   In this context, one cannot directly use ``eq_G``:
+
+   .. coqtop:: all fail
+
+      rewrite eq_G.
+
+   as we need to explicitly provide the non-inferable argument ``F2``,
+   which corresponds here to the term we want to obtain *after* the
+   rewriting step. We can thus do:
+
+   .. coqtop:: all abort
+
+      rewrite (@eq_G _ (fun _ : nat => 0)); last first.
+        by move=> m; rewrite subnn.
+
+   Otherwise, a more convenient approach consists in relying on the
+   :tacn:`under` tactic that alleviates this bookkeeping:
+
+   .. coqtop:: all abort
+
+      Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
+      under m: eq_G by rewrite subnn.
+
+  ``(* FIXME: replace with do... *)``
+
+.. tacn:: under {? @occ_switch} {? [ @r_pattern ] } @term {? => @i_item} {? do ( @tactic | [ {*| @tactic } ] ) }
+   :name: under
+
+    Rewrite under :token:`term`. We distinguish two modes,
+    :ref:`interactive mode <under_interactive>` without a ``do`` clause, and
+    :ref:`one-liner mode <under_one_liner>` with a ``do`` clause,
+    which are explained in more detail below.
+
+   .. exn:: Incorrect number of tactics (expected N tactics, was given N').
+
+      This error can occur when using the version with a ``do`` clause.
+
+.. _under_interactive:
+
+Interactive mode
+````````````````
+The execution of the Ltac expression:
+:n:`under {@occ_switch}[@r_pattern]@term => [i|j].`
+involves the following steps:
+
++ It performs a full-blown :n:`rewrite {@occ_switch}[@r_pattern]@term`,
+  without failing like in the above example with ``eq_G``, but
+  creating evars.
++ As a 2-branches intro pattern is provided, it checks that 3 subgoals
+  have been created (the last one being the initial, main subgoal that
+  now contains some evars).
++ In the first 2 subgoals, it introduces ``i``, resp. ``j``, and tests
+  whether these 2 subgoals are (quantified) equalities involving
+  an evar. For example: ``some_expr(i) = ?Goal i``.
++ If this is the case, the subgoal is manipulated to get the
+  provably equivalent goal ``Under _ (some_expr i) (?Goal i)``,
+  pretty-printed as ``Under[ some_expr i ]``.
+  This change avoids instantiating the evar by accident (e.g., if one
+  uses a proof script such as: :n:`rewrite lem1 // lem2`).
++ Finally, a post-processing step is performed in the main (here, 3rd)
+  subgoal to try keeping (in the object after the rewrite) the same
+  bound variables as the identifers provided in the first
+  intro pattern branch (here, ``i``).
+
+If the intro pattern is omitted, the Ltac expression:
+:n:`under {@occ_switch}[@r_pattern]@term.` defaults to:
+:n:`under {@occ_switch}[@r_pattern]@term => *.`
+
+Two equivalent facilities (a terminator and a lemma) are provided to
+close intermediate subgoal ``Under[ … ]`` and instantiate the
+corresponding evar:
+
+.. tacn:: over
+   :name: over
+
+   This terminator tactic allows one to close goals of the form
+   ``Under[ … ]``.
+
+.. tacv:: by rewrite over
+
+   This is a variant of :tacn:`over` in order to close ``Under[ … ]``
+   goals, relying on the ``over`` lemma.
+
+Let us focus again on the simple example involving an extensionality
+lemma ``eq_G``, but this time in interactive mode:
+
+.. example::
+
+   .. coqtop:: all abort
+
+      Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
+      under m: eq_G.
+        rewrite subnn.
+        over.
+
+   ``(* FIXME: replace with do... *)``
+
+.. _under_one_liner:
+
+One-liner mode
+``````````````
+
+The Ltac expression:
+:n:`under {@occ_switch}[@r_pattern]@term => [i|j] do [tac1|tac2]`
+can be viewed as a shorter form for the following Ltac expression:
+:n:`under {@occ_switch}[@r_pattern]@term => [i|j]; [tac1; over | tac2; over | cbv beta iota].`
+
+Here, the ``beta-iota`` reduction is useful to get rid of the beta
+redexes that will typically be introduced after the substitution of
+the evars by the :tacn:`under` tactic.
+
+Note that the provided tactics (e.g., ``tac1``) can just as well
+involve other :tacn:`under` tactics. See below for a typical example
+involving the `bigop` theory from the Mathematical Components library.
+
+If there is only one tactic, the brackets are optional, i.e.:
+:n:`under @term => i do [tac1]` can be
+shortened to: :n:`under @term => i do tac1.`
+
+.. example::
+
+   .. coqtop:: reset none
+
+      From Coq Require Import ssreflect.
+      Set Implicit Arguments.
+      Unset Strict Implicit.
+      Unset Printing Implicit Defensive.
+
+      Reserved Notation "\big [ op / idx ]_ ( m <= i < n | P ) F"
+        (at level 36, F at level 36, op, idx at level 10, m, i, n at level 50,
+                 format "'[' \big [ op / idx ]_ ( m  <=  i  <  n  |  P )  F ']'").
+      Reserved Notation "\big [ op / idx ]_ ( m <= i < n ) F"
+        (at level 36, F at level 36, op, idx at level 10, i, m, n at level 50,
+                 format "'[' \big [ op / idx ]_ ( m  <=  i  <  n ) '/  '  F ']'").
+
+      Variant bigbody (R I : Type) : Type :=
+        BigBody : forall (_ : I) (_ : forall (_ : R) (_ : R), R) (_ : bool) (_ : R), bigbody R I.
+
+      Parameter bigop :
+        forall (R I : Type) (_ : R) (_ : list I) (_ : forall _ : I, bigbody R I), R.
+
+      Axiom eq_bigr :
+        forall (R : Type) (idx : R) (op : forall (_ : R) (_ : R), R) (I : Type)
+               (r : list I) (P : I -> bool) (F1 F2 : I -> R),
+          (forall x : I, P x = true -> F1 x = F2 x) ->
+          bigop idx r (fun i : I => BigBody i op (P i) (F1 i)) =
+          bigop idx r (fun i : I => BigBody i op (P i) (F2 i)).
+
+      Axiom eq_big :
+        forall (R : Type) (idx : R) (op : R -> R -> R) (I : Type) (r : list I)
+               (P1 P2 : I -> bool) (F1 F2 : I -> R),
+          (forall x : I, P1 x = P2 x) ->
+          (forall i : I, is_true (P1 i) -> F1 i = F2 i) ->
+          bigop idx r (fun i : I => BigBody i op (P1 i) (F1 i)) =
+          bigop idx r (fun i : I => BigBody i op (P2 i) (F2 i)).
+
+      Reserved Notation "\sum_ ( m <= i < n | P ) F"
+        (at level 41, F at level 41, i, m, n at level 50,
+                 format "'[' \sum_ ( m  <=  i  <  n  |  P ) '/  '  F ']'").
+      Reserved Notation "\sum_ ( m <= i < n ) F"
+        (at level 41, F at level 41, i, m, n at level 50,
+                 format "'[' \sum_ ( m  <=  i  <  n ) '/  '  F ']'").
+
+      Parameter index_iota : nat -> nat -> list nat.
+
+      Notation "\big [ op / idx ]_ ( m <= i < n | P ) F" :=
+        (bigop idx (index_iota m n) (fun i : nat => BigBody i op P%bool F)).
+      Notation "\big [ op / idx ]_ ( m <= i < n ) F" :=
+        (bigop idx (index_iota m n) (fun i : nat => BigBody i op true F)).
+
+      Notation "\sum_ ( m <= i < n | P ) F" :=
+        (\big[plus/O]_(m <= i < n | P%bool) F%nat).
+      Notation "\sum_ ( m <= i < n ) F" :=
+        (\big[plus/O]_(m <= i < n) F%nat).
+
+   .. coqtop:: in
+
+      Parameter addnC : forall m n : nat, m + n = n + m.
+      Parameter muln1 : forall n : nat, n * 1 = n.
+      Parameter odd : nat -> bool.
+
+   .. coqtop:: all
+
+      Lemma test_big_nested (F G : nat -> nat) (m n : nat) :
+        \sum_(0 <= a < m) \sum_(0 <= j < n | odd (j * 1)) (a + j) =
+        \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
+      under i I: eq_bigr by under j J: eq_big by [rewrite muln1|rewrite addnC].
+
+   ``(* FIXME: replace with do... *)``
 
 .. _locking_ssr:
 
@@ -5373,7 +5596,15 @@ respectively.
 
 .. tacn:: rewrite {+ @r_step }
 
-   rewrite  (see :ref:`rewriting_ssr`)
+   rewrite (see :ref:`rewriting_ssr`)
+
+.. tacn:: under {? @occ_switch} {? [ @r_pattern ] } @term {? => @i_item} {? do ( @tactic | [ {*| @tactic } ] )}
+
+   under (see :ref:`under_over_ssr`)
+
+.. tacn:: over
+
+   over (see :ref:`under_over_ssr`)
 
 .. tacn:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } {? : @term } := @term
           have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } : @term {? by @tactic }
