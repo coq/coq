@@ -63,4 +63,4 @@ val undertac :
   Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint -> unit Proofview.tactic
 
 val overtac :
-  Tacmach.tactic
+  unit Proofview.tactic

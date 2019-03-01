@@ -394,7 +394,7 @@ let rec pretty_rename evar_map term = function
         ppdebug(lazy Pp.(str"under: cannot pretty-rename all bound variables with destLambda"));
         term
 
-let overtac gl = ssr_n_tac "over" ~-1 gl
+let overtac = Proofview.V82.tactic (ssr_n_tac "over" ~-1)
 
 let check_numgoals ?(minus = 0) nh =
   Proofview.numgoals >>= fun ng ->
@@ -441,9 +441,9 @@ let undertac ist varnames ((dir,mult),_ as rule) hint =
       let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
       check_numgoals ~minus:1 nh <*>
         Proofview.tclDISPATCH
-          ((List.map (function None -> Proofview.V82.tactic overtac
+          ((List.map (function None -> overtac
                              | Some e -> ssrevaltac ist e <*>
-                                           Proofview.V82.tactic overtac)
+                                           overtac)
               (if hint = nullhint then [None] else snd hint))
            @ [betaiota])
   in
