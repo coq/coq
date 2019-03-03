@@ -551,16 +551,6 @@ Register Under as plugins.ssreflect.Under.
 Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
 Ltac over :=
-  solve [ apply Under.under_done
-        | by rewrite over
-        ].
-
-(* The 2 variants below wouldn't work on [test-suite/ssr/over.v:test_over_2_1]
-   (2-var test case with evars).
-
-Ltac over :=
-  exact: Under.under_done.
-
-Ltac over :=
-  by rewrite over.
- *)
+  by [ apply: Under.under_done
+     | rewrite over
+     ].
