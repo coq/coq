@@ -244,9 +244,6 @@ let prepare_body ((name,_,args,types,_),_) rt =
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 
-let process_vernac_interp_error e =
-  fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null))
-
 let warn_funind_cannot_build_inversion =
   CWarnings.create ~name:"funind-cannot-build-inversion" ~category:"funind"
     (fun e' -> strbrk "Cannot build inversion information" ++
@@ -293,11 +290,9 @@ let derive_inversion fix_names =
         fix_names_as_constant
         lind;
       with e when CErrors.noncritical e ->
-      let e' = process_vernac_interp_error e in
-      warn_funind_cannot_build_inversion e'
+        warn_funind_cannot_build_inversion e
   with e when CErrors.noncritical e ->
-    let e' = process_vernac_interp_error e in
-    warn_funind_cannot_build_inversion e'
+    warn_funind_cannot_build_inversion e
 
 let warn_cannot_define_graph =
   CWarnings.create ~name:"funind-cannot-define-graph" ~category:"funind"
@@ -310,17 +305,13 @@ let warn_cannot_define_principle =
       h 1 names ++ error)
 
 let warning_error names e =
-  let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e ->
-        let e = process_vernac_interp_error e in
         spc () ++ CErrors.print e
       | _ ->
         if do_observe ()
-        then
-          let e = process_vernac_interp_error e in
-          (spc () ++ CErrors.print e)
+        then (spc () ++ CErrors.print e)
         else mt ()
   in
   match e with
@@ -333,7 +324,6 @@ let warning_error names e =
     | _ -> raise e
 
 let error_error names e =
-  let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e -> spc () ++ CErrors.print e

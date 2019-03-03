@@ -79,7 +79,7 @@ let do_observe_tac s tac g =
   with reraise ->
     let reraise = CErrors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue (Some (fst (ExplainErr.process_vernac_interp_error reraise)));
+    then print_debug_queue (Some (fst reraise));
     iraise reraise
 
 let observe_tac_stream s tac g =

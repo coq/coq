@@ -210,7 +210,7 @@ let print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in
       if b then
-        Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
+        Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.iprint e) ++ str " on goal" ++ fnl() ++ goal))
       else
         begin
           Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
@@ -237,7 +237,7 @@ let do_observe_tac s tac g =
   with reraise ->
     let reraise = CErrors.push reraise in
     if not (Stack.is_empty debug_queue)
-    then print_debug_queue true (fst (ExplainErr.process_vernac_interp_error reraise));
+    then print_debug_queue true reraise;
     iraise reraise
 
 let observe_tac s tac g =

@@ -5,7 +5,6 @@ G_vernac
 G_proofs
 Vernacprop
 Himsg
-ExplainErr
 Locality
 Egramml
 Vernacextend

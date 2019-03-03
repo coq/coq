@@ -116,13 +116,12 @@ let call = get
 
 let call_process_error_once =
   let processed : unit Exninfo.t = Exninfo.make () in
-  fun (_, info as ei) ->
+  fun (e, info) ->
     match Exninfo.get info processed with
-    | Some _ -> ei
+    | Some _ -> e, info
     | None ->
-        let e, info = ExplainErr.process_vernac_interp_error ei in
-        let info = Exninfo.add info processed () in
-        e, info
+      let info = Exninfo.add info processed () in
+      e, info
 
 end
 

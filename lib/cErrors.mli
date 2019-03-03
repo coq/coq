@@ -86,3 +86,10 @@ val iprint_no_report : Exninfo.iexn -> Pp.t
     Typical example: [Sys.Break], [Assert_failure], [Anomaly] ...
 *)
 val noncritical : exn -> bool
+
+(** Register a printer for errors carrying additional information on
+   exceptions. This method is fragile and should be considered
+   deprecated *)
+val register_additional_error_info
+  :  (Exninfo.info -> (Pp.t option Loc.located) option)
+  -> unit

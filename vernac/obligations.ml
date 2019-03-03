@@ -467,12 +467,7 @@ let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } 
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
   let prg = { prg with prg_ctx = ctx' } in
-  let () =
-    try ignore (update_obls prg obls (pred rem))
-    with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
-  in
+  let () = ignore (update_obls prg obls (pred rem)) in
   if pred rem > 0 then begin
     let deps = dependencies obls num in
     if not (Int.Set.is_empty deps) then

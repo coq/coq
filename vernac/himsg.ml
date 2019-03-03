@@ -1353,3 +1353,70 @@ let explain_prim_token_notation_error kind env sigma = function
     (strbrk "Unexpected non-option term " ++
      pr_constr_env env sigma c ++
      strbrk (" while parsing a "^kind^" notation."))
+
+(** Registration of generic errors
+    Nota: explain_exn does NOT end with a newline anymore!
+*)
+
+let explain_exn_default = function
+  (* Basic interaction exceptions *)
+  | Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
+  | CLexer.Error.E err -> hov 0 (str (CLexer.Error.to_string err))
+  | Sys_error msg -> hov 0 (str "System error: " ++ quote (str msg))
+  | Out_of_memory -> hov 0 (str "Out of memory.")
+  | Stack_overflow -> hov 0 (str "Stack overflow.")
+  | Dynlink.Error e -> hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e))
+  | CErrors.Timeout -> hov 0 (str "Timeout!")
+  | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
+  (* Otherwise, not handled here *)
+  | _ -> raise CErrors.Unhandled
+
+let _ = CErrors.register_handler explain_exn_default
+
+let rec vernac_interp_error_handler = function
+  | Univ.UniverseInconsistency i ->
+    let msg =
+      if !Constrextern.print_universes then
+        str "." ++ spc() ++
+        Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i
+      else
+        mt() in
+    str "Universe inconsistency" ++ msg ++ str "."
+  | TypeError(ctx,te) ->
+    let te = map_ptype_error EConstr.of_constr te in
+    explain_type_error ctx Evd.empty te
+  | PretypeError(ctx,sigma,te) ->
+    explain_pretype_error ctx sigma te
+  | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->
+    explain_prim_token_notation_error kind ctx sigma te
+  | Typeclasses_errors.TypeClassError(env, sigma, te) ->
+    explain_typeclass_error env sigma te
+  | InductiveError e ->
+    explain_inductive_error e
+  | Modops.ModuleTypingError e ->
+    explain_module_error e
+  | Modintern.ModuleInternalizationError e ->
+    explain_module_internalization_error e
+  | RecursionSchemeError (env,e) ->
+    explain_recursion_scheme_error env e
+  | Cases.PatternMatchingError (env,sigma,e) ->
+    explain_pattern_matching_error env sigma e
+  | Tacred.ReductionTacticError e ->
+    explain_reduction_tactic_error e
+  | Logic.RefinerError (env, sigma, e) ->
+    explain_refiner_error env sigma e
+  | Nametab.GlobalizationError q ->
+    str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
+    spc () ++ str "was not found" ++
+    spc () ++ str "in the current" ++ spc () ++ str "environment."
+  | Refiner.FailError (i,s) ->
+    let s = Lazy.force s in
+    str "Tactic failure" ++
+    (if Pp.ismt s then s else str ": " ++ s) ++
+    if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
+  | Logic_monad.TacticFailure e ->
+    vernac_interp_error_handler e
+  | _ ->
+    raise CErrors.Unhandled
+
+let _ = CErrors.register_handler vernac_interp_error_handler

@@ -227,7 +227,6 @@ END
 {
 
 let warning_error names e =
-  let (e, _) = ExplainErr.process_vernac_interp_error (e, Exninfo.null) in
   match e with
     | Building_graph e ->
        let names = pr_enum Libnames.pr_qualid names in

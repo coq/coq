@@ -134,7 +134,6 @@ open Tacticals
 open Tactics
 open Eqschemes
 
-open ExplainErr
 open Class
 open ComDefinition
 open Indschemes

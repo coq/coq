@@ -41,33 +41,6 @@ let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
 exception Timeout
 
-let handle_stack = ref []
-
-exception Unhandled
-
-let register_handler h = handle_stack := h::!handle_stack
-
-let is_handled e =
-  let is_handled_by h = (try let _ = h e in true with | Unhandled -> false) in
-  List.exists is_handled_by !handle_stack
-
-let is_anomaly = function
-| Anomaly _ -> true
-| exn -> not (is_handled exn)
-
-(** [print_gen] is a general exception printer which tries successively
-    all the handlers of a list, and finally a [bottom] handler if all
-    others have failed *)
-
-let rec print_gen bottom stk e =
-  match stk with
-  | [] -> bottom e
-  | h::stk' ->
-    try h e
-    with
-    | Unhandled -> print_gen bottom stk' e
-    | any -> print_gen bottom stk' any
-
 (** Only anomalies should reach the bottom of the handler stack.
     In usual situation, the [handle_stack] is treated as it if was always
     non-empty with [print_anomaly] as its bottom handler. *)
@@ -100,17 +73,67 @@ let print_anomaly askreport e =
   else
     hov 0 (raw_anomaly e)
 
+let handle_stack = ref []
+
+exception Unhandled
+
+let register_handler h = handle_stack := h::!handle_stack
+
+let is_handled e =
+  let is_handled_by h = (try let _ = h e in true with | Unhandled -> false) in
+  List.exists is_handled_by !handle_stack
+
+let is_anomaly = function
+| Anomaly _ -> true
+| exn -> not (is_handled exn)
+
+(** Printing of additional error info, from Exninfo *)
+let additional_error_info_handler = ref []
+
+let register_additional_error_info (f : Exninfo.info -> (Pp.t option Loc.located) option) =
+  additional_error_info_handler := f :: !additional_error_info_handler
+
+(** [print_gen] is a general exception printer which tries successively
+    all the handlers of a list, and finally a [bottom] handler if all
+    others have failed *)
+
+let rec print_gen ~anomaly ~extra_msg stk (e, info) =
+  match stk with
+  | [] ->
+    print_anomaly anomaly e
+  | h::stk' ->
+    try
+      let err_msg = h e in
+      Option.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
+    with
+    | Unhandled -> print_gen ~anomaly ~extra_msg stk' (e,info)
+    | any -> print_gen ~anomaly ~extra_msg stk' (any,info)
+
+let print_gen ~anomaly (e, info) =
+  let extra_info =
+    try CList.find_map (fun f -> Some (f info)) !additional_error_info_handler
+    with Not_found -> None
+  in
+  let extra_msg, info = match extra_info with
+    | None -> None, info
+    | Some (loc, msg) ->
+      let info = Option.cata (fun l -> Loc.add_loc info l) info loc in
+      msg, info
+  in
+  print_gen ~anomaly ~extra_msg !handle_stack (e,info)
+
 (** The standard exception printer *)
-let print ?(info = Exninfo.null) e =
-  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace info
+let print ?info e =
+  let info = Option.default Exninfo.(info e) info in
+  print_gen ~anomaly:true (e,info) ++ print_backtrace info
 
 let iprint (e, info) = print ~info e
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
-let print_no_report e = print_gen (print_anomaly false) !handle_stack e
+let print_no_report e = print_gen ~anomaly:false (e, Exninfo.info e)
 let iprint_no_report (e, info) =
-  print_gen (print_anomaly false) !handle_stack e ++ print_backtrace info
+  print_gen ~anomaly:false (e,info) ++ print_backtrace info
 
 (** Predefined handlers **)
 
