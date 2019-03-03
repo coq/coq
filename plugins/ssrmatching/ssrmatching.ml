@@ -285,7 +285,8 @@ let iter_constr_LR f c = match kind c with
   | Prod (_, t, b) | Lambda (_, t, b)  -> f t; f b
   | LetIn (_, v, t, b) -> f v; f t; f b
   | App (cf, a) -> f cf; Array.iter f a
-  | Case (_, p, iv, v, b) -> f v; iter_invert f iv; f p; Array.iter f b
+  | Case (_, _, pms, (_, p), iv, v, b) ->
+    f v; Array.iter f pms; f p; iter_invert f iv; Array.iter (fun (_, c) -> f c) b
   | Fix (_, (_, t, b)) | CoFix (_, (_, t, b)) ->
     for i = 0 to Array.length t - 1 do f t.(i); f b.(i) done
   | Proj(_,a) -> f a
@@ -749,7 +750,7 @@ let rec uniquize = function
         EConstr.push_rel ctx_item env, h' + 1 in
       let self acc c = EConstr.of_constr (subst_loop acc (EConstr.Unsafe.to_constr c)) in
       let f = EConstr.of_constr f in
-      let f' = map_constr_with_binders_left_to_right sigma inc_h self acc f in
+      let f' = map_constr_with_binders_left_to_right env sigma inc_h self acc f in
       let f' = EConstr.Unsafe.to_constr f' in
       mkApp (f', Array.map_left (subst_loop acc) a) in
   subst_loop (env,h) c) : find_P),

@@ -122,12 +122,24 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
         | None ->
           let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
           let iv = EConstr.Unsafe.to_case_invert iv in
-          mkCase (ci, lift ndepar p, iv, mkRel 1, Termops.rel_vect ndepar k)
+          let ncons = Array.length mip.mind_consnames in
+          let mk_branch i =
+            (* eta-expansion to please branch contraction *)
+            let ft = get_type (lookup_rel (ncons - i) env) in
+            (* we need that to get the generated names for the branch *)
+            let (ctx, _) = decompose_prod_assum ft in
+            let n = mkRel (List.length ctx + 1) in
+            let args = Context.Rel.to_extended_vect mkRel 0 ctx in
+            let br = it_mkLambda_or_LetIn (mkApp (n, args)) ctx in
+            lift (ndepar + ncons - i - 1) br
+          in
+          let br = Array.init ncons mk_branch in
+          mkCase (Inductive.contract_case env (ci, lift ndepar p,  iv, mkRel 1, br))
         | Some ps ->
           let term =
             mkApp (mkRel 2,
-                   Array.map
-                   (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
+                    Array.map
+                    (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
             if dep then
               let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
                 mkCast (term, DEFAULTcast, ty)

@@ -253,12 +253,21 @@ let subst_univs_level_constr subst c =
            if u' == u then t else
              (changed := true; mkSort (Sorts.sort_of_univ u'))
 
-      | Case (ci,p,CaseInvert {univs;args},c,br) ->
-        if Univ.Instance.is_empty univs then Constr.map aux t
+      | Case (ci, u, pms, p, CaseInvert {univs;args}, c, br) ->
+        if Univ.Instance.is_empty u && Univ.Instance.is_empty univs then Constr.map aux t
         else
+          let u' = f u in
           let univs' = f univs in
-          if univs' == univs then Constr.map aux t
-          else (changed:=true; Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br)))
+          if u' == u && univs' == univs then Constr.map aux t
+          else (changed:=true; Constr.map aux (mkCase (ci,u',pms,p,CaseInvert {univs=univs';args},c,br)))
+
+      | Case (ci, u, pms, p, NoInvert, c, br) ->
+        if Univ.Instance.is_empty u then Constr.map aux t
+        else
+          let u' = f u in
+          if u' == u then Constr.map aux t
+          else
+            (changed := true; Constr.map aux (mkCase (ci, u', pms, p, NoInvert, c, br)))
 
       | Array (u,elems,def,ty) ->
         let u' = f u in
@@ -305,10 +314,19 @@ let subst_instance_constr subst c =
           if u' == u then t else
             (mkSort (Sorts.sort_of_univ u'))
 
-      | Case (ci,p,CaseInvert {univs;args},c,br) ->
+      | Case (ci, u, pms, p, CaseInvert {univs;args}, c, br) ->
+        let u' = f u in
         let univs' = f univs in
-        if univs' == univs then Constr.map aux t
-        else Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br))
+        if u' == u && univs' == univs then Constr.map aux t
+        else Constr.map aux (mkCase (ci,u',pms,p,CaseInvert {univs=univs';args},c,br))
+
+      | Case (ci, u, pms, p, NoInvert, c, br) ->
+        if Univ.Instance.is_empty u then Constr.map aux t
+        else
+          let u' = f u in
+          if u' == u then Constr.map aux t
+          else
+            Constr.map aux (mkCase (ci, u', pms, p, NoInvert, c, br))
 
       | Array (u,elems,def,ty) ->
         let u' = f u in
@@ -348,8 +366,11 @@ let universes_of_constr c =
     | Array (u,_,_,_) ->
       let s = LSet.fold LSet.add (Instance.levels u) s in
       Constr.fold aux s c
-    | Case (_,_,CaseInvert {univs;args=_},_,_) ->
+    | Case (_, u, _, _, CaseInvert {univs;args=_},_ ,_) ->
+      let s = LSet.fold LSet.add (Instance.levels u) s in
       let s = LSet.fold LSet.add (Instance.levels univs) s in
       Constr.fold aux s c
+    | Case (_, u, _, _, NoInvert, _, _) ->
+      Constr.fold aux (LSet.fold LSet.add (Instance.levels u) s) c
     | _ -> Constr.fold aux s c
   in aux LSet.empty c

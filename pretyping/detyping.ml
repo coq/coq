@@ -241,16 +241,9 @@ let print_primproj_params =
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
-let computable sigma p k =
+let computable sigma (nas, ccl) =
     (* We first remove as many lambda as the arity, then we look
-       if it remains a lambda for a dependent elimination. This function
-       works for normal eta-expanded term. For non eta-expanded or
-       non-normal terms, it may affirm the pred is synthetisable
-       because of an undetected ultimate dependent variable in the second
-       clause, or else, it may affirm the pred non synthetisable
-       because of a non normal term in the fourth clause.
-       A solution could be to store, in the MutCase, the eta-expanded
-       normal form of pred to decide if it depends on its variables
+       if it remains a lambda for a dependent elimination.
 
        Lorsque le prédicat est dépendant de manière certaine, on
        ne déclare pas le prédicat synthétisable (même si la
@@ -258,10 +251,7 @@ let computable sigma p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  let sign,ccl = decompose_lam_assum sigma p in
-  Int.equal (Context.Rel.length sign) (k + 1)
-  &&
-  noccur_between sigma 1 (k+1) ccl
+  noccur_between sigma 1 (Array.length nas) ccl
 
 let lookup_name_as_displayed env sigma t s =
   let rec lookup avoid n c = match EConstr.kind sigma c with
@@ -429,11 +419,12 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | [] -> [Id.Set.empty,[],rhs]
   | na::nal ->
     match EConstr.kind sigma c with
-    | Case (ci,p,iv,c,cl) when
+    | Case (ci,u,pms,p,iv,c,cl) when
         eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
         && (* don't contract if p dependent *)
-        computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
+        computable sigma p (* FIXME: can do better *) ->
+        let (ci, _, _, _, cl) = EConstr.expand_case (snd (snd e)) sigma (ci, u, pms, p, iv, c, cl) in
         let clauses = build_tree na isgoal e sigma ci cl in
         List.flatten
           (List.map (fun (ids,pat,rhs) ->
@@ -788,8 +779,9 @@ and detype_r d flags avoid env sigma t =
         GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
-    | Case (ci,p,iv,c,bl) ->
-        let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
+    | Case (ci,u,pms,p,iv,c,bl) ->
+        let comp = computable sigma p in
+        let (ci, p, iv, c, bl) = EConstr.expand_case (snd env) sigma (ci, u, pms, p, iv, c, bl) in
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma ci comp)
           (is_nondep_branch sigma) avoid

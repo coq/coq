@@ -57,9 +57,12 @@ module Stack : sig
 
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * ('a, EInstance.t) pcase_invert * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
+  | Case of 'a case_stk
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red

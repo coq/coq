@@ -918,7 +918,8 @@ let reset_env env =
     Environ.push_rel_context (Environ.rel_context env) env'
 
 let fold_match ?(force=false) env sigma c =
-  let (ci, p, iv, c, brs) = destCase sigma c in
+  let case = destCase sigma c in
+  let (ci, p, iv, c, brs) = EConstr.expand_case env sigma case in
   let cty = Retyping.get_type_of env sigma c in
   let dep, pred, exists, sk =
     let env', ctx, body =
@@ -986,7 +987,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                     let argty = Retyping.get_type_of env (goalevars evars) arg in
                     let state, res = s.strategy { state ; env ;
                                                   unfresh ;
-                                                  term1 = arg ;	ty1 = argty ;
+                                                  term1 = arg ;        ty1 = argty ;
                                                   cstr = (prop,None) ;
                                                   evars } in
                     let res' =
@@ -1153,7 +1154,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           | Fail | Identity -> b'
         in state, res
 
-      | Case (ci, p, iv, c, brs) ->
+      | Case (ci, u, pms, p, iv, c, brs) ->
+        let (ci, p, iv, c, brs) = EConstr.expand_case env (goalevars evars) (ci, u, pms, p, iv, c, brs) in
         let cty = Retyping.get_type_of env (goalevars evars) c in
         let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
         let cstr' = Some eqty in
@@ -1163,7 +1165,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         let state, res =
           match c' with
           | Success r ->
-            let case = mkCase (ci, lift 1 p, map_invert (lift 1) iv, mkRel 1, Array.map (lift 1) brs) in
+            let case = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, map_invert (lift 1) iv, mkRel 1, Array.map (lift 1) brs)) in
             let res = make_leibniz_proof env case ty r in
               state, Success (coerce env (prop,cstr) res)
           | Fail | Identity ->
@@ -1185,7 +1187,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               in
                 match found with
                 | Some r ->
-                  let ctxc = mkCase (ci, lift 1 p, map_invert (lift 1) iv, lift 1 c, Array.of_list (List.rev (brs' c'))) in
+                  let ctxc = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, map_invert (lift 1) iv, lift 1 c, Array.of_list (List.rev (brs' c')))) in
                     state, Success (make_leibniz_proof env ctxc ty r)
                 | None -> state, c'
             else
@@ -1386,7 +1388,7 @@ module Strategies =
 
     let fold_glob c : 'a pure_strategy = { strategy =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
-(* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
+(*         let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
         let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
         let unfolded =
           try Tacred.try_red_product env sigma c

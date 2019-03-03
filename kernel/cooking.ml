@@ -75,30 +75,30 @@ let share_univs cache r u l =
   let (u', args) = share cache r l in
     mkApp (instantiate_my_gr r (Instance.append u' u), args)
 
-let update_case cache ci iv modlist =
-  match share cache (IndRef ci.ci_ind) modlist with
-  | exception Not_found -> ci, iv
-  | u, l ->
-    let iv = match iv with
-      | NoInvert -> NoInvert
-      | CaseInvert {univs; args;} ->
-        let univs = Instance.append u univs in
-        let args = Array.append l args in
-        CaseInvert {univs; args;}
-    in
-    { ci with ci_npar = ci.ci_npar + Array.length l }, iv
-
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
 let expmod_constr cache modlist c =
   let share_univs = share_univs cache in
-  let update_case = update_case cache in
   let rec substrec c =
     match kind c with
-      | Case (ci,p,iv,t,br) ->
-        let ci,iv = update_case ci iv modlist in
-        Constr.map substrec (mkCase (ci,p,iv,t,br))
+      | Case (ci, u, pms, p, iv, t, br) ->
+        begin match share cache (IndRef ci.ci_ind) modlist with
+        | (u', prefix) ->
+          let u = Instance.append u' u in
+          let pms = Array.append prefix pms in
+          let ci = { ci with ci_npar = ci.ci_npar + Array.length prefix } in
+          let iv = match iv with
+            | NoInvert -> NoInvert
+            | CaseInvert {univs; args;} ->
+              let univs = Instance.append u' univs in
+              let args = Array.append prefix args in
+              CaseInvert {univs; args;}
+          in
+          Constr.map substrec (mkCase (ci,u,pms,p,iv,t,br))
+        | exception Not_found ->
+          Constr.map substrec c
+        end
 
       | Ind (ind,u) ->
           (try

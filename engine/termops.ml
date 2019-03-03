@@ -606,7 +606,7 @@ let map_left2 f a g b =
     r, s
   end
 
-let map_constr_with_binders_left_to_right sigma g f l c =
+let map_constr_with_binders_left_to_right env sigma g f l c =
   let open RelDecl in
   let open EConstr in
   match EConstr.kind sigma c with
@@ -650,14 +650,16 @@ let map_constr_with_binders_left_to_right sigma g f l c =
     let al' = List.map_left (f l) al in
       if List.for_all2 (==) al' al then c
       else mkEvar (e, al')
-  | Case (ci,p,iv,b,bl) ->
+  | Case (ci,u,pms,p,iv,b,bl) ->
+      (* FIXME: skip annotations? *)
+      let (ci, p, iv, b, bl) = EConstr.expand_case env sigma (ci, u, pms, p, iv, b, bl) in
       (* In v8 concrete syntax, predicate is after the term to match! *)
       let b' = f l b in
       let iv' = map_invert (f l) iv in
       let p' = f l p in
       let bl' = Array.map_left (f l) bl in
       if b' == b && p' == p && iv' == iv && bl' == bl then c
-      else mkCase (ci, p', iv', b', bl')
+      else mkCase (EConstr.contract_case env sigma (ci, p', iv', b', bl'))
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
@@ -677,34 +679,8 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       if def' == def && t' == t && ty' == ty then c
       else mkArray(u,t',def',ty')
 
-let rec map_under_context_with_full_binders sigma g f l n d =
-  if n = 0 then f l d else
-    match EConstr.kind sigma d with
-    | LetIn (na,b,t,c) ->
-       let b' = f l b in
-       let t' = f l t in
-       let c' = map_under_context_with_full_binders sigma g f (g (Context.Rel.Declaration.LocalDef (na,b,t)) l) (n-1) c in
-       if b' == b && t' == t && c' == c then d
-       else EConstr.mkLetIn (na,b',t',c')
-    | Lambda (na,t,b) ->
-       let t' = f l t in
-       let b' = map_under_context_with_full_binders sigma g f (g (Context.Rel.Declaration.LocalAssum (na,t)) l) (n-1) b in
-       if t' == t && b' == b then d
-       else EConstr.mkLambda (na,t',b')
-    | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
-
-let map_branches_with_full_binders sigma g f l ci bl =
-  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
-  let bl' = Array.map2 (map_under_context_with_full_binders sigma g f l) tags bl in
-  if Array.for_all2 (==) bl' bl then bl else bl'
-
-let map_return_predicate_with_full_binders sigma g f l ci p =
-  let n = List.length ci.ci_pp_info.ind_tags in
-  let p' = map_under_context_with_full_binders sigma g f l n p in
-  if p' == p then p else p'
-
 (* strong *)
-let map_constr_with_full_binders_gen userview sigma g f l cstr =
+let map_constr_with_full_binders env sigma g f l cstr =
   let open EConstr in
   match EConstr.kind sigma cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -736,20 +712,14 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
   | Evar (e,al) ->
       let al' = List.map (f l) al in
       if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
-  | Case (ci,p,iv,c,bl) when userview ->
-      let p' = map_return_predicate_with_full_binders sigma g f l ci p in
-      let iv' = map_invert (f l) iv in
-      let c' = f l c in
-      let bl' = map_branches_with_full_binders sigma g f l ci bl in
-      if p==p' && iv'==iv && c==c' && bl'==bl then cstr else
-        mkCase (ci, p', iv', c', bl')
-  | Case (ci,p,iv,c,bl) ->
+  | Case (ci, u, pms, p, iv, c, bl) ->
+      let (ci, p, iv, c, bl) = EConstr.expand_case env sigma (ci, u, pms, p, iv, c, bl) in
       let p' = f l p in
       let iv' = map_invert (f l) iv in
       let c' = f l c in
       let bl' = Array.map (f l) bl in
       if p==p' && iv'==iv && c==c' && Array.for_all2 (==) bl bl' then cstr else
-        mkCase (ci, p', iv', c', bl')
+        mkCase (EConstr.contract_case env sigma (ci, p', iv', c', bl'))
   | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
       let l' = fold_rec_types g fx l in
@@ -770,12 +740,6 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
       let ty' = f l ty in
       if def==def' && t == t' && ty==ty' then cstr else mkArray (u,t', def',ty')
 
-let map_constr_with_full_binders sigma g f =
-  map_constr_with_full_binders_gen false sigma g f
-
-let map_constr_with_full_binders_user_view sigma g f =
-  map_constr_with_full_binders_gen true sigma g f
-
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
    right according to the usual representation of the constructions as
@@ -783,7 +747,7 @@ let map_constr_with_full_binders_user_view sigma g f =
    index) which is processed by [g] (which typically add 1 to [n]) at
    each binder traversal; it is not recursive *)
 
-let fold_constr_with_full_binders sigma g f n acc c =
+let fold_constr_with_full_binders env sigma g f n acc c =
   let open EConstr.Vars in
   let open Context.Rel.Declaration in
   match EConstr.kind sigma c with
@@ -795,7 +759,9 @@ let fold_constr_with_full_binders sigma g f n acc c =
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_,c) -> f n acc c
   | Evar (_,l) -> List.fold_left (f n) acc l
-  | Case (_,p,iv,c,bl) -> Array.fold_left (f n) (f n (fold_invert (f n) (f n acc p) iv) c) bl
+  | Case (ci, u, pms, p, iv, c, bl) ->
+    let (ci, p, iv, b, bl) = EConstr.expand_case env sigma (ci, u, pms, p, iv, c, bl) in
+    Array.fold_left (f n) (f n (fold_invert (f n) (f n acc p) iv) c) bl
   | Fix (_,(lna,tl,bl)) ->
       let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in

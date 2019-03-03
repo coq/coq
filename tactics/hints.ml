@@ -46,7 +46,7 @@ let rec head_bound sigma t = match EConstr.kind sigma t with
 | Prod (_, _, b)  -> head_bound sigma b
 | LetIn (_, _, _, b) -> head_bound sigma b
 | App (c, _) -> head_bound sigma c
-| Case (_, _, _, c, _) -> head_bound sigma c
+| Case (_, _, _, _, _, c, _) -> head_bound sigma c
 | Ind (ind, _) -> GlobRef.IndRef ind
 | Const (c, _) -> GlobRef.ConstRef c
 | Construct (c, _) -> GlobRef.ConstructRef c
@@ -591,7 +591,7 @@ struct
   let head_evar sigma c =
     let rec hrec c = match EConstr.kind sigma c with
       | Evar (evk,_)   -> evk
-      | Case (_,_,_,c,_) -> hrec c
+      | Case (_,_,_,_,_,c,_) -> hrec c
       | App (c,_)      -> hrec c
       | Cast (c,_,_)   -> hrec c
       | Proj (p, c)    -> hrec c

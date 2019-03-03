@@ -378,6 +378,7 @@ end
 let () = define1 "constr_kind" constr begin fun c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclENV >>= fun env ->
   return begin match EConstr.kind sigma c with
   | Rel n ->
     v_blk 0 [|Value.of_int n|]
@@ -434,7 +435,9 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_ext Value.val_constructor cstr;
       of_instance u;
     |]
-  | Case (ci, c, iv, t, bl) ->
+  | Case (ci, u, pms, c, iv, t, bl) ->
+    (* FIXME: also change representation Ltac2-side? *)
+    let (ci, c, iv, t, bl) = EConstr.expand_case env sigma (ci, u, pms, c, iv, t, bl) in
     v_blk 13 [|
       Value.of_ext Value.val_case ci;
       Value.of_constr c;
@@ -472,6 +475,8 @@ let () = define1 "constr_kind" constr begin fun c ->
 end
 
 let () = define1 "constr_make" valexpr begin fun knd ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  Proofview.tclENV >>= fun env ->
   let c = match Tac2ffi.to_block knd with
   | (0, [|n|]) ->
     let n = Value.to_int n in
@@ -529,7 +534,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let iv = to_case_invert iv in
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
-    EConstr.mkCase (ci, c, iv, t, bl)
+    EConstr.mkCase (EConstr.contract_case env sigma (ci, c, iv, t, bl))
   | (14, [|recs; i; nas; cs|]) ->
     let recs = Value.to_array Value.to_int recs in
     let i = Value.to_int i in

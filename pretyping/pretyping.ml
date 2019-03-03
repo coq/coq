@@ -1043,7 +1043,7 @@ struct
       if not record then
         let f = it_mkLambda_or_LetIn f fsign in
         let ci = make_case_info !!env (ind_of_ind_type indt) rci LetStyle in
-          mkCase (ci, p, make_case_invert !!env indt ci, cj.uj_val,[|f|])
+          mkCase (EConstr.contract_case !!env sigma (ci, p, make_case_invert !!env indt ci, cj.uj_val,[|f|]))
       else it_mkLambda_or_LetIn f fsign
     in
     (* Make dependencies from arity signature impossible *)
@@ -1159,7 +1159,7 @@ struct
         let pred = nf_evar sigma pred in
         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val pred in
         let ci = make_case_info !!env (fst ind) rci IfStyle in
-          mkCase (ci, pred, make_case_invert !!env indty ci, cj.uj_val, [|b1;b2|])
+        mkCase (EConstr.contract_case !!env sigma (ci, pred, make_case_invert !!env indty ci, cj.uj_val, [|b1;b2|]))
       in
       let cj = { uj_val = v; uj_type = p } in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
