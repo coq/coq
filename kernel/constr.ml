@@ -599,30 +599,6 @@ let map_branches_with_binders g f l ci bl =
 let map_return_predicate_with_binders g f l ci p =
   map_under_context_with_binders g f l (List.length ci.ci_pp_info.ind_tags) p
 
-let rec map_under_context_with_full_binders g f l n d =
-  if n = 0 then f l d else
-    match kind d with
-    | LetIn (na,b,t,c) ->
-       let b' = f l b in
-       let t' = f l t in
-       let c' = map_under_context_with_full_binders g f (g (Context.Rel.Declaration.LocalDef (na,b,t)) l) (n-1) c in
-       if b' == b && t' == t && c' == c then d
-       else mkLetIn (na,b',t',c')
-    | Lambda (na,t,b) ->
-       let t' = f l t in
-       let b' = map_under_context_with_full_binders g f (g (Context.Rel.Declaration.LocalAssum (na,t)) l) (n-1) b in
-       if t' == t && b' == b then d
-       else mkLambda (na,t',b')
-    | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
-
-let map_branches_with_full_binders g f l ci bl =
-  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
-  let bl' = Array.map2 (map_under_context_with_full_binders g f l) tags bl in
-  if Array.for_all2 (==) bl' bl then bl else bl'
-
-let map_return_predicate_with_full_binders g f l ci p =
-  map_under_context_with_full_binders g f l (List.length ci.ci_pp_info.ind_tags) p
-
 let map_gen userview f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _) -> c
@@ -823,28 +799,6 @@ let liftn n k c =
     | el -> exliftn el c
 
 let lift n = liftn n 1
-
-let fold_with_full_binders g f n acc c =
-  let open Context.Rel.Declaration in
-  match kind c with
-  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
-  | Cast (c,_, t) -> f n (f n acc c) t
-  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
-  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
-  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
-  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
-  | Proj (_,c) -> f n acc c
-  | Evar (_,l) -> Array.fold_left (f n) acc l
-  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
-  | Fix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
-      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-  | CoFix (_,(lna,tl,bl)) ->
-      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
-      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
-
 
 type 'univs instance_compare_fn = GlobRef.t -> int ->
   'univs -> 'univs -> bool

@@ -466,25 +466,6 @@ val map_branches_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> 
 
 val map_return_predicate_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr -> constr
 
-(** [map_under_context_with_full_binders g f n l c] is similar to
-    [map_under_context_with_binders] except that [g] takes also a full
-    binder as argument and that only the number of binders (and not
-    their signature) is required *)
-
-val map_under_context_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> int -> constr -> constr
-
-(** [map_branches_with_full_binders g f l br] is equivalent to
-   [map_branches_with_binders] but using
-   [map_under_context_with_full_binders] *)
-
-val map_branches_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr array -> constr array
-
-(** [map_return_predicate_with_full_binders g f l p] is equivalent to
-   [map_return_predicate_with_binders] but using
-   [map_under_context_with_full_binders] *)
-
-val map_return_predicate_with_full_binders : ((constr, constr) Context.Rel.Declaration.pt -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr -> constr
-
 (** {6 Functionals working on the immediate subterm of a construction } *)
 
 (** [fold f acc c] folds [f] on the immediate subterms of [c]
@@ -492,10 +473,6 @@ val map_return_predicate_with_full_binders : ((constr, constr) Context.Rel.Decla
    the usual representation of the constructions; it is not recursive *)
 
 val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
-
-val fold_with_full_binders :
-  (rel_declaration -> 'a -> 'a) -> ('a -> 'b -> constr -> 'b) ->
-    'a -> 'b -> constr -> 'b
 
 (** [map f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
