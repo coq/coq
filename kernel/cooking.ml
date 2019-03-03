@@ -75,24 +75,23 @@ let share_univs cache r u l =
   let (u', args) = share cache r l in
     mkApp (instantiate_my_gr r (Instance.append u' u), args)
 
-let update_case_info cache ci modlist =
-  try
-    let (_u,l) = share cache (IndRef ci.ci_ind) modlist in
-    { ci with ci_npar = ci.ci_npar + Array.length l }
-  with Not_found ->
-    ci
-
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
 let expmod_constr cache modlist c =
   let share_univs = share_univs cache in
-  let update_case_info = update_case_info cache in
   let rec substrec c =
     match kind c with
-      | Case (ci,p,t,br) ->
-          Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
-
+      | Case (ci,u,pms,p,t,br) ->
+        begin match share cache (IndRef ci.ci_ind) modlist with
+        | (u', args) ->
+          let u = Instance.append u' u in
+          let pms = Array.append args pms in
+          let ci = { ci with ci_npar = ci.ci_npar + Array.length args } in
+          Constr.map substrec (mkCase (ci,u,pms,p,t,br))
+        | exception Not_found ->
+          Constr.map substrec c
+        end
       | Ind (ind,u) ->
           (try
             share_univs (IndRef ind) u modlist

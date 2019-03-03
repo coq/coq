@@ -279,8 +279,8 @@ let check_not_nested env sigma forbidden e =
       | Const _ -> ()
       | Ind _ -> ()
       | Construct _ -> ()
-      | Case(_,t,e,a) ->
-        check_not_nested t;check_not_nested e;Array.iter check_not_nested a
+      | Case(_,_,pms,(_, t),e,a) ->
+        Array.iter check_not_nested pms; check_not_nested t;check_not_nested e;Array.iter (fun (_, c) -> check_not_nested c) a
       | Fix _ -> user_err Pp.(str "check_not_nested : Fix")
       | CoFix _ -> user_err Pp.(str "check_not_nested : Fix")
   in
@@ -416,7 +416,8 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) g =
         with e when CErrors.noncritical e ->
           user_err ~hdr:"Recdef.travel" (str "the term " ++ Printer.pr_leconstr_env env sigma expr_info.info ++ str " can not contain a recursive call to " ++ Id.print expr_info.f_id)
       end
-    | Case(ci,t,a,l) ->
+    | Case(ci,u,pms,t,a,l) ->
+      let (ci,t,a,l) = EConstr.expand_case (pf_env g) sigma (ci, u, pms, t, a, l) in
       begin
         let continuation_tac_a =
           jinfo.casE
@@ -677,7 +678,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let a' = infos.info in
   let new_info =
     {infos with
-      info = mkCase(ci,t,a',l);
+      info = mkCase (EConstr.contract_case (pf_env g) sigma (ci,t,a',l));
       is_main_branch = expr_info.is_main_branch;
       is_final = expr_info.is_final} in
   let g,destruct_tac,rev_to_thin_intro =

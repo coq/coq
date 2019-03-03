@@ -564,13 +564,15 @@ let rec execute env cstr =
     | Construct c ->
       cstr, type_of_constructor env c
 
-    | Case (ci,p,c,lf) ->
+    | Case (ci, u, pms, p, c, lf) ->
+        (** FIXME: change type_of_case to handle the compact form *)
+        let (ci, p, c, lf) = expand_case env (ci, u, pms, p, c, lf) in
         let c', ct = execute env c in
         let p', pt = execute env p in
         let lf', lft = execute_array env lf in
         let ci', t = type_of_case env ci p' pt c' ct lf' lft in
         let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
-          else mkCase(ci',p',c',lf')
+          else mkCase (Inductive.contract_case env (ci',p',c',lf'))
         in
         cstr, t
 
@@ -709,11 +711,6 @@ let judge_of_inductive env indu =
 
 let judge_of_constructor env cu =
   make_judge (mkConstructU cu) (type_of_constructor env cu)
-
-let judge_of_case env ci pj cj lfj =
-  let lf, lft = dest_judgev lfj in
-  let ci, t = type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
-  make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft)) t
 
 (* Building type of primitive operators and type *)
 

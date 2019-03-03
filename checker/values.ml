@@ -147,7 +147,7 @@ let rec v_constr =
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
-    [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
+    [|v_caseinfo;v_instance; Array v_constr; v_case_return ;v_constr;Array v_case_branch|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_constr|]; (* Proj *)
@@ -159,6 +159,10 @@ and v_prec = Tuple ("prec_declaration",
                     [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
+
+and v_case_branch = Tuple ("case_branch", [|Array (v_binder_annot v_name); v_constr|])
+
+and v_case_return = Tuple ("case_return", [|Array (v_binder_annot v_name); v_constr|])
 
 let v_rdecl = v_sum "rel_declaration" 0
     [| [|v_binder_annot v_name; v_constr|];               (* LocalAssum *)

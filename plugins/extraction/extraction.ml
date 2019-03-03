@@ -672,7 +672,9 @@ let rec extract_term env sg mle mlt c args =
         (* we unify it with an fresh copy of the stored type of [Rel n]. *)
         let extract_rel mlt = put_magic (mlt, Mlenv.get mle n) (MLrel n)
         in extract_app env sg mle mlt extract_rel args
-    | Case ({ci_ind=ip},_,c0,br) ->
+    | Case (ci, u, pms, r, c0, br) ->
+        let (ip, r, c0, br) = EConstr.expand_case env sg (ci, u, pms, r, c0, br) in
+        let ip = ci.ci_ind in
         extract_app env sg mle mlt (extract_case env sg mle (ip,c0,br)) args
     | Fix ((_,i),recd) ->
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
@@ -1071,9 +1073,13 @@ let fake_match_projection env p =
         let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
         fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
       else
-        let p = mkLambda (x, lift 1 indty, liftn 1 2 ty) in
-        let branch = lift 1 (it_mkLambda_or_LetIn (mkRel (List.length ctx - (j-1))) ctx) in
-        let body = mkCase (ci, p, mkRel 1, [|branch|]) in
+        let p = ([|x|], liftn 1 2 ty) in
+        let branch =
+          let nas = Array.of_list (List.rev_map Context.Rel.Declaration.get_annot ctx) in
+          (nas, mkRel (List.length ctx - (j - 1)))
+        in
+        let params = Context.Rel.to_extended_vect mkRel 1 paramslet in
+        let body = mkCase (ci, u, params, p, mkRel 1, [|branch|]) in
         it_mkLambda_or_LetIn (mkLambda (x,indty,body)) mib.mind_params_ctxt
     | LocalDef (_,c,t) :: rem ->
       let c = liftn 1 j c in

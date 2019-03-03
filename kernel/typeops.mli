@@ -92,11 +92,6 @@ val judge_of_cast :
 val judge_of_inductive : env -> inductive puniverses -> unsafe_judgment
 val judge_of_constructor : env -> constructor puniverses -> unsafe_judgment
 
-(** {6 Type of Cases. } *)
-val judge_of_case : env -> case_info
-  -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
-    -> unsafe_judgment
-
 (** {6 Type of global references. } *)
 
 val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t

@@ -178,7 +178,7 @@ let type_case_branches env sigma (ind,largs) pj c =
   let ty = whd_betaiota sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
   sigma, (lc, ty, Sorts.relevance_of_sort ps)
 
-let judge_of_case env sigma ci pj cj lfj =
+let judge_of_case env sigma case ci pj cj lfj =
   let ((ind, u), spec) =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj in
@@ -186,7 +186,7 @@ let judge_of_case env sigma ci pj cj lfj =
   let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec pj cj.uj_val in
   let () = check_case_info env (fst indspec) rci ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
-  sigma, { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
+  sigma, { uj_val  = mkCase case;
            uj_type = rslty }
 
 let check_type_fixpoint ?loc env sigma lna lar vdefj =
@@ -361,11 +361,13 @@ let rec execute env sigma cstr =
         let sigma, ty = type_of_constructor env sigma ctor in
         sigma, make_judge cstr ty
 
-    | Case (ci,p,c,lf) ->
+    | Case (ci, u, pms, p, c, lf) ->
+        let case = (ci, u, pms, p, c, lf) in
+        let (ci, p, c, lf) = EConstr.expand_case env sigma case in
         let sigma, cj = execute env sigma c in
         let sigma, pj = execute env sigma p in
         let sigma, lfj = execute_array env sigma lf in
-        judge_of_case env sigma ci pj cj lfj
+        judge_of_case env sigma case ci pj cj lfj
 
     | Fix ((vn,i as vni),recdef) ->
         let sigma, (_,tys,_ as recdef') = execute_recdef env sigma recdef in

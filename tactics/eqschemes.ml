@@ -214,7 +214,7 @@ let build_sym_scheme env ind =
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
-  (mkCase (ci,
+  (mkCase (Inductive.contract_case env (ci,
      my_it_mkLambda_or_LetIn_name
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkApp (mkIndU indu,Array.concat
@@ -222,7 +222,7 @@ let build_sym_scheme env ind =
            rel_vect 1 nrealargs;
            rel_vect (2*nrealargs+2) nrealargs])),
      mkRel 1 (* varH *),
-       [|cstr (nrealargs+1)|]))))
+       [|cstr (nrealargs+1)|])))))
   in c, UState.of_context_set ctx
 
 let sym_scheme_kind =
@@ -276,13 +276,13 @@ let build_sym_involutive_scheme env ind =
   let c =
     (my_it_mkLambda_or_LetIn paramsctxt
      (my_it_mkLambda_or_LetIn_name realsign_ind
-      (mkCase (ci,
-               my_it_mkLambda_or_LetIn_name
-               (lift_rel_context (nrealargs+1) realsign_ind)
-               (mkApp (eq,[|
-               mkApp
-               (mkIndU indu, Array.concat
-               [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
+      (mkCase (Inductive.contract_case env (ci,
+                my_it_mkLambda_or_LetIn_name
+                (lift_rel_context (nrealargs+1) realsign_ind)
+                (mkApp (eq,[|
+                mkApp
+                (mkIndU indu, Array.concat
+                [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
                 rel_vect (2*nrealargs+2) nrealargs;
                 rel_vect 1 nrealargs]);
                mkApp (sym,Array.concat
@@ -296,7 +296,7 @@ let build_sym_involutive_scheme env ind =
                  [|mkRel 1|]])|]]);
                mkRel 1|])),
                mkRel 1 (* varH *),
-               [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|]))))
+               [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))))
   in (c, UState.of_context_set ctx), eff
 
 let sym_involutive_scheme_kind =
@@ -432,10 +432,10 @@ let build_l2r_rew_scheme dep env ind kind =
                rel_vect 4 nrealargs;
                [|mkRel 2|]])|]]) in
   let main_body =
-    mkCase (ci,
+    mkCase (Inductive.contract_case env (ci,
       my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
       applied_sym_C 3,
-      [|mkVar varHC|]) in
+      [|mkVar varHC|])) in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
@@ -444,14 +444,14 @@ let build_l2r_rew_scheme dep env ind kind =
   (mkNamedLambda (make_annot varHC indr) applied_PC
   (mkNamedLambda (make_annot varH indr) (lift 2 applied_ind)
   (if dep then (* we need a coercion *)
-     mkCase (cieq,
+     mkCase (Inductive.contract_case env (cieq,
        mkLambda (make_annot (Name varH) indr,lift 3 applied_ind,
          mkLambda (make_annot Anonymous indr,
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
                    applied_PR)),
        mkApp (sym_involutive,
          Array.append (Context.Rel.to_extended_vect mkRel 3 mip.mind_arity_ctxt) [|mkVar varH|]),
-       [|main_body|])
+       [|main_body|]))
    else
      main_body))))))
   in (c, UState.of_context_set ctx),
@@ -533,7 +533,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda (make_annot varH indr) applied_ind
-  (mkCase (ci,
+  (mkCase (Inductive.contract_case env (ci,
      my_it_mkLambda_or_LetIn_name
        (lift_rel_context (nrealargs+1) realsign_ind)
        (mkNamedProd (make_annot varP indr)
@@ -545,7 +545,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
         (my_it_mkProd_or_LetIn
           (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda (make_annot varHC indr) applied_PC'
-        (mkVar varHC))|])))))
+        (mkVar varHC))|]))))))
   in c, UState.of_context_set ctx
 
 (**********************************************************************)
@@ -612,7 +612,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
                              (if dep then realsign_ind else realsign)) s)
   (mkNamedLambda (make_annot varHC indr) (lift 1 applied_PG)
   (mkApp
-    (mkCase (ci,
+    (mkCase (Inductive.contract_case env (ci,
        my_it_mkLambda_or_LetIn_name
          (lift_rel_context (nrealargs+3) realsign_ind)
          (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)),
@@ -620,7 +620,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
        [|mkLambda
           (make_annot (Name varHC) indr,
            lift (nrealargs+3) applied_PC,
-           mkRel 1)|]),
+           mkRel 1)|])),
     [|mkVar varHC|]))))))
   in c, UState.of_context_set ctx
 
@@ -812,7 +812,7 @@ let build_congr env (eq,refl,ctx) ind =
            (mkIndU indu,
             Context.Rel.to_extended_list mkRel (mip.mind_nrealargs+2) paramsctxt @
             Context.Rel.to_extended_list mkRel 0 realsign))
-     (mkCase (ci,
+     (mkCase (Inductive.contract_case env (ci,
        my_it_mkLambda_or_LetIn_name
          (lift_rel_context (mip.mind_nrealargs+3) realsign)
          (mkLambda
@@ -829,7 +829,7 @@ let build_congr env (eq,refl,ctx) ind =
        mkVar varH,
        [|mkApp (refl,
           [|mkVar varB;
-            mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) b|])|])|]))))))
+            mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) b|])|])|])))))))
   in c, UState.of_context_set ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"

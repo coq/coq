@@ -204,7 +204,7 @@ let recheck_applications unify flags env evdref t =
        else ()
      in aux 0 fty
     | _ ->
-       iter_with_full_binders !evdref (fun d env -> push_rel d env) aux env t
+       iter_with_full_binders env !evdref (fun d env -> push_rel d env) aux env t
   in aux env t
 
 
@@ -279,7 +279,7 @@ let noccur_evar env evd evk c =
         | LocalAssum _ -> ()
         | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr b)))
   | Proj (p,c) -> occur_rec true acc c
-  | _ -> iter_with_full_binders evd (fun rd (k,env) -> (succ k, push_rel rd env))
+  | _ -> iter_with_full_binders env evd (fun rd (k,env) -> (succ k, push_rel rd env))
     (occur_rec check_types) acc c
   in
   try occur_rec false (0,env) c; true with Occur -> false
@@ -474,14 +474,14 @@ let expansion_of_var sigma aliases x =
   | Some a, _ -> (true, Alias.repr sigma a)
   | None, a :: _ -> (true, Some a)
 
-let rec expand_vars_in_term_using sigma aliases t = match EConstr.kind sigma t with
+let rec expand_vars_in_term_using env sigma aliases t = match EConstr.kind sigma t with
   | Rel n -> of_alias (normalize_alias sigma aliases (RelAlias n))
   | Var id -> of_alias (normalize_alias sigma aliases (VarAlias id))
   | _ ->
-    let self aliases c = expand_vars_in_term_using sigma aliases c in
-    map_constr_with_full_binders sigma (extend_alias sigma) self aliases t
+    let self aliases c = expand_vars_in_term_using env sigma aliases c in
+    map_constr_with_full_binders env sigma (extend_alias sigma) self aliases t
 
-let expand_vars_in_term env sigma = expand_vars_in_term_using sigma (make_alias_map env sigma)
+let expand_vars_in_term env sigma = expand_vars_in_term_using env sigma (make_alias_map env sigma)
 
 let free_vars_and_rels_up_alias_expansion env sigma aliases c =
   let acc1 = ref Int.Set.empty and acc2 = ref Id.Set.empty in
@@ -517,7 +517,7 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
     | Const _ | Ind _ | Construct _ ->
         acc2 := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !acc2
     | _ ->
-        iter_with_full_binders sigma
+        iter_with_full_binders env sigma
           (fun d (aliases,depth) -> (extend_alias sigma d aliases,depth+1))
           frec (aliases,depth) c
   in
@@ -1627,7 +1627,7 @@ let rec invert_definition unify flags choose imitate_defs
             let candidates =
               try
                 let t =
-                  map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
+                  map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
                     imitate envk t in
                 (* Less dependent solutions come last *)
                 l@[t]
@@ -1641,7 +1641,7 @@ let rec invert_definition unify flags choose imitate_defs
               evar'')
         | None ->
            (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
-          map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
+          map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
                                         imitate envk t
   in
   let rhs = whd_beta evd rhs (* heuristic *) in

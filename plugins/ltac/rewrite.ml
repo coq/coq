@@ -923,8 +923,9 @@ let reset_env env =
   let env' = Global.env_of_context (Environ.named_context_val env) in
     Environ.push_rel_context (Environ.rel_context env) env'
 
-let fold_match env sigma c =
-  let (ci, p, c, brs) = destCase sigma c in
+let fold_match ?(force=false) env sigma c =
+  let case = destCase sigma c in
+  let (ci, p, c, brs) = EConstr.expand_case env sigma case in
   let cty = Retyping.get_type_of env sigma c in
   let dep, pred, exists, sk =
     let env', ctx, body =
@@ -991,7 +992,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                     let argty = Retyping.get_type_of env (goalevars evars) arg in
                     let state, res = s.strategy { state ; env ;
                                                   unfresh ;
-                                                  term1 = arg ;	ty1 = argty ;
+                                                  term1 = arg ;        ty1 = argty ;
                                                   cstr = (prop,None) ;
                                                   evars } in
                     let res' =
@@ -1093,19 +1094,19 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             | Fail | Identity -> res
           in state, res
 
-      (* 		if x' = None && flags.under_lambdas then *)
-      (* 		  let lam = mkLambda (n, x, b) in *)
-      (* 		  let lam', occ = aux env lam occ None in *)
-      (* 		  let res =  *)
-      (* 		    match lam' with *)
-      (* 		    | None -> None *)
-      (* 		    | Some (prf, (car, rel, c1, c2)) -> *)
-      (* 			Some (resolve_morphism env sigma t *)
-      (* 				 ~fnewt:unfold_all *)
-      (* 				 (Lazy.force coq_all) [| x ; lam |] [| None; lam' |] *)
-      (* 				 cstr evars) *)
-      (* 		  in res, occ *)
-      (* 		else *)
+      (*                 if x' = None && flags.under_lambdas then *)
+      (*                   let lam = mkLambda (n, x, b) in *)
+      (*                   let lam', occ = aux env lam occ None in *)
+      (*                   let res =  *)
+      (*                     match lam' with *)
+      (*                     | None -> None *)
+      (*                     | Some (prf, (car, rel, c1, c2)) -> *)
+      (*                         Some (resolve_morphism env sigma t *)
+      (*                                  ~fnewt:unfold_all *)
+      (*                                  (Lazy.force coq_all) [| x ; lam |] [| None; lam' |] *)
+      (*                                  cstr evars) *)
+      (*                   in res, occ *)
+      (*                 else *)
 
       | Prod (n, dom, codom) ->
           let lam = mkLambda (n, dom, codom) in
@@ -1131,27 +1132,27 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
    dependent relations and using projections to get them out.
  *)
       (* | Lambda (n, t, b) when flags.under_lambdas -> *)
-      (* 	  let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in *)
-      (* 	  let n'' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n' in *)
-      (* 	  let n''' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n'' in *)
-      (* 	  let rel = new_cstr_evar cstr env (mkApp (Lazy.force coq_relation, [|t|])) in *)
-      (* 	  let env' = Environ.push_rel_context [(n'',None,lift 2 rel);(n'',None,lift 1 t);(n', None, t)] env in *)
-      (* 	  let b' = s env' avoid b (Typing.type_of env' (goalevars evars) (lift 2 b)) (unlift_cstr env (goalevars evars) cstr) evars in *)
-      (* 	    (match b' with *)
-      (* 	    | Some (Some r) -> *)
-      (* 		let prf = match r.rew_prf with *)
-      (* 		  | RewPrf (rel, prf) -> *)
-      (* 		      let rel = pointwise_or_dep_relation n' t r.rew_car rel in *)
-      (* 		      let prf = mkLambda (n', t, prf) in *)
-      (* 			RewPrf (rel, prf) *)
-      (* 		  | x -> x *)
-      (* 		in *)
-      (* 		  Some (Some { r with *)
-      (* 		    rew_prf = prf; *)
-      (* 		    rew_car = mkProd (n, t, r.rew_car); *)
-      (* 		    rew_from = mkLambda(n, t, r.rew_from); *)
-      (* 		    rew_to = mkLambda (n, t, r.rew_to) }) *)
-      (* 	    | _ -> b') *)
+      (*           let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in *)
+      (*           let n'' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n' in *)
+      (*           let n''' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n'' in *)
+      (*           let rel = new_cstr_evar cstr env (mkApp (Lazy.force coq_relation, [|t|])) in *)
+      (*           let env' = Environ.push_rel_context [(n'',None,lift 2 rel);(n'',None,lift 1 t);(n', None, t)] env in *)
+      (*           let b' = s env' avoid b (Typing.type_of env' (goalevars evars) (lift 2 b)) (unlift_cstr env (goalevars evars) cstr) evars in *)
+      (*             (match b' with *)
+      (*             | Some (Some r) -> *)
+      (*                 let prf = match r.rew_prf with *)
+      (*                   | RewPrf (rel, prf) -> *)
+      (*                       let rel = pointwise_or_dep_relation n' t r.rew_car rel in *)
+      (*                       let prf = mkLambda (n', t, prf) in *)
+      (*                         RewPrf (rel, prf) *)
+      (*                   | x -> x *)
+      (*                 in *)
+      (*                   Some (Some { r with *)
+      (*                     rew_prf = prf; *)
+      (*                     rew_car = mkProd (n, t, r.rew_car); *)
+      (*                     rew_from = mkLambda(n, t, r.rew_from); *)
+      (*                     rew_to = mkLambda (n, t, r.rew_to) }) *)
+      (*             | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
         let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
@@ -1183,7 +1184,8 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           | Fail | Identity -> b'
         in state, res
 
-      | Case (ci, p, c, brs) ->
+      | Case (ci, u, pms, p, c, brs) ->
+        let (ci, p, c, brs) = EConstr.expand_case env (goalevars evars) (ci, u, pms, p, c, brs) in
         let cty = Retyping.get_type_of env (goalevars evars) c in
         let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
         let cstr' = Some eqty in
@@ -1193,7 +1195,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         let state, res =
           match c' with
           | Success r ->
-            let case = mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs) in
+            let case = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) in
             let res = make_leibniz_proof env case ty r in
               state, Success (coerce env unfresh (prop,cstr) res)
           | Fail | Identity ->
@@ -1215,7 +1217,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               in
                 match found with
                 | Some r ->
-                  let ctxc = mkCase (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' c'))) in
+                  let ctxc = mkCase (EConstr.contract_case env (goalevars evars) (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' c')))) in
                     state, Success (make_leibniz_proof env ctxc ty r)
                 | None -> state, c'
             else
@@ -1416,7 +1418,7 @@ module Strategies =
 
     let fold_glob c : 'a pure_strategy = { strategy =
       fun { state ; env ; term1 = t ; ty1 = ty ; cstr ; evars } ->
-(* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
+(*         let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
         let sigma, c = Pretyping.understand_tcc env (goalevars evars) c in
         let unfolded =
           try Tacred.try_red_product env sigma c

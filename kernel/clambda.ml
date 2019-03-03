@@ -710,7 +710,8 @@ let rec lambda_of_constr env c =
 
   | Construct _ ->  lambda_of_app env c empty_args
 
-  | Case(ci,t,a,branches) ->
+  | Case (ci, u, pms, t, a, br) ->
+    let (ci, t, a, branches) = Inductive.expand_case env.global_env (ci, u, pms, t, a, br) in
     let ind = ci.ci_ind in
     let mib = lookup_mind (fst ind) env.global_env in
     let oib = mib.mind_packets.(snd ind) in

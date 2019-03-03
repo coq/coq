@@ -566,7 +566,7 @@ let is_rigid_head sigma flags t =
   | Construct _ | Int _ | Float _ -> true
   | Fix _ | CoFix _ -> true
   | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Cast (_, _, _) | Prod _
-    | Lambda _ | LetIn _ | App (_, _) | Case (_, _, _, _)
+    | Lambda _ | LetIn _ | App (_, _) | Case _
     | Proj (_, _) -> false (* Why aren't Prod, Sort rigid heads ? *)
 
 let force_eqs c =
@@ -656,7 +656,7 @@ let rec is_neutral env sigma ts t =
       not (TransparentState.is_transparent_variable ts id)
     | Rel n -> true
     | Evar _ | Meta _ -> true
-    | Case (_, p, c, cl) -> is_neutral env sigma ts c
+    | Case (_, _, _, _, c, _) -> is_neutral env sigma ts c
     | Proj (p, c) -> is_neutral env sigma ts c
     | Lambda _ | LetIn _ | Construct _ | CoFix _ | Int _ | Float _ -> false
     | Sort _ | Cast (_, _, _) | Prod (_, _, _) | Ind _ -> false (* Really? *)
@@ -846,7 +846,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                unify_app_pattern true curenvnb pb opt substn cM f1 l1 cN f2 l2
              | _ -> raise ex)
 
-        | Case (ci1,p1,c1,cl1), Case (ci2,p2,c2,cl2) ->
+        | Case (ci1, u1, pms1, p1, c1, cl1), Case (ci2, u2, pms2, p2, c2, cl2) ->
+          let (ci1, p1, c1, cl1) = EConstr.expand_case env sigma (ci1, u1, pms1, p1, c1, cl1) in
+          let (ci2, p2, c2, cl2) = EConstr.expand_case env sigma (ci2, u2, pms2, p2, c2, cl2) in
             (try
              if not (eq_ind ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN);
              let opt' = {opt with at_top = true; with_types = false} in
@@ -1671,7 +1673,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
         (push_named_context_val d sign,depdecls)
     | (AllOccurrences | AtLeastOneOccurrence), InHyp as occ ->
         let occ = if likefirst then LikeFirst else AtOccs occ in
-        let newdecl = replace_term_occ_decl_modulo sigma occ test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo env sigma occ test mkvarid d in
         if Context.Named.Declaration.equal (EConstr.eq_constr sigma) d newdecl
            && not (indirectly_dependent sigma c d depdecls)
         then
@@ -1682,7 +1684,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
           (push_named_context_val newdecl sign, newdecl :: depdecls)
     | occ ->
         (* There are specific occurrences, hence not like first *)
-        let newdecl = replace_term_occ_decl_modulo sigma (AtOccs occ) test mkvarid d in
+        let newdecl = replace_term_occ_decl_modulo env sigma (AtOccs occ) test mkvarid d in
         (push_named_context_val newdecl sign, newdecl :: depdecls) in
   try
     let sign,depdecls =
@@ -1692,7 +1694,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
       | NoOccurrences -> concl
       | occ ->
           let occ = if likefirst then LikeFirst else AtOccs occ in
-          replace_term_occ_modulo sigma occ test mkvarid concl
+          replace_term_occ_modulo env sigma occ test mkvarid concl
     in
     let lastlhyp =
       if List.is_empty depdecls then None else Some (NamedDecl.get_id (List.last depdecls)) in
@@ -1780,11 +1782,11 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
                  matchrec c1
                with ex when precatchable_exception ex ->
                  matchrec c2)
-          | Case(_,_,c,lf) -> (* does not search in the predicate *)
+          | Case(_,_,_,_,c,lf) -> (* does not search in the predicate *)
                (try
                  matchrec c
                with ex when precatchable_exception ex ->
-                 iter_fail matchrec lf)
+                 iter_fail matchrec (Array.map snd lf))
           | LetIn(_,c1,_,c2) ->
                (try
                  matchrec c1
@@ -1865,8 +1867,8 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
                 let c2 = args.(n-1) in
                 bind (matchrec c1) (matchrec c2)
 
-            | Case(_,_,c,lf) -> (* does not search in the predicate *)
-                bind (matchrec c) (bind_iter matchrec lf)
+            | Case(_,_,_,_,c,lf) -> (* does not search in the predicate *)
+                bind (matchrec c) (bind_iter matchrec (Array.map snd lf))
 
             | Proj (p,c) -> matchrec c
 

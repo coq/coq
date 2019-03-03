@@ -72,7 +72,7 @@ let constructor_instantiate mind u mib c =
   let s = ind_subst mind mib u in
     substl s (subst_instance_constr u c)
 
-let instantiate_params full t u args sign =
+let instantiate_params t u args sign =
   let fail () =
     anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch.") in
   let (rem_args, subs, ty) =
@@ -81,8 +81,7 @@ let instantiate_params full t u args sign =
         match (decl, largs, kind ty) with
           | (LocalAssum _, a::args, Prod(_,_,t)) -> (args, a::subs, t)
           | (LocalDef (_,b,_), _, LetIn(_,_,_,t))    ->
-             (largs, (substl subs (subst_instance_constr u b))::subs, t)
-          | (_,[],_)                -> if full then fail() else ([], subs, ty)
+            (largs, (substl subs (subst_instance_constr u b))::subs, t)
           | _                       -> fail ())
       sign
       ~init:(args,[],t)
@@ -93,11 +92,11 @@ let instantiate_params full t u args sign =
 let full_inductive_instantiate mib u params sign =
   let dummy = Sorts.prop in
   let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
-    fst (Term.destArity (instantiate_params true t u params mib.mind_params_ctxt))
+    fst (Term.destArity (instantiate_params t u params mib.mind_params_ctxt))
 
 let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
   let inst_ind = constructor_instantiate mind u mib t in
-   instantiate_params true inst_ind u params mib.mind_params_ctxt
+   instantiate_params inst_ind u params mib.mind_params_ctxt
 
 (************************************************************************)
 (************************************************************************)
@@ -360,6 +359,91 @@ let is_correct_arity env c pj ind specif params =
   with LocalArity kinds ->
     error_elim_arity env ind c pj kinds
 
+(** {6 Changes of representation of Case nodes} *)
+
+(** Provided:
+    - a universe instance [u]
+    - a term substitution [subst]
+    - name replacements [nas]
+    [instantiate_context u subst nas ctx] applies both [u] and [subst] to [ctx]
+    while replacing names using [nas] (order reversed)
+*)
+let instantiate_context u subst nas ctx =
+  let rec instantiate i ctx = match ctx with
+  | [] -> assert (Int.equal i (-1)); []
+  | LocalAssum (_, ty) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    LocalAssum (nas.(i), ty) :: ctx
+  | LocalDef (_, ty, bdy) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let ty = substnl subst i (subst_instance_constr u ty) in
+    let bdy = substnl subst i (subst_instance_constr u bdy) in
+    LocalDef (nas.(i), ty, bdy) :: ctx
+  in
+  instantiate (Array.length nas - 1) ctx
+
+let expand_case_specif mib (ci, u, params, p, c, br) =
+  (* Γ ⊢ c : I@{u} params args *)
+  (* Γ, indices, self : I@{u} params indices ⊢ p : Type *)
+  let mip = mib.mind_packets.(snd ci.ci_ind) in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list params) in
+  (* Expand the return clause *)
+  let ep =
+    let (nas, p) = p in
+    let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+    let self =
+      let args = Context.Rel.to_extended_vect mkRel 0 mip.mind_arity_ctxt in
+      let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+      mkApp (mkIndU (ci.ci_ind, inst), args)
+    in
+    let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
+    let realdecls = instantiate_context u paramsubst nas realdecls in
+    Term.it_mkLambda_or_LetIn p realdecls
+  in
+  (* Expand the branches *)
+  let subst = paramsubst @ ind_subst (fst ci.ci_ind) mib u in
+  let ebr =
+    let build_one_branch i (nas, br) (ctx, _) =
+      let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+      let ctx = instantiate_context u subst nas ctx in
+      Term.it_mkLambda_or_LetIn br ctx
+    in
+    Array.map2_i build_one_branch br mip.mind_nf_lc
+  in
+  (ci, ep, c, ebr)
+
+let expand_case env (ci, _, _, _, _, _ as case) =
+  let specif = Environ.lookup_mind (fst ci.ci_ind) env in
+  expand_case_specif specif case
+
+let contract_case env (ci, p, c, br) =
+  let (mib, mip) = lookup_mind_specif env ci.ci_ind in
+  let (arity, p) = Term.decompose_lam_n_decls (mip.mind_nrealdecls + 1) p in
+  let (u, pms) = match arity with
+  | LocalAssum (_, ty) :: _ ->
+    (** Last binder is the self binder for the term being eliminated *)
+    let (ind, args) = decompose_appvect ty in
+    let (ind, u) = destInd ind in
+    let () = assert (eq_ind ind ci.ci_ind) in
+    let pms = Array.sub args 0 mib.mind_nparams in
+    (** Unlift the parameters from under the index binders *)
+    let dummy = List.make mip.mind_nrealdecls mkProp in
+    let pms = Array.map (fun c -> Vars.substl dummy c) pms in
+    (u, pms)
+  | _ -> assert false
+  in
+  let p =
+    let nas = Array.of_list (List.rev_map get_annot arity) in
+    (nas, p)
+  in
+  let map i br =
+    let (ctx, br) = Term.decompose_lam_n_decls mip.mind_consnrealdecls.(i) br in
+    let nas = Array.of_list (List.rev_map get_annot ctx) in
+    (nas, br)
+  in
+  (ci, u, pms, p, c, Array.mapi map br)
 
 (************************************************************************)
 (* Type of case branches *)
@@ -756,7 +840,8 @@ let rec subterm_specif renv stack t =
   let f,l = decompose_app (whd_all renv.env t) in
     match kind f with
     | Rel k -> subterm_var k renv
-    | Case (ci,p,c,lbr) ->
+    | Case (ci, u, pms, p, c, lbr) ->
+      let (ci, p, c, lbr) = expand_case renv.env (ci, u, pms, p, c, lbr) in
        let stack' = push_stack_closures renv l stack in
        let cases_spec =
          branches_specif renv (lazy_subterm_specif renv [] c) ci
@@ -954,7 +1039,8 @@ let check_one_fix renv recpos trees def =
                       check_rec_call renv stack (Term.applist(lift p c,l))
               end
 
-        | Case (ci,p,c_0,lrest) ->
+        | Case (ci, u, pms, ret, c_0, br) ->
+            let (ci, p, c_0, lrest) = expand_case renv.env (ci, u, pms, ret, c_0, br) in
             begin try
               List.iter (check_rec_call renv []) (c_0::p::l);
               (* compute the recarg info for the arguments of each branch *)
@@ -976,7 +1062,7 @@ let check_one_fix renv recpos trees def =
                   (* the call to whd_betaiotazeta will reduce the
                      apparent iota redex away *)
                   check_rec_call renv []
-                    (Term.applist (mkCase (ci,p,c_0,lrest), l))
+                    (Term.applist (mkCase (ci, u, pms, ret, c_0, br), l))
               | _ -> Exninfo.iraise exn
             end
 
@@ -1254,13 +1340,14 @@ let check_one_cofix env nbfix def deftype =
             else
               raise (CoFixGuardError (env,UnguardedRecursiveCall c))
 
-        | Case (_,p,tm,vrest) ->
-           begin
-             let tree = match restrict_spec env (Subterm (Strict, tree)) p with
-             | Dead_code -> assert false
-             | Subterm (_, tree') -> tree'
-             | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
-             in
+        | Case (ci, u, pms, p, tm, br) ->
+          begin
+            let (_, p, tm, vrest) = expand_case env (ci, u, pms, p, tm, br) in
+            let tree = match restrict_spec env (Subterm (Strict, tree)) p with
+            | Dead_code -> assert false
+            | Subterm (_, tree') -> tree'
+            | _ -> raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
+            in
                if (noccur_with_meta n nbfix p) then
                  if (noccur_with_meta n nbfix tm) then
                    if (List.for_all (noccur_with_meta n nbfix) args) then

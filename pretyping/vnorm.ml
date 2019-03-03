@@ -280,7 +280,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs c in
       let ci = sw.sw_annot.Vmvalues.ci in
-      nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
+      nf_stk env sigma (mkCase (Inductive.contract_case env (ci, p, c, branchs))) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;
      let p' = Projection.make p true in

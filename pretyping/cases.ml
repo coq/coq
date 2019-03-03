@@ -1131,17 +1131,16 @@ let rec ungeneralize sigma n ng body =
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
       mkLetIn (na,b,t,ungeneralize sigma (n+1) ng c)
-  | Case (ci,p,c,brs) ->
+  | Case (ci,u,pms,p,c,brs) ->
       (* We traverse a split *)
       let p =
-        let sign,p = decompose_lam_assum sigma p in
+        let (nas, p) = p in
         let sign2,p = decompose_prod_n_assum sigma ng p in
-        let p = prod_applist sigma p [mkRel (n+List.length sign+ng)] in
-        it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
-      mkCase (ci,p,c,Array.map2 (fun q c ->
-        let sign,b = decompose_lam_n_decls sigma q c in
-        it_mkLambda_or_LetIn (ungeneralize sigma (n+q) ng b) sign)
-        ci.ci_cstr_ndecls brs)
+        let p = prod_applist sigma p [mkRel (n+Array.length nas+ng)] in
+        nas, it_mkProd_or_LetIn p sign2
+      in
+      let map (nas, br) = nas, ungeneralize sigma (n + Array.length nas) ng br in
+      mkCase (ci, u, pms, p, c, Array.map map brs)
   | App (f,args) ->
       (* We traverse an inner generalization *)
       assert (isCase sigma f);
@@ -1161,12 +1160,9 @@ let rec is_dependent_generalization sigma ng body =
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
       is_dependent_generalization sigma ng c
-  | Case (ci,p,c,brs) ->
+  | Case (ci,u,pms,p,c,brs) ->
       (* We traverse a split *)
-      Array.exists2 (fun q c ->
-        let _,b = decompose_lam_n_decls sigma q c in
-        is_dependent_generalization sigma ng b)
-        ci.ci_cstr_ndecls brs
+      Array.exists (fun (_, b) -> is_dependent_generalization sigma ng b) brs
   | App (g,args) ->
       (* We traverse an inner generalization *)
       assert (isCase sigma g);
@@ -1723,7 +1719,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
     let good = List.filter (fun (_,u,_) -> is_conv_leq !!env sigma t u) subst in
     match good with
     | [] ->
-      map_constr_with_full_binders sigma (push_binder sigma) aux x t
+      map_constr_with_full_binders !!env sigma (push_binder sigma) aux x t
     | (_, _, u) :: _ -> (* u is in extenv *)
       let vl = List.map pi1 good in
       let ty =

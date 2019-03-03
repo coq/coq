@@ -351,7 +351,9 @@ let matches_core env sigma allow_bound_rels
           sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
-      | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
+      | PIf (a1,b1,b1'), Case (ci, u2, pms2, p2, a2, ([|b2;b2'|] as br2)) ->
+          let (ci2, p2, a2, br2) = EConstr.expand_case env sigma (ci, u2, pms2, p2, a2, br2) in
+          let b2, b2' = match br2 with [|b2; b2'|] -> b2, b2' | _ -> assert false in
           let ctx_b2,b2 = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(0) b2 in
           let ctx_b2',b2' = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(1) b2' in
           let n = Context.Rel.length ctx_b2 in
@@ -367,7 +369,8 @@ let matches_core env sigma allow_bound_rels
           else
             raise PatternMatchingFailure
 
-      | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
+      | PCase (ci1, p1, a1, br1), Case (ci2, u2, pms2, p2, a2, br2) ->
+          let (ci2, p2, a2, br2) = EConstr.expand_case env sigma (ci2, u2, pms2, p2, a2, br2) in
           let n2 = Array.length br2 in
           let () = match ci1.cip_ind with
           | None -> ()
@@ -498,12 +501,27 @@ let sub_match ?(closed=true) env sigma pat c =
        | [app';c] -> mk_ctx (mkApp (app',[|c|]))
        | _ -> assert false in
      try_aux [(env, app); (env, Array.last lc)] mk_ctx next
-  | Case (ci,hd,c1,lc) ->
+  | Case (ci,u,pms,hd0,c1,lc0) ->
+      let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
+      let (_, hd, _, br) = expand_case env sigma (ci, u, pms, hd0, c1, lc0) in
+      let hd =
+        let (ctx, hd) = decompose_lam_assum sigma hd in
+        (push_rel_context ctx env, hd)
+      in
+      let map i br =
+        let decls = mip.Declarations.mind_consnrealdecls.(i) in
+        let (ctx, c) = decompose_lam_n_decls sigma decls br in
+        (push_rel_context ctx env, c)
+      in
+      let lc = Array.to_list (Array.mapi map br) in
       let next_mk_ctx = function
-      | c1 :: hd :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
+      | c1 :: hd :: lc ->
+        let hd = (fst hd0, hd) in
+        let map_br (nas, _) br = (nas, br) in
+        mk_ctx (mkCase (ci,u,pms,hd,c1,Array.map2 map_br lc0 (Array.of_list lc)))
       | _ -> assert false
       in
-      let sub = (env, c1) :: (env, hd) :: subargs env lc in
+      let sub = (env, c1) :: hd :: lc in
       try_aux sub next_mk_ctx next
   | Fix (indx,(names,types,bodies as recdefs)) ->
     let nb_fix = Array.length types in

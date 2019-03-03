@@ -83,6 +83,12 @@ type pconstant = Constant.t puniverses
 type pinductive = inductive puniverses
 type pconstructor = constructor puniverses
 
+type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
+type 'types pcase_return = Name.t Context.binder_annot array * 'types
+
+type ('constr, 'types, 'univs) pcase =
+  case_info * 'univs * 'constr array * 'types pcase_return * 'constr * 'constr pcase_branch array
+
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
@@ -99,7 +105,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
   | Construct of (constructor * 'univs)
-  | Case      of case_info * 'constr * 'constr * 'constr array
+  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr * 'constr pcase_branch array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
@@ -114,6 +120,9 @@ type existential = existential_key * constr array
 
 type types = constr
 
+type case_return = types pcase_return
+type case_branch = constr pcase_branch
+type case = (constr, types, Instance.t) pcase
 type rec_declaration = (constr, types) prec_declaration
 type fixpoint = (constr, types) pfixpoint
 type cofixpoint = (constr, types) pcofixpoint
@@ -189,7 +198,7 @@ let mkConstructU c = Construct c
 let mkConstructUi ((ind,u),i) = Construct ((ind,i),u)
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-let mkCase (ci, p, c, ac) = Case (ci, p, c, ac)
+let mkCase (ci, u, params, p, c, ac) = Case (ci, u, params, p, c, ac)
 
 (* If recindxs = [|i1,...in|]
       funnames = [|f1,...fn|]
@@ -417,7 +426,7 @@ let destConstruct c = match kind c with
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 let destCase c = match kind c with
-  | Case (ci,p,c,v) -> (ci,p,c,v)
+  | Case (ci,u,params,p,c,v) -> (ci,u,params,p,c,v)
   | _ -> raise DestKO
 
 let destProj c = match kind c with
@@ -471,7 +480,7 @@ let fold f acc c = match kind c with
   | App (c,l) -> Array.fold_left f (f acc c) l
   | Proj (_p,c) -> f acc c
   | Evar (_,l) -> Array.fold_left f acc l
-  | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
+  | Case (_,_,pms,(_,p),c,bl) -> Array.fold_left (fun acc (_, b) -> f acc b) (f (f (Array.fold_left f acc pms) p) c) bl
   | Fix (_,(_lna,tl,bl)) ->
     Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
   | CoFix (_,(_lna,tl,bl)) ->
@@ -491,7 +500,7 @@ let iter f c = match kind c with
   | App (c,l) -> f c; Array.iter f l
   | Proj (_p,c) -> f c
   | Evar (_,l) -> Array.iter f l
-  | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
+  | Case (_,_,pms,p,c,bl) -> Array.iter f pms; f (snd p); f c; Array.iter (fun (_, b) -> f b) bl
   | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
   | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
 
@@ -510,7 +519,11 @@ let iter_with_binders g f n c = match kind c with
   | LetIn (_,b,t,c) -> f n b; f n t; f (g n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
   | Evar (_,l) -> Array.Fun1.iter f n l
-  | Case (_,p,c,bl) -> f n p; f n c; Array.Fun1.iter f n bl
+  | Case (_,_,pms,p,c,bl) ->
+    Array.Fun1.iter f n pms;
+    f (iterate g (Array.length (fst p)) n) (snd p);
+    f n c;
+    Array.Fun1.iter (fun n (ctx, b) -> f (iterate g (Array.length ctx) n) b) n bl
   | Proj (_p,c) -> f n c
   | Fix (_,(_,tl,bl)) ->
       Array.Fun1.iter f n tl;
@@ -537,7 +550,11 @@ let fold_constr_with_binders g f n acc c =
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_p,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
-  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Case (_,_,pms,p,c,bl) ->
+    let fold_ctx n accu (nas, c) =
+      f (iterate g (Array.length nas) n) accu c
+    in
+    Array.fold_left (fold_ctx n) (f n (fold_ctx n (Array.fold_left (f n) acc pms) p) c) bl
   | Fix (_,(_,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
@@ -551,55 +568,32 @@ let fold_constr_with_binders g f n acc c =
    not recursive and the order with which subterms are processed is
    not specified *)
 
-let rec map_under_context f n d =
-  if n = 0 then f d else
-  match kind d with
-  | LetIn (na,b,t,c) ->
-    let b' = f b in
-    let t' = f t in
-    let c' = map_under_context f (n-1) c in
-    if b' == b && t' == t && c' == c then d
-    else mkLetIn (na,b',t',c')
-  | Lambda (na,t,b) ->
-    let t' = f t in
-    let b' = map_under_context f (n-1) b in
-    if t' == t && b' == b then d
-    else mkLambda (na,t',b')
-  | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
+let map_under_context f d =
+  let (nas, p) = d in
+  let p' = f p in
+  if p' == p then d else (nas, p')
 
-let map_branches f ci bl =
-  let nl = Array.map List.length ci.ci_pp_info.cstr_tags in
-  let bl' = Array.map2 (map_under_context f) nl bl in
+let map_branches f bl =
+  let bl' = Array.map (map_under_context f) bl in
   if Array.for_all2 (==) bl' bl then bl else bl'
 
-let map_return_predicate f ci p =
-  map_under_context f (List.length ci.ci_pp_info.ind_tags) p
+let map_return_predicate f p =
+  map_under_context f p
 
-let rec map_under_context_with_binders g f l n d =
-  if n = 0 then f l d else
-  match kind d with
-  | LetIn (na,b,t,c) ->
-      let b' = f l b in
-      let t' = f l t in
-      let c' = map_under_context_with_binders g f (g l) (n-1) c in
-      if b' == b && t' == t && c' == c then d
-      else mkLetIn (na,b',t',c')
-  | Lambda (na,t,b) ->
-      let t' = f l t in
-      let b' = map_under_context_with_binders g f (g l) (n-1) b in
-      if t' == t && b' == b then d
-      else mkLambda (na,t',b')
-  | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
+let map_under_context_with_binders g f l d =
+  let (nas, p) = d in
+  let l = iterate g (Array.length nas) l in
+  let p' = f l p in
+  if p' == p then d else (nas, p')
 
-let map_branches_with_binders g f l ci bl =
-  let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
-  let bl' = Array.map2 (map_under_context_with_binders g f l) tags bl in
+let map_branches_with_binders g f l bl =
+  let bl' = Array.map (map_under_context_with_binders g f l) bl in
   if Array.for_all2 (==) bl' bl then bl else bl'
 
-let map_return_predicate_with_binders g f l ci p =
-  map_under_context_with_binders g f l (List.length ci.ci_pp_info.ind_tags) p
+let map_return_predicate_with_binders g f l p =
+  map_under_context_with_binders g f l p
 
-let map_gen userview f c = match kind c with
+let map f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _ | Float _) -> c
   | Cast (b,k,t) ->
@@ -636,18 +630,13 @@ let map_gen userview f c = match kind c with
       let l' = Array.Smart.map f l in
       if l'==l then c
       else mkEvar (e, l')
-  | Case (ci,p,b,bl) when userview ->
+  | Case (ci,u,pms,p,b,bl) ->
+      let pms' = Array.Smart.map f pms in
       let b' = f b in
-      let p' = map_return_predicate f ci p in
-      let bl' = map_branches f ci bl in
-      if b'==b && p'==p && bl'==bl then c
-      else mkCase (ci, p', b', bl')
-  | Case (ci,p,b,bl) ->
-      let b' = f b in
-      let p' = f p in
-      let bl' = Array.Smart.map f bl in
-      if b'==b && p'==p && bl'==bl then c
-      else mkCase (ci, p', b', bl')
+      let p' = map_return_predicate f p in
+      let bl' = map_branches f bl in
+      if b'==b && p'==p && bl'==bl && pms'==pms then c
+      else mkCase (ci, u, pms', p', b', bl')
   | Fix (ln,(lna,tl,bl)) ->
       let tl' = Array.Smart.map f tl in
       let bl' = Array.Smart.map f bl in
@@ -659,10 +648,19 @@ let map_gen userview f c = match kind c with
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
 
-let map_user_view = map_gen true
-let map = map_gen false
-
 (* Like {!map} but with an accumulator. *)
+
+let fold_map_under_context f accu d =
+  let (nas, p) = d in
+  let accu, p' = f accu p in
+  if p' == p then accu, d else accu, (nas, p')
+
+let fold_map_branches f accu bl =
+  let accu, bl' = Array.Smart.fold_left_map (fold_map_under_context f) accu bl in
+  if Array.for_all2 (==) bl' bl then accu, bl else accu, bl'
+
+let fold_map_return_predicate f accu p =
+  fold_map_under_context f accu p
 
 let fold_map f accu c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -701,12 +699,13 @@ let fold_map f accu c = match kind c with
       let accu, l' = Array.Smart.fold_left_map f accu l in
       if l'==l then accu, c
       else accu, mkEvar (e, l')
-  | Case (ci,p,b,bl) ->
+  | Case (ci,u,pms,p,b,bl) ->
+      let accu, pms' = Array.Smart.fold_left_map f accu pms in
       let accu, b' = f accu b in
-      let accu, p' = f accu p in
-      let accu, bl' = Array.Smart.fold_left_map f accu bl in
-      if b'==b && p'==p && bl'==bl then accu, c
-      else accu, mkCase (ci, p', b', bl')
+      let accu, p' = fold_map_return_predicate f accu p in
+      let accu, bl' = fold_map_branches f accu bl in
+      if b'==b && p'==p && bl'==bl && pms'==pms then accu, c
+      else accu, mkCase (ci, u, pms', p', b', bl')
   | Fix (ln,(lna,tl,bl)) ->
       let accu, tl' = Array.Smart.fold_left_map f accu tl in
       let accu, bl' = Array.Smart.fold_left_map f accu bl in
@@ -761,12 +760,13 @@ let map_with_binders g f l c0 = match kind c0 with
     let al' = Array.Fun1.Smart.map f l al in
     if al' == al then c0
     else mkEvar (e, al')
-  | Case (ci, p, c, bl) ->
-    let p' = f l p in
+  | Case (ci, u, pms, p, c, bl) ->
+    let pms' = Array.Fun1.Smart.map f l pms in
+    let p' = map_return_predicate_with_binders g f l p in
     let c' = f l c in
-    let bl' = Array.Fun1.Smart.map f l bl in
-    if p' == p && c' == c && bl' == bl then c0
-    else mkCase (ci, p', c', bl')
+    let bl' = map_branches_with_binders g f l bl in
+    if p' == p && c' == c && bl' == bl && pms' == pms then c0
+    else mkCase (ci, u, pms', p', c', bl')
   | Fix (ln, (lna, tl, bl)) ->
     let tl' = Array.Fun1.Smart.map f l tl in
     let l' = iterate g (Array.length tl) l in
@@ -816,6 +816,9 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
    optimisation that physically equal arrays are equals (hence the
    calls to {!Array.equal_norefl}). *)
 
+let eq_under_context eq (_nas1, p1) (_nas2, p2) =
+  eq p1 p2
+
 let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
@@ -841,8 +844,10 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
-  | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-    eq 0 p1 p2 && eq 0 c1 c2 && Array.equal (eq 0) bl1 bl2
+  | Case (ci1,u1,pms1,p1,c1,bl1), Case (ci2,u2,pms2,p2,c2,bl2) ->
+    (** FIXME: what are we doing with u1 = u2 ? *)
+    eq_ind ci1.ci_ind ci2.ci_ind && leq_universes (GlobRef.IndRef ci1.ci_ind) 0 u1 u2 &&
+    Array.equal (eq 0) pms1 pms2 && eq_under_context (eq 0) p1 p2 && eq 0 c1 c2 && Array.equal (eq_under_context (eq 0)) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
     Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
     && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
@@ -980,6 +985,9 @@ let constr_ord_int f t1 t2 =
   let fix_cmp (a1, i1) (a2, i2) =
     ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
   in
+  let ctx_cmp f (_n1, p1) (_n2, p2) =
+    f p1 p2
+  in
   match kind t1, kind t2 with
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
@@ -1013,8 +1021,11 @@ let constr_ord_int f t1 t2 =
     | Ind _, _ -> -1 | _, Ind _ -> 1
     | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
-    | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-        ((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
+    | Case (_,_u1,pms1,p1,c1,bl1), Case (_,_u2,pms2,p2,c2,bl2) ->
+      let c = Array.compare f pms1 pms2 in
+      if c != 0 then c
+      else
+        ((ctx_cmp f =? f) ==? (Array.compare (ctx_cmp f))) p1 p2 c1 c2 bl1 bl2
     | Case _, _ -> -1 | _, Case _ -> 1
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
         ((fix_cmp =? (Array.compare f)) ==? (Array.compare f))
@@ -1082,6 +1093,9 @@ let array_eqeq t1 t2 =
      (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
    in aux 0)
 
+let hasheq_ctx (nas1, c1) (nas2, c2) =
+  array_eqeq nas1 nas2 && c1 == c2
+
 let hasheq t1 t2 =
   match t1, t2 with
     | Rel n1, Rel n2 -> n1 == n2
@@ -1099,8 +1113,10 @@ let hasheq t1 t2 =
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
-    | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
-      ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
+    | Case (ci1,u1,pms1,p1,c1,bl1), Case (ci2,u2,pms2,p2,c2,bl2) ->
+      (** FIXME: use deeper equality for contexts *)
+      u1 == u2 && array_eqeq pms1 pms2 &&
+      ci1 == ci2 && hasheq_ctx p1 p2 && c1 == c2 && Array.equal hasheq_ctx bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
       Int.equal i1 i2
       && Array.equal Int.equal ln1 ln2
@@ -1147,7 +1163,7 @@ let sh_instance = Univ.Instance.share
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
 let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
-  let rec hash_term t =
+  let rec hash_term (t : t) =
     match t with
       | Var i ->
         (Var (sh_id i), combinesmall 1 (Id.hash i))
@@ -1189,12 +1205,26 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         let u', hu = sh_instance u in
         (Construct (sh_construct c, u'),
          combinesmall 11 (combine (constructor_syntactic_hash c) hu))
-      | Case (ci,p,c,bl) ->
-        let p, hp = sh_rec p
-        and c, hc = sh_rec c in
-        let bl,hbl = hash_term_array bl in
-        let hbl = combine (combine hc hp) hbl in
-        (Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
+      | Case (ci,u,pms,p,c,bl) ->
+        (** FIXME: use a dedicated hashconsing structure *)
+        let hcons_ctx (lna, c) =
+          let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
+          let fold accu na = combine (hash_annot Name.hash na) accu in
+          let hna = Array.fold_left fold 0 lna in
+          let c, hc = sh_rec c in
+          (lna, c), combine hna hc
+        in
+        let u, hu = sh_instance u in
+        let p, hp = hcons_ctx p in
+        let c, hc = sh_rec c in
+        let pms,hpms = hash_term_array pms in
+        let fold accu c =
+          let c, h = hcons_ctx c in
+          combine accu h, c
+        in
+        let hbl, bl= Array.fold_left_map fold 0 bl in
+        let hbl = combine (combine hc (combine hpms (combine hu hp))) hbl in
+        (Case (sh_ci ci, u, pms, p, c, bl), combinesmall 12 hbl)
       | Fix (ln,(lna,tl,bl)) ->
         let bl,hbl = hash_term_array bl in
         let tl,htl = hash_term_array tl in
@@ -1277,8 +1307,8 @@ let rec hash t =
       combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
     | Construct (c,u) ->
       combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
-    | Case (_ , p, c, bl) ->
-      combinesmall 12 (combine3 (hash c) (hash p) (hash_term_array bl))
+    | Case (_ , u, pms, p, c, bl) ->
+      combinesmall 12 (combine (combine (hash c) (combine (hash_term_array pms) (combine (Instance.hash u) (hash_under_context p)))) (hash_branches bl))
     | Fix (_ln ,(_, tl, bl)) ->
       combinesmall 13 (combine (hash_term_array bl) (hash_term_array tl))
     | CoFix(_ln, (_, tl, bl)) ->
@@ -1292,6 +1322,11 @@ let rec hash t =
 
 and hash_term_array t =
   Array.fold_left (fun acc t -> combine acc (hash t)) 0 t
+
+and hash_under_context (_, t) = hash t
+
+and hash_branches bl =
+  Array.fold_left (fun acc t -> combine acc (hash_under_context t)) 0 bl
 
 module CaseinfoHash =
 struct
@@ -1418,10 +1453,15 @@ let rec debug_print c =
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"
-  | Case (_ci,p,c,bl) -> v 0
-      (hv 0 (str"<"++debug_print p++str">"++ cut() ++ str"Case " ++
-             debug_print c ++ str"of") ++ cut() ++
-       prlist_with_sep (fun _ -> brk(1,2)) debug_print (Array.to_list bl) ++
+  | Case (_ci,_u,pms,p,c,bl) ->
+    let pr_ctx (nas, c) =
+      prvect_with_sep spc (fun na -> Name.print na.binder_name) nas ++ spc () ++ str "|-" ++ spc () ++
+        debug_print c
+    in
+    v 0 (hv 0 (str"Case " ++
+             debug_print c ++ cut () ++ str "as" ++ cut () ++ prlist_with_sep cut debug_print (Array.to_list pms) ++
+             cut () ++ str"return"++ cut () ++ pr_ctx p ++ cut() ++ str"with") ++ cut() ++
+       prlist_with_sep (fun _ -> brk(1,2)) pr_ctx (Array.to_list bl) ++
       cut() ++ str"end")
   | Fix f -> debug_print_fix debug_print f
   | CoFix(i,(lna,tl,bl)) ->

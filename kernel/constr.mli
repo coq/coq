@@ -141,14 +141,29 @@ val mkRef : GlobRef.t Univ.puniverses -> constr
 
 (** Constructs a destructor of inductive type.
 
-    [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac]
+    [mkCase ci params p c ac] stand for match [c] as [x] in [I args] return [p] with [ac]
     presented as describe in [ci].
 
-    [p] structure is [fun args x -> "return clause"]
+
+    [p] structure is [args x |- "return clause"]
 
     [ac]{^ ith} element is ith constructor case presented as
-    {e lambda construct_args (without params). case_term } *)
-val mkCase : case_info * constr * constr * constr array -> constr
+    {e construct_args |- case_term } *)
+
+type 'constr pcase_branch = Name.t Context.binder_annot array * 'constr
+(** Names of the indices + name of self *)
+
+type 'types pcase_return = Name.t Context.binder_annot array * 'types
+(** Names of the branches *)
+
+type ('constr, 'types, 'univs) pcase =
+  case_info * 'univs * 'constr array * 'types pcase_return * 'constr * 'constr pcase_branch array
+
+type case_return = types pcase_return
+type case_branch = constr pcase_branch
+type case = (constr, types, Univ.Instance.t) pcase
+
+val mkCase : case -> constr
 
 (** If [recindxs = [|i1,...in|]]
       [funnames = [|f1,.....fn|]]
@@ -232,7 +247,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
 
   | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Case      of case_info * 'constr * 'constr * 'constr array
+  | Case      of case_info * 'univs * 'constr array * 'types pcase_return * 'constr * 'constr pcase_branch array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
   | Proj      of Projection.t * 'constr
@@ -339,7 +354,7 @@ Ci(...yij...) => ti | ... end] (or [let (..y1i..) := c as x in I args
 return P in t1], or [if c then t1 else t2])
 @return [(info,c,fun args x => P,[|...|fun yij => ti| ...|])]
 where [info] is pretty-printing information *)
-val destCase : constr -> case_info * constr * constr * constr array
+val destCase : constr -> case
 
 (** Destructs a projection *)
 val destProj : constr -> Projection.t * constr
@@ -409,12 +424,6 @@ val lift : int -> constr -> constr
 (** {6 Functionals working on expressions canonically abstracted over
        a local context (possibly with let-ins)} *)
 
-(** [map_under_context f l c] maps [f] on the immediate subterms of a
-    term abstracted over a context of length [n] (local definitions
-    are counted) *)
-
-val map_under_context : (constr -> constr) -> int -> constr -> constr
-
 (** [map_branches f br] maps [f] on the immediate subterms of an array
    of "match" branches [br] in canonical eta-let-expanded form; it is
    not recursive and the order with which subterms are processed is
@@ -422,7 +431,7 @@ val map_under_context : (constr -> constr) -> int -> constr -> constr
    types and possibly terms occurring in the context of each branch as
    well as the body of each branch *)
 
-val map_branches : (constr -> constr) -> case_info -> constr array -> constr array
+val map_branches : (constr -> constr) -> case_branch array -> case_branch array
 
 (** [map_return_predicate f p] maps [f] on the immediate subterms of a
    return predicate of a "match" in canonical eta-let-expanded form;
@@ -431,16 +440,7 @@ val map_branches : (constr -> constr) -> case_info -> constr array -> constr arr
    the types and possibly terms occurring in the context of each
    branch as well as the body of the predicate *)
 
-val map_return_predicate : (constr -> constr) -> case_info -> constr -> constr
-
-(** [map_under_context_with_binders g f n l c] maps [f] on the
-    immediate subterms of a term abstracted over a context of length
-    [n] (local definitions are counted); it preserves sharing; it
-    carries an extra data [n] (typically a lift index) which is
-    processed by [g] (which typically add 1 to [n]) at each binder
-    traversal *)
-
-val map_under_context_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> int -> constr -> constr
+val map_return_predicate : (constr -> constr) -> case_return -> case_return
 
 (** [map_branches_with_binders f br] maps [f] on the immediate
    subterms of an array of "match" branches [br] in canonical
@@ -452,7 +452,7 @@ val map_under_context_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> '
    occurring in the context of the branch as well as the body of the
    branch *)
 
-val map_branches_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr array -> constr array
+val map_branches_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_branch array -> case_branch array
 
 (** [map_return_predicate_with_binders f p] maps [f] on the immediate
    subterms of a return predicate of a "match" in canonical
@@ -464,7 +464,7 @@ val map_branches_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> 
    occurring in the context of each branch as well as the body of the
    predicate *)
 
-val map_return_predicate_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_info -> constr -> constr
+val map_return_predicate_with_binders : ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> case_return -> case_return
 
 (** {6 Functionals working on the immediate subterm of a construction } *)
 
@@ -479,13 +479,6 @@ val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
    not specified *)
 
 val map : (constr -> constr) -> constr -> constr
-
-(** [map_user_view f c] maps [f] on the immediate subterms of [c]; it
-   differs from [map f c] in that the typing context and body of the
-   return predicate and of the branches of a [match] are considered as
-   immediate subterm of a [match] *)
-
-val map_user_view : (constr -> constr) -> constr -> constr
 
 (** Like {!map}, but also has an additional accumulator. *)
 

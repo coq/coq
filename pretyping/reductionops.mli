@@ -71,9 +71,12 @@ module Stack : sig
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -252,14 +255,16 @@ val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 
 
 type 'a miota_args = {
-  mP      : constr;     (** the result type *)
+  mU      : EInstance.t;
+  mParams : constr array;
+  mP      : case_return; (** the result type *)
   mconstr : constr;     (** the constructor *)
   mci     : case_info;  (** special info to re-build pattern *)
   mcargs  : 'a list;    (** the constructor's arguments *)
-  mlf     : 'a array }  (** the branch code vector *)
+  mlf     : 'a pcase_branch array }  (** the branch code vector *)
 
 val reducible_mind_case : evar_map -> constr -> bool
-val reduce_mind_case : evar_map -> constr miota_args -> constr
+val reduce_mind_case : Environ.env -> evar_map -> constr miota_args -> constr
 
 val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool

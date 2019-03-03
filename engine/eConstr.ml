@@ -35,6 +35,9 @@ include (Evd.MiniEConstr : module type of Evd.MiniEConstr
 type types = t
 type constr = t
 type existential = t pexistential
+type case_return = t pcase_return
+type case_branch = t pcase_branch
+type case = (t, t, EInstance.t) pcase
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
@@ -69,7 +72,7 @@ let mkInd i = of_kind (Ind (in_punivs i))
 let mkConstructU pc = of_kind (Construct pc)
 let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
-let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
+let mkCase (ci, u, pms, c, r, p) = of_kind (Case (ci, u, pms, c, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
@@ -194,7 +197,7 @@ let destCoFix sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destCase sigma c = match kind sigma c with
-| Case (ci, t, c, p) -> (ci, t, c, p)
+| Case (ci, u, pms, t, c, p) -> (ci, u, pms, t, c, p)
 | _ -> raise DestKO
 
 let destProj sigma c = match kind sigma c with
@@ -319,19 +322,28 @@ let existential_type = Evd.existential_type
 
 let lift n c = of_constr (Vars.lift n (unsafe_to_constr c))
 
-let map_under_context f n c =
-  let f c = unsafe_to_constr (f (of_constr c)) in
-  of_constr (Constr.map_under_context f n (unsafe_to_constr c))
-let map_branches f ci br =
-  let f c = unsafe_to_constr (f (of_constr c)) in
-  of_constr_array (Constr.map_branches f ci (unsafe_to_constr_array br))
-let map_return_predicate f ci p =
-  let f c = unsafe_to_constr (f (of_constr c)) in
-  of_constr (Constr.map_return_predicate f ci (unsafe_to_constr p))
+let of_branches : Constr.case_branch array -> case_branch array =
+  match Evd.MiniEConstr.unsafe_eq with
+  | Refl -> fun x -> x
 
-let map_user_view sigma f c =
+let unsafe_to_branches : case_branch array -> Constr.case_branch array =
+  match Evd.MiniEConstr.unsafe_eq with
+  | Refl -> fun x -> x
+
+let of_return : Constr.case_return -> case_return =
+  match Evd.MiniEConstr.unsafe_eq with
+  | Refl -> fun x -> x
+
+let unsafe_to_return : case_return -> Constr.case_return =
+  match Evd.MiniEConstr.unsafe_eq with
+  | Refl -> fun x -> x
+
+let map_branches f br =
   let f c = unsafe_to_constr (f (of_constr c)) in
-  of_constr (Constr.map_user_view f (unsafe_to_constr (whd_evar sigma c)))
+  of_branches (Constr.map_branches f (unsafe_to_branches br))
+let map_return_predicate f p =
+  let f c = unsafe_to_constr (f (of_constr c)) in
+  of_return (Constr.map_return_predicate f (unsafe_to_return p))
 
 let map sigma f c =
   let f c = unsafe_to_constr (f (of_constr c)) in
@@ -345,7 +357,45 @@ let iter sigma f c =
   let f c = f (of_constr c) in
   Constr.iter f (unsafe_to_constr (whd_evar sigma c))
 
-let iter_with_full_binders sigma g f n c =
+let expand_case env _sigma (ci, u, pms, p, c, bl) =
+  let u = EInstance.unsafe_to_instance u in
+  let pms = unsafe_to_constr_array pms in
+  let p = unsafe_to_return p in
+  let c = unsafe_to_constr c in
+  let bl = unsafe_to_branches bl in
+  let (ci, p, c, bl) = Inductive.expand_case env (ci, u, pms, p, c, bl) in
+  let p = of_constr p in
+  let c = of_constr c in
+  let bl = of_constr_array bl in
+  (ci, p, c, bl)
+
+let expand_branch env _sigma u pms (ind, i) (nas, _br) =
+  let open Declarations in
+  let u = EInstance.unsafe_to_instance u in
+  let pms = unsafe_to_constr_array pms in
+  let (mib, mip) = Inductive.lookup_mind_specif env ind in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl (Array.to_list pms) in
+  let subst = paramsubst @ Inductive.ind_subst (fst ind) mib u in
+  let (ctx, _) = mip.mind_nf_lc.(i - 1) in
+  let (ctx, _) = List.chop mip.mind_consnrealdecls.(i - 1) ctx in
+  let ans = Inductive.instantiate_context u subst nas ctx in
+  let ans : rel_context = match Evd.MiniEConstr.unsafe_eq with Refl -> ans in
+  ans
+
+let contract_case env _sigma (ci, p, c, bl) =
+  let p = unsafe_to_constr p in
+  let c = unsafe_to_constr c in
+  let bl = unsafe_to_constr_array bl in
+  let (ci, u, pms, p, c, bl) = Inductive.contract_case env (ci, p, c, bl) in
+  let u = EInstance.make u in
+  let pms = of_constr_array pms in
+  let p = of_return p in
+  let c = of_constr c in
+  let bl = of_branches bl in
+  (ci, u, pms, p, c, bl)
+
+let iter_with_full_binders env sigma g f n c =
   let open Context.Rel.Declaration in
   match kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -356,7 +406,10 @@ let iter_with_full_binders sigma g f n c =
   | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
   | Evar (_,l) -> Array.Fun1.iter f n l
-  | Case (_,p,c,bl) -> f n p; f n c; Array.Fun1.iter f n bl
+  | Case (ci,u,pms,p,c,bl) ->
+    (* FIXME: skip the type annotations *)
+    let (ci, p, c, bl) = expand_case env sigma (ci, u, pms, p, c, bl) in
+    f n p; f n c; Array.Fun1.iter f n bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
@@ -558,6 +611,8 @@ let universes_of_constr sigma c =
     | Evar (k, args) ->
        let concl = Evd.evar_concl (Evd.find sigma k) in
        fold sigma aux (aux s concl) c
+    | Case (_, u, _, _, _, _) ->
+      fold sigma aux (LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s) c
     | _ -> fold sigma aux s c
   in aux LSet.empty c
 

@@ -255,6 +255,13 @@ let subst_univs_level_constr subst c =
          let u' = Univ.subst_univs_level_universe subst u in
            if u' == u then t else
              (changed := true; mkSort (Sorts.sort_of_univ u'))
+      | Case (ci, u, pms, p, c, br) ->
+        if Univ.Instance.is_empty u then Constr.map aux t
+        else
+          let u' = f u in
+          if u' == u then Constr.map aux t
+          else
+            (changed := true; Constr.map aux (mkCase (ci, u', pms, p, c, br)))
       | _ -> Constr.map aux t
     in
     let c' = aux c in
@@ -291,6 +298,13 @@ let subst_instance_constr subst c =
          let u' = Univ.subst_instance_universe subst u in
           if u' == u then t else
             (mkSort (Sorts.sort_of_univ u'))
+      | Case (ci, u, pms, p, c, br) ->
+        if Univ.Instance.is_empty u then Constr.map aux t
+        else
+          let u' = f u in
+          if u' == u then Constr.map aux t
+          else
+            Constr.map aux (mkCase (ci, u', pms, p, c, br))
       | _ -> Constr.map aux t
     in
     aux c
@@ -318,5 +332,7 @@ let universes_of_constr c =
     | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in
       LSet.fold LSet.add (Universe.levels u) s
+    | Case (_, u, _, _, _, _) ->
+      Constr.fold aux (LSet.fold LSet.add (Instance.levels u) s) c
     | _ -> Constr.fold aux s c
   in aux LSet.empty c

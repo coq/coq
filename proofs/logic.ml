@@ -298,13 +298,10 @@ let collect_meta_variables c =
   let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
-    | Case(ci,p,c,br) ->
-        (* Hack assuming only two situations: the legacy one that branches,
-           if with Metas, are Meta, and the new one with eta-let-expanded
-           branches *)
-        let br = Array.map2 (fun n b -> try snd (Term.decompose_lam_n_decls n b) with UserError _ -> b) ci.ci_cstr_ndecls br in
+    | Case(ci,u,pms,p,c,br) ->
+        let br = Array.map snd br in
         Array.fold_left (collrec deep)
-          (Constr.fold (collrec deep) (Constr.fold (collrec deep) acc p) c)
+          (Constr.fold (collrec deep) (Constr.fold (collrec deep) (Array.fold_left (collrec deep) acc pms) (snd p)) c)
           br
     | App _ -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
@@ -402,14 +399,15 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
         let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
-      | Case (ci,p,c,lf) ->
+      | Case (ci, u, pms, p, c, lf) ->
+        let (ci, p, c, lf) = Inductive.expand_case env (ci, u, pms, p, c, lf) in
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
         let sigma = check_conv_leq_goal env sigma trm conclty' conclty in
         let (acc'',sigma,rbranches) = treat_case sigma goal ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',c',lf')
+          else mkCase (Inductive.contract_case env (ci,p',c',lf'))
         in
         (acc'',conclty',sigma, ans)
 
@@ -451,13 +449,14 @@ and mk_hdgoals sigma goal goalacc trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci,p,c,lf) ->
+    | Case (ci, u, pms, p, c, lf) ->
+        let (ci, p, c, lf) = Inductive.expand_case env (ci, u, pms, p, c, lf) in
         let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
         let (acc'',sigma,rbranches) = treat_case sigma goal ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (ci,p',c',lf')
+          else mkCase (Inductive.contract_case env (ci,p',c',lf'))
         in
         (acc'',conclty',sigma, ans)
 

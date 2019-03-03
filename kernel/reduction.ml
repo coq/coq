@@ -56,7 +56,7 @@ let compare_stack_shape stk1 stk2 =
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _p1::s1, Zproj _p2::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
-    | (ZcaseT(_c1,_,_,_)::s1, ZcaseT(_c2,_,_,_)::s2) ->
+    | (ZcaseT(_c1,_,_,_,_,_)::s1, ZcaseT(_c2,_,_,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
@@ -74,7 +74,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * constr * constr array * fconstr subs
+  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list
@@ -109,8 +109,8 @@ let pure_stack lfts stk =
             | (Zfix(fx,a),(l,pstk)) ->
                 let (lfx,pa) = pure_rec l a in
                 (l, Zlfix((lfx,fx),pa)::pstk)
-            | (ZcaseT(ci,p,br,e),(l,pstk)) ->
-                (l,Zlcase(ci,l,p,br,e)::pstk)
+            | (ZcaseT(ci,u,pms,p,br,e),(l,pstk)) ->
+                (l,Zlcase(ci,l,u,pms,p,br,e)::pstk)
             | (Zprimitive(op,c,rargs,kargs),(l,pstk)) ->
                 (l,Zlprimitive(op,c,List.map (fun t -> (l,t)) rargs,
                             List.map (fun (k,t) -> (k,(l,t))) kargs)::pstk))
@@ -230,6 +230,9 @@ let sort_cmp_universes env pb s0 s1 (u, check) =
 let convert_instances ~flex u u' (s, check) =
   (check.compare_instances ~flex u u' s, check)
 
+let convert_instances_cumul pb var u u' (s, check) =
+  (check.compare_cumul_instances pb var u u' s, check)
+
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
@@ -289,8 +292,6 @@ let conv_table_key infos k1 k2 cuniv =
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
-exception IrregularPatternShape
-
 let unfold_ref_with_args infos tab fl v =
   match unfold_reference infos tab fl with
   | Def def -> Some (def, v)
@@ -317,17 +318,6 @@ let push_relevance infos r =
 
 let push_relevances infos nas =
   { infos with relevances = Array.fold_left (fun l x -> Range.cons x.Context.binder_relevance l) infos.relevances nas }
-
-let rec skip_pattern infos relevances n c1 c2 =
-  if Int.equal n 0 then {infos with relevances}, c1, c2
-  else match kind c1, kind c2 with
-    | Lambda (x, _, c1), Lambda (_, _, c2) ->
-      skip_pattern infos (Range.cons x.Context.binder_relevance relevances) (pred n) c1 c2
-    | _ -> raise IrregularPatternShape
-
-let skip_pattern infos n c1 c2 =
-  if Int.equal n 0 then infos, c1, c2
-  else skip_pattern infos infos.relevances n c1 c2
 
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
@@ -655,11 +645,22 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 let cu2 = f fx1 fx2 cu1 in
                 cmp_rec a1 a2 cu2
-            | (Zlcase(ci1,l1,p1,br1,e1),Zlcase(ci2,l2,p2,br2,e2)) ->
+            | (Zlcase(ci1,l1,u1,pms1,p1,br1,e1),Zlcase(ci2,l2,u2,pms2,p2,br2,e2)) ->
                 if not (eq_ind ci1.ci_ind ci2.ci_ind) then
                   raise NotConvertible;
-                let cu2 = f (l1, mk_clos e1 p1) (l2, mk_clos e2 p2) cu1 in
-                convert_branches l2r infos ci1 e1 e2 l1 l2 br1 br2 cu2
+                let cu = cu1 in
+                let cu =
+                  if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
+                    convert_instances ~flex:false u1 u2 cu
+                  else
+                    let mind = Environ.lookup_mind (fst ci1.ci_ind) (info_env infos.cnv_inf) in
+                    match mind.Declarations.mind_variance with
+                    | None -> convert_instances ~flex:false u1 u2 cu
+                    | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
+                in
+                let cu = Array.fold_right2 (fun c1 c2 accu -> f (l1, mk_clos e1 c1) (l2, mk_clos e2 c2) accu) pms1 pms2 cu in
+                let cu = convert_under_context l2r infos e1 e2 l1 l2 p1 p2 cu in
+                convert_branches l2r infos e1 e2 l1 l2 br1 br2 cu
             | (Zlprimitive(op1,_,rargs1,kargs1),Zlprimitive(op2,_,rargs2,kargs2)) ->
               if not (CPrimitives.equal op1 op2) then raise NotConvertible else
                 let cu2 = List.fold_right2 f rargs1 rargs2 cu1 in
@@ -684,21 +685,19 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-and convert_branches l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
-  (** Skip comparison of the pattern types. We know that the two terms are
-      living in a common type, thus this check is useless. *)
-  let fold n c1 c2 cuniv = match skip_pattern infos n c1 c2 with
-  | (infos, c1, c2) ->
-    let lft1 = el_liftn n lft1 in
-    let lft2 = el_liftn n lft2 in
-    let e1 = subs_liftn n e1 in
-    let e2 = subs_liftn n e2 in
-    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
-  | exception IrregularPatternShape ->
-    (** Might happen due to a shape invariant that is not enforced *)
-    ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cuniv
-  in
-  Array.fold_right3 fold ci.ci_cstr_nargs br1 br2 cuniv
+and convert_under_context l2r infos e1 e2 lft1 lft2 (nas1, c1) (nas2, c2) cu =
+  let n = Array.length nas1 in
+  let () = assert (Int.equal n (Array.length nas2)) in
+  let lft1 = el_liftn n lft1 in
+  let lft2 = el_liftn n lft2 in
+  let e1 = subs_liftn n e1 in
+  let e2 = subs_liftn n e2 in
+  let infos = push_relevances infos nas1 in
+  ccnv CONV l2r infos lft1 lft2 (mk_clos e1 c1) (mk_clos e2 c2) cu
+
+and convert_branches l2r infos e1 e2 lft1 lft2 br1 br2 cuniv =
+  let fold c1 c2 cuniv = convert_under_context l2r infos e1 e2 lft1 lft2 c1 c2 cuniv in
+  Array.fold_right2 fold br1 br2 cuniv
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in

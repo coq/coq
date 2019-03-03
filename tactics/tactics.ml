@@ -3342,7 +3342,7 @@ let expand_projections env sigma c =
   let rec aux env c =
     match EConstr.kind sigma c with
     | Proj (p, c) -> Retyping.expand_projection env sigma p (aux env c) []
-    | _ -> map_constr_with_full_binders sigma push_rel aux env c
+    | _ -> map_constr_with_full_binders env sigma push_rel aux env c
   in
   aux env c
 

@@ -20,6 +20,8 @@ type t = Evd.econstr
 type types = t
 type constr = t
 type existential = t pexistential
+type case_return = t pcase_return
+type case_branch = t pcase_branch
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
@@ -57,6 +59,8 @@ sig
   val empty : t
   val is_empty : t -> bool
 end
+
+type case = (t, t, EInstance.t) pcase
 
 type 'a puniverses = 'a * EInstance.t
 
@@ -128,7 +132,7 @@ val mkIndU : inductive * EInstance.t -> t
 val mkConstruct : constructor -> t
 val mkConstructU : constructor * EInstance.t -> t
 val mkConstructUi : (inductive * EInstance.t) * int -> t
-val mkCase : case_info * t * t * t array -> t
+val mkCase : case -> t
 val mkFix : (t, t) pfixpoint -> t
 val mkCoFix : (t, t) pcofixpoint -> t
 val mkArrow : t -> Sorts.relevance  -> t -> t
@@ -198,7 +202,7 @@ val destConst : Evd.evar_map -> t -> Constant.t * EInstance.t
 val destEvar : Evd.evar_map -> t -> t pexistential
 val destInd : Evd.evar_map -> t -> inductive * EInstance.t
 val destConstruct : Evd.evar_map -> t -> constructor * EInstance.t
-val destCase : Evd.evar_map -> t -> case_info * t * t * t array
+val destCase : Evd.evar_map -> t -> case
 val destProj : Evd.evar_map -> t -> Projection.t * t
 val destFix : Evd.evar_map -> t -> (t, t) pfixpoint
 val destCoFix : Evd.evar_map -> t -> (t, t) pcofixpoint
@@ -249,14 +253,12 @@ val compare_constr : Evd.evar_map -> (t -> t -> bool) -> t -> t -> bool
 (** {6 Iterators} *)
 
 val map : Evd.evar_map -> (t -> t) -> t -> t
-val map_user_view : Evd.evar_map -> (t -> t) -> t -> t
 val map_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> t) -> 'a -> t -> t
-val map_under_context : (t -> t) -> int -> t -> t
-val map_branches : (t -> t) -> case_info -> t array -> t array
-val map_return_predicate : (t -> t) -> case_info -> t -> t
+val map_branches : (t -> t) -> case_branch array -> case_branch array
+val map_return_predicate : (t -> t) -> case_return -> case_return
 val iter : Evd.evar_map -> (t -> unit) -> t -> unit
 val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
-val iter_with_full_binders : Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
+val iter_with_full_binders : Environ.env -> Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val fold : Evd.evar_map -> ('a -> t -> 'a) -> 'a -> t -> 'a
 
 (** Gather the universes transitively used in the term, including in the
@@ -329,6 +331,17 @@ val fresh_global :
 
 val is_global : Evd.evar_map -> GlobRef.t -> t -> bool
 [@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
+
+val expand_case : Environ.env -> Evd.evar_map ->
+  case -> (case_info * t * t * t array)
+
+val expand_branch : Environ.env -> Evd.evar_map ->
+  EInstance.t -> t array -> constructor -> case_branch -> rel_context
+(** Given a universe instance and parameters for the inductive type,
+    constructs the typed context in which the branch lives. *)
+
+val contract_case : Environ.env -> Evd.evar_map ->
+  (case_info * t * t * t array) -> case
 
 (** {5 Extra} *)
 

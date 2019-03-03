@@ -336,7 +336,7 @@ let make_case_or_project env sigma indf ci pred c branches =
   let open EConstr in
   let projs = get_projections env (fst (fst indf)) in
   match projs with
-  | None -> (mkCase (ci, pred, c, branches))
+  | None -> (mkCase (EConstr.contract_case env sigma (ci, pred, c, branches)))
   | Some ps ->
      assert(Array.length branches == 1);
      let na, ty, t = destLambda sigma pred in
@@ -728,6 +728,6 @@ let control_only_guard env sigma c =
   in
   let rec iter env c =
     check_fix_cofix env c;
-    EConstr.iter_with_full_binders sigma EConstr.push_rel iter env c
+    EConstr.iter_with_full_binders env sigma EConstr.push_rel iter env c
   in
   iter env c

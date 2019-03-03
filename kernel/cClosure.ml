@@ -34,6 +34,8 @@ open Environ
 open Vars
 open Esubst
 
+module RelDecl = Context.Rel.Declaration
+
 let stats = ref false
 
 (* Profiling *)
@@ -342,7 +344,7 @@ and fterm =
   | FProj of Projection.t * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr subs (* paramaters, predicate and branches are closures *)
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
@@ -392,7 +394,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * constr * constr array * fconstr subs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -558,14 +560,19 @@ let rec to_constr lfts v =
     | FFlex (ConstKey op) -> mkConstU op
     | FInd op -> mkIndU op
     | FConstruct op -> mkConstructU op
-    | FCaseT (ci,p,c,ve,env) ->
+    | FCaseT (ci, u, pms, p, c, ve, env) ->
       if is_subs_id env && is_lift_id lfts then
-        mkCase (ci, p, to_constr lfts c, ve)
+        mkCase (ci, u, pms, p, to_constr lfts c, ve)
       else
         let subs = comp_subs lfts env in
-        mkCase (ci, subst_constr subs p,
+        let f_ctx (nas, c) =
+          let c = subst_constr (Esubst.subs_liftn (Array.length nas) subs) c in
+          (nas, c)
+        in
+        mkCase (ci, u, Array.map (fun c -> subst_constr subs c) pms,
+            f_ctx p,
             to_constr lfts c,
-            Array.map (fun b -> subst_constr subs b) ve)
+            Array.map f_ctx ve)
     | FFix ((op,(lna,tys,bds)) as fx, e) ->
       if is_subs_id e && is_lift_id lfts then
         mkFix fx
@@ -657,8 +664,8 @@ let rec zip m stk =
   match stk with
     | [] -> m
     | Zapp args :: s -> zip {mark=Mark.neutr m.mark; term=FApp(m, args)} s
-    | ZcaseT(ci,p,br,e)::s ->
-        let t = FCaseT(ci, p, m, br, e) in
+    | ZcaseT(ci, u, pms, p, br, e)::s ->
+        let t = FCaseT(ci, u, pms, p, m, br, e) in
         let mark = mark (neutr (Mark.red_state m.mark)) Unknown  in
         zip {mark; term=t} s
     | Zproj p :: s ->
@@ -835,6 +842,58 @@ let drop_parameters depth n argstk =
   (* we know that n < stack_args_size(argstk) (if well-typed term) *)
   anomaly (Pp.str "ill-typed term: found a match on a partially applied constructor.")
 
+(* Iota-reduction: feed the arguments of the constructor to the branch *)
+let get_branch infos depth ci u pms (ind, c) br e args =
+  let i = c - 1 in
+  let args = drop_parameters depth ci.ci_npar args in
+  let (_nas, br) = br.(i) in
+  if Int.equal ci.ci_cstr_ndecls.(i) ci.ci_cstr_nargs.(i) then
+    (* No let-bindings in the constructor, we don't have to fetch the
+      environment to know the value of the branch. *)
+    let rec push e stk = match stk with
+    | [] -> e
+    | Zapp v :: stk -> push (Esubst.subs_cons (v, e)) stk
+    | (Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _) :: _ ->
+      assert false
+    in
+    let e = push e args in
+    (br, e)
+  else
+    (* The constructor contains let-bindings, but they are not physically
+        present in the match, so we fetch them in the environment. *)
+    let env = info_env infos in
+    let mib = Environ.lookup_mind (fst ind) env in
+    let mip = mib.mind_packets.(snd ind) in
+    let (ctx, _) = mip.mind_nf_lc.(i) in
+    let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+    let map = function
+    | Zapp args -> args
+    | Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _ ->
+      assert false
+    in
+    let args = Array.concat (List.map map args) in
+    let self =
+      let ntypes = mib.mind_ntypes in
+      let init i = inject (mkIndU ((fst ind, i), u)) in
+      Array.init ntypes init
+    in
+    let pms = mk_clos_vect e pms in
+    let rec push i e = function
+    | [] -> []
+    | RelDecl.LocalAssum _ :: ctx ->
+      let ans = push (pred i) e ctx in
+      args.(i) :: ans
+    | RelDecl.LocalDef (_, b, _) :: ctx ->
+      let ans = push i e ctx in
+      let b = subst_instance_constr u b in
+      let s = Array.rev_of_list ans in
+      let e = subs_cons (s, subs_cons (pms, subs_cons (self, subs_id 0))) in
+      let v = mk_clos e b in
+      v :: ans
+    in
+    let ext = push (Array.length args - 1) [] ctx in
+    (br, subs_cons (Array.rev_of_list ext, e))
+
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant
     of ind, and the Constructor c of this inductive type applied to arguments
@@ -873,7 +932,6 @@ let rec project_nth_arg n = function
         else (* n < q *) args.(n)
   | (ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zshift _ | Zprimitive _) :: _ | [] -> assert false
       (* After drop_parameters we have a purely applicative stack *)
-
 
 (* Iota reduction: expansion of a fixpoint.
  * Given a fixpoint and a substitution, returns the corresponding
@@ -918,7 +976,8 @@ let rec knh info m stk =
     | FCLOS(t,e) -> knht info e t (zupdate info m stk)
     | FLOCKED -> assert false
     | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
-    | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate info m stk)
+    | FCaseT(ci, u, pms, p, t, br, e) ->
+      knh info t (ZcaseT (ci, u, pms, p, br, e) :: zupdate info m stk)
     | FFix(((ri,n),_),_) ->
         (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
@@ -938,8 +997,8 @@ and knht info e t stk =
   match kind t with
     | App(a,b) ->
         knht info e a (append_stack (mk_clos_vect e b) stk)
-    | Case(ci,p,t,br) ->
-        knht info e t (ZcaseT(ci, p, br, e)::stk)
+    | Case(ci, u, pms, p, t, br) ->
+        knht info e t (ZcaseT (ci, u, pms, p, br, e)::stk)
     | Fix fx -> knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
     | Rel n -> knh info (clos_rel e n) stk
@@ -1272,15 +1331,15 @@ let rec knr info tab m stk =
         | Def v -> kni info tab v stk
         | Primitive _ -> assert false
         | OpaqueDef _ | Undef _ -> (set_norm m; (m,stk)))
-  | FConstruct((_ind,c),_u) ->
+  | FConstruct(c,_u) ->
      let use_match = red_set info.i_flags fMATCH in
      let use_fix = red_set info.i_flags fFIX in
      if use_match || use_fix then
       (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-        | (depth, args, ZcaseT(ci,_,br,e)::s) when use_match ->
+        | (depth, args, ZcaseT(ci,u,pms,_,br,e)::s) when use_match ->
             assert (ci.ci_npar>=0);
-            let rargs = drop_parameters depth ci.ci_npar args in
-            knit info tab e br.(c-1) (rargs@s)
+            let (br, e) = get_branch info depth ci u pms c br e args in
+            knit info tab e br s
         | (_, cargs, Zfix(fx,par)::s) when use_fix ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
@@ -1345,9 +1404,13 @@ let rec zip_term zfun m stk =
     | [] -> m
     | Zapp args :: s ->
         zip_term zfun (mkApp(m, Array.map zfun args)) s
-    | ZcaseT(ci,p,br,e)::s ->
-        let t = mkCase(ci, zfun (mk_clos e p), m,
-                       Array.map (fun b -> zfun (mk_clos e b)) br) in
+    | ZcaseT(ci, u, pms, p, br, e)::s ->
+        let zip_ctx (nas, c) =
+          let e = Esubst.subs_liftn (Array.length nas) e in
+          (nas, zfun (mk_clos e c))
+        in
+        let t = mkCase(ci, u, Array.map (fun c -> zfun (mk_clos e c)) pms, zip_ctx p, m,
+                       Array.map zip_ctx br) in
         zip_term zfun t s
     | Zproj p::s ->
         let t = mkProj (Projection.make p true, m) in

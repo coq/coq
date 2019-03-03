@@ -42,8 +42,10 @@ let clenv_cast_meta clenv =
             else mkCast (mkMeta mv, DEFAULTcast, b)
           with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,c,br) ->
-          mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+      | Case(ci,u,pms,p,c,br) ->
+          (* FIXME: we only change c because [p] is always a lambda and [br] is
+             most of the time??? *)
+          mkCase (ci, u, pms, p, crec_hd c, br)
       | Proj (p, c) -> mkProj (p, crec_hd c)
       | _ -> u
   in

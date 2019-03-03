@@ -67,7 +67,10 @@ let unif evd t1 t2=
           | _,Cast(_,_,_)->Queue.add (nt1,strip_outer_cast evd nt2) bige
           | (Prod(_,a,b),Prod(_,c,d))|(Lambda(_,a,b),Lambda(_,c,d))->
               Queue.add (a,c) bige;Queue.add (pop b,pop d) bige
-          | Case (_,pa,ca,va),Case (_,pb,cb,vb)->
+          | Case (cia,ua,pmsa,pa,ca,va),Case (cib,ub,pmsb,pb,cb,vb)->
+            let env = Global.env () in
+            let (cia,pa,ca,va) = EConstr.expand_case env evd (cia,ua,pmsa,pa,ca,va) in
+            let (cib,pb,cb,vb) = EConstr.expand_case env evd (cib,ub,pmsb,pb,cb,vb) in
               Queue.add (pa,pb) bige;
               Queue.add (ca,cb) bige;
               let l=Array.length va in

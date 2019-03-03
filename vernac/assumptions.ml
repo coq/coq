@@ -176,7 +176,10 @@ let fold_with_full_binders g f n acc c =
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
-  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Case (ci, u, pms, p, c, bl) ->
+    let mib = lookup_mind (fst ci.ci_ind) in
+    let (ci, p, c, bl) = Inductive.expand_case_specif mib (ci, u, pms, p, c, bl) in
+    Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
       let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
@@ -200,12 +203,11 @@ let rec traverse current ctx accu t =
 | Construct (((mind, _), _) as cst, _) ->
   traverse_inductive accu mind (ConstructRef cst)
 | Meta _ | Evar _ -> assert false
-| Case (_,oty,c,[||]) ->
+| Case (_, _, _, ([|_|], oty), c, [||]) when Vars.noccurn 1 oty ->
     (* non dependent match on an inductive with no constructors *)
-    begin match Constr.(kind oty, kind c) with
-    | Lambda(_,_,oty), Const (kn, _)
-      when Vars.noccurn 1 oty &&
-      not (Declareops.constant_has_body (lookup_constant kn)) ->
+    begin match Constr.kind c with
+    | Const (kn, _)
+      when not (Declareops.constant_has_body (lookup_constant kn)) ->
         let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)

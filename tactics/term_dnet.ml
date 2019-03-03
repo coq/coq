@@ -315,8 +315,9 @@ struct
           meta
       in
       Meta meta
-    | Case (ci,c1,c2,ca)     ->
-      Term(DCase(ci,pat_of_constr c1,pat_of_constr c2,Array.map pat_of_constr ca))
+    | Case (ci,u1,pms1,c1,c2,ca)     ->
+      let f_ctx (_, p) = pat_of_constr p in
+      Term(DCase(ci,f_ctx c1,pat_of_constr c2,Array.map f_ctx ca))
     | Fix ((ia,i),(_,ta,ca)) ->
       Term(DFix(ia,i,Array.map pat_of_constr ta, Array.map pat_of_constr ca))
     | CoFix (i,(_,ta,ca))    ->

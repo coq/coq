@@ -293,9 +293,9 @@ let constr_display csr =
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
   | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
-  | Case (ci,p,c,bl) ->
+  | Case (ci,u,pms,(_,p),c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
-      ^(array_display bl)^")"
+      ^(array_display (Array.map snd bl))^")"
   | Fix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
@@ -405,13 +405,25 @@ let print_pure_constr csr =
       print_int i; print_string ","; print_int j;
       print_string ","; universes_display u;
       print_string ")"
-  | Case (ci,p,c,bl) ->
+  | Case (ci,u,pms,p,c,bl) ->
+      let pr_ctx (nas, c) =
+        Array.iter (fun na -> print_cut (); name_display na) nas;
+        print_string " |- ";
+        box_display c
+      in
       open_vbox 0;
-      print_string "<"; box_display p; print_string ">";
       print_cut(); print_string "Case";
-      print_space(); box_display c; print_space (); print_string "of";
+      print_space(); box_display c; print_space ();
+      print_cut(); print_string "in";
+      print_cut(); print_string "Ind(";
+      sp_display (fst ci.ci_ind);
+      print_string ","; print_int (snd ci.ci_ind); print_string ")";
+      print_string "@{"; universes_display u; print_string "}";
+      Array.iter (fun x -> print_space (); box_display x) pms;
+      print_cut(); print_string "return <"; pr_ctx p; print_string ">";
+      print_cut(); print_string "with";
       open_vbox 0;
-      Array.iter (fun x ->  print_cut();  box_display x) bl;
+      Array.iter (fun x ->  print_cut();  pr_ctx x) bl;
       close_box();
       print_cut();
       print_string "end";

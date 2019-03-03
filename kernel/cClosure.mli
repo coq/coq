@@ -109,7 +109,7 @@ type fterm =
   | FProj of Projection.t * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
-  | FCaseT of case_info * constr * fconstr * constr array * fconstr subs (* predicate and branches are closures *)
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr subs (* parameters, predicate and branches are closures *)
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
@@ -127,7 +127,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * constr * constr array * fconstr subs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args

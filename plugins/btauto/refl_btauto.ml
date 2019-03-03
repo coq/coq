@@ -112,13 +112,13 @@ module Bool = struct
       else if head === negb && Array.length args = 1 then
         Negb (aux args.(0))
       else Var (Env.add env c)
-    | Case (info, r, arg, pats) ->
+    | Case (info, _, _, _, arg, pats) ->
       let is_bool =
         let i = info.ci_ind in
         Names.eq_ind i (Lazy.force ind)
       in
       if is_bool then
-        Ifb ((aux arg), (aux pats.(0)), (aux pats.(1)))
+        Ifb ((aux arg), (aux (snd pats.(0))), (aux (snd pats.(1))))
       else
         Var (Env.add env c)
     | _ ->

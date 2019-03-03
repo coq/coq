@@ -75,7 +75,7 @@ type cbv_value =
 and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
-  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
+  | CASE of Univ.Instance.t * constr array * case_return * case_branch array * case_info * cbv_value subs * cbv_stack
   | PROJ of Projection.t * cbv_stack
 
 (* les vars pourraient etre des constr,
@@ -134,7 +134,7 @@ let rec stack_concat stk1 stk2 =
   match stk1 with
       TOP -> stk2
     | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
-    | CASE(c,b,i,s,stk1') -> CASE(c,b,i,s,stack_concat stk1' stk2)
+    | CASE(u,pms,c,b,i,s,stk1') -> CASE(u,pms,c,b,i,s,stack_concat stk1' stk2)
     | PROJ (p,stk1') -> PROJ (p,stack_concat stk1' stk2)
 
 (* merge stacks when there is no shifts in between *)
@@ -339,9 +339,9 @@ let rec reify_stack t = function
   | TOP -> t
   | APP (args,st) ->
       reify_stack (mkApp(t,Array.map reify_value args)) st
-  | CASE (ty,br,ci,env,st) ->
+  | CASE (u,pms,ty,br,ci,env,st) ->
       reify_stack
-        (mkCase (ci, ty, t,br))
+        (mkCase (ci, u, pms, ty, t,br))
         st
   | PROJ (p, st) ->
        reify_stack (mkProj (p, t)) st
@@ -400,7 +400,7 @@ let rec norm_head info env t stack =
                         they could be computed when getting out of the stack *)
       let nargs = Array.map (cbv_stack_term info TOP env) args in
       norm_head info env head (stack_app nargs stack)
-  | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
+  | Case (ci,u,pms,p,c,v) -> norm_head info env c (CASE(u,pms,p,v,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
 
   | Proj (p, c) ->
@@ -514,16 +514,17 @@ and cbv_stack_value info env = function
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
-    | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
+    | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,_,_,br,ci,env,stk)))
             when red_set info.reds fMATCH ->
         let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
-        cbv_stack_term info (stack_app cargs stk) env br.(n-1)
+        let env = subs_cons (cargs, env) in
+        cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor of arity 0 in a Case -> IOTA *)
-    | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
+    | (CONSTR(((_,n),u),[||]), CASE(_,_,_,br,_,env,stk))
             when red_set info.reds fMATCH ->
-                    cbv_stack_term info stk env br.(n-1)
+                    cbv_stack_term info stk env (snd br.(n-1))
 
     (* constructor in a Projection -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
@@ -597,10 +598,14 @@ let rec apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
       apply_stack info (mkApp(t,Array.map (cbv_norm_value info) args)) st
-  | CASE (ty,br,ci,env,st) ->
+  | CASE (u,pms,ty,br,ci,env,st) ->
+    (* FIXME: handle let-bindings in clause / branches *)
+    let map_ctx (nas, c) =
+      (nas, cbv_norm_term info (subs_liftn (Array.length nas) env) c)
+    in
       apply_stack info
-        (mkCase (ci, cbv_norm_term info env ty, t,
-                    Array.map (cbv_norm_term info env) br))
+        (mkCase (ci, u, Array.map (cbv_norm_term info env) pms, map_ctx ty, t,
+                    Array.map map_ctx br))
         st
   | PROJ (p, st) ->
        apply_stack info (mkProj (p, t)) st

@@ -258,9 +258,12 @@ sig
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -277,7 +280,7 @@ sig
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
   val equal : ('a -> 'a -> bool) -> (('a, 'a) pfixpoint -> ('a, 'a) pfixpoint -> bool)
-    -> 'a t -> 'a t -> bool
+    -> ('a case_stk -> 'a case_stk -> bool) -> 'a t -> 'a t -> bool
   val compare_shape : 'a t -> 'a t -> bool
   val map : ('a -> 'a) -> 'a t -> 'a t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
@@ -319,9 +322,12 @@ struct
     | Cst_const of pconstant
     | Cst_proj of Projection.t
 
+  type 'a case_stk =
+    case_info * EInstance.t * 'a array * 'a pcase_return * 'a pcase_branch array
+
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
+  | Case of 'a case_stk * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -335,9 +341,9 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,br,cst) ->
+    | Case ((_,_,_,_,br),cst) ->
        str "ZCase(" ++
-         prvect_with_sep (pr_bar) pr_c br
+         prvect_with_sep (pr_bar) (fun (_, c) -> pr_c c) br
        ++ str ")"
     | Proj (p,cst) ->
       str "ZProj(" ++ Constant.debug_print (Projection.constant p) ++ str ")"
@@ -385,7 +391,7 @@ struct
     if i < j then (l.(j), App (i,l,pred j) :: sk)
     else (l.(j), sk)
 
-  let equal f f_fix sk1 sk2 =
+  let equal f f_fix f_case sk1 sk2 =
     let equal_cst_member x y =
       match x, y with
       | Cst_const (c1,u1), Cst_const (c2, u2) ->
@@ -400,8 +406,8 @@ struct
         let t1,s1' = decomp_node_last a1 s1 in
         let t2,s2' = decomp_node_last a2 s2 in
         (f t1 t2) && (equal_rec s1' s2')
-      | Case (_,t1,a1,_) :: s1, Case (_,t2,a2,_) :: s2 ->
-        f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
+      | Case ((ci1,pms1,p1,t1,a1),_) :: s1, Case ((ci2,pms2,p2,t2,a2),_) :: s2 ->
+        f_case (ci1,pms1,p1,t1,a1) (ci2,pms2,p2,t2,a2) && equal_rec s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Projection.Repr.equal (Projection.repr p) (Projection.repr p2)
         && equal_rec s1 s2
@@ -422,7 +428,7 @@ struct
         ([],[]) -> Int.equal bal 0
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
-      | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
+      | (Case _ :: s1, Case _::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
@@ -444,8 +450,9 @@ struct
         let t1,l1 = decomp_node_last n1 q1 in
         let t2,l2 = decomp_node_last n2 q2 in
         aux (f o t1 t2) l1 l2
-      | Case (_,t1,a1,_) :: q1, Case (_,t2,a2,_) :: q2 ->
-        aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
+      | Case ((_,_,pms1,(_, t1),a1),_) :: q1, Case ((_,_,pms2, (_, t2),a2),_) :: q2 ->
+        let f' o (_, t1) (_, t2) = f o t1 t2 in
+        aux (Array.fold_left2 f' (f (Array.fold_left2 f o pms1 pms2) t1 t2) a1 a2) q1 q2
       | Proj (p1,_) :: q1, Proj (p2,_) :: q2 ->
         aux o q1 q2
       | Fix ((_,(_,a1,b1)),s1,_) :: q1, Fix ((_,(_,a2,b2)),s2,_) :: q2 ->
@@ -463,7 +470,8 @@ struct
                                | App (i,a,j) ->
                                   let le = j - i + 1 in
                                   App (0,Array.map f (Array.sub a i le), le-1)
-                               | Case (info,ty,br,alt) -> Case (info, f ty, Array.map f br, alt)
+                               | Case ((info,u,pms,ty,br),alt) ->
+                                  Case ((info, u, Array.map f pms, on_snd f ty, Array.map (on_snd f) br), alt)
                                | Fix ((r,(na,ty,bo)),arg,alt) ->
                                   Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg,alt)
                                | Cst (cst,curr,remains,params,alt) ->
@@ -505,7 +513,7 @@ struct
                           | App _ | Primitive _ -> false) args
   let will_expose_iota args =
     List.exists
-      (function (Fix (_,_,l) | Case (_,_,_,l) |
+      (function (Fix (_,_,l) | Case (_,l) |
                  Proj (_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
@@ -572,9 +580,9 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,br,cst_l)::s) when refold ->
-      zip (best_state sigma (mkCase (ci,rt,f,br), s) cst_l)
-    | f, (Case (ci,rt,br,_)::s) -> zip (mkCase (ci,rt,f,br), s)
+    | f, (Case ((ci,u,pms,rt,br),cst_l)::s) when refold ->
+      zip (best_state sigma (mkCase (ci,u,pms,rt,f,br), s) cst_l)
+    | f, (Case ((ci,u,pms,rt,br),_)::s) -> zip (mkCase (ci,u,pms,rt,f,br), s)
     | f, (Fix (fix,st,cst_l)::s) when refold ->
       zip (best_state sigma (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip
@@ -650,13 +658,13 @@ let strong_with_flags whdfun flags env sigma t =
       | d -> d in
     push_rel d env in
   let rec strongrec env t =
-    map_constr_with_full_binders sigma
+    map_constr_with_full_binders env sigma
       push_rel_check_zeta strongrec env (whdfun flags env sigma t) in
   strongrec env t
 
 let strong whdfun env sigma t =
   let rec strongrec env t =
-    map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
+    map_constr_with_full_binders env sigma push_rel strongrec env (whdfun env sigma t) in
   strongrec env t
 
 let local_strong whdfun sigma =
@@ -696,11 +704,13 @@ let beta_applist sigma (c,l) =
 (* Iota reduction tools *)
 
 type 'a miota_args = {
-  mP      : constr;     (* the result type *)
+  mU      : EInstance.t; (* Universe instance of the return clause *)
+  mParams : constr array; (* Parameters of the inductive *)
+  mP      : case_return;     (* the result type *)
   mconstr : constr;     (* the constructor *)
   mci     : case_info;  (* special info to re-build pattern *)
   mcargs  : 'a list;    (* the constructor's arguments *)
-  mlf     : 'a array }  (* the branch code vector *)
+  mlf     : 'a pcase_branch array }  (* the branch code vector *)
 
 let reducible_mind_case sigma c = match EConstr.kind sigma c with
   | Construct _ | CoFix _ -> true
@@ -774,15 +784,17 @@ let reduce_and_refold_cofix recfun env sigma refold cst_l cofix sk =
       recfun x (t',sk'))
     [] sigma refold Cst_stack.empty raw_answer sk
 
-let reduce_mind_case sigma mia =
+let reduce_mind_case env sigma mia =
   match EConstr.kind sigma mia.mconstr with
-    | Construct ((ind_sp,i),u) ->
-(*	let ncargs = (fst mia.mci).(i-1) in*)
+    | Construct ((_, i as cstr), u) ->
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
-        applist (mia.mlf.(i-1),real_cargs)
+        let br = mia.mlf.(i - 1) in
+        let ctx = EConstr.expand_branch env sigma mia.mU mia.mParams cstr br in
+        let br = it_mkLambda_or_LetIn (snd br) ctx in
+        applist (br, real_cargs)
     | CoFix cofix ->
         let cofix_def = contract_cofix sigma cofix in
-        mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
+        mkCase (mia.mci, mia.mU, mia.mParams, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
@@ -978,7 +990,19 @@ let () = Goptions.(declare_bool_option {
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
   let eq_fix a b = f_equal (mkFix a) (mkFix b) in
-  Stack.equal f_equal eq_fix l l' && f_equal x y
+  let eq_case (ci1, u1, pms1, p1, br1) (ci2, u2, pms2, p2, br2) =
+    Array.equal f_equal pms1 pms2 &&
+    f_equal (snd p1) (snd p2) &&
+    Array.equal (fun (_, c1) (_, c2) -> f_equal c1 c2) br1 br2
+  in
+  Stack.equal f_equal eq_fix eq_case l l' && f_equal x y
+
+let apply_branch ci (ind, i) lf args =
+  (* FIXME: handle let-bindings *)
+  let () = assert (Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1)) in
+  let args = Stack.tail ci.ci_npar args in
+  let subst = Option.get (Stack.list_of_app_stack args) in
+  Vars.substl (List.rev subst) (snd (lf.(i - 1)))
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
@@ -1144,8 +1168,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,d,lf) ->
-      whrec Cst_stack.empty (d, Stack.Case (ci,p,lf,cst_l) :: stack)
+    | Case (ci,u,pms,p,d,lf) ->
+      whrec Cst_stack.empty (d, Stack.Case ((ci,u,pms,p,lf),cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -1153,13 +1177,14 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       |Some (bef,arg,s') ->
         whrec Cst_stack.empty (arg, Stack.Fix(f,bef,cst_l)::s'))
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr ,u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
-          whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case((ci, _, _, _, lf), _)::s') when use_match ->
+          let r = apply_branch ci cstr lf args in
+          whrec Cst_stack.empty (r, s')
         |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
@@ -1268,8 +1293,8 @@ let local_whd_state_gen flags sigma =
     | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
       (whrec (c, Stack.Proj (p, Cst_stack.empty) :: stack))
 
-    | Case (ci,p,d,lf) ->
-      whrec (d, Stack.Case (ci,p,lf,Cst_stack.empty) :: stack)
+    | Case (ci,u,pms,p,d,lf) ->
+      whrec (d, Stack.Case ((ci,u,pms,p,lf),Cst_stack.empty) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -1282,13 +1307,14 @@ let local_whd_state_gen flags sigma =
         Some c -> whrec (c,stack)
       | None -> s)
 
-    | Construct ((ind,c),u) ->
+    | Construct (cstr, u) ->
       let use_match = CClosure.RedFlags.red_set flags CClosure.RedFlags.fMATCH in
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
-          whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
+        |args, (Stack.Case((ci, _,_,_, lf),_)::s') when use_match ->
+          let r = apply_branch ci cstr lf args in
+          whrec (r, s')
         |args, (Stack.Proj (p,_) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
         |args, (Stack.Fix (f,s',cst)::s'') when use_fix ->
@@ -1825,7 +1851,7 @@ let meta_reducible_instance evd b =
   let rec irec u =
     let u = whd_betaiota Evd.empty u (* FIXME *) in
     match EConstr.kind evd u with
-    | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
+    | Case (ci,u,pms,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
         let m = destMeta evd (strip_outer_cast evd c) in
         (match
           try
@@ -1834,8 +1860,10 @@ let meta_reducible_instance evd b =
             if isConstruct evd g || not is_coerce then Some g else None
           with Not_found -> None
           with
-            | Some g -> irec (mkCase (ci,p,g,bl))
-            | None -> mkCase (ci,irec p,c,Array.map irec bl))
+            | Some g -> irec (mkCase (ci,u,pms,p,g,bl))
+            | None ->
+              let on_ctx (na, c) = (na, irec c) in
+              mkCase (ci,u,Array.map irec pms,on_ctx p,c,Array.map on_ctx bl))
     | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
         let m = destMeta evd (strip_outer_cast evd f) in
         (match

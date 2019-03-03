@@ -50,16 +50,12 @@ val it_mkLambda_or_LetIn_from_no_LetIn : Constr.constr -> Constr.rel_context -> 
 (** {6 Generic iterators on constr} *)
 
 val map_constr_with_binders_left_to_right :
-  Evd.evar_map ->
+  Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) ->
     'a -> constr -> constr
 val map_constr_with_full_binders :
-  Evd.evar_map ->
-  (rel_declaration -> 'a -> 'a) ->
-  ('a -> constr -> constr) -> 'a -> constr -> constr
-val map_constr_with_full_binders_user_view :
-  Evd.evar_map ->
+  Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 
@@ -73,7 +69,7 @@ val map_constr_with_full_binders_user_view :
 val fold_constr_with_binders : Evd.evar_map ->
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
-val fold_constr_with_full_binders : Evd.evar_map ->
+val fold_constr_with_full_binders : Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> 'b -> constr -> 'b) ->
   'a -> 'b -> constr -> 'b
