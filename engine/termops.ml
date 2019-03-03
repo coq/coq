@@ -677,12 +677,21 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       if def' == def && t' == t && ty' == ty then c
       else mkArray(u,t',def',ty')
 
-let map_under_context_with_full_binders sigma g f l n d =
-  let open EConstr in
-  let f l c = Unsafe.to_constr (f l (of_constr c)) in
-  let g d l = g (of_rel_decl d) l in
-  let d = EConstr.Unsafe.to_constr (EConstr.whd_evar sigma d) in
-  EConstr.of_constr (Constr.map_under_context_with_full_binders g f l n d)
+let rec map_under_context_with_full_binders sigma g f l n d =
+  if n = 0 then f l d else
+    match EConstr.kind sigma d with
+    | LetIn (na,b,t,c) ->
+       let b' = f l b in
+       let t' = f l t in
+       let c' = map_under_context_with_full_binders sigma g f (g (Context.Rel.Declaration.LocalDef (na,b,t)) l) (n-1) c in
+       if b' == b && t' == t && c' == c then d
+       else EConstr.mkLetIn (na,b',t',c')
+    | Lambda (na,t,b) ->
+       let t' = f l t in
+       let b' = map_under_context_with_full_binders sigma g f (g (Context.Rel.Declaration.LocalAssum (na,t)) l) (n-1) b in
+       if t' == t && b' == b then d
+       else EConstr.mkLambda (na,t',b')
+    | _ -> CErrors.anomaly (Pp.str "Ill-formed context")
 
 let map_branches_with_full_binders sigma g f l ci bl =
   let tags = Array.map List.length ci.ci_pp_info.cstr_tags in
@@ -775,11 +784,27 @@ let map_constr_with_full_binders_user_view sigma g f =
    each binder traversal; it is not recursive *)
 
 let fold_constr_with_full_binders sigma g f n acc c =
-  let open EConstr in
-  let f l acc c = f l acc (of_constr c) in
-  let g d l  = g (of_rel_decl d) l in
-  let c = Unsafe.to_constr (whd_evar sigma c) in
-  Constr.fold_with_full_binders g f n acc c
+  let open EConstr.Vars in
+  let open Context.Rel.Declaration in
+  match EConstr.kind sigma c with
+  | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
+  | Cast (c,_, t) -> f n (f n acc c) t
+  | Prod (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | Lambda (na,t,c) -> f (g (LocalAssum (na,t)) n) (f n acc t) c
+  | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Proj (_,c) -> f n acc c
+  | Evar (_,l) -> List.fold_left (f n) acc l
+  | Case (_,p,iv,c,bl) -> Array.fold_left (f n) (f n (fold_invert (f n) (f n acc p) iv) c) bl
+  | Fix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,lift i t)) c) n lna tl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
+  | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
 let fold_constr_with_binders sigma g f n acc c =
   let open EConstr in
