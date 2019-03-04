@@ -75,16 +75,22 @@ endef
 
 ## Files in the source tree
 
+# instead of using "export FOO" do "COQ_EXPORTED += FOO"
+# this makes it possible to clean up the environment in the subcall
+COQ_EXPORTED := COQ_EXPORTED
+
 LEXFILES := $(call find, '*.mll')
 YACCFILES := $(call find, '*.mly')
-export MLLIBFILES := $(call find, '*.mllib')
-export MLPACKFILES := $(call find, '*.mlpack')
-export MLGFILES := $(call find, '*.mlg')
-export CFILES := $(call findindir, 'kernel/byterun', '*.c')
+MLLIBFILES := $(call find, '*.mllib')
+MLPACKFILES := $(call find, '*.mlpack')
+MLGFILES := $(call find, '*.mlg')
+CFILES := $(call findindir, 'kernel/byterun', '*.c')
+COQ_EXPORTED +=MLLIBFILES MLPACKFILES MLGFILES CFILES
 
 # NB our find wrapper ignores the test suite
 MERLININFILES := $(call find, '.merlin.in') test-suite/unit-tests/.merlin.in
-export MERLINFILES := $(MERLININFILES:.in=)
+MERLINFILES := $(MERLININFILES:.in=)
+COQ_EXPORTED += MERLINFILES
 
 # NB: The lists of currently existing .ml and .mli files will change
 # before and after a build or a make clean. Hence we do not export
@@ -97,17 +103,21 @@ EXISTINGMLI := $(call find, '*.mli')
 
 GENMLGFILES:= $(MLGFILES:.mlg=.ml)
 # GRAMFILES must be in linking order
-export GRAMFILES=$(addprefix gramlib/.pack/gramlib__,Ploc Plexing Gramext Grammar)
-export GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
-export GENGRAMFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
-export GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
-export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+GRAMFILES=$(addprefix gramlib/.pack/gramlib__,Ploc Plexing Gramext Grammar)
+GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
+GENGRAMFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml
+GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
+GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
+GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+COQ_EXPORTED += GRAMFILES GRAMMLFILES GENGRAMFILES GENMLFILES GENHFILES GENFILES
 
 ## More complex file lists
 
-export MLSTATICFILES := $(filter-out $(GENMLFILES), $(EXISTINGML))
-export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
+MLSTATICFILES := $(filter-out $(GENMLFILES), $(EXISTINGML))
+MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
+COQ_EXPORTED += MLSTATICFILES MLIFILES
+
+export $(COQ_EXPORTED)
 
 include Makefile.common
 
