@@ -6,7 +6,7 @@
 
 (rule
  (targets libpath.inc)
- (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe ../../install/%{context_name}/lib/coq/ ))))
+ (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/ ))))
 
 (rule
  (targets summary.log)

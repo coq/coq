@@ -38,9 +38,9 @@ include ../Makefile.common
 BIN := $(shell cd ..; pwd)/bin/
 COQFLAGS?=
 
+COQLIB?=
 ifeq ($(COQLIB),)
-  # This method of setting `pwd` won't work on win32 OCaml
-  COQLIB := $(shell cd ..; pwd)
+  COQLIB := $(shell ocaml ocaml_pwd.ml ..)
 endif
 export COQLIB
 
