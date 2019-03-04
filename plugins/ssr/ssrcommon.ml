@@ -828,10 +828,12 @@ let view_error s gv =
 open Locus
 (****************************** tactics ***********************************)
 
-let rewritetac dir c =
+let rewritetac ?(under=false) dir c =
   (* Due to the new optional arg ?tac, application shouldn't be too partial *)
+  let open Proofview.Notations in
   Proofview.V82.of_tactic begin
-    Equality.general_rewrite (dir = L2R) AllOccurrences true false c
+      Equality.general_rewrite (dir = L2R) AllOccurrences true false c <*>
+        if under then Proofview.cycle 1 else Proofview.tclUNIT ()
   end
 
 (**********************`:********* hooks ************************************)
@@ -1542,6 +1544,7 @@ end
 let is_construct_ref sigma c r =
   EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
 let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
-
+let is_const_ref sigma c r =
+  EConstr.isConst sigma c && GlobRef.equal (ConstRef (fst(EConstr.destConst sigma c))) r
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

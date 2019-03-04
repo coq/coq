@@ -406,7 +406,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let gl = pf_merge_uc_of sigma gl in
-          Proofview.V82.of_tactic (convert_concl cl'), rewritetac dir r', gl
+          Proofview.V82.of_tactic (convert_concl cl'), rewritetac ?under dir r', gl
     else
       let dc, r2 = EConstr.decompose_lam_n_assum (project gl) n r' in
       let r3, _, r3t  = 
@@ -417,7 +417,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
       let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
       let itacs = [introid pattern_id; introid rule_id] in
       let cltac = Proofview.V82.of_tactic (Tactics.clear [pattern_id; rule_id]) in
-      let rwtacs = [rewritetac dir (EConstr.mkVar rule_id); cltac] in
+      let rwtacs = [rewritetac ?under dir (EConstr.mkVar rule_id); cltac] in
       apply_type cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], tclTHENLIST (itacs @ rwtacs), gl
   in
   let cvtac' _ =

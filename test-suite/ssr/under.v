@@ -162,3 +162,37 @@ under x: Lem.
 under Lem => [|x|] do [done|rewrite f_eq|done].
 done.
 Qed.
+
+
+(* Inspired From Coquelicot.Lub. *)
+(* http://coquelicot.saclay.inria.fr/html/Coquelicot.Lub.html#Lub_Rbar_eqset *)
+
+Parameters (R Rbar : Set) (R0 : R) (Rbar0 : Rbar).
+Parameter Rbar_le : Rbar -> Rbar -> Prop.
+Parameter Lub_Rbar : (R -> Prop) -> Rbar.
+Parameter Lub_Rbar_eqset :
+  forall E1 E2 : R -> Prop,
+    (forall x : R, E1 x <-> E2 x) ->
+    Lub_Rbar E1 = Lub_Rbar E2.
+
+Lemma test_Lub_Rbar (E : R -> Prop)  :
+  Rbar_le Rbar0 (Lub_Rbar (fun x => x = R0 \/ E x)).
+Proof.
+under Lub_Rbar_eqset => r.
+by rewrite over.
+Abort.
+
+
+Lemma ex_iff R (P1 P2 : R -> Prop) :
+  (forall x : R, P1 x <-> P2 x) -> ((exists x, P1 x) <-> (exists x, P2 x)).
+Proof.
+by move=> H; split; move=> [x Hx]; exists x; apply H.
+Qed.
+
+Arguments ex_iff [R P1] P2 iffP12.
+
+Require Import Setoid.
+Lemma test_ex_iff (P : nat -> Prop) : (exists x, P x) -> True.
+under ex_iff => n.
+by rewrite over.
+Abort.

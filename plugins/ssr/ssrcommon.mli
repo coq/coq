@@ -349,7 +349,7 @@ val resolve_typeclasses :
 
 (*********************** Wrapped Coq  tactics *****************************)
 
-val rewritetac : ssrdir -> EConstr.t -> tactic
+val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
@@ -486,3 +486,4 @@ end
 
 val is_ind_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
 val is_construct_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_const_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
