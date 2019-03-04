@@ -1,0 +1,22 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# jumping outside the focused zone should signal an unfocus.
+ 
+# first proof
+ADD here { Goal True. }
+ADD here1 { Proof. }
+ADD { Qed. }
+WAIT
+EDIT_AT here1
+EDIT_AT here
+# fwd again
+ADD here2 { Proof. }
+ADD here3 { Qed. }
+WAIT
+EDIT_AT here2
+# Fixing the proof
+ADD { Proof. }
+ADD { trivial. }
+ADD { Qed. }
+JOIN
