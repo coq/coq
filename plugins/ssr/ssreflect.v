@@ -550,7 +550,49 @@ End Under.
 Register Under as plugins.ssreflect.Under.
 Register Under_from_eq as plugins.ssreflect.Under_from_eq.
 
+Module Type UNDER_IFF.
+Parameter Under_iff : Prop -> Prop -> Prop.
+Parameter Under_from_iff : forall x y : Prop, @Under_iff x y -> x <-> y.
+
+(** [Over_iff, over_iff, over_iff_done]: for "by rewrite over_iff" *)
+Parameter Over_iff : Prop -> Prop -> Prop.
+Parameter over_iff :
+  forall (x : Prop) (y : Prop), @Under_iff x y = @Over_iff x y.
+Parameter over_iff_done :
+  forall (x : Prop), @Over_iff x x.
+Hint Extern 0 (@Over_iff _ _) => solve [ apply over_iff_done ] : core.
+Hint Resolve over_iff_done : core.
+
+(** [under_iff_done]: for Ltac-style over *)
+Parameter under_iff_done :
+  forall (x : Prop), @Under_iff x x.
+Notation "''Under_iff[' x ]" := (@Under_iff x _)
+  (at level 8, format "''Under_iff['  x  ]").
+End UNDER_IFF.
+
+Module Export Under_iff : UNDER_IFF.
+Definition Under_iff := iff.
+Lemma Under_from_iff (x y : Prop) :
+  @Under_iff x y -> x <-> y.
+Proof. by []. Qed.
+Definition Over_iff := Under_iff.
+Lemma over_iff :
+  forall (x : Prop) (y : Prop), @Under_iff x y = @Over_iff x y.
+Proof. by []. Qed.
+Lemma over_iff_done :
+  forall (x : Prop), @Over_iff x x.
+Proof. by []. Qed.
+Lemma under_iff_done :
+  forall (x : Prop), @Under_iff x x.
+Proof. by []. Qed.
+End Under_iff.
+
+Register Under_iff as plugins.ssreflect.Under_iff.
+Register Under_from_iff as plugins.ssreflect.Under_from_iff.
+
 Ltac over :=
   by [ apply: Under.under_done
      | rewrite over
+     | apply: Under_iff.under_iff_done
+     | rewrite over_iff
      ].

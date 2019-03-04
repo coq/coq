@@ -339,6 +339,19 @@ let intro_lock ipats =
         let c = Proofview.Goal.concl gl in
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
+        match EConstr.kind_of_type sigma c with
+        | Term.AtomicType(hd, args) when
+            Ssrcommon.is_const_ref sigma hd (Coqlib.lib_ref "core.iff.type") &&
+           Array.length args = 2 && is_app_evar sigma args.(1) ->
+           Tactics.New.refine ~typecheck:true (fun sigma ->
+               let sigma, under_iff =
+                 Ssrcommon.mkSsrConst "Under_iff" env sigma in
+               let sigma, under_from_iff =
+                 Ssrcommon.mkSsrConst "Under_from_iff" env sigma in
+               let ty = EConstr.mkApp (under_iff,args) in
+               let sigma, t = Evarutil.new_evar env sigma ty in
+               sigma, EConstr.mkApp(under_from_iff,Array.append args [|t|]))
+        | _ ->
         let t = Reductionops.whd_all env sigma c in
         match EConstr.kind_of_type sigma t with
         | Term.AtomicType(hd, args) when
