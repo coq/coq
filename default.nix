@@ -35,6 +35,11 @@
 with pkgs;
 with stdenv.lib;
 
+let packages = [ "coq" "coqide-server" ]
+++ optional buildIde "coqide"
+++ optional buildDoc "coq-refman"
+; in
+
 stdenv.mkDerivation rec {
 
   name = "coq";
@@ -78,31 +83,46 @@ stdenv.mkDerivation rec {
            !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "nix"]) ./.;
 
   preConfigure = ''
+    patchShebangs tools/
     patchShebangs dev/tools/
+    configureFlagsArray+=("-libdir" "$OCAMLFIND_DESTDIR"coq "-native-compiler" "no")
+  '' + optionalString doInstallCheck ''
+    patchShebangs test-suite/
+  '' + optionalString buildDoc ''
+    patchShebangs doc/tools/
   '';
 
   prefixKey = "-prefix ";
 
-  enableParallelBuilding = true;
-
-  buildFlags = [ "world" "byte" ] ++ optional buildDoc "doc-html";
-
-  installTargets =
-    [ "install" "install-byte" ] ++ optional buildDoc "install-doc-html";
+  makefile = "Makefile.dune";
 
   createFindlibDestdir = !shell;
 
-  postInstall = "ln -s $out/lib/coq $OCAMLFIND_DESTDIR/coq";
+  buildFlags = [ "voboot" ];
+
+  postBuild = ''
+    for package in ${toString packages}
+    do
+      dune build $package.install
+    done
+  '';
+
+  installPhase = ''
+    runHook preInstall
+    for package in ${toString packages}
+    do
+      dune install --prefix=$out --libdir=$OCAMLFIND_DESTDIR $package
+    done
+    runHook postInstall
+  '';
 
   inherit doInstallCheck;
 
   preInstallCheck = ''
-    patchShebangs tools/
-    patchShebangs test-suite/
     export OCAMLPATH=$OCAMLFIND_DESTDIR:$OCAMLPATH
   '';
 
-  installCheckTarget = [ "check" ];
+  installCheckTarget = [ "test-suite" ];
 
   passthru = {
     inherit coq-version ocamlPackages;
