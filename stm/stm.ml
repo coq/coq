@@ -3097,10 +3097,9 @@ let edit_at ~doc id =
   let vcs = VCS.backup () in
   let on_cur_branch id =
     let rec aux cur =
-      if id = cur then true
-      else match VCS.visit cur with
+      match VCS.visit cur with
       | { step = `Fork _ } -> false
-      | { next } -> aux next in
+      | { next } -> if id = cur then true else aux next in
     aux (VCS.get_branch_pos (VCS.current_branch ())) in
   let rec is_pure_aux id =
     let view = VCS.visit id in
