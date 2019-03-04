@@ -503,14 +503,23 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem true pbty,ev,term2) with
-	      | UnifFailure (_,OccurCheck _) -> 
-		(* Eta-expansion might apply *) default ()
+              | UnifFailure (_,(OccurCheck _ | NotClean _)) ->
+                (* Eta-expansion might apply *)
+                (* OccurCheck: eta-expansion could solve
+                     ?X = {| foo := ?X.(foo) |}
+                   NotClean: pruning in solve_simple_eqn is incomplete wrt
+                     Miller patterns *)
+                default ()
 	      | x -> x)
           | _, Evar ev when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
             (match solve_simple_eqn (conv_fun evar_conv_x) flags env evd
               (position_problem false pbty,ev,term1) with
-	      | UnifFailure (_, OccurCheck _) ->
-		(* Eta-expansion might apply *) default () 
+              | UnifFailure (_, (OccurCheck _ | NotClean _)) ->
+                (* OccurCheck: eta-expansion could solve
+                     ?X = {| foo := ?X.(foo) |}
+                   NotClean: pruning in solve_simple_eqn is incomplete wrt
+                     Miller patterns *)
+                default ()
 	      | x -> x)
           | _ -> default ()
         end
