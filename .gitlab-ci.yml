@@ -209,6 +209,17 @@ after_script:
     variables:
       - $WINDOWS =~ /enabled/
 
+.deploy-template: &deploy-template
+  stage: deploy
+  before_script:
+    - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+    - git config --global user.name "coqbot"
+    - git config --global user.email "coqbot@users.noreply.github.com"
+
 build:base:
   <<: *build-template
   variables:
@@ -325,6 +336,21 @@ pkg:nix:deploy:
     - master
     - /^v.*\..*$/
 
+pkg:nix:deploy:channel:
+  <<: *deploy-template
+  environment:
+    name: cachix
+    url: https://coq.cachix.org
+  only:
+    variables:
+      - $CACHIX_DEPLOYMENT_KEY
+  dependencies:
+    - pkg:nix:deploy
+  script:
+    - echo "$CACHIX_DEPLOYMENT_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - git fetch --unshallow
+    - git push git@github.com:coq/coq-on-cachix "${CI_COMMIT_REF_NAME}"
+
 pkg:nix:
   <<: *nix-template
   except:
@@ -357,7 +383,7 @@ doc:stdlib:dune:
       - _build/default/doc/stdlib/html
 
 doc:refman:deploy:
-  stage: deploy
+  <<: *deploy-template
   environment:
     name: deployment
     url: https://coq.github.io/
@@ -368,14 +394,6 @@ doc:refman:deploy:
     - doc:ml-api:odoc
     - doc:refman:dune
     - doc:stdlib:dune
-  before_script:
-    - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
-    - eval $(ssh-agent -s)
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-    - git config --global user.name "coqbot"
-    - git config --global user.email "coqbot@users.noreply.github.com"
   script:
     - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
