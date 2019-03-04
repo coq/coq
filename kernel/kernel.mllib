@@ -29,6 +29,8 @@ Primred
 CClosure
 Retypeops
 Reduction
+Type_errors
+Inductive
 Clambda
 Nativelambda
 Cbytegen
@@ -38,9 +40,7 @@ Csymtable
 Vm
 Vconv
 Nativeconv
-Type_errors
 Modops
-Inductive
 Typeops
 InferCumulativity
 IndTyping
