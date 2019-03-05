@@ -408,13 +408,13 @@ object (self)
     | _ -> ()
 
   method apply_unicode_binding () =
-    (** Auxiliary method to reach the beginning of line or the
+    (* Auxiliary method to reach the beginning of line or the
         nearest space before the iterator. *)
     let rec get_line_start iter =
       if iter#starts_line || Glib.Unichar.isspace iter#char then iter
       else get_line_start iter#backward_char
       in
-    (** Main action *)
+    (* Main action *)
     let buffer = self#buffer in
     let insert = buffer#get_iter `INSERT in
     let insert_mark = buffer#create_mark ~left_gravity:false insert in

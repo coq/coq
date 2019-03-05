@@ -1517,7 +1517,7 @@ let bindings_set_1 = [
 
 let bindings_set_2 = [
 
-   (** Symbols *)
+   (* Symbols *)
    "\\!'", "¡";
    "\\`", "‘";
    "\\``", "“";
@@ -2046,7 +2046,7 @@ let bindings_set_2 = [
    "\\xi", "ξ";
    "\\zeta", "ζ";
 
-   (** Double accent *)
+   (* Double accent *)
    "\\\"A", "Ä";
    "\\\"E", "Ë";
    "\\\"H", "Ḧ";
@@ -2067,7 +2067,7 @@ let bindings_set_2 = [
    "\\\"x", "ẍ";
    "\\\"y", "ÿ";
 
-   (** Acute accent *)
+   (* Acute accent *)
    "\\'A", "Á";
    "\\'C", "Ć";
    "\\'E", "É";
@@ -2103,7 +2103,7 @@ let bindings_set_2 = [
    "\\'y", "ý";
    "\\'z", "ź";
 
-   (** Doted accent *)
+   (* Doted accent *)
    "\\.A", "Ȧ";
    "\\.B", "Ḃ";
    "\\.C", "Ċ";
@@ -2224,7 +2224,7 @@ let bindings_set_2 = [
    "\\dy", "ỵ";
    "\\dz", "ẓ";
 
-   (** Double dot accent *)
+   (* Double dot accent *)
    "\\ddots", "⋱";
    "\\ddotA", "Ä";
    "\\ddotE", "Ë";
@@ -2246,7 +2246,7 @@ let bindings_set_2 = [
    "\\ddotx", "ẍ";
    "\\ddoty", "ÿ";
 
-   (** Breve accent *)
+   (* Breve accent *)
    "\\breveA", "Ă";
    "\\breveE", "Ĕ";
    "\\breveG", "Ğ";
@@ -2272,7 +2272,7 @@ let bindings_set_2 = [
    "\\uo", "ŏ";
    "\\uu", "ŭ";
 
-   (** Check accent *)
+   (* Check accent *)
    "\\checkA", "Ǎ";
    "\\checkC", "Č";
    "\\checkD", "Ď";
@@ -2310,7 +2310,7 @@ let bindings_set_2 = [
    "\\vt", "ť";
    "\\vz", "ž";
 
-   (** Bar accent *)
+   (* Bar accent *)
    "\\=A", "Ā";
    "\\=E", "Ē";
    "\\=G", "Ḡ";
@@ -2342,7 +2342,7 @@ let bindings_set_2 = [
    "\\baru", "ū";
    "\\bary", "ȳ";
 
-   (** Hat acccent *)
+   (* Hat acccent *)
    "\\^A", "Â";
    "\\^C", "Ĉ";
    "\\^E", "Ê";
@@ -2370,7 +2370,7 @@ let bindings_set_2 = [
    "\\^y", "ŷ";
    "\\^z", "ẑ";
 
-   (** Backquote acccent *)
+   (* Backquote acccent *)
    "\\`A", "À";
    "\\`E", "È";
    "\\`I", "Ì";
@@ -2388,7 +2388,7 @@ let bindings_set_2 = [
    "\\`w", "ẁ";
    "\\`y", "ỳ";
 
-   (** Tiled acccent *)
+   (* Tiled acccent *)
    "\\~A", "Ā";
    "\\~E", "Ẽ";
    "\\~I", "Ĩ";
@@ -2404,7 +2404,7 @@ let bindings_set_2 = [
    "\\~u", "ũ";
    "\\~y", "ỹ";
 
-   (** textrt font *)
+   (* textrt font *)
    "\\textrtaild", "ɖ";
    "\\textrtaill", "ɭ";
    "\\textrtailn", "ɳ";
@@ -2413,7 +2413,7 @@ let bindings_set_2 = [
    "\\textrtailt", "ʈ";
    "\\textrtailz", "ʐ";
 
-   (** textsc font *)
+   (* textsc font *)
    "\\textscb", "ʙ";
    "\\textscg", "ɢ";
    "\\textsch", "ʜ";
@@ -2427,7 +2427,7 @@ let bindings_set_2 = [
    "\\textscriptv", "ʋ";
    "\\textscy", "ʏ";
 
-   (** bb font *)
+   (* bb font *)
    "\\bb0", "𝟘";
    "\\bb1", "𝟙";
    "\\bb2", "𝟚";
@@ -2491,7 +2491,7 @@ let bindings_set_2 = [
    "\\bby", "𝕪";
    "\\bbz", "𝕫";
 
-   (** cal font *)
+   (* cal font *)
    "\\calA", "𝒜";
    "\\calB", "ℬ";
    "\\calC", "𝒞";
@@ -2545,7 +2545,7 @@ let bindings_set_2 = [
    "\\caly", "𝓎";
    "\\calz", "𝓏";
 
-   (** frak font *)
+   (* frak font *)
    "\\frakA", "𝔄";
    "\\frakB", "𝔅";
    "\\frakC", "ℭ";
@@ -2599,7 +2599,7 @@ let bindings_set_2 = [
    "\\fraky", "𝔶";
    "\\frakz", "𝔷";
 
-   (** Exponent *)
+   (* Exponent *)
    "\\^(", "⁽";
    "\\^)", "⁾";
    "\\^+", "⁺";
@@ -2670,7 +2670,7 @@ let bindings_set_2 = [
    "\\^y", "ʸ";
    "\\^z", "ᶻ";
 
-   (** Subscript *)
+   (* Subscript *)
    "\\_(", "₍";
    "\\_)", "₎";
    "\\_+", "₊";
