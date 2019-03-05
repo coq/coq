@@ -82,41 +82,31 @@ let print ppf tok = Format.pp_print_string ppf (to_string tok)
 (** For camlp5, conversion from/to [Plexing.pattern],
     and a match function analoguous to [Plexing.default_match] *)
 
-let of_pattern = function
-  | "", s -> KEYWORD s
-  | "IDENT", s -> IDENT s
-  | "PATTERNIDENT", s -> PATTERNIDENT s
-  | "FIELD", s -> FIELD s
-  | "INT", s -> INT s
-  | "STRING", s -> STRING s
-  | "LEFTQMARK", _ -> LEFTQMARK
-  | "BULLET", s -> BULLET s
-  | "EOI", _ -> EOI
-  | _ -> failwith "Tok.of_pattern: not a constructor"
+type pattern = string * string option
 
-let to_pattern = function
-  | KEYWORD s -> "", s
-  | IDENT s -> "IDENT", s
-  | PATTERNIDENT s -> "PATTERNIDENT", s
-  | FIELD s -> "FIELD", s
-  | INT s -> "INT", s
-  | STRING s -> "STRING", s
-  | LEFTQMARK -> "LEFTQMARK", ""
-  | BULLET s -> "BULLET", s
-  | EOI -> "EOI", ""
+let is_keyword = function
+  | "", Some s -> Some s
+  | _ -> None
 
-let match_pattern =
+let pattern_for_EOI = ("EOI",None)
+let pattern_for_KEYWORD s = ("",Some s)
+let pattern_for_IDENT s = ("IDENT",Some s)
+
+let match_pattern (key, value) =
   let err () = raise Stream.Failure in
-  function
-    | "", "" -> (function KEYWORD s -> s | _ -> err ())
-    | "IDENT", "" -> (function IDENT s -> s | _ -> err ())
-    | "PATTERNIDENT", "" -> (function PATTERNIDENT s -> s | _ -> err ())
-    | "FIELD", "" -> (function FIELD s -> s | _ -> err ())
-    | "INT", "" -> (function INT s -> s | _ -> err ())
-    | "STRING", "" -> (function STRING s -> s | _ -> err ())
-    | "LEFTQMARK", "" -> (function LEFTQMARK -> ""  | _ -> err ())
-    | "BULLET", "" ->  (function BULLET s -> s  | _ -> err ())
-    | "EOI", "" -> (function EOI -> "" | _ -> err ())
-    | pat ->
-	let tok = of_pattern pat in
-	function tok' -> if equal tok tok' then snd pat else err ()
+  let cond x =
+    match value with
+    | None -> x
+    | Some value -> if string_equal value x then x else err () in
+  match key with
+  | "" -> (function { v = KEYWORD s } -> cond s | _ -> err ())
+  | "IDENT" when value <> None -> (function { v = (IDENT s | KEYWORD s) } -> cond s | _ -> err ())
+  | "IDENT" -> (function { v = IDENT s } -> cond s | _ -> err ())
+  | "PATTERNIDENT" -> (function { v = PATTERNIDENT s } -> cond s | _ -> err ())
+  | "FIELD" -> (function { v = FIELD s } -> cond s | _ -> err ())
+  | "INT" -> (function { v = INT s } -> cond s | _ -> err ())
+  | "STRING" -> (function { v = STRING s } -> cond s | _ -> err ())
+  | "LEFTQMARK" -> (function { v = LEFTQMARK } -> cond "" | _ -> err ())
+  | "BULLET" ->  (function { v = BULLET s } -> cond s  | _ -> err ())
+  | "EOI" -> (function { v = EOI } -> cond "" | _ -> err ())
+  | p -> CErrors.anomaly Pp.(str "Tok: unknown pattern " ++ str p)

@@ -740,15 +740,15 @@ type te = Tok.t
 (** Names of tokens, for this lexer, used in Grammar error messages *)
 
 let token_text = function
-  | ("", t) -> "'" ^ t ^ "'"
-  | ("IDENT", "") -> "identifier"
-  | ("IDENT", t) -> "'" ^ t ^ "'"
-  | ("INT", "") -> "integer"
-  | ("INT", s) -> "'" ^ s ^ "'"
-  | ("STRING", "") -> "string"
-  | ("EOI", "") -> "end of input"
-  | (con, "") -> con
-  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
+  | ("", Some t) -> "'" ^ t ^ "'"
+  | ("IDENT", None) -> "identifier"
+  | ("IDENT", Some t) -> "'" ^ t ^ "'"
+  | ("INT", None) -> "integer"
+  | ("INT", Some s) -> "'" ^ s ^ "'"
+  | ("STRING", None) -> "string"
+  | ("EOI", None) -> "end of input"
+  | (con, None) -> con
+  | (con, Some prm) -> con ^ " \"" ^ prm ^ "\""
 
 let func next_token ?loc cs =
   let loct = loct_create () in
@@ -765,9 +765,9 @@ let func next_token ?loc cs =
 let make_lexer ~diff_mode = {
   Plexing.tok_func = func (next_token ~diff_mode);
   Plexing.tok_using =
-    (fun pat -> match Tok.of_pattern pat with
-       | KEYWORD s -> add_keyword s
-       | _ -> ());
+    (fun pat -> match Tok.is_keyword pat with
+       | Some s -> add_keyword s
+       | None -> ());
   Plexing.tok_removing = (fun _ -> ());
   Plexing.tok_match = Tok.match_pattern;
   Plexing.tok_text = token_text }
@@ -807,6 +807,6 @@ let strip s =
 let terminal s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
-  if is_ident_not_keyword s then IDENT s
-  else if is_number s then INT s
-  else KEYWORD s
+  if is_ident_not_keyword s then "IDENT", Some s
+  else if is_number s then "INT", Some s
+  else "", Some s

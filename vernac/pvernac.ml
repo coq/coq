@@ -55,7 +55,7 @@ module Vernac_ =
       let act_vernac v loc = Some CAst.(make ~loc v) in
       let act_eoi _ loc = None in
       let rule = [
-        Rule (Next (Stop, Atoken Tok.EOI), act_eoi);
+        Rule (Next (Stop, Atoken Tok.pattern_for_EOI), act_eoi);
         Rule (Next (Stop, Aentry vernac_control), act_vernac);
       ] in
       Pcoq.grammar_extend main_entry None (None, [None, None, rule])

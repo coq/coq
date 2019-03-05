@@ -21,7 +21,7 @@ val get_keyword_state : unit -> keyword_state
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
-val terminal : string -> Tok.t
+val terminal : string -> Tok.pattern
 
 (** The lexer of Coq: *)
 

@@ -44,7 +44,7 @@ type simple_constr_prod_entry_key =
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
-type binder_entry_kind = ETBinderOpen | ETBinderClosed of Tok.t list
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of Tok.pattern list
 
 type binder_target = ForBinder | ForTerm
 
@@ -54,7 +54,7 @@ type constr_prod_entry_key =
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
   | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
-  | ETProdConstrList of (production_level * production_position) * Tok.t list (* Parsed as non-empty list of constr *)
+  | ETProdConstrList of (production_level * production_position) * Tok.pattern list (* Parsed as non-empty list of constr *)
   | ETProdBinderList of binder_entry_kind  (* Parsed as non-empty list of local binders *)
 
 (** {5 AST for user-provided entries} *)
@@ -80,7 +80,7 @@ type ('a,'b,'c) ty_user_symbol =
 (** {5 Type-safe grammar extension} *)
 
 type ('self, 'a) symbol =
-| Atoken : Tok.t -> ('self, string) symbol
+| Atoken : Tok.pattern -> ('self, string) symbol
 | Alist1 : ('self, 'a) symbol -> ('self, 'a list) symbol
 | Alist1sep : ('self, 'a) symbol * ('self, _) symbol -> ('self, 'a list) symbol
 | Alist0 : ('self, 'a) symbol -> ('self, 'a list) symbol

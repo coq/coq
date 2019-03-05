@@ -8,7 +8,7 @@
    grammars (see module [Grammar]). It also provides some useful functions
    to create lexers. *)
 
-type pattern = string * string
+type pattern = string * string option
     (* Type for values used by the generated code of the EXTEND
        statement to represent terminals in entry rules.
 -      The first string is the constructor name (must start with

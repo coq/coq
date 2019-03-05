@@ -16,7 +16,7 @@ module type S =
     type te
     type parsable
     val parsable : ?loc:Loc.t -> char Stream.t -> parsable
-    val tokens : string -> (string * int) list
+    val tokens : string -> (string option * int) list
     module Entry :
       sig
         type 'a e
@@ -195,7 +195,7 @@ let is_before : type s1 s2 a1 a2. (s1, a1) ty_symbol -> (s2, a2) ty_symbol -> bo
   match s1, s2 with
     Stoken ("ANY", _), _ -> false
   | _, Stoken ("ANY", _) -> true
-  | Stoken (_, s), Stoken (_, "") when s <> "" -> true
+  | Stoken (_, Some _), Stoken (_, None) -> true
   | Stoken _, Stoken _ -> false
   | Stoken _, _ -> true
   | _ -> false
@@ -683,7 +683,7 @@ let rec print_symbol : type s r. formatter -> (s, r) ty_symbol -> unit =
       fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
         (if osep then " OPT_SEP" else "")
   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Stoken (con, prm) when con <> "" && prm <> "" ->
+  | Stoken (con, Some prm) when con <> "" ->
       fprintf ppf "%s@ %a" con print_str prm
   | Snterml (e, l) ->
       fprintf ppf "%s%s@ LEVEL@ %a" e.ename ""
@@ -695,8 +695,8 @@ and print_symbol1 : type s r. formatter -> (s, r) ty_symbol -> unit =
   | Snterm e -> fprintf ppf "%s%s" e.ename ""
   | Sself -> pp_print_string ppf "SELF"
   | Snext -> pp_print_string ppf "NEXT"
-  | Stoken ("", s) -> print_str ppf s
-  | Stoken (con, "") -> pp_print_string ppf con
+  | Stoken ("", Some s) -> print_str ppf s
+  | Stoken (con, None) -> pp_print_string ppf con
   | Stree t -> print_level ppf pp_print_space (flatten_tree t)
   | s ->
       fprintf ppf "(%a)" print_symbol s

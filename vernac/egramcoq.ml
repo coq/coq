@@ -247,10 +247,10 @@ type (_, _) entry =
 | TTReference : ('self, qualid) entry
 | TTBigint : ('self, Constrexpr.raw_natural_number) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
-| TTConstrList : prod_info * Tok.t list * 'r target -> ('r, 'r list) entry
+| TTConstrList : prod_info * Tok.pattern list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
-| TTClosedBinderList : Tok.t list -> ('self, local_binder_expr list list) entry
+| TTClosedBinderList : Tok.pattern list -> ('self, local_binder_expr list list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -319,7 +319,7 @@ let is_binder_level from e = match e with
 let make_sep_rules = function
   | [tk] -> Atoken tk
   | tkl ->
-  let rec mkrule : Tok.t list -> string rules = function
+  let rec mkrule : Tok.pattern list -> string rules = function
   | [] -> Rules ({ norec_rule = Stop }, fun _ -> (* dropped anyway: *) "")
   | tkn :: rem ->
     let Rules ({ norec_rule = r }, f) = mkrule rem in
@@ -406,7 +406,7 @@ match e with
 | TTConstrList _ -> { subst with constrlists = v :: subst.constrlists }
 
 type (_, _) ty_symbol =
-| TyTerm : Tok.t -> ('s, string) ty_symbol
+| TyTerm : Tok.pattern -> ('s, string) ty_symbol
 | TyNonTerm : 's target * ('s, 'a) entry * ('s, 'a) symbol * bool -> ('s, 'a) ty_symbol
 
 type ('self, _, 'r) ty_rule =

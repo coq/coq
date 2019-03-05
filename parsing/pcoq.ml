@@ -119,24 +119,9 @@ struct
 end
 
 module Symbols : sig
-  val stoken : Tok.t -> ('s, string) G.ty_symbol
   val slist0sep : ('s, 'a) G.ty_symbol -> ('s, 'b) G.ty_symbol -> ('s, 'a list) G.ty_symbol
   val slist1sep : ('s, 'a) G.ty_symbol -> ('s, 'b) G.ty_symbol -> ('s, 'a list) G.ty_symbol
 end = struct
-
-  let stoken tok =
-    let pattern = match tok with
-    | Tok.KEYWORD s -> "", s
-    | Tok.IDENT s -> "IDENT", s
-    | Tok.PATTERNIDENT s -> "PATTERNIDENT", s
-    | Tok.FIELD s -> "FIELD", s
-    | Tok.INT s -> "INT", s
-    | Tok.STRING s -> "STRING", s
-    | Tok.LEFTQMARK -> "LEFTQMARK", ""
-    | Tok.BULLET s -> "BULLET", s
-    | Tok.EOI -> "EOI", ""
-    in
-    G.s_token pattern
 
   let slist0sep x y = G.s_list0sep x y false
   let slist1sep x y = G.s_list1sep x y false
@@ -158,7 +143,7 @@ end
 type ('s, 'a, 'r) casted_rule = Casted : ('s, 'b, 'r) G.ty_rule * ('a -> 'b) -> ('s, 'a, 'r) casted_rule
 
 let rec symbol_of_prod_entry_key : type s a. (s, a) symbol -> (s, a) G.ty_symbol = function
-| Atoken t -> Symbols.stoken t
+| Atoken t -> G.s_token t
 | Alist1 s -> G.s_list1 (symbol_of_prod_entry_key s)
 | Alist1sep (s,sep) ->
     Symbols.slist1sep (symbol_of_prod_entry_key s) (symbol_of_prod_entry_key sep)
@@ -303,7 +288,7 @@ let make_rule r = [None, None, r]
 
 let eoi_entry en =
   let e = Entry.create ((Gram.Entry.name en) ^ "_eoi") in
-  let symbs = G.r_next (G.r_next G.r_stop (G.s_nterm en)) (Symbols.stoken Tok.EOI) in
+  let symbs = G.r_next (G.r_next G.r_stop (G.s_nterm en)) (G.s_token Tok.pattern_for_EOI) in
   let act = fun _ x loc -> x in
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   Gram.safe_extend ~warning:(Some warning) e None (make_rule [G.production (symbs, act)]);

@@ -29,7 +29,14 @@ val to_string : t -> string
 val print : Format.formatter -> t -> unit
 val match_keyword : string -> t -> bool
 
-(** for camlp5 *)
-val of_pattern : string*string -> t
-val to_pattern : t -> string*string
-val match_pattern : string*string -> t -> string
+(** for camlp5,
+    eg GRAMMAR EXTEND ..... [ IDENT "x" -> .... END
+    is a pattern ("IDENT", Some "x")
+*)
+type pattern = string * string option (* = Plexing.pattern *)
+
+val is_keyword : pattern -> string option
+val pattern_for_EOI : pattern
+val pattern_for_KEYWORD : string -> pattern
+val pattern_for_IDENT : string -> pattern
+val match_pattern : pattern -> t -> string
