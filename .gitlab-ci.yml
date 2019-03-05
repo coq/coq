@@ -584,6 +584,9 @@ library:ci-math-comp:
 library:ci-sf:
   <<: *ci-template
 
+library:ci-stdlib2:
+  <<: *ci-template-flambda
+
 library:ci-unimath:
   <<: *ci-template-flambda
 
