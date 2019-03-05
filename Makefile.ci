@@ -40,6 +40,7 @@ CI_TARGETS= \
     ci-relation-algebra \
     ci-sf \
     ci-simple-io \
+    ci-stdlib2 \
     ci-tlc \
     ci-unimath \
     ci-verdi-raft \

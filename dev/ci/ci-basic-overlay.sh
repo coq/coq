@@ -289,3 +289,10 @@
 : "${verdi_raft_CI_REF:=master}"
 : "${verdi_raft_CI_GITURL:=https://github.com/uwplse/verdi-raft}"
 : "${verdi_raft_CI_ARCHIVEURL:=${verdi_raft_CI_GITURL}/archive}"
+
+########################################################################
+# stdlib2
+########################################################################
+: "${stdlib2_CI_REF:=master}"
+: "${stdlib2_CI_GITURL:=https://github.com/coq/stdlib2}"
+: "${stdlib2_CI_ARCHIVEURL:=${stdlib2_CI_GITURL}/archive}"
