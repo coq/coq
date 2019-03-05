@@ -99,8 +99,19 @@ TACTIC EXTEND is_ground
 | [ "is_ground" constr(ty) ] -> { is_ground ty }
 END
 
+{
+let deprecated_autoapply_using =
+  CWarnings.create
+    ~name:"autoapply-using" ~category:"deprecated"
+    (fun () -> Pp.str "The syntax [autoapply ... using] is deprecated. Use [autoapply ... with] instead.")
+}
+
 TACTIC EXTEND autoapply
-| [ "autoapply" constr(c) "using" preident(i) ] -> { autoapply c i }
+| [ "autoapply" constr(c) "using" preident(i) ] -> {
+    deprecated_autoapply_using ();
+    autoapply c i
+  }
+| [ "autoapply" constr(c) "with" preident(i) ] -> { autoapply c i }
 END
 
 {
