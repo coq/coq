@@ -56,7 +56,7 @@ FIND_SKIP_DIRS:='(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' -o \
-  -name '_install_ci' -o \
+  -name '_install ci' -o \
   -name 'gramlib' -o \
   -name 'user-contrib' -o \
   -name 'test-suite' -o \

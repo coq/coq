@@ -40,7 +40,7 @@ REM see -destcyg in ReadMe.txt
 SET DESTCYG=C:\bin\cygwin_coq
 
 REM see -destcoq in ReadMe.txt
-SET DESTCOQ=C:\bin\coq
+SET DESTCOQ=C:\bin\the coq proof assistant
 
 REM see -setup in ReadMe.txt
 SET SETUP=setup-x86_64.exe

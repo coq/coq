@@ -60,7 +60,7 @@ after_script:
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
-      - _install_ci
+      - "_install ci"
       - config/Makefile
       - config/coq_config.py
       - test-suite/misc/universes/all_stdlib.v
@@ -73,7 +73,7 @@ after_script:
     - echo 'end:coq.clean'
 
     - echo 'start:coq.config'
-    - ./configure -warn-error yes -prefix "$(pwd)/_install_ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
+    - ./configure -warn-error yes -prefix "$(pwd)/_install ci" ${COQ_EXTRA_CONF}"$COQ_EXTRA_CONF_QUOTE"
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
@@ -85,7 +85,7 @@ after_script:
     - echo 'start:coq.install'
     - make install install-byte $EXTRA_INSTALL
     - make install-byte
-    - cp bin/fake_ide _install_ci/bin/
+    - cp bin/fake_ide "_install ci/bin/"
     - echo 'end:coq.install'
 
     - set +e
@@ -134,13 +134,13 @@ after_script:
   dependencies:
     - not-a-real-job
   script:
-    - SPHINXENV='COQBIN="'"$PWD"'/_install_ci/bin/"'
+    - SPHINXENV='COQBIN="'"$PWD"'/_install ci/bin/"'
     - make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= refman
     - make install-doc-sphinx
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
-      - _install_ci/share/doc/coq/
+      - "_install ci/share/doc/coq/"
 
 # set dependencies when using
 .test-suite-template: &test-suite-template
@@ -151,9 +151,9 @@ after_script:
     - cd test-suite
     - make clean
     # careful with the ending /
-    - BIN=$(readlink -f ../_install_ci/bin)/
-    - LIB=$(readlink -f ../_install_ci/lib/coq)/
-    - export OCAMLPATH=$(readlink -f ../_install_ci/lib/):"$OCAMLPATH"
+    - BIN=$(readlink -f "../_install ci/bin)/"
+    - LIB=$(readlink -f "../_install ci/lib/coq)/"
+    - export OCAMLPATH=$(readlink -f "../_install ci/lib/"):"$OCAMLPATH"
     - make -j "$NJOBS" BIN="$BIN" COQLIB="$LIB" COQFLAGS="${COQFLAGS}" all
   artifacts:
     name: "$CI_JOB_NAME.logs"
@@ -167,7 +167,7 @@ after_script:
   dependencies:
     - not-a-real-job
   script:
-    - cd _install_ci
+    - cd "_install ci"
     - find lib/coq/ -name '*.vo' -print0 > vofiles
     - for regexp in 's/.vo//' 's:lib/coq/plugins:Coq:' 's:lib/coq/theories:Coq:' 's:/:.:g'; do sed -z -i "$regexp" vofiles; done
     - xargs -0 --arg-file=vofiles bin/coqchk -silent -o -m -coqlib lib/coq/
