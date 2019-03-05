@@ -17,6 +17,7 @@
    ../Makefile.common
    ../config/Makefile
    ; Stuff for the compat script test
+   ../configure.ml
    ../dev/header.ml
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
