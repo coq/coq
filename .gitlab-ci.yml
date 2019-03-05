@@ -252,12 +252,14 @@ build:base+async:
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
+  allow_failure: true # See https://github.com/coq/coq/issues/9658
 
 build:quick:
   <<: *build-template
   variables:
     COQ_EXTRA_CONF: "-native-compiler no"
     QUICK: "1"
+  allow_failure: true # See https://github.com/coq/coq/issues/9637
 
 windows64:
   <<: *windows-template
