@@ -107,7 +107,8 @@ let find_rectype_a env c =
 
 (* Instantiate inductives and parameters in constructor type *)
 
-let type_constructor mind mib u typ params =
+let type_constructor mind mib u (ctx, typ) params =
+  let typ = it_mkProd_or_LetIn typ ctx in
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let nparams = Array.length params in

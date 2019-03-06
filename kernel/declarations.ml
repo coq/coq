@@ -166,7 +166,7 @@ type one_inductive_body = {
 
     mind_kelim : Sorts.family list; (** List of allowed elimination sorts *)
 
-    mind_nf_lc : types array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
+    mind_nf_lc : (rel_context * types) array; (** Head normalized constructor types so that their conclusion exposes the inductive type *)
 
     mind_consnrealargs : int array;
  (** Number of expected proper arguments of the constructors (w/o params) *)

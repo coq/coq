@@ -214,7 +214,7 @@ let subst_mind_packet sub mbp =
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_consnrealargs = mbp.mind_consnrealargs;
     mind_typename = mbp.mind_typename;
-    mind_nf_lc = Array.Smart.map (subst_mps sub) mbp.mind_nf_lc;
+    mind_nf_lc = Array.Smart.map (fun (ctx, c) -> Context.Rel.map (subst_mps sub) ctx, subst_mps sub c) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_ind_arity sub mbp.mind_arity;
     mind_user_lc = Array.Smart.map (subst_mps sub) mbp.mind_user_lc;
@@ -299,9 +299,8 @@ let hcons_ind_arity =
 
 let hcons_mind_packet oib =
   let user = Array.Smart.map Constr.hcons oib.mind_user_lc in
-  let nf = Array.Smart.map Constr.hcons oib.mind_nf_lc in
-  (* Special optim : merge [mind_user_lc] and [mind_nf_lc] if possible *)
-  let nf = if Array.equal (==) user nf then user else nf in
+  let map (ctx, c) = Context.Rel.map Constr.hcons ctx, Constr.hcons c in
+  let nf = Array.Smart.map map oib.mind_nf_lc in
   { oib with
     mind_typename = Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;

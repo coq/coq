@@ -1188,7 +1188,6 @@ let check_constructor_length env loc cstr len_pl pl0 =
       (error_wrong_numarg_constructor ?loc env cstr
          (Inductiveops.constructor_nrealargs cstr)))
 
-open Term
 open Declarations
 
 (* Similar to Cases.adjust_local_defs but on RCPat *)
@@ -1197,16 +1196,15 @@ let insert_local_defs_in_pattern (ind,j) l =
   if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
     (* Optimisation *) l
   else
-    let typi = mip.mind_nf_lc.(j-1) in
-    let (_,typi) = decompose_prod_n_assum (Context.Rel.length mib.mind_params_ctxt) typi in
-    let (decls,_) = decompose_prod_assum typi in
+    let (ctx, _) = mip.mind_nf_lc.(j-1) in
+    let decls = List.skipn (Context.Rel.length mib.mind_params_ctxt) (List.rev ctx) in
     let rec aux decls args =
       match decls, args with
       | Context.Rel.Declaration.LocalDef _ :: decls, args -> (DAst.make @@ RCPatAtom None) :: aux decls args
       | _, [] -> [] (* In particular, if there were trailing local defs, they have been inserted *)
       | Context.Rel.Declaration.LocalAssum _ :: decls, a :: args -> a :: aux decls args
       | _ -> assert false in
-    aux (List.rev decls) l
+    aux decls l
 
 let add_local_defs_and_check_length loc env g pl args = match g with
   | ConstructRef cstr ->

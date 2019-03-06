@@ -89,6 +89,9 @@ let eq_recarg a1 a2 = match a1, a2 with
 
 let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
 
+let eq_in_context (ctx1, t1) (ctx2, t2) =
+  Context.Rel.equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
+
 let check_packet env mind ind
     { mind_typename; mind_arity_ctxt; mind_arity; mind_consnames; mind_user_lc;
       mind_nrealargs; mind_nrealdecls; mind_kelim; mind_nf_lc;
@@ -105,7 +108,7 @@ let check_packet env mind ind
   check "mind_nrealdecls" Int.(equal ind.mind_nrealdecls mind_nrealdecls);
   check "mind_kelim" (check_kelim ind.mind_kelim mind_kelim);
 
-  check "mind_nf_lc" (Array.equal Constr.equal ind.mind_nf_lc mind_nf_lc);
+  check "mind_nf_lc" (Array.equal eq_in_context ind.mind_nf_lc mind_nf_lc);
   (* NB: here syntactic equality is not just an optimisation, we also
      care about the shape of the terms *)
 

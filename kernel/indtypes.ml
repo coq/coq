@@ -416,7 +416,9 @@ let compute_projections (kn, i as ind) mib =
   let pkt = mib.mind_packets.(i) in
   let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
-  let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
+  let (ctx, cty) = pkt.mind_nf_lc.(0) in
+  let cty = it_mkProd_or_LetIn cty ctx in
+  let rctx, _ = decompose_prod_assum (substl subst cty) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
   (** We build a substitution smashing the lets in the record parameters so
       that typechecking projections requires just a substitution and not
@@ -475,7 +477,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
   (* Check one inductive *)
   let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
     (* Type of constructors in normal form *)
-    let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b (d@paramsctxt)) splayed_lc in
+    let nf_lc = Array.map (fun (d, b) -> (d@paramsctxt, b)) splayed_lc in
     let consnrealdecls =
       Array.map (fun (d,_) -> Context.Rel.length d)
 	splayed_lc in

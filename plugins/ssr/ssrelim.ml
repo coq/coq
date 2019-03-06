@@ -209,7 +209,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
           let mind,indb = Inductive.lookup_mind_specif env (kn,i) in
           let tys = indb.Declarations.mind_nf_lc in
           let renamed_tys =
-            Array.mapi (fun j t ->
+            Array.mapi (fun j (ctx, cty) ->
+              let t = Term.it_mkProd_or_LetIn cty ctx in
                     ppdebug(lazy Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
               let t = Arguments_renaming.rename_type t
                 (GlobRef.ConstructRef((kn,i),j+1)) in

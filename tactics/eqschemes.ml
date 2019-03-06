@@ -138,7 +138,7 @@ let get_sym_eq_data env (ind,u) =
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
-  let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
+  let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments"; (* This can be relaxed... *)
@@ -173,7 +173,7 @@ let get_non_sym_eq_data env (ind,u) =
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported";
-  let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
+  let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
@@ -776,7 +776,7 @@ let build_congr env (eq,refl,ctx) ind =
     error "Inductive equalities with local definitions in arity not supported.";
   let env_with_arity = push_rel_context arityctxt env in
   let ty = RelDecl.get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
-  let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
+  let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";

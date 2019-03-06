@@ -101,7 +101,8 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
   and nconstr = Array.length mip.mind_consnames in
   let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
   if j > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-    substl (List.init ntypes make_Ik) (subst_instance_constr u specif.(j-1))
+  let (ctx, cty) = specif.(j - 1) in
+  substl (List.init ntypes make_Ik) (subst_instance_constr u (Term.it_mkProd_or_LetIn cty ctx))
 
 (* Number of constructors *)
 
@@ -280,8 +281,7 @@ let make_case_info env ind style =
   let ind_tags =
     Context.Rel.to_tags (List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt) in
   let cstr_tags =
-    Array.map2 (fun c n ->
-      let d,_ = decompose_prod_assum c in
+    Array.map2 (fun (d, _) n ->
       Context.Rel.to_tags (List.firstn n d))
       mip.mind_nf_lc mip.mind_consnrealdecls in
   let print_info = { ind_tags; cstr_tags; style } in
@@ -462,7 +462,8 @@ let compute_projections env (kn, i as ind) =
   let pkt = mib.mind_packets.(i) in
   let { mind_nparams = nparamargs; mind_params_ctxt = params } = mib in
   let subst = List.init mib.mind_ntypes (fun i -> mkIndU ((kn, mib.mind_ntypes - i - 1), u)) in
-  let rctx, _ = decompose_prod_assum (substl subst pkt.mind_nf_lc.(0)) in
+  let ctx, cty = pkt.mind_nf_lc.(0) in
+  let rctx, _ = decompose_prod_assum (substl subst (Term.it_mkProd_or_LetIn cty ctx)) in
   let ctx, paramslet = List.chop pkt.mind_consnrealdecls.(0) rctx in
   (* We build a substitution smashing the lets in the record parameters so
      that typechecking projections requires just a substitution and not
@@ -622,9 +623,7 @@ let set_pattern_names env sigma ind brv =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let arities =
     Array.map
-      (fun c ->
-        Context.Rel.length ((prod_assum c)) -
-        mib.mind_nparams)
+      (fun (d, _) -> List.length d - mib.mind_nparams)
       mip.mind_nf_lc in
   Array.map2 (set_names env sigma) arities brv
 

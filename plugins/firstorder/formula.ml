@@ -13,7 +13,6 @@ open Names
 open Constr
 open EConstr
 open Vars
-open Termops
 open Util
 open Declarations
 open Globnames
@@ -100,9 +99,8 @@ let kind_of_formula env sigma term =
 		      else
 			let has_realargs=(n>0) in
 			let is_trivial=
-			  let is_constant c =
-			    Int.equal (nb_prod sigma (EConstr.of_constr c)) mib.mind_nparams in
-			    Array.exists is_constant mip.mind_nf_lc in
+                          let is_constant n = Int.equal n 0 in
+                            Array.exists is_constant mip.mind_consnrealargs in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
 			  then
