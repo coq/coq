@@ -25,7 +25,6 @@
 | [`dev/doc/universes.txt`](doc/universes.txt) |  Help for debugging universes |
 | [`dev/doc/extensions.txt`](doc/extensions.txt) | Some help about TACTIC EXTEND |
 | [`dev/doc/perf-analysis`](doc/perf-analysis)|  Analysis of perfs measured on the compilation of user contribs |
-| [`dev/doc/cic.dtd`](doc/cic.dtd) | Official dtd of the calc. of ind. constr. for im/ex-portation |
 | [`dev/doc/econstr.md`](doc/econstr.md) | Describes `Econstr`, implementation of treatment of `evar` in the engine |
 | [`dev/doc/primproj.md`](doc/primproj.md) | Describes primitive projections |
 | [`dev/doc/proof-engine.md`](doc/proof-engine.md) | Tutorial on new proof engine |
