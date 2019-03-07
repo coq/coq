@@ -681,6 +681,9 @@ let pf_type_id gl t = Id.of_string (Namegen.hdchar (pf_env gl) (project gl) t)
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
+let pfe_type_relevance_of gl t =
+  let gl, ty = pfe_type_of gl t in
+  gl, ty, pf_apply Retyping.relevance_of_term gl t
 let pf_type_of gl t =
   let sigma, ty = pf_type_of gl (EConstr.of_constr t) in
   re_sig (sig_it gl)  sigma, EConstr.Unsafe.to_constr ty
@@ -741,8 +744,7 @@ let rec constr_name sigma c = match EConstr.kind sigma c with
   | _ -> Anonymous
 
 let pf_mkprod gl c ?(name=constr_name (project gl) c) cl =
-  let gl, t = pfe_type_of gl c in
-  let r = pf_apply Retyping.relevance_of_term gl c in
+  let gl, t, r = pfe_type_relevance_of gl c in
   if name <> Anonymous || EConstr.Vars.noccurn (project gl) 1 cl then gl, EConstr.mkProd (make_annot name r, t, cl) else
   gl, EConstr.mkProd (make_annot (Name (pf_type_id gl t)) r, t, cl)
 
@@ -1135,8 +1137,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
     let nv, p, _, ucst' = pf_abs_evars gl (fst pat, c) in
     let ucst = UState.union ucst ucst' in
     if nv = 0 then anomaly "occur_existential but no evars" else
-    let gl, pty = pfe_type_of gl p in
-    let rp = pf_apply Retyping.relevance_of_term gl p in
+    let gl, pty, rp = pfe_type_relevance_of gl p in
     false, pat, EConstr.mkProd (make_annot (constr_name (project gl) c) rp, pty, Tacmach.pf_concl gl), p, clr,ucst,gl
   else CErrors.user_err ?loc:(loc_of_cpattern t) (str "generalized term didn't match")
 
@@ -1243,7 +1244,10 @@ let abs_wgen keep_let f gen (gl,args,c) =
                      (EConstr.Vars.subst_var x c)
   | _, Some ((x, _), None) ->
      let x = hoi_id x in
-     gl, EConstr.mkVar x :: args, EConstr.mkProd (make_annot (Name (f x)) Sorts.Relevant,Tacmach.pf_get_hyp_typ gl x, EConstr.Vars.subst_var x c)
+     let hyp = Tacmach.pf_get_hyp gl x in
+     let x' = make_annot (Name (f x)) (NamedDecl.get_relevance hyp) in
+     let prod = EConstr.mkProd (x', NamedDecl.get_type hyp, EConstr.Vars.subst_var x c) in
+     gl, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) -> 
      let x = hoi_id x in
      let cp = interp_cpattern gl p None in
@@ -1254,8 +1258,8 @@ let abs_wgen keep_let f gen (gl,args,c) =
      let t = EConstr.of_constr t in
      evar_closed t p;
      let ut = red_product_skip_id env sigma t in
-     let gl, ty = pfe_type_of gl t in
-     pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) Sorts.Relevant, ut, ty, c)
+     let gl, ty, r = pfe_type_relevance_of gl t in
+     pf_merge_uc ucst gl, args, EConstr.mkLetIn(make_annot (Name (f x)) r, ut, ty, c)
   | _, Some ((x, _), Some p) ->
      let x = hoi_id x in
      let cp = interp_cpattern gl p None in
@@ -1265,8 +1269,8 @@ let abs_wgen keep_let f gen (gl,args,c) =
      let c = EConstr.of_constr c in
      let t = EConstr.of_constr t in
      evar_closed t p;
-     let gl, ty = pfe_type_of gl t in
-     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(make_annot (Name (f x)) Sorts.Relevant, ty, c)
+     let gl, ty, r = pfe_type_relevance_of gl t in
+     pf_merge_uc ucst gl, t :: args, EConstr.mkProd(make_annot (Name (f x)) r, ty, c)
   | _ -> gl, args, c
 
 let clr_of_wgen gen clrs = match gen with
@@ -1437,7 +1441,7 @@ let tacMKPROD c ?name cl =
   tacCONSTR_NAME ?name c >>= fun name ->
   Goal.enter_one ~__LOC__ begin fun g ->
     let sigma, env = Goal.sigma g, Goal.env g in
-    let r = Sorts.Relevant in (* TODO relevance *)
+    let r = Retyping.relevance_of_term env sigma c in
     if name <> Names.Name.Anonymous || EConstr.Vars.noccurn sigma  1 cl
     then tclUNIT (EConstr.mkProd (make_annot name r, t, cl))
     else
