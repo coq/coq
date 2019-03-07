@@ -1,0 +1,3 @@
+The command has indeed failed with message:
+The term "@foo_dependent nat Foo_instance_0 (S O)" has type 
+"True" while it is expected to have type "False".
