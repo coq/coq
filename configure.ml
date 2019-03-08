@@ -983,11 +983,11 @@ let config_runtime () =
   | Some flags -> string_split ',' flags
   | _ when use_custom -> [custom_flag]
   | _ when !prefs.local ->
-    ["-dllib";"-lcoqrun";"-dllpath";coqtop/"kernel/byterun"]
+    ["-dllib";"-lcoqrun";"-dllpath";Filename.quote(coqtop/"kernel/byterun")]
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
-    ["-dllib";"-lcoqrun";"-dllpath";coqlib/"kernel/byterun"]
+    ["-dllib";"-lcoqrun";"-dllpath";Filename.quote(coqlib/"kernel/byterun")]
 
 let vmbyteflags = config_runtime ()
 
