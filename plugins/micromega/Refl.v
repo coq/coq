@@ -36,6 +36,21 @@ trivial.
 intro; apply IH.
 Qed.
 
+
+Theorem make_impl_map :
+  forall (A B: Type) (eval : A -> Prop) (eval' : A*B -> Prop) (l : list (A*B)) r
+         (EVAL : forall x, eval' x <-> eval (fst x)),
+    make_impl eval' l r <-> make_impl eval (List.map fst l) r.
+Proof.
+induction l as [| a l IH]; simpl.
+- tauto.
+- intros.
+  rewrite EVAL.
+  rewrite IH.
+  tauto.
+  auto.
+Qed.
+
 Fixpoint make_conj (A : Type) (eval : A -> Prop) (l : list A) {struct l} : Prop :=
   match l with
     | nil => True

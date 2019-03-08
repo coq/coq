@@ -54,6 +54,17 @@ let pp_var_num pp_var o (v,n) =
     | Int 0  -> ()
     |  _     -> Printf.fprintf o "%s*%a" (string_of_num n) pp_var v
 
+let pp_var_num_smt pp_var o (v,n) =
+  if Int.equal v 0
+  then if eq_num (Int 0) n then ()
+       else Printf.fprintf o "%s" (string_of_num n)
+  else
+    match n with
+    | Int 1  -> pp_var o v
+    | Int -1 -> Printf.fprintf o "(- %a)" pp_var v
+    | Int 0  -> ()
+    |  _     -> Printf.fprintf o "(* %s %a)" (string_of_num n) pp_var v
+
 
 let rec pp_gen pp_var o v =
   match v with
@@ -66,6 +77,9 @@ let pp_var o v = Printf.fprintf o "x%i" v
 
 let pp o v = pp_gen pp_var o v
 
+let pp_smt  o v =
+  let list o v = List.iter (fun e -> Printf.fprintf o "%a "  (pp_var_num_smt pp_var) e) v in
+  Printf.fprintf o "(+ %a)" list v
 
 let from_list (l: num list) =
   let rec xfrom_list i l =
@@ -222,6 +236,19 @@ let decomp_cst v =
   | (0,vl)::v -> vl,v
   | _  -> Int 0,v
 
+let rec decomp_at i v =
+  match v with
+  | [] -> (Int 0 , null)
+  | (vr,vl)::r -> if i = vr then (vl,r)
+                  else if i < vr then (Int 0,v)
+                  else decomp_at i r
+
+let decomp_fst v =
+  match v with
+  | [] -> ((0,Int 0),[])
+  | x::v -> (x,v)
+
+
 let fold f acc v =
   List.fold_left (fun acc (v,i) -> f acc v i) acc v
 
@@ -293,3 +320,19 @@ let dotproduct v1 v2 =
        then dot acc v1' v2
        else dot acc v1  v2' in
   dot (Int 0) v1 v2
+
+
+let map f v = List.map (fun (x,v) -> f x v) v
+
+let abs_min_elt v =
+  match v with
+  | [] -> None
+  | (v,vl)::r ->
+     Some (List.fold_left (fun (v1,vl1) (v2,vl2) ->
+              if abs_num vl1 </ abs_num vl2
+              then (v1,vl1) else (v2,vl2) ) (v,vl) r)
+
+
+let partition p = List.partition (fun (vr,vl) -> p vr vl)
+
+let mkvar x = set x (Int 1) null

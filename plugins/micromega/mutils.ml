@@ -19,8 +19,18 @@
 (*                                                                      *)
 (************************************************************************)
 
+module Int = struct
+  type t = int
+  let compare : int -> int -> int = Pervasives.compare
+  let equal  : int -> int -> bool = (=)
+end
 
-module ISet = Set.Make(Int)
+module ISet =
+  struct
+    include Set.Make(Int)
+
+    let pp o s = iter (fun i -> Printf.fprintf o "%i " i) s
+  end
 
 module IMap =
   struct
@@ -82,11 +92,68 @@ let extract pred l =
 		    |  _   -> (fd, e::sys)
 		 ) (None,[]) l
 
+let extract_best red lt l =
+  let rec extractb c e rst l =
+    match l with
+      [] -> Some (c,e) , rst
+    | e'::l' -> match red e' with
+                | None -> extractb c e (e'::rst) l'
+                | Some c' -> if lt c' c
+                             then extractb c' e' (e::rst) l'
+                             else extractb c  e  (e'::rst) l' in
+  match extract red l with
+  | None , _  -> None,l
+  | Some(c,e), rst -> extractb c e [] rst
+
+
+let rec find_some pred l =
+  match l with
+  | [] -> None
+  | e::l -> match pred e with
+            | Some r -> Some r
+            | None   -> find_some pred l
+
+
 let extract_all pred l  =
   List.fold_left (fun (s1,s2) e ->
       match pred e with
       | None -> s1,e::s2
       | Some v -> (v,e)::s1 , s2) ([],[]) l
+
+let simplify f sys =
+  let (sys',b) =
+    List.fold_left (fun (sys',b) c ->
+        match f c with
+        | None    -> (c::sys',b)
+        | Some c' ->
+           (c'::sys',true)
+      ) ([],false) sys in
+  if b then Some sys' else None
+
+let generate_acc f acc sys =
+  List.fold_left (fun sys' c -> match f c with
+                                | None    -> sys'
+                                | Some c' -> c'::sys'
+    ) acc sys
+
+
+let generate f sys = generate_acc f [] sys
+
+
+let saturate p f sys =
+  let rec sat acc l  =
+    match extract p l with
+    | None,_ -> acc
+    | Some r,l' ->
+       let n = generate (f r) (l'@acc) in
+       sat (n@acc) l' in
+  try sat [] sys with
+    x ->
+     begin
+       Printexc.print_backtrace stdout ;
+       raise x
+     end
+
 
 open Num
 open Big_int
@@ -276,7 +343,8 @@ sig
   val next : t -> t
   val pp : out_channel -> t -> unit
   val compare : t -> t -> int
-
+  val max : t -> t -> t
+  val to_int  : t -> int
 end
 
 module Tag : Tag =
@@ -286,8 +354,10 @@ struct
 
   let from i = i
   let next i = i + 1
+  let max : int -> int -> int = Pervasives.max
   let pp o i = output_string o (string_of_int i)
   let compare : int -> int -> int = Int.compare
+  let to_int x = x
 
 end
 

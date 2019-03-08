@@ -15,7 +15,6 @@
 
 Require Import Rbase.
 Require Import R_Ifp.
-Require Import Lra.
 Local Open Scope R_scope.
 
 Implicit Type r : R.
@@ -357,7 +356,9 @@ Qed.
 
 Lemma Rle_abs : forall x:R, x <= Rabs x.
 Proof.
-  intro; unfold Rabs; case (Rcase_abs x); intros; lra.
+  intro; unfold Rabs; case (Rcase_abs x); intros;auto with real.
+  apply Rminus_le; rewrite <- Rplus_0_r;
+    unfold Rminus; rewrite Ropp_involutive; auto with real.
 Qed.
 
 Definition RRle_abs := Rle_abs.

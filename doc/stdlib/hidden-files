@@ -22,6 +22,7 @@ plugins/extraction/Extraction.v
 plugins/funind/FunInd.v
 plugins/funind/Recdef.v
 plugins/ltac/Ltac.v
+plugins/micromega/DeclConstant.v
 plugins/micromega/Env.v
 plugins/micromega/EnvRing.v
 plugins/micromega/Fourier.v

@@ -706,6 +706,8 @@ Definition psub := Psub cO  cplus cminus copp ceqb.
 
 Definition padd  := Padd cO  cplus ceqb.
 
+Definition pmul := Pmul cO cI cplus ctimes ceqb.
+
 Definition normalise (f : Formula C) : NFormula :=
 let (lhs, op, rhs) := f in
   let lhs := norm lhs in
@@ -746,6 +748,15 @@ Proof.
   apply (Padd_ok  (SORsetoid sor) Rops_wd
     (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor)) (SORrm addon)).
 Qed.
+
+Lemma eval_pol_mul : forall env lhs rhs, eval_pol env (pmul  lhs rhs) == eval_pol env lhs * eval_pol env rhs.
+Proof.
+  intros.
+  apply (Pmul_ok  sor.(SORsetoid) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm)).
+Qed.
+
+
 
 Lemma eval_pol_norm : forall env lhs, eval_pexpr env lhs == eval_pol env  (norm lhs).
 Proof.
@@ -801,29 +812,29 @@ Definition xnormalise (t:Formula C) : list (NFormula)  :=
 
 Import Coq.micromega.Tauto.
 
-Definition cnf_normalise (t:Formula C) : cnf (NFormula) :=
-  List.map  (fun x => x::nil) (xnormalise t).
+Definition cnf_normalise {T : Type} (t:Formula C) (tg : T) : cnf NFormula T :=
+  List.map  (fun x => (x,tg)::nil) (xnormalise t).
 
 
 Add Ring SORRing : (SORrt sor).
 
-Lemma cnf_normalise_correct : forall env t, eval_cnf eval_nformula env (cnf_normalise t) -> eval_formula env t.
+Lemma cnf_normalise_correct : forall (T : Type) env t tg, eval_cnf (Annot:=T) eval_nformula env (cnf_normalise t tg) -> eval_formula env t.
 Proof.
-  unfold cnf_normalise, xnormalise ; simpl ; intros env t.
+  unfold cnf_normalise, xnormalise ; simpl ; intros T env t tg.
   unfold eval_cnf, eval_clause.
-  destruct t as [lhs o rhs]; case_eq o ; simpl;
+  destruct t as [lhs o rhs]; case_eq o ; unfold eval_tt;
+    simpl;
     repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ;
     generalize (eval_pexpr  env lhs);
       generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros.
-  (**)
-  apply (SORle_antisymm sor).
-  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
-  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
-  now rewrite <- (Rminus_eq_0 sor).
-  rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
-  rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
-  rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
-  rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
+  - apply (SORle_antisymm sor).
+  + rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  + rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  - now rewrite <- (Rminus_eq_0 sor).
+  - rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
+  - rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
+  - rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
+  - rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
 Qed.
 
 Definition xnegate (t:Formula C) : list (NFormula)  :=
@@ -839,30 +850,27 @@ Definition xnegate (t:Formula C) : list (NFormula)  :=
       | OpLe  => (psub rhs lhs,NonStrict) :: nil
     end.
 
-Definition cnf_negate (t:Formula C) : cnf (NFormula) :=
-  List.map  (fun x => x::nil) (xnegate t).
+Definition cnf_negate {T : Type} (t:Formula C) (tg:T) : cnf NFormula T :=
+  List.map  (fun x => (x,tg)::nil) (xnegate t).
 
-Lemma cnf_negate_correct : forall env t, eval_cnf eval_nformula env (cnf_negate t) -> ~ eval_formula env t.
+Lemma cnf_negate_correct : forall (T : Type) env t (tg:T), eval_cnf eval_nformula env (cnf_negate t tg) -> ~ eval_formula env t.
 Proof.
-  unfold cnf_negate, xnegate ; simpl ; intros env t.
+  unfold cnf_negate, xnegate ; simpl ; intros T env t tg.
   unfold eval_cnf, eval_clause.
-  destruct t as [lhs o rhs]; case_eq o ; simpl;
+  destruct t as [lhs o rhs]; case_eq o ; unfold eval_tt; simpl;
     repeat rewrite eval_pol_sub ; repeat rewrite <- eval_pol_norm in * ;
     generalize (eval_pexpr  env lhs);
       generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros ; intuition.
-  (**)
+  -
   apply H0.
   rewrite H1 ; ring.
-  (**)
-  apply H1.
-  apply (SORle_antisymm sor).
-  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
-  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
-  (**)
-  apply H0. now rewrite  (Rle_le_minus sor) in H1.
-  apply H0. now rewrite (Rle_le_minus sor) in H1.
-  apply H0. now rewrite (Rlt_lt_minus sor) in H1.
-  apply H0. now rewrite (Rlt_lt_minus sor) in H1.
+  - apply H1.  apply (SORle_antisymm sor).
+  + rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  + rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  - apply H0. now rewrite  (Rle_le_minus sor) in H1.
+  - apply H0. now rewrite (Rle_le_minus sor) in H1.
+  - apply H0. now rewrite (Rlt_lt_minus sor) in H1.
+  - apply H0. now rewrite (Rlt_lt_minus sor) in H1.
 Qed.
 
 Lemma eval_nformula_dec : forall env d, (eval_nformula env d) \/ ~ (eval_nformula env d).

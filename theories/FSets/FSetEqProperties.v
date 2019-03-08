@@ -170,7 +170,7 @@ Qed.
 Lemma equal_cardinal:
  equal s s'=true -> cardinal s=cardinal s'.
 Proof.
-auto with set.
+auto with set fset.
 Qed.
 
 (* Properties of [subset] *)
@@ -268,7 +268,7 @@ Proof.
 intros; apply bool_1; split; intros.
 rewrite MP.cardinal_1; simpl; auto with set.
 assert (cardinal s = 0) by (apply zerob_true_elim; auto).
-auto with set.
+auto with set fset.
 Qed.
 
 (** Properties of [singleton] *)
@@ -551,7 +551,7 @@ End Fold.
 Lemma add_cardinal_1:
  forall s x, mem x s=true -> cardinal (add x s)=cardinal s.
 Proof.
-auto with set.
+auto with set fset.
 Qed.
 
 Lemma add_cardinal_2:
@@ -846,9 +846,9 @@ Lemma sum_plus :
 Proof.
 unfold sum.
 intros f g Hf Hg.
-assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto.
+assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto with fset.
 assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros; omega.
-assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto.
+assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto with fset.
 assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; omega.
 assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). repeat red; auto.
 assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; omega.

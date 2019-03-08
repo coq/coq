@@ -11,8 +11,10 @@
 (** A naive simplex *)
 open Polynomial
 open Num
-open Util
+(*open Util*)
 open Mutils
+
+type ('a,'b) sum = Inl of 'a | Inr of 'b
 
 let debug = false
 
@@ -130,12 +132,6 @@ let is_maximised rst v =
     violating a restriction.
  *)
 
-(* let is_unbounded rst  tbl vr =
-  IMap.for_all (fun x v -> if Vect.get vr v </ Int 0
-                           then not (IMap.mem vr rst)
-                           else true
-    ) tbl
- *)
 
 type result =
   | Max of num   (** Maximum is reached *)
@@ -335,6 +331,8 @@ let normalise_row (t : tableau) (v: Vect.t) =
 let add_row (nw :var) (t : tableau) (v : Vect.t) : tableau =
   IMap.add nw (normalise_row t v) t
 
+
+
 (** [push_real] performs reasoning over the rationals *)
 let push_real (opt : bool) (nw : var) (v : Vect.t) (rst: Restricted.t) (t : tableau) : certificate  =
   if debug
@@ -361,7 +359,7 @@ let push_real (opt : bool) (nw : var) (v : Vect.t) (rst: Restricted.t) (t : tabl
           Unsat (Vect.set nw (Int 1) (Vect.set 0 (Int 0) (Vect.mul (Int (-1)) v')))
 
 
-(** One complication is that equalities needs some pre-processing.contents
+(** One complication is that equalities needs some pre-processing.
  *)
 open Mutils
 open Polynomial
@@ -406,25 +404,21 @@ let find_solution rst tbl =
 
 let choose_conflict (sol:Vect.t) (l: (var * Vect.t) list) =
   let esol = Vect.set 0 (Int 1) sol in
-  let is_conflict (x,v) =
-    if Vect.dotproduct esol v >=/ Int 0
-    then None else Some(x,v) in
-  let (c,r) = extract is_conflict l in
-  match c with
-  | Some (c,_) -> Some (c,r)
-  | None   -> match l with
-              | []   -> None
-              | e::l -> Some(e,l)
 
-(*let remove_redundant rst t =
-  IMap.fold (fun k v m -> if Restricted.is_restricted k rst && Vect.for_all (fun x _ -> x == 0 || Restricted.is_restricted x rst) v
-                          then begin
-                              if debug then
-                                Printf.printf "%a is redundant\n" LinPoly.pp_var k;
-                              IMap.remove k m
-                            end
-                          else m) t t
- *)
+  let rec most_violating l e (x,v) rst =
+    match l with
+    | [] ->  Some((x,v),rst)
+    | (x',v')::l ->
+       let e' = Vect.dotproduct esol v' in
+       if e' <=/ e
+       then most_violating l e' (x',v') ((x,v)::rst)
+       else most_violating l e (x,v)    ((x',v')::rst) in
+
+  match l with
+  | [] -> None
+  | (x,v)::l -> let e = Vect.dotproduct esol v in
+                most_violating l e (x,v) []
+
 
 
 let rec solve opt l (rst:Restricted.t) (t:tableau) =
@@ -515,65 +509,117 @@ let make_farkas_proof (env: WithProof.t IMap.t) vm v =
             WithProof.mult (Vect.cst n) (IMap.find x env)
         end) WithProof.zero v
 
-(*
-let incr_cut rmin x =
-  match rmin with
-  | None -> true
-  | Some r -> Int.compare x r = 1
- *)
 
-let cut env rmin sol vm (rst:Restricted.t) (x,v) =
-(*  if not (incr_cut rmin x)
-  then None
-  else *)
-  let (n,r) = Vect.decomp_cst v in
+let frac_num n = n -/ Num.floor_num n
 
-  let nf = Num.floor_num n in
-  if nf =/ n
+
+(* [resolv_var v rst tbl] returns (if it exists) a restricted variable vr such that v = vr *)
+exception FoundVar of int
+
+let resolve_var v rst tbl =
+  let v = Vect.set v (Int 1) Vect.null  in
+  try
+  IMap.iter (fun k vect ->
+      if Restricted.is_restricted k rst
+      then if Vect.equal v vect then raise (FoundVar k)
+           else ()) tbl ; None
+  with FoundVar k -> Some k
+
+let prepare_cut env rst tbl x v =
+  (* extract the unrestricted part *)
+  let (unrst,rstv) = Vect.partition (fun x vl -> not (Restricted.is_restricted x rst) && frac_num vl <>/ Int 0) (Vect.set 0 (Int 0) v) in
+  if Vect.is_null unrst
+  then Some rstv
+  else  Some (Vect.fold (fun acc k i ->
+                 match resolve_var k rst tbl with
+                 | None -> acc (* Should not happen *)
+                 | Some v' -> Vect.set v' i acc)
+               rstv unrst)
+
+let cut env rmin sol vm (rst:Restricted.t)  tbl (x,v) =
+  begin
+      (*    Printf.printf "Trying to cut %i\n" x;*)
+    let (n,r) = Vect.decomp_cst v in
+
+
+  let f = frac_num n in
+
+  if f =/ Int 0
   then None (* The solution is integral *)
   else
     (* This is potentially a cut *)
-    let cut = Vect.normalise
-                (Vect.fold (fun acc x n ->
-                     if Restricted.is_restricted x rst then
-                       Vect.set x (n -/ (Num.floor_num n)) acc
-                     else acc
-                   ) Vect.null r) in
-    if debug then Printf.fprintf stdout "Cut vector for %a : %a\n" LinPoly.pp_var x LinPoly.pp cut ;
-    let cut = make_farkas_proof env vm cut in
+    let t  =
+      if f  </ (Int 1) // (Int 2)
+      then
+        let t' = ((Int 1) // f) in
+        if Num.is_integer_num t'
+        then t' -/ Int 1
+        else Num.floor_num t'
+      else Int 1 in
 
-    match WithProof.cutting_plane cut  with
-    | None ->  None
-    | Some (v,prf) ->
-       if debug then begin
-           Printf.printf "This is a cutting plane:\n" ;
-           Printf.printf "%a -> %a\n" WithProof.output cut WithProof.output (v,prf);
-         end;
-       if Pervasives.(=) (snd v) Eq
-       then (* Unsat *) Some (x,(v,prf))
-       else if eval_op Ge (Vect.dotproduct (fst v) (Vect.set 0 (Int 1) sol)) (Int 0)
-       then begin
-           (* Can this happen? *)
-           if debug then  Printf.printf "The cut is feasible - drop it\n";
-           None
-         end
-       else Some(x,(v,prf))
+    let cut_coeff1 v =
+      let fv = frac_num v in
+      if fv <=/ (Int 1 -/ f)
+      then fv // (Int 1 -/ f)
+      else (Int 1 -/ fv) // f in
 
-let find_cut env u sol vm rst tbl =
-  (* find first *)
-  IMap.fold (fun x v acc ->
-      match acc with
-      | None -> cut env u sol  vm rst (x,v)
-      | Some c -> acc) tbl None
+    let cut_coeff2 v = frac_num (t */ v) in
 
-(*
-let find_cut env u sol vm rst tbl =
-  IMap.fold (fun x v acc ->
-      match acc with
-      | Some c -> Some c
-      |  None  ->  cut env u sol  vm rst (x,v)
-    ) tbl None
- *)
+    let cut_vector ccoeff =
+      match prepare_cut env rst tbl x v with
+      | None -> Vect.null
+      | Some r ->
+         (*Printf.printf "Potential cut %a\n" LinPoly.pp r;*)
+         Vect.fold (fun acc x n -> Vect.set x (ccoeff n) acc) Vect.null r
+    in
+
+    let lcut = List.map (fun cv -> Vect.normalise (cut_vector cv)) [cut_coeff1 ; cut_coeff2] in
+
+    let lcut = List.map (make_farkas_proof  env vm) lcut in
+
+    let check_cutting_plane c =
+      match WithProof.cutting_plane c with
+      | None ->
+         if debug then Printf.printf "This is not cutting plane for %a\n%a:" LinPoly.pp_var x WithProof.output c;
+         None
+      | Some(v,prf) ->
+         if debug then begin
+             Printf.printf "This is a cutting plane for %a:" LinPoly.pp_var x;
+             Printf.printf " %a\n"  WithProof.output (v,prf);
+           end;
+         if Pervasives.(=) (snd v) Eq
+         then (* Unsat *) Some (x,(v,prf))
+         else
+           let vl = (Vect.dotproduct (fst v) (Vect.set 0 (Int 1) sol)) in
+           if eval_op Ge vl  (Int 0)
+           then begin
+               (* Can this happen? *)
+               if debug then  Printf.printf "The cut is feasible %s >= 0 ??\n" (Num.string_of_num vl);
+               None
+             end
+           else Some(x,(v,prf)) in
+
+    find_some check_cutting_plane lcut
+  end
+
+let find_cut nb env u sol vm rst tbl =
+  if nb = 0
+  then
+    IMap.fold (fun x v acc ->
+             match acc with
+           | None -> cut env u sol  vm rst tbl (x,v)
+           | Some c -> Some c) tbl None
+  else
+    IMap.fold (fun x v acc ->
+             match cut env u sol  vm rst tbl (x,v) , acc with
+             | None , Some r | Some r , None -> Some r
+             | None , None -> None
+             | Some (v,((lp,o),p1)) , Some (v',((lp',o'),p2)) ->
+                Some (if ProofFormat.pr_size p1 </ ProofFormat.pr_size p2
+                      then (v,((lp,o),p1)) else (v',((lp',o'),p2)))
+           ) tbl None
+
+
 
 let integer_solver lp =
   let (l,_) = List.split lp in
@@ -587,7 +633,10 @@ let integer_solver lp =
     | Sat (t',x) -> Inl (Restricted.restrict vr rst,t',x)
     | Unsat c -> Inr c in
 
+  let nb = ref 0 in
+
   let rec isolve env cr vr res =
+    incr nb;
     match res with
     | Inr c -> Some (Step (vr, make_farkas_certificate env vm (Vect.normalise c),Done))
     | Inl (rst,tbl,x) ->
@@ -595,10 +644,11 @@ let integer_solver lp =
            Printf.fprintf stdout "Looking for a cut\n";
            Printf.fprintf stdout "Restricted %a ...\n" Restricted.pp rst;
            Printf.fprintf stdout "Current Tableau\n%a\n" output_tableau tbl;
+           (*           Printf.fprintf stdout "Bounding box\n%a\n" output_box (bounding_box (vr+1) rst tbl l')*)
          end;
        let sol = find_solution rst tbl in
 
-       match find_cut env cr (*x*) sol vm rst tbl with
+       match find_cut (!nb mod 2) env cr (*x*) sol vm rst tbl with
        | None -> None
        | Some(cr,((v,op),cut)) ->
           if Pervasives.(=) op Eq
@@ -615,6 +665,8 @@ let integer_solver lp =
   isolve env None vr res
 
 let integer_solver lp =
+  if debug then Printf.printf "Input integer solver\n%a\n" WithProof.output_sys (List.map WithProof.of_cstr lp);
+
   match integer_solver lp with
   | None -> None
   | Some prf -> if debug

@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val is_ground_tac : EConstr.constr -> unit Proofview.tactic
 val psatz_Z : int -> unit Proofview.tactic -> unit Proofview.tactic
 val psatz_Q : int -> unit Proofview.tactic -> unit Proofview.tactic
 val psatz_R : int -> unit Proofview.tactic -> unit Proofview.tactic

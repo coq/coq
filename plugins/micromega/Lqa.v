@@ -18,12 +18,13 @@ Require Import QMicromega.
 Require Import QArith.
 Require Import RingMicromega.
 Require Import VarMap.
+Require Import DeclConstant.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 Ltac rchange := 
   intros __wit __varmap __ff ;
-  change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
+  change (Tauto.eval_bf (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
   apply (QTautoChecker_sound __ff __wit).
 
 Ltac rchecker_no_abstract := rchange ; vm_compute ; reflexivity.

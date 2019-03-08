@@ -435,6 +435,12 @@ Goal forall
     (R  : sz + d * sz - sz * x >= 1),
     False.
 Proof.
+  (* Manual proof.
+     assert (H : sz >= 2) by GE + R.
+     assert (GEd : x - d >= 1 by GE / H
+     assert (Rd  : 1 + d - x >= 1 by R / H)
+     1 >= 2 by GEd + Rd
+   *)
   intros.
   assert (x - d >= 1) by nia.
   nia.

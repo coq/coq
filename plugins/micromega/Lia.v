@@ -18,6 +18,7 @@ Require Import ZMicromega.
 Require Import ZArith.
 Require Import RingMicromega.
 Require Import VarMap.
+Require Import DeclConstant.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
@@ -25,18 +26,22 @@ Declare ML Module "micromega_plugin".
 Ltac preprocess :=
   zify ; unfold Z.succ in * ; unfold Z.pred in *.
 
-Ltac zchange := 
+Ltac zchange checker :=
   intros __wit __varmap __ff ;
-  change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
-  apply (ZTautoChecker_sound __ff __wit).
+  change (@Tauto.eval_bf _ (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+  apply (checker __ff __wit).
 
-Ltac zchecker_no_abstract := zchange ; vm_compute ; reflexivity.
+Ltac zchecker_no_abstract checker :=
+  zchange checker ; vm_compute ; reflexivity.
 
-Ltac zchecker_abstract := abstract (zchange ; vm_cast_no_check (eq_refl true)).
+Ltac zchecker_abstract checker :=
+  abstract (zchange checker ; vm_cast_no_check (eq_refl true)).
 
-Ltac zchecker := zchecker_no_abstract.
+Ltac zchecker := zchecker_no_abstract ZTautoChecker_sound.
 
-Ltac lia := preprocess; xlia zchecker.
+Ltac zchecker_ext := zchecker_no_abstract ZTautoCheckerExt_sound.
+
+Ltac lia := preprocess; xlia zchecker_ext.
                
 Ltac nia := preprocess; xnlia zchecker.
 
