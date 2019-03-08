@@ -21,6 +21,7 @@ type t =
   | STRING of string
   | LEFTQMARK
   | BULLET of string
+  | QUOTATION of string * string
   | EOI
 
 let equal t1 t2 = match t1, t2 with
@@ -34,6 +35,7 @@ let equal t1 t2 = match t1, t2 with
 | LEFTQMARK, LEFTQMARK -> true
 | BULLET s1, BULLET s2 -> string_equal s1 s2
 | EOI, EOI -> true
+| QUOTATION(s1,t1), QUOTATION(s2,t2) -> string_equal s1 s2 && string_equal t1 t2
 | _ -> false
 
 let extract_string diff_mode = function
@@ -58,6 +60,7 @@ let extract_string diff_mode = function
   | INT s -> s
   | LEFTQMARK -> "?"
   | BULLET s -> s
+  | QUOTATION(_,s) -> s
   | EOI -> ""
 
 let to_string = function
@@ -69,11 +72,26 @@ let to_string = function
   | STRING s -> Format.sprintf "STRING %S" s
   | LEFTQMARK -> "LEFTQMARK"
   | BULLET s -> Format.sprintf "BULLET %S" s
+  | QUOTATION(lbl,s) -> lbl ^ s
   | EOI -> "EOI"
 
 let match_keyword kwd = function
   | KEYWORD kwd' when kwd = kwd' -> true
   | _ -> false
+
+(* Invariant, txt is "ident" or a well parenthesized "{{....}}" *)
+let trim_quotation txt =
+  let len = String.length txt in
+  if len = 0 then None, txt
+  else
+    let c = txt.[0] in
+    if c = '(' || c = '[' || c = '{' then
+      let rec aux n =
+        if n < len && txt.[n] = c then aux (n+1)
+        else Some c, String.sub txt n (len - (2*n))
+      in
+        aux 0
+    else None, txt
 
 (* Needed to fix Camlp5 signature.
  Cannot use Pp because of silly Tox -> Compat -> Pp dependency *)
@@ -85,7 +103,8 @@ let print ppf tok = Format.pp_print_string ppf (to_string tok)
 type pattern = string * string option
 
 let is_keyword = function
-  | "", Some s -> Some s
+  | "", Some s -> Some (false,s)
+  | "QUOTATION", Some s -> Some (true,s)
   | _ -> None
 
 let pattern_for_EOI = ("EOI",None)
@@ -99,14 +118,20 @@ let match_pattern (key, value) =
     | None -> x
     | Some value -> if string_equal value x then x else err () in
   match key with
-  | "" -> (function { v = KEYWORD s } -> cond s | _ -> err ())
-  | "IDENT" when value <> None -> (function { v = (IDENT s | KEYWORD s) } -> cond s | _ -> err ())
-  | "IDENT" -> (function { v = IDENT s } -> cond s | _ -> err ())
-  | "PATTERNIDENT" -> (function { v = PATTERNIDENT s } -> cond s | _ -> err ())
-  | "FIELD" -> (function { v = FIELD s } -> cond s | _ -> err ())
-  | "INT" -> (function { v = INT s } -> cond s | _ -> err ())
-  | "STRING" -> (function { v = STRING s } -> cond s | _ -> err ())
-  | "LEFTQMARK" -> (function { v = LEFTQMARK } -> cond "" | _ -> err ())
-  | "BULLET" ->  (function { v = BULLET s } -> cond s  | _ -> err ())
-  | "EOI" -> (function { v = EOI } -> cond "" | _ -> err ())
+  | "" -> (function KEYWORD s -> cond s | _ -> err ())
+  | "IDENT" when value <> None -> (function (IDENT s | KEYWORD s) -> cond s | _ -> err ())
+  | "IDENT" -> (function IDENT s -> cond s | _ -> err ())
+  | "PATTERNIDENT" -> (function PATTERNIDENT s -> cond s | _ -> err ())
+  | "FIELD" -> (function FIELD s -> cond s | _ -> err ())
+  | "INT" -> (function INT s -> cond s | _ -> err ())
+  | "STRING" -> (function STRING s -> cond s | _ -> err ())
+  | "LEFTQMARK" -> (function LEFTQMARK -> cond "" | _ -> err ())
+  | "BULLET" ->  (function BULLET s -> cond s  | _ -> err ())
+  | "QUOTATION" -> (function
+      | QUOTATION(lbl,s) ->
+          begin match value with
+          | None -> assert false
+          | Some lbl1 -> if string_equal lbl1 lbl then s else err () end
+      | _ -> err ())
+  | "EOI" -> (function EOI -> cond "" | _ -> err ())
   | p -> CErrors.anomaly Pp.(str "Tok: unknown pattern " ++ str p)

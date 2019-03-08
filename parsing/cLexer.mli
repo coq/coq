@@ -9,7 +9,9 @@
 (************************************************************************)
 
 (** This should be functional but it is not due to the interface *)
-val add_keyword : string -> unit
+type starts_quotation = NoQuotation | Quotation
+
+val add_keyword : ?quotation:starts_quotation -> string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
 val keywords : unit -> CString.Set.t

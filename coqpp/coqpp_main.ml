@@ -163,6 +163,8 @@ let is_token s = match string_split s with
 
 let rec parse_tokens = function
 | [GSymbString s] -> SymbToken ("", Some s)
+| [GSymbQualid ("QUOTATION", None); GSymbString s] ->
+    SymbToken ("QUOTATION", Some s)
 | [GSymbQualid ("SELF", None)] -> SymbSelf
 | [GSymbQualid ("NEXT", None)] -> SymbNext
 | [GSymbQualid ("LIST0", None); tkn] ->
