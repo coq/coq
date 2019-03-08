@@ -790,10 +790,12 @@ and detype_r d flags avoid env sigma t =
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,p,iv,c,bl) ->
         let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
+        if Environ.mem_mind (fst ci.ci_ind) (snd env) then
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma ci comp)
           (is_nondep_branch sigma) avoid
           ci p iv c bl
+        else GHole (Evar_kinds.InternalHole,Namegen.IntroAnonymous,None)
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
