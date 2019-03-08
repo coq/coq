@@ -813,6 +813,13 @@ and detype_r d flags avoid env sigma t =
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,u,pms,p,c,bl) ->
         let comp = computable sigma p in
+        let check_env =
+          try
+            let _ = Environ.lookup_mind (fst ci.ci_ind) (snd env) in
+            true
+          with Not_found -> false
+        in
+        if check_env then
         let (ci, p, c, bl) = EConstr.expand_case (snd env) sigma (ci, u, pms, p, c, bl) in
         detype_case comp (detype d flags avoid env sigma)
           (detype_eqns d flags avoid env sigma ci comp)
@@ -820,6 +827,7 @@ and detype_r d flags avoid env sigma t =
           (ci.ci_ind,ci.ci_pp_info.style,
             ci.ci_pp_info.cstr_tags,ci.ci_pp_info.ind_tags)
           p c bl
+        else GHole (Evar_kinds.InternalHole,Namegen.IntroAnonymous,None)
     | Fix (nvn,recdef) -> detype_fix (detype d) flags avoid env sigma nvn recdef
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
