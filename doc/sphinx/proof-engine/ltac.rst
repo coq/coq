@@ -200,7 +200,7 @@ following form:
    :name: [> ... | ... | ... ] (dispatch)
 
    The expressions :n:`@expr__i` are evaluated to :n:`v__i`, for
-   i = 0, ..., n and all have to be tactics. The :n:`v__i` is applied to the
+   i = 1, ..., n and all have to be tactics. The :n:`v__i` is applied to the
    i-th goal, for i = 1, ..., n. It fails if the number of focused goals is not
    exactly n.
 
