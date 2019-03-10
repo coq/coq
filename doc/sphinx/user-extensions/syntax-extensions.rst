@@ -1115,6 +1115,8 @@ Binding arguments of a constant to an interpretation scope
    .. coqtop:: all
 
       Parameter g : bool -> bool.
+      Declare Scope mybool_scope.
+
       Notation "@@" := true (only parsing) : bool_scope.
       Notation "@@" := false (only parsing): mybool_scope.
 
@@ -1151,6 +1153,7 @@ Binding types of arguments to an interpretation scope
    .. coqtop:: in reset
 
       Parameter U : Set.
+      Declare Scope U_scope.
       Bind Scope U_scope with U.
       Parameter Uplus : U -> U -> U.
       Parameter P : forall T:Set, T -> U -> Prop.
@@ -1575,7 +1578,7 @@ Numeral notations
 
      For example
 
-     .. coqtop:: all
+     .. coqtop:: all warn
 
         Check 90000.
 

@@ -1023,7 +1023,7 @@ Mutually defined inductive types
 
    .. coqtop:: in
 
-      Variables A B : Set.
+      Parameters A B : Set.
 
       Inductive tree : Set := node : A -> forest -> tree
 
@@ -1533,7 +1533,7 @@ the following attributes names are recognized:
 
 .. example::
 
-   .. coqtop:: all reset
+   .. coqtop:: all reset warn
 
         From Coq Require Program.
         #[program] Definition one : nat := S _.

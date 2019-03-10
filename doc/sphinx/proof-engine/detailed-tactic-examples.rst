@@ -33,7 +33,7 @@ example, revisiting the first example of the inversion documentation:
         | LeO : forall n:nat, Le 0 n
         | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
 
-   Variable P : nat -> nat -> Prop.
+   Parameter P : nat -> nat -> Prop.
 
    Goal forall n m:nat, Le (S n) m -> P n m.
 
@@ -69,7 +69,7 @@ as well in this case, e.g.:
 
 .. coqtop:: in
 
-   Variable Q : forall (n m : nat), Le n m -> Prop.
+   Parameter Q : forall (n m : nat), Le n m -> Prop.
    Goal forall n m (p : Le (S n) m), Q (S n) m p.
 
 .. coqtop:: all
@@ -124,7 +124,7 @@ the following example on vectors:
 
 .. coqtop:: in
 
-   Variable A : Set.
+   Parameter A : Set.
 
 .. coqtop:: in
 
@@ -329,7 +329,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in
 
-      Variable Ack : nat -> nat -> nat.
+      Parameter Ack : nat -> nat -> nat.
 
    .. coqtop:: in
 
@@ -357,7 +357,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in
 
-      Variable g : nat -> nat -> nat.
+      Parameter g : nat -> nat -> nat.
 
    .. coqtop:: in
 

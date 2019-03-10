@@ -313,7 +313,9 @@ constructor ``*``. It also tests that they work as expected.
 Unfortunately, these declarations are very verbose. In the following
 subsection we show how to make them more compact.
 
-.. coqtop:: all
+.. FIXME shouldn't warn
+
+.. coqtop:: all warn
 
   Module Add_instance_attempt.
 
@@ -418,7 +420,9 @@ the reader can refer to :cite:`CSwcu`.
 
 The declaration of canonical instances can now be way more compact:
 
-.. coqtop:: all
+.. FIXME should not warn
+
+.. coqtop:: all warn
 
   Canonical Structure nat_LEQty := Eval hnf in Pack nat nat_LEQmx.
   
