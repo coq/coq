@@ -373,7 +373,8 @@ IF "%RUNSETUP%"=="Y" (
     -P make,unzip ^
     -P gdb,liblzma5 ^
     -P patch,automake1.14 ^
-    -P mingw64-%ARCH%-binutils,mingw64-%ARCH%-gcc-core,mingw64-%ARCH%-gcc-g++,mingw64-%ARCH%-pkg-config,mingw64-%ARCH%-windows_default_manifest ^
+    -P pkg-config ^
+    -P mingw64-%ARCH%-binutils,mingw64-%ARCH%-gcc-core,mingw64-%ARCH%-gcc-g++,mingw64-%ARCH%-windows_default_manifest ^
     -P mingw64-%ARCH%-headers,mingw64-%ARCH%-runtime,mingw64-%ARCH%-pthreads,mingw64-%ARCH%-zlib ^
     -P libiconv-devel,libunistring-devel,libncurses-devel ^
     -P gettext-devel,libgettextpo-devel ^

@@ -1202,7 +1202,7 @@ function make_lablgtk {
   make_gtk_sourceview2
   if build_prep https://forge.ocamlcore.org/frs/download.php/1726 lablgtk-2.18.6 tar.gz 1 ; then
     # configure should be fixed to search for $TARGET_ARCH-pkg-config.exe
-    cp "/bin/$TARGET_ARCH-pkg-config.exe"  bin_special/pkg-config.exe
+    cp "/bin/$TARGET_ARCH-pkg-config"  bin_special/pkg-config
     logn configure ./configure --build="$BUILD" --host="$HOST" --target="$TARGET" --prefix="$PREFIXOCAML"
 
     # lablgtk shows occasional errors with -j, so don't pass $MAKE_OPT
