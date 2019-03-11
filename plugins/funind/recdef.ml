@@ -776,7 +776,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
       let a' = infos.info in
       let new_info =
         { infos with
-          info = mkCase (ci, t, iv, a', l)
+          info = mkCase (ci, a, iv, a', l)
         ; is_main_branch = expr_info.is_main_branch
         ; is_final = expr_info.is_final }
       in
