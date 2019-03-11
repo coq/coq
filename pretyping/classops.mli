@@ -100,6 +100,8 @@ val lookup_pattern_path_between :
 (* Crade *)
 val install_path_printer :
   ((cl_index * cl_index) * inheritance_path -> Pp.t) -> unit
+val install_path_comparator :
+  (inheritance_path -> inheritance_path -> bool) -> unit
 (**/**)
 
 (** {6 This is for printing purpose } *)
