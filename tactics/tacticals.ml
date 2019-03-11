@@ -295,13 +295,11 @@ module New = struct
      [tclPROGRESS]. It strikes me as a bad idea, but consistency can be
      considered valuable. *)
   let tclOR t1 t2 =
-    tclINDEPENDENT begin
-      Proofview.tclOR
-        t1
-        begin fun e ->
-          catch_failerror e <*> t2
-        end
-    end
+    Proofview.tclOR
+      t1
+      begin fun e ->
+        catch_failerror e <*> t2
+      end
 
   let tclORD t1 t2 =
     tclINDEPENDENT begin
