@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-02-17-V1"
+# CACHEKEY: "bionic_coq-V2019-03-11-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -37,7 +37,7 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.6.2 ounit.2.0.8 odoc.1.3.0" \
+ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.6.2 ounit.2.0.8 odoc.1.4.0" \
     CI_OPAM="menhir.20181113 elpi.1.1.0 ocamlgraph.1.8.8"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
