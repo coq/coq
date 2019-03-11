@@ -24,6 +24,8 @@ open Type_errors
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+exception NotConvertibleVect of int
+
 let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 
 let conv_leq_vecti env v1 v2 =

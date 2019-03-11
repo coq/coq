@@ -193,8 +193,6 @@ type 'a extended_conversion_function =
   'a -> 'a -> unit
 
 exception NotConvertible
-exception NotConvertibleVect of int
-
 
 (* Convertibility of sorts *)
 

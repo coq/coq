@@ -27,7 +27,6 @@ val nf_betaiota      : env -> constr -> constr
   s conversion functions *)
 
 exception NotConvertible
-exception NotConvertibleVect of int
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 type 'a extended_conversion_function = 
