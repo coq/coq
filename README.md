@@ -68,25 +68,25 @@ and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
 ## Changes
+
 There is a file named [`CHANGES.md`](CHANGES.md) that explains the differences and the
 incompatibilities since last versions. If you upgrade Coq, please read
 it carefully.
 
-## The Coq Club
-The Coq Club moderated mailing list is meant to be a standard way
-to discuss questions about the Coq system and related topics. The
-subscription link can be found at [coq.inria.fr/community](http://coq.inria.fr/community).
+## Questions and discussion
 
-The topics to be discussed in the club should include:
+We have a number of channels to reach the user community and the
+development team:
 
-* technical problems;
-* questions about proof developments;
-* suggestions and questions about the implementation;
-* announcements of proofs;
-* theoretical questions about typed lambda-calculi which are
-  closely related to Coq.
+- Our [Discourse forum](https://coq.discourse.group).
+- Our mailing list, the [Coq-Club](https://sympa.inria.fr/sympa/info/coq-club).
+- Our [Gitter channel][gitter-link], which is a good way to reach
+  developers for quick chat and development questions.
+
+See also [coq.inria.fr/community](https://coq.inria.fr/community.html).
 
 ## Bugs report
+
 Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
 
 To be effective, bug reports should mention the OCaml version used
