@@ -678,7 +678,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let a' = infos.info in
   let new_info =
     {infos with
-      info = mkCase (EConstr.contract_case (pf_env g) sigma (ci,t,a',l));
+      info = mkCase (EConstr.contract_case (pf_env g) sigma (ci,a,a',l));
       is_main_branch = expr_info.is_main_branch;
       is_final = expr_info.is_final} in
   let g,destruct_tac,rev_to_thin_intro =
