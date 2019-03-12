@@ -149,7 +149,7 @@ let declare_instance_open env sigma ?hook ~tac ~program_mode ~global ~poly k id 
   if program_mode then
     let hook _ _ vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-      Impargs.declare_manual_implicits false gr [imps];
+      Impargs.declare_manual_implicits false gr imps;
       let pri = intern_info pri in
       Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
     in

@@ -72,6 +72,12 @@ Libobject
   * `Libobject.superglobal_object`
   * `Libobject.superglobal_object_nodischarge`
 
+Implicit Arguments
+
+- `Impargs.declare_manual_implicits` is restricted to only support declaration
+  of implicit binders at constant declaration time. `Impargs.set_implicits` should
+  be used for redeclaration of implicit arguments.
+
 ## Changes between Coq 8.8 and Coq 8.9
 
 ### ML API

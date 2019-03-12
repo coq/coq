@@ -22,7 +22,7 @@ Print comparison.
 Definition foo := forall x, x = 0.
 Parameter bar : foo.
 
-Arguments bar [x].
+Arguments bar {x}.
 About bar.
 Print bar.
 

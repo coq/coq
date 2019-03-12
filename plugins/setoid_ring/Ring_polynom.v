@@ -1507,5 +1507,5 @@ Qed.
 
 End MakeRingPol.
 
-Arguments PEO [C].
-Arguments PEI [C].
+Arguments PEO {C}.
+Arguments PEI {C}.

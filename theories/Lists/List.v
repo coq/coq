@@ -1033,7 +1033,7 @@ Lemma map_ext_in_iff :
    forall (A B : Type)(f g:A->B) l, map f l = map g l <-> forall a, In a l -> f a = g a.
 Proof. split; [apply ext_in_map | apply map_ext_in]. Qed.
 
-Arguments map_ext_in_iff [A B f g l].
+Arguments map_ext_in_iff {A B f g l}.
 
 Lemma map_ext :
   forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.

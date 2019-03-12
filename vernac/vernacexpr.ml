@@ -237,13 +237,11 @@ type vernac_cumulative = VernacCumulative | VernacNonCumulative
 
 (** {6 The type of vernacular expressions} *)
 
-type vernac_implicit_status = Implicit | MaximallyImplicit | NotImplicit
-
 type vernac_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : string CAst.t option;
-  implicit_status : vernac_implicit_status;
+  implicit_status : Impargs.implicit_kind;
 }
 
 type extend_name =
@@ -355,7 +353,7 @@ type nonrec vernac_expr =
       onlyparsing_flag
   | VernacArguments of qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
-        (Name.t * vernac_implicit_status) list list (* Extra implicit status lists *) *
+        (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
       int option (* Number of args to trigger reduction *) *
         [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
           `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
@@ -409,3 +407,9 @@ type vernac_control =
   | VernacRedirect of string * vernac_control CAst.t
   | VernacTimeout of int * vernac_control
   | VernacFail of vernac_control
+
+(** Deprecated *)
+
+type vernac_implicit_status = Impargs.implicit_kind =
+  | Implicit [@ocaml.deprecated] | MaximallyImplicit [@ocaml.deprecated] | NotImplicit [@ocaml.deprecated]
+[@@ocaml.deprecated "Use [Impargs.implicit_kind]"]

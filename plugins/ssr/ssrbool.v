@@ -813,21 +813,21 @@ Proof. by case b1; case b2; constructor; auto. Qed.
 
 End ReflectConnectives.
 
-Arguments idP [b1].
-Arguments idPn [b1].
-Arguments negP [b1].
-Arguments negPn [b1].
-Arguments negPf [b1].
-Arguments andP [b1 b2].
-Arguments and3P [b1 b2 b3].
-Arguments and4P [b1 b2 b3 b4].
-Arguments and5P [b1 b2 b3 b4 b5].
-Arguments orP [b1 b2].
-Arguments or3P [b1 b2 b3].
-Arguments or4P [b1 b2 b3 b4].
-Arguments nandP [b1 b2].
-Arguments norP [b1 b2].
-Arguments implyP [b1 b2].
+Arguments idP {b1}.
+Arguments idPn {b1}.
+Arguments negP {b1}.
+Arguments negPn {b1}.
+Arguments negPf {b1}.
+Arguments andP {b1 b2}.
+Arguments and3P {b1 b2 b3}.
+Arguments and4P {b1 b2 b3 b4}.
+Arguments and5P {b1 b2 b3 b4 b5}.
+Arguments orP {b1 b2}.
+Arguments or3P {b1 b2 b3}.
+Arguments or4P {b1 b2 b3 b4}.
+Arguments nandP {b1 b2}.
+Arguments norP {b1 b2}.
+Arguments implyP {b1 b2}.
 Prenex Implicits idP idPn negP negPn negPf.
 Prenex Implicits andP and3P and4P and5P orP or3P or4P nandP norP implyP.
 
@@ -953,7 +953,7 @@ Proof. by case: a; case: b. Qed.
 
 Lemma addbP a b : reflect (~~ a = b) (a (+) b).
 Proof. by case: a; case: b; constructor. Qed.
-Arguments addbP [a b].
+Arguments addbP {a b}.
 
 (**
  Resolution tactic for blindly weeding out common terms from boolean
@@ -1158,8 +1158,8 @@ Definition clone_pred U :=
 
 End Predicates.
 
-Arguments pred0 [T].
-Arguments predT [T].
+Arguments pred0 {T}.
+Arguments predT {T}.
 Prenex Implicits pred0 predT predI predU predC predD preim relU.
 
 Notation "[ 'pred' : T | E ]" := (SimplPred (fun _ : T => E%B))
@@ -1357,7 +1357,7 @@ Variant qualifier (q : nat) T := Qualifier of predPredType T.
 
 Coercion has_quality n T (q : qualifier n T) : pred_class :=
   fun x => let: Qualifier _ p := q in p x.
-Arguments has_quality n [T].
+Arguments has_quality n {T}.
 
 Lemma qualifE n T p x : (x \in @Qualifier n T p) = p x. Proof. by []. Qed.
 

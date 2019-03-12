@@ -675,7 +675,7 @@ let check_inclusion l =
 	  user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
 	aux nl
     | _ -> () in
-  aux (List.map (fun (imps,_) -> List.length imps) l)
+  aux (List.map snd l)
 
 let check_rigidity isrigid =
   if not isrigid then
@@ -686,6 +686,8 @@ let projection_implicits env p impls =
   CList.skipn_at_least npars impls
 
 let declare_manual_implicits local ref ?enriching l =
+  assert (List.for_all (fun (_, (max, fi, fu)) -> fi && fu) l);
+  assert (List.for_all (fun (ex, _) -> match ex with ExplByPos (_,_) -> true | _ -> false) l);
   let flags = !implicit_args in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -693,28 +695,70 @@ let declare_manual_implicits local ref ?enriching l =
   let t = of_constr t in
   let enriching = Option.default flags.auto enriching in
   let autoimpls = compute_auto_implicits env sigma flags enriching t in
+  let l = [DefaultImpArgs, set_manual_implicits flags enriching autoimpls l] in
+  let req =
+    if is_local local ref then ImplLocal
+    else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
+  in add_anonymous_leaf (inImplicits (req,[ref,l]))
+
+let maybe_declare_manual_implicits local ref ?enriching l =
+  match l with
+  | [] -> ()
+  | _ -> declare_manual_implicits local ref ?enriching l
+
+(* TODO: either turn these warnings on and document them, or handle these cases sensibly *)
+
+let warn_set_maximal_deprecated =
+  CWarnings.create ~name:"set-maximal-deprecated" ~category:"deprecated"
+    (fun i -> strbrk ("Argument number " ^ string_of_int i ^ " is a trailing implicit so must be maximal"))
+
+type implicit_kind = Implicit | MaximallyImplicit | NotImplicit
+
+let compute_implicit_statuses autoimps l =
+  let rec aux i = function
+    | _ :: autoimps, NotImplicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
+    | Name id :: autoimps, MaximallyImplicit :: manualimps ->
+       Some (id, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
+    | Name id :: autoimps, Implicit :: manualimps ->
+       let imps' = aux (i+1) (autoimps, manualimps) in
+       let max = set_maximality imps' false in
+       if max then warn_set_maximal_deprecated i;
+       Some (id, Manual, (max, true)) :: imps'
+    | Anonymous :: _, (Implicit | MaximallyImplicit) :: _ ->
+       user_err ~hdr:"set_implicits"
+         (strbrk ("Argument number " ^ string_of_int i ^ " (anonymous in original definition) cannot be declared implicit."))
+    | autoimps, [] -> List.map (fun _ -> None) autoimps
+    | [], _::_ -> assert false
+  in aux 0 (autoimps, l)
+
+let set_implicits local ref l =
+  let flags = !implicit_args in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let t, _ = Typeops.type_of_global_in_context env ref in
+  let t = of_constr t in
+  let autoimpls = compute_implicits_names env sigma t in
   let l' = match l with
     | [] -> assert false
     | [l] ->
-       [DefaultImpArgs, set_manual_implicits flags enriching autoimpls l]
+       [DefaultImpArgs, compute_implicit_statuses autoimpls l]
     | _ ->
        check_rigidity (is_rigid env sigma t);
-       let l = List.map (fun imps -> (imps,List.length imps)) l in
+       (* Sort by number of implicits, decreasing *)
+       let is_implicit = function
+         | NotImplicit -> false
+         | _ -> true in
+       let l = List.map (fun imps -> (imps,List.count is_implicit imps)) l in
        let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
        check_inclusion l;
        let nargs = List.length autoimpls in
        List.map (fun (imps,n) ->
            (LessArgsThan (nargs-n),
-            set_manual_implicits flags enriching autoimpls imps)) l in
+            compute_implicit_statuses autoimpls imps)) l in
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual (List.length autoimpls))
   in add_anonymous_leaf (inImplicits (req,[ref,l']))
-
-let maybe_declare_manual_implicits local ref ?enriching l =
-  match l with
-  | [] -> ()
-  | _ -> declare_manual_implicits local ref ?enriching [l]
 
 let extract_impargs_data impls =
   let rec aux p = function

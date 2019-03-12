@@ -152,7 +152,7 @@ let declare_one_prenex_implicit locality f =
     with _ -> errorstrm (pr_qualid f ++ str " is not declared") in
   let rec loop = function
   | a :: args' when Impargs.is_status_implicit a ->
-    (ExplByName (Impargs.name_of_implicit a), (true, true, true)) :: loop args'
+    Impargs.MaximallyImplicit :: loop args'
   | args' when List.exists Impargs.is_status_implicit args' ->
       errorstrm (str "Expected prenex implicits for " ++ pr_qualid f)
   | _ -> [] in
@@ -165,7 +165,7 @@ let declare_one_prenex_implicit locality f =
   | [] ->
     errorstrm (str "Expected some implicits for " ++ pr_qualid f)
   | impls ->
-    Impargs.declare_manual_implicits locality fref ~enriching:false [impls]
+    Impargs.set_implicits locality fref [impls]
 
 }
 

@@ -215,7 +215,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
         let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
         let gr = ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr [impls]
+          Impargs.declare_manual_implicits false gr impls
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
       hook, name, typ
@@ -223,7 +223,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
       let hook sigma _ _ l gr =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr [impls]
+          Impargs.declare_manual_implicits false gr impls
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)
