@@ -26,7 +26,7 @@ val explain_inductive_error : inductive_error -> Pp.t
 
 val explain_mismatched_contexts : env -> contexts -> Constrexpr.constr_expr list -> Constr.rel_context -> Pp.t
 
-val explain_typeclass_error : env -> typeclass_error -> Pp.t
+val explain_typeclass_error : env -> Evd.evar_map -> typeclass_error -> Pp.t
 
 val explain_recursion_scheme_error : env -> recursion_scheme_error -> Pp.t
 

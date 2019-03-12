@@ -1039,12 +1039,10 @@ let explain_module_internalization_error = function
 
 (* Typeclass errors *)
 
-let explain_not_a_class env c =
-  let sigma = Evd.from_env env in
-  let c = EConstr.to_constr sigma c in
-  pr_constr_env env sigma c ++ str" is not a declared type class."
+let explain_not_a_class env sigma c =
+  pr_econstr_env env sigma c ++ str" is not a declared type class."
 
-let explain_unbound_method env cid { CAst.v = id } =
+let explain_unbound_method env sigma cid { CAst.v = id } =
   str "Unbound method name " ++ Id.print (id) ++ spc () ++
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
@@ -1059,9 +1057,9 @@ let explain_mismatched_contexts env c i j =
     fnl () ++ brk (1,1) ++
     hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
 
-let explain_typeclass_error env = function
-  | NotAClass c -> explain_not_a_class env c
-  | UnboundMethod (cid, id) -> explain_unbound_method env cid id
+let explain_typeclass_error env sigma = function
+  | NotAClass c -> explain_not_a_class env sigma c
+  | UnboundMethod (cid, id) -> explain_unbound_method env sigma cid id
 
 (* Refiner errors *)
 
