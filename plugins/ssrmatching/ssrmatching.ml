@@ -213,7 +213,7 @@ let unif_EQ_args env sigma pa a =
   loop 0
 
 let unif_HO env ise p c =
-  try Evarconv.the_conv_x env p c ise
+  try Evarconv.unify_delay env ise p c
   with Evarconv.UnableToUnify(ise, err) ->
     raise Pretype_errors.(PretypeError(env,ise,CannotUnify(p,c,Some err)))
 

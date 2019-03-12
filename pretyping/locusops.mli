@@ -21,6 +21,8 @@ val convert_occs : occurrences -> bool * int list
 
 val is_selected : int -> occurrences -> bool
 
+val is_all_occurrences : 'a occurrences_gen -> bool
+
 (** Usual clauses *)
 
 val allHypsAndConcl : 'a clause_expr

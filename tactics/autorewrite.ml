@@ -145,7 +145,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   let try_do_hyps treat_id l =
     autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
   in
-  if cl.concl_occs != AllOccurrences &&
+  if not (Locusops.is_all_occurrences cl.concl_occs) &&
      cl.concl_occs != NoOccurrences
   then
     Tacticals.New.tclZEROMSG (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")

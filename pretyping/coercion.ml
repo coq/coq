@@ -64,9 +64,9 @@ let apply_coercion_args env sigma check isproj argl funj =
       | Prod (_,c1,c2) ->
         let sigma =
           if check then
-            begin match cumul env sigma (Retyping.get_type_of env sigma h) c1 with
-              | None -> raise NoCoercion
-              | Some sigma -> sigma
+            begin match Evarconv.unify_leq_delay env sigma (Retyping.get_type_of env sigma h) c1 with
+              | exception Evarconv.UnableToUnify _ -> raise NoCoercion
+              | sigma -> sigma
             end
           else sigma
         in
@@ -157,7 +157,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
   let rec coerce_unify env x y =
     let x = hnf env !evdref x and y = hnf env !evdref y in
       try
-	evdref := the_conv_x_leq env x y !evdref;
+        evdref := Evarconv.unify_leq_delay env !evdref x y;
 	None
       with UnableToUnify _ -> coerce' env x y
   and coerce' env x y : (EConstr.constr -> EConstr.constr) option =
@@ -172,7 +172,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
       let rec aux tele typ typ' i co =
 	if i < len then
 	  let hdx = l.(i) and hdy = l'.(i) in
-	    try evdref := the_conv_x_leq env hdx hdy !evdref;
+            try evdref := unify_leq_delay env !evdref hdx hdy;
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
@@ -180,8 +180,8 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
               let () =
-		try evdref := the_conv_x_leq env eqT eqT' !evdref
-		with UnableToUnify _ -> raise NoSubtacCoercion
+                try evdref := unify_leq_delay env !evdref eqT eqT'
+                with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
 		if Reductionops.is_arity env !evdref eqT then raise NoSubtacCoercion;
@@ -466,7 +466,7 @@ let inh_coerce_to_prod ?loc ~program_mode env evd t =
       !evdref, typ'
   else (evd, t)
 
-let inh_coerce_to_fail env evd rigidonly v t c1 =
+let inh_coerce_to_fail flags env evd rigidonly v t c1 =
   if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
   then
     raise NoCoercion
@@ -483,13 +483,16 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
 	  | None -> evd, None, t
       with Not_found -> raise NoCoercion
     in
-      try (the_conv_x_leq env t' c1 evd, v')
+      try (unify_leq_delay ~flags env evd t' c1, v')
       with UnableToUnify _ -> raise NoCoercion
 
-let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
-  try (the_conv_x_leq env t c1 evd, v)
+let default_flags_of env =
+  default_flags_of TransparentState.full
+
+let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigidonly v t c1 =
+  try (unify_leq_delay ~flags env evd t c1, v)
   with UnableToUnify (best_failed_evd,e) ->
-    try inh_coerce_to_fail env evd rigidonly v t c1
+    try inh_coerce_to_fail flags env evd rigidonly v t c1
     with NoCoercion ->
       match
       EConstr.kind evd (whd_all env evd t),
@@ -520,10 +523,10 @@ let rec inh_conv_coerce_to_fail ?loc env evd rigidonly v t c1 =
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly env evd cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env evd cj t =
   let (evd', val') =
     try
-      inh_conv_coerce_to_fail ?loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+      inh_conv_coerce_to_fail ?loc env evd ~flags rigidonly (Some cj.uj_val) cj.uj_type t
     with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
         if program_mode then
@@ -545,15 +548,14 @@ let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly env evd cj t 
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
 
-let inh_conv_coerce_to ?loc ~program_mode resolve_tc =
-  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false
+let inh_conv_coerce_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false flags env evd
+let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc true flags env evd
 
-let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc =
-  inh_conv_coerce_to_gen ~program_mode resolve_tc ?loc true
-
-let inh_conv_coerces_to ?loc env evd t t' =
+let inh_conv_coerces_to ?loc env evd ?(flags=default_flags_of env) t t' =
   try
-    fst (inh_conv_coerce_to_fail ?loc env evd true None t t')
+    fst (inh_conv_coerce_to_fail ?loc env evd ~flags true None t t')
   with NoCoercion ->
     evd (* Maybe not enough information to unify *)
       

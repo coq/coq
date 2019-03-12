@@ -20,6 +20,7 @@ type 'a or_var =
 
 type 'a occurrences_gen =
   | AllOccurrences
+  | AtLeastOneOccurrence
   | AllOccurrencesBut of 'a list (** non-empty *)
   | NoOccurrences
   | OnlyOccurrences of 'a list (** non-empty *)

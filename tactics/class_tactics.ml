@@ -230,8 +230,9 @@ let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
       let sigma', cl = Clenv.make_evar_clause env sigma ?len:n ty in
       let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
       let sigma' =
-        Evarconv.the_conv_x_leq env ~ts:flags.core_unify_flags.modulo_delta
-                                cl.cl_concl concl sigma'
+        Evarconv.(unify_leq_delay
+                    ~flags:(default_flags_of flags.core_unify_flags.modulo_delta)
+                              env sigma' cl.cl_concl concl)
       in (sigma', term) end
 
 let unify_resolve_refine poly flags gl clenv =
@@ -1111,7 +1112,7 @@ let initial_select_evars filter =
 let resolve_typeclass_evars debug depth unique env evd filter split fail =
   let evd =
     try Evarconv.solve_unif_constraints_with_heuristics
-      ~ts:(Typeclasses.classes_transparent_state ()) env evd
+      ~flags:(Evarconv.default_flags_of (Typeclasses.classes_transparent_state ())) env evd
     with e when CErrors.noncritical e -> evd
   in
     resolve_all_evars debug depth unique env

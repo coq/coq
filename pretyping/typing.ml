@@ -71,10 +71,10 @@ let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
          | _ ->
              error_cant_apply_not_functional env sigma funj argjv
        in
-       begin match Evarconv.cumul env sigma hj.uj_type c1 with
-         | Some sigma ->
+       begin match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
+         | sigma ->
            apply_rec sigma (n+1) (subst1 hj.uj_val c2) restjl
-         | None ->
+         | exception Evarconv.UnableToUnify _ ->
            error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
        end
   in
@@ -96,10 +96,10 @@ let judge_of_apply env sigma funj argjv =
          | _ ->
             error_cant_apply_not_functional env sigma funj argjv
        in
-       begin match Evarconv.cumul env sigma hj.uj_type c1 with
-         | Some sigma ->
+       begin match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
+         | sigma ->
            apply_rec sigma (n+1) (subst1 hj.uj_val c2) restjl
-         | None ->
+         | exception Evarconv.UnableToUnify _ ->
            error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
        end
   in
@@ -109,9 +109,9 @@ let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
     error_number_branches env sigma cj (Array.length explft);
   Array.fold_left2_i (fun i sigma lfj explft ->
-      match Evarconv.cumul env sigma lfj.uj_type explft with
-      | Some sigma -> sigma
-      | None ->
+      match Evarconv.unify_leq_delay env sigma lfj.uj_type explft with
+      | sigma -> sigma
+      | exception Evarconv.UnableToUnify _ ->
         error_ill_formed_branch env sigma cj.uj_val ((ind,i+1),u) lfj.uj_type explft)
     sigma lfj explft
 
@@ -127,9 +127,9 @@ let is_correct_arity env sigma c pj ind specif params =
     let pt' = whd_all env sigma pt in
     match EConstr.kind sigma pt', ar with
     | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-      begin match Evarconv.cumul env sigma a1 a1' with
-        | None -> error ()
-        | Some sigma ->
+      begin match Evarconv.unify_leq_delay env sigma a1 a1' with
+        | exception Evarconv.UnableToUnify _ -> error ()
+        | sigma ->
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
@@ -187,9 +187,9 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
   let lt = Array.length vdefj in
   assert (Int.equal (Array.length lar) lt);
   Array.fold_left2_i (fun i sigma defj ar ->
-      match Evarconv.cumul env sigma defj.uj_type (lift lt ar) with
-      | Some sigma -> sigma
-      | None ->
+      match Evarconv.unify_leq_delay env sigma defj.uj_type (lift lt ar) with
+      | sigma -> sigma
+      | exception Evarconv.UnableToUnify _ ->
         error_ill_typed_rec_body ?loc env sigma
           i lna vdefj lar)
     sigma vdefj lar
@@ -211,10 +211,10 @@ let check_allowed_sort env sigma ind c p =
 
 let judge_of_cast env sigma cj k tj =
   let expected_type = tj.utj_val in
-  match Evarconv.cumul env sigma cj.uj_type expected_type with
-  | None ->
+  match Evarconv.unify_leq_delay env sigma cj.uj_type expected_type with
+  | exception Evarconv.UnableToUnify _ ->
     error_actual_type_core env sigma cj expected_type;
-  | Some sigma ->
+  | sigma ->
     sigma, { uj_val = mkCast (cj.uj_val, k, expected_type);
              uj_type = expected_type }
 
@@ -427,10 +427,10 @@ and execute_array env = Array.fold_left_map (execute env)
 
 let check env sigma c t =
   let sigma, j = execute env sigma c in
-  match Evarconv.cumul env sigma j.uj_type t with
-  | None ->
+  match Evarconv.unify_leq_delay env sigma j.uj_type t with
+  | exception Evarconv.UnableToUnify _ ->
     error_actual_type_core env sigma j t
-  | Some sigma -> sigma
+  | sigma -> sigma
 
 (* Type of a constr *)
 

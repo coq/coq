@@ -3840,9 +3840,9 @@ let specialize_eqs id =
   let evars = ref (Proofview.Goal.sigma gl) in
   let unif env evars c1 c2 =
     compare_upto_variables !evars c1 c2 &&
-    (match Evarconv.conv env !evars c1 c2 with
-     | Some sigma -> evars := sigma; true
-     | None -> false)
+    (match Evarconv.unify_delay env !evars c1 c2 with
+     | sigma -> evars := sigma; true
+     | exception Evarconv.UnableToUnify _ -> false)
   in
   let rec aux in_eqs ctx acc ty =
     match EConstr.kind !evars ty with
@@ -4398,7 +4398,9 @@ let check_expected_type env sigma (elimc,bl) elimt =
   let sigma,cl = make_evar_clause env sigma ~len:(n - 1) elimt in
   let sigma = solve_evar_clause env sigma true cl bl in
   let (_,u,_) = destProd sigma cl.cl_concl in
-  fun t -> Option.has_some (Evarconv.cumul env sigma t u)
+  fun t -> match Evarconv.unify_leq_delay env sigma t u with
+    | _sigma -> true
+    | exception Evarconv.UnableToUnify _ -> false
 
 let check_enough_applied env sigma elim =
   (* A heuristic to decide whether the induction arg is enough applied *)

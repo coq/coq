@@ -45,17 +45,21 @@ val inh_coerce_to_prod : ?loc:Loc.t -> program_mode:bool ->
     a way [t] and [j.uj_type] are convertible; it fails if no coercion is
     applicable. resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
+
 val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> bool ->
-  env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
+  env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  unsafe_judgment -> types -> evar_map * unsafe_judgment
 
 val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool ->bool ->
-  env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
+  env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  unsafe_judgment -> types -> evar_map * unsafe_judgment
 
 (** [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]
     is coercible to an object of type [t'] adding evar constraints if needed;
     it fails if no coercion exists *)
 val inh_conv_coerces_to : ?loc:Loc.t ->
-  env -> evar_map -> types -> types -> evar_map
+  env -> evar_map -> ?flags:Evarconv.unify_flags ->
+  types -> types -> evar_map
 
 (** [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
     pattern [pat] typed in [ind1] into a pattern typed in [ind2];

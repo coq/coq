@@ -6,6 +6,7 @@ open Pputils
 
 let pr_with_occurrences pr keyword (occs,c) =
   match occs with
+    | AtLeastOneOccurrence -> hov 1 (pr c ++ spc () ++ keyword "at" ++ str" +")
     | AllOccurrences ->
       pr c
     | NoOccurrences ->
