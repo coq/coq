@@ -1449,25 +1449,17 @@ let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
                              Array.of_list (List.map mkVar x)))));
     observe_tac (fun _ _ -> str "prove_eq") (cont_tactic x)]) g;;
 
-let (com_eqn : int -> Id.t ->
-       GlobRef.t -> GlobRef.t -> GlobRef.t
-	 -> Constr.t -> unit) =
-  fun nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
+let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type =
     let open CVars in
     let opacity =
       match terminate_ref with
 	| ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
-    (* let evd, env = Pfedit.get_current_context () in *)
-    let env = Global.env () in
-    (* let evd = Evd.from_ctx (Evd.evar_universe_context evd) in *)
-    let evd = Evd.from_env env in
+    let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let pstate = Lemmas.start_proof ~ontop:None eq_name (Global, false, Proof Lemma)
-       ~sign:(Environ.named_context_val env)
-       evd
+    let pstate = Lemmas.start_proof ~ontop:None eq_name (Global, false, Proof Lemma) ~sign evd
        (EConstr.of_constr equation_lemma_type) in
     let pstate = fst @@ by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
@@ -1554,13 +1546,15 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
-  let hook _ _ _ _ =
+  let hook uctx _ _ _ =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
     let _ = Extraction_plugin.Table.extraction_inline true [qualid_of_ident term_id] in
     (*     message "start second proof"; *)
-    let stop = 
-      try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
+    let stop =
+      (* XXX: What is the correct way to get sign at hook time *)
+      let sign = Environ.named_context_val Global.(env ()) in
+      try com_eqn sign uctx (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
 	  false
       with e when CErrors.noncritical e ->
 	begin
