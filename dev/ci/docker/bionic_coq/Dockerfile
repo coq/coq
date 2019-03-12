@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-03-11-V1"
+# CACHEKEY: "bionic_coq-V2019-03-12-V8"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -15,7 +15,9 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         xindy python3-pip python3-setuptools python3-pexpect python3-bs4 \
         # Dependencies of source-doc and coq-makefile
-        texlive-science tipa
+        texlive-science tipa \
+        # Dependencies of bedrock2 [hexdump!]
+        bsdmainutils
 
 # More dependencies of the sphinx doc
 RUN pip3 install sphinx==1.7.8 sphinx_rtd_theme==0.2.5b2 \
