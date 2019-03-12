@@ -1655,7 +1655,7 @@ Declaring Implicit Arguments
 
    For instance in
 
-   .. coqtop:: all
+   .. coqtop:: all warn
 
       Arguments prod _ [_].
 
