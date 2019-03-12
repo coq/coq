@@ -235,6 +235,12 @@ let scan_plugins m =
   let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath ["plugins";f]) Array.(to_list @@ readdir "plugins")) in
   List.fold_left scan_mlg m dirs
 
+(* This will be removed when we drop support for Make *)
+let fix_cmo_cma file =
+  if String.equal Filename.(extension file) ".cmo"
+  then replace_ext ~file ~newext:".cma"
+  else file
+
 (* Process .vfiles.d and generate a skeleton for the dune file *)
 let parse_coqdep_line l =
   match Str.(split (regexp ":") l) with
@@ -249,6 +255,7 @@ let parse_coqdep_line l =
          the platform. Anyways, I hope we can link to coqdep instead
          of having to parse its output soon, that should solve this
          kind of issues *)
+      let deps = List.map fix_cmo_cma deps in
       Some (String.split_on_char '/' dir, VO { target; deps; })
     (* Otherwise a vio file, we ignore *)
     | _ -> None

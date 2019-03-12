@@ -11,6 +11,19 @@
     (run chmod +x %{targets})))))
 
 (rule
+ (targets coqbyte-prelude)
+ (deps
+  %{bin:coqtop.byte}
+  %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
+  %{project_root}/theories/Init/Prelude.vo)
+ (action
+  (with-outputs-to %{targets}
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{bin:coqtop.byte} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (run chmod +x %{targets})))))
+
+(rule
  (targets coqide-prelude)
  (deps
   %{bin:coqqueryworker.opt}

@@ -126,9 +126,9 @@ script again] This will be fixed in the future.
 
 ## Dropping from coqtop:
 
-The following sequence is recommended:
+After doing `make -f Makefile.dune voboot`, the following commands should work:
 ```
-dune exec coqtop.byte
+dune exec dev/shim/coqbyte-prelude
 > Drop.
 # #directory "dev";;
 # #use "include_dune";;
