@@ -371,7 +371,3 @@ let translate_local_def env _id centry =
   | Undef _ | Primitive _ -> assert false
   in
   c, decl.cook_relevance, typ
-
-(* Insertion of inductive types. *)
-
-let translate_mind env kn mie = Indtypes.check_inductive env kn mie
