@@ -529,7 +529,7 @@ let warn_non_primitive_record =
           (hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (IndRef indsp) ++
                     strbrk" could not be defined as a primitive record")))
 
-let declare_mutual_inductive_with_eliminations mie pl impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie pl impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -543,8 +543,7 @@ let declare_mutual_inductive_with_eliminations mie pl impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
-  if match mie.mind_entry_record with Some (Some _) -> not prim | _ -> false
-  then warn_non_primitive_record (mind,0);
+  if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   Declare.declare_univ_binders (IndRef (mind,0)) pl;
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
