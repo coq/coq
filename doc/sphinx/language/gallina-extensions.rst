@@ -1713,19 +1713,15 @@ of constants. For instance, the variable ``p`` below has type
 ``forall x,y:U, R x y -> forall z:U, R y z -> R x z``. As the variables ``x``, ``y`` and ``z``
 appear strictly in the body of the type, they are implicit.
 
-.. coqtop:: reset none
-
-   Set Warnings "-local-declaration".
-
 .. coqtop:: all
 
-   Variable X : Type.
+   Parameter X : Type.
 
    Definition Relation := X -> X -> Prop.
 
    Definition Transitivity (R:Relation) := forall x y:X, R x y -> forall z:X, R y z -> R x z.
 
-   Variables (R : Relation) (p : Transitivity R).
+   Parameters (R : Relation) (p : Transitivity R).
 
    Arguments p : default implicits.
 
@@ -1733,7 +1729,7 @@ appear strictly in the body of the type, they are implicit.
 
    Print Implicit p.
 
-   Variables (a b c : X) (r1 : R a b) (r2 : R b c).
+   Parameters (a b c : X) (r1 : R a b) (r2 : R b c).
 
    Check (p r1 r2).
 
