@@ -620,6 +620,9 @@ gramlib/.pack/gramlib.cmxa: $(GRAMOBJS:.cmo=.cmx) gramlib/.pack/gramlib.cmx
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $^
 
+# used by install
+gramlib/.pack/gramlib_MLLIB_DEPENDENCIES:=$(GRAMFILES)
+
 # Specific rule for kernel.cma, with $(VMBYTEFLAGS).
 # This helps loading dllcoqrun.so during an ocamldebug
 kernel/kernel.cma: kernel/kernel.mllib
