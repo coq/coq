@@ -1621,7 +1621,7 @@ Declaring Implicit Arguments
 
     .. coqtop:: reset all
 
-       Inductive list (A:Type) : Type :=
+       Inductive list (A : Type) : Type :=
        | nil : list A
        | cons : A -> list A -> list A.
 
@@ -1629,13 +1629,15 @@ Declaring Implicit Arguments
 
        Arguments cons [A] _ _.
 
-       Arguments nil [A].
+       Arguments nil {A}.
 
        Check (cons 3 nil).
 
-       Fixpoint map (A B:Type) (f:A->B) (l:list A) : list B := match l with nil => nil | cons a t => cons (f a) (map A B f t) end.
+       Fixpoint map (A B : Type) (f : A -> B) (l : list A) : list B :=
+         match l with nil => nil | cons a t => cons (f a) (map A B f t) end.
 
-       Fixpoint length (A:Type) (l:list A) : nat := match l with nil => 0 | cons _ m => S (length A m) end.
+       Fixpoint length (A : Type) (l : list A) : nat :=
+         match l with nil => 0 | cons _ m => S (length A m) end.
 
        Arguments map [A B] f l.
 
