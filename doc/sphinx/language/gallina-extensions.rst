@@ -1575,7 +1575,7 @@ Declaring Implicit Arguments
 
 
 
-.. cmd:: Arguments @qualid {* [ @ident ] | @ident }
+.. cmd:: Arguments @qualid {* [ @ident ] | { @ident } | @ident }
    :name: Arguments (implicits)
 
    This command is used to set implicit arguments *a posteriori*,
@@ -1592,20 +1592,20 @@ Declaring Implicit Arguments
 
    This command clears implicit arguments.
 
-.. cmdv:: Global Arguments @qualid {* [ @ident ] | @ident }
+.. cmdv:: Global Arguments @qualid {* [ @ident ] | { @ident } | @ident }
 
    This command is used to recompute the implicit arguments of
    :token:`qualid` after ending of the current section if any, enforcing the
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* [ @ident ] | @ident }
+.. cmdv:: Local Arguments @qualid {* [ @ident ] | { @ident } | @ident }
 
    When in a module, tell not to activate the
    implicit arguments of :token:`qualid` declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | @ident } }
+.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | { @ident } | @ident } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of
