@@ -285,7 +285,7 @@ By default, implicit arguments are omitted in patterns. So we write:
 
 .. coqtop:: all
 
-   Arguments nil [A].
+   Arguments nil {A}.
    Arguments cons [A] _ _.
    Check
      (fun l:List nat =>

@@ -1575,7 +1575,7 @@ Declaring Implicit Arguments
 
 
 
-.. cmd:: Arguments @qualid {* [ @ident ] | @ident }
+.. cmd:: Arguments @qualid {* [ @ident ] | { @ident } | @ident }
    :name: Arguments (implicits)
 
    This command is used to set implicit arguments *a posteriori*,
@@ -1592,20 +1592,20 @@ Declaring Implicit Arguments
 
    This command clears implicit arguments.
 
-.. cmdv:: Global Arguments @qualid {* [ @ident ] | @ident }
+.. cmdv:: Global Arguments @qualid {* [ @ident ] | { @ident } | @ident }
 
    This command is used to recompute the implicit arguments of
    :token:`qualid` after ending of the current section if any, enforcing the
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* [ @ident ] | @ident }
+.. cmdv:: Local Arguments @qualid {* [ @ident ] | { @ident } | @ident }
 
    When in a module, tell not to activate the
    implicit arguments of :token:`qualid` declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | @ident } }
+.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | { @ident } | @ident } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of
@@ -1621,7 +1621,7 @@ Declaring Implicit Arguments
 
     .. coqtop:: reset all
 
-       Inductive list (A:Type) : Type :=
+       Inductive list (A : Type) : Type :=
        | nil : list A
        | cons : A -> list A -> list A.
 
@@ -1629,13 +1629,15 @@ Declaring Implicit Arguments
 
        Arguments cons [A] _ _.
 
-       Arguments nil [A].
+       Arguments nil {A}.
 
        Check (cons 3 nil).
 
-       Fixpoint map (A B:Type) (f:A->B) (l:list A) : list B := match l with nil => nil | cons a t => cons (f a) (map A B f t) end.
+       Fixpoint map (A B : Type) (f : A -> B) (l : list A) : list B :=
+         match l with nil => nil | cons a t => cons (f a) (map A B f t) end.
 
-       Fixpoint length (A:Type) (l:list A) : nat := match l with nil => 0 | cons _ m => S (length A m) end.
+       Fixpoint length (A : Type) (l : list A) : nat :=
+         match l with nil => 0 | cons _ m => S (length A m) end.
 
        Arguments map [A B] f l.
 
@@ -1655,7 +1657,7 @@ Declaring Implicit Arguments
 
    For instance in
 
-   .. coqtop:: all
+   .. coqtop:: all warn
 
       Arguments prod _ [_].
 
@@ -1711,19 +1713,15 @@ of constants. For instance, the variable ``p`` below has type
 ``forall x,y:U, R x y -> forall z:U, R y z -> R x z``. As the variables ``x``, ``y`` and ``z``
 appear strictly in the body of the type, they are implicit.
 
-.. coqtop:: reset none
-
-   Set Warnings "-local-declaration".
-
 .. coqtop:: all
 
-   Variable X : Type.
+   Parameter X : Type.
 
    Definition Relation := X -> X -> Prop.
 
    Definition Transitivity (R:Relation) := forall x y:X, R x y -> forall z:X, R y z -> R x z.
 
-   Variables (R : Relation) (p : Transitivity R).
+   Parameters (R : Relation) (p : Transitivity R).
 
    Arguments p : default implicits.
 
@@ -1731,7 +1729,7 @@ appear strictly in the body of the type, they are implicit.
 
    Print Implicit p.
 
-   Variables (a b c : X) (r1 : R a b) (r2 : R b c).
+   Parameters (a b c : X) (r1 : R a b) (r2 : R b c).
 
    Check (p r1 r2).
 
