@@ -339,9 +339,6 @@ let subst_retro_action subst action =
   | Register_type(prim,c) ->
     let c' = subst_constant subst c in
     if c == c' then action else Register_type(prim, c')
-  | Register_inline(c) ->
-    let c' = subst_constant subst c in
-    if c == c' then action else Register_inline(c')
 
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?

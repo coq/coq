@@ -252,6 +252,11 @@ let type_of_prim env t =
   in
   nary_int63_op (CPrimitives.arity t) return_ty
 
+let type_of_prim_or_type env = let open CPrimitives in
+  function
+  | OT_type t -> type_of_prim_type env t
+  | OT_op op -> type_of_prim env op
+
 let judge_of_int env i =
   make_judge (Constr.mkInt i) (type_of_int env)
 
@@ -664,17 +669,7 @@ let judge_of_case env ci pj cj lfj =
 
 (* Building type of primitive operators and type *)
 
-open CPrimitives
-
 let check_primitive_type env op_t t =
-  match op_t with
-  | OT_type PT_int63 ->
-    (try
-      default_conv ~l2r:false CUMUL env mkSet t
-    with NotConvertible ->
-      CErrors.user_err Pp.(str"Was expecting the sort of this primitive type to be Set"))
-  | OT_op p ->
-    (try
-      default_conv ~l2r:false CUMUL env (type_of_prim env p) t
-    with NotConvertible ->
-      CErrors.user_err Pp.(str"Not the expected type for this primitive"))
+  let inft = type_of_prim_or_type env op_t in
+  try default_conv ~l2r:false CUMUL env inft t
+  with NotConvertible -> error_incorrect_primitive env (make_judge op_t inft) t

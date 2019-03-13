@@ -148,7 +148,7 @@ let prim_ind_to_string = function
   | PIT_cmp -> "cmp"
 
 let prim_type_to_string = function
-  | PT_int63 -> "int63"
+  | PT_int63 -> "int63_type"
 
 let op_or_type_to_string = function
   | OT_op op -> to_string op
