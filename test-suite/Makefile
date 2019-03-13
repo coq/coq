@@ -317,8 +317,6 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	    echo "    $<...correctly prepared" ; \
 	  fi; \
 	} > "$@"
-	@echo "CHECK     $<"
-	$(HIDE)$(coqchk) -norec TestSuite.$(shell basename $< .v) > $(shell dirname $<)/$(shell basename $< .v).chk.log 2>&1
 
 ssr: $(wildcard ssr/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v arithmetic/*.v)): %.v.log: %.v $(PREREQUISITELOG)
