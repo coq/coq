@@ -1251,7 +1251,7 @@ open CAst
 
 let () = add_scope "keyword" begin function
 | [SexprStr {loc;v=s}] ->
-  let scope = Extend.Atoken (Tok.KEYWORD s) in
+  let scope = Extend.Atoken (Tok.pattern_for_KEYWORD s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "keyword" arg
 end

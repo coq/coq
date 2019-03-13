@@ -539,7 +539,7 @@ let parse_scope = function
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
 | SexprStr {v=str} ->
   let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
-  ScopeRule (Extend.Atoken (Tok.IDENT str), (fun _ -> v_unit))
+  ScopeRule (Extend.Atoken (Tok.pattern_for_IDENT str), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
