@@ -209,11 +209,10 @@ def make_table_string(times_dict,
 
 def print_or_write_table(table, files):
     if len(files) == 0 or '-' in files:
-        try:
-            binary_stdout = sys.stdout.buffer
-        except AttributeError:
-            binary_stdout = sys.stdout
-        print(table.encode("utf-8"), file=binary_stdout)
+        if hasattr(sys.stdout, 'buffer'):
+            sys.stdout.buffer.write(table.encode("utf-8"))
+        else:
+            sys.stdout.write(table)
     for file_name in files:
         if file_name != '-':
             with open(file_name, 'w', encoding="utf-8") as f:
