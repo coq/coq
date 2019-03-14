@@ -308,10 +308,11 @@ end (* }}} *)
 
 type interactive_top = TopLogical of DirPath.t | TopPhysical of string
 
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+
 (* The main document type associated to a VCS *)
 type stm_doc_type =
-  | VoDoc       of string
-  | VioDoc      of string
+  | Batch of compilation_mode * string
   | Interactive of interactive_top
 
 (* Dummy until we land the functional interp patch + fixed start_library *)
@@ -549,7 +550,7 @@ end = struct (* {{{ *)
 
   let is_vio_doc () =
     match !doc_type with
-    | VioDoc _ -> true
+    | Batch (BuildVio, _) -> true
     | _ -> false
 
   let current_branch () = current_branch !vcs
@@ -2645,17 +2646,12 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
       in
       Declaremods.start_library dp
 
-    | VoDoc f ->
+    | Batch (_, f) ->
       let ldir = dirpath_of_file f in
       let () = Flags.verbosely Declaremods.start_library ldir in
       VCS.set_ldir ldir;
       set_compilation_hints f
 
-    | VioDoc f ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
-      VCS.set_ldir ldir;
-      set_compilation_hints f
   end;
 
   (* Import initial libraries. *)

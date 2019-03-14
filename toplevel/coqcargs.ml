@@ -8,10 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-
 type t =
-  { compilation_mode : compilation_mode
+  { compilation_mode : Stm.compilation_mode
 
   ; compile_list: (string * bool) list  (* bool is verbosity  *)
   ; compilation_output_name : string option
@@ -28,7 +26,7 @@ type t =
   }
 
 let default =
-  { compilation_mode = BuildVo
+  { compilation_mode = Stm.BuildVo
 
   ; compile_list = []
   ; compilation_output_name = None
@@ -96,7 +94,7 @@ let set_vio_checking_j opts opt j =
 
 let set_compilation_mode opts mode =
   match opts.compilation_mode with
-  | BuildVo -> { opts with compilation_mode = mode }
+  | Stm.BuildVo -> { opts with compilation_mode = mode }
   | mode' when mode <> mode' ->
     prerr_endline "Options -quick and -vio2vo are exclusive";
     exit 1
@@ -165,7 +163,7 @@ let parse arglist : t =
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
-          set_compilation_mode oval BuildVio
+          set_compilation_mode oval Stm.BuildVio
         | "-check-vio-tasks" ->
           let tno = get_task_list (next ()) in
           let tfile = next () in
@@ -184,7 +182,7 @@ let parse arglist : t =
 
         | "-vio2vo" ->
           let oval = add_compile ~echo:false oval (next ()) in
-          set_compilation_mode oval Vio2Vo
+          set_compilation_mode oval Stm.Vio2Vo
 
         | "-outputstate" ->
           set_outputstate oval (next ())

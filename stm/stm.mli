@@ -44,12 +44,13 @@ end
 
 type interactive_top = TopLogical of DirPath.t | TopPhysical of string
 
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+
 (** The STM document type [stm_doc_type] determines some properties
    such as what uncompleted proofs are allowed and what gets recorded
    to aux files. *)
 type stm_doc_type =
-  | VoDoc       of string       (* file path *)
-  | VioDoc      of string       (* file path *)
+  | Batch of compilation_mode * string (* file path *)
   | Interactive of interactive_top    (* module path *)
 
 (** Coq initialization options:

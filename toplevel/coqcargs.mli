@@ -8,10 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-
 type t =
-  { compilation_mode : compilation_mode
+  { compilation_mode : Stm.compilation_mode
 
   ; compile_list: (string * bool) list  (* bool is verbosity  *)
   ; compilation_output_name : string option

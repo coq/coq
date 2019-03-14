@@ -107,13 +107,13 @@ let compile opts copts ~echo ~f_in ~f_out =
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
   match copts.compilation_mode with
-  | BuildVo ->
+  | Stm.BuildVo ->
       let long_f_dot_v, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".v" ".vo" in
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VoDoc long_f_dot_vo;
+          Stm.{ doc_type = Batch(BuildVo, long_f_dot_vo);
                 iload_path; require_libs; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
@@ -139,7 +139,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
 
-  | BuildVio ->
+  | Stm.BuildVio ->
       let long_f_dot_v, long_f_dot_vio =
         ensure_exists_with_prefix f_in f_out ".v" ".vio" in
 
@@ -158,7 +158,7 @@ let compile opts copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_vio;
+          Stm.{ doc_type = Batch(BuildVio, long_f_dot_vio);
                 iload_path; require_libs; stm_options;
               } in
 
@@ -171,7 +171,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       let () = ignore (Stm.snapshot_vio ~doc ~output_native_objects ldir long_f_dot_vio) in
       Stm.reset_task_queue ()
 
-  | Vio2Vo ->
+  | Stm.Vio2Vo ->
       let long_f_dot_vio, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
       let sum, lib, univs, tasks, proofs =
