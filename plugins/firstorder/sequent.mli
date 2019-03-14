@@ -39,7 +39,7 @@ val deepen: t -> t
 
 val record: h_item -> t -> t
 
-val lookup: Evd.evar_map -> h_item -> t -> bool
+val lookup: Environ.env -> Evd.evar_map -> h_item -> t -> bool
 
 val add_formula : Environ.env -> Evd.evar_map -> side -> GlobRef.t -> constr -> t -> t
 

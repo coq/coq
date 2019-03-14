@@ -187,7 +187,7 @@ let empty_internalization_env = Id.Map.empty
 
 let compute_internalization_data env sigma id ty typ impl =
   let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
-  (ty, impl, compute_arguments_scope sigma typ, var_uid id)
+  (ty, impl, compute_arguments_scope env sigma typ, var_uid id)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
   List.fold_left3
@@ -2358,9 +2358,9 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Id.Set.empty
 
-let scope_of_type_kind sigma = function
+let scope_of_type_kind env sigma = function
   | IsType -> Notation.current_type_scope_name ()
-  | OfType typ -> compute_type_scope sigma typ
+  | OfType typ -> compute_type_scope env sigma typ
   | WithoutTypeConstraint | UnknownIfTermOrType -> None
 
 let allowed_binder_kind_of_type_kind = function
@@ -2377,7 +2377,7 @@ let empty_ltac_sign = {
 let intern_gen kind env sigma
                ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
-  let tmp_scope = scope_of_type_kind sigma kind in
+  let tmp_scope = scope_of_type_kind env sigma kind in
   let k = allowed_binder_kind_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
                          tmp_scope = tmp_scope; scopes = [];
@@ -2462,7 +2462,7 @@ let intern_constr_pattern env sigma ?(as_type=false) ?(ltacvars=empty_ltac_sign)
 
 let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
       { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
-  let tmp_scope = scope_of_type_kind sigma kind in
+  let tmp_scope = scope_of_type_kind env sigma kind in
   let impls = empty_internalization_env in
   let k = allowed_binder_kind_of_type_kind kind in
   internalize env

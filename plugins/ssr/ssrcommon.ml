@@ -947,7 +947,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
   let open EConstr in
   if n = 0 then
     let args = List.rev args in
-     (if beta then Reductionops.whd_beta sigma else fun x -> x)
+     (if beta then Reductionops.whd_beta env sigma else fun x -> x)
       (EConstr.mkApp (c, Array.of_list (List.map snd args))), ty, args, sigma
   else match kind_of_type sigma ty with
   | ProdType (_, src, tgt) ->
@@ -1062,11 +1062,12 @@ end
 let introid ?(orig=ref Anonymous) name =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let g = Proofview.Goal.concl gl in
    match EConstr.kind sigma g with
    | App (hd, _) when EConstr.isLambda sigma hd ->
-      convert_concl_no_check (Reductionops.whd_beta sigma g)
+      convert_concl_no_check (Reductionops.whd_beta env sigma g)
    | _ -> Tacticals.New.tclIDTAC
   end <*>
     (fst_prod false (fun id -> orig := id; Tactics.intro_mustbe_force name))

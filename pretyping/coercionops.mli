@@ -26,7 +26,7 @@ type cl_typ =
 (** Equality over [cl_typ] *)
 val cl_typ_eq : cl_typ -> cl_typ -> bool
 
-val subst_cl_typ : substitution -> cl_typ -> cl_typ
+val subst_cl_typ : env -> substitution -> cl_typ -> cl_typ
 
 (** Comparison of [cl_typ] *)
 val cl_typ_ord : cl_typ -> cl_typ -> int
@@ -64,7 +64,7 @@ val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
 (** [find_class_type env sigma c] returns the head reference of [c],
     its universe instance and its arguments *)
-val find_class_type : evar_map -> types -> cl_typ * EInstance.t * constr list
+val find_class_type : env -> evar_map -> types -> cl_typ * EInstance.t * constr list
 
 (** raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> types -> types * cl_index

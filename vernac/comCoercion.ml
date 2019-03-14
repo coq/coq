@@ -111,7 +111,7 @@ la liste des variables dont depend la classe source
 l'indice de la classe source dans la liste lp
 *)
 
-let get_source lp source =
+let get_source env lp source =
   let open Context.Rel.Declaration in
   match source with
     | None ->
@@ -120,7 +120,7 @@ let get_source lp source =
          | [] -> raise Not_found
          | LocalDef _ :: lt -> aux lt
          | LocalAssum (_,t1) :: lt ->
-            let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+            let cl1,u1,lv1 = find_class_type env Evd.empty (EConstr.of_constr t1) in
             cl1,lt,lv1,1
        in aux lp
     | Some cl ->
@@ -130,17 +130,17 @@ let get_source lp source =
          | LocalDef _ as decl :: lt -> aux (decl::acc) lt
          | LocalAssum (_,t1) as decl :: lt ->
             try
-              let cl1,u1,lv1 = find_class_type Evd.empty (EConstr.of_constr t1) in
+              let cl1,u1,lv1 = find_class_type env Evd.empty (EConstr.of_constr t1) in
               if cl_typ_eq cl cl1 then cl1,acc,lv1,Context.Rel.nhyps lt+1
               else raise Not_found
             with Not_found -> aux (decl::acc) lt
        in aux [] (List.rev lp)
 
-let get_target t ind =
+let get_target env t ind =
   if (ind > 1) then
     CL_FUN
   else
-    match pi1 (find_class_type Evd.empty (EConstr.of_constr t)) with
+    match pi1 (find_class_type env Evd.empty (EConstr.of_constr t)) with
     | CL_CONST p when Recordops.is_primitive_projection p ->
       CL_PROJ (Option.get @@ Recordops.find_primitive_projection p)
     | x -> x
@@ -209,7 +209,7 @@ let build_id_coercion idf_opt source poly =
     match idf_opt with
       | Some idf -> idf
       | None ->
-          let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
+          let cl,u,_ = find_class_type env sigma (EConstr.of_constr t) in
           Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
@@ -298,14 +298,15 @@ let warn_uniform_inheritance =
 
 let add_new_coercion_core coef stre poly source target isid =
   check_source source;
-  let t, _ = Typeops.type_of_global_in_context (Global.env ()) coef in
+  let env = Global.env () in
+  let t, _ = Typeops.type_of_global_in_context env coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp,tg = decompose_prod_assum t in
   let llp = List.length lp in
   if Int.equal llp 0 then raise (CoercionError NotAFunction);
   let (cls,ctx,lvs,ind) =
     try
-      get_source lp source
+      get_source env lp source
     with Not_found ->
       raise (CoercionError (NoSource source))
   in
@@ -315,7 +316,7 @@ let add_new_coercion_core coef stre poly source target isid =
     warn_uniform_inheritance coef;
   let clt =
     try
-      get_target tg ind
+      get_target env tg ind
     with Not_found ->
       raise (CoercionError NoTarget)
   in

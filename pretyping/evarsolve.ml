@@ -633,7 +633,7 @@ let solve_pattern_eqn env sigma l c =
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
-  shrink_eta c'
+  shrink_eta env c'
 
 (*****************************************)
 (* Refining/solving unification problems *)
@@ -1632,7 +1632,7 @@ let rec invert_definition unify flags choose imitate_defs
           map_constr_with_full_binders !evdref (fun d (env,k) -> push_rel d env, k+1)
                                         imitate envk t
   in
-  let rhs = whd_beta evd rhs (* heuristic *) in
+  let rhs = whd_beta env evd rhs (* heuristic *) in
   let fast rhs =
     let filter_ctxt = evar_filtered_context evi in
     let names = ref Id.Set.empty in
@@ -1758,7 +1758,7 @@ let reconsider_unif_constraints unify flags evd =
 let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
                      env evd (pbty,(evk1,args1 as ev1),t2) =
   try
-    let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
+    let t2 = whd_betaiota env evd t2 in (* includes whd_evar *)
     let evd = evar_define unify flags ~choose ~imitate_defs env evd pbty ev1 t2 in
       reconsider_unif_constraints unify flags evd
   with

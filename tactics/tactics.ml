@@ -1319,7 +1319,7 @@ let cut c =
       let r = Sorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
       (* Backward compat: normalize [c]. *)
-      let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
+      let c = if normalize_cut then strong whd_betaiota env sigma c else c in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->
             let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in
@@ -1607,7 +1607,7 @@ let make_projection env sigma params cstr sign elim i n c u =
         noccur_between sigma 1 (n-i-1) t
         (* to avoid surprising unifications, excludes flexible
         projection types or lambda which will be instantiated by Meta/Evar *)
-        && not (isEvar sigma (fst (whd_betaiota_stack sigma t)))
+        && not (isEvar sigma (fst (whd_betaiota_stack env sigma t)))
         && (accept_universal_lemma_under_conjunctions () || not (isRel sigma t))
       then
         let t = lift (i+1-n) t in
@@ -3025,7 +3025,7 @@ let specialize (c,lbind) ipat =
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
       let sigma = clause.evd in
-      let (thd,tstack) = whd_nored_stack sigma (clenv_value clause) in
+      let (thd,tstack) = whd_nored_stack env sigma (clenv_value clause) in
       (* The completely applied term is (thd tstack), but tstack may
          contain unsolved metas, so now we must reabstract them
          args with there name to have

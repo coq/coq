@@ -1755,7 +1755,8 @@ let cache_scope_command o =
 
 let subst_scope_command (subst,(local,scope,o as x)) = match o with
   | ScopeClasses cl ->
-      let cl' = List.map_filter (subst_scope_class subst) cl in
+      let env = Global.env () in
+      let cl' = List.map_filter (subst_scope_class env subst) cl in
       let cl' =
         if List.for_all2eq (==) cl cl' then cl
         else cl' in

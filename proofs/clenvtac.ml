@@ -36,7 +36,7 @@ let clenv_cast_meta clenv =
     match EConstr.kind clenv.evd (strip_outer_cast clenv.evd u) with
       | Meta mv ->
           (try
-            let b = Typing.meta_type clenv.evd mv in
+            let b = Typing.meta_type clenv.env clenv.evd mv in
             assert (not (occur_meta clenv.evd b));
             if occur_meta clenv.evd b then u
             else mkCast (mkMeta mv, DEFAULTcast, b)

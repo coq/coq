@@ -57,12 +57,12 @@ let make_simple_atoms seq=
       | None->[]
   in {negative=seq.latoms;positive=ratoms}
 
-let do_sequent sigma setref triv id seq i dom atoms=
+let do_sequent env sigma setref triv id seq i dom atoms=
   let flag=ref true in
   let phref=ref triv in
   let do_atoms a1 a2 =
     let do_pair t1 t2 =
-      match unif_atoms sigma i dom t1 t2 with
+      match unif_atoms env sigma i dom t1 t2 with
           None->()
         | Some (Phantom _) ->phref:=true
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
@@ -72,16 +72,16 @@ let do_sequent sigma setref triv id seq i dom atoms=
     do_atoms atoms (make_simple_atoms seq);
     !flag && !phref
 
-let match_one_quantified_hyp sigma setref seq lf=
+let match_one_quantified_hyp env sigma setref seq lf=
   match lf.pat with
       Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
-        if do_sequent sigma setref triv lf.id seq i dom lf.atoms then
+        if do_sequent env sigma setref triv lf.id seq i dom lf.atoms then
           setref:=IS.add ((Phantom dom),lf.id) !setref
     | _ -> anomaly (Pp.str "can't happen.")
 
-let give_instances sigma lf seq=
+let give_instances env sigma lf seq=
   let setref=ref IS.empty in
-    List.iter (match_one_quantified_hyp sigma setref seq) lf;
+    List.iter (match_one_quantified_hyp env sigma setref seq) lf;
     IS.elements !setref
 
 (* collector for the engine *)
@@ -129,9 +129,10 @@ let left_instance_tac (inst,id) continue seq=
   let open EConstr in
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
+  let env = Proofview.Goal.env gl in
   match inst with
       Phantom dom->
-        if lookup sigma (id,None) seq then
+        if lookup env sigma (id,None) seq then
           tclFAIL 0 (Pp.str "already done")
         else
           tclTHENS (cut dom)
@@ -148,7 +149,7 @@ let left_instance_tac (inst,id) continue seq=
             tclTRY assumption]
     | Real((m,t),_)->
         let c = (m, EConstr.to_constr sigma t) in
-        if lookup sigma (id,Some c) seq then
+        if lookup env sigma (id,Some c) seq then
           tclFAIL 0 (Pp.str "already done")
         else
           let special_generalize=
@@ -205,7 +206,8 @@ let instance_tac inst=
 
 let quantified_tac lf backtrack continue seq =
   Proofview.Goal.enter begin fun gl ->
-  let insts=give_instances (project gl) lf seq in
+  let env = Proofview.Goal.env gl in
+  let insts=give_instances env (project gl) lf seq in
     tclORELSE
       (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
       backtrack

@@ -1066,7 +1066,7 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
 (*   with .. end                                                             *)
 (*                                                                           *)
 (*****************************************************************************)
-let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
+let specialize_predicate env newtomatchs (names,depna) arsign cs tms ccl =
   (* Assume some gamma st: gamma |- PI [X,x:I(X)]. PI tms. ccl *)
   let nrealargs = List.length names in
   let l = match depna with Anonymous -> 0 | Name _ -> 1 in
@@ -1091,7 +1091,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
   (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
-    whd_betaiota Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
+    whd_betaiota env Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
   (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
@@ -1099,7 +1099,7 @@ let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
 
 let find_predicate loc env sigma p current (IndType (indf,realargs)) dep tms =
   let pred = abstract_predicate env sigma indf current realargs dep tms p in
-  (pred, whd_betaiota sigma
+  (pred, whd_betaiota !!env sigma
            (applist (pred, realargs@[current])))
 
 (* Take into account that a type has been discovered to be inductive, leading
@@ -1255,7 +1255,7 @@ let rec generalize_problem names sigma pb = function
       | LocalDef ({binder_name=Anonymous},_,_) -> pb', deps
       | _ ->
          (* for better rendering *)
-        let d = RelDecl.map_type (fun c -> whd_betaiota sigma c) d in
+        let d = RelDecl.map_type (fun c -> whd_betaiota !!(pb.env) sigma c) d in
         let tomatch = lift_tomatch_stack 1 pb'.tomatch in
         let tomatch = relocate_index_tomatch sigma (i+1) 1 tomatch in
         { pb' with
@@ -1352,7 +1352,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
 
   (* Do the specialization for the predicate *)
   let pred =
-    specialize_predicate typs' (realnames,curname) arsign const_info tomatch pb.pred in
+    specialize_predicate !!(pb.env) typs' (realnames,curname) arsign const_info tomatch pb.pred in
 
   let currents = List.map (fun x -> Pushed (false,x)) typs' in
 
