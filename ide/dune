@@ -25,8 +25,7 @@
 
 ; IDE Client
 (library
- (name gui)
- (public_name coqide.gui)
+ (name coqide_gui)
  (wrapped false)
  (modules (:standard \ document fake_ide idetop coqide_main))
  (optional)
@@ -42,7 +41,7 @@
  (public_name coqide)
  (package coqide)
  (modules coqide_main)
- (libraries coqide.gui))
+ (libraries coqide_gui))
 
 ; FIXME: we should install those in share/coqide. We better do this
 ; once the make-based system has been phased out.
