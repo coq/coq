@@ -304,7 +304,7 @@ let with_time ~batch ~header f x =
     raise e
 
 (* We use argv.[0] as we don't want to resolve symlinks *)
-let get_toplevel_path ?(byte=not Dynlink.is_native) top =
+let get_toplevel_path ?(byte=Sys.(backend_type = Bytecode)) top =
   let open Filename in
   let dir = if String.equal (basename Sys.argv.(0)) Sys.argv.(0)
             then "" else dirname Sys.argv.(0) ^ dir_sep in
