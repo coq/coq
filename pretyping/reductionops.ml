@@ -1261,7 +1261,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   if tactic_mode then (Stack.best_state sigma s cst_l,Cst_stack.empty) else res
 
 (** reduction machine without global env and refold machinery *)
-let local_whd_state_gen flags sigma =
+let local_whd_state_gen flags env sigma =
   let rec whrec (x, stack) =
     let c0 = EConstr.kind sigma x in
     let s = (EConstr.of_kind c0, stack) in
@@ -1345,7 +1345,7 @@ let raw_whd_state_gen flags env =
   f
 
 let stack_red_of_state_red f =
-  let f sigma x = EConstr.decompose_app sigma (Stack.zip sigma (f sigma (x, Stack.empty))) in
+  let f env sigma x = EConstr.decompose_app sigma (Stack.zip sigma (f env sigma (x, Stack.empty))) in
   f
 
 (* Drops the Cst_stack *)
@@ -1356,8 +1356,8 @@ let iterate_whd_gen refold flags env sigma s =
   Stack.zip sigma ~refold (hd,whd_sk)
   in aux s
 
-let red_of_state_red f sigma x =
-  Stack.zip sigma (f sigma (x,Stack.empty))
+let red_of_state_red f env sigma x =
+  Stack.zip sigma (f env sigma (x,Stack.empty))
 
 (* 0. No Reduction Functions *)
 
@@ -1378,15 +1378,12 @@ let whd_betalet = red_of_state_red whd_betalet_state
 (* 2. Delta Reduction Functions *)
 
 let whd_delta_state e = raw_whd_state_gen CClosure.delta e
-let whd_delta_stack env = stack_red_of_state_red (whd_delta_state env)
-let whd_delta env = red_of_state_red  (whd_delta_state env)
+let whd_delta_stack = stack_red_of_state_red whd_delta_state
+let whd_delta = red_of_state_red whd_delta_state
 
-let whd_betadeltazeta_state e = raw_whd_state_gen CClosure.betadeltazeta e
-let whd_betadeltazeta_stack env =
-  stack_red_of_state_red (whd_betadeltazeta_state env)
-let whd_betadeltazeta env =
-  red_of_state_red (whd_betadeltazeta_state env)
-
+let whd_betadeltazeta_state = raw_whd_state_gen CClosure.betadeltazeta
+let whd_betadeltazeta_stack = stack_red_of_state_red whd_betadeltazeta_state
+let whd_betadeltazeta = red_of_state_red whd_betadeltazeta_state
 
 (* 3. Iota reduction Functions *)
 
@@ -1398,21 +1395,19 @@ let whd_betaiotazeta_state = local_whd_state_gen CClosure.betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_all_state env = raw_whd_state_gen CClosure.all env
-let whd_all_stack env =
-  stack_red_of_state_red (whd_all_state env)
-let whd_all env =
-  red_of_state_red (whd_all_state env)
+let whd_all_state = raw_whd_state_gen CClosure.all
+let whd_all_stack = stack_red_of_state_red whd_all_state
+let whd_all = red_of_state_red whd_all_state
 
-let whd_allnolet_state env = raw_whd_state_gen CClosure.allnolet env
-let whd_allnolet_stack env =
-  stack_red_of_state_red (whd_allnolet_state env)
-let whd_allnolet env =
-  red_of_state_red (whd_allnolet_state env)
+let whd_allnolet_state = raw_whd_state_gen CClosure.allnolet
+let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
+let whd_allnolet = red_of_state_red whd_allnolet_state
 
 (* 4. Ad-hoc eta reduction, does not substitute evars *)
 
-let shrink_eta c = Stack.zip Evd.empty (local_whd_state_gen eta Evd.empty (c,Stack.empty))
+let shrink_eta env c =
+  let evd = Evd.from_env env in
+  Stack.zip evd (local_whd_state_gen eta env evd (c,Stack.empty))
 
 (* 5. Zeta Reduction Functions *)
 
@@ -1668,9 +1663,9 @@ let plain_instance sigma s c =
      empty map).
  *)
 
-let instance sigma s c =
+let instance env sigma s c =
   (* if s = [] then c else *)
-  local_strong whd_betaiota sigma (plain_instance sigma s c)
+  strong whd_betaiota env sigma (plain_instance sigma s c)
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
@@ -1816,30 +1811,30 @@ let is_arity env sigma c =
 (*************************************)
 (* Metas *)
 
-let meta_value evd mv =
+let meta_value env evd mv =
   let rec valrec mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
       let metas = Metamap.bind valrec b.freemetas in
-      instance evd metas b.rebus
+      instance env evd metas b.rebus
     | None -> mkMeta mv
   in
   valrec mv
 
-let meta_instance sigma b =
+let meta_instance env sigma b =
   let fm = b.freemetas in
   if Metaset.is_empty fm then b.rebus
   else
-    let c_sigma = Metamap.bind (fun mv -> meta_value sigma mv) fm in
-    instance sigma c_sigma b.rebus
+    let c_sigma = Metamap.bind (fun mv -> meta_value env sigma mv) fm in
+    instance env sigma c_sigma b.rebus
 
-let nf_meta sigma c =
+let nf_meta env sigma c =
   let cl = mk_freelisted c in
-  meta_instance sigma { cl with rebus = cl.rebus }
+  meta_instance env sigma { cl with rebus = cl.rebus }
 
 (* Instantiate metas that create beta/iota redexes *)
 
-let meta_reducible_instance evd b =
+let meta_reducible_instance env evd b =
   let fm = b.freemetas in
   let fold mv accu =
     let fvalue = try meta_opt_fvalue evd mv with Not_found -> None in
@@ -1849,7 +1844,7 @@ let meta_reducible_instance evd b =
   in
   let metas = Metaset.fold fold fm Metamap.empty in
   let rec irec u =
-    let u = whd_betaiota Evd.empty u (* FIXME *) in
+    let u = whd_betaiota env Evd.empty u (* FIXME *) in
     match EConstr.kind evd u with
     | Case (ci,u,pms,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
         let m = destMeta evd (strip_outer_cast evd c) in

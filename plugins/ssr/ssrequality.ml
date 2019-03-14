@@ -265,7 +265,7 @@ let unfoldintac occ rdx t (kt,_) gl =
           | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
           | Proj _ when same_proj sigma0 c t -> body env t c
           | _ ->
-            let c = Reductionops.whd_betaiotazeta sigma0 c in
+            let c = Reductionops.whd_betaiotazeta env sigma0 c in
             match EConstr.kind sigma0 c with
             | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
             | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
@@ -488,7 +488,7 @@ let rwprocess_rule dir rule gl =
     let rec loop d sigma r t0 rs red =
       let t =
         if red = 1 then Tacred.hnf_constr env sigma t0
-        else Reductionops.whd_betaiotazeta sigma t0 in
+        else Reductionops.whd_betaiotazeta env sigma t0 in
       ppdebug(lazy Pp.(str"rewrule="++pr_econstr_pat env sigma t));
       match EConstr.kind sigma t with
       | Prod (_, xt, at) ->

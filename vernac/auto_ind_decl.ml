@@ -191,7 +191,7 @@ let build_beq_scheme mode kn =
     let compute_A_equality rel_list nlist eqA ndx t =
       let lifti = ndx in
       let rec aux c =
-        let (c,a) = Reductionops.whd_betaiota_stack Evd.empty EConstr.(of_constr c) in
+        let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
         let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
         match Constr.kind c with
         | Rel x -> mkRel (x-nlist+ndx), Evd.empty_side_effects

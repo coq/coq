@@ -424,7 +424,8 @@ let type_of_clause cls gl = match cls with
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.enter begin fun gl ->
   let evd = Proofview.Goal.sigma gl in
-  let isatomic = isProd evd (whd_zeta evd hdcncl) in
+  let env = Proofview.Goal.env gl in
+  let isatomic = isProd evd (whd_zeta env evd hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun evd c type_of_cls in
@@ -459,7 +460,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       let sigma = Tacmach.New.project gl in
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
-    let rels, t = decompose_prod_assum sigma (whd_betaiotazeta sigma ctype) in
+    let rels, t = decompose_prod_assum sigma (whd_betaiotazeta env sigma ctype) in
       match match_with_equality_type env sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
           let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -476,7 +477,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
                   Proofview.tclEVARMAP >>= fun sigma ->
                   let env' = push_rel_context rels env in
                   let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
-                  match match_with_equality_type env sigma t' with
+                  match match_with_equality_type env' sigma t' with
                     | Some (hdcncl,args) ->
                   let lft2rgt = adjust_rewriting_direction args lft2rgt in
                   leibniz_rewrite_ebindings_clause cls lft2rgt tac c
@@ -1216,7 +1217,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       with Evarconv.UnableToUnify _ ->
         user_err Pp.(str "Cannot solve a unification problem.")
     else
-      let (a,p_i_minus_1) = match whd_beta_stack sigma p_i with
+      let (a,p_i_minus_1) = match whd_beta_stack env sigma p_i with
         | (_sigS,[a;p]) -> (a, p)
         | _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type.") in
       let sigma, ev = Evarutil.new_evar env sigma a in

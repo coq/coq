@@ -1016,7 +1016,7 @@ struct
           | [], [] -> []
           | _ -> assert false
         in aux 1 1 (List.rev nal) cs.cs_args, true in
-    let fsign = Context.Rel.map (whd_betaiota sigma) fsign in
+    let fsign = Context.Rel.map (whd_betaiota !!env sigma) fsign in
     let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let fsign,env_f = push_rel_context ~hypnaming sigma fsign env in
     let obj ind rci p v f =
@@ -1125,7 +1125,7 @@ struct
         let pi = lift n pred in (* liftn n 2 pred ? *)
         let pi = beta_applist sigma (pi, [EConstr.of_constr (build_dependent_constructor cs)]) in
         let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs.cs_args in
-        let cs_args = Context.Rel.map (whd_betaiota sigma) cs_args in
+        let cs_args = Context.Rel.map (whd_betaiota !!env sigma) cs_args in
         let csgn =
           List.map (set_name Anonymous) cs_args
         in

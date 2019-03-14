@@ -166,9 +166,9 @@ let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 
 (* find_class_type : evar_map -> constr -> cl_typ * universe_list * constr list *)
 
-let find_class_type sigma t =
+let find_class_type env sigma t =
   let open EConstr in
-  let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
+  let t', args = Reductionops.whd_betaiotazeta_stack env sigma t in
   match EConstr.kind sigma t' with
     | Var id -> CL_SECVAR id, EInstance.empty, args
     | Const (sp,u) -> CL_CONST sp, u, args
@@ -180,7 +180,7 @@ let find_class_type sigma t =
     |  _ -> raise Not_found
 
 
-let subst_cl_typ subst ct = match ct with
+let subst_cl_typ env subst ct = match ct with
     CL_SORT
   | CL_FUN
   | CL_SECVAR _ -> ct
@@ -192,7 +192,7 @@ let subst_cl_typ subst ct = match ct with
       if c' == c then ct else (match t with
           | None -> CL_CONST c'
           | Some t ->
-            pi1 (find_class_type Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)))
+            pi1 (find_class_type env Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)))
   | CL_IND i ->
       let i' = subst_ind subst i in
         if i' == i then ct else CL_IND i'
@@ -206,12 +206,12 @@ let subst_coe_typ subst t = subst_global_reference subst t
 let class_of env sigma t =
   let (t, n1, i, u, args) =
     try
-      let (cl, u, args) = find_class_type sigma t in
+      let (cl, u, args) = find_class_type env sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
-      let (cl, u, args) = find_class_type sigma t in
+      let (cl, u, args) = find_class_type env sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
   in
@@ -219,7 +219,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of env sigma c = pi3 (find_class_type sigma c)
+let class_args_of env sigma c = pi3 (find_class_type env sigma c)
 
 let string_of_class = function
   | CL_FUN -> "Funclass"
@@ -251,14 +251,14 @@ let lookup_path_to_sort_from_class s =
 
 let apply_on_class_of env sigma t cont =
   try
-    let (cl,u,args) = find_class_type sigma t in
+    let (cl,u,args) = find_class_type env sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
-    let (cl, u, args) = find_class_type sigma t in
+    let (cl, u, args) = find_class_type env sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
@@ -392,9 +392,10 @@ type coercion = {
 }
 
 let subst_coercion subst c =
+  let env = Global.env () in
   let coe = subst_coe_typ subst c.coercion_type in
-  let cls = subst_cl_typ subst c.coercion_source in
-  let clt = subst_cl_typ subst c.coercion_target in
+  let cls = subst_cl_typ env subst c.coercion_source in
+  let clt = subst_cl_typ env subst c.coercion_target in
   let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
   if c.coercion_type == coe && c.coercion_source == cls &&
      c.coercion_target == clt && c.coercion_is_proj == clp

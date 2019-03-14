@@ -1451,8 +1451,8 @@ type scope_class = cl_typ
 let scope_class_compare : scope_class -> scope_class -> int =
   cl_typ_ord
 
-let compute_scope_class sigma t =
-  let (cl,_,_) = find_class_type sigma t in
+let compute_scope_class env sigma t =
+  let (cl,_,_) = find_class_type env sigma t in
   cl
 
 module ScopeClassOrd =
@@ -1481,22 +1481,23 @@ let find_scope_class_opt = function
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
-let rec compute_arguments_classes sigma t =
-  match EConstr.kind sigma (Reductionops.whd_betaiotazeta sigma t) with
-    | Prod (_,t,u) ->
-        let cl = try Some (compute_scope_class sigma t) with Not_found -> None in
-        cl :: compute_arguments_classes sigma u
+let rec compute_arguments_classes env sigma t =
+  match EConstr.kind sigma (Reductionops.whd_betaiotazeta env sigma t) with
+    | Prod (na, t, u) ->
+        let env = EConstr.push_rel (Context.Rel.Declaration.LocalAssum (na, t)) env in
+        let cl = try Some (compute_scope_class env sigma t) with Not_found -> None in
+        cl :: compute_arguments_classes env sigma u
     | _ -> []
 
-let compute_arguments_scope_full sigma t =
-  let cls = compute_arguments_classes sigma t in
+let compute_arguments_scope_full env sigma t =
+  let cls = compute_arguments_classes env sigma t in
   let scs = List.map find_scope_class_opt cls in
   scs, cls
 
-let compute_arguments_scope sigma t = fst (compute_arguments_scope_full sigma t)
+let compute_arguments_scope env sigma t = fst (compute_arguments_scope_full env sigma t)
 
-let compute_type_scope sigma t =
-  find_scope_class_opt (try Some (compute_scope_class sigma t) with Not_found -> None)
+let compute_type_scope env sigma t =
+  find_scope_class_opt (try Some (compute_scope_class env sigma t) with Not_found -> None)
 
 let current_type_scope_name () =
    find_scope_class_opt (Some CL_SORT)
@@ -1534,15 +1535,16 @@ let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_scope_class subst cs =
-  try Some (subst_cl_typ subst cs) with Not_found -> None
+let subst_scope_class env subst cs =
+  try Some (subst_cl_typ env subst cs) with Not_found -> None
 
 let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
   let r' = fst (subst_global subst r) in
   let subst_cl ocl = match ocl with
     | None -> ocl
     | Some cl ->
-        match subst_scope_class subst cl with
+        let env = Global.env () in
+        match subst_scope_class env subst cl with
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
   let cls' = List.Smart.map subst_cl cls in
@@ -1568,7 +1570,7 @@ let rebuild_arguments_scope sigma (req,r,n,l,_) =
     | ArgsScopeAuto ->
       let env = Global.env () in (*FIXME?*)
       let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
-      let scs,cls = compute_arguments_scope_full sigma typ in
+      let scs,cls = compute_arguments_scope_full env sigma typ in
       (req,r,List.length scs,scs,cls)
     | ArgsScopeManual ->
       (* Add to the manually given scopes the one found automatically
@@ -1576,7 +1578,7 @@ let rebuild_arguments_scope sigma (req,r,n,l,_) =
          of the manually given scopes to avoid further re-computations. *)
       let env = Global.env () in (*FIXME?*)
       let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
-      let l',cls = compute_arguments_scope_full sigma typ in
+      let l',cls = compute_arguments_scope_full env sigma typ in
       let l1 = List.firstn n l' in
       let cls1 = List.firstn n cls in
       (req,r,0,l1@l,cls1)
@@ -1623,7 +1625,7 @@ let find_arguments_scope r =
 let declare_ref_arguments_scope sigma ref =
   let env = Global.env () in (* FIXME? *)
   let typ = EConstr.of_constr @@ fst @@ Typeops.type_of_global_in_context env ref in
-  let (scs,cls as o) = compute_arguments_scope_full sigma typ in
+  let (scs,cls as o) = compute_arguments_scope_full env sigma typ in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
 
 (********************************)

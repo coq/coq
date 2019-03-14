@@ -125,7 +125,7 @@ let retype ?(polyprop=true) sigma =
         let n = inductive_nrealdecls env (fst (fst (dest_ind_family indf))) in
         let t = betazetaevar_applist sigma n p realargs in
         (match EConstr.kind sigma (whd_all env sigma (type_of env t)) with
-          | Prod _ -> whd_beta sigma (applist (t, [c]))
+          | Prod _ -> whd_beta env sigma (applist (t, [c]))
           | _ -> t)
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (LocalAssum (name,c1)) env) c2)

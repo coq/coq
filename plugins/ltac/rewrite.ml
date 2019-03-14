@@ -478,7 +478,7 @@ let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite."
 
 let rec decompose_app_rel env evd t =
   (* Head normalize for compatibility with the old meta mechanism *)
-  let t = Reductionops.whd_betaiota evd t in
+  let t = Reductionops.whd_betaiota env evd t in
   match EConstr.kind evd t with
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
@@ -711,7 +711,7 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     let sigma = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
       ~fail:true env sigma in
     let evd = solve_remaining_by env sigma holes by in
-    let nf c = Reductionops.nf_evar evd (Reductionops.nf_meta evd c) in
+    let nf c = Reductionops.nf_evar evd (Reductionops.nf_meta env evd c) in
     let c1 = nf c1 and c2 = nf c2
     and rew_car = nf car and rel = nf rel
     and prf = nf prf in
@@ -971,7 +971,7 @@ let unfold_match env sigma sk app =
   | App (f', args) when Constant.equal (fst (destConst sigma f')) sk ->
       let v = Environ.constant_value_in (Global.env ()) (sk,Univ.Instance.empty)(*FIXME*) in
       let v = EConstr.of_constr v in
-        Reductionops.whd_beta sigma (mkApp (v, args))
+        Reductionops.whd_beta env sigma (mkApp (v, args))
   | _ -> app
 
 let is_rew_cast = function RewCast _ -> true | _ -> false

@@ -140,7 +140,7 @@ let flex_kind_of_term flags env evd c sk =
     | Cast _ | App _ | Case _ -> assert false
 
 let apprec_nohdbeta flags env evd c =
-  let (t,sk as appr) = Reductionops.whd_nored_state evd (c, []) in
+  let (t,sk as appr) = Reductionops.whd_nored_state env evd (c, []) in
   if flags.modulo_betaiota && Stack.not_purely_applicative sk
   then Stack.zip evd (whd_betaiota_deltazeta_for_iota_state
                    flags.open_ts env evd appr)
@@ -498,8 +498,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
         let term2 = apprec_nohdbeta flags env evd term2 in
         let default () =
           evar_eqappr_x flags env evd pbty
-            (whd_nored_state evd (term1,Stack.empty))
-            (whd_nored_state evd (term2,Stack.empty))
+            (whd_nored_state env evd (term1,Stack.empty))
+            (whd_nored_state env evd (term2,Stack.empty))
         in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
@@ -558,7 +558,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       flags.open_ts env' evd (c'1, Stack.empty) in
-    let out2, _ = whd_nored_state evd
+    let out2, _ = whd_nored_state env' evd
       (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty),
       Cst_stack.empty in
     if onleft then evar_eqappr_x flags env' evd CONV out1 out2

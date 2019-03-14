@@ -185,30 +185,30 @@ val nf_evar : evar_map -> constr -> constr
 (** Lazy strategy, weak head reduction *)
 
 val whd_evar :  evar_map -> constr -> constr
-val whd_nored : local_reduction_function
-val whd_beta : local_reduction_function
-val whd_betaiota : local_reduction_function
-val whd_betaiotazeta : local_reduction_function
+val whd_nored : contextual_reduction_function
+val whd_beta : contextual_reduction_function
+val whd_betaiota : contextual_reduction_function
+val whd_betaiotazeta : contextual_reduction_function
 val whd_all :  contextual_reduction_function
 val whd_allnolet :  contextual_reduction_function
-val whd_betalet : local_reduction_function
+val whd_betalet : contextual_reduction_function
 
 (** Removes cast and put into applicative form *)
-val whd_nored_stack : local_stack_reduction_function
-val whd_beta_stack : local_stack_reduction_function
-val whd_betaiota_stack : local_stack_reduction_function
-val whd_betaiotazeta_stack : local_stack_reduction_function
+val whd_nored_stack : contextual_stack_reduction_function
+val whd_beta_stack : contextual_stack_reduction_function
+val whd_betaiota_stack : contextual_stack_reduction_function
+val whd_betaiotazeta_stack : contextual_stack_reduction_function
 val whd_all_stack : contextual_stack_reduction_function
 val whd_allnolet_stack : contextual_stack_reduction_function
-val whd_betalet_stack : local_stack_reduction_function
+val whd_betalet_stack : contextual_stack_reduction_function
 
-val whd_nored_state : local_state_reduction_function
-val whd_beta_state : local_state_reduction_function
-val whd_betaiota_state : local_state_reduction_function
-val whd_betaiotazeta_state : local_state_reduction_function
+val whd_nored_state : contextual_state_reduction_function
+val whd_beta_state : contextual_state_reduction_function
+val whd_betaiota_state : contextual_state_reduction_function
+val whd_betaiotazeta_state : contextual_state_reduction_function
 val whd_all_state : contextual_state_reduction_function
 val whd_allnolet_state : contextual_state_reduction_function
-val whd_betalet_state : local_state_reduction_function
+val whd_betalet_state : contextual_state_reduction_function
 
 (** {6 Head normal forms } *)
 
@@ -218,11 +218,11 @@ val whd_delta :  reduction_function
 val whd_betadeltazeta_stack :  stack_reduction_function
 val whd_betadeltazeta_state :  state_reduction_function
 val whd_betadeltazeta :  reduction_function
-val whd_zeta_stack : local_stack_reduction_function
-val whd_zeta_state : local_state_reduction_function
-val whd_zeta : local_reduction_function
+val whd_zeta_stack : stack_reduction_function
+val whd_zeta_state : state_reduction_function
+val whd_zeta : reduction_function
 
-val shrink_eta : constr -> constr
+val shrink_eta : Environ.env -> constr -> constr
 
 (** Various reduction functions *)
 
@@ -318,7 +318,7 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
 
 val whd_meta : local_reduction_function
 val plain_instance : evar_map -> constr Metamap.t -> constr -> constr
-val instance : evar_map -> constr Metamap.t -> constr -> constr
+val instance : env -> evar_map -> constr Metamap.t -> constr -> constr
 val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 
 (** {6 Heuristic for Conversion with Evar } *)
@@ -327,6 +327,6 @@ val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
 
 (** {6 Meta-related reduction functions } *)
-val meta_instance : evar_map -> constr freelisted -> constr
-val nf_meta       : evar_map -> constr -> constr
-val meta_reducible_instance : evar_map -> constr freelisted -> constr
+val meta_instance : env -> evar_map -> constr freelisted -> constr
+val nf_meta       : env -> evar_map -> constr -> constr
+val meta_reducible_instance : env -> evar_map -> constr freelisted -> constr

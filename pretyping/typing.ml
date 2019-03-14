@@ -29,11 +29,11 @@ open Context.Rel.Declaration
 
 module GR = Names.GlobRef
 
-let meta_type evd mv =
+let meta_type env evd mv =
   let ty =
     try Evd.meta_ftype evd mv
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
-  meta_instance evd ty
+  meta_instance env evd ty
 
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let u = Unsafe.to_instance u in
@@ -175,7 +175,7 @@ let type_case_branches env sigma (ind,largs) pj c =
   let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
-  let ty = whd_betaiota sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
+  let ty = whd_betaiota env sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
   sigma, (lc, ty, Sorts.relevance_of_sort ps)
 
 let judge_of_case env sigma case ci pj cj lfj =
@@ -335,7 +335,7 @@ let rec execute env sigma cstr =
   let cstr = whd_evar sigma cstr in
   match EConstr.kind sigma cstr with
     | Meta n ->
-        sigma, { uj_val = cstr; uj_type = meta_type sigma n }
+        sigma, { uj_val = cstr; uj_type = meta_type env sigma n }
 
     | Evar ev ->
         let ty = EConstr.existential_type sigma ev in
