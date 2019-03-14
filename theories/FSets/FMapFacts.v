@@ -1822,7 +1822,7 @@ Module OrdProperties (M:S).
     destruct (gtb (x,e) (a,e')); destruct (gtb (x,e) (b,e'')); auto.
    unfold O.ltk in *; simpl in *; intros.
    symmetry; rewrite H2.
-   apply ME.eq_lt with a; auto.
+   apply ME.eq_lt with a; auto with ordered_type.
    rewrite <- H1; auto.
    unfold O.ltk in *; simpl in *; intros.
    rewrite H1.
@@ -1869,7 +1869,7 @@ Module OrdProperties (M:S).
   rewrite <- elements_mapsto_iff in H1.
   assert (~E.eq x t0).
    contradict H.
-   exists e0; apply MapsTo_1 with t0; auto.
+   exists e0; apply MapsTo_1 with t0; auto with ordered_type.
   ME.order.
   apply (@filter_sort _ eqke); auto with *; clean_eauto.
   intros.
@@ -1888,9 +1888,9 @@ Module OrdProperties (M:S).
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
     add_mapsto_iff by (auto with *).
   unfold O.eqke, O.ltk; simpl.
-  destruct (E.compare t0 x); intuition; try fold (~E.eq x t0); auto.
+  destruct (E.compare t0 x); intuition; try fold (~E.eq x t0); auto with ordered_type.
   - elim H; exists e0; apply MapsTo_1 with t0; auto.
-  - fold (~E.lt t0 x); auto.
+  - fold (~E.lt t0 x); auto with ordered_type.
   Qed.
 
   Lemma elements_Add_Above : forall m m' x e,
@@ -1905,7 +1905,7 @@ Module OrdProperties (M:S).
   destruct x0; destruct y.
   rewrite <- elements_mapsto_iff in H1.
   unfold O.eqke, O.ltk in *; simpl in *; destruct H3.
-  apply ME.lt_eq with x; auto.
+  apply ME.lt_eq with x; auto with ordered_type.
   apply H; firstorder.
   inversion H3.
   red; intros a; destruct a.
@@ -1991,7 +1991,7 @@ Module OrdProperties (M:S).
   injection H as [= -> ->].
   inversion_clear H1.
   red in H; simpl in *; intuition.
-  elim H0; eauto.
+  elim H0; eauto with ordered_type.
   inversion H.
   change (max_elt_aux (p::l) = Some (x,e)) in H.
   generalize (IHl x e H); clear IHl; intros IHl.
@@ -2007,9 +2007,9 @@ Module OrdProperties (M:S).
    inversion_clear H2.
    inversion_clear H5.
    red in H2; simpl in H2; ME.order.
-  eapply IHl; eauto.
+  eapply IHl; eauto with ordered_type.
   econstructor; eauto.
-  red; eauto.
+  red; eauto with ordered_type.
   inversion H2; auto.
   Qed.
 
@@ -2022,7 +2022,7 @@ Module OrdProperties (M:S).
   induction (elements m).
   simpl; try discriminate.
   destruct a; destruct l; simpl in *.
-  injection H; intros; subst; constructor; red; auto.
+  injection H; intros; subst; constructor; red; auto with ordered_type.
   constructor 2; auto.
   Qed.
 
@@ -2069,7 +2069,7 @@ Module OrdProperties (M:S).
   destruct (elements m).
   simpl; try discriminate.
   destruct p; simpl in *.
-  injection H; intros; subst; constructor; red; auto.
+  injection H; intros; subst; constructor; red; auto with ordered_type.
   Qed.
 
   Lemma min_elt_Empty :
@@ -2106,7 +2106,7 @@ Module OrdProperties (M:S).
   apply IHn.
   assert (S n = S (cardinal (remove k m))).
    rewrite Heqn.
-   eapply cardinal_2; eauto with map.
+   eapply cardinal_2; eauto with map ordered_type.
   inversion H1; auto.
   eapply max_elt_Above; eauto.
 
@@ -2133,7 +2133,7 @@ Module OrdProperties (M:S).
   apply IHn.
   assert (S n = S (cardinal (remove k m))).
    rewrite Heqn.
-   eapply cardinal_2; eauto with map.
+   eapply cardinal_2; eauto with map ordered_type.
   inversion H1; auto.
   eapply min_elt_Below; eauto.
 

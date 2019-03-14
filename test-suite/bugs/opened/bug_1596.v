@@ -69,9 +69,8 @@ Definition t := (X.t * Y.t)%type.
     elim (X.lt_not_eq H2 H3).
     elim H0;clear H0;intros.
     right.
-    split.
-    eauto.
-    eauto.
+    split;
+    eauto with ordered_type.
   Qed.
 
   Lemma lt_not_eq : forall (x y:t),(lt x y)->~(eq x y).
@@ -97,7 +96,7 @@ Definition t := (X.t * Y.t)%type.
     apply EQ.
     split;trivial.
     apply GT.
-    right;auto.
+    right;auto with ordered_type.
     apply GT.
     left;trivial.
   Defined.
