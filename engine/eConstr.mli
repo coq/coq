@@ -343,6 +343,10 @@ val is_global : Evd.evar_map -> GlobRef.t -> t -> bool
 val expand_case : Environ.env -> Evd.evar_map ->
   case -> (case_info * t * case_invert * t * t array)
 
+val annotate_case : Environ.env -> Evd.evar_map -> case ->
+  case_info * EInstance.t * t array * (rel_context * t) * case_invert * t * (rel_context * t) array
+(** Same as above, but doesn't turn contexts into binders *)
+
 val expand_branch : Environ.env -> Evd.evar_map ->
   EInstance.t -> t array -> constructor -> case_branch -> rel_context
 (** Given a universe instance and parameters for the inductive type,

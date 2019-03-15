@@ -373,6 +373,18 @@ let expand_case env _sigma (ci, u, pms, p, iv, c, bl) =
   let bl = of_constr_array bl in
   (ci, p, iv, c, bl)
 
+let annotate_case env sigma (ci, u, pms, p, iv, c, bl as case) =
+  let (_, p, _, _, bl) = expand_case env sigma case in
+  let p =
+    (* Too bad we need to fetch this data in the environment, should be in the
+      case_info instead. *)
+    let (_, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
+    decompose_lam_n_decls sigma (mip.Declarations.mind_nrealdecls + 1) p
+  in
+  let mk_br c n = decompose_lam_n_decls sigma n c in
+  let bl = Array.map2 mk_br bl ci.ci_cstr_ndecls in
+  (ci, u, pms, p, iv, c, bl)
+
 let expand_branch env _sigma u pms (ind, i) (nas, _br) =
   let open Declarations in
   let u = EInstance.unsafe_to_instance u in
@@ -413,9 +425,9 @@ let iter_with_full_binders env sigma g f n c =
   | App (c,l) -> f n c; Array.Fun1.iter f n l
   | Evar (_,l) -> List.iter (fun c -> f n c) l
   | Case (ci,u,pms,p,iv,c,bl) ->
-    (* FIXME: skip the type annotations *)
-    let (ci, p, iv, c, bl) = expand_case env sigma (ci, u, pms, p, iv, c, bl) in
-    f n p; iter_invert (f n) iv; f n c; Array.Fun1.iter f n bl
+    let (ci, _, pms, p, iv, c, bl) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
+    let f_ctx (ctx, c) = f (List.fold_right g ctx n) c in
+    Array.Fun1.iter f n pms; f_ctx p; iter_invert (f n) iv; f n c; Array.iter f_ctx bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
