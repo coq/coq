@@ -69,5 +69,3 @@ it is not convertible.
 The only hope to improve this problem is to observe that S' hides
 (behind two indirections) a Setoid constructor. This could be the
 argument to solve the problem.
-
-
