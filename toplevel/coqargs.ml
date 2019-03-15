@@ -60,6 +60,8 @@ type t = {
   indices_matter : bool;
   enable_VM : bool;
   native_compiler : native_compiler;
+  allow_sprop : bool;
+  cumulative_sprop : bool;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
@@ -110,6 +112,8 @@ let default = {
   indices_matter = false;
   enable_VM = true;
   native_compiler = default_native;
+  allow_sprop = false;
+  cumulative_sprop = false;
 
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
@@ -477,6 +481,9 @@ let parse_args ~help ~init arglist : t * string list =
     |"-filteropts" -> { oval with filter_opts = true }
     |"-impredicative-set" ->
       { oval with impredicative_set = Declarations.ImpredicativeSet }
+    |"-allow-sprop" -> { oval with allow_sprop = true }
+    |"-disallow-sprop" -> { oval with allow_sprop = false }
+    |"-sprop-cumulative" -> { oval with cumulative_sprop = true }
     |"-indices-matter" -> { oval with indices_matter = true }
     |"-m"|"--memory" -> { oval with memory_stat = true }
     |"-noinit"|"-nois" -> { oval with load_init = false }

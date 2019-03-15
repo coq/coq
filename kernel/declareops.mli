@@ -70,6 +70,8 @@ val inductive_make_projection : Names.inductive -> mutual_inductive_body -> proj
 val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
   Names.Projection.Repr.t array option
 
+val relevance_of_projection_repr : mutual_inductive_body -> Names.Projection.Repr.t -> Sorts.relevance
+
 (** {6 Kernel flags} *)
 
 (** A default, safe set of flags for kernel type-checking *)

@@ -155,7 +155,7 @@ val pf_e_type_of :
 val splay_open_constr : 
            Goal.goal Evd.sigma ->
            evar_map * EConstr.t ->
-           (Names.Name.t * EConstr.t) list * EConstr.t
+           (Names.Name.t Context.binder_annot * EConstr.t) list * EConstr.t
 val isAppInd : Environ.env -> Evd.evar_map -> EConstr.types -> bool
 
 val mk_term : ssrtermkind -> constr_expr -> ssrterm
@@ -205,6 +205,9 @@ val pf_type_of :
 val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
+val pfe_type_relevance_of :
+           Goal.goal Evd.sigma ->
+           EConstr.t -> Goal.goal Evd.sigma * EConstr.types * Sorts.relevance
 val pf_abs_prod :
            Name.t ->
            Goal.goal Evd.sigma ->

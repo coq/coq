@@ -92,7 +92,7 @@ let push_rec_types ~hypnaming sigma (lna,typarray) env =
   let open Context.Rel.Declaration in
   let ctxt = Array.map2_i (fun i na t -> Context.Rel.Declaration.LocalAssum (na, lift i t)) lna typarray in
   let env,ctx = Array.fold_left_map (fun e assum -> let (d,e) = push_rel sigma assum e ~hypnaming in (e,d)) env ctxt in
-  Array.map get_name ctx, env
+  Array.map get_annot ctx, env
 
 let new_evar env sigma ?src ?naming typ =
   let open Context.Named.Declaration in

@@ -169,12 +169,14 @@ let tag_var = tag Tag.variable
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
   let pr_glob_sort = let open Glob_term in function
+    | GSProp -> tag_type (str "SProp")
     | GProp -> tag_type (str "Prop")
     | GSet -> tag_type (str "Set")
     | GType [] -> tag_type (str "Type")
     | GType u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
 
   let pr_glob_level = let open Glob_term in function
+    | GSProp -> tag_type (str "SProp")
     | GProp -> tag_type (str "Prop")
     | GSet -> tag_type (str "Set")
     | GType UUnknown -> tag_type (str "Type")
@@ -197,6 +199,8 @@ let tag_var = tag Tag.variable
   let pr_patvar = pr_id
 
   let pr_glob_sort_instance = let open Glob_term in function
+    | GSProp ->
+      tag_type (str "SProp")
     | GProp ->
       tag_type (str "Prop")
     | GSet ->

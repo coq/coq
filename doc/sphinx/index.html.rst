@@ -74,6 +74,7 @@ Contents
    addendum/parallel-proof-processing
    addendum/miscellaneous-extensions
    addendum/universe-polymorphism
+   addendum/sprop
 
 .. toctree::
    :caption: Reference

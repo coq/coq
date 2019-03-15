@@ -28,7 +28,7 @@ let fresh_level () =
 (* TODO: remove *)
 let new_univ () = Univ.Universe.make (fresh_level ())
 let new_Type () = mkType (new_univ ())
-let new_Type_sort () = Type (new_univ ())
+let new_Type_sort () = sort_of_univ (new_univ ())
 
 let fresh_instance auctx =
   let inst = Array.init (AUContext.size auctx) (fun _ -> fresh_level()) in
@@ -128,11 +128,12 @@ let type_of_reference env r =
 let type_of_global t = type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family = function
+  | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty
   | InSet -> Sorts.set, ContextSet.empty
   | InType ->
     let u = fresh_level () in
-      Type (Univ.Universe.make u), ContextSet.singleton u
+      sort_of_univ (Univ.Universe.make u), ContextSet.singleton u
 
 let new_sort_in_family sf =
   fst (fresh_sort_in_family sf)

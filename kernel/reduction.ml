@@ -293,12 +293,6 @@ let conv_table_key infos k1 k2 cuniv =
 
 exception IrregularPatternShape
 
-let rec skip_pattern n c =
-  if Int.equal n 0 then c
-  else match kind c with
-  | Lambda (_, _, c) -> skip_pattern (pred n) c
-  | _ -> raise IrregularPatternShape
-
 let unfold_ref_with_args infos tab fl v =
   match unfold_reference infos tab fl with
   | Def def -> Some (def, v)
@@ -310,6 +304,7 @@ let unfold_ref_with_args infos tab fl v =
 
 type conv_tab = {
   cnv_inf : clos_infos;
+  relevances : Sorts.relevance list;
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
 }
@@ -319,9 +314,23 @@ type conv_tab = {
 (** The same heap separation invariant must hold for the fconstr arguments
     passed to each respective side of the conversion function below. *)
 
+let push_relevance infos r =
+  { infos with relevances = r.Context.binder_relevance :: infos.relevances }
+
+let rec skip_pattern infos n c1 c2 =
+  if Int.equal n 0 then infos, c1, c2
+  else match kind c1, kind c2 with
+  | Lambda (x, _, c1), Lambda (_, _, c2) -> skip_pattern (push_relevance infos x) (pred n) c1 c2
+  | _ -> raise IrregularPatternShape
+
+let is_irrelevant infos lft c =
+  let env = info_env infos.cnv_inf in
+  try Retypeops.relevance_of_fterm env infos.relevances lft c == Sorts.Irrelevant with _ -> false
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
-  eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+  try eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+  with NotConvertible when is_irrelevant infos lft1 term1 && is_irrelevant infos lft2 term2 -> cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
@@ -399,14 +408,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         match unfold_projection infos.cnv_inf p2 with
         | Some s2 ->
           eqappr cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
-	| None -> 
+        | None ->
           if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
-	     && compare_stack_shape v1 v2 then
+             && compare_stack_shape v1 v2 then
             let el1 = el_stack lft1 v1 in
             let el2 = el_stack lft2 v2 in
             let u1 = ccnv CONV l2r infos el1 el2 c1 c2 cuniv in
               convert_stacks l2r infos lft1 lft2 v1 v2 u1
-	  else (* Two projections in WHNF: unfold *)
+          else (* Two projections in WHNF: unfold *)
 	    raise NotConvertible)
 
     | (FProj (p1,c1), t2) ->
@@ -446,22 +455,22 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         (* Inconsistency: we tolerate that v1, v2 contain shift and update but
            we throw them away *)
         if not (is_empty_stack v1 && is_empty_stack v2) then
-	  anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
-        let (_,ty1,bd1) = destFLambda mk_clos hd1 in
+          anomaly (Pp.str "conversion was given ill-typed terms (FLambda).");
+        let (x1,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
-        ccnv CONV l2r infos (el_lift el1) (el_lift el2) bd1 bd2 cuniv
+        ccnv CONV l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) bd1 bd2 cuniv
 
-    | (FProd (_, c1, c2, e), FProd (_, c'1, c'2, e')) ->
+    | (FProd (x1, c1, c2, e), FProd (_, c'1, c'2, e')) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
 	  anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
 	(* Luo's system *)
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
-        ccnv cv_pb l2r infos (el_lift el1) (el_lift el2) (mk_clos (subs_lift e) c2) (mk_clos (subs_lift e') c'2) cuniv
+        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (subs_lift e) c2) (mk_clos (subs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
@@ -470,19 +479,21 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         | _ ->
           anomaly (Pp.str "conversion was given unreduced term (FLambda).")
         in
-        let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+        let (x1,_ty1,bd1) = destFLambda mk_clos hd1 in
+        let infos = push_relevance infos x1 in
         eqappr CONV l2r infos
-	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
+          (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
     | (_, FLambda _) ->
         let () = match v2 with
         | [] -> ()
         | _ ->
 	  anomaly (Pp.str "conversion was given unreduced term (FLambda).")
 	in
-        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let (x2,_ty2,bd2) = destFLambda mk_clos hd2 in
+        let infos = push_relevance infos x2 in
         eqappr CONV l2r infos
-	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
-	
+          (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
+
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, c2)      ->
       begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
@@ -568,8 +579,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          in convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
        with Not_found -> raise NotConvertible)
 
-    | (FFix (((op1, i1),(_,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
-	if Int.equal i1 i2 && Array.equal Int.equal op1 op2
+    | (FFix (((op1, i1),(na1,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
+        if Int.equal i1 i2 && Array.equal Int.equal op1 op2
 	then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -580,12 +591,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
+            let infos = Array.fold_left push_relevance infos na1 in
             convert_vect l2r infos
-	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
+                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
+          in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
-    | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
+    | (FCoFix ((op1,(na1,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
         if Int.equal op1 op2
         then
 	  let n = Array.length cl1 in
@@ -597,8 +610,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
+            let infos = Array.fold_left push_relevance infos na1 in
             convert_vect l2r infos
-	      (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv in
+                         (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
+          in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
@@ -662,8 +677,8 @@ and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
 and convert_branches l2r infos ci e1 e2 lft1 lft2 br1 br2 cuniv =
   (** Skip comparison of the pattern types. We know that the two terms are
       living in a common type, thus this check is useless. *)
-  let fold n c1 c2 cuniv = match skip_pattern n c1, skip_pattern n c2 with
-  | (c1, c2) ->
+  let fold n c1 c2 cuniv = match skip_pattern infos n c1 c2 with
+  | (infos, c1, c2) ->
     let lft1 = el_liftn n lft1 in
     let lft2 = el_liftn n lft2 in
     let e1 = subs_liftn n e1 in
@@ -680,6 +695,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let infos = create_clos_infos ~evars reds env in
   let infos = {
     cnv_inf = infos;
+    relevances = List.map Context.Rel.Declaration.get_relevance (rel_context env);
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
@@ -701,7 +717,8 @@ let check_sort_cmp_universes env pb s0 s1 univs =
       | CONV -> check_eq univs u0 u1
     in
     match (s0,s1) with
-    | Prop, Prop | Set, Set -> ()
+    | SProp, SProp | Prop, Prop | Set, Set -> ()
+    | SProp, _ | _, SProp -> raise NotConvertible
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> check_pb Univ.type0_univ u
@@ -749,7 +766,8 @@ let infer_cmp_universes env pb s0 s1 univs =
       | CONV -> infer_eq univs u0 u1
     in
     match (s0,s1) with
-    | Prop, Prop | Set, Set -> univs
+    | SProp, SProp | Prop, Prop | Set, Set -> univs
+    | SProp, _ | _, SProp -> raise NotConvertible
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible else univs
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> infer_pb Univ.type0_univ u
@@ -894,7 +912,7 @@ let dest_prod env =
     let t = whd_all env c in
     match kind t with
       | Prod (n,a,c0) ->
-	  let d = LocalAssum (n,a) in
+          let d = LocalAssum (n,a) in
 	  decrec (push_rel d env) (Context.Rel.add d m) c0
       | _ -> m,t
   in

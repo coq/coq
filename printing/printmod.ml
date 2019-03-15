@@ -10,6 +10,7 @@
 
 open Util
 open Constr
+open Context
 open Pp
 open Names
 open Environ
@@ -132,10 +133,10 @@ let get_fields =
   let rec prodec_rec l subst c =
     match kind c with
     | Prod (na,t,c) ->
-        let id = match na with Name id -> id | Anonymous -> Id.of_string "_" in
+        let id = match na.binder_name with Name id -> id | Anonymous -> Id.of_string "_" in
         prodec_rec ((id,true,Vars.substl subst t)::l) (mkVar id::subst) c
     | LetIn (na,b,_,c) ->
-        let id = match na with Name id -> id | Anonymous -> Id.of_string "_" in
+        let id = match na.binder_name with Name id -> id | Anonymous -> Id.of_string "_" in
         prodec_rec ((id,false,Vars.substl subst b)::l) (mkVar id::subst) c
     | _               -> List.rev l
   in

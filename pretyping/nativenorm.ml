@@ -10,6 +10,7 @@
 open CErrors
 open Term
 open Constr
+open Context
 open Vars
 open Environ
 open Reduction
@@ -89,10 +90,12 @@ let invert_tag cst tag reloc_tbl =
   with Find_at j -> (j+1)
 
 let decompose_prod env t =
-  let (name,dom,codom as res) = destProd (whd_all env t) in
-  match name with
-  | Anonymous -> (Name (Id.of_string "x"),dom,codom)
-  | _ -> res
+  let (name,dom,codom) = destProd (whd_all env t) in
+  let name = map_annot (function
+      | Anonymous -> Name (Id.of_string "x")
+      | na -> na) name
+  in
+  (name,dom,codom)
 
 let app_type env c =
   let t = whd_all env c in
@@ -194,7 +197,7 @@ let rec nf_val env sigma v typ =
   | Vaccu accu -> nf_accu env sigma accu
   | Vfun f -> 
       let lvl = nb_rel env in
-      let name,dom,codom = 
+      let name,dom,codom =
 	try decompose_prod env typ
 	with DestKO ->
           CErrors.anomaly
@@ -275,11 +278,13 @@ and nf_atom env sigma atom =
   | Asort s -> mkSort s
   | Avar id -> mkVar id
   | Aprod(n,dom,codom) ->
-      let dom = nf_type env sigma dom in
-      let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (LocalAssum (n,dom)) env in
-      let codom = nf_type env sigma (codom vn) in
-      mkProd(n,dom,codom)
+    let dom, sdom = nf_type_sort env sigma dom in
+    let rdom = Sorts.relevance_of_sort sdom in
+    let n = make_annot n rdom in
+    let vn = mk_rel_accu (nb_rel env) in
+    let env = push_rel (LocalAssum (n,dom)) env in
+    let codom = nf_type env sigma (codom vn) in
+    mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
   | Aproj (p, c) ->
       let c = nf_accu env sigma c in
@@ -325,28 +330,34 @@ and nf_atom_type env sigma atom =
       let ci = ans.asw_ci in
       mkCase(ci, p, a, branchs), tcase 
   | Afix(tt,ft,rp,s) ->
-      let tt = Array.map (fun t -> nf_type env sigma t) tt in
-      let name = Array.map (fun _ -> (Name (Id.of_string "Ffix"))) tt in
+      let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
+      let tt = Array.map fst tt and rt = Array.map snd tt in
+      let name = Name (Id.of_string "Ffix") in
+      let names = Array.map (fun s -> make_annot name (Sorts.relevance_of_sort s)) rt in
       let lvl = nb_rel env in
       let nbfix = Array.length ft in
       let fargs = mk_rels_accu lvl (Array.length ft) in
-      (* Third argument of the tuple is ignored by push_rec_types *)
-      let env = push_rec_types (name,tt,[||]) env in
+      (* Body argument of the tuple is ignored by push_rec_types *)
+      let env = push_rec_types (names,tt,[||]) env in
       (* We lift here because the types of arguments (in tt) will be evaluated
          in an environment where the fixpoints have been pushed *)
       let norm_body i v = nf_val env sigma (napply v fargs) (lift nbfix tt.(i)) in
       let ft = Array.mapi norm_body ft in
-      mkFix((rp,s),(name,tt,ft)), tt.(s)
+      mkFix((rp,s),(names,tt,ft)), tt.(s)
   | Acofix(tt,ft,s,_) | Acofixe(tt,ft,s,_) ->
-      let tt = Array.map (nf_type env sigma) tt in
-      let name = Array.map (fun _ -> (Name (Id.of_string "Fcofix"))) tt in
+      let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
+      let tt = Array.map fst tt and rt = Array.map snd tt in
+      let name = Name (Id.of_string "Fcofix") in
       let lvl = nb_rel env in
+      let names = Array.map (fun s -> make_annot name (Sorts.relevance_of_sort s)) rt in
       let fargs = mk_rels_accu lvl (Array.length ft) in
-      let env = push_rec_types (name,tt,[||]) env in
+      let env = push_rec_types (names,tt,[||]) env in
       let ft = Array.mapi (fun i v -> nf_val env sigma (napply v fargs) tt.(i)) ft in
-      mkCoFix(s,(name,tt,ft)), tt.(s)
+      mkCoFix(s,(names,tt,ft)), tt.(s)
   | Aprod(n,dom,codom) ->
       let dom,s1 = nf_type_sort env sigma dom in
+      let r1 = Sorts.relevance_of_sort s1 in
+      let n = make_annot n r1 in
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
       let codom,s2 = nf_type_sort env sigma (codom vn) in
@@ -390,6 +401,8 @@ and  nf_predicate env sigma ind mip params v pT =
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
+      let r = Inductive.relevance_of_inductive env (fst ind) in
+      let name = make_annot name r in
       let body = nf_type (push_rel (LocalAssum (name,dom)) env) sigma vb in
       mkLambda(name,dom,body)
     | _ -> nf_type env sigma v

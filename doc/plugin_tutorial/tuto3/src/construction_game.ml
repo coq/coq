@@ -1,4 +1,5 @@
 open Pp
+open Context
 
 let find_reference = Coqlib.find_reference [@ocaml.warning "-3"]
 
@@ -32,7 +33,7 @@ let dangling_identity env evd =
   let evd, arg_type = Evarutil.new_evar env evd type_type in
 (* Notice the use of a De Bruijn index for the inner occurrence of the
   bound variable. *)
-  evd, EConstr.mkLambda(Names.Name (Names.Id.of_string "x"), arg_type,
+  evd, EConstr.mkLambda(nameR (Names.Id.of_string "x"), arg_type,
           EConstr.mkRel 1)
 
 let dangling_identity2 env evd =
@@ -40,7 +41,7 @@ let dangling_identity2 env evd =
   is meant to be a type. *)
   let evd, (arg_type, type_type) =
     Evarutil.new_type_evar env evd Evd.univ_rigid in
-  evd, EConstr.mkLambda(Names.Name (Names.Id.of_string "x"), arg_type,
+  evd, EConstr.mkLambda(nameR (Names.Id.of_string "x"), arg_type,
           EConstr.mkRel 1)
 
 let example_sort_app_lambda () =

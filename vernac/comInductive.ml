@@ -13,6 +13,7 @@ open CErrors
 open Sorts
 open Util
 open Constr
+open Context
 open Environ
 open Declare
 open Names
@@ -70,9 +71,9 @@ let rec complete_conclusion a cs = CAst.map_with_loc (fun ?loc -> function
   | c -> c
   )
 
-let push_types env idl tl =
-  List.fold_left2 (fun env id t -> EConstr.push_rel (LocalAssum (Name id,t)) env)
-    env idl tl
+let push_types env idl rl tl =
+  List.fold_left3 (fun env id r t -> EConstr.push_rel (LocalAssum (make_annot (Name id) r,t)) env)
+    env idl rl tl
 
 type structured_one_inductive_expr = {
   ind_name : Id.t;
@@ -139,9 +140,6 @@ let make_conclusion_flexible sigma = function
         | None -> sigma)
      | _ -> sigma)
 
-let is_impredicative env u =
-  u = Prop || (is_impredicative_set env && u = Set)
-
 let interp_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
@@ -152,7 +150,7 @@ let interp_ind_arity env sigma ind =
     user_err ?loc:(constr_loc ind.ind_arity) (str "Not an arity")
   | s ->
     let concl = if pseudo_poly then Some s else None in
-    sigma, (t, concl, impls)
+    sigma, (t, Retyping.relevance_of_sort s,  concl, impls)
 
 let interp_cstrs env sigma impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
@@ -176,14 +174,14 @@ let sign_level env evd sign =
         in
         let u = univ_of_sort s in
           (Univ.sup u lev, push_rel d env))
-    sign (Univ.type0m_univ,env))
+    sign (Univ.Universe.sprop,env))
 
 let sup_list min = List.fold_left Univ.sup min
 
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
     let ctx, concl = Reduction.dest_prod_assum env ty in
-      sign_level env evd (LocalAssum (Anonymous, concl) :: ctx)) tys
+      sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
   in sup_list min sorts
 
 let is_flexible_sort evd u =
@@ -260,7 +258,7 @@ let solve_constraints_system levels level_bounds =
 let inductive_levels env evd poly arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
   let levels = List.map (fun (x,(ctx,a)) ->
-    if a = Prop then None
+    if Sorts.is_prop a || Sorts.is_sprop a then None
     else Some (univ_of_sort a)) destarities
   in
   let cstrs_levels, min_levels, sizes =
@@ -269,7 +267,7 @@ let inductive_levels env evd poly arities inds =
         let len = List.length tys in
         let minlev = Sorts.univ_of_sort du in
         let minlev =
-          if len > 1 && not (is_impredicative env du) then
+          if len > 1 && not (is_impredicative_sort env du) then
             Univ.sup minlev Univ.type0_univ
           else minlev
         in
@@ -290,7 +288,7 @@ let inductive_levels env evd poly arities inds =
   in
   let evd, arities =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
-      if is_impredicative env du then
+      if is_impredicative_sort env du then
         (* Any product is allowed here. *)
         evd, arity :: arities
       else (* If in a predicative sort, or asked to infer the type,
@@ -313,16 +311,16 @@ let inductive_levels env evd poly arities inds =
            (* "Polymorphic" type constraint and more than one constructor,
                should not land in Prop. Add constraint only if it would
                land in Prop directly (no informative arguments as well). *)
-            Evd.set_leq_sort env evd Set du
+            Evd.set_leq_sort env evd Sorts.set du
           else evd
         in
         let duu = Sorts.univ_of_sort du in
         let evd =
           if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
             if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu) then
-              Evd.set_eq_sort env evd Prop du
+              Evd.set_eq_sort env evd Sorts.prop du
             else evd
-          else Evd.set_eq_sort env evd (Type cu) du
+          else Evd.set_eq_sort env evd (sort_of_univ cu) du
         in
           (evd, arity :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes
@@ -370,15 +368,15 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
 
   (* Interpret the arities *)
   let sigma, arities = List.fold_left_map (fun sigma -> interp_ind_arity env_params sigma) sigma indl in
+  let arities, relevances, arityconcl, indimpls = List.split4 arities in
 
-  let fullarities = List.map (fun (c, _, _) -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
-  let env_ar = push_types env_uparams indnames fullarities in
+  let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
+  let env_ar = push_types env_uparams indnames relevances fullarities in
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun (_, _, impls) -> userimpls @
-    lift_implicits (Context.Rel.nhyps ctx_params) impls) arities in
-  let arities = List.map pi1 arities and arityconcl = List.map pi2 arities in
+  let indimpls = List.map (fun impls -> userimpls @
+    lift_implicits (Context.Rel.nhyps ctx_params) impls) indimpls in
   let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
@@ -407,7 +405,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let userimpls = useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) userimpls) in
   let indimpls = List.map (fun iimpl -> useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) iimpl)) indimpls in
   let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_uparams) fullarities in
-  let env_ar = push_types env0 indnames fullarities in
+  let env_ar = push_types env0 indnames relevances fullarities in
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Try further to solve evars, and instantiate them *)

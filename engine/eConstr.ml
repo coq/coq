@@ -48,9 +48,10 @@ type 'a puniverses = 'a * EInstance.t
 
 let in_punivs a = (a, EInstance.empty)
 
+let mkSProp = of_kind (Sort (ESorts.make Sorts.sprop))
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
-let mkType u = of_kind (Sort (ESorts.make (Sorts.Type u)))
+let mkType u = of_kind (Sort (ESorts.make (Sorts.sort_of_univ u)))
 let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
@@ -72,7 +73,8 @@ let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
-let mkArrow t1 t2 = of_kind (Prod (Anonymous, t1, t2))
+let mkArrow t1 r t2 = of_kind (Prod (make_annot Anonymous r, t1, t2))
+let mkArrowR t1 t2 = mkArrow t1 Sorts.Relevant t2
 let mkInt i = of_kind (Int i)
 
 let mkRef (gr,u) = let open GlobRef in match gr with
@@ -80,6 +82,8 @@ let mkRef (gr,u) = let open GlobRef in match gr with
   | IndRef ind -> mkIndU (ind,u)
   | ConstructRef c -> mkConstructU (c,u)
   | VarRef x -> mkVar x
+
+let type1 = mkSort Sorts.type1
 
 let applist (f, arg) = mkApp (f, Array.of_list arg)
 let applistc f arg = mkApp (f, Array.of_list arg)
@@ -665,9 +669,9 @@ let mkLambda_or_LetIn decl c =
   | LocalAssum (na,t) -> mkLambda (na, t, c)
   | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
-let mkNamedProd id typ c = mkProd (Name id, typ, Vars.subst_var id c)
-let mkNamedLambda id typ c = mkLambda (Name id, typ, Vars.subst_var id c)
-let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, Vars.subst_var id c2)
+let mkNamedProd id typ c = mkProd (map_annot Name.mk_name id, typ, Vars.subst_var id.binder_name c)
+let mkNamedLambda id typ c = mkLambda (map_annot Name.mk_name id, typ, Vars.subst_var id.binder_name c)
+let mkNamedLetIn id c1 t c2 = mkLetIn (map_annot Name.mk_name id, c1, t, Vars.subst_var id.binder_name c2)
 
 let mkNamedProd_or_LetIn decl c =
   let open Context.Named.Declaration in

@@ -142,7 +142,7 @@ let flatten_contravariant_conj _ ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
-    let newtyp = List.fold_right mkArrow args c in
+    let newtyp = List.fold_right (fun a b -> mkArrow a Sorts.Relevant b) args c in
     let intros = tclMAP (fun _ -> intro) args in
     let by = tclTHENLIST [intros; apply hyp; split; assumption] in
     tclTHENLIST [assert_ ~by newtyp; clear (destVar sigma hyp)]
@@ -173,7 +173,7 @@ let flatten_contravariant_disj _ ist =
           typ with
   | Some (_,args) ->
       let map i arg =
-        let typ = mkArrow arg c in
+        let typ = mkArrow arg Sorts.Relevant c in
         let ci = Tactics.constructor_tac false None (succ i) Tactypes.NoBindings in
         let by = tclTHENLIST [intro; apply hyp; ci; assumption] in
         assert_ ~by typ

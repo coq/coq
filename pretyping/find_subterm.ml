@@ -70,7 +70,7 @@ let map_named_declaration_with_hyploc f hyploc acc decl =
   in
   match decl,hyploc with
   | LocalAssum (id,_), InHypValueOnly ->
-      error_occurrences_error (IncorrectInValueOccurrence id)
+      error_occurrences_error (IncorrectInValueOccurrence id.Context.binder_name)
   | LocalAssum (id,typ), _ ->
       let acc,typ = f acc typ in acc, LocalAssum (id,typ)
   | LocalDef (id,body,typ), InHypTypeOnly ->

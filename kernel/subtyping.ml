@@ -23,6 +23,7 @@ open Declareops
 open Reduction
 open Inductive
 open Modops
+open Context
 open Mod_subst
 (*i*)
 
@@ -190,8 +191,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   check (fun mib -> mib.mind_record <> NotRecord) (==) (fun x -> RecordFieldExpected x);
   if mib1.mind_record <> NotRecord then begin
     let rec names_prod_letin t = match kind t with
-      | Prod(n,_,t) -> n::(names_prod_letin t)
-      | LetIn(n,_,_,t) -> n::(names_prod_letin t)
+      | Prod(n,_,t) -> n.binder_name::(names_prod_letin t)
+      | LetIn(n,_,_,t) -> n.binder_name::(names_prod_letin t)
       | Cast(t,_,_) -> names_prod_letin t
       | _ -> []
     in

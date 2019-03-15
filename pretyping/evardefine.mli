@@ -33,12 +33,12 @@ val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
 
 val split_tycon :
   ?loc:Loc.t -> env ->  evar_map -> type_constraint ->
-    evar_map * (Name.t * type_constraint * type_constraint)
+    evar_map * (Name.t Context.binder_annot * type_constraint * type_constraint)
 
 val valcon_of_tycon : type_constraint -> val_constraint
 val lift_tycon : int -> type_constraint -> type_constraint
 
-val define_evar_as_product : evar_map -> existential -> evar_map * types
+val define_evar_as_product : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_sort : env -> evar_map -> existential -> evar_map * Sorts.t
 

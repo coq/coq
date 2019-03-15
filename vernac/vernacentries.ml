@@ -144,8 +144,8 @@ let make_cases_aux glob_ref =
 	       | [] -> []
                | RelDecl.LocalDef _ :: l -> "_" :: rename avoid l
                | RelDecl.LocalAssum (n, _)::l ->
-		   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n avoid in
-		   Id.to_string n' :: rename (Id.Set.add n' avoid) l in
+                   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n.Context.binder_name avoid in
+                   Id.to_string n' :: rename (Id.Set.add n' avoid) l in
 	     let al' = rename Id.Set.empty al in
 	     let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
 	     (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
@@ -1420,6 +1420,14 @@ let vernac_reserve bl =
 let vernac_generalizable ~local =
   let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "allow sprop";
+      optkey   = ["Allow";"StrictProp"];
+      optread  = (fun () -> Global.sprop_allowed());
+      optwrite = Global.set_allow_sprop }
 
 let () =
   declare_bool_option

@@ -12,6 +12,7 @@
 
 open Pp
 open Constr
+open Context
 open Genarg
 open Stdarg
 open Tacarg
@@ -674,7 +675,7 @@ let hResolve id c occ t =
   let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (change_concl (mkLetIn (Name.Anonymous,t_constr,t_constr_type,concl)))
+    (change_concl (mkLetIn (make_annot Name.Anonymous Sorts.Relevant,t_constr,t_constr_type,concl)))
   end
 
 let hResolve_auto id c t =

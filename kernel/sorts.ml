@@ -10,13 +10,15 @@
 
 open Univ
 
-type family = InProp | InSet | InType
+type family = InSProp | InProp | InSet | InType
 
 type t =
+  | SProp
   | Prop
   | Set
   | Type of Universe.t
 
+let sprop = SProp
 let prop = Prop
 let set = Set
 let type1 = Type type1_univ
@@ -25,15 +27,20 @@ let univ_of_sort = function
   | Type u -> u
   | Set -> Universe.type0
   | Prop -> Universe.type0m
+  | SProp -> Universe.sprop
 
 let sort_of_univ u =
-  if is_type0m_univ u then prop
+  if Universe.is_sprop u then sprop
+  else if is_type0m_univ u then prop
   else if is_type0_univ u then set
   else Type u
 
 let compare s1 s2 =
   if s1 == s2 then 0 else
     match s1, s2 with
+    | SProp, SProp -> 0
+    | SProp, _ -> -1
+    | _, SProp -> 1
     | Prop, Prop -> 0
     | Prop, _ -> -1
     | Set, Prop -> 1
@@ -44,34 +51,52 @@ let compare s1 s2 =
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
+let super = function
+  | SProp | Prop | Set -> Type (Universe.type1)
+  | Type u -> Type (Universe.super u)
+
+let is_sprop = function
+  | SProp -> true
+  | Prop | Set | Type _ -> false
+
 let is_prop = function
   | Prop -> true
-  | Type u when Universe.equal Universe.type0m u -> true
-  | _ -> false
+  | SProp | Set | Type _ -> false
 
 let is_set = function
   | Set -> true
-  | Type u when Universe.equal Universe.type0 u -> true
-  | _ -> false
+  | SProp | Prop | Type _ -> false
 
 let is_small = function
-  | Prop | Set -> true
-  | Type u -> is_small_univ u
+  | SProp | Prop | Set -> true
+  | Type _ -> false
 
 let family = function
+  | SProp -> InSProp
   | Prop -> InProp
   | Set -> InSet
-  | Type u when is_type0m_univ u -> InProp
-  | Type u when is_type0_univ u -> InSet
   | Type _ -> InType
+
+let family_compare a b = match a,b with
+  | InSProp, InSProp -> 0
+  | InSProp, _ -> -1
+  | _, InSProp -> 1
+  | InProp, InProp -> 0
+  | InProp, _ -> -1
+  | _, InProp -> 1
+  | InSet, InSet -> 0
+  | InSet, _ -> -1
+  | _, InSet -> 1
+  | InType, InType -> 0
 
 let family_equal = (==)
 
 open Hashset.Combine
 
 let hash = function
-  | Prop -> combinesmall 1 0
-  | Set -> combinesmall 1 1
+  | SProp -> combinesmall 1 0
+  | Prop -> combinesmall 1 1
+  | Set -> combinesmall 1 2
   | Type u ->
     let h = Univ.Universe.hash u in
     combinesmall 2 h
@@ -103,12 +128,33 @@ module Hsorts =
 
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
 
+(** On binders: is this variable proof relevant *)
+type relevance = Relevant | Irrelevant
+
+let relevance_equal r1 r2 = match r1,r2 with
+  | Relevant, Relevant | Irrelevant, Irrelevant -> true
+  | (Relevant | Irrelevant), _ -> false
+
+let relevance_of_sort_family = function
+  | InSProp -> Irrelevant
+  | _ -> Relevant
+
+let relevance_hash = function
+  | Relevant -> 0
+  | Irrelevant -> 1
+
+let relevance_of_sort = function
+  | SProp -> Irrelevant
+  | _ -> Relevant
+
 let debug_print = function
-  | Set -> Pp.(str "Set")
+  | SProp -> Pp.(str "SProp")
   | Prop -> Pp.(str "Prop")
+  | Set -> Pp.(str "Set")
   | Type u -> Pp.(str "Type(" ++ Univ.Universe.pr u ++ str ")")
 
 let pr_sort_family = function
-  | InSet -> Pp.(str "Set")
+  | InSProp -> Pp.(str "SProp")
   | InProp -> Pp.(str "Prop")
+  | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")

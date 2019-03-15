@@ -17,6 +17,7 @@ open Pp
 open Names
 open Sorts
 open Constr
+open Context
 open Vars
 open Goptions
 open Tacmach
@@ -421,11 +422,11 @@ let new_representative typ =
 
 let _A_ = Name (Id.of_string "A")
 let _B_ = Name (Id.of_string "A")
-let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
+let _body_ =  mkProd(make_annot Anonymous Sorts.Relevant,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
-  mkLambda(_A_,mkSort(s1),
-	   mkLambda(_B_,mkSort(s2),_body_))
+  mkLambda(make_annot _A_ Sorts.Relevant,mkSort(s1),
+           mkLambda(make_annot _B_ Sorts.Relevant,mkSort(s2),_body_))
 
 let rec constr_of_term = function
     Symb s-> s
@@ -452,11 +453,11 @@ let rec canonize_name sigma c =
 	  let canon_mind = MutInd.make1 (MutInd.canonical kn) in
 	    mkConstructU (((canon_mind,i),j),u)
       | Prod (na,t,ct) ->
-	  mkProd (na,func t, func ct)
+          mkProd (na,func t, func ct)
       | Lambda (na,t,ct) ->
-	  mkLambda (na, func t,func ct)
+          mkLambda (na, func t,func ct)
       | LetIn (na,b,t,ct) ->
-	  mkLetIn (na, func b,func t,func ct)
+          mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
           mkApp (func ct,Array.Smart.map func l)
       | Proj(p,c) ->
@@ -806,7 +807,8 @@ let __eps__ = Id.of_string "_eps_"
 let new_state_var typ state =
   let ids = Environ.ids_of_named_context_val (Environ.named_context_val state.env) in
   let id = Namegen.next_ident_away __eps__ ids in
-  state.env<- EConstr.push_named (Context.Named.Declaration.LocalAssum (id,typ)) state.env;
+  let r = Sorts.Relevant in (* TODO relevance *)
+  state.env<- EConstr.push_named (Context.Named.Declaration.LocalAssum (make_annot id r,typ)) state.env;
   id
 
 let complete_one_class state i=
@@ -814,9 +816,9 @@ let complete_one_class state i=
       Partial pac ->
 	let rec app t typ n =
 	  if n<=0 then t else
-	    let _,etyp,rest= destProd typ in
+            let _,etyp,rest= destProd typ in
             let id = new_state_var (EConstr.of_constr etyp) state in
-		app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
+                app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
         let _c = Typing.unsafe_type_of state.env state.sigma
 	  (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
         let _c = EConstr.Unsafe.to_constr _c in

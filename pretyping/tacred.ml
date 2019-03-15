@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Names
 open Constr
+open Context
 open Libnames
 open Globnames
 open Termops
@@ -229,7 +230,8 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
 (* Heuristic to look if global names are associated to other
    components of a mutual fixpoint *)
 
-let invert_name labs l na0 env sigma ref = function
+let invert_name labs l {binder_name=na0} env sigma ref na =
+  match na.binder_name with
   | Name id ->
       let minfxargs = List.length l in
       begin match na0 with
@@ -249,7 +251,7 @@ let invert_name labs l na0 env sigma ref = function
 		| Some c ->
 		    let labs',ccl = decompose_lam sigma c in
 		    let _, l' = whd_betalet_stack sigma ccl in
-		    let labs' = List.map snd labs' in
+                    let labs' = List.map snd labs' in
                     (* ppedrot: there used to be generic equality on terms here *)
                     let eq_constr c1 c2 = EConstr.eq_constr sigma c1 c2 in
 		    if List.equal eq_constr labs' labs &&
@@ -269,7 +271,7 @@ let compute_consteval_direct env sigma ref =
     match EConstr.kind sigma c' with
       | Lambda (id,t,g) when List.is_empty l && not onlyproj ->
           let open Context.Rel.Declaration in
-	  srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
+          srec (push_rel (LocalAssum (id,t)) env) (n+1) (t::labs) onlyproj g
       | Fix fix when not onlyproj ->
 	  (try check_fix_reversibility sigma labs l fix
 	  with Elimconst -> NotAnElimination)
@@ -289,7 +291,7 @@ let compute_consteval_mutual_fix env sigma ref =
     match EConstr.kind sigma c' with
       | Lambda (na,t,g) when List.is_empty l ->
           let open Context.Rel.Declaration in
-	  srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
+          srec (push_rel (LocalAssum (na,t)) env) (minarg+1) (t::labs) ref g
       | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct env sigma ref with
@@ -374,7 +376,8 @@ let make_elim_fun (names,(nbfix,lv,n)) u largs =
             List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
               let subst = List.map (Vars.lift (-q)) (List.firstn (n-ij) la) in
               let tij' = Vars.substl (List.rev subst) tij in
-	      mkLambda (x,tij',c)) 1 body (List.rev lv)
+              let x = make_annot x Sorts.Relevant in  (* TODO relevance *)
+              mkLambda (x,tij',c)) 1 body (List.rev lv)
           in Some (minargs,g)
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]:
@@ -384,7 +387,8 @@ let dummy = mkProp
 let vfx = Id.of_string "_expanded_fix_"
 let vfun = Id.of_string "_eliminator_function_"
 let venv = let open Context.Named.Declaration in
-           val_of_named_context [LocalAssum (vfx, dummy); LocalAssum (vfun, dummy)]
+  val_of_named_context [LocalAssum (make_annot vfx Sorts.Relevant, dummy);
+                        LocalAssum (make_annot vfun Sorts.Relevant, dummy)]
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
@@ -513,7 +517,7 @@ let reduce_mind_case_use_function func env sigma mia =
             let minargs = List.length mia.mcargs in
 	    fun i ->
 	      if Int.equal i bodynum then Some (minargs,func)
-	      else match names.(i) with
+              else match names.(i).binder_name with
 		| Anonymous -> None
 		| Name id ->
 		    (* In case of a call to another component of a block of
@@ -627,12 +631,12 @@ let whd_nothing_for_iota env sigma s =
       | Rel n ->
           let open Context.Rel.Declaration in
 	  (match lookup_rel n env with
-	     | LocalDef (_,body,_) -> whrec (lift n body, stack)
+             | LocalDef (_,body,_) -> whrec (lift n body, stack)
 	     | _ -> s)
       | Var id ->
           let open Context.Named.Declaration in
 	  (match lookup_named id env with
-	     | LocalDef (_,body,_) -> whrec (body, stack)
+             | LocalDef (_,body,_) -> whrec (body, stack)
 	     | _ -> s)
       | Evar ev -> s
       | Meta ev ->
@@ -838,10 +842,10 @@ let try_red_product env sigma c =
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) ->
           let open Context.Rel.Declaration in
-	  mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
+          mkProd (x, a, redrec (push_rel (LocalAssum (x, a)) env) b)
       | LetIn (x,a,b,t) -> redrec env (Vars.subst1 a t)
       | Case (ci,p,d,lf) -> simpfun (mkCase (ci,p,redrec env d,lf))
-      | Proj (p, c) -> 
+      | Proj (p, c) ->
 	let c' = 
 	  match EConstr.kind sigma c with
 	  | Construct _ -> c
@@ -1150,6 +1154,7 @@ let compute = cbv_betadeltaiota
 let abstract_scheme env sigma (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env sigma ta Anonymous in
+  let na = make_annot na Sorts.Relevant in (* TODO relevance *)
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
@@ -1192,7 +1197,7 @@ let reduce_to_ind_gen allow_product env sigma t =
       | Prod (n,ty,t') ->
 	  let open Context.Rel.Declaration in
 	  if allow_product then
-	    elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
+            elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
 	  else
 	    user_err  (str"Not an inductive definition.")
       | _ ->
@@ -1270,7 +1275,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
       | Prod (n,ty,t') ->
           if allow_product then
 	    let open Context.Rel.Declaration in
-	    elimrec (push_rel (LocalAssum (n,t)) env) t' ((LocalAssum (n,ty))::l)
+            elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
           else
             error_cannot_recognize ref
       | _ ->

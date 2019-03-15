@@ -141,6 +141,8 @@ val set_typing_flags : Declarations.typing_flags -> safe_transformer0
 val set_share_reduction : bool -> safe_transformer0
 val set_VM : bool -> safe_transformer0
 val set_native_compiler : bool -> safe_transformer0
+val make_sprop_cumulative : safe_transformer0
+val set_allow_sprop : bool -> safe_transformer0
 
 val check_engagement : Environ.env -> Declarations.set_predicativity -> unit
 

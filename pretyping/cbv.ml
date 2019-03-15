@@ -48,7 +48,7 @@ type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack
   | CBN of constr * cbv_value subs
-  | LAM of int * (Name.t * constr) list * constr * cbv_value subs
+  | LAM of int * (Name.t Context.binder_annot * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor Univ.puniverses * cbv_value array
@@ -281,11 +281,11 @@ and reify_value = function (* reduction under binders *)
     apply_env env @@
     List.fold_left (fun c (n,t) ->
         mkLambda (n, t, c)) b ctxt
-  | FIXP ((lij,(names,lty,bds)),env,args) ->
-    let fix = mkFix (lij, (names, lty, bds)) in
+  | FIXP ((lij,fix),env,args) ->
+    let fix = mkFix (lij, fix) in
     mkApp (apply_env env fix, Array.map reify_value args)
-  | COFIXP ((j,(names,lty,bds)),env,args) ->
-    let cofix = mkCoFix (j, (names,lty,bds)) in
+  | COFIXP ((j,cofix),env,args) ->
+    let cofix = mkCoFix (j, cofix) in
     mkApp (apply_env env cofix, Array.map reify_value args)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map reify_value args)
@@ -550,7 +550,7 @@ and cbv_norm_value info = function (* reduction under binders *)
   | FIXP ((lij,(names,lty,bds)),env,args) ->
       mkApp
         (mkFix (lij,
-		(names,
+                (names,
                  Array.map (cbv_norm_term info env) lty,
 		 Array.map (cbv_norm_term info
 			      (subs_liftn (Array.length lty) env)) bds)),
@@ -558,7 +558,7 @@ and cbv_norm_value info = function (* reduction under binders *)
   | COFIXP ((j,(names,lty,bds)),env,args) ->
       mkApp
         (mkCoFix (j,
-		  (names,Array.map (cbv_norm_term info env) lty,
+                  (names,Array.map (cbv_norm_term info env) lty,
 		   Array.map (cbv_norm_term info
 				(subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)

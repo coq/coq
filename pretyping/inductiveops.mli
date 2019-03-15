@@ -38,6 +38,8 @@ val lift_inductive_family  : int -> inductive_family -> inductive_family
 val substnl_ind_family :
   constr list -> int -> inductive_family -> inductive_family
 
+val relevance_of_inductive_family : env -> inductive_family -> Sorts.relevance
+
 (** An inductive type with its parameters and real arguments *)
 type inductive_type = IndType of inductive_family * EConstr.constr list
 val make_ind_type : inductive_family * EConstr.constr list -> inductive_type
@@ -46,6 +48,8 @@ val map_inductive_type : (EConstr.constr -> EConstr.constr) -> inductive_type ->
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type  : int -> inductive_type -> inductive_type
 val substnl_ind_type : EConstr.constr list -> int -> inductive_type -> inductive_type
+
+val relevance_of_inductive_type : env -> inductive_type -> Sorts.relevance
 
 val mkAppliedInd : inductive_type -> EConstr.constr
 val mis_is_recursive_subset : int list -> wf_paths -> bool
@@ -176,7 +180,7 @@ val type_case_branches_with_names :
   env -> evar_map -> pinductive * EConstr.constr list -> constr -> constr -> types array * types
 
 (** Annotation for cases *)
-val make_case_info : env -> inductive -> case_style -> case_info
+val make_case_info : env -> inductive -> Sorts.relevance -> case_style -> case_info
 
 (** Make a case or substitute projections if the inductive type is a record
     with primitive projections.

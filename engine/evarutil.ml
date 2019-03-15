@@ -11,6 +11,7 @@
 open CErrors
 open Util
 open Names
+open Context
 open Constr
 open Environ
 open Evd
@@ -781,13 +782,13 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   in
   NamedDecl.fold_constr fold decl accu
 | Some cache ->
-  let id = NamedDecl.get_id decl in
+  let id = NamedDecl.get_annot decl in
   let r =
-    try Id.Map.find id cache.cache
+    try Id.Map.find id.binder_name cache.cache
     with Not_found ->
       (* Dummy value *)
       let r = ref (NamedDecl.LocalAssum (id, EConstr.mkProp), Evar.Set.empty) in
-      let () = cache.cache <- Id.Map.add id r cache.cache in
+      let () = cache.cache <- Id.Map.add id.binder_name r cache.cache in
       r
   in
   let (decl', evs) = !r in
@@ -836,7 +837,7 @@ let occur_evar_upto sigma n c =
 let judge_of_new_Type evd =
   let open EConstr in
   let (evd', s) = new_univ_variable univ_rigid evd in
-  (evd', { uj_val = mkSort (Sorts.Type s); uj_type = mkSort (Sorts.Type (Univ.super s)) })
+  (evd', { uj_val = mkType s; uj_type = mkType (Univ.super s) })
 
 let subterm_source evk ?where (loc,k) =
   let evk = match k with

@@ -188,13 +188,17 @@ let instantiate_universes env ctx ar argsorts =
     (* Non singleton type not containing types are interpretable in Set *)
     else if is_type0_univ level then Sorts.set
     (* This is a Type with constraints *)
-    else Sorts.Type level
+    else Sorts.sort_of_univ level
   in
     (ctx, ty)
 
 (* Type of an inductive type *)
 
-let type_of_inductive_gen ?(polyprop=true) env ((_mib,mip),u) paramtyps =
+let relevance_of_inductive env ind =
+  let _, mip = lookup_mind_specif env ind in
+  mip.mind_relevance
+
+let type_of_inductive_gen ?(polyprop=true) env ((_,mip),u) paramtyps =
   match mip.mind_arity with
   | RegularArity a -> subst_instance_constr u a.mind_user_arity
   | TemplateArity ar ->
@@ -226,7 +230,10 @@ let type_of_inductive_knowing_parameters env ?(polyprop=true) mip args =
 (* The max of an array of universes *)
 
 let cumulate_constructor_univ u = let open Sorts in function
-  | Prop -> u
+  | SProp | Prop ->
+    (* SProp is non cumulative but allowed in constructors of any
+       inductive (except non-sprop primitive records) *)
+    u
   | Set -> Universe.sup Universe.type0 u
   | Type u' -> Universe.sup u u'
 
@@ -298,16 +305,12 @@ let build_dependent_inductive ind (_,mip) params =
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
 (* This exception is local *)
-exception LocalArity of (Sorts.family * Sorts.family * arity_error) option
+exception LocalArity of (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
 
 let check_allowed_sort ksort specif =
-  let open Sorts in
-  let eq_ksort s = match ksort, s with
-  | InProp, InProp | InSet, InSet | InType, InType -> true
-  | _ -> false in
-  if not (CList.exists eq_ksort (elim_sorts specif)) then
+  if not (CList.exists (Sorts.family_equal ksort) (elim_sorts specif)) then
     let s = inductive_sort_family (snd specif) in
-    raise (LocalArity (Some(ksort,s,error_elim_explain ksort s)))
+    raise (LocalArity (Some(elim_sorts specif, ksort,s,error_elim_explain ksort s)))
 
 let is_correct_arity env c pj ind specif params =
   let arsign,_ = get_instantiated_arity ind specif params in
@@ -321,7 +324,7 @@ let is_correct_arity env c pj ind specif params =
           srec (push_rel (LocalAssum (na1,a1)) env) t ar'
       (* The last Prod domain is the type of the scrutinee *)
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
-	 let env' = push_rel (LocalAssum (na1,a1)) env in
+         let env' = push_rel (LocalAssum (na1,a1)) env in
 	 let ksort = match kind (whd_all env' a2) with
 	 | Sort s -> Sorts.family s
 	 | _ -> raise (LocalArity None) in
@@ -337,7 +340,7 @@ let is_correct_arity env c pj ind specif params =
   in
   try srec env pj.uj_type (List.rev arsign) 
   with LocalArity kinds ->
-    error_elim_arity env ind (elim_sorts specif) c pj kinds
+    error_elim_arity env ind c pj kinds
 
 
 (************************************************************************)
@@ -380,13 +383,14 @@ let type_case_branches env (pind,largs) pj c =
 (************************************************************************)
 (* Checking the case annotation is relevant *)
 
-let check_case_info env (indsp,u) ci =
+let check_case_info env (indsp,u) r ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
     not (eq_ind indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
+    not (ci.ci_relevance == r) ||
     is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
 
@@ -575,7 +579,9 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let mib = Environ.lookup_mind mind env in
   let ntypes = mib.mind_ntypes in
   let push_ind specif env =
-    let decl = LocalAssum (Anonymous, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
+    let r = specif.mind_relevance in
+    let anon = Context.make_annot Anonymous r in
+    let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
     push_rel decl env
   in
   let env = Array.fold_right push_ind mib.mind_packets env in
@@ -596,7 +602,8 @@ let rec ienv_decompose_prod (env,_ as ienv) n c =
 let dummy_univ = Level.(make (UGlobal.make (DirPath.make [Id.of_string "implicit"]) 0))
 let dummy_implicit_sort = mkType (Universe.make dummy_univ)
 let lambda_implicit_lift n a =
-  let lambda_implicit a = mkLambda (Anonymous, dummy_implicit_sort, a) in
+  let anon = Context.make_annot Anonymous Sorts.Relevant in
+  let lambda_implicit a = mkLambda (anon, dummy_implicit_sort, a) in
   iterate lambda_implicit n (lift n a)
 
 (* This removes global parameters of the inductive types in lc (for
@@ -1022,7 +1029,7 @@ let check_one_fix renv recpos trees def =
       check_rec_call (assign_var_spec renv (1,recArgsDecrArg)) [] body
     else
       match kind body with
-	| Lambda (x,a,b) ->
+        | Lambda (x,a,b) ->
 	    check_rec_call renv [] a;
             let renv' = push_var_renv renv (x,a) in
 	      check_nested_fix_body renv' (decr-1) recArgsDecrArg b
@@ -1055,7 +1062,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
       match kind (whd_all env def) with
         | Lambda (x,a,b) ->
 	    if noccur_with_meta n nbfix a then
-	      let env' = push_rel (LocalAssum (x,a)) env in
+              let env' = push_rel (LocalAssum (x,a)) env in
               if Int.equal n (k + 1) then
                 (* get the inductive type of the fixpoint *)
                 let (mind, _) =
@@ -1068,8 +1075,19 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
                 (mind, (env', b))
 	      else check_occur env' (n+1) b
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
-        | _ -> raise_err env i NotEnoughAbstractionInFixBody in
-    check_occur fixenv 1 def in
+        | _ -> raise_err env i NotEnoughAbstractionInFixBody
+    in
+    let ((ind, _), _) as res = check_occur fixenv 1 def in
+    let _, ind = lookup_mind_specif env ind in
+    (* recursive sprop means non record with projections -> squashed *)
+    if Sorts.Irrelevant == ind.mind_relevance
+    then
+      begin
+        if names.(i).Context.binder_relevance == Sorts.Relevant
+        then raise_err env i FixpointOnIrrelevantInductive
+      end;
+    res
+  in
   (* Do it on every fixpoint *)
   let rv = Array.map2_i find_ind nvect bodies in
   (Array.map fst rv, Array.map snd rv)
@@ -1112,7 +1130,7 @@ let rec codomain_is_coind env c =
   let b = whd_all env c in
   match kind b with
     | Prod (x,a,b) ->
-	codomain_is_coind (push_rel (LocalAssum (x,a)) env) b
+        codomain_is_coind (push_rel (LocalAssum (x,a)) env) b
     | _ ->
 	(try find_coinductive env b
         with Not_found ->
@@ -1150,7 +1168,7 @@ let check_one_cofix env nbfix def deftype =
               | _ -> anomaly_ill_typed ()
             in process_args_of_constr (realargs, lra)
 
-	| Lambda (x,a,b) ->
+        | Lambda (x,a,b) ->
 	    let () = assert (List.is_empty args) in
             if noccur_with_meta n nbfix a then
               let env' = push_rel (LocalAssum (x,a)) env in

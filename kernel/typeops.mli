@@ -16,26 +16,28 @@ open Environ
 (** {6 Typing functions (not yet tagged as safe) }
 
     They return unsafe judgments that are "in context" of a set of
-    (local) universe variables (the ones that appear in the term)
-    and associated constraints. In case of polymorphic definitions,
-    these variables and constraints will be generalized.
- *)
+   (local) universe variables (the ones that appear in the term) and
+   associated constraints. In case of polymorphic definitions, these
+   variables and constraints will be generalized.
 
+    When typechecking a term it may be updated to fix relevance marks.
+   Do not discard the result. *)
 
 val infer      : env -> constr       -> unsafe_judgment
-val infer_v    : env -> constr array -> unsafe_judgment array
 val infer_type : env -> types        -> unsafe_type_judgment
 
 val check_context :
-  env -> Constr.rel_context -> env
+  env -> Constr.rel_context -> env * Constr.rel_context
 
 (** {6 Basic operations of the typing machine. } *)
 
 (** If [j] is the judgement {% $ %}c:t{% $ %}, then [assumption_of_judgement env j]
    returns the type {% $ %}c{% $ %}, checking that {% $ %}t{% $ %} is a sort. *)
 
-val assumption_of_judgment :  env -> unsafe_judgment -> types
+val assumption_of_judgment :  env -> unsafe_judgment -> Sorts.relevance
 val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
+
+val check_binder_annot : Sorts.t -> Name.t Context.binder_annot -> Name.t Context.binder_annot
 
 (** {6 Type of sorts. } *)
 val type1 : types
@@ -65,21 +67,21 @@ val judge_of_apply :
     -> unsafe_judgment
 
 (** {6 Type of an abstraction. } *)
-val judge_of_abstraction :
-  env -> Name.t -> unsafe_type_judgment -> unsafe_judgment
-    -> unsafe_judgment
+(* val judge_of_abstraction : *)
+(*   env -> Name.t -> unsafe_type_judgment -> unsafe_judgment *)
+(*     -> unsafe_judgment *)
 
 (** {6 Type of a product. } *)
 val sort_of_product : env -> Sorts.t -> Sorts.t -> Sorts.t
-val type_of_product : env -> Name.t -> Sorts.t -> Sorts.t -> types
-val judge_of_product :
-  env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment
-    -> unsafe_judgment
+val type_of_product : env -> Name.t Context.binder_annot -> Sorts.t -> Sorts.t -> types
+(* val judge_of_product : *)
+(*   env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment *)
+(*     -> unsafe_judgment *)
 
 (** s Type of a let in. *)
-val judge_of_letin :
-  env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment
-    -> unsafe_judgment
+(* val judge_of_letin : *)
+(*   env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment *)
+(*     -> unsafe_judgment *)
 
 (** {6 Type of a cast. } *)
 val judge_of_cast :
@@ -128,3 +130,6 @@ val judge_of_int : env -> Uint63.t -> unsafe_judgment
 
 val type_of_prim_type : env -> CPrimitives.prim_type -> types
 val type_of_prim : env -> CPrimitives.t -> types
+
+val warn_bad_relevance_name : string
+(** Allow the checker to make this warning into an error. *)

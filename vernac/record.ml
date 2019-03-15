@@ -17,6 +17,7 @@ open Names
 open Globnames
 open Nameops
 open Constr
+open Context
 open Vars
 open Environ
 open Declarations
@@ -66,6 +67,7 @@ let interp_fields_evars env sigma impls_env nots l =
   List.fold_left2
     (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
       let sigma, (t', impl) = interp_type_evars_impls ~program_mode:false env sigma ~impls t in
+      let r = Retyping.relevance_of_type env sigma t' in
       let sigma, b' =
         Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
                       interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
@@ -75,8 +77,8 @@ let interp_fields_evars env sigma impls_env nots l =
         | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
       in
       let d = match b' with
-	      | None -> LocalAssum (i,t')
-	      | Some b' -> LocalDef (i,b',t')
+              | None -> LocalAssum (make_annot i r,t')
+              | Some b' -> LocalDef (make_annot i r,b',t')
       in
       List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
       (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
@@ -90,7 +92,7 @@ let compute_constructor_level evars env l =
 	  Univ.sup (univ_of_sort s) univ 
       else univ
     in (EConstr.push_rel d env, univ))
-    l (env, Univ.type0m_univ)
+    l (env, Univ.Universe.sprop)
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
@@ -144,8 +146,10 @@ let typecheck_params_and_fields finite def poly pl ps records =
   in
   let (sigma, template), typs = List.fold_left_map fold (sigma, true) records in
   let arities = List.map (fun (typ, _) -> EConstr.it_mkProd_or_LetIn typ newps) typs in
-  let fold accu (id, _, _, _) arity = EConstr.push_rel (LocalAssum (Name id,arity)) accu in
-  let env_ar = EConstr.push_rel_context newps (List.fold_left2 fold env0 records arities) in
+  let relevances = List.map (fun (_,s) -> Sorts.relevance_of_sort s) typs in
+  let fold accu (id, _, _, _) arity r =
+    EConstr.push_rel (LocalAssum (make_annot (Name id) r,arity)) accu in
+  let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
   let assums = List.filter is_local_assum newps in
   let impls_env =
     let params = List.map (RelDecl.get_name %> Name.get_id) assums in
@@ -163,16 +167,16 @@ let typecheck_params_and_fields finite def poly pl ps records =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
-      if not def && (Sorts.is_prop sort ||
-	(Sorts.is_set sort && is_impredicative_set env0)) then
+    let univ = if Sorts.is_sprop sort then univ else Univ.Universe.sup univ Univ.type0m_univ in
+      if not def && is_impredicative_sort env0 sort then
         sigma, typ
       else
-        let sigma = Evd.set_leq_sort env_ar sigma (Type univ) sort in
-	if Univ.is_small_univ univ &&
+        let sigma = Evd.set_leq_sort env_ar sigma (Sorts.sort_of_univ univ) sort in
+        if Univ.is_small_univ univ &&
            Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
 	   (* We can assume that the level in aritysort is not constrained
 	       and clear it, if it is flexible *)
-   Evd.set_eq_sort env_ar sigma Set sort, EConstr.mkSort (Sorts.sort_of_univ univ)
+   Evd.set_eq_sort env_ar sigma Sorts.set sort, EConstr.mkSort (Sorts.sort_of_univ univ)
         else sigma, typ
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
@@ -213,12 +217,12 @@ let warning_or_error coe indsp err =
 	   strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with
-	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
+          | ElimArity (_,_,_,Some (_,_,_,NonInformativeToInformative)) ->
               (Id.print fi ++
 		strbrk" cannot be defined because it is informative and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
 		strbrk " is not.")
-	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
+          | ElimArity (_,_,_,Some (_,_,_,StrongEliminationOnNonSmallType)) ->
 	      (Id.print fi ++
 		strbrk" cannot be defined because it is large and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
@@ -284,7 +288,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
   let r = mkIndU (indsp,u) in
   let rp = applist (r, Context.Rel.to_extended_list mkRel 0 paramdecls) in
   let paramargs = Context.Rel.to_extended_list mkRel 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = Name binder_name in
+  let x = make_annot (Name binder_name) mip.mind_relevance in
   let fields = instantiate_possibly_recursive_type (fst indsp) u mib.mind_ntypes paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
   let primitive = 
@@ -316,18 +320,19 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 	      else
 		let ccl = subst_projection fid subst ti in
 		let body = match decl with
-		  | LocalDef (_,ci,_) -> subst_projection fid subst ci
-		  | LocalAssum _ ->
+                  | LocalDef (_,ci,_) -> subst_projection fid subst ci
+                  | LocalAssum ({binder_relevance=rci},_) ->
 	            (* [ccl] is defined in context [params;x:rp] *)
 		    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
 		    let ccl' = liftn 1 2 ccl in
-		    let p = mkLambda (x, lift 1 rp, ccl') in
+                    let p = mkLambda (x, lift 1 rp, ccl') in
 		    let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
-		    let ci = Inductiveops.make_case_info env indsp LetStyle in
-		      mkCase (ci, p, mkRel 1, [|branch|]) 
-		in
+                    let ci = Inductiveops.make_case_info env indsp rci LetStyle in
+                    (* Record projections have no is *)
+                    mkCase (ci, p, mkRel 1, [|branch|])
+                in
 		let proj =
-	          it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
+                  it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
@@ -463,7 +468,9 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
   let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
   let data =
     match fields with
-    | [LocalAssum (Name proj_name, field) | LocalDef (Name proj_name, _, field)] when def ->
+    | [LocalAssum ({binder_name=Name proj_name} as binder, field)
+      | LocalDef ({binder_name=Name proj_name} as binder, _, field)] when def ->
+      let binder = {binder with binder_name=Name binder_name} in
       let class_body = it_mkLambda_or_LetIn field params in
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
@@ -477,11 +484,11 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       in
       let cstu = (cst, inst) in
       let inst_type = appvectc (mkConstU cstu)
-			       (Termops.rel_vect 0 (List.length params)) in
+          (Termops.rel_vect 0 (List.length params)) in
       let proj_type =
-	it_mkProd_or_LetIn (mkProd(Name binder_name, inst_type, lift 1 field)) params in
+        it_mkProd_or_LetIn (mkProd(binder, inst_type, lift 1 field)) params in
       let proj_body =
-	it_mkLambda_or_LetIn (mkLambda (Name binder_name, inst_type, mkRel 1)) params in
+        it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
       let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
       let proj_cst = Declare.declare_constant proj_name
         (DefinitionEntry proj_entry, IsDefinition Definition)
@@ -548,12 +555,13 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
 
 let add_constant_class env cst =
   let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
+  let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, arity = decompose_prod_assum ty in
   let tc = 
     { cl_univs = univs;
       cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
-      cl_props = [LocalAssum (Anonymous, arity)];
+      cl_props = [LocalAssum (make_annot Anonymous r, arity)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
@@ -570,10 +578,11 @@ let add_inductive_class env ind =
     let env = push_rel_context ctx env in
     let inst = Univ.make_abstract_instance univs in
     let ty = Inductive.type_of_inductive env ((mind, oneind), inst) in
+    let r = Inductive.relevance_of_inductive env ind in
       { cl_univs = univs;
         cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
-	cl_props = [LocalAssum (Anonymous, ty)];
+        cl_props = [LocalAssum (make_annot Anonymous r, ty)];
 	cl_projs = [];
 	cl_strict = !typeclasses_strict;
 	cl_unique = !typeclasses_unique }

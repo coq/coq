@@ -30,11 +30,13 @@ sig
 
   val set : t
   val prop : t
+  val sprop : t
   (** The set and prop universe levels. *)
 
   val is_small : t -> bool
   (** Is the universe set or prop? *)
 
+  val is_sprop : t -> bool
   val is_prop : t -> bool
   val is_set : t -> bool
   (** Is it specifically Prop or Set *)
@@ -119,6 +121,8 @@ sig
   val sup   : t -> t -> t
   (** The l.u.b. of 2 universes *)
 
+  val sprop : t
+
   val type0m : t
   (** image of Prop in the universes hierarchy *)
 
@@ -127,6 +131,10 @@ sig
 
   val type1 : t
   (** the universe of the type of Prop/Set *)
+
+  val is_sprop : t -> bool
+  val is_type0m : t -> bool
+  val is_type0 : t -> bool
 
   val exists : (Level.t * int -> bool) -> t -> bool
   val for_all : (Level.t * int -> bool) -> t -> bool

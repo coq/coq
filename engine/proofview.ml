@@ -876,9 +876,9 @@ module Progress = struct
     let eq_named_declaration d1 d2 =
       match d1, d2 with
       | LocalAssum (i1,t1), LocalAssum (i2,t2) ->
-         Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 t1 t2
+         Context.eq_annot Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 t1 t2
       | LocalDef (i1,c1,t1), LocalDef (i2,c2,t2) ->
-         Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 c1 c2
+         Context.eq_annot Names.Id.equal i1 i2 && eq_constr sigma1 sigma2 c1 c2
          && eq_constr sigma1 sigma2 t1 t2
       | _ ->
          false

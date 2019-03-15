@@ -182,10 +182,10 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
       let car = constructors_nrealargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
-	&& not (mis_is_recursive (ind,mib,mip))
-        && (Int.equal mip.mind_nrealargs 0)
+      && not (mis_is_recursive (ind,mib,mip))
+      && (Int.equal mip.mind_nrealargs 0)
       then
-	if strict then
+        if strict then
           if test_strict_disjunction (mib, mip) then
 	    Some (hdapp,args)
 	  else
@@ -196,7 +196,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) sigma t =
             pi2 (destProd sigma (prod_applist sigma ar args))
           in
           let cargs = Array.map map mip.mind_nf_lc in
-	  Some (hdapp,Array.to_list cargs)
+          Some (hdapp,Array.to_list cargs)
       else
 	None
   | _ -> None in

@@ -132,6 +132,7 @@ sig
   val fold_right_map : (Id.t -> 'a -> Id.t * 'a) -> Name.t -> 'a -> Name.t * 'a
   val get_id : t -> Id.t
   val pick : t -> t -> t
+  val pick_annot : t Context.binder_annot -> t Context.binder_annot -> t Context.binder_annot
   val cons : t -> Id.t list -> Id.t list
   val to_option : Name.t -> Id.t option
 
@@ -175,6 +176,11 @@ struct
     match na1 with
     | Name _ -> na1
     | Anonymous -> na2
+
+  let pick_annot na1 na2 =
+    let open Context in
+    match na1.binder_name with
+    | Name _ -> na1 | Anonymous -> na2
 
   let cons na l =
     match na with

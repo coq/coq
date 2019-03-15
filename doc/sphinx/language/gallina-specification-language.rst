@@ -94,8 +94,8 @@ Keywords
   employed otherwise::
 
     _ as at cofix else end exists exists2 fix for
-    forall fun if IF in let match mod Prop return
-    Set then Type using where with
+    forall fun if IF in let match mod return
+    SProp Prop Set Type then using where with
 
 Special tokens
   The following sequences of characters are special tokens::
@@ -159,7 +159,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : ' `pattern`
    name             : `ident` | _
    qualid           : `ident` | `qualid` `access_ident`
-   sort             : Prop | Set | Type
+   sort             : SProp | Prop | Set | Type
    fix_bodies       : `fix_body`
                     : `fix_body` with `fix_body` with … with `fix_body` for `ident`
    cofix_bodies     : `cofix_body`
@@ -218,13 +218,17 @@ numbers (see :ref:`datatypes`).
 
 .. index::
    single: Set (sort)
+   single: SProp
    single: Prop
    single: Type
 
 Sorts
 -----
 
-There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
+There are four sorts :g:`SProp`, :g:`Prop`, :g:`Set`  and :g:`Type`.
+
+-  :g:`SProp` is the universe of *definitionally irrelevant
+   propositions* (also called *strict propositions*).
 
 -  :g:`Prop` is the universe of *logical propositions*. The logical propositions
    themselves are typing the proofs. We denote propositions by :production:`form`.
@@ -235,7 +239,7 @@ There are three sorts :g:`Set`, :g:`Prop` and :g:`Type`.
    specifications by :production:`specif`. This constitutes a semantic subclass of
    the syntactic class :token:`term`.
 
--  :g:`Type` is the type of :g:`Prop` and :g:`Set`
+-  :g:`Type` is the type of sorts.
 
 More on sorts can be found in Section :ref:`sorts`.
 
@@ -767,9 +771,9 @@ Simple inductive types
    are the names of its constructors and :token:`type` their respective types.
    Depending on the universe where the inductive type :token:`ident` lives
    (e.g. its type :token:`sort`), Coq provides a number of destructors.
-   Destructors are named :token:`ident`\ ``_ind``, :token:`ident`\ ``_rec``
-   or :token:`ident`\ ``_rect`` which respectively correspond to elimination
-   principles on :g:`Prop`, :g:`Set` and :g:`Type`.
+   Destructors are named :token:`ident`\ ``_sind``,:token:`ident`\ ``_ind``,
+   :token:`ident`\ ``_rec`` or :token:`ident`\ ``_rect`` which respectively
+   correspond to elimination principles on :g:`SProp`, :g:`Prop`, :g:`Set` and :g:`Type`.
    The type of the destructors expresses structural induction/recursion
    principles over objects of type :token:`ident`.
    The constant :token:`ident`\ ``_ind`` is always provided,

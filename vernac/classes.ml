@@ -352,8 +352,8 @@ let named_of_rel_context l =
       (fun decl (subst, ctx) ->
         let id = match RelDecl.get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
 	let d = match decl with
-	  | LocalAssum (_,t) -> id, None, substl subst t
-	  | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in
+          | LocalAssum (_,t) -> id, None, substl subst t
+          | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in
 	  (mkVar id :: subst, d :: ctx))
       l ([], [])
   in ctx

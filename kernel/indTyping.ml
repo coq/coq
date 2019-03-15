@@ -122,72 +122,105 @@ let check_cumulativity univs variances env_ar params data =
 (************************** Type checking *******************************)
 (************************************************************************)
 
-type univ_info = { ind_squashed : bool;
+type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    ind_min_univ : Universe.t option; (* Some for template *)
                    ind_univ : Universe.t }
 
-let check_univ_leq env u info =
+let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
-  if type_in_type env || (UGraph.check_leq (universes env) u ind_univ)
+  let info = if not info.ind_has_relevant_arg && is_real_arg && not (Univ.Universe.is_sprop u)
+    then {info with ind_has_relevant_arg=true}
+    else info
+  in
+  (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
+  if type_in_type env || Univ.Universe.is_sprop u || UGraph.check_leq (universes env) u ind_univ
   then { info with ind_min_univ = Option.map (Universe.sup u) info.ind_min_univ }
   else if is_impredicative_univ env ind_univ
   then if Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
     else raise (InductiveError BadUnivs)
   else raise (InductiveError BadUnivs)
 
-let check_indices_matter env_params info indices =
-  let check_index d (info,env) =
+let check_context_univs ~ctor env info ctx =
+  let check_one d (info,env) =
     let info = match d with
       | LocalAssum (_,t) ->
         (* could be retyping if it becomes available in the kernel *)
         let tj = Typeops.infer_type env t in
-        check_univ_leq env (Sorts.univ_of_sort tj.utj_type) info
+        check_univ_leq ~is_real_arg:ctor env (Sorts.univ_of_sort tj.utj_type) info
       | LocalDef _ -> info
     in
     info, push_rel d env
   in
+  fst (Context.Rel.fold_outside ~init:(info,env) check_one ctx)
+
+let check_indices_matter env_params info indices =
   if not (indices_matter env_params) then info
-  else fst (Context.Rel.fold_outside ~init:(info,env_params) check_index indices)
+  else check_context_univs ~ctor:false env_params info indices
 
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
 let check_arity env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
   let ind_min_univ = if ind.mind_entry_template then Some Universe.type0m else None in
-  let univ_info = {ind_squashed=false;ind_min_univ;ind_univ=Sorts.univ_of_sort ind_sort} in
+  let univ_info = {
+    ind_squashed=false;
+    ind_has_relevant_arg=false;
+    ind_min_univ;
+    ind_univ=Sorts.univ_of_sort ind_sort;
+  }
+  in
   let univ_info = check_indices_matter env_params univ_info indices in
   (* We do not need to generate the universe of the arity with params;
      if later, after the validation of the inductive definition,
      full_arity is used as argument or subject to cast, an upper
      universe will be generated *)
   let arity = it_mkProd_or_LetIn arity (Environ.rel_context env_params) in
-  push_rel (LocalAssum (Name ind.mind_entry_typename, arity)) env_ar,
+  let x = Context.make_annot (Name ind.mind_entry_typename) (Sorts.relevance_of_sort ind_sort) in
+  push_rel (LocalAssum (x, arity)) env_ar,
   (arity, indices, univ_info)
 
-let check_constructor_univs env_ar_par univ_info (args,_) =
+let check_constructor_univs env_ar_par info (args,_) =
   (* We ignore the output, positivity will check that it's the expected inductive type *)
-  (* NB: very similar to check_indices_matter but that will change with SProp *)
-  fst (Context.Rel.fold_outside ~init:(univ_info,env_ar_par) (fun d (univ_info,env) ->
-      let univ_info = match d with
-        | LocalDef _ -> univ_info
-        | LocalAssum (_,t) ->
-          (* could be retyping if it becomes available in the kernel *)
-          let tj = Typeops.infer_type env t in
-          check_univ_leq env (Sorts.univ_of_sort tj.utj_type) univ_info
-      in
-      univ_info, push_rel d env)
-      args)
+  check_context_univs ~ctor:true env_ar_par info args
 
-let check_constructors env_ar_par params lc (arity,indices,univ_info) =
+let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
   let lc = Array.map_of_list (fun c -> (Typeops.infer_type env_ar_par c).utj_val) lc in
   let splayed_lc = Array.map (Reduction.dest_prod_assum env_ar_par) lc in
-  let univ_info = if Array.length lc <= 1 then univ_info
-    else check_univ_leq env_ar_par Univ.Universe.type0 univ_info
+  let univ_info = match Array.length lc with
+    (* Empty type: all OK *)
+    | 0 -> univ_info
+
+    (* SProp primitive records are OK, if we squash and become fakerecord also OK *)
+    | 1 when isrecord -> univ_info
+
+    (* Unit and identity types must squash if SProp *)
+    | 1 -> check_univ_leq env_ar_par Univ.Universe.type0m univ_info
+
+    (* More than 1 constructor: must squash if Prop/SProp *)
+    | _ -> check_univ_leq env_ar_par Univ.Universe.type0 univ_info
   in
   let univ_info = Array.fold_left (check_constructor_univs env_ar_par) univ_info splayed_lc in
   (* generalize the constructors over the parameters *)
   let lc = Array.map (fun c -> Term.it_mkProd_or_LetIn c params) lc in
   (arity, lc), (indices, splayed_lc), univ_info
+
+let check_record data =
+  List.for_all (fun (_,(_,splayed_lc),info) ->
+      (* records must have all projections definable -> equivalent to not being squashed *)
+      not info.ind_squashed
+      (* relevant records must have at least 1 relevant argument *)
+      && (Univ.Universe.is_sprop info.ind_univ
+          || info.ind_has_relevant_arg)
+      && (match splayed_lc with
+          (* records must have 1 constructor with at least 1 argument, and no anonymous fields *)
+          | [|ctx,_|] ->
+            let module D = Context.Rel.Declaration in
+            List.exists D.is_local_assum ctx &&
+            List.for_all (fun d -> not (D.is_local_assum d)
+                                   || not (Name.is_anonymous (D.get_name d)))
+              ctx
+          | _ -> false))
+    data
 
 (* Allowed eliminations *)
 
@@ -199,16 +232,18 @@ let check_constructors env_ar_par params lc (arity,indices,univ_info) =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let all_sorts = [InProp;InSet;InType]
-let small_sorts = [InProp;InSet]
-let logical_sorts = [InProp]
+let all_sorts = [InSProp;InProp;InSet;InType]
+let small_sorts = [InSProp;InProp;InSet]
+let logical_sorts = [InSProp;InProp]
+let sprop_sorts = [InSProp]
 
-let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_} =
+let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_} =
   if not ind_squashed then all_sorts
   else match Sorts.family (Sorts.sort_of_univ ind_univ) with
     | InType -> assert false
     | InSet -> small_sorts
     | InProp -> logical_sorts
+    | InSProp -> sprop_sorts
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter (starting
@@ -268,16 +303,36 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
   in
 
   (* Params *)
-  let env_params = Typeops.check_context env_univs mie.mind_entry_params in
-  let params = Environ.rel_context env_params in
+  let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
 
   (* Arities *)
   let env_ar, data = List.fold_left_map (check_arity env_params) env_univs mie.mind_entry_inds in
   let env_ar_par = push_rel_context params env_ar in
 
   (* Constructors *)
-  let data = List.map2 (fun ind data -> check_constructors env_ar_par params ind.mind_entry_lc data)
+  let isrecord = match mie.mind_entry_record with
+    | Some (Some _) -> true
+    | Some None | None -> false
+  in
+  let data = List.map2 (fun ind data ->
+      check_constructors env_ar_par isrecord params ind.mind_entry_lc data)
       mie.mind_entry_inds data
+  in
+
+  let record = mie.mind_entry_record in
+  let data, record = match record with
+    | None | Some None -> data, record
+    | Some (Some _) ->
+      if check_record data then
+        data, record
+      else
+        (* if someone tried to declare a record as SProp but it can't
+           be primitive we must squash. *)
+        let data = List.map (fun (a,b,univs) ->
+            a,b,check_univ_leq env_ar_par Univ.Universe.type0m univs)
+            data
+        in
+        data, Some None
   in
 
   let () = match mie.mind_entry_variance with
@@ -298,4 +353,4 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, mie.mind_entry_variance, params, Array.of_list data
+  env_ar_par, univs, mie.mind_entry_variance, record, params, Array.of_list data

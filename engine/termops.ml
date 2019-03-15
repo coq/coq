@@ -15,6 +15,7 @@ open Names
 open Nameops
 open Term
 open Constr
+open Context
 open Vars
 open Environ
 
@@ -115,8 +116,8 @@ let pr_decl env sigma (decl,ok) =
   let open NamedDecl in
   let print_constr = print_kconstr in
   match decl with
-  | LocalAssum (id,_) -> if ok then Id.print id else (str "{" ++ Id.print id ++ str "}")
-  | LocalDef (id,c,_) -> str (if ok then "(" else "{") ++ Id.print id ++ str ":=" ++
+  | LocalAssum ({binder_name=id},_) -> if ok then Id.print id else (str "{" ++ Id.print id ++ str "}")
+  | LocalDef ({binder_name=id},c,_) -> str (if ok then "(" else "{") ++ Id.print id ++ str ":=" ++
                            print_constr env sigma c ++ str (if ok then ")" else "}")
 
 let pr_evar_source env sigma = function
@@ -248,8 +249,8 @@ let pr_evar_universe_context ctx =
 let print_env_short env sigma =
   let print_constr = print_kconstr in
   let pr_rel_decl = function
-    | RelDecl.LocalAssum (n,_) -> Name.print n
-    | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n ++ str " := "
+    | RelDecl.LocalAssum (n,_) -> Name.print n.binder_name
+    | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n.binder_name ++ str " := "
                                   ++ print_constr env sigma (EConstr.of_constr b) ++ str ")"
   in
   let pr_named_decl = NamedDecl.to_rel_decl %> pr_rel_decl in
@@ -459,9 +460,10 @@ let push_named_rec_types (lna,typarray,_) env =
   let ctxt =
     Array.map2_i
       (fun i na t ->
-	 match na with
-	   | Name id -> LocalAssum (id, lift i t)
-	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named."))
+         let id = map_annot (function
+             | Name id -> id
+             | Anonymous -> anomaly (Pp.str "Fix declarations must be named.")) na
+         in  LocalAssum (id, lift i t))
       lna typarray in
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
@@ -469,14 +471,11 @@ let push_named_rec_types (lna,typarray,_) env =
 let lookup_rel_id id sign =
   let open RelDecl in
   let rec lookrec n = function
-    | [] ->
-        raise Not_found
-    | (LocalAssum (Anonymous, _) | LocalDef (Anonymous,_,_)) :: l ->
-        lookrec (n + 1) l
-    | LocalAssum (Name id', t) :: l  ->
-        if Names.Id.equal id' id then (n,None,t)  else lookrec (n + 1) l
-    | LocalDef (Name id', b, t) :: l  ->
-        if Names.Id.equal id' id then (n,Some b,t) else lookrec (n + 1) l
+    | [] -> raise Not_found
+    | decl :: l ->
+      if Names.Name.equal (Name id) (get_name decl)
+      then (n, get_value decl, get_type decl)
+      else lookrec (n+1) l
   in
   lookrec 1 sign
 
@@ -1098,7 +1097,8 @@ let is_template_polymorphic_ind env sigma f =
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-  | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | SProp, SProp | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | SProp, _ | _, SProp -> false
   | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Reduction.CUMUL
   | Set, Prop | Type _, Prop | Type _, Set -> false
 
@@ -1352,7 +1352,7 @@ let compact_named_context sign =
 let clear_named_body id env =
   let open NamedDecl in
   let aux _ = function
-  | LocalDef (id',c,t) when Id.equal id id' -> push_named (LocalAssum (id,t))
+  | LocalDef (id',c,t) when Id.equal id id'.binder_name -> push_named (LocalAssum (id',t))
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)
 

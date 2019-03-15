@@ -13,6 +13,7 @@ open Ssrmatching_plugin
 open Util
 open Names
 open Constr
+open Context
 
 open Proofview
 open Proofview.Notations
@@ -393,12 +394,12 @@ let tcltclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
       let sigma, m = Evarutil.new_evar env sigma abstract_ty in
       sigma, (m, abstract_ty) in
     let sigma, kont =
-      let rd = Context.Rel.Declaration.LocalAssum (Name id, abstract_ty) in
+      let rd = Context.Rel.Declaration.LocalAssum (make_annot (Name id) Sorts.Relevant, abstract_ty) in
       let sigma, ev = Evarutil.new_evar (EConstr.push_rel rd env) sigma concl in
       sigma, ev
     in
     let term =
-      EConstr.(mkApp (mkLambda(Name id,abstract_ty,kont),[|abstract_proof|])) in
+      EConstr.(mkApp (mkLambda(make_annot (Name id) Sorts.Relevant,abstract_ty,kont),[|abstract_proof|])) in
     let sigma, _ = Typing.type_of env sigma term in
     sigma, term
   end in
@@ -608,7 +609,7 @@ let with_defective maintac deps clr = Goal.enter begin fun g ->
   let sigma, concl = Goal.(sigma g, concl g) in
   let top_id =
     match EConstr.kind_of_type sigma concl with
-    | Term.ProdType (Name id, _, _)
+    | Term.ProdType ({binder_name=Name id}, _, _)
       when Ssrcommon.is_discharged_id id -> id
     | _ -> Ssrcommon.top_id in
   let top_gen = Ssrequality.mkclr clr, Ssrmatching.cpattern_of_id top_id in
@@ -683,7 +684,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
            let name = Ssrcommon.mk_anon_id "K" (Tacmach.New.pf_ids_of_hyps g) in
 
            let new_concl =
-             mkProd (Name name, case_ty, mkArrow refl (Vars.lift 2 concl)) in
+             mkProd (make_annot (Name name) Sorts.Relevant, case_ty, mkArrow refl Sorts.Relevant (Vars.lift 2 concl)) in
            let erefl, sigma = mkCoqRefl case_ty case env sigma in
            Proofview.Unsafe.tclEVARS sigma <*>
            Tactics.apply_type ~typecheck:true new_concl [case;erefl]
@@ -707,7 +708,7 @@ let mkEq dir cl c t n env sigma =
   eqargs.(Ssrequality.dir_org dir) <- mkRel n;
   let eq, sigma = mkCoqEq env sigma in
   let refl, sigma = mkCoqRefl t c env sigma in
-  mkArrow (mkApp (eq, eqargs)) (Vars.lift 1 cl), refl, sigma
+  mkArrow (mkApp (eq, eqargs)) Sorts.Relevant (Vars.lift 1 cl), refl, sigma
 
 (** in [tac/v: last gens..] the first (last to be run) generalization is
     "special" in that is it also the main argument of [tac] and is eventually
@@ -743,7 +744,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
           Ssrcommon.errorstrm Pp.(str "@ can be used with let-ins only")
       | Context.Named.Declaration.LocalDef (name, b, ty) ->
           Unsafe.tclEVARS sigma <*>
-          tclUNIT (true, EConstr.mkLetIn (Name name,b,ty,cl), c, clr)
+          tclUNIT (true, EConstr.mkLetIn (map_annot Name.mk_name name,b,ty,cl), c, clr)
     else
       Unsafe.tclEVARS sigma <*>
       Ssrcommon.tacMKPROD c cl >>= fun ccl ->
@@ -757,7 +758,7 @@ let tclLAST_GEN ~to_ind ((oclr, occ), t) conclusion = tclINDEPENDENTL begin
       Unsafe.tclEVARS sigma <*>
       Ssrcommon.tacTYPEOF p >>= fun pty ->
       (* TODO: check bug: cl0 no lift? *)
-      let ccl = EConstr.mkProd (Ssrcommon.constr_name sigma c, pty, cl0) in
+      let ccl = EConstr.mkProd (make_annot (Ssrcommon.constr_name sigma c) Sorts.Relevant, pty, cl0) in
       tclUNIT (false, ccl, p, clr)
   else
     Ssrcommon.errorstrm Pp.(str "generalized term didn't match")

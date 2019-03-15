@@ -12,6 +12,7 @@ open Sorts
 open Util
 open CErrors
 open Names
+open Context
 open Constr
 open Environ
 open Termops
@@ -193,9 +194,9 @@ let recheck_applications unify flags env evdref t =
        let rec aux i ty =
 	 if i < Array.length argsty then
 	 match EConstr.kind !evdref (whd_all env !evdref ty) with
-	 | Prod (na, dom, codom) ->
+         | Prod (na, dom, codom) ->
             (match unify flags TypeUnification env !evdref Reduction.CUMUL argsty.(i) dom with
-	     | Success evd -> evdref := evd;
+             | Success evd -> evdref := evd;
 			     aux (succ i) (subst1 args.(i) codom)
 	     | UnifFailure (evd, reason) ->
 		Pretype_errors.error_cannot_unify env evd ~reason (argsty.(i), dom))
@@ -353,7 +354,7 @@ let compute_rel_aliases var_aliases rels sigma =
 	 (fun decl (n,aliases) ->
 	  (n-1,
 	   match decl with
-	   | LocalDef (_,t,u) ->
+           | LocalDef (_,t,u) ->
 	      (match EConstr.kind sigma t with
 	       | Var id' ->
 		  let aliases_of_n =
@@ -640,7 +641,7 @@ let make_projectable_subst aliases sigma evi args =
     List.fold_right_i
       (fun i decl (args,all,cstrs,revmap) ->
         match decl,args with
-        | LocalAssum (id,c), a::rest ->
+        | LocalAssum ({binder_name=id},c), a::rest ->
             let revmap = Id.Map.add id i revmap in
             let cstrs =
               let a',args = decompose_app_vect sigma a in
@@ -651,7 +652,7 @@ let make_projectable_subst aliases sigma evi args =
               | _ -> cstrs in
             let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
             (rest,all,cstrs,revmap)
-        | LocalDef (id,c,_), a::rest ->
+        | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
             (match EConstr.kind sigma c with
             | Var id' ->
@@ -727,7 +728,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
     List.fold_right (fun d (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
       let LocalAssum (na,t_in_env) | LocalDef (na,_,t_in_env) = d in
-      let id = next_name_away na avoid in
+      let id = map_annot (fun na -> next_name_away na avoid) na in
       let evd,t_in_sign =
         let s = Retyping.get_sort_of env evd t_in_env in
         let evd,ty_t_in_sign = refresh_universes
@@ -743,7 +744,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
       (push_named_context_val d' sign, Filter.extend 1 filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
-       push_rel d env,evd,Id.Set.add id avoid))
+       push_rel d env,evd,Id.Set.add id.binder_name avoid))
       rel_sign
       (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,avoid)
   in

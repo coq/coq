@@ -12,6 +12,7 @@
     (lazy)match and (lazy)match goal. *)
 
 open Names
+open Context
 open Tacexpr
 open Context.Named.Declaration
 
@@ -299,8 +300,8 @@ module PatternMatching (E:StaticEnvironment) = struct
       | LocalDef (id,body,hyp) ->
           pattern_match_term false bodypat body () <*>
           pattern_match_term true typepat hyp () <*>
-          put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
-          return id
+          put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
+          return id.binder_name
       | LocalAssum (id,hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to

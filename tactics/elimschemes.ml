@@ -88,13 +88,26 @@ let ind_scheme_kind_from_type =
   declare_individual_scheme_object "_ind_nodep"
   (optimize_non_type_induction_scheme rec_scheme_kind_from_type false InProp)
 
+let sind_scheme_kind_from_type =
+  declare_individual_scheme_object "_sind_nodep"
+  (fun _ x -> build_induction_scheme_in_type false InSProp x, Safe_typing.empty_private_constants)
+
 let ind_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
   (optimize_non_type_induction_scheme rec_dep_scheme_kind_from_type true InProp)
 
+let sind_dep_scheme_kind_from_type =
+  declare_individual_scheme_object "_sind" ~aux:"_sind_from_type"
+  (fun _ x -> build_induction_scheme_in_type true InSProp x, Safe_typing.empty_private_constants)
+
 let ind_scheme_kind_from_prop =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
   (optimize_non_type_induction_scheme rec_scheme_kind_from_prop false InProp)
+
+let sind_scheme_kind_from_prop =
+  declare_individual_scheme_object "_sind" ~aux:"_sind_from_prop"
+  (fun _ x -> build_induction_scheme_in_type false InSProp x, Safe_typing.empty_private_constants)
+
 
 (* Case analysis *)
 

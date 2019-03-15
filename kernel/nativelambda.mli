@@ -21,9 +21,9 @@ type lambda =
   | Lmeta         of metavariable * lambda (* type *)
   | Levar         of Evar.t * lambda array (* arguments *)
   | Lprod         of lambda * lambda
-  | Llam          of Name.t array * lambda
-  | Lrec          of Name.t * lambda
-  | Llet          of Name.t * lambda * lambda
+  | Llam          of Name.t Context.binder_annot array * lambda
+  | Lrec          of Name.t Context.binder_annot * lambda
+  | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * pconstant
   | Lproj         of prefix * inductive * int (* prefix, inductive, index starting from 0 *)
@@ -45,9 +45,9 @@ type lambda =
   | Llazy
   | Lforce
 
-and lam_branches = (constructor * Name.t array * lambda) array
+and lam_branches = (constructor * Name.t Context.binder_annot array * lambda) array
 
-and fix_decl =  Name.t array * lambda array * lambda array
+and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 type evars =
     { evars_val : existential -> constr option;
@@ -55,8 +55,8 @@ type evars =
 
 val empty_evars : evars
 
-val decompose_Llam : lambda -> Name.t array * lambda
-val decompose_Llam_Llet : lambda -> (Name.t * lambda option) array * lambda
+val decompose_Llam : lambda -> Name.t Context.binder_annot array * lambda
+val decompose_Llam_Llet : lambda -> (Name.t Context.binder_annot * lambda option) array * lambda
 
 val is_lazy : constr -> bool
 val mk_lazy : lambda -> lambda

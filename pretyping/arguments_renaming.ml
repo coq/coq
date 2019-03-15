@@ -13,6 +13,7 @@ open Names
 open Globnames
 open Term
 open Constr
+open Context
 open Environ
 open Util
 open Libobject
@@ -72,7 +73,7 @@ let arguments_names r = GlobRef.Map.find r !name_table
 let rename_type ty ref =
   let name_override old_name override =
     match override with
-    | Name _ as x -> x
+    | Name _ as x -> {old_name with binder_name=x}
     | Anonymous -> old_name in
   let rec rename_type_aux c = function
     | [] -> c

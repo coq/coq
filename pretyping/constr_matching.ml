@@ -14,6 +14,7 @@ open CErrors
 open Util
 open Names
 open Constr
+open Context
 open Globnames
 open Termops
 open Term
@@ -70,7 +71,7 @@ let constrain sigma n (ids, m) ((names,seen as names_seen), terms as subst) =
     (names_seen, Id.Map.add n (ids, m) terms)
 
 let add_binders na1 na2 binding_vars ((names,seen), terms as subst) =
-  match na1, na2 with
+  match na1, na2.binder_name with
   | Name id1, Name id2 when Id.Set.mem id1 binding_vars ->
     if Id.Map.mem id1 names then
       let () = Glob_ops.warn_variable_collision id1 in
@@ -94,7 +95,7 @@ let rec build_lambda sigma vars ctx m = match vars with
   let (na, t, suf) = match suf with
   | [] -> assert false
   | (_, id, t) :: suf ->
-     (Name id, t, suf)
+     (map_annot Name.mk_name id, t, suf)
   in
   (* Check that the abstraction is legal by generating a transitive closure of
      its dependencies. *)
@@ -178,11 +179,12 @@ let make_renaming ids = function
 | _ -> dummy_constr
 
 let push_binder na1 na2 t ctx =
-  let id2 = match na2 with
-  | Name id2 -> id2
-  | Anonymous ->
-     let avoid = Id.Set.of_list (List.map pi2 ctx) in
-     Namegen.next_ident_away Namegen.default_non_dependent_ident avoid in
+  let id2 = map_annot (function
+      | Name id2 -> id2
+      | Anonymous ->
+        let avoid = Id.Set.of_list (List.map (fun (_,id,_) -> id.binder_name) ctx) in
+        Namegen.next_ident_away Namegen.default_non_dependent_ident avoid) na2
+  in
   (na1, id2, t) :: ctx
 
 (* This is an optimization of the main pattern-matching which shares
@@ -341,19 +343,19 @@ let matches_core env sigma allow_bound_rels
           sorec ctx env subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
+          sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
+          sorec (push_binder na1 na2 c2 ctx) (EConstr.push_rel (LocalAssum (na2,c2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,Some t1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
+          sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env (sorec ctx env subst c1 c2) t1 t2)) d1 d2
 
       | PLetIn (na1,c1,None,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
+          sorec (push_binder na1 na2 t2 ctx) (EConstr.push_rel (LocalDef (na2,c2,t2)) env)
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->

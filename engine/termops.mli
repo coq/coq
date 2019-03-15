@@ -23,9 +23,9 @@ val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
 [@@ocaml.deprecated "Use [Constr.debug_print_fix]"]
 
 (** about contexts *)
-val push_rel_assum : Name.t * types -> env -> env
-val push_rels_assum : (Name.t * Constr.types) list -> env -> env
-val push_named_rec_types : Name.t array * Constr.types array * 'a -> env -> env
+val push_rel_assum : Name.t Context.binder_annot * types -> env -> env
+val push_rels_assum : (Name.t Context.binder_annot * Constr.types) list -> env -> env
+val push_named_rec_types : Name.t Context.binder_annot array * Constr.types array * 'a -> env -> env
 
 val lookup_rel_id : Id.t -> ('c, 't) Context.Rel.pt -> int * 'c option * 't
 (** Associates the contents of an identifier in a [rel_context]. Raise
@@ -40,8 +40,8 @@ val rel_list : int -> int -> constr list
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkProd_wo_LetIn : rel_declaration -> types -> types
-val it_mkProd : types -> (Name.t * types) list -> types
-val it_mkLambda : constr -> (Name.t * types) list -> constr
+val it_mkProd : types -> (Name.t Context.binder_annot * types) list -> types
+val it_mkLambda : constr -> (Name.t Context.binder_annot * types) list -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 val it_mkProd_wo_LetIn : types -> rel_context -> types
 val it_mkLambda_or_LetIn : Constr.constr -> Constr.rel_context -> Constr.constr
@@ -246,7 +246,7 @@ val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 
 (** other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
-val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Name.t * 't) list
+val assums_of_rel_context : ('c, 't) Context.Rel.pt -> (Name.t Context.binder_annot * 't) list
 val lift_rel_context : int -> Constr.rel_context -> Constr.rel_context
 val substl_rel_context : Constr.constr list -> Constr.rel_context -> Constr.rel_context
 val smash_rel_context : Constr.rel_context -> Constr.rel_context (** expand lets in context *)

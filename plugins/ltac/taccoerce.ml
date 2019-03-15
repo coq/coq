@@ -199,7 +199,8 @@ let id_of_name = function
 	  basename
        | Sort s ->
           begin
-	    match ESorts.kind sigma s with
+            match ESorts.kind sigma s with
+            | Sorts.SProp -> Label.to_id (Label.make "SProp")
             | Sorts.Prop -> Label.to_id (Label.make "Prop")
             | Sorts.Set -> Label.to_id (Label.make "Set")
             | Sorts.Type _ -> Label.to_id (Label.make "Type")

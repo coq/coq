@@ -172,7 +172,7 @@ module New = struct
     let env = Proofview.Goal.env gl in
     let sign = Environ.named_context env in
     List.map (function LocalAssum (id,x)
-                     | LocalDef (id,_,x) -> id, EConstr.of_constr x)
+                     | LocalDef (id,_,x) -> id.Context.binder_name, EConstr.of_constr x)
              sign
 
   let pf_last_hyp gl =

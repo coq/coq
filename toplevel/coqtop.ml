@@ -189,6 +189,8 @@ let init_toplevel ~help ~init custom_init arglist =
   Global.set_indices_matter opts.indices_matter;
   Global.set_VM opts.enable_VM;
   Global.set_native_compiler (match opts.native_compiler with NativeOff -> false | NativeOn _ -> true);
+  Global.set_allow_sprop opts.allow_sprop;
+  if opts.cumulative_sprop then Global.make_sprop_cumulative ();
 
   (* Allow the user to load an arbitrary state here *)
   inputstate opts;

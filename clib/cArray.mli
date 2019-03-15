@@ -83,6 +83,8 @@ sig
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
+  val map3_i :
+    (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   (** As [map] but guaranteed to be left-to-right. *)
@@ -126,6 +128,8 @@ sig
     val map : ('a -> 'a) -> 'a array -> 'a array
     (** [Smart.map f a] behaves as [map f a] but returns [a] instead of a copy when
         [f x == x] for all [x] in [a]. *)
+
+    val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
 
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     (** [Smart.map2 f a b] behaves as [map2 f a b] but returns [a] instead of a copy when

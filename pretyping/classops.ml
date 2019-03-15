@@ -179,7 +179,7 @@ let find_class_type sigma t =
     | Proj (p, c) when not (Projection.unfolded p) ->
       CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
-    | Prod (_,_,_) -> CL_FUN, EInstance.empty, []
+    | Prod _ -> CL_FUN, EInstance.empty, []
     | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found
 

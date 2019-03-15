@@ -51,6 +51,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open Vars
 open Declarations
 open Environ
@@ -66,7 +67,7 @@ module RelDecl = Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
-let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
+let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType -> xid
 let fresh env id = next_global_ident_away id Id.Set.empty
 let with_context_set ctx (b, ctx') = 
   (b, Univ.ContextSet.union ctx ctx')
@@ -80,8 +81,8 @@ let build_dependent_inductive ind (mib,mip) =
 
 let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
-| LocalAssum (na,t) -> LocalAssum (named_hd env t na, t)
-| LocalDef (na,c,t) -> LocalDef (named_hd env c na, c, t)
+| LocalAssum (na,t) -> LocalAssum (map_annot (named_hd env t) na, t)
+| LocalDef (na,c,t) -> LocalDef (map_annot (named_hd env c) na, c, t)
 
 let name_context env hyps =
   snd
@@ -202,11 +203,14 @@ let build_sym_scheme env ind =
     get_sym_eq_data env indu in
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect mkRel n mib.mind_params_ctxt) in
-  let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
+  let inds = snd (mind_arity mip) in
+  let varH = fresh env (default_id_of_sort inds) in
   let applied_ind = build_dependent_inductive indu specif in
+  let indr = Sorts.relevance_of_sort_family inds in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
+  let rci = Sorts.Relevant in (* TODO relevance *)
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
@@ -256,7 +260,9 @@ let build_sym_involutive_scheme env ind =
   let eq,eqrefl,ctx = get_coq_eq ctx in
   let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
   let cstr n = mkApp (mkConstructUi (indu,1),Context.Rel.to_extended_vect mkRel n paramsctxt) in
-  let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
+  let inds = snd (mind_arity mip) in
+  let indr = Sorts.relevance_of_sort_family inds in
+  let varH = fresh env (default_id_of_sort inds) in
   let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_C =
     mkApp
@@ -264,8 +270,9 @@ let build_sym_involutive_scheme env ind =
          (Context.Rel.to_extended_vect mkRel (nrealargs+1) mib.mind_params_ctxt)
          (rel_vect (nrealargs+1) nrealargs)) in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
+  let rci = Sorts.Relevant in (* TODO relevance *)
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let c = 
     (my_it_mkLambda_or_LetIn paramsctxt
      (my_it_mkLambda_or_LetIn_name realsign_ind
@@ -368,7 +375,9 @@ let build_l2r_rew_scheme dep env ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
+  let inds = snd (mind_arity mip) in
+  let indr = Sorts.relevance_of_sort_family inds in
+  let varH = fresh env (default_id_of_sort inds) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
   let applied_ind = build_dependent_inductive indu specif in
@@ -384,9 +393,9 @@ let build_l2r_rew_scheme dep env ind kind =
         rel_vect 0 nrealargs]) in
   let realsign_P = lift_rel_context nrealargs realsign in
   let realsign_ind_P =
-    name_context env ((LocalAssum (Name varH,applied_ind_P))::realsign_P) in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind_P))::realsign_P) in
   let realsign_ind_G =
-    name_context env ((LocalAssum (Name varH,applied_ind_G))::
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind_G))::
                       lift_rel_context (nrealargs+3) realsign) in
   let applied_sym_C n =
      mkApp(sym,
@@ -400,8 +409,9 @@ let build_l2r_rew_scheme dep env ind kind =
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
-  let cieq = make_case_info (Global.env()) (fst (destInd eq)) RegularStyle in
+  let rci = Sorts.Relevant in (* TODO relevance *)
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
+  let cieq = make_case_info (Global.env()) (fst (destInd eq)) rci RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append (Context.Rel.to_extended_vect mkRel 1 realsign)
            (if dep then [|cstr (2*nrealargs+1) 1|] else [||])) in
@@ -429,14 +439,14 @@ let build_l2r_rew_scheme dep env ind kind =
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
-  (mkNamedLambda varP
+  (mkNamedLambda (make_annot varP indr)
     (my_it_mkProd_or_LetIn (if dep then realsign_ind_P else realsign_P) s)
-  (mkNamedLambda varHC applied_PC
-  (mkNamedLambda varH (lift 2 applied_ind)
+  (mkNamedLambda (make_annot varHC indr) applied_PC
+  (mkNamedLambda (make_annot varH indr) (lift 2 applied_ind)
   (if dep then (* we need a coercion *)
      mkCase (cieq,
-       mkLambda (Name varH,lift 3 applied_ind,
-         mkLambda (Anonymous,
+       mkLambda (make_annot (Name varH) indr,lift 3 applied_ind,
+         mkLambda (make_annot Anonymous indr,
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
                    applied_PR)),
        mkApp (sym_involutive,
@@ -481,7 +491,9 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     mkApp (mkConstructUi(indu,1),
       Array.concat [Context.Rel.to_extended_vect mkRel n paramsctxt1;
                     rel_vect p nrealargs]) in
-  let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
+  let inds = snd (mind_arity mip) in
+  let indr = Sorts.relevance_of_sort_family inds in
+  let varH = fresh env (default_id_of_sort inds) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
   let applied_ind = build_dependent_inductive indu specif in
@@ -497,13 +509,14 @@ let build_l2r_forward_rew_scheme dep env ind kind =
         rel_vect (2*nrealargs+1) nrealargs]) in
   let realsign_P n = lift_rel_context (nrealargs*n+n) realsign in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let realsign_ind_P n aP =
-    name_context env ((LocalAssum (Name varH,aP))::realsign_P n) in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,aP))::realsign_P n) in
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
+  let rci = Sorts.Relevant in
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append
            (rel_vect (nrealargs*2+3) nrealargs)
@@ -519,19 +532,19 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
-  (mkNamedLambda varH applied_ind
+  (mkNamedLambda (make_annot varH indr) applied_ind
   (mkCase (ci,
      my_it_mkLambda_or_LetIn_name
        (lift_rel_context (nrealargs+1) realsign_ind)
-       (mkNamedProd varP
+       (mkNamedProd (make_annot varP indr)
          (my_it_mkProd_or_LetIn
 	   (if dep then realsign_ind_P 2 applied_ind_P else realsign_P 2) s)
-       (mkNamedProd varHC applied_PC applied_PG)),
+       (mkNamedProd (make_annot varHC indr) applied_PC applied_PG)),
      (mkVar varH),
-     [|mkNamedLambda varP
+     [|mkNamedLambda (make_annot varP indr)
         (my_it_mkProd_or_LetIn
 	  (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
-      (mkNamedLambda varHC applied_PC'
+      (mkNamedLambda (make_annot varHC indr) applied_PC'
 	(mkVar varHC))|])))))
   in c, UState.of_context_set ctx
 
@@ -572,16 +585,19 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let cstr n =
     mkApp (mkConstructUi(indu,1),Context.Rel.to_extended_vect mkRel n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
-  let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
+  let inds = snd (mind_arity mip) in
+  let indr = Sorts.relevance_of_sort_family inds in
+  let varH = fresh env (default_id_of_sort inds) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
   let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
-    name_context env ((LocalAssum (Name varH,applied_ind))::realsign) in
+    name_context env ((LocalAssum (make_annot (Name varH) indr,applied_ind))::realsign) in
   let s, ctx' = UnivGen.fresh_sort_in_family kind in
   let ctx = Univ.ContextSet.union ctx ctx' in
   let s = mkSort s in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
+  let rci = Sorts.Relevant in (* TODO relevance *)
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let applied_PC =
     applist (mkVar varP,if dep then constrargs_cstr else constrargs) in
   let applied_PG =
@@ -591,18 +607,18 @@ let build_r2l_forward_rew_scheme dep env ind kind =
   let c = 
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
-  (mkNamedLambda varP
+  (mkNamedLambda (make_annot varP indr)
     (my_it_mkProd_or_LetIn (lift_rel_context (nrealargs+1)
                              (if dep then realsign_ind else realsign)) s)
-  (mkNamedLambda varHC (lift 1 applied_PG)
+  (mkNamedLambda (make_annot varHC indr) (lift 1 applied_PG)
   (mkApp
     (mkCase (ci,
        my_it_mkLambda_or_LetIn_name
          (lift_rel_context (nrealargs+3) realsign_ind)
-         (mkArrow applied_PG (lift (2*nrealargs+5) applied_PC)),
+         (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)),
        mkRel 3 (* varH *),
        [|mkLambda
-          (Name varHC,
+          (make_annot (Name varHC) indr,
 	   lift (nrealargs+3) applied_PC,
 	   mkRel 1)|]),
     [|mkVar varHC|]))))))
@@ -775,7 +791,10 @@ let build_congr env (eq,refl,ctx) ind =
   if List.exists is_local_def realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let env_with_arity = push_rel_context arityctxt env in
-  let ty = RelDecl.get_type (lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity) in
+  let ty, tyr =
+    let decl = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
+    RelDecl.get_type decl, RelDecl.get_relevance decl
+  in
   let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
@@ -784,15 +803,16 @@ let build_congr env (eq,refl,ctx) ind =
   let varB = fresh env (Id.of_string "B") in
   let varH = fresh env (Id.of_string "H") in
   let varf = fresh env (Id.of_string "f") in
-  let ci = make_case_info (Global.env()) ind RegularStyle in
+  let rci = Sorts.Relevant in (* TODO relevance *)
+  let ci = make_case_info (Global.env()) ind rci RegularStyle in
   let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
   let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c = 
   my_it_mkLambda_or_LetIn paramsctxt
-     (mkNamedLambda varB (mkSort (Type uni))
-     (mkNamedLambda varf (mkArrow (lift 1 ty) (mkVar varB))
+     (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)
+     (mkNamedLambda (make_annot varf Sorts.Relevant) (mkArrow (lift 1 ty) tyr (mkVar varB))
      (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
-     (mkNamedLambda varH
+     (mkNamedLambda (make_annot varH Sorts.Relevant)
         (applist
            (mkIndU indu,
 	    Context.Rel.to_extended_list mkRel (mip.mind_nrealargs+2) paramsctxt @
@@ -801,7 +821,7 @@ let build_congr env (eq,refl,ctx) ind =
        my_it_mkLambda_or_LetIn_name
 	 (lift_rel_context (mip.mind_nrealargs+3) realsign)
          (mkLambda
-           (Anonymous,
+           (make_annot Anonymous Sorts.Relevant,
             applist
              (mkIndU indu,
 	        Context.Rel.to_extended_list mkRel (2*mip.mind_nrealdecls+3)

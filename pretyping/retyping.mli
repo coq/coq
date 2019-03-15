@@ -53,3 +53,8 @@ val sorts_of_context : env -> evar_map -> rel_context -> Sorts.t list
 val expand_projection : env -> evar_map -> Names.Projection.t -> constr -> constr list -> constr
 
 val print_retype_error : retype_error -> Pp.t
+
+val relevance_of_term : env -> evar_map -> constr -> Sorts.relevance
+val relevance_of_type : env -> evar_map -> types -> Sorts.relevance
+val relevance_of_sort : ESorts.t -> Sorts.relevance
+val relevance_of_sort_family : Sorts.family -> Sorts.relevance

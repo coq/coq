@@ -69,7 +69,7 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
   | RegularArity s -> s.mind_user_arity, false
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
-      mkArity (List.rev ctx, Type ar.template_level), true
+      mkArity (List.rev ctx, Sorts.sort_of_univ ar.template_level), true
 
 let process_inductive info modlist mib =
   let section_decls = Lib.named_of_variable_context info.Lib.abstr_ctx in
@@ -103,7 +103,7 @@ let process_inductive info modlist mib =
   let (params',inds') = abstract_inductive section_decls' nparamdecls inds in
   let record = match mib.mind_record with
     | PrimRecord info ->
-      Some (Some (Array.map pi1 info))
+      Some (Some (Array.map (fun (x,_,_,_) -> x) info))
     | FakeRecord -> Some None
     | NotRecord -> None
   in

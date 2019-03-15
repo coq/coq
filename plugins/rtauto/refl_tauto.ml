@@ -16,6 +16,7 @@ open CErrors
 open Util
 open Term
 open Constr
+open Context
 open Proof_search
 open Context.Named.Declaration
 
@@ -127,7 +128,7 @@ let rec make_hyps env sigma atom_env lenv = function
   | LocalAssum (id,typ)::rest ->
     let hrec=
       make_hyps env sigma atom_env (typ::lenv) rest in
-    if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id c) lenv ||
+    if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id.binder_name c) lenv ||
        (Retyping.get_sort_family_of env sigma typ != InProp)
     then
       hrec
@@ -291,7 +292,7 @@ let rtauto_tac =
                         build_form formula;
                         build_proof [] 0 prf|]) in
     let term=
-      applistc main (List.rev_map (fun (id,_) -> mkVar id) hyps) in
+      applistc main (List.rev_map (fun (id,_) -> mkVar id.binder_name) hyps) in
     let build_end_time=System.get_time () in
     let () = if !verbose then
         begin

@@ -15,6 +15,7 @@ open Names
 open Nameops
 open Namegen
 open Constr
+open Context
 open EConstr
 open Vars
 open Reduction
@@ -220,23 +221,23 @@ end) = struct
     let rec aux env evars ty l =
       let t = Reductionops.whd_all env (goalevars evars) ty in
 	match EConstr.kind (goalevars evars) t, l with
-	| Prod (na, ty, b), obj :: cstrs ->
+        | Prod (na, ty, b), obj :: cstrs ->
           let b = Reductionops.nf_betaiota env (goalevars evars) b in
-	  if noccurn (goalevars evars) 1 b (* non-dependent product *) then
+          if noccurn (goalevars evars) 1 b (* non-dependent product *) then
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
 	    let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
 	    let evars, relty = mk_relty evars env ty obj in
 	    let evars, newarg = app_poly env evars respectful [| ty ; b' ; relty ; arg |] in
-	      evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
+              evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
 	  else
 	    let (evars, b, arg, cstrs) =
-	      aux (push_rel (LocalAssum (na, ty)) env) evars b cstrs
+              aux (push_rel (LocalAssum (na, ty)) env) evars b cstrs
 	    in
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
-	    let pred = mkLambda (na, ty, b) in
-	    let liftarg = mkLambda (na, ty, arg) in
-	    let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
-	      if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
+            let pred = mkLambda (na, ty, b) in
+            let liftarg = mkLambda (na, ty, arg) in
+            let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
+              if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else user_err Pp.(str "build_signature: no constraint can apply on a dependent argument")
 	| _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products.")
 	| _, [] ->
@@ -253,7 +254,7 @@ end) = struct
   let unfold_impl sigma t =
     match EConstr.kind sigma t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) ->
-      mkProd (Anonymous, a, lift 1 b)
+      mkProd (make_annot Anonymous Sorts.Relevant, a, lift 1 b)
     | _ -> assert false
 
   let unfold_all sigma t =
@@ -279,7 +280,7 @@ end) = struct
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 	(* (evd, mkProd (Anonymous, a, b)), (fun x -> x) *)
       else if bp then (* Dummy forall *)
-	(app_poly env evd coq_all [| a; mkLambda (Anonymous, a, lift 1 b) |]), unfold_forall
+        (app_poly env evd coq_all [| a; mkLambda (make_annot Anonymous Sorts.Relevant, a, lift 1 b) |]), unfold_forall
       else (* None in Prop, use arrow *)
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
@@ -308,7 +309,8 @@ end) = struct
       app_poly env evd pointwise_relation [| t; lift (-1) car; lift (-1) rel |]
     else
       app_poly env evd forall_relation
-	[| t; mkLambda (n, t, car); mkLambda (n, t, rel) |]
+        [| t; mkLambda (make_annot n Sorts.Relevant, t, car);
+           mkLambda (make_annot n Sorts.Relevant, t, rel) |]
 
   let lift_cstr env evars (args : constr list) c ty cstr =
     let start evars env car =
@@ -323,15 +325,15 @@ end) = struct
       else
         let sigma = goalevars evars in
 	match EConstr.kind sigma (Reductionops.whd_all env sigma prod) with
-	| Prod (na, ty, b) ->
+        | Prod (na, ty, b) ->
 	  if noccurn sigma 1 b then
 	    let b' = lift (-1) b in
 	    let evars, rb = aux evars env b' (pred n) in
 	      app_poly env evars pointwise_relation [| ty; b'; rb |]
 	  else
-	    let evars, rb = aux evars (push_rel (LocalAssum (na, ty)) env) b (pred n) in
+            let evars, rb = aux evars (push_rel (LocalAssum (na, ty)) env) b (pred n) in
 	      app_poly env evars forall_relation
-		[| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |]
+                [| ty; mkLambda (na, ty, b); mkLambda (na, ty, rb) |]
 	| _ -> raise Not_found
     in 
     let rec find env c ty = function
@@ -481,8 +483,9 @@ let rec decompose_app_rel env evd t =
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
     let ty = Typing.unsafe_type_of env evd argl in
-    let f'' = mkLambda (Name default_dependent_ident, ty,
-      mkLambda (Name (Id.of_string "y"), lift 1 ty,
+    let r = Retyping.relevance_of_type env evd ty in
+    let f'' = mkLambda (make_annot (Name default_dependent_ident) r, ty,
+      mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
         mkApp (lift 2 f, [| mkApp (lift 2 f', [| mkRel 2; mkRel 1 |]) |])))
     in (f'', argl, argr)
   | App (f, args) ->
@@ -522,7 +525,7 @@ let decompose_applied_relation env sigma (c,l) =
     | Some c -> c
     | None ->
 	let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
-	match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
+        match find_rel (it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx)) with
 	| Some c -> c
 	| None -> user_err Pp.(str "Cannot find an homogeneous relation to rewrite.")
 
@@ -803,7 +806,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 	else TypeGlobal.do_subrelation, TypeGlobal.apply_subrelation
       in
 	EConstr.push_named
-	  (LocalDef (Id.of_string "do_subrelation",
+          (LocalDef (make_annot (Id.of_string "do_subrelation") Sorts.Relevant,
 	             snd (app_poly_sort b env evars dosub [||]),
 	             snd (app_poly_nocheck env evars appsub [||])))
 	  env
@@ -906,7 +909,7 @@ let make_leibniz_proof env c ty r =
 	let prf =
 	  e_app_poly env evars coq_f_equal
 		[| r.rew_car; ty;
-		   mkLambda (Anonymous, r.rew_car, c);
+                   mkLambda (make_annot Anonymous Sorts.Relevant, r.rew_car, c);
 		   r.rew_from; r.rew_to; prf |]
 	in RewPrf (rel, prf)
     | RewCast k -> r.rew_prf
@@ -1103,7 +1106,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       (* 		else *)
 
       | Prod (n, dom, codom) ->
-	  let lam = mkLambda (n, dom, codom) in
+          let lam = mkLambda (n, dom, codom) in
 	  let (evars', app), unfold = 
 	    if eq_constr (fst evars) ty mkProp then
 	      (app_poly_sort prop env evars coq_all [| dom; lam |]), TypeGlobal.unfold_all
@@ -1149,9 +1152,9 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
       (* 	    | _ -> b') *)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-        let n' = Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env) n in
+        let n' = map_annot (Nameops.Name.map (fun id -> Tactics.fresh_id_in_env unfresh id env)) n in
         let open Context.Rel.Declaration in
-	let env' = EConstr.push_rel (LocalAssum (n', t)) env in
+        let env' = EConstr.push_rel (LocalAssum (n', t)) env in
 	let bty = Retyping.get_type_of env' (goalevars evars) b in
 	let unlift = if prop then PropGlobal.unlift_cstr else TypeGlobal.unlift_cstr in
 	let state, b' = s.strategy { state ; env = env' ; unfresh ;
@@ -1166,15 +1169,15 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		let point = if prop then PropGlobal.pointwise_or_dep_relation else
 		    TypeGlobal.pointwise_or_dep_relation
 		in
-		let evars, rel = point env r.rew_evars n' t r.rew_car rel in
-		let prf = mkLambda (n', t, prf) in
+                let evars, rel = point env r.rew_evars n'.binder_name t r.rew_car rel in
+                let prf = mkLambda (n', t, prf) in
 		  { r with rew_prf = RewPrf (rel, prf); rew_evars = evars }
 	      | x -> r
 	    in
 	      Success { r with
-		rew_car = mkProd (n, t, r.rew_car);
-		rew_from = mkLambda(n, t, r.rew_from);
-		rew_to = mkLambda (n, t, r.rew_to) }
+                rew_car = mkProd (n, t, r.rew_car);
+                rew_from = mkLambda(n, t, r.rew_from);
+                rew_to = mkLambda (n, t, r.rew_to) }
 	  | Fail | Identity -> b'
 	in state, res
 	    
@@ -1516,7 +1519,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	    | Some (t, ty) ->
               let t = Reductionops.nf_evar evars' t in
               let ty = Reductionops.nf_evar evars' ty in
-		mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
+                mkApp (mkLambda (make_annot (Name (Id.of_string "lemma")) Sorts.Relevant, ty, p), [| t |])
 	  in
 	  let proof = match is_hyp with
             | None -> term
@@ -1542,7 +1545,8 @@ let assert_replacing id newt tac =
     let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
     | [] -> assert false
-    | d :: rem -> insert_dependent env sigma (LocalAssum (NamedDecl.get_id d, newt)) [] after @ rem
+    | d :: rem -> insert_dependent env sigma
+                    (LocalAssum (make_annot (NamedDecl.get_id d) Sorts.Relevant, newt)) [] after @ rem
     in
     let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
     Refine.refine ~typecheck:true begin fun sigma ->
@@ -1586,7 +1590,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	    tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (LocalAssum (id, newt)) <*>
+            convert_hyp_no_check (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
             beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1905,7 +1909,7 @@ let build_morphism_signature env sigma m =
   let cstrs =
     let rec aux t =
       match EConstr.kind sigma t with
-	| Prod (na, a, b) ->
+        | Prod (na, a, b) ->
 	    None :: aux b
 	| _ -> []
     in aux t

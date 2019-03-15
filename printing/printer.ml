@@ -13,6 +13,7 @@ open CErrors
 open Util
 open Names
 open Constr
+open Context
 open Environ
 open Globnames
 open Evd
@@ -100,7 +101,7 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
   (* we also need to preserve the actual names of the patterns *)
   (* So what to do? *)
-  let assums = List.map (fun id -> (Name id,(* dummy *) mkProp)) ids in
+  let assums = List.map (fun id -> (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) ids in
   pr (Termops.push_rels_assum assums env) sigma c
 
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
@@ -290,7 +291,7 @@ let pr_compacted_decl env sigma decl =
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
-  let pids = prlist_with_sep pr_comma pr_id ids in
+  let pids = prlist_with_sep pr_comma (fun id -> pr_id id.binder_name) ids in
   let pt = pr_ltype_env env sigma typ in
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)

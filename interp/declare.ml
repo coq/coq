@@ -370,7 +370,7 @@ let declare_projections univs mind =
   let mib = Environ.lookup_mind mind env in
   match mib.mind_record with
   | PrimRecord info ->
-    let iter_ind i (_, labs, _) =
+    let iter_ind i (_, labs, _, _) =
       let ind = (mind, i) in
       let projs = Inductiveops.compute_projections env ind in
       Array.iter2_i (declare_one_projection univs ind ~proj_npars:mib.mind_nparams) labs projs

@@ -28,6 +28,7 @@
 open Util
 open Names
 open Univ
+open Context
 
 type existential_key = Evar.t
 type metavariable = int
@@ -60,6 +61,7 @@ type case_info =
                                        in addition to the parameters of the related inductive type
                                        NOTE: "lets" are therefore excluded from the count
                                        NOTE: parameters of the inductive type are also excluded from the count *)
+    ci_relevance : Sorts.relevance;
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
@@ -71,7 +73,7 @@ type case_info =
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr array
 type ('constr, 'types) prec_declaration =
-    Name.t array * 'types array * 'constr array
+    Name.t binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
 type ('constr, 'types) pcofixpoint =
@@ -90,9 +92,9 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t * 'types * 'types
-  | Lambda    of Name.t * 'types * 'constr
-  | LetIn     of Name.t * 'constr * 'types * 'constr
+  | Prod      of Name.t binder_annot * 'types * 'types
+  | Lambda    of Name.t binder_annot * 'types * 'constr
+  | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of (Constant.t * 'univs)
   | Ind       of (inductive * 'univs)
@@ -127,13 +129,15 @@ let rels =
 let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel n
 
 (* Construct a type *)
+let mkSProp  = Sort Sorts.sprop
 let mkProp   = Sort Sorts.prop
 let mkSet    = Sort Sorts.set
-let mkType u = Sort (Sorts.Type u)
+let mkType u = Sort (Sorts.sort_of_univ u)
 let mkSort   = function
+  | Sorts.SProp -> mkSProp
   | Sorts.Prop -> mkProp (* Easy sharing *)
   | Sorts.Set -> mkSet
-  | s -> Sort s
+  | Sorts.Type _ as s -> Sort s
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
 (* (that means t2 is declared as the type of t1) *)
@@ -1181,16 +1185,16 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Prod (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (Name.hash na) ht hc))
+        (Prod (sh_na na, t, c), combinesmall 4 (combine3 (hash_annot Name.hash na) ht hc))
       | Lambda (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (Name.hash na) ht hc))
+        (Lambda (sh_na na, t, c), combinesmall 5 (combine3 (hash_annot Name.hash na) ht hc))
       | LetIn (na,b,t,c) ->
 	let b, hb = sh_rec b in
 	let t, ht = sh_rec t in
 	let c, hc = sh_rec c in
-	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Name.hash na) hb ht hc))
+        (LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
       | App (c,l) ->
 	let c, hc = sh_rec c in
 	let l, hl = hash_term_array l in
@@ -1214,24 +1218,24 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
 	let bl,hbl = hash_term_array bl in
-	let hbl = combine (combine hc hp) hbl in
+        let hbl = combine (combine hc hp) hbl in
 	(Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
       | Fix (ln,(lna,tl,bl)) ->
-	let bl,hbl = hash_term_array bl in
+        let bl,hbl = hash_term_array bl in
 	let tl,htl = hash_term_array tl in
         let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
-        let fold accu na = combine (Name.hash na) accu in
+        let fold accu na = combine (hash_annot Name.hash na) accu in
         let hna = Array.fold_left fold 0 lna in
         let h = combine3 hna hbl htl in
-	(Fix (ln,(lna,tl,bl)), combinesmall 13 h)
+        (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
       | CoFix(ln,(lna,tl,bl)) ->
-	let bl,hbl = hash_term_array bl in
+        let bl,hbl = hash_term_array bl in
 	let tl,htl = hash_term_array tl in
         let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
-        let fold accu na = combine (Name.hash na) accu in
+        let fold accu na = combine (hash_annot Name.hash na) accu in
         let hna = Array.fold_left fold 0 lna in
         let h = combine3 hna hbl htl in
-	(CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
+        (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
 	(t, combinesmall 15 n)
       | Rel n ->
@@ -1322,6 +1326,7 @@ struct
     info1.style == info2.style
   let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
+    ci.ci_relevance == ci'.ci_relevance &&
     Int.equal ci.ci_npar ci'.ci_npar &&
     Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
     Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
@@ -1345,7 +1350,7 @@ struct
     let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
     let h4 = Array.fold_left combine 0 ci.ci_cstr_nargs in
     let h5 = hash_pp_info ci.ci_pp_info in
-    combine5 h1 h2 h3 h4 h5
+    combinesmall (Sorts.relevance_hash ci.ci_relevance) (combine5 h1 h2 h3 h4 h5)
 end
 
 module Hcaseinfo = Hashcons.Make(CaseinfoHash)
@@ -1354,6 +1359,18 @@ let case_info_hash = CaseinfoHash.hash
 
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate Hcaseinfo.hcons hcons_ind
 
+module Hannotinfo = struct
+    type t = Name.t binder_annot
+    type u = Name.t -> Name.t
+    let hash = hash_annot Name.hash
+    let eq = eq_annot (fun na1 na2 -> na1 == na2)
+    let hashcons h {binder_name=na;binder_relevance} =
+      {binder_name=h na;binder_relevance}
+  end
+module Hannot = Hashcons.Make(Hannotinfo)
+
+let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons Name.hcons
+
 let hcons =
   hashcons
     (Sorts.hcons,
@@ -1361,7 +1378,7 @@ let hcons =
      hcons_construct,
      hcons_ind,
      hcons_con,
-     Name.hcons,
+     hcons_annot,
      Id.hcons)
 
 (* let hcons_types = hcons_constr *)
@@ -1377,7 +1394,7 @@ type compacted_context = compacted_declaration list
 
 let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
   let open Pp in
-  let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
+  let fixl = Array.mapi (fun i na -> (na.binder_name,t.(i),tl.(i),bl.(i))) lna in
   hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
@@ -1399,17 +1416,17 @@ let rec debug_print c =
   | Cast (c,_, t) -> hov 1
       (str"(" ++ debug_print c ++ cut() ++
        str":" ++ debug_print t ++ str")")
-  | Prod (Name(id),t,c) -> hov 1
+  | Prod ({binder_name=Name id;_},t,c) -> hov 1
       (str"forall " ++ Id.print id ++ str":" ++ debug_print t ++ str"," ++
        spc() ++ debug_print c)
-  | Prod (Anonymous,t,c) -> hov 0
+  | Prod ({binder_name=Anonymous;_},t,c) -> hov 0
       (str"(" ++ debug_print t ++ str " ->" ++ spc() ++
        debug_print c ++ str")")
   | Lambda (na,t,c) -> hov 1
-      (str"fun " ++ Name.print na ++ str":" ++
+      (str"fun " ++ Name.print na.binder_name ++ str":" ++
        debug_print t ++ str" =>" ++ spc() ++ debug_print c)
   | LetIn (na,b,t,c) -> hov 0
-      (str"let " ++ Name.print na ++ str":=" ++ debug_print b ++
+      (str"let " ++ Name.print na.binder_name ++ str":=" ++ debug_print b ++
        str":" ++ brk(1,2) ++ debug_print t ++ cut() ++
        debug_print c)
   | App (c,l) ->  hov 1
@@ -1434,7 +1451,7 @@ let rec debug_print c =
       hov 1
         (str"cofix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,ty,bd) ->
-           Name.print na ++ str":" ++ debug_print ty ++
+           Name.print na.binder_name ++ str":" ++ debug_print ty ++
            cut() ++ str":=" ++ debug_print bd) (Array.to_list fixl)) ++
          str"}")
   | Int i -> str"Int("++str (Uint63.to_string i) ++ str")"

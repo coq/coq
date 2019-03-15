@@ -18,6 +18,7 @@ open Util
 open Names
 open Namegen
 open Constr
+open Context
 open EConstr
 open Declarations
 open Tactics
@@ -74,7 +75,8 @@ let generalize_right mk typ c1 c2 =
     let env = Proofview.Goal.env gl in
   Refine.refine ~typecheck:false begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
-    let newconcl = mkProd (na, typ, mk typ c1 (mkRel 1)) in
+    let r = Retyping.relevance_of_type env sigma typ in
+    let newconcl = mkProd (make_annot na r, typ, mk typ c1 (mkRel 1)) in
     let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
     (sigma, mkApp (x, [|c2|]))
   end
@@ -123,8 +125,8 @@ let mkGenDecideEqGoal rectype ops g =
   let hypnames = pf_ids_set_of_hyps g in
   let xname    = next_ident_away idx hypnames
   and yname    = next_ident_away idy hypnames in
-  (mkNamedProd xname rectype
-     (mkNamedProd yname rectype
+  (mkNamedProd (make_annot xname Sorts.Relevant) rectype
+     (mkNamedProd (make_annot yname Sorts.Relevant) rectype
         (mkDecideEqGoal true ops
           rectype (mkVar xname) (mkVar yname))))
 

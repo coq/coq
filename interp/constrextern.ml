@@ -755,6 +755,7 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 (* mapping glob_constr to constr_expr                                    *)
 
 let extern_glob_sort = function
+  | GSProp -> GSProp
   | GProp -> GProp
   | GSet -> GSet
   | GType _ as s when !print_universes -> s

@@ -146,6 +146,7 @@ let make_senv () =
   let senv = Safe_typing.set_engagement !impredicative_set senv in
   let senv = Safe_typing.set_indices_matter !indices_matter senv in
   let senv = Safe_typing.set_VM false senv in
+  let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
   Safe_typing.set_native_compiler false senv
 
 let admit_list = ref ([] : object_file list)
@@ -296,6 +297,8 @@ let explain_exn = function
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
+      | DisallowedSProp -> str"DisallowedSProp"
+      | BadRelevance -> str"BadRelevance"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"))
 
   | InductiveError e ->
@@ -383,6 +386,7 @@ let init_with_argv argv =
   let _fhandle = Feedback.(add_feeder (console_feedback_listener Format.err_formatter)) in
   try
     parse_args argv;
+    CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
     if !Flags.debug then Printexc.record_backtrace true;
     Envars.set_coqlib ~fail:(fun x -> CErrors.user_err Pp.(str x));
     Flags.if_verbose print_header ();

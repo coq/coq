@@ -308,6 +308,9 @@ sig
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   (** Like [split] but for triples *)
 
+  val split4 : ('a * 'b * 'c * 'd) list -> 'a list * 'b list * 'c list * 'd list
+  (** Like [split] but for quads *)
+
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
   (** Like [combine] but for triples *)
 

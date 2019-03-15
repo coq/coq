@@ -22,6 +22,7 @@ type result = {
   cook_type : types;
   cook_universes : universes;
   cook_private_univs : Univ.ContextSet.t option;
+  cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Constr.named_context option;
 }

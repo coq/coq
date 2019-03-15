@@ -52,6 +52,8 @@ sig
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
+  val map3_i :
+    (int -> 'a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
@@ -66,6 +68,7 @@ sig
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a array -> 'a array
+    val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
     val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
@@ -358,6 +361,21 @@ let map3 f v1 v2 v3 =
     res
   end
 
+let map3_i f v1 v2 v3 =
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let len3 = Array.length v3 in
+  let () = if not (Int.equal len1 len2 && Int.equal len1 len3) then invalid_arg "Array.map3_i" in
+  if Int.equal len1 0 then
+    [| |]
+  else begin
+    let res = Array.make len1 (f 0 (uget v1 0) (uget v2 0) (uget v3 0)) in
+    for i = 1 to pred len1 do
+      Array.unsafe_set res i (f i (uget v1 i) (uget v2 i) (uget v3 i))
+    done;
+    res
+  end
+
 let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
   let l = Array.length a in (* (even if so), then we rewrite it *)
   if Int.equal l 0 then [||] else begin
@@ -459,6 +477,36 @@ struct
       while !i < len do
         let v = Array.unsafe_get ans !i in
         let v' = f v in
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      ans
+    end else ar
+
+  (* Same as map_i but smart *)
+  let map_i f (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let v' = f !i v in
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      (* The array is not the same as the original one *)
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ans !i in
+        let v' = f !i v in
         if v != v' then Array.unsafe_set ans !i v';
         incr i
       done;

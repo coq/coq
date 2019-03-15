@@ -204,14 +204,14 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
   List.rev !rv;;
 
 
-type 'a hyp = (Names.Id.t list * 'a option * 'a)
+type 'a hyp = (Names.Id.t Context.binder_annot list * 'a option * 'a)
 type 'a reified_goal = { name: string; ty: 'a; hyps: 'a hyp list; env : Environ.env; sigma: Evd.evar_map }
 
 (* XXX: Port to proofview, one day. *)
 (* open Proofview *)
 module CDC = Context.Compacted.Declaration
 
-let to_tuple : Constr.compacted_declaration -> (Names.Id.t list * 'pc option * 'pc) =
+let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
   let open CDC in function
     | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm);;
@@ -283,7 +283,7 @@ let goal_info goal sigma =
   let build_hyp_info env sigma hyp =
     let (names, body, ty) = hyp in
     let open Pp in
-    let idents = List.map (fun x -> Names.Id.to_string x) names in
+    let idents = List.map (fun x -> Names.Id.to_string x.Context.binder_name) names in
 
     line_idents := idents :: !line_idents;
     let mid = match body with

@@ -228,17 +228,20 @@ let declare_one_case_analysis_scheme ind =
 let kinds_from_prop =
   [InType,rect_scheme_kind_from_prop;
    InProp,ind_scheme_kind_from_prop;
-   InSet,rec_scheme_kind_from_prop]
+   InSet,rec_scheme_kind_from_prop;
+   InSProp,sind_scheme_kind_from_prop]
 
 let kinds_from_type =
   [InType,rect_dep_scheme_kind_from_type;
    InProp,ind_dep_scheme_kind_from_type;
-   InSet,rec_dep_scheme_kind_from_type]
+   InSet,rec_dep_scheme_kind_from_type;
+   InSProp,sind_dep_scheme_kind_from_type]
 
 let nondep_kinds_from_type =
   [InType,rect_scheme_kind_from_type;
    InProp,ind_scheme_kind_from_type;
-   InSet,rec_scheme_kind_from_type]
+   InSet,rec_scheme_kind_from_type;
+   InSProp,sind_scheme_kind_from_type]
 
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
@@ -246,6 +249,9 @@ let declare_one_induction_scheme ind =
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim mib in
   let kelim = elim_sorts (mib,mip) in
+  let kelim = if Global.sprop_allowed () then kelim
+    else List.filter (fun s -> s <> InSProp) kelim
+  in
   let elims =
     List.map_filter (fun (sort,kind) ->
       if Sorts.List.mem sort kelim then Some kind else None)
@@ -347,19 +353,23 @@ requested
           match sort_of_ind with
           | InProp ->
               if isdep then (match z with
+              | InSProp -> inds ^ "s_dep"
               | InProp -> inds ^ "_dep"
               | InSet  -> recs ^ "_dep"
               | InType -> recs ^ "t_dep")
               else ( match z with
+              | InSProp -> inds ^ "s"
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
           | _ ->
               if isdep then (match z with
+              | InSProp -> inds ^ "s"
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
               else (match z with
+              | InSProp -> inds ^ "s_nodep"
               | InProp -> inds ^ "_nodep"
               | InSet -> recs ^ "_nodep"
               | InType -> recs ^ "t_nodep")

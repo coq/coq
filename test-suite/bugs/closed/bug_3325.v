@@ -1,13 +1,13 @@
 Typeclasses eauto := debug.
 Set Printing All.
 
-Axiom SProp : Set.
-Axiom sp : SProp.
+Axiom sProp : Set.
+Axiom sp : sProp.
 
 (* If we hardcode valueType := nat, it goes through *)
 Class StateIs := {
   valueType : Type;
-  stateIs : valueType -> SProp
+  stateIs : valueType -> sProp
 }.
 
 Instance NatStateIs : StateIs := {
@@ -17,17 +17,17 @@ Instance NatStateIs : StateIs := {
 Canonical Structure NatStateIs.
 
 Class LogicOps F := { land: F -> F }.
-Instance : LogicOps SProp. Admitted.
+Instance : LogicOps sProp. Admitted.
 Instance : LogicOps Prop. Admitted.
 
 Parameter (n : nat).
 (* If this is a [Definition], the resolution goes through fine. *)
 Notation vn := (@stateIs _ n).
 Definition vn' := (@stateIs _ n).
-Definition GOOD : SProp :=
+Definition GOOD : sProp :=
   @land _ _ vn'.
 (* This doesn't resolve, if PropLogicOps is defined later than SPropLogicOps *)
-Definition BAD : SProp :=
+Definition BAD : sProp :=
   @land _ _ vn.
 
 

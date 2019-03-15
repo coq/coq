@@ -18,6 +18,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open Environ
 open EConstr
 open Vars
@@ -117,7 +118,7 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     | Const _ | Ind _ | Construct _ | Var _ as c ->
         Some (Nametab.basename_of_global (global_of_constr c))
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	Some (match lna.(i) with Name id -> id | _ -> assert false)
+        Some (match lna.(i).binder_name with Name id -> id | _ -> assert false)
     | Sort _ | Rel _ | Meta _|Evar _|Case (_, _, _, _) | Int _ -> None
   in
   hdrec c
@@ -136,6 +137,7 @@ let lowercase_first_char id = (* First character of a constr *)
         s ^ Unicode.lowercase_first_char s'
 
 let sort_hdchar = function
+  | SProp -> "P"
   | Prop -> "P"
   | Set -> "S"
   | Type _ -> "T"
@@ -154,12 +156,12 @@ let hdchar env sigma c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match lookup_rel (n-k) env with
-	     | LocalAssum (Name id,_)   | LocalDef (Name id,_,_) -> lowercase_first_char id
-	     | LocalAssum (Anonymous,t) | LocalDef (Anonymous,_,t) -> hdrec 0 (lift (n-k) t)
+           try match let d = lookup_rel (n-k) env in get_name d, get_type d with
+             | Name id, _ -> lowercase_first_char id
+             | Anonymous, t -> hdrec 0 (lift (n-k) t)
 	   with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-	let id = match lna.(i) with Name id -> id | _ -> assert false in
+        let id = match lna.(i).binder_name with Name id -> id | _ -> assert false in
 	lowercase_first_char id
     | Evar _ (* We could do better... *)
     | Meta _ | Case (_, _, _, _) -> "y"
@@ -175,18 +177,20 @@ let named_hd env sigma a = function
   | Anonymous -> Name (Id.of_string (hdchar env sigma a))
   | x         -> x
 
-let mkProd_name   env sigma (n,a,b) = mkProd (named_hd env sigma a n, a, b)
-let mkLambda_name env sigma (n,a,b) = mkLambda (named_hd env sigma a n, a, b)
+let mkProd_name   env sigma (n,a,b) = mkProd (map_annot (named_hd env sigma a) n, a, b)
+let mkLambda_name env sigma (n,a,b) = mkLambda (map_annot (named_hd env sigma a) n, a, b)
 
 let lambda_name = mkLambda_name
 let prod_name = mkProd_name
 
-let prod_create   env sigma (a,b) = mkProd (named_hd env sigma a Anonymous, a, b)
-let lambda_create env sigma (a,b) =  mkLambda (named_hd env sigma a Anonymous, a, b)
+let prod_create   env sigma (r,a,b) =
+  mkProd (make_annot (named_hd env sigma a Anonymous) r, a, b)
+let lambda_create env sigma (r,a,b) =
+  mkLambda (make_annot (named_hd env sigma a Anonymous) r, a, b)
 
 let name_assumption env sigma = function
-    | LocalAssum (na,t) -> LocalAssum (named_hd env sigma t na, t)
-    | LocalDef (na,c,t) -> LocalDef (named_hd env sigma c na, c, t)
+    | LocalAssum (na,t) -> LocalAssum (map_annot (named_hd env sigma t) na, t)
+    | LocalDef (na,c,t) -> LocalDef (map_annot (named_hd env sigma c) na, c, t)
 
 let name_context env sigma hyps =
   snd
@@ -456,13 +460,13 @@ let rename_bound_vars_as_displayed sigma avoid env c =
     | Prod (na,c1,c2)  ->
 	let na',avoid' =
           compute_displayed_name_in sigma
-            (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkProd (na', c1, rename avoid' (na' :: env) c2)
+            (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
+        mkProd ({na with binder_name=na'}, c1, rename avoid' (na' :: env) c2)
     | LetIn (na,c1,t,c2) ->
 	let na',avoid' =
           compute_displayed_let_name_in sigma
-            (RenamingElsewhereFor (env,c2)) avoid na c2 in
-	mkLetIn (na',c1,t, rename avoid' (na' :: env) c2)
+            (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
+        mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: env) c2)
     | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)
     | _ -> c
   in

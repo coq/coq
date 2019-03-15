@@ -235,9 +235,9 @@ val hnf_lam_app      : env ->  evar_map -> constr -> constr -> constr
 val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
-val splay_prod : env ->  evar_map -> constr -> (Name.t * constr) list * constr
-val splay_lam : env ->  evar_map -> constr -> (Name.t * constr) list * constr
-val splay_arity : env ->  evar_map -> constr -> (Name.t * constr) list * ESorts.t
+val splay_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_lam : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
 val sort_of_arity : env -> evar_map -> constr -> ESorts.t
 val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr

@@ -15,6 +15,7 @@ open Constr
 open Termops
 open Environ
 open EConstr
+open Context
 open Vars
 open Reduction
 open Reductionops
@@ -78,8 +79,8 @@ let impossible_default_case env =
 let coq_unit_judge =
   let open Environ in
   let make_judge c t = make_judge (EConstr.of_constr c) (EConstr.of_constr t) in
-  let na1 = Name (Id.of_string "A") in
-  let na2 = Name (Id.of_string "H") in
+  let na1 = make_annot (Name (Id.of_string "A")) Sorts.Relevant in
+  let na2 = make_annot (Name (Id.of_string "H")) Sorts.Relevant in
   fun env ->
     match impossible_default_case env with
     | Some (id, type_of_id, ctx) ->
@@ -87,7 +88,7 @@ let coq_unit_judge =
     | None ->
       (* In case the constants id/ID are not defined *)
       Environ.make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
-        (mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2))), 
+        (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2))),
       Univ.ContextSet.empty
 
 let unfold_projection env evd ts p c =
@@ -251,8 +252,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
   let canon_s,sk2_effective =
     try
       match EConstr.kind sigma t2 with
-	Prod (_,a,b) -> (* assert (l2=[]); *)
-	  let _, a, b = destProd sigma t2 in
+        Prod (_,a,b) -> (* assert (l2=[]); *)
+          let _, a, b = destProd sigma t2 in
           if noccurn sigma 1 b then
             lookup_canonical_conversion (proji, Prod_cs),
 	    (Stack.append_app [|a;pop b|] Stack.empty)
@@ -815,10 +816,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	     (fun i ->
 	       let b = nf_evar i b1 in
 	       let t = nf_evar i t1 in
-               let na = Nameops.Name.pick na1 na2 in
+               let na = Nameops.Name.pick_annot na1 na2 in
                evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
-	and f2 i =
+        and f2 i =
           let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts1 (v1,sk1)
           and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts2 (v2,sk2)
           in evar_eqappr_x flags env i pbty out1 out2
@@ -930,7 +931,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           [(fun i -> evar_conv_x flags env i CONV c1 c2);
            (fun i ->
 	     let c = nf_evar i c1 in
-             let na = Nameops.Name.pick na1 na2 in
+             let na = Nameops.Name.pick_annot na1 na2 in
              evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2);
            (* When in modulo_betaiota = false case, lambda's are not reduced *)
            (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
@@ -988,12 +989,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                UnifFailure (evd,UnifUnivInconsistency p)
 	     | e when CErrors.noncritical e -> UnifFailure (evd,NotSameHead))
 
-	| Prod (n1,c1,c'1), Prod (n2,c2,c'2) when app_empty ->
+        | Prod (n1,c1,c'1), Prod (n2,c2,c'2) when app_empty ->
             ise_and evd
               [(fun i -> evar_conv_x flags env i CONV c1 c2);
                (fun i ->
  	         let c = nf_evar i c1 in
-                 let na = Nameops.Name.pick n1 n2 in
+                 let na = Nameops.Name.pick_annot n1 n2 in
                  evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->
@@ -1027,7 +1028,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	| _, Construct u ->
           eta_constructor flags env evd sk2 u sk1 term1
 
-	| Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
+        | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
 	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
             ise_and evd [
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags env i' CONV) tys1 tys2);
@@ -1035,7 +1036,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
 	  else UnifFailure (evd, NotSameHead)
 
-	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
+        | CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
             if Int.equal i1 i2  then
               ise_and evd
                 [(fun i -> ise_array2 i
@@ -1352,7 +1353,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           make_subst (ctxt',l,occsl)
       end
     | decl'::ctxt', c::l, occs::occsl ->
-      let id = NamedDecl.get_id decl' in
+      let id = NamedDecl.get_annot decl' in
       let t = NamedDecl.get_type decl' in
       let evs = ref [] in
       let c = nf_evar evd c in
@@ -1369,7 +1370,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      let c = nf_evar evd c in
      if !debug_ho_unification then
        Feedback.msg_debug Pp.(str"set holes for: " ++
-                                prc env_rhs evd (mkVar id) ++ spc () ++
+                                prc env_rhs evd (mkVar id.binder_name) ++ spc () ++
                                 prc env_rhs evd c ++ str" in " ++
                                 prc env_rhs evd rhs);
      let occ = ref 1 in
@@ -1381,7 +1382,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        incr occ;
        match occs with
        | AtOccurrences occs ->
-          if Locusops.is_selected oc occs then evd, mkVar id
+          if Locusops.is_selected oc occs then evd, mkVar id.binder_name
           else evd, inst
        | Unspecified prefer_abstraction ->
           let evd, evty = set_holes env_rhs evd cty subst in
@@ -1436,6 +1437,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
 
   let rec abstract_free_holes evd = function
    | (id,idty,c,cty,evsref,_,_)::l ->
+     let id = id.binder_name in
      let c = nf_evar evd c in
      if !debug_ho_unification then
        Feedback.msg_debug Pp.(str"abstracting: " ++

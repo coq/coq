@@ -11,6 +11,7 @@
 open Util
 open Names
 open Constr
+open Context
 open CErrors
 open Evar_refiner
 open Tacmach
@@ -62,7 +63,7 @@ let instantiate_tac n c ido =
 		  evar_list sigma (EConstr.of_constr (NamedDecl.get_type decl))
 	      | InHypValueOnly ->
 		  (match decl with
-		    | LocalDef (_,body,_) -> evar_list sigma (EConstr.of_constr body)
+                    | LocalDef (_,body,_) -> evar_list sigma (EConstr.of_constr body)
 		    | _ -> user_err Pp.(str "Not a defined hypothesis.")) in
   if List.length evl < n then
     user_err Pp.(str "Not enough uninstantiated existential variables.");
@@ -108,5 +109,6 @@ let hget_evar n =
   if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
   let ev = List.nth evl (n-1) in
   let ev_type = EConstr.existential_type sigma ev in
-  Tactics.change_concl (mkLetIn (Name.Anonymous,mkEvar ev,ev_type,concl))
+  let r = Retyping.relevance_of_type (Proofview.Goal.env gl) sigma ev_type in
+  Tactics.change_concl (mkLetIn (make_annot Name.Anonymous r,mkEvar ev,ev_type,concl))
   end

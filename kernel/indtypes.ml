@@ -173,7 +173,9 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
   let specif = (lookup_mind_specif env mi, u) in
   let ty = type_of_inductive env specif in
   let env' =
-    let decl = LocalAssum (Anonymous, hnf_prod_applist env ty lrecparams) in
+    let r = (snd (fst specif)).mind_relevance in
+    let anon = Context.make_annot Anonymous r in
+    let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
@@ -186,8 +188,8 @@ let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
   if Int.equal n 0 then (ienv,c) else
     let c' = whd_all env c in
     match kind c' with
-	Prod(na,a,b) ->
-	  let ienv' = ienv_push_var ienv (na,a,mk_norec) in
+        Prod(na,a,b) ->
+          let ienv' = ienv_push_var ienv (na,a,mk_norec) in
 	  ienv_decompose_prod ienv' (n-1) b
       | _ -> assert false
 
@@ -215,7 +217,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c =
     let x,largs = decompose_app (whd_all env c) in
       match kind x with
-	| Prod (na,b,d) ->
+        | Prod (na,b,d) ->
 	    let () = assert (List.is_empty largs) in
             (** If one of the inductives of the mutually inductive
                 block occurs in the left-hand side of a product, then
@@ -406,8 +408,6 @@ let used_section_variables env inds =
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
 let rel_list n m = Array.to_list (rel_vect n m)
 
-exception UndefinableExpansion
-
 (** From a rel context describing the constructor arguments,
     build an expansion function.
     The term built is expecting to be substituted first by 
@@ -433,7 +433,7 @@ let compute_projections (kn, i as ind) mib =
       mkRel 1 :: List.map (lift 1) subst in
     subst
   in
-  let projections decl (i, j, labs, pbs, letsubst) =
+  let projections decl (i, j, labs, rs, pbs, letsubst) =
     match decl with
     | LocalDef (_na,c,_t) ->
         (* From [params, field1,..,fieldj |- c(params,field1,..,fieldj)]
@@ -445,10 +445,11 @@ let compute_projections (kn, i as ind) mib =
         (* From [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj)]
            to [params-wo-let, x:I |- subst:(params, x:I, field1,..,fieldj+1)] *)
         let letsubst = c2 :: letsubst in
-        (i, j+1, labs, pbs, letsubst)
+        (i, j+1, labs, rs, pbs, letsubst)
     | LocalAssum (na,t) ->
-      match na with
+      match na.Context.binder_name with
       | Name id ->
+        let r = na.Context.binder_relevance in
         let lab = Label.of_id id in
         let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
@@ -460,14 +461,15 @@ let compute_projections (kn, i as ind) mib =
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
 	let fterm = mkProj (Projection.make kn false, mkRel 1) in
-        (i + 1, j + 1, lab :: labs, projty :: pbs, fterm :: letsubst)
-      | Anonymous -> raise UndefinableExpansion
+        (i + 1, j + 1, lab :: labs, r :: rs, projty :: pbs, fterm :: letsubst)
+      | Anonymous -> assert false (* checked by indTyping *)
   in
-  let (_, _, labs, pbs, _letsubst) =
-    List.fold_right projections ctx (0, 1, [], [], paramsletsubst)
+  let (_, _, labs, rs, pbs, _letsubst) =
+    List.fold_right projections ctx (0, 1, [], [], [], paramsletsubst)
   in
-    Array.of_list (List.rev labs),
-    Array.of_list (List.rev pbs)
+  Array.of_list (List.rev labs),
+  Array.of_list (List.rev rs),
+  Array.of_list (List.rev pbs)
 
 let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
@@ -483,7 +485,11 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 	splayed_lc in
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
-	splayed_lc in
+        splayed_lc in
+    let mind_relevance = match arity with
+      | RegularArity { mind_sort;_ } -> Sorts.relevance_of_sort mind_sort
+      | TemplateArity _ -> Sorts.Relevant
+    in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
     let transf num =
@@ -510,8 +516,9 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 	mind_consnrealargs = consnrealargs;
 	mind_user_lc = lc;
 	mind_nf_lc = nf_lc;
-	mind_recargs = recarg;
-	mind_nb_constant = !nconst;
+        mind_recargs = recarg;
+        mind_relevance;
+        mind_nb_constant = !nconst;
 	mind_nb_args = !nblock;
 	mind_reloc_tbl = rtbl;
       } in
@@ -534,24 +541,12 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
   in
   let record_info = match isrecord with
   | Some (Some rid) ->
-    let is_record pkt =
-      if Array.length pkt.mind_consnames != 1 then
-        user_err ~hdr:"build_inductive"
-          Pp.(str "Primitive records must have exactly one constructor.")
-      else if pkt.mind_consnrealargs.(0) = 0 then
-        user_err ~hdr:"build_inductive"
-          Pp.(str "Primitive records must have at least one constructor argument.")
-      else List.exists (Sorts.family_equal Sorts.InType) pkt.mind_kelim
-    in
     (** The elimination criterion ensures that all projections can be defined. *)
-    if Array.for_all is_record packets then
-      let map i id =
-        let labs, projs = compute_projections (kn, i) mib in
-        (id, labs, projs)
-      in
-      try PrimRecord (Array.mapi map rid)
-      with UndefinableExpansion -> FakeRecord
-    else FakeRecord
+    let map i id =
+      let labs, rs, projs = compute_projections (kn, i) mib in
+      (id, labs, rs, projs)
+    in
+    PrimRecord (Array.mapi map rid)
   | Some None -> FakeRecord
   | None -> NotRecord
   in
@@ -562,7 +557,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, variance, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
+  let (env_ar_par, univs, variance, record, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
   (* Then check positivity conditions *)
   let chkpos = (Environ.typing_flags env).check_guarded in
   let names = Array.map_of_list (fun entry -> entry.mind_entry_typename, entry.mind_entry_consnames)
@@ -574,5 +569,5 @@ let check_inductive env kn mie =
   in
   (* Build the inductive packets *)
     build_inductive env names mie.mind_entry_private univs variance
-      paramsctxt kn mie.mind_entry_record mie.mind_entry_finite
+      paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs

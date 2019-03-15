@@ -21,6 +21,7 @@ open Util
 open Names
 open Term
 open Constr
+open Context
 open Environ
 open EConstr
 open Vars
@@ -175,23 +176,23 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
             try evdref := unify_leq_delay env !evdref hdx hdy;
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
-		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
+                aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
 	    with UnableToUnify _ ->
-	      let (n, eqT), restT = dest_prod typ in
+              let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
               let () =
                 try evdref := unify_leq_delay env !evdref eqT eqT'
                 with UnableToUnify _ -> raise NoSubtacCoercion
-	      in
+              in
 		(* Disallow equalities on arities *)
 		if Reductionops.is_arity env !evdref eqT then raise NoSubtacCoercion;
 		let restargs = lift_args 1
 		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
 		in
 		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
-		let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
+                let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
 		let eq = papp evdref coq_eq_ind [| eqT; hdx; hdy |] in
-		let evar = make_existential ?loc n env evdref eq in
+                let evar = make_existential ?loc n.binder_name env evdref eq in
 		let eq_app x = papp evdref coq_eq_rect
 		  [| eqT; hdx; pred; x; hdy; evar|] 
 		in
@@ -216,9 +217,12 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = 
-	    Name (Namegen.next_ident_away Namegen.default_dependent_ident (Termops.vars_of_env env))
-	  in
-	  let env' = push_rel (LocalAssum (name', a')) env in
+            {name' with
+             binder_name =
+               Name (Namegen.next_ident_away
+                       Namegen.default_dependent_ident (Termops.vars_of_env env))}
+          in
+          let env' = push_rel (LocalAssum (name', a')) env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
 	  let coec1 = app_opt env' evdref c1 (mkRel 1) in
@@ -230,7 +234,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	     | _, _ ->
 		 Some
 		   (fun f ->
-		      mkLambda (name', a',
+                      mkLambda (name', a',
 				app_opt env' evdref c2
 				  (mkApp (lift 1 f, [| coec1 |])))))
 
@@ -253,11 +257,11 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		     let c1 = coerce_unify env a a' in
 		     let remove_head a c =
 		       match EConstr.kind !evdref c with
-		       | Lambda (n, t, t') -> c, t'
+                       | Lambda (n, t, t') -> c, t'
 		       | Evar (k, args) ->
 			   let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
 			     evdref := evs;
-			     let (n, dom, rng) = destLambda !evdref t in
+                             let (n, dom, rng) = destLambda !evdref t in
 			       if isEvar !evdref dom then
 				 let (domk, args) = destEvar !evdref dom in
                                    evdref := define domk a !evdref;
@@ -265,8 +269,12 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 			       t, rng
 		       | _ -> raise NoSubtacCoercion
 		     in
-		     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-		     let env' = push_rel (LocalAssum (Name Namegen.default_dependent_ident, a)) env in
+                     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
+                     let ra = Retyping.relevance_of_type env !evdref a in
+                     let env' = push_rel
+                         (LocalAssum (make_annot (Name Namegen.default_dependent_ident) ra, a))
+                         env
+                     in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
 		       | None, None -> None
@@ -396,9 +404,9 @@ let apply_coercion env sigma p hj typ_cl =
 let inh_app_fun_core ~program_mode env evd j =
   let t = whd_all env evd j.uj_type in
     match EConstr.kind evd t with
-    | Prod (_,_,_) -> (evd,j)
+    | Prod _ -> (evd,j)
     | Evar ev ->
-	let (evd',t) = Evardefine.define_evar_as_product evd ev in
+        let (evd',t) = Evardefine.define_evar_as_product env evd ev in
 	  (evd',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
       	try let t,p =
@@ -505,11 +513,11 @@ let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigid
 	  (* has type forall (x:u1), u2 (with v' recursively obtained) *)
           (* Note: we retype the term because template polymorphism may have *)
           (* weakened its type *)
-	  let name = match name with
+          let name = map_annot (function
 	    | Anonymous -> Name Namegen.default_dependent_ident
-	    | _ -> name in
+            | na -> na) name in
 	  let open Context.Rel.Declaration in
-	  let env1 = push_rel (LocalAssum (name,u1)) env in
+          let env1 = push_rel (LocalAssum (name,u1)) env in
 	  let (evd', v1) =
 	    inh_conv_coerce_to_fail ?loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
@@ -519,7 +527,7 @@ let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigid
 	    | None -> subst_term evd' v1 t2
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	  let (evd'',v2') = inh_conv_coerce_to_fail ?loc env1 evd' rigidonly v2 t2 u2 in
-	    (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
+            (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)

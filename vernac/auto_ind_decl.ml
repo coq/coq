@@ -16,6 +16,7 @@ open Util
 open Pp
 open Term
 open Constr
+open Context
 open Vars
 open Termops
 open Declarations
@@ -144,7 +145,7 @@ let build_beq_scheme mode kn =
   in
   (* construct the "fun A B ... N, eqA eqB eqC ... N => fixpoint" part *)
   let create_input c =
-    let myArrow u v = mkArrow u (lift 1 v)
+    let myArrow u v = mkArrow u Sorts.Relevant (lift 1 v)
     and eqName = function
         | Name s -> Id.of_string ("eq_"^(Id.to_string s))
         | Anonymous -> Id.of_string "eq_A"
@@ -161,14 +162,16 @@ let build_beq_scheme mode kn =
           ( fun a b decl -> (* mkLambda(n,b,a) ) *)
                 (* here I leave the Naming thingy so that the type of
                   the function is more readable for the user *)
-                mkNamedLambda (eqName (RelDecl.get_name decl)) b a )
+                mkNamedLambda (map_annot eqName (RelDecl.get_annot decl)) b a )
                 c (List.rev eqs_typ) lnamesparrec
        in
         List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
-          (* Same here , hoping the auto renaming will do something good ;)  *)
-          mkNamedLambda
-                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
-                (RelDecl.get_type decl)  a) eq_input lnamesparrec
+           (* Same here , hoping the auto renaming will do something good ;)  *)
+           let x = map_annot
+               (function Name s -> s | Anonymous -> Id.of_string "A")
+               (RelDecl.get_annot decl)
+           in
+          mkNamedLambda x (RelDecl.get_type decl)  a) eq_input lnamesparrec
  in
  let make_one_eq cur =
   let u = Univ.Instance.empty in
@@ -251,8 +254,8 @@ let build_beq_scheme mode kn =
   in
   (* construct the predicate for the Case part*)
   let do_predicate rel_list n =
-     List.fold_left (fun a b -> mkLambda(Anonymous,b,a))
-      (mkLambda (Anonymous,
+     List.fold_left (fun a b -> mkLambda(make_annot Anonymous Sorts.Relevant,b,a))
+      (mkLambda (make_annot Anonymous Sorts.Relevant,
                  mkFullInd ind (n+3+(List.length rettyp_l)+nb_ind-1),
                  (bb ())))
       (List.rev rettyp_l) in
@@ -260,7 +263,8 @@ let build_beq_scheme mode kn =
   (* do the [| C1 ... =>  match Y with ... end
                ...
                Cn => match Y with ... end |]  part *)
-    let ci = make_case_info env (fst ind) MatchStyle in
+    let rci = Sorts.Relevant in (* TODO relevance *)
+    let ci = make_case_info env (fst ind) rci MatchStyle in
     let constrs n = get_constructors env (make_ind_family (ind,
       Context.Rel.to_extended_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
@@ -296,32 +300,32 @@ let build_beq_scheme mode kn =
                           (Array.sub eqs 1 (nb_cstr_args - 1))
                   )
    		  in
-		    (List.fold_left (fun a decl -> mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a)) cc
+                    (List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a)) cc
                     (constrsj.(j).cs_args)
 		)
 	      else ar2.(j) <- (List.fold_left (fun a decl ->
-                        mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a)) (ff ())  (constrsj.(j).cs_args) )
-	    done;
+                        mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a)) (ff ())  (constrsj.(j).cs_args) )
+            done;
 
-	  ar.(i) <- (List.fold_left (fun a decl -> mkLambda (RelDecl.get_name decl, RelDecl.get_type decl, a))
+          ar.(i) <- (List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
 			(mkCase (ci,do_predicate rel_list nb_cstr_args,
 				  mkVar (Id.of_string "Y") ,ar2))
 			 (constrsi.(i).cs_args))
-	done;
-        mkNamedLambda (Id.of_string "X") (mkFullInd ind (nb_ind-1+1))  (
-          mkNamedLambda (Id.of_string "Y") (mkFullInd ind (nb_ind-1+2))  (
+        done;
+        mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd ind (nb_ind-1+1))  (
+          mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd ind (nb_ind-1+2))  (
  	    mkCase (ci, do_predicate rel_list 0,mkVar (Id.of_string "X"),ar))),
         !eff
     in (* build_beq_scheme *)
-    let names = Array.make nb_ind Anonymous and
+    let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
         types = Array.make nb_ind mkSet and
         cores = Array.make nb_ind mkSet in
     let eff = ref Safe_typing.empty_private_constants in
     let u = Univ.Instance.empty in
     for i=0 to (nb_ind-1) do
-        names.(i) <- Name (Id.of_string (rec_name i));
-	types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0)
-                     (mkArrow (mkFullInd ((kn,i),u) 1) (bb ()));
+        names.(i) <- make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant;
+        types.(i) <- mkArrow (mkFullInd ((kn,i),u) 0) Sorts.Relevant
+                     (mkArrow (mkFullInd ((kn,i),u) 1) Sorts.Relevant (bb ()));
         let c, eff' = make_one_eq i in
         cores.(i) <- c;
         eff := Safe_typing.concat_private eff' !eff
@@ -562,34 +566,39 @@ let compute_bl_goal ind lnamesparrec nparrec =
     let x = next_ident_away (Id.of_string "x") avoid and
         y = next_ident_away (Id.of_string "y") avoid in
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd x (mkVar s) (
-            mkNamedProd y (mkVar s) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                ( mkApp(eq (),[|bb (); mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt () |]))
+               Sorts.Relevant
                ( mkApp(eq (),[|mkVar s;mkVar x;mkVar y|]))
           ))
         ) list_id in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd sbl b a
+        mkNamedProd (make_annot sbl Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,(bb ())))
+          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,(bb ())))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd seq b a
+        mkNamedProd (make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a decl -> mkNamedProd
-                (match RelDecl.get_name decl with Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
-                (RelDecl.get_type decl) a) eq_input lnamesparrec
+    List.fold_left (fun a decl ->
+        let x = map_annot
+            (function Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
+            (RelDecl.get_annot decl)
+        in
+        mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
           m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
      create_input (
-        mkNamedProd n (mkFullInd (ind,u) nparrec) (
-          mkNamedProd m (mkFullInd (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
+          mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
             mkArrow
               (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar n;mkVar m|]);tt ()|]))
+              Sorts.Relevant
               (mkApp(eq (),[|mkFullInd (ind,u) (nparrec+3);mkVar n;mkVar m|]))
         ))), eff
 
@@ -706,34 +715,40 @@ let compute_lb_goal ind lnamesparrec nparrec =
       let x = next_ident_away (Id.of_string "x") avoid and
           y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd x (mkVar s) (
-            mkNamedProd y (mkVar s) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
-               ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
-               ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
+                ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
+                Sorts.Relevant
+                ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
           ))
         ) list_id in
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd slb b a
+        mkNamedProd (make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
+          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd seq b a
+        mkNamedProd (make_annot seq Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a decl -> mkNamedProd
-                (match (RelDecl.get_name decl) with Name s -> s | Anonymous ->  Id.of_string "A")
-                (RelDecl.get_type decl)  a) eq_input lnamesparrec
+      List.fold_left (fun a decl ->
+          let x = map_annot
+              (function Name s -> s | Anonymous -> Id.of_string "A")
+              (RelDecl.get_annot decl)
+          in
+          mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
           m = next_ident_away (Id.of_string "y") avoid in
       let u = Univ.Instance.empty in
       create_input (
-        mkNamedProd n (mkFullInd (ind,u) nparrec) (
-          mkNamedProd m (mkFullInd (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd (ind,u) nparrec) (
+          mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd (ind,u) (nparrec+1)) (
             mkArrow
               (mkApp(eq,[|mkFullInd (ind,u) (nparrec+2);mkVar n;mkVar m|]))
+              Sorts.Relevant
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
         ))), eff
 
@@ -835,45 +850,51 @@ let compute_dec_goal ind lnamesparrec nparrec =
       let x = next_ident_away (Id.of_string "x") avoid and
           y = next_ident_away (Id.of_string "y") avoid in
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd x (mkVar s) (
-            mkNamedProd y (mkVar s) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
-               ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
-               ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
+                ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
+                Sorts.Relevant
+                ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
           ))
         ) list_id in
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd x (mkVar s) (
-            mkNamedProd y (mkVar s) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
-               ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
-               ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
+                ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
+                Sorts.Relevant
+                ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
           ))
         ) list_id in
 
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd slb b a
+        mkNamedProd (make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd sbl b a
+        mkNamedProd (make_annot sbl Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev bl_typ) in
 
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(Anonymous,mkVar s,mkProd(Anonymous,mkVar s,bb))
+          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd seq b a
+        mkNamedProd (make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
-      List.fold_left (fun a decl -> mkNamedProd
-                (match RelDecl.get_name decl with Name s -> s | Anonymous ->  Id.of_string "A")
-                (RelDecl.get_type decl) a) eq_input lnamesparrec
+      List.fold_left (fun a decl ->
+          let x = map_annot
+              (function Name s -> s | Anonymous -> Id.of_string "A")
+              (RelDecl.get_annot decl)
+          in
+          mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
       let n = next_ident_away (Id.of_string "x") avoid and
           m = next_ident_away (Id.of_string "y") avoid in
         let eqnm = mkApp(eq,[|mkFullInd ind (2*nparrec+2);mkVar n;mkVar m|]) in
         create_input (
-          mkNamedProd n (mkFullInd ind (2*nparrec)) (
-            mkNamedProd m (mkFullInd ind (2*nparrec+1)) (
+          mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd ind (2*nparrec)) (
+            mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd ind (2*nparrec+1)) (
               mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )

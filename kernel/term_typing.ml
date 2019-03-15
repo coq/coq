@@ -21,7 +21,6 @@ open Constr
 open Declarations
 open Environ
 open Entries
-open Typeops
 
 module NamedDecl = Context.Named.Declaration
 
@@ -72,15 +71,16 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
         | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
       in
-      let j = infer env t in
+      let j = Typeops.infer env t in
       let usubst, univs = Declareops.abstract_universes uctx in
-      let c = Typeops.assumption_of_judgment env j in
-      let t = Constr.hcons (Vars.subst_univs_level_constr usubst c) in
+      let r = Typeops.assumption_of_judgment env j in
+      let t = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
         cook_universes = univs;
         cook_private_univs = None;
+        cook_relevance = r;
         cook_inline = false;
         cook_context = ctx;
       }
@@ -93,12 +93,12 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let env = push_context_set ~strict:true uctxt env in
       let ty = match otyp with
       | Some typ ->
-        let tyj = infer_type env typ in
-        check_primitive_type env op_t tyj.utj_val;
-        Constr.hcons tyj.utj_val
+        let typ = Typeops.infer_type env typ in
+        Typeops.check_primitive_type env op_t typ.utj_val;
+        Constr.hcons typ.utj_val
       | None ->
         match op_t with
-        | CPrimitives.OT_op op -> type_of_prim env op
+        | CPrimitives.OT_op op -> Typeops.type_of_prim env op
         | CPrimitives.OT_type _ -> mkSet
       in
       let cd =
@@ -110,7 +110,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_universes = Monomorphic uctxt;
         cook_private_univs = None;
         cook_inline = false;
-        cook_context = None
+        cook_context = None;
+        cook_relevance = Sorts.Relevant;
       }
 
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
@@ -128,8 +129,8 @@ the polymorphic case
                        const_entry_opaque = true;
                        const_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
-      let { const_entry_body = body; const_entry_feedback = feedback_id ; _ } = c in
-      let tyj = infer_type env typ in
+      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let tyj = Typeops.infer_type env typ in
       let proofterm =
         Future.chain body (fun ((body,uctx),side_eff) ->
           (* don't redeclare universes which are declared for the type *)
@@ -137,17 +138,17 @@ the polymorphic case
           let j, uctx = match trust with
           | Pure ->
             let env = push_context_set uctx env in
-            let j = infer env body in
-            let _ = judge_of_cast env j DEFAULTcast tyj in
+            let j = Typeops.infer env body in
+            let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           | SideEffects handle ->
             let (body, uctx', valid_signatures) = handle env body side_eff in
             let uctx = Univ.ContextSet.union uctx uctx' in
             let env = push_context_set uctx env in
             let body,env,ectx = skip_trusted_seff valid_signatures body env in
-            let j = infer env body in
+            let j = Typeops.infer env body in
             let j = unzip ectx j in
-            let _ = judge_of_cast env j DEFAULTcast tyj in
+            let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           in
           let c = Constr.hcons j.uj_val in
@@ -156,9 +157,10 @@ the polymorphic case
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       {
         Cooking.cook_body = def;
-        cook_type = typ;
+        cook_type = tyj.utj_val;
         cook_universes = Monomorphic univs;
         cook_private_univs = None;
+        cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -194,14 +196,14 @@ the polymorphic case
         in
         env, sbst, Polymorphic auctx, local
       in
-      let j = infer env body in
+      let j = Typeops.infer env body in
       let typ = match typ with
         | None ->
           Vars.subst_univs_level_constr usubst j.uj_type
         | Some t ->
-           let tj = infer_type env t in
-           let _ = judge_of_cast env j DEFAULTcast tj in
-           Vars.subst_univs_level_constr usubst t
+           let tj = Typeops.infer_type env t in
+           let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+           Vars.subst_univs_level_constr usubst tj.utj_val
       in
       let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
@@ -214,6 +216,7 @@ the polymorphic case
         cook_type = typ;
         cook_universes = univs;
         cook_private_univs = private_univs;
+        cook_relevance = Retypeops.relevance_of_term env j.uj_val;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
@@ -309,6 +312,7 @@ let build_constant_declaration _kn env result =
     const_body_code = tps;
     const_universes = univs;
     const_private_poly_univs = result.cook_private_univs;
+    const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
@@ -319,9 +323,9 @@ let translate_constant mb env kn ce =
     (infer_declaration ~trust:mb env ce)
 
 let translate_local_assum env t =
-  let j = infer env t in
+  let j = Typeops.infer env t in
   let t = Typeops.assumption_of_judgment env j in
-    t
+    j.uj_val, t
 
 let translate_recipe ~hcons env kn r =
   build_constant_declaration kn env (Cooking.cook_constant ~hcons r)
@@ -366,7 +370,7 @@ let translate_local_def env _id centry =
     p
   | Undef _ | Primitive _ -> assert false
   in
-  c, typ
+  c, decl.cook_relevance, typ
 
 (* Insertion of inductive types. *)
 
