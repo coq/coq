@@ -640,14 +640,19 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
       if Array.for_all2 (==) al' al then c
       else mkEvar (e, al')
   | Case (ci,u,pms,p,b,bl) ->
-      (* FIXME: skip annotations? *)
-      let (ci, p, b, bl) = EConstr.expand_case env sigma (ci, u, pms, p, b, bl) in
+      let (ci, _, pms, p0, b, bl0) = annotate_case env sigma (ci, u, pms, p, b, bl) in
+      let f_ctx (nas, _ as r) (ctx, c) =
+        let c' = f (List.fold_right g ctx l) c in
+        if c' == c then r else (nas, c')
+      in
       (* In v8 concrete syntax, predicate is after the term to match! *)
       let b' = f l b in
-      let p' = f l p in
-      let bl' = Array.map_left (f l) bl in
-        if b' == b && p' == p && bl' == bl then c
-        else mkCase (EConstr.contract_case env sigma (ci, p', b', bl'))
+      (* FIXME: should we map over the parameters? *)
+      let pms' = Array.map_left (f l) pms in
+      let p' = f_ctx p p0 in
+      let bl' = Array.map_left (fun (c, c0) -> f_ctx c c0) (Array.map2 (fun x y -> (x, y)) bl bl0) in
+        if b' == b && pms' == pms && p' == p && bl' == bl then c
+        else mkCase (ci, u, pms', p', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
@@ -695,12 +700,18 @@ let map_constr_with_full_binders env sigma g f l cstr =
       let al' = Array.map (f l) al in
       if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
   | Case (ci, u, pms, p, c, bl) ->
-      let (ci, p, c, bl) = EConstr.expand_case env sigma (ci, u, pms, p, c, bl) in
-      let p' = f l p in
+      let (ci, _, pms, p0, c, bl0) = annotate_case env sigma (ci, u, pms, p, c, bl) in
+      let f_ctx (nas, _ as r) (ctx, c) =
+        let c' = f (List.fold_right g ctx l) c in
+        if c' == c then r else (nas, c')
+      in
+      (* FIXME: should we map over the parameters? *)
+      let pms' = Array.Smart.map (f l) pms in
+      let p' = f_ctx p p0 in
       let c' = f l c in
-      let bl' = Array.map (f l) bl in
-      if p==p' && c==c' && Array.for_all2 (==) bl bl' then cstr else
-        mkCase (EConstr.contract_case env sigma (ci, p', c', bl'))
+      let bl' = Array.map2 f_ctx bl bl0 in
+      if pms==pms' && p==p' && c==c' && Array.for_all2 (==) bl bl' then cstr else
+        mkCase (ci, u, pms', p', c', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
       let l' = fold_rec_types g fx l in
@@ -735,8 +746,9 @@ let fold_with_full_binders env sigma g f n acc c =
   | Proj (_,c) -> f n acc c
   | Evar (_,l) -> Array.fold_left (f n) acc l
   | Case (ci, u, pms, p, c, bl) ->
-    let (ci, p, b, bl) = EConstr.expand_case env sigma (ci, u, pms, p, c, bl) in
-    Array.fold_left (f n) (f n (f n acc p) c) bl
+    let (ci, _, pms, p, c, bl) = EConstr.annotate_case env sigma (ci, u, pms, p, c, bl) in
+    let f_ctx acc (ctx, c) = f (List.fold_right g ctx n) acc c in
+    Array.fold_left f_ctx (f n (f_ctx (Array.fold_left (f n) acc pms) p) c) bl
   | Fix (_,(lna,tl,bl)) ->
       let n' = CArray.fold_left2_i (fun i c n t -> g (LocalAssum (n,EConstr.Vars.lift i t)) c) n lna tl in
       let fd = Array.map2 (fun t b -> (t,b)) tl bl in
