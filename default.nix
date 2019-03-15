@@ -21,7 +21,7 @@
 # Once the build is finished, you will find, in the current directory,
 # a symlink to where Coq was installed.
 
-{ pkgs ? import ./nixpkgs.nix {}
+{ pkgs ? import ./dev/nixpkgs.nix {}
 , ocamlPackages ? pkgs.ocamlPackages
 , buildIde ? true
 , buildDoc ? true
