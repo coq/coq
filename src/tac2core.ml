@@ -66,6 +66,26 @@ let to_name c = match Value.to_option Value.to_ident c with
 | None -> Anonymous
 | Some id -> Name id
 
+let of_relevance = function
+  | Sorts.Relevant -> ValInt 0
+  | Sorts.Irrelevant -> ValInt 1
+
+let to_relevance = function
+  | ValInt 0 -> Sorts.Relevant
+  | ValInt 1 -> Sorts.Irrelevant
+  | _ -> assert false
+
+let of_annot f Context.{binder_name;binder_relevance} =
+  of_tuple [|(f binder_name); of_relevance binder_relevance|]
+
+let to_annot f x =
+  match to_tuple x with
+  | [|x;y|] ->
+    let x = f x in
+    let y = to_relevance y in
+    Context.make_annot x y
+  | _ -> assert false
+
 let of_instance u =
   let u = Univ.Instance.to_array (EConstr.Unsafe.to_instance u) in
   Value.of_array (fun v -> Value.of_ext Value.val_univ v) u
@@ -75,12 +95,12 @@ let to_instance u =
   EConstr.EInstance.make (Univ.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =
-  (Value.of_array of_name nas,
+  (Value.of_array (of_annot of_name) nas,
   Value.of_array Value.of_constr ts,
   Value.of_array Value.of_constr cs)
 
 let to_rec_declaration (nas, ts, cs) =
-  (Value.to_array to_name nas,
+  (Value.to_array (to_annot to_name) nas,
   Value.to_array Value.to_constr ts,
   Value.to_array Value.to_constr cs)
 
@@ -338,19 +358,19 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Prod (na, t, u) ->
     v_blk 6 [|
-      of_name na;
+      of_annot of_name na;
       Value.of_constr t;
       Value.of_constr u;
     |]
   | Lambda (na, t, c) ->
     v_blk 7 [|
-      of_name na;
+      of_annot of_name na;
       Value.of_constr t;
       Value.of_constr c;
     |]
   | LetIn (na, b, t, c) ->
     v_blk 8 [|
-      of_name na;
+      of_annot of_name na;
       Value.of_constr b;
       Value.of_constr t;
       Value.of_constr c;
@@ -433,17 +453,17 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let t = Value.to_constr t in
     EConstr.mkCast (c, k, t)
   | (6, [|na; t; u|]) ->
-    let na = to_name na in
+    let na = to_annot to_name na in
     let t = Value.to_constr t in
     let u = Value.to_constr u in
     EConstr.mkProd (na, t, u)
   | (7, [|na; t; c|]) ->
-    let na = to_name na in
+    let na = to_annot to_name na in
     let t = Value.to_constr t in
     let u = Value.to_constr c in
     EConstr.mkLambda (na, t, u)
   | (8, [|na; b; t; c|]) ->
-    let na = to_name na in
+    let na = to_annot to_name na in
     let b = Value.to_constr b in
     let t = Value.to_constr t in
     let c = Value.to_constr c in
@@ -513,7 +533,7 @@ end
 let () = define1 "constr_case" (repr_ext val_inductive) begin fun ind ->
   Proofview.tclENV >>= fun env ->
   try
-    let ans = Inductiveops.make_case_info env ind Constr.RegularStyle in
+    let ans = Inductiveops.make_case_info env ind Sorts.Relevant Constr.RegularStyle in
     return (Value.of_ext Value.val_case ans)
   with e when CErrors.noncritical e ->
     throw err_notfound
@@ -546,7 +566,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       Tacticals.New.tclZEROMSG (str "Variable already exists")
     else
       let open Context.Named.Declaration in
-      let nenv = EConstr.push_named (LocalAssum (id, t)) env in
+      let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
       let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
@@ -556,7 +576,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
       let args = Array.of_list (EConstr.mkRel 1 :: args) in
       let ans = EConstr.mkEvar (evk, args) in
-      let ans = EConstr.mkLambda (Name id, t, ans) in
+      let ans = EConstr.mkLambda (Context.make_annot (Name id) Sorts.Relevant, t, ans) in
       return (Value.of_constr ans)
   | _ ->
     throw err_notfocussed
@@ -761,16 +781,17 @@ end
 
 let () = define0 "hyps" begin
   pf_apply begin fun env _ ->
-    let open Context.Named.Declaration in
+    let open Context in
+    let open Named.Declaration in
     let hyps = List.rev (Environ.named_context env) in
     let map = function
     | LocalAssum (id, t) ->
       let t = EConstr.of_constr t in
-      Value.of_tuple [|Value.of_ident id; Value.of_option Value.of_constr None; Value.of_constr t|]
+      Value.of_tuple [|Value.of_ident id.binder_name; Value.of_option Value.of_constr None; Value.of_constr t|]
     | LocalDef (id, c, t) ->
       let c = EConstr.of_constr c in
       let t = EConstr.of_constr t in
-      Value.of_tuple [|Value.of_ident id; Value.of_option Value.of_constr (Some c); Value.of_constr t|]
+      Value.of_tuple [|Value.of_ident id.binder_name; Value.of_option Value.of_constr (Some c); Value.of_constr t|]
     in
     return (Value.of_list map hyps)
   end
