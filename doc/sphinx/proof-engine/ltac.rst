@@ -1071,6 +1071,16 @@ Proving a subgoal as a separate lemma
    It may be useful to generate lemmas minimal w.r.t. the assumptions they
    depend on. This can be obtained thanks to the option below.
 
+   .. warning::
+
+      The abstract tactic, while very useful, still has some known
+      limitations, see https://github.com/coq/coq/issues/9146 for more
+      details. Thus we recommend using it caution in some
+      "non-standard" contexts. In particular, ``abstract`` won't
+      properly work when used inside quotations ``ltac:(...)``, or
+      if used as part of typeclass resolution, it may produce wrong
+      terms when in universe polymorphic mode.
+
    .. tacv:: abstract @expr using @ident
 
       Give explicitly the name of the auxiliary lemma.
