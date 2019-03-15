@@ -997,12 +997,19 @@ let equal_stacks sigma (x, l) (y, l') =
   in
   Stack.equal f_equal eq_fix eq_case l l' && f_equal x y
 
-let apply_branch ci (ind, i) lf args =
-  (* FIXME: handle let-bindings *)
-  let () = assert (Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1)) in
+let apply_branch env sigma (ind, i) args (ci, u, pms, r, lf) =
   let args = Stack.tail ci.ci_npar args in
-  let subst = Option.get (Stack.list_of_app_stack args) in
-  Vars.substl (List.rev subst) (snd (lf.(i - 1)))
+  let args = Option.get (Stack.list_of_app_stack args) in
+  let br = lf.(i - 1) in
+  let subst =
+    if Int.equal ci.ci_cstr_nargs.(i - 1) ci.ci_cstr_ndecls.(i - 1) then
+      (* No let-bindings *)
+      List.rev args
+    else
+      let ctx = expand_branch env sigma u pms (ind, i) br in
+      subst_of_rel_context_instance ctx args
+  in
+  Vars.substl subst (snd br)
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
@@ -1182,8 +1189,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case((ci, _, _, _, lf), _)::s') when use_match ->
-          let r = apply_branch ci cstr lf args in
+        |args, (Stack.Case(case, _)::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
           whrec Cst_stack.empty (r, s')
         |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')
@@ -1312,8 +1319,8 @@ let local_whd_state_gen flags env sigma =
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case((ci, _,_,_, lf),_)::s') when use_match ->
-          let r = apply_branch ci cstr lf args in
+        |args, (Stack.Case(case,_)::s') when use_match ->
+          let r = apply_branch env sigma cstr args case in
           whrec (r, s')
         |args, (Stack.Proj (p,_) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
