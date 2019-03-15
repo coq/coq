@@ -2,7 +2,8 @@ from __future__ import with_statement
 from __future__ import division
 from __future__ import unicode_literals
 from __future__ import print_function
-import os, sys, re
+import sys
+import re
 from io import open
 
 # This script parses the output of `make TIMED=1` into a dictionary
