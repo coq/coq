@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import ../../../nixpkgs.nix {}
 , branch
 , wd
 , project ? "xyz"
