@@ -1184,8 +1184,8 @@ let () =
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
 let () =
-  let pr_raw id = Genprint.PrinterBasic mt in
-  let pr_glb id = Genprint.PrinterBasic (fun () -> str "$" ++ Id.print id) in
+  let pr_raw id = Genprint.PrinterBasic (fun _env _sigma -> mt ()) in
+  let pr_glb id = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
   let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
 
@@ -1209,8 +1209,8 @@ let () =
   Geninterp.register_interp0 wit_ltac2 interp
 
 let () =
-  let pr_raw _ = Genprint.PrinterBasic mt in
-  let pr_glb e = Genprint.PrinterBasic (fun () -> Tac2print.pr_glbexpr e) in
+  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> mt ()) in
+  let pr_glb e = Genprint.PrinterBasic (fun _env _sigma -> Tac2print.pr_glbexpr e) in
   let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
 
