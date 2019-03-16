@@ -6,4 +6,4 @@ ci_dir="$(dirname "$0")"
 FORCE_GIT=1
 git_download bedrock2
 
-( cd "${CI_BUILD_DIR}/bedrock2" && git submodule update --init --recursive && COQMF_ARGS='-arg "-async-proofs-tac-j 1"' make )
+( cd "${CI_BUILD_DIR}/bedrock2" && git submodule update --init --recursive && COQMF_ARGS='-arg "-async-proofs-tac-j 1"' make | iconv -t UTF-8 -c `#9767` )
