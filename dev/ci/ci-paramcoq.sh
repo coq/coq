@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download paramcoq
 
-( cd "${CI_BUILD_DIR}/paramcoq" && make && make install )
+( cd "${CI_BUILD_DIR}/paramcoq" && make && make install && cd test-suite && make examples)
