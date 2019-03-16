@@ -639,6 +639,9 @@ has type :token:`type`.
    parametrized (the variable is *discharged*). Using the :cmd:`Variable` command out
    of any section is equivalent to using :cmd:`Local Parameter`.
 
+   See also :cmd:`Context`, a variant of :cmd:`Variable` where variables can be
+   made implicit and allowing :ref:`implicit-generalization`.
+
    .. exn:: @ident already exists.
       :name: @ident already exists. (Variable)
       :undocumented:
