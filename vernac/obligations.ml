@@ -852,6 +852,9 @@ let obligation_terminator ?hook name num guard auto pf =
     let ty = entry.Entries.const_entry_type in
     let (body, cstr), () = Future.force entry.Entries.const_entry_body in
     let sigma = Evd.from_ctx uctx in
+    let univs = universes_of_constr body in
+    let univs = Option.cata (fun x -> Univ.LSet.union (universes_of_constr x) univs) univs ty in
+    let sigma = Evd.restrict_universe_context sigma univs in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
