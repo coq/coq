@@ -308,7 +308,7 @@ let explain_unification_error env sigma p1 p2 = function
      | UnifUnivInconsistency p ->
         if !Constrextern.print_universes then
 	  [str "universe inconsistency: " ++
-          Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes p]
+          Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
 	else
           [str "universe inconsistency"]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
