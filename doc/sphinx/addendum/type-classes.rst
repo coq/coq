@@ -151,10 +151,12 @@ database.
 Sections and contexts
 ---------------------
 
-To ease the parametrization of developments by typeclasses, we provide a new
-way to introduce variables into section contexts, compatible with the implicit
-argument mechanism. The new command works similarly to the :cmd:`Variables`
-vernacular, except it accepts any binding context as argument. For example:
+To ease the parametrization of developments by typeclasses, one can use
+the command :cmd:`Context` to introduce variables into section contexts,
+it works similarly to the :cmd:`Variable` vernacular, except it accepts any
+binding context as argument, so variables can implicit, and
+:ref:`implicit-generalization` can be used (see also :ref:`section-mechanism`).
+For example:
 
 .. coqtop:: all
 
@@ -356,24 +358,6 @@ few other commands related to typeclasses.
    sections, or declaring structure projections as instances. This is
    equivalent to ``Hint Resolve ident : typeclass_instances``, except it
    registers instances for :cmd:`Print Instances`.
-
-.. cmd:: Context @binders
-
-   Declare variables in the context of the current section, like :cmd:`Variable`,
-   but also allowing implicit variables and :ref:`implicit-generalization`.
-
-   .. coqdoc::
-
-       Section ContextExample.
-
-       Context {A : Type} (a b : A).
-       Context `{EqDec A}.
-
-       (* ... *)
-
-       End ContextExample.
-
-   See also :ref:`contexts`.
 
 .. tacn:: typeclasses eauto
    :name: typeclasses eauto

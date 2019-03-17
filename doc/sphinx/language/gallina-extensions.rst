@@ -773,7 +773,7 @@ Section :ref:`gallina-definitions`).
 .. cmd:: End @ident
 
    This command closes the section named :token:`ident`. After closing of the
-   section, the local declarations (variables and local definitions) get
+   section, the local declarations (variables and local definitions, see :cmd:`Variable`) get
    *discharged*, meaning that they stop being visible and that all global
    objects defined in the section are generalized with respect to the
    variables and local definitions they each depended on in the section.
@@ -810,6 +810,45 @@ Section :ref:`gallina-definitions`).
    Most commands, like :cmd:`Hint`, :cmd:`Notation`, option management, … which
    appear inside a section are canceled when the section is closed.
 
+.. cmd:: Variable @ident : @type
+
+   This command links :token:`type` to the name :token:`ident` in the context of
+   the current section (see Section :ref:`section-mechanism` for a description of
+   the section mechanism). When the current section is closed, name :token:`ident`
+   will be unknown and every object using this variable will be explicitly
+   parametrized (the variable is *discharged*).
+   The :cmd:`Variable` command out of any section is equivalent to :cmd:`Local Parameter`.
+
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Variable)
+      :undocumented:
+
+   .. cmdv:: Variable {+ @ident } : @term
+
+      Links :token:`type` to each :token:`ident`.
+
+   .. cmdv:: Variable {+ ( {+ @ident } : @term ) }
+
+      Adds blocks of variables with different specifications.
+
+   .. cmdv:: Variables {+ ( {+ @ident } : @term) }
+             Hypothesis {+ ( {+ @ident } : @term) }
+             Hypotheses {+ ( {+ @ident } : @term) }
+      :name: Variables; Hypothesis; Hypotheses
+
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @term) }`.
+
+.. cmd:: Context @binders
+
+   Declare variables in the context of the current section, like :cmd:`Variable`,
+   but also allowing implicit variables and :ref:`implicit-generalization`.
+
+   .. coqdoc::
+
+     Context {A : Type} (a b : A).
+     Context `{EqDec A}.
+
+   See also :ref:`contexts` in the chapter :ref:`typeclasses`.
 
 Module system
 -------------
