@@ -1,7 +1,7 @@
 .. _typeclasses:
 
-Type Classes
-============
+Typeclasses
+===========
 
 This chapter presents a quick reference of the commands related to type
 classes. For an actual introduction to typeclasses, there is a
@@ -150,7 +150,7 @@ To ease the parametrization of developments by typeclasses, one can use
 the command :cmd:`Context` to introduce variables into section contexts,
 it works similarly to the :cmd:`Variable` vernacular, except it accepts any
 binding context as argument, so variables can implicit, and
-:ref:`implicit-generalization` can be used (see also :ref:`section-mechanism`).
+:ref:`implicit-generalization` can be used.
 For example:
 
 .. coqtop:: all
@@ -158,6 +158,8 @@ For example:
    Section EqDec_defs.
 
    Context `{EA : EqDec A}.
+
+.. coqtop:: in
 
    Global Program Instance option_eqb : EqDec (option A) :=
      { eqb x y := match x, y with
@@ -167,6 +169,8 @@ For example:
             end }.
    Admit Obligations.
 
+.. coqtop:: all
+
    End EqDec_defs.
 
    About option_eqb.
@@ -175,6 +179,7 @@ Here the :cmd:`Global` modifier redeclares the instance at the end of the
 section, once it has been generalized by the context variables it
 uses.
 
+.. seealso:: Section :ref:`section-mechanism`
 
 Building hierarchies
 --------------------
@@ -280,7 +285,7 @@ Summary of the commands
 .. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
 
    The :cmd:`Class` command is used to declare a typeclass with parameters
-   ``binders`` and fields the declared record fields.
+   :token:`binders` and fields the declared record fields.
 
    .. _singleton-class:
 

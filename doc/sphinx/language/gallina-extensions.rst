@@ -754,10 +754,46 @@ used by ``Function``. A more precise description is given below.
 Section mechanism
 -----------------
 
-The sectioning mechanism can be used to to organize a proof in
-structured sections. Then local declarations become available (see
-Section :ref:`gallina-definitions`).
+Sections create local contexts which can be shared across multiple definitions.
 
+.. example::
+
+   Sections are opened by the :cmd:`Section` command, and closed by :cmd:`End`.
+
+   .. coqtop:: all
+
+      Section s1.
+
+   Inside a section, local parameters can be introduced using :cmd:`Variable`,
+   :cmd:`Hypothesis`, or :cmd:`Context` (there are also plural variants for
+   the former two).
+
+   .. coqtop:: all
+
+      Variables x y : nat.
+
+   The command :cmd:`Let` introduces section-wide :ref:`let-in`. These definitions
+   won't persist when the section is closed, and all persistent definitions which
+   depend on `y'` will be prefixed with `let y' := y in`.
+
+   .. coqtop:: in
+
+      Let y' := y.
+      Definition x' := S x.
+      Definition x'' := x' + y'.
+
+   .. coqtop:: all
+
+      Print x'.
+      Print x''.
+
+      End s1.
+
+      Print x'.
+      Print x''.
+
+   Notice the difference between the value of :g:`x'` and :g:`x''` inside section
+   :g:`s1` and outside.
 
 .. cmd:: Section @ident
 
@@ -773,31 +809,6 @@ Section :ref:`gallina-definitions`).
    objects defined in the section are generalized with respect to the
    variables and local definitions they each depended on in the section.
 
-   .. example::
-
-      .. coqtop:: all
-
-         Section s1.
-
-         Variables x y : nat.
-
-         Let y' := y.
-
-         Definition x' := S x.
-
-         Definition x'' := x' + y'.
-
-         Print x'.
-
-         End s1.
-
-         Print x'.
-
-         Print x''.
-
-      Notice the difference between the value of :g:`x'` and :g:`x''` inside section
-      :g:`s1` and outside.
-
    .. exn:: This is not the last opened section.
       :undocumented:
 
@@ -808,11 +819,9 @@ Section :ref:`gallina-definitions`).
 .. cmd:: Variable @ident : @type
 
    This command links :token:`type` to the name :token:`ident` in the context of
-   the current section (see Section :ref:`section-mechanism` for a description of
-   the section mechanism). When the current section is closed, name :token:`ident`
+   the current section. When the current section is closed, name :token:`ident`
    will be unknown and every object using this variable will be explicitly
    parametrized (the variable is *discharged*).
-   The :cmd:`Variable` command out of any section is equivalent to :cmd:`Local Parameter`.
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Variable)
@@ -843,7 +852,31 @@ Section :ref:`gallina-definitions`).
      Context {A : Type} (a b : A).
      Context `{EqDec A}.
 
-   See also :ref:`contexts` in the chapter :ref:`typeclasses`.
+.. seealso:: Section :ref:`contexts` in chapter :ref:`typeclasses`.
+
+.. cmd:: Let @ident := @term
+
+   This command binds the value :token:`term` to the name :token:`ident` in the
+   environment of the current section. The name :token:`ident` disappears when the
+   current section is eventually closed, and all persistent definitions and
+   theorems within the section and depending on :token:`ident` are
+   prefixed by the let-in definition :n:`let @ident := @term in`.
+
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Let)
+      :undocumented:
+
+   .. cmdv:: Let @ident {? @binders } {? : @type } := @term
+      :undocumented:
+
+   .. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
+      :name: Let Fixpoint
+      :undocumented:
+
+   .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
+      :name: Let CoFixpoint
+      :undocumented:
+
 
 Module system
 -------------
