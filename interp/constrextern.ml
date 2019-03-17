@@ -1314,7 +1314,10 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
           Array.map (fun (bl,_,_) -> bl) v,
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
-  | PSort s -> GSort s
+  | PSort Sorts.InSProp -> GSort GSProp
+  | PSort Sorts.InProp -> GSort GProp
+  | PSort Sorts.InSet -> GSort GSet
+  | PSort Sorts.InType -> GSort (GType [])
   | PInt i -> GInt i
 
 let extern_constr_pattern env sigma pat =

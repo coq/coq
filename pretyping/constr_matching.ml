@@ -17,7 +17,6 @@ open Constr
 open Context
 open Globnames
 open Termops
-open Term
 open EConstr
 open Vars
 open Pattern
@@ -280,14 +279,8 @@ let matches_core env sigma allow_bound_rels
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
       | PSort ps, Sort s ->
-
-        let open Glob_term in
-        begin match ps, ESorts.kind sigma s with
-        | GProp, Prop -> subst
-        | GSet, Set -> subst
-        | GType _, Type _ -> subst
-        | _ -> raise PatternMatchingFailure
-        end
+        if Sorts.family_equal ps (Sorts.family (ESorts.kind sigma s))
+        then subst else raise PatternMatchingFailure
 
       | PApp (p, [||]), _ -> sorec ctx env subst p t
 
