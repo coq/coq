@@ -151,10 +151,10 @@ database.
 Sections and contexts
 ---------------------
 
-To ease the parametrization of developments by typeclasses, one can use
-the command :cmd:`Context` to introduce variables into section contexts,
-it works similarly to the :cmd:`Variable` vernacular, except it accepts any
-binding context as argument, so variables can implicit, and
+To ease developments parameterized by many instances, one can use the
+:cmd:`Context` command to introduce these parameters into section contexts,
+it works similarly to the command :cmd:`Variable`, except it accepts any
+binding context as an argument, so variables can be implicit, and
 :ref:`implicit-generalization` can be used.
 For example:
 

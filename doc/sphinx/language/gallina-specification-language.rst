@@ -632,14 +632,14 @@ has type :token:`type`.
              Hypotheses {+ ( {+ @ident } : @type ) }
       :name: Variable (outside a section); Variables (outside a section); Hypothesis (outside a section); Hypotheses (outside a section)
 
-      Out of any section, these variants are synonyms of
+      Outside of any section, these variants are synonyms of
       :n:`Local Parameter {+ ( {+ @ident } : @type ) }`.
       For their meaning inside a section, see :cmd:`Variable` in
       :ref:`section-mechanism`.
 
       .. warn:: @ident is declared as a local axiom [local-declaration,scope]
 
-         Warning that is emitted when using :cmd:`Variable` instead of
+         Warning generated when using :cmd:`Variable` instead of
          :cmd:`Local Parameter`.
 
 .. note::
@@ -690,10 +690,10 @@ Section :ref:`typing-rules`.
       .. exn:: The term @term has type @type while it is expected to have type @type'.
          :undocumented:
 
-   .. cmdv:: Definition @ident @binders {? : @term } := @term
+   .. cmdv:: Definition @ident @binders {? : @type } := @term
 
       This is equivalent to
-      :n:`Definition @ident : forall @binders, @term := fun @binders => @term`.
+      :n:`Definition @ident : forall @binders, @type := fun @binders => @term`.
 
    .. cmdv:: Local Definition @ident {? @binders } {? : @type } := @term
       :name: Local Definition
@@ -710,14 +710,14 @@ Section :ref:`typing-rules`.
    .. cmdv:: Let @ident := @term
       :name: Let (outside a section)
 
-      Out of any section, this variant is a synonym of
+      Outside of any section, this variant is a synonym of
       :n:`Local Definition @ident := @term`.
       For its meaning inside a section, see :cmd:`Let` in
       :ref:`section-mechanism`.
 
       .. warn:: @ident is declared as a local definition [local-declaration,scope]
 
-         Warning that is emitted when using :cmd:`Let` instead of
+         Warning generated when using :cmd:`Let` instead of
          :cmd:`Local Definition`.
 
 .. seealso:: Section :ref:`section-mechanism`, commands :cmd:`Opaque`,
