@@ -25,9 +25,10 @@ let coq-ext-lib = coqPackages.coq-ext-lib.overrideAttrs (o: {
     src = fetchTarball "https://github.com/coq-ext-lib/coq-ext-lib/tarball/master";
   }); in
 
-let simple-io = coqPackages.simple-io.overrideAttrs (o: {
+let simple-io =
+  (coqPackages.simple-io.override { inherit coq-ext-lib; })
+  .overrideAttrs (o: {
     src = fetchTarball "https://github.com/Lysxia/coq-simple-io/tarball/master";
-    buildInputs = o.buildInputs ++ [ coq-ext-lib ];
   }); in
 
 let bignums = coqPackages.bignums.overrideAttrs (o:
