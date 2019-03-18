@@ -513,13 +513,7 @@ and treat_case sigma goal ci lbrty lf acc' =
   | _ -> (c,[||]) in
   let env = Goal.V82.env sigma goal in
   Array.fold_left3
-    (fun (lacc,sigma,bacc) ty fi l ->
-        if isMeta (strip_outer_cast fi) then
-          (* Support for non-eta-let-expanded Meta as found in *)
-          (* destruct/case with an non eta-let expanded elimination scheme *)
-          let (r,_,s,fi') = mk_refgoals sigma goal lacc ty fi in
-          r,s,(fi'::bacc)
-        else
+    (fun (lacc,sigma,bacc) ty fi n ->
         (* Deal with a branch in expanded form of the form
            Case(ci,p,c,[|eta-let-exp(Meta);...;eta-let-exp(Meta)|]) as
            if it were not so, so as to preserve compatibility with when
@@ -528,7 +522,6 @@ and treat_case sigma goal ci lbrty lf acc' =
            CAUTION: it does not deal with the general case of eta-zeta
            reduced branches having a form different from Meta, as it
            would be theoretically the case with third-party code *)
-        let n = List.length l in
         let ctx, body = Term.decompose_lam_n_decls n fi in
         let head, args = decompose_app_vect body in
         (* Strip cast because clenv_cast_meta adds a cast when the branch is
@@ -537,8 +530,7 @@ and treat_case sigma goal ci lbrty lf acc' =
         let head = strip_outer_cast head in
         if isMeta head then begin
           assert (args = Context.Rel.to_extended_vect mkRel 0 ctx);
-          let head' = lift (-n) head in
-          let (r,_,s,head'') = mk_refgoals sigma goal lacc ty head' in
+          let (r,_,s,head'') = mk_refgoals sigma goal lacc ty head in
           let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
           (r,s,fi'::bacc)
         end
@@ -547,7 +539,7 @@ and treat_case sigma goal ci lbrty lf acc' =
           let sigma, t'ty = goal_type_of env sigma fi in
           let sigma = check_conv_leq_goal env sigma fi t'ty ty in
           (lacc,sigma,fi::bacc))
-    (acc',sigma,[]) lbrty lf ci.ci_pp_info.cstr_tags
+    (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
 let convert_hyp ~check ~reorder env sigma d =
   let id = NamedDecl.get_id d in
