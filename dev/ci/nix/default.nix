@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import ../../nixpkgs.nix {}
 , branch
 , wd
 , project ? "xyz"
@@ -20,8 +20,17 @@ let mathcomp = coqPackages.mathcomp.overrideAttrs (o: {
 let ssreflect = coqPackages.ssreflect.overrideAttrs (o: {
   inherit (mathcomp) src;
   }); in
-let coq-ext-lib = coqPackages.coq-ext-lib; in
-let simple-io = coqPackages.simple-io; in
+
+let coq-ext-lib = coqPackages.coq-ext-lib.overrideAttrs (o: {
+    src = fetchTarball "https://github.com/coq-ext-lib/coq-ext-lib/tarball/master";
+  }); in
+
+let simple-io =
+  (coqPackages.simple-io.override { inherit coq-ext-lib; })
+  .overrideAttrs (o: {
+    src = fetchTarball "https://github.com/Lysxia/coq-simple-io/tarball/master";
+  }); in
+
 let bignums = coqPackages.bignums.overrideAttrs (o:
     if bn == "release" then {} else
     if bn == "master" then { src = fetchTarball https://github.com/coq/bignums/archive/master.tar.gz; } else
