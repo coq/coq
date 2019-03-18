@@ -1002,6 +1002,16 @@ function make_ln {
   fi
 }
 
+##### ARCH-pkg-config replacement #####
+
+# cygwin replaced ARCH-pkg-config with a shell script, which doesn't work e.g. for dune on Windows.
+# This builds a binary replacement for the shell script and puts it into the bin_special folder.
+# There is no global installation since it is module specific what pkg-config is needed under what name.
+
+function make_arch_pkg_config {
+  gcc -DARCH="$TARGET_ARCH" -o bin_special/pkg-config.exe $PATCHES/pkg-config.c
+}
+
 ##### OCAML #####
 
 function make_ocaml {
@@ -1151,15 +1161,11 @@ function make_menhir {
 # Otherwise make install fails
 
 function make_ocaml_cairo2 {
-
   if build_prep https://github.com/Chris00/ocaml-cairo/archive 0.6 tar.gz 1 ocaml_cairo2-0.6; then
-
-    # configure should be fixed to search for $TARGET_ARCH-pkg-config
-    cp "/bin/$TARGET_ARCH-pkg-config" bin_special/pkg-config
+    make_arch_pkg_config
 
     log2 dune build cairo2.install
     log2 dune install cairo2
-
     log2 dune clean
     build_post
 
@@ -1175,9 +1181,7 @@ function make_lablgtk {
   make_ocaml_cairo2
 
   if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
-
-    # configure should be fixed to search for $TARGET_ARCH-pkg-config
-    cp "/bin/$TARGET_ARCH-pkg-config" bin_special/pkg-config
+    make_arch_pkg_config
 
     # lablgtk3 includes more packages that are not relevant for Coq,
     # such as gtkspell
