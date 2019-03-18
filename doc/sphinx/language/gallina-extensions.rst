@@ -766,7 +766,7 @@ Sections create local contexts which can be shared across multiple definitions.
 
    Inside a section, local parameters can be introduced using :cmd:`Variable`,
    :cmd:`Hypothesis`, or :cmd:`Context` (there are also plural variants for
-   the former two).
+   the first two).
 
    .. coqtop:: all
 
@@ -827,40 +827,28 @@ Sections create local contexts which can be shared across multiple definitions.
       :name: @ident already exists. (Variable)
       :undocumented:
 
-   .. cmdv:: Variable {+ @ident } : @term
+   .. cmdv:: Variable {+ @ident } : @type
 
       Links :token:`type` to each :token:`ident`.
 
-   .. cmdv:: Variable {+ ( {+ @ident } : @term ) }
+   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
 
-      Adds blocks of variables with different specifications.
+      Declare one or more variables with various types.
 
-   .. cmdv:: Variables {+ ( {+ @ident } : @term) }
-             Hypothesis {+ ( {+ @ident } : @term) }
-             Hypotheses {+ ( {+ @ident } : @term) }
+   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
+             Hypothesis {+ ( {+ @ident } : @type) }
+             Hypotheses {+ ( {+ @ident } : @type) }
       :name: Variables; Hypothesis; Hypotheses
 
-      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @term) }`.
-
-.. cmd:: Context @binders
-
-   Declare variables in the context of the current section, like :cmd:`Variable`,
-   but also allowing implicit variables and :ref:`implicit-generalization`.
-
-   .. coqdoc::
-
-     Context {A : Type} (a b : A).
-     Context `{EqDec A}.
-
-.. seealso:: Section :ref:`contexts` in chapter :ref:`typeclasses`.
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
 
 .. cmd:: Let @ident := @term
 
    This command binds the value :token:`term` to the name :token:`ident` in the
-   environment of the current section. The name :token:`ident` disappears when the
-   current section is eventually closed, and all persistent definitions and
-   theorems within the section and depending on :token:`ident` are
-   prefixed by the let-in definition :n:`let @ident := @term in`.
+   environment of the current section. The name :token:`ident` is accessible
+   only within the current section. When the section is closed, all persistent
+   definitions and theorems within it and depending on :token:`ident`
+   will be prefixed by the let-in definition :n:`let @ident := @term in`.
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Let)
@@ -877,6 +865,19 @@ Sections create local contexts which can be shared across multiple definitions.
       :name: Let CoFixpoint
       :undocumented:
 
+.. cmd:: Context @binders
+
+   Declare variables in the context of the current section, like :cmd:`Variable`,
+   but also allowing implicit variables, :ref:`implicit-generalization`, and
+   let-binders.
+
+   .. coqdoc::
+
+     Context {A : Type} (a b : A).
+     Context `{EqDec A}.
+     Context (b' := b).
+
+.. seealso:: Section :ref:`binders`. Section :ref:`contexts` in chapter :ref:`typeclasses`.
 
 Module system
 -------------
@@ -2100,7 +2101,7 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 
   This is useful for declaring the implicit type of a single variable.
 
-.. cmdv:: Implicit Types {+ ( {+ @ident } : @term ) }
+.. cmdv:: Implicit Types {+ ( {+ @ident } : @type ) }
 
   Adds blocks of implicit types with different specifications.
 
