@@ -154,8 +154,10 @@ Declaring Coercions
   .. warn:: Ambiguous path.
 
      When the coercion :token:`qualid` is added to the inheritance graph,
-     invalid coercion paths are ignored; they are signaled by a warning
-     displaying these paths of the form :g:`[f₁;..;fₙ] : C >-> D`.
+     invalid coercion paths are ignored. The :cmd:`Coercion` command tries to check
+     that they are convertible with existing ones on the same classes.
+     The paths for which this check fails are displayed by a warning in the form
+     :g:`[f₁;..;fₙ] : C >-> D`.
 
   .. cmdv:: Local Coercion @qualid : @class >-> @class
 

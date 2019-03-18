@@ -140,6 +140,9 @@ Vernacular commands
 
 - `Hypotheses` and `Variables` can now take implicit binders inside sections.
 
+- `Coercion` does not warn ambiguous paths which are obviously convertible with
+  existing ones.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
