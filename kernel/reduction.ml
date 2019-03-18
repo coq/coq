@@ -315,11 +315,19 @@ type conv_tab = {
 let push_relevance infos r =
   { infos with relevances = r.Context.binder_relevance :: infos.relevances }
 
-let rec skip_pattern infos n c1 c2 =
-  if Int.equal n 0 then infos, c1, c2
+let push_relevances infos nas =
+  { infos with relevances = Array.fold_left (fun l x -> x.Context.binder_relevance :: l) infos.relevances nas }
+
+let rec skip_pattern infos relevances n c1 c2 =
+  if Int.equal n 0 then {infos with relevances}, c1, c2
   else match kind c1, kind c2 with
-  | Lambda (x, _, c1), Lambda (_, _, c2) -> skip_pattern (push_relevance infos x) (pred n) c1 c2
-  | _ -> raise IrregularPatternShape
+    | Lambda (x, _, c1), Lambda (_, _, c2) ->
+      skip_pattern infos (x.Context.binder_relevance :: relevances) (pred n) c1 c2
+    | _ -> raise IrregularPatternShape
+
+let skip_pattern infos n c1 c2 =
+  if Int.equal n 0 then infos, c1, c2
+  else skip_pattern infos infos.relevances n c1 c2
 
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
@@ -589,7 +597,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
-            let infos = Array.fold_left push_relevance infos na1 in
+            let infos = push_relevances infos na1 in
             convert_vect l2r infos
                          (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
           in
@@ -608,7 +616,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
           let cuniv =
-            let infos = Array.fold_left push_relevance infos na1 in
+            let infos = push_relevances infos na1 in
             convert_vect l2r infos
                          (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 cuniv
           in
