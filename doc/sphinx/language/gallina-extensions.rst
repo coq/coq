@@ -821,7 +821,7 @@ Sections create local contexts which can be shared across multiple definitions.
    This command links :token:`type` to the name :token:`ident` in the context of
    the current section. When the current section is closed, name :token:`ident`
    will be unknown and every object using this variable will be explicitly
-   parametrized (the variable is *discharged*).
+   parameterized (the variable is *discharged*).
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Variable)
