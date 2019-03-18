@@ -464,7 +464,9 @@ test-suite:edge+trunk+make:
     - eval $(opam env)
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
-    - opam install ocaml-variants=4.09.0+trunk num
+    - opam install ocaml-variants=4.09.0+trunk
+    - opam pin add -n ocamlfind https://gitlab.camlcity.org/gerd/lib-findlib.git#gerd/optional-vmthreads
+    - opam install num
     - eval $(opam env)
     # We avoid problems with warnings:
     - ./configure -profile devel -warn-error no
@@ -488,9 +490,10 @@ test-suite:edge+trunk+dune:
     - eval $(opam env)
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
-    - opam install ocaml-variants=4.09.0+trunk num
+    - opam install ocaml-variants=4.09.0+trunk
+    - opam pin add -n ocamlfind https://gitlab.camlcity.org/gerd/lib-findlib.git#gerd/optional-vmthreads
     - opam pin add dune --dev # ounit lablgtk conf-gtksourceview
-    - opam install dune
+    - opam install dune num
     - eval $(opam env)
     # We use the release profile to avoid problems with warnings
     - make -f Makefile.dune trunk
