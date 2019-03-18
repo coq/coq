@@ -849,8 +849,8 @@ which is a type whose conclusion is a sort.
    successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
    structural induction principle we got for :g:`nat`.
 
-Parametrized inductive types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameterized inductive types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmdv:: Inductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
 
@@ -926,7 +926,7 @@ Parametrized inductive types
      because the conclusion of the type of constructors should be :g:`listw A`
      in both cases.
 
-   + A parametrized inductive definition can be defined using annotations
+   + A parameterized inductive definition can be defined using annotations
      instead of parameters but it will sometimes give a different (bigger)
      sort for the inductive definition and will produce a less convenient
      rule for case elimination.
@@ -986,7 +986,7 @@ Mutually defined inductive types
 
    .. cmdv:: Inductive @ident @binders {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident @binders {? : @type } } }
 
-      In this variant, the inductive definitions are parametrized
+      In this variant, the inductive definitions are parameterized
       with :token:`binders`. However, parameters correspond to a local context
       in which the whole set of inductive declarations is done. For this
       reason, the parameters must be strictly the same for each inductive types.
@@ -1022,7 +1022,7 @@ Mutually defined inductive types
 
       Check forest_rec.
 
-   Assume we want to parametrize our mutual inductive definitions with the
+   Assume we want to parameterize our mutual inductive definitions with the
    two type variables :g:`A` and :g:`B`, the declaration should be
    done the following way:
 
