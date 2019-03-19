@@ -31,9 +31,7 @@ class segment : unit ->
     inherit GObj.widget
     val obj : Gtk.widget Gtk.obj
     method set_model : model -> unit
-(*
     method connect : segment_signals
     method default_color : color
     method set_default_color : color -> unit
-*)
   end

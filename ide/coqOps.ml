@@ -250,7 +250,6 @@ object(self)
     feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback;
     let md = segment_model document in
     segment#set_model md;
-(*
     let on_click id =
       let find _ _ s = Int.equal s.index id in
       let sentence = Doc.find document find in
@@ -267,7 +266,6 @@ object(self)
       ignore (script#scroll_to_iter ~use_align:true ~yalign:0. iter)
     in
     let _ = segment#connect#clicked ~callback:on_click in
-*)
     ()
 
   method private tooltip_callback ~x ~y ~kbd tooltip =
