@@ -193,21 +193,21 @@ let display mode (view : #GText.view_skel) goals hints evars =
 
 
 let proof_view () =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Proof.table ()
   in
   let text_buffer = new GText.buffer buffer#as_buffer in
-  let view = GSourceView2.source_view
+  let view = GSourceView3.source_view
     ~source_buffer:buffer ~editable:false ~wrap_mode:`WORD ()
   in
   let () = Gtk_parsing.fix_double_click view in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
-  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed ~callback:cb in
   let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
-  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  let cb ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   stick text_font view cb;
 
   let pf = object

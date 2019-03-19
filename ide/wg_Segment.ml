@@ -8,8 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(*
 open Util
 open Preferences
+*)
 
 type color = GDraw.color
 
@@ -22,6 +24,7 @@ object
   method fold : 'a. ('a -> color -> 'a) -> 'a -> 'a
 end
 
+(*
 let i2f = float_of_int
 let f2i = int_of_float
 
@@ -32,14 +35,14 @@ let color_eq (c1 : GDraw.color) (c2 : GDraw.color) = match c1, c2 with
 | `RGB (r1, g1, b1), `RGB (r2, g2, b2) -> r1 = r2 && g1 = g2 && b1 = b2
 | `WHITE, `WHITE -> true
 | _ -> false
-
+*)
 class type segment_signals =
 object
   inherit GObj.misc_signals
   inherit GUtil.add_ml_signals
   method clicked : callback:(int -> unit) -> GtkSignal.id
 end
-
+(*
 class segment_signals_impl obj (clicked : 'a GUtil.signal) : segment_signals =
 object
   val after = false
@@ -47,11 +50,14 @@ object
   inherit GUtil.add_ml_signals obj [clicked#disconnect]
   method clicked = clicked#connect ~after
 end
+*)
 
 class segment () =
 let box = GBin.frame () in
+(*
 let eventbox = GBin.event_box ~packing:box#add () in
 let draw = GMisc.image ~packing:eventbox#add () in
+*)
 object (self)
 
   inherit GObj.widget box#as_widget
@@ -60,11 +66,13 @@ object (self)
   val mutable height = 20
   val mutable model : model option = None
   val mutable default : color = `WHITE
+(*
   val mutable pixmap : GDraw.pixmap = GDraw.pixmap ~width:1 ~height:1 ()
+*)
   val clicked = new GUtil.signal ()
   val mutable need_refresh = false
   val refresh_timer = Ideutils.mktimer ()
-
+(*
   initializer
     box#misc#set_size_request ~height ();
     let cb rect =
@@ -95,17 +103,18 @@ object (self)
     draw#set_pixmap pixmap;
     refresh_timer.Ideutils.run ~ms:300
       ~callback:(fun () -> if need_refresh then self#refresh (); true)
-
+*)
   method set_model md =
     model <- Some md;
     let changed_cb = function
     | `INSERT | `REMOVE ->
       if self#misc#visible then need_refresh <- true
     | `SET (i, color) ->
-      if self#misc#visible then self#fill_range color i (i + 1)
+      ()
+(*      if self#misc#visible then self#fill_range color i (i + 1)*)
     in
     md#changed ~callback:changed_cb
-
+(*
   method private fill_range color i j = match model with
   | None -> ()
   | Some md ->
@@ -150,5 +159,6 @@ object (self)
 
   method connect =
     new segment_signals_impl box#as_widget clicked
+*)
 
 end

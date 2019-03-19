@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val lang_manager : GSourceView2.source_language_manager
-val style_manager : GSourceView2.source_style_scheme_manager
+val lang_manager : GSourceView3.source_language_manager
+val style_manager : GSourceView3.source_style_scheme_manager
 
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
@@ -108,6 +108,6 @@ val load_pref : unit -> unit
 val configure : ?apply:(unit -> unit) -> GWindow.window -> unit
 
 val stick : 'a preference ->
-  (#GObj.widget as 'obj) -> ('a -> unit) -> unit
+  < connect : #GObj.widget_signals ; .. > -> ('a -> unit) -> unit
 
 val use_default_doc_url : string

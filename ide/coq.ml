@@ -128,16 +128,15 @@ and asks_for_coqtop args =
       let () = pb_mes#destroy () in
       filter_coq_opts args
     | `DELETE_EVENT | `NO ->
-      let () = pb_mes#destroy () in
-      let cmd_sel = GWindow.file_selection
+      let file = select_file_for_open
         ~title:"coqidetop to execute (edit your preference then)"
-	~filename:(coqtop_path ()) ~urgency_hint:true () in
-      match cmd_sel#run () with
-	| `OK ->
-	  let () = custom_coqtop := (Some cmd_sel#filename) in
-	  let () = cmd_sel#destroy () in
+        ~filter:false
+        ~filename:(coqtop_path ()) () in
+      match file with
+      | Some _ ->
+          let () = custom_coqtop := file in
 	  filter_coq_opts args
-	| `CANCEL | `DELETE_EVENT | `HELP -> exit 0
+      | None -> exit 0
 
 exception WrongExitStatus of string
 

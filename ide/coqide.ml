@@ -193,7 +193,7 @@ let confirm_save ok =
 let select_and_save ?parent ~saveas ?filename sn =
   let do_save = if saveas then sn.fileops#saveas ?parent else sn.fileops#save in
   let title = if saveas then "Save file as" else "Save file" in
-  match select_file_for_save ~title ?filename () with
+  match select_file_for_save ~title ?parent ?filename () with
     |None -> false
     |Some f ->
       let ok = do_save f in
@@ -213,7 +213,8 @@ let check_save ?parent ~saveas sn =
 exception DontQuit
 
 let check_quit ?parent saveall =
-  (try save_pref () with _ -> flash_info "Cannot save preferences");
+  (try save_pref ()
+   with e -> flash_info ("Cannot save preferences (" ^ Printexc.to_string e ^ ")"));
   let is_modified sn = sn.buffer#modified in
   if List.exists is_modified notebook#pages then begin
     let answ = Configwin_ihm.question_box ~title:"Quit"
@@ -271,11 +272,11 @@ let newfile _ =
   let index = notebook#append_term session in
   notebook#goto_page index
 
-let load _ =
+let load ?parent _ =
   let filename =
     try notebook#current_term.fileops#filename
     with Invalid_argument _ -> None in
-  match select_file_for_open ~title:"Load file" ?filename () with
+  match select_file_for_open ~title:"Load file" ?parent ?filename () with
     | None -> ()
     | Some f -> FileAux.load_file f
 
@@ -359,7 +360,7 @@ let print sn =
         Filename.quote (Filename.basename f_name) ^ " | " ^ cmd_print#get
       in
       let w = GWindow.window ~title:"Print" ~modal:true
-        ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE" ()
+        ~position:`CENTER ~wmclass:("CoqIDE","CoqIDE") ()
       in
       let v = GPack.vbox ~spacing:10 ~border_width:10 ~packing:w#add ()
       in
@@ -812,7 +813,7 @@ let zoom_fit sn =
   let space = script#misc#allocation.Gtk.width in
   let cols = script#right_margin_position in
   let pango_ctx = script#misc#pango_context in
-  let layout = pango_ctx#create_layout in
+  let layout = pango_ctx#create_layout#as_layout in
   let fsize = Pango.Font.get_size (Pango.Font.from_string text_font#get) in
   Pango.Layout.set_text layout (String.make cols 'X');
   let tlen = fst (Pango.Layout.get_pixel_size layout) in
@@ -939,7 +940,7 @@ let emit_to_focus window sgn =
 
 let build_ui () =
   let w = GWindow.window
-    ~wm_class:"CoqIde" ~wm_name:"CoqIde"
+    ~wmclass:("CoqIde","CoqIde")
     ~width:window_width#get ~height:window_height#get
     ~title:"CoqIde" ()
   in
@@ -972,7 +973,7 @@ let build_ui () =
   menu file_menu [
     item "File" ~label:"_File";
     item "New" ~callback:File.newfile ~stock:`NEW;
-    item "Open" ~callback:File.load ~stock:`OPEN;
+    item "Open" ~callback:(File.load ~parent:w) ~stock:`OPEN;
     item "Save" ~callback:(File.save ~parent:w) ~stock:`SAVE ~tooltip:"Save current buffer";
     item "Save as" ~label:"S_ave as" ~stock:`SAVE_AS ~callback:(File.saveas ~parent:w);
     item "Save all" ~label:"Sa_ve all" ~callback:File.saveall;
@@ -1021,7 +1022,8 @@ let build_ui () =
       ~callback:(fun _ ->
         begin
 	  try Preferences.configure ~apply:refresh_notebook_pos w
-	  with _ -> flash_info "Cannot save preferences"
+          with e ->
+            flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;
         reset_revert_timer ());
   ];
@@ -1220,10 +1222,10 @@ let build_ui () =
       ((Coqide_ui.ui_m#get_widget "/CoqIde ToolBar")#as_widget)
   in
   let () = GtkButton.Toolbar.set
-    ~orientation:`HORIZONTAL ~style:`ICONS ~tooltips:true tbar
+    ~orientation:`HORIZONTAL ~style:`ICONS tbar
   in
-  let toolbar = new GObj.widget tbar in
-  let () = vbox#pack toolbar in
+  let toolbar = new GButton.toolbar tbar in
+  let () = vbox#pack toolbar#coerce in
 
   (* Emacs/PG mode *)
   NanoPG.init w notebook all_menus;
@@ -1302,11 +1304,6 @@ let build_ui () =
   stick show_toolbar toolbar refresh_toolbar;
   let _ = source_style#connect#changed ~callback:refresh_style in
   let _ = source_language#connect#changed ~callback:refresh_language in
-
-  (* Color configuration *)
-  Tags.Script.incomplete#set_property
-    (`BACKGROUND_STIPPLE
-      (Gdk.Bitmap.create_from_data ~width:2 ~height:2 "\x01\x02"));
 
   (* Showtime ! *)
   w#show ();

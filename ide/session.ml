@@ -47,7 +47,7 @@ type session = {
 }
 
 let create_buffer () =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~tag_table:Tags.Script.table
     ~highlight_matching_brackets:true
     ?language:(lang_manager#language source_language#get)
@@ -257,7 +257,7 @@ let make_table_widget ?sort cd cb =
       ~model:store ~packing:frame#add () in
   let () = data#set_headers_visible true in
   let () = data#set_headers_clickable true in
-  let refresh clr = data#misc#modify_base [`NORMAL, `NAME clr] in
+  let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed ~callback:refresh in
   let _ = data#misc#connect#realize ~callback:(fun () -> refresh background_color#get) in
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
@@ -442,11 +442,11 @@ let build_layout (sn:session) =
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
   let script_frame = GBin.frame ~shadow_type:`IN
-    ~packing:eval_paned#add1 () in
+    ~packing:(eval_paned#pack1 ~shrink:false) () in
   let script_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
   let state_paned = GPack.paned `VERTICAL
-    ~packing:eval_paned#add2 () in
+    ~packing:(eval_paned#pack2 ~shrink:false) () in
 
   (* Proof buffer. *)
 

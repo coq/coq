@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let _ = GtkMain.Main.init ()
+let _ = Coqide.set_signal_handlers ()
 
 (* We handle Gtk warning messages ourselves :
    - on win32, we don't want them to end on a non-existing console

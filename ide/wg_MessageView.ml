@@ -42,7 +42,7 @@ class type message_view =
   end
 
 let message_view () : message_view =
-  let buffer = GSourceView2.source_buffer
+  let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
     ~tag_table:Tags.Message.table ()
   in
@@ -50,7 +50,7 @@ let message_view () : message_view =
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
-  let view = GSourceView2.source_view
+  let view = GSourceView3.source_view
     ~source_buffer:buffer ~packing:scroll#add
     ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
   in
@@ -59,10 +59,10 @@ let message_view () : message_view =
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
   view#misc#show ();
-  let cb clr = view#misc#modify_base [`NORMAL, `NAME clr] in
+  let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in
   let _ = background_color#connect#changed ~callback:cb in
   let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
-  let cb ft = view#misc#modify_font (Pango.Font.from_string ft) in
+  let cb ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   stick text_font view cb;
 
   (* Inserts at point, advances the mark *)

@@ -1,0 +1,19 @@
+diff/patch file created on Tue, Feb 19, 2019  9:41:26 PM with:
+difftar-folder.sh tarballs/flexdll-0.37.tar.gz flexdll-0.37 1
+TARFILE= tarballs/flexdll-0.37.tar.gz
+FOLDER= flexdll-0.37
+TARSTRIP= 1
+TARPREFIX= flexdll-0.37/
+ORIGFOLDER= flexdll-0.37.orig
+--- flexdll-0.37.orig/cmdline.ml	2017-10-25 10:40:46.000000000 +0200
++++ flexdll-0.37/cmdline.ml	2019-02-19 21:41:18.157024900 +0100
+@@ -248,6 +248,9 @@
+         String.sub s 0 2 :: String.sub s 2 (String.length s - 2) :: tr rest
+     | s :: rest when String.length s >= 5 && String.sub s 0 5 = "/link" ->
+         "-link" :: String.sub s 5 (String.length s - 5) :: tr rest
++    (* Convert gcc linker option prefix -Wl, to flexlink linker prefix -link *)
++    | s :: rest when String.length s >= 6 && String.sub s 0 5 = "-Wl,-" ->
++        "-link" :: String.sub s 4 (String.length s - 4) :: tr rest
+     | "-arg" :: x :: rest ->
+         tr (Array.to_list (Arg.read_arg x)) @ rest
+     | "-arg0" :: x :: rest ->

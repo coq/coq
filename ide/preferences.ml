@@ -12,10 +12,10 @@ open Configwin
 
 let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
 let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
-let lang_manager = GSourceView2.source_language_manager ~default:true
+let lang_manager = GSourceView3.source_language_manager ~default:true
 let () = lang_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@lang_manager#search_path)
-let style_manager = GSourceView2.source_style_scheme_manager ~default:true
+let style_manager = GSourceView3.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@style_manager#search_path)
 
@@ -73,11 +73,11 @@ object (self)
   method default = default
 end
 
-let stick (pref : 'a preference) (obj : #GObj.widget as 'obj)
+let stick (pref : 'a preference) (obj : < connect : #GObj.widget_signals ; .. >)
   (cb : 'a -> unit) =
   let _ = cb pref#get in
   let p_id = pref#connect#changed ~callback:(fun v -> cb v) in
-  let _ = obj#misc#connect#destroy ~callback:(fun () -> pref#connect#disconnect p_id) in
+  let _ = obj#connect#destroy ~callback:(fun () -> pref#connect#disconnect p_id) in
   ()
 
 (** Useful marshallers *)
@@ -413,8 +413,11 @@ let attach_fg (pref : string preference) (tag : GText.tag) =
 let processing_color =
   new preference ~name:["processing_color"] ~init:"light blue" ~repr:Repr.(string)
 
+let incompletely_processed_color =
+  new preference ~name:["incompletely_processed_color"] ~init:"light sky blue" ~repr:Repr.(string)
+
 let _ = attach_bg processing_color Tags.Script.to_process
-let _ = attach_bg processing_color Tags.Script.incomplete
+let _ = attach_bg incompletely_processed_color Tags.Script.incomplete
 
 let tags = ref Util.String.Map.empty
 
@@ -575,7 +578,7 @@ object (self)
     | None -> set#set_active true
     | Some c ->
       set#set_active false;
-      but#set_color (Tags.color_of_string c)
+      but#set_color (Gdk.Color.color_parse c)
     in
     track tag.tag_bg_color bg_color bg_unset;
     track tag.tag_fg_color fg_color fg_unset;
@@ -587,7 +590,7 @@ object (self)
   method tag =
     let get but set =
       if set#active then None
-      else Some (Tags.string_of_color but#color)
+      else Some (Gdk.Color.color_to_string but#color)
     in
     {
       tag_bg_color = get bg_color bg_unset;
@@ -691,7 +694,7 @@ let configure ?(apply=(fun () -> ())) parent =
 
   let config_color =
     let box = GPack.vbox () in
-    let table = GPack.table
+    let grid = GPack.grid
       ~row_spacings:5
       ~col_spacings:5
       ~border_width:2
@@ -703,19 +706,19 @@ let configure ?(apply=(fun () -> ())) parent =
     in
     let iter i (text, pref) =
       let label = GMisc.label
-        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:i) ()
+        ~text ~packing:(grid#attach (*~expand:`X*) ~left:0 ~top:i) ()
       in
       let () = label#set_xalign 0. in
       let button = GButton.color_button
-        ~color:(Tags.color_of_string pref#get)
-        ~packing:(table#attach ~left:1 ~top:i) ()
+        ~color:(Gdk.Color.color_parse pref#get)
+        ~packing:(grid#attach ~left:1 ~top:i) ()
       in
       let _ = button#connect#color_set ~callback:begin fun () ->
-        pref#set (Tags.string_of_color button#color)
+        pref#set (Gdk.Color.color_to_string button#color)
       end in
       let reset _ =
         pref#reset ();
-        button#set_color Tags.(color_of_string pref#get)
+        button#set_color (Gdk.Color.color_parse pref#get)
       in
       let _ = reset_button#connect#clicked ~callback:reset in
       ()
@@ -724,6 +727,7 @@ let configure ?(apply=(fun () -> ())) parent =
       ("Background color", background_color);
       ("Background color of processed text", processed_color);
       ("Background color of text being processed", processing_color);
+      ("Background color of incompletely processed Qed", incompletely_processed_color);
       ("Background color of errors", error_color);
       ("Foreground color of errors", error_fg_color);
     ] in
@@ -740,7 +744,7 @@ let configure ?(apply=(fun () -> ())) parent =
       ~packing:(box#pack ~expand:true)
       ()
     in
-    let table = GPack.table
+    let grid = GPack.grid
       ~row_spacings:5
       ~col_spacings:5
       ~border_width:2
@@ -750,13 +754,13 @@ let configure ?(apply=(fun () -> ())) parent =
     let cb = ref [] in
     let iter text tag =
       let label = GMisc.label
-        ~text ~packing:(table#attach ~expand:`X ~left:0 ~top:!i) ()
+        ~text ~packing:(grid#attach (*~expand:`X*) ~left:0 ~top:!i) ()
       in
       let () = label#set_xalign 0. in
       let button = tag_button () in
       let callback () = tag#set button#tag in
       button#set_tag tag#get;
-      table#attach ~left:1 ~top:!i button#coerce;
+      grid#attach ~left:1 ~top:!i button#coerce;
       incr i;
       cb := callback :: !cb;
     in
@@ -921,6 +925,7 @@ let configure ?(apply=(fun () -> ())) parent =
                    else cmd_browse#get])
       cmd_browse#get
   in
+(*
   let automatic_tactics =
     strings
       ~f:automatic_tactics#set
@@ -929,12 +934,14 @@ let configure ?(apply=(fun () -> ())) parent =
       automatic_tactics#get
 
   in
+*)
 
   let contextual_menus_on_goal = pbool "Contextual menus on goal" contextual_menus_on_goal in
 
   let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
+(*
   let add_user_query () =
     let input_string l v =
       match GToolbox.input_string ~title:l v with
@@ -964,6 +971,7 @@ let configure ?(apply=(fun () -> ())) parent =
       user_queries#get
 
   in
+*)
 
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
@@ -987,12 +995,14 @@ let configure ?(apply=(fun () -> ())) parent =
      Section("Externals", None,
 	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
               cmd_print;cmd_editor;cmd_browse]);
+(*
      Section("Tactics Wizard", None,
 	     [automatic_tactics]);
+*)
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;
-        modifier_for_queries; user_queries]);
+        modifier_for_queries (*; user_queries *)]);
      Section("Misc", Some `ADD,
        misc)]
   in

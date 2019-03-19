@@ -284,12 +284,12 @@ end
 
 class script_view (tv : source_view) (ct : Coq.coqtop) =
 
-let view = new GSourceView2.source_view (Gobject.unsafe_cast tv) in
+let view = new GSourceView3.source_view (Gobject.unsafe_cast tv) in
 let completion = new Wg_Completion.complete_model ct view#buffer in
 let popup = new Wg_Completion.complete_popup completion (view :> GText.view) in
 
 object (self)
-  inherit GSourceView2.source_view (Gobject.unsafe_cast tv)
+  inherit GSourceView3.source_view (Gobject.unsafe_cast tv)
 
   val undo_manager = new undo_manager view#buffer
 
@@ -461,7 +461,7 @@ object (self)
     in
     let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
     (* Plug on preferences *)
-    let cb clr = self#misc#modify_base [`NORMAL, `NAME clr] in
+    let cb clr = self#misc#modify_bg [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
     let _ = self#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
 
@@ -484,24 +484,24 @@ object (self)
     stick tab_length self self#set_tab_width;
     stick auto_complete self self#set_auto_complete;
 
-    let cb ft = self#misc#modify_font (Pango.Font.from_string ft) in
+    let cb ft = self#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font self cb;
 
     ()
 
 end
 
-let script_view ct ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
-  GtkSourceView2.SourceView.make_params [] ~cont:(
+let script_view ct ?(source_buffer:GSourceView3.source_buffer option)  ?draw_spaces =
+  GtkSourceView3.SourceView.make_params [] ~cont:(
     GtkText.View.make_params ~cont:(
       GContainer.pack_container ~create:
 	(fun pl ->
 	  let w = match source_buffer with
-	    | None -> GtkSourceView2.SourceView.new_ ()
-	    | Some buf -> GtkSourceView2.SourceView.new_with_buffer
+            | None -> GtkSourceView3.SourceView.new_ ()
+            | Some buf -> GtkSourceView3.SourceView.new_with_buffer
               (Gobject.try_cast buf#as_buffer "GtkSourceBuffer")
 	  in
 	  let w = Gobject.unsafe_cast w in
 	  Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
-	  Gaux.may ~f:(GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
+          Gaux.may ~f:(GtkSourceView3.SourceView.set_draw_spaces w) draw_spaces;
 	  ((new script_view w ct) : script_view))))

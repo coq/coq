@@ -69,6 +69,7 @@ val string : ?editable: bool -> ?expand: bool -> ?help: string ->
 val bool : ?editable: bool -> ?help: string ->
   ?f: (bool -> unit) -> string -> bool -> parameter_kind
 
+(*
 (** [strings label value] creates a string list parameter.
    @param editable indicate if the value is editable (default is [true]).
    @param help an optional help message.
@@ -119,6 +120,7 @@ val list : ?editable: bool -> ?help: string ->
 		('a -> string list) ->
 		  'a list ->
 		    parameter_kind
+*)
 
 (** [combo label choices value] creates a combo parameter.
    @param editable indicate if the value is editable (default is [true]).

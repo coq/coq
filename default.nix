@@ -45,7 +45,10 @@ stdenv.mkDerivation rec {
     dune
   ]
   ++ (with ocamlPackages; [ ocaml findlib num ])
-  ++ optional buildIde ocamlPackages.lablgtk
+  ++ optionals buildIde [
+    ocamlPackages.lablgtk3-sourceview3
+    glib gnome3.defaultIconTheme wrapGAppsHook
+  ]
   ++ optionals buildDoc [
     # Sphinx doc dependencies
     pkgconfig (python3.withPackages

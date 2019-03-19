@@ -37,8 +37,10 @@ type return_button =
   | Return_cancel
 
 let string = Configwin_ihm.string
+(*
 let strings = Configwin_ihm.strings
 let list = Configwin_ihm.list
+*)
 let bool = Configwin_ihm.bool
 let combo = Configwin_ihm.combo
 let custom = Configwin_ihm.custom

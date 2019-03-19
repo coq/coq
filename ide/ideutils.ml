@@ -8,8 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-
 open Preferences
+
+let _ = GtkMain.Main.init ()
 
 let warn_image () =
   let img = GMisc.image () in
@@ -229,14 +230,17 @@ let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
-let select_file_for_open ~title ?filename () =
+let select_file_for_open ~title ?(filter=true) ?parent ?filename () =
   let file_chooser =
-    GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ()
+    GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ?parent ()
   in
   file_chooser#add_button_stock `CANCEL `CANCEL ;
   file_chooser#add_select_button_stock `OPEN `OPEN ;
-  file_chooser#add_filter (filter_coq_files ());
-  file_chooser#add_filter (filter_all_files ());
+  if filter then
+    begin
+      file_chooser#add_filter (filter_coq_files ());
+      file_chooser#add_filter (filter_all_files ())
+    end;
   file_chooser#set_default_response `OPEN;
   let dir = match filename with
     | None -> current_dir ()
@@ -255,10 +259,10 @@ let select_file_for_open ~title ?filename () =
   file_chooser#destroy ();
   file
 
-let select_file_for_save ~title ?filename () =
+let select_file_for_save ~title ?parent ?filename () =
   let file = ref None in
   let file_chooser =
-    GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title ()
+    GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title ?parent ()
   in
   file_chooser#add_button_stock `CANCEL `CANCEL ;
   file_chooser#add_select_button_stock `SAVE `SAVE ;

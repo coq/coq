@@ -331,7 +331,7 @@ IF "%CYGWIN_QUIET%" == "Y" (
 )
 
 IF "%GTK_FROM_SOURCES%"=="N" (
-  SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk2.0,mingw64-%ARCH%-gtksourceview2.0
+  SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk3,mingw64-%ARCH%-gtksourceview3.0
 )
 
 REM Cygwin setup sets proper ACLs (permissions) for folders it CREATES.

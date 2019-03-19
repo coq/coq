@@ -100,10 +100,10 @@ object(self)
     router#register_route route_id result;
     r_bin#add_with_viewport (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;
-    let cb clr = result#misc#modify_base [`NORMAL, `NAME clr] in
+    let cb clr = result#misc#modify_bg [`NORMAL, `NAME clr] in
     let _ = background_color#connect#changed ~callback:cb in
     let _ = result#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
-    let cb ft = result#misc#modify_font (Pango.Font.from_string ft) in
+    let cb ft = result#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font result cb;
     result#misc#set_can_focus true; (* false causes problems for selection *)
     let callback () =
@@ -163,8 +163,8 @@ object(self)
     frame#visible
 
   method private refresh_color clr =
-    let clr = Tags.color_of_string clr in
-    let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
+    let clr = Gdk.Color.color_parse clr in
+    let iter (_,view,_) = view#misc#modify_bg [`NORMAL, `COLOR clr] in
     List.iter iter views
 
   initializer

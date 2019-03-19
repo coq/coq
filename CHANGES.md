@@ -17,6 +17,8 @@ OCaml and dependencies
 
 Coqide
 
+- CoqIDE now depends on gtk+3 and lablgtk3, rather than gtk+2 and lablgtk2.
+
 - CoqIDE now properly sets the module name for a given file based on
   its path, see -topfile change entry for more details.
 

@@ -17,10 +17,10 @@ dev-repo: "git+https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
 depends: [
-  "dune"               { build & >= "1.4.0" }
+  "dune"                 { build & >= "1.4.0" }
   "coqide-server"
-  "conf-gtksourceview"
-  "lablgtk"            {         >= "2.18.5" }
+  "lablgtk3"             {         >= "3.0.beta5" }
+  "lablgtk3-sourceview3" {         >= "3.0.beta5" }
 ]
 
 build-env: [

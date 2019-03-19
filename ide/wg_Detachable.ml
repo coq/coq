@@ -15,6 +15,9 @@ class type detachable_signals =
     method detached : callback:(GObj.widget -> unit) -> unit
   end
 
+(* Cannot do a local warning in 4.05.0, fixme when we use a newer
+   OCaml to avoid the warning in the method itself. *)
+[@@@ocaml.warning "-7"]
 class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
 
   object(self)
