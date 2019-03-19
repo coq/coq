@@ -39,11 +39,11 @@ assert (cos (atan v) <> 0).
  destruct (atan_bound v); apply Rgt_not_eq, cos_gt_0; auto.
  rewrite <- Ropp_div; assumption.
 assert (t : forall a b c, a - b = c -> a = b + c) by (intros; subst; field).
-apply t, tan_is_inj; clear t; try assumption.
+apply t, tan_inj; clear t; try assumption.
 rewrite tan_minus; auto.
-  rewrite !atan_right_inv; reflexivity.
+  rewrite !tan_atan; reflexivity.
 apply Rgt_not_eq, cos_gt_0; rewrite <- ?Ropp_div; tauto.
-rewrite !atan_right_inv; assumption.
+rewrite !tan_atan; assumption.
 Qed.
 
 Lemma tech : forall x y , -1 <= x <= 1 -> -1 < y < 1 -> 

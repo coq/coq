@@ -746,6 +746,9 @@ Proof.
 Qed.
 Hint Resolve Rminus_diag_eq: real.
 
+Lemma Rminus_eq_0 x : x - x = 0.
+Proof. ring. Qed.
+
 (**********)
 Lemma Rminus_diag_uniq : forall r1 r2, r1 - r2 = 0 -> r1 = r2.
 Proof.
@@ -793,6 +796,10 @@ Lemma Rmult_minus_distr_l :
 Proof.
   intros; ring.
 Qed.
+
+Lemma Rmult_minus_distr_r:
+  forall r1 r2 r3, (r2 - r3) * r1 = r2 * r1 - r3 * r1.
+Proof. intros; ring. Qed.
 
 (*********************************************************)
 (** ** Inverse                                           *)
