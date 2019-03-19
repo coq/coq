@@ -359,7 +359,7 @@ pkg:nix:deploy:channel:
     - echo "$CACHIX_DEPLOYMENT_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git fetch --unshallow
     - git branch -v
-    - git push git@github.com:coq/coq-on-cachix "${CI_COMMIT_REF_NAME}"
+    - git push git@github.com:coq/coq-on-cachix "${CI_COMMIT_SHA}":"${CI_COMMIT_REF_NAME}"
 
 pkg:nix:
   extends: .nix-template
