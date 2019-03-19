@@ -253,6 +253,9 @@ build:base+async:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
   allow_failure: true # See https://github.com/coq/coq/issues/9658
+  only:
+    variables:
+      - $UNRELIABLE =~ /enabled/
 
 build:quick:
   extends: .build-template
@@ -260,6 +263,9 @@ build:quick:
     COQ_EXTRA_CONF: "-native-compiler no"
     QUICK: "1"
   allow_failure: true # See https://github.com/coq/coq/issues/9637
+  only:
+    variables:
+      - $UNRELIABLE =~ /enabled/
 
 windows64:
   extends: .windows-template
@@ -507,6 +513,10 @@ test-suite:base+async:
     - build:base
   variables:
     COQFLAGS: "-async-proofs on"
+  allow_failure: true
+  only:
+    variables:
+      - $UNRELIABLE =~ /enabled/
 
 validate:base:
   extends: .validate-template
@@ -532,6 +542,9 @@ validate:quick:
   extends: .validate-template
   dependencies:
     - build:quick
+  only:
+    variables:
+      - $UNRELIABLE =~ /enabled/
 
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API
