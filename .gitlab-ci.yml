@@ -320,6 +320,7 @@ pkg:opam:
   dependencies: [] # We don't need to download build artifacts
   before_script: [] # We don't want to use the shared 'before_script'
   script:
+    - cat /proc/{cpu,mem}info || true
     # Use current worktree as tmpdir to allow exporting artifacts in case of failure
     - export TMPDIR=$PWD
     # We build an expression rather than a direct URL to not be dependent on

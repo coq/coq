@@ -5,5 +5,4 @@ let coq = callPackage wd { buildDoc = false; doInstallCheck = false; coq-version
 coq.overrideAttrs (o: {
   name = "coq-local-${branch}";
   src = fetchGit "${wd}";
-  enableParallelBuilding = true;
 })
