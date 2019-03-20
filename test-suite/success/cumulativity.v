@@ -137,3 +137,12 @@ Module WithIndex.
   Monomorphic Constraint i < j.
   Definition bar : eq mkfoo@{i} mkfoo@{j} := eq_refl _.
 End WithIndex.
+
+Module CumulApp.
+
+  (* i is covariant here, and we have one parameter *)
+  Inductive foo@{i} (A : nat) : Type@{i+1} := mkfoo (B : Type@{i}).
+
+  Definition bar@{i j|i<=j} := fun x : foo@{i} 0 => x : foo@{j} 0.
+
+End CumulApp.

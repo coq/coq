@@ -860,7 +860,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
-    eq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
+    leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal (eq 0) l1 l2
   | Const (c1,u1), Const (c2,u2) ->
