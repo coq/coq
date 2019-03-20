@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-
 type status =
   Disabled | Enabled | AsError
 
@@ -158,6 +156,10 @@ let set_flags s =
    warning flags string, because the warning being created might have been set
    already. *)
 let create ~name ~category ?(default=Enabled) pp =
+  let pp x = let open Pp in
+    pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
+    str category ++ str "]"
+  in
   Hashtbl.replace warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
@@ -166,13 +168,8 @@ let create ~name ~category ?(default=Enabled) pp =
      new warning is now known. *)
   set_flags !flags;
   fun ?loc x ->
-           let w = Hashtbl.find warnings name in
-           match w.status with
-           | Disabled -> ()
-           | AsError -> CErrors.user_err ?loc (pp x)
-           | Enabled ->
-              let msg =
-                pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
-                  str category ++ str "]"
-              in
-              Feedback.msg_warning ?loc msg
+    let w = Hashtbl.find warnings name in
+    match w.status with
+    | Disabled -> ()
+    | AsError -> CErrors.user_err ?loc (pp x)
+    | Enabled -> Feedback.msg_warning ?loc (pp x)
