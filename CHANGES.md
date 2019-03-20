@@ -231,6 +231,12 @@ SSReflect
   - `=> {x..} /H`      ->  `=> /v {x..H}`
   - `rewrite {x..} H`  ->  `rewrite E {x..H}`
 
+Diffs
+
+- Some error messages that show problems with a pair of non-matching values will now
+  highlight the differences.
+
+
 Changes from 8.8.2 to 8.9+beta1
 ===============================
 

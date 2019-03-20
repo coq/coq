@@ -628,7 +628,8 @@ Showing differences between proof steps
 ---------------------------------------
 
 
-Coq can automatically highlight the differences between successive proof steps.
+Coq can automatically highlight the differences between successive proof steps and between
+values in some error messages.
 For example, the following screenshots of CoqIDE and coqtop show the application
 of the same :tacn:`intros` tactic.  The tactic creates two new hypotheses, highlighted in green.
 The conclusion is entirely in pale green because although it’s changed, no tokens were added
@@ -665,15 +666,24 @@ new, no line of old text is shown for them.
   .. image:: ../_static/diffs-coqtop-on3.png
      :alt: coqtop with Set Diffs on
 
+This image shows an error message with diff highlighting in CoqIDE:
+
+..
+
+  .. image:: ../_static/diffs-error-message.png
+     :alt: |CoqIDE| error message with diffs
+
 How to enable diffs
 ```````````````````
 
 .. opt:: Diffs %( "on" %| "off" %| "removed" %)
    :name: Diffs
 
-   The “on” option highlights added tokens in green, while the “removed” option
+   The “on” setting highlights added tokens in green, while the “removed” setting
    additionally reprints items with removed tokens in red.  Unchanged tokens in
-   modified items are shown with pale green or red.  (Colors are user-configurable.)
+   modified items are shown with pale green or red.  Diffs in error messages
+   use red and green for the compared values; they appear regardless of the setting.
+   (Colors are user-configurable.)
 
 For coqtop, showing diffs can be enabled when starting coqtop with the
 ``-diffs on|off|removed`` command-line option or by setting the :opt:`Diffs` option

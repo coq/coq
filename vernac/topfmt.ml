@@ -196,8 +196,8 @@ let init_tag_map styles =
 let default_styles () =
   init_tag_map (default_tag_map ())
 
-let parse_color_config file =
-  let styles = Terminal.parse file in
+let parse_color_config str =
+  let styles = Terminal.parse str in
   init_tag_map styles
 
 let dump_tags () = CString.Map.bindings !tag_map

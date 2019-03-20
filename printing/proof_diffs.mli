@@ -16,6 +16,12 @@ val write_diffs_option : string -> unit
 (** Returns true if the diffs option is "on" or "removed" *)
 val show_diffs : unit -> bool
 
+(** controls whether color output is enabled *)
+val write_color_enabled : bool -> unit
+
+(** true indicates that color output is enabled *)
+val color_enabled : unit -> bool
+
 open Evd
 open Environ
 open Constr
