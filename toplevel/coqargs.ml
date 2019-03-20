@@ -47,7 +47,7 @@ type option_command = OptionSet of string option | OptionUnset
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
-  toplevel_name     : Stm.interactive_top;
+  top_path          : Stm.top_path;
   allow_sprop       : bool;
   cumulative_sprop  : bool;
 }
@@ -112,7 +112,7 @@ let default_native =
 let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
-  toplevel_name = Stm.TopLogical default_toplevel;
+  top_path = Stm.TopLogical default_toplevel;
   allow_sprop = false;
   cumulative_sprop = false;
 }
@@ -440,10 +440,10 @@ let parse_args ~help ~init arglist : t * string list =
       let topname = Libnames.dirpath_of_string (next ()) in
       if Names.DirPath.is_empty topname then
         CErrors.user_err Pp.(str "Need a non empty toplevel module name");
-      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopLogical topname }}}
+      { oval with config = { oval.config with logic = { oval.config.logic with top_path = Stm.TopLogical topname }}}
 
     |"-topfile" ->
-      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopPhysical (next()) }}}
+      { oval with config = { oval.config with logic = { oval.config.logic with top_path = Stm.TopPhysical (next()) }}}
 
     |"-main-channel" ->
       Spawned.main_channel := get_host_port opt (next()); oval

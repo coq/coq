@@ -42,20 +42,9 @@ module AsyncOpts : sig
 
 end
 
-type interactive_top = TopLogical of DirPath.t | TopPhysical of string
+(** Coq initalization options:
 
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-
-(** The STM document type [stm_doc_type] determines some properties
-   such as what uncompleted proofs are allowed and what gets recorded
-   to aux files. *)
-type stm_doc_type =
-  | Batch of compilation_mode * string (* file path *)
-  | Interactive of interactive_top    (* module path *)
-
-(** Coq initialization options:
-
- - [doc_type]: Type of document being created.
+ - [library_mode]: Type of document being created.
 
  - [require_libs]: list of libraries/modules to be pre-loaded at
    startup. A tuple [(modname,modfrom,import)] is equivalent to [From
@@ -64,11 +53,15 @@ type stm_doc_type =
    the module, [Some true] will additionally export it.
 
 *)
+type top_path = TopLogical of DirPath.t | TopPhysical of string
+
 type stm_init_options = {
   (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should disappear at some
-     some point. *)
-  doc_type     : stm_doc_type;
+     specified [library_info]. This distinction should disappear at some
+     point. *)
+  library_mode     : Declaremods.library_mode;
+
+  top_path : top_path;
 
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
@@ -177,7 +170,6 @@ val finish_tasks : string ->
 
 (* Id of the tip of the current branch *)
 val get_current_state : doc:doc -> Stateid.t
-val get_ldir : doc:doc -> Names.DirPath.t
 
 (* This returns the node at that position *)
 val get_ast : doc:doc -> Stateid.t -> Vernacexpr.vernac_control option

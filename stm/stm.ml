@@ -306,15 +306,6 @@ end (* }}} *)
 (*************************** THE DOCUMENT *************************************)
 (******************************************************************************)
 
-type interactive_top = TopLogical of DirPath.t | TopPhysical of string
-
-type compilation_mode = BuildVo | BuildVio | Vio2Vo
-
-(* The main document type associated to a VCS *)
-type stm_doc_type =
-  | Batch of compilation_mode * string
-  | Interactive of interactive_top
-
 (* Dummy until we land the functional interp patch + fixed start_library *)
 type doc = int
 let dummy_doc : doc = 0
@@ -335,10 +326,7 @@ module VCS : sig
 
   type vcs = (branch_type, transaction, vcs state_info, box) Vcs_.t
 
-  val init : stm_doc_type -> id -> Vernacstate.Parser.state -> doc
-  (* val get_type : unit -> stm_doc_type *)
-  val set_ldir : Names.DirPath.t -> unit
-  val get_ldir : unit -> Names.DirPath.t
+  val init : id -> Vernacstate.Parser.state -> doc
 
   val is_interactive : unit -> bool
   val is_vio_doc : unit -> bool
@@ -527,30 +515,22 @@ end = struct (* {{{ *)
   type vcs = (branch_type, transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
-  let doc_type = ref (Interactive (TopLogical (Names.DirPath.make [])))
-  let ldir = ref Names.DirPath.empty
-
-  let init dt id ps =
-    doc_type := dt;
+  let init id ps =
     vcs := empty id;
     let info = { (default_info None) with state = ParsingState ps } in
     vcs := set_info !vcs id info;
     dummy_doc
 
-  let set_ldir ld =
-    ldir := ld
-
-  let get_ldir () = !ldir
-  (* let get_type () = !doc_type *)
-
   let is_interactive () =
-    match !doc_type with
-    | Interactive _ -> true
+    let open Declaremods in
+    match (get_current_library_info ()).library_mode with
+    | Interactive -> true
     | _ -> false
 
   let is_vio_doc () =
-    match !doc_type with
-    | Batch (BuildVio, _) -> true
+    let open Declaremods in
+    match (get_current_library_info ()).library_mode with
+    | Batch BuildVio -> true
     | _ -> false
 
   let current_branch () = current_branch !vcs
@@ -2570,12 +2550,16 @@ end (* }}} *)
 (********************************* STM API ************************************)
 (******************************************************************************)
 
-(* Main initialization routine *)
+type top_path = TopLogical of DirPath.t | TopPhysical of string
+
+(* Main initalization routine *)
 type stm_init_options = {
   (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should disappear at some
-     some point. *)
-  doc_type     : stm_doc_type;
+     specified [library_mode]. This distinction should disappear at some
+     point. *)
+  library_mode : Declaremods.library_mode;
+
+  top_path : top_path;
 
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
@@ -2593,13 +2577,6 @@ type stm_init_options = {
 }
 (* fb_handler   : Feedback.feedback -> unit; *)
 
-(*
-let doc_type_module_name (std : stm_doc_type) =
-  match std with
-  | VoDoc mn | VioDoc mn | Vio2Vo mn -> mn
-  | Interactive mn -> Names.DirPath.to_string mn
-*)
-
 let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   State.register_root_state ()
@@ -2616,7 +2593,7 @@ let dirpath_of_file f =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
-let new_doc { doc_type ; iload_path; require_libs; stm_options } =
+let new_doc { library_mode ; top_path; iload_path; require_libs; stm_options } =
 
   let require_file (dir, from, exp) =
     let mp = Libnames.qualid_of_string dir in
@@ -2629,7 +2606,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   (* We must reset the whole state before creating a document! *)
   State.restore_root_state ();
 
-  let doc = VCS.init doc_type Stateid.initial (Vernacstate.Parser.init ()) in
+  let doc = VCS.init Stateid.initial (Vernacstate.Parser.init ()) in
 
   (* Set load path; important, this has to happen before we declare
      the library below as [Declaremods/Library] will infer the module
@@ -2638,20 +2615,28 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
 
-  begin match doc_type with
-    | Interactive ln ->
-      let dp = match ln with
-        | TopLogical dp -> dp
-        | TopPhysical f -> dirpath_of_file f
-      in
-      Declaremods.start_library dp
+  let library_path = match top_path with
+    | TopLogical dir -> dir
+    | TopPhysical f -> dirpath_of_file f
+  in
 
-    | Batch (_, f) ->
-      let ldir = dirpath_of_file f in
-      let () = Flags.verbosely Declaremods.start_library ldir in
-      VCS.set_ldir ldir;
+  let library_info =
+    Declaremods.{ library_mode;
+                  library_path;
+                }
+  in
+
+  begin match library_mode with
+  | Declaremods.Interactive ->
+    Declaremods.start_library library_info
+  | Declaremods.Batch _ ->
+    Flags.verbosely Declaremods.start_library library_info
+  end;
+
+  begin match library_mode, top_path with
+    | Declaremods.Batch _, TopPhysical f ->
       set_compilation_hints f
-
+    | _, _ -> ()
   end;
 
   (* Import initial libraries. *)
@@ -3199,7 +3184,6 @@ let edit_at ~doc id =
         Exninfo.iraise (e, info)
 
 let get_current_state ~doc = VCS.cur_tip ()
-let get_ldir ~doc = VCS.get_ldir ()
 
 let get_doc did = dummy_doc
 

@@ -277,7 +277,8 @@ let init_document opts =
   let open Vernac.State in
   let doc, sid =
     Stm.(new_doc
-           { doc_type = Interactive opts.config.logic.toplevel_name;
+           { library_mode = Declaremods.Interactive;
+             top_path = opts.config.logic.top_path;
              iload_path; require_libs; stm_options;
            }) in
   { doc; sid; proof = None; time = opts.config.time }

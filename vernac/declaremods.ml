@@ -642,6 +642,27 @@ let build_subtypes env mp args mtys =
   in
   (ans, cst)
 
+(** {6 Current library information} *)
+
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+
+type library_mode =
+  | Batch of compilation_mode
+  | Interactive
+
+type library_info =
+  { library_path: DirPath.t;
+    library_mode: library_mode;
+  }
+
+let default_library_info =
+  { library_path = Libnames.default_library;
+    library_mode = Interactive;
+  }
+
+let library_info = Summary.ref default_library_info ~name:"LIBRARY-INFO"
+
+let get_current_library_info () = !library_info
 
 (** {6 Current module information}
 
@@ -1001,10 +1022,11 @@ let register_library dir cenv (objs:library_objects) digest univ =
   let sobjs,keepobjs = objs in
   do_module false load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
-let start_library dir =
-  let mp = Global.start_library dir in
+let start_library info =
+  let mp = Global.start_library info.library_path in
+  library_info := info;
   openmod_info := default_module_info;
-  Lib.start_compilation dir mp
+  Lib.start_compilation info.library_path mp
 
 let end_library_hook = ref ignore
 let append_end_library_hook f =

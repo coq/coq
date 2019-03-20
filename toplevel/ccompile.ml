@@ -107,18 +107,19 @@ let compile opts copts ~echo ~f_in ~f_out =
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
   match copts.compilation_mode with
-  | Stm.BuildVo ->
+  | Declaremods.BuildVo ->
       let long_f_dot_v, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".v" ".vo" in
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = Batch(BuildVo, long_f_dot_vo);
+          Stm.{ library_mode = Declaremods.(Batch BuildVo);
+                top_path = TopPhysical long_f_dot_vo;
                 iload_path; require_libs; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
-      let ldir = Stm.get_ldir ~doc:state.doc in
+      let ldir = Declaremods.((get_current_library_info ()).library_path) in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
         ~v_file:long_f_dot_v);
@@ -139,7 +140,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       Aux_file.stop_aux_file ();
       Dumpglob.end_dump_glob ()
 
-  | Stm.BuildVio ->
+  | Declaremods.BuildVio ->
       let long_f_dot_v, long_f_dot_vio =
         ensure_exists_with_prefix f_in f_out ".v" ".vio" in
 
@@ -158,20 +159,21 @@ let compile opts copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = Batch(BuildVio, long_f_dot_vio);
+          Stm.{ library_mode = Declaremods.(Batch BuildVio);
+                top_path = TopPhysical long_f_dot_vio;
                 iload_path; require_libs; stm_options;
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
-      let ldir = Stm.get_ldir ~doc:state.doc in
+      let ldir = Declaremods.((get_current_library_info ()).library_path) in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
       let () = ignore (Stm.snapshot_vio ~doc ~output_native_objects ldir long_f_dot_vio) in
       Stm.reset_task_queue ()
 
-  | Stm.Vio2Vo ->
+  | Declaremods.Vio2Vo ->
       let long_f_dot_vio, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
       let sum, lib, univs, tasks, proofs =

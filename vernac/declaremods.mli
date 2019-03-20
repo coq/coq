@@ -82,7 +82,20 @@ val register_library :
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
   Univ.ContextSet.t -> unit
 
-val start_library : library_name -> unit
+type compilation_mode = BuildVo | BuildVio | Vio2Vo
+
+type library_mode =
+  | Batch of compilation_mode
+  | Interactive
+
+type library_info =
+  { library_path: DirPath.t;
+    library_mode: library_mode;
+  }
+
+val get_current_library_info : unit -> library_info
+
+val start_library : library_info -> unit
 
 val end_library :
   ?except:Future.UUIDSet.t -> output_native_objects:bool -> library_name ->

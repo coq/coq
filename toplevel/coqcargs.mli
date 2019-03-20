@@ -9,7 +9,7 @@
 (************************************************************************)
 
 type t =
-  { compilation_mode : Stm.compilation_mode
+  { compilation_mode : Declaremods.compilation_mode
 
   ; compile_list: (string * bool) list  (* bool is verbosity  *)
   ; compilation_output_name : string option

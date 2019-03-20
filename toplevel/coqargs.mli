@@ -19,7 +19,7 @@ type option_command = OptionSet of string option | OptionUnset
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
-  toplevel_name     : Stm.interactive_top;
+  top_path          : Stm.top_path;
   allow_sprop       : bool;
   cumulative_sprop  : bool;
 }
