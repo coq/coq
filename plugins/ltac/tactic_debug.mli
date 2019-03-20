@@ -40,7 +40,7 @@ val db_constr : debug_info -> env -> evar_map -> constr -> unit Proofview.NonLog
 
 (** Prints the pattern rule *)
 val db_pattern_rule :
-  debug_info -> int -> (Genintern.glob_constr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> unit Proofview.NonLogical.t
+  debug_info -> env -> evar_map -> int -> (Genintern.glob_constr_and_expr * constr_pattern,glob_tactic_expr) match_rule -> unit Proofview.NonLogical.t
 
 (** Prints a matched hypothesis *)
 val db_matched_hyp :

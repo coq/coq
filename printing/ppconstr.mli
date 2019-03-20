@@ -41,19 +41,19 @@ val pr_guard_annot : (constr_expr -> Pp.t) ->
   Pp.t
 
 val pr_record_body : (qualid * constr_expr) list -> Pp.t
-val pr_binders : local_binder_expr list -> Pp.t
-val pr_constr_pattern_expr : constr_pattern_expr -> Pp.t
-val pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
-val pr_constr_expr : constr_expr -> Pp.t
-val pr_lconstr_expr : constr_expr -> Pp.t
+val pr_binders : Environ.env -> Evd.evar_map -> local_binder_expr list -> Pp.t
+val pr_constr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t
+val pr_lconstr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t
+val pr_constr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t
+val pr_lconstr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t
 val pr_cases_pattern_expr : cases_pattern_expr -> Pp.t
-val pr_constr_expr_n : tolerability -> constr_expr -> Pp.t
+val pr_constr_expr_n : Environ.env -> Evd.evar_map -> tolerability -> constr_expr -> Pp.t
 
 type term_pr = {
-  pr_constr_expr   : constr_expr -> Pp.t;
-  pr_lconstr_expr  : constr_expr -> Pp.t;
-  pr_constr_pattern_expr  : constr_pattern_expr -> Pp.t;
-  pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
+  pr_constr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
+  pr_lconstr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
+  pr_constr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t;
+  pr_lconstr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t
 }
 
 val set_term_pr : term_pr -> unit

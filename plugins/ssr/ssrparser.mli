@@ -14,13 +14,15 @@ open Ltac_plugin
 
 val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
 val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
-val pr_ssrtacarg : 'a -> 'b -> (Notation_gram.tolerability -> 'c) -> 'c
+val pr_ssrtacarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
+  (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c) -> 'c
 
 val ssrtclarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
 val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
-val pr_ssrtclarg : 'a -> 'b -> (Notation_gram.tolerability -> 'c -> 'd) -> 'c -> 'd
+val pr_ssrtclarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
+  (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c -> 'd) -> 'c -> 'd
 
-val add_genarg : string -> ('a -> Pp.t) -> 'a Genarg.uniform_genarg_type
+val add_genarg : string -> (Environ.env -> Evd.evar_map -> 'a -> Pp.t) -> 'a Genarg.uniform_genarg_type
 
 (* Parsing witnesses, needed to serialize ssreflect syntax *)
 open Ssrmatching_plugin

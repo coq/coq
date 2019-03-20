@@ -41,20 +41,20 @@ val pinject :  proof -> pconstructor -> int -> int -> proof
 
 (** Proof building functions *)
 
-val equal_proof : forest -> int -> int -> proof
+val equal_proof : Environ.env -> Evd.evar_map -> forest -> int -> int -> proof
 
-val edge_proof : forest -> (int*int)*equality -> proof
+val edge_proof : Environ.env -> Evd.evar_map -> forest -> (int*int)*equality -> proof
 
-val path_proof : forest -> int -> ((int*int)*equality) list -> proof
+val path_proof : Environ.env -> Evd.evar_map -> forest -> int -> ((int*int)*equality) list -> proof
 
-val congr_proof :  forest -> int -> int -> proof
+val congr_proof : Environ.env -> Evd.evar_map -> forest -> int -> int -> proof
 
-val ind_proof : forest -> int -> pa_constructor -> int -> pa_constructor -> proof
+val ind_proof : Environ.env -> Evd.evar_map -> forest -> int -> pa_constructor -> int -> pa_constructor -> proof
 
 (** Main proof building function *)
 
 val build_proof :
-  forest ->
+  Environ.env -> Evd.evar_map -> forest ->
   [ `Discr of int * pa_constructor * int * pa_constructor
   | `Prove of int * int ] -> proof
 

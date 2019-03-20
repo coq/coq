@@ -54,6 +54,15 @@ Macros:
   where `atts : Vernacexpr.vernac_flags` was bound in the expression
   and had to be manually parsed.
 
+- `PRINTED BY` now binds `env` and `sigma`, and expects printers which take
+  as parameters term printers parametrized by an environment and an `evar_map`.
+
+Printers
+
+- `Ppconstr.pr_constr_expr`, `Ppconstr.lconstr_expr`,
+  `Ppconstr.pr_constr_pattern_expr` and `Ppconstr.pr_lconstr_pattern_expr`
+  now all take an environment and an `evar_map`.
+
 Libobject
 
 - A Higher-level API for objects with fixed scope was introduced. It supports the following kinds of objects:

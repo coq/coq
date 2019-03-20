@@ -72,7 +72,7 @@ let pr_econstr t =
   Printer.pr_econstr_env env sigma t
 let ppconstr x = pp (pr_constr x)
 let ppeconstr x = pp (pr_econstr x)
-let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
+let ppconstr_expr x = let sigma,env = Pfedit.get_current_context () in pp (Ppconstr.pr_constr_expr env sigma x)
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))

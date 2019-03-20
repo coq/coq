@@ -57,11 +57,17 @@ let pr_guarded guard prc c =
   let s = Format.flush_str_formatter () ^ "$" in
   if guard s (skip_wschars s 0) then pr_paren prc c else prc c
 
-let prl_constr_expr = Ppconstr.pr_lconstr_expr
+let prl_constr_expr =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Ppconstr.pr_lconstr_expr env sigma
 let pr_glob_constr c = Printer.pr_glob_constr_env (Global.env ()) c
 let prl_glob_constr c = Printer.pr_lglob_constr_env (Global.env ()) c
 let pr_glob_constr_and_expr = function
-  | _, Some c -> Ppconstr.pr_constr_expr c
+  | _, Some c ->
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Ppconstr.pr_constr_expr env sigma c
   | c, None -> pr_glob_constr c
 let pr_term (k, c) = pr_guarded (guard_term k) pr_glob_constr_and_expr c
 
@@ -91,7 +97,10 @@ let pr_simpl = function
 
 (* New terms *)
 
-let pr_ast_closure_term { body } = Ppconstr.pr_constr_expr body
+let pr_ast_closure_term { body } =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Ppconstr.pr_constr_expr env sigma body
 
 let pr_view2 = pr_list mt (fun c -> str "/" ++ pr_ast_closure_term c)
 

@@ -276,12 +276,10 @@ let subst_Function (subst,finfos) =
 
 let discharge_Function (_,finfos) = Some finfos
 
-let pr_ocst c =
-  let sigma, env = Pfedit.get_current_context () in
+let pr_ocst env sigma c =
   Option.fold_right (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
 
-let pr_info f_info =
-  let sigma, env = Pfedit.get_current_context () in
+let pr_info env sigma f_info =
   str "function_constant := " ++
   Printer.pr_lconstr_env env sigma (mkConst f_info.function_constant)++ fnl () ++
   str "function_constant_type := " ++
@@ -289,17 +287,17 @@ let pr_info f_info =
      Printer.pr_lconstr_env env sigma
        (fst (Typeops.type_of_global_in_context env (ConstRef f_info.function_constant)))
    with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
-  str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
-  str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++
-  str "correctness_lemma := " ++ pr_ocst f_info.correctness_lemma ++ fnl () ++
-  str "rect_lemma := " ++ pr_ocst f_info.rect_lemma ++ fnl () ++
-  str "rec_lemma := " ++ pr_ocst f_info.rec_lemma ++ fnl () ++
-  str "prop_lemma := " ++ pr_ocst f_info.prop_lemma ++ fnl () ++
+  str "equation_lemma := " ++ pr_ocst env sigma f_info.equation_lemma ++ fnl () ++
+  str "completeness_lemma :=" ++ pr_ocst env sigma f_info.completeness_lemma ++ fnl () ++
+  str "correctness_lemma := " ++ pr_ocst env sigma f_info.correctness_lemma ++ fnl () ++
+  str "rect_lemma := " ++ pr_ocst env sigma f_info.rect_lemma ++ fnl () ++
+  str "rec_lemma := " ++ pr_ocst env sigma f_info.rec_lemma ++ fnl () ++
+  str "prop_lemma := " ++ pr_ocst env sigma f_info.prop_lemma ++ fnl () ++
   str "graph_ind := " ++ Printer.pr_lconstr_env env sigma (mkInd f_info.graph_ind) ++ fnl ()
 
-let pr_table tb =
+let pr_table env sigma tb =
   let l = Cmap_env.fold (fun k v acc -> v::acc) tb [] in
-  Pp.prlist_with_sep fnl pr_info l
+  Pp.prlist_with_sep fnl (pr_info env sigma) l
 
 let in_Function : function_info -> Libobject.obj =
   let open Libobject in
@@ -358,7 +356,7 @@ let add_Function is_general f =
   in
   update_Function finfos
 
-let pr_table () = pr_table !from_function
+let pr_table env sigma = pr_table env sigma !from_function
 (*********************************)
 (* Debuging *)
 let functional_induction_rewrite_dependent_proofs = ref true

@@ -21,5 +21,6 @@ open Stdarg
 VERNAC COMMAND EXTEND StringNotation CLASSIFIED AS SIDEFF
   | #[ locality = Attributes.locality; ] [ "String" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) ] ->
-    { vernac_string_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) }
+    { let (sigma, env) = Pfedit.get_current_context () in
+      vernac_string_notation env sigma (Locality.make_module_locality locality) ty f g (Id.to_string sc) }
 END

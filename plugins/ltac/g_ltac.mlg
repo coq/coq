@@ -514,7 +514,7 @@ END
 
 let pr_ltac_ref = Libnames.pr_qualid
 
-let pr_tacdef_body tacdef_body =
+let pr_tacdef_body env sigma tacdef_body =
   let id, redef, body =
     match tacdef_body with
     | TacticDefinition ({CAst.v=id}, body) -> Id.print id, false, body
@@ -528,12 +528,12 @@ let pr_tacdef_body tacdef_body =
     prlist (function Name.Anonymous -> str " _"
       | Name.Name id -> spc () ++ Id.print id) idl
   ++ (if redef then str" ::=" else str" :=") ++ brk(1,1)
-  ++ Pptactic.pr_raw_tactic body
+  ++ Pptactic.pr_raw_tactic env sigma body
 
 }
 
 VERNAC ARGUMENT EXTEND ltac_tacdef_body
-PRINTED BY { pr_tacdef_body }
+PRINTED BY { pr_tacdef_body env sigma }
 | [ tacdef_body(t) ] -> { t }
 END
 

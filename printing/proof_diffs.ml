@@ -247,13 +247,13 @@ let process_goal sigma g : EConstr.t reified_goal =
   { name; ty; hyps; env; sigma };;
 
 let pr_letype_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr (Constrextern.extern_type goal_concl_style env sigma t)
+  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_type goal_concl_style env sigma t)
 
 let pp_of_type env sigma ty =
   pr_letype_core true env sigma ty
 
 let pr_leconstr_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr (Constrextern.extern_constr goal_concl_style env sigma t)
+  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_constr goal_concl_style env sigma t)
 
 let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
 

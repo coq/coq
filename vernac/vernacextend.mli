@@ -109,7 +109,7 @@ type 'a argument_rule =
     entries instead of ty_user_symbol and thus arguments as roots. *)
 
 type 'a vernac_argument = {
-  arg_printer : 'a -> Pp.t;
+  arg_printer : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
   arg_parsing : 'a argument_rule;
 }
 

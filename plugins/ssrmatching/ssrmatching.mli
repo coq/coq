@@ -46,7 +46,7 @@ type ('ident, 'term) ssrpattern =
   | E_As_X_In_T of 'term * 'ident * 'term
 
 type pattern = evar_map * (constr, constr) ssrpattern
-val pp_pattern : pattern -> Pp.t
+val pp_pattern : env -> pattern -> Pp.t
 
 (** Extracts the redex and applies to it the substitution part of the pattern.
   @raise Anomaly if called on [In_T] or [In_X_In_T] *)
@@ -222,7 +222,7 @@ val loc_of_cpattern : cpattern -> Loc.t option
 val id_of_pattern : pattern -> Names.Id.t option
 val is_wildcard : cpattern -> bool
 val cpattern_of_id : Names.Id.t -> cpattern
-val pr_constr_pat : constr -> Pp.t
+val pr_constr_pat : env -> evar_map -> constr -> Pp.t
 val pf_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 val pf_unsafe_merge_uc : UState.t -> goal Evd.sigma -> goal Evd.sigma
 

@@ -18,8 +18,8 @@ type 'a with_level =
     printer : 'a }
 
 type printer_result =
-| PrinterBasic of (unit -> Pp.t)
-| PrinterNeedsLevel of (Notation_gram.tolerability -> Pp.t) with_level
+| PrinterBasic of (Environ.env -> Evd.evar_map -> Pp.t)
+| PrinterNeedsLevel of (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t) with_level
 
 type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
 

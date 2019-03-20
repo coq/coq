@@ -353,7 +353,7 @@ let raw_push_named (na,raw_value,raw_typ) env =
            EConstr.push_named (NamedDecl.LocalDef (na, value, typ)) env)
 
 
-let add_pat_variables pat typ env : Environ.env =
+let add_pat_variables sigma pat typ env : Environ.env =
   let rec add_pat_variables env pat typ  : Environ.env =
     observe (str "new rel env := " ++ Printer.pr_rel_context_of env (Evd.from_env env));
 
@@ -375,7 +375,6 @@ let add_pat_variables pat typ env : Environ.env =
       Context.Rel.fold_outside
 	(fun decl (env,ctxt) ->
            let open Context.Rel.Declaration in
-           let sigma, _ = Pfedit.get_current_context () in
            match decl with
            | LocalAssum ({binder_name=Anonymous},_) | LocalDef ({binder_name=Anonymous},_,_) -> assert false
            | LocalAssum ({binder_name=Name id} as na, t) ->
@@ -476,7 +475,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
 *)
 
 
-let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
+let rec build_entry_lc env sigma funnames avoid rt : glob_constr build_entry_return =
   observe (str " Entering : " ++ Printer.pr_glob_constr_env env rt);
   let open CAst in
   match DAst.get rt with
@@ -488,7 +487,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	let args_res : (glob_constr list) build_entry_return =
 	  List.fold_right (* create the arguments lists of constructors and combine them *)
 	    (fun arg ctxt_argsl ->
-	       let arg_res = build_entry_lc env funnames ctxt_argsl.to_avoid arg in
+               let arg_res = build_entry_lc env sigma funnames ctxt_argsl.to_avoid arg in
 	       combine_results combine_args arg_res ctxt_argsl
 	    )
 	    args
@@ -507,7 +506,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 			  | _ -> 
 			      GApp(t,l)
 		in
-		build_entry_lc env funnames avoid (aux f args)
+                build_entry_lc env sigma funnames avoid (aux f args)
 	    | GVar id when Id.Set.mem id funnames ->
 		(* if we have [f t1 ... tn] with [f]$\in$[fnames]
 		   then we create a fresh variable [res],
@@ -571,7 +570,8 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		in
 		build_entry_lc
 		  env
-		  funnames
+      sigma
+      funnames
 		  avoid
 		  (mkGLetIn(new_n,v,t,mkGApp(new_b,args)))
 	    | GCases _  | GIf _ | GLetTuple _ ->
@@ -579,7 +579,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 		   we first compute the result from the case and
 		   then combine each of them with each of args one
 		*)
-		let f_res = build_entry_lc env funnames args_res.to_avoid f in
+                let f_res = build_entry_lc env sigma funnames args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
 	    | GCast(b,_) ->
 		(* for an applied cast we just trash the cast part
@@ -587,7 +587,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 
 		   WARNING: We need to restart since [b] itself should be an application term
 		*)
-		build_entry_lc env funnames avoid (mkGApp(b,args))
+                build_entry_lc env sigma funnames avoid (mkGApp(b,args))
 	    | GRec _ -> user_err Pp.(str "Not handled GRec")
 	    | GProd _ -> user_err Pp.(str "Cannot apply a type")
             | GInt _ -> user_err Pp.(str "Cannot apply an integer")
@@ -599,14 +599,14 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   then the one corresponding to the type
 	   and combine the two result
 	*)
-	let t_res = build_entry_lc env funnames avoid t  in
+        let t_res = build_entry_lc env sigma funnames avoid t  in
 	let new_n =
 	  match n with
 	    | Name _ -> n
 	    | Anonymous -> Name (Indfun_common.fresh_id [] "_x")
 	in
 	let new_env = raw_push_named (new_n,None,t) env in
-	let b_res = build_entry_lc new_env funnames avoid b in
+        let b_res = build_entry_lc new_env sigma funnames avoid b in
 	combine_results (combine_lam new_n) t_res b_res
     | GProd(n,_,t,b) ->
 	(* we first compute the list of constructor
@@ -614,9 +614,9 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   then the one corresponding to the type
 	   and combine the two result
 	*)
-	let t_res = build_entry_lc env funnames avoid t in
+        let t_res = build_entry_lc env sigma funnames avoid t in
 	let new_env = raw_push_named (n,None,t) env in
-	let b_res = build_entry_lc new_env funnames avoid b in
+        let b_res = build_entry_lc new_env sigma funnames avoid b in
         if List.length t_res.result = 1 && List.length b_res.result = 1
         then combine_results (combine_prod2 n) t_res b_res
         else combine_results (combine_prod n) t_res b_res
@@ -627,7 +627,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	   and combine the two result
 	*)
         let v = match typ with None -> v | Some t -> DAst.make ?loc:rt.loc @@ GCast (v,CastConv t) in
-	let v_res = build_entry_lc env funnames avoid v in
+        let v_res = build_entry_lc env sigma funnames avoid v in
 	let v_as_constr,ctx = Pretyping.understand env (Evd.from_env env) v in
         let v_type = Typing.unsafe_type_of env (Evd.from_env env) v_as_constr in
         let v_r = Sorts.Relevant in (* TODO relevance *)
@@ -636,14 +636,14 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	      Anonymous -> env
             | Name id -> EConstr.push_named (NamedDecl.LocalDef (make_annot id v_r,v_as_constr,v_type)) env
         in
-	let b_res = build_entry_lc new_env funnames avoid b in
+        let b_res = build_entry_lc new_env sigma funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
     | GCases(_,_,el,brl) ->
 	(* we create the discrimination function
 	   and treat the case itself
 	*)
 	let make_discr = make_discr_match brl in
-	build_entry_lc_from_case env funnames make_discr el brl avoid
+        build_entry_lc_from_case env sigma funnames make_discr el brl avoid
     | GIf(b,(na,e_option),lhs,rhs) ->
 	let b_as_constr,ctx = Pretyping.understand env (Evd.from_env env) b in
         let b_typ = Typing.unsafe_type_of env (Evd.from_env env) b_as_constr in
@@ -666,7 +666,7 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  mkGCases(None,[(b,(Anonymous,None))],brl)
 	in
 	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_glob_constr match_expr); *)
-	build_entry_lc env funnames avoid match_expr
+        build_entry_lc env sigma funnames avoid match_expr
     | GLetTuple(nal,_,b,e) ->
 	begin
 	  let nal_as_glob_constr =
@@ -690,13 +690,13 @@ let rec build_entry_lc env funnames avoid rt : glob_constr build_entry_return =
 	  assert (Int.equal (Array.length case_pats) 1);
           let br = CAst.make ([],[case_pats.(0)],e) in
 	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
-	  build_entry_lc env funnames avoid match_expr
+          build_entry_lc env sigma funnames avoid match_expr
 
 	end
     | GRec _ -> user_err Pp.(str "Not handled GRec")
     | GCast(b,_) ->
-	build_entry_lc env funnames  avoid b
-and build_entry_lc_from_case env funname make_discr
+        build_entry_lc env sigma funnames  avoid b
+and build_entry_lc_from_case env sigma funname make_discr
     (el:tomatch_tuples)
     (brl:Glob_term.cases_clauses) avoid :
     glob_constr build_entry_return =
@@ -714,7 +714,7 @@ and build_entry_lc_from_case env funname make_discr
 	let case_resl =
 	    List.fold_right
 	      (fun (case_arg,_) ctxt_argsl ->
-		let arg_res = build_entry_lc env funname ctxt_argsl.to_avoid case_arg in
+                let arg_res = build_entry_lc env sigma funname ctxt_argsl.to_avoid case_arg in
 		combine_results combine_args arg_res ctxt_argsl
 	      )
 	      el
@@ -731,7 +731,7 @@ and build_entry_lc_from_case env funname make_discr
 	  List.map
 	    (fun ca ->
 	       let res = build_entry_lc_from_case_term
-	       env types
+               env sigma types
 	       funname (make_discr)
 	       []  brl
 	       case_resl.to_avoid
@@ -748,7 +748,7 @@ and build_entry_lc_from_case env funname make_discr
               [] results
 	}
 
-and build_entry_lc_from_case_term env types funname make_discr patterns_to_prevent brl avoid
+and build_entry_lc_from_case_term env sigma types funname make_discr patterns_to_prevent brl avoid
     matched_expr =
   match brl with
     | [] -> (* computed_branches  *) {result = [];to_avoid = avoid}
@@ -759,14 +759,14 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	(* building a list of precondition stating that we are not in this branch
 	   (will be used in the following recursive calls)
 	*)
-	let new_env = List.fold_right2 add_pat_variables patl types env in
+        let new_env = List.fold_right2 (add_pat_variables sigma) patl types env in
 	let not_those_patterns : (Id.t list -> glob_constr -> glob_constr) list =
 	  List.map2
 	    (fun pat typ ->
 	       fun avoid pat'_as_term ->
 		 let renamed_pat,_,_ = alpha_pat avoid pat in
 		 let pat_ids = get_pattern_id renamed_pat  in
-		 let env_with_pat_ids = add_pat_variables pat typ new_env in
+                 let env_with_pat_ids = add_pat_variables sigma pat typ new_env in
 		   List.fold_right
 		     (fun id acc ->
 			let typ_of_id =
@@ -798,6 +798,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	let brl'_res =
 	  build_entry_lc_from_case_term
 	    env
+      sigma
 	    types
 	    funname
 	    make_discr
@@ -862,7 +863,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	  )
 	in
 	(* We compute the result of the value returned by the branch*)
-	let return_res = build_entry_lc new_env funname new_avoid return in
+        let return_res = build_entry_lc new_env sigma funname new_avoid return in
 	(* and combine it with the preconds computed for this branch *)
 	let this_branch_res =
 	  List.map
@@ -895,8 +896,7 @@ let same_raw_term rt1 rt2 =
     | GRef(r1,_), GRef (r2,_) -> GlobRef.equal r1 r2
     | GHole _, GHole _ -> true
     | _ -> false
-let decompose_raw_eq lhs rhs = 
-  let _, env = Pfedit.get_current_context () in
+let decompose_raw_eq env lhs rhs =
   let rec decompose_raw_eq lhs rhs acc =
     observe (str "decomposing eq for " ++ pr_glob_constr_env env lhs ++ str " " ++ pr_glob_constr_env env rhs);
     let (rhd,lrhs) = glob_decompose_app rhs in
@@ -1086,7 +1086,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  ->
 	      begin
 		try 
-		  let l = decompose_raw_eq rt1 rt2 in 
+                  let l = decompose_raw_eq env rt1 rt2 in
 		  if List.length l > 1 
 		  then 
 		    let new_rt =
@@ -1346,7 +1346,7 @@ let do_build_inductive
         resolve_and_replace_implicits ~expected_type:(Pretyping.OfType t) env evd rt
       ) rta
   in
-  let resa = Array.map (build_entry_lc env funnames_as_set []) rta in
+  let resa = Array.map (build_entry_lc env evd funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Rebuilding arities (with parameters) *)
       let rel_first_args :(Name.t * Glob_term.glob_constr * Glob_term.glob_constr option ) list  =

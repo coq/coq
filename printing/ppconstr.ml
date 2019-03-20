@@ -669,10 +669,10 @@ let tag_var = tag Tag.variable
       (sep() ++ if prec_less prec inherited then strm else surround strm)
 
   type term_pr = {
-    pr_constr_expr   : constr_expr -> Pp.t;
-    pr_lconstr_expr  : constr_expr -> Pp.t;
-    pr_constr_pattern_expr  : constr_pattern_expr -> Pp.t;
-    pr_lconstr_pattern_expr : constr_pattern_expr -> Pp.t
+    pr_constr_expr   : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
+    pr_lconstr_expr  : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
+    pr_constr_pattern_expr  : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t;
+    pr_lconstr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr -> Pp.t
   }
 
   let modular_constr_pr = pr
@@ -693,18 +693,16 @@ let tag_var = tag Tag.variable
       Constrextern.extern_glob_constr (Termops.vars_of_env env) r
     else c
 
-  let pr_expr prec c =
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
+  let pr_expr env sigma prec c =
     pr prec (transf env sigma c)
 
-  let pr_simpleconstr = pr_expr lsimpleconstr
+  let pr_simpleconstr env sigma = pr_expr env sigma lsimpleconstr
 
   let default_term_pr = {
     pr_constr_expr   = pr_simpleconstr;
-    pr_lconstr_expr  = pr_expr ltop;
+    pr_lconstr_expr  = (fun env sigma -> pr_expr env sigma ltop);
     pr_constr_pattern_expr  = pr_simpleconstr;
-    pr_lconstr_pattern_expr = pr_expr ltop
+    pr_lconstr_pattern_expr = (fun env sigma -> pr_expr env sigma ltop)
   }
 
   let term_pr = ref default_term_pr
@@ -721,5 +719,5 @@ let tag_var = tag Tag.variable
 
   let pr_record_body = pr_record_body_gen pr
 
-  let pr_binders = pr_undelimited_binders spc (pr_expr ltop)
+  let pr_binders env sigma = pr_undelimited_binders spc (pr_expr env sigma ltop)
 

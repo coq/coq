@@ -29,10 +29,10 @@ DECLARE PLUGIN "recdef_plugin"
 
 {
 
-let pr_fun_ind_using  prc prlc _ opt_c =
+let pr_fun_ind_using env sigma prc prlc _ opt_c =
   match opt_c with
     | None -> mt ()
-    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
+    | Some b -> spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings (prc env sigma) (prlc env sigma) b)
 
 (* Duplication of printing functions because "'a with_bindings" is
    (internally) not uniform in 'a: indeed constr_with_bindings at the
@@ -47,15 +47,15 @@ let pr_fun_ind_using_typed prc prlc _ opt_c =
       let env = Global.env () in
       let evd = Evd.from_env env in
       let (_, b) = b env evd in
-      spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings prc prlc b)
+      spc () ++ hov 2 (str "using" ++ spc () ++ Miscprint.pr_with_bindings (prc env evd) (prlc env evd) b)
 
 }
 
 ARGUMENT EXTEND fun_ind_using
   TYPED AS constr_with_bindings option
   PRINTED BY { pr_fun_ind_using_typed }
-  RAW_PRINTED BY { pr_fun_ind_using }
-  GLOB_PRINTED BY { pr_fun_ind_using }
+  RAW_PRINTED BY { pr_fun_ind_using env sigma }
+  GLOB_PRINTED BY { pr_fun_ind_using env sigma }
 | [ "using" constr_with_bindings(c) ] -> { Some c }
 | [ ] -> { None }
 END
@@ -119,26 +119,26 @@ END
 
 {
 
-let pr_constr_comma_sequence prc _ _ = prlist_with_sep pr_comma prc
+let pr_constr_comma_sequence env sigma prc _ _ = prlist_with_sep pr_comma (prc env sigma)
 
 }
 
 ARGUMENT EXTEND constr_comma_sequence'
   TYPED AS constr list
-  PRINTED BY { pr_constr_comma_sequence }
+  PRINTED BY { pr_constr_comma_sequence env sigma }
 | [ constr(c) "," constr_comma_sequence'(l) ] -> { c::l }
 | [ constr(c) ] -> { [c] }
 END
 
 {
 
-let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
+let pr_auto_using env sigma prc _prlc _prt = Pptactic.pr_auto_using (prc env sigma)
 
 }
 
 ARGUMENT EXTEND auto_using'
   TYPED AS constr list
-  PRINTED BY { pr_auto_using }
+  PRINTED BY { pr_auto_using env sigma }
 | [ "using" constr_comma_sequence'(l) ] -> { l }
 | [ ] -> { [] }
 END
@@ -170,7 +170,7 @@ END
 {
 
 let () =
-  let raw_printer _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
+  let raw_printer env sigma _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
   Pptactic.declare_extra_vernac_genarg_pprule wit_function_rec_definition_loc raw_printer
 
 }

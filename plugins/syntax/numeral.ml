@@ -77,8 +77,7 @@ let locate_int63 () =
     Some (mkRefC q_int63)
   else None
 
-let has_type f ty =
-  let (sigma, env) = Pfedit.get_current_context () in
+let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Glob_term.CastConv ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
@@ -95,7 +94,7 @@ let type_error_of g ty =
      str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
      str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int could be used (you may need to require BinNums or Decimal or Int63 first).")
 
-let vernac_numeral_notation local ty f g scope opts =
+let vernac_numeral_notation env sigma local ty f g scope opts =
   let int_ty = locate_int () in
   let z_pos_ty = locate_z () in
   let int63_ty = locate_int63 () in
@@ -112,35 +111,35 @@ let vernac_numeral_notation local ty f g scope opts =
   (* Check the type of f *)
   let to_kind =
     match int_ty with
-    | Some (int_ty, cint, _) when has_type f (arrow cint cty) -> Int int_ty, Direct
-    | Some (int_ty, cint, _) when has_type f (arrow cint (opt cty)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint) when has_type f (arrow cuint cty) -> UInt int_ty.uint, Direct
-    | Some (int_ty, _, cuint) when has_type f (arrow cuint (opt cty)) -> UInt int_ty.uint, Option
+    | Some (int_ty, cint, _) when has_type env sigma f (arrow cint cty) -> Int int_ty, Direct
+    | Some (int_ty, cint, _) when has_type env sigma f (arrow cint (opt cty)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint) when has_type env sigma f (arrow cuint cty) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint) when has_type env sigma f (arrow cuint (opt cty)) -> UInt int_ty.uint, Option
     | _ ->
     match z_pos_ty with
-    | Some (z_pos_ty, cZ) when has_type f (arrow cZ cty) -> Z z_pos_ty, Direct
-    | Some (z_pos_ty, cZ) when has_type f (arrow cZ (opt cty)) -> Z z_pos_ty, Option
+    | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ cty) -> Z z_pos_ty, Direct
+    | Some (z_pos_ty, cZ) when has_type env sigma f (arrow cZ (opt cty)) -> Z z_pos_ty, Option
     | _ ->
     match int63_ty with
-    | Some cint63 when has_type f (arrow cint63 cty) -> Int63, Direct
-    | Some cint63 when has_type f (arrow cint63 (opt cty)) -> Int63, Option
+    | Some cint63 when has_type env sigma f (arrow cint63 cty) -> Int63, Direct
+    | Some cint63 when has_type env sigma f (arrow cint63 (opt cty)) -> Int63, Option
     | _ -> type_error_to f ty
   in
   (* Check the type of g *)
   let of_kind =
     match int_ty with
-    | Some (int_ty, cint, _) when has_type g (arrow cty cint) -> Int int_ty, Direct
-    | Some (int_ty, cint, _) when has_type g (arrow cty (opt cint)) -> Int int_ty, Option
-    | Some (int_ty, _, cuint) when has_type g (arrow cty cuint) -> UInt int_ty.uint, Direct
-    | Some (int_ty, _, cuint) when has_type g (arrow cty (opt cuint)) -> UInt int_ty.uint, Option
+    | Some (int_ty, cint, _) when has_type env sigma g (arrow cty cint) -> Int int_ty, Direct
+    | Some (int_ty, cint, _) when has_type env sigma g (arrow cty (opt cint)) -> Int int_ty, Option
+    | Some (int_ty, _, cuint) when has_type env sigma g (arrow cty cuint) -> UInt int_ty.uint, Direct
+    | Some (int_ty, _, cuint) when has_type env sigma g (arrow cty (opt cuint)) -> UInt int_ty.uint, Option
     | _ ->
     match z_pos_ty with
-    | Some (z_pos_ty, cZ) when has_type g (arrow cty cZ) -> Z z_pos_ty, Direct
-    | Some (z_pos_ty, cZ) when has_type g (arrow cty (opt cZ)) -> Z z_pos_ty, Option
+    | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty cZ) -> Z z_pos_ty, Direct
+    | Some (z_pos_ty, cZ) when has_type env sigma g (arrow cty (opt cZ)) -> Z z_pos_ty, Option
     | _ ->
     match int63_ty with
-    | Some cint63 when has_type g (arrow cty cint63) -> Int63, Direct
-    | Some cint63 when has_type g (arrow cty (opt cint63)) -> Int63, Option
+    | Some cint63 when has_type env sigma g (arrow cty cint63) -> Int63, Direct
+    | Some cint63 when has_type env sigma g (arrow cty (opt cint63)) -> Int63, Option
     | _ -> type_error_of g ty
   in
   let o = { to_kind; to_ty; of_kind; of_ty;

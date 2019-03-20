@@ -27,10 +27,6 @@ let init_size=5
 
 let cc_verbose=ref false
 
-let print_constr t =
-  let sigma, env = Pfedit.get_current_context () in
-  Printer.pr_econstr_env env sigma t
-
 let debug x =
   if !cc_verbose then Feedback.msg_debug (x ())
 
@@ -484,11 +480,11 @@ let rec inst_pattern subst = function
 	(fun spat f -> Appli (f,inst_pattern subst spat))
 	   args t
 
-let pr_idx_term uf i = str "[" ++ int i ++ str ":=" ++
-  print_constr (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
+let pr_idx_term env sigma uf i = str "[" ++ int i ++ str ":=" ++
+  Printer.pr_econstr_env env sigma (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
 
-let pr_term t = str "[" ++
-  print_constr (EConstr.of_constr (constr_of_term t)) ++ str "]"
+let pr_term env sigma t = str "[" ++
+  Printer.pr_econstr_env env sigma (EConstr.of_constr (constr_of_term t)) ++ str "]"
 
 let rec add_term state t=
   let uf=state.uf in
@@ -603,16 +599,16 @@ let add_inst state (inst,int_subst) =
 	      begin
 		debug (fun () ->
 		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
-                  (str "  [" ++ print_constr (EConstr.of_constr prf) ++ str " : " ++
-			   pr_term s ++ str " == " ++ pr_term t ++ str "]"));
+                  (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
+                           pr_term state.env state.sigma s ++ str " == " ++ pr_term state.env state.sigma t ++ str "]"));
 		add_equality state prf s t
 	      end
 	    else
 	      begin
 		debug (fun () ->
 		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
-                  (str "  [" ++ print_constr (EConstr.of_constr prf) ++ str " : " ++
-			   pr_term s ++ str " <> " ++ pr_term t ++ str "]"));
+                  (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
+                           pr_term state.env state.sigma s ++ str " <> " ++ pr_term state.env state.sigma t ++ str "]"));
 		add_disequality state (Hyp prf) s t
 	      end
   end
@@ -640,8 +636,8 @@ let join_path uf i j=
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
-  debug (fun () -> str "Linking " ++ pr_idx_term state.uf i1 ++
-		 str " and " ++ pr_idx_term state.uf i2 ++ str ".");
+  debug (fun () -> str "Linking " ++ pr_idx_term state.env state.sigma state.uf i1 ++
+                 str " and " ++ pr_idx_term state.env state.sigma state.uf i2 ++ str ".");
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
@@ -681,8 +677,8 @@ let union state i1 i2 eq=
 
 let merge eq state = (* merge and no-merge *)
   debug
-    (fun () -> str "Merging " ++ pr_idx_term state.uf eq.lhs ++
-       str " and " ++ pr_idx_term state.uf eq.rhs ++ str ".");
+    (fun () -> str "Merging " ++ pr_idx_term state.env state.sigma state.uf eq.lhs ++
+       str " and " ++ pr_idx_term state.env state.sigma state.uf eq.rhs ++ str ".");
   let uf=state.uf in
   let i=find uf eq.lhs
   and j=find uf eq.rhs in
@@ -694,7 +690,7 @@ let merge eq state = (* merge and no-merge *)
 
 let update t state = (* update 1 and 2 *)
   debug
-    (fun () -> str "Updating term " ++ pr_idx_term state.uf t ++ str ".");
+    (fun () -> str "Updating term " ++ pr_idx_term state.env state.sigma state.uf t ++ str ".");
   let (i,j) as sign = signature state.uf t in
   let (u,v) = subterms state.uf t in
   let rep = get_representative state.uf i in
@@ -756,7 +752,7 @@ let process_constructor_mark t i rep pac state =
 
 let process_mark t m state =
   debug
-    (fun () -> str "Processing mark for term " ++ pr_idx_term state.uf t ++ str ".");
+    (fun () -> str "Processing mark for term " ++ pr_idx_term state.env state.sigma state.uf t ++ str ".");
   let i=find state.uf t in
   let rep=get_representative state.uf i in
     match m with
@@ -777,8 +773,8 @@ let check_disequalities state =
           else (str "No", check_aux q)
         in
         let _ = debug
-        (fun () -> str "Checking if " ++ pr_idx_term state.uf dis.lhs ++ str " = " ++
-         pr_idx_term state.uf dis.rhs ++ str " ... " ++ info) in
+        (fun () -> str "Checking if " ++ pr_idx_term state.env state.sigma state.uf dis.lhs ++ str " = " ++
+         pr_idx_term state.env state.sigma state.uf dis.rhs ++ str " ... " ++ info) in
         ans
     | [] -> None
   in
