@@ -188,7 +188,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zdiv.v
     theories/ZArith/Zquot.v
     theories/ZArith/Zeuclid.v
-    theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
