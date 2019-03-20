@@ -13,7 +13,6 @@ open Util
 open Names
 open Globnames
 open Nameops
-open Term
 open Constr
 open Context
 open Glob_term
@@ -47,7 +46,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
   Name.equal v1 v2 && constr_pattern_eq b1 b2 &&
   Option.equal constr_pattern_eq t1 t2 && constr_pattern_eq c1 c2
-| PSort s1, PSort s2 -> Glob_ops.glob_sort_eq s1 s2
+| PSort s1, PSort s2 -> Sorts.family_equal s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq t1 t2 && constr_pattern_eq l1 l2 && constr_pattern_eq r1 r2
@@ -154,10 +153,7 @@ let pattern_of_constr env sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort SProp -> PSort GSProp
-    | Sort Prop -> PSort GProp
-    | Sort Set -> PSort GSet
-    | Sort (Type _) -> PSort (GType [])
+    | Sort s -> PSort (Sorts.family s)
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na.binder_name,
                                   pattern_of_constr env c,Some (pattern_of_constr env t),
@@ -416,8 +412,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
 	       pat_of_raw metas (na::vars) c2)
-  | GSort s ->
-      PSort s
+  | GSort gs -> PSort (Glob_ops.glob_sort_family gs)
   | GHole _ ->
       PMeta None
   | GCast (c,_) ->

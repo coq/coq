@@ -47,11 +47,18 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
 
 
 let glob_sort_eq g1 g2 = let open Glob_term in match g1, g2 with
-| GProp, GProp -> true
+| GSProp, GSProp
+| GProp, GProp
 | GSet, GSet -> true
 | GType l1, GType l2 ->
    List.equal (Option.equal (fun (x,m) (y,n) -> Libnames.qualid_eq x y && Int.equal m n)) l1 l2
-| _ -> false
+| (GSProp|GProp|GSet|GType _), _ -> false
+
+let glob_sort_family = let open Sorts in function
+| GSProp -> InSProp
+| GProp -> InProp
+| GSet -> InSet
+| GType _ -> InType
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Decl_kinds.Explicit, Decl_kinds.Explicit -> true
