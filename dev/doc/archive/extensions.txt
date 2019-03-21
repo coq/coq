@@ -16,4 +16,3 @@ Exemple de l'ajout de l'entrée "clause":
   faut rejouter clause dans le GLOBAL du GEXTEND
 
 - seulement après, le nom clause sera accessible dans les TACTIC EXTEND !
-
