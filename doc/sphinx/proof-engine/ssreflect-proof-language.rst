@@ -3692,9 +3692,7 @@ complete terms, as shown by the simple example below.
    .. coqtop:: all abort
 
       Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
-      under m: eq_G by rewrite subnn.
-
-  ``(* FIXME: replace with do... *)``
+      under eq_G => n do rewrite subnn.
 
 .. tacn:: under {? @occ_switch} {? [ @r_pattern ] } @term {? => @i_item} {? do ( @tactic | [ {*| @tactic } ] ) }
    :name: under
@@ -3762,7 +3760,7 @@ lemma ``eq_G``, but this time in interactive mode:
    .. coqtop:: all abort
 
       Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
-      under m: eq_G.
+      under eq_G => m.
         rewrite subnn.
         over.
 
@@ -3857,9 +3855,7 @@ shortened to: :n:`under @term => i do tac1.`
       Lemma test_big_nested (F G : nat -> nat) (m n : nat) :
         \sum_(0 <= a < m) \sum_(0 <= j < n | odd (j * 1)) (a + j) =
         \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
-      under i I: eq_bigr by under j J: eq_big by [rewrite muln1|rewrite addnC].
-
-   ``(* FIXME: replace with do... *)``
+      under eq_bigr => i Hi do under eq_big => [j|j Hj] do [rewrite muln1|rewrite addnC].
 
 .. _locking_ssr:
 
