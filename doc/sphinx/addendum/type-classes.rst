@@ -1,7 +1,7 @@
 .. _typeclasses:
 
-Type Classes
-============
+Typeclasses
+===========
 
 This chapter presents a quick reference of the commands related to type
 classes. For an actual introduction to typeclasses, there is a
@@ -15,24 +15,25 @@ Class and Instance declarations
 The syntax for class and instance declarations is the same as the record
 syntax of Coq:
 
-``Class Id (`` |p_1| ``:`` |t_1| ``) ⋯ (`` |p_n| ``:`` |t_n| ``) [:
-sort] := {`` |f_1| ``:`` |u_1| ``; ⋮`` |f_m| ``:`` |u_m| ``}.``
+.. coqdoc::
 
-``Instance ident : Id`` |p_1| ``⋯`` |p_n| ``:= {`` |f_1| ``:=`` |t_1| ``; ⋮`` |f_m| ``:=`` |t_m| ``}.``
+  Class classname (p1 : t1) ⋯ (pn : tn) [: sort] := { f1 : u1 ; ⋯ ; fm : um }.
 
-The |p_i| ``:`` |t_i| variables are called the *parameters* of the class and
-the |f_i| ``:`` |t_i| are called the *methods*. Each class definition gives
+  Instance instancename q1 ⋯ qm : classname p1 ⋯ pn := { f1 := t1 ; ⋯ ; fm := tm }.
+
+The ``pi : ti`` variables are called the *parameters* of the class and
+the ``fi : ti`` are called the *methods*. Each class definition gives
 rise to a corresponding record declaration and each instance is a
-regular definition whose name is given by ident and type is an
+regular definition whose name is given by `instancename` and type is an
 instantiation of the record type.
 
 We’ll use the following example class in the rest of the chapter:
 
 .. coqtop:: in
 
-   Class EqDec (A : Type) := {
-     eqb : A -> A -> bool ;
-     eqb_leibniz : forall x y, eqb x y = true -> x = y }.
+   Class EqDec (A : Type) :=
+     { eqb : A -> A -> bool ;
+       eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
 This class implements a boolean equality test which is compatible with
 Leibniz equality on some type. An example implementation is:
@@ -40,9 +41,11 @@ Leibniz equality on some type. An example implementation is:
 .. coqtop:: in
 
    Instance unit_EqDec : EqDec unit :=
-    { eqb x y := true ;
-      eqb_leibniz x y H :=
-            match x, y return x = y with tt, tt => eq_refl tt end }.
+     { eqb x y := true ;
+       eqb_leibniz x y H :=
+         match x, y return x = y with
+         | tt, tt => eq_refl tt
+         end }.
 
 Using :cmd:`Program Instance`, if one does not give all the members in
 the Instance declaration, Coq generates obligations for the remaining
@@ -52,7 +55,7 @@ fields, e.g.:
 
    Require Import Program.Tactics.
    Program Instance eq_bool : EqDec bool :=
-   { eqb x y := if x then y else negb y }.
+     { eqb x y := if x then y else negb y }.
 
 .. coqtop:: all
 
@@ -127,9 +130,9 @@ the constraints as a binding context before the instance, e.g.:
 .. coqtop:: in
 
    Program Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
-   { eqb x y := match x, y with
-                | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
-                end }.
+     { eqb x y := match x, y with
+                  | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
+                  end }.
 
 .. coqtop:: none
 
@@ -138,21 +141,27 @@ the constraints as a binding context before the instance, e.g.:
 These instances are used just as well as lemmas in the instance hint
 database.
 
+.. _contexts:
+
 Sections and contexts
 ---------------------
 
-To ease the parametrization of developments by typeclasses, we provide a new
-way to introduce variables into section contexts, compatible with the implicit
-argument mechanism. The new command works similarly to the :cmd:`Variables`
-vernacular, except it accepts any binding context as argument. For example:
+To ease developments parameterized by many instances, one can use the
+:cmd:`Context` command to introduce these parameters into section contexts,
+it works similarly to the command :cmd:`Variable`, except it accepts any
+binding context as an argument, so variables can be implicit, and
+:ref:`implicit-generalization` can be used.
+For example:
 
 .. coqtop:: all
 
    Section EqDec_defs.
 
-     Context `{EA : EqDec A}.
+   Context `{EA : EqDec A}.
 
-     Global Program Instance option_eqb : EqDec (option A) :=
+.. coqtop:: in
+
+   Global Program Instance option_eqb : EqDec (option A) :=
      { eqb x y := match x, y with
             | Some x, Some y => eqb x y
             | None, None => true
@@ -160,14 +169,17 @@ vernacular, except it accepts any binding context as argument. For example:
             end }.
    Admit Obligations.
 
+.. coqtop:: all
+
    End EqDec_defs.
 
    About option_eqb.
 
-Here the Global modifier redeclares the instance at the end of the
+Here the :cmd:`Global` modifier redeclares the instance at the end of the
 section, once it has been generalized by the context variables it
 uses.
 
+.. seealso:: Section :ref:`section-mechanism`
 
 Building hierarchies
 --------------------
@@ -188,7 +200,7 @@ superclasses as a binding context:
 Contrary to Haskell, we have no special syntax for superclasses, but
 this declaration is equivalent to:
 
-::
+.. coqdoc::
 
     Class `(E : EqDec A) => Ord A :=
       { le : A -> A -> bool }.
@@ -248,8 +260,8 @@ explanation). These may be used as parts of other classes:
 .. coqtop:: all
 
    Class PreOrder (A : Type) (R : relation A) :=
-   { PreOrder_Reflexive :> Reflexive A R ;
-     PreOrder_Transitive :> Transitive A R }.
+     { PreOrder_Reflexive :> Reflexive A R ;
+       PreOrder_Transitive :> Transitive A R }.
 
 The syntax ``:>`` indicates that each ``PreOrder`` can be seen as a
 ``Reflexive`` relation. So each time a reflexive relation is needed, a
@@ -273,33 +285,31 @@ Summary of the commands
 .. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
 
    The :cmd:`Class` command is used to declare a typeclass with parameters
-   ``binders`` and fields the declared record fields.
+   :token:`binders` and fields the declared record fields.
 
-Variants:
+   .. _singleton-class:
 
-.. _singleton-class:
+   .. cmdv:: Class @ident {? @binders} : {? @sort} := @ident : @term
 
-.. cmd:: Class @ident {? @binders} : {? @sort} := @ident : @term
+      This variant declares a *singleton* class with a single method.  This
+      singleton class is a so-called definitional class, represented simply
+      as a definition ``ident binders := term`` and whose instances are
+      themselves objects of this type. Definitional classes are not wrapped
+      inside records, and the trivial projection of an instance of such a
+      class is convertible to the instance itself. This can be useful to
+      make instances of existing objects easily and to reduce proof size by
+      not inserting useless projections. The class constant itself is
+      declared rigid during resolution so that the class abstraction is
+      maintained.
 
-   This variant declares a *singleton* class with a single method.  This
-   singleton class is a so-called definitional class, represented simply
-   as a definition ``ident binders := term`` and whose instances are
-   themselves objects of this type. Definitional classes are not wrapped
-   inside records, and the trivial projection of an instance of such a
-   class is convertible to the instance itself. This can be useful to
-   make instances of existing objects easily and to reduce proof size by
-   not inserting useless projections. The class constant itself is
-   declared rigid during resolution so that the class abstraction is
-   maintained.
+   .. cmdv:: Existing Class @ident
 
-.. cmd:: Existing Class @ident
+      This variant declares a class a posteriori from a constant or
+      inductive definition. No methods or instances are defined.
 
-   This variant declares a class a posteriori from a constant or
-   inductive definition. No methods or instances are defined.
+      .. warn:: @ident is already declared as a typeclass
 
-   .. warn:: @ident is already declared as a typeclass
-
-      This command has no effect when used on a typeclass.
+         This command has no effect when used on a typeclass.
 
 .. cmd:: Instance @ident {? @binders} : @class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
 
@@ -314,32 +324,33 @@ Variants:
    :tacn:`auto` hints. If the priority is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
-.. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n [| priority] := @term
+   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n [| priority] := @term
 
-   This syntax is used for declaration of singleton class instances or
-   for directly giving an explicit term of type :n:`forall @binders, @class
-   @term__1 … @term__n`.  One need not even mention the unique field name for
-   singleton classes.
+      This syntax is used for declaration of singleton class instances or
+      for directly giving an explicit term of type :n:`forall @binders, @class
+      @term__1 … @term__n`.  One need not even mention the unique field name for
+      singleton classes.
 
-.. cmdv:: Global Instance
+   .. cmdv:: Global Instance
+      :name: Global Instance
 
-   One can use the ``Global`` modifier on instances declared in a
-   section so that their generalization is automatically redeclared
-   after the section is closed.
+      One can use the :cmd:`Global` modifier on instances declared in a
+      section so that their generalization is automatically redeclared
+      after the section is closed.
 
-.. cmdv:: Program Instance
-   :name: Program Instance
+   .. cmdv:: Program Instance
+      :name: Program Instance
 
-   Switches the type checking to Program (chapter :ref:`programs`) and
-   uses the obligation mechanism to manage missing fields.
+      Switches the type checking to `Program` (chapter :ref:`programs`) and
+      uses the obligation mechanism to manage missing fields.
 
-.. cmdv:: Declare Instance
-   :name: Declare Instance
+   .. cmdv:: Declare Instance
+      :name: Declare Instance
 
-   In a Module Type, this command states that a corresponding concrete
-   instance should exist in any implementation of this Module Type. This
-   is similar to the distinction between :cmd:`Parameter` vs. :cmd:`Definition`, or
-   between :cmd:`Declare Module` and :cmd:`Module`.
+      In a :cmd:`Module Type`, this command states that a corresponding concrete
+      instance should exist in any implementation of this :cmd:`Module Type`. This
+      is similar to the distinction between :cmd:`Parameter` vs. :cmd:`Definition`, or
+      between :cmd:`Declare Module` and :cmd:`Module`.
 
 
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
@@ -353,11 +364,6 @@ few other commands related to typeclasses.
    sections, or declaring structure projections as instances. This is
    equivalent to ``Hint Resolve ident : typeclass_instances``, except it
    registers instances for :cmd:`Print Instances`.
-
-.. cmd:: Context @binders
-
-   Declares variables according to the given binding context, which might
-   use :ref:`implicit-generalization`.
 
 .. tacn:: typeclasses eauto
    :name: typeclasses eauto
@@ -449,9 +455,8 @@ By default, all constants and local variables are considered transparent. One
 should take care not to make opaque any constant that is used to abbreviate a
 type, like:
 
-::
-
-   relation A := A -> A -> Prop.
+.. coqdoc::
+   Definition relation A := A -> A -> Prop.
 
 This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 

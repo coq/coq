@@ -630,33 +630,21 @@ has type :token:`type`.
 
       These variants are synonyms of :n:`{? Local } Parameter {+ ( {+ @ident } : @type ) }`.
 
-.. cmd:: Variable @ident : @type
+   .. cmdv:: Variable  {+ ( {+ @ident } : @type ) }
+             Variables {+ ( {+ @ident } : @type ) }
+             Hypothesis {+ ( {+ @ident } : @type ) }
+             Hypotheses {+ ( {+ @ident } : @type ) }
+      :name: Variable (outside a section); Variables (outside a section); Hypothesis (outside a section); Hypotheses (outside a section)
 
-   This command links :token:`type` to the name :token:`ident` in the context of
-   the current section (see Section :ref:`section-mechanism` for a description of
-   the section mechanism). When the current section is closed, name :token:`ident`
-   will be unknown and every object using this variable will be explicitly
-   parametrized (the variable is *discharged*). Using the :cmd:`Variable` command out
-   of any section is equivalent to using :cmd:`Local Parameter`.
+      Outside of any section, these variants are synonyms of
+      :n:`Local Parameter {+ ( {+ @ident } : @type ) }`.
+      For their meaning inside a section, see :cmd:`Variable` in
+      :ref:`section-mechanism`.
 
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Variable)
-      :undocumented:
+      .. warn:: @ident is declared as a local axiom [local-declaration,scope]
 
-   .. cmdv:: Variable {+ @ident } : @term
-
-      Links :token:`type` to each :token:`ident`.
-
-   .. cmdv:: Variable {+ ( {+ @ident } : @term ) }
-
-      Adds blocks of variables with different specifications.
-
-   .. cmdv:: Variables {+ ( {+ @ident } : @term) }
-             Hypothesis {+ ( {+ @ident } : @term) }
-             Hypotheses {+ ( {+ @ident } : @term) }
-      :name: Variables; Hypothesis; Hypotheses
-
-      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @term) }`.
+         Warning generated when using :cmd:`Variable` instead of
+         :cmd:`Local Parameter`.
 
 .. note::
    It is advised to use the commands :cmd:`Axiom`, :cmd:`Conjecture` and
@@ -664,6 +652,8 @@ has type :token:`type`.
    the assertion :token:`type` is of sort :g:`Prop`), and to use the commands
    :cmd:`Parameter` and :cmd:`Variable` (and their plural forms) in other cases
    (corresponding to the declaration of an abstract mathematical entity).
+
+.. seealso:: Section :ref:`section-mechanism`.
 
 .. _gallina-definitions:
 
@@ -704,10 +694,10 @@ Section :ref:`typing-rules`.
       .. exn:: The term @term has type @type while it is expected to have type @type'.
          :undocumented:
 
-   .. cmdv:: Definition @ident @binders {? : @term } := @term
+   .. cmdv:: Definition @ident @binders {? : @type } := @term
 
       This is equivalent to
-      :n:`Definition @ident : forall @binders, @term := fun @binders => @term`.
+      :n:`Definition @ident : forall @binders, @type := fun @binders => @term`.
 
    .. cmdv:: Local Definition @ident {? @binders } {? : @type } := @term
       :name: Local Definition
@@ -721,32 +711,18 @@ Section :ref:`typing-rules`.
 
       This is equivalent to :cmd:`Definition`.
 
-.. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
+   .. cmdv:: Let @ident := @term
+      :name: Let (outside a section)
 
-.. cmd:: Let @ident := @term
+      Outside of any section, this variant is a synonym of
+      :n:`Local Definition @ident := @term`.
+      For its meaning inside a section, see :cmd:`Let` in
+      :ref:`section-mechanism`.
 
-   This command binds the value :token:`term` to the name :token:`ident` in the
-   environment of the current section. The name :token:`ident` disappears when the
-   current section is eventually closed, and all persistent objects (such
-   as theorems) defined within the section and depending on :token:`ident` are
-   prefixed by the let-in definition :n:`let @ident := @term in`.
-   Using the :cmd:`Let` command out of any section is equivalent to using
-   :cmd:`Local Definition`.
+      .. warn:: @ident is declared as a local definition [local-declaration,scope]
 
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Let)
-      :undocumented:
-
-   .. cmdv:: Let @ident {? @binders } {? : @type } := @term
-      :undocumented:
-
-   .. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
-      :name: Let Fixpoint
-      :undocumented:
-
-   .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
-      :name: Let CoFixpoint
-      :undocumented:
+         Warning generated when using :cmd:`Let` instead of
+         :cmd:`Local Definition`.
 
 .. seealso:: Section :ref:`section-mechanism`, commands :cmd:`Opaque`,
              :cmd:`Transparent`, and tactic :tacn:`unfold`.
@@ -877,8 +853,8 @@ which is a type whose conclusion is a sort.
    successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
    structural induction principle we got for :g:`nat`.
 
-Parametrized inductive types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Parameterized inductive types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmdv:: Inductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
 
@@ -954,7 +930,7 @@ Parametrized inductive types
      because the conclusion of the type of constructors should be :g:`listw A`
      in both cases.
 
-   + A parametrized inductive definition can be defined using annotations
+   + A parameterized inductive definition can be defined using annotations
      instead of parameters but it will sometimes give a different (bigger)
      sort for the inductive definition and will produce a less convenient
      rule for case elimination.
@@ -1014,7 +990,7 @@ Mutually defined inductive types
 
    .. cmdv:: Inductive @ident @binders {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident @binders {? : @type } } }
 
-      In this variant, the inductive definitions are parametrized
+      In this variant, the inductive definitions are parameterized
       with :token:`binders`. However, parameters correspond to a local context
       in which the whole set of inductive declarations is done. For this
       reason, the parameters must be strictly the same for each inductive types.
@@ -1050,7 +1026,7 @@ Mutually defined inductive types
 
       Check forest_rec.
 
-   Assume we want to parametrize our mutual inductive definitions with the
+   Assume we want to parameterize our mutual inductive definitions with the
    two type variables :g:`A` and :g:`B`, the declaration should be
    done the following way:
 
