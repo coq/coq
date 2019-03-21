@@ -209,10 +209,11 @@ install-doc-printable:
 
 install-doc-sphinx:
 	$(MKDIR) $(FULLDOCDIR)/sphinx
-	(for f in `cd doc/sphinx/_build; find . -type f`; do \
-		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$f);\
-		$(INSTALLLIB) doc/sphinx/_build/$$f $(FULLDOCDIR)/sphinx/$$f;\
-	done)
+	(for d in html latex; do \
+	for f in `cd doc/sphinx/_build/$$d && find . -type f`; do \
+		$(MKDIR) $$(dirname $(FULLDOCDIR)/sphinx/$$d/$$f);\
+		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(FULLDOCDIR)/sphinx/$$d/$$f;\
+	done; done)
 
 # For emacs:
 # Local Variables:
