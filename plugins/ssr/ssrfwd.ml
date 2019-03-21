@@ -331,68 +331,53 @@ let is_app_evar sigma t =
       | _ -> false end
   | _ -> false
 
-let tmp = ref 0
+let intro_lock ipats =
+  let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
+    Proofview.tclORELSE
+      (Ssripats.tclIPAT [Ssripats.IOpTemporay; Ssripats.IOpEqGen (lock_eq ())])
+      (fun _exn -> Proofview.Goal.enter begin fun gl ->
+        let c = Proofview.Goal.concl gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        let t = Reductionops.whd_all env sigma c in
+        match EConstr.kind_of_type sigma t with
+        | Term.AtomicType(hd, args) when
+            Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
+            Array.length args = 3 && is_app_evar sigma args.(2) ->
+              Tactics.New.refine ~typecheck:true (fun sigma ->
+                let sigma, under =
+                  Ssrcommon.mkSsrConst "Under" env sigma in
+                let sigma, under_from_eq =
+                  Ssrcommon.mkSsrConst "Under_from_eq" env sigma in
+                let ty = EConstr.mkApp (under,args) in
+                let sigma, t = Evarutil.new_evar env sigma ty in
+                sigma, EConstr.mkApp(under_from_eq,Array.append args [|t|]))
+        | _ ->
+    ppdebug(lazy Pp.(str"under: stop:" ++ pr_econstr_env env sigma t));
 
-let rec intro_lock names = Proofview.Goal.enter begin fun gl ->
- let c = Proofview.Goal.concl gl in
- let sigma = Proofview.Goal.sigma gl in
- let env = Proofview.Goal.env gl in
- let rec aux c =
-  match EConstr.kind_of_type sigma c with
-  | Term.SortType _ -> Proofview.tclUNIT ()
-  | ( Term.ProdType ({ Context.binder_name = name },_,t)
-    | Term.LetInType ({ Context.binder_name = name },_,_,t) ) ->
-      begin match names with
-      | n :: names -> Ssripats.(tclIPAT @@ [Ssripats.IOpId n]) <*> intro_lock names
-      | [] ->
-          (* after quell intro patterns, use IpatTemp *)
-          let id =
-            match name with
-            | Name.Anonymous -> Id.of_string (Printf.sprintf "_under_%d_" !tmp)
-            | Name.Name n -> n in
-          incr tmp;
-          Ssripats.tclIPAT [
-            Ssripats.IOpId id;
-            Ssripats.IOpEqGen (intro_lock names);
-            Ssripats.IOpEqGen (Tactics.revert [id])]
-      end
-  | Term.CastType (t,_) -> aux t
-  | Term.AtomicType _ ->
-      let t = Reductionops.whd_all env sigma c in
-      match EConstr.kind_of_type sigma t with
-      | Term.ProdType _ -> aux t
-      | Term.AtomicType(hd, args) when
-          Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
-          Array.length args = 3 && is_app_evar sigma args.(2) ->
-            Tactics.New.refine ~typecheck:true (fun sigma ->
-              let sigma, under =
-                Ssrcommon.mkSsrConst "Under" env sigma in
-              let sigma, under_from_eq =
-                Ssrcommon.mkSsrConst "Under_from_eq" env sigma in
-              let ty = EConstr.mkApp (under,args) in
-              let sigma, t = Evarutil.new_evar env sigma ty in
-              sigma, EConstr.mkApp(under_from_eq,Array.append args [|t|]))
-      | _ -> Proofview.tclUNIT ()
+            Proofview.tclUNIT ()
+       end)
+    end
   in
-    aux c
+  Ssripats.tclIPATssr ipats <*> lock_eq ()
 
-end
-
-let rec pretty_rename evar_map term = function
-  | [] -> term
-  | varname :: varnames ->
-     try begin
-       match EConstr.destLambda evar_map term
-       with ({ Context.binder_relevance = r }, types, body) ->
-           let res = pretty_rename evar_map body varnames in
-           let name = Names.Name.mk_name varname in
-           (* Note: we don't explicitly check name \notin free_vars(res) here *)
-           EConstr.mkLambda (Context.make_annot name r, types, res)
-         end
-     with
-     | DestKO ->
-        ppdebug(lazy Pp.(str"under: cannot pretty-rename all bound variables with destLambda"));
-        term
+let pretty_rename evar_map term varnames =
+  let rec aux term vars =
+    try
+      match vars with
+      | [] -> term
+      | Names.Name.Anonymous :: varnames ->
+          let name, types, body = EConstr.destLambda evar_map term in
+          let res = aux body varnames in
+          EConstr.mkLambda (name, types, res)
+      | Names.Name.Name _ as name :: varnames ->
+          let { Context.binder_relevance = r }, types, body =
+            EConstr.destLambda evar_map term in
+          let res = aux body varnames in
+          EConstr.mkLambda (Context.make_annot name r, types, res)
+    with DestKO -> term
+  in
+    aux term varnames
 
 let overtac = Proofview.V82.tactic (ssr_n_tac "over" ~-1)
 
@@ -408,19 +393,37 @@ let check_numgoals ?(minus = 0) nh =
   else
     Proofview.tclUNIT ()
 
-let undertac ist varnames ((dir,mult),_ as rule) hint =
-  if mult <> Ssrequality.nomult then
-    Ssrcommon.errorstrm Pp.(str"Multiplicity not supported");
+let undertac ist ipats ((dir,_),_ as rule) hint =
+
+  let varnames =
+    let rec aux acc = function
+      | IPatId id :: rest -> aux (Names.Name.Name id :: acc) rest
+      | IPatClear _ :: rest -> aux acc rest
+      | IPatSimpl _ :: rest -> aux acc rest
+      | IPatAnon (One _ | Drop) :: rest ->
+          aux (Names.Name.Anonymous :: acc) rest
+      | _ -> List.rev acc in
+    aux [] (Option.default [] ipats) in
+
+  (* If we find a "=> [|]" we add 1 | to get "=> [||]" for the extra
+   * goal (the one that is left once we run over) *)
+  let ipats =
+    match ipats with
+    | None -> [IPatNoop]
+    | Some (IPatCase(Regular []) :: _ as ipats) -> ipats
+    | Some (IPatCase(Regular l) :: rest) -> IPatCase(Regular(l @ [[]])) :: rest
+    | Some (IPatCase(Block _) :: _ as l) -> l
+    | Some l -> [IPatCase(Regular [l;[]])] in
 
   let map_redex env evar_map ~before:_ ~after:t =
-    ppdebug(lazy Pp.(str("under vars: " ^
-      (List.fold_right (fun e r -> Names.Id.to_string e ^ " " ^ r) varnames ""))));
-    ppdebug(lazy Pp.(str"under: mapping:" ++ pr_econstr_env env evar_map t));
+    ppdebug(lazy Pp.(str"under vars: " ++ prlist Names.Name.print varnames));
 
     let evar_map, ty = Typing.type_of env evar_map t in
     let new_t = (* pretty-rename the bound variables *)
       try begin match EConstr.destApp evar_map t with (f, ar) ->
             let lam = Array.last ar in
+            ppdebug(lazy Pp.(str"under: mapping:" ++
+                             pr_econstr_env env evar_map lam));
             let new_lam = pretty_rename evar_map lam varnames in
             let new_ar, len1 = Array.copy ar, pred (Array.length ar) in
             new_ar.(len1) <- new_lam;
@@ -450,5 +453,8 @@ let undertac ist varnames ((dir,mult),_ as rule) hint =
               (if hint = nullhint then [None] else snd hint))
            @ [betaiota])
   in
-  (Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
-     intro_lock varnames <*> undertacs)
+  let rew =
+    Proofview.V82.tactic
+      (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule])
+  in
+  rew <*> intro_lock ipats <*> undertacs

@@ -86,12 +86,13 @@ Lemma test_big_nested_1 (F G : nat -> nat) (m n : nat) :
   \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
 Proof.
 (* in interactive mode *)
-under i Hi: eq_bigr.
-  under j Hj: eq_big.
+under eq_bigr => i Hi.
+  under eq_big => [j|j Hj].
   { rewrite muln1. over. }
   { rewrite addnC. over. }
+(* MISSING BETA *)
   over.
-done.
+by [].
 Qed.
 
 Lemma test_big_nested_2 (F G : nat -> nat) (m n : nat) :
@@ -99,14 +100,14 @@ Lemma test_big_nested_2 (F G : nat -> nat) (m n : nat) :
   \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
 Proof.
 (* in one-liner mode *)
-under i Hi: eq_bigr by under j Hj: eq_big by [rewrite muln1 | rewrite addnC].
+under eq_bigr => i Hi do under eq_big => [j|j Hj] do [rewrite muln1 | rewrite addnC ].
 done.
 Qed.
 
 Lemma test_big_patt1 (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (F i + G i) = \sum_(0 <= i < n) (G i + F i) + 0.
 Proof.
-under i Hi: [in RHS]eq_bigr.
+under [in RHS]eq_bigr => i Hi.
   by rewrite addnC over.
 done.
 Qed.
@@ -115,14 +116,14 @@ Lemma test_big_patt2 (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (F i + F i) =
   \sum_(0 <= i < n) 0 + \sum_(0 <= i < n) (F i * 2).
 Proof.
-under i Hi: [X in _ = _ + X]eq_bigr by rewrite mulnS muln1.
+under [X in _ = _ + X]eq_bigr => i Hi do rewrite mulnS muln1.
 by rewrite big_const_nat iter_addn_0.
 Qed.
 
 Lemma test_big_occs (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0).
 Proof.
-under i Hi: {2}[in RHS]eq_bigr by rewrite muln0.
+under {2}[in RHS]eq_bigr => i Hi do rewrite muln0.
 by rewrite big_const_nat iter_addn_0.
 Qed.
 
@@ -131,15 +132,15 @@ Lemma test_big_cosmetic (F G : nat -> nat) (m n : nat) :
   \sum_(0 <= i < m) \sum_(0 <= j < n | odd (j * 1)) (i + j) =
   \sum_(0 <= i < m) \sum_(0 <= j < n | odd j) (j + i).
 Proof.
-under a A: [RHS]eq_bigr by under b B: eq_bigr by []. (* renaming bound vars *)
+under [RHS]eq_bigr => a A do under eq_bigr => b B do []. (* renaming bound vars *)
 myadmit.
 Qed.
 
 Lemma test_big_andb (F : nat -> nat) (m n : nat) :
   \sum_(0 <= i < 5 | odd i && (i == 1)) i = 1.
 Proof.
-under i: eq_bigl by rewrite andb_idl; first by move/eqP->.
-under i: eq_bigr by move/eqP=>{1}->. (* the 2nd occ should not be touched *)
+under eq_bigl => i do rewrite andb_idl; first by move/eqP->.
+under eq_bigr => i do move/eqP=>{1}->. (* the 2nd occ should not be touched *)
 myadmit.
 Qed.
 
@@ -158,6 +159,6 @@ under x: Lem.
 - rewrite f_eq; over.
 - done.
  *)
-under x: Lem by [done|rewrite f_eq|done].
+under Lem => [|x|] do [done|rewrite f_eq|done].
 done.
 Qed.
