@@ -3,3 +3,5 @@
  (public_name coq.plugins.omega)
  (synopsis "Coq's omega plugin")
  (libraries coq.plugins.ltac))
+
+(coq.pp (modules g_omega))

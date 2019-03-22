@@ -3,3 +3,5 @@
  (public_name coq.plugins.funind)
  (synopsis "Coq's functional induction plugin")
  (libraries coq.plugins.extraction))
+
+(coq.pp (modules g_indfun))

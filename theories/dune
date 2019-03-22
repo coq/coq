@@ -1,0 +1,38 @@
+(coq.theory
+ (name Coq)
+ (package coq)
+ (synopsis "Coq's Standard Library")
+ (flags -q)
+ ; (mode native)
+ (boot)
+ ; (per_file
+ ;  (Init/*.v -> -boot))
+ (libraries
+   coq.plugins.ltac
+   coq.plugins.tauto
+
+   coq.plugins.cc
+   coq.plugins.firstorder
+
+   coq.plugins.numeral_notation
+   coq.plugins.string_notation
+   coq.plugins.int63_syntax
+   coq.plugins.r_syntax
+   coq.plugins.float_syntax
+
+   coq.plugins.btauto
+   coq.plugins.rtauto
+
+   coq.plugins.setoid_ring
+   coq.plugins.nsatz
+   coq.plugins.omega
+
+   coq.plugins.zify
+   coq.plugins.micromega
+
+   coq.plugins.funind
+
+   coq.plugins.ssreflect
+   coq.plugins.derive))
+
+(include_subdirs qualified)

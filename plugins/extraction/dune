@@ -3,3 +3,5 @@
  (public_name coq.plugins.extraction)
  (synopsis "Coq's extraction plugin")
  (libraries num coq.plugins.ltac))
+
+(coq.pp (modules g_extraction))
