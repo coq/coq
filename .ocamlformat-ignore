@@ -16,7 +16,7 @@ printing/*
 proofs/*
 stm/*
 tactics/*
-theories/*
+stdlib/theories/*
 user-contrib/*/*
 vernac/*
 toplevel/*
@@ -31,23 +31,23 @@ test-suite/*/*/*/*
 test-suite/*/*/*/*/*
 tools/*
 tools/*/*
-plugins/btauto/*
-plugins/cc/*
-plugins/derive/*
-plugins/extraction/*
-plugins/firstorder/*
-plugins/fourier/*
-plugins/funind/*
-plugins/ltac/*
-plugins/nsatz/*
-plugins/omega/*
-plugins/rtauto/*
-plugins/setoid/*
-plugins/ing/*
-plugins/setoid_ring/*
-plugins/ssr/*
-plugins/ssrmatching/*
-plugins/syntax/*
+stdlib/plugins/btauto/*
+stdlib/plugins/cc/*
+stdlib/plugins/derive/*
+stdlib/plugins/extraction/*
+stdlib/plugins/firstorder/*
+stdlib/plugins/fourier/*
+stdlib/plugins/funind/*
+stdlib/plugins/ltac/*
+stdlib/plugins/nsatz/*
+stdlib/plugins/omega/*
+stdlib/plugins/rtauto/*
+stdlib/plugins/setoid/*
+stdlib/plugins/ing/*
+stdlib/plugins/setoid_ring/*
+stdlib/plugins/ssr/*
+stdlib/plugins/ssrmatching/*
+stdlib/plugins/syntax/*
 # Enabled: micromega
-# plugins/micromega/*
-plugins/micromega/micromega.ml
+# stdlib/plugins/micromega/*
+stdlib/plugins/micromega/micromega.ml

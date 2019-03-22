@@ -6,7 +6,7 @@
 
 (rule
  (targets libpath.inc)
- (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/ ))))
+ (action (with-stdout-to %{targets} (run ./ocaml_pwd.exe -quoted ../../install/%{context_name}/lib/coq/stdlib/ ))))
 
 (rule
  (targets summary.log)
@@ -38,7 +38,7 @@
    ; Finer-grained dependencies would look like this and be generated
    ; by coqdep; that would allow tests to be run incrementally.
    ; ../tools/CoqMakefile.in
-   ; ../theories/Init/Prelude.vo
+   ; ../stdlib/Init/Prelude.vo
    ; %{bin:coqc}
    ; %{bin:coq_makefile}
    ; %{bin:fake_ide}

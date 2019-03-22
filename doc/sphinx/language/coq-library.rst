@@ -33,7 +33,7 @@ The basic library
 
 This section lists the basic notions and results which are directly
 available in the standard |Coq| system. Most of these constructions
-are defined in the ``Prelude`` module in directory ``theories/Init``
+are defined in the ``Prelude`` module in directory ``stdlib/theories/Init``
 at the |Coq| root directory; this includes the modules
 ``Notations``,
 ``Logic``,

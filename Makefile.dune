@@ -43,10 +43,10 @@ help:
 	@echo "  - help:    show this message"
 
 # We need to bootstrap with a dummy coq.plugins.ltac so install targets do work.
-plugins/ltac/dune:
-	@echo "(library (name ltac_plugin) (public_name coq.plugins.ltac) (modules_without_implementation extraargs extratactics))" > plugins/ltac/dune
+stdlib/plugins/ltac/dune:
+	@echo "(library (name ltac_plugin) (public_name coq.plugins.ltac) (modules_without_implementation extraargs extratactics))" > stdlib/plugins/ltac/dune
 
-voboot: plugins/ltac/dune
+voboot: stdlib/plugins/ltac/dune
 	dune build --build-dir=$(BOOT_DIR) $(DUNEOPT) @vodeps
 	dune exec --build-dir=$(BOOT_DIR) -- ./tools/coq_dune.exe $(BOOT_CONTEXT)/.vfiles.d
 

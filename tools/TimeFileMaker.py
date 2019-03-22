@@ -10,7 +10,7 @@ from io import open
 # mapping names of compiled files to the number of minutes and seconds
 # that they took to compile.
 
-STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
+STRIP_REG = re.compile('^(coq/|contrib/|)(?:stdlib/theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\u221e'
 

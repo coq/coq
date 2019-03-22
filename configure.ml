@@ -1103,13 +1103,13 @@ let write_configml f =
   pr "\nlet plugins_dirs = [\n";
 
   let plugins =
-    try Sys.readdir "plugins"
+    try Sys.readdir "stdlib/plugins"
     with _ -> [||]
   in
   Array.sort compare plugins;
   Array.iter
     (fun f ->
-      let f' = "plugins/"^f in
+      let f' = "stdlib/plugins/"^f in
       if Sys.is_directory f' && f.[0] <> '.' then pr "  %S;\n" f')
     plugins;
   pr "]\n";

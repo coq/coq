@@ -464,7 +464,7 @@ approve-output: output output-coqtop
 
 # the expected output for the MExtraction test is
 # /plugins/micromega/micromega.ml except with additional newline
-output/MExtraction.out: ../plugins/micromega/micromega.ml
+output/MExtraction.out: ../stdlib/plugins/micromega/micromega.ml
 	$(SHOW) GEN $@
 	$(HIDE) cp $< $@
 	$(HIDE) echo >> $@

@@ -56,9 +56,9 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps
-.PHONY: stdlib full-stdlib sphinx
+.PHONY: doc-stdlib full-stdlib sphinx
 
-doc: refman stdlib
+doc: refman doc-stdlib
 
 SPHINX_DEPS ?=
 ifndef QUICK
@@ -93,7 +93,7 @@ doc-pdf:\
 doc-ps:\
   doc/stdlib/Library.ps
 
-stdlib: \
+doc-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
 
 full-stdlib: \
@@ -129,7 +129,7 @@ doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
 # Standard library
 ######################################################################
 
-DOCLIBS=-R theories Coq -R plugins Coq -Q user-contrib/Ltac2 Ltac2
+DOCLIBS=-R stdlib/theories Coq -Q user-contrib/Ltac2 Ltac2
 
 ### Standard library (browsable html format)
 
@@ -156,10 +156,10 @@ doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.
 ifdef QUICK
 doc/stdlib/Library.coqdoc.tex:
 else
-doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
+doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(STDLIBLIGHTVO)
 endif
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
-            -R theories Coq $(THEORIESLIGHTVO:.$(VO)=.v) >> $@
+            -R stdlib/theories Coq $(STDLIBLIGHTVO:.$(VO)=.v) >> $@
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\

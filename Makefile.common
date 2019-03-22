@@ -57,15 +57,15 @@ FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
 
 PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT)
 
-CSDPCERT:=plugins/micromega/csdpcert$(EXE)
-CSDPCERTBYTE:=plugins/micromega/csdpcert.byte$(EXE)
+CSDPCERT:=stdlib/plugins/micromega/csdpcert$(EXE)
+CSDPCERTBYTE:=stdlib/plugins/micromega/csdpcert.byte$(EXE)
 
 ###########################################################################
 # Object and Source files
 ###########################################################################
 
 ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
- # static link of plugins, do not mention them in .v.d
+ # static link of stdlib, do not mention them in .v.d
  DYNDEP:=-dyndep no
 else
  DYNDEP:=-dyndep var
@@ -112,7 +112,7 @@ USERCONTRIBDIRS:=\
 SRCDIRS:=\
   $(CORESRCDIRS)  \
   tools 	tools/coqdoc	\
-  $(addprefix plugins/, $(PLUGINDIRS))  \
+  $(addprefix stdlib/plugins/, $(PLUGINDIRS))  \
   $(addprefix user-contrib/, $(USERCONTRIBDIRS))
 
 COQRUN := coqrun
@@ -133,31 +133,31 @@ CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/l
         stm/stm.cma toplevel/toplevel.cma
 
 ###########################################################################
-# plugins object files
+# stdlib object files
 ###########################################################################
 
-OMEGACMO:=plugins/omega/omega_plugin.cmo
-MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
-RINGCMO:=plugins/setoid_ring/newring_plugin.cmo
-NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
-EXTRACTIONCMO:=plugins/extraction/extraction_plugin.cmo
-FUNINDCMO:=plugins/funind/recdef_plugin.cmo
-FOCMO:=plugins/firstorder/ground_plugin.cmo
-CCCMO:=plugins/cc/cc_plugin.cmo
-BTAUTOCMO:=plugins/btauto/btauto_plugin.cmo
-RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
-SYNTAXCMO:=$(addprefix plugins/syntax/, \
+OMEGACMO:=stdlib/plugins/omega/omega_plugin.cmo
+MICROMEGACMO:=stdlib/plugins/micromega/micromega_plugin.cmo
+RINGCMO:=stdlib/plugins/setoid_ring/newring_plugin.cmo
+NSATZCMO:=stdlib/plugins/nsatz/nsatz_plugin.cmo
+EXTRACTIONCMO:=stdlib/plugins/extraction/extraction_plugin.cmo
+FUNINDCMO:=stdlib/plugins/funind/recdef_plugin.cmo
+FOCMO:=stdlib/plugins/firstorder/ground_plugin.cmo
+CCCMO:=stdlib/plugins/cc/cc_plugin.cmo
+BTAUTOCMO:=stdlib/plugins/btauto/btauto_plugin.cmo
+RTAUTOCMO:=stdlib/plugins/rtauto/rtauto_plugin.cmo
+SYNTAXCMO:=$(addprefix stdlib/plugins/syntax/, \
         r_syntax_plugin.cmo \
 	int63_syntax_plugin.cmo \
 	float_syntax_plugin.cmo \
 	numeral_notation_plugin.cmo \
 	string_notation_plugin.cmo)
-DERIVECMO:=plugins/derive/derive_plugin.cmo
-LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
-SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
-SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
+DERIVECMO:=stdlib/plugins/derive/derive_plugin.cmo
+LTACCMO:=stdlib/plugins/ltac/ltac_plugin.cmo stdlib/plugins/ltac/tauto_plugin.cmo
+SSRMATCHINGCMO:=stdlib/plugins/ssrmatching/ssrmatching_plugin.cmo
+SSRCMO:=stdlib/plugins/ssr/ssreflect_plugin.cmo
 LTAC2CMO:=user-contrib/Ltac2/ltac2_plugin.cmo
-ZIFYCMO:=plugins/micromega/zify_plugin.cmo
+ZIFYCMO:=stdlib/plugins/micromega/zify_plugin.cmo
 
 PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
         $(RINGCMO) \

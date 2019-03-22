@@ -49,11 +49,9 @@ let _ =
     add_rec_dir_import (fun _ -> add_caml_known) "." ["Coq"];
   end
   else begin
-    add_rec_dir_import add_known "theories" ["Coq"];
-    add_rec_dir_import add_known "plugins" ["Coq"];
+    add_rec_dir_import add_known "stdlib/theories" ["Coq"];
     add_caml_dir "tactics";
-    add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
-    add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
+    add_rec_dir_import (fun _ -> add_caml_known) "stdlib/plugins" ["Coq"];
   end;
   if !option_c then mL_dependencies ();
   coq_dependencies ()

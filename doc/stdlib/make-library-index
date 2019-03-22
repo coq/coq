@@ -8,7 +8,7 @@ HIDDEN=$2
 cp -f $FILE.template tmp
 echo -n "Building file index-list.prehtml... "
 
-LIBDIRS=`find theories/* plugins/* user-contrib/* -type d ! -name .coq-native`
+LIBDIRS=`find stdlib/theories/* user-contrib/* -type d ! -name .coq-native`
 
 for k in $LIBDIRS; do
     if [[ $k =~ "user-contrib" ]]; then
@@ -49,7 +49,7 @@ for k in $LIBDIRS; do
     sed -e "s/#$d#//" tmp > tmp2
     mv -f tmp2 tmp
 done
-a=`grep theories tmp`
+a=`grep stdlib/theories tmp`
 if [ $? = 0 ]; then echo Error: extra files:; echo $a; exit 1; fi
 mv tmp $FILE
 echo Done

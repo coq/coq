@@ -2,7 +2,7 @@
  (targets coqtop-prelude)
  (deps
   %{bin:coqtop}
-  %{project_root}/theories/Init/Prelude.vo)
+  %{project_root}/stdlib/theories/Init/Prelude.vo)
  (action
   (with-stdout-to coqtop-prelude
    (progn
@@ -14,7 +14,7 @@
  (targets coqc-prelude)
  (deps
   %{bin:coqc}
-  %{project_root}/theories/Init/Prelude.vo)
+  %{project_root}/stdlib/theories/Init/Prelude.vo)
  (action
   (with-stdout-to coqc-prelude
    (progn
@@ -27,7 +27,7 @@
  (deps
   %{bin:coqtop.byte}
   %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
-  %{project_root}/theories/Init/Prelude.vo)
+  %{project_root}/stdlib/theories/Init/Prelude.vo)
  (action
   (with-stdout-to %{targets}
    (progn
@@ -41,7 +41,7 @@
   %{bin:coqqueryworker.opt}
   %{bin:coqtacticworker.opt}
   %{bin:coqproofworker.opt}
-  %{project_root}/theories/Init/Prelude.vo
+  %{project_root}/stdlib/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
   %{project_root}/coqide.install)
  (action

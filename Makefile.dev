@@ -61,9 +61,9 @@ revision:
 ### 1) general-purpose targets
 ###############################
 
-coqlight: theories-light tools coqbinaries
+coqlight: stdlib-light tools coqbinaries
 
-states: theories/Init/Prelude.$(VO)
+states: stdlib/theories/Init/Prelude.$(VO)
 
 miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte
@@ -100,38 +100,38 @@ toplevel: toplevel/toplevel.cma
 ### 3) theories files
 ######################
 
-init: $(filter theories/Init/%, $(THEORIESVO))
-logic: $(filter theories/Logic/%, $(THEORIESVO))
-arith: $(filter theories/Arith/%, $(THEORIESVO))
-bool: $(filter theories/Bool/%, $(THEORIESVO))
-parith: $(filter theories/PArith/%, $(THEORIESVO))
-narith: $(filter theories/NArith/%, $(THEORIESVO))
-zarith: $(filter theories/ZArith/%, $(THEORIESVO))
-qarith: $(filter theories/QArith/%, $(THEORIESVO))
-lists: $(filter theories/Lists/%, $(THEORIESVO))
-strings: $(filter theories/Strings/%, $(THEORIESVO))
-sets: $(filter theories/Sets/%, $(THEORIESVO))
-fsets: $(filter theories/FSets/%, $(THEORIESVO))
-relations: $(filter theories/Relations/%, $(THEORIESVO))
-wellfounded: $(filter theories/Wellfounded/%, $(THEORIESVO))
-reals: $(filter theories/Reals/%, $(THEORIESVO))
-setoids: $(filter theories/Setoids/%, $(THEORIESVO))
-sorting: $(filter theories/Sorting/%, $(THEORIESVO))
-numbers: $(filter theories/Numbers/%, $(THEORIESVO))
-unicode: $(filter theories/Unicode/%, $(THEORIESVO))
-classes: $(filter theories/Classes/%, $(THEORIESVO))
-program: $(filter theories/Program/%, $(THEORIESVO))
-structures: $(filter theories/Structures/%, $(THEORIESVO))
-vectors: $(filter theories/Vectors/%, $(THEORIESVO))
-msets: $(filter theories/MSets/%, $(THEORIESVO))
-compat: $(filter theories/Compat/%, $(THEORIESVO))
+init: $(filter stdlib/theories/Init/%, $(STDLIBVO))
+logic: $(filter stdlib/theories/Logic/%, $(STDLIBVO))
+arith: $(filter stdlib/theories/Arith/%, $(STDLIBVO))
+bool: $(filter stdlib/theories/Bool/%, $(STDLIBVO))
+parith: $(filter stdlib/theories/PArith/%, $(STDLIBVO))
+narith: $(filter stdlib/theories/NArith/%, $(STDLIBVO))
+zarith: $(filter stdlib/theories/ZArith/%, $(STDLIBVO))
+qarith: $(filter stdlib/theories/QArith/%, $(STDLIBVO))
+lists: $(filter stdlib/theories/Lists/%, $(STDLIBVO))
+strings: $(filter stdlib/theories/Strings/%, $(STDLIBVO))
+sets: $(filter stdlib/theories/Sets/%, $(STDLIBVO))
+fsets: $(filter stdlib/theories/FSets/%, $(STDLIBVO))
+relations: $(filter stdlib/theories/Relations/%, $(STDLIBVO))
+wellfounded: $(filter stdlib/theories/Wellfounded/%, $(STDLIBVO))
+reals: $(filter stdlib/theories/Reals/%, $(STDLIBVO))
+setoids: $(filter stdlib/theories/Setoids/%, $(STDLIBVO))
+sorting: $(filter stdlib/theories/Sorting/%, $(STDLIBVO))
+numbers: $(filter stdlib/theories/Numbers/%, $(STDLIBVO))
+unicode: $(filter stdlib/theories/Unicode/%, $(STDLIBVO))
+classes: $(filter stdlib/theories/Classes/%, $(STDLIBVO))
+program: $(filter stdlib/theories/Program/%, $(STDLIBVO))
+structures: $(filter stdlib/theories/Structures/%, $(STDLIBVO))
+vectors: $(filter stdlib/theories/Vectors/%, $(STDLIBVO))
+msets: $(filter stdlib/theories/MSets/%, $(STDLIBVO))
+compat: $(filter stdlib/theories/Compat/%, $(STDLIBVO))
 
-theories-light: $(THEORIESLIGHTVO)
+stdlib-light: $(STDLIBLIGHTVO)
 
 noreal: unicode logic arith bool zarith qarith lists sets fsets \
 	relations wellfounded setoids sorting
 
-.PHONY: init theories-light noreal
+.PHONY: init stdlib-light noreal
 .PHONY: logic arith bool narith zarith qarith lists strings sets
 .PHONY: fsets relations wellfounded reals setoids sorting numbers
 .PHONY: msets mmaps compat parith classes program unicode structures vectors
@@ -140,17 +140,17 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 ### 4) plugins
 ################
 
-OMEGAVO:=$(filter plugins/omega/%, $(PLUGINSVO))
-MICROMEGAVO:=$(filter plugins/micromega/%, $(PLUGINSVO))
-RINGVO:=$(filter plugins/setoid_ring/%, $(PLUGINSVO))
-NSATZVO:=$(filter plugins/nsatz/%, $(PLUGINSVO))
-FUNINDVO:=$(filter plugins/funind/%, $(PLUGINSVO))
-BTAUTOVO:=$(filter plugins/btauto/%, $(PLUGINSVO))
-RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
-EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
+OMEGAVO:=$(filter stdlib/plugins/omega/%, $(STDLIBVO))
+MICROMEGAVO:=$(filter stdlib/plugins/micromega/%, $(STDLIBVO))
+RINGVO:=$(filter stdlib/plugins/setoid_ring/%, $(STDLIBVO))
+NSATZVO:=$(filter stdlib/plugins/nsatz/%, $(STDLIBVO))
+FUNINDVO:=$(filter stdlib/plugins/funind/%, $(STDLIBVO))
+BTAUTOVO:=$(filter stdlib/plugins/btauto/%, $(STDLIBVO))
+RTAUTOVO:=$(filter stdlib/plugins/rtauto/%, $(STDLIBVO))
+EXTRACTIONVO:=$(filter stdlib/plugins/extraction/%, $(STDLIBVO))
 CCVO:=
-DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
-LTACVO:=$(filter plugins/ltac/%, $(PLUGINSVO))
+DERIVEVO:=$(filter stdlib/plugins/derive/%, $(STDLIBVO))
+LTACVO:=$(filter stdlib/plugins/ltac/%, $(STDLIBVO))
 
 omega: $(OMEGAVO) $(OMEGACMO)
 micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)

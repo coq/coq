@@ -178,7 +178,7 @@ let pp_vo_dep dir fmt vo =
   let depth = List.length dir in
   let sdir = gen_sub depth in
   (* All files except those in Init implicitly depend on the Prelude, we account for it here. *)
-  let eflag, edep = if List.tl dir = ["Init"] then "-noinit -R theories Coq", [] else "", [bpath ["theories";"Init";"Prelude.vo"]] in
+  let eflag, edep = if List.(tl (tl dir)) = ["Init"] then "-noinit -R stdlib/theories Coq", [] else "", [bpath ["stdlib";"theories";"Init";"Prelude.vo"]] in
   (* Coq flags *)
   let cflag = Options.build_coq_flags () in
   (* Correct path from global to local "theories/Init/Decimal.vo" -> "../../theories/Init/Decimal.vo" *)
@@ -213,7 +213,7 @@ let record_dune d ff =
   if Sys.file_exists sd && Sys.is_directory sd then
     let out = open_out (bpath [sd;"dune"]) in
     let fmt = formatter_of_out_channel out in
-    if List.nth d 0 = "plugins" || List.nth d 0 = "user-contrib" then
+    if Sys.file_exists (bpath [sd; "plugin_base.dune"]) then
       fprintf fmt "(include plugin_base.dune)@\n";
     out_install fmt d ff;
     List.iter (pp_dep d fmt) ff;
@@ -235,7 +235,7 @@ let scan_dir ~root m =
   let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath [root;f]) Array.(to_list @@ readdir root)) in
   List.fold_left (scan_mlg ~root) m dirs
 
-let scan_plugins m = scan_dir ~root:"plugins" m
+let scan_plugins m = scan_dir ~root:"stdlib/plugins" m
 let scan_usercontrib m = scan_dir ~root:"user-contrib" m
 
 (* This will be removed when we drop support for Make *)
@@ -285,8 +285,11 @@ let exec_ifile f =
     begin try
       let ic = open_in in_file in
       (try f ic
-       with _ -> eprintf "Error: exec_ifile@\n%!"; close_in ic)
-      with _ -> eprintf "Error: cannot open input file %s@\n%!" in_file
+       with exn ->
+         eprintf "Error: exec_ifile @[%s@]@\n%!" (Printexc.to_string exn);
+         close_in ic)
+      with _ ->
+        eprintf "Error: cannot open input file %s@\n%!" in_file
     end
   | _ -> eprintf "Error: wrong number of arguments@\n%!"; exit 1
 

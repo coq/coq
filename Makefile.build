@@ -157,10 +157,10 @@ endif
 
 VDFILE := .vfiles
 MLDFILE := .mlfiles
-PLUGMLDFILE := plugins/.mlfiles
+PLUGMLDFILE := stdlib/plugins/.mlfiles
 USERCONTRIBMLDFILE := user-contrib/.mlfiles
 MLLIBDFILE := .mllibfiles
-PLUGMLLIBDFILE := plugins/.mllibfiles
+PLUGMLLIBDFILE := stdlib/plugins/.mllibfiles
 USERCONTRIBMLLIBDFILE := user-contrib/.mllibfiles
 
 DEPENDENCIES := \
@@ -219,7 +219,7 @@ OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter plugins/% user-contrib/%,$@),, -I ide -I ide/protocol)
+DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter stdlib/plugins/% user-contrib/%,$@),, -I ide -I ide/protocol)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -550,7 +550,7 @@ bin/votour.byte: $(VOTOURCMO) $(LIBCOQRUN)
 # Csdp to micromega special targets
 ###########################################################################
 
-CSDPCERTCMO:=clib/clib.cma $(addprefix plugins/micromega/, \
+CSDPCERTCMO:=clib/clib.cma $(addprefix stdlib/plugins/micromega/, \
   micromega.cmo mutils.cmo 	 \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
@@ -571,7 +571,7 @@ $(CSDPCERTBYTE): $(CSDPCERTCMO)
 VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m -coqlib .
 
 validate: $(CHICKEN) | $(ALLVO:.$(VO)=.vo)
-	$(SHOW)'COQCHK <theories & plugins>'
+	$(SHOW)'COQCHK <stdlib>'
 	$(HIDE)$(CHICKEN) $(VALIDOPTS) $(ALLVO)
 
 $(ALLSTDLIB).v:
@@ -674,11 +674,11 @@ COND_BYTEFLAGS= \
 COND_OPTFLAGS= \
  $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS) $(COND_GRAMFLAGS) $(COND_KERFLAGS)
 
-plugins/micromega/%.cmi: plugins/micromega/%.mli
+stdlib/plugins/micromega/%.cmi: stdlib/plugins/micromega/%.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
 
-plugins/nsatz/%.cmi: plugins/nsatz/%.mli
+stdlib/plugins/nsatz/%.cmi: stdlib/plugins/nsatz/%.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
 
@@ -686,11 +686,11 @@ plugins/nsatz/%.cmi: plugins/nsatz/%.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -c $<
 
-plugins/micromega/%.cmo: plugins/micromega/%.ml
+stdlib/plugins/micromega/%.cmo: stdlib/plugins/micromega/%.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
 
-plugins/nsatz/%.cmo: plugins/nsatz/%.ml
+stdlib/plugins/nsatz/%.cmo: stdlib/plugins/nsatz/%.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
 
@@ -722,20 +722,20 @@ $(MLWITHOUTMLI:.ml=.cmi): %.cmi: %.cmo
 # NB: the *_FORPACK variables are generated in *.mlpack.d by ocamllibdep
 # The only exceptions are the sources of the csdpcert binary.
 # To avoid warnings, we set them manually here:
-plugins/micromega/sos_lib_FORPACK:=
-plugins/micromega/sos_FORPACK:=
-plugins/micromega/sos_print_FORPACK:=
-plugins/micromega/csdpcert_FORPACK:=
+stdlib/plugins/micromega/sos_lib_FORPACK:=
+stdlib/plugins/micromega/sos_FORPACK:=
+stdlib/plugins/micromega/sos_print_FORPACK:=
+stdlib/plugins/micromega/csdpcert_FORPACK:=
 
-plugins/micromega/%.cmx: plugins/micromega/%.ml
+stdlib/plugins/micromega/%.cmx: stdlib/plugins/micromega/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -package unix,num -c $<
 
-plugins/nsatz/%.cmx: plugins/nsatz/%.ml
+stdlib/plugins/nsatz/%.cmx: stdlib/plugins/nsatz/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -package unix,num -c $<
 
-plugins/%.cmx: plugins/%.ml
+stdlib/plugins/%.cmx: stdlib/plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
 
@@ -774,8 +774,8 @@ user-contrib/%.cmx: user-contrib/%.ml
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
 OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 
-MAINMLFILES := $(filter-out gramlib/.pack/% checker/% plugins/% user-contrib/%, $(MLFILES) $(MLIFILES))
-MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% plugins/% user-contrib/%, $(MLLIBFILES) $(MLPACKFILES))
+MAINMLFILES := $(filter-out gramlib/.pack/% checker/% stdlib/plugins/% user-contrib/%, $(MLFILES) $(MLIFILES))
+MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% stdlib/plugins/% user-contrib/%, $(MLLIBFILES) $(MLPACKFILES))
 
 $(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'
@@ -786,13 +786,13 @@ $(MLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLLIBFILES) $(D_DEPEND_AFTER_SRC) 
 	$(SHOW)'OCAMLLIBDEP  MLLIBFILES MLPACKFILES'
 	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(MAINMLLIBFILES) $(TOTARGET)
 
-$(PLUGMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLFILES) $(MLIFILES)) $(D_DEPEND_AFTER_SRC) $(GENFILES)
-	$(SHOW)'OCAMLDEP  plugins/MLFILES plugins/MLIFILES'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(filter plugins/%, $(MLFILES) $(MLIFILES)) $(TOTARGET)
+$(PLUGMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter stdlib/%, $(MLFILES) $(MLIFILES)) $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  stdlib/MLFILES stdlib/MLIFILES'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(filter stdlib/%, $(MLFILES) $(MLIFILES)) $(TOTARGET)
 
-$(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
-	$(SHOW)'OCAMLLIBDEP  plugins/MLLIBFILES plugins/MLPACKFILES'
-	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
+$(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter stdlib/%, $(MLLIBFILES) $(MLPACKFILES)) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  stdlib/MLLIBFILES stdlib/MLPACKFILES'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(filter stdlib/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
 
 $(USERCONTRIBMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter user-contrib/%, $(MLFILES) $(MLIFILES)) $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  user-contrib/MLFILES user-contrib/MLIFILES'
@@ -806,24 +806,23 @@ $(USERCONTRIBMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter user-contrib/%, $(ML
 # Compilation of .v files
 ###########################################################################
 
-# NB: for make world, no need to mention explicitly the .cmxs of the plugins,
+# NB: for make world, no need to mention explicitly the .cmxs of the stdlib,
 # since they are all mentioned in at least one Declare ML Module in some .v
 
-coqlib: theories plugins
+coqlib: stdlib-vo contrib-vo
 ifdef QUICK
-	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio plugins/**.vio'
-	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(THEORIESVO) $(PLUGINSVO)
+	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) stdlib/**.vio'
+	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(STDLIBVO) $(CONTRIBVO)
 endif
 
-coqlib.timing.diff: theories.timing.diff plugins.timing.diff
+coqlib.timing.diff: stdlib.timing.diff
 
-theories: $(THEORIESVO)
-plugins: $(PLUGINSVO)
+stdlib-vo: $(STDLIBVO)
+contrib-vo: $(CONTRIBVO)
 
-theories.timing.diff: $(THEORIESVO:.$(VO)=.v.timing.diff)
-plugins.timing.diff: $(PLUGINSVO:.$(VO)=.v.timing.diff)
+stdlib.timing.diff: $(ALLVO:.$(VO)=.v.timing.diff)
 
-.PHONY: coqlib theories plugins coqlib.timing.diff theories.timing.diff plugins.timing.diff
+.PHONY: coqlib stdlib-vo contrib-vo coqlib.timing.diff stdlib.timing.diff
 
 # The .vo files in Init are built with the -noinit option
 
@@ -833,18 +832,18 @@ else
 TIMING_EXTRA =
 endif
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
+stdlib/theories/Init/%.vo stdlib/theories/Init/%.glob: stdlib/theories/Init/%.v $(VO_TOOLS_DEP)
 	$(SHOW)'COQC -noinit $<'
-	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
+	$(HIDE)rm -f stdlib/theories/Init/$*.glob
+	$(HIDE)$(BOOTCOQC) $< -noinit -R stdlib/theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
 
-theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
+stdlib/theories/Init/%.vio: stdlib/theories/Init/%.v $(VO_TOOLS_DEP)
 	$(SHOW)'COQC -quick -noinit $<'
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -vio -noglob
+	$(HIDE)$(BOOTCOQC) $< -noinit -R stdlib/theories Coq -vio -noglob
 
 # The general rule for building .vo files :
 
-%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
+%.vo %.glob: %.v stdlib/theories/Init/Prelude.vo $(VO_TOOLS_DEP)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob
 	$(HIDE)$(BOOTCOQC) $< $(TIMING_ARG) $(TIMING_EXTRA)
@@ -854,7 +853,7 @@ ifdef VALIDATE
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
 
-%.vio: %.v theories/Init/Prelude.vio $(VO_TOOLS_DEP)
+%.vio: %.v stdlib/theories/Init/Prelude.vio $(VO_TOOLS_DEP)
 	$(SHOW)'COQC -vio $<'
 	$(HIDE)$(BOOTCOQC) $< -vio -noglob
 

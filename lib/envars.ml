@@ -96,7 +96,7 @@ let check_file_else ~dir ~file oth =
 
 let guess_coqlib fail =
   getenv_else "COQLIB" (fun () ->
-  let prelude = "theories/Init/Prelude.vo" in
+  let prelude = "stdlib/theories/Init/Prelude.vo" in
   check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
       if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)

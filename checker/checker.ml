@@ -111,10 +111,10 @@ let init_load_path () =
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs in
   let coqpath = Envars.coqpath in
-  let plugins = coqlib/"plugins" in
+  let plugins = coqlib/"stdlib/plugins" in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
-  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.DirPath.make[coq_root]);
+  add_rec_path ~unix_path:(coqlib/"stdlib/theories") ~coq_root:(Names.DirPath.make[coq_root]);
   (* then plugins *)
   add_rec_path ~unix_path:plugins ~coq_root:(Names.DirPath.make [coq_root]);
   (* then user-contrib *)

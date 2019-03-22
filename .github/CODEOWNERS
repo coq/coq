@@ -108,36 +108,36 @@
 /gramlib/         @coq/parsing-maintainers
 /parsing/         @coq/parsing-maintainers
 
-########## Plugins ##########
+########## Stdlib ##########
 
-/plugins/btauto/       @coq/btauto-maintainers
+/stdlib/plugins/btauto/       @coq/btauto-maintainers
 
-/plugins/cc/           @coq/cc-maintainers
+/stdlib/plugins/cc/           @coq/cc-maintainers
 
-/plugins/derive/       @coq/derive-maintainers
+/stdlib/plugins/derive/       @coq/derive-maintainers
 
-/plugins/extraction/   @coq/extraction-maintainers
+/stdlib/plugins/extraction/   @coq/extraction-maintainers
 
-/plugins/firstorder/   @coq/firstorder-maintainers
+/stdlib/plugins/firstorder/   @coq/firstorder-maintainers
 
-/plugins/funind/       @coq/funind-maintainers
+/stdlib/plugins/funind/       @coq/funind-maintainers
 
-/plugins/ltac/         @coq/ltac-maintainers
+/stdlib/plugins/ltac/         @coq/ltac-maintainers
 
-/plugins/micromega/    @coq/micromega-maintainers
+/stdlib/micromega/    @coq/micromega-maintainers
 /test-suite/micromega/ @coq/micromega-maintainers
 
-/plugins/nsatz/        @coq/nsatz-maintainers
+/stdlib/plugins/nsatz/        @coq/nsatz-maintainers
 
-/plugins/setoid_ring/  @coq/ring-maintainers
+/stdlib/plugins/setoid_ring/  @coq/ring-maintainers
 
-/plugins/ssrmatching/  @coq/ssreflect-maintainers
-/plugins/ssr/          @coq/ssreflect-maintainers
+/stdlib/ssrmatching/  @coq/ssreflect-maintainers
+/stdlib/ssr/          @coq/ssreflect-maintainers
 /test-suite/ssr/       @coq/ssreflect-maintainers
 
-/plugins/syntax/       @coq/parsing-maintainers
+/stdlib/syntax/       @coq/parsing-maintainers
 
-/plugins/rtauto/       @coq/rtauto-maintainers
+/stdlib/plugins/rtauto/       @coq/rtauto-maintainers
 
 /user-contrib/Ltac2    @coq/ltac2-maintainers
 
@@ -172,6 +172,7 @@
 
 ########## Standard library ##########
 
+<<<<<<< HEAD
 /theories/         @coq/stdlib-maintainers
 
 /theories/Classes/ @coq/typeclasses-maintainers
@@ -179,6 +180,64 @@
 /theories/Reals/   @coq/reals-library-maintainers
 
 /theories/Compat/  @coq/compat-maintainers
+=======
+/stdlib/Arith/          @herbelin
+
+/stdlib/Bool/           @herbelin
+
+/stdlib/Classes/        @mattam82
+# Secondary maintainer @herbelin
+
+/stdlib/FSets/          @herbelin
+
+/stdlib/Init/           @ppedrot
+
+/stdlib/Lists/          @ppedrot
+
+/stdlib/Logic/          @herbelin
+# Secondary maintainer @ppedrot
+
+/stdlib/MSets/          @herbelin
+
+/stdlib/NArith/         @herbelin
+
+/stdlib/Numbers/        @herbelin
+
+/stdlib/PArith/         @herbelin
+
+/stdlib/Program/        @mattam82
+# Secondary maintainer @herbelin
+
+/stdlib/QArith/         @herbelin
+
+/stdlib/Reals/          @coq/reals-library-maintainers
+# Secondary maintainer @ppedrot
+
+/stdlib/Relations/      @mattam82
+# Secondary maintainer @ppedrot
+
+/stdlib/Setoids/        @mattam82
+# Secondary maintainer @ppedrot
+
+/stdlib/Sets/           @herbelin
+
+/stdlib/Sorting/        @herbelin
+
+/stdlib/Strings/        @herbelin
+
+/stdlib/Structures/     @herbelin
+
+/stdlib/Unicode/        @herbelin
+
+/stdlib/Wellfounded/    @mattam82
+
+/stdlib/ZArith/         @herbelin
+
+/stdlib/Compat/         @JasonGross
+# Secondary maintainer @Zimmi48
+
+/stdlib/Vectors/        @herbelin
+>>>>>>> [stdlib] Consolidate the standard library in its on directory.
 
 ########## Tools ##########
 
