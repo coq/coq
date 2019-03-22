@@ -50,6 +50,13 @@ Kernel
 
 - Added primitive integers
 
+- Unfolding heuristic in termination checking made more complete.
+  In particular Coq is now more aggressive in unfolding constants
+  when it looks for a iota redex. Performance regression may occur
+  in Fixpoint declarations without an explicit {struct} annotation,
+  since guessing the decreasing argument can now be more expensive.
+  (PR #9602)
+
 Notations
 
 - New command `Declare Scope` to explicitly declare a scope name

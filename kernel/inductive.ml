@@ -934,16 +934,30 @@ let check_one_fix renv recpos trees def =
               end
 		
         | Case (ci,p,c_0,lrest) ->
-            List.iter (check_rec_call renv []) (c_0::p::l);
-            (* compute the recarg information for the arguments of
-               each branch *)
-            let case_spec = branches_specif renv 
-	      (lazy_subterm_specif renv [] c_0) ci in
-	    let stack' = push_stack_closures renv l stack in
-            let stack' = filter_stack_domain renv.env p stack' in
-              Array.iteri (fun k br' -> 
-			     let stack_br = push_stack_args case_spec.(k) stack' in
-			     check_rec_call renv stack_br br') lrest
+            begin try
+              List.iter (check_rec_call renv []) (c_0::p::l);
+              (* compute the recarg info for the arguments of each branch *)
+              let case_spec =
+                branches_specif renv (lazy_subterm_specif renv [] c_0) ci in
+              let stack' = push_stack_closures renv l stack in
+              let stack' = filter_stack_domain renv.env p stack' in
+              lrest |> Array.iteri (fun k br' ->
+                let stack_br = push_stack_args case_spec.(k) stack' in
+                check_rec_call renv stack_br br')
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the match away by looking for a
+                 constructor in c_0 (we unfold definitions too) *)
+              let c_0 = whd_all renv.env c_0 in
+              let hd, _ = decompose_app c_0 in
+              match kind hd with
+              | Construct _ ->
+                  (* the call to whd_betaiotazeta will reduce the
+                     apparent iota redex away *)
+                  check_rec_call renv []
+                    (Term.applist (mkCase (ci,p,c_0,lrest), l))
+              | _ -> Exninfo.iraise exn
+            end
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
            way, ie, the rule :
@@ -958,19 +972,33 @@ let check_one_fix renv recpos trees def =
            then f is guarded with respect to S in (g a1 ... am).
            Eduardo 7/9/98 *)
         | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-            List.iter (check_rec_call renv []) l;
-            Array.iter (check_rec_call renv []) typarray;
             let decrArg = recindxs.(i) in
-            let renv' = push_fix_renv renv recdef in
-	    let stack' = push_stack_closures renv l stack in
-              Array.iteri
-                (fun j body ->
-                   if Int.equal i j && (List.length stack' > decrArg) then
-		     let recArg = List.nth stack' decrArg in
-	             let arg_sp = stack_element_specif recArg in
-	             check_nested_fix_body renv' (decrArg+1) arg_sp body
-                   else check_rec_call renv' [] body)
-                bodies
+            begin try
+              List.iter (check_rec_call renv []) l;
+              Array.iter (check_rec_call renv []) typarray;
+              let renv' = push_fix_renv renv recdef in
+              let stack' = push_stack_closures renv l stack in
+              bodies |> Array.iteri (fun j body ->
+                if Int.equal i j && (List.length stack' > decrArg) then
+                  let recArg = List.nth stack' decrArg in
+                  let arg_sp = stack_element_specif recArg in
+                  check_nested_fix_body renv' (decrArg+1) arg_sp body
+                else check_rec_call renv' [] body)
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the fix away by looking for a
+                 constructor in l[decrArg] (we unfold definitions too) *)
+              if List.length l <= decrArg then Exninfo.iraise exn;
+              let recArg = List.nth l decrArg in
+              let recArg = whd_all renv.env recArg in
+              let hd, _ = decompose_app recArg in
+              match kind hd with
+              | Construct _ ->
+                  let before, after = CList.(firstn decrArg l, skipn (decrArg+1) l) in
+                  check_rec_call renv []
+                    (Term.applist (mkFix ((recindxs,i),recdef), (before @ recArg :: after)))
+              | _ -> Exninfo.iraise exn
+            end
 
         | Const (kn,_u as cu) ->
             if evaluable_constant kn renv.env then
@@ -1000,9 +1028,22 @@ let check_one_fix renv recpos trees def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
-        | Proj (_p, c) ->
-           List.iter (check_rec_call renv []) l;
-           check_rec_call renv [] c
+        | Proj (p, c) ->
+            begin try
+              List.iter (check_rec_call renv []) l;
+              check_rec_call renv [] c
+            with (FixGuardError _ as exn) ->
+              let exn = CErrors.push exn in
+              (* we try hard to reduce the proj away by looking for a
+                 constructor in c (we unfold definitions too) *)
+              let c = whd_all renv.env c in
+              let hd, _ = decompose_app c in
+              match kind hd with
+              | Construct _ ->
+                  check_rec_call renv []
+                    (Term.applist (mkProj(Projection.unfold p,c), l))
+              | _ -> Exninfo.iraise exn
+            end
 
         | Var id ->
             begin
