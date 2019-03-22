@@ -31,7 +31,7 @@ open Entries
 let refine_instance = ref false
 
 let () = Goptions.(declare_bool_option {
-  optdepr  = false;
+  optdepr  = true;
   optname  = "definition of instances by refining";
   optkey   = ["Refine";"Instance";"Mode"];
   optread  = (fun () -> !refine_instance);
