@@ -26,6 +26,7 @@ object
   method set_show_right_margin : bool -> unit
   method comment : unit -> unit
   method uncomment : unit -> unit
+  method apply_unicode_binding : unit -> unit
   method recenter_insert : unit
   method complete_popup : Wg_Completion.complete_popup
 end

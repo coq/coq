@@ -55,7 +55,11 @@ IDETOPBYTE=bin/coqidetop.byte$(EXE)
 LINKIDE:=$(IDEDEPS) $(IDECDEPS) $(IDECMA) ide/coqide_os_specific.cmo ide/coqide_main.mli ide/coqide_main.ml
 LINKIDEOPT:=$(IDEOPTCDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_os_specific.cmx ide/coqide_main.mli ide/coqide_main.ml
 
-IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map
+IDEBINDINGS:=ide/default.bindings
+IDEBINDINGSSRC:=ide/default_bindings_src.ml
+IDEBINDINGSEXE:=ide/default_bindings_src.exe
+
+IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map $(IDEBINDINGS)
 
 ## GTK for Coqide MacOS bundle
 
@@ -69,7 +73,7 @@ SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-3.0)/share
 # CoqIde special targets
 ###########################################################################
 
-.PHONY: coqide coqide-opt coqide-byte coqide-files coqide-binaries
+.PHONY: coqide coqide-opt coqide-byte coqide-bindings coqide-files coqide-binaries
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
 # target to build CoqIde (native version) and the stuff needed to lauch it
@@ -162,6 +166,15 @@ $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 			 $(SYSMOD) \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@
 
+coqide-bindings: $(IDEBINDINGS)
+
+$(IDEBINDINGSEXE): $(IDEBINDINGSSRC)
+	$(OCAMLC) $< -o $@
+
+$(IDEBINDINGS): $(IDEBINDINGSEXE)
+	$< $@
+
+
 ####################
 ## Install targets
 ####################
@@ -208,7 +221,7 @@ endif
 
 install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same time
 	$(MKDIR) $(FULLDATADIR)
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(FULLDATADIR)
+	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
 	if [ $(IDEINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 
@@ -236,7 +249,7 @@ $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
-	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $@/coq/
+	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $@/coq/
 	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
 	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
 	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/

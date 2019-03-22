@@ -28,6 +28,7 @@ type tag = {
   tag_strikethrough : bool;
 }
 
+
 (** Generic preferences *)
 
 type obj = {
@@ -248,6 +249,18 @@ let loaded_accel_file =
   try get_config_file "coqide.keys"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
+let get_unicode_bindings_local_file () =
+  try Some (get_config_file "coqide.bindings")
+  with Not_found -> None
+
+let get_unicode_bindings_default_file () =
+  let name = "default.bindings" in
+  let chk d = Sys.file_exists (Filename.concat d name) in
+  try
+    let dir = List.find chk (Minilib.coqide_data_dirs ()) in
+    Some (Filename.concat dir name)
+  with Not_found -> None
+
 (** Hooks *)
 
 (** New style preferences *)
@@ -326,7 +339,7 @@ let modifier_for_navigation =
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
- 
+
 let modifier_for_tactics =
   new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
 
@@ -647,13 +660,13 @@ let save_pref () =
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
 
-    let m = Config_lexer.load_file loaded_pref_file in
-    let iter name v =
-      if Util.String.Map.mem name !preferences then
-        try (Util.String.Map.find name !preferences).set v with _ -> ()
-      else unknown_preferences := Util.String.Map.add name v !unknown_preferences
-    in
-    Util.String.Map.iter iter m
+  let m = Config_lexer.load_file loaded_pref_file in
+  let iter name v =
+    if Util.String.Map.mem name !preferences then
+      try (Util.String.Map.find name !preferences).set v with _ -> ()
+    else unknown_preferences := Util.String.Map.add name v !unknown_preferences
+  in
+  Util.String.Map.iter iter m
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get

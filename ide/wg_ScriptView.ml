@@ -10,6 +10,8 @@
 
 open Preferences
 
+exception Abort
+
 type insert_action = {
   ins_val : string;
   ins_off : int;
@@ -404,6 +406,49 @@ object (self)
       let () = self#buffer#end_user_action () in
       self#buffer#delete_mark (`MARK stop_mark)
     | _ -> ()
+
+  method apply_unicode_binding () =
+    (* Auxiliary method to reach the beginning of line or the
+        nearest space before the iterator. *)
+    let rec get_line_start iter =
+      if iter#starts_line || Glib.Unichar.isspace iter#char then iter
+      else get_line_start iter#backward_char
+      in
+    (* Main action *)
+    let buffer = self#buffer in
+    let insert = buffer#get_iter `INSERT in
+    let insert_mark = buffer#create_mark ~left_gravity:false insert in
+    let () = buffer#begin_user_action () in
+    let word_to_insert =
+      try
+        let line_start = get_line_start insert in
+        let prev_backslash_search = insert#backward_search ~limit:line_start "\\" in
+        let backslash =
+          match prev_backslash_search with
+          | None -> raise Abort
+          | Some (backslash_start,backslash_stop) -> backslash_start
+          in
+        let prefix = backslash#get_text ~stop:insert in
+        let word =
+          match Unicode_bindings.lookup prefix with
+          | None -> raise Abort
+          | Some word -> word
+          in
+        let was_deleted = buffer#delete_interactive ~start:backslash ~stop:insert () in
+        if not was_deleted then raise Abort;
+        word
+      with Abort -> " "
+       (* Insert a space if no binding applies. This is to make sure that the user
+          gets some visual feedback that the keystroke was taken into account.
+          And also avoid slowing down users who press "Shift" for capitalizing the
+          first letter of a sentence just before typing the "Space" that comes in
+          front of that first letter. *)
+      in
+    let insert2 = buffer#get_iter_at_mark (`MARK insert_mark) in
+    let _was_inserted = buffer#insert_interactive ~iter:insert2 word_to_insert in
+    let () = self#buffer#end_user_action () in
+    self#buffer#delete_mark (`MARK insert_mark)
+
 
   method complete_popup = popup
 

@@ -163,6 +163,16 @@ Tools
 - A new `-bytecode-compiler` flag for `coqc` and `coqtop` controls whether
   conversion can use the VM. The default value is `yes`.
 
+- CoqIDE now supports input for Unicode characters. For example, typing
+  "\alpha" then the "Shift+Space" will insert the greek letter alpha.
+  In fact, typing the prefix string "\a" is sufficient.
+  A larger number of default bindings are provided, following the latex
+  naming convention. Bindings can be customized, either globally, or on a
+  per-project basis, with the requirement is that keys must begin with a
+  backslash and contain no space character. Bindings may be assigned custom
+  priorities, so that prefixes resolve to the most convenient bindings.
+  The documentation pages for CoqIDE provides further details.
+
 Standard Library
 
 - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about

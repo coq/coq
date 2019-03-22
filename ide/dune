@@ -27,7 +27,7 @@
 (library
  (name coqide_gui)
  (wrapped false)
- (modules (:standard \ document fake_ide idetop coqide_main))
+ (modules (:standard \ document fake_ide idetop coqide_main default_bindings_src))
  (optional)
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
 
@@ -43,6 +43,16 @@
  (modules coqide_main)
  (libraries coqide_gui))
 
+; Input-method bindings
+(executable
+ (name default_bindings_src)
+ (modules default_bindings_src))
+
+(rule
+ (targets default.bindings)
+ (deps (:gen ./default_bindings_src.exe))
+ (action (run %{gen} %{targets})))
+
 ; FIXME: we should install those in share/coqide. We better do this
 ; once the make-based system has been phased out.
 (install
@@ -50,6 +60,7 @@
  (package coqide)
  (files
   (coq.png as coq/coq.png)
+  (default.bindings as coq/default.bindings)
   (coq_style.xml as coq/coq_style.xml)
   (coq.lang as coq/coq.lang)
   (coq-ssreflect.lang as coq/coq-ssreflect.lang)))

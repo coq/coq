@@ -10,6 +10,7 @@ Utf8_convert
 Preferences
 Project_file
 Ideutils
+Unicode_bindings
 Coq
 Coq_lex
 Sentence
