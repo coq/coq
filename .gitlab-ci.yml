@@ -466,7 +466,7 @@ test-suite:edge+trunk+make:
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
     - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind https://gitlab.camlcity.org/gerd/lib-findlib.git#gerd/optional-vmthreads
+    - opam pin add -n ocamlfind --dev
     - opam install num
     - eval $(opam env)
     # We avoid problems with warnings:
@@ -492,7 +492,7 @@ test-suite:edge+trunk+dune:
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
     - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind https://gitlab.camlcity.org/gerd/lib-findlib.git#gerd/optional-vmthreads
+    - opam pin add -n ocamlfind --dev
     - opam pin add dune --dev # ounit lablgtk conf-gtksourceview
     - opam install dune num
     - eval $(opam env)
