@@ -161,29 +161,33 @@ let is_token s = match string_split s with
 | [s] -> is_uident s
 | _ -> false
 
-let rec parse_tokens = function
+let rec parse_tokens ?(in_anon=false) =
+let err_anon () =
+  if in_anon then
+    fatal (Printf.sprintf "'SELF' or 'NEXT' illegal in anonymous entry level") in
+function
 | [GSymbString s] -> SymbToken ("", Some s)
 | [GSymbQualid ("QUOTATION", None); GSymbString s] ->
     SymbToken ("QUOTATION", Some s)
-| [GSymbQualid ("SELF", None)] -> SymbSelf
-| [GSymbQualid ("NEXT", None)] -> SymbNext
+| [GSymbQualid ("SELF", None)] -> err_anon (); SymbSelf
+| [GSymbQualid ("NEXT", None)] -> err_anon (); SymbNext
 | [GSymbQualid ("LIST0", None); tkn] ->
-  SymbList0 (parse_token tkn, None)
+  SymbList0 (parse_token ~in_anon tkn, None)
 | [GSymbQualid ("LIST1", None); tkn] ->
-  SymbList1 (parse_token tkn, None)
+  SymbList1 (parse_token ~in_anon tkn, None)
 | [GSymbQualid ("LIST0", None); tkn; GSymbQualid ("SEP", None); tkn'] ->
-  SymbList0 (parse_token tkn, Some (parse_token tkn'))
+  SymbList0 (parse_token ~in_anon tkn, Some (parse_token ~in_anon tkn'))
 | [GSymbQualid ("LIST1", None); tkn; GSymbQualid ("SEP", None); tkn'] ->
-  SymbList1 (parse_token tkn, Some (parse_token tkn'))
+  SymbList1 (parse_token ~in_anon tkn, Some (parse_token ~in_anon tkn'))
 | [GSymbQualid ("OPT", None); tkn] ->
-  SymbOpt (parse_token tkn)
+  SymbOpt (parse_token ~in_anon tkn)
 | [GSymbQualid (e, None)] when is_token e -> SymbToken (e, None)
 | [GSymbQualid (e, None); GSymbString s] when is_token e -> SymbToken (e, Some s)
 | [GSymbQualid (e, lvl)] when not (is_token e) -> SymbEntry (e, lvl)
-| [GSymbParen tkns] -> parse_tokens tkns
+| [GSymbParen tkns] -> parse_tokens ~in_anon tkns
 | [GSymbProd prds] ->
   let map p =
-    let map (pat, tkns) = (pat, parse_tokens tkns) in
+    let map (pat, tkns) = (pat, parse_tokens ~in_anon:true tkns) in
     (List.map map p.gprod_symbs, p.gprod_body)
   in
   SymbRules (List.map map prds)
@@ -199,7 +203,7 @@ let rec parse_tokens = function
   in
   fatal (Printf.sprintf "Invalid token: %s" (db_tokens t))
 
-and parse_token tkn = parse_tokens [tkn]
+and parse_token ~in_anon tkn = parse_tokens ~in_anon [tkn]
 
 let print_fun fmt (vars, body) =
   let vars = List.rev vars in
