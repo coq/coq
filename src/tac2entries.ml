@@ -514,7 +514,7 @@ type 'a token =
 | TacNonTerm of Name.t * 'a
 
 type scope_rule =
-| ScopeRule : (raw_tacexpr, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
+| ScopeRule : (raw_tacexpr, _, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
 
 type scope_interpretation = sexpr list -> scope_rule
 
@@ -539,7 +539,7 @@ let parse_scope = function
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
 | SexprStr {v=str} ->
   let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
-  ScopeRule (Extend.Atoken (Tok.pattern_for_IDENT str), (fun _ -> v_unit))
+  ScopeRule (Extend.Atoken (Tok.PIDENT (Some str)), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
@@ -567,7 +567,7 @@ type synext = {
 
 type krule =
 | KRule :
-  (raw_tacexpr, 'act, Loc.t -> raw_tacexpr) Extend.rule *
+  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Extend.rule *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
 let rec get_rule (tok : scope_rule token list) : krule = match tok with
