@@ -21,6 +21,13 @@ Coq is a formal proof management system. It provides a formal language to write
 mathematical definitions, executable algorithms and theorems together with an
 environment for semi-interactive development of machine-checked proofs.
 
+## New to Coq?
+
+Please see the [new to coq] introductory page for links to tutorial
+and beginner resources.
+
+[new to coq]: https://github.com/coq/coq/doc/STARTING.md
+
 ## Installation
 
 [![latest packaged version(s)][repology-badge]][repology-link]
