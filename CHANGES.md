@@ -149,6 +149,8 @@ Vernacular commands
 
 - `Hypotheses` and `Variables` can now take implicit binders inside sections.
 
+- Removed deprecated option `Automatic Coercions Import`.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
