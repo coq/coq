@@ -21,7 +21,7 @@ let safe_getenv warning n =
   )
 
 let ( / ) a b =
-  if Filename.is_relative b then a ^ "/" ^ b else b
+  if Filename.is_relative b then a ^ Filename.dir_sep ^ b else b
 
 let coqify d = d / "coq"
 
@@ -99,7 +99,7 @@ let guess_coqlib fail =
   let prelude = "theories/Init/Prelude.vo" in
   check_file_else ~dir:Coq_config.coqlibsuffix ~file:prelude
     (fun () ->
-      if not Coq_config.local && Sys.file_exists (Coq_config.coqlib / prelude)
+      if not Coq_config.local  && Sys.file_exists (Coq_config.coqlib / prelude)
       then Coq_config.coqlib
       else
         fail "cannot guess a path for Coq libraries; please use -coqlib option")
