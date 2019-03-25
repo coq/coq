@@ -29,6 +29,8 @@ let create fname line_nb bol_pos bp ep = {
   line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep;
 }
 
+let initial source = create source 1 0 0 0
+
 let make_loc (bp, ep) = {
   fname = ToplevelInput; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
   bp = bp; ep = ep;

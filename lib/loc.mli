@@ -32,6 +32,9 @@ val create : source -> int -> int -> int -> int -> t
 (** Create a location from a filename, a line number, a position of the
     beginning of the line, a start and end position *)
 
+val initial : source -> t
+(** Create a location corresponding to the beginning of the given source *)
+
 val unloc : t -> int * int
 (** Return the start and end position of a location *)
 

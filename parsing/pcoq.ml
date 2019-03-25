@@ -59,7 +59,7 @@ module type S =
 
   type coq_parsable
 
-  val coq_parsable : ?file:Loc.source -> char Stream.t -> coq_parsable
+  val coq_parsable : ?loc:Loc.t -> char Stream.t -> coq_parsable
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> coq_parsable -> 'a
 
@@ -71,10 +71,10 @@ end with type 'a Entry.e = 'a Extend.entry = struct
 
   type coq_parsable = parsable * CLexer.lexer_state ref
 
-  let coq_parsable ?(file=Loc.ToplevelInput) c =
-    let state = ref (CLexer.init_lexer_state file) in
+  let coq_parsable ?loc c =
+    let state = ref (CLexer.init_lexer_state ()) in
     CLexer.set_lexer_state !state;
-    let a = parsable c in
+    let a = parsable ?loc c in
     state := CLexer.get_lexer_state ();
     (a,state)
 
@@ -320,8 +320,9 @@ let map_entry f en =
 (* Parse a string, does NOT check if the entire string was read
    (use eoi_entry) *)
 
-let parse_string f x =
-  let strm = Stream.of_string x in Gram.entry_parse f (Gram.coq_parsable strm)
+let parse_string f ?loc x =
+  let strm = Stream.of_string x in
+  Gram.entry_parse f (Gram.coq_parsable ?loc strm)
 
 type gram_universe = string
 

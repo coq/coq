@@ -383,9 +383,6 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
      let loc = set_loc_pos loc bp ep in
      err loc Unterminated_string
 
-(* To associate locations to a file name *)
-let current_file = ref Loc.ToplevelInput
-
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
 let comm_loc bp = match !comment_begin with
@@ -397,21 +394,20 @@ let current_comment = Buffer.create 8192
 let between_commands = ref true
 
 (* The state of the lexer visible from outside *)
-type lexer_state = int option * string * bool * ((int * int) * string) list * Loc.source
+type lexer_state = int option * string * bool * ((int * int) * string) list
 
-let init_lexer_state f = (None,"",true,[],f)
-let set_lexer_state (o,s,b,c,f) =
+let init_lexer_state () = (None,"",true,[])
+let set_lexer_state (o,s,b,c) =
   comment_begin := o;
   Buffer.clear current_comment; Buffer.add_string current_comment s;
   between_commands := b;
-  comments := c;
-  current_file := f
+  comments := c
 let get_lexer_state () =
-  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments, !current_file)
+  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments)
 let drop_lexer_state () =
-    set_lexer_state (init_lexer_state Loc.ToplevelInput)
+    set_lexer_state (init_lexer_state ())
 
-let get_comment_state (_,_,_,c,_) = c
+let get_comment_state (_,_,_,c) = c
 
 let real_push_char c = Buffer.add_char current_comment c
 
@@ -754,9 +750,9 @@ let token_text = function
   | (con, "") -> con
   | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
-let func next_token cs =
+let func next_token ?loc cs =
   let loct = loct_create () in
-  let cur_loc = ref (Loc.create !current_file 1 0 0 0) in
+  let cur_loc = ref (Option.default Loc.(initial ToplevelInput) loc) in
   let ts =
     Stream.from
       (fun i ->
