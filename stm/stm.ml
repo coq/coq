@@ -1121,7 +1121,12 @@ let get_script prf =
     in
   find [] (VCS.get_branch_pos branch)
 
+let warn_show_script_deprecated =
+  CWarnings.create ~name:"deprecated-show-script" ~category:"deprecated"
+    (fun () -> Pp.str "The “Show Script” command is deprecated.")
+
 let show_script ?proof () =
+  warn_show_script_deprecated ();
   try
     let prf =
       try match proof with
