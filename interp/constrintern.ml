@@ -956,7 +956,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
      (str "variable " ++ Id.print id ++ str " should be bound to a term.")
   else
     (* Is [id] a goal or section variable *)
-    let _ = Context.Named.lookup id namedctx in
+    let _ = Environ.lookup_named_ctxt id namedctx in
       try
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)
@@ -1095,7 +1095,8 @@ let interp_reference vars r =
   let (r,_,_,_),_ =
     intern_applied_reference (fun _ -> error_not_enough_arguments ?loc:None)
       {ids = Id.Set.empty; unb = false ;
-       tmp_scope = None; scopes = []; impls = empty_internalization_env} []
+       tmp_scope = None; scopes = []; impls = empty_internalization_env}
+      Environ.empty_named_context_val
       (vars, Id.Map.empty) None [] r
   in r
 
@@ -1826,7 +1827,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = CAst.with_loc_val (fun ?loc -> function
     | CRef (ref,us) ->
 	let (c,imp,subscopes,l),_ =
-	  intern_applied_reference intern env (Environ.named_context globalenv)
+          intern_applied_reference intern env (Environ.named_context_val globalenv)
 	    lvar us [] ref
 	in
 	  apply_impargs c env imp subscopes l loc
@@ -1932,7 +1933,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CAppExpl ((isproj,ref,us), args) ->
         let (f,_,args_scopes,_),args =
 	  let args = List.map (fun a -> (a,None)) args in
-	  intern_applied_reference intern env (Environ.named_context globalenv) 
+          intern_applied_reference intern env (Environ.named_context_val globalenv)
 	    lvar us args ref 
 	in
         (* Rem: GApp(_,f,[]) stands for @f *)
@@ -1950,7 +1951,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           match f.CAst.v with
             | CRef (ref,us) -> 
 	       intern_applied_reference intern env
-		 (Environ.named_context globalenv) lvar us args ref
+                 (Environ.named_context_val globalenv) lvar us args ref
             | CNotation (ntn,([],[],[],[])) ->
                 let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
                 let x, impl, scopes, l = find_appl_head_data c in
