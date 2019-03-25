@@ -573,18 +573,19 @@ Settings
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses eauto := {? debug} {? {dfs | bfs}} depth
+.. cmd:: Typeclasses eauto := {? debug} {? (dfs) | (bfs) } @num
    :name: Typeclasses eauto
 
    This command allows more global customization of the typeclass
    resolution tactic. The semantics of the options are:
 
-   + ``debug`` In debug mode, the trace of successfully applied tactics is
-     printed.  This value can also be set with :flag:`Typeclasses Debug`.
+   + ``debug`` This sets the debug mode. In debug mode, the trace of
+     successfully applied tactics is printed. The debug mode can also
+     be set with :flag:`Typeclasses Debug`.
 
-   + ``dfs, bfs`` This sets the search strategy to depth-first search (the
-     default) or breadth-first search.  This value can also be set with
-     :flag:`Typeclasses Iterative Deepening`.
+   + ``(dfs)``, ``(bfs)`` This sets the search strategy to depth-first
+     search (the default) or breadth-first search. The search strategy
+     can also be set with :flag:`Typeclasses Iterative Deepening`.
 
-   + ``depth`` This sets the depth limit of the search.  This value can also be set with
-     :opt:`Typeclasses Depth`.
+   + :token:`num` This sets the depth limit of the search. The depth
+     limit can also be set with :opt:`Typeclasses Depth`.
