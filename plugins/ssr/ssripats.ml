@@ -369,18 +369,20 @@ let tac_intro_seed interp_ipats fix = Goal.enter begin fun gl ->
 end end
 
 (*** [=> [: id]] ************************************************************)
-[@@@ocaml.warning "-3"]
 let mk_abstract_id =
   let open Coqlib in
   let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0 in
-begin fun () ->
+begin fun env sigma ->
+  let sigma, zero = EConstr.fresh_global env sigma (lib_ref "num.nat.O") in
+  let sigma, succ = EConstr.fresh_global env sigma (lib_ref "num.nat.S") in
   let rec nat_of_n n =
-    if n = 0 then EConstr.mkConstruct path_of_O
-    else EConstr.mkApp (EConstr.mkConstruct path_of_S, [|nat_of_n (n-1)|]) in
-  incr ssr_abstract_id; nat_of_n !ssr_abstract_id
+    if n = 0 then zero
+    else EConstr.mkApp (succ, [|nat_of_n (n-1)|]) in
+  incr ssr_abstract_id;
+  sigma, nat_of_n !ssr_abstract_id
 end
 
-let tcltclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
+let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
   let env, concl = Goal.(env gl, concl gl) in
   let step = begin fun sigma ->
     let (sigma, (abstract_proof, abstract_ty)) =
@@ -389,8 +391,8 @@ let tcltclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
       let (sigma, ablock) = Ssrcommon.mkSsrConst "abstract_lock" env sigma in
       let (sigma, lock) = Evarutil.new_evar env sigma ablock in
       let (sigma, abstract) = Ssrcommon.mkSsrConst "abstract" env sigma in
-      let abstract_ty =
-        EConstr.mkApp(abstract, [|ty;mk_abstract_id ();lock|]) in
+      let (sigma, abstract_id) = mk_abstract_id env sigma in
+      let abstract_ty = EConstr.mkApp(abstract, [|ty; abstract_id; lock|]) in
       let sigma, m = Evarutil.new_evar env sigma abstract_ty in
       sigma, (m, abstract_ty) in
     let sigma, kont =
@@ -409,7 +411,7 @@ end
 
 let tclMK_ABSTRACT_VARS ids =
   List.fold_right (fun id tac ->
-    Tacticals.New.tclTHENFIRST (tcltclMK_ABSTRACT_VAR id) tac) ids (tclUNIT ())
+    Tacticals.New.tclTHENFIRST (tclMK_ABSTRACT_VAR id) tac) ids (tclUNIT ())
 
 (* Debugging *)
 let tclLOG p t =
