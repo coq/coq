@@ -342,8 +342,13 @@ let repr eff = eff.seff
 let empty = { seff = []; elts = SeffSet.empty }
 let is_empty { seff; elts } = List.is_empty seff && SeffSet.is_empty elts
 let add x es =
-  if SeffSet.mem x es.elts then es
-  else { seff = x :: es.seff; elts = SeffSet.add x es.elts }
+  if SeffSet.mem x es.elts
+  then
+    CErrors.anomaly
+      Pp.(str "a tactic is creating side effects in an incorrect way: " ++ (Constant.print x.seff_constant))
+  else
+    { seff = x :: es.seff; elts = SeffSet.add x es.elts }
+
 let concat xes yes =
   List.fold_right add xes.seff yes
 
@@ -365,8 +370,11 @@ let lift_constant c =
 let push_private_constants env eff =
   let eff = side_effects_of_private_constants eff in
   let add_if_undefined env eff =
-    if Environ.mem_constant eff.seff_constant env then env
-    else Environ.add_constant eff.seff_constant (lift_constant eff.seff_body) env
+    if Environ.mem_constant eff.seff_constant env then
+      CErrors.anomaly
+        Pp.(str "a tactic is creating side effects in an incorrect way: " ++ (Constant.print eff.seff_constant))
+    else
+      Environ.add_constant eff.seff_constant (lift_constant eff.seff_body) env
   in
   List.fold_left add_if_undefined env eff
 
