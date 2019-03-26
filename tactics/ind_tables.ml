@@ -181,10 +181,7 @@ let define_mutual_scheme kind mode names mind =
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
-  s, Safe_typing.concat_private
-      (Safe_typing.private_con_of_scheme
-            ~kind (Global.safe_env()) [ind, s])
-      Safe_typing.empty_private_constants
+  s, Safe_typing.empty_private_constants
 
 let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
