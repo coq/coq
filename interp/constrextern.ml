@@ -752,6 +752,30 @@ let extended_glob_local_binder_of_decl loc = function
 let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_local_binder_of_decl loc u)
 
 (**********************************************************************)
+(* mapping special floats                                             *)
+
+(* this helper function is copied from notation.ml as it's not exported *)
+let qualid_of_ref n =
+  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+
+let q_infinity () = qualid_of_ref "num.float.infinity"
+let q_neg_infinity () = qualid_of_ref "num.float.neg_infinity"
+let q_nan () = qualid_of_ref "num.float.nan"
+
+let extern_float f scopes =
+  if Float64.is_nan f then CRef(q_nan (), None)
+  else if Float64.is_infinity f then CRef(q_infinity (), None)
+  else if Float64.is_neg_infinity f then CRef(q_neg_infinity (), None)
+  else
+    let sign = if Float64.sign f then SMinus else SPlus in
+    let s = Float64.(to_string (abs f)) in
+    match NumTok.of_string s with
+    | None -> assert false
+    | Some n ->
+       extern_prim_token_delimiter_if_required (Numeral (sign, n))
+       "float" "float_scope" scopes
+
+(**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
 
 let extern_glob_sort = function
@@ -972,8 +996,7 @@ let rec extern inctx scopes vars r =
        (Numeral (SPlus, NumTok.int (Uint63.to_string i)))
        "int63" "int63_scope" (snd scopes)
 
-  | GFloat f ->
-     CPrim(String (Float64.to_string f))
+  | GFloat f -> extern_float f (snd scopes)
 
   in insert_coercion coercion (CAst.make ?loc c)
 

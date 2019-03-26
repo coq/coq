@@ -14,6 +14,7 @@ Beware: NaNs have a sign and a payload, while they should be
 indistinguishable from Coq's perspective. *)
 type t
 
+(** Test functions for special values to avoid calling [classify] *)
 val is_nan : t -> bool
 val is_infinity : t -> bool
 val is_neg_infinity : t -> bool
@@ -24,6 +25,9 @@ val of_string : string -> t
 val compile : t -> string
 
 val of_float : float -> t
+
+(** Return [true] for "-", [false] for "+". *)
+val sign : t -> bool
 
 val opp : t -> t
 val abs : t -> t

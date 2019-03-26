@@ -57,11 +57,16 @@ Primitive next_down := #float64_next_down.
 
 Local Open Scope float_scope.
 
-(* Special values *)
+(* Special values, needed for pretty-printing *)
 Definition infinity := Eval compute in div (of_int63 1) (of_int63 0).
 Definition neg_infinity := Eval compute in opp infinity.
 Definition nan := Eval compute in div (of_int63 0) (of_int63 0).
 
+Register infinity as num.float.infinity.
+Register neg_infinity as num.float.neg_infinity.
+Register nan as num.float.nan.
+
+(* Other special values *)
 Definition one := Eval compute in (of_int63 1).
 Definition zero := Eval compute in (of_int63 0).
 Definition neg_zero := Eval compute in (-zero).

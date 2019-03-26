@@ -16,9 +16,14 @@ let is_nan f = f <> f
 let is_infinity f = f = infinity
 let is_neg_infinity f = f = neg_infinity
 
-(* OCaml give a sign to nan values which should not be displayed as all nan are
- * considered equal *)
-let to_string f = if is_nan f then "nan" else string_of_float f
+(* Printing a binary64 float in 17 decimal places and parsing it again
+   will yield the same float. We assume [to_string_raw] is not given a
+   [nan] as input. *)
+let to_string_raw f = Printf.sprintf "%.17g" f
+
+(* OCaml gives a sign to nan values which should not be displayed as
+   all NaNs are considered equal here *)
+let to_string f = if is_nan f then "nan" else to_string_raw f
 let of_string = float_of_string
 
 (* Compiles a float to OCaml code *)
@@ -29,6 +34,8 @@ let compile f =
   Printf.sprintf "Float64.of_float (%s)" s
 
 let of_float f = f
+
+let sign f = copysign 1. f < 0.
 
 let opp = ( ~-. )
 let abs = abs_float

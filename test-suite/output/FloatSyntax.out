@@ -1,0 +1,40 @@
+2%float
+     : float
+2.5%float
+     : float
+(-2.5)%float
+     : float
+2.5e+20%float
+     : float
+(-2.4999999999999999e-20)%float
+     : float
+(2 + 2)%float
+     : float
+(2.5 + 2.5)%float
+     : float
+2
+     : float
+2.5
+     : float
+-2.5
+     : float
+2.5e+20
+     : float
+-2.4999999999999999e-20
+     : float
+2 + 2
+     : float
+2.5 + 2.5
+     : float
+2
+     : nat
+2%float
+     : float
+t = 2%flt
+     : float
+t = 2%flt
+     : float
+2
+     : nat
+2
+     : float
