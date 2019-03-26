@@ -30,13 +30,15 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if ! git log master --grep "Merge PR #${PRNUM}" | grep "." > /dev/null; then
+MASTER=origin/master
+
+if ! git log $MASTER --grep "Merge PR #$PRNUM" | grep "." > /dev/null; then
     echo "PR #${PRNUM} does not exist."
     exit 1
 fi
 
-SIGNATURE_STATUS=$(git log master --grep "Merge PR #${PRNUM}" --format="%G?")
-git log master --grep "Merge PR #${PRNUM}" --format="%GG"
+SIGNATURE_STATUS=$(git log $MASTER --grep "Merge PR #$PRNUM" --format="%G?")
+git log $MASTER --grep "Merge PR #$PRNUM" --format="%GG"
 if [[ "$NO_SIGNATURE_CHECK" != "true" && "$SIGNATURE_STATUS" != "G" ]]; then
     echo
     read -p "Merge commit does not have a good (valid) signature. Bypass? [y/N] " -n 1 -r
@@ -47,10 +49,18 @@ if [[ "$NO_SIGNATURE_CHECK" != "true" && "$SIGNATURE_STATUS" != "G" ]]; then
 fi
 
 BRANCH=backport-pr-${PRNUM}
-RANGE=$(git log master --grep "Merge PR #${PRNUM}" --format="%P" | sed 's/ /../')
-MESSAGE=$(git log master --grep "Merge PR #${PRNUM}" --format="%s" | sed 's/Merge/Backport/')
+RANGE=$(git log $MASTER --grep "Merge PR #$PRNUM" --format="%P" | sed 's/ /../')
+MESSAGE=$(git log $MASTER --grep "Merge PR #$PRNUM" --format="%s" | sed 's/Merge/Backport/')
 
-if git checkout -b "${BRANCH}"; then
+if [[ "$(git rev-parse --abbrev-ref HEAD)" == "$BRANCH" ]]; then
+
+    if ! git cherry-pick --continue; then
+        echo "Please fix the conflicts, then relaunch the script."
+        exit 1
+    fi
+    git checkout -
+
+elif git checkout -b "$BRANCH"; then
 
     if ! git cherry-pick -x "${RANGE}"; then
         if [[ "$NO_CONFLICTS" == "true" ]]; then
@@ -61,12 +71,8 @@ if git checkout -b "${BRANCH}"; then
             git branch -d "$BRANCH"
             exit 1
         fi
-        echo "Please fix the conflicts, then exit."
-        bash
-        while ! git cherry-pick --continue; do
-            echo "Please fix the conflicts, then exit."
-            bash
-        done
+        echo "Please fix the conflicts, then relaunch the script."
+        exit 1
     fi
     git checkout -
 
