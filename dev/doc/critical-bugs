@@ -63,8 +63,8 @@ Typing constructions
   impacted coqchk versions: ?
   fixed in: master/trunk (679801, r13450, 23 Sep 2010, Glondu), v8.3 (309a53f2, r13449, 22 Sep 2010, Glondu), v8.2 (41ea5f08, r14263, 6 Jul 2011, Herbelin, backport)
   found by: Georgi Guninski
-  exploit: test-suite/bugs/closed/4294.v
-  GH issue number: #4294
+  exploit: test-suite/failure/prop_set_proof_irrelevance.v
+  GH issue number: none?
   risk: ?
 
 Module system
