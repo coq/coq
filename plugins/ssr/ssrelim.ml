@@ -255,31 +255,49 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   (* Here we try to understand if the main pattern/term the user gave is
    * the first pattern to be matched (i.e. if elimty ends in P t1 .. tn,
    * weather tn is the t the user wrote in 'elim: t' *)
-  let c_is_head_p, gl = match cty with
+  let c_is_head_p, gl =
+    match cty with
     | None -> true, gl  (* The user wrote elim: _ *)
     | Some (c, c_ty, _) ->
-    let res = 
-      (* we try to see if c unifies with the last arg of elim *)
-      if elim_is_dep then None else
-      let arg = List.assoc (n_elim_args - 1) elim_args in
-      let gl, arg_ty = pfe_type_of gl arg in
-      match saturate_until gl c c_ty (fun c c_ty gl ->
-        pf_unify_HO (pf_unify_HO gl c_ty arg_ty) arg c) with
-      | Some (c, _, _, gl) -> Some (false, gl)
-      | None -> None in
-    match res with
-    | Some x -> x
-    | None ->
-      (* we try to see if c unifies with the last inferred pattern *)
-      let inf_arg = List.hd inf_deps_r in
-      let gl, inf_arg_ty = pfe_type_of gl inf_arg in
-      match saturate_until gl c c_ty (fun _ c_ty gl ->
-              pf_unify_HO gl c_ty inf_arg_ty) with
-      | Some (c, _, _,gl) -> true, gl
-      | None ->
-        errorstrm Pp.(str"Unable to apply the eliminator to the term"++
-          spc()++pr_econstr_env env (project gl) c++spc()++str"or to unify it's type with"++
-          pr_econstr_env env (project gl) inf_arg_ty) in
+      let rec first = function
+        | [] ->
+          errorstrm Pp.(str"Unable to apply the eliminator to the term"++
+            spc()++pr_econstr_env env (project gl) c++spc())
+        | x :: rest ->
+          match x () with
+          | None -> first rest
+          | Some (b,gl) -> b, gl
+      in
+      (* Unify two terms if their heads are not applied unif variables, eg
+       * not (?P x). The idea is to rule out cases where the problem is too
+       * vague to drive the current heuristics. *)
+      let pf_unify_HO_rigid gl a b =
+        let is_applied_evar x = match EConstr.kind (project gl) x with
+          | App(x,_) -> EConstr.isEvar (project gl) x
+          | _ -> false in
+        if is_applied_evar a || is_applied_evar b then
+          raise Evarconv.(UnableToUnify(project gl,
+                   Pretype_errors.ProblemBeyondCapabilities))
+        else pf_unify_HO gl a b in
+      let try_c_last_arg () =
+        (* we try to see if c unifies with the last arg of elim *)
+        if elim_is_dep then None else
+        let arg = List.assoc (n_elim_args - 1) elim_args in
+        let gl, arg_ty = pfe_type_of gl arg in
+        match saturate_until gl c c_ty (fun c c_ty gl ->
+          pf_unify_HO (pf_unify_HO_rigid gl c_ty arg_ty) arg c) with
+        | Some (c, _, _, gl) -> Some (false, gl)
+        | None -> None in
+      let try_c_last_pattern () =
+        (* we try to see if c unifies with the last inferred pattern *)
+        if inf_deps_r = [] then None else
+        let inf_arg = List.hd inf_deps_r in
+        let gl, inf_arg_ty = pfe_type_of gl inf_arg in
+        match saturate_until gl c c_ty (fun _ c_ty gl ->
+                pf_unify_HO_rigid gl c_ty inf_arg_ty) with
+        | Some (c, _, _,gl) -> Some(true, gl)
+        | None -> None in
+      first [try_c_last_arg;try_c_last_pattern] in
   ppdebug(lazy Pp.(str"c_is_head_p= " ++ bool c_is_head_p));
   let gl, predty = pfe_type_of gl pred in
   (* Patterns for the inductive types indexes to be bound in pred are computed
