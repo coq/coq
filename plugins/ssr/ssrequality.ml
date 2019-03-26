@@ -325,7 +325,7 @@ let rec strip_prod_assum c = match Constr.kind c with
 
 let rule_id = mk_internal_id "rewrite rule"
 
-exception PRtype_error
+exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_error) option
 
 let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
 (*   ppdebug(lazy(str"sigma@pirrel_rewrite=" ++ pr_evar_map None sigma)); *)
@@ -351,7 +351,10 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
   let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in
   (* We check the proof is well typed *)
   let sigma, proof_ty =
-    try Typing.type_of env sigma proof with _ -> raise PRtype_error in
+    try Typing.type_of env sigma proof with
+    | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
+    | e when CErrors.noncritical e -> raise (PRtype_error None)
+  in
   ppdebug(lazy Pp.(str"pirrel_rewrite proof term of type: " ++ pr_econstr_env env sigma proof_ty));
   try refine_with 
     ~first_goes_last:(not !ssroldreworder) ~with_evars:false (sigma, proof) gl
@@ -423,13 +426,17 @@ let rwcltac cl rdx dir sr gl =
   in
   let cvtac' _ =
     try cvtac gl with
-    | PRtype_error ->
+    | PRtype_error e ->
+      let error = Option.cata (fun (env, sigma, te) ->
+          Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
+          (Pp.mt ()) e in
       if occur_existential (project gl) (Tacmach.pf_concl gl)
-      then errorstrm Pp.(str "Rewriting impacts evars")
+      then errorstrm Pp.(str "Rewriting impacts evars" ++ error)
       else errorstrm Pp.(str "Dependent type error in rewrite of "
         ++ pr_constr_env (pf_env gl) (project gl)
           (Term.mkNamedLambda (make_annot pattern_id Sorts.Relevant)
-             (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl)))
+             (EConstr.Unsafe.to_constr rdxt) (EConstr.Unsafe.to_constr cl))
+        ++ error)
   in
   tclTHEN cvtac' rwtac gl
 
