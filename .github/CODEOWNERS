@@ -240,8 +240,7 @@ azure-pipelines.yml @coq/ci-maintainers
 
 /theories/QArith/         @herbelin
 
-/theories/Reals/          @silene
-# Secondary maintainer @ppedrot
+/theories/Reals/          @coq/reals-library-maintainers
 
 /theories/Relations/      @mattam82
 # Secondary maintainer @ppedrot
