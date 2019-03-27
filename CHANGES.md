@@ -153,6 +153,9 @@ Vernacular commands
 
 - The `Show Script` command has been deprecated.
 
+- Option `Refine Instance Mode` has been deprecated and will be removed in
+  the next version.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

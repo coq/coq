@@ -561,6 +561,8 @@ Settings
 
 .. flag:: Refine Instance Mode
 
+   .. deprecated:: 8.10
+
    This flag allows to switch the behavior of instance declarations made through
    the Instance command.
 
