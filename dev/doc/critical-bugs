@@ -63,8 +63,8 @@ Typing constructions
   impacted coqchk versions: ?
   fixed in: master/trunk (679801, r13450, 23 Sep 2010, Glondu), v8.3 (309a53f2, r13449, 22 Sep 2010, Glondu), v8.2 (41ea5f08, r14263, 6 Jul 2011, Herbelin, backport)
   found by: Georgi Guninski
-  exploit: test-suite/bugs/closed/4294.v
-  GH issue number: #4294
+  exploit: test-suite/failure/prop_set_proof_irrelevance.v
+  GH issue number: none?
   risk: ?
 
 Module system
@@ -77,7 +77,7 @@ Module system
   impacted coqchk versions: ?
   fixed in: master/trunk (d4869e059, 2 Oct 2015, Sozeau), v8.4 (40350ef3b, 9 Sep 2015, Sozeau)
   found by: Dénès
-  exploit: test-suite/bugs/closed/4294.v
+  exploit: test-suite/bugs/closed/bug_4294.v
   GH issue number: #4294
   risk: ?
 
@@ -105,7 +105,7 @@ Universes
   impacted coqchk versions: ?
   fixed in: trunk/master/v8.4 (8082d1faf, 5 Oct 2011, Herbelin), V8.3pl3 (bb582bca2, 5 Oct 2011, Herbelin), v8.2 branch (3333e8d3, 5 Oct 2011, Herbelin), v8.1 branch (a8fc2027, 5 Oct 2011, Herbelin), 
   found by: Barras
-  exploit: test-suite/failure/inductive4.v
+  exploit: test-suite/failure/inductive.v
   GH issue number: none
   risk: unlikely to be activated by chance
 
@@ -141,7 +141,7 @@ Primitive projections
   impacted coqchk versions: ?
   fixed in: trunk/master/v8.5 (120053a50, 4 Mar 2016, Dénès)
   found by: Dénès exploiting bug #4588
-  exploit: test-suite/bugs/closed/4588.v
+  exploit: test-suite/bugs/closed/bug_4588.v
   GH issue number: #4588
   risk: ?
 
@@ -167,7 +167,7 @@ Conversion machines
   impacted coqchk versions: none (no virtual machine in coqchk)
   fixed in: master/trunk/v8.5 (00894adf6/596a4a525, 26-39 Mar 2015, Grégoire), v8.4 (cd2101a39, 1 Apr 2015, Grégoire), v8.3 (a0c7fc05b, 1 Apr 2015, Grégoire), v8.2 (2c6189f61, 1 Apr 2015, Grégoire), v8.1 (bb877e5b5, 29 Nov 2015, Herbelin, backport)
   found by: Dénès, Pédrot
-  exploit: test-suite/failure/vm-bug4157.v
+  exploit: test-suite/bugs/closed/bug_4157.v
   GH issue number: #4157
   risk: 
 
@@ -179,7 +179,7 @@ Conversion machines
   impacted coqchk versions: none (no virtual machine in coqchk)
   fixed in: master (c9f3a6cbe, 12 Feb 2018, PR#6713, Dénès), v8.7 (c058a4182, 15 Feb 2018, Zimmermann, backport), v8.6 (a2cc54c64, 21 Feb 2018, Herbelin, backport), v8.5 (d4d550d0f, 21 Feb 2018, Herbelin, backport)
   found by: Dénès
-  exploit: test-suite/bugs/closed/6677.v
+  exploit: test-suite/bugs/closed/bug_6677.v
   GH issue number: #6677
   risk: 
 
@@ -203,7 +203,7 @@ Conversion machines
   impacted coqchk versions: none (no native computation in coqchk)
   fixed in: master/trunk/v8.6 (244d7a9aa, 19 May 2016, letouzey), v8.5 (088b3161c, 19 May 2016, letouzey), 
   found by: Letouzey, Dénès
-  exploit: lost?
+  exploit: see commit message for 244d7a9aa
   GH issue number: ?
   risk: 
 
