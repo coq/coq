@@ -140,7 +140,7 @@ let define internal id c poly univs =
   in
   kn
 
-let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
+let define_individual_scheme_base ~static kind suff f mode idopt (mind,i as ind) =
   let (c, ctx), eff = f mode ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
@@ -148,50 +148,59 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let const = define mode id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
-  const, Safe_typing.concat_private
-     (Safe_typing.private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff
+  let seff = if static
+    then eff
+    else Safe_typing.(
+        concat_private
+          (private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff) in
+  const, seff
 
-let define_individual_scheme kind mode names (mind,i as ind) =
+let define_individual_scheme ~static kind mode names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
-  | _,MutualSchemeFunction f -> assert false
-  | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f mode names ind
+  | _, MutualSchemeFunction f ->
+    assert false
+  | s, IndividualSchemeFunction f ->
+    define_individual_scheme_base ~static kind s f mode names ind
 
-let define_mutual_scheme_base kind suff f mode names mind =
+let define_mutual_scheme_base ~static kind suff f mode names mind =
   let (cl, ctx), eff = f mode mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-  let consts = Array.map2 (fun id cl -> 
+  let consts = Array.map2 (fun id cl ->
      define mode id cl (Declareops.inductive_is_polymorphic mib) ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
-  consts,
-  Safe_typing.concat_private
-    (Safe_typing.private_con_of_scheme
-      ~kind (Global.safe_env()) (Array.to_list schemes))
-    eff 
+  let seff = if static
+    then eff
+    else Safe_typing.(
+        concat_private
+          (private_con_of_scheme
+             ~kind (Global.safe_env()) (Array.to_list schemes))) eff in
+  consts, seff
 
-let define_mutual_scheme kind mode names mind =
+let define_mutual_scheme ~static kind mode names mind =
   match Hashtbl.find scheme_object_table kind with
-  | _,IndividualSchemeFunction _ -> assert false
-  | s,MutualSchemeFunction f ->
-      define_mutual_scheme_base kind s f mode names mind
+  | _, IndividualSchemeFunction _ ->
+    assert false
+  | s, MutualSchemeFunction f ->
+    define_mutual_scheme_base ~static kind s f mode names mind
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
   s, Safe_typing.empty_private_constants
 
-let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
+let find_scheme ?(mode=InternalTacticRequest) ~static kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
   with Not_found ->
+  (* XXX: Deprecate on the fly creation *)
   match Hashtbl.find scheme_object_table kind with
-  | s,IndividualSchemeFunction f ->
-      define_individual_scheme_base kind s f mode None ind
-  | s,MutualSchemeFunction f ->
-      let ca, eff = define_mutual_scheme_base kind s f mode [] mind in
-      ca.(i), eff
+  | s, IndividualSchemeFunction f ->
+    define_individual_scheme_base ~static kind s f mode None ind
+  | s, MutualSchemeFunction f ->
+    let ca, eff = define_mutual_scheme_base ~static kind s f mode [] mind in
+    ca.(i), eff
 
 let check_scheme kind ind =
   try let _ = find_scheme_on_env_too kind ind in true

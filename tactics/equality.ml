@@ -395,11 +395,10 @@ let find_elim hdcncl lft2rgt dep cls ot =
     | true, _, false -> rew_r2l_forward_dep_scheme_kind
   in
   match EConstr.kind sigma hdcncl with
-  | Ind (ind,u) -> 
-      
-      let c, eff = find_scheme scheme_name ind in 
-      Proofview.tclEFFECTS eff <*>
-        pf_constr_of_global (ConstRef c) 
+  | Ind (ind,u) ->
+    let c, eff = find_scheme ~static:false scheme_name ind in
+    Proofview.tclEFFECTS eff <*>
+    pf_constr_of_global (ConstRef c)
   | _ -> assert false
   end
 
@@ -990,8 +989,8 @@ let ind_scheme_of_eq lbeq =
   let kind =
     if kind == InProp then Elimschemes.ind_scheme_kind_from_prop
     else Elimschemes.ind_scheme_kind_from_type in
-  let c, eff = find_scheme kind (destIndRef lbeq.eq) in
-    ConstRef c, eff
+  let c, eff = find_scheme ~static:false kind (destIndRef lbeq.eq) in
+  ConstRef c, eff
 
 
 let discrimination_pf e (t,t1,t2) discriminator lbeq =
@@ -1348,7 +1347,7 @@ let inject_if_homogenous_dependent_pair ty =
     check_required_library ["Coq";"Logic";"Eqdep_dec"];
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = lib_ref "core.eqdep_dec.inj_pair2" in
-    let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
+    let c, eff = find_scheme ~static:false (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
       [Proofview.tclEFFECTS eff;

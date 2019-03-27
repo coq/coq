@@ -211,7 +211,8 @@ let build_beq_scheme mode kn =
             else begin
               try
                 let eq, eff =
-                  let c, eff = find_scheme ~mode (!beq_scheme_kind_aux()) (kn',i) in
+                  let c, eff =
+                    find_scheme ~static:true ~mode (!beq_scheme_kind_aux()) (kn',i) in
                   mkConst c, eff in
                 let eqa, eff =
                   let eqa, effs = List.split (List.map aux a) in
@@ -401,7 +402,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
     let u,v = destruct_ind env sigma type_of_pq
     in let lb_type_of_p =
         try
-          let c, eff = find_scheme ~mode lb_scheme_key (fst u) (*FIXME*) in
+          let c, eff = find_scheme ~static:true ~mode lb_scheme_key (fst u) (*FIXME*) in
           Proofview.tclUNIT (mkConst c, eff)
         with Not_found ->
           (* spiwack: the format of this error message should probably
@@ -471,7 +472,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
              else (
                let bl_t1, eff =
                try 
-                 let c, eff = find_scheme bl_scheme_key (fst u) (*FIXME*) in
+                 let c, eff = find_scheme ~static:true bl_scheme_key (fst u) (*FIXME*) in
                  mkConst c, eff
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
@@ -548,7 +549,7 @@ let eqI ind l =
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
   and e, eff = 
-    try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
+    try let c, eff = find_scheme ~static:true beq_scheme_kind ind in mkConst c, eff
     with Not_found -> user_err ~hdr:"AutoIndDecl.eqI"
       (str "The boolean equality on " ++ Printer.pr_inductive (Global.env ()) ind ++ str " is needed.");
   in (if Array.equal Constr.equal eA [||] then e else mkApp(e,eA)), eff
@@ -927,13 +928,13 @@ let compute_dec_tact ind lnamesparrec nparrec =
   let arfresh = Array.of_list fresh_first_intros in
   let xargs = Array.sub arfresh 0 (2*nparrec) in
   begin try
-          let c, eff = find_scheme bl_scheme_kind ind in
+          let c, eff = find_scheme ~static:true bl_scheme_kind ind in
           Proofview.tclUNIT (mkConst c,eff) with
     Not_found ->
       Tacticals.New.tclZEROMSG (str "Error during the decidability part, boolean to leibniz equality is required.")
   end >>= fun (blI,eff') ->
   begin try
-          let c, eff = find_scheme lb_scheme_kind ind in
+          let c, eff = find_scheme ~static:true lb_scheme_kind ind in
           Proofview.tclUNIT (mkConst c,eff) with
     Not_found ->
       Tacticals.New.tclZEROMSG (str "Error during the decidability part, leibniz to boolean equality is required.")

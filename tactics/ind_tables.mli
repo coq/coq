@@ -23,6 +23,7 @@ type 'a scheme_kind
 
 type mutual_scheme_object_function =
   internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
+
 type individual_scheme_object_function =
   internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
 
@@ -37,17 +38,29 @@ val declare_individual_scheme_object : string -> ?aux:string ->
 
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
-val define_individual_scheme : individual scheme_kind -> 
-  internal_flag (** internal *) ->
-  Id.t option -> inductive -> Constant.t * Safe_typing.private_constants
+val define_individual_scheme
+  :  static:bool
+  -> individual scheme_kind
+  -> internal_flag (** internal *)
+  -> Id.t option
+  -> inductive -> Constant.t * Safe_typing.private_constants
 
-val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
-  (int * Id.t) list -> MutInd.t -> Constant.t array * Safe_typing.private_constants
+val define_mutual_scheme
+  :  static:bool
+  -> mutual scheme_kind
+  -> internal_flag (** internal *)
+  -> (int * Id.t) list
+  -> MutInd.t
+  -> Constant.t array * Safe_typing.private_constants
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> Constant.t * Safe_typing.private_constants
+val find_scheme
+  :  ?mode:internal_flag
+  -> static:bool                (* whether the scheme has been generated dynamically *)
+  -> 'a scheme_kind
+  -> inductive
+  -> Constant.t * Safe_typing.private_constants
 
 val check_scheme : 'a scheme_kind -> inductive -> bool
-
 
 val pr_scheme_kind : 'a scheme_kind -> Pp.t

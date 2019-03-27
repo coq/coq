@@ -958,7 +958,7 @@ let fold_match ?(force=false) env sigma c =
     in 
     let exists = Ind_tables.check_scheme sk ci.ci_ind in
       if exists || force then
-	dep, pred, exists, Ind_tables.find_scheme sk ci.ci_ind
+        dep, pred, exists, Ind_tables.find_scheme ~static:false sk ci.ci_ind
       else raise Not_found
   in
   let app =

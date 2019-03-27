@@ -121,7 +121,7 @@ let define ~poly id internal sigma c t =
 (* Boolean equality *)
 
 let declare_beq_scheme_gen internal names kn =
-  ignore (define_mutual_scheme beq_scheme_kind internal names kn)
+  ignore (define_mutual_scheme ~static:true beq_scheme_kind internal names kn)
 
 let alarm what internal msg =
   let debug = false in
@@ -221,7 +221,7 @@ let declare_one_case_analysis_scheme ind =
        induction scheme, the other ones share the same code with the
        apropriate type *)
   if Sorts.List.mem InType kelim then
-    ignore (define_individual_scheme dep UserAutomaticRequest None ind)
+    ignore (define_individual_scheme ~static:true dep UserAutomaticRequest None ind)
 
 (* Induction/recursion schemes *)
 
@@ -258,7 +258,7 @@ let declare_one_induction_scheme ind =
       (if from_prop then kinds_from_prop
        else if depelim then kinds_from_type
        else nondep_kinds_from_type) in
-  List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
+  List.iter (fun kind -> ignore (define_individual_scheme ~static:true kind UserAutomaticRequest None ind))
     elims
 
 let declare_induction_schemes kn =
@@ -274,7 +274,7 @@ let declare_induction_schemes kn =
 let declare_eq_decidability_gen internal names kn =
   let mib = Global.lookup_mind kn in
   if mib.mind_finite <> Declarations.CoFinite then
-    ignore (define_mutual_scheme eq_dec_scheme_kind internal names kn)
+    ignore (define_mutual_scheme ~static:true eq_dec_scheme_kind internal names kn)
 
 let eq_dec_scheme_msg ind = (* TODO: mutual inductive case *)
   str "Decidable equality on " ++ quote (Printer.pr_inductive (Global.env()) ind)
@@ -294,17 +294,17 @@ let ignore_error f x =
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
-    ignore (define_individual_scheme rew_r2l_scheme_kind UserAutomaticRequest None ind);
-    ignore (define_individual_scheme rew_r2l_dep_scheme_kind UserAutomaticRequest None ind);
-    ignore (define_individual_scheme rew_r2l_forward_dep_scheme_kind
+    ignore (define_individual_scheme ~static:true rew_r2l_scheme_kind UserAutomaticRequest None ind);
+    ignore (define_individual_scheme ~static:true rew_r2l_dep_scheme_kind UserAutomaticRequest None ind);
+    ignore (define_individual_scheme ~static:true rew_r2l_forward_dep_scheme_kind
       UserAutomaticRequest None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind UserAutomaticRequest None) ind;
+    ignore_error (define_individual_scheme ~static:true rew_l2r_scheme_kind UserAutomaticRequest None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind UserAutomaticRequest None) ind;
+      (define_individual_scheme ~static:true rew_l2r_dep_scheme_kind UserAutomaticRequest None) ind;
     ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
+      (define_individual_scheme ~static:true rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
   end
 
 let warn_cannot_build_congruence =
@@ -320,7 +320,7 @@ let declare_congr_scheme ind =
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
     then
-      ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)
+      ignore (define_individual_scheme ~static:true congr_scheme_kind UserAutomaticRequest None ind)
     else
       warn_cannot_build_congruence ()
   end
@@ -328,7 +328,7 @@ let declare_congr_scheme ind =
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind UserAutomaticRequest None) ind
+    ignore_error (define_individual_scheme ~static:true sym_scheme_kind UserAutomaticRequest None) ind
 
 (* Scheme command *)
 

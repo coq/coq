@@ -31,7 +31,7 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        apropriate type *)
-    let cte, eff = find_scheme kind ind in
+    let cte, eff = find_scheme ~static:true kind ind in
     let sigma, cte = Evd.fresh_constant_instance env sigma cte in
     let c = mkConstU cte in
     let t = type_of_constant_in (Global.env()) cte in
