@@ -289,9 +289,6 @@ let try_declare_eq_decidability kn =
 
 let declare_eq_decidability = declare_eq_decidability_scheme_with []
 
-let ignore_error f x =
-  try ignore (f x) with e when CErrors.noncritical e -> ()
-
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
     ignore (define_individual_scheme rew_r2l_scheme_kind UserAutomaticRequest None ind);
@@ -300,11 +297,9 @@ let declare_rewriting_schemes ind =
       UserAutomaticRequest None ind);
     (* These ones expect the equality to be symmetric; the first one also *)
     (* needs eq *)
-    ignore_error (define_individual_scheme rew_l2r_scheme_kind UserAutomaticRequest None) ind;
-    ignore_error
-      (define_individual_scheme rew_l2r_dep_scheme_kind UserAutomaticRequest None) ind;
-    ignore_error
-      (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None) ind
+    ignore (define_individual_scheme rew_l2r_scheme_kind UserAutomaticRequest None ind);
+    ignore (define_individual_scheme rew_l2r_dep_scheme_kind UserAutomaticRequest None ind);
+    ignore (define_individual_scheme rew_l2r_forward_dep_scheme_kind UserAutomaticRequest None ind)
   end
 
 let warn_cannot_build_congruence =
@@ -326,7 +321,7 @@ let declare_congr_scheme ind =
 let declare_sym_scheme ind =
   if Hipattern.is_inductive_equality ind then
     (* Expect the equality to be symmetric *)
-    ignore_error (define_individual_scheme sym_scheme_kind UserAutomaticRequest None) ind
+    ignore (define_individual_scheme sym_scheme_kind UserAutomaticRequest None ind)
 
 (* Scheme command *)
 
