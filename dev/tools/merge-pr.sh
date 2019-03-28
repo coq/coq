@@ -73,10 +73,10 @@ fi
 
 PRDATA=$(curl -s "$API/pulls/$PR")
 
-TITLE=$(echo "$PRDATA" | jq -r '.title')
+TITLE=$(echo "$PRDATA" | jq -r '.title' | tr -d "\r")
 info "title for PR $PR is ${BLUE}$TITLE"
 
-BASE_BRANCH=$(echo "$PRDATA" | jq -r '.base.label')
+BASE_BRANCH=$(echo "$PRDATA" | jq -r '.base.label' | tr -d "\r")
 info "PR $PR targets branch ${BLUE}$BASE_BRANCH"
 
 CURRENT_LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -143,7 +143,7 @@ fi
 
 # Sanity check: PR has an outdated version of CI
 
-BASE_COMMIT=$(echo "$PRDATA" | jq -r '.base.sha')
+BASE_COMMIT=$(echo "$PRDATA" | jq -r '.base.sha' | tr -d "\r")
 CI_FILES=(".gitlab-ci.yml" "azure-pipelines.yml")
 
 if ! git diff --quiet "$BASE_COMMIT" "$LOCAL_BRANCH_COMMIT" -- "${CI_FILES[@]}"
@@ -163,15 +163,15 @@ fi
 
 STATUS=$(curl -s "$API/commits/$COMMIT/status")
 
-if [ "$(echo "$STATUS" | jq -r '.state')" != "success" ]; then
+if [ "$(echo "$STATUS" | jq -r '.state' | tr -d "\r")" != "success" ]; then
   error "CI unsuccessful on ${BLUE}$(echo "$STATUS" |
-    jq -r -c '.statuses|map(select(.state != "success"))|map(.context)')"
+    jq -r -c '.statuses|map(select(.state != "success"))|map(.context)' | tr -d "\r")"
   ask_confirmation
 fi;
 
 # Sanity check: has labels named "needs:"
 
-NEEDS_LABELS=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)')
+NEEDS_LABELS=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)' | tr -d "\r")
 if [ "$NEEDS_LABELS" != "[]" ]; then
   error "needs:something labels still present: ${BLUE}$NEEDS_LABELS"
   ask_confirmation
@@ -179,7 +179,7 @@ fi
 
 # Sanity check: has milestone
 
-MILESTONE=$(echo "$PRDATA" | jq -rc '.milestone.title')
+MILESTONE=$(echo "$PRDATA" | jq -rc '.milestone.title' | tr -d "\r")
 if [ "$MILESTONE" = "null" ]; then
   error "no milestone set, please set one"
   ask_confirmation
@@ -187,7 +187,7 @@ fi
 
 # Sanity check: has kind
 
-KIND=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("kind:"))) | map(.name)')
+KIND=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("kind:"))) | map(.name)' | tr -d "\r")
 if [ "$KIND" = "[]" ]; then
   error "no kind:something label set, please set one"
   ask_confirmation
@@ -206,10 +206,10 @@ reviews=$(curl -s "$API/pulls/$PR/reviews")
 msg="Merge PR #$PR: $TITLE"
 
 has_state() {
-    [ "$(jq -rc 'map(select(.user.login == "'"$1"'") | .state) | any(. == "'"$2"'")' <<< "$reviews")" = true ]
+    [ "$(jq -rc 'map(select(.user.login == "'"$1"'") | .state) | any(. == "'"$2"'")' <<< "$reviews" | tr -d '\r')" = true ]
 }
 
-for reviewer in $(jq -rc 'map(.user.login) | unique | join(" ")' <<< "$reviews" ); do
+for reviewer in $(jq -rc 'map(.user.login) | unique | join(" ")' <<< "$reviews" | tr -d "\r" ); do
     if has_state "$reviewer" APPROVED; then
         msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Reviewed-by="$reviewer")
     elif has_state "$reviewer" COMMENTED; then
