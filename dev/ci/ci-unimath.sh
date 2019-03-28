@@ -3,6 +3,6 @@
 ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
-git_download UniMath
+git_download unimath
 
-( cd "${CI_BUILD_DIR}/UniMath" && make BUILD_COQ=no )
+( cd "${CI_BUILD_DIR}/unimath" && make BUILD_COQ=no )

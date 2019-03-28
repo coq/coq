@@ -24,9 +24,9 @@
 ########################################################################
 # UniMath
 ########################################################################
-: "${UniMath_CI_REF:=master}"
-: "${UniMath_CI_GITURL:=https://github.com/UniMath/UniMath}"
-: "${UniMath_CI_ARCHIVEURL:=${UniMath_CI_GITURL}/archive}"
+: "${unimath_CI_REF:=master}"
+: "${unimath_CI_GITURL:=https://github.com/UniMath/UniMath}"
+: "${unimath_CI_ARCHIVEURL:=${unimath_CI_GITURL}/archive}"
 
 ########################################################################
 # Unicoq + Mtac2
