@@ -324,8 +324,6 @@ unfold cos_approx; simpl; unfold cos_term.
 rewrite !INR_IZR_INZ.
 simpl.
 field_simplify.
-unfold Rdiv.
-rewrite Rmult_0_l.
 apply Rdiv_lt_0_compat ; now apply IZR_lt.
 Qed.
 
@@ -1612,4 +1610,3 @@ Lemma PI_ineq :
 Proof.
 intros; rewrite <- Alt_PI_eq; apply Alt_PI_ineq.
 Qed.
-
