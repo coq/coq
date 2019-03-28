@@ -55,6 +55,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       Pretyping.fail_evar = false;
       Pretyping.expand_evars = true;
       Pretyping.program_mode = false;
+      Pretyping.polymorphic = false;
     } in
     try Pretyping.understand_ltac flags
       env sigma ltac_var (Pretyping.OfType evi.evar_concl) rawc

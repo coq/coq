@@ -456,7 +456,7 @@ let obligation_substitution expand prg =
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
-let declare_definition prg =
+let declare_definition ~ontop prg =
   let varsubst = obligation_substitution true prg in
   let body, typ = subst_prog varsubst prg in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst (fun x -> None)
@@ -475,7 +475,7 @@ let declare_definition prg =
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition prg.prg_name
+  DeclareDef.declare_definition ~ontop prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
@@ -554,16 +554,14 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4
-      (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
-      fixnames fixdecls fixtypes fiximps
-  in
-  (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
-  Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
-  let gr = List.hd kns in
-  Lemmas.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
-  List.iter progmap_remove l; gr
+  let kns = List.map4 (DeclareDef.declare_fix ~ontop:None ~opaque (local, poly, kind) UnivNames.empty_binders univs)
+    fixnames fixdecls fixtypes fiximps in
+    (* Declare notations *)
+    List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
+    Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
+    let gr = List.hd kns in
+    Lemmas.call_hook ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
+    List.iter progmap_remove l; gr
 
 let decompose_lam_prod c ty =
   let open Context.Rel.Declaration in
@@ -763,7 +761,7 @@ let update_obls prg obls rem =
     else (
       match prg'.prg_deps with
       | [] ->
-	  let kn = declare_definition prg' in
+          let kn = declare_definition ~ontop:None prg' in
 	    progmap_remove prg';
 	    Defined kn
       | l ->
@@ -948,7 +946,7 @@ let obligation_hook prg obl num auto ctx' _ _ gr =
       ignore (auto (Some prg.prg_name) None deps)
   end
 
-let rec solve_obligation prg num tac =
+let rec solve_obligation ~ontop prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
@@ -967,20 +965,21 @@ let rec solve_obligation prg num tac =
   let auto n tac oblset = auto_solve_obligations n ~oblset tac in
   let terminator ?hook guard =
     Proof_global.make_terminator
-      (obligation_terminator ?hook prg.prg_name num guard auto) in
+      (obligation_terminator prg.prg_name num guard ?hook auto) in
   let hook = Lemmas.mk_hook (obligation_hook prg obl num auto) in
-  let () = Lemmas.start_proof ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
-  let _ = Pfedit.by !default_tactic in
-  Option.iter (fun tac -> Proof_global.set_endline_tactic tac) tac
+  let pstate = Lemmas.start_proof ~ontop ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~terminator ~hook in
+  let pstate = fst @@ Pfedit.by !default_tactic pstate in
+  let pstate = Option.cata (fun tac -> Proof_global.set_endline_tactic tac pstate) pstate tac in
+  pstate
 
-and obligation (user_num, name, typ) tac =
+and obligation ~ontop (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
     if num >= 0 && num < Array.length obls then
       let obl = obls.(num) in
 	match obl.obl_body with
-	    None -> solve_obligation prg num tac
+          | None -> solve_obligation ~ontop prg num tac
 	  | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
 
@@ -1113,7 +1112,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
-    let cst = declare_definition prg in
+    let cst = declare_definition ~ontop:None prg in
       Defined cst)
   else (
     let len = Array.length obls in
@@ -1180,7 +1179,7 @@ let admit_obligations n =
     let prg = get_prog_err n in
     admit_prog prg
 
-let next_obligation n tac =
+let next_obligation ~ontop n tac =
   let prg = match n with
   | None -> get_any_prog_err ()
   | Some _ -> get_prog_err n
@@ -1191,7 +1190,7 @@ let next_obligation n tac =
   | Some i -> i
   | None -> anomaly (Pp.str "Could not find a solvable obligation.")
   in
-  solve_obligation prg i tac
+  solve_obligation ~ontop prg i tac
 
 let check_program_libraries () =
   Coqlib.check_required_library Coqlib.datatypes_module_name;

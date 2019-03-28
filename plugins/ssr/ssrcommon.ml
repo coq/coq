@@ -246,6 +246,7 @@ let interp_refine ist gl rc =
     fail_evar = false;
     expand_evars = true;
     program_mode = false;
+    polymorphic = false;
   }
   in
   let sigma, c = Pretyping.understand_ltac flags (pf_env gl) (project gl) vars kind rc in
@@ -1175,7 +1176,7 @@ let genstac (gens, clr) =
   tclTHENLIST (old_cleartac clr :: List.rev_map gentac gens)
 
 let gen_tmp_ids
-  ?(ist=Geninterp.({ lfun = Id.Map.empty; extra = Tacinterp.TacStore.empty })) gl
+  ?(ist=Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })) gl
 =
   let gl, ctx = pull_ctx gl in
   push_ctxs ctx
@@ -1232,7 +1233,7 @@ let abs_wgen keep_let f gen (gl,args,c) =
   let evar_closed t p =
     if occur_existential sigma t then
       CErrors.user_err ?loc:(loc_of_cpattern p) ~hdr:"ssreflect"
-        (pr_constr_pat env sigma (EConstr.Unsafe.to_constr t) ++
+        (pr_econstr_pat env sigma t ++
         str" contains holes and matches no subterm of the goal") in
   match gen with
   | _, Some ((x, mode), None) when mode = "@" || (mode = " " && keep_let) ->

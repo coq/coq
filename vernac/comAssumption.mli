@@ -17,8 +17,13 @@ open Decl_kinds
 
 (** {6 Parameters/Assumptions} *)
 
-val do_assumptions : program_mode:bool -> locality * polymorphic * assumption_object_kind ->
-  Declaremods.inline -> (ident_decl list * constr_expr) with_coercion list -> bool
+val do_assumptions
+  :  pstate:Proof_global.t option
+  -> program_mode:bool
+  -> locality * polymorphic * assumption_object_kind
+  -> Declaremods.inline
+  -> (ident_decl list * constr_expr) with_coercion list
+  -> bool
 
 (************************************************************************)
 (** Internal API  *)
@@ -28,10 +33,16 @@ val do_assumptions : program_mode:bool -> locality * polymorphic * assumption_ob
 
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
-val declare_assumption : coercion_flag -> assumption_kind ->
-  types in_universes_entry ->
-  UnivNames.universe_binders -> Impargs.manual_implicits ->
-  bool (** implicit *) -> Declaremods.inline -> variable CAst.t ->
-  GlobRef.t * Univ.Instance.t * bool
+val declare_assumption
+  :  pstate:Proof_global.t option
+  -> coercion_flag
+  -> assumption_kind
+  -> types in_universes_entry
+  -> UnivNames.universe_binders
+  -> Impargs.manual_implicits
+  -> bool (** implicit *)
+  -> Declaremods.inline
+  -> variable CAst.t
+  -> GlobRef.t * Univ.Instance.t * bool
 
 val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit

@@ -17,7 +17,6 @@
 (***********************************************************************)
 
 open Util
-open Pp
 open Names
 open Context
 
@@ -55,108 +54,66 @@ type pstate = {
   strength : Decl_kinds.goal_kind;
 }
 
-type t = pstate list
+(* The head of [t] is the actual current proof, the other ones are
+   to be resumed when the current proof is closed or aborted. *)
+type t = pstate * pstate list
+
+let pstate_map f (pf, pfl) = (f pf, List.map f pfl)
 
 let make_terminator f = f
 let apply_terminator f = f
 
-(* The head of [!pstates] is the actual current proof, the other ones are
-   to be resumed when the current proof is closed or aborted. *)
-let pstates = ref ([] : pstate list)
-
 (* combinators for the current_proof lists *)
-let push a l = l := a::!l
-
-exception NoCurrentProof
-let () = CErrors.register_handler begin function
-  | NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof (No proof-editing in progress).")
-  | _ -> raise CErrors.Unhandled
-end
+let push ~ontop a =
+  match ontop with
+  | None -> a , []
+  | Some (l,ls) -> a, (l :: ls)
 
 (*** Proof Global manipulation ***)
 
-let get_all_proof_names () =
-  List.map Proof.(function pf -> (data pf.proof).name) !pstates
+let get_all_proof_names (pf : t) =
+  let (pn, pns) = pstate_map Proof.(function pf -> (data pf.proof).name) pf in
+  pn :: pns
 
-let cur_pstate () =
-  match !pstates with
-  | np::_ -> np
-  | [] -> raise NoCurrentProof
+let give_me_the_proof (ps,_) = ps.proof
+let get_current_proof_name (ps,_) = (Proof.data ps.proof).Proof.name
+let get_current_persistence (ps,_) = ps.strength
 
-let give_me_the_proof () = (cur_pstate ()).proof
-let give_me_the_proof_opt () = try Some (give_me_the_proof ()) with | NoCurrentProof -> None
-let get_current_proof_name () = (Proof.data (cur_pstate ()).proof).Proof.name
-let get_current_persistence () = (cur_pstate ()).strength
+let with_current_proof f (ps, psl) =
+  let et =
+    match ps.endline_tactic with
+    | None -> Proofview.tclUNIT ()
+    | Some tac ->
+      let open Geninterp in
+      let ist = { lfun = Id.Map.empty; poly = pi2 ps.strength; extra = TacStore.empty } in
+      let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
+      let tac = Geninterp.interp tag ist tac in
+      Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
+  in
+  let (newpr,ret) = f et ps.proof in
+  let ps = { ps with proof = newpr } in
+  (ps, psl), ret
 
-let with_current_proof f =
-  match !pstates with
-  | [] -> raise NoCurrentProof
-  | p :: rest ->
-      let et =
-        match p.endline_tactic with
-        | None -> Proofview.tclUNIT ()
-        | Some tac ->
-          let open Geninterp in
-          let ist = { lfun = Id.Map.empty; extra = TacStore.empty } in
-          let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
-          let tac = Geninterp.interp tag ist tac in
-          Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
-      in
-      let (newpr,ret) = f et p.proof in
-      let p = { p with proof = newpr } in
-      pstates := p :: rest;
-      ret
+let simple_with_current_proof f pf =
+  let p, () = with_current_proof (fun t p -> f t p , ()) pf in p
 
-let simple_with_current_proof f = with_current_proof (fun t p -> f t p , ())
-
-let compact_the_proof () = simple_with_current_proof (fun _ -> Proof.compact)
+let compact_the_proof pf = simple_with_current_proof (fun _ -> Proof.compact) pf
 
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
-let set_endline_tactic tac =
-  match !pstates with
-  | [] -> raise NoCurrentProof
-  | p :: rest -> pstates := { p with endline_tactic = Some tac } :: rest
-
-(* spiwack: it might be considered to move error messages away.
-    Or else to remove special exceptions from Proof_global.
-    Arguments for the former: there is no reason Proof_global is only
-    accessed directly through vernacular commands. Error message should be
-   pushed to external layers, and so we should be able to have a finer
-   control on error message on complex actions. *)
-let msg_proofs () =
-  match get_all_proof_names () with
-    | [] -> (spc () ++ str"(No proof-editing in progress).")
-    | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
-               (pr_sequence Id.print l) ++ str".")
-
-let there_is_a_proof () = not (List.is_empty !pstates)
-let there_are_pending_proofs () = there_is_a_proof ()
-let check_no_pending_proof () =
-  if not (there_are_pending_proofs ()) then
-    ()
-  else begin
-    CErrors.user_err
-      (str"Proof editing in progress" ++ msg_proofs () ++ fnl() ++
-       str"Use \"Abort All\" first or complete proof(s).")
-  end
+let set_endline_tactic tac (ps, psl) =
+  { ps with endline_tactic = Some tac }, psl
 
 let pf_name_eq id ps =
   let Proof.{ name } = Proof.data ps.proof in
   Id.equal name id
 
-let discard_gen id =
-  pstates := List.filter (fun pf -> not (pf_name_eq id pf)) !pstates
+let discard {CAst.loc;v=id} (ps, psl) =
+  match List.filter (fun pf -> not (pf_name_eq id pf)) (ps :: psl) with
+  | [] -> None
+  | ps :: psl -> Some (ps, psl)
 
-let discard {CAst.loc;v=id} =
-  let n = List.length !pstates in
-  discard_gen id;
-  if Int.equal (List.length !pstates) n then
-    CErrors.user_err ?loc
-      ~hdr:"Pfedit.delete_proof" (str"No such proof" ++ msg_proofs ())
-
-let discard_current () =
-  if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates
-let discard_all () = pstates := []
+let discard_current (ps, psl) =
+  if List.is_empty psl then None else Some List.(hd psl, tl psl)
 
 (** [start_proof sigma id pl str goals terminator] starts a proof of name
     [id] with goals [goals] (a list of pairs of environment and
@@ -166,30 +123,30 @@ let discard_all () = pstates := []
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma name ?(pl=UState.default_univ_decl) kind goals terminator =
+let start_proof ~ontop sigma name ?(pl=UState.default_univ_decl) kind goals terminator =
   let initial_state = {
     terminator = CEphemeron.create terminator;
     proof = Proof.start ~name ~poly:(pi2 kind) sigma goals;
     endline_tactic = None;
     section_vars = None;
-    strength = kind;
-    universe_decl = pl } in
-  push initial_state pstates
+    universe_decl = pl;
+    strength = kind } in
+  push ~ontop initial_state
 
-let start_dependent_proof name ?(pl=UState.default_univ_decl) kind goals terminator =
+let start_dependent_proof ~ontop name ?(pl=UState.default_univ_decl) kind goals terminator =
   let initial_state = {
     terminator = CEphemeron.create terminator;
     proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals;
     endline_tactic = None;
     section_vars = None;
-    strength = kind;
-    universe_decl = pl } in
-  push initial_state pstates
+    universe_decl = pl;
+    strength = kind } in
+  push ~ontop initial_state
 
-let get_used_variables () = (cur_pstate ()).section_vars
-let get_universe_decl () = (cur_pstate ()).universe_decl
+let get_used_variables (pf,_) = pf.section_vars
+let get_universe_decl (pf,_) = pf.universe_decl
 
-let set_used_variables l =
+let set_used_variables (ps,psl) l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let ids = List.fold_right Id.Set.add l Id.Set.empty in
@@ -210,20 +167,17 @@ let set_used_variables l =
        else (ctx, all_safe) in
   let ctx, _ =
     Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
-  match !pstates with
-  | [] -> raise NoCurrentProof
-  | p :: rest ->
-      if not (Option.is_empty p.section_vars) then
-        CErrors.user_err Pp.(str "Used section variables can be declared only once");
-      pstates := { p with section_vars = Some ctx} :: rest;
-      ctx, []
+  if not (Option.is_empty ps.section_vars) then
+    CErrors.user_err Pp.(str "Used section variables can be declared only once");
+  (* EJGA: This is always empty thus we should modify the type *)
+  (ctx, []), ({ ps with section_vars = Some ctx}, psl)
 
-let get_open_goals () =
-  let Proof.{ goals; stack; shelf } = Proof.data (cur_pstate ()).proof in
+let get_open_goals (ps, _) =
+  let Proof.{ goals; stack; shelf } = Proof.data ps.proof in
   List.length goals +
-    List.fold_left (+) 0
+  List.fold_left (+) 0
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
-    List.length shelf
+  List.length shelf
 
 type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
 
@@ -240,8 +194,8 @@ let private_poly_univs =
   fun () -> !b
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
-                (fpl : closed_proof_output Future.computation) =
-  let { section_vars; proof; terminator; universe_decl; strength } = cur_pstate () in
+                (fpl : closed_proof_output Future.computation) ps =
+  let { section_vars; proof; terminator; universe_decl; strength } = ps in
   let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
@@ -339,8 +293,8 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     universes },
   fun pr_ending -> CEphemeron.get terminator pr_ending
 
-let return_proof ?(allow_partial=false) () =
- let { proof } = cur_pstate () in
+let return_proof ?(allow_partial=false) (ps,_) =
+ let { proof } = ps in
  if allow_partial then begin
   let proofs = Proof.partial_proof proof in
   let Proof.{sigma=evd} = Proof.data proof in
@@ -368,43 +322,44 @@ let return_proof ?(allow_partial=false) () =
     List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
 
-let close_future_proof ~opaque ~feedback_id proof =
-  close_proof ~opaque ~keep_body_ucst_separate:true ~feedback_id ~now:false proof
-let close_proof ~opaque ~keep_body_ucst_separate fix_exn =
+let close_future_proof ~opaque ~feedback_id (ps, psl) proof =
+  close_proof ~opaque ~keep_body_ucst_separate:true ~feedback_id ~now:false proof ps
+
+let close_proof ~opaque ~keep_body_ucst_separate fix_exn (ps, psl) =
   close_proof ~opaque ~keep_body_ucst_separate ~now:true
-    (Future.from_val ~fix_exn (return_proof ()))
+    (Future.from_val ~fix_exn (return_proof (ps,psl))) ps
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-let get_terminator () = CEphemeron.get ( cur_pstate() ).terminator
-let set_terminator hook =
-  match !pstates with
-  | [] -> raise NoCurrentProof
-  | p :: ps -> pstates := { p with terminator = CEphemeron.create hook } :: ps
+let get_terminator (ps, _) = CEphemeron.get ps.terminator
+let set_terminator hook (ps, psl) =
+  { ps with terminator = CEphemeron.create hook }, psl
 
-let freeze ~marshallable =
-  if marshallable then CErrors.anomaly (Pp.str"full marshalling of proof state not supported.")
-  else !pstates
-let unfreeze s = pstates := s
-let proof_of_state = function { proof }::_ -> proof | _ -> raise NoCurrentProof
 let copy_terminators ~src ~tgt =
-  assert(List.length src = List.length tgt);
-  List.map2 (fun op p -> { p with terminator = op.terminator }) src tgt
+  let (ps, psl), (ts,tsl) = src, tgt in
+  assert(List.length psl = List.length tsl);
+  {ts with terminator = ps.terminator}, List.map2 (fun op p -> { p with terminator = op.terminator }) psl tsl
 
-let update_global_env pf_info =
+let update_global_env (pf : t) =
+  let res, () =
   with_current_proof (fun _ p ->
      Proof.in_proof p (fun sigma ->
        let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
        let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
-         (p, ())))
+         (p, ()))) pf
+  in res
 
-(* XXX: Bullet hook, should be really moved elsewhere *)
-let () =
-  let hook n =
-    try
-      let prf = give_me_the_proof () in
-      (Proof_bullet.suggest prf)
-    with NoCurrentProof -> mt ()
-  in
-  Proofview.set_nosuchgoals_hook hook
+(* XXX: This hook is used to provide a better error w.r.t. bullets,
+   however the proof engine [surprise!] knows nothing about bullets so
+   here we have a layering violation. The right fix is to modify the
+   entry point to handle this and reraise the exception with the
+   needed information. *)
+(* let _ =
+ *   let hook n =
+ *     try
+ *       let prf = give_me_the_proof pf in
+ *       (Proof_bullet.suggest prf)
+ *     with NoCurrentProof -> mt ()
+ *   in
+ *   Proofview.set_nosuchgoals_hook hook *)
 

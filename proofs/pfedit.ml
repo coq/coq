@@ -37,41 +37,35 @@ let get_nth_V82_goal p i =
   try { it = List.nth goals (i-1) ; sigma }
   with Failure _ -> raise NoSuchGoal
 
-let get_goal_context_gen p i =
-  let { it=goal ; sigma=sigma; } = get_nth_V82_goal p i in
+let get_goal_context_gen pf i =
+  let { it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
   (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
 
-let get_goal_context i =
-  try get_goal_context_gen (Proof_global.give_me_the_proof ()) i
-  with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
-     | NoSuchGoal -> CErrors.user_err Pp.(str "No such goal.")
+let get_goal_context pf i =
+  let p = Proof_global.give_me_the_proof pf in
+  get_goal_context_gen p i
 
-let get_current_goal_context () =
-  try get_goal_context_gen (Proof_global.give_me_the_proof ()) 1
-  with Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof.")
-     | NoSuchGoal -> 
-    (* spiwack: returning empty evar_map, since if there is no goal, under focus,
-        there is no accessible evar either *)
+let get_current_goal_context pf =
+  let p = Proof_global.give_me_the_proof pf in
+  try get_goal_context_gen p 1
+  with
+  | NoSuchGoal ->
+    (* spiwack: returning empty evar_map, since if there is no goal,
+       under focus, there is no accessible evar either. EJGA: this
+       seems strange, as we have pf *)
     let env = Global.env () in
-    (Evd.from_env env, env)
+    Evd.from_env env, env
 
-let get_current_context ?p () =
-  let current_proof_by_default = function
-    | Some p -> p
-    | None -> Proof_global.give_me_the_proof ()
-  in
-  try get_goal_context_gen (current_proof_by_default p) 1
-  with Proof_global.NoCurrentProof ->
-    let env = Global.env () in
-    (Evd.from_env env, env)
-     | NoSuchGoal ->
-        (* No more focused goals ? *)
-        let p = (current_proof_by_default p) in
-        let evd = Proof.in_proof p (fun x -> x) in
-        (evd, Global.env ())
+let get_current_context pf =
+  let p = Proof_global.give_me_the_proof pf in
+  try get_goal_context_gen p 1
+  with
+  | NoSuchGoal ->
+    (* No more focused goals *)
+    let evd = Proof.in_proof p (fun x -> x) in
+    evd, Global.env ()
 
 let solve ?with_end_tac gi info_lvl tac pr =
-  try 
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
@@ -112,15 +106,12 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | Some i -> Feedback.msg_info (hov 0 (Proofview.Trace.pr_info env sigma ~lvl:i info))
     in
     (p,status)
-  with
-    Proof_global.NoCurrentProof -> CErrors.user_err Pp.(str "No focused proof")
 
 let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
 
-let instantiate_nth_evar_com n com = 
+let instantiate_nth_evar_com n com =
   Proof_global.simple_with_current_proof (fun _ p ->
-      Proof.V82.instantiate_evar Global.(env ())n com p)
-
+      Proof.V82.instantiate_evar Global.(env ()) n com p)
 
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
@@ -133,21 +124,19 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   let evd = Evd.from_ctx ctx in
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  Proof_global.start_proof evd id goal_kind goals terminator;
+  let pf = Proof_global.start_proof ~ontop:None evd id goal_kind goals terminator in
   try
-    let status = by tac in
+    let pf, status = by tac pf in
     let open Proof_global in
-    let { entries; universes } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) in
+    let { entries; universes } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
-      discard_current ();
       let univs = UState.demote_seff_univs entry universes in
       entry, status, univs
     | _ ->
       CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
   with reraise ->
     let reraise = CErrors.push reraise in
-    Proof_global.discard_current ();
     iraise reraise
 
 let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =

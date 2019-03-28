@@ -50,7 +50,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
   let c = EConstr.of_constr c in
   let cl = EConstr.of_constr cl in
   if Termops.occur_existential sigma c then errorstrm(str"The pattern"++spc()++
-    pr_constr_pat env sigma (EConstr.Unsafe.to_constr c)++spc()++str"did not match and has holes."++spc()++
+    pr_econstr_pat env sigma c++spc()++str"did not match and has holes."++spc()++
     str"Did you mean pose?") else
   let c, (gl, cty) =  match EConstr.kind sigma c with
   | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)

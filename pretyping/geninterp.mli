@@ -62,9 +62,10 @@ val register_val0 : ('raw, 'glb, 'top) genarg_type -> 'top Val.tag option -> uni
 
 module TacStore : Store.S
 
-type interp_sign = {
-  lfun : Val.t Id.Map.t;
-  extra : TacStore.t }
+type interp_sign =
+  { lfun : Val.t Id.Map.t
+  ; poly : bool
+  ; extra : TacStore.t }
 
 type ('glb, 'top) interp_fun = interp_sign -> 'glb -> 'top Ftactic.t
 

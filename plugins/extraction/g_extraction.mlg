@@ -178,6 +178,6 @@ END
 (* Show the extraction of the current proof *)
 
 VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY
-| [ "Show" "Extraction" ]
-  -> { show_extraction () }
+| ![ proof ] [ "Show" "Extraction" ]
+  -> { fun ~pstate -> let () = show_extraction ~pstate in pstate }
 END
