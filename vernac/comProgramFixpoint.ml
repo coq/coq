@@ -232,7 +232,7 @@ let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
   let hook = Lemmas.mk_hook (hook sigma) in
   (* XXX: Grounding non-ground terms here... bad bad *)
   let fullcoqc = EConstr.to_constr ~abort_on_undefined_evars:false sigma def in
-  let fullctyp = EConstr.to_constr sigma typ in
+  let fullctyp = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   Obligations.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
     Obligations.eterm_obligations env recname sigma 0 fullcoqc fullctyp
