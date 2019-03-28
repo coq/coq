@@ -4,7 +4,7 @@
  (public_name coq.kernel)
  (wrapped false)
  (modules (:standard \ genOpcodeFiles uint63_x86 uint63_amd64 write_uint63))
- (libraries lib byterun))
+ (libraries lib byterun dynlink))
 
 (executable
   (name genOpcodeFiles)
