@@ -9,9 +9,11 @@ Short description of the tactics
 --------------------------------
 
 The Psatz module (``Require Import Psatz.``) gives access to several
-tactics for solving arithmetic goals over :math:`\mathbb{Z}`, :math:`\mathbb{Q}`, and :math:`\mathbb{R}` [#]_.
-It also possible to get the tactics for integers by a ``Require Import Lia``,
-rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
+tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
+:math:`\mathbb{R}`, and :math:`\mathbb{Z}` but also :g:`nat` and
+:g:`N`.  It also possible to get the tactics for integers by a
+``Require Import Lia``, rationals ``Require Import Lqa`` and reals
+``Require Import Lra``.
 
 + :tacn:`lia` is a decision procedure for linear integer arithmetic;
 + :tacn:`nia` is an incomplete proof procedure for integer non-linear
@@ -23,7 +25,7 @@ rationals ``Require Import Lqa`` and reals ``Require Import Lra``.
   ``n`` is an optional integer limiting the proof search depth,
   is an incomplete proof procedure for non-linear arithmetic.
   It is based on John Harrison’s HOL Light
-  driver to the external prover `csdp` [#]_. Note that the `csdp` driver is
+  driver to the external prover `csdp` [#csdp]_. Note that the `csdp` driver is
   generating a *proof cache* which makes it possible to rerun scripts
   even without `csdp`.
 
@@ -78,7 +80,7 @@ closed under the following rules:
 \end{array}`
 
 The following theorem provides a proof principle for checking that a
-set of polynomial inequalities does not have solutions [#]_.
+set of polynomial inequalities does not have solutions [#fnpsatz]_.
 
 .. _psatz_thm:
 
@@ -111,32 +113,21 @@ and checked to be :math:`-1`.
    The deductive power of :tacn:`lra` overlaps with the one of :tacn:`field`
    tactic *e.g.*, :math:`x = 10 * x / 10` is solved by :tacn:`lra`.
 
-
 `lia`: a tactic for linear integer arithmetic
 ---------------------------------------------
 
 .. tacn:: lia
    :name: lia
 
-   This tactic offers an alternative to the :tacn:`omega` tactic. Roughly
-   speaking, the deductive power of lia is the combined deductive power of
-   :tacn:`ring_simplify` and :tacn:`omega`. However, it solves linear goals
-   that :tacn:`omega` does not solve, such as the following so-called *omega
-   nightmare* :cite:`TheOmegaPaper`.
+   This tactic solves linear goals over :g:`Z` by searching for *linear* refutations and cutting planes.
+   :tacn:`lia` provides support for :g:`Z`, :g:`nat`, :g:`positive` and :g:`N` by pre-processing via the :tacn:`zify` tactic.
 
-.. coqdoc::
-
-   Goal forall x y,
-     27 <= 11 * x + 13 * y <= 45 ->
-     -10 <= 7 * x - 9 * y <= 4 -> False.
-
-The estimation of the relative efficiency of :tacn:`lia` *vs* :tacn:`omega` is under evaluation.
 
 High level view of `lia`
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Over :math:`\mathbb{R}`, *positivstellensatz* refutations are a complete proof
-principle [#]_. However, this is not the case over :math:`\mathbb{Z}`. Actually,
+principle [#mayfail]_. However, this is not the case over :math:`\mathbb{Z}`. Actually,
 *positivstellensatz* refutations are not even sufficient to decide
 linear *integer* arithmetic. The canonical example is :math:`2 * x = 1 -> \mathtt{False}`
 which is a theorem of :math:`\mathbb{Z}` but not a theorem of :math:`{\mathbb{R}}`. To remedy this
@@ -249,21 +240,55 @@ cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) +
 belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
-.. [#] Support for :g:`nat` and :g:`N` is obtained by pre-processing the goal with
-  the ``zify`` tactic.
-.. [#] Support for :g:`Z.div` and :g:`Z.modulo` may be obtained by
-  pre-processing the goal with the ``Z.div_mod_to_equations`` tactic (you may
-  need to manually run ``zify`` first).
-.. [#] Support for :g:`Z.quot` and :g:`Z.rem` may be obtained by pre-processing
-  the goal with the ``Z.quot_rem_to_equations`` tactic (you may need to manually
-  run ``zify`` first).
-.. [#] Note that support for :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and
-  :g:`Z.rem` may be simultaneously obtained by pre-processing the goal with the
-  ``Z.to_euclidean_division_equations`` tactic (you may need to manually run
-  ``zify`` first).
-.. [#] Sources and binaries can be found at https://projects.coin-or.org/Csdp
-.. [#] Variants deal with equalities and strict inequalities.
-.. [#] In practice, the oracle might fail to produce such a refutation.
+`zify`: pre-processing of arithmetic goals
+------------------------------------------
+
+.. tacn:: zify
+   :name: zify
+
+   This tactic is internally called by :tacn:`lia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
+   By requiring the module ``ZifyBool``, the boolean type :g:`bool` and some comparison operators are also supported.
+   :tacn:`zify` can also be extended by rebinding the tactic `Zify.zify_post_hook` that is run immediately after :tacn:`zify`.
+
+   + To support :g:`Z.div` and :g:`Z.modulo`: ``Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations``.
+   + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
+   + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations``.
+
+
+.. cmd:: Show Zify InjTyp
+   :name: Show Zify InjTyp
+
+   This command shows the list of types that can be injected into :g:`Z`.
+
+.. cmd:: Show Zify BinOp
+   :name: Show Zify BinOp
+
+   This command shows the list of binary operators processed by :tacn:`zify`.
+
+.. cmd:: Show Zify BinRel
+   :name: Show Zify BinRel
+
+   This command shows the list of binary relations processed by :tacn:`zify`.
+
+
+.. cmd:: Show Zify UnOp
+   :name: Show Zify UnOp
+
+   This command shows the list of unary operators processed by :tacn:`zify`.
+
+.. cmd:: Show Zify CstOp
+   :name: Show Zify CstOp
+
+   This command shows the list of constants processed by :tacn:`zify`.
+
+.. cmd:: Show Zify Spec
+   :name: Show Zify Spec
+
+   This command shows the list of operators over :g:`Z` that are compiled using their specification e.g., :g:`Z.min`.
+
+.. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp
+.. [#fnpsatz] Variants deal with equalities and strict inequalities.
+.. [#mayfail] In practice, the oracle might fail to produce such a refutation.
 
 .. comment in original TeX:
 .. %% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a

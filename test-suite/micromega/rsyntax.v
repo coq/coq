@@ -60,7 +60,6 @@ Proof.
   lia. (* exponent is a constant expr *)
 Qed.
 
-
 Goal (1 / IZR (Z.pow_pos 10 25) = 1 / 10 ^ 25)%R.
 Proof.
   lra.

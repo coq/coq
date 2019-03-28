@@ -67,11 +67,25 @@ let rec nth n0 l default =
             | [] -> default
             | _::t0 -> nth m t0 default)
 
+(** val rev_append : 'a1 list -> 'a1 list -> 'a1 list **)
+
+let rec rev_append l l' =
+  match l with
+  | [] -> l'
+  | a::l0 -> rev_append l0 (a::l')
+
 (** val map : ('a1 -> 'a2) -> 'a1 list -> 'a2 list **)
 
 let rec map f = function
 | [] -> []
 | a::t0 -> (f a)::(map f t0)
+
+(** val fold_left : ('a1 -> 'a2 -> 'a1) -> 'a2 list -> 'a1 -> 'a1 **)
+
+let rec fold_left f l a0 =
+  match l with
+  | [] -> a0
+  | b::t0 -> fold_left f t0 (f a0 b)
 
 (** val fold_right : ('a2 -> 'a1 -> 'a1) -> 'a1 -> 'a2 list -> 'a1 **)
 
@@ -1061,15 +1075,24 @@ let rec or_clause unsat deduce cl1 cl2 =
      | Some cl' -> or_clause unsat deduce cl cl'
      | None -> None)
 
+(** val xor_clause_cnf :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1,
+    'a2) cnf -> ('a1, 'a2) cnf **)
+
+let xor_clause_cnf unsat deduce t0 f =
+  fold_left (fun acc e ->
+    match or_clause unsat deduce t0 e with
+    | Some cl -> cl::acc
+    | None -> acc) f []
+
 (** val or_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1,
     'a2) cnf -> ('a1, 'a2) cnf **)
 
 let or_clause_cnf unsat deduce t0 f =
-  fold_right (fun e acc ->
-    match or_clause unsat deduce t0 e with
-    | Some cl -> cl::acc
-    | None -> acc) [] f
+  match t0 with
+  | [] -> f
+  | _::_ -> xor_clause_cnf unsat deduce t0 f
 
 (** val or_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
@@ -1079,45 +1102,78 @@ let rec or_cnf unsat deduce f f' =
   match f with
   | [] -> cnf_tt
   | e::rst ->
-    app (or_cnf unsat deduce rst f') (or_clause_cnf unsat deduce e f')
+    rev_append (or_cnf unsat deduce rst f') (or_clause_cnf unsat deduce e f')
 
 (** val and_cnf : ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf **)
 
 let and_cnf =
-  app
+  rev_append
 
 type ('term, 'annot, 'tX, 'aF) tFormula = ('term, 'tX, 'annot, 'aF) gFormula
+
+(** val is_cnf_tt : ('a1, 'a2) cnf -> bool **)
+
+let is_cnf_tt = function
+| [] -> true
+| _::_ -> false
+
+(** val is_cnf_ff : ('a1, 'a2) cnf -> bool **)
+
+let is_cnf_ff = function
+| [] -> false
+| c0::l ->
+  (match c0 with
+   | [] -> (match l with
+            | [] -> true
+            | _::_ -> false)
+   | _::_ -> false)
+
+(** val and_cnf_opt : ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf **)
+
+let and_cnf_opt f1 f2 =
+  if if is_cnf_ff f1 then true else is_cnf_ff f2
+  then cnf_ff
+  else and_cnf f1 f2
+
+(** val or_cnf_opt :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
+    'a2) cnf -> ('a1, 'a2) cnf **)
+
+let or_cnf_opt unsat deduce f1 f2 =
+  if if is_cnf_tt f1 then true else is_cnf_tt f2
+  then cnf_tt
+  else if is_cnf_ff f2 then f1 else or_cnf unsat deduce f1 f2
 
 (** val xcnf :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3)
     cnf) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5)
     tFormula -> ('a2, 'a3) cnf **)
 
-let rec xcnf unsat deduce normalise0 negate0 pol0 = function
+let rec xcnf unsat deduce normalise1 negate0 pol0 = function
 | TT -> if pol0 then cnf_tt else cnf_ff
 | FF -> if pol0 then cnf_ff else cnf_tt
 | X _ -> cnf_ff
-| A (x, t0) -> if pol0 then normalise0 x t0 else negate0 x t0
+| A (x, t0) -> if pol0 then normalise1 x t0 else negate0 x t0
 | Cj (e1, e2) ->
   if pol0
-  then and_cnf (xcnf unsat deduce normalise0 negate0 pol0 e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
-  else or_cnf unsat deduce (xcnf unsat deduce normalise0 negate0 pol0 e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
+  then and_cnf_opt (xcnf unsat deduce normalise1 negate0 pol0 e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
+  else or_cnf_opt unsat deduce (xcnf unsat deduce normalise1 negate0 pol0 e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
 | D (e1, e2) ->
   if pol0
-  then or_cnf unsat deduce (xcnf unsat deduce normalise0 negate0 pol0 e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
-  else and_cnf (xcnf unsat deduce normalise0 negate0 pol0 e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
-| N e -> xcnf unsat deduce normalise0 negate0 (negb pol0) e
+  then or_cnf_opt unsat deduce (xcnf unsat deduce normalise1 negate0 pol0 e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
+  else and_cnf_opt (xcnf unsat deduce normalise1 negate0 pol0 e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
+| N e -> xcnf unsat deduce normalise1 negate0 (negb pol0) e
 | I (e1, _, e2) ->
   if pol0
-  then or_cnf unsat deduce
-         (xcnf unsat deduce normalise0 negate0 (negb pol0) e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
-  else and_cnf (xcnf unsat deduce normalise0 negate0 (negb pol0) e1)
-         (xcnf unsat deduce normalise0 negate0 pol0 e2)
+  then or_cnf_opt unsat deduce
+         (xcnf unsat deduce normalise1 negate0 (negb pol0) e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
+  else and_cnf_opt (xcnf unsat deduce normalise1 negate0 (negb pol0) e1)
+         (xcnf unsat deduce normalise1 negate0 pol0 e2)
 
 (** val radd_term :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2)
@@ -1153,19 +1209,28 @@ let rec ror_clause unsat deduce cl1 cl2 =
      | Inl cl' -> ror_clause unsat deduce cl cl'
      | Inr l -> Inr l)
 
+(** val xror_clause_cnf :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
+    'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
+
+let xror_clause_cnf unsat deduce t0 f =
+  fold_left (fun pat e ->
+    let acc,tg = pat in
+    (match ror_clause unsat deduce t0 e with
+     | Inl cl -> (cl::acc),tg
+     | Inr l -> acc,(rev_append tg l))) f ([],[])
+
 (** val ror_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
     'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
 
 let ror_clause_cnf unsat deduce t0 f =
-  fold_right (fun e pat ->
-    let acc,tg = pat in
-    (match ror_clause unsat deduce t0 e with
-     | Inl cl -> (cl::acc),tg
-     | Inr l -> acc,(app tg l))) ([],[]) f
+  match t0 with
+  | [] -> f,[]
+  | _::_ -> xror_clause_cnf unsat deduce t0 f
 
 (** val ror_cnf :
-    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list list ->
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause list ->
     ('a1, 'a2) clause list -> ('a1, 'a2) cnf * 'a2 list **)
 
 let rec ror_cnf unsat deduce f f' =
@@ -1174,37 +1239,159 @@ let rec ror_cnf unsat deduce f f' =
   | e::rst ->
     let rst_f',t0 = ror_cnf unsat deduce rst f' in
     let e_f',t' = ror_clause_cnf unsat deduce e f' in
-    (app rst_f' e_f'),(app t0 t')
+    (rev_append rst_f' e_f'),(rev_append t0 t')
+
+(** val ror_cnf_opt :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
+    'a2) cnf -> ('a1, 'a2) cnf * 'a2 list **)
+
+let ror_cnf_opt unsat deduce f1 f2 =
+  if is_cnf_tt f1
+  then cnf_tt,[]
+  else if is_cnf_tt f2
+       then cnf_tt,[]
+       else if is_cnf_ff f2 then f1,[] else ror_cnf unsat deduce f1 f2
+
+(** val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 list **)
+
+let ratom c a =
+  if if is_cnf_ff c then true else is_cnf_tt c then c,(a::[]) else c,[]
 
 (** val rxcnf :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3)
     cnf) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5)
     tFormula -> ('a2, 'a3) cnf * 'a3 list **)
 
-let rec rxcnf unsat deduce normalise0 negate0 polarity = function
+let rec rxcnf unsat deduce normalise1 negate0 polarity = function
 | TT -> if polarity then cnf_tt,[] else cnf_ff,[]
 | FF -> if polarity then cnf_ff,[] else cnf_tt,[]
 | X _ -> cnf_ff,[]
-| A (x, t0) -> (if polarity then normalise0 x t0 else negate0 x t0),[]
+| A (x, t0) -> ratom (if polarity then normalise1 x t0 else negate0 x t0) t0
 | Cj (e1, e2) ->
-  let e3,t1 = rxcnf unsat deduce normalise0 negate0 polarity e1 in
-  let e4,t2 = rxcnf unsat deduce normalise0 negate0 polarity e2 in
+  let e3,t1 = rxcnf unsat deduce normalise1 negate0 polarity e1 in
+  let e4,t2 = rxcnf unsat deduce normalise1 negate0 polarity e2 in
   if polarity
-  then (app e3 e4),(app t1 t2)
-  else let f',t' = ror_cnf unsat deduce e3 e4 in f',(app t1 (app t2 t'))
+  then (and_cnf_opt e3 e4),(rev_append t1 t2)
+  else let f',t' = ror_cnf_opt unsat deduce e3 e4 in
+       f',(rev_append t1 (rev_append t2 t'))
 | D (e1, e2) ->
-  let e3,t1 = rxcnf unsat deduce normalise0 negate0 polarity e1 in
-  let e4,t2 = rxcnf unsat deduce normalise0 negate0 polarity e2 in
+  let e3,t1 = rxcnf unsat deduce normalise1 negate0 polarity e1 in
+  let e4,t2 = rxcnf unsat deduce normalise1 negate0 polarity e2 in
   if polarity
-  then let f',t' = ror_cnf unsat deduce e3 e4 in f',(app t1 (app t2 t'))
-  else (app e3 e4),(app t1 t2)
-| N e -> rxcnf unsat deduce normalise0 negate0 (negb polarity) e
+  then let f',t' = ror_cnf_opt unsat deduce e3 e4 in
+       f',(rev_append t1 (rev_append t2 t'))
+  else (and_cnf_opt e3 e4),(rev_append t1 t2)
+| N e -> rxcnf unsat deduce normalise1 negate0 (negb polarity) e
 | I (e1, _, e2) ->
-  let e3,t1 = rxcnf unsat deduce normalise0 negate0 (negb polarity) e1 in
-  let e4,t2 = rxcnf unsat deduce normalise0 negate0 polarity e2 in
+  let e3,t1 = rxcnf unsat deduce normalise1 negate0 (negb polarity) e1 in
   if polarity
-  then let f',t' = ror_cnf unsat deduce e3 e4 in f',(app t1 (app t2 t'))
-  else (and_cnf e3 e4),(app t1 t2)
+  then if is_cnf_ff e3
+       then rxcnf unsat deduce normalise1 negate0 polarity e2
+       else let e4,t2 = rxcnf unsat deduce normalise1 negate0 polarity e2 in
+            let f',t' = ror_cnf_opt unsat deduce e3 e4 in
+            f',(rev_append t1 (rev_append t2 t'))
+  else let e4,t2 = rxcnf unsat deduce normalise1 negate0 polarity e2 in
+       (and_cnf_opt e3 e4),(rev_append t1 t2)
+
+type ('term, 'annot, 'tX) to_constrT = { mkTT : 'tX; mkFF : 'tX;
+                                         mkA : ('term -> 'annot -> 'tX);
+                                         mkCj : ('tX -> 'tX -> 'tX);
+                                         mkD : ('tX -> 'tX -> 'tX);
+                                         mkI : ('tX -> 'tX -> 'tX);
+                                         mkN : ('tX -> 'tX) }
+
+(** val aformula :
+    ('a1, 'a2, 'a3) to_constrT -> ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3 **)
+
+let rec aformula to_constr = function
+| TT -> to_constr.mkTT
+| FF -> to_constr.mkFF
+| X p -> p
+| A (x, t0) -> to_constr.mkA x t0
+| Cj (f1, f2) ->
+  to_constr.mkCj (aformula to_constr f1) (aformula to_constr f2)
+| D (f1, f2) -> to_constr.mkD (aformula to_constr f1) (aformula to_constr f2)
+| N f0 -> to_constr.mkN (aformula to_constr f0)
+| I (f1, _, f2) ->
+  to_constr.mkI (aformula to_constr f1) (aformula to_constr f2)
+
+(** val is_X : ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3 option **)
+
+let is_X = function
+| X p -> Some p
+| _ -> None
+
+(** val abs_and :
+    ('a1, 'a2, 'a3) to_constrT -> ('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2,
+    'a3, 'a4) tFormula -> (('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2, 'a3,
+    'a4) tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula) -> ('a1, 'a3, 'a2, 'a4)
+    gFormula **)
+
+let abs_and to_constr f1 f2 c =
+  match is_X f1 with
+  | Some _ -> X (aformula to_constr (c f1 f2))
+  | None ->
+    (match is_X f2 with
+     | Some _ -> X (aformula to_constr (c f1 f2))
+     | None -> c f1 f2)
+
+(** val abs_or :
+    ('a1, 'a2, 'a3) to_constrT -> ('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2,
+    'a3, 'a4) tFormula -> (('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2, 'a3,
+    'a4) tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula) -> ('a1, 'a3, 'a2, 'a4)
+    gFormula **)
+
+let abs_or to_constr f1 f2 c =
+  match is_X f1 with
+  | Some _ ->
+    (match is_X f2 with
+     | Some _ -> X (aformula to_constr (c f1 f2))
+     | None -> c f1 f2)
+  | None -> c f1 f2
+
+(** val mk_arrow :
+    'a4 option -> ('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2, 'a3, 'a4)
+    tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula **)
+
+let mk_arrow o f1 f2 =
+  match o with
+  | Some _ -> (match is_X f1 with
+               | Some _ -> f2
+               | None -> I (f1, o, f2))
+  | None -> I (f1, None, f2)
+
+(** val abst_form :
+    ('a1, 'a2, 'a3) to_constrT -> ('a2 -> bool) -> bool -> ('a1, 'a2, 'a3,
+    'a4) tFormula -> ('a1, 'a3, 'a2, 'a4) gFormula **)
+
+let rec abst_form to_constr needA pol0 = function
+| TT -> if pol0 then TT else X to_constr.mkTT
+| FF -> if pol0 then X to_constr.mkFF else FF
+| X p -> X p
+| A (x, t0) -> if needA t0 then A (x, t0) else X (to_constr.mkA x t0)
+| Cj (f1, f2) ->
+  let f3 = abst_form to_constr needA pol0 f1 in
+  let f4 = abst_form to_constr needA pol0 f2 in
+  if pol0
+  then abs_and to_constr f3 f4 (fun x x0 -> Cj (x, x0))
+  else abs_or to_constr f3 f4 (fun x x0 -> Cj (x, x0))
+| D (f1, f2) ->
+  let f3 = abst_form to_constr needA pol0 f1 in
+  let f4 = abst_form to_constr needA pol0 f2 in
+  if pol0
+  then abs_or to_constr f3 f4 (fun x x0 -> D (x, x0))
+  else abs_and to_constr f3 f4 (fun x x0 -> D (x, x0))
+| N f0 ->
+  let f1 = abst_form to_constr needA (negb pol0) f0 in
+  (match is_X f1 with
+   | Some a -> X (to_constr.mkN a)
+   | None -> N f1)
+| I (f1, o, f2) ->
+  let f3 = abst_form to_constr needA (negb pol0) f1 in
+  let f4 = abst_form to_constr needA pol0 f2 in
+  if pol0
+  then abs_or to_constr f3 f4 (mk_arrow o)
+  else abs_and to_constr f3 f4 (mk_arrow o)
 
 (** val cnf_checker :
     (('a1 * 'a2) list -> 'a3 -> bool) -> ('a1, 'a2) cnf -> 'a3 list -> bool **)
@@ -1222,8 +1409,8 @@ let rec cnf_checker checker f l =
     cnf) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> (('a2 * 'a3) list -> 'a4 ->
     bool) -> ('a1, __, 'a3, unit0) gFormula -> 'a4 list -> bool **)
 
-let tauto_checker unsat deduce normalise0 negate0 checker f w =
-  cnf_checker checker (xcnf unsat deduce normalise0 negate0 true f) w
+let tauto_checker unsat deduce normalise1 negate0 checker f w =
+  cnf_checker checker (xcnf unsat deduce normalise1 negate0 true f) w
 
 (** val cneqb : ('a1 -> 'a1 -> bool) -> 'a1 -> 'a1 -> bool **)
 
@@ -1413,62 +1600,76 @@ let psub0 =
 let padd0 =
   padd
 
-(** val xnormalise :
+(** val popp0 : ('a1 -> 'a1) -> 'a1 pol -> 'a1 pol **)
+
+let popp0 =
+  popp
+
+(** val normalise :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
     -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
-    nFormula list **)
+    nFormula **)
 
-let xnormalise cO cI cplus ctimes cminus copp ceqb t0 =
-  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+let normalise cO cI cplus ctimes cminus copp ceqb f =
+  let { flhs = lhs; fop = op; frhs = rhs } = f in
   let lhs0 = norm cO cI cplus ctimes cminus copp ceqb lhs in
   let rhs0 = norm cO cI cplus ctimes cminus copp ceqb rhs in
+  (match op with
+   | OpEq -> (psub0 cO cplus cminus copp ceqb lhs0 rhs0),Equal
+   | OpNEq -> (psub0 cO cplus cminus copp ceqb lhs0 rhs0),NonEqual
+   | OpLe -> (psub0 cO cplus cminus copp ceqb rhs0 lhs0),NonStrict
+   | OpGe -> (psub0 cO cplus cminus copp ceqb lhs0 rhs0),NonStrict
+   | OpLt -> (psub0 cO cplus cminus copp ceqb rhs0 lhs0),Strict
+   | OpGt -> (psub0 cO cplus cminus copp ceqb lhs0 rhs0),Strict)
+
+(** val xnormalise : ('a1 -> 'a1) -> 'a1 nFormula -> 'a1 nFormula list **)
+
+let xnormalise copp = function
+| e,o ->
   (match o with
-   | OpEq ->
-     ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Strict)::(((psub0 cO cplus
-                                                               cminus copp
-                                                               ceqb rhs0 lhs0),Strict)::[])
-   | OpNEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Equal)::[]
-   | OpLe -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Strict)::[]
-   | OpGe -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0),Strict)::[]
-   | OpLt -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),NonStrict)::[]
-   | OpGt -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0),NonStrict)::[])
+   | Equal -> (e,Strict)::(((popp0 copp e),Strict)::[])
+   | NonEqual -> (e,Equal)::[]
+   | Strict -> ((popp0 copp e),NonStrict)::[]
+   | NonStrict -> ((popp0 copp e),Strict)::[])
+
+(** val xnegate : ('a1 -> 'a1) -> 'a1 nFormula -> 'a1 nFormula list **)
+
+let xnegate copp = function
+| e,o ->
+  (match o with
+   | NonEqual -> (e,Strict)::(((popp0 copp e),Strict)::[])
+   | x -> (e,x)::[])
+
+(** val cnf_of_list :
+    'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula list
+    -> 'a2 -> ('a1 nFormula, 'a2) cnf **)
+
+let cnf_of_list cO ceqb cleb l tg =
+  fold_right (fun x acc ->
+    if check_inconsistent cO ceqb cleb x then acc else ((x,tg)::[])::acc)
+    cnf_tt l
 
 (** val cnf_normalise :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 ->
-    ('a1 nFormula, 'a2) cnf **)
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
+    -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf **)
 
-let cnf_normalise cO cI cplus ctimes cminus copp ceqb t0 tg =
-  map (fun x -> (x,tg)::[])
-    (xnormalise cO cI cplus ctimes cminus copp ceqb t0)
-
-(** val xnegate :
-    'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1
-    nFormula list **)
-
-let xnegate cO cI cplus ctimes cminus copp ceqb t0 =
-  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = norm cO cI cplus ctimes cminus copp ceqb lhs in
-  let rhs0 = norm cO cI cplus ctimes cminus copp ceqb rhs in
-  (match o with
-   | OpEq -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Equal)::[]
-   | OpNEq ->
-     ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Strict)::(((psub0 cO cplus
-                                                               cminus copp
-                                                               ceqb rhs0 lhs0),Strict)::[])
-   | OpLe -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0),NonStrict)::[]
-   | OpGe -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),NonStrict)::[]
-   | OpLt -> ((psub0 cO cplus cminus copp ceqb rhs0 lhs0),Strict)::[]
-   | OpGt -> ((psub0 cO cplus cminus copp ceqb lhs0 rhs0),Strict)::[])
+let cnf_normalise cO cI cplus ctimes cminus copp ceqb cleb t0 tg =
+  let f = normalise cO cI cplus ctimes cminus copp ceqb t0 in
+  if check_inconsistent cO ceqb cleb f
+  then cnf_ff
+  else cnf_of_list cO ceqb cleb (xnormalise copp f) tg
 
 (** val cnf_negate :
     'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1
-    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 ->
-    ('a1 nFormula, 'a2) cnf **)
+    -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool)
+    -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf **)
 
-let cnf_negate cO cI cplus ctimes cminus copp ceqb t0 tg =
-  map (fun x -> (x,tg)::[]) (xnegate cO cI cplus ctimes cminus copp ceqb t0)
+let cnf_negate cO cI cplus ctimes cminus copp ceqb cleb t0 tg =
+  let f = normalise cO cI cplus ctimes cminus copp ceqb t0 in
+  if check_inconsistent cO ceqb cleb f
+  then cnf_tt
+  else cnf_of_list cO ceqb cleb (xnegate copp f) tg
 
 (** val xdenorm : positive -> 'a1 pol -> 'a1 pExpr **)
 
@@ -1696,52 +1897,6 @@ let padd1 =
 let normZ =
   norm Z0 (Zpos XH) Z.add Z.mul Z.sub Z.opp zeq_bool
 
-(** val xnormalise0 : z formula -> z nFormula list **)
-
-let xnormalise0 t0 =
-  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = normZ lhs in
-  let rhs0 = normZ rhs in
-  (match o with
-   | OpEq ->
-     ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))),NonStrict)::(((psub1 rhs0
-                                                               (padd1 lhs0
-                                                                 (Pc (Zpos
-                                                                 XH)))),NonStrict)::[])
-   | OpNEq -> ((psub1 lhs0 rhs0),Equal)::[]
-   | OpLe -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))),NonStrict)::[]
-   | OpGe -> ((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))),NonStrict)::[]
-   | OpLt -> ((psub1 lhs0 rhs0),NonStrict)::[]
-   | OpGt -> ((psub1 rhs0 lhs0),NonStrict)::[])
-
-(** val normalise : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
-
-let normalise t0 tg =
-  map (fun x -> (x,tg)::[]) (xnormalise0 t0)
-
-(** val xnegate0 : z formula -> z nFormula list **)
-
-let xnegate0 t0 =
-  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
-  let lhs0 = normZ lhs in
-  let rhs0 = normZ rhs in
-  (match o with
-   | OpEq -> ((psub1 lhs0 rhs0),Equal)::[]
-   | OpNEq ->
-     ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))),NonStrict)::(((psub1 rhs0
-                                                               (padd1 lhs0
-                                                                 (Pc (Zpos
-                                                                 XH)))),NonStrict)::[])
-   | OpLe -> ((psub1 rhs0 lhs0),NonStrict)::[]
-   | OpGe -> ((psub1 lhs0 rhs0),NonStrict)::[]
-   | OpLt -> ((psub1 rhs0 (padd1 lhs0 (Pc (Zpos XH)))),NonStrict)::[]
-   | OpGt -> ((psub1 lhs0 (padd1 rhs0 (Pc (Zpos XH)))),NonStrict)::[])
-
-(** val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
-
-let negate t0 tg =
-  map (fun x -> (x,tg)::[]) (xnegate0 t0)
-
 (** val zunsat : z nFormula -> bool **)
 
 let zunsat =
@@ -1752,11 +1907,65 @@ let zunsat =
 let zdeduce =
   nformula_plus_nformula Z0 Z.add zeq_bool
 
+(** val xnnormalise : z formula -> z nFormula **)
+
+let xnnormalise t0 =
+  let { flhs = lhs; fop = o; frhs = rhs } = t0 in
+  let lhs0 = normZ lhs in
+  let rhs0 = normZ rhs in
+  (match o with
+   | OpEq -> (psub1 rhs0 lhs0),Equal
+   | OpNEq -> (psub1 rhs0 lhs0),NonEqual
+   | OpLe -> (psub1 rhs0 lhs0),NonStrict
+   | OpGe -> (psub1 lhs0 rhs0),NonStrict
+   | OpLt -> (psub1 rhs0 lhs0),Strict
+   | OpGt -> (psub1 lhs0 rhs0),Strict)
+
+(** val xnormalise0 : z nFormula -> z nFormula list **)
+
+let xnormalise0 = function
+| e,o ->
+  (match o with
+   | Equal ->
+     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+   | NonEqual -> (e,Equal)::[]
+   | Strict -> ((psub1 (Pc Z0) e),NonStrict)::[]
+   | NonStrict -> ((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+
+(** val cnf_of_list0 :
+    'a1 -> z nFormula list -> (z nFormula * 'a1) list list **)
+
+let cnf_of_list0 tg l =
+  fold_right (fun x acc -> if zunsat x then acc else ((x,tg)::[])::acc)
+    cnf_tt l
+
+(** val normalise0 : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
+
+let normalise0 t0 tg =
+  let f = xnnormalise t0 in
+  if zunsat f then cnf_ff else cnf_of_list0 tg (xnormalise0 f)
+
+(** val xnegate0 : z nFormula -> z nFormula list **)
+
+let xnegate0 = function
+| e,o ->
+  (match o with
+   | NonEqual ->
+     ((psub1 e (Pc (Zpos XH))),NonStrict)::(((psub1 (Pc (Zneg XH)) e),NonStrict)::[])
+   | Strict -> ((psub1 e (Pc (Zpos XH))),NonStrict)::[]
+   | x -> (e,x)::[])
+
+(** val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf **)
+
+let negate t0 tg =
+  let f = xnnormalise t0 in
+  if zunsat f then cnf_tt else cnf_of_list0 tg (xnegate0 f)
+
 (** val cnfZ :
     (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1) cnf * 'a1 list **)
 
 let cnfZ f =
-  rxcnf zunsat zdeduce normalise negate true f
+  rxcnf zunsat zdeduce normalise0 negate true f
 
 (** val ceiling : z -> z -> z **)
 
@@ -2027,7 +2236,7 @@ let rec zChecker l = function
 (** val zTautoChecker : z formula bFormula -> zArithProof list -> bool **)
 
 let zTautoChecker f w =
-  tauto_checker zunsat zdeduce normalise negate (fun cl ->
+  tauto_checker zunsat zdeduce normalise0 negate (fun cl ->
     zChecker (map fst cl)) f w
 
 type qWitness = q psatz
@@ -2042,13 +2251,13 @@ let qWeakChecker =
 
 let qnormalise t0 tg =
   cnf_normalise { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH }
-    qplus qmult qminus qopp qeq_bool t0 tg
+    qplus qmult qminus qopp qeq_bool qle_bool t0 tg
 
 (** val qnegate : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
 let qnegate t0 tg =
   cnf_negate { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus
-    qmult qminus qopp qeq_bool t0 tg
+    qmult qminus qopp qeq_bool qle_bool t0 tg
 
 (** val qunsat : q nFormula -> bool **)
 
@@ -2122,13 +2331,13 @@ let rWeakChecker =
 
 let rnormalise t0 tg =
   cnf_normalise { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH }
-    qplus qmult qminus qopp qeq_bool t0 tg
+    qplus qmult qminus qopp qeq_bool qle_bool t0 tg
 
 (** val rnegate : q formula -> 'a1 -> (q nFormula, 'a1) cnf **)
 
 let rnegate t0 tg =
   cnf_negate { qnum = Z0; qden = XH } { qnum = (Zpos XH); qden = XH } qplus
-    qmult qminus qopp qeq_bool t0 tg
+    qmult qminus qopp qeq_bool qle_bool t0 tg
 
 (** val runsat : q nFormula -> bool **)
 

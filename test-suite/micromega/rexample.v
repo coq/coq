@@ -24,6 +24,16 @@ Proof.
   lra.
 Qed.
 
+Goal
+  forall  (a c : R)
+         (Had : a <> a),
+    a > c.
+Proof.
+  intros.
+  lra.
+Qed.
+
+
 (* Other (simple) examples *)
 
 Lemma binomial : forall x y, ((x+y)^2 = x^2 + 2 *x*y + y^2).
@@ -31,7 +41,6 @@ Proof.
   intros.
   lra.
 Qed.
-
 
 Lemma hol_light19 : forall m n, 2 * m + n = (n + m) + m.
 Proof.
