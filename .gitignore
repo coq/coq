@@ -150,6 +150,8 @@ kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
 kernel/copcodes.ml
 kernel/uint63.ml
+ide/default.bindings
+ide/default_bindings_src.exe
 ide/index_urls.txt
 .lia.cache
 .nia.cache
