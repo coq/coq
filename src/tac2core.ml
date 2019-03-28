@@ -979,6 +979,7 @@ let constr_flags () =
     fail_evar = true;
     expand_evars = true;
     program_mode = false;
+    polymorphic = false;
   }
 
 let open_constr_no_classes_flags () =
@@ -989,6 +990,7 @@ let open_constr_no_classes_flags () =
   fail_evar = false;
   expand_evars = true;
   program_mode = false;
+  polymorphic = false;
   }
 
 (** Embed all Ltac2 data into Values *)
@@ -1164,17 +1166,17 @@ let () =
 (** Ltac2 in terms *)
 
 let () =
-  let interp ist env sigma concl tac =
+  let interp ist poly env sigma concl tac =
     let ist = Tac2interp.get_env ist in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
-    let name, poly = Id.of_string "ltac2", false in
+    let name, poly = Id.of_string "ltac2", poly in
     let c, sigma = Pfedit.refine_by_tactic ~name ~poly env sigma concl tac in
     (EConstr.of_constr c, sigma)
   in
   GlobEnv.register_constr_interp0 wit_ltac2 interp
 
 let () =
-  let interp ist env sigma concl id =
+  let interp ist poly env sigma concl id =
     let ist = Tac2interp.get_env ist in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in

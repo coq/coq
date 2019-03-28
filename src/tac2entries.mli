@@ -21,7 +21,11 @@ val register_type : ?local:bool -> rec_flag ->
 val register_primitive : ?local:bool ->
   Names.lident -> raw_typexpr -> ml_tactic_name -> unit
 
-val register_struct : ?local:bool -> strexpr -> unit
+val register_struct
+  :  ?local:bool
+  -> pstate:Proof_global.t option
+  -> strexpr
+  -> unit
 
 val register_notation : ?local:bool -> sexpr list -> int option ->
   raw_tacexpr -> unit
@@ -46,7 +50,7 @@ val print_ltac : Libnames.qualid -> unit
 (** {5 Eval loop} *)
 
 (** Evaluate a tactic expression in the current environment *)
-val call : default:bool -> raw_tacexpr -> unit
+val call : pstate:Proof_global.t -> default:bool -> raw_tacexpr -> Proof_global.t
 
 (** {5 Toplevel exceptions} *)
 

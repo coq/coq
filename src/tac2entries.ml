@@ -739,19 +739,20 @@ let register_redefinition ?(local = false) qid e =
   } in
   Lib.add_anonymous_leaf (inTac2Redefinition def)
 
-let perform_eval e =
+let perform_eval ~pstate e =
   let open Proofview.Notations in
   let env = Global.env () in
   let (e, ty) = Tac2intern.intern ~strict:false e in
   let v = Tac2interp.interp Tac2interp.empty_environment e in
   let selector, proof =
-    try
-      Goal_select.get_default_goal_selector (),
-      Proof_global.give_me_the_proof ()
-    with Proof_global.NoCurrentProof ->
+    match pstate with
+    | None ->
       let sigma = Evd.from_env env in
       let name, poly = Id.of_string "ltac2", false in
       Goal_select.SelectAll, Proof.start ~name ~poly sigma []
+    | Some pstate ->
+      Goal_select.get_default_goal_selector (),
+      Proof_global.give_me_the_proof pstate
   in
   let v = match selector with
   | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
@@ -773,13 +774,13 @@ let perform_eval e =
 
 (** Toplevel entries *)
 
-let register_struct ?local str = match str with
+let register_struct ?local ~pstate str = match str with
 | StrVal (mut, isrec, e) -> register_ltac ?local ~mut isrec e
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
 | StrMut (qid, e) -> register_redefinition ?local qid e
-| StrRun e -> perform_eval e
+| StrRun e -> perform_eval ~pstate e
 
 (** Toplevel exception *)
 
@@ -860,8 +861,8 @@ let print_ltac qid =
 
 (** Calling tactics *)
 
-let solve default tac =
-  let status = Proof_global.with_current_proof begin fun etac p ->
+let solve ~pstate default tac =
+  let pstate, status = Proof_global.with_current_proof begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Pfedit.solve g None tac ?with_end_tac p in
@@ -869,15 +870,16 @@ let solve default tac =
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus Vernacentries.command_focus p in
     p, status
-  end in
-  if not status then Feedback.feedback Feedback.AddedAxiom
+  end pstate in
+  if not status then Feedback.feedback Feedback.AddedAxiom;
+  pstate
 
-let call ~default e =
+let call ~pstate ~default e =
   let loc = e.loc in
   let (e, t) = intern ~strict:false e in
   let () = check_unit ?loc t in
   let tac = Tac2interp.interp Tac2interp.empty_environment e in
-  solve default (Proofview.tclIGNORE tac)
+  solve ~pstate default (Proofview.tclIGNORE tac)
 
 (** Primitive algebraic types than can't be defined Coq-side *)
 
