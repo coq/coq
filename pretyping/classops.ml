@@ -305,9 +305,16 @@ let install_path_printer f = path_printer := f
 
 let print_path x = !path_printer x
 
-let message_ambig l =
-  str"Ambiguous paths:" ++ spc () ++
-  prlist_with_sep fnl print_path l
+let path_comparator : (inheritance_path -> inheritance_path -> bool) ref =
+  ref (fun _ _ -> false)
+
+let install_path_comparator f = path_comparator := f
+
+let compare_path p q = !path_comparator p q
+
+let warn_ambiguous_path =
+  CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
+    (fun l -> strbrk"Ambiguous paths: " ++ prlist_with_sep fnl print_path l)
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
@@ -326,21 +333,15 @@ let add_coercion_in_graph (ic,source,target) =
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
-    try
-      if Bijint.Index.equal i j then begin
-	if different_class_params i then begin
-	  let _ = lookup_path_between_class ij in
-          ambig_paths := (ij,p)::!ambig_paths
-	end
-      end else begin
-        let _ = lookup_path_between_class ij in
-        ambig_paths := (ij,p)::!ambig_paths
-      end;
+    if not (Bijint.Index.equal i j) || different_class_params i then
+      match lookup_path_between_class ij with
+      | q ->
+        if not (compare_path p q) then
+          ambig_paths := (ij,p)::!ambig_paths;
+        false
+      | exception Not_found -> (add_new_path ij p; true)
+    else
       false
-    with Not_found -> begin
-      add_new_path ij p;
-      true
-    end
   in
   let try_add_new_path1 ij p =
     let _ = try_add_new_path ij p in ()
@@ -361,9 +362,7 @@ let add_coercion_in_graph (ic,source,target) =
 	 end)
       old_inheritance_graph
   end;
-  let is_ambig = match !ambig_paths with [] -> false | _ -> true in
-  if is_ambig && not !Flags.quiet then
-    Feedback.msg_info (message_ambig !ambig_paths)
+  match !ambig_paths with [] -> () | _ -> warn_ambiguous_path !ambig_paths
 
 type coercion = {
   coercion_type   : coe_typ;

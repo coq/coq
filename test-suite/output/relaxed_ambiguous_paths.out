@@ -1,0 +1,33 @@
+File "stdin", line 10, characters 0-28:
+Warning: Ambiguous paths: [ac; cd] : A >-> D [ambiguous-paths,typechecker]
+[ab] : A >-> B
+[ab; bd] : A >-> D
+[ac] : A >-> C
+[bd] : B >-> D
+[cd] : C >-> D
+[B_A] : B >-> A
+[C_A] : C >-> A
+[D_B] : D >-> B
+[D_A] : D >-> A
+[D_C] : D >-> C
+[A'_A] : A' >-> A
+[B_A'] : B >-> A'
+[B_A'; A'_A] : B >-> A
+[C_A'] : C >-> A'
+[C_A'; A'_A] : C >-> A
+[D_B; B_A'] : D >-> A'
+[D_A] : D >-> A
+[D_B] : D >-> B
+[D_C] : D >-> C
+File "stdin", line 103, characters 0-86:
+Warning: Ambiguous paths: [D_C; C_A'] : D >-> A'
+[ambiguous-paths,typechecker]
+[A'_A] : A' >-> A
+[B_A'] : B >-> A'
+[B_A'; A'_A] : B >-> A
+[C_A'] : C >-> A'
+[C_A'; A'_A] : C >-> A
+[D_B; B_A'] : D >-> A'
+[D_A] : D >-> A
+[D_B] : D >-> B
+[D_C] : D >-> C

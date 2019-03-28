@@ -156,6 +156,9 @@ Vernacular commands
 - Option `Refine Instance Mode` has been deprecated and will be removed in
   the next version.
 
+- `Coercion` does not warn ambiguous paths which are obviously convertible with
+  existing ones.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:

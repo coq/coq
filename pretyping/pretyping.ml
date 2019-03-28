@@ -1141,3 +1141,39 @@ let understand_tcc ?flags env sigma ?expected_type c =
 let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
+
+let path_convertible p q =
+  let open Classops in
+  let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
+  let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
+  let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
+  let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Decl_kinds.Explicit,t,b) in
+  let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous,None) in
+  let path_to_gterm p =
+    match p with
+    | ic :: p' ->
+      let names =
+        List.map (fun n -> Id.of_string ("x" ^ string_of_int n))
+          (List.interval 0 ic.coe_param)
+      in
+      List.fold_right
+        (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@
+        List.fold_left
+          (fun t ic ->
+             mkGApp (mkGRef ic.coe_value,
+                     List.make ic.coe_param (mkGHole ()) @ [t]))
+          (mkGApp (mkGRef ic.coe_value, List.map (fun i -> mkGVar i) names))
+          p'
+    | [] -> anomaly (str "A coercion path shouldn't be empty.")
+  in
+  try
+    let e = Global.env () in
+    let sigma,tp = understand_tcc e (Evd.from_env e) (path_to_gterm p) in
+    let sigma,tq = understand_tcc e sigma (path_to_gterm q) in
+    if Evd.has_undefined sigma then
+      false
+    else
+      let _ = Evarconv.unify_delay e sigma tp tq in true
+  with Evarconv.UnableToUnify _ | PretypeError _ -> false
+
+let _ = Classops.install_path_comparator path_convertible
