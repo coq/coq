@@ -19,7 +19,7 @@ open Libnames
 module Parsable :
 sig
   type t
-  val make : ?file:Loc.source -> char Stream.t -> t
+  val make : ?loc:Loc.t -> char Stream.t -> t
   (* Get comment parsing information from the Lexer *)
   val comment_state : t -> ((int * int) * string) list
 end
@@ -121,7 +121,7 @@ end
 
 (** Parse a string *)
 
-val parse_string : 'a Entry.t -> string -> 'a
+val parse_string : 'a Entry.t -> ?loc:Loc.t -> string -> 'a
 val eoi_entry : 'a Entry.t -> 'a Entry.t
 val map_entry : ('a -> 'b) -> 'a Entry.t -> 'b Entry.t
 

@@ -5,7 +5,7 @@
 type pattern = string * string
 
 type location_function = int -> Loc.t
-type 'te lexer_func = char Stream.t -> 'te Stream.t * location_function
+type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function
 
 type 'te lexer =
   { tok_func : 'te lexer_func;

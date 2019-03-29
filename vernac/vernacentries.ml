@@ -2175,7 +2175,7 @@ let vernac_load ~st interp fname =
   let input =
     let longfname = Loadpath.locate_file fname in
     let in_chan = open_utf8_file_in longfname in
-    Pcoq.Parsable.make ~file:(Loc.InFile longfname) (Stream.of_channel in_chan) in
+    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile longfname)) (Stream.of_channel in_chan) in
   let rec load_loop ~pstate =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in

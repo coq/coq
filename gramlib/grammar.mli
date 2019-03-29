@@ -23,7 +23,7 @@ module type S =
   sig
     type te
     type parsable
-    val parsable : char Stream.t -> parsable
+    val parsable : ?loc:Loc.t -> char Stream.t -> parsable
     val tokens : string -> (string * int) list
     module Entry :
       sig

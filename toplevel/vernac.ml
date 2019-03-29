@@ -91,7 +91,8 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
 
   let in_pa =
-    Pcoq.Parsable.make ~file:(Loc.InFile file) (Stream.of_channel in_chan) in
+    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile file))
+      (Stream.of_channel in_chan) in
   let open State in
 
   (* ids = For beautify, list of parsed sids *)
