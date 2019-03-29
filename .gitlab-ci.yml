@@ -516,7 +516,7 @@ test-suite:base+async:
   dependencies:
     - build:base
   variables:
-    COQFLAGS: "-async-proofs on"
+    COQFLAGS: "-async-proofs on -async-proofs-cache force"
   allow_failure: true
   only:
     variables:
