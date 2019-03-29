@@ -323,7 +323,7 @@ The syntax for adding a new ring is
    decidable :n:`@term`
       declares the ring as computational. The expression
       :n:`@term` is the correctness proof of an equality test ``?=!``
-      (which  hould be evaluable). Its type should be of the form
+      (which should be evaluable). Its type should be of the form
       ``forall x y, x ?=! y = true → x == y``.
 
    morphism :n:`@term`
