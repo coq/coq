@@ -443,7 +443,7 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = ConstructRef cstr in
     let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
-    let () = Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs) in
+    let () = Recordops.declare_structure(cstr, List.rev kinds, List.rev sp_projs) in
     rsp
   in
   List.mapi map record_data

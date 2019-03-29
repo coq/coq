@@ -45,14 +45,14 @@ let structure_table =
 let projection_table =
   Summary.ref (Cmap.empty : struc_typ Cmap.t) ~name:"record-projs"
 
-(* TODO: could be unify struc_typ and struc_tuple ? in particular,
-   is the inductive always (fst constructor) ? It seems so... *)
+(* TODO: could be unify struc_typ and struc_tuple ? *)
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * Constant.t option list
+    constructor * (Name.t * bool) list * Constant.t option list
 
-let load_structure i (_,(ind,id,kl,projs)) =
+let load_structure i (_, (id,kl,projs)) =
   let open Declarations in
+  let ind = fst id in
   let mib, mip = Global.lookup_inductive ind in
   let n = mib.mind_nparams in
   let struc =
@@ -65,8 +65,7 @@ let load_structure i (_,(ind,id,kl,projs)) =
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (subst,((kn,i),id,kl,projs as obj)) = 
-  let kn' = subst_mind subst kn in
+let subst_structure (subst, (id, kl, projs as obj)) =
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
@@ -75,10 +74,10 @@ let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
     projs
   in
   let id' = subst_constructor subst id in
-  if projs' == projs && kn' == kn && id' == id then obj else
-    ((kn',i),id',kl,projs')
+  if projs' == projs && id' == id then obj else
+    (id',kl,projs')
 
-let discharge_structure (_,x) = Some x
+let discharge_structure (_, x) = Some x
 
 let inStruc : struc_tuple -> obj =
   declare_object {(default_object "STRUCTURE") with
@@ -88,8 +87,8 @@ let inStruc : struc_tuple -> obj =
     classify_function = (fun x -> Substitute x);
     discharge_function = discharge_structure }
 
-let declare_structure (s,c,kl,pl) =
-  Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
+let declare_structure o =
+  Lib.add_anonymous_leaf (inStruc o)
 
 let lookup_structure indsp = Indmap.find indsp !structure_table
 
