@@ -7,7 +7,19 @@
   (with-outputs-to coqtop-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqtop} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (bash "echo \"$(pwd)/%{bin:coqtop} -coqlib $(pwd)/%{project_root}\" \\$@")
+    (run chmod +x %{targets})))))
+
+(rule
+ (targets coqc-prelude)
+ (deps
+  %{bin:coqc}
+  %{project_root}/theories/Init/Prelude.vo)
+ (action
+  (with-outputs-to coqc-prelude
+   (progn
+    (echo "#!/usr/bin/env bash\n")
+    (bash "echo \"$(pwd)/%{bin:coqc} -coqlib $(pwd)/%{project_root}\" \\$@")
     (run chmod +x %{targets})))))
 
 (rule
@@ -20,7 +32,7 @@
   (with-outputs-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqtop.byte} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (bash "echo \"$(pwd)/%{bin:coqtop.byte} -coqlib $(pwd)/%{project_root}\" \\$@")
     (run chmod +x %{targets})))))
 
 (rule
@@ -36,5 +48,5 @@
   (with-outputs-to coqide-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \"$@\"")
+    (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \\$@")
     (run chmod +x %{targets})))))
