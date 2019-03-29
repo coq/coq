@@ -11,6 +11,8 @@
 Require Import Ring_tac BinList Ring_polynom InitialRing.
 Require Export Field_theory.
 
+Strategy expand [PEeval].
+
  (* syntaxification *)
  (* We do not assume that Cst recognizes the rO and rI terms as constants, as *)
  (* the tactic could be used to discriminate occurrences of an opaque *)

@@ -20,6 +20,7 @@ Require Export Ncring.
 Require Import Ncring_polynom.
 Require Import Ncring_initial.
 
+Strategy expand [PEeval].
 
 Set Implicit Arguments.
 

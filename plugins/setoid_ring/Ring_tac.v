@@ -17,6 +17,7 @@ Require Export ListTactics.
 Require Import InitialRing.
 Declare ML Module "newring_plugin".
 
+Strategy expand [PEeval].
 
 (* adds a definition t' on the normal form of t and an hypothesis id
    stating that t = t' (tries to produces a proof as small as possible) *)

@@ -126,7 +126,7 @@ type strategy_obj =
 let inStrategy : strategy_obj -> obj =
   declare_object {(default_object "STRATEGY") with
                     cache_function = (fun (_,obj) -> cache_strategy obj);
-                    load_function = (fun _ (_,obj) -> cache_strategy obj);
+                    open_function = (fun i (_,obj) -> if i = 1 then cache_strategy obj);
                     subst_function = subst_strategy;
                     discharge_function = discharge_strategy;
                     classify_function = classify_strategy }
