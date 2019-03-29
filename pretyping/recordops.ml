@@ -277,21 +277,21 @@ let add_canonical_structure warn o =
     (* XXX: Undesired global access to env *)
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let lo = compute_canonical_projections env warn o in
-    List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
+    compute_canonical_projections env warn o |>
+    List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
-      let ocs = try Some (assoc_pat cs_pat l)
-      with Not_found -> None
-      in match ocs with
-        | None -> object_table := GlobRef.Map.add proj ((pat,s)::l) !object_table;
-        | Some (c, cs) ->
-              let old_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF))
-              and new_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF))
-              in
-              let prj = (Nametab.pr_global_env Id.Set.empty proj)
-              and hd_val = (pr_cs_pattern cs_pat) in
-              if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
-          lo
+      match assoc_pat cs_pat l with
+      | exception Not_found ->
+          object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table
+      | _, cs ->
+        if warn
+        then
+          let old_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF) in
+          let new_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF) in
+          let prj = Nametab.pr_global_env Id.Set.empty proj in
+          let hd_val = pr_cs_pattern cs_pat in
+          warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s)
+      )
 
 let open_canonical_structure i (_, o) =
   if Int.equal i 1 then add_canonical_structure false o
