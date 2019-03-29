@@ -60,7 +60,11 @@ let prrecarg = function
      str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
 let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 
-let get_current_context = Vernacstate.Proof_global.get_current_context
+let get_current_context () =
+  try Vernacstate.Proof_global.get_current_context ()
+  with Vernacstate.Proof_global.NoCurrentProof ->
+    let env = Global.env() in
+    Evd.from_env env, env
 
 (* term printers *)
 let envpp pp = let sigma,env = get_current_context () in pp env sigma
