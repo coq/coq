@@ -13,3 +13,6 @@ Makefile.coq.conf
 *.a
 *.aux
 tests/*.log
+*.install
+_build
+.merlin

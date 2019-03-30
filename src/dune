@@ -1,8 +1,8 @@
 (library
- (name ltac2)
- (public_name coq.plugins.ltac2)
+ (name ltac2_plugin)
+ (public_name ltac2.plugin)
  (modules_without_implementation tac2expr tac2qexpr tac2types)
- (flags :standard -w -50)
+ (flags :standard -warn-error -9-27-50)
  (libraries coq.plugins.firstorder))
 
 (rule
