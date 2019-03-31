@@ -19,16 +19,19 @@ open Gramlib
 module CharOrd = struct type t = char let compare : char -> char -> int = compare end
 module CharMap = Map.Make (CharOrd)
 
+type starts_quotation = NoQuotation | Quotation
+
 type ttree = {
-  node : string option;
-  branch : ttree CharMap.t }
+  node : (string * starts_quotation) option;
+  branch : ttree CharMap.t;
+}
 
 let empty_ttree = { node = None; branch = CharMap.empty }
 
-let ttree_add ttree str =
+let ttree_add ttree (str,quot) =
   let rec insert tt i =
     if i == String.length str then
-      {node = Some str; branch = tt.branch}
+      {node = Some (str,quot); branch = tt.branch}
     else
       let c = str.[i] in
       let br =
@@ -75,7 +78,7 @@ let ttree_elements ttree =
   let rec elts tt accu =
     let accu = match tt.node with
     | None -> accu
-    | Some s -> CString.Set.add s accu
+    | Some (s,_) -> CString.Set.add s accu
     in
     CharMap.fold (fun _ tt accu -> elts tt accu) tt.branch accu
   in
@@ -259,11 +262,11 @@ let is_keyword s =
   try match (ttree_find !token_tree s).node with None -> false | Some _ -> true
   with Not_found -> false
 
-let add_keyword str =
+let add_keyword ?(quotation=NoQuotation) str =
   if not (is_keyword str) then
     begin
       check_keyword str;
-      token_tree := ttree_add !token_tree str
+      token_tree := ttree_add !token_tree (str,quotation)
     end
 
 let remove_keyword str =
@@ -529,11 +532,62 @@ and progress_utf8 loc last nj n c tt cs =
 and progress_from_byte loc last nj tt cs c =
   progress_utf8 loc last nj (utf8_char_size loc cs c) c tt cs
 
+type marker = Delimited of int * char list * char list | ImmediateAsciiIdent
+
+let peek_marker_len b e s =
+  let rec peek n =
+    match stream_nth n s with
+    | c -> if c = b then peek (n+1) else n, List.make n b, List.make n e
+    | exception Stream.Failure -> n, List.make n b, List.make n e
+  in
+  let len, start, stop = peek 0 in
+  if len = 0 then raise Stream.Failure
+  else Delimited (len, start, stop)
+
+let peek_marker s =
+  match stream_nth 0 s with
+    | '(' -> peek_marker_len '(' ')' s
+    | '[' -> peek_marker_len '[' ']' s
+    | '{' -> peek_marker_len '{' '}' s
+    | ('a'..'z' | 'A'..'Z' | '_') -> ImmediateAsciiIdent
+    | _ -> raise Stream.Failure
+
+let parse_quotation loc s =
+  match peek_marker s with
+  | ImmediateAsciiIdent ->
+      let c = Stream.next s in
+      let len =
+        try ident_tail loc (store 0 c) s with
+          Stream.Failure -> raise (Stream.Error "")
+      in
+      get_buff len
+  | Delimited (lenmarker, bmarker, emarker) ->
+      let b = Buffer.create 80 in
+      let commit1 c = Buffer.add_char b c; Stream.junk s in
+      let commit l = List.iter commit1 l in
+      let rec quotation depth =
+        match Stream.npeek lenmarker s with
+        | l when l = bmarker ->
+              commit l;
+              quotation (depth + 1)
+        | l when l = emarker ->
+              commit l;
+              if depth > 1 then quotation (depth - 1)
+        | c :: cs ->
+              commit1 c;
+              quotation depth
+        | [] -> raise Stream.Failure
+      in
+      quotation 0;
+      Buffer.contents b
+
+
 let find_keyword loc id s =
   let tt = ttree_find !token_tree id in
   match progress_further loc tt.node 0 tt s with
   | None -> raise Not_found
-  | Some c -> KEYWORD c
+  | Some (c,NoQuotation) -> KEYWORD c
+  | Some (c,Quotation) -> QUOTATION(c, parse_quotation loc s)
 
 let process_sequence loc bp c cs =
   let rec aux n cs =
@@ -548,7 +602,8 @@ let process_chars ~diff_mode loc bp c cs =
   let t = progress_from_byte loc None (-1) !token_tree cs c in
   let ep = Stream.count cs in
   match t with
-    | Some t -> (KEYWORD t, set_loc_pos loc bp ep)
+    | Some (t,NoQuotation) -> (KEYWORD t, set_loc_pos loc bp ep)
+    | Some (c,Quotation) -> (QUOTATION(c, parse_quotation loc cs), set_loc_pos loc bp ep)
     | None ->
         let ep' = bp + utf8_char_size loc cs c in
         if diff_mode then begin
@@ -740,15 +795,15 @@ type te = Tok.t
 (** Names of tokens, for this lexer, used in Grammar error messages *)
 
 let token_text = function
-  | ("", t) -> "'" ^ t ^ "'"
-  | ("IDENT", "") -> "identifier"
-  | ("IDENT", t) -> "'" ^ t ^ "'"
-  | ("INT", "") -> "integer"
-  | ("INT", s) -> "'" ^ s ^ "'"
-  | ("STRING", "") -> "string"
-  | ("EOI", "") -> "end of input"
-  | (con, "") -> con
-  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
+  | ("", Some t) -> "'" ^ t ^ "'"
+  | ("IDENT", None) -> "identifier"
+  | ("IDENT", Some t) -> "'" ^ t ^ "'"
+  | ("INT", None) -> "integer"
+  | ("INT", Some s) -> "'" ^ s ^ "'"
+  | ("STRING", None) -> "string"
+  | ("EOI", None) -> "end of input"
+  | (con, None) -> con
+  | (con, Some prm) -> con ^ " \"" ^ prm ^ "\""
 
 let func next_token ?loc cs =
   let loct = loct_create () in
@@ -765,9 +820,10 @@ let func next_token ?loc cs =
 let make_lexer ~diff_mode = {
   Plexing.tok_func = func (next_token ~diff_mode);
   Plexing.tok_using =
-    (fun pat -> match Tok.of_pattern pat with
-       | KEYWORD s -> add_keyword s
-       | _ -> ());
+    (fun pat -> match Tok.is_keyword pat with
+       | Some (false,s) -> add_keyword ~quotation:NoQuotation s
+       | Some (true,s) -> add_keyword ~quotation:Quotation s
+       | None -> ());
   Plexing.tok_removing = (fun _ -> ());
   Plexing.tok_match = Tok.match_pattern;
   Plexing.tok_text = token_text }
@@ -807,6 +863,6 @@ let strip s =
 let terminal s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
-  if is_ident_not_keyword s then IDENT s
-  else if is_number s then INT s
-  else KEYWORD s
+  if is_ident_not_keyword s then "IDENT", Some s
+  else if is_number s then "INT", Some s
+  else "", Some s

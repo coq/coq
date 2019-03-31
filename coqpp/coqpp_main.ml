@@ -163,6 +163,8 @@ let is_token s = match string_split s with
 
 let rec parse_tokens = function
 | [GSymbString s] -> SymbToken ("", Some s)
+| [GSymbQualid ("QUOTATION", None); GSymbString s] ->
+    SymbToken ("QUOTATION", Some s)
 | [GSymbQualid ("SELF", None)] -> SymbSelf
 | [GSymbQualid ("NEXT", None)] -> SymbNext
 | [GSymbQualid ("LIST0", None); tkn] ->
@@ -212,17 +214,9 @@ let print_fun fmt (vars, body) =
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise
     violates value restriction *)
-let print_tok fmt = function
-| "", s -> fprintf fmt "Tok.KEYWORD %a" print_string s
-| "IDENT", s -> fprintf fmt "Tok.IDENT %a" print_string s
-| "PATTERNIDENT", s -> fprintf fmt "Tok.PATTERNIDENT %a" print_string s
-| "FIELD", s -> fprintf fmt "Tok.FIELD %a" print_string s
-| "INT", s -> fprintf fmt "Tok.INT %a" print_string s
-| "STRING", s -> fprintf fmt "Tok.STRING %a" print_string s
-| "LEFTQMARK", _ -> fprintf fmt "Tok.LEFTQMARK"
-| "BULLET", s -> fprintf fmt "Tok.BULLET %a" print_string s
-| "EOI", _ -> fprintf fmt "Tok.EOI"
-| _ -> failwith "Tok.of_pattern: not a constructor"
+let print_tok fmt (k,o) =
+  let print_pat fmt = print_opt fmt print_string in
+  fprintf fmt "(%a,%a)" print_string k print_pat o
 
 let rec print_prod fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
@@ -240,7 +234,6 @@ and print_symbols fmt = function
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
-  let s = match s with None -> "" | Some s -> s in
   fprintf fmt "(Extend.Atoken (%a))" print_tok (t, s)
 | SymbEntry (e, None) ->
   fprintf fmt "(Extend.Aentry %s)" e

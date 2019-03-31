@@ -22,7 +22,7 @@ If you want to build the standard libraries and plugins you should
 call `make -f Makefile.dune voboot`. It is usually enough to do that
 once per-session.
 
-More helper targets are availabe in `Makefile.dune`, `make -f
+More helper targets are available in `Makefile.dune`, `make -f
 Makefile.dune` will display some help.
 
 Dune places build artifacts in a separate directory `_build`; it will

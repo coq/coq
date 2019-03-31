@@ -2,7 +2,7 @@
 (* plexing.ml,v *)
 (* Copyright (c) INRIA 2007-2017 *)
 
-type pattern = string * string
+type pattern = string * string option
 
 type location_function = int -> Loc.t
 type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te Stream.t * location_function

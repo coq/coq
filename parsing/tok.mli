@@ -19,6 +19,7 @@ type t =
   | STRING of string
   | LEFTQMARK
   | BULLET of string
+  | QUOTATION of string * string
   | EOI
 
 val equal : t -> t -> bool
@@ -29,7 +30,19 @@ val to_string : t -> string
 val print : Format.formatter -> t -> unit
 val match_keyword : string -> t -> bool
 
-(** for camlp5 *)
-val of_pattern : string*string -> t
-val to_pattern : t -> string*string
-val match_pattern : string*string -> t -> string
+(** Utility function for the test returned by a QUOTATION token:
+    It returns the delimiter parenthesis, if any, and the text
+    without delimiters. Eg `{{{ text }}}` -> Some '{', ` text ` *)
+val trim_quotation : string -> char option * string
+
+(** for camlp5,
+    eg GRAMMAR EXTEND ..... [ IDENT "x" -> .... END
+    is a pattern ("IDENT", Some "x")
+*)
+type pattern = string * string option (* = Plexing.pattern *)
+
+val is_keyword : pattern -> (bool * string) option
+val pattern_for_EOI : pattern
+val pattern_for_KEYWORD : string -> pattern
+val pattern_for_IDENT : string -> pattern
+val match_pattern : pattern -> t -> string

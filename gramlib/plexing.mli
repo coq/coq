@@ -8,13 +8,13 @@
    grammars (see module [Grammar]). It also provides some useful functions
    to create lexers. *)
 
-type pattern = string * string
+type pattern = string * string option
     (* Type for values used by the generated code of the EXTEND
        statement to represent terminals in entry rules.
 -      The first string is the constructor name (must start with
        an uppercase character). When it is empty, the second string
        is supposed to be a keyword.
--      The second string is the constructor parameter. Empty if it
+-      The second component is the constructor parameter. None if it
        has no parameter (corresponding to the 'wildcard' pattern).
 -      The way tokens patterns are interpreted to parse tokens is done
        by the lexer, function [tok_match] below. *)
