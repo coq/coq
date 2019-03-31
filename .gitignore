@@ -64,6 +64,8 @@ time-of-build.log
 time-of-build-pretty.log
 time-of-build-before.log
 time-of-build-after.log
+time-of-build-pretty.log2
+time-of-build-pretty.log3
 .csdp.cache
 test-suite/.lia.cache
 test-suite/.nra.cache
