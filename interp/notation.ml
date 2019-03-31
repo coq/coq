@@ -606,20 +606,18 @@ module PrimTokenNotation = struct
     At least [c] is known to be evar-free, since it comes from
     our own ad-hoc [constr_of_glob] or from conversions such
     as [coqint_of_rawnum].
+
+    It is important to fully normalize the term, *including inductive
+    parameters of constructors*; see
+    https://github.com/coq/coq/issues/9840 for details on what goes
+    wrong if this does not happen, e.g., from using the vm rather than
+    cbv.
 *)
 
-let eval_constr env sigma (c : Constr.t) =
-  let c = EConstr.of_constr c in
-  let sigma,t = Typing.type_of env sigma c in
-  let c' = Vnorm.cbv_vm env sigma c t in
-  EConstr.Unsafe.to_constr c'
-
-(* For testing with "compute" instead of "vm_compute" :
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
   let c' = Tacred.compute env sigma c in
   EConstr.Unsafe.to_constr c'
-*)
 
 let eval_constr_app env sigma c1 c2 =
   eval_constr env sigma (mkApp (c1,[| c2 |]))
