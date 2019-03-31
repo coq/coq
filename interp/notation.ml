@@ -632,6 +632,9 @@ let rec constr_of_glob env sigma g = match DAst.get g with
   | Glob_term.GRef (ConstructRef c, _) ->
       let sigma,c = Evd.fresh_constructor_instance env sigma c in
       sigma,mkConstructU c
+  | Glob_term.GRef (IndRef c, _) ->
+      let sigma,c = Evd.fresh_inductive_instance env sigma c in
+      sigma,mkIndU c
   | Glob_term.GApp (gc, gcl) ->
       let sigma,c = constr_of_glob env sigma gc in
       let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in
