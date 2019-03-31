@@ -831,7 +831,7 @@ let open Tok in
 let (++) r s = Next (r, s) in
 let rules = [
   Rule (
-    Stop ++ Aentry test_dollar_ident ++ Atoken (KEYWORD "$") ++ Aentry Prim.ident,
+    Stop ++ Aentry test_dollar_ident ++ Atoken (pattern_for_KEYWORD "$") ++ Aentry Prim.ident,
     begin fun id _ _ loc ->
       let id = Loc.tag ~loc id in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
@@ -840,7 +840,7 @@ let rules = [
   );
 
   Rule (
-    Stop ++ Aentry test_ampersand_ident ++ Atoken (KEYWORD "&") ++ Aentry Prim.ident,
+    Stop ++ Aentry test_ampersand_ident ++ Atoken (pattern_for_KEYWORD "&") ++ Aentry Prim.ident,
     begin fun id _ _ loc ->
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
@@ -849,8 +849,8 @@ let rules = [
   );
 
   Rule (
-    Stop ++ Atoken (IDENT "ltac2") ++ Atoken (KEYWORD ":") ++
-      Atoken (KEYWORD "(") ++ Aentry tac2expr ++ Atoken (KEYWORD ")"),
+    Stop ++ Atoken (pattern_for_IDENT "ltac2") ++ Atoken (pattern_for_KEYWORD ":") ++
+      Atoken (pattern_for_KEYWORD "(") ++ Aentry tac2expr ++ Atoken (pattern_for_KEYWORD ")"),
     begin fun _ tac _ _ _ loc ->
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
