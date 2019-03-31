@@ -183,6 +183,14 @@ Tools
   priorities, so that prefixes resolve to the most convenient bindings.
   The documentation pages for CoqIDE provides further details.
 
+- The pretty timing diff scripts (flag `TIMING=1` to a
+  `coq_makefile`-made `Makefile`, also
+  `tools/make-both-single-timing-files.py`,
+  `tools/make-both-time-files.py`, and `tools/make-one-time-file.py`)
+  now correctly support non-UTF-8 characters in the output of
+  `coqc`/`make` as well as printing to stdout, on both python2 and
+  python3.
+
 Standard Library
 
 - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about

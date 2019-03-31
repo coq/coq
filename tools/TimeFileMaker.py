@@ -34,6 +34,24 @@ def reformat_time_string(time):
     minutes, seconds = divmod(seconds, 60)
     return '%dm%02d.%ss' % (minutes, seconds, milliseconds)
 
+def get_file_lines(file_name):
+    if file_name == '-':
+        if hasattr(sys.stdin, 'buffer'):
+            lines = sys.stdin.buffer.readlines()
+        else:
+            lines = sys.stdin.readlines()
+    else:
+        with open(file_name, 'rb') as f:
+            lines = f.readlines()
+    for line in lines:
+        try:
+            yield line.decode('utf-8')
+        except UnicodeDecodeError: # invalid utf-8
+            pass
+
+def get_file(file_name):
+    return ''.join(get_file_lines(file_name))
+
 def get_times(file_name):
     '''
     Reads the contents of file_name, which should be the output of
@@ -41,11 +59,7 @@ def get_times(file_name):
     names to compile durations, as strings.  Removes common prefixes
     using STRIP_REG and STRIP_REP.
     '''
-    if file_name == '-':
-        lines = sys.stdin.read()
-    else:
-        with open(file_name, 'r', encoding="utf-8") as f:
-            lines = f.read()
+    lines = get_file(file_name)
     reg = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
     times = reg.findall(lines)
     if all(time in ('0.00', '0.01') for name, time in times):
@@ -61,11 +75,7 @@ def get_single_file_times(file_name):
     'coqc -time', and parses it to construct a dict mapping lines to
     to compile durations, as strings.
     '''
-    if file_name == '-':
-        lines = sys.stdin.read()
-    else:
-        with open(file_name, 'r', encoding="utf-8") as f:
-            lines = f.read()
+    lines = get_file(file_name)
     reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs (.*)$', re.MULTILINE)
     times = reg.findall(lines)
     if len(times) == 0: return dict()
@@ -212,7 +222,7 @@ def print_or_write_table(table, files):
         if hasattr(sys.stdout, 'buffer'):
             sys.stdout.buffer.write(table.encode("utf-8"))
         else:
-            sys.stdout.write(table)
+            sys.stdout.write(table.encode("utf-8"))
     for file_name in files:
         if file_name != '-':
             with open(file_name, 'w', encoding="utf-8") as f:
