@@ -75,6 +75,15 @@ Notations
 - Various bugs have been fixed (e.g. PR #9214 on removing spurious
   parentheses on abbreviations shortening a strict prefix of an application).
 
+- Numeral Notations now support inductive types in the input to
+  printing functions (e.g., numeral notations can be defined for terms
+  containing things like `@cons nat O O`), and parsing functions now
+  fully normalize terms including parameters of constructors (so that,
+  e.g., a numeral notation whose parsing function outputs a proof of
+  `Nat.gcd x y = 1` will no longer fail to parse due to containing the
+  constant `Nat.gcd` in the parameter-argument of `eq_refl`).  See
+  #9840 for more details.
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)
