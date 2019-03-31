@@ -445,7 +445,7 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
  Arguments Mkt this {is_ok}.
  Hint Resolve is_ok : typeclass_instances.
 
- Definition In (x : elt)(s : t) := M.In x s.(this).
+ Definition In (x : elt)(s : t) := M.In x (this s).
  Definition Equal (s s' : t) := forall a : elt, In a s <-> In a s'.
  Definition Subset (s s' : t) := forall a : elt, In a s -> In a s'.
  Definition Empty (s : t) := forall a : elt, ~ In a s.

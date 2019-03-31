@@ -600,7 +600,7 @@ Section MakeRingPol.
  Lemma pow_pos_add x i j : x^(j + i) == x^i * x^j.
  Proof.
   rewrite Pos.add_comm.
-  apply (pow_pos_add Rsth Reqe.(Rmul_ext) ARth.(ARmul_assoc)).
+  apply (pow_pos_add Rsth (Rmul_ext Reqe) (ARmul_assoc ARth)).
  Qed.
 
  Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c ?=! c').
@@ -810,7 +810,7 @@ Section MakeRingPol.
  Proof.
  revert l.
  induction P as [c0 | j P IH | P1 IH1 i P2 IH2]; intros l; Esimpl. 
- - assert (H := div_th.(div_eucl_th) c0 c). 
+ - assert (H := (div_eucl_th div_th) c0 c).
    destruct cdiv as (q,r). rewrite H; Esimpl. add_permut. 
  - destr_factor. Esimpl.
  - destr_factor. Esimpl. add_permut.
@@ -827,7 +827,7 @@ Section MakeRingPol.
   try (case Pos.compare_spec; intros He);
   rewrite ?He;
    destr_factor; simpl; Esimpl.
- - assert (H := div_th.(div_eucl_th) c0 c).
+ - assert (H := div_eucl_th div_th c0 c).
    destruct cdiv as (q,r). rewrite H; Esimpl. add_permut.
  - assert (H := Mcphi_ok P c). destr_factor. Esimpl.
  - now rewrite <- jump_add, Pos.sub_add.
@@ -1073,7 +1073,7 @@ Section POWER.
    - rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
    - rewrite IHpe. Esimpl.
    - rewrite Ppow_N_ok by reflexivity.
-     rewrite pow_th.(rpow_pow_N). destruct n0; simpl; Esimpl.
+     rewrite (rpow_pow_N pow_th). destruct n0; simpl; Esimpl.
      induction p;simpl; now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
   Qed.
 
@@ -1329,7 +1329,7 @@ Section POWER.
   case_eq (get_sign c);intros.
   assert (H1 := (morph_eq CRmorph) c0  cI).
   destruct (c0 ?=! cI).
-   rewrite (CRmorph.(morph_eq) _ _ (get_sign_spec.(sign_spec) _ H)). Esimpl. rewrite H1;trivial.
+   rewrite (morph_eq CRmorph _ _ (sign_spec get_sign_spec _ H)). Esimpl. rewrite H1;trivial.
    rewrite <- r_list_pow_rev;trivial;Esimpl.
   apply mkmultm1_ok.
  rewrite <- r_list_pow_rev; apply mkmult_rec_ok.
@@ -1340,7 +1340,7 @@ Qed.
  Proof.
   intros;unfold mkadd_mult.
   case_eq (get_sign c);intros.
-  rewrite (CRmorph.(morph_eq) _ _ (get_sign_spec.(sign_spec) _ H));Esimpl.
+  rewrite (morph_eq CRmorph _ _ (sign_spec get_sign_spec _ H));Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
   rewrite mkmult_c_pos_ok;Esimpl.
  Qed.
@@ -1421,7 +1421,7 @@ Qed.
     | xO _ => rpow r (Cp_phi (Npos p))
     | 1 => r
     end == pow_pos rmul r p.
- Proof. destruct p; now rewrite ?pow_th.(rpow_pow_N). Qed.
+ Proof. destruct p; now rewrite ?(rpow_pow_N pow_th). Qed.
 
  Lemma Pphi_pow_ok : forall P fv, Pphi_pow fv P  == P@fv.
  Proof.

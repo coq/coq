@@ -46,6 +46,11 @@ Specification language, type inference
   solved by writing an explicit `return` clause, sometimes even simply
   an explicit `return _` clause.
 
+- Using non-projection values with the projection syntax is not
+  allowed. For instance "0.(S)" is not a valid way to write "S 0".
+  Projections from non-primitive (emulated) records are allowed with
+  warning "nonprimitive-projection-syntax".
+
 Kernel
 
 - Added primitive integers

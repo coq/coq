@@ -74,8 +74,8 @@ Record retract_cond : Prop :=
 
 (** The dependent elimination above implies the axiom of choice: *)
 
-Lemma AC : forall r:retract_cond, retract -> forall a:A, r.(j2) (r.(i2) a) = a.
-Proof. intros r. exact r.(inv2). Qed.
+Lemma AC : forall r:retract_cond, retract -> forall a:A, j2 r (i2 r a) = a.
+Proof. intros r. exact (inv2 r). Qed.
 
 End Retracts.
 

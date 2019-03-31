@@ -1,5 +1,6 @@
 
 Set Printing Projections.
+Set Primitive Projections.
 
 Class HostFunction := host_func : Type.
 

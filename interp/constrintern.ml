@@ -1033,7 +1033,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
   | TrueGlobal (VarRef _) when no_secvar ->
       (* Rule out section vars since these should have been found by intern_var *)
       raise Not_found
-  | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), true, args
+  | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), Some ref, args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition ?loc sp in
       let nids = List.length ids in
@@ -1043,7 +1043,6 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
       let terms = make_subst ids (List.map fst args1) in
       let subst = (terms, Id.Map.empty, Id.Map.empty, Id.Map.empty) in
       let infos = (Id.Map.empty, env) in
-      let projapp = match c with NRef _ -> true | _ -> false in
       let c = instantiate_notation_constr loc intern intern_cases_pattern_as_binder ntnvars subst infos c in
       let loc = c.loc in
       let err () =
@@ -1067,33 +1066,60 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
         user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)
       | Some _, _ -> err ()
       in
-      c, projapp, args2
+      c, None, args2
 
-let intern_applied_reference intern env namedctx (_, ntnvars as lvar) us args qid =
+let warn_nonprimitive_projection =
+  CWarnings.create ~name:"nonprimitive-projection-syntax" ~category:"syntax" ~default:CWarnings.Disabled
+    Pp.(fun f -> pr_qualid f ++ str " used as a primitive projection but is not one.")
+
+let error_nonprojection_syntax ?loc qid =
+  CErrors.user_err ?loc ~hdr:"nonprojection-syntax" Pp.(pr_qualid qid ++ str" is not a projection.")
+
+let check_applied_projection isproj realref qid =
+  match isproj with
+  | None -> ()
+  | Some projargs ->
+    let is_prim = match realref with
+      | None | Some (IndRef _ | ConstructRef _ | VarRef _) -> false
+      | Some (ConstRef c) ->
+        if Recordops.is_primitive_projection c then true
+        else if Recordops.is_projection c then false
+        else error_nonprojection_syntax ?loc:qid.loc qid
+        (* TODO check projargs, note we will need implicit argument info *)
+    in
+    if not is_prim then warn_nonprimitive_projection ?loc:qid.loc qid
+
+let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us args qid =
   let loc = qid.CAst.loc in
   if qualid_is_ident qid then
-      try intern_var env lvar namedctx loc (qualid_basename qid) us, args
+      try
+        let res = intern_var env lvar namedctx loc (qualid_basename qid) us in
+        check_applied_projection isproj None qid;
+        res, args
       with Not_found ->
       try
-        let r, projapp, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
+        let r, realref, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
+        check_applied_projection isproj realref qid;
 	let x, imp, scopes, l = find_appl_head_data r in
 	  (x,imp,scopes,l), args2
       with Not_found ->
         (* Extra allowance for non globalizing functions *)
         if !interning_grammar || env.unb then
+          (* check_applied_projection ?? *)
           (gvar (loc,qualid_basename qid) us, [], [], []), args
         else Nametab.error_global_not_found qid
   else
-    let r,projapp,args2 =
+    let r,realref,args2 =
       try intern_qualid qid intern env ntnvars us args
       with Not_found -> Nametab.error_global_not_found qid
     in
+    check_applied_projection isproj realref qid;
     let x, imp, scopes, l = find_appl_head_data r in
     (x,imp,scopes,l), args2
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
-    intern_applied_reference (fun _ -> error_not_enough_arguments ?loc:None)
+    intern_applied_reference ~isproj:None (fun _ -> error_not_enough_arguments ?loc:None)
       {ids = Id.Set.empty; unb = false ;
        tmp_scope = None; scopes = []; impls = empty_internalization_env}
       Environ.empty_named_context_val
@@ -1827,8 +1853,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   let rec intern env = CAst.with_loc_val (fun ?loc -> function
     | CRef (ref,us) ->
 	let (c,imp,subscopes,l),_ =
-          intern_applied_reference intern env (Environ.named_context_val globalenv)
-	    lvar us [] ref
+          intern_applied_reference ~isproj:None intern env (Environ.named_context_val globalenv)
+            lvar us [] ref
 	in
 	  apply_impargs c env imp subscopes l loc
 
@@ -1933,30 +1959,31 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CAppExpl ((isproj,ref,us), args) ->
         let (f,_,args_scopes,_),args =
 	  let args = List.map (fun a -> (a,None)) args in
-          intern_applied_reference intern env (Environ.named_context_val globalenv)
-	    lvar us args ref 
+          intern_applied_reference ~isproj intern env (Environ.named_context_val globalenv)
+            lvar us args ref
 	in
         (* Rem: GApp(_,f,[]) stands for @f *)
         if args = [] then DAst.make ?loc @@ GApp (f,[]) else
           smart_gapp f loc (intern_args env args_scopes (List.map fst args))
 
     | CApp ((isproj,f), args) ->
-        let f,args = match f.CAst.v with
+        let isproj,f,args = match f.CAst.v with
           (* Compact notations like "t.(f args') args" *)
-          | CApp ((Some _,f), args') when not (Option.has_some isproj) ->
-	    f,args'@args
+          | CApp ((Some _ as isproj',f), args') when not (Option.has_some isproj) ->
+            isproj',f,args'@args
           (* Don't compact "(f args') args" to resolve implicits separately *)
-          | _ -> f,args in
+          | _ -> isproj,f,args in
 	let (c,impargs,args_scopes,l),args =
           match f.CAst.v with
             | CRef (ref,us) -> 
-	       intern_applied_reference intern env
+               intern_applied_reference ~isproj intern env
                  (Environ.named_context_val globalenv) lvar us args ref
             | CNotation (ntn,([],[],[],[])) ->
+                assert (Option.is_empty isproj);
                 let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
                 let x, impl, scopes, l = find_appl_head_data c in
 		  (x,impl,scopes,l), args
-            | _ -> (intern env f,[],[],[]), args in
+            | _ -> assert (Option.is_empty isproj); (intern env f,[],[],[]), args in
           apply_impargs c env impargs args_scopes
 	    (merge_impargs l args) loc
 

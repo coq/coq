@@ -81,30 +81,30 @@ Record SORaddon := mk_SOR_addon {
 Variable addon : SORaddon.
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
+  reflexivity proved by (@Equivalence_Reflexive _ _ (SORsetoid sor))
+  symmetry proved by (@Equivalence_Symmetric _ _ (SORsetoid sor))
+  transitivity proved by (@Equivalence_Transitive _ _ (SORsetoid sor))
 as micomega_sor_setoid.
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
 Proof.
-exact sor.(SORplus_wd).
+exact (SORplus_wd sor).
 Qed.
 Add Morphism rtimes with signature req ==> req ==> req as rtimes_morph.
 Proof.
-exact sor.(SORtimes_wd).
+exact (SORtimes_wd sor).
 Qed.
 Add Morphism ropp with signature req ==> req as ropp_morph.
 Proof.
-exact sor.(SORopp_wd).
+exact (SORopp_wd sor).
 Qed.
 Add Morphism rle with signature req ==> req ==> iff as rle_morph.
 Proof.
-  exact sor.(SORle_wd).
+  exact (SORle_wd sor).
 Qed.
 Add Morphism rlt with signature req ==> req ==> iff as rlt_morph.
 Proof.
-  exact sor.(SORlt_wd).
+  exact (SORlt_wd sor).
 Qed.
 
 Add Morphism rminus with signature req ==> req ==> req as rminus_morph.
@@ -124,12 +124,12 @@ Ltac le_elim H := rewrite (Rle_lt_eq sor) in H; destruct H as [H | H].
 
 Lemma cleb_sound : forall x y : C, x [<=] y = true -> [x] <= [y].
 Proof.
-  exact addon.(SORcleb_morph).
+  exact (SORcleb_morph addon).
 Qed.
 
 Lemma cneqb_sound : forall x y : C, x [~=] y = true -> [x] ~= [y].
 Proof.
-intros x y H1. apply addon.(SORcneqb_morph). unfold cneqb, negb in H1.
+intros x y H1. apply (SORcneqb_morph addon). unfold cneqb, negb in H1.
 destruct (ceqb x y); now try discriminate.
 Qed.
 
@@ -325,9 +325,9 @@ Definition map_option2 (A B C : Type) (f : A -> B -> option C)
 Arguments map_option2 [A B C] f o o'.
 
 Definition Rops_wd := mk_reqe (*rplus rtimes ropp req*)
-                       sor.(SORplus_wd)
-                       sor.(SORtimes_wd)
-                       sor.(SORopp_wd).
+                       (SORplus_wd sor)
+                       (SORtimes_wd sor)
+                       (SORopp_wd sor).
 
 Definition pexpr_times_nformula (e: PolC) (f : NFormula) : option NFormula :=
   let (ef,o) := f in
@@ -368,8 +368,8 @@ Proof.
   destruct f.
   intros. destruct o ; inversion H0 ; try discriminate.
   simpl in *.    unfold eval_pol in *.
-  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm)).
+  rewrite (Pmul_ok (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon)).
   rewrite H. apply (Rtimes_0_r sor).
 Qed.
 
@@ -385,8 +385,8 @@ Proof.
   intros. inversion H2 ; simpl.
   unfold eval_pol.
   destruct o1; simpl;
-  rewrite (Pmul_ok sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
+  rewrite (Pmul_ok (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
   apply OpMult_sound with (3:= H);assumption.
 Qed.
 
@@ -402,8 +402,8 @@ Proof.
   intros. inversion H2 ; simpl.
   unfold eval_pol.
   destruct o1; simpl;
-  rewrite (Padd_ok sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
+  rewrite (Padd_ok (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
   apply OpAdd_sound with (3:= H);assumption.
 Qed.
 
@@ -422,12 +422,12 @@ Proof.
   (* index is out-of-bounds *)
   inversion H0.
   rewrite Heq. simpl.
-  now apply  addon.(SORrm).(morph0).
+  now apply  (morph0 (SORrm addon)).
   (* PsatzSquare *)
   simpl. intros. inversion H0.
   simpl. unfold eval_pol.
-  rewrite (Psquare_ok sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
+  rewrite (Psquare_ok (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
   now apply (Rtimes_square_nonneg sor).
   (* PsatzMulC *)
   simpl.
@@ -454,11 +454,11 @@ Proof.
   simpl.
   intro. case_eq (cO [<] c).
   intros.  inversion H1. simpl.
-  rewrite <- addon.(SORrm).(morph0). now apply cltb_sound.
+  rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
   discriminate.
   (* PsatzZ *)
   simpl. intros. inversion H0.
-  simpl.   apply  addon.(SORrm).(morph0).
+  simpl.   apply  (morph0 (SORrm addon)).
 Qed.
 
 Fixpoint ge_bool (n m  : nat) : bool :=
@@ -529,8 +529,8 @@ Proof.
   inv H.
   simpl.
   unfold eval_pol.
-  rewrite (Psquare_ok sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))  addon.(SORrm));
+  rewrite (Psquare_ok (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
   now apply (Rtimes_square_nonneg sor).
   (* PsatzMulC *)
   simpl in *.
@@ -570,12 +570,12 @@ Proof.
   case_eq (cO [<] c).
   intros.  rewrite H1 in H. inv H.
   unfold eval_nformula. simpl.
-  rewrite <- addon.(SORrm).(morph0). now apply cltb_sound.
+  rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
   intros. rewrite H1 in H. discriminate.
   (* PsatzZ *)
   simpl in *. inv H. 
   unfold eval_nformula. simpl.
-  apply  addon.(SORrm).(morph0).
+  apply  (morph0 (SORrm addon)).
 Qed.
   
 
@@ -592,19 +592,19 @@ Definition psubC := PsubC cminus.
 
 Definition PsubC_ok : forall c P env, eval_pol env (psubC  P c) == eval_pol env P - [c] :=
   let Rops_wd := mk_reqe (*rplus rtimes ropp req*)
-                       sor.(SORplus_wd)
-                       sor.(SORtimes_wd)
-                       sor.(SORopp_wd) in
-                       PsubC_ok sor.(SORsetoid) Rops_wd (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))
-                addon.(SORrm).
+                       (SORplus_wd sor)
+                       (SORtimes_wd sor)
+                       (SORopp_wd sor) in
+                       PsubC_ok (SORsetoid sor) Rops_wd (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))
+                (SORrm addon).
 
 Definition PaddC_ok : forall c P env, eval_pol env (paddC  P c) == eval_pol env P + [c] :=
   let Rops_wd := mk_reqe (*rplus rtimes ropp req*)
-                       sor.(SORplus_wd)
-                       sor.(SORtimes_wd)
-                       sor.(SORopp_wd) in
-                       PaddC_ok sor.(SORsetoid) Rops_wd (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))
-                addon.(SORrm).
+                       (SORplus_wd sor)
+                       (SORtimes_wd sor)
+                       (SORopp_wd sor) in
+                       PaddC_ok (SORsetoid sor) Rops_wd (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))
+                (SORrm addon).
 
 
 (* Check that a formula f is inconsistent by normalizing and comparing the
@@ -631,9 +631,9 @@ intros p op H1 env. unfold check_inconsistent in H1.
 destruct op; simpl ;
 (*****)
 destruct p ; simpl; try discriminate H1;
-try rewrite <- addon.(SORrm).(morph0); trivial.
+try rewrite <- (morph0 (SORrm addon)); trivial.
 now apply cneqb_sound.
-apply addon.(SORrm).(morph_eq) in H1. congruence.
+apply (morph_eq (SORrm addon)) in H1. congruence.
 apply cleb_sound in H1. now apply -> (Rle_ngt sor).
 apply cltb_sound in H1. now apply -> (Rlt_nge sor).
 Qed.
@@ -736,21 +736,21 @@ let (lhs, op, rhs) := f in
 Lemma eval_pol_sub : forall env lhs rhs, eval_pol env (psub  lhs rhs) == eval_pol env lhs - eval_pol env rhs.
 Proof.
   intros.
-  apply (Psub_ok  sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm)).
+  apply (Psub_ok  (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor)) (SORrm addon)).
 Qed.
 
 Lemma eval_pol_add : forall env lhs rhs, eval_pol env (padd  lhs rhs) == eval_pol env lhs + eval_pol env rhs.
 Proof.
   intros.
-  apply (Padd_ok  sor.(SORsetoid) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm)).
+  apply (Padd_ok  (SORsetoid sor) Rops_wd
+    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor)) (SORrm addon)).
 Qed.
 
 Lemma eval_pol_norm : forall env lhs, eval_pexpr env lhs == eval_pol env  (norm lhs).
 Proof.
   intros.
-  apply  (norm_aux_spec sor.(SORsetoid) Rops_wd   (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt)) addon.(SORrm) addon.(SORpower) ).
+  apply  (norm_aux_spec (SORsetoid sor) Rops_wd   (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor)) (SORrm addon) (SORpower addon) ).
 Qed.
 
 
@@ -805,7 +805,7 @@ Definition cnf_normalise (t:Formula C) : cnf (NFormula) :=
   List.map  (fun x => x::nil) (xnormalise t).
 
 
-Add Ring SORRing : sor.(SORrt).
+Add Ring SORRing : (SORrt sor).
 
 Lemma cnf_normalise_correct : forall env t, eval_cnf eval_nformula env (cnf_normalise t) -> eval_formula env t.
 Proof.
@@ -816,7 +816,7 @@ Proof.
     generalize (eval_pexpr  env lhs);
       generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros.
   (**)
-  apply sor.(SORle_antisymm).
+  apply (SORle_antisymm sor).
   rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
   rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
   now rewrite <- (Rminus_eq_0 sor).
@@ -855,7 +855,7 @@ Proof.
   rewrite H1 ; ring.
   (**)
   apply H1.
-  apply sor.(SORle_antisymm).
+  apply (SORle_antisymm sor).
   rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
   rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
   (**)
@@ -912,7 +912,7 @@ Proof.
   unfold Env.nth.
   unfold jump at 2.
   rewrite <- Pos.add_1_l.
-  rewrite addon.(SORpower).(rpow_pow_N).
+  rewrite (rpow_pow_N (SORpower addon)).
   unfold pow_N. ring.
 Qed.
 
@@ -932,7 +932,7 @@ Proof.
   unfold Env.tail.
   rewrite xdenorm_correct.
   change (Pos.succ xH) with 2%positive.
-  rewrite addon.(SORpower).(rpow_pow_N).
+  rewrite (rpow_pow_N (SORpower addon)).
   simpl. reflexivity.
 Qed.
 

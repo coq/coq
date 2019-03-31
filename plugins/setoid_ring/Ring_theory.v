@@ -358,7 +358,7 @@ Section ALMOST_RING.
   rewrite <-(Radd_0_l Rth (- x * y)).
   rewrite (Radd_comm Rth), <-(Ropp_def Rth (x*y)).
   rewrite (Radd_assoc Rth), <- (Rdistr_l Rth).
-  rewrite (Rth.(Radd_comm) (-x)), (Ropp_def Rth).
+  rewrite (Radd_comm Rth (-x)), (Ropp_def Rth).
   now rewrite Rmul_0_l, (Radd_0_l Rth).
  Qed.
 
@@ -407,9 +407,9 @@ Section ALMOST_RING.
  Variable Ceqe : ring_eq_ext cadd cmul copp ceq.
 
    Add Parametric Relation : C ceq
-     reflexivity  proved by Csth.(@Equivalence_Reflexive _ _)
-     symmetry     proved by Csth.(@Equivalence_Symmetric _ _)
-     transitivity proved by Csth.(@Equivalence_Transitive _ _)
+     reflexivity  proved by (@Equivalence_Reflexive _ _ Csth)
+     symmetry     proved by (@Equivalence_Symmetric _ _ Csth)
+     transitivity proved by (@Equivalence_Transitive _ _ Csth)
     as C_setoid.
 
    Add Morphism cadd with signature (ceq ==> ceq ==> ceq) as cadd_ext.
@@ -430,7 +430,7 @@ Section ALMOST_RING.
 
  Lemma Smorph_opp x : [-!x] == -[x].
  Proof.
-  rewrite <-  (Rth.(Radd_0_l) [-!x]).
+  rewrite <-  (Radd_0_l Rth [-!x]).
   rewrite <- ((Ropp_def Rth) [x]).
   rewrite ((Radd_comm Rth) [x]).
   rewrite <- (Radd_assoc Rth).
@@ -498,12 +498,12 @@ Qed.
 
  Lemma ARdistr_r x y z : z * (x + y) == z*x + z*y.
  Proof.
-  mrewrite. now rewrite !(ARth.(ARmul_comm) z).
+  mrewrite. now rewrite !(ARmul_comm ARth z).
  Qed.
 
  Lemma ARadd_assoc1 x y z : (x + y) + z == (y + z) + x.
  Proof.
-  now rewrite <-(ARth.(ARadd_assoc) x), (ARth.(ARadd_comm) x).
+  now rewrite <-(ARadd_assoc ARth x), (ARadd_comm ARth x).
  Qed.
 
  Lemma ARadd_assoc2 x y z : (y + x) + z == (y + z) + x.
