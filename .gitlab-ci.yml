@@ -553,6 +553,9 @@ validate:quick:
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API
 
+library:ci-argosy:
+  extends: .ci-template
+
 library:ci-bedrock2:
   extends: .ci-template
 

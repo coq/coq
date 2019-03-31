@@ -296,3 +296,10 @@
 : "${stdlib2_CI_REF:=master}"
 : "${stdlib2_CI_GITURL:=https://github.com/coq/stdlib2}"
 : "${stdlib2_CI_ARCHIVEURL:=${stdlib2_CI_GITURL}/archive}"
+
+########################################################################
+# argosy
+########################################################################
+: "${argosy_CI_REF:=master}"
+: "${argosy_CI_GITURL:=https://github.com/mit-pdos/argosy}"
+: "${argosy_CI_ARCHIVEURL:=${argosy_CI_GITURL}/archive}"
