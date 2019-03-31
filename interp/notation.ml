@@ -626,7 +626,13 @@ exception NotAValidPrimToken
 
 (** The uninterp function below work at the level of [glob_constr]
     which is too low for us here. So here's a crude conversion back
-    to [constr] for the subset that concerns us. *)
+    to [constr] for the subset that concerns us.
+
+    Note that if you update [constr_of_glob], you should update the
+    corresponding numeral notation *and* string notation doc in
+    doc/sphinx/user-extensions/syntax-extensions.rst that describes
+    what it means for a term to be ground / to be able to be
+    considered for parsing. *)
 
 let rec constr_of_glob env sigma g = match DAst.get g with
   | Glob_term.GRef (ConstructRef c, _) ->
