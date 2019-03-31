@@ -1,5 +1,7 @@
 (* Test that we fail, rather than raising anomalies, on opaque terms during interpretation *)
 
+Declare Scope opaque_scope.
+
 (* https://github.com/coq/coq/pull/8064#discussion_r202497516 *)
 Module Test1.
   Axiom hold : forall {A B C}, A -> B -> C.
@@ -19,6 +21,8 @@ Module Test2.
   Fail Check 1%opaque.
 End Test2.
 
+Declare Scope silly_scope.
+
 Module Test3.
   Inductive silly := SILLY (v : Decimal.uint) (f : forall A, A -> A).
   Definition to_silly (v : Decimal.uint) := SILLY v (fun _ x => x).
@@ -28,8 +32,18 @@ Module Test3.
   Fail Check 1%silly.
 End Test3.
 
-
 Module Test4.
+  Declare Scope opaque_scope.
+  Declare Scope silly_scope.
+  Declare Scope pto.
+  Declare Scope ppo.
+  Declare Scope ptp.
+  Declare Scope ppp.
+  Declare Scope uto.
+  Declare Scope upo.
+  Declare Scope utp.
+  Declare Scope upp.
+  Declare Scope ppps.
   Polymorphic NonCumulative Inductive punit := ptt.
   Polymorphic Definition pto_punit (v : Decimal.uint) : option punit := match Nat.of_uint v with O => Some ptt | _ => None end.
   Polymorphic Definition pto_punit_all (v : Decimal.uint) : punit := ptt.
@@ -102,6 +116,7 @@ Module Test6.
   Definition to_uint (x : wnat) : Decimal.uint := Nat.to_uint x.
   Definition of_uint (x : Decimal.uint) : wnat := Nat.of_uint x.
   Module Export Scopes.
+    Declare Scope wnat_scope.
     Delimit Scope wnat_scope with wnat.
   End Scopes.
   Module Export Notations.
@@ -123,6 +138,7 @@ End Test6_2.
 Module Test7.
   Local Set Primitive Projections.
   Record wuint := wrap { unwrap : Decimal.uint }.
+  Declare Scope wuint_scope.
   Delimit Scope wuint_scope with wuint.
   Numeral Notation wuint wrap unwrap : wuint_scope.
   Check let v := 0%wuint in v : wuint.
@@ -132,6 +148,8 @@ End Test7.
 Module Test8.
   Local Set Primitive Projections.
   Record wuint := wrap { unwrap : Decimal.uint }.
+  Declare Scope wuint8_scope.
+  Declare Scope wuint8'_scope.
   Delimit Scope wuint8_scope with wuint8.
   Delimit Scope wuint8'_scope with wuint8'.
   Section with_var.
@@ -152,6 +170,8 @@ Module Test8.
 End Test8.
 
 Module Test9.
+  Declare Scope wuint9_scope.
+  Declare Scope wuint9'_scope.
   Delimit Scope wuint9_scope with wuint9.
   Delimit Scope wuint9'_scope with wuint9'.
   Section with_let.
@@ -175,6 +195,8 @@ Module Test10.
   Definition to_uint (v : unit) := Nat.to_uint 0.
   Definition of_uint (v : Decimal.uint) := match Nat.of_uint v with O => Some tt | _ => None end.
   Definition of_any_uint (v : Decimal.uint) := tt.
+  Declare Scope unit_scope.
+  Declare Scope unit2_scope.
   Delimit Scope unit_scope with unit.
   Delimit Scope unit2_scope with unit2.
   Numeral Notation unit of_uint to_uint : unit_scope (abstract after 1).
@@ -188,6 +210,7 @@ End Test10.
 Module Test11.
   (* Test that numeral notations don't work on proof-local variables, especially not ones containing evars *)
   Inductive unit11 := tt11.
+  Declare Scope unit11_scope.
   Delimit Scope unit11_scope with unit11.
   Goal True.
     evar (to_uint : unit11 -> Decimal.uint).
@@ -201,6 +224,7 @@ End Test11.
 
 Module Test12.
   (* Test for numeral notations on context variables *)
+  Declare Scope test12_scope.
   Delimit Scope test12_scope with test12.
   Section test12.
     Context (to_uint : unit -> Decimal.uint) (of_uint : Decimal.uint -> unit).
@@ -212,6 +236,9 @@ End Test12.
 
 Module Test13.
   (* Test for numeral notations on notations which do not denote references *)
+  Declare Scope test13_scope.
+  Declare Scope test13'_scope.
+  Declare Scope test13''_scope.
   Delimit Scope test13_scope with test13.
   Delimit Scope test13'_scope with test13'.
   Delimit Scope test13''_scope with test13''.
@@ -232,6 +259,10 @@ Module Test14.
   (* Test that numeral notations follow [Import], not [Require], and
      also test that [Local Numeral Notation]s do not escape modules
      nor sections. *)
+  Declare Scope test14_scope.
+  Declare Scope test14'_scope.
+  Declare Scope test14''_scope.
+  Declare Scope test14'''_scope.
   Delimit Scope test14_scope with test14.
   Delimit Scope test14'_scope with test14'.
   Delimit Scope test14''_scope with test14''.
@@ -263,6 +294,7 @@ End Test14.
 
 Module Test15.
   (** Test module include *)
+  Declare Scope test15_scope.
   Delimit Scope test15_scope with test15.
   Module Inner.
     Definition to_uint (x : unit) : Decimal.uint := Nat.to_uint O.
@@ -280,6 +312,7 @@ End Test15.
 
 Module Test16.
   (** Test functors *)
+  Declare Scope test16_scope.
   Delimit Scope test16_scope with test16.
   Module Type A.
     Axiom T : Set.
@@ -305,9 +338,71 @@ Require Import Coq.Numbers.Cyclic.Int63.Int63.
 Module Test17.
   (** Test int63 *)
   Declare Scope test17_scope.
+  Declare Scope test17_scope.
   Delimit Scope test17_scope with test17.
   Local Set Primitive Projections.
   Record myint63 := of_int { to_int : int }.
   Numeral Notation myint63 of_int to_int : test17_scope.
   Check let v := 0%test17 in v : myint63.
 End Test17.
+
+Module Test18.
+  (** Test https://github.com/coq/coq/issues/9840 *)
+  Record Q := { num : nat ; den : nat ; reduced : Nat.gcd num den = 1 }.
+  Declare Scope Q_scope.
+  Delimit Scope Q_scope with Q.
+
+  Definition nat_eq_dec (x y : nat) : {x = y} + {x <> y}.
+  Proof. decide equality. Defined.
+
+  Definition transparentify {A} (D : {A} + {not A}) (H : A) : A :=
+    match D with
+    | left pf => pf
+    | right npf => match npf H with end
+    end.
+
+  Axiom gcd_good : forall x, Nat.gcd x 1 = 1.
+
+  Definition Q_of_nat (x : nat) : Q := {| num := x ; den := 1 ; reduced := transparentify (nat_eq_dec _ _) (gcd_good _) |}.
+  Definition nat_of_Q (x : Q) : option nat
+    := if Nat.eqb x.(den) 1 then Some (x.(num)) else None.
+  Definition Q_of_uint (x : Decimal.uint) : Q := Q_of_nat (Nat.of_uint x).
+  Definition uint_of_Q (x : Q) : option Decimal.uint
+    := option_map Nat.to_uint (nat_of_Q x).
+
+  Numeral Notation Q Q_of_uint uint_of_Q : Q_scope.
+
+  Check let v := 0%Q in v : Q.
+  Check let v := 1%Q in v : Q.
+  Check let v := 2%Q in v : Q.
+  Check let v := 3%Q in v : Q.
+  Check let v := 4%Q in v : Q.
+  Compute let v := 0%Q in (num v, den v).
+  Compute let v := 1%Q in (num v, den v).
+  Compute let v := 2%Q in (num v, den v).
+  Compute let v := 3%Q in (num v, den v).
+  Compute let v := 4%Q in (num v, den v).
+End Test18.
+
+Require Import Coq.Lists.List.
+Require Import Coq.ZArith.ZArith.
+Module Test19.
+  (** Test another thing related to https://github.com/coq/coq/issues/9840 *)
+  Record Zlike := { summands : list Z }.
+  Declare Scope Zlike_scope.
+  Delimit Scope Zlike_scope with Zlike.
+
+  Definition Z_of_Zlike (x : Zlike) := List.fold_right Z.add 0%Z (summands x).
+  Definition Zlike_of_Z (x : Z) := {| summands := cons x nil |}.
+
+  Numeral Notation Zlike Zlike_of_Z Z_of_Zlike : Zlike_scope.
+
+  Check let v := (-1)%Zlike in v : Zlike.
+  Check let v := 0%Zlike in v : Zlike.
+  Check let v := 1%Zlike in v : Zlike.
+  Check let v := 2%Zlike in v : Zlike.
+  Check let v := 3%Zlike in v : Zlike.
+  Check let v := 4%Zlike in v : Zlike.
+  Check {| summands := (cons 1 (cons 2 (cons (-1) nil)))%Z |}.
+  Check {| summands := nil |}.
+End Test19.

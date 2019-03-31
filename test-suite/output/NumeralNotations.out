@@ -1,0 +1,186 @@
+The command has indeed failed with message:
+Unexpected term (nat -> nat) while parsing a numeral notation.
+The command has indeed failed with message:
+Unexpected non-option term opaque4 while parsing a numeral notation.
+The command has indeed failed with message:
+Unexpected term (fun (A : Type) (x : A) => x) while parsing a numeral
+notation.
+let v := 0%ppp in v : punit
+     : punit
+let v := 0%ppp in v : punit
+     : punit
+let v := 0%ppp in v : punit
+     : punit
+let v := 0%ppp in v : punit
+     : punit
+let v := 0%uto in v : unit
+     : unit
+The command has indeed failed with message:
+Cannot interpret this number as a value of type unit
+The command has indeed failed with message:
+Cannot interpret this number as a value of type unit
+let v := 0%upp in v : unit
+     : unit
+let v := 0%upp in v : unit
+     : unit
+let v := 0%upp in v : unit
+     : unit
+let v := 0%ppps in v : punit
+     : punit
+File "stdin", line 91, characters 2-46:
+Warning: To avoid stack overflow, large numbers in punit are interpreted as
+applications of pto_punits. [abstract-large-number,numbers]
+The command has indeed failed with message:
+In environment
+v := pto_punits (Decimal.D1 Decimal.Nil) : punit
+The term "v" has type "punit@{Set}" while it is expected to have type
+ "punit@{u}".
+S
+     : nat -> nat
+S (ack 4 4)
+     : nat
+let v := 0%wnat in v : wnat
+     : wnat
+0%wnat
+     : wnat
+{| unwrap := ack 4 4 |}
+     : wnat
+{| Test6.unwrap := 0 |}
+     : Test6.wnat
+let v := 0%wnat in v : Test6.wnat
+     : Test6.wnat
+let v := 0%wuint in v : wuint
+     : wuint
+let v := 1%wuint in v : wuint
+     : wuint
+let v := 0%wuint8 in v : wuint
+     : wuint
+let v := 0 in v : nat
+     : nat
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "wuint".
+     = {| unwrap := Decimal.D0 Decimal.Nil |}
+     : wuint
+let v := 0%wuint8' in v : wuint
+     : wuint
+let v := 0%wuint9 in v : wuint
+     : wuint
+let v := 0%wuint9' in v : wuint
+     : wuint
+let v := 0 in v : nat
+     : nat
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "wuint".
+File "stdin", line 202, characters 2-72:
+Warning: The 'abstract after' directive has no effect when the parsing
+function (of_uint) targets an option type.
+[abstract-large-number-no-op,numbers]
+The command has indeed failed with message:
+The 'abstract after' directive has no effect when the parsing function
+(of_uint) targets an option type. [abstract-large-number-no-op,numbers]
+The command has indeed failed with message:
+The reference of_uint was not found in the current environment.
+The command has indeed failed with message:
+The reference of_uint was not found in the current environment.
+let v := of_uint (Decimal.D1 Decimal.Nil) in v : unit
+     : unit
+let v := 0%test13 in v : unit
+     : unit
+The command has indeed failed with message:
+to_uint' is bound to a notation that does not denote a reference.
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+The command has indeed failed with message:
+to_uint'' is bound to a notation that does not denote a reference.
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+let v := 0%test14' in v : unit
+     : unit
+let v := 0%test14' in v : unit
+     : unit
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+let v := 0%test14' in v : unit
+     : unit
+The command has indeed failed with message:
+This command does not support the Global option in sections.
+let v := 0%test14'' in v : unit
+     : unit
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+The command has indeed failed with message:
+In environment
+v := 0 : nat
+The term "v" has type "nat" while it is expected to have type "unit".
+let v := 0%test15 in v : unit
+     : unit
+let v := 0%test15 in v : unit
+     : unit
+let v := 0%test15 in v : unit
+     : unit
+let v := foo a.t in v : Foo
+     : Foo
+The command has indeed failed with message:
+Cannot interpret in test16_scope because NumeralNotations.Test16.F.Foo could not be found in the current environment.
+let v := 0%test17 in v : myint63
+     : myint63
+let v := 0%Q in v : Q
+     : Q
+let v := 1%Q in v : Q
+     : Q
+let v := 2%Q in v : Q
+     : Q
+let v := 3%Q in v : Q
+     : Q
+let v := 4%Q in v : Q
+     : Q
+     = (0, 1)
+     : nat * nat
+     = (1, 1)
+     : nat * nat
+     = (2, 1)
+     : nat * nat
+     = (3, 1)
+     : nat * nat
+     = (4, 1)
+     : nat * nat
+let v := (-1)%Zlike in v : Zlike
+     : Zlike
+let v := 0%Zlike in v : Zlike
+     : Zlike
+let v := 1%Zlike in v : Zlike
+     : Zlike
+let v := 2%Zlike in v : Zlike
+     : Zlike
+let v := 3%Zlike in v : Zlike
+     : Zlike
+let v := 4%Zlike in v : Zlike
+     : Zlike
+2%Zlike
+     : Zlike
+0%Zlike
+     : Zlike
