@@ -574,20 +574,20 @@ let is_not_small_constr = function
   | _ -> false
 
 let rec define_keywords_aux = function
-  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal("IDENT",Some k) :: l
+  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(Tok.PIDENT (Some k)) :: l
       when is_not_small_constr e ->
       Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       CLexer.add_keyword k;
-      n1 :: GramConstrTerminal(Tok.pattern_for_KEYWORD k) :: define_keywords_aux l
+      n1 :: GramConstrTerminal(Tok.PKEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
   | [] -> []
 
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
-  | GramConstrTerminal("IDENT", Some k)::l ->
+  | GramConstrTerminal(Tok.PIDENT (Some k))::l ->
       Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");
       CLexer.add_keyword k;
-      GramConstrTerminal(Tok.pattern_for_KEYWORD k) :: define_keywords_aux l
+      GramConstrTerminal(Tok.PKEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
 
 let distribute a ll = List.map (fun l -> a @ l) ll

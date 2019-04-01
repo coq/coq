@@ -12,6 +12,31 @@
 
 let string_equal (s1 : string) s2 = s1 = s2
 
+type 'c p =
+  | PKEYWORD : string -> string p
+  | PPATTERNIDENT : string option -> string p
+  | PIDENT : string option -> string p
+  | PFIELD : string option -> string p
+  | PINT : string option -> string p
+  | PSTRING : string option -> string p
+  | PLEFTQMARK : unit p
+  | PBULLET : string option -> string p
+  | PQUOTATION : string -> string p
+  | PEOI : unit p
+
+let pattern_strings : type c. c p -> string * string option =
+  function
+  | PKEYWORD s -> "", Some s
+  | PPATTERNIDENT s -> "PATTERNIDENT", s
+  | PIDENT s -> "IDENT", s
+  | PFIELD s -> "FIELD", s
+  | PINT s -> "INT", s
+  | PSTRING s -> "STRING", s
+  | PLEFTQMARK -> "LEFTQMARK", None
+  | PBULLET s -> "BULLET", s
+  | PQUOTATION lbl -> "QUOTATION", Some lbl
+  | PEOI -> "EOI", None
+
 type t =
   | KEYWORD of string
   | PATTERNIDENT of string
@@ -23,6 +48,22 @@ type t =
   | BULLET of string
   | QUOTATION of string * string
   | EOI
+
+let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
+  let streq s1 s2 = match s1, s2 with None, None -> true
+    | Some s1, Some s2 -> string_equal s1 s2 | _ -> false in
+  match t1, t2 with
+  | PKEYWORD s1, PKEYWORD s2 when string_equal s1 s2 -> Some Util.Refl
+  | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
+  | PIDENT s1, PIDENT s2 when streq s1 s2 -> Some Util.Refl
+  | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
+  | PINT s1, PINT s2 when streq s1 s2 -> Some Util.Refl
+  | PSTRING s1, PSTRING s2 when streq s1 s2 -> Some Util.Refl
+  | PLEFTQMARK, PLEFTQMARK -> Some Util.Refl
+  | PBULLET s1, PBULLET s2 when streq s1 s2 -> Some Util.Refl
+  | PQUOTATION s1, PQUOTATION s2 when string_equal s1 s2 -> Some Util.Refl
+  | PEOI, PEOI -> Some Util.Refl
+  | _ -> None
 
 let equal t1 t2 = match t1, t2 with
 | IDENT s1, KEYWORD s2 -> string_equal s1 s2
@@ -63,22 +104,6 @@ let extract_string diff_mode = function
   | QUOTATION(_,s) -> s
   | EOI -> ""
 
-let to_string = function
-  | KEYWORD s -> Format.sprintf "%S" s
-  | IDENT s -> Format.sprintf "IDENT %S" s
-  | PATTERNIDENT s -> Format.sprintf "PATTERNIDENT %S" s
-  | FIELD s -> Format.sprintf "FIELD %S" s
-  | INT s -> Format.sprintf "INT %s" s
-  | STRING s -> Format.sprintf "STRING %S" s
-  | LEFTQMARK -> "LEFTQMARK"
-  | BULLET s -> Format.sprintf "BULLET %S" s
-  | QUOTATION(lbl,s) -> lbl ^ s
-  | EOI -> "EOI"
-
-let match_keyword kwd = function
-  | KEYWORD kwd' when kwd = kwd' -> true
-  | _ -> false
-
 (* Invariant, txt is "ident" or a well parenthesized "{{....}}" *)
 let trim_quotation txt =
   let len = String.length txt in
@@ -93,45 +118,23 @@ let trim_quotation txt =
         aux 0
     else None, txt
 
-(* Needed to fix Camlp5 signature.
- Cannot use Pp because of silly Tox -> Compat -> Pp dependency *)
-let print ppf tok = Format.pp_print_string ppf (to_string tok)
-
-(** For camlp5, conversion from/to [Plexing.pattern],
-    and a match function analoguous to [Plexing.default_match] *)
-
-type pattern = string * string option
-
-let is_keyword = function
-  | "", Some s -> Some (false,s)
-  | "QUOTATION", Some s -> Some (true,s)
-  | _ -> None
-
-let pattern_for_EOI = ("EOI",None)
-let pattern_for_KEYWORD s = ("",Some s)
-let pattern_for_IDENT s = ("IDENT",Some s)
-
-let match_pattern (key, value) =
+let match_pattern (type c) (p : c p) : t -> c =
   let err () = raise Stream.Failure in
-  let cond x =
-    match value with
-    | None -> x
-    | Some value -> if string_equal value x then x else err () in
-  match key with
-  | "" -> (function KEYWORD s -> cond s | _ -> err ())
-  | "IDENT" when value <> None -> (function (IDENT s | KEYWORD s) -> cond s | _ -> err ())
-  | "IDENT" -> (function IDENT s -> cond s | _ -> err ())
-  | "PATTERNIDENT" -> (function PATTERNIDENT s -> cond s | _ -> err ())
-  | "FIELD" -> (function FIELD s -> cond s | _ -> err ())
-  | "INT" -> (function INT s -> cond s | _ -> err ())
-  | "STRING" -> (function STRING s -> cond s | _ -> err ())
-  | "LEFTQMARK" -> (function LEFTQMARK -> cond "" | _ -> err ())
-  | "BULLET" ->  (function BULLET s -> cond s  | _ -> err ())
-  | "QUOTATION" -> (function
-      | QUOTATION(lbl,s) ->
-          begin match value with
-          | None -> assert false
-          | Some lbl1 -> if string_equal lbl1 lbl then s else err () end
-      | _ -> err ())
-  | "EOI" -> (function EOI -> cond "" | _ -> err ())
-  | p -> CErrors.anomaly Pp.(str "Tok: unknown pattern " ++ str p)
+  let seq = string_equal in
+  match p with
+  | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s' | _ -> err ())
+  | PIDENT None -> (function IDENT s' -> s' | _ -> err ())
+  | PIDENT (Some s) -> (function (IDENT s' | KEYWORD s') when seq s s' -> s' | _ -> err ())
+  | PPATTERNIDENT None -> (function PATTERNIDENT s -> s | _ -> err ())
+  | PPATTERNIDENT (Some s) -> (function PATTERNIDENT s' when seq s s' -> s' | _ -> err ())
+  | PFIELD None -> (function FIELD s -> s | _ -> err ())
+  | PFIELD (Some s) -> (function FIELD s' when seq s s' -> s' | _ -> err ())
+  | PINT None -> (function INT s -> s | _ -> err ())
+  | PINT (Some s) -> (function INT s' when seq s s' -> s' | _ -> err ())
+  | PSTRING None -> (function STRING s -> s | _ -> err ())
+  | PSTRING (Some s) -> (function STRING s' when seq s s' -> s' | _ -> err ())
+  | PLEFTQMARK -> (function LEFTQMARK -> () | _ -> err ())
+  | PBULLET None -> (function BULLET s -> s | _ -> err ())
+  | PBULLET (Some s) -> (function BULLET s' when seq s s' -> s' | _ -> err ())
+  | PQUOTATION lbl -> (function QUOTATION(lbl',s') when string_equal lbl lbl' -> s' | _ -> err ())
+  | PEOI -> (function EOI -> () | _ -> err ())

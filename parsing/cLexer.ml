@@ -790,20 +790,25 @@ let loct_add loct i loc = Hashtbl.add loct i loc
    we unfreeze the state of the lexer. This restores the behaviour of the
    lexer. B.B. *)
 
-type te = Tok.t
-
 (** Names of tokens, for this lexer, used in Grammar error messages *)
 
-let token_text = function
-  | ("", Some t) -> "'" ^ t ^ "'"
-  | ("IDENT", None) -> "identifier"
-  | ("IDENT", Some t) -> "'" ^ t ^ "'"
-  | ("INT", None) -> "integer"
-  | ("INT", Some s) -> "'" ^ s ^ "'"
-  | ("STRING", None) -> "string"
-  | ("EOI", None) -> "end of input"
-  | (con, None) -> con
-  | (con, Some prm) -> con ^ " \"" ^ prm ^ "\""
+let token_text : type c. c Tok.p -> string = function
+  | PKEYWORD t -> "'" ^ t ^ "'"
+  | PIDENT None -> "identifier"
+  | PIDENT (Some t) -> "'" ^ t ^ "'"
+  | PINT None -> "integer"
+  | PINT (Some s) -> "'" ^ s ^ "'"
+  | PSTRING None -> "string"
+  | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
+  | PLEFTQMARK -> "LEFTQMARK"
+  | PEOI -> "end of input"
+  | PPATTERNIDENT None -> "PATTERNIDENT"
+  | PPATTERNIDENT (Some s) -> "PATTERNIDENT \"" ^ s ^ "\""
+  | PFIELD None -> "FIELD"
+  | PFIELD (Some s) -> "FIELD \"" ^ s ^ "\""
+  | PBULLET None -> "BULLET"
+  | PBULLET (Some s) -> "BULLET \"" ^ s ^ "\""
+  | PQUOTATION lbl -> "QUOTATION \"" ^ lbl ^ "\""
 
 let func next_token ?loc cs =
   let loct = loct_create () in
@@ -817,18 +822,24 @@ let func next_token ?loc cs =
   in
   (ts, loct_func loct)
 
-let make_lexer ~diff_mode = {
-  Plexing.tok_func = func (next_token ~diff_mode);
-  Plexing.tok_using =
-    (fun pat -> match Tok.is_keyword pat with
-       | Some (false,s) -> add_keyword ~quotation:NoQuotation s
-       | Some (true,s) -> add_keyword ~quotation:Quotation s
-       | None -> ());
-  Plexing.tok_removing = (fun _ -> ());
-  Plexing.tok_match = Tok.match_pattern;
-  Plexing.tok_text = token_text }
+module MakeLexer (Diff : sig val mode : bool end) = struct
+  type te = Tok.t
+  type 'c pattern = 'c Tok.p
+  let tok_pattern_eq = Tok.equal_p
+  let tok_pattern_strings = Tok.pattern_strings
+  let tok_func = func (next_token ~diff_mode:Diff.mode)
+  let tok_using : type c. c pattern -> unit = function
+    | PKEYWORD s -> add_keyword ~quotation:NoQuotation s
+    | PQUOTATION s -> add_keyword ~quotation:Quotation s
+    | _ -> ()
+  let tok_removing = (fun _ -> ())
+  let tok_match = Tok.match_pattern
+  let tok_text = token_text
+end
 
-let lexer = make_lexer ~diff_mode:false
+module Lexer = MakeLexer (struct let mode = false end)
+
+module LexerDiff = MakeLexer (struct let mode = true end)
 
 (** Terminal symbols interpretation *)
 
@@ -863,6 +874,6 @@ let strip s =
 let terminal s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
-  if is_ident_not_keyword s then "IDENT", Some s
-  else if is_number s then "INT", Some s
-  else "", Some s
+  if is_ident_not_keyword s then PIDENT (Some s)
+  else if is_number s then PINT (Some s)
+  else PKEYWORD s

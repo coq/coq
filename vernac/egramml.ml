@@ -19,17 +19,17 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      ('a raw_abstract_argument_type * ('s, 'a) symbol) Loc.located -> 's grammar_prod_item
+      ('a raw_abstract_argument_type * ('s, _, 'a) symbol) Loc.located -> 's grammar_prod_item
 
 type 'a ty_arg = ('a -> raw_generic_argument)
 
-type ('self, _, 'r) ty_rule =
-| TyStop : ('self, 'r, 'r) ty_rule
-| TyNext : ('self, 'a, 'r) ty_rule * ('self, 'b) Extend.symbol * 'b ty_arg option ->
-  ('self, 'b -> 'a, 'r) ty_rule
+type ('self, 'tr, _, 'r) ty_rule =
+| TyStop : ('self, Extend.norec, 'r, 'r) ty_rule
+| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Extend.symbol * 'b ty_arg option ->
+  ('self, Extend.mayrec, 'b -> 'a, 'r) ty_rule
 
 type ('self, 'r) any_ty_rule =
-| AnyTyRule : ('self, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
+| AnyTyRule : ('self, _, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
 
 let rec ty_rule_of_gram = function
 | [] -> AnyTyRule TyStop
@@ -44,13 +44,13 @@ let rec ty_rule_of_gram = function
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r
 
-let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) Extend.rule = function
+let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Extend.rule = function
 | TyStop -> Extend.Stop
 | TyNext (rem, tok, _) -> Extend.Next (ty_erase rem, tok)
 
 type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
-let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
+let rec ty_eval : type s tr a. (s, tr, a, Loc.t -> s) ty_rule -> s gen_eval -> a = function
 | TyStop -> fun f loc -> f loc []
 | TyNext (rem, tok, None) -> fun f _ -> ty_eval rem f
 | TyNext (rem, tok, Some inj) -> fun f x ->

@@ -45,26 +45,14 @@ val get_keyword_state : unit -> keyword_state
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
-val terminal : string -> Tok.pattern
+
+(** When string is neither an ident nor an int, returns a keyword. *)
+val terminal : string -> string Tok.p
 
 (** The lexer of Coq: *)
 
-(* modtype Grammar.GLexerType: sig
-     type te val
-     lexer : te Plexing.lexer
-   end
-
-where
-
-  type lexer 'te =
-    { tok_func : lexer_func 'te;
-      tok_using : pattern -> unit;
-      tok_removing : pattern -> unit;
-      tok_match : pattern -> 'te -> string;
-      tok_text : pattern -> string;
-      tok_comm : mutable option (list location) }
- *)
-include Gramlib.Grammar.GLexerType with type te = Tok.t
+module Lexer :
+  Gramlib.Grammar.GLexerType with type te = Tok.t and type 'c pattern = 'c Tok.p
 
 module Error : sig
   type t
@@ -90,4 +78,5 @@ as if it was unquoted, possibly becoming multiple tokens
 it was not in a comment, possibly becoming multiple tokens
 - return any unrecognized Ascii or UTF-8 character as a string
 *)
-val make_lexer : diff_mode:bool -> Tok.t Gramlib.Plexing.lexer
+module LexerDiff :
+  Gramlib.Grammar.GLexerType with type te = Tok.t and type 'c pattern = 'c Tok.p

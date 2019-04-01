@@ -48,7 +48,7 @@ let atactic n =
   else Aentryl (Pltac.tactic_expr, string_of_int n)
 
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, 'a) Extend.symbol -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Extend.symbol -> entry_name
 
 (** Quite ad-hoc *)
 let get_tacentry n m =
