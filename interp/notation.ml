@@ -606,20 +606,18 @@ module PrimTokenNotation = struct
     At least [c] is known to be evar-free, since it comes from
     our own ad-hoc [constr_of_glob] or from conversions such
     as [coqint_of_rawnum].
+
+    It is important to fully normalize the term, *including inductive
+    parameters of constructors*; see
+    https://github.com/coq/coq/issues/9840 for details on what goes
+    wrong if this does not happen, e.g., from using the vm rather than
+    cbv.
 *)
 
-let eval_constr env sigma (c : Constr.t) =
-  let c = EConstr.of_constr c in
-  let sigma,t = Typing.type_of env sigma c in
-  let c' = Vnorm.cbv_vm env sigma c t in
-  EConstr.Unsafe.to_constr c'
-
-(* For testing with "compute" instead of "vm_compute" :
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
   let c' = Tacred.compute env sigma c in
   EConstr.Unsafe.to_constr c'
-*)
 
 let eval_constr_app env sigma c1 c2 =
   eval_constr env sigma (mkApp (c1,[| c2 |]))
@@ -628,12 +626,21 @@ exception NotAValidPrimToken
 
 (** The uninterp function below work at the level of [glob_constr]
     which is too low for us here. So here's a crude conversion back
-    to [constr] for the subset that concerns us. *)
+    to [constr] for the subset that concerns us.
+
+    Note that if you update [constr_of_glob], you should update the
+    corresponding numeral notation *and* string notation doc in
+    doc/sphinx/user-extensions/syntax-extensions.rst that describes
+    what it means for a term to be ground / to be able to be
+    considered for parsing. *)
 
 let rec constr_of_glob env sigma g = match DAst.get g with
   | Glob_term.GRef (ConstructRef c, _) ->
       let sigma,c = Evd.fresh_constructor_instance env sigma c in
       sigma,mkConstructU c
+  | Glob_term.GRef (IndRef c, _) ->
+      let sigma,c = Evd.fresh_inductive_instance env sigma c in
+      sigma,mkIndU c
   | Glob_term.GApp (gc, gcl) ->
       let sigma,c = constr_of_glob env sigma gc in
       let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in

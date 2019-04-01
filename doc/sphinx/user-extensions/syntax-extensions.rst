@@ -1473,6 +1473,10 @@ Numeral notations
      :n:`@ident__2` to the number will be fully reduced, and universes
      of the resulting term will be refreshed.
 
+     Note that only fully-reduced ground terms (terms containing only
+     function application, constructors, inductive type families, and
+     primitive integers) will be considered for printing.
+
    .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
 
      When a literal larger than :token:`num` is parsed, a warning
@@ -1617,6 +1621,10 @@ String notations
      When parsing, the application of the parsing function
      :n:`@ident__2` to the string will be fully reduced, and universes
      of the resulting term will be refreshed.
+
+     Note that only fully-reduced ground terms (terms containing only
+     function application, constructors, inductive type families, and
+     primitive integers) will be considered for printing.
 
    .. exn:: Cannot interpret this string as a value of type @type
 
