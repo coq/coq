@@ -181,7 +181,8 @@
 # TLC
 ########################################################################
 : "${tlc_CI_REF:=master}"
-: "${tlc_CI_GITURL:=https://gforge.inria.fr/git/tlc/tlc}"
+: "${tlc_CI_GITURL:=https://gitlab.inria.fr/charguer/tlc}"
+: "${tlc_CI_ARCHIVEURL:=${tlc_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Bignums
