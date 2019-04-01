@@ -239,6 +239,9 @@ let init_execution opts custom_init =
 
   set_options opts.config.set_options;
 
+  (* Native output dir *)
+  Nativelib.output_dir := opts.config.native_output_dir;
+
   (* Allow the user to load an arbitrary state here *)
   inputstate opts.pre;
 

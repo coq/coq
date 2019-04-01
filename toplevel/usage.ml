@@ -94,6 +94,7 @@ let print_usage_common co command =
 \n                          for full Gc stats dump)\
 \n  -bytecode-compiler (yes|no)        enable the vm_compute reduction machine\
 \n  -native-compiler (yes|no|ondemand) enable the native_compute reduction machine\
+\n  -native-output-dir     <directory> set the output directory for native objects\
 \n  -h, -help, --help      print this list of options\
 \n"
 

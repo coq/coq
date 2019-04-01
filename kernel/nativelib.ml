@@ -25,7 +25,7 @@ let open_header = ["Nativevalues";
 let open_header = List.map mk_open open_header
 
 (* Directory where compiled files are stored *)
-let output_dir = ".coq-native"
+let output_dir = ref ".coq-native"
 
 (* Extension of generated ml files, stored for debugging purposes *)
 let source_ext = ".native"
@@ -88,7 +88,7 @@ let error_native_compiler_failed e =
 
 let call_compiler ?profile:(profile=false) ml_filename =
   let load_path = !get_load_paths () in
-  let load_path = List.map (fun dn -> dn / output_dir) load_path in
+  let load_path = List.map (fun dn -> dn / !output_dir) load_path in
   let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
@@ -139,7 +139,7 @@ let compile_library dir code fn =
   let fn = fn ^ source_ext in
   let basename = Filename.basename fn in
   let dirname = Filename.dirname fn in
-  let dirname = dirname / output_dir in
+  let dirname = dirname / !output_dir in
   let () =
     try Unix.mkdir dirname 0o755
     with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
@@ -181,5 +181,5 @@ let call_linker ?(fatal=true) env ~prefix f upds =
   match upds with Some upds -> update_locations upds | _ -> ()
 
 let link_library env ~prefix ~dirname ~basename =
-  let f = dirname / output_dir / basename in
+  let f = dirname / !output_dir / basename in
   call_linker env ~fatal:false ~prefix f None
