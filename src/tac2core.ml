@@ -1251,7 +1251,7 @@ open CAst
 
 let () = add_scope "keyword" begin function
 | [SexprStr {loc;v=s}] ->
-  let scope = Extend.Atoken (Tok.pattern_for_KEYWORD s) in
+  let scope = Extend.Atoken (Tok.PKEYWORD s) in
   Tac2entries.ScopeRule (scope, (fun _ -> q_unit))
 | arg -> scope_fail "keyword" arg
 end
@@ -1381,34 +1381,25 @@ let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
 open Extend
 exception SelfSymbol
 
-type 'a any_symbol = { any_symbol : 'r. ('r, 'a) symbol }
-
 let rec generalize_symbol :
-  type a s. (s, a) Extend.symbol -> a any_symbol = function
-| Atoken tok ->
-  { any_symbol = Atoken tok }
-| Alist1 e ->
-  let e = generalize_symbol e in
-  { any_symbol = Alist1 e.any_symbol }
+  type a tr s. (s, tr, a) Extend.symbol -> (s, Extend.norec, a) Extend.symbol = function
+| Atoken tok -> Atoken tok
+| Alist1 e -> Alist1 (generalize_symbol e)
 | Alist1sep (e, sep) ->
   let e = generalize_symbol e in
   let sep = generalize_symbol sep in
-  { any_symbol = Alist1sep (e.any_symbol, sep.any_symbol) }
-| Alist0 e ->
-  let e = generalize_symbol e in
-  { any_symbol = Alist0 e.any_symbol }
+  Alist1sep (e, sep)
+| Alist0 e -> Alist0 (generalize_symbol e)
 | Alist0sep (e, sep) ->
   let e = generalize_symbol e in
   let sep = generalize_symbol sep in
-  { any_symbol = Alist0sep (e.any_symbol, sep.any_symbol) }
-| Aopt e ->
-  let e = generalize_symbol e in
-  { any_symbol = Aopt e.any_symbol }
+  Alist0sep (e, sep)
+| Aopt e -> Aopt (generalize_symbol e)
 | Aself -> raise SelfSymbol
 | Anext -> raise SelfSymbol
-| Aentry e -> { any_symbol = Aentry e }
-| Aentryl (e, l) -> { any_symbol = Aentryl (e, l) }
-| Arules r -> { any_symbol = Arules r }
+| Aentry e -> Aentry e
+| Aentryl (e, l) -> Aentryl (e, l)
+| Arules r -> Arules r
 
 type _ converter =
 | CvNil : (Loc.t -> raw_tacexpr) converter
@@ -1420,17 +1411,16 @@ let rec apply : type a. a converter -> raw_tacexpr list -> a = function
 | CvCns (c, Some f) -> fun accu x -> apply c (f x :: accu)
 
 type seqrule =
-| Seqrule : ('act, Loc.t -> raw_tacexpr) norec_rule * 'act converter -> seqrule
+| Seqrule : (Tac2expr.raw_tacexpr, Extend.norec, 'act, Loc.t -> raw_tacexpr) rule * 'act converter -> seqrule
 
 let rec make_seq_rule = function
 | [] ->
-  let r = { norec_rule = Stop } in
-  Seqrule (r, CvNil)
+  Seqrule (Stop, CvNil)
 | tok :: rem ->
   let Tac2entries.ScopeRule (scope, f) = Tac2entries.parse_scope tok in
   let scope = generalize_symbol scope in
   let Seqrule (r, c) = make_seq_rule rem in
-  let r = { norec_rule = Next (r.norec_rule, scope.any_symbol) } in
+  let r = NextNoRec (r, scope) in
   let f = match tok with
   | SexprStr _ -> None (* Leave out mere strings *)
   | _ -> Some f
