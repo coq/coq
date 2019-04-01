@@ -403,7 +403,10 @@ let undertac ist ipats ((dir,_),_ as rule) hint =
       | IPatAnon (One _ | Drop) :: rest ->
           aux (Names.Name.Anonymous :: acc) rest
       | _ -> List.rev acc in
-    aux [] (Option.default [] ipats) in
+    aux [] @@ match ipats with
+              | None -> []
+              | Some (IPatCase(Regular (l :: _)) :: _) -> l
+              | Some l -> l in
 
   (* If we find a "=> [|]" we add 1 | to get "=> [||]" for the extra
    * goal (the one that is left once we run over) *)
