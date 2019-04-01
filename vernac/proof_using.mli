@@ -21,3 +21,6 @@ val suggest_constant : Environ.env -> Names.Constant.t -> unit
 val suggest_variable : Environ.env -> Names.Id.t -> unit
 
 val get_default_proof_using : unit -> Vernacexpr.section_subset_expr option
+
+val proof_using_opt_name : string list
+(** For the stm *)
