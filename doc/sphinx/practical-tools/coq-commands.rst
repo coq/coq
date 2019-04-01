@@ -210,6 +210,13 @@ and ``coqtop``, unless stated otherwise:
   is intended to be used as a linter for developments that want to be robust to
   changes in the auto-generated name scheme. The options are provided to
   facilitate tracking down problems.
+:-set *string*: Enable flags and set options. *string* should be
+   ``Option Name=value``, the value is interpreted according to the
+   type of the option. For flags ``Option Name`` is equivalent to
+   ``Option Name=true``. For instance ``-set "Universe Polymorphism"``
+   will enable :flag:`Universe Polymorphism`. Note that the quotes are
+   shell syntax, Coq does not see them.
+:-unset *string*: As ``-set`` but used to disable options and flags.
 :-compat *version*: Attempt to maintain some backward-compatibility
   with a previous version.
 :-dump-glob *file*: Dump references for global names in file *file*

@@ -38,6 +38,8 @@ type color = [`ON | `AUTO | `OFF]
 
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
+type option_command = OptionSet of string option | OptionUnset
+
 type t = {
 
   load_init   : bool;
@@ -62,6 +64,8 @@ type t = {
   native_compiler : native_compiler;
   allow_sprop : bool;
   cumulative_sprop : bool;
+
+  set_options : (Goptions.option_name * option_command) list;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
@@ -114,6 +118,8 @@ let default = {
   native_compiler = default_native;
   allow_sprop = false;
   cumulative_sprop = false;
+
+  set_options = [];
 
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
@@ -244,6 +250,16 @@ let get_native_name s =
     String.concat "/" [Filename.dirname s;
       Nativelib.output_dir; Library.native_name_from_filename s]
   with _ -> ""
+
+let to_opt_key = Str.(split (regexp " +"))
+
+let parse_option_set opt =
+  match String.index_opt opt '=' with
+  | None -> to_opt_key opt, None
+  | Some eqi ->
+    let len = String.length opt in
+    let v = String.sub opt (eqi+1) (len - eqi - 1) in
+    to_opt_key (String.sub opt 0 eqi), Some v
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
@@ -449,6 +465,16 @@ let parse_args ~help ~init arglist : t * string list =
           error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler")
       in
       { oval with native_compiler }
+
+    | "-set" ->
+      let opt = next() in
+      let opt, v = parse_option_set opt in
+      { oval with set_options = (opt, OptionSet v) :: oval.set_options }
+
+    | "-unset" ->
+      let opt = next() in
+      let opt = to_opt_key opt in
+      { oval with set_options = (opt, OptionUnset) :: oval.set_options }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"

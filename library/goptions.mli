@@ -172,6 +172,14 @@ type option_value =
   | StringValue of string
   | StringOptValue of string option
 
+val set_option_value : ?locality:option_locality ->
+  ('a -> option_value -> option_value) -> option_name -> 'a -> unit
+(** [set_option_value ?locality f name v] sets [name] to the result of
+    applying [f] to [v] and [name]'s current value. Use for behaviour
+    depending on the type of the option, eg erroring when ['a] doesn't
+    match it. Changing the type will result in errors later so don't do
+    that. *)
+
 (** Summary of an option status *)
 type option_state = {
   opt_depr  : bool;
