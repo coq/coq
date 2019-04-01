@@ -29,3 +29,14 @@ val timeout : int -> ('a -> 'b) -> 'a -> exn -> 'b
    API and it is scheduled to go away. *)
 type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
 val set_timeout : timeout -> unit
+
+(** [protect_sigalrm f x] computes [f x], but if SIGALRM is received during that
+    computation, the signal handler is executed only once the computation is
+    terminated. Otherwise said, it makes the execution of [f] atomic w.r.t.
+    handling of SIGALRM.
+
+    This is useful for example to prevent the implementation of `Timeout` to
+    interrupt I/O routines, generating ill-formed output.
+
+*)
+val protect_sigalrm : ('a -> 'b) -> 'a -> 'b
