@@ -604,6 +604,9 @@ library:ci-sf:
 library:ci-stdlib2:
   extends: .ci-template-flambda
 
+library:ci-tlc:
+  extends: .ci-template
+
 library:ci-unimath:
   extends: .ci-template-flambda
 
