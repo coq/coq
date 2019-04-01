@@ -14,6 +14,8 @@ val default_toplevel : Names.DirPath.t
 
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
+type option_command = OptionSet of string option | OptionUnset
+
 type t = {
 
   load_init   : bool;
@@ -37,6 +39,8 @@ type t = {
   native_compiler : native_compiler;
   allow_sprop : bool;
   cumulative_sprop : bool;
+
+  set_options : (Goptions.option_name * option_command) list;
 
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
