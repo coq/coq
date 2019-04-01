@@ -67,6 +67,8 @@ type t = {
 
   set_options : (Goptions.option_name * option_command) list;
 
+  native_output_dir : CUnix.physical_path option;
+
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;
@@ -120,6 +122,8 @@ let default = {
   cumulative_sprop = false;
 
   set_options = [];
+
+  native_output_dir = Some ".coq-native";
 
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
@@ -247,8 +251,10 @@ let get_cache opt = function
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
   try
-    String.concat "/" [Filename.dirname s;
-      Nativelib.output_dir; Library.native_name_from_filename s]
+    Filename.(List.fold_left concat (dirname s)
+                [ Option.default "" !Nativelib.output_dir
+                ; Library.native_name_from_filename s
+                ])
   with _ -> ""
 
 let to_opt_key = Str.(split (regexp " +"))
@@ -475,6 +481,12 @@ let parse_args ~help ~init arglist : t * string list =
       let opt = next() in
       let opt = to_opt_key opt in
       { oval with set_options = (opt, OptionUnset) :: oval.set_options }
+
+    |"-native-output-dir" ->
+      let native_output_dir = match next () with
+        | "none" -> None
+        | x -> Some x
+      in { oval with native_output_dir }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"

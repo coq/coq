@@ -232,6 +232,9 @@ let init_toplevel ~help ~init custom_init arglist =
 
   set_options opts.set_options;
 
+  (* Native output dir *)
+  Nativelib.output_dir := opts.native_output_dir;
+
   (* Allow the user to load an arbitrary state here *)
   inputstate opts;
 

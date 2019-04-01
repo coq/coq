@@ -42,6 +42,8 @@ type t = {
 
   set_options : (Goptions.option_name * option_command) list;
 
+  native_output_dir : CUnix.physical_path option;
+
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;
