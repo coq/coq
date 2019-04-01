@@ -1442,8 +1442,8 @@ Numeral notations
      of the resulting term will be refreshed.
 
      Note that only fully-reduced ground terms (terms containing only
-     function application, constructors, inductive type families, and
-     primitive integers) will be considered for printing.
+     function application, constructors, inductive type families,
+     sorts, and primitive integers) will be considered for printing.
 
    .. cmdv:: Numeral Notation @ident__1 @ident__2 @ident__3 : @scope (warning after @num).
 
@@ -1592,8 +1592,8 @@ String notations
      of the resulting term will be refreshed.
 
      Note that only fully-reduced ground terms (terms containing only
-     function application, constructors, inductive type families, and
-     primitive integers) will be considered for printing.
+     function application, constructors, inductive type families,
+     sorts, and primitive integers) will be considered for printing.
 
    .. exn:: Cannot interpret this string as a value of type @type
 
