@@ -6,6 +6,6 @@ ci_dir="$(dirname "$0")"
 install_ssreflect
 
 FORCE_GIT=1
-git_download Coquelicot
+git_download coquelicot
 
-( cd "${CI_BUILD_DIR}/Coquelicot" && ./autogen.sh && ./configure && ./remake "-j${NJOBS}" )
+( cd "${CI_BUILD_DIR}/coquelicot" && ./autogen.sh && ./configure && ./remake "-j${NJOBS}" )

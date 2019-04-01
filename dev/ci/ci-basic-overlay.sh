@@ -104,15 +104,8 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-# The URL for downloading a tgz snapshot of the master branch is
-# https://scm.gforge.inria.fr/anonscm/gitweb?p=coquelicot/coquelicot.git;a=snapshot;h=refs/heads/master;sf=tgz
-# See https://gforge.inria.fr/scm/browser.php?group_id=3599
-# Since this URL doesn't fit to our standard mechanism and since Coquelicot doesn't seem to change frequently,
-# we use a fixed version, which has a download path which does fit to our standard mechanism.
-# ATTENTION: The archive URL might depend on the version!
-: "${Coquelicot_CI_REF:=coquelicot-3.0.2}"
-: "${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
-: "${Coquelicot_CI_ARCHIVEURL:=https://gforge.inria.fr/frs/download.php/file/37523}"
+: "${coquelicot_CI_REF:=master}"
+: "${coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
 
 ########################################################################
 # CompCert
