@@ -24,7 +24,7 @@ type struc_typ = {
   s_PROJ : Constant.t option list }
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * Constant.t option list
+    constructor * (Name.t * bool) list * Constant.t option list
 
 val declare_structure : struc_tuple -> unit
 

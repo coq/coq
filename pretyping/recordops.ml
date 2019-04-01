@@ -45,14 +45,14 @@ let structure_table =
 let projection_table =
   Summary.ref (Cmap.empty : struc_typ Cmap.t) ~name:"record-projs"
 
-(* TODO: could be unify struc_typ and struc_tuple ? in particular,
-   is the inductive always (fst constructor) ? It seems so... *)
+(* TODO: could be unify struc_typ and struc_tuple ? *)
 
 type struc_tuple =
-    inductive * constructor * (Name.t * bool) list * Constant.t option list
+    constructor * (Name.t * bool) list * Constant.t option list
 
-let load_structure i (_,(ind,id,kl,projs)) =
+let load_structure i (_, (id,kl,projs)) =
   let open Declarations in
+  let ind = fst id in
   let mib, mip = Global.lookup_inductive ind in
   let n = mib.mind_nparams in
   let struc =
@@ -65,8 +65,7 @@ let load_structure i (_,(ind,id,kl,projs)) =
 let cache_structure o =
   load_structure 1 o
 
-let subst_structure (subst,((kn,i),id,kl,projs as obj)) = 
-  let kn' = subst_mind subst kn in
+let subst_structure (subst, (id, kl, projs as obj)) =
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
@@ -75,10 +74,10 @@ let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
     projs
   in
   let id' = subst_constructor subst id in
-  if projs' == projs && kn' == kn && id' == id then obj else
-    ((kn',i),id',kl,projs')
+  if projs' == projs && id' == id then obj else
+    (id',kl,projs')
 
-let discharge_structure (_,x) = Some x
+let discharge_structure (_, x) = Some x
 
 let inStruc : struc_tuple -> obj =
   declare_object {(default_object "STRUCTURE") with
@@ -88,8 +87,8 @@ let inStruc : struc_tuple -> obj =
     classify_function = (fun x -> Substitute x);
     discharge_function = discharge_structure }
 
-let declare_structure (s,c,kl,pl) =
-  Lib.add_anonymous_leaf (inStruc (s,c,kl,pl))
+let declare_structure o =
+  Lib.add_anonymous_leaf (inStruc o)
 
 let lookup_structure indsp = Indmap.find indsp !structure_table
 
@@ -279,21 +278,21 @@ let add_canonical_structure warn o =
     (* XXX: Undesired global access to env *)
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let lo = compute_canonical_projections env warn o in
-    List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
+    compute_canonical_projections env warn o |>
+    List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
-      let ocs = try Some (assoc_pat cs_pat l)
-      with Not_found -> None
-      in match ocs with
-        | None -> object_table := GlobRef.Map.add proj ((pat,s)::l) !object_table;
-        | Some (c, cs) ->
-              let old_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF))
-              and new_can_s = (Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF))
-              in
-              let prj = (Nametab.pr_global_env Id.Set.empty proj)
-              and hd_val = (pr_cs_pattern cs_pat) in
-              if warn then warn_redundant_canonical_projection (hd_val,prj,new_can_s,old_can_s))
-          lo
+      match assoc_pat cs_pat l with
+      | exception Not_found ->
+          object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table
+      | _, cs ->
+        if warn
+        then
+          let old_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF) in
+          let new_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF) in
+          let prj = Nametab.pr_global_env Id.Set.empty proj in
+          let hd_val = pr_cs_pattern cs_pat in
+          warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s)
+      )
 
 let open_canonical_structure i (_, o) =
   if Int.equal i 1 then add_canonical_structure false o

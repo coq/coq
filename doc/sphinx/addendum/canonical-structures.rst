@@ -92,7 +92,7 @@ and use the ``==`` notation on terms of this type.
 Derived Canonical Structures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We know how to use ``== `` on base types, like ``nat``, ``bool``, ``Z``. Here we show
+We know how to use ``==`` on base types, like ``nat``, ``bool``, ``Z``. Here we show
 how to deal with type constructors, i.e. how to make the following
 example work:
 
