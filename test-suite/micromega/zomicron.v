@@ -82,11 +82,48 @@ Proof.
   lia.
 Qed.
 
+Section S.
+  Variables x y: Z.
+  Variables XGe : x >= 0.
+  Variables YGt : y > 0.
+  Variables YLt : y < 0.
+
+  Goal False.
+  Proof using - XGe.
+    lia.
+  Qed.
+
+  Goal False.
+  Proof using YGt YLt x y.
+    lia.
+  Qed.
+
+  End S.
+
 (*  Bug 5073 *)
 Lemma opp_eq_0_iff a : -a = 0 <-> a = 0.
 Proof.
   lia.
 Qed.
 
+Lemma ex_pos : forall x, exists z t, x = z - t /\ z >= 0 /\ t >= 0.
+Proof.
+  intros.
+  destruct (dec_Zge x 0).
+  exists x, 0.
+  lia.
+  exists 0, (-x).
+  lia.
+Qed.
 
-
+Goal forall
+    (b q r : Z)
+    (H : b * q + r <= 0)
+    (H5 : - b < r)
+    (H6 : r <= 0)
+    (H2 : 0 <= b),
+  b = 0 -> False.
+Proof.
+  intros b q r.
+  lia.
+Qed.

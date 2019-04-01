@@ -30,6 +30,9 @@ TACTIC EXTEND RED
 | [ "myred"  ] -> { Tactics.red_in_concl }
 END
 
+TACTIC EXTEND ISGROUND
+| [ "is_ground" constr(t) ] -> { Coq_micromega.is_ground_tac t }
+END
 
 
 TACTIC EXTEND PsatzZ

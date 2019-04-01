@@ -40,6 +40,9 @@ val pp_gen : (out_channel -> var -> unit) ->  out_channel -> t -> unit
 (** [pp o v] prints the representation of the vector [v] over the channel [o] *)
 val pp : out_channel -> t -> unit
 
+(** [pp_smt o v] prints the representation of the vector [v] over the channel [o] using SMTLIB conventions *)
+val pp_smt : out_channel -> t -> unit
+
 (** [variables v] returns the set of variables with non-zero coefficients *)
 val variables : t -> ISet.t
 
@@ -48,6 +51,11 @@ val get_cst : t -> num
 
 (** [decomp_cst v] returns the pair (c,a1.x1+...+an.xn) *)
 val decomp_cst : t -> num * t
+
+(** [decomp_cst v] returns the pair (ai, ai+1.xi+...+an.xn) *)
+val decomp_at : int -> t -> num * t
+
+val decomp_fst : t -> (var * num) * t
 
 (** [cst c] returns the vector v=c+0.x1+...+0.xn *)
 val cst : num -> t
@@ -70,10 +78,13 @@ val get : var -> t -> num
     i.e. the coefficient of the variable xi is set to ai' *)
 val set : var -> num -> t -> t
 
+(** [mkvar xi] returns 1.xi *)
+val mkvar : var -> t
+
 (** [update xi f v] returns c+a1.x1+...+f(ai).xi+...+an.xn *)
 val update : var -> (num -> num) ->  t -> t
 
-(** [fresh v] return the fresh variable with inded 1+ max (variables v) *)
+(** [fresh v] return the fresh variable with index 1+ max (variables v) *)
 val fresh : t -> int
 
 (** [choose v] decomposes a vector [v] depending on whether it is [null] or not.
@@ -154,3 +165,9 @@ val exists2 : (num -> num -> bool) -> t -> t -> (var * num * num) option
 
 (** [dotproduct v1 v2] is the dot product of v1 and v2. *)
 val dotproduct : t -> t -> num
+
+val map : (var -> num -> 'a) -> t -> 'a list
+
+val abs_min_elt : t -> (var * num) option
+
+val partition : (var -> num -> bool) -> t -> t * t

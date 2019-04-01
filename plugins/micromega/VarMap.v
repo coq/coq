@@ -33,14 +33,14 @@ Section MakeVarMap.
   #[universes(template)]
   Inductive t  : Type :=
   | Empty : t
-  | Leaf : A -> t
-  | Node : t  -> A -> t  -> t .
+  | Elt : A -> t
+  | Branch : t  -> A -> t  -> t .
 
   Fixpoint find (vm : t) (p:positive) {struct vm} : A :=
     match vm with
       | Empty => default
-      | Leaf i => i
-      | Node l e r => match p with
+      | Elt i => i
+      | Branch l e r => match p with
                         | xH => e
                         | xO p => find l p
                         | xI p => find r p
@@ -50,25 +50,25 @@ Section MakeVarMap.
 
   Fixpoint singleton (x:positive) (v : A) : t :=
     match x with
-    | xH => Leaf v
-    | xO p => Node (singleton p v) default Empty
-    | xI p => Node Empty default (singleton p v)
+    | xH => Elt v
+    | xO p => Branch (singleton p v) default Empty
+    | xI p => Branch Empty default (singleton p v)
     end.
   
   Fixpoint vm_add (x: positive) (v : A) (m : t) {struct m} : t :=
     match m with
     | Empty   => singleton x v
-    | Leaf vl =>
+    | Elt vl =>
       match x with
-      | xH => Leaf v
-      | xO p => Node (singleton p v) vl Empty
-      | xI p => Node Empty vl (singleton p v)
+      | xH => Elt v
+      | xO p => Branch (singleton p v) vl Empty
+      | xI p => Branch Empty vl (singleton p v)
       end
-    | Node l o r => 
+    | Branch l o r =>
       match x with
-      | xH => Node l v r
-      | xI p => Node l o (vm_add p v r)
-      | xO p => Node (vm_add p v l) o r
+      | xH => Branch l v r
+      | xI p => Branch l o (vm_add p v r)
+      | xO p => Branch (vm_add p v l) o r
       end
     end.
 

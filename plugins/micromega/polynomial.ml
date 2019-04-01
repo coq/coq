@@ -378,6 +378,7 @@ module LinPoly = struct
 
   let pp o p =   Vect.pp_gen pp_var o p
 
+
   let constant c =
     if sign_num c = 0
     then Vect.null
@@ -389,6 +390,12 @@ module LinPoly = struct
         let mn = (MonT.retrieve v) in
         Monomial.is_var mn || Monomial.is_const mn) p
 
+  let is_variable p =
+    let ((x,v),r) = Vect.decomp_fst p in
+    if Vect.is_null r && v >/ Int 0
+    then Monomial.get_var (MonT.retrieve x)
+    else None
+
 
   let factorise x p =
     let (px,cx) = Poly.factorise x (pol_of_linpol p) in
@@ -398,20 +405,6 @@ module LinPoly = struct
   let is_linear_for x p =
     let (a,b) = factorise x p in
     Vect.is_constant a
-
-  let search_linear p l =
-
-    Vect.find (fun x v ->
-        if p v
-        then
-          let x' = MonT.retrieve x in
-          match Monomial.get_var x' with
-          | None -> None
-          | Some x -> if is_linear_for x l
-                      then Some x
-                      else None
-         else None) l
-
 
   let search_all_linear p l =
     Vect.fold (fun acc x v ->
@@ -426,11 +419,23 @@ module LinPoly = struct
              else acc
         else acc) [] l
 
+  let min_list (l:int list) =
+    match l with
+    | [] -> None
+    | e::l -> Some (List.fold_left Pervasives.min e l)
+
+  let search_linear p l =
+    min_list (search_all_linear p l)
+
 
   let product p1 p2 =
     linpol_of_pol (Poly.product (pol_of_linpol p1) (pol_of_linpol p2))
 
   let addition p1 p2 = Vect.add p1 p2
+
+
+  let of_vect v =
+    Vect.fold (fun acc v vl -> addition (product (var v) (constant vl)) acc) Vect.null v
 
   let variables p = Vect.fold
                      (fun acc v _ ->
@@ -489,8 +494,8 @@ module ProofFormat =  struct
     | Cst c -> Printf.fprintf o "Cst %s" (string_of_num c)
     | Zero  -> Printf.fprintf o "Zero"
     | Square s -> Printf.fprintf o "(%a)^2" Poly.pp (LinPoly.pol_of_linpol s)
-    | MulC(p,pr) -> Printf.fprintf o "(%a) * %a" Poly.pp (LinPoly.pol_of_linpol p) output_prf_rule pr
-    | MulPrf(p1,p2) -> Printf.fprintf o "%a * %a" output_prf_rule p1 output_prf_rule p2
+    | MulC(p,pr) -> Printf.fprintf o "(%a) * (%a)" Poly.pp (LinPoly.pol_of_linpol p) output_prf_rule pr
+    | MulPrf(p1,p2) -> Printf.fprintf o "(%a) * (%a)" output_prf_rule p1 output_prf_rule p2
     | AddPrf(p1,p2) -> Printf.fprintf o "%a + %a" output_prf_rule p1 output_prf_rule p2
     | CutPrf(p) -> Printf.fprintf o "[%a]" output_prf_rule p
     | Gcd(c,p)  -> Printf.fprintf o "(%a)/%s" output_prf_rule p (string_of_big_int c)
@@ -501,6 +506,18 @@ module ProofFormat =  struct
     | Enum(i,p1,v,p2,pl) -> Printf.fprintf o "%i{%a<=%a<=%a}%a" i
                               output_prf_rule p1 Vect.pp v output_prf_rule p2
                               (pp_list ";" output_proof) pl
+
+  let rec pr_size = function
+    | Annot(_,p) -> pr_size p
+    | Zero| Square _ -> Int 0
+    | Hyp _      -> Int 1
+    | Def _      -> Int 1
+    | Cst n      ->  n
+    | Gcd(i, p)    -> pr_size p // (Big_int i)
+    | MulPrf(p1,p2) | AddPrf(p1,p2) -> pr_size p1 +/ pr_size p2
+    | CutPrf p    -> pr_size p
+    | MulC(v, p) -> pr_size p
+
 
   let rec pr_rule_max_id = function
     | Annot(_,p) -> pr_rule_max_id p
@@ -613,6 +630,48 @@ module ProofFormat =  struct
     if debug then Printf.printf "normalise_proof %a -> %a" output_proof  prf output_proof (snd res) ;
     res
 
+  module OrdPrfRule =
+    struct
+      type t = prf_rule
+
+      let id_of_constr = function
+        | Annot _ -> 0
+        | Hyp _  -> 1
+        | Def _  -> 2
+        | Cst _   -> 3
+        | Zero   -> 4
+        | Square _ -> 5
+        | MulC  _  -> 6
+        | Gcd _    -> 7
+        | MulPrf _ -> 8
+        | AddPrf _ -> 9
+        | CutPrf _ -> 10
+
+      let cmp_pair c1 c2 (x1,x2) (y1,y2) =
+        match c1 x1 y1 with
+        |  0 -> c2 x2 y2
+        |  i -> i
+
+
+      let rec compare p1 p2 =
+        match p1, p2 with
+        | Annot(s1,p1) , Annot(s2,p2) -> if s1 = s2 then compare p1 p2
+                                         else Pervasives.compare s1 s2
+        | Hyp i       , Hyp j        -> Pervasives.compare i j
+        | Def i       , Def j        -> Pervasives.compare i j
+        | Cst n       , Cst m        -> Num.compare_num n m
+        | Zero        , Zero         -> 0
+        | Square v1   , Square v2    -> Vect.compare v1 v2
+        | MulC(v1,p1) , MulC(v2,p2)  -> cmp_pair Vect.compare compare (v1,p1) (v2,p2)
+        | Gcd(b1,p1)  , Gcd(b2,p2)   -> cmp_pair Big_int.compare_big_int compare (b1,p1) (b2,p2)
+        | MulPrf(p1,q1) , MulPrf(p2,q2) -> cmp_pair compare compare (p1,q1) (p2,q2)
+        | AddPrf(p1,q1) , MulPrf(p2,q2) -> cmp_pair compare compare (p1,q1) (p2,q2)
+        | CutPrf p      , CutPrf p'     -> compare p p'
+        |   _          ,   _            -> Pervasives.compare (id_of_constr p1) (id_of_constr p2)
+
+    end
+
+
 
 
   let add_proof x y =
@@ -621,27 +680,96 @@ module ProofFormat =  struct
     | _    -> AddPrf(x,y)
 
 
-  let mul_cst_proof c p =
-    match  sign_num c with
-    | 0 -> Zero (* This is likely to be a bug *)
-    | -1 -> MulC(LinPoly.constant  c,p) (* [p] should represent an equality *)
-    | 1 ->
-       if eq_num (Int 1) c
-       then p
-       else MulPrf(Cst  c,p)
-    | _ -> assert false
+  let rec mul_cst_proof c p =
+    match p with
+    | Annot(s,p) -> Annot(s,mul_cst_proof c p)
+    | MulC(v,p') -> MulC(Vect.mul c v,p')
+    | _  ->
+       match  sign_num c with
+       | 0 -> Zero (* This is likely to be a bug *)
+       | -1 -> MulC(LinPoly.constant c, p) (* [p] should represent an equality *)
+       | 1 ->
+          if eq_num (Int 1) c
+          then p
+          else MulPrf(Cst c,p)
+       | _ -> assert false
+
+
+  let sMulC v p =
+    let (c,v') = Vect.decomp_cst v in
+    if Vect.is_null v' then mul_cst_proof c p
+    else  MulC(v,p)
 
 
   let mul_proof p1 p2 =
     match p1 , p2 with
     | Zero , _ | _ , Zero -> Zero
-    | Cst (Int 1) , p | p , Cst (Int 1) -> p
-    |   _  ,  _ -> MulPrf(p1,p2)
+    | Cst c , p | p , Cst c -> mul_cst_proof c p
+    |   _  ,  _ ->
+         MulPrf(p1,p2)
 
+
+    module PrfRuleMap = Map.Make(OrdPrfRule)
+
+    let prf_rule_of_map m =
+      PrfRuleMap.fold (fun k v acc -> add_proof (sMulC v k) acc) m Zero
+
+
+    let rec dev_prf_rule p =
+      match p with
+      | Annot(s,p) -> dev_prf_rule p
+      | Hyp _ | Def _ | Cst _ | Zero | Square _ -> PrfRuleMap.singleton p (LinPoly.constant (Int 1))
+      | MulC(v,p) -> PrfRuleMap.map (fun v1 -> LinPoly.product v v1) (dev_prf_rule p)
+      | AddPrf(p1,p2) -> PrfRuleMap.merge (fun k o1 o2 ->
+                             match o1 , o2 with
+                             | None , None -> None
+                             | None , Some v | Some v, None -> Some v
+                             | Some v1 , Some v2 -> Some (LinPoly.addition v1 v2)) (dev_prf_rule p1) (dev_prf_rule p2)
+      | MulPrf(p1, p2) ->
+         begin
+           let p1' = dev_prf_rule p1 in
+           let p2' = dev_prf_rule p2 in
+
+           let p1'' = prf_rule_of_map p1' in
+           let p2'' = prf_rule_of_map p2' in
+
+           match p1'' with
+           | Cst c -> PrfRuleMap.map (fun v1 -> Vect.mul c v1) p2'
+           | _     -> PrfRuleMap.singleton (MulPrf(p1'',p2'')) (LinPoly.constant (Int 1))
+         end
+      |   _  -> PrfRuleMap.singleton p (LinPoly.constant (Int 1))
+
+    let simplify_prf_rule p =
+      prf_rule_of_map (dev_prf_rule p)
+
+
+    (*
+  let mul_proof p1 p2 =
+    let res = mul_proof p1 p2 in
+    Printf.printf "mul_proof %a %a = %a\n"
+    output_prf_rule p1 output_prf_rule p2 output_prf_rule res; res
+
+  let add_proof p1 p2 =
+    let res = add_proof p1 p2 in
+    Printf.printf "add_proof %a %a = %a\n"
+    output_prf_rule p1 output_prf_rule p2 output_prf_rule res; res
+
+
+  let sMulC v p =
+    let res = sMulC v p in
+    Printf.printf "sMulC %a %a = %a\n" Vect.pp v output_prf_rule p output_prf_rule res ;
+    res
+
+  let mul_cst_proof c p  =
+    let res = mul_cst_proof c p in
+    Printf.printf "mul_cst_proof %s %a = %a\n" (Num.string_of_num c) output_prf_rule p output_prf_rule res ;
+    res
+ *)
 
   let proof_of_farkas env vect =
     Vect.fold (fun prf x n ->
         add_proof (mul_cst_proof n (IMap.find x env)) prf) Zero vect
+
 
 
 
@@ -768,10 +896,14 @@ module WithProof =  struct
   let output o ((lp,op),prf) =
     Printf.fprintf o "%a %s 0 by %a\n" LinPoly.pp lp (string_of_op op) ProofFormat.output_prf_rule prf
 
+  let output_sys o l =
+    List.iter (Printf.fprintf o "%a\n" output) l
+
   exception InvalidProof
 
   let  zero = ((Vect.null,Eq), ProofFormat.Zero)
 
+  let  const n = ((LinPoly.constant n,Ge), ProofFormat.Cst n)
 
   let of_cstr (c,prf)  =
     (Vect.set 0 (Num.minus_num (c.cst)) c.coeffs,c.op), prf
@@ -784,7 +916,7 @@ module WithProof =  struct
 
   let mult p ((p1,o1),prf1) =
     match o1 with
-    | Eq -> ((LinPoly.product p p1,o1), ProofFormat.MulC(p, prf1))
+    | Eq -> ((LinPoly.product p p1,o1), ProofFormat.sMulC p  prf1)
     | Gt| Ge  -> let (n,r) = Vect.decomp_cst p in
                  if Vect.is_null r && n >/ Int 0
                  then ((LinPoly.product p p1, o1), ProofFormat.mul_cst_proof n prf1)
@@ -889,6 +1021,51 @@ module WithProof =  struct
           |   _  -> None
         end
       | (Ge|Gt) , Eq -> failwith "pivot: equality as second argument"
+
+  let linear_pivot sys ((lp1,op1), prf1) x ((lp2,op2), prf2) =
+    match linear_pivot sys ((lp1,op1), prf1) x ((lp2,op2), prf2) with
+    | None -> None
+    | Some (c,p) -> Some(c, ProofFormat.simplify_prf_rule p)
+
+
+let is_substitution strict ((p,o),prf) =
+  let pred v = if strict then v =/ Int 1 || v =/ Int (-1) else true in
+
+  match o with
+  | Eq -> LinPoly.search_linear pred  p
+  | _  -> None
+
+
+let subst1 sys0 =
+  let (oeq,sys') = extract (is_substitution true) sys0 in
+  match oeq with
+    | None -> sys0
+    | Some(v,pc) ->
+       match simplify (linear_pivot sys0 pc v) sys' with
+       | None -> sys0
+       | Some sys' -> sys'
+
+
+
+let subst sys0 =
+  let elim sys =
+    let (oeq,sys') = extract (is_substitution true) sys in
+    match oeq with
+    | None -> None
+    | Some(v,pc) ->  simplify (linear_pivot sys0 pc v) sys' in
+
+  iterate_until_stable elim sys0
+
+
+let saturate_subst b sys0  =
+  let select = is_substitution b in
+  let gen (v,pc) ((c,op),prf) =
+    if ISet.mem v (LinPoly.variables c)
+    then linear_pivot sys0 pc v ((c,op),prf)
+    else None
+  in
+  saturate select gen sys0
+
 
 end
 

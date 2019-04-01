@@ -28,6 +28,8 @@ module Monomial : sig
       @return the empty monomial i.e. without any variable *)
   val const : t
 
+  val is_const : t -> bool
+
   (** [var x]
       @return the monomial x^1 *)
   val var : var -> t
@@ -39,6 +41,11 @@ module Monomial : sig
   (** [is_var m]
       @return [true] iff m = x^1 for some variable x *)
   val is_var : t -> bool
+
+  (** [get_var m]
+      @return [x] iff m = x^1 for  variable x *)
+  val get_var : t -> var option
+
 
   (** [div m1 m2]
       @return a pair [mr,n] such that mr * (m2)^n = m1 where n is maximum *)
@@ -141,6 +148,10 @@ module LinPoly : sig
         @return the monomial corresponding to the variable [x] *)
     val retrieve : int -> Monomial.t
 
+    (** [register m]
+        @return the variable index for the monomial m *)
+    val register : Monomial.t -> int
+
   end
 
   (** [linpol_of_pol p] linearise the polynomial p *)
@@ -161,10 +172,20 @@ module LinPoly : sig
       @returns 1.x where x is the variable (index) for monomial m *)
   val of_monomial : Monomial.t -> t
 
+    (** [of_vect v]
+        @returns a1.x1 + ... + an.xn
+        This is not the identity because xi is the variable index of xi^1
+     *)
+  val of_vect : Vect.t -> t
+
   (** [variables p]
       @return the set of variables of the polynomial p
       interpreted as a multi-variate polynomial *)
   val variables : t -> ISet.t
+
+  (** [is_variable p]
+      @return Some x if p = a.x for a >= 0 *)
+  val is_variable : t ->  var option
 
   (** [is_linear p]
       @return whether the multi-variate polynomial is linear. *)
@@ -245,6 +266,8 @@ module ProofFormat : sig
     | Step of int * prf_rule * proof
     | Enum of int * prf_rule * Vect.t * prf_rule * proof list
 
+  val pr_size : prf_rule -> Num.num
+
   val pr_rule_max_id : prf_rule -> int
 
   val proof_max_id : proof -> int
@@ -294,8 +317,13 @@ sig
   (** [out_channel chan c] pretty-prints the constraint [c] over the channel [chan] *)
   val output : out_channel -> t -> unit
 
+  val output_sys : out_channel -> t list -> unit
+
   (** [zero] represents the tautology (0=0) *)
   val zero : t
+
+  (** [const n] represents the tautology (n>=0) *)
+  val const : Num.num -> t
 
   (** [product p q]
       @return the polynomial p*q with its sign and proof *)
@@ -320,5 +348,25 @@ sig
       - The pivoting also requires some sign conditions for [a]
    *)
   val linear_pivot : t list -> t -> Vect.var -> t -> t option
+
+
+(** [subst sys] performs the equivalent of the 'subst' tactic of Coq.
+    For every p=0 \in sys such that p is linear in x with coefficient +/- 1
+                               i.e. p = 0 <-> x = e and x \notin e.
+    Replace x by e in sys
+
+    NB: performing this transformation may hinders the non-linear prover to find a proof.
+    [elim_simple_linear_equality] is much more careful.
+ *)
+
+  val subst : t list -> t list
+
+  (** [subst1 sys] performs a single substitution *)
+  val subst1 : t list -> t list
+
+  val saturate_subst : bool -> t list -> t list
+
+
+  val is_substitution : bool -> t -> var option
 
 end

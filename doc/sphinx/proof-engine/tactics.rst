@@ -3912,6 +3912,8 @@ At Coq startup, only the core database is nonempty and can be used.
                       environment, including those used for ``setoid_rewrite``,
                       from the Classes directory.
 
+:fset: internal database for the implementation of the ``FSets`` library.
+
 You are advised not to put your own hints in the core database, but
 use one or several databases specific to your development.
 

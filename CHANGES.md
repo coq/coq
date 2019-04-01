@@ -123,6 +123,8 @@ Tactics
 - The syntax of the `autoapply` tactic was fixed to conform with preexisting
   documentation: it now takes a `with` clause instead of a `using` clause.
 
+
+
 Vernacular commands
 
 - `Combined Scheme` can now work when inductive schemes are generated in sort
@@ -227,6 +229,9 @@ Standard Library
 - The `Coq.Numbers.Cyclic.Int31` library is deprecated.
 
 - Added lemmas about `Z.testbit`, `Z.ones`, and `Z.modulo`.
+
+- Moved the `auto` hints of the `FSet` library into a new
+  `fset` database.
 
 Universes
 

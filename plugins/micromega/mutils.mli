@@ -8,8 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Int : sig type t = int val compare : int -> int -> int val equal : int -> int -> bool end
 
-module ISet : Set.S with type elt = int
+
+module ISet : sig
+  include Set.S with type elt = int
+  val pp : out_channel -> t -> unit
+end
 
 module IMap :
 sig
@@ -36,7 +41,9 @@ module Tag : sig
 
   val pp : out_channel -> t -> unit
   val next : t -> t
+  val max  :  t -> t -> t
   val from : int -> t
+  val to_int : t -> int
 
 end
 
@@ -78,7 +85,17 @@ val extract : ('a -> 'b option) -> 'a list -> ('b * 'a) option * 'a list
 
 val extract_all : ('a -> 'b option) -> 'a list -> ('b * 'a) list * 'a list
 
+val extract_best : ('a -> 'b option) -> ('b -> 'b -> bool) -> 'a list -> ('b *'a) option * 'a list
+
+val find_some : ('a -> 'b option) -> 'a list  -> 'b option
+
 val iterate_until_stable : ('a -> 'a option) -> 'a -> 'a
+
+val simplify : ('a -> 'a option) -> 'a list -> 'a list option
+
+val saturate : ('a -> 'b option) -> ('b * 'a -> 'a -> 'a option) -> 'a list -> 'a list
+
+val generate : ('a -> 'b option) -> 'a list -> 'b list
 
 val app_funs : ('a -> 'b option) list -> 'a -> 'b option
 

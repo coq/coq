@@ -21,8 +21,8 @@ Require Import DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Hint Unfold transpose compat_op Proper respectful : core.
-Hint Extern 1 (Equivalence _) => constructor; congruence : core.
+Hint Unfold transpose compat_op Proper respectful : fset.
+Hint Extern 1 (Equivalence _) => constructor; congruence : fset.
 
 (** First, a functor for Weak Sets in functorial version. *)
 
@@ -708,7 +708,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.
   Proof.
-  intros; rewrite cardinal_fold; apply fold_1; auto.
+  intros; rewrite cardinal_fold; apply fold_1; auto with fset.
   Qed.
 
   Lemma cardinal_2 :
@@ -716,7 +716,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ => S) x).
-  apply fold_2; auto.
+  apply fold_2; auto with fset.
   Qed.
 
   (** ** Cardinal and (non-)emptiness *)
@@ -732,7 +732,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; rewrite cardinal_Empty; auto.
   Qed.
-  Hint Resolve cardinal_inv_1 : core.
+  Hint Resolve cardinal_inv_1 : fset.
 
   Lemma cardinal_inv_2 :
    forall s n, cardinal s = S n -> { x : elt | In x s }.
@@ -757,7 +757,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   symmetry.
   remember (cardinal s) as n; symmetry in Heqn; revert s s' Heqn H.
   induction n; intros.
-  apply cardinal_1; rewrite <- H; auto.
+  apply cardinal_1; rewrite <- H; auto with fset.
   destruct (cardinal_inv_2 Heqn) as (x,H2).
   revert Heqn.
   rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
@@ -769,13 +769,13 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   exact Equal_cardinal.
   Qed.
 
-  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : core.
+  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal : fset.
 
   (** ** Cardinal and set operators *)
 
   Lemma empty_cardinal : cardinal empty = 0.
   Proof.
-  rewrite cardinal_fold; apply fold_1; auto with set.
+  rewrite cardinal_fold; apply fold_1; auto with set fset.
   Qed.
 
   Hint Immediate empty_cardinal cardinal_1 : set.
@@ -795,7 +795,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; do 3 rewrite cardinal_fold.
   rewrite <- fold_plus.
-  apply fold_diff_inter with (eqA:=@Logic.eq nat); auto.
+  apply fold_diff_inter with (eqA:=@Logic.eq nat); auto with fset.
   Qed.
 
   Lemma union_cardinal:
@@ -804,7 +804,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros; do 3 rewrite cardinal_fold.
   rewrite <- fold_plus.
-  apply fold_union; auto.
+  apply fold_union; auto with fset.
   Qed.
 
   Lemma subset_cardinal :
@@ -838,7 +838,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros.
   do 4 rewrite cardinal_fold.
   do 2 rewrite <- fold_plus.
-  apply fold_union_inter with (eqA:=@Logic.eq nat); auto.
+  apply fold_union_inter with (eqA:=@Logic.eq nat); auto with fset.
   Qed.
 
   Lemma union_cardinal_inter :
@@ -860,7 +860,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma add_cardinal_1 :
    forall s x, In x s -> cardinal (add x s) = cardinal s.
   Proof.
-  auto with set.
+  auto with set fset.
   Qed.
 
   Lemma add_cardinal_2 :
@@ -869,7 +869,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros.
   do 2 rewrite cardinal_fold.
   change S with ((fun _ => S) x);
-   apply fold_add with (eqA:=@Logic.eq nat); auto.
+   apply fold_add with (eqA:=@Logic.eq nat); auto with fset.
   Qed.
 
   Lemma remove_cardinal_1 :
@@ -878,16 +878,16 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros.
   do 2 rewrite cardinal_fold.
   change S with ((fun _ =>S) x).
-  apply remove_fold_1 with (eqA:=@Logic.eq nat); auto.
+  apply remove_fold_1 with (eqA:=@Logic.eq nat); auto with fset.
   Qed.
 
   Lemma remove_cardinal_2 :
    forall s x, ~In x s -> cardinal (remove x s) = cardinal s.
   Proof.
-  auto with set.
+  auto with set fset.
   Qed.
 
-  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : core.
+  Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2 : fset.
 
 End WProperties_fun.
 
@@ -952,7 +952,7 @@ Module OrdProperties (M:S).
    red; intros x a b H; unfold leb.
    f_equal; apply gtb_compat; auto.
   Qed.
-  Hint Resolve gtb_compat leb_compat : core.
+  Hint Resolve gtb_compat leb_compat : fset.
 
   Lemma elements_split : forall x s,
    elements s = elements_lt x s ++ elements_ge x s.
@@ -1047,7 +1047,7 @@ Module OrdProperties (M:S).
    (forall s s', P s -> forall x, Above x s -> Add x s s' -> P s') ->
    forall s : t, P s.
   Proof.
-  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto.
+  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto with fset.
   case_eq (max_elt s); intros.
   apply X0 with (remove e s) e; auto with set.
   apply IHn.
@@ -1068,7 +1068,7 @@ Module OrdProperties (M:S).
    (forall s s', P s -> forall x, Below x s -> Add x s s' -> P s') ->
    forall s : t, P s.
   Proof.
-  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto.
+  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto with fset.
   case_eq (min_elt s); intros.
   apply X0 with (remove e s) e; auto with set.
   apply IHn.

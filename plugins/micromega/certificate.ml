@@ -19,7 +19,6 @@
 
 let debug = false
 
-open Util
 open Big_int
 open Num
 open Polynomial
@@ -29,6 +28,16 @@ module Ml2C = Mutils.CamlToCoq
 module C2Ml = Mutils.CoqToCaml
 
 let use_simplex = ref true
+
+
+type ('prf,'model) res =
+   | Prf of 'prf
+   | Model of 'model
+   | Unknown
+
+type zres = (Mc.zArithProof , (int * Mc.z  list)) res
+
+type qres = (Mc.q Mc.psatz , (int * Mc.q  list)) res
 
 
 open Mutils
@@ -181,7 +190,7 @@ let build_dual_linear_system l =
   {coeffs = Vect.from_list ([Big_int zero_big_int ;Big_int unit_big_int]) ;
    op = Ge ;
    cst = Big_int zero_big_int}::(strict::(positivity l)@c::s0)
-
+open Util
 
 (** [direct_linear_prover l] does not handle strict inegalities *)
 let fourier_linear_prover l =
@@ -201,11 +210,11 @@ let direct_linear_prover l =
   else fourier_linear_prover l
 
 let find_point l =
-  if !use_simplex
-  then Simplex.find_point l
-  else match Mfourier.Fourier.find_point l with
-       | Inr _ -> None
-       | Inl cert -> Some cert
+   if !use_simplex
+   then Simplex.find_point l
+   else match Mfourier.Fourier.find_point l with
+        | Inr _ -> None
+        | Inl cert -> Some cert
 
 let optimise v l =
   if !use_simplex
@@ -253,9 +262,6 @@ let simple_linear_prover l =
     (* Fourier elimination should handle > *)
     dual_raw_certificate l
 
-open ProofFormat
-
-
 let env_of_list l =
   snd (List.fold_left (fun (i,m) p -> (i+1,IMap.add i p m)) (0,IMap.empty) l)
 
@@ -268,7 +274,7 @@ let linear_prover_cstr sys =
 
   match simple_linear_prover sysi with
   | None -> None
-  | Some cert -> Some (proof_of_farkas (env_of_list prfi) cert)
+  | Some cert -> Some (ProofFormat.proof_of_farkas (env_of_list prfi) cert)
 
 let linear_prover_cstr  =
   if debug
@@ -301,15 +307,14 @@ let develop_constraint z_spec (e,k) =
     - 0 =  c for c a non-zero constant
     - e = c  when the coeffs of e are all integers and c is rational
  *)
-open ProofFormat
 
 type checksat =
   | Tauto (* Tautology *)
-  | Unsat of prf_rule (* Unsatisfiable *)
-  | Cut of cstr * prf_rule (* Cutting plane *)
-  | Normalise of cstr * prf_rule (* Coefficients may be normalised i.e relatively prime *)
+  | Unsat of ProofFormat.prf_rule (* Unsatisfiable *)
+  | Cut of cstr * ProofFormat.prf_rule (* Cutting plane *)
+  | Normalise of cstr * ProofFormat.prf_rule (* Coefficients may be normalised i.e relatively prime *)
 
-exception FoundProof of  prf_rule
+exception FoundProof of  ProofFormat.prf_rule
 
 
 (** [check_sat]
@@ -336,17 +341,17 @@ let check_int_sat (cstr,prf) =
                coeffs = Vect.div gcd  coeffs;
                op = op ; cst = cst // gcd
              } in
-           Normalise(cstr,Gcd(gcdi,prf))
+           Normalise(cstr,ProofFormat.Gcd(gcdi,prf))
                     (*		    Normalise(cstr,CutPrf prf)*)
          end
        else
          match op with
-         | Eq -> Unsat (CutPrf prf)
+         | Eq -> Unsat (ProofFormat.CutPrf prf)
          | Ge ->
             let cstr = {
                 coeffs = Vect.div gcd coeffs;
                 op = op ; cst = ceiling_num (cst // gcd)
-              } in Cut(cstr,CutPrf prf)
+              } in Cut(cstr,ProofFormat.CutPrf prf)
          | Gt -> failwith "check_sat : Unexpected operator"
 
 
@@ -363,29 +368,6 @@ let apply_and_normalise check f psys =
     ) [] psys
 
 
-let simplify f sys =
-  let (sys',b) =
-    List.fold_left (fun (sys',b) c ->
-        match f c with
-        | None    -> (c::sys',b)
-        | Some c' ->
-           (c'::sys',true)
-      ) ([],false) sys in
-  if b then Some sys' else None
-
-let saturate f sys =
-  List.fold_left (fun sys' c -> match f c with
-                                | None    -> sys'
-                                | Some c' -> c'::sys'
-    ) [] sys
-
-let is_substitution strict ((p,o),prf) =
-  let pred v = if strict then v =/ Int 1 || v =/ Int (-1) else true in
-
-  match o with
-  | Eq -> LinPoly.search_linear pred  p
-  | _  -> None
-
 
 let is_linear_for v pc =
   LinPoly.is_linear (fst (fst pc)) || LinPoly.is_linear_for v (fst (fst pc))
@@ -393,11 +375,11 @@ let is_linear_for v pc =
 
 
 
-let non_linear_pivot sys pc v pc' =
+(*let non_linear_pivot sys pc v pc' =
   if LinPoly.is_linear (fst (fst pc'))
   then None (* There are other ways to deal with those *)
   else WithProof.linear_pivot sys pc v pc'
-
+ *)
 
 let is_linear_substitution sys ((p,o),prf) =
   let pred v =  v =/ Int 1 || v =/ Int (-1)  in
@@ -423,7 +405,33 @@ let elim_simple_linear_equality sys0 =
   iterate_until_stable elim sys0
 
 
-let saturate_linear_equality_non_linear sys0 =
+
+let output_sys o sys =
+  List.iter (fun s -> Printf.fprintf o "%a\n" WithProof.output s) sys
+
+let subst sys =
+  let sys' = WithProof.subst sys in
+  if debug then Printf.fprintf stdout "[subst:\n%a\n==>\n%a\n]" output_sys sys output_sys sys' ;
+  sys'
+
+
+
+(** [saturate_linear_equality sys] generate new constraints
+    obtained by eliminating linear equalities by pivoting.
+    For integers, the obtained constraints are  sound but not complete.
+ *)
+  let saturate_by_linear_equalities sys0 =
+    WithProof.saturate_subst false sys0
+
+
+let saturate_by_linear_equalities sys =
+  let sys' = saturate_by_linear_equalities sys in
+  if debug then Printf.fprintf stdout "[saturate_by_linear_equalities:\n%a\n==>\n%a\n]" output_sys sys output_sys sys' ;
+  sys'
+
+
+
+(* let saturate_linear_equality_non_linear sys0 =
   let (l,_) = extract_all (is_substitution false) sys0 in
   let rec elim l acc =
     match l with
@@ -432,18 +440,51 @@ let saturate_linear_equality_non_linear sys0 =
        let nc = saturate (non_linear_pivot sys0 pc v) (sys0@acc) in
        elim l' (nc@acc) in
   elim l []
+ *)
 
+let bounded_vars (sys: WithProof.t list) =
+  let l =  (fst (extract_all (fun ((p,o),prf) ->
+                     LinPoly.is_variable p
+                   ) sys)) in
+  List.fold_left (fun acc (i,wp) -> IMap.add i wp acc) IMap.empty l
+
+let rec power n p =
+  if n = 1 then p
+  else WithProof.product p (power (n-1) p)
+
+let bound_monomial mp m =
+  if  Monomial.is_var m || Monomial.is_const m
+  then None
+  else
+     try
+       Some (Monomial.fold
+               (fun v i acc ->
+                 let wp = IMap.find v mp in
+                 WithProof.product (power i wp) acc) m (WithProof.const (Int 1))
+         )
+     with Not_found -> None
+
+
+let bound_monomials (sys:WithProof.t list) =
+  let mp = bounded_vars sys in
+  let m  =
+    List.fold_left (fun acc ((p,_),_) ->
+        Vect.fold (fun acc v _ -> let m = LinPoly.MonT.retrieve v in
+                                  match bound_monomial mp m with
+                                  | None -> acc
+                                  | Some r -> IMap.add v r acc) acc p) IMap.empty sys in
+  IMap.fold (fun _ e acc -> e::acc) m []
 
 
 let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
   max_nb_cstr := compute_max_nb_cstr sys prfdepth ;
   let sys = List.map (develop_constraint n_spec) sys in
-  List.mapi (fun i (p,o) -> ((LinPoly.linpol_of_pol p,o),Hyp i)) sys
+  List.mapi (fun i (p,o) -> ((LinPoly.linpol_of_pol p,o),ProofFormat.Hyp i)) sys
 
 let square_of_var i =
   let x = LinPoly.var i in
-  ((LinPoly.product x x,Ge),(Square  x))
+  ((LinPoly.product x x,Ge),(ProofFormat.Square  x))
 
   
 (** [nlinear_preprocess  sys]  augments the system [sys] by performing some limited non-linear reasoning.
@@ -462,7 +503,7 @@ let nlinear_preprocess  (sys:WithProof.t list) =
     let sys = MonMap.fold (fun s m acc ->
                   let s = LinPoly.of_monomial s in
                   let m = LinPoly.of_monomial m in
-                  ((m, Ge), (Square s))::acc) collect_square  sys in
+                  ((m, Ge), (ProofFormat.Square s))::acc) collect_square  sys in
 
     let collect_vars = List.fold_left (fun acc p -> ISet.union acc (LinPoly.variables (fst (fst p)))) ISet.empty sys in
 
@@ -482,16 +523,16 @@ let nlinear_preprocess  (sys:WithProof.t list) =
 let nlinear_prover prfdepth sys =
   let sys = develop_constraints prfdepth q_spec sys in
   let sys1 = elim_simple_linear_equality sys in
-  let sys2 = saturate_linear_equality_non_linear sys1 in
+  let sys2 = saturate_by_linear_equalities sys1 in
   let sys = nlinear_preprocess sys1@sys2 in
   let sys = List.map (fun ((p,o),prf) -> (cstr_of_poly (p,o), prf)) sys in
   let id  = (List.fold_left
               (fun acc (_,r) -> max acc (ProofFormat.pr_rule_max_id r)) 0 sys) in
   let env = CList.interval 0 id in
   match linear_prover_cstr sys with
-  | None -> None
+  | None -> Unknown
   | Some cert ->
-     Some (cmpl_prf_rule Mc.normQ CamlToCoq.q env cert)
+     Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q env cert)
 
 
 let linear_prover_with_cert prfdepth sys =
@@ -500,9 +541,9 @@ let linear_prover_with_cert prfdepth sys =
   let sys = List.map (fun (c,p) -> cstr_of_poly c,p) sys in
 
   match linear_prover_cstr sys with
-  | None -> None
+  | None -> Unknown
   | Some cert ->
-     Some (cmpl_prf_rule Mc.normQ CamlToCoq.q (List.mapi (fun i e -> i) sys) cert)
+     Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q (List.mapi (fun i e -> i) sys) cert)
 
 (* The prover is (probably) incomplete -- 
    only searching for naive cutting planes *)
@@ -643,7 +684,7 @@ open Polynomial
 
 
 
-type prf_sys = (cstr * prf_rule) list
+type prf_sys = (cstr * ProofFormat.prf_rule) list
 
 
 
@@ -661,7 +702,7 @@ let pivot v (c1,p1) (c2,p2) =
        op = opAdd op1 op2 ;
        cst = n1 */ cv1 +/ n2 */ cv2 },
 
-      AddPrf(mul_cst_proof  cv1 p1,mul_cst_proof  cv2 p2)) in
+      ProofFormat.add_proof (ProofFormat.mul_cst_proof  cv1 p1) (ProofFormat.mul_cst_proof  cv2 p2)) in
 
   match Vect.get v v1 , Vect.get v v2 with
   | Int 0 , _ | _ , Int 0 -> None
@@ -747,7 +788,7 @@ let reduce_coprime psys =
         op = Eq ;
         cst = (l1' */ c1.cst) +/ (l2' */ c2.cst)
        } in
-     let prf = add_proof (mul_cst_proof  l1' p1) (mul_cst_proof  l2' p2) in
+     let prf = ProofFormat.add_proof (ProofFormat.mul_cst_proof  l1' p1) (ProofFormat.mul_cst_proof  l2' p2) in
 
      Some (pivot_sys v (cstr,prf) ((c1,p1)::sys))
 
@@ -798,7 +839,7 @@ let reduce_var_change psys =
        let m = minus_num (vx */ l1 +/ vx' */ l2) in
        Some ({coeffs =
                 Vect.add (Vect.mul m c.coeffs) coeffs ; op = op ; cst = m */ c.cst +/ cst} ,
-             AddPrf(MulC((LinPoly.constant m),p),p')) in
+             ProofFormat.add_proof (ProofFormat.mul_cst_proof m p) p') in
 
      Some (apply_and_normalise check_int_sat pivot_eq sys)
 
@@ -871,40 +912,42 @@ let get_bound sys =
 let check_sys sys = 
   List.for_all (fun (c,p) -> Vect.for_all (fun _ n -> sign_num n <> 0) c.coeffs) sys
 
+open ProofFormat
 
 let xlia (can_enum:bool)  reduction_equations  sys = 
 
 
-  let rec enum_proof (id:int) (sys:prf_sys) : ProofFormat.proof option =
+  let rec enum_proof (id:int) (sys:prf_sys)  =
     if debug then (Printf.printf "enum_proof\n" ; flush stdout) ;
     assert (check_sys sys) ;
 
     let nsys,prf = List.split sys in
     match get_bound nsys with
-    | None -> None (* Is the systeme really unbounded ? *)
+    | None -> Unknown (* Is the systeme really unbounded ? *)
     | Some(prf1,(lb,e,ub),prf2) ->
        if debug then Printf.printf "Found interval: %a in [%s;%s] -> " Vect.pp e (string_of_num lb) (string_of_num ub) ;
        (match start_enum  id  e  (ceiling_num lb)  (floor_num ub) sys
         with
-        | Some prfl ->
-           Some(Enum(id,proof_of_farkas (env_of_list prf) (Vect.from_list prf1),e,
-                     proof_of_farkas (env_of_list prf) (Vect.from_list prf2),prfl))
-        | None -> None
+        | Prf prfl ->
+           Prf(ProofFormat.Enum(id,ProofFormat.proof_of_farkas (env_of_list prf) (Vect.from_list prf1),e,
+                     ProofFormat.proof_of_farkas (env_of_list prf) (Vect.from_list prf2),prfl))
+        | _ -> Unknown
        )
 
-  and start_enum id e clb cub sys =
+  and start_enum id e clb cub sys  =
     if clb >/ cub
-    then Some []
+    then Prf []
     else
       let eq = {coeffs = e ; op = Eq ; cst = clb} in
-      match aux_lia (id+1) ((eq, Def id) :: sys) with
-      | None -> None
-      | Some prf  ->
+      match aux_lia (id+1) ((eq, ProofFormat.Def id) :: sys) with
+      | Unknown | Model _ -> Unknown
+      | Prf prf  ->
          match start_enum id e (clb +/ (Int 1)) cub sys with
-         | None -> None
-         | Some l -> Some (prf::l)
+         | Prf l -> Prf (prf::l)
+         | _ -> Unknown
 
-  and aux_lia (id:int)  (sys:prf_sys) : ProofFormat.proof option  =
+
+  and aux_lia (id:int)  (sys:prf_sys)   =
     assert (check_sys sys) ;
     if debug then Printf.printf "xlia:  %a \n" (pp_list ";" (fun o (c,_) -> output_cstr o c)) sys ;
     try
@@ -912,11 +955,11 @@ let xlia (can_enum:bool)  reduction_equations  sys =
       if debug then
         Printf.printf "after reduction:  %a \n" (pp_list ";" (fun o (c,_) -> output_cstr o c)) sys ;
       match linear_prover_cstr sys with
-      | Some prf -> Some (Step(id,prf,Done))
-      | None ->  if can_enum then enum_proof id sys else None
+      | Some prf -> Prf (Step(id,prf,Done))
+      | None ->  if can_enum then enum_proof id sys else Unknown
     with FoundProof prf ->
       (* [reduction_equations] can find a proof *)
-      Some(Step(id,prf,Done)) in
+      Prf(Step(id,prf,Done)) in
 
   (*  let sys' = List.map (fun (p,o) -> Mc.norm0 p , o) sys in*)
   let id  = 1 + (List.fold_left
@@ -925,10 +968,10 @@ let xlia (can_enum:bool)  reduction_equations  sys =
     try
       let sys = simpl_sys sys in
       aux_lia id sys
-    with FoundProof pr -> Some(Step(id,pr,Done)) in
+    with FoundProof pr -> Prf(Step(id,pr,Done)) in
   match orpf with
-  | None -> None
-  | Some prf ->
+  | Unknown | Model _ -> Unknown
+  | Prf prf ->
      let env = CList.interval 0 (id - 1) in
      if debug then begin
          Printf.fprintf stdout "direct proof %a\n" output_proof prf;
@@ -939,21 +982,25 @@ let xlia (can_enum:bool)  reduction_equations  sys =
 	     if Mc.zChecker sys' prf then Some prf else 
 	     raise Certificate.BadCertificate
 	     with Failure s -> (Printf.printf "%s" s ; Some prf)
-      *) Some prf
+      *) Prf prf
 
-let xlia_simplex env sys =
-  match Simplex.integer_solver sys with
-  | None -> None
-  | Some prf ->
-     (*let _ = ProofFormat.eval_proof (env_of_list env) prf in *)
+let xlia_simplex env red sys =
+  let compile_prf sys prf =
+    let id  = 1 + (List.fold_left
+                          (fun acc (_,r) -> max acc (ProofFormat.pr_rule_max_id r)) 0 sys) in
+    let env = CList.interval 0 (id - 1) in
+    Prf (compile_proof env prf) in
 
-     let id  = 1 + (List.fold_left
-                      (fun acc (_,r) -> max acc (ProofFormat.pr_rule_max_id r)) 0 sys) in
-     let env = CList.interval 0 (id - 1) in
-     Some (compile_proof env prf)
+  try
+    let sys = red sys in
+
+    match Simplex.integer_solver sys with
+    | None -> Unknown
+    | Some prf -> compile_prf sys prf
+  with FoundProof prf -> compile_prf sys (Step(0,prf,Done))
 
 let xlia env0 en red sys =
-  if !use_simplex then xlia_simplex env0 sys
+  if !use_simplex then xlia_simplex env0 red sys
   else xlia en red sys
 
 
@@ -971,9 +1018,9 @@ let gen_bench (tac, prover) can_enum prfdepth sys =
        Printf.fprintf o "Goal %a.\n" (LinPoly.pp_goal "Z") (List.map fst sys) ;
        begin
          match res with
-         | None ->
+         | Unknown | Model _ ->
             Printf.fprintf o "Proof.\n intros. Fail %s.\nAbort.\n" tac
-         | Some res ->
+         | Prf res ->
             Printf.fprintf o "Proof.\n intros. %s.\nQed.\n" tac
        end
        ;
@@ -987,7 +1034,14 @@ let lia (can_enum:bool) (prfdepth:int) sys =
   if debug then begin
       Printf.fprintf stdout "Input problem\n";
       List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys;
+      Printf.fprintf stdout "Input problem\n";
+      let string_of_op = function Eq -> "=" | Ge -> ">=" | Gt -> ">" in
+      List.iter (fun ((p,op),_) -> Printf.fprintf stdout "(assert (%s %a))\n" (string_of_op op) Vect.pp_smt p) sys;
     end;
+  let sys = subst sys in
+  let bnd = bound_monomials sys in (* To deal with non-linear monomials *)
+  let sys = bnd@(saturate_by_linear_equalities sys)@sys in
+
 
   let sys' = List.map (fun ((p,o),prf) -> (cstr_of_poly (p,o), prf)) sys in
   xlia (List.map fst sys) can_enum reduction_equations sys'
@@ -1013,7 +1067,7 @@ let nlia enum prfdepth sys =
       It would only be safe if the variable is linear...
      *)
     let sys1 = elim_simple_linear_equality sys in
-    let sys2 = saturate_linear_equality_non_linear sys1 in
+    let sys2 = saturate_by_linear_equalities sys1 in
     let sys3 = nlinear_preprocess (sys1@sys2) in
 
     let sys4  = make_cstr_system ((*sys2@*)sys3) in

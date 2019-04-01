@@ -173,6 +173,7 @@ Qed.
 Require Import Coq.micromega.Tauto.
 
 Definition Qnormalise := @cnf_normalise Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
+
 Definition Qnegate := @cnf_negate Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 
 Definition qunsat := check_inconsistent 0 Qeq_bool Qle_bool.
@@ -182,30 +183,36 @@ Definition qdeduce := nformula_plus_nformula 0 Qplus Qeq_bool.
 Definition normQ  := norm 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 Declare Equivalent Keys normQ RingMicromega.norm.
 
+Definition cnfQ (Annot TX AF: Type) (f: TFormula (Formula Q) Annot TX AF) :=
+  rxcnf qunsat qdeduce (Qnormalise Annot) (Qnegate Annot) true f.
 
 Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=
-  @tauto_checker (Formula Q) (NFormula Q)
+  @tauto_checker (Formula Q) (NFormula Q) unit
   qunsat qdeduce
-  Qnormalise
-  Qnegate QWitness QWeakChecker f w.
+  (Qnormalise unit)
+  (Qnegate unit) QWitness (fun cl => QWeakChecker (List.map fst cl)) f w.
 
 
 
-Lemma QTautoChecker_sound : forall f w, QTautoChecker f w = true -> forall env, eval_f  (Qeval_formula env)  f.
+Lemma QTautoChecker_sound : forall f w, QTautoChecker f w = true -> forall env, eval_bf  (Qeval_formula env)  f.
 Proof.
   intros f w.
   unfold QTautoChecker.
-  apply (tauto_checker_sound  Qeval_formula Qeval_nformula).
-  apply Qeval_nformula_dec.
-  intros until env.
-  unfold eval_nformula. unfold RingMicromega.eval_nformula.
-  destruct t.
-  apply (check_inconsistent_sound Qsor QSORaddon) ; auto.
-  unfold qdeduce. apply (nformula_plus_nformula_correct Qsor QSORaddon).
-  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now  apply (cnf_normalise_correct Qsor QSORaddon).
-  intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now apply (cnf_negate_correct Qsor QSORaddon).
-  intros t w0.
-  apply QWeakChecker_sound.
+  apply tauto_checker_sound  with (eval:= Qeval_formula) (eval':= Qeval_nformula).
+  - apply Qeval_nformula_dec.
+  - intros until env.
+    unfold eval_nformula. unfold RingMicromega.eval_nformula.
+    destruct t.
+    apply (check_inconsistent_sound Qsor QSORaddon) ; auto.
+  - unfold qdeduce. apply (nformula_plus_nformula_correct Qsor QSORaddon).
+  - intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now  eapply (cnf_normalise_correct Qsor QSORaddon);eauto.
+  - intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now eapply (cnf_negate_correct Qsor QSORaddon);eauto.
+  - intros t w0.
+    unfold eval_tt.
+    intros.
+    rewrite make_impl_map with (eval := Qeval_nformula env).
+    eapply QWeakChecker_sound; eauto.
+    tauto.
 Qed.
 
 (* Local Variables: *)
