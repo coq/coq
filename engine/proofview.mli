@@ -395,9 +395,13 @@ val give_up : unit tactic
 (** {7 Control primitives} *)
 
 (** [tclPROGRESS t] checks the state of the proof after [t]. It it is
-    identical to the state before, then [tclePROGRESS t] fails, otherwise
+    identical to the state before, then [tclPROGRESS t] fails, otherwise
     it succeeds like [t]. *)
 val tclPROGRESS : 'a tactic -> 'a tactic
+
+module Progress : sig
+  val goal_equal : Evd.evar_map -> Evar.t -> Evd.evar_map -> Evar.t -> bool
+end
 
 (** Checks for interrupts *)
 val tclCHECKINTERRUPT : unit tactic
