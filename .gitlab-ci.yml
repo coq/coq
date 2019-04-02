@@ -4,6 +4,7 @@ stages:
   - docker
   - build
   - test
+  - deploy
 
 # some default values
 variables:
@@ -282,6 +283,37 @@ doc:ml-api:
     name: "$CI_JOB_NAME"
     paths:
       - dev/ocamldoc
+
+doc:refman:deploy:
+  stage: deploy
+  environment:
+    name: deployment
+    url: https://coq.github.io/
+  only:
+    variables:
+      - $DOCUMENTATION_DEPLOY_KEY
+  dependencies:
+    - doc:refman
+  before_script:
+    - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
+    - eval $(ssh-agent -s)
+    - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+    - git config --global user.name "coqbot"
+    - git config --global user.email "coqbot@users.noreply.github.com"
+  script:
+    - git clone git@github.com:coq/doc.git _deploy
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/refman
+    - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - mkdir -p _deploy/$CI_COMMIT_REF_NAME
+    - cp -rv _install_ci/share/doc/coq/sphinx/html _deploy/$CI_COMMIT_REF_NAME/refman
+    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cd _deploy/$CI_COMMIT_REF_NAME/
+    - git add refman stdlib
+    - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
+    - git push # TODO: rebase and retry on failure
 
 test-suite:base:
   <<: *test-suite-template
