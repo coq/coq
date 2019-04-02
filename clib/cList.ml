@@ -796,7 +796,7 @@ let share_tails l1 l2 =
 
 (** {6 Association lists} *)
 
-let map_assoc f = List.map (fun (x,a) -> (x,f a))
+let map_assoc f = map (fun (x,a) -> (x,f a))
 
 let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
@@ -997,7 +997,7 @@ let rec duplicates cmp = function
    and so on if there are more elements in the lists. *)
 
 let cartesian op l1 l2 =
-  map_append (fun x -> List.map (op x) l2) l1
+  map_append (fun x -> map (op x) l2) l1
 
 (* [cartesians] is an n-ary cartesian product: it iterates
    [cartesian] over a list of lists.  *)
@@ -1024,7 +1024,7 @@ let cartesians_filter op init ll =
 let rec factorize_left cmp = function
   | (a,b) :: l ->
       let al,l' = partition (fun (a',_) -> cmp a a') l in
-      (a,(b :: List.map snd al)) :: factorize_left cmp l'
+      (a,(b :: map snd al)) :: factorize_left cmp l'
   | [] -> []
 
 module Smart =
