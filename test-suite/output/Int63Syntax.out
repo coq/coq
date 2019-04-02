@@ -1,3 +1,7 @@
+2%int63
+     : int
+(2 + 2)%int63
+     : int
 2
      : int
 9223372036854775807
@@ -14,3 +18,15 @@ The command has indeed failed with message:
 int63 are only non-negative numbers.
 The command has indeed failed with message:
 overflow in int63 literal: 9223372036854775808
+2
+     : nat
+2%int63
+     : int
+t = 2%i63
+     : int
+t = 2%i63
+     : int
+2
+     : nat
+2
+     : int
