@@ -243,39 +243,24 @@ let type_of_prim env t =
     | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in
-  let rec nary_int63_op arity ty =
-    if Int.equal arity 0 then ty
-      else Constr.mkProd(Context.nameR (Id.of_string "x"), int_ty, nary_int63_op (arity-1) ty)
-  in
-  let return_ty =
-    let open CPrimitives in
-    match t with
-    | Int63head0
-    | Int63tail0
-    | Int63add
-    | Int63sub
-    | Int63mul
-    | Int63div
-    | Int63mod
-    | Int63lsr
-    | Int63lsl
-    | Int63land
-    | Int63lor
-    | Int63lxor
-    | Int63addMulDiv -> int_ty
-    | Int63eq
-    | Int63lt
-    | Int63le -> bool_ty ()
-    | Int63mulc
-    | Int63div21
-    | Int63diveucl -> pair_ty int_ty int_ty
-    | Int63addc
-    | Int63subc
-    | Int63addCarryC
-    | Int63subCarryC -> carry_ty int_ty
-    | Int63compare -> compare_ty ()
-  in
-  nary_int63_op (CPrimitives.arity t) return_ty
+  let open CPrimitives in
+  let tr_prim_type = function
+    | PT_int63 -> int_ty in
+  let tr_ind (type t) (i : t prim_ind) (a : t) = match i, a with
+    | PIT_bool, () -> bool_ty ()
+    | PIT_carry, t -> carry_ty (tr_prim_type t)
+    | PIT_pair, (t1, t2) -> pair_ty (tr_prim_type t1) (tr_prim_type t2)
+    | PIT_cmp, () -> compare_ty () in
+  let tr_type = function
+    | PITT_ind (i, a) -> tr_ind i a
+    | PITT_type t -> tr_prim_type t in
+  let rec nary_op = function
+    | [] -> assert false
+    | [ret_ty] -> tr_type ret_ty
+    | arg_ty :: r ->
+       let arg_ty = tr_type arg_ty in
+       Constr.mkProd(Context.nameR (Id.of_string "x"), arg_ty, nary_op r) in
+  nary_op (types t)
 
 let type_of_prim_or_type env = let open CPrimitives in
   function

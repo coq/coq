@@ -90,6 +90,39 @@ let to_string = function
   | Int63le -> "le"
   | Int63compare -> "compare"
 
+type prim_type =
+  | PT_int63
+
+type 'a prim_ind =
+  | PIT_bool : unit prim_ind
+  | PIT_carry : prim_type prim_ind
+  | PIT_pair : (prim_type * prim_type) prim_ind
+  | PIT_cmp : unit prim_ind
+
+type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
+
+type ind_or_type =
+  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
+  | PITT_type : prim_type -> ind_or_type
+
+let types =
+  let int_ty = PITT_type PT_int63 in
+  function
+  | Int63head0 | Int63tail0 -> [int_ty; int_ty]
+  | Int63add | Int63sub | Int63mul
+  | Int63div | Int63mod
+  | Int63lsr | Int63lsl
+  | Int63land | Int63lor | Int63lxor -> [int_ty; int_ty; int_ty]
+  | Int63addc | Int63subc | Int63addCarryC | Int63subCarryC ->
+     [int_ty; int_ty; PITT_ind (PIT_carry, PT_int63)]
+  | Int63mulc | Int63diveucl ->
+     [int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
+  | Int63eq | Int63lt | Int63le -> [int_ty; int_ty; PITT_ind (PIT_bool, ())]
+  | Int63compare -> [int_ty; int_ty; PITT_ind (PIT_cmp, ())]
+  | Int63div21 ->
+     [int_ty; int_ty; int_ty; PITT_ind (PIT_pair, (PT_int63, PT_int63))]
+  | Int63addMulDiv -> [int_ty; int_ty; int_ty; int_ty]
+
 type arg_kind =
   | Kparam (* not needed for the evaluation of the primitive when it reduces *)
   | Kwhnf  (* need to be reduced in whnf before reducing the primitive *)
@@ -100,48 +133,19 @@ type args_red = arg_kind list
 (* Invariant only argument of type int63 or an inductive can
    have kind Kwhnf *)
 
-let kind = function
-  | Int63head0 | Int63tail0 -> [Kwhnf]
+let arity t = List.length (types t) - 1
 
-  | Int63add | Int63sub | Int63mul
-  | Int63div | Int63mod
-  | Int63lsr | Int63lsl
-  | Int63land | Int63lor | Int63lxor
-  | Int63addc | Int63subc
-  | Int63addCarryC | Int63subCarryC  | Int63mulc | Int63diveucl
-  | Int63eq | Int63lt | Int63le | Int63compare -> [Kwhnf; Kwhnf]
-
-  | Int63div21 | Int63addMulDiv -> [Kwhnf; Kwhnf; Kwhnf]
-
-let arity = function
-  | Int63head0 | Int63tail0 -> 1
-  | Int63add | Int63sub | Int63mul
-  | Int63div | Int63mod
-  | Int63lsr | Int63lsl
-  | Int63land | Int63lor | Int63lxor
-  | Int63addc | Int63subc
-  | Int63addCarryC | Int63subCarryC | Int63mulc | Int63diveucl
-  | Int63eq | Int63lt | Int63le
-  | Int63compare -> 2
-
-  | Int63div21 | Int63addMulDiv -> 3
+let kind t =
+  let rec aux n = if n <= 0 then [] else Kwhnf :: aux (n - 1) in
+  aux (arity t)
 
 (** Special Entries for Register **)
-
-type prim_ind =
-  | PIT_bool
-  | PIT_carry
-  | PIT_pair
-  | PIT_cmp
-
-type prim_type =
-  | PT_int63
 
 type op_or_type =
   | OT_op of t
   | OT_type of prim_type
 
-let prim_ind_to_string = function
+let prim_ind_to_string (type a) (p : a prim_ind) = match p with
   | PIT_bool -> "bool"
   | PIT_carry -> "carry"
   | PIT_pair -> "pair"

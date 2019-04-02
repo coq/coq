@@ -1327,7 +1327,7 @@ let register_inline kn senv =
   let cb = {cb with const_inline_code = true} in
   let env = add_constant kn cb env in { senv with env}
 
-let check_register_ind ind r env =
+let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
   let (mb,ob as spec) = Inductive.lookup_mind_specif env ind in
   let check_if b msg =
     if not b then

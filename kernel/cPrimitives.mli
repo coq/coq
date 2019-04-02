@@ -53,18 +53,26 @@ val kind : t -> args_red
 
 (** Special Entries for Register **)
 
-type prim_ind =
-  | PIT_bool
-  | PIT_carry
-  | PIT_pair
-  | PIT_cmp
-
 type prim_type =
   | PT_int63
+
+type 'a prim_ind =
+  | PIT_bool : unit prim_ind
+  | PIT_carry : prim_type prim_ind
+  | PIT_pair : (prim_type * prim_type) prim_ind
+  | PIT_cmp : unit prim_ind
+
+type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
 type op_or_type =
   | OT_op of t
   | OT_type of prim_type
 
-val prim_ind_to_string : prim_ind -> string
+val prim_ind_to_string : 'a prim_ind -> string
 val op_or_type_to_string : op_or_type -> string
+
+type ind_or_type =
+  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
+  | PITT_type : prim_type -> ind_or_type
+
+val types : t -> ind_or_type list
