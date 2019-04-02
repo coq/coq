@@ -377,8 +377,46 @@ let rec intro_lock names = Proofview.Goal.enter begin fun gl ->
 
 end
 
+let rec pretty_rename evar_map term = function
+  | [] -> term
+  | varname :: varnames ->
+     try begin
+       match EConstr.destLambda evar_map term
+       with ({ Context.binder_relevance = r }, types, body) ->
+           let res = pretty_rename evar_map body varnames in
+           let name = Names.Name.mk_name varname in
+           (* Note: we don't explicitly check name \notin free_vars(res) here *)
+           EConstr.mkLambda (Context.make_annot name r, types, res)
+         end
+     with
+     | DestKO ->
+        ppdebug(lazy Pp.(str"under: cannot pretty-rename all bound variables with destLambda"));
+        term
+
 let undertac ist varnames ((dir,mult),_ as rule) =
   if mult <> Ssrequality.nomult then
     Ssrcommon.errorstrm Pp.(str"Multiplicity not supported");
-  Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ist [rule]) <*>
+
+  let map_redex env evar_map ~before:_ ~after:t =
+    ppdebug(lazy Pp.(str("under vars: " ^
+      (List.fold_right (fun e r -> Names.Id.to_string e ^ " " ^ r) varnames ""))));
+    ppdebug(lazy Pp.(str"under: mapping:" ++ pr_econstr_env env evar_map t));
+
+    let evar_map, ty = Typing.type_of env evar_map t in
+    let new_t = (* pretty-rename the bound variables *)
+      try begin match EConstr.destApp evar_map t with (f, ar) ->
+            let lam = Array.last ar in
+            let new_lam = pretty_rename evar_map lam varnames in
+            let new_ar, len1 = Array.copy ar, pred (Array.length ar) in
+            new_ar.(len1) <- new_lam;
+            EConstr.mkApp (f, new_ar)
+          end with
+      | DestKO ->
+        ppdebug(lazy Pp.(str"under: cannot pretty-rename bound variables with destApp"));
+        t
+    in
+    ppdebug(lazy Pp.(str"under: to:" ++ pr_econstr_env env evar_map new_t));
+    evar_map, new_t
+  in
+  Proofview.V82.tactic (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule]) <*>
   intro_lock varnames
