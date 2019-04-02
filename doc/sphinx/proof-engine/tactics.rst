@@ -401,39 +401,59 @@ Applying theorems
 
    A solution is to ``apply (Rtrans n m p)`` or ``(Rtrans n m)``.
 
-   .. coqtop:: all undo
+   .. coqtop:: all
 
       apply (Rtrans n m p).
 
    Note that ``n`` can be inferred from the goal, so the following would work
    too.
 
-   .. coqtop:: in undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: in
 
       apply (Rtrans _ m).
 
    More elegantly, ``apply Rtrans with (y:=m)`` allows only mentioning the
    unknown m:
 
-   .. coqtop:: in undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: in
 
       apply Rtrans with (y := m).
 
    Another solution is to mention the proof of ``(R x y)`` in ``Rtrans``
 
-   .. coqtop:: all undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: all
 
       apply Rtrans with (1 := Rnm).
 
    ... or the proof of ``(R y z)``.
 
-   .. coqtop:: all undo
+   .. coqtop:: none
+
+      Abort. Goal R n p.
+
+   .. coqtop:: all
 
       apply Rtrans with (2 := Rmp).
 
    On the opposite, one can use ``eapply`` which postpones the problem of
    finding ``m``. Then one can apply the hypotheses ``Rnm`` and ``Rmp``. This
    instantiates the existential variable and completes the proof.
+
+   .. coqtop:: none
+
+      Abort. Goal R n p.
 
    .. coqtop:: all
 
@@ -2106,6 +2126,7 @@ and an explanation of the underlying technique.
    where :n:`@ident` is the identifier for the last introduced hypothesis.
 
 .. tacv:: inversion_clear @ident
+   :name: inversion_clear
 
    This behaves as :n:`inversion` and then erases :n:`@ident` from the context.
 
@@ -2263,47 +2284,54 @@ and an explanation of the underlying technique.
 
    *Non-dependent inversion*.
 
-   Let us consider the relation Le over natural numbers and the following
-   variables:
+   Let us consider the relation :g:`Le` over natural numbers:
 
-   .. coqtop:: all reset
+   .. coqtop:: reset in
 
       Inductive Le : nat -> nat -> Set :=
       | LeO : forall n:nat, Le 0 n
       | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
-      Variable P : nat -> nat -> Prop.
-      Variable Q : forall n m:nat, Le n m -> Prop.
+
 
    Let us consider the following goal:
 
    .. coqtop:: none
 
+      Section Section.
+      Variable P : nat -> nat -> Prop.
+      Variable Q : forall n m:nat, Le n m -> Prop.
+      Goal forall n m, Le (S n) m -> P n m.
+      intros.
+
+   .. coqtop:: out
+
+      Show.
+
+   To prove the goal, we may need to reason by cases on :g:`H` and to derive
+   that :g:`m` is necessarily of the form :g:`(S m0)` for certain :g:`m0` and that
+   :g:`(Le n m0)`. Deriving these conditions corresponds to proving that the only
+   possible constructor of :g:`(Le (S n) m)` is :g:`LeS` and that we can invert
+   the arrow in the type of :g:`LeS`. This inversion is possible because :g:`Le`
+   is the smallest set closed by the constructors :g:`LeO` and :g:`LeS`.
+
+   .. coqtop:: all
+
+      inversion_clear H.
+
+   Note that :g:`m` has been substituted in the goal for :g:`(S m0)` and that the
+   hypothesis :g:`(Le n m0)` has been added to the context.
+
+   Sometimes it is interesting to have the equality :g:`m = (S m0)` in the
+   context to use it after. In that case we can use :tacn:`inversion` that does
+   not clear the equalities:
+
+   .. coqtop:: none
+
+      Abort.
       Goal forall n m, Le (S n) m -> P n m.
       intros.
 
    .. coqtop:: all
-
-      Show.
-
-   To prove the goal, we may need to reason by cases on H and to derive
-   that m is necessarily of the form (S m 0 ) for certain m 0 and that
-   (Le n m 0 ). Deriving these conditions corresponds to proving that the
-   only possible constructor of (Le (S n) m) isLeS and that we can invert
-   the-> in the type of LeS. This inversion is possible because Le is the
-   smallest set closed by the constructors LeO and LeS.
-
-   .. coqtop:: undo all
-
-      inversion_clear H.
-
-   Note that m has been substituted in the goal for (S m0) and that the
-   hypothesis (Le n m0) has been added to the context.
-
-   Sometimes it is interesting to have the equality m=(S m0) in the
-   context to use it after. In that case we can use inversion that does
-   not clear the equalities:
-
-   .. coqtop:: undo all
 
       inversion H.
 
@@ -2313,31 +2341,27 @@ and an explanation of the underlying technique.
 
    Let us consider the following goal:
 
-   .. coqtop:: reset none
+   .. coqtop:: none
 
-      Inductive Le : nat -> nat -> Set :=
-      | LeO : forall n:nat, Le 0 n
-      | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
-      Variable P : nat -> nat -> Prop.
-      Variable Q : forall n m:nat, Le n m -> Prop.
+      Abort.
       Goal forall n m (H:Le (S n) m), Q (S n) m H.
       intros.
 
-   .. coqtop:: all
+   .. coqtop:: out
 
       Show.
 
-   As H occurs in the goal, we may want to reason by cases on its
-   structure and so, we would like inversion tactics to substitute H by
+   As :g:`H` occurs in the goal, we may want to reason by cases on its
+   structure and so, we would like inversion tactics to substitute :g:`H` by
    the corresponding @term in constructor form. Neither :tacn:`inversion` nor
-   :n:`inversion_clear` do such a substitution. To have such a behavior we
+   :tacn:`inversion_clear` do such a substitution. To have such a behavior we
    use the dependent inversion tactics:
 
    .. coqtop:: all
 
       dependent inversion_clear H.
 
-   Note that H has been substituted by (LeS n m0 l) andm by (S m0).
+   Note that :g:`H` has been substituted by :g:`(LeS n m0 l)` and :g:`m` by :g:`(S m0)`.
 
 .. example::
 

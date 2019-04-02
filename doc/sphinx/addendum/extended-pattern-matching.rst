@@ -295,7 +295,7 @@ By default, implicit arguments are omitted in patterns. So we write:
         end).
 
 But the possibility to use all the arguments is given by “``@``” implicit
-explicitations (as for terms 2.7.11).
+explicitations (as for terms, see :ref:`explicit-applications`).
 
 .. coqtop:: all
 
