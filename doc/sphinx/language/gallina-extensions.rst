@@ -1362,8 +1362,8 @@ with the same physical-to-logical translation and with an empty logical prefix.
 The command line option ``-R`` is a variant of ``-Q`` which has the strictly
 same behavior regarding loadpaths, but which also makes the
 corresponding ``.vo`` files available through their short names in a way
-not unlike the ``Import`` command (see :ref:`here <import_qualid>`). For instance, ``-R`` `path` ``Lib``
-associates to the file path `path`\ ``/path/fOO/Bar/File.vo`` the logical name
+not unlike the ``Import`` command (see :ref:`here <import_qualid>`). For instance, ``-R path Lib``
+associates to the file ``/path/fOO/Bar/File.vo`` the logical name
 ``Lib.fOO.Bar.File``, but allows this file to be accessed through the
 short names ``fOO.Bar.File,Bar.File`` and ``File``. If several files with
 identical base name are present in different subdirectories of a
