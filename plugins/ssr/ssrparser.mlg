@@ -2690,9 +2690,9 @@ TACTIC EXTEND under
     check_under_arg arg;
     Ssrfwd.undertac ist (Some ipats) arg h
     }
-  | [ "under" ssrrwarg(arg) "do" ssrhintarg(h) ] -> { (* implicit "=> *" *)
+  | [ "under" ssrrwarg(arg) "do" ssrhintarg(h) ] -> { (* implicit "=> [*|*]" *)
     check_under_arg arg;
-    Ssrfwd.undertac ist (Some [IPatAnon All]) arg h
+    Ssrfwd.undertac ~pad_intro:true ist (Some [IPatAnon All]) arg h
     }
 END
 
