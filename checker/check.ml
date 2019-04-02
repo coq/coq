@@ -328,6 +328,10 @@ let intern_from_file ~intern_mode (dir, f) =
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
+      let marshal_in_segment f ch = if intern_mode <> Dep
+        then marshal_in_segment f ch
+        else System.marshal_in_segment f ch
+      in
       let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
