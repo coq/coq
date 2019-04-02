@@ -738,6 +738,14 @@ let extern_optimal extern r r' =
   | Some n, (Some ({ CAst.v = CDelimiters _}) | None) | _, Some n -> n
   | _ -> raise No_match
 
+(* Helper function for safe and optimal printing of primitive tokens  *)
+(* such as those for Int63                                            *)
+let extern_prim_token_delimiter_if_required n key_n scope_n scopes =
+  match availability_of_prim_token n scope_n scopes with
+  | Some None -> CPrim n
+  | None -> CDelimiters(key_n, CAst.make (CPrim n))
+  | Some (Some key) -> CDelimiters(key, CAst.make (CPrim n))
+
 (**********************************************************************)
 (* mapping decl                                                       *)
 
@@ -967,8 +975,11 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
   | GCast (c, c') ->
       CCast (sub_extern true scopes vars c,
              map_cast_type (extern_typ scopes vars) c')
+
   | GInt i ->
-     CPrim(Numeral (SPlus, NumTok.int (Uint63.to_string i)))
+     extern_prim_token_delimiter_if_required
+       (Numeral (SPlus, NumTok.int (Uint63.to_string i)))
+       "int63" "int63_scope" (snd scopes)
 
   in insert_coercion coercion (CAst.make ?loc c)
 
