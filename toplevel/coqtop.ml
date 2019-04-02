@@ -222,7 +222,7 @@ let init_toplevel ~help ~init custom_init arglist =
     exit 0;
   end;
   let top_lp = Coqinit.toplevel_init_load_path () in
-  List.iter Mltop.add_coq_path top_lp;
+  List.iter Loadpath.add_coq_path top_lp;
   let opts, extras = custom_init ~opts extras in
   Mltop.init_known_plugins ();
 

@@ -7,7 +7,6 @@ Global
 Decl_kinds
 Lib
 Declaremods
-Loadpath
 Library
 States
 Kindops

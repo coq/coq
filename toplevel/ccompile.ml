@@ -225,7 +225,7 @@ let do_vio opts copts =
      process happens outside of the STM *)
   if copts.vio_files <> [] || copts.vio_tasks <> [] then
     let iload_path = build_load_path opts in
-    List.iter Mltop.add_coq_path iload_path;
+    List.iter Loadpath.add_coq_path iload_path;
 
   (* Vio compile pass *)
   if copts.vio_files <> [] then schedule_vio copts;

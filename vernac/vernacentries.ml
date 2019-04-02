@@ -444,9 +444,9 @@ let locate_file f =
   str file
 
 let msg_found_library = function
-  | Library.LibLoaded, fulldir, file ->
+  | Loadpath.LibLoaded, fulldir, file ->
     hov 0 (DirPath.print fulldir ++ strbrk " has been loaded from file " ++ str file)
-  | Library.LibInPath, fulldir, file ->
+  | Loadpath.LibInPath, fulldir, file ->
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
 let err_unmapped_library ?from qid =
@@ -471,10 +471,11 @@ let err_notfound_library ?from qid =
      (strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix)
 
 let print_located_library qid =
-  try msg_found_library (Library.locate_qualified_library ~warn:false qid)
+  let open Loadpath in
+  try msg_found_library (locate_qualified_library ~warn:false qid)
   with
-    | Library.LibUnmappedDir -> err_unmapped_library qid
-    | Library.LibNotFound -> err_notfound_library qid
+    | LibUnmappedDir -> err_unmapped_library qid
+    | LibNotFound -> err_notfound_library qid
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -1026,18 +1027,20 @@ let vernac_require from import qidl =
     Some (Libnames.add_dirpath_suffix hd tl)
   in
   let locate qid =
+    let open Loadpath in
     try
       let warn = not !Flags.quiet in
-      let (_, dir, f) = Library.locate_qualified_library ?root ~warn qid in
+      let (_, dir, f) = locate_qualified_library ?root ~warn qid in
       (dir, f)
     with
-      | Library.LibUnmappedDir -> err_unmapped_library ?from:root qid
-      | Library.LibNotFound -> err_notfound_library ?from:root qid
+      | LibUnmappedDir -> err_unmapped_library ?from:root qid
+      | LibNotFound -> err_notfound_library ?from:root qid
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
     List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
-  Library.require_library_from_dirpath modrefl import
+  let lib_resolver = Loadpath.try_locate_absolute_library in
+  Library.require_library_from_dirpath ~lib_resolver modrefl import
 
 (* Coercions and canonical structures *)
 
@@ -1133,7 +1136,7 @@ let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
 let vernac_add_loadpath implicit pdir ldiropt =
-  let open Mltop in
+  let open Loadpath in
   let pdir = expand pdir in
   let alias = Option.default Libnames.default_root_prefix ldiropt in
   add_coq_path { recursive = true;
@@ -1145,7 +1148,7 @@ let vernac_remove_loadpath path =
   (* Coq syntax for ML or system commands *)
 
 let vernac_add_ml_path isrec path =
-  let open Mltop in
+  let open Loadpath in
   add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
 
 let vernac_declare_ml_module ~local l =

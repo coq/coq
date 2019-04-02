@@ -55,3 +55,47 @@ val filter_path : (DirPath.t -> bool) -> (CUnix.physical_path * DirPath.t) list
 val locate_file : string -> string
 (** Locate a file among the registered paths. Do not use this function, as
     it does not respect the visibility of paths. *)
+
+(** {6 Locate a library in the load path } *)
+exception LibUnmappedDir
+exception LibNotFound
+type library_location = LibLoaded | LibInPath
+
+val locate_qualified_library :
+  ?root:DirPath.t -> ?warn:bool -> Libnames.qualid ->
+  library_location * DirPath.t * CUnix.physical_path
+(** Locates a library by implicit name.
+
+  @raise LibUnmappedDir if the library is not in the path
+  @raise LibNotFound if there is no corresponding file in the path
+
+*)
+
+val try_locate_absolute_library : DirPath.t -> string
+
+(** {6 Extending the Load Path } *)
+
+(** Adds a path to the Coq and ML paths *)
+type add_ml = AddNoML | AddTopML | AddRecML
+
+type vo_path_spec = {
+  unix_path : string;
+  (** Filesystem path contaning vo/ml files *)
+  coq_path  : Names.DirPath.t;
+  (** Coq prefix for the path *)
+  implicit  : bool;
+  (** [implicit = true] avoids having to qualify with [coq_path] *)
+  has_ml    : add_ml;
+  (** If [has_ml] is true, the directory will also be search for plugins *)
+}
+
+type coq_path_spec =
+  | VoPath of vo_path_spec
+  | MlPath of string
+
+type coq_path = {
+  path_spec: coq_path_spec;
+  recursive: bool;
+}
+
+val add_coq_path : coq_path -> unit

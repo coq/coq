@@ -264,85 +264,6 @@ let in_import_library : DirPath.t list * bool -> obj =
        subst_function = subst_import_library;
        classify_function = classify_import_library }
 
-
-(************************************************************************)
-(*s Locate absolute or partially qualified library names in the path *)
-
-exception LibUnmappedDir
-exception LibNotFound
-type library_location = LibLoaded | LibInPath
-
-let warn_several_object_files =
-  CWarnings.create ~name:"several-object-files" ~category:"require"
-         (fun (vi, vo) -> str"Loading" ++ spc () ++ str vi ++
-                            strbrk " instead of " ++ str vo ++
-                            strbrk " because it is more recent")
-
-let locate_absolute_library dir =
-  (* Search in loadpath *)
-  let pref, base = split_dirpath dir in
-  let loadpath = Loadpath.filter_path (fun dir -> DirPath.equal dir pref) in
-  let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
-  let loadpath = List.map fst loadpath in
-  let find ext =
-    try
-      let name = Id.to_string base ^ ext in
-      let _, file = System.where_in_path ~warn:false loadpath name in
-      Some file
-    with Not_found -> None in
-  match find ".vo", find ".vio" with
-  | None, None -> raise LibNotFound
-  | Some file, None | None, Some file -> file
-  | Some vo, Some vi when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-    warn_several_object_files (vi, vo);
-    vi
-  | Some vo, Some _ -> vo
-
-let locate_qualified_library ?root ?(warn = true) qid =
-  (* Search library in loadpath *)
-  let dir, base = repr_qualid qid in
-  let loadpath = Loadpath.expand_path ?root dir in
-  let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
-  let find ext =
-    try
-      let name = Id.to_string base ^ ext in
-      let lpath, file =
-        System.where_in_path ~warn (List.map fst loadpath) name in
-      Some (lpath, file)
-    with Not_found -> None in
-  let lpath, file =
-    match find ".vo", find ".vio" with
-    | None, None -> raise LibNotFound
-    | Some res, None | None, Some res -> res
-    | Some (_, vo), Some (_, vi as resvi)
-      when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-      warn_several_object_files (vi, vo);
-       resvi
-    | Some resvo, Some _ -> resvo
-  in
-  let dir = add_dirpath_suffix (String.List.assoc lpath loadpath) base in
-  (* Look if loaded *)
-  if library_is_loaded dir then (LibLoaded, dir,library_full_filename dir)
-  (* Otherwise, look for it in the file system *)
-  else (LibInPath, dir, file)
-
-let error_unmapped_dir qid =
-  let prefix, _ = repr_qualid qid in
-  user_err ~hdr:"load_absolute_library_from"
-    (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++
-     str "no physical path bound to" ++ spc () ++ DirPath.print prefix ++ fnl ())
-
-let error_lib_not_found qid =
-  user_err ~hdr:"load_absolute_library_from"
-    (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
-
-let try_locate_absolute_library dir =
-  try
-    locate_absolute_library dir
-  with
-    | LibUnmappedDir -> error_unmapped_dir (qualid_of_dirpath dir)
-    | LibNotFound -> error_lib_not_found (qualid_of_dirpath dir)
-
 (************************************************************************)
 (** {6 Tables of opaque proof terms} *)
 
@@ -450,7 +371,7 @@ let intern_from_file f =
 
 module DPMap = Map.Make(DirPath)
 
-let rec intern_library (needed, contents) (dir, f) from =
+let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
@@ -459,7 +380,7 @@ let rec intern_library (needed, contents) (dir, f) from =
   with Not_found ->
   Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-  let f = match f with Some f -> f | None -> try_locate_absolute_library dir in
+  let f = match f with Some f -> f | None -> lib_resolver dir in
   let m = intern_from_file f in
   if not (DirPath.equal dir m.library_name) then
     user_err ~hdr:"load_physical_library"
@@ -467,22 +388,24 @@ let rec intern_library (needed, contents) (dir, f) from =
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir);
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps (needed, contents) dir m f
+  m.library_digests, intern_library_deps ~lib_resolver (needed, contents) dir m f
 
-and intern_library_deps libs dir m from =
-  let needed, contents = Array.fold_left (intern_mandatory_library dir from) libs m.library_deps in
+and intern_library_deps ~lib_resolver libs dir m from =
+  let needed, contents =
+    Array.fold_left (intern_mandatory_library ~lib_resolver dir from)
+      libs m.library_deps in
   (dir :: needed, DPMap.add dir m contents )
 
-and intern_mandatory_library caller from libs (dir,d) =
-  let digest, libs = intern_library libs (dir, None) (Some from) in
+and intern_mandatory_library ~lib_resolver caller from libs (dir,d) =
+  let digest, libs = intern_library ~lib_resolver libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     user_err (str "Compiled library " ++ DirPath.print caller ++
     str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
     over library " ++ DirPath.print dir);
   libs
 
-let rec_intern_library libs (dir, f) =
-  let _, libs = intern_library libs (dir, Some f) None in
+let rec_intern_library ~lib_resolver libs (dir, f) =
+  let _, libs = intern_library ~lib_resolver libs (dir, Some f) None in
   libs
 
 let native_name_from_filename f =
@@ -557,8 +480,8 @@ let warn_require_in_module =
                               strbrk "You can Require a module at toplevel " ++
                               strbrk "and optionally Import it inside another one.")
 
-let require_library_from_dirpath modrefl export =
-  let needed, contents = List.fold_left rec_intern_library ([], DPMap.empty) modrefl in
+let require_library_from_dirpath ~lib_resolver modrefl export =
+  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then

@@ -2661,7 +2661,7 @@ type stm_init_options = {
 
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
-  iload_path   : Mltop.coq_path list;
+  iload_path   : Loadpath.coq_path list;
 
   (* Require [require_libs] before the initial state is
      ready. Parameters follow [Library], that is to say,
@@ -2719,7 +2719,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   (* Set load path; important, this has to happen before we declare
      the library below as [Declaremods/Library] will infer the module
      name by looking at the load path! *)
-  List.iter Mltop.add_coq_path iload_path;
+  List.iter Loadpath.add_coq_path iload_path;
 
   Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
 
