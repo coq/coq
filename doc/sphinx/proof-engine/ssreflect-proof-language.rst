@@ -3737,16 +3737,12 @@ involves the following steps:
    bound variables as the identifers provided in the first
    intro pattern branch (here, ``i``).
 
-Notes:
+Note:
 
 + For the steps 3. and 4. above, the :tacn:`under` tactic also
   supports subgoals of the form ``some_expr(i) <-> ?Goal i``, which
   are "protected" in the form ``Under_iff (some_expr i) (?Goal i)``,
   itself pretty-printed as ``'Under_iff[ some_expr i ]``.
-
-+ If the intro pattern is omitted, the Ltac expression:
-  :n:`under {@occ_switch}[@r_pattern]@term.` defaults to:
-  :n:`under {@occ_switch}[@r_pattern]@term => *.`
 
 Two equivalent facilities (a terminator and a lemma) are provided to
 close intermediate subgoal ``Under[ … ]`` and instantiate the
@@ -3790,17 +3786,25 @@ The Ltac expression:
 can be viewed as a shorter form for the following Ltac expression:
 :n:`under {@occ_switch}[@r_pattern]@term => [i|j|]; [tac1; over | tac2; over | cbv beta iota].`
 
-Here, the ``beta-iota`` reduction is useful to get rid of the beta
-redexes that could be introduced after the substitution of the evars
-by the :tacn:`under` tactic.
+Notes:
 
-Note that the provided tactics (e.g., ``tac1``) can just as well
-involve other :tacn:`under` tactics. See below for a typical example
-involving the `bigop` theory from the Mathematical Components library.
++ The ``beta-iota`` reduction here is useful to get rid of the beta
+  redexes that could be introduced after the substitution of the evars
+  by the :tacn:`under` tactic.
 
-If there is only one tactic, the brackets are optional, i.e.:
-:n:`under @term => i do [tac1]` can be
-shortened to: :n:`under @term => i do tac1.`
++ Note that the provided tactics (e.g., ``tac1``) can just as well
+  involve other :tacn:`under` tactics. See below for a typical example
+  involving the `bigop` theory from the Mathematical Components library.
+
++ If there is only one tactic, the brackets are optional, i.e.:
+  :n:`under @term => [i] do [tac1]` is equivalent to:
+  :n:`under @term => i do tac1.` and that shorter form should be
+  preferred.
+
++ If the ``do`` clause is provided but the intro pattern is omitted,
+  the Ltac expression:
+  :n:`under {@occ_switch}[@r_pattern]@term do [tac1|tac2]` defaults to:
+  :n:`under {@occ_switch}[@r_pattern]@term => [*|*] do [tac1|tac2].`
 
 .. example::
 

@@ -406,7 +406,15 @@ let check_numgoals ?(minus = 0) nh =
   else
     Proofview.tclUNIT ()
 
-let undertac ist ipats ((dir,_),_ as rule) hint =
+let rec ncons n e = match n with
+  | 0 -> []
+  | n when n > 0 -> e :: ncons (n - 1) e
+  | _ -> failwith "ncons"
+
+let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
+
+  (* total number of implied hints *)
+  let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
 
   let varnames =
     let rec aux acc = function
@@ -426,7 +434,11 @@ let undertac ist ipats ((dir,_),_ as rule) hint =
   let ipats =
     match ipats with
     | None -> [IPatNoop]
+    | Some l when pad_intro -> (* typically, ipats = Some [IPatAnon All] *)
+       let new_l = ncons (nh - 1) l in
+       [IPatCase(Regular (new_l @ [[]]))]
     | Some (IPatCase(Regular []) :: _ as ipats) -> ipats
+    (* Erik: is the previous line correct/useful? *)
     | Some (IPatCase(Regular l) :: rest) -> IPatCase(Regular(l @ [[]])) :: rest
     | Some (IPatCase(Block _) :: _ as l) -> l
     | Some l -> [IPatCase(Regular [l;[]])] in
@@ -457,7 +469,6 @@ let undertac ist ipats ((dir,_),_ as rule) hint =
       Proofview.tclUNIT ()
     else
       let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
-      let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
       (* Usefulness of check_numgoals: tclDISPATCH would be enough,
          except for the error message w.r.t. the number of
          provided/expected tactics, as the last one is implied *)

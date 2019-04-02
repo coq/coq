@@ -104,6 +104,42 @@ under eq_bigr => i Hi do under eq_big => [j|j Hj] do [rewrite muln1 | rewrite ad
 done.
 Qed.
 
+Lemma test_big_2cond_0intro (F : nat -> nat) (m : nat) :
+  \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
+Proof.
+(* in interactive mode *)
+under eq_big.
+{ move=> n; rewrite (addnC n 1); over. }
+{ move=> i Hi; rewrite (addnC i 2); over. }
+done.
+Qed.
+
+Lemma test_big_2cond_1intro (F : nat -> nat) (m : nat) :
+  \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
+Proof.
+(* in interactive mode *)
+Fail under eq_big => i.
+(* as it amounts to [under eq_big => [i]] *)
+Abort.
+
+Lemma test_big_2cond_all (F : nat -> nat) (m : nat) :
+  \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
+Proof.
+(* in interactive mode *)
+Fail under eq_big => *.
+(* as it amounts to [under eq_big => [*]] *)
+Abort.
+
+Lemma test_big_2cond_all_implied (F : nat -> nat) (m : nat) :
+  \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
+Proof.
+(* in one-liner mode *)
+under eq_big do [move=> ? (* due to delta-head-cst *); rewrite addnC
+                |rewrite addnC].
+(* amounts to [under eq_big => [*|*] do [...|...]] *)
+done.
+Qed.
+
 Lemma test_big_patt1 (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (F i + G i) = \sum_(0 <= i < n) (G i + F i) + 0.
 Proof.
