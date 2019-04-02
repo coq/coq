@@ -56,7 +56,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
-  library_opaques : seg_proofs;
+  library_opaques : seg_proofs option;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t }
@@ -306,6 +306,23 @@ let marshal_in_segment f ch =
   with _ ->
     user_err (str "Corrupted file " ++ quote (str f))
 
+let skip_in_segment f ch =
+  try
+    let stop = (input_binary_int ch : int) in
+    seek_in ch stop;
+    let digest = Digest.input ch in
+    stop, digest
+  with _ ->
+    user_err (str "Corrupted file " ++ quote (str f))
+
+let marshal_or_skip ~intern_mode f ch =
+  if intern_mode <> Dep then
+    let v, pos, digest = marshal_in_segment f ch in
+    Some v, pos, digest
+  else
+    let pos, digest = skip_in_segment f ch in
+    None, pos, digest
+
 let intern_from_file ~intern_mode (dir, f) =
   let validate a b c = if intern_mode <> Dep then Validate.validate a b c in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
@@ -317,8 +334,8 @@ let intern_from_file ~intern_mode (dir, f) =
       let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
       let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
-      let (table:seg_proofs), pos, checksum =
-        marshal_in_segment f ch in
+      let (table:seg_proofs option), pos, checksum =
+        marshal_or_skip ~intern_mode f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
@@ -342,7 +359,7 @@ let intern_from_file ~intern_mode (dir, f) =
       (* Verification of the unmarshalled values *)
       validate !Flags.debug Values.v_libsum sd;
       validate !Flags.debug Values.v_lib md;
-      validate !Flags.debug Values.v_opaques table;
+      validate !Flags.debug Values.(Opt v_opaques) table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
         if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)
@@ -350,7 +367,7 @@ let intern_from_file ~intern_mode (dir, f) =
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
-  opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
+  Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
   Option.iter (fun (opaque_csts,_,_) ->
     opaque_univ_tables :=
       LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
