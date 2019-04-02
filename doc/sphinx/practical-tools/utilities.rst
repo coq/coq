@@ -34,9 +34,16 @@ For example, to statically link |Ltac|, you can just do:
 
 and similarly for other plugins.
 
+Building a |Coq| project
+------------------------
+
+As of today it is possible to build Coq projects using two tools:
+
+- coq_makefile, which is distributed by Coq and is based on generating a makefile,
+- Dune, the standard OCaml build tool, which, since version 1.9, supports building Coq libraries.
 
 Building a |Coq| project with coq_makefile
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The majority of |Coq| projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a |Coq| plugin). The main piece of
@@ -119,7 +126,7 @@ distinct plugins because of a clash in their auxiliary module names.
 .. _coqmakefilelocal:
 
 CoqMakefile.local
-~~~~~~~~~~~~~~~~~
++++++++++++++++++
 
 The optional file ``CoqMakefile.local`` is included by the generated
 file ``CoqMakefile``. It can contain two kinds of directives.
@@ -205,7 +212,7 @@ The following makefile rules can be extended.
   target.
 
 Timing targets and performance testing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++++++++++++
 
 The generated ``Makefile`` supports the generation of two kinds of timing
 data: per-file build-times, and per-line times for an individual file.
@@ -385,7 +392,7 @@ line timing data:
 
 
 Reusing/extending the generated Makefile
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++++++++++++++
 
 Including the generated makefile with an include directive is
 discouraged. The contents of this file, including variable names and
@@ -429,7 +436,7 @@ have a generic target for invoking unknown targets.
 
 
 Building a subset of the targets with ``-j``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++++++++++++++++++
 
 To build, say, two targets foo.vo and bar.vo in parallel one can use
 ``make only TGTS="foo.vo bar.vo" -j``.
@@ -452,11 +459,90 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
 
 
 
-Module dependencies
---------------------
+Building a |Coq| project with Dune
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In order to compute module dependencies (so to use ``make``), |Coq| comes
-with an appropriate tool, ``coqdep``.
+.. note::
+
+   The canonical documentation for the Coq Dune extension is
+   maintained upstream; please refer to the `Dune manual
+   <https://dune.readthedocs.io/>`_ for up-to-date information.
+
+Building a Coq project with Dune requires setting up a Dune project
+for your files. This involves adding a ``dune-project`` and
+``pkg.opam`` file to the root (``pkg.opam`` can be empty), and then
+providing ``dune`` files in the directories your ``.v`` files are
+placed. For the experimental version "0.1" of the Coq Dune language,
+|Coq| library stanzas look like:
+
+.. code:: scheme
+
+    (coqlib
+     (name <module_prefix>)
+     (public_name <package.lib_name>)
+     (synopsis <text>)
+     (modules <ordered_set_lang>)
+     (libraries <ocaml_libraries>)
+     (flags <coq_flags>))
+
+This stanza will build all `.v` files in the given directory, wrapping
+the library under ``<module_prefix>``. If you declare a
+``<package.lib_name>`` a ``.install`` file for the library will be
+generated; the optional ``<modules>`` field allows you to filter
+the list of modules, and ``<libraries>`` allows to depend on ML
+plugins. For the moment, Dune relies on Coq's standard mechanisms
+(such as ``COQPATH``) to locate installed Coq libraries.
+
+By default Dune will skip ``.v`` files present in subdirectories. In
+order to enable the usual recursive organization of Coq projects add
+
+.. code:: scheme
+
+    (include_subdirs qualified)
+
+to you ``dune`` file.
+
+Once your project is set up, `dune build` will generate the
+`pkg.install` files and all the files necessary for the installation
+of your project.
+
+.. example::
+
+   A typical stanza for a Coq plugin is split into two parts. An OCaml build directive, which is standard Dune:
+
+   .. code:: scheme
+
+       (library
+        (name equations_plugin)
+        (public_name equations.plugin)
+        (flags :standard -warn-error -3-9-27-32-33-50)
+        (libraries coq.plugins.cc coq.plugins.extraction))
+
+       (rule
+        (targets g_equations.ml)
+        (deps (:pp-file g_equations.mlg))
+        (action (run coqpp %{pp-file})))
+
+   And a Coq-specific part that depends on it via the ``libraries`` field:
+
+   .. code:: scheme
+
+       (coqlib
+        (name Equations) ; -R flag
+        (public_name equations.Equations)
+        (synopsis "Equations Plugin")
+        (libraries coq.plugins.extraction equations.plugin)
+        (modules :standard \ IdDec NoCycle)) ; exclude some modules that don't build
+
+       (include_subdirs qualified)
+
+.. _coqdep:
+
+Computing Module dependencies
+-----------------------------
+
+In order to compute module dependencies (to be used by ``make`` or
+``dune``), |Coq| provides the ``coqdep`` tool.
 
 ``coqdep`` computes inter-module dependencies for |Coq| and |OCaml|
 programs, and prints the dependencies on the standard output in a
@@ -474,10 +560,8 @@ done approximately and you are advised to use ``ocamldep`` instead for the
 
 See the man page of ``coqdep`` for more details and options.
 
-The build infrastructure generated by ``coq_makefile`` uses ``coqdep`` to
-automatically compute the dependencies among the files part of the
-project.
-
+Both Dune and ``coq_makefile`` use ``coqdep`` to compute the
+dependencies among the files part of a Coq project.
 
 .. _coqdoc:
 
