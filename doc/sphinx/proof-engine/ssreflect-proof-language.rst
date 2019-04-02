@@ -3683,7 +3683,7 @@ complete terms, as shown by the simple example below.
 
    .. coqtop:: all abort
 
-      rewrite (@eq_G _ (fun _ : nat => 0)); last first.
+      rewrite (@eq_G _ (fun _ : nat => 0)).
         by move=> m; rewrite subnn.
 
    Otherwise, a more convenient approach consists in relying on the
@@ -3692,7 +3692,7 @@ complete terms, as shown by the simple example below.
    .. coqtop:: all abort
 
       Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
-      under eq_G => n do rewrite subnn.
+      under eq_G => m do rewrite subnn.
 
 .. tacn:: under {? @occ_switch} {? [ @r_pattern ] } @term {? => @i_item} {? do ( @tactic | [ {*| @tactic } ] ) }
    :name: under
@@ -3714,28 +3714,39 @@ The execution of the Ltac expression:
 :n:`under {@occ_switch}[@r_pattern]@term => [i|j].`
 involves the following steps:
 
-+ It performs a full-blown :n:`rewrite {@occ_switch}[@r_pattern]@term`,
-  without failing like in the above example with ``eq_G``, but
-  creating evars.
-+ As a 2-branches intro pattern is provided, it checks that 3 subgoals
-  have been created (the last one being the initial, main subgoal that
-  now contains some evars).
-+ In the first 2 subgoals, it introduces ``i``, resp. ``j``, and tests
-  whether these 2 subgoals are (quantified) equalities involving
-  an evar. For example: ``some_expr(i) = ?Goal i``.
-+ If this is the case, the subgoal is manipulated to get the
-  provably equivalent goal ``Under _ (some_expr i) (?Goal i)``,
-  pretty-printed as ``Under[ some_expr i ]``.
-  This change avoids instantiating the evar by accident (e.g., if one
-  uses a proof script such as: :n:`rewrite lem1 // lem2`).
-+ Finally, a post-processing step is performed in the main (here, 3rd)
-  subgoal to try keeping (in the object after the rewrite) the same
-  bound variables as the identifers provided in the first
-  intro pattern branch (here, ``i``).
+1. It performs a full-blown :n:`rewrite {@occ_switch}[@r_pattern]@term`,
+   without failing like in the above example with ``eq_G``, but
+   creating evars.
 
-If the intro pattern is omitted, the Ltac expression:
-:n:`under {@occ_switch}[@r_pattern]@term.` defaults to:
-:n:`under {@occ_switch}[@r_pattern]@term => *.`
+2. As a 2-branches intro pattern is provided, it checks that 3 subgoals
+   have been created (the last one being the initial, main subgoal that
+   now contains some evars).
+
+3. In the first 2 subgoals, it introduces ``i``, resp. ``j``, and tests
+   whether these 2 subgoals are (quantified) equalities involving
+   an evar. For example: ``some_expr(i) = ?Goal i``.
+
+4. If this is the case, the subgoal is manipulated to get the
+   provably equivalent goal ``Under _ (some_expr i) (?Goal i)``,
+   pretty-printed as ``'Under[ some_expr i ]``.
+   This change avoids instantiating the evar by accident (e.g., if one
+   uses a proof script such as: :n:`rewrite lem1 // lem2`).
+
+5. Finally, a post-processing step is performed in the main (here, 3rd)
+   subgoal to try keeping (in the object after the rewrite) the same
+   bound variables as the identifers provided in the first
+   intro pattern branch (here, ``i``).
+
+Notes:
+
++ For the steps 3. and 4. above, the :tacn:`under` tactic also
+  supports subgoals of the form ``some_expr(i) <-> ?Goal i``, which
+  are "protected" in the form ``Under_iff (some_expr i) (?Goal i)``,
+  itself pretty-printed as ``'Under_iff[ some_expr i ]``.
+
++ If the intro pattern is omitted, the Ltac expression:
+  :n:`under {@occ_switch}[@r_pattern]@term.` defaults to:
+  :n:`under {@occ_switch}[@r_pattern]@term => *.`
 
 Two equivalent facilities (a terminator and a lemma) are provided to
 close intermediate subgoal ``Under[ … ]`` and instantiate the
@@ -3745,12 +3756,17 @@ corresponding evar:
    :name: over
 
    This terminator tactic allows one to close goals of the form
-   ``Under[ … ]``.
+   ``'Under[ … ]`` or ``'Under_iff[ … ]``.
 
 .. tacv:: by rewrite over
 
    This is a variant of :tacn:`over` in order to close ``Under[ … ]``
    goals, relying on the ``over`` lemma.
+
+.. tacv:: by rewrite over_iff
+
+   This is a variant of :tacn:`over` in order to close ``Under_iff[ … ]``
+   goals, relying on the ``over_iff`` lemma.
 
 Let us focus again on the simple example involving an extensionality
 lemma ``eq_G``, but this time in interactive mode:
@@ -3764,8 +3780,6 @@ lemma ``eq_G``, but this time in interactive mode:
         rewrite subnn.
         over.
 
-   ``(* FIXME: replace with do... *)``
-
 .. _under_one_liner:
 
 One-liner mode
@@ -3774,11 +3788,11 @@ One-liner mode
 The Ltac expression:
 :n:`under {@occ_switch}[@r_pattern]@term => [i|j] do [tac1|tac2]`
 can be viewed as a shorter form for the following Ltac expression:
-:n:`under {@occ_switch}[@r_pattern]@term => [i|j]; [tac1; over | tac2; over | cbv beta iota].`
+:n:`under {@occ_switch}[@r_pattern]@term => [i|j|]; [tac1; over | tac2; over | cbv beta iota].`
 
 Here, the ``beta-iota`` reduction is useful to get rid of the beta
-redexes that will typically be introduced after the substitution of
-the evars by the :tacn:`under` tactic.
+redexes that could be introduced after the substitution of the evars
+by the :tacn:`under` tactic.
 
 Note that the provided tactics (e.g., ``tac1``) can just as well
 involve other :tacn:`under` tactics. See below for a typical example
