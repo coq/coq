@@ -77,14 +77,8 @@ val incl : ('a -> 'a -> bool) -> ('a -> 'a -> 'a option) -> 'a -> 'a t -> 'a t -
 (** See also [Smart.map] *)
 val map : ('a -> 'b) -> 'a t -> 'b t
 
-val smartmap : ('a -> 'a) -> 'a t -> 'a t
-(** @deprecated Same as [Smart.map] *)
-
 (** A rather simple minded pretty-printer *)
 val pp_tree : ('a -> Pp.t) -> 'a t -> Pp.t
-
-val eq_rtree : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-(** @deprecated Same as [Rtree.equal] *)
 
 module Smart :
 sig

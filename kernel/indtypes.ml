@@ -49,20 +49,6 @@ let weaker_noccur_between env x nvars t =
 (************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
 
-(* Errors related to inductive constructions *)
-type inductive_error = Type_errors.inductive_error =
-  | NonPos of env * constr * constr
-  | NotEnoughArgs of env * constr * constr
-  | NotConstructor of env * Id.t * constr * constr * int * int
-  | NonPar of env * constr * int * constr * constr
-  | SameNamesTypes of Id.t
-  | SameNamesConstructors of Id.t
-  | SameNamesOverlap of Id.t list
-  | NotAnArity of env * constr
-  | BadEntry
-  | LargeNonPropInductiveNotInType
-  | BadUnivs
-
 exception InductiveError = Type_errors.InductiveError
 
 (************************************************************************)
@@ -84,6 +70,7 @@ exception IllFormedInd of ill_formed_ind
 let mind_extract_params = decompose_prod_n_assum
 
 let explain_ind_err id ntyp env nparamsctxt c err =
+  let open Type_errors in
   let (_lparams,c') = mind_extract_params nparamsctxt c in
   match err with
     | LocalNonPos kt ->
@@ -329,7 +316,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
           | Prod (na,b,d) ->
 	      let () = assert (List.is_empty largs) in
 	      if not recursive && not (noccur_between n ntypes b) then
-	        raise (InductiveError BadEntry);
+                raise (InductiveError Type_errors.BadEntry);
               let nmr',recarg = check_pos ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
                 check_constr_rec ienv' nmr' (recarg::lrec) d

@@ -446,7 +446,7 @@ let lz_setoid_relation =
   | Some (env', srel) when env' == env -> srel
   | _ ->
     let srel =
-       try Some (UnivGen.constr_of_global @@
+       try Some (UnivGen.constr_of_monomorphic_global @@
                  Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with _ -> None in
     last_srel := Some (env, srel); srel
@@ -491,7 +491,7 @@ let rwprocess_rule dir rule gl =
           | _ ->
             let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
             EConstr.mkApp (pi2, ra), sigma in
-        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.(lib_ref "core.True.type"))) then
+        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.(lib_ref "core.True.type"))) then
          let s, sigma = sr sigma 2 in
          loop (converse_dir d) sigma s a.(1) rs 0
         else

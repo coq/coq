@@ -26,24 +26,7 @@ let safe_evar_value sigma ev =
   try Some (EConstr.Unsafe.to_constr @@ Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
 
-(** Combinators *)
-
-let evd_comb0 f evdref =
-  let (evd',x) = f !evdref in
-    evdref := evd';
-    x
-
-let evd_comb1 f evdref x =
-  let (evd',y) = f !evdref x in
-    evdref := evd';
-    y
-
-let evd_comb2 f evdref x y =
-  let (evd',z) = f !evdref x y in
-    evdref := evd';
-    z
-
-let new_global evd x = 
+let new_global evd x =
   let (evd, c) = Evd.fresh_global (Global.env()) evd x in
   (evd, c)
 

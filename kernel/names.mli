@@ -278,9 +278,6 @@ sig
   val make : ModPath.t -> Label.t -> t
   val repr : t -> ModPath.t * Label.t
 
-  val make2 : ModPath.t -> Label.t -> t
-  [@@ocaml.deprecated "Please use [KerName.make]"]
-
   (** Projections *)
   val modpath : t -> ModPath.t
   val label : t -> Label.t

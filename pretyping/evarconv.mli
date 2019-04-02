@@ -46,19 +46,6 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 val unify_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
 val unify_leq_delay : ?flags:unify_flags -> env -> evar_map -> constr -> constr -> evar_map
 
-(** returns exception UnableToUnify with best known evar_map if not unifiable *)
-val the_conv_x     : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
-[@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
-val the_conv_x_leq : env -> ?ts:TransparentState.t -> constr -> constr -> evar_map -> evar_map
-[@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
-(** The same function resolving evars by side-effect and
-   catching the exception *)
-
-val conv : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
-[@@ocaml.deprecated "Use Evarconv.unify_delay instead"]
-val cumul : env -> ?ts:TransparentState.t -> evar_map -> constr -> constr -> evar_map option
-[@@ocaml.deprecated "Use Evarconv.unify_leq_delay instead"]
-
 (** This function also calls [solve_unif_constraints_with_heuristics] to resolve any remaining
     constraints. In case of success the two terms are unified without condition.
 

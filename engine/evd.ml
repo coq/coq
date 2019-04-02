@@ -869,8 +869,6 @@ let to_universe_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
-let const_univ_entry = univ_entry
-
 let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes decl
 
 let restrict_universe_context evd vars =

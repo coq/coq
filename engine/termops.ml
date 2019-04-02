@@ -25,11 +25,6 @@ module CompactedDecl = Context.Compacted.Declaration
 
 module Internal = struct
 
-let pr_sort_family = Sorts.pr_sort_family
-[@@ocaml.deprecated "Use [Sorts.pr_sort_family]"]
-let pr_fix = Constr.debug_print_fix
-[@@ocaml.deprecated "Use [Constr.debug_print_fix]"]
-
 let debug_print_constr c = Constr.debug_print EConstr.Unsafe.(to_constr c)
 let debug_print_constr_env env sigma c = Constr.debug_print EConstr.(to_constr sigma c)
 let term_printer = ref debug_print_constr_env
@@ -761,13 +756,6 @@ let fold_constr_with_binders sigma g f n acc c =
   let c = Unsafe.to_constr (whd_evar sigma c) in
   Constr.fold_constr_with_binders g f n acc c
 
-(* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
-   subterms of [c]; it carries an extra data [acc] which is processed by [g] at
-   each binder traversal; it is not recursive and the order with which
-   subterms are processed is not specified *)
-
-let iter_constr_with_full_binders = EConstr.iter_with_full_binders
-
 (***************************)
 (* occurs check functions  *)
 (***************************)
@@ -861,8 +849,6 @@ let collect_vars sigma c =
   | Var id -> Id.Set.add id vars
   | _ -> EConstr.fold sigma aux vars c in
   aux Id.Set.empty c
-
-let vars_of_global_reference = vars_of_global
 
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
@@ -1416,10 +1402,6 @@ let prod_applist_assum sigma n c l =
     | LetIn(_,b,_,c), _ -> app (n-1) (Vars.substl subst b::subst) c l
     | _ -> anomaly (Pp.str "Not enough prod/let's.") in
   app n [] c l
-
-let on_judgment = Environ.on_judgment
-let on_judgment_value = Environ.on_judgment_value
-let on_judgment_type = Environ.on_judgment_type
 
 (* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k non let-in
      variables skips let-in's; let-in's in the middle are put in ctx2 *)

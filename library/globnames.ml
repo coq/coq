@@ -85,15 +85,6 @@ let printable_constr_of_global = function
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
 
-module RefOrdered = Names.GlobRef.Ordered
-module RefOrdered_env = Names.GlobRef.Ordered_env
-
-module Refmap = Names.GlobRef.Map
-module Refset = Names.GlobRef.Set
-
-module Refmap_env = Names.GlobRef.Map_env
-module Refset_env = Names.GlobRef.Set_env
-
 (* Extended global references *)
 
 type syndef_name = KerName.t
@@ -134,6 +125,3 @@ end
 type global_reference_or_constr = 
   | IsGlobal of global_reference
   | IsConstr of constr
-
-(* Deprecated *)
-let eq_gr = GlobRef.equal

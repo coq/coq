@@ -184,10 +184,6 @@ let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
          (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
 
-let warn_deprecated_boot =
-  CWarnings.create ~name:"deprecated-boot" ~category:"noop"
-         (fun () -> Pp.strbrk "The -boot option is deprecated, please use -q and/or -coqlib options instead.")
-
 let set_inputstate opts s =
   warn_deprecated_inputstate ();
   { opts with inputstate = Some s }
@@ -488,9 +484,6 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with batch = true }
     |"-test-mode" -> Vernacentries.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
-    |"-boot" ->
-      warn_deprecated_boot ();
-      { oval with load_rcfile = false; }
     |"-bt" -> Backtrace.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> { oval with print_config = true }

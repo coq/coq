@@ -1348,9 +1348,6 @@ let explain_pattern_matching_error env sigma = function
   | CannotInferPredicate typs ->
       explain_cannot_infer_predicate env sigma typs
 
-let map_pguard_error = map_pguard_error
-let map_ptype_error = map_ptype_error
-
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
       let e = map_ptype_error EConstr.of_constr e in

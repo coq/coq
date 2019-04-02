@@ -67,9 +67,6 @@ val context : t -> Univ.UContext.t
 val univ_entry : poly:bool -> t -> Entries.universes_entry
 (** Pick from {!context} or {!context_set} based on [poly]. *)
 
-val const_univ_entry : poly:bool -> t -> Entries.universes_entry
-[@@ocaml.deprecated "Use [univ_entry]."]
-
 (** {5 Constraints handling} *)
 
 val drop_weak_constraints : bool ref

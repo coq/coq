@@ -131,14 +131,6 @@ val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
 val is_type_in_type : GlobRef.t -> bool
 
-val type_of_global_in_context : Environ.env -> 
-  GlobRef.t -> Constr.types * Univ.AUContext.t
-  [@@ocaml.deprecated "alias of [Typeops.type_of_global_in_context]"]
-
-(** Returns the universe context of the global reference (whatever its polymorphic status is). *)
-val universes_of_global : GlobRef.t -> Univ.AUContext.t
-[@@ocaml.deprecated "Use [Environ.universes_of_global]"]
-
 (** {6 Retroknowledge } *)
 
 val register_inline : Constant.t -> unit

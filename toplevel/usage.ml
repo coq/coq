@@ -102,12 +102,6 @@ let print_usage_coqtop () =
 coqtop specific options:\
 \n\
 \n  -batch                 batch mode (exits just after argument parsing)\
-\n\
-\nDeprecated options [use coqc instead]:\
-\n\
-\n  -compile f.v           compile Coq file f.v (implies -batch)\
-\n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
-\n  -o f.vo                use f.vo as the output file name\
 \n";
   flush stderr ;
   exit 1
@@ -128,14 +122,6 @@ coqc specific options:\
 \nUndocumented:\
 \n  -vio2vo                [see manual]\
 \n  -check-vio-tasks       [see manual]\
-\n\
-\nDeprecated options:\
-\n\
-\n  -image f               specify an alternative executable for Coq\
-\n  -opt                   run the native-code version of Coq\
-\n  -byte                  run the bytecode version of Coq\
-\n  -t                     keep temporary files\
-\n  -outputstate file      save summary state in file \
 \n";
   flush stderr ;
   exit 1

@@ -126,9 +126,6 @@ type t =
   (** Locality, polymorphism, and "kind" [Coercion, Definition, etc...] *)
   }
 
-let initial_goals pf = Proofview.initial_goals pf.entry
-let initial_euctx pf = pf.initial_euctx
-
 (*** General proof functions ***)
 
 let proof p =
@@ -146,33 +143,6 @@ let proof p =
   let shelf = p.shelf in
   let given_up = p.given_up in
   (goals,stack,shelf,given_up,sigma)
-
-type 'a pre_goals = {
-  fg_goals : 'a list;
-  (** List of the focussed goals *)
-  bg_goals : ('a list * 'a list) list;
-  (** Zipper representing the unfocussed background goals *)
-  shelved_goals : 'a list;
-  (** List of the goals on the shelf. *)
-  given_up_goals : 'a list;
-  (** List of the goals that have been given up *)
-}
-
-let map_structured_proof pfts process_goal: 'a pre_goals =
-  let (goals, zipper, shelf, given_up, sigma) = proof pfts in
-  let fg = List.map (process_goal sigma) goals in
-  let map_zip (lg, rg) =
-    let lg = List.map (process_goal sigma) lg in
-    let rg = List.map (process_goal sigma) rg in
-    (lg, rg)
-  in
-  let bg = List.map map_zip zipper in
-  let shelf = List.map (process_goal sigma) shelf in
-  let given_up = List.map (process_goal sigma) given_up in
-    { fg_goals = fg;
-      bg_goals = bg;
-      shelved_goals = shelf;
-      given_up_goals = given_up; }
 
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
@@ -441,22 +411,6 @@ let in_proof p k = k (Proofview.return p.proofview)
 let unshelve p =
   { p with proofview = Proofview.unshelve (p.shelf) (p.proofview) ; shelf = [] }
 
-let pr_proof p =
-  let p = map_structured_proof p (fun _sigma g -> g) in
-  Pp.(
-    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
-    let rec aux acc = function
-      | [] -> acc
-      | (before,after)::stack ->
-         aux (pr_goal_list before ++ spc () ++ str "{" ++ acc ++ str "}" ++ spc () ++
-              pr_goal_list after) stack in
-    str "[" ++ str "focus structure: " ++
-               aux (pr_goal_list p.fg_goals) p.bg_goals ++ str ";" ++ spc () ++
-    str "shelved: " ++ pr_goal_list p.shelved_goals ++ str ";" ++ spc () ++
-    str "given up: " ++ pr_goal_list p.given_up_goals ++
-    str "]"
-  )
-
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
 
@@ -554,3 +508,19 @@ let data { proofview; focus_stack; entry; shelf; given_up; initial_euctx; name; 
   let stack =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
   { sigma; goals; entry; stack; shelf; given_up; initial_euctx; name; poly }
+
+let pr_proof p =
+  let { goals=fg_goals; stack=bg_goals; shelf; given_up; _ } = data p in
+  Pp.(
+    let pr_goal_list = prlist_with_sep spc Goal.pr_goal in
+    let rec aux acc = function
+      | [] -> acc
+      | (before,after)::stack ->
+         aux (pr_goal_list before ++ spc () ++ str "{" ++ acc ++ str "}" ++ spc () ++
+              pr_goal_list after) stack in
+    str "[" ++ str "focus structure: " ++
+               aux (pr_goal_list fg_goals) bg_goals ++ str ";" ++ spc () ++
+    str "shelved: " ++ pr_goal_list shelf ++ str ";" ++ spc () ++
+    str "given up: " ++ pr_goal_list given_up ++
+    str "]"
+  )
