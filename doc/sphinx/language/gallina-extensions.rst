@@ -759,10 +759,46 @@ used by ``Function``. A more precise description is given below.
 Section mechanism
 -----------------
 
-The sectioning mechanism can be used to to organize a proof in
-structured sections. Then local declarations become available (see
-Section :ref:`gallina-definitions`).
+Sections create local contexts which can be shared across multiple definitions.
 
+.. example::
+
+   Sections are opened by the :cmd:`Section` command, and closed by :cmd:`End`.
+
+   .. coqtop:: all
+
+      Section s1.
+
+   Inside a section, local parameters can be introduced using :cmd:`Variable`,
+   :cmd:`Hypothesis`, or :cmd:`Context` (there are also plural variants for
+   the first two).
+
+   .. coqtop:: all
+
+      Variables x y : nat.
+
+   The command :cmd:`Let` introduces section-wide :ref:`let-in`. These definitions
+   won't persist when the section is closed, and all persistent definitions which
+   depend on `y'` will be prefixed with `let y' := y in`.
+
+   .. coqtop:: in
+
+      Let y' := y.
+      Definition x' := S x.
+      Definition x'' := x' + y'.
+
+   .. coqtop:: all
+
+      Print x'.
+      Print x''.
+
+      End s1.
+
+      Print x'.
+      Print x''.
+
+   Notice the difference between the value of :g:`x'` and :g:`x''` inside section
+   :g:`s1` and outside.
 
 .. cmd:: Section @ident
 
@@ -773,35 +809,10 @@ Section :ref:`gallina-definitions`).
 .. cmd:: End @ident
 
    This command closes the section named :token:`ident`. After closing of the
-   section, the local declarations (variables and local definitions) get
+   section, the local declarations (variables and local definitions, see :cmd:`Variable`) get
    *discharged*, meaning that they stop being visible and that all global
    objects defined in the section are generalized with respect to the
    variables and local definitions they each depended on in the section.
-
-   .. example::
-
-      .. coqtop:: all
-
-         Section s1.
-
-         Variables x y : nat.
-
-         Let y' := y.
-
-         Definition x' := S x.
-
-         Definition x'' := x' + y'.
-
-         Print x'.
-
-         End s1.
-
-         Print x'.
-
-         Print x''.
-
-      Notice the difference between the value of :g:`x'` and :g:`x''` inside section
-      :g:`s1` and outside.
 
    .. exn:: This is not the last opened section.
       :undocumented:
@@ -810,6 +821,68 @@ Section :ref:`gallina-definitions`).
    Most commands, like :cmd:`Hint`, :cmd:`Notation`, option management, … which
    appear inside a section are canceled when the section is closed.
 
+.. cmd:: Variable @ident : @type
+
+   This command links :token:`type` to the name :token:`ident` in the context of
+   the current section. When the current section is closed, name :token:`ident`
+   will be unknown and every object using this variable will be explicitly
+   parameterized (the variable is *discharged*).
+
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Variable)
+      :undocumented:
+
+   .. cmdv:: Variable {+ @ident } : @type
+
+      Links :token:`type` to each :token:`ident`.
+
+   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
+
+      Declare one or more variables with various types.
+
+   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
+             Hypothesis {+ ( {+ @ident } : @type) }
+             Hypotheses {+ ( {+ @ident } : @type) }
+      :name: Variables; Hypothesis; Hypotheses
+
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
+
+.. cmd:: Let @ident := @term
+
+   This command binds the value :token:`term` to the name :token:`ident` in the
+   environment of the current section. The name :token:`ident` is accessible
+   only within the current section. When the section is closed, all persistent
+   definitions and theorems within it and depending on :token:`ident`
+   will be prefixed by the let-in definition :n:`let @ident := @term in`.
+
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Let)
+      :undocumented:
+
+   .. cmdv:: Let @ident {? @binders } {? : @type } := @term
+      :undocumented:
+
+   .. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
+      :name: Let Fixpoint
+      :undocumented:
+
+   .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
+      :name: Let CoFixpoint
+      :undocumented:
+
+.. cmd:: Context @binders
+
+   Declare variables in the context of the current section, like :cmd:`Variable`,
+   but also allowing implicit variables, :ref:`implicit-generalization`, and
+   let-binders.
+
+   .. coqdoc::
+
+     Context {A : Type} (a b : A).
+     Context `{EqDec A}.
+     Context (b' := b).
+
+.. seealso:: Section :ref:`binders`. Section :ref:`contexts` in chapter :ref:`typeclasses`.
 
 Module system
 -------------
@@ -2032,7 +2105,7 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 
   This is useful for declaring the implicit type of a single variable.
 
-.. cmdv:: Implicit Types {+ ( {+ @ident } : @term ) }
+.. cmdv:: Implicit Types {+ ( {+ @ident } : @type ) }
 
   Adds blocks of implicit types with different specifications.
 
