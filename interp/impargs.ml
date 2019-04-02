@@ -201,7 +201,7 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders sigma push_lift (frec false) ed c
-    | Proj (p,c) when rig ->
+    | Proj (p, _) when rig ->
       if strict then () else
         iter_constr_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
