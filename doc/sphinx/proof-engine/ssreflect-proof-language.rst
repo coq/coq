@@ -223,7 +223,7 @@ construct differs from the latter in that
 
     .. coqtop:: reset all
 
-       Definition f u := let (m, n) := u in m + n.
+       Fail Definition f u := let (m, n) := u in m + n.
 
 
 The ``let:`` construct is just (more legible) notation for the primitive
@@ -403,7 +403,7 @@ each point of use, e.g., the above definition can be written:
      Variable all : (T -> bool) -> list T -> bool.
 
 
-  .. coqtop:: all undo
+  .. coqtop:: all
 
      Prenex Implicits null.
      Definition all_null (s : list T) := all null s.
@@ -427,7 +427,7 @@ display settings of |Coq| so that they are not printed (except after
 a ``Set Printing All`` command). All |SSR| library files thus start
 with the incantation
 
-.. coqtop:: all undo
+.. coqdoc::
 
    Set Implicit Arguments.
    Unset Strict Implicit.
@@ -496,7 +496,7 @@ Definitions
    |SSR| pose tactic supports *open syntax*: the body of the
    definition does not need surrounding parentheses. For instance:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose t := x + y.
 
@@ -525,7 +525,7 @@ The |SSR| pose tactic also supports (co)fixpoints, by providing
 the local counterpart of the ``Fixpoint f := …`` and ``CoFixpoint f := …``
 constructs. For instance, the following tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose fix f (x y : nat) {struct x} : nat :=
      if x is S p then S (f p y) else 0.
@@ -535,7 +535,7 @@ on natural numbers.
 
 Similarly, local cofixpoints can be defined by a tactic of the form:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose cofix f (arg : T) := … .
 
@@ -544,26 +544,26 @@ offers a smooth way of defining local abstractions. The type of
 “holes” is guessed by type inference, and the holes are abstracted.
 For instance the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f := _ + 1.
 
 is shorthand for:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f n := n + 1.
 
 When the local definition of a function involves both arguments and
 holes, hole abstractions appear first. For instance, the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f x := x + _.
 
 is shorthand for:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f n x := x + n.
 
@@ -571,13 +571,13 @@ The interaction of the pose tactic with the interpretation of implicit
 arguments results in a powerful and concise syntax for local
 definitions involving dependent types. For instance, the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f x y := (x, y).
 
 adds to the context the local definition:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose f (Tx Ty : Type) (x : Tx) (y : Ty) := (x, y).
 
@@ -761,7 +761,7 @@ Moreover:
      .. coqtop:: all
 
         Lemma test : forall x : nat, x + 1 = 0.
-        set t := _ + 1.
+        Fail set t := _ + 1.
 
 + Typeclass inference should fill in any residual hole, but matching
   should never assign a value to a global existential variable.
@@ -884,7 +884,7 @@ only one occurrence of the selected term.
      .. coqtop:: all
 
         Lemma test x y z : (x + y) + (z + z) = z + z.
-        set a := {2}(_ + _).
+        Fail set a := {2}(_ + _).
 
 
 .. _basic_localization_ssr:
@@ -1079,7 +1079,7 @@ constants to the goal.
 
 Because they are tacticals, ``:`` and ``=>`` can be combined, as in
 
-.. coqtop:: in
+.. coqdoc::
 
    move: m le_n_m => p le_n_p.
 
@@ -1139,7 +1139,7 @@ Basic tactics like apply and elim can also be used without the ’:’
 tactical: for example we can directly start a proof of ``subnK`` by
 induction on the top variable ``m`` with
 
-.. coqtop:: in
+.. coqdoc::
 
    elim=> [|m IHm] n le_n.
 
@@ -1150,7 +1150,7 @@ explained in terms of the goal stack::
 
 is basically equivalent to
 
-.. coqtop:: in
+.. coqdoc::
 
    move: a H1 H2; tactic => a H1 H2.
 
@@ -1163,13 +1163,13 @@ temporary abbreviation to hide the statement of the goal from
 The general form of the in tactical can be used directly with the
 ``move``, ``case`` and ``elim`` tactics, so that one can write
 
-.. coqtop:: in
+.. coqdoc::
 
    elim: n => [|n IHn] in m le_n_m *.
 
 instead of
 
-.. coqtop:: in
+.. coqdoc::
 
    elim: n m le_n_m => [|n IHn] m le_n_m.
 
@@ -1394,7 +1394,7 @@ Switches affect the discharging of a :token:`d_item` as follows:
 
 For example, the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    move: n {2}n (refl_equal n).
 
@@ -1405,7 +1405,7 @@ For example, the tactic:
 
 Therefore this tactic changes any goal ``G`` into
 
-.. coqtop::
+.. coqdoc::
 
    forall n n0 : nat, n = n0 -> G.
 
@@ -1725,7 +1725,7 @@ Generation of equations
 The generation of named equations option stores the definition of a
 new constant as an equation. The tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    move En: (size l) => n.
 
@@ -1733,7 +1733,7 @@ where ``l`` is a list, replaces ``size l`` by ``n`` in the goal and
 adds the fact ``En : size l = n`` to the context.
 This is quite different from:
 
-.. coqtop:: in
+.. coqdoc::
 
    pose n := (size l).
 
@@ -1997,7 +1997,7 @@ In the script provided as example in section :ref:`indentation_ssr`, the
 paragraph corresponding to each sub-case ends with a tactic line prefixed
 with a ``by``, like in:
 
-.. coqtop:: in
+.. coqdoc::
 
    by apply/eqP; rewrite -dvdn1.
 
@@ -2042,13 +2042,13 @@ A natural and common way of closing a goal is to apply a lemma which
 is the exact one needed for the goal to be solved. The defective form
 of the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    exact.
 
 is equivalent to:
 
-.. coqtop:: in
+.. coqdoc::
 
    do [done | by move=> top; apply top].
 
@@ -2056,13 +2056,13 @@ where ``top`` is a fresh name assigned to the top assumption of the goal.
 This applied form is supported by the : discharge tactical, and the
 tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    exact: MyLemma.
 
 is equivalent to:
 
-.. coqtop:: in
+.. coqdoc::
 
    by apply: MyLemma.
 
@@ -2074,19 +2074,19 @@ is equivalent to:
    follows the ``by`` keyword is considered to be a parenthesized block applied to
    the current goal. Hence for example if the tactic:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       by rewrite my_lemma1.
 
    succeeds, then the tactic:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       by rewrite my_lemma1; apply my_lemma2.
 
    usually fails since it is equivalent to:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       by (rewrite my_lemma1; apply my_lemma2).
 
@@ -2152,7 +2152,7 @@ Finally, the tactics ``last`` and ``first`` combine with the branching syntax
 of Ltac: if the tactic generates n subgoals on a given goal,
 then the tactic
 
-.. coqtop:: in
+.. coqdoc::
 
    tactic ; last k [ tactic1 |…| tacticm ] || tacticn.
 
@@ -2167,7 +2167,6 @@ to the others.
 
    .. coqtop:: reset
 
-      Abort.
       From Coq Require Import ssreflect.
       Set Implicit Arguments.
       Unset Strict Implicit.
@@ -2203,13 +2202,13 @@ multiplier is present.
 
 A tactic of the form:
 
-.. coqtop:: in
+.. coqdoc::
 
    do [ tactic 1 | … | tactic n ].
 
 is equivalent to the standard Ltac expression:
 
-.. coqtop:: in
+.. coqdoc::
 
    first [ tactic 1 | … | tactic n ].
 
@@ -2234,14 +2233,14 @@ Their meaning is:
 
 For instance, the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    tactic; do 1? rewrite mult_comm.
 
 rewrites at most one time the lemma ``mult_comm`` in all the subgoals
 generated by tactic , whereas the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    tactic; do 2! rewrite mult_comm.
 
@@ -2426,7 +2425,7 @@ tactics of the form:
 
 which behave like:
 
-.. coqtop:: in
+.. coqdoc::
 
    have: term ; first by tactic.
    move=> clear_switch i_item.
@@ -2439,7 +2438,7 @@ to introduce the new assumption itself.
 The``by`` feature is especially convenient when the proof script of the
 statement is very short, basically when it fits in one line like in:
 
-.. coqtop:: in
+.. coqdoc::
 
    have H23 : 3 + 2 = 2 + 3 by rewrite addnC.
 
@@ -2467,7 +2466,7 @@ the further use of the intermediate step. For instance,
 Thanks to the deferred execution of clears, the following idiom is
 also supported (assuming x occurs in the goal only):
 
-.. coqtop:: in
+.. coqdoc::
 
    have {x} -> : x = y.
 
@@ -2543,7 +2542,7 @@ Since the :token:`i_pattern` can be omitted, to avoid ambiguity,
 bound variables can be surrounded
 with parentheses even if no type is specified:
 
-.. coqtop:: in
+.. coqdoc::
 
    have (x) : 2 * x = x + x by omega.
 
@@ -2724,7 +2723,7 @@ The
 + but the optional clear item is still performed in the *second*
   branch. This means that the tactic:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      suff {H} H : forall x : nat, x >= 0.
 
@@ -2796,7 +2795,7 @@ name of the local definition with the ``@`` character.
 
 In the second subgoal, the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    move=> clear_switch i_item.
 
@@ -2902,10 +2901,13 @@ illustrated in the following example.
   the pattern ``id (addx x)``, that would produce the following first
   subgoal
 
-  .. coqtop:: none
+  .. coqtop:: none reset
 
-     Abort All.
-     From Coq Require Import Omega.
+     From Coq Require Import ssreflect Omega.
+     Set Implicit Arguments.
+     Unset Strict Implicit.
+     Unset Printing Implicit Defensive.
+
      Section Test.
      Variable x : nat.
      Definition addx z := z + x.
@@ -3050,7 +3052,7 @@ An :token:`r_item` can be:
 
         Definition f := fun x y => x + y.
         Lemma test x y : x + y = f y x.
-        rewrite -[f y]/(y + _).
+        Fail rewrite -[f y]/(y + _).
 
      but the following script succeeds
 
@@ -3078,7 +3080,7 @@ tactics.
 
 In a rewrite tactic of the form:
 
-.. coqtop:: in
+.. coqdoc::
 
    rewrite occ_switch [term1]term2.
 
@@ -3121,7 +3123,7 @@ Performing rewrite and simplification operations in a single tactic
 enhances significantly the concision of scripts. For instance the
 tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    rewrite /my_def {2}[f _]/= my_eq //=.
 
@@ -3202,7 +3204,7 @@ the equality.
   .. coqtop:: all
 
      Lemma test (H : forall t u, t + u * 0 = t) x y : x + y * 4 + 2 * 0 = x + 2 * 0.
-     rewrite [x + _]H.
+     Fail rewrite [x + _]H.
 
   Indeed the left hand side of ``H`` does not match
   the redex identified by the pattern ``x + y * 4``.
@@ -3388,7 +3390,7 @@ reasoning purposes. The library also provides one lemma per such
 operation, stating that both versions return the same values when
 applied to the same arguments:
 
-.. coqtop:: in
+.. coqdoc::
 
      Lemma addE : add =2 addn.
      Lemma doubleE : double =1 doublen.
@@ -3404,7 +3406,7 @@ hand side. In order to reason conveniently on expressions involving
 the efficient operations, we gather all these rules in the definition
 ``trecE``:
 
-.. coqtop:: in
+.. coqdoc::
 
    Definition trecE := (addE, (doubleE, oddE), (mulE, add_mulE, (expE, mul_expE))).
 
@@ -3462,14 +3464,14 @@ cases:
 
 + |SSR| never accepts to rewrite indeterminate patterns like:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      Lemma foo (x : unit) : x = tt.
 
   |SSR| will however accept the
   ηζ expansion of this rule:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      Lemma fubar (x : unit) : (let u := x in u) = tt.
 
@@ -3507,7 +3509,7 @@ cases:
 
     .. coqtop:: all
 
-       rewrite H.
+       Fail rewrite H.
 
     Rewriting with ``H`` first requires unfolding the occurrences of
     ``f``
@@ -3619,7 +3621,7 @@ copy of any term t. However this copy is (on purpose) *not
 convertible* to t in the |Coq| system [#8]_. The job is done by the
 following construction:
 
-.. coqtop:: in
+.. coqdoc::
 
    Lemma master_key : unit. Proof. exact tt. Qed.
    Definition locked A := let: tt := master_key in fun x : A => x.
@@ -3685,14 +3687,14 @@ some functions by the partial evaluation switch ``/=``, unless this
 allowed the evaluation of a condition. This is possible thanks to another
 mechanism of term tagging, resting on the following *Notation*:
 
-.. coqtop:: in
+.. coqdoc::
 
    Notation "'nosimpl' t" := (let: tt := tt in t).
 
 The term ``(nosimpl t)`` simplifies to ``t`` *except* in a definition.
 More precisely, given:
 
-.. coqtop:: in
+.. coqdoc::
 
    Definition foo := (nosimpl bar).
 
@@ -3708,7 +3710,7 @@ Note that ``nosimpl bar`` is simply notation for a term that reduces to
    The ``nosimpl`` trick only works if no reduction is apparent in
    ``t``; in particular, the declaration:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Definition foo x := nosimpl (bar x).
 
@@ -3716,14 +3718,14 @@ Note that ``nosimpl bar`` is simply notation for a term that reduces to
    function, and to use the following definition, which blocks the
    reduction as expected:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Definition foo x := nosimpl bar x.
 
 A standard example making this technique shine is the case of
 arithmetic operations. We define for instance:
 
-.. coqtop:: in
+.. coqdoc::
 
    Definition addn := nosimpl plus.
 
@@ -3743,7 +3745,7 @@ Congruence
 Because of the way matching interferes with parameters of type families,
 the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    apply: my_congr_property.
 
@@ -3940,7 +3942,7 @@ For a quick glance at what can be expressed with the last
 :token:`r_pattern`
 consider the goal ``a = b`` and the tactic
 
-.. coqtop:: in
+.. coqdoc::
 
    rewrite [in X in _ = X]rule.
 
@@ -4041,14 +4043,14 @@ patterns over simple terms, but to interpret a pattern with double
 parentheses as a simple term. For example, the following tactic would
 capture any occurrence of the term ``a in A``.
 
-.. coqtop:: in
+.. coqdoc::
 
    set t := ((a in A)).
 
 Contextual patterns can also be used as arguments of the ``:`` tactical.
 For example:
 
-.. coqtop:: in
+.. coqdoc::
 
    elim: n (n in _ = n) (refl_equal n).
 
@@ -4139,7 +4141,7 @@ context shortcuts.
 The following example is taken from ``ssreflect.v`` where the
 ``LHS`` and ``RHS`` shortcuts are defined.
 
-.. coqtop:: in
+.. coqdoc::
 
    Notation RHS := (X in _ = X)%pattern.
    Notation LHS := (X in X = _)%pattern.
@@ -4147,7 +4149,7 @@ The following example is taken from ``ssreflect.v`` where the
 Shortcuts defined this way can be freely used in place of the trailing
 ``ident in term`` part of any contextual pattern. Some examples follow:
 
-.. coqtop:: in
+.. coqdoc::
 
    set rhs := RHS.
    rewrite [in RHS]rule.
@@ -4179,13 +4181,13 @@ The view syntax combined with the ``elim`` tactic specifies an elimination
 scheme to be used instead of the default, generated, one. Hence the
 |SSR| tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    elim/V.
 
 is a synonym for:
 
-.. coqtop:: in
+.. coqdoc::
 
    intro top; elim top using V; clear top.
 
@@ -4195,13 +4197,13 @@ Since an elimination view supports the two bookkeeping tacticals of
 discharge and introduction (see section :ref:`basic_tactics_ssr`),
 the |SSR| tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    elim/V: x => y.
 
 is a synonym for:
 
-.. coqtop:: in
+.. coqdoc::
 
    elim x using V; clear x; intro y.
 
@@ -4259,13 +4261,13 @@ command) can be combined with the type family switches described
 in section :ref:`type_families_ssr`.
 Consider an eliminator ``foo_ind`` of type:
 
-.. coqtop:: in
+.. coqdoc::
 
    foo_ind : forall …, forall x : T, P p1 … pm.
 
 and consider the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    elim/foo_ind: e1 … / en.
 
@@ -4316,7 +4318,7 @@ Here is an example of a regular, but nontrivial, eliminator.
   The following tactics are all valid and perform the same elimination
   on this goal.
 
-  .. coqtop:: in
+  .. coqdoc::
 
      elim/plus_ind: z / (plus _ z).
      elim/plus_ind: {z}(plus _ z).
@@ -4365,7 +4367,7 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   .. coqtop:: all
 
-     elim/plus_ind: y / _.
+     Fail elim/plus_ind: y / _.
 
   triggers an error: in the conclusion
   of the ``plus_ind`` eliminator, the first argument of the predicate
@@ -4386,7 +4388,7 @@ Here is an example of a truncated eliminator:
      Unset Printing Implicit Defensive.
      Section Test.
 
-  .. coqtop:: in
+  .. coqdoc::
 
      Lemma test p n (n_gt0 : 0 < n) (pr_p : prime p) :
        p %| \prod_(i <- prime_decomp n | i \in prime_decomp n) i.1 ^ i.2 ->
@@ -4397,7 +4399,7 @@ Here is an example of a truncated eliminator:
 
   where the type of the ``big_prop`` eliminator is
 
-  .. coqtop:: in
+  .. coqdoc::
 
      big_prop: forall (R : Type) (Pb : R -> Type)
        (idx : R) (op1 : R -> R -> R), Pb idx ->
@@ -4410,7 +4412,7 @@ Here is an example of a truncated eliminator:
   inferred one is used instead: ``big[_/_]_(i <- _ | _ i) _ i``,
   and after the introductions, the following goals are generated:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      subgoal 1 is:
        p %| 1 -> exists2 x : nat * nat, x \in prime_decomp n & p = x.1
@@ -4516,7 +4518,7 @@ equation name generation mechanism (see section :ref:`generation_of_equations_ss
 
   This view tactic performs:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      move=> HQ; case: {HQ}(Q2P HQ) => [HPa | HPb].
 
@@ -4553,14 +4555,14 @@ relevant for the current goal.
   the double implication into the expected simple implication. The last
   script is in fact equivalent to:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      Lemma test a b : P (a || b) -> True.
      move/(iffLR (PQequiv _ _)).
 
   where:
 
-  .. coqtop:: in
+  .. coqdoc::
 
      Lemma iffLR P Q : (P <-> Q) -> P -> Q.
 
@@ -4702,7 +4704,7 @@ decidable predicate to its boolean version.
 First, booleans are injected into propositions using the coercion
 mechanism:
 
-.. coqtop:: in
+.. coqdoc::
 
    Coercion is_true (b : bool) := b = true.
 
@@ -4719,7 +4721,7 @@ To get all the benefits of the boolean reflection, it is in fact
 convenient to introduce the following inductive predicate ``reflect`` to
 relate propositions and booleans:
 
-.. coqtop:: in
+.. coqdoc::
 
    Inductive reflect (P: Prop): bool -> Type :=
    | Reflect_true : P -> reflect P true
@@ -4730,7 +4732,7 @@ logically equivalent propositions.
 
 For instance, the following lemma:
 
-.. coqtop:: in
+.. coqdoc::
 
      Lemma andP: forall b1 b2, reflect (b1 /\ b2) (b1 && b2).
 
@@ -4745,20 +4747,20 @@ to the case analysis of |Coq|’s inductive types.
 
 Since the equivalence predicate is defined in |Coq| as:
 
-.. coqtop:: in
+.. coqdoc::
 
    Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 where ``/\`` is a notation for ``and``:
 
-.. coqtop:: in
+.. coqdoc::
 
    Inductive and (A B:Prop) : Prop := conj : A -> B -> and A B.
 
 This make case analysis very different according to the way an
 equivalence property has been defined.
 
-.. coqtop:: in
+.. coqdoc::
 
    Lemma andE (b1 b2 : bool) : (b1 /\ b2) <-> (b1 && b2).
 
@@ -4842,13 +4844,13 @@ Specializing assumptions
 
 The |SSR| tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    move/(_ term1 … termn).
 
 is equivalent to the tactic:
 
-.. coqtop:: in
+.. coqdoc::
 
    intro top; generalize (top term1 … termn); clear top.
 
@@ -4904,13 +4906,13 @@ If ``term`` is a double implication, then the view hint will be one of
 the defined view hints for implication. These hints are by default the
 ones present in the file ``ssreflect.v``:
 
-.. coqtop:: in
+.. coqdoc::
 
    Lemma iffLR : forall P Q, (P <-> Q) -> P -> Q.
 
 which transforms a double implication into the left-to-right one, or:
 
-.. coqtop:: in
+.. coqdoc::
 
    Lemma iffRL : forall P Q, (P <-> Q) -> Q -> P.
 
@@ -5012,7 +5014,7 @@ equality, while the second term is the one applied to the right hand side.
 
 In this context, the identity view can be used when no view has to be applied:
 
-.. coqtop:: in
+.. coqdoc::
 
    Lemma idP : reflect b1 b1.
 
@@ -5088,7 +5090,7 @@ in sequence. Both move and apply can be followed by an arbitrary
 number of ``/term``. The main difference between the following two
 tactics
 
-.. coqtop:: in
+.. coqdoc::
 
    apply/v1/v2/v3.
    apply/v1; apply/v2; apply/v3.
@@ -5100,7 +5102,7 @@ line would apply the view ``v2`` to all the goals generated by ``apply/v1``.
 Note that the NO-OP intro pattern ``-`` can be used to separate two views,
 making the two following examples equivalent:
 
-.. coqtop:: in
+.. coqdoc::
 
    move=> /v1; move=> /v2.
    move=> /v1 - /v2.

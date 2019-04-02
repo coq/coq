@@ -223,7 +223,7 @@ The following is an example of a record with non-trivial subtyping relation:
    E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
    \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
 
-Cumulative inductive types, coninductive types, variants and records
+Cumulative inductive types, coinductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
 error is issued whenever the user uses the :g:`Cumulative` or
 :g:`NonCumulative` prefix in a monomorphic context.
@@ -236,11 +236,11 @@ Consider the following examples.
 
 .. coqtop:: all reset
 
-   Monomorphic Cumulative Inductive Unit := unit.
+   Fail Monomorphic Cumulative Inductive Unit := unit.
 
 .. coqtop:: all reset
 
-   Monomorphic NonCumulative Inductive Unit := unit.
+   Fail Monomorphic NonCumulative Inductive Unit := unit.
 
 .. coqtop:: all reset
 

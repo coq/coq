@@ -434,6 +434,10 @@ the identifier :g:`b` being used to represent the dependency.
    the return type. For instance, the following alternative definition is
    accepted and has the same meaning as the previous one.
 
+   .. coqtop:: none
+
+      Reset bool_case.
+
    .. coqtop:: in
 
       Definition bool_case (b:bool) : or (eq bool b true) (eq bool b false) :=
@@ -471,7 +475,7 @@ For instance, in the following example:
 
    Definition eq_sym (A:Type) (x y:A) (H:eq A x y) : eq A y x :=
    match H in eq _ _ z return eq A z x with
-   | eq_refl _ => eq_refl A x
+   | eq_refl _ _ => eq_refl A x
    end.
 
 the type of the branch is :g:`eq A x x` because the third argument of
@@ -826,6 +830,10 @@ Simple inductive types
 
       .. example::
 
+         .. coqtop:: none
+
+            Reset nat.
+
          .. coqtop:: in
 
             Inductive nat : Set := O | S (_:nat).
@@ -904,6 +912,10 @@ Parametrized inductive types
       Once again, it is possible to specify only the type of the arguments
       of the constructors, and to omit the type of the conclusion:
 
+      .. coqtop:: none
+
+         Reset list.
+
       .. coqtop:: in
 
          Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
@@ -949,7 +961,7 @@ Parametrized inductive types
      inductive definitions are abstracted over their parameters
      before type checking constructors, allowing to write:
 
-     .. coqtop:: all undo
+     .. coqtop:: all
 
         Set Uniform Inductive Parameters.
         Inductive list3 (A:Set) : Set :=
@@ -960,7 +972,7 @@ Parametrized inductive types
      and using :cmd:`Context` to give the uniform parameters, like so
      (cf. :ref:`section-mechanism`):
 
-     .. coqtop:: all undo
+     .. coqtop:: all reset
 
         Section list3.
         Context (A:Set).
@@ -1038,7 +1050,7 @@ Mutually defined inductive types
    two type variables :g:`A` and :g:`B`, the declaration should be
    done the following way:
 
-   .. coqtop:: in
+   .. coqdoc::
 
       Inductive tree (A B:Set) : Set := node : A -> forest A B -> tree A B
 
@@ -1130,6 +1142,10 @@ found in e.g. Agda, and preserves subject reduction.
 
 The above example can be rewritten in the following way.
 
+.. coqtop:: none
+
+   Reset Stream.
+
 .. coqtop:: all
 
    Set Primitive Projections.
@@ -1147,7 +1163,7 @@ axiom.
 
 .. coqtop:: all
 
-   Axiom Stream_eta : forall s: Stream, s = cons (hs s) (tl s).
+   Axiom Stream_eta : forall s: Stream, s = Seq (hd s) (tl s).
 
 More generally, as in the case of positive coinductive types, it is consistent
 to further identify extensional equality of coinductive types with propositional
