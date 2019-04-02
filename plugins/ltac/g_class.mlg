@@ -84,7 +84,7 @@ TACTIC EXTEND typeclasses_eauto
  | [ "typeclasses" "eauto" int_or_var_opt(d) "with" ne_preident_list(l) ] ->
     { typeclasses_eauto ~depth:d l }
  | [ "typeclasses" "eauto" int_or_var_opt(d) ] -> {
-     typeclasses_eauto ~only_classes:true ~depth:d [Hints.typeclasses_db] }
+     typeclasses_eauto ~only_classes:true ~depth:d [Class_tactics.typeclasses_db] }
 END
 
 TACTIC EXTEND head_of_constr

@@ -332,3 +332,7 @@ Tactic Notation "assert_succeeds" tactic3(tac) :=
   assert_succeeds tac.
 Tactic Notation "assert_fails" tactic3(tac) :=
   assert_fails tac.
+
+Create HintDb rewrite discriminated.
+Hint Variables Opaque : rewrite.
+Create HintDb typeclass_instances discriminated.

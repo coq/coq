@@ -277,11 +277,6 @@ val make_local_hint_db : env -> evar_map -> ?ts:TransparentState.t -> bool -> de
 
 val make_db_list : hint_db_name list -> hint_db list
 
-(** Initially created hint databases, for typeclasses and rewrite *)
-
-val typeclasses_db : hint_db_name
-val rewrite_db : hint_db_name
-
 val wrap_hint_warning : 'a Proofview.tactic -> 'a Proofview.tactic
 (** Use around toplevel calls to hint-using tactics, to enable the tracking of
     non-imported hints. Any tactic calling [run_hint] must be wrapped this

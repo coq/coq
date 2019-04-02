@@ -21,6 +21,7 @@ open Globnames
 open Constrintern
 open Constrexpr
 open Context.Rel.Declaration
+open Class_tactics
 
 module RelDecl = Context.Rel.Declaration
 (*i*)
@@ -38,12 +39,15 @@ let () = Goptions.(declare_bool_option {
   optwrite = (fun b -> refine_instance := b)
 })
 
-let typeclasses_db = "typeclass_instances"
-
 let set_typeclass_transparency c local b = 
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
-    
+
+let classes_transparent_state () =
+  try
+    Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db)
+  with Not_found -> TransparentState.empty
+
 let () =
   Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local info poly ->
@@ -55,8 +59,7 @@ let () =
 	  (Hints.HintsResolveEntry
 	     [info, poly, false, Hints.PathHints path, inst'])) ());
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
-  Hook.set Typeclasses.classes_transparent_state_hook
-    (fun () -> Hints.Hint_db.transparent_state (Hints.searchtable_map typeclasses_db))
+  Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
 
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
