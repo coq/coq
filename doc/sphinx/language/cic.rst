@@ -20,9 +20,9 @@ There are types for functions (or programs), there are atomic types
 (especially datatypes)... but also types for proofs and types for the
 types themselves. Especially, any object handled in the formalism must
 belong to a type. For instance, universal quantification is relative
-to a type and takes the form "*for all x of type T, P* ". The expression
-“x of type T” is written :g:`x:T`. Informally, :g:`x:T` can be thought as
-“x belongs to T”.
+to a type and takes the form “*for all x of type* :math:`T`, :math:`P`”. The expression
+“:math:`x` *of type* :math:`T`” is written “:math:`x:T`”. Informally, “:math:`x:T`” can be thought as
+“:math:`x` *belongs to* :math:`T`”.
 
 The types of types are *sorts*. Types and sorts are themselves terms
 so that terms, types and sorts are all components of a common
@@ -132,7 +132,7 @@ the following rules.
    which maps elements of :math:`T` to the expression :math:`u`.
 #. if :math:`t` and :math:`u` are terms then :math:`(t~u)` is a term
    (:g:`t u` in |Coq| concrete
-   syntax). The term :math:`(t~u)` reads as “t applied to u”.
+   syntax). The term :math:`(t~u)` reads as “:math:`t` applied to :math:`u`”.
 #. if :math:`x` is a variable, and :math:`t`, :math:`T` and :math:`u` are
    terms then :math:`\letin{x}{t:T}{u}` is
    a term which denotes the term :math:`u` where the variable :math:`x` is locally bound
@@ -216,7 +216,7 @@ For the rest of the chapter, :math:`Γ::(y:T)` denotes the local context :math:`
 enriched with the local assumption :math:`y:T`. Similarly, :math:`Γ::(y:=t:T)` denotes
 the local context :math:`Γ` enriched with the local definition :math:`(y:=t:T)`. The
 notation :math:`[]` denotes the empty local context. By :math:`Γ_1 ; Γ_2` we mean
-concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2` .
+concatenation of the local context :math:`Γ_1` and the local context :math:`Γ_2`.
 
 
 .. _Global-environment:
@@ -542,10 +542,10 @@ exist terms :math:`u_1` and :math:`u_2` such that :math:`E[Γ] ⊢ t_1 \triangle
 … \triangleright u_1` and :math:`E[Γ] ⊢ t_2 \triangleright … \triangleright u_2` and either :math:`u_1` and
 :math:`u_2` are identical, or they are convertible up to η-expansion,
 i.e. :math:`u_1` is :math:`λ x:T.~u_1'` and :math:`u_2 x` is
-recursively convertible to :math:`u_1'` , or, symmetrically,
+recursively convertible to :math:`u_1'`, or, symmetrically,
 :math:`u_2` is :math:`λx:T.~u_2'`
 and :math:`u_1 x` is recursively convertible to :math:`u_2'`. We then write
-:math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2` .
+:math:`E[Γ] ⊢ t_1 =_{βδιζη} t_2`.
 
 Apart from this we consider two instances of polymorphic and
 cumulative (see Chapter :ref:`polymorphicuniverses`) inductive types
@@ -793,7 +793,7 @@ Types of inductive objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have to give the type of constants in a global environment :math:`E` which
-contains an inductive declaration.
+contains an inductive definition.
 
 .. inference:: Ind
 	       
@@ -833,7 +833,7 @@ contains an inductive declaration.
 Well-formed inductive definitions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We cannot accept any inductive declaration because some of them lead
+We cannot accept any inductive definition because some of them lead
 to inconsistent systems. We restrict ourselves to definitions which
 satisfy a syntactic criterion of positivity. Before giving the formal
 rules, we need a few definitions:
@@ -898,7 +898,7 @@ cases:
 + :math:`T` converts to :math:`∀ x:U,~V` and :math:`X` does not occur in type :math:`U` but occurs
   strictly positively in type :math:`V`
 + :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
-  inductive declaration of the form
+  inductive definition of the form
   
   .. math::
      \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_n}
@@ -914,7 +914,7 @@ Nested Positivity
 The type of constructor :math:`T` of :math:`I` *satisfies the nested positivity
 condition* for a constant :math:`X` in the following cases:
 
-+ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive definition with :math:`m`
++ :math:`T=(I~b_1 … b_m~u_1 … u_p)`, :math:`I` is an inductive type with :math:`m`
   parameters and :math:`X` does not occur in any :math:`u_i`
 + :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the nested positivity condition for :math:`X`
@@ -980,8 +980,8 @@ provided that the following side conditions hold:
 One can remark that there is a constraint between the sort of the
 arity of the inductive type and the sort of the type of its
 constructors which will always be satisfied for the impredicative
-sort :math:`\Prop` but may fail to define inductive definition on sort :math:`\Set` and
-generate constraints between universes for inductive definitions in
+sort :math:`\Prop` but may fail to define inductive type on sort :math:`\Set` and
+generate constraints between universes for inductive types in
 the Type hierarchy.
 
 
@@ -1037,9 +1037,9 @@ longest prefix of parameters such that the :math:`m` first arguments of all
 occurrences of all :math:`I_j` in all :math:`C_k` (even the occurrences in the
 hypotheses of :math:`C_k`) are exactly applied to :math:`p_1 … p_m` (:math:`m` is the number
 of *recursively uniform parameters* and the :math:`p−m` remaining parameters
-are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r` , with
+are the *recursively non-uniform parameters*). Let :math:`q_1 , …, q_r`, with
 :math:`0≤ r≤ m`, be a (possibly) partial instantiation of the recursively
-uniform parameters of :math:`Γ_P` . We have:
+uniform parameters of :math:`Γ_P`. We have:
 
 .. inference:: Ind-Family
 
@@ -1058,7 +1058,7 @@ provided that the following side conditions hold:
     + :math:`Γ_{P′}` is the context obtained from :math:`Γ_P` by replacing each :math:`P_l` that is
       an arity with :math:`P_l'` for :math:`1≤ l ≤ r` (notice that :math:`P_l` arity implies :math:`P_l'`
       arity since :math:`E[] ⊢ P_l' ≤_{βδιζη} \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}`);
-    + there are sorts :math:`s_i` , for :math:`1 ≤ i ≤ k` such that, for
+    + there are sorts :math:`s_i`, for :math:`1 ≤ i ≤ k` such that, for
       :math:`Γ_{I'} = [I_1 :∀ Γ_{P'} ,(A_1)_{/s_1} ;~…;~I_k :∀ Γ_{P'} ,(A_k)_{/s_k}]`
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
     + the sorts :math:`s_i` are such that all eliminations, to
@@ -1189,7 +1189,7 @@ recognized implicitly and taken into account in the conversion rule.
 From the logical point of view, we have built a type family by giving
 a set of constructors. We want to capture the fact that we do not have
 any other way to build an object in this type. So when trying to prove
-a property about an object :math:`m` in an inductive definition it is enough
+a property about an object :math:`m` in an inductive type it is enough
 to enumerate all the cases where :math:`m` starts with a different
 constructor.
 
@@ -1295,7 +1295,7 @@ and :math:`I:A` and :math:`λ a x . P : B` then by :math:`[I:A|B]` we mean that 
 **Notations.** The :math:`[I:A|B]` is defined as the smallest relation satisfying the
 following rules: We write :math:`[I|B]` for :math:`[I:A|B]` where :math:`A` is the type of :math:`I`.
 
-The case of inductive definitions in sorts :math:`\Set` or :math:`\Type` is simple.
+The case of inductive types in sorts :math:`\Set` or :math:`\Type` is simple.
 There is no restriction on the sort of the predicate to be eliminated.
 
 .. inference:: Prod
@@ -1371,7 +1371,7 @@ proof-irrelevance property which is sometimes a useful axiom:
 
       Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
 
-The elimination of an inductive definition of type :math:`\Prop` on a predicate
+The elimination of an inductive type of sort :math:`\Prop` on a predicate
 :math:`P` of type :math:`I→ \Type` leads to a paradox when applied to impredicative
 inductive definition like the second-order existential quantifier
 :g:`exProp` defined above, because it gives access to the two projections on
@@ -1416,7 +1416,7 @@ elimination on any sort is allowed.
 **Type of branches.**
 Let :math:`c` be a term of type :math:`C`, we assume :math:`C` is a type of constructor for an
 inductive type :math:`I`. Let :math:`P` be a term that represents the property to be
-proved. We assume :math:`r` is the number of parameters and :math:`p` is the number of
+proved. We assume :math:`r` is the number of parameters and :math:`s` is the number of
 arguments.
 
 We define a new type :math:`\{c:C\}^P` which represents the type of the branch
@@ -1424,7 +1424,7 @@ corresponding to the :math:`c:C` constructor.
 
 .. math::
    \begin{array}{ll}
-   \{c:(I~p_1\ldots p_r\ t_1 \ldots t_p)\}^P &\equiv (P~t_1\ldots ~t_p~c) \\
+   \{c:(I~q_1\ldots q_r\ t_1 \ldots t_s)\}^P &\equiv (P~t_1\ldots ~t_s~c) \\
    \{c:∀ x:T,~C\}^P &\equiv ∀ x:T,~\{(c~x):C\}^P
    \end{array}
 
@@ -1471,7 +1471,7 @@ We write :math:`\{c\}^P` for :math:`\{c:C\}^P` with :math:`C` the type of :math:
       & ≡∀ n:\nat,~∀ l:\List~\nat,~(P~(\cons~\nat~n~l)).
       \end{array}
 
-   Given some :math:`P` then :math:`\{(\Nil~\nat)\}^P` represents the expected type of :math:`f_1` ,
+   Given some :math:`P` then :math:`\{(\Nil~\nat)\}^P` represents the expected type of :math:`f_1`,
    and :math:`\{(\cons~\nat)\}^P` represents the expected type of :math:`f_2`.
 
 
@@ -1603,15 +1603,15 @@ Before accepting a fixpoint definition as being correctly typed, we
 check that the definition is “guarded”. A precise analysis of this
 notion can be found in :cite:`Gim94`. The first stage is to precise on which
 argument the fixpoint will be decreasing. The type of this argument
-should be an inductive definition. For doing this, the syntax of
+should be an inductive type. For doing this, the syntax of
 fixpoints is extended and becomes
 
 .. math::
-   \Fix~f_i\{f_1/k_1 :A_1':=t_1' … f_n/k_n :A_n':=t_n'\}
+   \Fix~f_i\{f_1/k_1 :A_1:=t_1 … f_n/k_n :A_n:=t_n\}
 
 
 where :math:`k_i` are positive integers. Each :math:`k_i` represents the index of
-parameter of :math:`f_i` , on which :math:`f_i` is decreasing. Each :math:`A_i` should be a
+parameter of :math:`f_i`, on which :math:`f_i` is decreasing. Each :math:`A_i` should be a
 type (reducible to a term) starting with at least :math:`k_i` products
 :math:`∀ y_1 :B_1 ,~… ∀ y_{k_i} :B_{k_i} ,~A_i'` and :math:`B_{k_i}` an inductive type.
 
@@ -1623,7 +1623,7 @@ The definition of being structurally smaller is a bit technical. One
 needs first to define the notion of *recursive arguments of a
 constructor*. For an inductive definition :math:`\ind{r}{Γ_I}{Γ_C}`, if the
 type of a constructor :math:`c` has the form
-:math:`∀ p_1 :P_1 ,~… ∀ p_r :P_r,~∀ x_1:T_1,~… ∀ x_r :T_r,~(I_j~p_1 … p_r~t_1 … t_s )`,
+:math:`∀ p_1 :P_1 ,~… ∀ p_r :P_r,~∀ x_1:T_1,~… ∀ x_m :T_m,~(I_j~p_1 … p_r~t_1 … t_s )`,
 then the recursive
 arguments will correspond to :math:`T_i` in which one of the :math:`I_l` occurs.
 
@@ -1636,13 +1636,13 @@ Given a variable :math:`y` of an inductively defined type in a declaration
 + :math:`(t~u)` and :math:`λ x:U .~t` when :math:`t` is structurally smaller than :math:`y`.
 + :math:`\case(c,P,f_1 … f_n)` when each :math:`f_i` is structurally smaller than :math:`y`.
   If :math:`c` is :math:`y` or is structurally smaller than :math:`y`, its type is an inductive
-  definition :math:`I_p` part of the inductive declaration corresponding to :math:`y`.
+  type :math:`I_p` part of the inductive definition corresponding to :math:`y`.
   Each :math:`f_i` corresponds to a type of constructor
-  :math:`C_q ≡ ∀ p_1 :P_1 ,~…,∀ p_r :P_r ,~∀ y_1 :B_1 ,~… ∀ y_k :B_k ,~(I~a_1 … a_k )`
-  and can consequently be written :math:`λ y_1 :B_1' .~… λ y_k :B_k'.~g_i`. (:math:`B_i'` is
+  :math:`C_q ≡ ∀ p_1 :P_1 ,~…,∀ p_r :P_r ,~∀ y_1 :B_1 ,~… ∀ y_m :B_m ,~(I_p~p_1 … p_r~t_1 … t_s )`
+  and can consequently be written :math:`λ y_1 :B_1' .~… λ y_m :B_m'.~g_i`. (:math:`B_i'` is
   obtained from :math:`B_i` by substituting parameters for variables) the variables
   :math:`y_j` occurring in :math:`g_i` corresponding to recursive arguments :math:`B_i` (the
-  ones in which one of the :math:`I_l` occurs) are structurally smaller than y.
+  ones in which one of the :math:`I_l` occurs) are structurally smaller than :math:`y`.
 
 
 The following definitions are correct, we enter them using the :cmd:`Fixpoint`
@@ -1725,7 +1725,7 @@ One can modify a global declaration by generalizing it over a
 previously assumed constant :math:`c`. For doing that, we need to modify the
 reference to the global declaration in the subsequent global
 environment and local context by explicitly applying this constant to
-the constant :math:`c'`.
+the constant :math:`c`.
 
 Below, if :math:`Γ` is a context of the form :math:`[y_1 :A_1 ;~…;~y_n :A_n]`, we write
 :math:`∀x:U,~\subst{Γ}{c}{x}` to mean
@@ -1755,7 +1755,7 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
          {\subst{Γ}{|Γ_I ;Γ_C|}{|Γ_I ;Γ_C | c}}}
 
 One can similarly modify a global declaration by generalizing it over
-a previously defined constant :math:`c′`. Below, if :math:`Γ` is a context of the form
+a previously defined constant :math:`c`. Below, if :math:`Γ` is a context of the form
 :math:`[y_1 :A_1 ;~…;~y_n :A_n]`, we write :math:`\subst{Γ}{c}{u}` to mean
 :math:`[y_1 :\subst{A_1} {c}{u};~…;~y_n:\subst{A_n} {c}{u}]`.
 
