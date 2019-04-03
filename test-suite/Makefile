@@ -252,6 +252,7 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 #######################################################################
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
+OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 SYSMOD:=-package num,str,unix,dynlink,threads
 
 COQSRCDIRS:=$(addprefix -I $(LIB)/,$(CORESRCDIRS))
@@ -263,26 +264,33 @@ UNIT_ALLMLFILES:=$(shell find ./unit-tests -name *.ml)
 UNIT_MLFILES:=$(filter-out $(UNIT_SRCFILES),$(UNIT_ALLMLFILES))
 UNIT_LOGFILES:=$(patsubst %.ml,%.ml.log,$(UNIT_MLFILES))
 
-UNIT_CMXS=utest.cmx
+ifneq ($(BEST),opt)
+UNIT_LINK:=utest.cmo
+OCAMLBEST:=$(OCAMLC)
+else
+UNIT_LINK:=utest.cmx
+OCAMLBEST:=$(OCAMLOPT)
+endif
 
 unit-tests/src/utest.cmx: unit-tests/src/utest.ml unit-tests/src/utest.cmi
 	$(SHOW) 'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) -c -I unit-tests/src -package oUnit $<
+unit-tests/src/utest.cmo: unit-tests/src/utest.ml unit-tests/src/utest.cmi
+	$(SHOW) 'OCAMLC  $<'
+	$(HIDE)$(OCAMLC) -c -I unit-tests/src -package oUnit $<
 unit-tests/src/utest.cmi: unit-tests/src/utest.mli
-	$(SHOW) 'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) -package oUnit $<
-
-$(UNIT_LOGFILES): unit-tests/src/utest.cmx
+	$(SHOW) 'OCAMLC  $<'
+	$(HIDE)$(OCAMLC) -package oUnit -c $<
 
 unit-tests: $(UNIT_LOGFILES)
 
 # Build executable, run it to generate log file
-unit-tests/%.ml.log: unit-tests/%.ml
+unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg -cclib -lcoqrun \
+	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -cclib -lcoqrun \
 		   $(SYSMOD) -package camlp5.gramlib,oUnit  \
 	     -I unit-tests/src $(COQSRCDIRS) $(COQCMXS) \
-	     $(UNIT_CMXS) $< -o $<.test;
+	     $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 
 #######################################################################
