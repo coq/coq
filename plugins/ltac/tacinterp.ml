@@ -1960,7 +1960,9 @@ let lifts f = (); fun ist x -> Ftactic.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let (sigma, v) = f ist env sigma x in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-  (Ftactic.return v)
+    (* FIXME once we don't need to catch side effects *)
+    (Proofview.tclTHEN (Proofview.Unsafe.tclSETENV (Global.env()))
+       (Ftactic.return v))
 end
 
 let interp_bindings' ist bl = Ftactic.return begin fun env sigma ->
