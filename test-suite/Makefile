@@ -546,7 +546,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off" 2>&1; \
+	  $(BIN)fake_ide $< "-coqlib $(LIB) -boot -async-proofs on -async-proofs-tactic-error-resilience off -async-proofs-command-error-resilience off $(call get_coq_prog_args,"$<")" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

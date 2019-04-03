@@ -11,7 +11,7 @@
 (** Fake_ide : Simulate a [coqide] talking to a [coqidetop] *)
 
 let error s =
-  prerr_endline ("fake_id: error: "^s);
+  prerr_endline ("fake_ide: error: "^s);
   exit 1
 
 let pperr_endline pp = Format.eprintf "@[%a@]\n%!" Pp.pp_with pp
@@ -22,7 +22,7 @@ type coqtop = {
 }
 
 let print_error msg =
-  Format.eprintf "fake_id: error: @[%a@]\n%!" Pp.pp_with msg
+  Format.eprintf "fake_ide: error: @[%a@]\n%!" Pp.pp_with msg
 
 let base_eval_call ?(print=true) ?(fail=true) call coqtop =
   if print then prerr_endline (Xmlprotocol.pr_call call);
@@ -257,10 +257,15 @@ let eval_print l coq =
       eval_call (wait ()) coq
   | [ Tok(_,"JOIN") ] ->
       eval_call (status true) coq
+  | [ Tok(_,"FAILJOIN") ] ->
+      after_fail coq (base_eval_call ~fail:false (status true) coq)
   | [ Tok(_,"ASSERT"); Tok(_,"TIP"); Tok(_,id) ] ->
       let to_id, _ = get_id id in
       if not(Stateid.equal (Document.tip doc) to_id) then error "Wrong tip"
       else prerr_endline "Good tip"
+  | [ Tok(_,"ABORT") ] ->
+      prerr_endline "Quitting fake_ide";
+      exit 0
   | Tok("#[^\n]*",_) :: _  -> ()
   | _ -> error "syntax error"
 
@@ -276,6 +281,8 @@ let grammar =
     ; Seq [Item (eat_rex "JOIN")]
     ; Seq [Item (eat_rex "GOALS")]
     ; Seq [Item (eat_rex "FAILGOALS")]
+    ; Seq [Item (eat_rex "FAILJOIN")]
+    ; Seq [Item (eat_rex "ABORT")]
     ; Seq [Item (eat_rex "ASSERT"); Item (eat_rex "TIP"); Item eat_id ]
     ; Item (eat_rex "#[^\n]*")
     ]
@@ -305,6 +312,8 @@ let main =
         Array.of_list (def_args @ ct), f
     | _ -> usage () in
   let inc = if input_file = "-" then stdin else open_in input_file in
+  prerr_endline ("Running: "^idetop_name^" "^
+                   (String.concat " " (Array.to_list coqtop_args)));
   let coq =
     let _p, cin, cout = Coqide.spawn idetop_name coqtop_args in
     let ip = Xml_parser.make (Xml_parser.SChannel cin) in

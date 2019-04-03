@@ -2672,7 +2672,7 @@ let finish ~doc =
   ); doc
 
 let wait ~doc =
-  let doc = finish ~doc in
+  let doc = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
   Slaves.wait_all_done ();
   VCS.print ();
   doc
@@ -2686,12 +2686,29 @@ let rec join_admitted_proofs id =
        join_admitted_proofs view.next
   | _ -> join_admitted_proofs view.next
 
+(* Error resiliency may have tolerated some broken commands *)
+let rec check_no_err_states ~doc visited id =
+  let open Stateid in
+  if Set.mem id visited then visited else
+  match state_of_id ~doc id with
+  | `Error e -> raise e
+  | _ ->
+     let view = VCS.visit id in
+     match view.step with
+     | `Qed(_,id) ->
+         let visited = check_no_err_states ~doc (Set.add id visited) id in
+         check_no_err_states ~doc visited view.next
+     | _ -> check_no_err_states ~doc (Set.add id visited) view.next
+
 let join ~doc =
   let doc = wait ~doc in
   stm_prerr_endline (fun () -> "Joining the environment");
   Global.join_safe_environment ();
   stm_prerr_endline (fun () -> "Joining Admitted proofs");
-  join_admitted_proofs (VCS.get_branch_pos (VCS.current_branch ()));
+  join_admitted_proofs (VCS.get_branch_pos VCS.Branch.master);
+  stm_prerr_endline (fun () -> "Checking no error states");
+  ignore(check_no_err_states ~doc (Stateid.Set.singleton Stateid.initial)
+    (VCS.get_branch_pos VCS.Branch.master));
   VCS.print ();
   doc
 
