@@ -466,7 +466,7 @@ let print_xml =
   let m = Mutex.create () in
   fun oc xml ->
     Mutex.lock m;
-    try Xml_printer.print oc xml; Mutex.unlock m
+    try Control.protect_sigalrm (Xml_printer.print oc) xml; Mutex.unlock m
     with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
 
 let slave_feeder fmt xml_oc msg =

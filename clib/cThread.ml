@@ -100,10 +100,10 @@ let thread_friendly_input_value ic =
 (* On the ocaml runtime used in some opam-for-windows version the
  * [Thread.sigmask] API raises Invalid_argument "not implemented",
  * hence we protect the call and turn the exception into a no-op *)
-let protect_sigalrm f x =
+let mask_sigalrm f x =
   begin try ignore(Thread.sigmask Unix.SIG_BLOCK [Sys.sigalrm])
   with Invalid_argument _ -> () end;
   f x
 
 let create f x =
-  Thread.create (protect_sigalrm f) x
+  Thread.create (mask_sigalrm f) x
