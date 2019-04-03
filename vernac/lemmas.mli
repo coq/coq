@@ -82,6 +82,7 @@ val start_lemma
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
   -> ?impargs:Impargs.manual_implicits
+  -> ?other_thms:Recthm.t list
   -> EConstr.types
   -> t
 
@@ -93,6 +94,7 @@ val start_dependent_lemma
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
   -> ?impargs:Impargs.manual_implicits
+  -> ?other_thms:Recthm.t list
   -> Proofview.telescope
   -> t
 
