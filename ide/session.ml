@@ -145,10 +145,12 @@ let set_buffer_handlers
     buffer#apply_tag Tags.Script.edit_zone
       ~start:(get_start()) ~stop:(get_stop())
     end in
-  let backto_before_error it =
+  let processed_sentence_just_before_error it =
     let rec aux old it =
-      if it#is_start || not(it#has_tag Tags.Script.error_bg) then old
-      else aux it it#backward_char in
+      if it#is_start then None
+      else if it#has_tag Tags.Script.processed then Some old
+      else if it#has_tag Tags.Script.error_bg then aux it it#backward_char 
+      else None in
     aux it it in
   let insert_cb it s = if String.length s = 0 then () else begin
     Minilib.log ("insert_cb " ^ string_of_int it#offset);
@@ -156,12 +158,16 @@ let set_buffer_handlers
     let () = update_prev it in
     if it#has_tag Tags.Script.to_process then
       cancel_signal "Altering the script being processed in not implemented"
+    else if it#has_tag Tags.Script.incomplete then
+      cancel_signal "Altering the script being processed in not implemented"
     else if it#has_tag Tags.Script.processed then
       call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     else if it#has_tag Tags.Script.error_bg then begin
-      let prev_sentence_end = backto_before_error it in
-      let text_mark = add_mark prev_sentence_end in
-      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+      match processed_sentence_just_before_error it with
+      | None -> ()
+      | Some prev_sentence_end ->
+          let text_mark = add_mark prev_sentence_end in
+          call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     end end in
   let delete_cb ~start ~stop =
     Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
@@ -171,14 +177,18 @@ let set_buffer_handlers
     let text_mark = add_mark min_iter in
     let rec aux min_iter =
       if min_iter#equal max_iter then ()
+      else if min_iter#has_tag Tags.Script.incomplete then
+        cancel_signal "Altering the script being processed in not implemented"
       else if min_iter#has_tag Tags.Script.to_process then
         cancel_signal "Altering the script being processed in not implemented"
       else if min_iter#has_tag Tags.Script.processed then
         call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
       else if min_iter#has_tag Tags.Script.error_bg then
-        let prev_sentence_end = backto_before_error min_iter in
-        let text_mark = add_mark prev_sentence_end in
-        call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+        match processed_sentence_just_before_error min_iter with
+        | None -> ()
+        | Some prev_sentence_end ->
+            let text_mark = add_mark prev_sentence_end in
+            call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
       else aux min_iter#forward_char in
     aux min_iter in
   let begin_action_cb () =
