@@ -21,9 +21,9 @@ val load_obj : (string -> unit) ref
 
 val get_ml_filename : unit -> string * string
 
-val compile : string -> global list -> profile:bool -> bool * string
+val compile : string -> global list -> profile:bool -> string
 
-val compile_library : Names.DirPath.t -> global list -> string -> bool
+val compile_library : Names.DirPath.t -> global list -> string -> unit
 
 val call_linker :
   ?fatal:bool -> string -> string -> code_location_updates option -> unit
