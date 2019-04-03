@@ -3680,7 +3680,7 @@ complete terms, as shown by the simple example below.
 
    as we need to explicitly provide the non-inferable argument ``F2``,
    which corresponds here to the term we want to obtain *after* the
-   rewriting step. In order to perform the rewrie step one has to
+   rewriting step. In order to perform the rewrite step one has to
    provide the term by hand as follows:
 
    .. coqtop:: all abort
@@ -3742,30 +3742,30 @@ The execution of the Ltac expression:
 involves the following steps:
 
 1. It performs a :n:`rewrite @term`
-   without failing like in the above example with ``eq_map``, but
-   creating evars (see :tacn:`evar`). If :n:`term` is prefixed by
-   a pattern or an occurrence selector, then the modifiers is honoured.
+   without failing like in the first example with ``rewrite eq_map.``,
+   but creating evars (see :tacn:`evar`). If :n:`term` is prefixed by
+   a pattern or an occurrence selector, then the modifiers are honoured.
 
 2. As a n-branches intro pattern is provided :tacn:`under` checks that
    n+1 subgoals have been created. The last one is the main subgoal,
    while the other ones correspond to premises of the rewrite rule (such as
    ``forall n, F1 n = F2 n`` for ``eq_map``).
 
-3. Then :tacn:`under` checks that the first n subgoals
+3. If so :tacn:`under` executes the corresponding
+   intro pattern :n:`@ipat__i` in each goal.
+
+4. Then :tacn:`under` checks that the first n subgoals
    are (quantified) equalities or double implications between a
    term and an evar (e.g. ``m - m = ?F2 m`` in the running example).
 
-4. If so :tacn:`under` executes the corresponding
-   intro pattern :n:`@ipat__i` in each goal.
-
-5. Then :tacn:`under` protects these n goals against an
-   accidental instantiation of the evar. These protected goals are displayed
-   using the ``Under[ … ]`` notation (e.g. ``Under[ m - m ]``
-   in the running example).
+5. If so :tacn:`under` protects these n goals against an
+   accidental instantiation of the evar.
+   These protected goals are displayed using the ``Under[ … ]``
+   notation (e.g. ``Under[ m - m ]`` in the running example).
 
 6. The expression inside the ``Under[ … ]`` notation can be
    proved equivalent to the desired expression
-   by using a regular tacn:`rewrite` tactic.
+   by using a regular :tacn:`rewrite` tactic.
 
 7. Interactive editing of the first n goals has to be signalled by
    using the :tacn:`over` tactic or rewrite rule (see below).
@@ -3787,17 +3787,12 @@ displayed as ``Under[ … ]``):
    :name: over
 
    This terminator tactic allows one to close goals of the form
-   ``'Under[ … ]`` or ``'Under_iff[ … ]``.
+   ``'Under[ … ]``.
 
 .. tacv:: by rewrite over
 
    This is a variant of :tacn:`over` in order to close ``Under[ … ]``
-   goals, relying on the ``over`` lemma.
-
-.. tacv:: by rewrite over_iff
-
-   This is a variant of :tacn:`over` in order to close ``Under_iff[ … ]``
-   goals, relying on the ``over_iff`` lemma.
+   goals, relying on the ``over`` rewrite rule.
 
 .. _under_one_liner:
 
@@ -3828,8 +3823,8 @@ Notes:
 
 + If the ``do`` clause is provided and the intro pattern is omitted,
   then the defeault :token:`i_item` ``*`` is applied to each branch.
-  Eg the Ltac expression
-  :n:`under @term do [ @tac__1 | … | @tac__n ]` is equivalent to
+  E.g., the Ltac expression:
+  :n:`under @term do [ @tac__1 | … | @tac__n ]` is equivalent to:
   :n:`under @term => [ * | … | * ] do [ @tac__1 | … | @tac__n ].`
 
 .. example::

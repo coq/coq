@@ -1,2 +1,4 @@
 'Under[ m - m ]
 (G (fun _ : nat => 0) n >= 0)
+'Under[ r = R0 \/ E r ]
+(Rbar_le Rbar0 (Lub_Rbar (fun r : R => r = R0 \/ E r)))

@@ -347,7 +347,7 @@ let intro_lock ipats =
                let sigma, under_iff =
                  Ssrcommon.mkSsrConst "Under_iff" env sigma in
                let sigma, under_from_iff =
-                 Ssrcommon.mkSsrConst "Under_from_iff" env sigma in
+                 Ssrcommon.mkSsrConst "Under_iff_from_iff" env sigma in
                let ty = EConstr.mkApp (under_iff,args) in
                let sigma, t = Evarutil.new_evar env sigma ty in
                sigma, EConstr.mkApp(under_from_iff,Array.append args [|t|]))
@@ -359,9 +359,9 @@ let intro_lock ipats =
             Array.length args = 3 && is_app_evar sigma args.(2) ->
               Tactics.New.refine ~typecheck:true (fun sigma ->
                 let sigma, under =
-                  Ssrcommon.mkSsrConst "Under" env sigma in
+                  Ssrcommon.mkSsrConst "Under_eq" env sigma in
                 let sigma, under_from_eq =
-                  Ssrcommon.mkSsrConst "Under_from_eq" env sigma in
+                  Ssrcommon.mkSsrConst "Under_eq_from_eq" env sigma in
                 let ty = EConstr.mkApp (under,args) in
                 let sigma, t = Evarutil.new_evar env sigma ty in
                 sigma, EConstr.mkApp(under_from_eq,Array.append args [|t|]))
