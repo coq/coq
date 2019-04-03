@@ -70,20 +70,20 @@ let classify x =
   | FP_nan -> NaN
 [@@ocaml.inline always]
 
-let mul x y = x *. y
-[@@ocaml.inline always]
+external mul : float -> float -> float = "coq_fmul_byte" "coq_fmul"
+[@@unboxed] [@@noalloc]
 
-let add x y = x +. y
-[@@ocaml.inline always]
+external add : float -> float -> float = "coq_fadd_byte" "coq_fadd"
+[@@unboxed] [@@noalloc]
 
-let sub x y = x -. y
-[@@ocaml.inline always]
+external sub : float -> float -> float = "coq_fsub_byte" "coq_fsub"
+[@@unboxed] [@@noalloc]
 
-let div x y = x /. y
-[@@ocaml.inline always]
+external div : float -> float -> float = "coq_fdiv_byte" "coq_fdiv"
+[@@unboxed] [@@noalloc]
 
-let sqrt x = sqrt x
-[@@ocaml.inline always]
+external sqrt : float -> float = "coq_fsqrt_byte" "coq_fsqrt"
+[@@unboxed] [@@noalloc]
 
 let of_int63 x = Uint63.to_float x
 [@@ocaml.inline always]
@@ -111,25 +111,11 @@ let frshiftexp f =
 let ldshiftexp f e = ldexp f (snd (Uint63.to_int2 e) - eshift)
 [@@ocaml.inline always]
 
-let eta_float = ldexp 1. (-1074) (* smallest positive float (subnormal) *)
+external next_up : float -> float = "coq_next_up_byte" "coq_next_up"
+[@@unboxed] [@@noalloc]
 
-let next_up f =
-  match classify_float f with
-  | FP_nan -> f
-  | FP_infinite -> if 0. < f then f else -.max_float
-  | FP_zero | FP_subnormal ->
-     let f = f +. eta_float in
-     if f = 0. then -0. else f (* or next_down may return -0. *)
-  | FP_normal ->
-     let f, e = frexp f in
-     if 0. < f || f <> -0.5 || e = -1021 then
-       ldexp (f +. epsilon_float /. 2.) e
-     else
-       ldexp (-0.5 +. epsilon_float /. 4.) e
-[@@ocaml.inline always]
-
-let next_down f = -.(next_up (-.f))
-[@@ocaml.inline always]
+external next_down : float -> float = "coq_next_down_byte" "coq_next_down"
+[@@unboxed] [@@noalloc]
 
 let equal f1 f2 =
   match classify_float f1 with
@@ -153,3 +139,13 @@ let total_compare f1 f2 =
 let is_float64 t =
   Obj.tag t = Obj.double_tag
 [@@ocaml.inline always]
+
+(*** Test at runtime that no harmful double rounding seems to
+   be performed with an intermediate 80 bits representation (x87). *)
+let () =
+  let b = ldexp 1. 53 in
+  let s = add 1. (ldexp 1. (-52)) in
+  if add b s <= b || add b 1. <> b then
+    failwith "Detected double rounding due to the use of intermediate \
+              80 bits floating-point representation. Use of Float is \
+              thus unsafe."

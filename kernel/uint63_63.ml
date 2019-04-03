@@ -27,8 +27,13 @@ let to_int2 i = (0,i)
 
 let of_int64 _i = assert false
 
+let to_int_saturate i = i
+
 let of_float = int_of_float
-let to_float i = Int64.to_float (to_uint64 i)
+
+external to_float : int -> (float [@unboxed])
+  = "coq_uint63_to_float_byte" "coq_uint63_to_float"
+[@@noalloc]
 
 let hash i = i
 [@@ocaml.inline always]

@@ -20,6 +20,7 @@ val of_int64 : Int64.t -> t
 (*
 val of_uint : int -> t
 *)
+val to_int_saturate : t -> int (* maxuint31 in case of overflow *)
 
       (* conversion to float *)
 val of_float : float -> t

@@ -1,3 +1,5 @@
+(* TODO add tests for ldexp (particularly with overflow with 31 and 63 bits integers) *)
+
 Require Import ZArith Floats.
 
 Definition denorm := Eval compute in ldexp one (-1074)%Z.

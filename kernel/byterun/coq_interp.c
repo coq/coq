@@ -23,6 +23,7 @@
 #include "coq_fix_code.h"
 #include "coq_memory.h" 
 #include "coq_values.h" 
+#include "coq_float64.h"
 
 #ifdef ARCH_SIXTYFOUR
 #include "coq_uint63_native.h"
@@ -1593,42 +1594,42 @@ value coq_interprete
       Instruct (CHECKADDFLOAT) {
         print_instr("CHECKADDFLOAT");
         CheckFloat2();
-        Coq_copy_double(Double_val(accu) + Double_val(*sp++));
+        Coq_copy_double(coq_fadd(Double_val(accu), Double_val(*sp++)));
         Next;
       }
 
       Instruct (CHECKSUBFLOAT) {
         print_instr("CHECKSUBFLOAT");
         CheckFloat2();
-        Coq_copy_double(Double_val(accu) - Double_val(*sp++));
+        Coq_copy_double(coq_fsub(Double_val(accu), Double_val(*sp++)));
         Next;
       }
 
       Instruct (CHECKMULFLOAT) {
         print_instr("CHECKMULFLOAT");
         CheckFloat2();
-        Coq_copy_double(Double_val(accu) * Double_val(*sp++));
+        Coq_copy_double(coq_fmul(Double_val(accu), Double_val(*sp++)));
         Next;
       }
 
       Instruct (CHECKDIVFLOAT) {
         print_instr("CHECKDIVFLOAT");
         CheckFloat2();
-        Coq_copy_double(Double_val(accu) / Double_val(*sp++));
+        Coq_copy_double(coq_fdiv(Double_val(accu), Double_val(*sp++)));
         Next;
       }
 
       Instruct (CHECKSQRTFLOAT) {
         print_instr("CHECKSQRTFLOAT");
         CheckFloat1();
-        Coq_copy_double(sqrt(Double_val(accu)));
+        Coq_copy_double(coq_fsqrt(Double_val(accu)));
         Next;
       }
 
       Instruct (CHECKFLOATOFINT63) {
         print_instr("CHECKFLOATOFINT63");
         CheckInt1();
-        Coq_copy_double(uint63_to_double(accu));
+        Uint63_to_double(accu);
         Next;
       }
 
@@ -1638,10 +1639,10 @@ value coq_interprete
         CheckFloat1();
         f = fabs(Double_val(accu));
         if (f >= 0.5 && f < 1) {
-          accu = uint63_of_double(ldexp(f, DBL_MANT_DIG));
+          Uint63_of_double(ldexp(f, DBL_MANT_DIG));
         }
         else {
-          accu = Val_int(0);
+          Uint63_of_int(Val_int(0));
         }
         Next;
       }
@@ -1660,31 +1661,39 @@ value coq_interprete
         }
         Coq_copy_double(f);
         *--sp = accu;
+#ifdef ARCH_SIXTYFOUR
         Alloc_small(accu, 2, coq_tag_pair);
-        Field(accu, 0) = *sp++;
         Field(accu, 1) = Val_int(exp);
+#else
+        Uint63_of_int(Val_int(exp));
+        *--sp = accu;
+        Alloc_small(accu, 2, coq_tag_pair);
+        Field(accu, 1) = *sp++;
+#endif
+        Field(accu, 0) = *sp++;
         Next;
       }
 
       Instruct (CHECKLDSHIFTEXP) {
         print_instr("CHECKLDSHIFTEXP");
         CheckPrimArgs(Is_double(accu) && Is_uint63(sp[0]), apply2);
-        Coq_copy_double(ldexp(Double_val(accu),
-                              uint63_of_value(*sp++) - FLOAT_EXP_SHIFT));
+        Swap_accu_sp;
+        Int_of_uint63(accu);
+        Coq_copy_double(ldexp(Double_val(*sp++), accu - FLOAT_EXP_SHIFT));
         Next;
       }
 
       Instruct (CHECKNEXTUPFLOAT) {
         print_instr("CHECKNEXTUPFLOAT");
         CheckFloat1();
-        Coq_copy_double(nextafter(Double_val(accu), INFINITY));
+        Coq_copy_double(coq_next_up(Double_val(accu)));
         Next;
       }
 
       Instruct (CHECKNEXTDOWNFLOAT) {
         print_instr("CHECKNEXTDOWNFLOAT");
         CheckFloat1();
-        Coq_copy_double(nextafter(Double_val(accu), -INFINITY));
+        Coq_copy_double(coq_next_down(Double_val(accu)));
         Next;
       }
 

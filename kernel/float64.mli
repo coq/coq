@@ -46,19 +46,14 @@ val classify : t -> float_class
 [@@ocaml.inline always]
 
 val mul : t -> t -> t
-[@@ocaml.inline always]
 
 val add : t -> t -> t
-[@@ocaml.inline always]
 
 val sub : t -> t -> t
-[@@ocaml.inline always]
 
 val div : t -> t -> t
-[@@ocaml.inline always]
 
 val sqrt : t -> t
-[@@ocaml.inline always]
 
 (** Link with integers *)
 val of_int63 : Uint63.t -> t
@@ -77,10 +72,8 @@ val ldshiftexp : t -> Uint63.t -> t
 [@@ocaml.inline always]
 
 val next_up : t -> t
-[@@ocaml.inline always]
 
 val next_down : t -> t
-[@@ocaml.inline always]
 
 (** Return true if two floats are equal.
  * All NaN values are considered equal. *)
