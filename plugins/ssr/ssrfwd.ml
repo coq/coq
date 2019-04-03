@@ -331,7 +331,15 @@ let is_app_evar sigma t =
       | _ -> false end
   | _ -> false
 
+let rec ncons n e = match n with
+  | 0 -> []
+  | n when n > 0 -> e :: ncons (n - 1) e
+  | _ -> failwith "ncons"
+
 let intro_lock ipats =
+  let hnf' = Proofview.numgoals >>= fun ng ->
+             Proofview.tclDISPATCH
+               (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
   let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
     Proofview.tclORELSE
       (Ssripats.tclIPAT [Ssripats.IOpTemporay; Ssripats.IOpEqGen (lock_eq ())])
@@ -372,7 +380,7 @@ let intro_lock ipats =
        end)
     end
   in
-  Ssripats.tclIPATssr ipats <*> lock_eq ()
+  hnf' <*> Ssripats.tclIPATssr ipats <*> lock_eq ()
 
 let pretty_rename evar_map term varnames =
   let rec aux term vars =
@@ -405,11 +413,6 @@ let check_numgoals ?(minus = 0) nh =
     CErrors.user_err errmsg
   else
     Proofview.tclUNIT ()
-
-let rec ncons n e = match n with
-  | 0 -> []
-  | n when n > 0 -> e :: ncons (n - 1) e
-  | _ -> failwith "ncons"
 
 let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
 

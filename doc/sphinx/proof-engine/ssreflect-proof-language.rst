@@ -3733,7 +3733,7 @@ Let us redo the running example in interactive mode.
       Lemma example_map l : sumlist (map (fun m => m - m) l) = 0.
       under eq_map => m.
         rewrite subnn.
-        by over.
+        over.
 
 The execution of the Ltac expression:
 
@@ -3751,8 +3751,9 @@ involves the following steps:
    while the other ones correspond to premises of the rewrite rule (such as
    ``forall n, F1 n = F2 n`` for ``eq_map``).
 
-3. If so :tacn:`under` executes the corresponding
-   intro pattern :n:`@ipat__i` in each goal.
+3. If so :tacn:`under` puts these n goals in head normal form (using
+   the defective form of the tactic :tacn:`move`), then executes
+   the corresponding intro pattern :n:`@ipat__i` in each goal.
 
 4. Then :tacn:`under` checks that the first n subgoals
    are (quantified) equalities or double implications between a
@@ -3805,7 +3806,7 @@ The Ltac expression:
 
 can be seen as a shorter form for the following expression:
 
-:n:`under @term => [ @i_item__1 | … | @i_item__n | ]; [ @tac__1; over | … | @tac__n; over | cbv beta iota ].`
+:n:`(under @term) => [ @i_item__1 | … | @i_item__n | ]; [ @tac__1; over | … | @tac__n; over | cbv beta iota ].`
 
 Notes:
 
@@ -3822,10 +3823,12 @@ Notes:
   preferred.
 
 + If the ``do`` clause is provided and the intro pattern is omitted,
-  then the defeault :token:`i_item` ``*`` is applied to each branch.
+  then the default :token:`i_item` ``*`` is applied to each branch.
   E.g., the Ltac expression:
   :n:`under @term do [ @tac__1 | … | @tac__n ]` is equivalent to:
-  :n:`under @term => [ * | … | * ] do [ @tac__1 | … | @tac__n ].`
+  :n:`under @term => [ * | … | * ] do [ @tac__1 | … | @tac__n ]`
+  (and it can be noted here that the :tacn:`under` tactic performs a
+  ``move.`` before processing the intro patterns ``=> [ * | … | * ]``).
 
 .. example::
 

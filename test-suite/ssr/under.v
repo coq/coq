@@ -90,7 +90,7 @@ under eq_bigr => i Hi.
   under eq_big => [j|j Hj].
   { rewrite muln1. over. }
   { rewrite addnC. over. }
-(* MISSING BETA *)
+  simpl. (* or: cbv beta. *)
   over.
 by [].
 Qed.
@@ -134,7 +134,7 @@ Lemma test_big_2cond_all_implied (F : nat -> nat) (m : nat) :
   \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
 Proof.
 (* in one-liner mode *)
-under eq_big do [move=> ? (* due to delta-head-cst *); rewrite addnC
+under eq_big do [rewrite addnC
                 |rewrite addnC].
 (* amounts to [under eq_big => [*|*] do [...|...]] *)
 done.
