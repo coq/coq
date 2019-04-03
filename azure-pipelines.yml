@@ -74,5 +74,5 @@ jobs:
 
   - script: |
       eval $(opam env)
-      make -j "$NJOBS" test-suite
+      make -j "$NJOBS" test-suite PRINT_LOGS=1
     displayName: 'Run Coq Test Suite'
