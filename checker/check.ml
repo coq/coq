@@ -56,7 +56,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
-  library_opaques : seg_proofs;
+  library_opaques : seg_proofs option;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t }
@@ -292,6 +292,8 @@ let name_clash_message dir mdir f =
   pr_dirpath mdir ++ spc () ++ str "and not library" ++ spc() ++
   pr_dirpath dir
 
+type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = dependency of norec *)
+
 (* Dependency graph *)
 let depgraph = ref LibraryMap.empty
 
@@ -304,18 +306,40 @@ let marshal_in_segment f ch =
   with _ ->
     user_err (str "Corrupted file " ++ quote (str f))
 
-let intern_from_file (dir, f) =
+let skip_in_segment f ch =
+  try
+    let stop = (input_binary_int ch : int) in
+    seek_in ch stop;
+    let digest = Digest.input ch in
+    stop, digest
+  with _ ->
+    user_err (str "Corrupted file " ++ quote (str f))
+
+let marshal_or_skip ~intern_mode f ch =
+  if intern_mode <> Dep then
+    let v, pos, digest = marshal_in_segment f ch in
+    Some v, pos, digest
+  else
+    let pos, digest = skip_in_segment f ch in
+    None, pos, digest
+
+let intern_from_file ~intern_mode (dir, f) =
+  let validate a b c = if intern_mode <> Dep then Validate.validate a b c in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
+      let marshal_in_segment f ch = if intern_mode <> Dep
+        then marshal_in_segment f ch
+        else System.marshal_in_segment f ch
+      in
       let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
       let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
       let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
-      let (table:seg_proofs), pos, checksum =
-        marshal_in_segment f ch in
+      let (table:seg_proofs option), pos, checksum =
+        marshal_or_skip ~intern_mode f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
@@ -334,12 +358,12 @@ let intern_from_file (dir, f) =
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
-      Validate.validate !Flags.debug Values.v_univopaques opaque_csts;
+      validate !Flags.debug Values.v_univopaques opaque_csts;
       end;
       (* Verification of the unmarshalled values *)
-      Validate.validate !Flags.debug Values.v_libsum sd;
-      Validate.validate !Flags.debug Values.v_lib md;
-      Validate.validate !Flags.debug Values.v_opaques table;
+      validate !Flags.debug Values.v_libsum sd;
+      validate !Flags.debug Values.v_lib md;
+      validate !Flags.debug Values.(Opt v_opaques) table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
         if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)
@@ -347,7 +371,7 @@ let intern_from_file (dir, f) =
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
-  opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
+  Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
   Option.iter (fun (opaque_csts,_,_) ->
     opaque_univ_tables :=
       LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
@@ -365,7 +389,7 @@ let get_deps (dir, f) =
 
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)
-let rec intern_library seen (dir, f) needed =
+let rec intern_library ~intern_mode seen (dir, f) needed =
   if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
   (* Look if in the current logical environment *)
   try let _ = find_library dir in needed
@@ -374,12 +398,13 @@ let rec intern_library seen (dir, f) needed =
   if List.mem_assoc_f DirPath.equal dir needed then needed
   else
     (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-    let m = intern_from_file (dir,f) in
+    let m = intern_from_file ~intern_mode (dir,f) in
     let seen' = LibrarySet.add dir seen in
     let deps =
       Array.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps
     in
-    (dir,m) :: Array.fold_right (intern_library seen') deps needed
+    let intern_mode = match intern_mode with Rec -> Rec | Root | Dep -> Dep in
+    (dir,m) :: Array.fold_right (intern_library ~intern_mode seen') deps needed
 
 (* Compute the reflexive transitive dependency closure *)
 let rec fold_deps seen ff (dir,f) (s,acc) =
@@ -402,8 +427,9 @@ let recheck_library senv ~norec ~admit ~check =
   let ml = List.map try_locate_qualified_library check in
   let nrl = List.map try_locate_qualified_library norec in
   let al =  List.map try_locate_qualified_library admit in
-  let needed = List.rev
-    (List.fold_right (intern_library LibrarySet.empty) (ml@nrl) []) in
+  let needed = List.fold_right (intern_library ~intern_mode:Rec LibrarySet.empty) ml [] in
+  let needed = List.fold_right (intern_library ~intern_mode:Root LibrarySet.empty) nrl needed in
+  let needed = List.rev needed in
   (* first compute the closure of norec, remove closure of check,
      add closure of admit, and finally remove norec and check *)
   let nochk = fold_deps_list LibrarySet.add nrl LibrarySet.empty in
