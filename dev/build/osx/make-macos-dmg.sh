@@ -4,7 +4,6 @@
 set -e
 
 # Configuration setup
-OUTDIR=$PWD/_install
 DMGDIR=$PWD/_dmg
 VERSION=$(sed -n -e '/^let coq_version/ s/^[^"]*"\([^"]*\)"$/\1/p' configure.ml)
 APP=bin/CoqIDE_${VERSION}.app
@@ -13,7 +12,7 @@ APP=bin/CoqIDE_${VERSION}.app
 make PRIVATEBINARIES="$APP" -j "$NJOBS" -l2 "$APP"
 
 # Add Coq to the .app file
-make OLDROOT="$OUTDIR" COQINSTALLPREFIX="$APP/Contents/Resources/" install-coq install-ide-toploop
+make OLDROOT="$OUTDIR" COQINSTALLPREFIX="$APP/Contents/Resources" install-coq install-ide-toploop
 
 # Create the dmg bundle
 mkdir -p "$DMGDIR"
