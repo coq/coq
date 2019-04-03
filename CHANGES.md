@@ -84,6 +84,14 @@ Notations
   constant `Nat.gcd` in the parameter-argument of `eq_refl`).  See
   #9840 for more details.
 
+- Deprecated compatibility notations have actually been removed.  Uses
+  of these notations are generally easy to fix thanks to the hint
+  contained in the deprecation warnings. For projects that require
+  more than a handful of such fixes, there is [a
+  script](https://gist.github.com/JasonGross/9770653967de3679d131c59d42de6d17#file-replace-notations-py)
+  that will do it automatically, using the output of coqc. The script
+  contains documentation on its usage in a comment at the top.
+
 Plugins
 
 - The quote plugin (https://coq.inria.fr/distrib/V8.8.1/refman/proof-engine/detailed-tactic-examples.html#quote)
