@@ -222,7 +222,12 @@ and nf_type_sort env sigma v =
   match kind_of_value v with
   | Vaccu accu -> 
       let t,s = nf_accu_type env sigma accu in
-      let s = try destSort s with DestKO -> assert false in
+      let s =
+        try
+          destSort (whd_all env s)
+        with DestKO ->
+          CErrors.anomaly (Pp.str "Value should be a sort")
+      in
       t, s
   | _ -> assert false
 
