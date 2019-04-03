@@ -75,6 +75,10 @@ let by tac pf =
   let proof, res = Pfedit.by tac pf.proof in
   { pf with proof }, res
 
+(************************************************************************)
+(* Creating a lemma-like constant                                       *)
+(************************************************************************)
+
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm uctx = function
@@ -198,37 +202,6 @@ let look_for_possibly_mutual_statements sigma = function
     Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
   | [] -> anomaly (Pp.str "Empty list of theorems.")
 
-(* Saving a goal *)
-let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes =
-  let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
-  try
-    let const = adjust_guardness_conditions const do_guard in
-    let k = Kindops.logical_kind_of_goal_kind kind in
-    let should_suggest = const.const_entry_opaque && Option.is_empty const.const_entry_secctx in
-    let r = match locality with
-      | Discharge ->
-          let c = SectionLocalDef const in
-          let _ = declare_variable id (Lib.cwd(), c, k) in
-          let () = if should_suggest
-            then Proof_using.suggest_variable (Global.env ()) id
-          in
-          VarRef id
-      | Global local ->
-          let kn =
-           declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
-          let () = if should_suggest
-            then Proof_using.suggest_constant (Global.env ()) kn
-          in
-          let gr = ConstRef kn in
-          Declare.declare_univ_binders gr (UState.universe_binders uctx);
-          gr
-    in
-    definition_message id;
-    DeclareDef.Hook.call ~fix_exn ?hook universes [] locality r
-  with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    iraise (fix_exn e)
-
 let default_thm_id = Id.of_string "Unnamed_thm"
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
@@ -284,47 +257,6 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
 	in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (ConstRef kn,imps)
-
-let check_anonymity id save_ident =
-  if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
-    user_err Pp.(str "This command can only be used for unnamed theorem.")
-
-(* Admitted *)
-let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
-                   (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
-                                spc () ++ strbrk "declared as a local axiom.")
-
-let admit ?hook ctx (id,k,e) pl () =
-  let local = match k with
-  | Global local, _, _ -> local
-  | Discharge, _, _ -> warn_let_as_axiom id; ImportNeedQualified
-  in
-  let kn = declare_constant id ~local (ParameterEntry e, IsAssumption Conjectural) in
-  let () = assumption_message id in
-  Declare.declare_univ_binders (ConstRef kn) pl;
-  DeclareDef.Hook.call ?hook ctx [] (Global local) (ConstRef kn)
-
-let finish_admitted id k pe ctx hook =
-  let () = admit ?hook ctx (id,k,pe) (UState.universe_binders ctx) () in
-  Feedback.feedback Feedback.AddedAxiom
-
-let finish_proved opaque idopt po hook compute_guard =
-  let open Proof_global in
-  match po with
-  | { id; entries=[const]; persistence; universes } ->
-    let is_opaque, export_seff = match opaque with
-      | Transparent -> false, true
-      | Opaque      -> true, false
-    in
-    assert (is_opaque == const.const_entry_opaque);
-    let id = match idopt with
-      | None -> id
-      | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    let () = save ~export_seff id const universes compute_guard persistence hook universes in
-    ()
-  | _ ->
-    CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -469,7 +401,31 @@ let start_lemma_com ~program_mode ?inference_hook ?hook kind thms =
   in
   start_lemma_with_initialization ?hook kind evd decl recguard thms snl
 
-(* Saving a proof *)
+(************************************************************************)
+(* Admitting a lemma-like constant                                      *)
+(************************************************************************)
+
+let check_anonymity id save_ident =
+  if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
+    user_err Pp.(str "This command can only be used for unnamed theorem.")
+
+(* Admitted *)
+let warn_let_as_axiom =
+  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
+                   (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
+                                spc () ++ strbrk "declared as an axiom.")
+
+let finish_admitted id k pe ctx hook =
+  let local = match k with
+  | Global local, _, _ -> local
+  | Discharge, _, _ -> warn_let_as_axiom id; ImportNeedQualified
+  in
+  let kn = declare_constant id ~local (ParameterEntry pe, IsAssumption Conjectural) in
+  let () = assumption_message id in
+  Declare.declare_univ_binders (ConstRef kn) (UState.universe_binders ctx);
+  DeclareDef.Hook.call ?hook ctx [] (Global local) (ConstRef kn);
+  Feedback.feedback Feedback.AddedAxiom
+
 let get_keep_admitted_vars =
   Goptions.declare_bool_option_and_ref
     ~depr:false
@@ -527,12 +483,52 @@ type proof_info = DeclareDef.Hook.t option * lemma_possible_guards * Proof_endin
 
 let default_info = None, [], CEphemeron.create Proof_ending.Regular
 
-let finish_derive ~f ~name ~idopt ~opaque ~entries =
-  (* Extracts the relevant information from the proof. [Admitted] and
-     [Save] result in user errors. [opaque] is [true] if the proof was
-     concluded by [Qed], and [false] if [Defined]. [f_def] and
-     [lemma_def] correspond to the proof of [f] and of [suchthat],
-     respectively. *)
+let finish_proved opaque idopt po hook compute_guard =
+  let open Proof_global in
+  match po with
+  | { id; entries=[const]; persistence=locality,poly,kind; universes } ->
+    let is_opaque, export_seff = match opaque with
+      | Transparent -> false, true
+      | Opaque      -> true, false
+    in
+    assert (is_opaque == const.const_entry_opaque);
+    let id = match idopt with
+      | None -> id
+      | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
+    let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
+    let () = try
+      let const = adjust_guardness_conditions const compute_guard in
+      let k = Kindops.logical_kind_of_goal_kind kind in
+      let should_suggest = const.const_entry_opaque && Option.is_empty const.const_entry_secctx in
+      let r = match locality with
+        | Discharge ->
+          let c = SectionLocalDef const in
+          let _ = declare_variable id (Lib.cwd(), c, k) in
+          let () = if should_suggest
+            then Proof_using.suggest_variable (Global.env ()) id
+          in
+          VarRef id
+        | Global local ->
+          let kn =
+            declare_constant ~export_seff id ~local (DefinitionEntry const, k) in
+          let () = if should_suggest
+            then Proof_using.suggest_constant (Global.env ()) kn
+          in
+          let gr = ConstRef kn in
+          Declare.declare_univ_binders gr (UState.universe_binders universes);
+          gr
+      in
+      definition_message id;
+      DeclareDef.Hook.call ~fix_exn ?hook universes [] locality r
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
+      iraise (fix_exn e)
+    in ()
+  | _ ->
+    CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
+
+let finish_derived ~f ~name ~idopt ~opaque ~entries =
+  (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
 
   if Option.has_some idopt then
     CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.");
@@ -599,4 +595,4 @@ let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   | End_obligation oinfo ->
     DeclareObl.obligation_terminator opaque proof_obj.entries proof_obj.universes oinfo
   | End_derive { f ; name } ->
-    finish_derive ~f ~name ~idopt ~opaque ~entries:proof_obj.entries
+    finish_derived ~f ~name ~idopt ~opaque ~entries:proof_obj.entries
