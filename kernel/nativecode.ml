@@ -1958,7 +1958,7 @@ let compile_mind mb mind stack =
       let cargs = Array.init arity
         (fun i -> if Int.equal i proj_arg then Some ci_uid else None)
       in
-      let i = push_symbol (SymbProj (ind, j)) in
+      let i = push_symbol (SymbProj (ind, proj_arg)) in
       let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
       let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[((ind,1),cargs)],MLlocal ci_uid|]) in
