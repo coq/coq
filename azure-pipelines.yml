@@ -50,6 +50,7 @@ jobs:
       set -e
       brew update
       brew install gnu-time opam pkg-config gtksourceview3
+      pip3 install macpack
     displayName: 'Install system dependencies'
 
   - script: |
@@ -71,7 +72,7 @@ jobs:
       set -e
 
       eval $(opam env)
-      ./configure -local -warn-error yes -native-compiler no -coqide opt
+      ./configure -prefix '$(Build.BinariesDirectory)' -warn-error yes -native-compiler no -coqide opt
       make -j "$NJOBS"
     displayName: 'Build Coq'
 
@@ -79,3 +80,22 @@ jobs:
       eval $(opam env)
       make -j "$NJOBS" test-suite PRINT_LOGS=1
     displayName: 'Run Coq Test Suite'
+
+  - script: |
+      make install
+    displayName: 'Install Coq'
+
+  - script: |
+      set -e
+      eval $(opam env)
+      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
+      ./dev/build/osx/make-macos-dmg.sh
+      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
+    displayName: 'Create the dmg bundle'
+    env:
+      OUTDIR: '$(Build.BinariesDirectory)'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: coq-macOS-installer
