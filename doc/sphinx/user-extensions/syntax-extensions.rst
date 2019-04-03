@@ -1522,9 +1522,9 @@ Numeral notations
    .. exn:: Unexpected term @term while parsing a numeral notation.
 
      Parsing functions must always return ground terms, made up of
-     applications of constructors and inductive types.  Parsing
-     functions may not return terms containing axioms, bare
-     (co)fixpoints, lambdas, etc.
+     applications of constructors, inductive types, and primitive
+     integers.  Parsing functions may not return terms containing
+     axioms, bare (co)fixpoints, lambdas, etc.
 
    .. exn:: Unexpected non-option term @term while parsing a numeral notation.
 
@@ -1650,9 +1650,9 @@ String notations
    .. exn:: Unexpected term @term while parsing a string notation.
 
      Parsing functions must always return ground terms, made up of
-     applications of constructors and inductive types.  Parsing
-     functions may not return terms containing axioms, bare
-     (co)fixpoints, lambdas, etc.
+     applications of constructors, inductive types, and primitive
+     integers.  Parsing functions may not return terms containing
+     axioms, bare (co)fixpoints, lambdas, etc.
 
    .. exn:: Unexpected non-option term @term while parsing a string notation.
 
