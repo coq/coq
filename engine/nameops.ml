@@ -13,6 +13,51 @@ open Names
 
 (* Utilities *)
 
+module Subscript =
+struct
+
+type t = {
+  ss_zero : int;
+  (** Number of leading zeros of the subscript *)
+  ss_subs : int;
+  (** Digital value of the subscript, zero meaning empty *)
+}
+
+let rec overflow n =
+  Int.equal (n mod 10) 9 && (Int.equal (n / 10) 0 || overflow (n / 10))
+
+let zero = { ss_subs = 0; ss_zero = 0 }
+
+let succ s =
+  if Int.equal s.ss_subs 0 then
+    if Int.equal s.ss_zero 0 then
+      (* [] -> [0] *)
+      { ss_zero = 1; ss_subs = 0 }
+    else
+      (* [0...00] -> [0..01] *)
+      { ss_zero = s.ss_zero - 1; ss_subs = 1 }
+  else if overflow s.ss_subs then
+    if Int.equal s.ss_zero 0 then
+      (* [9...9] -> [10...0] *)
+      { ss_zero = 0; ss_subs = 1 + s.ss_subs }
+    else
+      (* [0...009...9] -> [0...010...0] *)
+      { ss_zero = s.ss_zero - 1; ss_subs = 1 + s.ss_subs }
+  else
+    (* [0...0n] -> [0...0{n+1}] *)
+    { ss_zero = s.ss_zero; ss_subs = s.ss_subs + 1 }
+
+let equal s1 s2 =
+  Int.equal s1.ss_zero s2.ss_zero && Int.equal s1.ss_subs s2.ss_subs
+
+let compare s1 s2 =
+  (* Lexicographic order is reversed in order to ensure that [succ] is strictly
+      increasing. *)
+  let c = Int.compare s1.ss_subs s2.ss_subs in
+  if Int.equal c 0 then Int.compare s1.ss_zero s2.ss_zero else c
+
+end
+
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
 
@@ -103,6 +148,46 @@ let increment_subscript id =
 let has_subscript id =
   let id = Id.to_string id in
   is_digit (id.[String.length id - 1])
+
+let get_subscript id =
+  let id0 = id in
+  let id = Id.to_string id in
+  let len = String.length id in
+  let rec get_suf accu pos =
+    if pos < 0 then (pos, accu)
+    else
+      let c = id.[pos] in
+      if is_digit c then get_suf (Char.code c - Char.code '0' :: accu) (pos - 1)
+      else (pos, accu)
+  in
+  let (pos, suf) = get_suf [] (len - 1) in
+  if Int.equal pos (len - 1) then (id0, Subscript.zero)
+  else
+    let id = String.sub id 0 (pos + 1) in
+    let rec compute_zeros accu = function
+    | [] -> (accu, [])
+    | 0 :: l -> compute_zeros (succ accu) l
+    | _ :: _ as l -> (accu, l)
+    in
+    let (ss_zero, suf) = compute_zeros 0 suf in
+    let rec compute_suf accu = function
+    | [] -> accu
+    | n :: l -> compute_suf (10 * accu + n) l
+    in
+    let ss_subs = compute_suf 0 suf in
+    (Id.of_string id, { Subscript.ss_subs; ss_zero; })
+
+let add_subscript id ss =
+  if Subscript.equal Subscript.zero ss then id
+  else if Int.equal ss.Subscript.ss_subs 0 then
+    let id = Id.to_string id in
+    let pad = String.make ss.Subscript.ss_zero '0' in
+    Id.of_string (Printf.sprintf "%s%s" id pad)
+  else
+    let id = Id.to_string id in
+    let pad = String.make ss.Subscript.ss_zero '0' in
+    let suf = ss.Subscript.ss_subs in
+    Id.of_string (Printf.sprintf "%s%s%i" id pad suf)
 
 let forget_subscript id =
   let numstart = cut_ident false id in

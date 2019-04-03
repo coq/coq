@@ -510,6 +510,20 @@ Requests to the environment
 
 .. seealso:: Section :ref:`locating-notations`
 
+.. _printing-flags:
+
+Printing flags
+-------------------------------
+
+.. flag:: Fast Name Printing
+
+   When turned on, |Coq| uses an asymptotically faster algorithm for the
+   generation of unambiguous names of bound variables while printing terms.
+   While faster, it is also less clever and results in a typically less elegant
+   display, e.g. it will generate more names rather than reusing certain names
+   across subterms. This flag is not enabled by default, because as Ltac
+   observes bound names, turning it on can break existing proof scripts.
+
 
 .. _loading-files:
 

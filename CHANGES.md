@@ -183,6 +183,10 @@ Vernacular commands
 - `Coercion` does not warn ambiguous paths which are obviously convertible with
   existing ones.
 
+- A new flag `Fast Name Printing` has been introduced. It changes the
+  algorithm used for allocating bound variable names for a faster but less
+  clever one.
+
 Tools
 
 - The `-native-compiler` flag of `coqc` and `coqtop` now takes an argument which can have three values:
