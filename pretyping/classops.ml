@@ -15,7 +15,6 @@ open Names
 open Constr
 open Libnames
 open Globnames
-open Libobject
 open Mod_subst
 
 (* usage qque peu general: utilise aussi dans record *)
@@ -374,6 +373,17 @@ type coercion = {
   coercion_params : int;
 }
 
+let subst_coercion subst c =
+  let coe = subst_coe_typ subst c.coercion_type in
+  let cls = subst_cl_typ subst c.coercion_source in
+  let clt = subst_cl_typ subst c.coercion_target in
+  let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
+  if c.coercion_type == coe && c.coercion_source == cls &&
+     c.coercion_target == clt && c.coercion_is_proj == clp
+  then c
+  else { c with coercion_type = coe; coercion_source = cls;
+                coercion_target = clt; coercion_is_proj = clp; }
+
 (* Computation of the class arity *)
 
 let reference_arity_length ref =
@@ -396,7 +406,7 @@ let class_params = function
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
 
-let cache_coercion (_, c) =
+let declare_coercion c =
   let () = add_class c.coercion_source in
   let () = add_class c.coercion_target in
   let is, _ = class_info c.coercion_source in
@@ -410,64 +420,6 @@ let cache_coercion (_, c) =
     } in
   let () = add_new_coercion c.coercion_type xf in
   add_coercion_in_graph (xf,is,it)
-
-let open_coercion i o =
-  if Int.equal i 1 then
-    cache_coercion o
-
-let subst_coercion (subst, c) =
-  let coe = subst_coe_typ subst c.coercion_type in
-  let cls = subst_cl_typ subst c.coercion_source in
-  let clt = subst_cl_typ subst c.coercion_target in
-  let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
-  if c.coercion_type == coe && c.coercion_source == cls &&
-     c.coercion_target == clt && c.coercion_is_proj == clp
-  then c
-  else { c with coercion_type = coe; coercion_source = cls;
-                coercion_target = clt; coercion_is_proj = clp; }
-
-let discharge_coercion (_, c) =
-  if c.coercion_local then None
-  else
-    let n =
-      try
-        let ins = Lib.section_instance c.coercion_type in
-        Array.length (snd ins)
-      with Not_found -> 0
-    in
-    let nc = { c with
-      coercion_params = n + c.coercion_params;
-      coercion_is_proj = Option.map Lib.discharge_proj_repr c.coercion_is_proj;
-    } in
-    Some nc
-
-let classify_coercion obj =
-  if obj.coercion_local then Dispose else Substitute obj
-
-let inCoercion : coercion -> obj =
-  declare_object {(default_object "COERCION") with
-    open_function = open_coercion;
-    cache_function = cache_coercion;
-    subst_function = subst_coercion;
-    classify_function = classify_coercion;
-    discharge_function = discharge_coercion }
-
-let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
-  let isproj = 
-    match coef with
-    | ConstRef c -> Recordops.find_primitive_projection c
-    | _ -> None
-  in
-  let c = {
-    coercion_type = coef;
-    coercion_local = local;
-    coercion_is_id = isid;
-    coercion_is_proj = isproj;
-    coercion_source = cls;
-    coercion_target = clt;
-    coercion_params = ps;
-  } in
-  Lib.add_anonymous_leaf (inCoercion c)
 
 (* For printing purpose *)
 let pr_cl_index = Bijint.Index.print

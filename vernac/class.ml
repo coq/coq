@@ -23,6 +23,7 @@ open Classops
 open Declare
 open Globnames
 open Decl_kinds
+open Libobject
 
 let strength_min l = if List.mem `LOCAL l then `LOCAL else `GLOBAL
 
@@ -229,6 +230,56 @@ let build_id_coercion idf_opt source poly =
 let check_source = function
 | Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
 | _ -> ()
+
+let cache_coercion (_,c) =
+  Classops.declare_coercion c
+
+let open_coercion i o =
+  if Int.equal i 1 then
+    cache_coercion o
+
+let discharge_coercion (_, c) =
+  if c.coercion_local then None
+  else
+    let n =
+      try
+        let ins = Lib.section_instance c.coercion_type in
+        Array.length (snd ins)
+      with Not_found -> 0
+    in
+    let nc = { c with
+      coercion_params = n + c.coercion_params;
+      coercion_is_proj = Option.map Lib.discharge_proj_repr c.coercion_is_proj;
+    } in
+    Some nc
+
+let classify_coercion obj =
+  if obj.coercion_local then Dispose else Substitute obj
+
+let inCoercion : coercion -> obj =
+  declare_object {(default_object "COERCION") with
+    open_function = open_coercion;
+    cache_function = cache_coercion;
+    subst_function = (fun (subst,c) -> subst_coercion subst c);
+    classify_function = classify_coercion;
+    discharge_function = discharge_coercion }
+
+let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
+  let isproj =
+    match coef with
+    | ConstRef c -> Recordops.find_primitive_projection c
+    | _ -> None
+  in
+  let c = {
+    coercion_type = coef;
+    coercion_local = local;
+    coercion_is_id = isid;
+    coercion_is_proj = isproj;
+    coercion_source = cls;
+    coercion_target = clt;
+    coercion_params = ps;
+  } in
+  Lib.add_anonymous_leaf (inCoercion c)
 
 (*
 nom de la fonction coercion
