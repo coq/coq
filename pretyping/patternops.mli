@@ -21,7 +21,7 @@ val constr_pattern_eq : constr_pattern -> constr_pattern -> bool
 
 val occur_meta_pattern : constr_pattern -> bool
 
-val subst_pattern : substitution -> constr_pattern -> constr_pattern
+val subst_pattern : Environ.env -> substitution -> constr_pattern -> constr_pattern
 
 val noccurn_pattern : int -> constr_pattern -> bool
 

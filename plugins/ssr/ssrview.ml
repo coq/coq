@@ -43,7 +43,7 @@ module AdaptorDb = struct
       term_view_adaptor_db := AdaptorMap.add k (t :: lk) !term_view_adaptor_db
 
   let subst_adaptor ( subst, (k, t as a)) =
-    let t' = Detyping.subst_glob_constr subst t in
+    let t' = Detyping.subst_glob_constr (Global.env()) subst t in
     if t' == t then a else k, t'
 
   let in_db =

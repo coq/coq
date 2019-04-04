@@ -262,7 +262,7 @@ let subst_red_expr subs =
   Redops.map_red_expr_gen
     (subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
-    (Patternops.subst_pattern subs)
+    (Patternops.subst_pattern (Global.env()) subs)
 
 let inReduction : bool * string * red_expr -> obj =
   declare_object
