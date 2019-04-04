@@ -227,6 +227,8 @@ Tools
   `coqc`/`make` as well as printing to stdout, on both python2 and
   python3.
 
+- coq_makefile's install target now errors if any file to install is missing.
+
 Standard Library
 
 - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about
