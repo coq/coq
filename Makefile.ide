@@ -66,7 +66,7 @@ IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_
 GTKSHARE=$(shell pkg-config --variable=prefix gtk+-3.0)/share
 GTKBIN=$(shell pkg-config --variable=prefix gtk+-3.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-3.0)
-PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-3.0)/bin
+PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
 SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-3.0)/share
 
 ###########################################################################
@@ -244,15 +244,15 @@ $(COQIDEAPP)/Contents:
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	        -linkpkg -package str,unix,dynlink,threads,lablgtk3.sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
+	        -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
 	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $@/coq/
-	$(MKDIR) $@/gtksourceview-2.0/{language-specs,styles}
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-2.0/language-specs/
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-2.0/styles/{styles.rng,classic.xml} $@/gtksourceview-2.0/styles/
+	$(MKDIR) $@/gtksourceview-3.0/{language-specs,styles}
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-3.0/language-specs/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/styles/{styles.rng,classic.xml} $@/gtksourceview-3.0/styles/
 	cp -R "$(GTKSHARE)/"locale $@
 	cp -R "$(GTKSHARE)/"themes $@
 
@@ -262,20 +262,20 @@ $(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
-	$(INSTALLLIB) "$(GTKLIBS)/gtk-2.0/2.10.0/immodules/"*.so $@
+	$(INSTALLLIB) "$(GTKLIBS)/gtk-3.0/3.0.0/immodules/"*.so $@
 
 
 $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 	$(MKDIR) $@/xdg/coq
 	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
-	$(MKDIR) $@/gtk-2.0
+	$(MKDIR) $@/gtk-3.0
 	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
 	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-2.0/gdk-pixbuf.loaders
-	{ "$(GTKBIN)/gtk-query-immodules-2.0" $@/../immodules/*.so |\
+	> $@/gtk-3.0/gdk-pixbuf.loaders
+	{ "$(GTKBIN)/gtk-query-immodules-3.0" $@/../immodules/*.so |\
 	 sed -e "s!/.*\(/immodules/.*.so\)!@executable_path/../Resources/\1!" |\
 	 sed -e "s!/.*\(/share/locale\)!@executable_path/../Resources/\1!"; } \
-	> $@/gtk-2.0/gtk-immodules.loaders
+	> $@/gtk-3.0/gtk-immodules.loaders
 	$(MKDIR) $@/pango
 	echo "[Pango]" > $@/pango/pangorc
 

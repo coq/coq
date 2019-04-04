@@ -24,13 +24,13 @@ let () = Unix.putenv "GTK_DATA_PREFIX" resources_dir
 let () = Unix.putenv "GTK_EXE_PREFIX" resources_dir
 let () = Unix.putenv "GTK_PATH" resources_dir
 let () =
-  Unix.putenv "GTK2_RC_FILES" (Filename.concat etc_dir "gtk-2.0/gtkrc")
+  Unix.putenv "GTK3_RC_FILES" (Filename.concat etc_dir "gtk-3.0/gtkrc")
 let () =
   Unix.putenv "GTK_IM_MODULE_FILE"
-   (Filename.concat etc_dir "gtk-2.0/gtk-immodules.loaders")
+   (Filename.concat etc_dir "gtk-3.0/gtk-immodules.loaders")
 let () =
   Unix.putenv "GDK_PIXBUF_MODULE_FILE"
-   (Filename.concat etc_dir "gtk-2.0/gdk-pixbuf.loaders")
+   (Filename.concat etc_dir "gtk-3.0/gdk-pixbuf.loaders")
 let () = Unix.putenv "PANGO_LIBDIR" lib_dir
 let () = Unix.putenv "PANGO_SYSCONFIGDIR" etc_dir
 let () = Unix.putenv "CHARSETALIASDIR" lib_dir
