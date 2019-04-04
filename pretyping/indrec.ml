@@ -610,11 +610,11 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 
 (* Look up function for the default elimination constant *)
 
-let lookup_eliminator ind_sp s =
+let lookup_eliminator env ind_sp s =
   let kn,i = ind_sp in
   let mpu = KerName.modpath @@ MutInd.user kn in
   let mpc = KerName.modpath @@ MutInd.canonical kn in
-  let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
+  let ind_id = (lookup_mind kn env).mind_packets.(i).mind_typename in
   let id = add_suffix ind_id (elimination_suffix s) in
   let l = Label.of_id id in
   let knu = KerName.make mpu l in
@@ -623,7 +623,7 @@ let lookup_eliminator ind_sp s =
   (* inductive type *)
   try
     let cst = Constant.make knu knc in
-    let _ = Global.lookup_constant cst in
+    let _ = lookup_constant cst env in
       ConstRef cst
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)

@@ -1455,7 +1455,8 @@ exception IsNonrec
 let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
 let find_ind_eliminator ind s gl =
-  let gr = lookup_eliminator ind s in
+  let env = Proofview.Goal.env gl in
+  let gr = lookup_eliminator env ind s in
   Tacmach.New.pf_apply Evd.fresh_global gl gr
 
 let find_eliminator c gl =
@@ -4128,7 +4129,7 @@ let guess_elim isrec dep s hyp0 gl =
   let sigma, elimc =
     if isrec && not (is_nonrec mind)
     then
-      let gr = lookup_eliminator mind s in
+      let gr = lookup_eliminator env mind s in
       Evd.fresh_global env sigma gr
     else
       let u = EInstance.kind sigma u in

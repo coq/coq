@@ -356,7 +356,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
       match EConstr.kind sigma hdcncl with 
       | Ind (ind_sp,u) -> 
 	let pr1 = 
-	  lookup_eliminator ind_sp (elimination_sort_of_clause cls gl) 
+          lookup_eliminator env ind_sp (elimination_sort_of_clause cls gl)
 	in
         begin match lft2rgt, cls with
         | Some true, None

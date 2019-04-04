@@ -704,7 +704,8 @@ module New = struct
   (* computing the case/elim combinators *)
 
   let gl_make_elim ind = begin fun gl ->
-    let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
+    let env = Proofview.Goal.env gl in
+    let gr = Indrec.lookup_eliminator env (fst ind) (elimination_sort_of_goal gl) in
     let (sigma, c) = pf_apply Evd.fresh_global gl gr in
     (sigma, c)
   end
