@@ -87,7 +87,7 @@ type coercion = {
 
 val subst_coercion : substitution -> coercion -> coercion
 
-val declare_coercion : coercion -> unit
+val declare_coercion : env -> evar_map -> coercion -> unit
 
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool

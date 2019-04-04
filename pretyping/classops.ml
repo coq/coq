@@ -318,21 +318,21 @@ let warn_ambiguous_path =
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
 
-let different_class_params i =
+let different_class_params env i =
   let ci = class_info_from_index i in
     if (snd ci).cl_param > 0 then true
     else 
       match fst ci with
-      | CL_IND i -> Global.is_polymorphic (IndRef i)
-      | CL_CONST c -> Global.is_polymorphic (ConstRef c)
+      | CL_IND i -> Environ.is_polymorphic env (IndRef i)
+      | CL_CONST c -> Environ.is_polymorphic env (ConstRef c)
       | _ -> false
 
-let add_coercion_in_graph (ic,source,target) =
+let add_coercion_in_graph env (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
-    if not (Bijint.Index.equal i j) || different_class_params i then
+    if not (Bijint.Index.equal i j) || different_class_params env i then
       match lookup_path_between_class ij with
       | q ->
         if not (compare_path p q) then
@@ -386,29 +386,29 @@ let subst_coercion subst c =
 
 (* Computation of the class arity *)
 
-let reference_arity_length ref =
-  let t, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
-  List.length (fst (Reductionops.splay_arity (Global.env()) Evd.empty (EConstr.of_constr t))) (** FIXME *)
+let reference_arity_length env sigma ref =
+  let t, _ = Typeops.type_of_global_in_context env ref in
+  List.length (fst (Reductionops.splay_arity env sigma (EConstr.of_constr t)))
 
-let projection_arity_length p =
-  let len = reference_arity_length (ConstRef (Projection.Repr.constant p)) in
+let projection_arity_length env sigma p =
+  let len = reference_arity_length env sigma (ConstRef (Projection.Repr.constant p)) in
   len - Projection.Repr.npars p
 
-let class_params = function
+let class_params env sigma = function
   | CL_FUN | CL_SORT -> 0
-  | CL_CONST sp -> reference_arity_length (ConstRef sp)
-  | CL_PROJ sp -> projection_arity_length sp
-  | CL_SECVAR sp -> reference_arity_length (VarRef sp)
-  | CL_IND sp  -> reference_arity_length (IndRef sp)
+  | CL_CONST sp -> reference_arity_length env sigma (ConstRef sp)
+  | CL_PROJ sp -> projection_arity_length env sigma sp
+  | CL_SECVAR sp -> reference_arity_length env sigma (VarRef sp)
+  | CL_IND sp  -> reference_arity_length env sigma (IndRef sp)
 
 (* add_class : cl_typ -> locality_flag option -> bool -> unit *)
 
-let add_class cl =
-  add_new_class cl { cl_param = class_params cl }
+let add_class env sigma cl =
+  add_new_class cl { cl_param = class_params env sigma cl }
 
-let declare_coercion c =
-  let () = add_class c.coercion_source in
-  let () = add_class c.coercion_target in
+let declare_coercion env sigma c =
+  let () = add_class env sigma c.coercion_source in
+  let () = add_class env sigma c.coercion_target in
   let is, _ = class_info c.coercion_source in
   let it, _ = class_info c.coercion_target in
   let xf =
@@ -419,7 +419,7 @@ let declare_coercion c =
       coe_param = c.coercion_params;
     } in
   let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph (xf,is,it)
+  add_coercion_in_graph env (xf,is,it)
 
 (* For printing purpose *)
 let pr_cl_index = Bijint.Index.print

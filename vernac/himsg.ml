@@ -601,7 +601,7 @@ let rec explain_evar_kind env sigma evk ty =
       (pr_leconstr_env env sigma ty') src
 
 let explain_typeclass_resolution env sigma evi k =
-  match Typeclasses.class_of_constr sigma evi.evar_concl with
+  match Typeclasses.class_of_constr env sigma evi.evar_concl with
   | Some _ ->
     let env = Evd.evar_filtered_env evi in
       fnl () ++ str "Could not find an instance for " ++
@@ -614,7 +614,7 @@ let explain_placeholder_kind env sigma c e =
   | Some (SeveralInstancesFound n) ->
       strbrk " (several distinct possible type class instances found)"
   | None ->
-      match Typeclasses.class_of_constr sigma c with
+      match Typeclasses.class_of_constr env sigma c with
       | Some _ -> strbrk " (no type class instance found)"
       | _ -> mt ()
 

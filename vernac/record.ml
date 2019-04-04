@@ -520,8 +520,10 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       List.map map inds
   in
   let ctx_context =
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
     List.map (fun decl ->
-      match Typeclasses.class_of_constr Evd.empty (EConstr.of_constr (RelDecl.get_type decl)) with
+      match Typeclasses.class_of_constr env sigma (EConstr.of_constr (RelDecl.get_type decl)) with
       | Some (_, ((cl,_), _)) -> Some cl.cl_impl
       | None -> None)
       params, params
@@ -548,12 +550,14 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
         cl_props = fields;
         cl_projs = projs }
     in
-    add_class k; impl
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Classes.add_class env sigma k; impl
   in
   List.map map data
 
 
-let add_constant_class env cst =
+let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, arity = decompose_prod_assum ty in
@@ -566,10 +570,11 @@ let add_constant_class env cst =
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
     }
-  in add_class tc;
+  in
+  Classes.add_class env sigma tc;
     set_typeclass_transparency (EvalConstRef cst) false false
-      
-let add_inductive_class env ind =
+
+let add_inductive_class env sigma ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
@@ -586,7 +591,8 @@ let add_inductive_class env ind =
 	cl_projs = [];
 	cl_strict = !typeclasses_strict;
 	cl_unique = !typeclasses_unique }
-  in add_class k
+  in
+  Classes.add_class env sigma k
 
 let warn_already_existing_class =
   CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
@@ -594,11 +600,12 @@ let warn_already_existing_class =
 
 let declare_existing_class g =
   let env = Global.env () in
+  let sigma = Evd.from_env env in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | ConstRef x -> add_constant_class env x
-    | IndRef x -> add_inductive_class env x
+    | ConstRef x -> add_constant_class env sigma x
+    | IndRef x -> add_inductive_class env sigma x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 

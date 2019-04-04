@@ -21,11 +21,11 @@ Indschemes
 DeclareDef
 Obligations
 ComDefinition
+Classes
 ComAssumption
 ComInductive
 ComFixpoint
 ComProgramFixpoint
-Classes
 Record
 Assumptions
 Vernacstate

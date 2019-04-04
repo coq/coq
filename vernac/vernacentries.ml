@@ -1075,7 +1075,7 @@ let vernac_declare_instance ~atts sup inst pri =
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
 let vernac_context ~pstate ~poly l =
-  if not (Classes.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
+  if not (ComAssumption.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in

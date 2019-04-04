@@ -232,7 +232,9 @@ let check_source = function
 | _ -> ()
 
 let cache_coercion (_,c) =
-  Classops.declare_coercion c
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  Classops.declare_coercion env sigma c
 
 let open_coercion i o =
   if Int.equal i 1 then
