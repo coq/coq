@@ -84,7 +84,8 @@ let tag_var = tag Tag.variable
         | Any -> true
 
   let prec_of_prim_token = function
-    | Numeral (_,b) -> if b then lposint else lnegint
+    | Numeral (SPlus,_) -> lposint
+    | Numeral (SMinus,_) -> lnegint
     | String _ -> latom
 
   let print_hunks n pr pr_patt pr_binders (terms, termlists, binders, binderlists) unps =
@@ -234,7 +235,8 @@ let tag_var = tag Tag.variable
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
   let pr_prim_token = function
-    | Numeral (n,s) -> str (if s then n else "-"^n)
+    | Numeral (SPlus,n) -> str (NumTok.to_string n)
+    | Numeral (SMinus,n) -> str ("-"^NumTok.to_string n)
     | String s -> qs s
 
   let pr_evar pr id l =

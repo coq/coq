@@ -72,7 +72,7 @@ let test_lpar_idnum_coloneq =
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
-              | IDENT _ | INT _ ->
+              | IDENT _ | NUMERAL _ ->
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" -> ()
                     | _ -> err ())
@@ -147,7 +147,8 @@ let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
     end
   | _ -> ElimOnConstr clbind
 
-let mkNumeral n = Numeral (string_of_int (abs n), 0<=n)
+let mkNumeral n =
+  Numeral ((if 0<=n then SPlus else SMinus),NumTok.int (string_of_int (abs n)))
 
 let mkTacCase with_evar = function
   | [(clear,ElimOnConstr cl),(None,None),None],None ->

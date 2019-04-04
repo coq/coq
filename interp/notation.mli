@@ -70,14 +70,14 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 (** {6 Declare and uses back and forth an interpretation of primitive token } *)
 
-(** A numeral interpreter is the pair of an interpreter for **integer**
+(** A numeral interpreter is the pair of an interpreter for **decimal**
    numbers in terms and an optional interpreter in pattern, if
-   negative numbers are not supported, the interpreter must fail with
-   an appropriate error message *)
+   non integer or negative numbers are not supported, the interpreter
+   must fail with an appropriate error message *)
 
 type notation_location = (DirPath.t * DirPath.t) * string
 type required_module = full_path * string list
-type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+type rawnum = Constrexpr.sign * Constrexpr.raw_numeral
 
 (** The unique id string below will be used to refer to a particular
     registered interpreter/uninterpreter of numeral or string notation.
@@ -112,8 +112,8 @@ exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_t
 
 type numnot_option =
   | Nop
-  | Warning of raw_natural_number
-  | Abstract of raw_natural_number
+  | Warning of string
+  | Abstract of string
 
 type int_ty =
   { uint : Names.inductive;
@@ -123,11 +123,16 @@ type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
+type decimal_ty =
+  { int : int_ty;
+    decimal : Names.inductive }
+
 type target_kind =
   | Int of int_ty (* Coq.Init.Decimal.int + uint *)
   | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
+  | Decimal of decimal_ty (* Coq.Init.Decimal.decimal + uint + int *)
 
 type string_target_kind =
   | ListByte

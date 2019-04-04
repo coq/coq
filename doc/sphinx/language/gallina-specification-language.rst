@@ -74,14 +74,20 @@ Identifiers and access identifiers
   `.` (dot) without blank. They are used in the syntax of qualified
   identifiers.
 
-Natural numbers and integers
-  Numerals are sequences of digits. Integers are numerals optionally
-  preceded by a minus sign.
+Numerals
+  Numerals are sequences of digits with a potential fractional part
+  and exponent. Integers are numerals without fractional nor exponent
+  part and optionally preceded by a minus sign. Underscores ``_`` can
+  be used as comments in numerals.
 
   .. productionlist:: coq
      digit   : 0..9
      num     : `digit`…`digit`
      integer : [-]`num`
+     dot     : .
+     exp     : e | E
+     sign    : + | -
+     numeral : `num`[`dot` `num`][`exp`[`sign`]`num`]
 
 Strings
   Strings are delimited by ``"`` (double quote), and enclose a sequence of

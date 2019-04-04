@@ -46,8 +46,11 @@ val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
 
-(** When string is neither an ident nor an int, returns a keyword. *)
+(** When string is not an ident, returns a keyword. *)
 val terminal : string -> string Tok.p
+
+(** Precondition: the input is a numeral (c.f. [NumTok.t]) *)
+val terminal_numeral : string -> NumTok.t Tok.p
 
 (** The lexer of Coq: *)
 

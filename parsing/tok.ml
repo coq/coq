@@ -17,7 +17,7 @@ type 'c p =
   | PPATTERNIDENT : string option -> string p
   | PIDENT : string option -> string p
   | PFIELD : string option -> string p
-  | PINT : string option -> string p
+  | PNUMERAL : NumTok.t option -> NumTok.t p
   | PSTRING : string option -> string p
   | PLEFTQMARK : unit p
   | PBULLET : string option -> string p
@@ -30,7 +30,8 @@ let pattern_strings : type c. c p -> string * string option =
   | PPATTERNIDENT s -> "PATTERNIDENT", s
   | PIDENT s -> "IDENT", s
   | PFIELD s -> "FIELD", s
-  | PINT s -> "INT", s
+  | PNUMERAL None -> "NUMERAL", None
+  | PNUMERAL (Some n) -> "NUMERAL", Some (NumTok.to_string n)
   | PSTRING s -> "STRING", s
   | PLEFTQMARK -> "LEFTQMARK", None
   | PBULLET s -> "BULLET", s
@@ -42,7 +43,7 @@ type t =
   | PATTERNIDENT of string
   | IDENT of string
   | FIELD of string
-  | INT of string
+  | NUMERAL of NumTok.t
   | STRING of string
   | LEFTQMARK
   | BULLET of string
@@ -57,7 +58,8 @@ let equal_p (type a b) (t1 : a p) (t2 : b p) : (a, b) Util.eq option =
   | PPATTERNIDENT s1, PPATTERNIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PIDENT s1, PIDENT s2 when streq s1 s2 -> Some Util.Refl
   | PFIELD s1, PFIELD s2 when streq s1 s2 -> Some Util.Refl
-  | PINT s1, PINT s2 when streq s1 s2 -> Some Util.Refl
+  | PNUMERAL None, PNUMERAL None -> Some Util.Refl
+  | PNUMERAL (Some n1), PNUMERAL (Some n2) when NumTok.equal n1 n2 -> Some Util.Refl
   | PSTRING s1, PSTRING s2 when streq s1 s2 -> Some Util.Refl
   | PLEFTQMARK, PLEFTQMARK -> Some Util.Refl
   | PBULLET s1, PBULLET s2 when streq s1 s2 -> Some Util.Refl
@@ -71,7 +73,7 @@ let equal t1 t2 = match t1, t2 with
 | PATTERNIDENT s1, PATTERNIDENT s2 -> string_equal s1 s2
 | IDENT s1, IDENT s2 -> string_equal s1 s2
 | FIELD s1, FIELD s2 -> string_equal s1 s2
-| INT s1, INT s2 -> string_equal s1 s2
+| NUMERAL n1, NUMERAL n2 -> NumTok.equal n1 n2
 | STRING s1, STRING s2 -> string_equal s1 s2
 | LEFTQMARK, LEFTQMARK -> true
 | BULLET s1, BULLET s2 -> string_equal s1 s2
@@ -98,7 +100,7 @@ let extract_string diff_mode = function
     else s
   | PATTERNIDENT s -> s
   | FIELD s -> if diff_mode then "." ^ s else s
-  | INT s -> s
+  | NUMERAL n -> NumTok.to_string n
   | LEFTQMARK -> "?"
   | BULLET s -> s
   | QUOTATION(_,s) -> s
@@ -122,15 +124,15 @@ let match_pattern (type c) (p : c p) : t -> c =
   let err () = raise Stream.Failure in
   let seq = string_equal in
   match p with
-  | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s' | _ -> err ())
+  | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s' | NUMERAL n when seq s (NumTok.to_string n) -> s | _ -> err ())
   | PIDENT None -> (function IDENT s' -> s' | _ -> err ())
   | PIDENT (Some s) -> (function (IDENT s' | KEYWORD s') when seq s s' -> s' | _ -> err ())
   | PPATTERNIDENT None -> (function PATTERNIDENT s -> s | _ -> err ())
   | PPATTERNIDENT (Some s) -> (function PATTERNIDENT s' when seq s s' -> s' | _ -> err ())
   | PFIELD None -> (function FIELD s -> s | _ -> err ())
   | PFIELD (Some s) -> (function FIELD s' when seq s s' -> s' | _ -> err ())
-  | PINT None -> (function INT s -> s | _ -> err ())
-  | PINT (Some s) -> (function INT s' when seq s s' -> s' | _ -> err ())
+  | PNUMERAL None -> (function NUMERAL s -> s | _ -> err ())
+  | PNUMERAL (Some n) -> let s = NumTok.to_string n in (function NUMERAL n' when s = NumTok.to_string n' -> n' | _ -> err ())
   | PSTRING None -> (function STRING s -> s | _ -> err ())
   | PSTRING (Some s) -> (function STRING s' when seq s s' -> s' | _ -> err ())
   | PLEFTQMARK -> (function LEFTQMARK -> () | _ -> err ())

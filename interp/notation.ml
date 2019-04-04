@@ -476,7 +476,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 (* Interpreting numbers (not in summary because functional objects)   *)
 
 type required_module = full_path * string list
-type rawnum = Constrexpr.raw_natural_number * Constrexpr.sign
+type rawnum = Constrexpr.sign * Constrexpr.raw_numeral
 
 type prim_token_uid = string
 
@@ -499,15 +499,20 @@ module InnerPrimToken = struct
     | StringInterp f, StringInterp f' -> f == f'
     | _ -> false
 
-  let ofNumeral n s =
-    if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
+  let ofNumeral s n =
+    let n = String.(concat "" (split_on_char '_' n)) in
+    match s with
+    | SPlus -> Bigint.of_string n
+    | SMinus -> Bigint.neg (Bigint.of_string n)
 
   let do_interp ?loc interp primtok =
     match primtok, interp with
-    | Numeral (n,s), RawNumInterp interp -> interp ?loc (n,s)
-    | Numeral (n,s), BigNumInterp interp -> interp ?loc (ofNumeral n s)
+    | Numeral (s,n), RawNumInterp interp -> interp ?loc (s,n)
+    | Numeral (s,{ NumTok.int = n; frac = ""; exp = "" }),
+      BigNumInterp interp -> interp ?loc (ofNumeral s n)
     | String s, StringInterp interp -> interp ?loc s
-    | _ -> raise Not_found
+    | (Numeral _ | String _),
+      (RawNumInterp _ | BigNumInterp _ | StringInterp _) -> raise Not_found
 
   type uninterpreter =
     | RawNumUninterp of (any_glob_constr -> rawnum option)
@@ -521,15 +526,17 @@ module InnerPrimToken = struct
     | _ -> false
 
   let mkNumeral n =
-    if Bigint.is_pos_or_zero n then Numeral (Bigint.to_string n, true)
-    else Numeral (Bigint.to_string (Bigint.neg n), false)
+    if Bigint.is_pos_or_zero n then
+      Numeral (SPlus,NumTok.int (Bigint.to_string n))
+    else
+      Numeral (SMinus,NumTok.int (Bigint.to_string (Bigint.neg n)))
 
   let mkString = function
     | None -> None
     | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
   let do_uninterp uninterp g = match uninterp with
-    | RawNumUninterp u -> Option.map (fun (n,s) -> Numeral (n,s)) (u g)
+    | RawNumUninterp u -> Option.map (fun (s,n) -> Numeral (s,n)) (u g)
     | BigNumUninterp u -> Option.map mkNumeral (u g)
     | StringUninterp u -> mkString (u g)
 
@@ -559,8 +566,8 @@ exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_t
 
 type numnot_option =
   | Nop
-  | Warning of raw_natural_number
-  | Abstract of raw_natural_number
+  | Warning of string
+  | Abstract of string
 
 type int_ty =
   { uint : Names.inductive;
@@ -570,11 +577,16 @@ type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
+type decimal_ty =
+  { int : int_ty;
+    decimal : Names.inductive }
+
 type target_kind =
   | Int of int_ty (* Coq.Init.Decimal.int + uint *)
   | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
+  | Decimal of decimal_ty (* Coq.Init.Decimal.decimal + uint + int *)
 
 type string_target_kind =
   | ListByte
@@ -760,15 +772,29 @@ let coquint_of_rawnum uint str =
   let nil = mkConstruct (uint,1) in
   let rec do_chars s i acc =
     if i < 0 then acc
-    else
+    else if s.[i] == '_' then do_chars s (i-1) acc else
       let dg = mkConstruct (uint, digit_of_char s.[i]) in
       do_chars s (i-1) (mkApp(dg,[|acc|]))
   in
   do_chars str (String.length str - 1) nil
 
-let coqint_of_rawnum inds (str,sign) =
+let coqint_of_rawnum inds sign str =
   let uint = coquint_of_rawnum inds.uint str in
-  mkApp (mkConstruct (inds.int, if sign then 1 else 2), [|uint|])
+  let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
+  mkApp (mkConstruct (inds.int, pos_neg), [|uint|])
+
+let coqdecimal_of_rawnum inds sign n =
+  let i, f, e = NumTok.(n.int, n.frac, n.exp) in
+  let i = coqint_of_rawnum inds.int sign i in
+  let f = coquint_of_rawnum inds.int.uint f in
+  if e = "" then mkApp (mkConstruct (inds.decimal, 1), [|i; f|])  (* Decimal *)
+  else
+    let sign, e = match e.[1] with
+      | '-' -> SMinus, String.sub e 2 (String.length e - 2)
+      | '+' -> SPlus, String.sub e 2 (String.length e - 2)
+      | _ -> SPlus, String.sub e 1 (String.length e - 1) in
+    let e = coqint_of_rawnum inds.int sign e in
+    mkApp (mkConstruct (inds.decimal, 2), [|i; f; e|])  (* DecimalExp *)
 
 let rawnum_of_coquint c =
   let rec of_uint_loop c buf =
@@ -788,17 +814,30 @@ let rawnum_of_coquint c =
     (* To avoid ambiguities between Nil and (D0 Nil), we choose
        to not display Nil alone as "0" *)
     raise NotAValidPrimToken
-  else Buffer.contents buf
+  else NumTok.int (Buffer.contents buf)
 
 let rawnum_of_coqint c =
   match Constr.kind c with
   | App (c,[|c'|]) ->
      (match Constr.kind c with
-      | Construct ((_,1), _) (* Pos *) -> (rawnum_of_coquint c', true)
-      | Construct ((_,2), _) (* Neg *) -> (rawnum_of_coquint c', false)
+      | Construct ((_,1), _) (* Pos *) -> (SPlus, rawnum_of_coquint c')
+      | Construct ((_,2), _) (* Neg *) -> (SMinus, rawnum_of_coquint c')
       | _ -> raise NotAValidPrimToken)
   | _ -> raise NotAValidPrimToken
 
+let rawnum_of_decimal c =
+  let of_ife i f e =
+    let sign, n = rawnum_of_coqint i in
+    let f =
+      try (rawnum_of_coquint f).NumTok.int with NotAValidPrimToken -> "" in
+    let e = match e with None -> "" | Some e -> match rawnum_of_coqint e with
+      | SPlus, e -> "e+" ^ e.NumTok.int
+      | SMinus, e -> "e-" ^ e.NumTok.int in
+    sign,{ n with NumTok.frac = f; exp = e } in
+  match Constr.kind c with
+  | App (_,[|i; f|]) -> of_ife i f None
+  | App (_,[|i; f; e|]) -> of_ife i f (Some e)
+  | _ -> raise NotAValidPrimToken
 
 (***********************************************************************)
 
@@ -885,31 +924,42 @@ let bigint_of_int63 c =
   | _ -> raise NotAValidPrimToken
 
 let big2raw n =
-  if Bigint.is_pos_or_zero n then (Bigint.to_string n, true)
-  else (Bigint.to_string (Bigint.neg n), false)
+  if Bigint.is_pos_or_zero n then
+    (SPlus, NumTok.int (Bigint.to_string n))
+  else
+    (SMinus, NumTok.int (Bigint.to_string (Bigint.neg n)))
 
-let raw2big (n,s) =
-  if s then Bigint.of_string n else Bigint.neg (Bigint.of_string n)
+let raw2big s n = match s with
+  | SPlus -> Bigint.of_string n
+  | SMinus -> Bigint.neg (Bigint.of_string n)
 
 let interp o ?loc n =
-  begin match o.warning with
-  | Warning threshold when snd n && rawnum_compare (fst n) threshold >= 0 ->
+  begin match o.warning, n with
+  | Warning threshold, (SPlus, { NumTok.int = n; frac = ""; exp = "" })
+       when rawnum_compare n threshold >= 0 ->
      warn_large_num o.ty_name
   | _ -> ()
   end;
-  let c = match fst o.to_kind with
-    | Int int_ty -> coqint_of_rawnum int_ty n
-    | UInt uint_ty when snd n -> coquint_of_rawnum uint_ty (fst n)
-    | UInt _ (* n <= 0 *) -> no_such_prim_token "number" ?loc o.ty_name
-    | Z z_pos_ty -> z_of_bigint z_pos_ty (raw2big n)
-    | Int63 -> interp_int63 ?loc (raw2big n)
+  let c = match fst o.to_kind, n with
+    | Int int_ty, (s, { NumTok.int = n; frac = ""; exp = "" }) ->
+       coqint_of_rawnum int_ty s n
+    | UInt uint_ty, (SPlus, { NumTok.int = n; frac = ""; exp = "" }) ->
+       coquint_of_rawnum uint_ty n
+    | Z z_pos_ty, (s, { NumTok.int = n; frac = ""; exp = "" }) ->
+       z_of_bigint z_pos_ty (raw2big s n)
+    | Int63, (s, { NumTok.int = n; frac = ""; exp = "" }) ->
+       interp_int63 ?loc (raw2big s n)
+    | (Int _ | UInt _ | Z _ | Int63), _ ->
+       no_such_prim_token "number" ?loc o.ty_name
+    | Decimal decimal_ty, (s,n) -> coqdecimal_of_rawnum decimal_ty s n
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   match o.warning, snd o.to_kind with
-  | Abstract threshold, Direct when rawnum_compare (fst n) threshold >= 0 ->
+  | Abstract threshold, Direct
+       when rawnum_compare (snd n).NumTok.int threshold >= 0 ->
      warn_abstract_large_num (o.ty_name,o.to_ty);
      glob_of_constr "numeral" ?loc env sigma (mkApp (to_ty,[|c|]))
   | _ ->
@@ -922,9 +972,10 @@ let uninterp o n =
   PrimTokenNotation.uninterp
     begin function
       | (Int _, c) -> rawnum_of_coqint c
-      | (UInt _, c) -> (rawnum_of_coquint c, true)
+      | (UInt _, c) -> (SPlus, rawnum_of_coquint c)
       | (Z _, c) -> big2raw (bigint_of_z c)
       | (Int63, c) -> big2raw (bigint_of_int63 c)
+      | (Decimal _, c) -> rawnum_of_decimal c
     end o n
 end
 
@@ -1249,8 +1300,8 @@ let find_notation ntn sc =
   (n.not_interp, n.not_location)
 
 let notation_of_prim_token = function
-  | Numeral (n,true) -> InConstrEntrySomeLevel, n
-  | Numeral (n,false) -> InConstrEntrySomeLevel, "- "^n
+  | Numeral (SPlus,n) -> InConstrEntrySomeLevel, NumTok.to_string n
+  | Numeral (SMinus,n) -> InConstrEntrySomeLevel, "- "^NumTok.to_string n
   | String _ -> raise Not_found
 
 let find_prim_token check_allowed ?loc p sc =
