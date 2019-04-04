@@ -108,10 +108,9 @@ install_ssreflect()
 
   git_download mathcomp
 
-  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
-    make Makefile.coq && \
-    make -f Makefile.coq ssreflect/all_ssreflect.vo && \
-    make -f Makefile.coq install )
+  ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp/ssreflect" && \
+    make && \
+    make install )
 
 }
 
@@ -123,8 +122,11 @@ install_ssralg()
   git_download mathcomp
 
   ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp" && \
-    make Makefile.coq && \
-    make -f Makefile.coq algebra/all_algebra.vo && \
-    make -f Makefile.coq install )
+    make -C ssreflect && \
+    make -C ssreflect install && \
+    make -C fingroup && \
+    make -C fingroup install && \
+    make -C algebra && \
+    make -C algebra install )
 
 }
