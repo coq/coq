@@ -159,6 +159,11 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define ACCU_REG asm("38")
 #define JUMPTBL_BASE_REG asm("39")
 #endif
+#ifdef __x86_64__
+#define PC_REG asm("%r15")
+#define SP_REG asm("%r14")
+#define ACCU_REG asm("%r13")
+#endif
 #endif
 
 #define CheckInt1() do{                            \
