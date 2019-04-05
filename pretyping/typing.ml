@@ -198,7 +198,7 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
-  let specif = Global.lookup_inductive (fst ind) in
+  let specif = lookup_mind_specif env (fst ind) in
   let sorts = elim_sorts specif in
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = splay_prod env sigma pj.uj_type in
