@@ -201,11 +201,6 @@ let show_match id =
 
 (* "Print" commands *)
 
-let print_path_entry p =
-  let dir = DirPath.print (Loadpath.logical p) in
-  let path = str (CUnix.escaped_string_of_physical_path (Loadpath.physical p)) in
-  Pp.hov 2 (dir ++ spc () ++ path)
-
 let print_loadpath dir =
   let l = Loadpath.get_load_paths () in
   let l = match dir with
@@ -215,7 +210,7 @@ let print_loadpath dir =
     List.filter filter l
   in
   str "Logical Path / Physical path:" ++ fnl () ++
-    prlist_with_sep fnl print_path_entry l
+    prlist_with_sep fnl Loadpath.pp l
 
 let print_modules () =
   let opened = Library.opened_libraries ()
@@ -472,10 +467,10 @@ let err_notfound_library ?from qid =
 
 let print_located_library qid =
   let open Loadpath in
-  try msg_found_library (locate_qualified_library ~warn:false qid)
-  with
-    | LibUnmappedDir -> err_unmapped_library qid
-    | LibNotFound -> err_notfound_library qid
+  match locate_qualified_library ~warn:false qid with
+  | Ok lib -> msg_found_library lib
+  | Error LibUnmappedDir -> err_unmapped_library qid
+  | Error LibNotFound -> err_notfound_library qid
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -1028,13 +1023,11 @@ let vernac_require from import qidl =
   in
   let locate qid =
     let open Loadpath in
-    try
-      let warn = not !Flags.quiet in
-      let (_, dir, f) = locate_qualified_library ?root ~warn qid in
-      (dir, f)
-    with
-      | LibUnmappedDir -> err_unmapped_library ?from:root qid
-      | LibNotFound -> err_notfound_library ?from:root qid
+    let warn = not !Flags.quiet in
+    match locate_qualified_library ?root ~warn qid with
+    | Ok (_,dir,f) -> dir, f
+    | Error LibUnmappedDir -> err_unmapped_library ?from:root qid
+    | Error LibNotFound -> err_notfound_library ?from:root qid
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
@@ -1144,7 +1137,6 @@ let vernac_add_loadpath implicit pdir ldiropt =
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)
-
   (* Coq syntax for ML or system commands *)
 
 let vernac_add_ml_path isrec path =
