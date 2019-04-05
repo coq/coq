@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Constr
 open Environ
 
@@ -16,11 +15,6 @@ open Environ
     head symbol of defined constants and local definitions; it
     provides the function to compute the head symbols and a table to
     store the heads *)
-
-(** [declared_head] computes and registers the head symbol of a
-   possibly evaluable constant or variable *)
-
-val declare_head : evaluable_global_reference -> unit
 
 (** [is_rigid] tells if some term is known to ultimately reduce to a term
     with a rigid head symbol *)

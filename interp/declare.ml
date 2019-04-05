@@ -119,7 +119,6 @@ let set_declare_scheme f = declare_scheme := f
 
 let update_tables c =
   declare_constant_implicits c;
-  Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope Evd.empty (ConstRef c)
 
 let register_side_effect (c, role) =
@@ -257,7 +256,6 @@ let declare_variable id obj =
   let oname = add_leaf id (inVariable (Inr (id,obj))) in
   declare_var_implicits id;
   Notation.declare_ref_arguments_scope Evd.empty (VarRef id);
-  Heads.declare_head (EvalVarRef id);
   oname
 
 (** Declaration of inductive blocks *)
