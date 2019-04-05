@@ -104,7 +104,8 @@ if (sp - num_args < coq_stack_threshold) {                                     \
    several architectures.
 */
 
-#if defined(__GNUC__) && !defined(DEBUG)
+#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) \
+    && !defined(__llvm__)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
