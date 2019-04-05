@@ -26,7 +26,8 @@ type struc_typ = {
 type struc_tuple =
     constructor * (Name.t * bool) list * Constant.t option list
 
-val declare_structure : struc_tuple -> unit
+val register_structure : Environ.env -> struc_tuple -> unit
+val subst_structure : Mod_subst.substitution -> struc_tuple -> struc_tuple
 
 (** [lookup_structure isp] returns the struc_typ associated to the
    inductive path [isp] if it corresponds to a structure, otherwise
@@ -47,7 +48,7 @@ val find_projection : GlobRef.t -> struc_typ
 val is_projection : Constant.t -> bool
 
 (** Sets up the mapping from constants to primitive projections *)
-val declare_primitive_projection : Projection.Repr.t -> Constant.t -> unit
+val register_primitive_projection : Projection.Repr.t -> Constant.t -> unit
 
 val is_primitive_projection : Constant.t -> bool
 
@@ -80,8 +81,12 @@ val cs_pattern_of_constr : Environ.env -> constr -> cs_pattern * int option * co
 val pr_cs_pattern : cs_pattern -> Pp.t
 
 val lookup_canonical_conversion : (GlobRef.t * cs_pattern) -> constr * obj_typ
-val declare_canonical_structure : GlobRef.t -> unit
+val register_canonical_structure : warn:bool -> Environ.env -> Evd.evar_map ->
+  Constant.t * inductive -> unit
+val subst_canonical_structure : Mod_subst.substitution -> Constant.t * inductive -> Constant.t * inductive
 val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> Reductionops.state -> bool
 val canonical_projections : unit ->
   ((GlobRef.t * cs_pattern) * obj_typ) list
+
+val check_and_decompose_canonical_structure : Environ.env -> Evd.evar_map -> GlobRef.t -> Constant.t * inductive

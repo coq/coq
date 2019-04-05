@@ -12,6 +12,7 @@ Vernacextend
 Ppvernac
 Proof_using
 Lemmas
+Canonical
 Class
 Egramcoq
 Metasyntax

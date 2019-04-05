@@ -346,6 +346,25 @@ let inInductive : mutual_inductive_entry -> obj =
     discharge_function = discharge_inductive;
     rebuild_function = rebuild_inductive }
 
+let cache_prim (_,(p,c)) = Recordops.register_primitive_projection p c
+
+let load_prim _ p = cache_prim p
+
+let subst_prim (subst,(p,c)) = Mod_subst.subst_proj_repr subst p, Mod_subst.subst_constant subst c
+
+let discharge_prim (_,(p,c)) = Some (Lib.discharge_proj_repr p, c)
+
+let inPrim : (Projection.Repr.t * Constant.t) -> obj =
+  declare_object {
+    (default_object "PRIMPROJS") with
+    cache_function = cache_prim ;
+    load_function = load_prim;
+    subst_function = subst_prim;
+    classify_function = (fun x -> Substitute x);
+    discharge_function = discharge_prim }
+
+let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
+
 let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
   let id = Label.to_id label in
   let univs, u = match univs with
@@ -360,7 +379,7 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
   let entry = definition_entry ~types ~univs term in
   let cst = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
   let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
-  Recordops.declare_primitive_projection p cst
+  declare_primitive_projection p cst
 
 
 let declare_projections univs mind =
