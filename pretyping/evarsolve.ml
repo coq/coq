@@ -73,11 +73,11 @@ let normalize_evar evd ev =
   | Evar (evk,args) -> (evk,args)
   | _ -> assert false
 
-let get_polymorphic_positions sigma f =
+let get_polymorphic_positions env sigma f =
   let open Declarations in
   match EConstr.kind sigma f with
-  | Ind (ind, u) | Construct ((ind, _), u) -> 
-    let mib,oib = Global.lookup_inductive ind in
+  | Ind (ind, u) | Construct ((ind, _), u) ->
+    let mib,oib = Inductive.lookup_mind_specif env ind in
       (match oib.mind_arity with
       | RegularArity _ -> assert false
       | TemplateArity templ -> templ.template_param_levels)
@@ -128,7 +128,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   let rec refresh_term_evars ~onevars ~top t =
     match EConstr.kind !evdref t with
     | App (f, args) when Termops.is_template_polymorphic_ind env !evdref f ->
-      let pos = get_polymorphic_positions !evdref f in
+      let pos = get_polymorphic_positions env !evdref f in
         refresh_polymorphic_positions args pos; t
     | App (f, args) when top && isEvar !evdref f -> 
        let f' = refresh_term_evars ~onevars:true ~top:false f in
