@@ -287,7 +287,7 @@ let get_coercion_constructor env coe =
   let red x = fst (Reductionops.whd_all_stack env evd x) in
   match EConstr.kind evd (red (mkNamed coe.coe_value)) with
   | Constr.Construct (c, _) ->
-      c, Inductiveops.constructor_nrealargs c -1
+      c, Inductiveops.constructor_nrealargs env c -1
   | _ -> raise Not_found
 
 let lookup_pattern_path_between env (s,t) =
@@ -442,7 +442,7 @@ module CoercionPrinting =
   struct
     type t = coe_typ
     let compare = GlobRef.Ordered.compare
-    let encode = coercion_of_reference
+    let encode _env = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = Nametab.pr_global_env Id.Set.empty x
     let key = ["Printing";"Coercion"]

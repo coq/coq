@@ -112,162 +112,145 @@ let mis_nf_constructor_type ((ind,u),mib,mip) j =
 
 (* Number of constructors *)
 
-let nconstructors ind =
-  let (_,mip) = Global.lookup_inductive ind in
-  Array.length mip.mind_consnames
-
-let nconstructors_env env ind =
+let nconstructors env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   Array.length mip.mind_consnames
+
+let nconstructors_env env ind = nconstructors env ind
+[@@ocaml.deprecated "Alias for Inductiveops.nconstructors"]
 
 (* Arity of constructors excluding parameters, excluding local defs *)
 
-let constructors_nrealargs ind =
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_consnrealargs
-
-let constructors_nrealargs_env env ind =
+let constructors_nrealargs env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealargs
+
+let constructors_nrealargs_env env ind = constructors_nrealargs env ind
+[@@ocaml.deprecated "Alias for Inductiveops.constructors_nrealargs"]
 
 (* Arity of constructors excluding parameters, including local defs *)
 
-let constructors_nrealdecls ind =
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_consnrealdecls
-
-let constructors_nrealdecls_env env ind =
+let constructors_nrealdecls env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealdecls
+
+let constructors_nrealdecls_env env ind = constructors_nrealdecls env ind
+[@@ocaml.deprecated "Alias for Inductiveops.constructors_nrealdecls"]
 
 (* Arity of constructors including parameters, excluding local defs *)
 
-let constructor_nallargs (indsp,j) =
-  let (mib,mip) = Global.lookup_inductive indsp in
+let constructor_nallargs env (ind,j) =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealargs.(j-1) + mib.mind_nparams
 
-let constructor_nallargs_env env ((kn,i),j) =
-  let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in
-  mip.mind_consnrealargs.(j-1) + mib.mind_nparams
+let constructor_nallargs_env env (indsp,j) = constructor_nallargs env (indsp,j)
+[@@ocaml.deprecated "Alias for Inductiveops.constructor_nallargs"]
 
 (* Arity of constructors including params, including local defs *)
 
-let constructor_nalldecls (indsp,j) = (* TOCHANGE en decls *)
-  let (mib,mip) = Global.lookup_inductive indsp in
+let constructor_nalldecls env (ind,j) = (* TOCHANGE en decls *)
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt)
 
-let constructor_nalldecls_env env ((kn,i),j) = (* TOCHANGE en decls *)
-  let mib = Environ.lookup_mind kn env in
-  let mip = mib.mind_packets.(i) in
-  mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt)
+let constructor_nalldecls_env env (indsp,j) = constructor_nalldecls env (indsp,j)
+[@@ocaml.deprecated "Alias for Inductiveops.constructor_nalldecls"]
 
 (* Arity of constructors excluding params, excluding local defs *)
 
-let constructor_nrealargs (ind,j) =
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_consnrealargs.(j-1)
-
-let constructor_nrealargs_env env (ind,j) =
+let constructor_nrealargs env (ind,j) =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealargs.(j-1)
+
+let constructor_nrealargs_env env (ind,j) = constructor_nrealargs env (ind,j)
+[@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealargs"]
 
 (* Arity of constructors excluding params, including local defs *)
 
-let constructor_nrealdecls (ind,j) = (* TOCHANGE en decls *)
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_consnrealdecls.(j-1)
-
-let constructor_nrealdecls_env env (ind,j) = (* TOCHANGE en decls *)
+let constructor_nrealdecls env (ind,j) = (* TOCHANGE en decls *)
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_consnrealdecls.(j-1)
+
+let constructor_nrealdecls_env env (ind,j) = constructor_nrealdecls env (ind,j)
+[@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealdecls"]
 
 (* Length of arity, excluding params, excluding local defs *)
 
-let inductive_nrealargs ind =
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_nrealargs
-
-let inductive_nrealargs_env env ind =
+let inductive_nrealargs env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_nrealargs
+
+let inductive_nrealargs_env env ind = inductive_nrealargs env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nrealargs"]
 
 (* Length of arity, excluding params, including local defs *)
 
-let inductive_nrealdecls ind =
-  let (_,mip) = Global.lookup_inductive ind in
-  mip.mind_nrealdecls
-
-let inductive_nrealdecls_env env ind =
+let inductive_nrealdecls env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_nrealdecls
 
+let inductive_nrealdecls_env env ind = inductive_nrealdecls env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nrealdecls"]
+
 (* Full length of arity (w/o local defs) *)
 
-let inductive_nallargs ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  mib.mind_nparams + mip.mind_nrealargs
-
-let inductive_nallargs_env env ind =
+let inductive_nallargs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mib.mind_nparams + mip.mind_nrealargs
+
+let inductive_nallargs_env env ind = inductive_nallargs env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nallargs"]
 
 (* Length of arity (w/o local defs) *)
 
-let inductive_nparams ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  mib.mind_nparams
-
-let inductive_nparams_env env ind =
+let inductive_nparams env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mib.mind_nparams
+
+let inductive_nparams_env env ind = inductive_nparams env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nparams"]
 
 (* Length of arity (with local defs) *)
 
-let inductive_nparamdecls ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  Context.Rel.length mib.mind_params_ctxt
-
-let inductive_nparamdecls_env env ind =
+let inductive_nparamdecls env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   Context.Rel.length mib.mind_params_ctxt
+
+let inductive_nparamdecls_env env ind = inductive_nparamdecls env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nparamsdecls"]
 
 (* Full length of arity (with local defs) *)
 
-let inductive_nalldecls ind =
-  let (mib,mip) = Global.lookup_inductive ind in
-  Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls
-
-let inductive_nalldecls_env env ind =
+let inductive_nalldecls env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls
+
+let inductive_nalldecls_env env ind = inductive_nalldecls env ind
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_nalldecls"]
 
 (* Others *)
 
-let inductive_paramdecls (ind,u) =
-  let (mib,mip) = Global.lookup_inductive ind in
-    Inductive.inductive_paramdecls (mib,u)
-
-let inductive_paramdecls_env env (ind,u) =
+let inductive_paramdecls env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
     Inductive.inductive_paramdecls (mib,u)
 
-let inductive_alldecls (ind,u) =
-  let (mib,mip) = Global.lookup_inductive ind in
-    Vars.subst_instance_context u mip.mind_arity_ctxt
+let inductive_paramdecls_env env (ind,u) = inductive_paramdecls env (ind,u)
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_paramsdecls"]
 
-let inductive_alldecls_env env (ind,u) =
+let inductive_alldecls env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
     Vars.subst_instance_context u mip.mind_arity_ctxt
 
-let constructor_has_local_defs (indsp,j) =
-  let (mib,mip) = Global.lookup_inductive indsp in
+let inductive_alldecls_env env (ind,u) = inductive_alldecls env (ind,u)
+[@@ocaml.deprecated "Alias for Inductiveops.inductive_alldecls"]
+
+let constructor_has_local_defs env (indsp,j) =
+  let (mib,mip) = Inductive.lookup_mind_specif env indsp in
   let l1 = mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt) in
   let l2 = recarg_length mip.mind_recargs j + mib.mind_nparams in
   not (Int.equal l1 l2)
 
-let inductive_has_local_defs ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+let inductive_has_local_defs env ind =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let l1 = Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls in
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)

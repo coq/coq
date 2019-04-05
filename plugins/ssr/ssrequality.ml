@@ -504,9 +504,9 @@ let rwprocess_rule dir rule gl =
          let sigma, rs2 = loop d sigma s a.(1) rs 0 in
          let s, sigma = sr sigma 1 in
          loop d sigma s a.(0) rs2 0
-      | App (r_eq, a) when Hipattern.match_with_equality_type sigma t != None ->
+      | App (r_eq, a) when Hipattern.match_with_equality_type env sigma t != None ->
         let (ind, u) = EConstr.destInd sigma r_eq and rhs = Array.last a in
-        let np = Inductiveops.inductive_nparamdecls ind in
+        let np = Inductiveops.inductive_nparamdecls env ind in
         let indu = (ind, EConstr.EInstance.kind sigma u) in
         let ind_ct = Inductiveops.type_of_constructors env indu in
         let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_assum ind_ct.(0))) in

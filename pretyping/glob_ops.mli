@@ -94,7 +94,7 @@ val map_pattern : (glob_constr -> glob_constr) ->
     Evaluation is forced.
     Take the current alias as parameter,
     @raise Not_found if translation is impossible *)
-val cases_pattern_of_glob_constr : Name.t -> 'a glob_constr_g -> 'a cases_pattern_g
+val cases_pattern_of_glob_constr : Environ.env -> Name.t -> 'a glob_constr_g -> 'a cases_pattern_g
 
 val glob_constr_of_closed_cases_pattern : Environ.env -> 'a cases_pattern_g -> Name.t * 'a glob_constr_g
 

@@ -145,9 +145,9 @@ let add_name_opt na b t (nenv, env) =
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
-let encode_inductive r =
+let encode_inductive env r =
   let indsp = Nametab.global_inductive r in
-  let constr_lengths = constructors_nrealargs indsp in
+  let constr_lengths = constructors_nrealargs env indsp in
   (indsp,constr_lengths)
 
 (* Parameterization of the translation from constr to ast      *)
@@ -159,15 +159,15 @@ let has_two_constructors lc =
 
 let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
 
-let encode_bool ({CAst.loc} as r) =
-  let (x,lc) = encode_inductive r in
+let encode_bool env ({CAst.loc} as r) =
+  let (x,lc) = encode_inductive env r in
   if not (has_two_constructors lc) then
     user_err ?loc ~hdr:"encode_if"
       (str "This type has not exactly two constructors.");
   x
 
-let encode_tuple ({CAst.loc} as r) =
-  let (x,lc) = encode_inductive r in
+let encode_tuple env ({CAst.loc} as r) =
+  let (x,lc) = encode_inductive env r in
   if not (isomorphic_to_tuple lc) then
     user_err ?loc ~hdr:"encode_tuple"
       (str "This type cannot be seen as a tuple type.");
@@ -175,7 +175,7 @@ let encode_tuple ({CAst.loc} as r) =
 
 module PrintingInductiveMake =
   functor (Test : sig
-     val encode : qualid -> inductive
+     val encode : Environ.env -> qualid -> inductive
      val member_message : Pp.t -> bool -> Pp.t
      val field : string
      val title : string

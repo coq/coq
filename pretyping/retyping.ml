@@ -121,7 +121,7 @@ let retype ?(polyprop=true) sigma =
             Inductiveops.find_rectype env sigma t
           with Not_found -> retype_error BadRecursiveType
         in
-        let n = inductive_nrealdecls_env env (fst (fst (dest_ind_family indf))) in
+        let n = inductive_nrealdecls env (fst (fst (dest_ind_family indf))) in
         let t = betazetaevar_applist sigma n p realargs in
         (match EConstr.kind sigma (whd_all env sigma (type_of env t)) with
           | Prod _ -> whd_beta sigma (applist (t, [c]))

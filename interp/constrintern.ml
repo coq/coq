@@ -658,7 +658,7 @@ let terms_of_binders bl =
     | PatCstr (c,l,_) ->
        let qid = qualid_of_path ?loc (Nametab.path_of_global (ConstructRef c)) in
        let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous,None) in
-       let params = List.make (Inductiveops.inductive_nparams (fst c)) hole in
+       let params = List.make (Inductiveops.inductive_nparams (Global.env()) (fst c)) hole in
        CAppExpl ((None,qid,None),params @ List.map term_of_pat l)) pt in
   let rec extract_variables l = match l with
     | bnd :: l ->
@@ -1212,10 +1212,10 @@ let check_or_pat_variables loc ids idsl =
     @return if letin are included *)
 let check_constructor_length env loc cstr len_pl pl0 =
   let n = len_pl + List.length pl0 in
-  if Int.equal n (Inductiveops.constructor_nallargs cstr) then false else
-    (Int.equal n (Inductiveops.constructor_nalldecls cstr) ||
+  if Int.equal n (Inductiveops.constructor_nallargs env cstr) then false else
+    (Int.equal n (Inductiveops.constructor_nalldecls env cstr) ||
       (error_wrong_numarg_constructor ?loc env cstr
-         (Inductiveops.constructor_nrealargs cstr)))
+         (Inductiveops.constructor_nrealargs env cstr)))
 
 open Declarations
 
@@ -1241,9 +1241,9 @@ let add_local_defs_and_check_length loc env g pl args = match g with
         have been given in the "explicit" arguments, which come from a
         "@C args" notation or from a custom user notation *)
      let pl' = insert_local_defs_in_pattern cstr pl in
-     let maxargs = Inductiveops.constructor_nalldecls cstr in
+     let maxargs = Inductiveops.constructor_nalldecls env cstr in
      if List.length pl' + List.length args > maxargs then
-       error_wrong_numarg_constructor ?loc env cstr (Inductiveops.constructor_nrealargs cstr);
+       error_wrong_numarg_constructor ?loc env cstr (Inductiveops.constructor_nrealargs env cstr);
      (* Two possibilities: either the args are given with explict
      variables for local definitions, then we give the explicit args
      extended with local defs, so that there is nothing more to be
@@ -1273,15 +1273,15 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
   in aux 0 (impl_list,pl2)
 
 let add_implicits_check_constructor_length env loc c len_pl1 pl2 =
-  let nargs = Inductiveops.constructor_nallargs c in
-  let nargs' = Inductiveops.constructor_nalldecls c in
+  let nargs = Inductiveops.constructor_nallargs env c in
+  let nargs' = Inductiveops.constructor_nalldecls env c in
   let impls_st = implicits_of_global (ConstructRef c) in
   add_implicits_check_length (error_wrong_numarg_constructor ?loc env c)
     nargs nargs' impls_st len_pl1 pl2
 
 let add_implicits_check_ind_length env loc c len_pl1 pl2 =
-  let nallargs = inductive_nallargs_env env c in
-  let nalldecls = inductive_nalldecls_env env c in
+  let nallargs = inductive_nallargs env c in
+  let nalldecls = inductive_nalldecls env c in
   let impls_st = implicits_of_global (IndRef c) in
   add_implicits_check_length (error_wrong_numarg_inductive ?loc env c)
     nallargs nalldecls impls_st len_pl1 pl2
@@ -1289,8 +1289,8 @@ let add_implicits_check_ind_length env loc c len_pl1 pl2 =
 (** Do not raise NotEnoughArguments thanks to preconditions*)
 let chop_params_pattern loc ind args with_letin =
   let nparams = if with_letin
-    then Inductiveops.inductive_nparamdecls ind
-    else Inductiveops.inductive_nparams ind in
+    then Inductiveops.inductive_nparamdecls (Global.env()) ind
+    else Inductiveops.inductive_nparams (Global.env()) ind in
   assert (nparams <= List.length args);
   let params,args = List.chop nparams args in
   List.iter (fun c -> match DAst.get c with
@@ -1310,10 +1310,11 @@ let find_constructor loc add_params ref =
   in
   cstr, match add_params with
     | Some nb_args ->
+      let env = Global.env () in
       let nb =
-        if Int.equal nb_args (Inductiveops.constructor_nrealdecls cstr)
-          then Inductiveops.inductive_nparamdecls ind
-          else Inductiveops.inductive_nparams ind
+        if Int.equal nb_args (Inductiveops.constructor_nrealdecls env cstr)
+        then Inductiveops.inductive_nparamdecls env ind
+        else Inductiveops.inductive_nparams env ind
       in
       List.make nb ([], [(Id.Map.empty, DAst.make @@ PatVar Anonymous)])
     | None -> []

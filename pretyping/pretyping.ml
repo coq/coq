@@ -644,7 +644,7 @@ let rec pretype ~program_mode ~poly k0 resolve_tc (tycon : type_constraint) (env
 	| None -> []
 	| Some ty ->
           let ((ind, i), u) = destConstruct sigma fj.uj_val in
-	  let npars = inductive_nparams ind in
+          let npars = inductive_nparams !!env ind in
 	    if Int.equal npars 0 then []
 	    else
 	      try

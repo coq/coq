@@ -782,7 +782,7 @@ let rec pat_binder_of_term t = DAst.map (function
   | GApp (t, l) ->
     begin match DAst.get t with
     | GRef (ConstructRef cstr,_) ->
-     let nparams = Inductiveops.inductive_nparams (fst cstr) in
+     let nparams = Inductiveops.inductive_nparams (Global.env()) (fst cstr) in
      let _,l = List.chop nparams l in
      PatCstr (cstr, List.map pat_binder_of_term l, Anonymous)
     | _ -> raise No_match
@@ -909,7 +909,8 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
-  let pat = try cases_pattern_of_glob_constr Anonymous c with Not_found -> raise No_match in
+  let env = Global.env () in
+  let pat = try cases_pattern_of_glob_constr env Anonymous c with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
     let patl' = Id.List.assoc var binders in

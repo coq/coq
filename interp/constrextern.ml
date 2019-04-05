@@ -212,7 +212,7 @@ let encode_record r =
 
 module PrintingRecordRecord =
   PrintingInductiveMake (struct
-    let encode = encode_record
+    let encode _env = encode_record
     let field = "Record"
     let title = "Types leading to pretty-printing using record notation: "
     let member_message s b =
@@ -224,7 +224,7 @@ module PrintingRecordRecord =
 
 module PrintingRecordConstructor =
   PrintingInductiveMake (struct
-    let encode = encode_record
+    let encode _env = encode_record
     let field = "Constructor"
     let title = "Types leading to pretty-printing using constructor form: "
     let member_message s b =
@@ -289,11 +289,11 @@ let extern_reference ?loc vars l = !my_extern_reference vars l
 
 let add_patt_for_params ind l =
   if !Flags.in_debugger then l else
-    Util.List.addn (Inductiveops.inductive_nparamdecls ind) (CAst.make @@ CPatAtom None) l
+    Util.List.addn (Inductiveops.inductive_nparamdecls (Global.env()) ind) (CAst.make @@ CPatAtom None) l
 
 let add_cpatt_for_params ind l =
   if !Flags.in_debugger then l else
-    Util.List.addn  (Inductiveops.inductive_nparamdecls ind) (DAst.make @@ PatVar Anonymous) l
+    Util.List.addn  (Inductiveops.inductive_nparamdecls (Global.env()) ind) (DAst.make @@ PatVar Anonymous) l
 
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
@@ -364,7 +364,7 @@ let mkPat ?loc qid l = CAst.make ?loc @@
 
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
-  let nb_params = Inductiveops.inductive_nparams ind in
+  let nb_params = Inductiveops.inductive_nparams (Global.env()) ind in
   List.exists (fun (_,impls) ->
     (List.length impls >= nb_params) &&
       let params,args = Util.List.chop nb_params impls in
@@ -526,7 +526,7 @@ let rec extern_notation_ind_pattern allscopes lonely_seen vars ind args = functi
 let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
   (* pboutill: There are letins in pat which is incompatible with notations and
      not explicit application. *)
-  if !Flags.in_debugger||Inductiveops.inductive_has_local_defs ind then
+  if !Flags.in_debugger||Inductiveops.inductive_has_local_defs (Global.env()) ind then
     let c = extern_reference vars (IndRef ind) in
     let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
     CAst.make @@ CPatCstr (c, Some (add_patt_for_params ind args), [])

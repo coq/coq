@@ -57,7 +57,7 @@ module MakeTable =
 	  type key
 	  val compare : t -> t -> int
 	  val table : (string * key table_of_A) list ref
-	  val encode : key -> t
+          val encode : Environ.env -> key -> t
 	  val subst : substitution -> t -> t
           val printer : t -> Pp.t
           val key : option_name
@@ -111,10 +111,10 @@ module MakeTable =
 
     class table_of_A () =
     object
-      method add x = add_option (A.encode x)
-      method remove x = remove_option (A.encode x)
+      method add x = add_option (A.encode (Global.env()) x)
+      method remove x = remove_option (A.encode (Global.env()) x)
       method mem x =
-	let y = A.encode x in
+        let y = A.encode (Global.env()) x in
         let answer = MySet.mem y !t in
         Feedback.msg_info (A.member_message y answer)
       method print = print_table A.title A.printer !t
@@ -142,7 +142,7 @@ struct
   type key = string
   let compare = String.compare
   let table = string_table
-  let encode x = x
+  let encode _env x = x
   let subst _ x = x
   let printer = str
   let key = A.key
@@ -161,7 +161,7 @@ module type RefConvertArg =
 sig
   type t
   val compare : t -> t -> int
-  val encode : qualid -> t
+  val encode : Environ.env -> qualid -> t
   val subst : substitution -> t -> t
   val printer : t -> Pp.t
   val key : option_name

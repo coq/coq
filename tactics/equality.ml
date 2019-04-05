@@ -446,7 +446,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       let env = Proofview.Goal.env gl in
     let ctype = get_type_of env sigma c in
     let rels, t = decompose_prod_assum sigma (whd_betaiotazeta sigma ctype) in
-      match match_with_equality_type sigma t with
+      match match_with_equality_type env sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac c (it_mkProd_or_LetIn t rels)
@@ -462,7 +462,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
                   Proofview.tclEVARMAP >>= fun sigma ->
 	          let env' = push_rel_context rels env in
 	          let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
-	          match match_with_equality_type sigma t' with
+                  match match_with_equality_type env sigma t' with
 	            | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		  leibniz_rewrite_ebindings_clause cls lft2rgt tac c
@@ -743,7 +743,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
     let hd2,args2 = whd_all_stack env sigma t2 in
     match (EConstr.kind sigma hd1, EConstr.kind sigma hd2) with
       | Construct ((ind1,i1 as sp1),u1), Construct (sp2,_)
-          when Int.equal (List.length args1) (constructor_nallargs_env env sp1)
+          when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
 	  let sorts' =
             Sorts.List.intersect sorts (allowed_sorts env (fst sp1))
@@ -751,7 +751,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if eq_constructor sp1 sp2 then
-	    let nparams = inductive_nparams_env env ind1 in
+            let nparams = inductive_nparams env ind1 in
 	    let params1,rargs1 = List.chop nparams args1 in
 	    let _,rargs2 = List.chop nparams args2 in
             let (mib,mip) = lookup_mind_specif env ind1 in
@@ -966,9 +966,10 @@ let rec build_discriminator env sigma true_0 false_0 dirn c = function
 
 let gen_absurdity id =
   Proofview.Goal.enter begin fun gl ->
+  let env = pf_env gl in
   let sigma = project gl in
   let hyp_typ = pf_get_hyp_typ id gl in
-  if is_empty_type sigma hyp_typ
+  if is_empty_type env sigma hyp_typ
   then
     simplest_elim (mkVar id)
   else
@@ -1066,7 +1067,7 @@ let onNegatedEquality with_evars tac =
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     match EConstr.kind sigma (hnf_constr env sigma ccl) with
-    | Prod (_,t,u) when is_empty_type sigma u ->
+    | Prod (_,t,u) when is_empty_type env sigma u ->
         tclTHEN introf
           (onLastHypId (fun id ->
             onEquality with_evars tac (mkVar id,NoBindings)))
