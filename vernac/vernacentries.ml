@@ -1096,7 +1096,10 @@ let focus_command_cond = Proof.no_cond command_focus
      there are no more goals to solve. It cannot be a tactic since
      all tactics fail if there are no further goals to prove. *)
 
-let vernac_solve_existential ~pstate i e = Pfedit.instantiate_nth_evar_com i e pstate
+let vernac_solve_existential ~pstate n com =
+  Proof_global.simple_with_current_proof (fun _ p ->
+      let intern env sigma = Constrintern.intern_constr env sigma com in
+      Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
 let vernac_set_end_tac ~pstate tac =
   let env = Genintern.empty_glob_sign (Global.env ()) in

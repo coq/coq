@@ -65,14 +65,8 @@ let pf_ids_set_of_hyps gls =
 let pf_get_new_id id gls =
   next_ident_away id (pf_ids_set_of_hyps gls)
 
-let pf_global gls id =
-  let env = pf_env gls in
-  let sigma = project gls in
-  Evd.fresh_global env sigma (Constrintern.construct_reference (pf_hyps gls) id)
-
 let pf_apply f gls = f (pf_env gls) (project gls)
-let pf_eapply f gls x = 
-  on_sig gls (fun evm -> f (pf_env gls) evm x)
+let pf_eapply f gls x = on_sig gls (fun evm -> f (pf_env gls) evm x)
 let pf_reduce = pf_apply
 let pf_e_reduce = pf_apply
 
@@ -125,11 +119,6 @@ module New = struct
 
   let of_old f gl =
     f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
-
-  let pf_global id gl =
-    (* We only check for the existence of an [id] in [hyps] *)
-    let hyps = Proofview.Goal.hyps gl in
-    Constrintern.construct_reference hyps id
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl

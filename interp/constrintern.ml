@@ -96,21 +96,6 @@ let is_global id =
   with Not_found ->
     false
 
-let global_reference_of_reference qid =
-  locate_reference qid
-
-let global_reference id =
-  locate_reference (qualid_of_ident id)
-
-let construct_reference ctx id =
-  try
-    VarRef (let _ = Context.Named.lookup id ctx in id)
-  with Not_found ->
-    global_reference id
-
-let global_reference_in_absolute_module dir id =
-  Nametab.global_of_path (Libnames.make_path dir id)
-
 (**********************************************************************)
 (* Internalization errors                                             *)
 
@@ -1354,7 +1339,7 @@ let sort_fields ~complete loc fields completer =
     | (first_field_ref, first_field_value):: other_fields ->
         let (first_field_glob_ref, record) =
           try
-            let gr = global_reference_of_reference first_field_ref in
+            let gr = locate_reference first_field_ref in
             (gr, Recordops.find_projection gr)
           with Not_found ->
             raise (InternalizationError(loc, NotAProjection first_field_ref))
@@ -1412,7 +1397,7 @@ let sort_fields ~complete loc fields completer =
         let rec index_fields fields remaining_projs acc =
           match fields with
             | (field_ref, field_value) :: fields ->
-               let field_glob_ref = try global_reference_of_reference field_ref
+               let field_glob_ref = try locate_reference field_ref
                with Not_found ->
                  user_err ?loc ~hdr:"intern"
                                (str "The field \"" ++ pr_qualid field_ref ++ str "\" does not exist.") in
