@@ -133,7 +133,7 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define SP_REG asm("%edi")
 #define ACCU_REG
 #endif
-#if defined(PPC) || defined(_POWER) || defined(_IBMR2)
+#if defined(__ppc__) || defined(__ppc64__)
 #define PC_REG asm("26")
 #define SP_REG asm("27")
 #define ACCU_REG asm("28")
