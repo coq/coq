@@ -20,6 +20,7 @@ typedef void (*scanning_action) (value, value *);
 
 CAMLextern char *young_ptr;
 CAMLextern char *young_limit;
+CAMLextern char *caml_young_trigger;
 CAMLextern void (*scan_roots_hook) (scanning_action);
 CAMLextern void minor_collection (void);
 
@@ -51,7 +52,7 @@ CAMLextern void minor_collection (void);
     minor_collection ();                                                \
     Restore_after_gc;                                                   \
     young_ptr -= Bhsize_wosize (wosize);                                \
-    if (young_ptr < young_limit) abort();                               \
+    if (young_ptr < caml_young_trigger) abort ();                       \
   }                                                                     \
   Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);        \
   (result) = Val_hp (young_ptr);                                        \
