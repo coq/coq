@@ -318,7 +318,7 @@ let declare_congr_scheme ind =
   let sigma = Evd.from_env env in
   if Hipattern.is_equality_type env sigma (EConstr.of_constr (mkInd ind)) (* FIXME *) then begin
     if
-      try Coqlib.check_required_library Coqlib.logic_module_name; true
+      try Library.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
     then
       ignore (define_individual_scheme congr_scheme_kind UserAutomaticRequest None ind)

@@ -3847,7 +3847,7 @@ let abstract_args gl generalize_vars dep id defined f args =
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
   let open Context.Named.Declaration in
   Proofview.Goal.enter begin fun gl ->
-  Coqlib.(check_required_library jmeq_module_name);
+  (* (Coqlib.check_required_library jmeq_module_name); *)
   let sigma = Tacmach.New.project gl in
   let (f, args, def, id, oldid) =
     let oldid = Tacmach.New.pf_get_new_id id gl in

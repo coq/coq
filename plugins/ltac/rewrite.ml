@@ -57,11 +57,11 @@ let classes_dirpath =
 
 let init_relation_classes () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Classes";"RelationClasses"]
+  else Library.check_required_library ["Coq";"Classes";"RelationClasses"]
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+  else Library.check_required_library ["Coq";"Setoids";"Setoid"]
 
 let find_reference dir s =
   Coqlib.find_reference "generalized rewriting" dir s

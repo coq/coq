@@ -410,7 +410,7 @@ exception ToShow of exn
 
 let jmeq () =
   try
-    Coqlib.check_required_library Coqlib.jmeq_module_name;
+    Library.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
     UnivGen.constr_of_monomorphic_global @@
       Coqlib.lib_ref "core.JMeq.type"
@@ -418,7 +418,7 @@ let jmeq () =
 
 let jmeq_refl () =
   try
-    Coqlib.check_required_library Coqlib.jmeq_module_name;
+    Library.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
     UnivGen.constr_of_monomorphic_global @@
       Coqlib.lib_ref "core.JMeq.refl"

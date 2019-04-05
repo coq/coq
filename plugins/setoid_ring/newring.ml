@@ -23,7 +23,6 @@ open Globnames
 open Glob_term
 open Locus
 open Tacexpr
-open Coqlib
 open Mod_subst
 open Tacinterp
 open Libobject
@@ -623,7 +622,7 @@ let interp_div env evdref div =
        (* Same remark on ill-typed terms ... *)
 
 let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
-  check_required_library (cdir@["Ring_base"]);
+  Library.check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
   let evd = ref sigma in
@@ -853,7 +852,7 @@ let print_fields () =
 let field_for_carrier r = Cmap.find r !field_from_carrier
 
 let find_field_structure env sigma l =
-  check_required_library (cdir@["Field_tac"]);
+  Library.check_required_library (cdir@["Field_tac"]);
   match l with
     | t::cl' ->
         let ty = Retyping.get_type_of env sigma t in
@@ -934,7 +933,7 @@ let field_equality evd r inv req =
 
 let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   let open Constr in
-  check_required_library (cdir@["Field_tac"]);
+  Library.check_required_library (cdir@["Field_tac"]);
   let (sigma,fth) = ic fth in
   let env = Global.env() in
   let evd = ref sigma in

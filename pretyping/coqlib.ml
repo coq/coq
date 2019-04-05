@@ -90,30 +90,16 @@ let gen_reference_in_modules locstr dirs s =
   match these with
     | [x] -> x
     | [] ->
-	anomaly ~label:locstr (str "cannot find " ++ str s ++
-	str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
+        anomaly ~label:locstr (str "cannot find " ++ str s ++
+        str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
         prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
     | l ->
       anomaly ~label:locstr
-	(str "ambiguous name " ++ str s ++ str " can represent " ++
-	   prlist_with_sep pr_comma
-	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
-	   str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
+        (str "ambiguous name " ++ str s ++ str " can represent " ++
+           prlist_with_sep pr_comma
+           (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
+           str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
            prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
-
-(* For tactics/commands requiring vernacular libraries *)
-
-let check_required_library d =
-  let dir = make_dir d in
-  if Library.library_is_loaded dir then ()
-  else
-    let in_current_dir = match Lib.current_mp () with
-      | MPfile dp -> DirPath.equal dir dp
-      | _ -> false
-    in
-    if not in_current_dir then
-      user_err ~hdr:"Coqlib.check_required_library"
-        (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects                                                 *)
@@ -249,8 +235,9 @@ type coq_inversion_data = {
   inv_congr: GlobRef.t  (* : forall params B (f:t->B) y, eq params y -> f c=f y *)
 }
 
-let build_coq_inversion_gen l str =
-  List.iter check_required_library l; {
+let build_coq_inversion_gen _l str =
+  (* List.iter check_required_library l *)
+  {
     inv_eq    = lib_ref ("core." ^ str ^ ".type");
     inv_ind   = lib_ref ("core." ^ str ^ ".ind");
     inv_congr = lib_ref ("core." ^ str ^ ".congr_canonical");

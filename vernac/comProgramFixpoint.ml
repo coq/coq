@@ -89,7 +89,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let open EConstr in
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
-  Coqlib.check_required_library ["Coq";"Program";"Wf"];
+  Library.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in

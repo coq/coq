@@ -29,8 +29,9 @@ let extern_state s =
   System.extern_state Coq_config.state_magic_number s (freeze ~marshallable:true)
 
 let intern_state s =
-  unfreeze (with_magic_number_check (System.intern_state Coq_config.state_magic_number) s);
-  Library.overwrite_library_filenames s
+  unfreeze (with_magic_number_check (System.intern_state Coq_config.state_magic_number) s)
+  (* ;
+   * Library.overwrite_library_filenames s *)
 
 (* Rollback. *)
 

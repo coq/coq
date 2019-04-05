@@ -594,7 +594,7 @@ let classes_dirpath =
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
+  else () (* Library.check_required_library ["Coq";"Setoids";"Setoid"] *)
 
 let check_setoid cl =
   let concloccs = Locusops.occurrences_map (fun x -> x) cl.concl_occs in
@@ -1344,7 +1344,7 @@ let inject_if_homogenous_dependent_pair ty =
     (* knows inductive types *)
     if not (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind &&
       pf_apply is_conv gl ar1.(2) ar2.(2)) then raise Exit;
-    check_required_library ["Coq";"Logic";"Eqdep_dec"];
+    (* check_required_library ["Coq";"Logic";"Eqdep_dec"]; *)
     let new_eq_args = [|pf_unsafe_type_of gl ar1.(3);ar1.(3);ar2.(3)|] in
     let inj2 = lib_ref "core.eqdep_dec.inj_pair2" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in

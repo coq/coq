@@ -254,7 +254,7 @@ let eterm_obligations env name evm fs ?status t ty =
     Array.of_list (List.rev evars), (evnames, evmap), t', ty
 
 let hide_obligation () =
-  Coqlib.check_required_library ["Coq";"Program";"Tactics"];
+  Library.check_required_library ["Coq";"Program";"Tactics"];
   UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "program.tactics.obligation")
 
 let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
@@ -1191,6 +1191,6 @@ let next_obligation n tac =
   solve_obligation prg i tac
 
 let check_program_libraries () =
-  Coqlib.check_required_library Coqlib.datatypes_module_name;
-  Coqlib.check_required_library ["Coq";"Init";"Specif"];
-  Coqlib.check_required_library ["Coq";"Program";"Tactics"]
+  Library.check_required_library Coqlib.datatypes_module_name;
+  Library.check_required_library ["Coq";"Init";"Specif"];
+  Library.check_required_library ["Coq";"Program";"Tactics"]

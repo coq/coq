@@ -477,10 +477,10 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
     if Lib.is_module_or_modtype () then
       begin
         warn_require_in_module ();
-	add_anonymous_leaf (in_require (needed,modrefl,None));
-	Option.iter (fun exp ->
-	  add_anonymous_leaf (in_import_library (modrefl,exp)))
-	  export
+        add_anonymous_leaf (in_require (needed,modrefl,None));
+        Option.iter (fun exp ->
+          add_anonymous_leaf (in_import_library (modrefl,exp)))
+          export
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
@@ -550,7 +550,7 @@ let current_deps () =
 let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
-  user_err 
+  user_err
     (strbrk "Unable to use logical name " ++ DirPath.print dir ++
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
@@ -643,3 +643,17 @@ let get_used_load_paths () =
        StringSet.empty !libraries_loaded_list)
 
 let _ = Nativelib.get_load_paths := get_used_load_paths
+
+(* For tactics/commands requiring vernacular libraries *)
+
+let check_required_library d =
+  let dir = DirPath.make (List.rev_map Id.of_string d) in
+  if library_is_loaded dir then ()
+  else
+    let in_current_dir = match Lib.current_mp () with
+      | MPfile dp -> DirPath.equal dir dp
+      | _ -> false
+    in
+    if not in_current_dir then
+      user_err ~hdr:"Coqlib.check_required_library"
+        (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
