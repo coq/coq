@@ -1516,7 +1516,7 @@ let uninterp_prim_token c =
      with Not_found -> raise Notation_ops.No_match
 
 let uninterp_prim_token_cases_pattern c =
-  match glob_constr_of_closed_cases_pattern c with
+  match glob_constr_of_closed_cases_pattern (Global.env()) c with
   | exception Not_found -> raise Notation_ops.No_match
   | na,c -> let (sc,n) = uninterp_prim_token c in (na,sc,n)
 

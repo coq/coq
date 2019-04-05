@@ -1292,7 +1292,7 @@ let match_notation_constr u c (metas,pat) =
     | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
        (match Id.List.assoc x binders with
         | [pat] ->
-          let v = glob_constr_of_cases_pattern pat in
+          let v = glob_constr_of_cases_pattern (Global.env()) pat in
           ((v,scl)::terms',termlists',binders',binderlists')
         | _ -> raise No_match)
     | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _) ->
@@ -1333,11 +1333,11 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(0,[])
   | PatVar Anonymous, NHole _ -> sigma,(0,[])
   | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
-      let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
+      let l = try add_patterns_for_params_remove_local_defs (Global.env ()) r1 largs with Not_found -> raise No_match in
       sigma,(0,l)
   | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
-      let l1 = try add_patterns_for_params_remove_local_defs r1 args1 with Not_found -> raise No_match in
+      let l1 = try add_patterns_for_params_remove_local_defs (Global.env()) r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
       then

@@ -539,8 +539,8 @@ let drop_local_defs params decls args =
       | _ -> assert false in
     aux decls args
 
-let add_patterns_for_params_remove_local_defs (ind,j) l =
-  let (mib,mip) = Global.lookup_inductive ind in
+let add_patterns_for_params_remove_local_defs env (ind,j) l =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let nparams = mib.Declarations.mind_nparams in
   let l =
     if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
@@ -556,12 +556,12 @@ let add_alias ?loc na c =
   | Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
 
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?loc -> function
+let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun ?loc -> function
   | PatCstr (cstr,[],na) -> add_alias ?loc na (GRef (ConstructRef cstr,None))
   | PatCstr (cstr,l,na)  ->
       let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
-      let l = add_patterns_for_params_remove_local_defs cstr l in
-      add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux isclosed) l))
+      let l = add_patterns_for_params_remove_local_defs env cstr l in
+      add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux env isclosed) l))
   | PatVar (Name id) when not isclosed ->
       GVar id
   | PatVar Anonymous when not isclosed ->
@@ -571,14 +571,14 @@ let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?lo
   | _ -> raise Not_found
   ) x
 
-let glob_constr_of_closed_cases_pattern p = match DAst.get p with
+let glob_constr_of_closed_cases_pattern env p = match DAst.get p with
   | PatCstr (cstr,l,na) ->
       let loc = p.CAst.loc in
-      na,glob_constr_of_cases_pattern_aux true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
+      na,glob_constr_of_cases_pattern_aux env true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found
 
-let glob_constr_of_cases_pattern p = glob_constr_of_cases_pattern_aux false p
+let glob_constr_of_cases_pattern env p = glob_constr_of_cases_pattern_aux env false p
 
 (* This has to be in some file... *)
 

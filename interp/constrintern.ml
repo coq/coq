@@ -753,7 +753,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           else
             let _,((disjpat,_),_),_ = intern_pat ntnvars nenv c in
             match disjpat with
-            | [pat] -> (glob_constr_of_cases_pattern pat, None)
+            | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat, None)
             | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
         in
         let terms = Id.Map.fold mk_env terms Id.Map.empty in
@@ -815,7 +815,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       else
         let env,((disjpat,ids),id),na = intern_pat ntnvars env pat in
         match disjpat with
-        | [pat] -> glob_constr_of_cases_pattern pat
+        | [pat] -> glob_constr_of_cases_pattern (Global.env()) pat
         | _ -> user_err Pp.(str "Cannot turn a disjunctive pattern into a term.")
     with Not_found ->
     try

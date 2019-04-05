@@ -96,12 +96,13 @@ val map_pattern : (glob_constr -> glob_constr) ->
     @raise Not_found if translation is impossible *)
 val cases_pattern_of_glob_constr : Name.t -> 'a glob_constr_g -> 'a cases_pattern_g
 
-val glob_constr_of_closed_cases_pattern : 'a cases_pattern_g -> Name.t * 'a glob_constr_g
+val glob_constr_of_closed_cases_pattern : Environ.env -> 'a cases_pattern_g -> Name.t * 'a glob_constr_g
 
 (** A canonical encoding of cases pattern into constr such that
     composed with [cases_pattern_of_glob_constr Anonymous] gives identity *)
-val glob_constr_of_cases_pattern : 'a cases_pattern_g -> 'a glob_constr_g
+val glob_constr_of_cases_pattern : Environ.env -> 'a cases_pattern_g -> 'a glob_constr_g
 
-val add_patterns_for_params_remove_local_defs : constructor -> 'a cases_pattern_g list -> 'a cases_pattern_g list
+val add_patterns_for_params_remove_local_defs : Environ.env -> constructor ->
+  'a cases_pattern_g list -> 'a cases_pattern_g list
 
 val empty_lvar : Ltac_pretype.ltac_var_map
