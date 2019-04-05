@@ -278,7 +278,7 @@ let extract_default_loc loc doc_id sid : Loc.t option =
   | None ->
     try
       let doc = Stm.get_doc doc_id in
-      Option.cata fst None Stm.(get_ast ~doc sid)
+      Option.cata (fun {CAst.loc} -> loc) None Stm.(get_ast ~doc sid)
     with _ -> loc
 
 (** Coqloop Console feedback handler *)
@@ -381,22 +381,22 @@ let rec vernac_loop ~state =
   try
     let input = top_buffer.tokens in
     match read_sentence ~state input with
-    | Some { v = VernacBacktrack(bid,_,_) } ->
+    | Some (VernacBacktrack(bid,_,_)) ->
       let bid = Stateid.of_int bid in
       let doc, res = Stm.edit_at ~doc:state.doc bid in
       assert (res = `NewTip);
       let state = { state with doc; sid = bid } in
       vernac_loop ~state
 
-    | Some { v = VernacQuit } ->
+    | Some VernacQuit ->
       exit 0
 
-    | Some { v = VernacDrop } ->
+    | Some VernacDrop ->
       if Mltop.is_ocaml_top()
       then (drop_last_doc := Some state; state)
       else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
 
-    | Some { v = VernacControl c; loc } ->
+    | Some VernacControl { loc; v=c } ->
       let nstate = Vernac.process_expr ~state (make ?loc c) in
       top_goal_print ~doc:state.doc c state.proof nstate.proof;
       vernac_loop ~state:nstate

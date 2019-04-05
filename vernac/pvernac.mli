@@ -26,7 +26,7 @@ module Vernac_ :
     val rec_definition : (fixpoint_expr * decl_notation list) Entry.t
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
-    val main_entry : vernac_control CAst.t option Entry.t
+    val main_entry : vernac_control option Entry.t
     val red_expr : raw_red_expr Entry.t
     val hint_info : Hints.hint_info_expr Entry.t
   end
@@ -40,7 +40,7 @@ module Unsafe : sig
 end
 
 (** The main entry: reads an optional vernac command *)
-val main_entry : proof_mode option -> vernac_control CAst.t option Entry.t
+val main_entry : proof_mode option -> vernac_control option Entry.t
 
 (** Grammar entry for tactics: proof mode(s).
   By default Coq's grammar has an empty entry (non-terminal) for

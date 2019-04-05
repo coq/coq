@@ -413,7 +413,7 @@ let with_output_to_file fname func input =
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let pr_cmd_header {CAst.loc;v=com} =
+let pr_cmd_header com =
   let shorten s =
     if Unicode.utf8_length s > 33 then (Unicode.utf8_sub s 0 30) ^ "..." else s
   in
@@ -423,7 +423,7 @@ let pr_cmd_header {CAst.loc;v=com} =
         | x -> x
       ) s
   in
-  let (start,stop) = Option.cata Loc.unloc (0,0) loc in
+  let (start,stop) = Option.cata Loc.unloc (0,0) com.CAst.loc in
   let safe_pr_vernac x =
     try Ppvernac.pr_vernac x
     with e -> str (Printexc.to_string e) in

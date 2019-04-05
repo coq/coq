@@ -2599,7 +2599,7 @@ and vernac_load ?proof ~verbosely ~st fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   pstate
 
-and interp_control ?proof ~st = function
+and interp_control ?proof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->
     interp_expr ?proof ~atts ~st cmd
   | { v=VernacFail v } ->
