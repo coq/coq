@@ -10,6 +10,7 @@
 
 #ifndef _COQ_CAML_GC_
 #define _COQ_CAML_GC_
+#include <stdio.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -50,6 +51,7 @@ CAMLextern void minor_collection (void);
     minor_collection ();                                                \
     Restore_after_gc;                                                   \
     young_ptr -= Bhsize_wosize (wosize);                                \
+    if (young_ptr < young_limit) abort();                               \
   }                                                                     \
   Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);        \
   (result) = Val_hp (young_ptr);                                        \
