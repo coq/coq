@@ -2077,7 +2077,7 @@ end = struct (* {{{ *)
       let rec find ~time ~batch ~fail = function
         | VernacTime (batch,{CAst.v=e}) -> find ~time:true ~batch ~fail e
         | VernacRedirect (_,{CAst.v=e}) -> find ~time ~batch ~fail e
-        | VernacFail e -> find ~time ~batch ~fail:true e
+        | VernacFail {CAst.v=e} -> find ~time ~batch ~fail:true e
         | e -> e, time, batch, fail in
       find ~time:false ~batch:false ~fail:false e in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in

@@ -206,10 +206,10 @@ let classify_vernac e =
     | VernacExpr (f, e) ->
       let poly = Attributes.(parse_drop_extra polymorphic_nowarn f) in
       static_classifier ~poly e
-    | VernacTimeout (_,e) -> static_control_classifier e
+    | VernacTimeout (_,{v=e}) -> static_control_classifier e
     | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->
        static_control_classifier e
-    | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
+    | VernacFail {v=e} -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier e with
         | ( VtQuery | VtProofStep _ | VtSideff _
           | VtMeta), _ as x -> x
