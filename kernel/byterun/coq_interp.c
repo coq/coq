@@ -148,8 +148,9 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define SP_REG asm("a4")
 #define ACCU_REG asm("d7")
 #endif
-#if defined(__arm__) && !defined(__thumb2__)
-#define PC_REG asm("r9")
+/* OCaml PR#4953: these specific registers not available in Thumb mode */
+#if defined(__arm__) && !defined(__thumb__)
+#define PC_REG asm("r6")
 #define SP_REG asm("r8")
 #define ACCU_REG asm("r7")
 #endif
