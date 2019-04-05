@@ -1371,7 +1371,7 @@ let read_coqide_args argv =
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files bindings_files out args
-    |arg::args when out = [] && Minilib.is_prefix_of "-psn_" arg ->
+    |arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
       filter_coqtop coqtop project_files bindings_files out args
     |arg::args -> filter_coqtop coqtop project_files bindings_files (arg::out) args

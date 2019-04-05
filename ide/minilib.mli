@@ -43,6 +43,3 @@ val coqide_config_dirs : unit -> string list
 
 (* The ordered list of directories where a data file is searched by default *)
 val coqide_data_dirs : unit -> string list
-
-(* Misc *)
-val is_prefix_of : string -> string -> bool
