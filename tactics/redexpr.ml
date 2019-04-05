@@ -259,10 +259,12 @@ let subst_mps subst c =
   EConstr.of_constr (Mod_subst.subst_mps subst (EConstr.Unsafe.to_constr c))
 
 let subst_red_expr subs =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   Redops.map_red_expr_gen
     (subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
-    (Patternops.subst_pattern (Global.env()) subs)
+    (Patternops.subst_pattern env sigma subs)
 
 let inReduction : bool * string * red_expr -> obj =
   declare_object
