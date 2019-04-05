@@ -1146,7 +1146,7 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
-let path_convertible p q =
+let path_convertible env sigma p q =
   let open Classops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
@@ -1171,13 +1171,12 @@ let path_convertible p q =
     | [] -> anomaly (str "A coercion path shouldn't be empty.")
   in
   try
-    let e = Global.env () in
-    let sigma,tp = understand_tcc e (Evd.from_env e) (path_to_gterm p) in
-    let sigma,tq = understand_tcc e sigma (path_to_gterm q) in
+    let sigma,tp = understand_tcc env sigma (path_to_gterm p) in
+    let sigma,tq = understand_tcc env sigma (path_to_gterm q) in
     if Evd.has_undefined sigma then
       false
     else
-      let _ = Evarconv.unify_delay e sigma tp tq in true
+      let _ = Evarconv.unify_delay env sigma tp tq in true
   with Evarconv.UnableToUnify _ | PretypeError _ -> false
 
 let _ = Classops.install_path_comparator path_convertible

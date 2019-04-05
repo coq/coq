@@ -304,8 +304,8 @@ let install_path_printer f = path_printer := f
 
 let print_path x = !path_printer x
 
-let path_comparator : (inheritance_path -> inheritance_path -> bool) ref =
-  ref (fun _ _ -> false)
+let path_comparator : (Environ.env -> Evd.evar_map -> inheritance_path -> inheritance_path -> bool) ref =
+  ref (fun _ _ _ _ -> false)
 
 let install_path_comparator f = path_comparator := f
 
@@ -327,7 +327,7 @@ let different_class_params env i =
       | CL_CONST c -> Environ.is_polymorphic env (ConstRef c)
       | _ -> false
 
-let add_coercion_in_graph env (ic,source,target) =
+let add_coercion_in_graph env sigma (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
@@ -335,7 +335,7 @@ let add_coercion_in_graph env (ic,source,target) =
     if not (Bijint.Index.equal i j) || different_class_params env i then
       match lookup_path_between_class ij with
       | q ->
-        if not (compare_path p q) then
+        if not (compare_path env sigma p q) then
           ambig_paths := (ij,p)::!ambig_paths;
         false
       | exception Not_found -> (add_new_path ij p; true)
@@ -419,7 +419,7 @@ let declare_coercion env sigma c =
       coe_param = c.coercion_params;
     } in
   let () = add_new_coercion c.coercion_type xf in
-  add_coercion_in_graph env (xf,is,it)
+  add_coercion_in_graph env sigma (xf,is,it)
 
 (* For printing purpose *)
 let pr_cl_index = Bijint.Index.print
