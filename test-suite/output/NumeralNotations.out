@@ -82,10 +82,6 @@ function (of_uint) targets an option type.
 The command has indeed failed with message:
 The 'abstract after' directive has no effect when the parsing function
 (of_uint) targets an option type. [abstract-large-number-no-op,numbers]
-The command has indeed failed with message:
-The reference of_uint was not found in the current environment.
-The command has indeed failed with message:
-The reference of_uint was not found in the current environment.
 let v := of_uint (Decimal.D1 Decimal.Nil) in v : unit
      : unit
 let v := 0%test13 in v : unit
