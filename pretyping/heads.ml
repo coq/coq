@@ -12,10 +12,7 @@ open Util
 open Names
 open Constr
 open Vars
-open Mod_subst
 open Environ
-open Libobject
-open Lib
 open Context.Named.Declaration
 
 (** Characterization of the head of a term *)
@@ -35,40 +32,33 @@ type head_approximation =
 | FlexibleHead of int * int * int * bool (* [true] if a surrounding case *)
 | NotImmediatelyComputableHead
 
-(** Registration as global tables and rollback. *)
+(* FIXME: maybe change interface here *)
+let rec compute_head = function
+  | EvalConstRef cst ->
+    let env = Global.env() in
+    let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
+    (match body with
+     | None -> RigidHead (RigidParameter cst)
+     | Some c -> kind_of_head env c)
+  | EvalVarRef id ->
+    (match Global.lookup_named id with
+     | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
+       kind_of_head (Global.env()) c
+     | _ -> RigidHead RigidOther)
 
-module Evalreford = struct
-  type t = evaluable_global_reference
-  let compare gr1 gr2 = match gr1, gr2 with
-  | EvalVarRef id1, EvalVarRef id2 -> Id.compare id1 id2
-  | EvalVarRef _, EvalConstRef _ -> -1
-  | EvalConstRef c1, EvalConstRef c2 ->
-    Constant.CanOrd.compare c1 c2
-  | EvalConstRef _, EvalVarRef _ -> 1
-end
-
-module Evalrefmap =
-  Map.Make (Evalreford)
-
-
-let head_map = Summary.ref Evalrefmap.empty ~name:"Head_decl"
-
-let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
-let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map
-
-let kind_of_head env t =
+and kind_of_head env t =
   let rec aux k l t b = match kind (Reduction.whd_betaiotazeta env t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->
-      (try on_subterm k l b (variable_head id)
+      (try on_subterm k l b (compute_head (EvalVarRef id))
        with Not_found ->
         (* a goal variable *)
         match lookup_named id env with
         | LocalDef (_,c,_) -> aux k l c b
         | LocalAssum _ -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
-      (try on_subterm k l b (constant_head cst)
+      (try on_subterm k l b (compute_head (EvalConstRef cst))
        with Not_found ->
          CErrors.anomaly
            Pp.(str "constant not found in kind_of_head: " ++
@@ -119,69 +109,7 @@ let kind_of_head env t =
   | x -> x
   in aux 0 [] t false
 
-(* FIXME: maybe change interface here *)
-let compute_head = function
-| EvalConstRef cst ->
-  let env = Global.env() in
-  let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
-  (match body with
-   | None -> RigidHead (RigidParameter cst)
-   | Some c -> kind_of_head env c)
-| EvalVarRef id ->
-    (match Global.lookup_named id with
-     | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
-           kind_of_head (Global.env()) c
-     | _ -> RigidHead RigidOther)
-
 let is_rigid env t =
   match kind_of_head env t with
   | RigidHead _ | ConstructorHead -> true
   | _ -> false
-
-(** Registration of heads as an object *)
-
-let load_head _ (_,(ref,(k:head_approximation))) =
-  head_map := Evalrefmap.add ref k !head_map
-
-let cache_head o =
-  load_head 1 o
-
-let subst_head_approximation subst = function
-  | RigidHead (RigidParameter cst) as k ->
-    let cst',c = subst_con subst cst in
-    if cst == cst' then k
-    else
-      (match c with
-       | None ->
-         (* A change of the prefix of the constant *)
-         RigidHead (RigidParameter cst')
-       | Some c ->
-         (* A substitution of the constant by a functor argument *)
-         kind_of_head (Global.env()) c.Univ.univ_abstracted_value)
-  | x -> x
-
-let subst_head (subst,(ref,k)) =
-  (subst_evaluable_reference subst ref, subst_head_approximation subst k)
-
-let discharge_head (_,(ref,k)) =
-  match ref with
-  | EvalConstRef cst -> Some (ref, k)
-  | EvalVarRef id -> None
-
-let rebuild_head (ref,k) =
-  (ref, compute_head ref)
-
-type head_obj = evaluable_global_reference * head_approximation
-
-let inHead : head_obj -> obj =
-  declare_object {(default_object "HEAD") with
-    cache_function = cache_head;
-    load_function = load_head;
-    subst_function = subst_head;
-    classify_function = (fun x -> Substitute x);
-    discharge_function = discharge_head;
-    rebuild_function = rebuild_head }
-
-let declare_head c =
-  let hd = compute_head c in
-  add_anonymous_leaf (inHead (c,hd))
