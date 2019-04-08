@@ -207,6 +207,15 @@ Conversion machines
   GH issue number: ?
   risk: 
 
+  component: primitive projections, native_compute
+  summary: stuck primitive projections computed incorrectly by native_compute
+  introduced: 1 Jun 2018, e1e7888a, ppedrot
+  impacted released versions: 8.9.0
+  impacted coqchk versions: none
+  found by: maximedenes exploiting bug #9684
+  exploit: test-suite/bugs/closed/bug_9684.v
+  GH issue number: #9684
+
 Conflicts with axioms in library
 
   component: library of real numbers
