@@ -33,17 +33,16 @@ type head_approximation =
 | NotImmediatelyComputableHead
 
 (* FIXME: maybe change interface here *)
-let rec compute_head = function
+let rec compute_head env = function
   | EvalConstRef cst ->
-    let env = Global.env() in
     let body = Environ.constant_opt_value_in env (cst,Univ.Instance.empty) in
     (match body with
      | None -> RigidHead (RigidParameter cst)
      | Some c -> kind_of_head env c)
   | EvalVarRef id ->
-    (match Global.lookup_named id with
+    (match lookup_named id env with
      | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
-       kind_of_head (Global.env()) c
+       kind_of_head env c
      | _ -> RigidHead RigidOther)
 
 and kind_of_head env t =
@@ -51,14 +50,14 @@ and kind_of_head env t =
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->
-      (try on_subterm k l b (compute_head (EvalVarRef id))
+      (try on_subterm k l b (compute_head env (EvalVarRef id))
        with Not_found ->
         (* a goal variable *)
         match lookup_named id env with
         | LocalDef (_,c,_) -> aux k l c b
         | LocalAssum _ -> NotImmediatelyComputableHead)
   | Const (cst,_) ->
-      (try on_subterm k l b (compute_head (EvalConstRef cst))
+      (try on_subterm k l b (compute_head env (EvalConstRef cst))
        with Not_found ->
          CErrors.anomaly
            Pp.(str "constant not found in kind_of_head: " ++
