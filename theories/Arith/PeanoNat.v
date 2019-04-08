@@ -52,7 +52,7 @@ Proof.
 intros A A_wd A0 AS. apply nat_ind. assumption. intros; now apply -> AS.
 Qed.
 
-(** Recursion fonction *)
+(** Recursion function *)
 
 Definition recursion {A} : A -> (nat -> A -> A) -> nat -> A :=
   nat_rect (fun _ => A).
