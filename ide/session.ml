@@ -257,9 +257,10 @@ let make_table_widget ?sort cd cb =
       ~model:store ~packing:frame#add () in
   let () = data#set_headers_visible true in
   let () = data#set_headers_clickable true in
-  let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in
-  let _ = background_color#connect#changed ~callback:refresh in
-  let _ = data#misc#connect#realize ~callback:(fun () -> refresh background_color#get) in
+(* FIXME: handle this using CSS *)
+(*   let refresh clr = data#misc#modify_bg [`NORMAL, `NAME clr] in *)
+(*   let _ = background_color#connect#changed ~callback:refresh in *)
+(*   let _ = data#misc#connect#realize ~callback:(fun () -> refresh background_color#get) in *)
   let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
   let cols =
     List.map2 (fun (_,c) (_,n,v) ->

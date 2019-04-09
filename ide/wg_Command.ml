@@ -100,9 +100,10 @@ object(self)
     router#register_route route_id result;
     r_bin#add_with_viewport (result :> GObj.widget);
     views <- (frame#coerce, result, combo#entry) :: views;
-    let cb clr = result#misc#modify_bg [`NORMAL, `NAME clr] in
-    let _ = background_color#connect#changed ~callback:cb in
-    let _ = result#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
+(* FIXME: handle this using CSS *)
+(*     let cb clr = result#misc#modify_bg [`NORMAL, `NAME clr] in *)
+(*     let _ = background_color#connect#changed ~callback:cb in *)
+(*     let _ = result#misc#connect#realize ~callback:(fun () -> cb background_color#get) in *)
     let cb ft = result#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font result cb;
     result#misc#set_can_focus true; (* false causes problems for selection *)
@@ -171,8 +172,9 @@ object(self)
     self#new_page_maker;
     self#new_query_aux ~grab_now:false ();
     frame#misc#hide ();
-    let _ = background_color#connect#changed ~callback:self#refresh_color in
-    self#refresh_color background_color#get;
+(* FIXME: handle this using CSS *)
+(*     let _ = background_color#connect#changed ~callback:self#refresh_color in *)
+(*     self#refresh_color background_color#get; *)
     ignore(notebook#event#connect#key_press ~callback:(fun ev ->
       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then (self#hide; true)
       else false

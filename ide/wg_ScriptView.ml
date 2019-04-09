@@ -506,9 +506,10 @@ object (self)
     in
     let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
     (* Plug on preferences *)
-    let cb clr = self#misc#modify_bg [`NORMAL, `NAME clr] in
-    let _ = background_color#connect#changed ~callback:cb in
-    let _ = self#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
+(* FIXME: handle this using CSS *)
+(*     let cb clr = self#misc#modify_bg [`NORMAL, `NAME clr] in *)
+(*     let _ = background_color#connect#changed ~callback:cb in *)
+(*     let _ = self#misc#connect#realize ~callback:(fun () -> cb background_color#get) in *)
 
     let cb b = self#set_wrap_mode (if b then `WORD else `NONE) in
     stick dynamic_word_wrap self cb;

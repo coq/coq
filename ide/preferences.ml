@@ -410,8 +410,8 @@ let vertical_tabs =
 let opposite_tabs =
   new preference ~name:["opposite_tabs"] ~init:false ~repr:Repr.(bool)
 
-let background_color =
-  new preference ~name:["background_color"] ~init:"cornsilk" ~repr:Repr.(string)
+(* let background_color = *)
+(*   new preference ~name:["background_color"] ~init:"cornsilk" ~repr:Repr.(string) *)
 
 let attach_tag (pref : string preference) (tag : GText.tag) f =
   tag#set_property (f pref#get);
@@ -737,7 +737,7 @@ let configure ?(apply=(fun () -> ())) parent =
       ()
     in
     let () = Util.List.iteri iter [
-      ("Background color", background_color);
+(*       ("Background color", background_color); *)
       ("Background color of processed text", processed_color);
       ("Background color of text being processed", processing_color);
       ("Background color of incompletely processed Qed", incompletely_processed_color);
