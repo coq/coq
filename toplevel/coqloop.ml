@@ -194,6 +194,7 @@ let make_prompt () =
     (Names.Id.to_string (Vernacstate.Proof_global.get_current_proof_name ())) ^ " < "
   with Vernacstate.Proof_global.NoCurrentProof ->
     "Coq < "
+  [@@ocaml.warning "-3"]
 
 (* the coq prompt added to the default one when in emacs mode
    The prompt contains the current state label [n] (for global
@@ -365,6 +366,7 @@ let top_goal_print ~doc c oldp newp =
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
+  [@@ocaml.warning "-3"]
 
 let exit_on_error =
   let open Goptions in

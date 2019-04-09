@@ -2632,7 +2632,7 @@ let interp ?(verbosely=true) ?proof ~st cmd =
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
       let pstate = v_mod (interp_control ?proof ~st) cmd in
-      Vernacstate.Proof_global.set pstate;
+      Vernacstate.Proof_global.set pstate [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
   with exn ->
