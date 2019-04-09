@@ -287,18 +287,17 @@ end
 class script_view (tv : source_view) (ct : Coq.coqtop) =
 
 let view = new GSourceView3.source_view (Gobject.unsafe_cast tv) in
-let completion = new Wg_Completion.complete_model ct view#buffer in
-let popup = new Wg_Completion.complete_popup completion (view :> GText.view) in
+let provider = new Wg_Completion.completion_provider ct in
 
 object (self)
   inherit GSourceView3.source_view (Gobject.unsafe_cast tv)
 
   val undo_manager = new undo_manager view#buffer
 
-  method auto_complete = completion#active
+  method auto_complete = provider#active
 
   method set_auto_complete flag =
-    completion#set_active flag
+    provider#set_active flag
 
   method recenter_insert =
     self#scroll_to_mark
@@ -448,7 +447,7 @@ object (self)
     self#buffer#delete_mark (`MARK insert_mark)
 
 
-  method complete_popup = popup
+  method proposal : string option = None (* FIXME *)
 
   method undo = undo_manager#undo
   method redo = undo_manager#redo
@@ -530,6 +529,10 @@ object (self)
 
     let cb ft = self#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font self cb;
+
+    let () = self#completion#set_accelerators 0 in
+    let () = self#completion#set_show_headers false in
+    let _ = self#completion#add_provider (provider :> GSourceView3.source_completion_provider) in
 
     ()
 
