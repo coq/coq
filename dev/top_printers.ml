@@ -65,6 +65,7 @@ let get_current_context () =
   with Vernacstate.Proof_global.NoCurrentProof ->
     let env = Global.env() in
     Evd.from_env env, env
+  [@@ocaml.warning "-3"]
 
 (* term printers *)
 let envpp pp = let sigma,env = get_current_context () in pp env sigma

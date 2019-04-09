@@ -82,3 +82,4 @@ module Proof_global : sig
   val copy_terminators : src:t option -> tgt:t option -> t option
 
 end
+[@@ocaml.deprecated "This module is internal and should not be used, instead, thread the proof state"]

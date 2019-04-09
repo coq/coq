@@ -70,7 +70,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
 
       (* Force the command  *)
       let ndoc = if check then Stm.observe ~doc nsid else doc in
-      let new_proof = Vernacstate.Proof_global.give_me_the_proof_opt () in
+      let new_proof = Vernacstate.Proof_global.give_me_the_proof_opt () [@ocaml.warning "-3"] in
       { state with doc = ndoc; sid = nsid; proof = new_proof; }
     with reraise ->
       (* XXX: In non-interactive mode edit_at seems to do very weird
