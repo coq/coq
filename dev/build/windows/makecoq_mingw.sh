@@ -1908,6 +1908,18 @@ function make_addon_quickchick {
   fi
 }
 
+# FCSL-PCM (Partial Commutative Monoids)
+
+function make_addon_fcslpcm {
+  installer_addon_dependency fcslpcm
+  if build_prep_overlay fcsl_pcm; then
+    installer_addon_section fcslpcm "FCSL-PCM" "Coq library providing Partial Commutative Monoids (PCMs)" ""
+    log1 make $MAKE_OPT
+    log2 make install
+    build_post
+  fi
+}
+
 # Main function for building addons
 
 function make_addons {

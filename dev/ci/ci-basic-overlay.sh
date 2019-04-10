@@ -231,7 +231,7 @@
 # fcsl-pcm
 ########################################################################
 # Latest commit on master as of Sep 27, 2018
-: "${fcsl_pcm_CI_REF:=51ade0a882ae2ac7df071b41d468df1813504c81}"
+: "${fcsl_pcm_CI_REF:=v1.1.0}"
 : "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm}"
 : "${fcsl_pcm_CI_ARCHIVEURL:=${fcsl_pcm_CI_GITURL}/archive}"
 
@@ -281,7 +281,7 @@
 # Latest commit on master as of April 8th, 2019
 # Note: the latest release tag is quite old (August 2018)
 #       and there seem to be significant changes since then
-: "${menhirlib_CI_REF:=ca0655b2f96057a271fb5c9a254a38d195b4a7f9}"
+: "${menhirlib_CI_REF:=f0842e17a90366c8e328e9a2c2f089013887edc5}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
