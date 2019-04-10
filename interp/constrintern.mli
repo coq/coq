@@ -162,24 +162,11 @@ val interp_context_evars :
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 
-(* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
-(*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
-(*   ?global_level:bool -> ?impl_env:internalization_env -> *)
-(*   env -> evar_map -> local_binder_expr list -> internalization_env * ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
-  
-(* val interp_context : ?global_level:bool -> ?impl_env:internalization_env -> *)
-(*   env -> evar_map -> local_binder_expr list ->  *)
-(*   internalization_env *  *)
-(*   ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
-
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
 
 val locate_reference :  Libnames.qualid -> GlobRef.t
 val is_global : Id.t -> bool
-val construct_reference : ('c, 't) Context.Named.pt -> Id.t -> GlobRef.t
-val global_reference : Id.t -> GlobRef.t
-val global_reference_in_absolute_module : DirPath.t -> Id.t -> GlobRef.t
 
 (** Interprets a term as the left-hand side of a notation. The returned map is
     guaranteed to have the same domain as the input one. *)

@@ -249,8 +249,11 @@ module V82 : sig
   val grab_evars : t -> t
 
   (* Implements the Existential command *)
-  val instantiate_evar :
-    Environ.env -> int -> Constrexpr.constr_expr -> t -> t
+  val instantiate_evar
+    :  Environ.env
+    -> int
+    -> (Environ.env -> Evd.evar_map -> Glob_term.glob_constr)
+    -> t -> t
 end
 
 (* returns the set of all goals in the proof *)

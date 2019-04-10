@@ -480,7 +480,7 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
   (* Main component of vernac command Existential *)
-  let instantiate_evar env n com pr =
+  let instantiate_evar env n intern pr =
     let tac =
       Proofview.tclBIND Proofview.tclEVARMAP begin fun sigma ->
       let (evk, evi) =
@@ -494,7 +494,7 @@ module V82 = struct
           CList.nth evl (n-1)
       in
       let env = Evd.evar_filtered_env evi in
-      let rawc = Constrintern.intern_constr env sigma com in
+      let rawc = intern env sigma in
       let ltac_vars = Glob_ops.empty_lvar in
       let sigma = Evar_refiner.w_refine (evk, evi) (ltac_vars, rawc) sigma in
       Proofview.Unsafe.tclEVARS sigma

@@ -2,7 +2,7 @@
  (name parsing)
  (public_name coq.parsing)
  (wrapped false)
- (libraries coq.gramlib proofs))
+ (libraries coq.gramlib interp))
 
 (rule
  (targets g_prim.ml)

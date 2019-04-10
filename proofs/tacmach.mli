@@ -33,7 +33,6 @@ val pf_hyps_types         : Goal.goal sigma -> (Id.t Context.binder_annot * type
 val pf_nth_hyp_id         : Goal.goal sigma -> int -> Id.t
 val pf_last_hyp           : Goal.goal sigma -> named_declaration
 val pf_ids_of_hyps        : Goal.goal sigma -> Id.t list
-val pf_global             : Goal.goal sigma -> Id.t -> evar_map * constr
 val pf_unsafe_type_of     : Goal.goal sigma -> constr -> types
 val pf_type_of            : Goal.goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : Goal.goal sigma -> constr -> types
@@ -76,7 +75,6 @@ val pr_glls   : Goal.goal list sigma -> Pp.t
 module New : sig
 
   val pf_apply : (env -> evar_map -> 'a) -> Proofview.Goal.t -> 'a
-  val pf_global : Id.t -> Proofview.Goal.t -> GlobRef.t
 
   (** FIXME: encapsulate the level in an existential type. *)
   val of_old : (Goal.goal Evd.sigma -> 'a) -> Proofview.Goal.t -> 'a

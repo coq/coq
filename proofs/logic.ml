@@ -63,7 +63,6 @@ let catchable_exception = function
   | CErrors.UserError _ | TypeError _
   | Proof.OpenProof _
   (* abstract will call close_proof inside a tactic *)
-  | Notation.PrimTokenNotationError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _
   (* reduction errors *)
