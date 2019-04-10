@@ -128,6 +128,28 @@ let warn_several_object_files =
             ; strbrk " because it is more recent"
             ])
 
+
+let select_vo_file ~warn loadpath base =
+  let find ext =
+    let loadpath = List.map fst loadpath in
+    try
+      let name = Names.Id.to_string base ^ ext in
+      let lpath, file =
+        System.where_in_path ~warn loadpath name in
+      Some (lpath, file)
+    with Not_found -> None in
+  match find ".vo", find ".vio" with
+  | None, None ->
+    Error LibNotFound
+  | Some res, None | None, Some res ->
+    Ok res
+  | Some (_, vo), Some (_, vi as resvi)
+    when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
+    warn_several_object_files (vi, vo);
+    Ok resvi
+  | Some resvo, Some _ ->
+    Ok resvo
+
 let locate_absolute_library dir : CUnix.physical_path locate_result =
   (* Search in loadpath *)
   let pref, base = Libnames.split_dirpath dir in
@@ -135,23 +157,9 @@ let locate_absolute_library dir : CUnix.physical_path locate_result =
   match loadpath with
   | [] -> Error LibUnmappedDir
   | _ ->
-    let loadpath = List.map fst loadpath in
-    let find ext =
-      try
-        let name = Names.Id.to_string base ^ ext in
-        let _, file = System.where_in_path ~warn:false loadpath name in
-        Some file
-      with Not_found -> None in
-    match find ".vo", find ".vio" with
-    | None, None ->
-      Error LibNotFound
-    | Some file, None | None, Some file ->
-      Ok file
-    | Some vo, Some vi when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-      warn_several_object_files (vi, vo);
-      Ok vi
-    | Some vo, Some _ ->
-      Ok vo
+    match select_vo_file ~warn:false loadpath base with
+    | Ok (_, file) -> Ok file
+    | Error fail -> Error fail
 
 let locate_qualified_library ?root ?(warn = true) qid :
   (library_location * DP.t * CUnix.physical_path) locate_result =
@@ -161,27 +169,7 @@ let locate_qualified_library ?root ?(warn = true) qid :
   match loadpath with
   | [] -> Error LibUnmappedDir
   | _ ->
-    let find ext =
-      try
-        let name = Names.Id.to_string base ^ ext in
-        let lpath, file =
-          System.where_in_path ~warn (List.map fst loadpath) name in
-        Some (lpath, file)
-      with Not_found -> None in
-    let vores =
-      match find ".vo", find ".vio" with
-      | None, None ->
-        Error LibNotFound
-      | Some res, None | None, Some res ->
-        Ok res
-      | Some (_, vo), Some (_, vi as resvi)
-        when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-        warn_several_object_files (vi, vo);
-        Ok resvi
-      | Some resvo, Some _ ->
-        Ok resvo
-    in
-    match vores with
+    match select_vo_file ~warn loadpath base with
     | Ok (lpath, file) ->
       let dir = Libnames.add_dirpath_suffix
           (CString.List.assoc lpath loadpath) base in
