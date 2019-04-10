@@ -113,6 +113,7 @@ Plugins
 Tactics
 
 - Removed the deprecated `romega` tactics.
+
 - Tactic names are no longer allowed to clash, even if they are not defined in
   the same section. For example, the following is no longer accepted:
   `Ltac foo := idtac. Section S. Ltac foo := fail. End S.`
