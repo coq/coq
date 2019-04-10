@@ -19,6 +19,9 @@ known as strict propositions). To use :math:`\SProp` you must pass
    initial value depends on whether you used the command line
    ``-allow-sprop``.
 
+.. exn:: SProp not allowed, you need to Set Allow StrictProp or to use the -allow-sprop command-line-flag.
+   :undocumented:
+
 .. coqtop:: none
 
    Set Allow StrictProp.

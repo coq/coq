@@ -731,7 +731,9 @@ let explain_undeclared_universe env sigma l =
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_disallowed_sprop () =
-  Pp.(str "SProp not allowed, you need to use -allow-sprop.")
+  Pp.(strbrk "SProp not allowed, you need to "
+      ++ str "Set Allow StrictProp"
+      ++ strbrk " or to use the -allow-sprop command-line-flag.")
 
 let explain_bad_relevance env =
   strbrk "Bad relevance (maybe a bugged tactic)."
