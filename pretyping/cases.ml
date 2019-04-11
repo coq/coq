@@ -284,7 +284,7 @@ let rec find_row_ind = function
 
 let inductive_template env sigma tmloc ind =
   let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
-  let arsign = inductive_alldecls_env env indu in
+  let arsign = inductive_alldecls env indu in
   let indu = on_snd EInstance.make indu in
   let hole_source i = match tmloc with
     | Some loc -> Loc.tag ~loc @@ Evar_kinds.TomatchTypeParameter (ind,i)
@@ -313,7 +313,7 @@ let try_find_ind env sigma typ realnames =
       | Some names -> names
       | None ->
           let ind = fst (fst (dest_ind_family indf)) in
-          List.make (inductive_nrealdecls ind) Anonymous in
+          List.make (inductive_nrealdecls env ind) Anonymous in
   IsInd (typ,ind,names)
 
 let inh_coerce_to_ind env sigma0 loc ty tyi =
@@ -1796,7 +1796,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
     | Construct (cstr,u) -> DAst.make (PatCstr (cstr,[],Anonymous)), acc
     | App (f,v) when isConstruct sigma f ->
 	let cstr,u = destConstruct sigma f in
-        let n = constructor_nrealargs_env !!env cstr in
+        let n = constructor_nrealargs !!env cstr in
 	let l = List.lastn n (Array.to_list v) in
 	let l,acc = List.fold_right_map reveal_pattern l acc in
 	DAst.make (PatCstr (cstr,l,Anonymous)), acc
@@ -1929,7 +1929,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = if dolift then lift_inductive_family n indf else indf in
 	  let ((ind,u),_) = dest_ind_family indf' in
-	  let nrealargs_ctxt = inductive_nrealdecls_env env0 ind in
+          let nrealargs_ctxt = inductive_nrealdecls env0 ind in
           let arsign, inds = get_arity env0 indf' in
 	  let arsign = List.map (fun d -> map_rel_decl EConstr.of_constr d) arsign in
           let realnal =

@@ -782,7 +782,7 @@ let rec pat_binder_of_term t = DAst.map (function
   | GApp (t, l) ->
     begin match DAst.get t with
     | GRef (ConstructRef cstr,_) ->
-     let nparams = Inductiveops.inductive_nparams (fst cstr) in
+     let nparams = Inductiveops.inductive_nparams (Global.env()) (fst cstr) in
      let _,l = List.chop nparams l in
      PatCstr (cstr, List.map pat_binder_of_term l, Anonymous)
     | _ -> raise No_match
@@ -909,7 +909,8 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
     alp, add_env alp sigma var (DAst.make @@ GVar id)
 
 let bind_binding_as_term_env alp (terms,termlists,binders,binderlists as sigma) var c =
-  let pat = try cases_pattern_of_glob_constr Anonymous c with Not_found -> raise No_match in
+  let env = Global.env () in
+  let pat = try cases_pattern_of_glob_constr env Anonymous c with Not_found -> raise No_match in
   try
     (* If already bound to a binder, unify the term and the binder *)
     let patl' = Id.List.assoc var binders in
@@ -1292,7 +1293,7 @@ let match_notation_constr u c (metas,pat) =
     | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
        (match Id.List.assoc x binders with
         | [pat] ->
-          let v = glob_constr_of_cases_pattern pat in
+          let v = glob_constr_of_cases_pattern (Global.env()) pat in
           ((v,scl)::terms',termlists',binders',binderlists')
         | _ -> raise No_match)
     | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _) ->
@@ -1333,11 +1334,11 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
   | r1, NVar id2 when Id.List.mem_assoc id2 metas -> (bind_env_cases_pattern sigma id2 a1),(0,[])
   | PatVar Anonymous, NHole _ -> sigma,(0,[])
   | PatCstr ((ind,_ as r1),largs,Anonymous), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
-      let l = try add_patterns_for_params_remove_local_defs r1 largs with Not_found -> raise No_match in
+      let l = try add_patterns_for_params_remove_local_defs (Global.env ()) r1 largs with Not_found -> raise No_match in
       sigma,(0,l)
   | PatCstr ((ind,_ as r1),args1,Anonymous), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
-      let l1 = try add_patterns_for_params_remove_local_defs r1 args1 with Not_found -> raise No_match in
+      let l1 = try add_patterns_for_params_remove_local_defs (Global.env()) r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
       then

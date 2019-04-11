@@ -24,6 +24,8 @@ val declare_projections :
   Constr.rel_context ->
     (Name.t * bool) list * Constant.t option list
 
+val declare_structure_entry : Recordops.struc_tuple -> unit
+
 val definition_structure :
   universe_decl_expr option -> inductive_kind -> template:bool option ->
   Decl_kinds.cumulative_inductive_flag -> Decl_kinds.polymorphic ->

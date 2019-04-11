@@ -1432,7 +1432,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   (general_elim with_evars clear_flag (c,lbindc)
    {elimindex = None; elimbody = (elim,NoBindings);
-    elimrename = Some (false, constructors_nrealdecls (fst mind))})
+    elimrename = Some (false, constructors_nrealdecls env (fst mind))})
   end
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -1455,7 +1455,8 @@ exception IsNonrec
 let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
 let find_ind_eliminator ind s gl =
-  let gr = lookup_eliminator ind s in
+  let env = Proofview.Goal.env gl in
+  let gr = lookup_eliminator env ind s in
   Tacmach.New.pf_apply Evd.fresh_global gl gr
 
 let find_eliminator c gl =
@@ -1463,7 +1464,7 @@ let find_eliminator c gl =
   if is_nonrec ind then raise IsNonrec;
   let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
     evd, {elimindex = None; elimbody = (c,NoBindings);
-          elimrename = Some (true, constructors_nrealdecls ind)}
+          elimrename = Some (true, constructors_nrealdecls (Global.env()) ind)}
 
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
@@ -1609,9 +1610,9 @@ let descend_in_conjunctions avoid tac (err, info) c =
     let t = Retyping.get_type_of env sigma c in
     let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
     let sign,ccl = EConstr.decompose_prod_assum sigma t in
-    match match_with_tuple sigma ccl with
+    match match_with_tuple env sigma ccl with
     | Some (_,_,isrec) ->
-	let n = (constructors_nrealargs ind).(0) in
+        let n = (constructors_nrealargs env ind).(0) in
 	let sort = Tacticals.New.elimination_sort_of_goal gl in
 	let IndType (indf,_) = find_rectype env sigma ccl in
 	let (_,inst), params = dest_ind_family indf in
@@ -2299,7 +2300,7 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
     let type_of = Tacmach.New.pf_unsafe_type_of gl in
     let whd_all = Tacmach.New.pf_apply whd_all gl in
     let t = whd_all (type_of (mkVar id)) in
-    let eqtac, thin = match match_with_equality_type sigma t with
+    let eqtac, thin = match match_with_equality_type env sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar sigma lhs && not (occur_var env sigma (destVar sigma lhs) rhs) then
           let id' = destVar sigma lhs in
@@ -4128,7 +4129,7 @@ let guess_elim isrec dep s hyp0 gl =
   let sigma, elimc =
     if isrec && not (is_nonrec mind)
     then
-      let gr = lookup_eliminator mind s in
+      let gr = lookup_eliminator env mind s in
       Evd.fresh_global env sigma gr
     else
       let u = EInstance.kind sigma u in
@@ -4739,9 +4740,10 @@ let reflexivity_red allowred =
   (* PL: usual reflexivity don't perform any reduction when searching
      for an equality, but we may need to do some when called back from
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
+    let env = Tacmach.New.pf_env gl in
     let sigma = Tacmach.New.project gl in
     let concl = maybe_betadeltaiota_concl allowred gl in
-    match match_with_equality_type sigma concl with
+    match match_with_equality_type env sigma concl with
     | None -> Proofview.tclZERO NoEquationFound
     | Some _ -> one_constructor 1 NoBindings
   end

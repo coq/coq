@@ -492,7 +492,7 @@ let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
 | _ -> false
 
-let rec cases_pattern_of_glob_constr na c =
+let rec cases_pattern_of_glob_constr env na c =
   (* Forcing evaluation to ensure that the possible raising of
      Not_found is not delayed *)
   let c = DAst.force c in
@@ -509,14 +509,14 @@ let rec cases_pattern_of_glob_constr na c =
   | GApp (c, l) ->
     begin match DAst.get c with
     | GRef (ConstructRef cstr,_) ->
-      let nparams = Inductiveops.inductive_nparams (fst cstr) in
+      let nparams = Inductiveops.inductive_nparams env (fst cstr) in
       let _,l = List.chop nparams l in
-      PatCstr (cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
+      PatCstr (cstr,List.map (cases_pattern_of_glob_constr env Anonymous) l,na)
     | _ -> raise Not_found
     end
   | GLetIn (Name id as na',b,None,e) when is_gvar id e && na = Anonymous ->
      (* A canonical encoding of aliases *)
-     DAst.get (cases_pattern_of_glob_constr na' b)
+     DAst.get (cases_pattern_of_glob_constr env na' b)
   | _ -> raise Not_found
   ) c
 
@@ -539,8 +539,8 @@ let drop_local_defs params decls args =
       | _ -> assert false in
     aux decls args
 
-let add_patterns_for_params_remove_local_defs (ind,j) l =
-  let (mib,mip) = Global.lookup_inductive ind in
+let add_patterns_for_params_remove_local_defs env (ind,j) l =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let nparams = mib.Declarations.mind_nparams in
   let l =
     if mip.mind_consnrealdecls.(j-1) = mip.mind_consnrealargs.(j-1) then
@@ -556,12 +556,12 @@ let add_alias ?loc na c =
   | Name id -> GLetIn (na,DAst.make ?loc c,None,DAst.make ?loc (GVar id))
 
 (* Turn a closed cases pattern into a glob_constr *)
-let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?loc -> function
+let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun ?loc -> function
   | PatCstr (cstr,[],na) -> add_alias ?loc na (GRef (ConstructRef cstr,None))
   | PatCstr (cstr,l,na)  ->
       let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
-      let l = add_patterns_for_params_remove_local_defs cstr l in
-      add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux isclosed) l))
+      let l = add_patterns_for_params_remove_local_defs env cstr l in
+      add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux env isclosed) l))
   | PatVar (Name id) when not isclosed ->
       GVar id
   | PatVar Anonymous when not isclosed ->
@@ -571,14 +571,14 @@ let rec glob_constr_of_cases_pattern_aux isclosed x = DAst.map_with_loc (fun ?lo
   | _ -> raise Not_found
   ) x
 
-let glob_constr_of_closed_cases_pattern p = match DAst.get p with
+let glob_constr_of_closed_cases_pattern env p = match DAst.get p with
   | PatCstr (cstr,l,na) ->
       let loc = p.CAst.loc in
-      na,glob_constr_of_cases_pattern_aux true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
+      na,glob_constr_of_cases_pattern_aux env true (DAst.make ?loc @@ PatCstr (cstr,l,Anonymous))
   | _ ->
       raise Not_found
 
-let glob_constr_of_cases_pattern p = glob_constr_of_cases_pattern_aux false p
+let glob_constr_of_cases_pattern env p = glob_constr_of_cases_pattern_aux env false p
 
 (* This has to be in some file... *)
 

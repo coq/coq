@@ -75,9 +75,19 @@ val inductive_class_of : inductive -> cl_index
 val class_args_of : env -> evar_map -> types -> constr list
 
 (** {6 [declare_coercion] adds a coercion in the graph of coercion paths } *)
-val declare_coercion :
-  coe_typ -> ?local:bool -> isid:bool ->
-      src:cl_typ -> target:cl_typ -> params:int -> unit
+type coercion = {
+  coercion_type   : coe_typ;
+  coercion_local  : bool;
+  coercion_is_id  : bool;
+  coercion_is_proj  : Projection.Repr.t option;
+  coercion_source : cl_typ;
+  coercion_target : cl_typ;
+  coercion_params : int;
+}
+
+val subst_coercion : substitution -> coercion -> coercion
+
+val declare_coercion : env -> evar_map -> coercion -> unit
 
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
@@ -101,7 +111,7 @@ val lookup_pattern_path_between :
 val install_path_printer :
   ((cl_index * cl_index) * inheritance_path -> Pp.t) -> unit
 val install_path_comparator :
-  (inheritance_path -> inheritance_path -> bool) -> unit
+  (env -> evar_map -> inheritance_path -> inheritance_path -> bool) -> unit
 (**/**)
 
 (** {6 This is for printing purpose } *)

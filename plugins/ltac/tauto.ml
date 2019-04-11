@@ -98,16 +98,18 @@ let split = Tactics.split_with_bindings false [Tactypes.NoBindings]
 (** Test *)
 
 let is_empty _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  if is_empty_type sigma (assoc_var "X1" ist) then idtac else fail
+  if is_empty_type genv sigma (assoc_var "X1" ist) then idtac else fail
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
 let is_unit_or_eq _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
-  if test sigma (assoc_var "X1" ist) then idtac else fail
+  if test genv sigma (assoc_var "X1" ist) then idtac else fail
 
 let bugged_is_binary sigma t =
   isApp sigma t &&
@@ -121,23 +123,25 @@ let bugged_is_binary sigma t =
 (** Dealing with conjunction *)
 
 let is_conj _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let ind = assoc_var "X1" ist in
     if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma ind) &&
-       is_conjunction sigma
+       is_conjunction genv sigma
          ~strict:flags.strict_in_hyp_and_ccl
          ~onlybinary:flags.binary_mode ind
     then idtac
     else fail
 
 let flatten_contravariant_conj _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
-  match match_with_conjunction sigma
+  match match_with_conjunction genv sigma
           ~strict:flags.strict_in_contravariant_hyp
           ~onlybinary:flags.binary_mode typ
   with
@@ -151,23 +155,25 @@ let flatten_contravariant_conj _ ist =
 (** Dealing with disjunction *)
 
 let is_disj _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let t = assoc_var "X1" ist in
   if (not flags.binary_mode_bugged_detection || bugged_is_binary sigma t) &&
-     is_disjunction sigma
+     is_disjunction genv sigma
        ~strict:flags.strict_in_hyp_and_ccl
        ~onlybinary:flags.binary_mode t
   then idtac
   else fail
 
 let flatten_contravariant_disj _ ist =
+  Proofview.tclENV >>= fun genv ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let flags = assoc_flags ist in
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
-  match match_with_disjunction sigma
+  match match_with_disjunction genv sigma
           ~strict:flags.strict_in_contravariant_hyp
           ~onlybinary:flags.binary_mode
           typ with

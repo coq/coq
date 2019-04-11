@@ -22,8 +22,10 @@ open Constrintern
 open Constrexpr
 open Context.Rel.Declaration
 open Class_tactics
+open Libobject
 
 module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
 (*i*)
 
 open Decl_kinds
@@ -49,17 +51,224 @@ let classes_transparent_state () =
   with Not_found -> TransparentState.empty
 
 let () =
-  Hook.set Typeclasses.add_instance_hint_hook
-    (fun inst path local info poly ->
+  Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
+  Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
+
+let add_instance_hint inst path local info poly =
      let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)
        | IsGlobal gr -> Hints.IsGlobRef gr
      in
      Flags.silently (fun () ->
        Hints.add_hints ~local [typeclasses_db]
 	  (Hints.HintsResolveEntry
-	     [info, poly, false, Hints.PathHints path, inst'])) ());
-  Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
-  Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
+             [info, poly, false, Hints.PathHints path, inst'])) ()
+
+let is_local_for_hint i =
+  match i.is_global with
+  | None -> true  (* i.e. either no Global keyword not in section, or in section *)
+  | Some n -> n <> 0 (* i.e. in a section, declare the hint as local
+                        since discharge is managed by rebuild_instance which calls again
+                        add_instance_hint; don't ask hints to take discharge into account
+                        itself *)
+
+let add_instance check inst =
+  let poly = Global.is_polymorphic inst.is_impl in
+  let local = is_local_for_hint inst in
+  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] local
+    inst.is_info poly;
+  List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
+                local pri poly)
+    (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
+       (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
+
+let mk_instance cl info glob impl =
+  let global =
+    if glob then Some (Lib.sections_depth ())
+    else None
+  in
+  if match global with Some n -> n>0 && isVarRef impl | _ -> false then
+    CErrors.user_err (Pp.str "Cannot set Global an instance referring to a section variable.");
+  { is_class = cl.cl_impl;
+    is_info = info ;
+    is_global = global ;
+    is_impl = impl }
+
+(*
+ * instances persistent object
+ *)
+let cache_instance (_, i) =
+  load_instance i
+
+let subst_instance (subst, inst) =
+  { inst with
+      is_class = fst (subst_global subst inst.is_class);
+      is_impl = fst (subst_global subst inst.is_impl) }
+
+let discharge_instance (_, inst) =
+  match inst.is_global with
+  | None -> None
+  | Some n ->
+    assert (not (isVarRef inst.is_impl));
+    Some
+    { inst with
+      is_global = Some (pred n);
+      is_class = inst.is_class;
+      is_impl = inst.is_impl }
+
+let is_local i = (i.is_global == None)
+
+let rebuild_instance inst =
+  add_instance true inst;
+  inst
+
+let classify_instance inst =
+  if is_local inst then Dispose
+  else Substitute inst
+
+let instance_input : instance -> obj =
+  declare_object
+    { (default_object "type classes instances state") with
+      cache_function = cache_instance;
+      load_function = (fun _ x -> cache_instance x);
+      open_function = (fun _ x -> cache_instance x);
+      classify_function = classify_instance;
+      discharge_function = discharge_instance;
+      rebuild_function = rebuild_instance;
+      subst_function = subst_instance }
+
+let add_instance i =
+  Lib.add_anonymous_leaf (instance_input i);
+  add_instance true i
+
+let warning_not_a_class =
+  let name = "not-a-class" in
+  let category = "typeclasses" in
+  CWarnings.create ~name ~category (fun (n, ty) ->
+      let env = Global.env () in
+      let evd = Evd.from_env env in
+      Pp.(str "Ignored instance declaration for “"
+          ++ Nametab.pr_global_env Id.Set.empty n
+          ++ str "”: “"
+          ++ Termops.Internal.print_constr_env env evd (EConstr.of_constr ty)
+          ++ str "” is not a class")
+    )
+
+let declare_instance ?(warn = false) env sigma info local glob =
+  let ty, _ = Typeops.type_of_global_in_context env glob in
+  let info = Option.default {hint_priority = None; hint_pattern = None} info in
+  match class_of_constr env sigma (EConstr.of_constr ty) with
+  | Some (rels, ((tc,_), args) as _cl) ->
+    assert (not (isVarRef glob) || local);
+    add_instance (mk_instance tc info (not local) glob)
+  | None -> if warn then warning_not_a_class (glob, ty)
+
+(*
+ * classes persistent object
+ *)
+
+let cache_class (_,c) = load_class c
+
+let subst_class (subst,cl) =
+  let do_subst_con c = Mod_subst.subst_constant subst c
+  and do_subst c = Mod_subst.subst_mps subst c
+  and do_subst_gr gr = fst (subst_global subst gr) in
+  let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
+  let do_subst_context (grs,ctx) =
+    List.Smart.map (Option.Smart.map do_subst_gr) grs,
+    do_subst_ctx ctx in
+  let do_subst_projs projs = List.Smart.map (fun (x, y, z) ->
+    (x, y, Option.Smart.map do_subst_con z)) projs in
+  { cl_univs = cl.cl_univs;
+    cl_impl = do_subst_gr cl.cl_impl;
+    cl_context = do_subst_context cl.cl_context;
+    cl_props = do_subst_ctx cl.cl_props;
+    cl_projs = do_subst_projs cl.cl_projs;
+    cl_strict = cl.cl_strict;
+    cl_unique = cl.cl_unique }
+
+let discharge_class (_,cl) =
+  let open CVars in
+  let repl = Lib.replacement_context () in
+  let rel_of_variable_context ctx = List.fold_right
+    ( fun (decl,_) (ctx', subst) ->
+        let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
+        (decl' :: ctx', NamedDecl.get_id decl :: subst)
+    ) ctx ([], []) in
+  let discharge_rel_context (subst, usubst) n rel =
+    let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
+    let fold decl (ctx, k) =
+      let map c = subst_univs_level_constr usubst (substn_vars k subst c) in
+      RelDecl.map_constr map decl :: ctx, succ k
+    in
+    let ctx, _ = List.fold_right fold rel ([], n) in
+    ctx
+  in
+  let abs_context cl =
+    match cl.cl_impl with
+      | VarRef _ | ConstructRef _ -> assert false
+      | ConstRef cst -> Lib.section_segment_of_constant cst
+      | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind in
+  let discharge_context ctx' subst (grs, ctx) =
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let grs' =
+      let newgrs = List.map (fun decl ->
+                             match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr env sigma with
+                             | None -> None
+                             | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
+                            ctx'
+      in
+      grs @ newgrs
+    in grs', discharge_rel_context subst 1 ctx @ ctx' in
+  try
+    let info = abs_context cl in
+    let ctx = info.Lib.abstr_ctx in
+    let ctx, subst = rel_of_variable_context ctx in
+    let usubst, cl_univs' = Lib.discharge_abstract_universe_context info cl.cl_univs in
+    let context = discharge_context ctx (subst, usubst) cl.cl_context in
+    let props = discharge_rel_context (subst, usubst) (succ (List.length (fst cl.cl_context))) cl.cl_props in
+    let discharge_proj x = x in
+    { cl_univs = cl_univs';
+      cl_impl = cl.cl_impl;
+      cl_context = context;
+      cl_props = props;
+      cl_projs = List.Smart.map discharge_proj cl.cl_projs;
+      cl_strict = cl.cl_strict;
+      cl_unique = cl.cl_unique
+    }
+  with Not_found -> (* not defined in the current section *)
+    cl
+
+let rebuild_class cl =
+  try
+    let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
+      set_typeclass_transparency cst false false; cl
+  with e when CErrors.noncritical e -> cl
+
+let class_input : typeclass -> obj =
+  declare_object
+    { (default_object "type classes state") with
+      cache_function = cache_class;
+      load_function = (fun _ -> cache_class);
+      open_function = (fun _ -> cache_class);
+      classify_function = (fun x -> Substitute x);
+      discharge_function = (fun a -> Some (discharge_class a));
+      rebuild_function = rebuild_class;
+      subst_function = subst_class }
+
+let add_class cl =
+  Lib.add_anonymous_leaf (class_input cl)
+
+let add_class env sigma cl =
+  add_class cl;
+  List.iter (fun (n, inst, body) ->
+      match inst with
+      | Some (Backward, info) ->
+        (match body with
+         | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
+         | Some b -> declare_instance ~warn:true env sigma (Some info) false (ConstRef b))
+      | _ -> ())
+    cl.cl_projs
 
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
@@ -72,10 +281,12 @@ let existing_instance glob g info =
   let c = Nametab.global g in
   let info = Option.default Hints.empty_hint_info info in
   let info = intern_info info in
-  let instance, _ = Typeops.type_of_global_in_context (Global.env ()) c in
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let instance, _ = Typeops.type_of_global_in_context env c in
   let _, r = Term.decompose_prod_assum instance in
-    match class_of_constr Evd.empty (EConstr.of_constr r) with
-      | Some (_, ((tc,u), _)) -> add_instance (new_instance tc info glob c)
+    match class_of_constr env sigma (EConstr.of_constr r) with
+      | Some (_, ((tc,u), _)) -> add_instance (mk_instance tc info glob c)
       | None -> user_err ?loc:g.CAst.loc
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
@@ -111,7 +322,9 @@ let id_of_class cl =
 let instance_hook k info global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst imps;
   let info = intern_info info in
-  Typeclasses.declare_instance (Some info) (not global) cst;
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
@@ -154,7 +367,9 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
       Impargs.declare_manual_implicits false gr imps;
       let pri = intern_info pri in
-      Typeclasses.declare_instance (Some pri) (not global) (ConstRef cst)
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      declare_instance env sigma (Some pri) (not global) (ConstRef cst)
     in
     let obls, constr, typ =
       match term with
@@ -360,96 +575,3 @@ let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl)
     interp_instance_context ~program_mode env ctx pl bk cl
   in
   do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
-
-let named_of_rel_context l =
-  let open Vars in
-  let acc, ctx =
-    List.fold_right
-      (fun decl (subst, ctx) ->
-        let id = match RelDecl.get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
-	let d = match decl with
-          | LocalAssum (_,t) -> id, None, substl subst t
-          | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in
-	  (mkVar id :: subst, d :: ctx))
-      l ([], [])
-  in ctx
-
-let context ~pstate poly l =
-  let env = Global.env() in
-  let sigma = Evd.from_env env in
-  let sigma, (_, ((env', fullctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
-  (* Note, we must use the normalized evar from now on! *)
-  let sigma = Evd.minimize_universes sigma in
-  let ce t = Pretyping.check_evars env (Evd.from_env env) sigma t in
-  let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) fullctx in
-  let ctx =
-    try named_of_rel_context fullctx
-    with e when CErrors.noncritical e ->
-      user_err Pp.(str "Anonymous variables not allowed in contexts.")
-  in
-  let univs =
-    match ctx with
-    | [] -> assert false
-    | [_] -> Evd.univ_entry ~poly sigma
-    | _::_::_ ->
-      if Lib.sections_are_opened ()
-      then
-        (* More than 1 variable in a section: we can't associate
-           universes to any specific variable so we declare them
-           separately. *)
-        begin
-          let uctx = Evd.universe_context_set sigma in
-          Declare.declare_universe_context poly uctx;
-          if poly then Polymorphic_entry ([||], Univ.UContext.empty)
-          else Monomorphic_entry Univ.ContextSet.empty
-        end
-      else if poly then
-        (* Multiple polymorphic axioms: they are all polymorphic the same way. *)
-        Evd.univ_entry ~poly sigma
-      else
-        (* Multiple monomorphic axioms: declare universes separately
-           to avoid redeclaring them. *)
-        begin
-          let uctx = Evd.universe_context_set sigma in
-          Declare.declare_universe_context poly uctx;
-          Monomorphic_entry Univ.ContextSet.empty
-        end
-  in
-  let fn status (id, b, t) =
-    let b, t = Option.map (to_constr sigma) b, to_constr sigma t in
-    if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      (* Declare the universe context once *)
-      let decl = match b with
-      | None ->
-        (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
-      | Some b ->
-        let entry = Declare.definition_entry ~univs ~types:t b in
-        (DefinitionEntry entry, IsAssumption Logical)
-      in
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
-        match class_of_constr sigma (of_constr t) with
-	| Some (rels, ((tc,_), args) as _cl) ->
-            add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (ConstRef cst));
-            status
-	    (* declare_subclasses (ConstRef cst) cl *)
-	| None -> status
-    else
-      let test (x, _) = match x with
-      | ExplByPos (_, Some id') -> Id.equal id id'
-      | _ -> false
-      in
-      let impl = List.exists test impls in
-      let decl = (Discharge, poly, Definitional) in
-      let nstatus = match b with
-      | None ->
-        pi3 (ComAssumption.declare_assumption ~pstate false decl (t, univs) UnivNames.empty_binders [] impl
-               Declaremods.NoInline (CAst.make id))
-      | Some b ->
-        let decl = (Discharge, poly, Definition) in
-        let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition ~ontop:pstate id decl entry UnivNames.empty_binders [] in
-        Lib.sections_are_opened () || Lib.is_modtype_strict ()
-      in
-	status && nstatus
-  in
-  List.fold_left fn true (List.rev ctx)

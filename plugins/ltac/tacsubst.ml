@@ -30,7 +30,7 @@ let subst_quantified_hypothesis _ x = x
 let subst_declared_or_quantified_hypothesis _ x = x
 
 let subst_glob_constr_and_expr subst (c, e) =
-  (Detyping.subst_glob_constr subst c, e)
+  (Detyping.subst_glob_constr (Global.env()) subst c, e)
 
 let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)
 
@@ -99,7 +99,9 @@ let subst_evaluable subst =
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
 
 let subst_glob_constr_or_pattern subst (bvars,c,p) =
-  (bvars,subst_glob_constr subst c,subst_pattern subst p)
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  (bvars,subst_glob_constr subst c,subst_pattern env sigma subst p)
 
 let subst_redexp subst =
   Redops.map_red_expr_gen

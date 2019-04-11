@@ -317,7 +317,7 @@ let build_constructors_of_type ind' argl =
 		  Impargs.implicits_of_global constructref
 		in
 		let cst_narg =
-		  Inductiveops.constructor_nallargs_env
+                  Inductiveops.constructor_nallargs
 		    (Global.env ())
 		    construct
 		in
@@ -330,7 +330,7 @@ let build_constructors_of_type ind' argl =
 		let pat_as_term =
 		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)
 		in
-		cases_pattern_of_glob_constr Anonymous pat_as_term
+                cases_pattern_of_glob_constr (Global.env()) Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
 
@@ -415,7 +415,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
 	mkGVar id
   | PatCstr(constr,patternl,_) ->
       let cst_narg =
-	Inductiveops.constructor_nallargs_env
+        Inductiveops.constructor_nallargs
 	  (Global.env ())
 	  constr
       in

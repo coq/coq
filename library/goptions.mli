@@ -89,8 +89,8 @@ module MakeRefTable :
     (A : sig
            type t
            val compare : t -> t -> int
-           val encode : qualid -> t
-	   val subst : substitution -> t -> t
+           val encode : Environ.env -> qualid -> t
+           val subst : substitution -> t -> t
            val printer : t -> Pp.t
            val key : option_name
            val title : string

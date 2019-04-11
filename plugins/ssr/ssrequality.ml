@@ -340,7 +340,7 @@ let pirrel_rewrite pred rdx rdx_ty new_rdx dir (sigma, c) c_ty gl =
   let elim, gl = 
     let ((kn, i) as ind, _), unfolded_c_ty = pf_reduce_to_quantified_ind gl c_ty in
     let sort = elimination_sort_of_goal gl in
-    let elim, gl = pf_fresh_global (Indrec.lookup_eliminator ind sort) gl in
+    let elim, gl = pf_fresh_global (Indrec.lookup_eliminator env ind sort) gl in
     if dir = R2L then elim, gl else (* taken from Coq's rewrite *)
     let elim, _ = destConst elim in
     let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical elim)) in
@@ -504,9 +504,9 @@ let rwprocess_rule dir rule gl =
          let sigma, rs2 = loop d sigma s a.(1) rs 0 in
          let s, sigma = sr sigma 1 in
          loop d sigma s a.(0) rs2 0
-      | App (r_eq, a) when Hipattern.match_with_equality_type sigma t != None ->
+      | App (r_eq, a) when Hipattern.match_with_equality_type env sigma t != None ->
         let (ind, u) = EConstr.destInd sigma r_eq and rhs = Array.last a in
-        let np = Inductiveops.inductive_nparamdecls ind in
+        let np = Inductiveops.inductive_nparamdecls env ind in
         let indu = (ind, EConstr.EInstance.kind sigma u) in
         let ind_ct = Inductiveops.type_of_constructors env indu in
         let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_assum ind_ct.(0))) in

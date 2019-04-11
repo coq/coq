@@ -30,6 +30,7 @@ open Constrexpr
 open Constrexpr_ops
 open Goptions
 open Context.Rel.Declaration
+open Libobject
 
 module RelDecl = Context.Rel.Declaration
 
@@ -373,6 +374,27 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 
 open Typeclasses
 
+let load_structure i (_, structure) =
+  Recordops.register_structure (Global.env()) structure
+
+let cache_structure o =
+  load_structure 1 o
+
+let subst_structure (subst, (id, kl, projs as obj)) =
+  Recordops.subst_structure subst obj
+
+let discharge_structure (_, x) = Some x
+
+let inStruc : Recordops.struc_tuple -> obj =
+  declare_object {(default_object "STRUCTURE") with
+    cache_function = cache_structure;
+    load_function = load_structure;
+    subst_function = subst_structure;
+    classify_function = (fun x -> Substitute x);
+    discharge_function = discharge_structure }
+
+let declare_structure_entry o =
+  Lib.add_anonymous_leaf (inStruc o)
 
 let declare_structure ~cum finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
   let nparams = List.length params in
@@ -443,7 +465,7 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = ConstructRef cstr in
     let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
-    let () = Recordops.declare_structure(cstr, List.rev kinds, List.rev sp_projs) in
+    let () = declare_structure_entry (cstr, List.rev kinds, List.rev sp_projs) in
     rsp
   in
   List.mapi map record_data
@@ -520,8 +542,10 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       List.map map inds
   in
   let ctx_context =
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
     List.map (fun decl ->
-      match Typeclasses.class_of_constr Evd.empty (EConstr.of_constr (RelDecl.get_type decl)) with
+      match Typeclasses.class_of_constr env sigma (EConstr.of_constr (RelDecl.get_type decl)) with
       | Some (_, ((cl,_), _)) -> Some cl.cl_impl
       | None -> None)
       params, params
@@ -548,12 +572,14 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
         cl_props = fields;
         cl_projs = projs }
     in
-    add_class k; impl
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Classes.add_class env sigma k; impl
   in
   List.map map data
 
 
-let add_constant_class env cst =
+let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, arity = decompose_prod_assum ty in
@@ -566,10 +592,11 @@ let add_constant_class env cst =
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
     }
-  in add_class tc;
+  in
+  Classes.add_class env sigma tc;
     set_typeclass_transparency (EvalConstRef cst) false false
-      
-let add_inductive_class env ind =
+
+let add_inductive_class env sigma ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
@@ -586,7 +613,8 @@ let add_inductive_class env ind =
 	cl_projs = [];
 	cl_strict = !typeclasses_strict;
 	cl_unique = !typeclasses_unique }
-  in add_class k
+  in
+  Classes.add_class env sigma k
 
 let warn_already_existing_class =
   CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
@@ -594,11 +622,12 @@ let warn_already_existing_class =
 
 let declare_existing_class g =
   let env = Global.env () in
+  let sigma = Evd.from_env env in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | ConstRef x -> add_constant_class env x
-    | IndRef x -> add_inductive_class env x
+    | ConstRef x -> add_constant_class env sigma x
+    | IndRef x -> add_inductive_class env sigma x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 

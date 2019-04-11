@@ -9,8 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
-open Entries
 open Vernacexpr
 open Constrexpr
 open Decl_kinds
@@ -25,24 +23,28 @@ val do_assumptions
   -> (ident_decl list * constr_expr) with_coercion list
   -> bool
 
-(************************************************************************)
-(** Internal API  *)
-(************************************************************************)
-
-(** Exported for Classes *)
-
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
 val declare_assumption
   :  pstate:Proof_global.t option
   -> coercion_flag
   -> assumption_kind
-  -> types in_universes_entry
+  -> Constr.types Entries.in_universes_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
   -> bool (** implicit *)
   -> Declaremods.inline
   -> variable CAst.t
   -> GlobRef.t * Univ.Instance.t * bool
+
+(** Context command *)
+
+(** returns [false] if, for lack of section, it declares an assumption
+    (unless in a module type). *)
+val context
+  :  pstate:Proof_global.t option
+  -> Decl_kinds.polymorphic
+  -> local_binder_expr list
+  -> bool
 
 val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit

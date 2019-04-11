@@ -188,7 +188,7 @@ let empty_seq depth=
 let expand_constructor_hints =
   List.map_append (function
     | GlobRef.IndRef ind ->
-        List.init (Inductiveops.nconstructors ind)
+        List.init (Inductiveops.nconstructors (Global.env()) ind)
           (fun i -> GlobRef.ConstructRef (ind,i+1))
     | gr ->
 	[gr])

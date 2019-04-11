@@ -362,7 +362,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
     try
       match hdc with
       | Some (hd,_) when only_classes ->
-         let cl = Typeclasses.class_info hd in
+         let cl = Typeclasses.class_info env sigma hd in
          if cl.cl_strict then
            Evarutil.undefined_evars_of_term sigma concl
          else Evar.Set.empty
@@ -1052,7 +1052,7 @@ let error_unresolvable env comp evd =
   | Some s -> Evar.Set.mem ev s
   in
   let fold ev evi (found, accu) =
-    let ev_class = class_of_constr evd evi.evar_concl in
+    let ev_class = class_of_constr env evd evi.evar_concl in
     if not (Option.is_empty ev_class) && is_part ev then
       (* focus on one instance if only one was searched for *)
       if not found then (true, Some ev)

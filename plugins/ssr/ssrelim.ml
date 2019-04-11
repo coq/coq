@@ -194,7 +194,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       let sort = Tacticals.elimination_sort_of_goal gl in
       let gl, elim =
         if not is_case then
-          let t,gl= pf_fresh_global (Indrec.lookup_eliminator (kn,i) sort) gl in
+          let t,gl= pf_fresh_global (Indrec.lookup_eliminator env (kn,i) sort) gl in
           gl, t
         else
           Tacmach.pf_eapply (fun env sigma () ->

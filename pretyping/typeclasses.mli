@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Globnames
 open Constr
 open Evd
 open Environ
@@ -54,19 +53,25 @@ type typeclass = {
       no backtracking and sharing of resolution. *)
 }
 
-type instance
+type instance = {
+  is_class: GlobRef.t;
+  is_info: hint_info;
+  (* Sections where the instance should be redeclared,
+     None for discard, Some 0 for none. *)
+  is_global: int option;
+  is_impl: GlobRef.t;
+}
 
-val instances : GlobRef.t -> instance list
+val instances : env -> evar_map -> GlobRef.t -> instance list
 val typeclasses : unit -> typeclass list
 val all_instances : unit -> instance list
 
-val add_class : typeclass -> unit
+val load_class : typeclass -> unit
 
-val new_instance : typeclass -> hint_info -> bool -> GlobRef.t -> instance
-val add_instance : instance -> unit
+val load_instance : instance -> unit
 val remove_instance : instance -> unit
 
-val class_info : GlobRef.t -> typeclass (** raises a UserError if not a class *)
+val class_info : env -> evar_map -> GlobRef.t -> typeclass (** raises a UserError if not a class *)
 
 
 (** These raise a UserError if not a class.
@@ -78,7 +83,8 @@ val dest_class_app : env -> evar_map -> EConstr.constr -> (typeclass * EConstr.E
 val typeclass_univ_instance : typeclass Univ.puniverses -> typeclass
 
 (** Just return None if not a class *)
-val class_of_constr : evar_map -> EConstr.constr -> (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
+val class_of_constr : env -> evar_map -> EConstr.constr ->
+  (EConstr.rel_context * ((typeclass * EConstr.EInstance.t) * constr list)) option
 
 val instance_impl : instance -> GlobRef.t
 
@@ -122,22 +128,8 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 val classes_transparent_state_hook : (unit -> TransparentState.t) Hook.t
 val classes_transparent_state : unit -> TransparentState.t
 
-val add_instance_hint_hook :
-  (global_reference_or_constr -> GlobRef.t list ->
-   bool (* local? *) -> hint_info -> Decl_kinds.polymorphic -> unit) Hook.t
-val remove_instance_hint_hook : (GlobRef.t -> unit) Hook.t
-val add_instance_hint : global_reference_or_constr -> GlobRef.t list ->
-  bool -> hint_info -> Decl_kinds.polymorphic -> unit
-val remove_instance_hint : GlobRef.t -> unit
-
 val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
-
-(** Declares the given global reference as an instance of its type.
-    Does nothing — or emit a “not-a-class” warning if the [warn] argument is set —
-    when said type is not a registered type class. *)
-val declare_instance : ?warn:bool -> hint_info option -> bool -> GlobRef.t -> unit
-
 
 (** Build the subinstances hints for a given typeclass object.
     check tells if we should check for existence of the 

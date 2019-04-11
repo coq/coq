@@ -119,7 +119,7 @@ let app_poly_check env evars f args =
   (evars, cstrs), t
 
 let app_poly_nocheck env evars f args =
-  let evars, fc = f evars in 
+  let evars, fc = f evars in
     evars, mkApp (fc, args)
 
 let app_poly_sort b =
@@ -175,25 +175,29 @@ end) = struct
 
   let rewrite_relation_class = find_global relation_classes "RewriteRelation"
 
-  let proper_class = lazy (class_info (find_reference morphisms "Proper"))
-  let proper_proxy_class = lazy (class_info (find_reference morphisms "ProperProxy"))
-    
-  let proper_proj = lazy (mkConst (Option.get (pi3 (List.hd (Lazy.force proper_class).cl_projs))))
-    
-  let proper_type = 
-    let l = lazy (Lazy.force proper_class).cl_impl in
-      fun (evd,cstrs) -> 
-        let (evd, c) = Evarutil.new_global evd (Lazy.force l) in
-	  (evd, cstrs), c
-	
-  let proper_proxy_type = 
-    let l = lazy (Lazy.force proper_proxy_class).cl_impl in
-      fun (evd,cstrs) -> 
-        let (evd, c) = Evarutil.new_global evd (Lazy.force l) in
-	  (evd, cstrs), c
+  let proper_class =
+    let r = lazy (find_reference morphisms "Proper") in
+    fun env sigma -> class_info env sigma (Lazy.force r)
+
+  let proper_proxy_class =
+    let r = lazy (find_reference morphisms "ProperProxy") in
+    fun env sigma -> class_info env sigma (Lazy.force r)
+
+  let proper_proj env sigma =
+    mkConst (Option.get (pi3 (List.hd (proper_class env sigma).cl_projs)))
+
+  let proper_type env (sigma,cstrs) =
+    let l = (proper_class env sigma).cl_impl in
+    let (sigma, c) = Evarutil.new_global sigma l in
+    (sigma, cstrs), c
+
+  let proper_proxy_type env (sigma,cstrs) =
+    let l = (proper_proxy_class env sigma).cl_impl in
+    let (sigma, c) = Evarutil.new_global sigma l in
+    (sigma, cstrs), c
 
   let proper_proof env evars carrier relation x =
-    let evars, goal = app_poly env evars proper_proxy_type [| carrier ; relation; x |] in
+    let evars, goal = app_poly env evars (proper_proxy_type env) [| carrier ; relation; x |] in
       new_cstr_evar evars env goal
 
   let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
@@ -800,7 +804,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     in
       (* Actual signature found *)
     let cl_args = [| appmtype' ; signature ; appm |] in
-    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type else TypeGlobal.proper_type)
+    let evars, app = app_poly_sort b env evars (if b then PropGlobal.proper_type env else TypeGlobal.proper_type env)
       cl_args in
     let env' = 
       let dosub, appsub = 
@@ -1310,8 +1314,8 @@ module Strategies =
 	in
 	let evars, proof =
 	  let proxy = 
-	    if prop then PropGlobal.proper_proxy_type 
-	    else TypeGlobal.proper_proxy_type
+            if prop then PropGlobal.proper_proxy_type env
+            else TypeGlobal.proper_proxy_type env
 	  in
 	  let evars, mty = app_poly_sort prop env evars proxy [| ty ; rel; t |] in
 	    new_cstr_evar evars env mty
@@ -1854,12 +1858,12 @@ let declare_relation ~pstate atts ?(binders=[]) a aeq n refl symm trans =
 
 let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)
 
-let proper_projection sigma r ty =
+let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
   let ctx, inst = decompose_prod_assum sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (Lazy.force PropGlobal.proper_proj,
+  let app = mkApp (PropGlobal.proper_proj env sigma,
 		  Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
 
@@ -1869,7 +1873,7 @@ let declare_projection n instance_id r =
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma c in
-  let term = proper_projection sigma c ty in
+  let term = proper_projection env sigma c ty in
   let sigma, typ = Typing.type_of env sigma term in
   let ctx, typ = decompose_prod_assum sigma typ in
   let typ =
@@ -1924,7 +1928,7 @@ let build_morphism_signature env sigma m =
 	rel)
     cstrs
   in
-  let morph = e_app_poly env evd PropGlobal.proper_type [| t; sig_; m |] in
+  let morph = e_app_poly env evd (PropGlobal.proper_type env) [| t; sig_; m |] in
   let evd = solve_constraints env !evd in
   let evd = Evd.minimize_universes evd in
   let m = Evarutil.nf_evars_universes evd (EConstr.Unsafe.to_constr morph) in
@@ -1938,9 +1942,9 @@ let default_morphism sign m =
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
-  let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
+  let evars, morph = app_poly_check env evars (PropGlobal.proper_type env) [| t; sign; m |] in
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
-    mor, proper_projection sigma mor morph
+    mor, proper_projection env sigma mor morph
 
 let warn_add_setoid_deprecated =
   CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
@@ -1984,8 +1988,8 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
              (None,(instance,uctx),None),
            Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-      add_instance (Typeclasses.new_instance
-                      (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info atts.global (ConstRef cst));
+      add_instance (Classes.mk_instance
+                      (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
       declare_projection n instance_id (ConstRef cst);
       pstate
     else
@@ -1995,8 +1999,8 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
       let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
       let hook _ _ _ = function
         | Globnames.ConstRef cst ->
-          add_instance (Typeclasses.new_instance
-                          (Lazy.force PropGlobal.proper_class) Hints.empty_hint_info
+          add_instance (Classes.mk_instance
+                          (PropGlobal.proper_class env evd) Hints.empty_hint_info
                           atts.global (ConstRef cst));
           declare_projection n instance_id (ConstRef cst)
         | _ -> assert false

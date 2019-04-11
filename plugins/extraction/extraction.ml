@@ -854,7 +854,7 @@ and extract_cons_app env sg mle mlt (((kn,i) as ip,j) as cp) args =
 and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
   (* [br]: bodies of each branch (in functional form) *)
   (* [ni]: number of arguments without parameters in each branch *)
-  let ni = constructors_nrealargs_env env ip in
+  let ni = constructors_nrealargs env ip in
   let br_size = Array.length br in
   assert (Int.equal (Array.length ni) br_size);
   if Int.equal br_size 0 then begin

@@ -43,8 +43,8 @@ open Coqlib
    also work on ad-hoc disjunctions introduced by the user.
    (Eduardo, 6/8/97). *)
 
-type 'a matching_function = evar_map -> constr -> 'a option
-type testing_function = evar_map -> constr -> bool
+type 'a matching_function = Environ.env -> evar_map -> constr -> 'a option
+type testing_function = Environ.env -> evar_map -> constr -> bool
 
 val match_with_non_recursive_type : (constr * constr list) matching_function
 val is_non_recursive_type         : testing_function
@@ -83,8 +83,8 @@ val is_inductive_equality  : inductive -> bool
 val match_with_equality_type : (constr * constr list) matching_function
 val is_equality_type       : testing_function
 
-val match_with_nottype     : Environ.env -> (constr * constr) matching_function
-val is_nottype             : Environ.env -> testing_function
+val match_with_nottype     : (constr * constr) matching_function
+val is_nottype             : testing_function
 
 val match_with_forall_term    : (Name.t Context.binder_annot * constr * constr) matching_function
 val is_forall_term            : testing_function

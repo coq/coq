@@ -1064,7 +1064,9 @@ let subst_autohint (subst, obj) =
   in
   let subst_hint (k,data as hint) =
     let k' = Option.Smart.map subst_key k in
-    let pat' = Option.Smart.map (subst_pattern subst) data.pat in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
     let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
     let code' = match data.code.obj with
       | Res_pf (c,t,ctx) ->
@@ -1353,7 +1355,7 @@ let interp_hints poly =
         let ind = global_inductive_with_alias qid in
 	let mib,_ = Global.lookup_inductive ind in
         Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_qualid qid) "ind";
-          List.init (nconstructors ind) 
+          List.init (nconstructors env ind)
 	    (fun i -> let c = (ind,i+1) in
 		      let gr = ConstructRef c in
 			empty_hint_info, 
@@ -1389,7 +1391,7 @@ let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
     match EConstr.kind sigma lem with
     | Ind (ind,u) ->
-	List.init (nconstructors ind) 
+        List.init (nconstructors env ind)
 		  (fun i ->
 		   let ctx = Univ.ContextSet.diff (Evd.universe_context_set evd)
 						  (Evd.universe_context_set sigma) in

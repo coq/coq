@@ -280,66 +280,64 @@ let rec liftn_pattern k n = function
 
 let lift_pattern k = liftn_pattern k 1
 
-let rec subst_pattern subst pat =
+let rec subst_pattern env sigma subst pat =
   match pat with
   | PRef ref ->
     let ref',t = subst_global subst ref in
     if ref' == ref then pat else (match t with
         | None -> PRef ref'
         | Some t ->
-          let env = Global.env () in
-          let evd = Evd.from_env env in
-          pattern_of_constr env evd t.Univ.univ_abstracted_value)
+          pattern_of_constr env sigma t.Univ.univ_abstracted_value)
   | PVar _
   | PEvar _
   | PRel _
   | PInt _ -> pat
   | PProj (p,c) -> 
       let p' = Projection.map (subst_mind subst) p in
-      let c' = subst_pattern subst c in
+      let c' = subst_pattern env sigma subst c in
 	if p' == p && c' == c then pat else
 	  PProj(p',c')
   | PApp (f,args) ->
-      let f' = subst_pattern subst f in
-      let args' = Array.Smart.map (subst_pattern subst) args in
+      let f' = subst_pattern env sigma subst f in
+      let args' = Array.Smart.map (subst_pattern env sigma subst) args in
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
   | PSoApp (i,args) ->
-      let args' = List.Smart.map (subst_pattern subst) args in
+      let args' = List.Smart.map (subst_pattern env sigma subst) args in
 	if args' == args then pat else
 	  PSoApp (i,args')
   | PLambda (name,c1,c2) ->
-      let c1' = subst_pattern subst c1 in
-      let c2' = subst_pattern subst c2 in
+      let c1' = subst_pattern env sigma subst c1 in
+      let c2' = subst_pattern env sigma subst c2 in
 	if c1' == c1 && c2' == c2 then pat else
 	  PLambda (name,c1',c2')
   | PProd (name,c1,c2) ->
-      let c1' = subst_pattern subst c1 in
-      let c2' = subst_pattern subst c2 in
+      let c1' = subst_pattern env sigma subst c1 in
+      let c2' = subst_pattern env sigma subst c2 in
 	if c1' == c1 && c2' == c2 then pat else
 	  PProd (name,c1',c2')
   | PLetIn (name,c1,t,c2) ->
-      let c1' = subst_pattern subst c1 in
-      let t' = Option.Smart.map (subst_pattern subst) t in
-      let c2' = subst_pattern subst c2 in
+      let c1' = subst_pattern env sigma subst c1 in
+      let t' = Option.Smart.map (subst_pattern env sigma subst) t in
+      let c2' = subst_pattern env sigma subst c2 in
 	if c1' == c1 && t' == t && c2' == c2 then pat else
 	  PLetIn (name,c1',t',c2')
   | PSort _
   | PMeta _ -> pat
   | PIf (c,c1,c2) ->
-      let c' = subst_pattern subst c in
-      let c1' = subst_pattern subst c1 in
-      let c2' = subst_pattern subst c2 in
+      let c' = subst_pattern env sigma subst c in
+      let c1' = subst_pattern env sigma subst c1 in
+      let c2' = subst_pattern env sigma subst c2 in
 	if c' == c && c1' == c1 && c2' == c2 then pat else
 	  PIf (c',c1',c2')
   | PCase (cip,typ,c,branches) ->
       let ind = cip.cip_ind in
       let ind' = Option.Smart.map (subst_ind subst) ind in
       let cip' = if ind' == ind then cip else { cip with cip_ind = ind' } in
-      let typ' = subst_pattern subst typ in
-      let c' = subst_pattern subst c in
+      let typ' = subst_pattern env sigma subst typ in
+      let c' = subst_pattern env sigma subst c in
       let subst_branch ((i,n,c) as br) =
-	let c' = subst_pattern subst c in
+        let c' = subst_pattern env sigma subst c in
 	if c' == c then br else (i,n,c')
       in
       let branches' = List.Smart.map subst_branch branches in
@@ -347,13 +345,13 @@ let rec subst_pattern subst pat =
       then pat
       else PCase(cip', typ', c', branches')
   | PFix (lni,(lna,tl,bl)) ->
-      let tl' = Array.Smart.map (subst_pattern subst) tl in
-      let bl' = Array.Smart.map (subst_pattern subst) bl in
+      let tl' = Array.Smart.map (subst_pattern env sigma subst) tl in
+      let bl' = Array.Smart.map (subst_pattern env sigma subst) bl in
       if bl' == bl && tl' == tl then pat
       else PFix (lni,(lna,tl',bl'))
   | PCoFix (ln,(lna,tl,bl)) ->
-      let tl' = Array.Smart.map (subst_pattern subst) tl in
-      let bl' = Array.Smart.map (subst_pattern subst) bl in
+      let tl' = Array.Smart.map (subst_pattern env sigma subst) tl in
+      let bl' = Array.Smart.map (subst_pattern env sigma subst) bl in
       if bl' == bl && tl' == tl then pat
       else PCoFix (ln,(lna,tl',bl'))
 

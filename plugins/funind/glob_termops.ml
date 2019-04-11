@@ -361,7 +361,7 @@ let rec pattern_to_term pt = DAst.with_val (function
 	mkGVar id
   | PatCstr(constr,patternl,_) ->
       let cst_narg =
-	Inductiveops.constructor_nallargs_env
+        Inductiveops.constructor_nallargs
 	  (Global.env ())
 	  constr
       in

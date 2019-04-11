@@ -382,8 +382,8 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 	let _ =
 	  List.map_i
 	    (fun i x ->
-	     let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
-	     let env = Global.env () in
+              let env = Global.env () in
+              let princ = Indrec.lookup_eliminator env (ind_kn,i) (InProp) in
 	     let evd = ref (Evd.from_env env) in
 	     let evd',uprinc = Evd.fresh_global env !evd princ in
              let _ = evd := evd' in 

@@ -81,12 +81,13 @@ let up_to_delta = ref false (* true *)
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
   let type_of = pf_unsafe_type_of gl in
+  let env = pf_env gl in
   let sigma = project gl in
   let typc = type_of c in
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId
-	    (ifOnHyp (recognizer sigma) (general_decompose_aux (recognizer sigma))
+            (ifOnHyp (recognizer env sigma) (general_decompose_aux (recognizer env sigma))
 	      (fun id -> clear [id])));
        exact_no_check c ]
   end
@@ -105,17 +106,17 @@ let head_in indl t gl =
 let decompose_these c l =
   Proofview.Goal.enter begin fun gl ->
   let indl = List.map (fun x -> x, Univ.Instance.empty) l in
-  general_decompose (fun sigma (_,t) -> head_in indl t gl) c
+  general_decompose (fun env sigma (_,t) -> head_in indl t gl) c
   end
 
 let decompose_and c =
   general_decompose
-    (fun sigma (_,t) -> is_record sigma t)
+    (fun env sigma (_,t) -> is_record env sigma t)
     c
 
 let decompose_or c =
   general_decompose
-    (fun sigma (_,t) -> is_disjunction sigma t)
+    (fun env sigma (_,t) -> is_disjunction env sigma t)
     c
 
 let h_decompose l c = decompose_these c l
