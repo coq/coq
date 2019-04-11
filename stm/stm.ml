@@ -2970,7 +2970,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
            "Nested proofs are not allowed unless you turn option Nested Proofs Allowed on."
            |> Pp.str
            |> (fun s -> (UserError (None, s), Exninfo.null))
-           |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
+           |> State.exn_on ~valid:Stateid.dummy newtip
            |> Exninfo.iraise
          else
 
@@ -3054,7 +3054,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
             "Commands which may open proofs are not allowed in a proof unless you turn option Nested Proofs Allowed on."
             |> Pp.str
             |> (fun s -> (UserError (None, s), Exninfo.null))
-            |> State.exn_on ~valid:Stateid.dummy Stateid.dummy
+            |> State.exn_on ~valid:Stateid.dummy newtip
             |> Exninfo.iraise
           else
             let id = VCS.new_node ~id:newtip proof_mode () in
