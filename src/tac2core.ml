@@ -1030,9 +1030,10 @@ let () =
   let intern = intern_constr in
   let interp ist c = interp_constr (constr_flags ()) ist c in
   let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
-    ml_subst = Detyping.subst_glob_constr;
+    ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
   } in
@@ -1042,9 +1043,10 @@ let () =
   let intern = intern_constr in
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
   let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
     ml_intern = intern;
-    ml_subst = Detyping.subst_glob_constr;
+    ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
   } in
@@ -1069,12 +1071,17 @@ let () =
     let _, pat = warn (fun () ->Constrintern.intern_constr_pattern env sigma ~as_type:false c) () in
     GlbVal pat, gtypref t_pattern
   in
+  let subst subst c =
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    Patternops.subst_pattern env sigma subst c
+  in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
   let interp _ c = return (Value.of_pattern c) in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
-    ml_subst = Patternops.subst_pattern;
+    ml_subst = subst;
     ml_print = print;
   } in
   define_ml_object Tac2quote.wit_pattern obj
