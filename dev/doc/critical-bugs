@@ -195,6 +195,18 @@ Conversion machines
   GH issue number: ?
   risk: 
 
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: primitive integer emulation layer on 32 bits not robust to garbage collection
+  introduced: master (before v8.10 in GH pull request #6914)
+  impacted released versions: none
+  impacted development branches:
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in:
+  found by: Roux, Melquiond
+  exploit:
+  GH issue number: #9925
+  risk:
+
   component: "native" conversion machine (translation to OCaml which compiles to native code)
   summary: translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
   introduced: V8.5
