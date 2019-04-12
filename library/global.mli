@@ -131,10 +131,6 @@ val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
 val is_type_in_type : GlobRef.t -> bool
 
-val constr_of_global_in_context : Environ.env ->
-  GlobRef.t -> Constr.types * Univ.AUContext.t
-  [@@ocaml.deprecated "alias of [Typeops.constr_of_global_in_context]"]
-
 val type_of_global_in_context : Environ.env -> 
   GlobRef.t -> Constr.types * Univ.AUContext.t
   [@@ocaml.deprecated "alias of [Typeops.type_of_global_in_context]"]
