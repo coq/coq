@@ -25,8 +25,9 @@ type zres = (Mc.zArithProof , (int * Mc.z  list)) res
 type qres = (Mc.q Mc.psatz , (int * Mc.q  list)) res
 
 (** [dump_file] is bound to the Coq option Dump Arith.
-    If set to some [file], arithmetic goals are dumped in filexxx.v *)
-val dump_file : string option ref
+   If set to some [file], arithmetic goals are dumped in filexxx.v,
+   if set to "" no dumping will occur *)
+val dump_file : string ref
 
 (** [q_cert_of_pos prf] converts a Sos proof into a rational Coq proof *)
 val q_cert_of_pos : Sos_types.positivstellensatz -> Mc.q Mc.psatz

@@ -128,8 +128,6 @@ val declare_bool_option  : ?preprocess:(bool -> bool) ->
                            bool option_sig   -> unit
 val declare_string_option: ?preprocess:(string -> string) ->
                            string option_sig -> unit
-val declare_stringopt_option: ?preprocess:(string option -> string option) ->
-                              string option option_sig -> unit
 
 (** Helper to declare a reference controlled by an option. Read-only
    as to avoid races. *)
@@ -170,7 +168,6 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
-  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {

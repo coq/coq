@@ -22,7 +22,6 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
-  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {
@@ -293,11 +292,6 @@ let declare_string_option =
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly (Pp.str "async_option."))
     (fun x y -> x^","^y)
-let declare_stringopt_option =
-  declare_option
-    (fun v -> StringOptValue v)
-    (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option."))
-    (fun _ _ -> anomaly (Pp.str "async_option."))
 
 let declare_bool_option_and_ref ~depr ~name ~key ~(value:bool) =
   let r_opt = ref value in
@@ -331,7 +325,6 @@ let show_value_type = function
   | BoolValue _ -> "bool"
   | IntValue _ -> "int"
   | StringValue _ -> "string"
-  | StringOptValue _ -> "string"
 
 let bad_type_error opt_value actual_type =
   user_err Pp.(str "Bad type of value for this option:" ++ spc() ++
@@ -348,13 +341,11 @@ let check_bool_value v = function
 
 let check_string_value v = function
   | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
   | optv -> bad_type_error optv "string"
 
 let check_unset_value v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
-  | StringOptValue _ -> StringOptValue None
   | optv -> bad_type_error optv "nothing"
 
 (* Nota: For compatibility reasons, some errors are treated as
@@ -390,8 +381,6 @@ let msg_option_value (name,v) =
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> quote (str s)
-    | StringOptValue None   -> str"undefined"
-    | StringOptValue (Some s)   -> quote (str s)
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =

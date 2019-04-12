@@ -178,8 +178,6 @@ open Pputils
     (* This should not happen because of the grammar *)
       | IntValue (Some n) -> spc() ++ int n
       | StringValue s -> spc() ++ str s
-      | StringOptValue None -> mt()
-      | StringOptValue (Some s) -> spc() ++ str s
       | BoolValue b -> mt()
     in pr_printoption a None ++ pr_opt_value b
 

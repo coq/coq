@@ -113,7 +113,6 @@ type option_value = Goptions.option_value =
   | BoolValue of bool
   | IntValue of int option
   | StringValue of string
-  | StringOptValue of string option
 
 type option_ref_value =
   | StringRefValue of string

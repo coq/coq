@@ -1004,13 +1004,13 @@ let xlia env0 en red sys =
   else xlia en red sys
 
 
-let dump_file = ref None
+let dump_file = ref ""
 
 let gen_bench (tac, prover) can_enum prfdepth sys =
   let res = prover can_enum prfdepth sys in
   (match !dump_file with
-  | None -> ()
-  | Some file ->
+  | "" -> ()
+  | file ->
      begin
        let o = open_out (Filename.temp_file ~temp_dir:(Sys.getcwd ()) file ".v") in
        let sys = develop_constraints prfdepth z_spec sys in

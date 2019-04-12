@@ -63,7 +63,6 @@ type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
-  | StringOptValue of string option
 
 (** Summary of an option status *)
 type option_state = {

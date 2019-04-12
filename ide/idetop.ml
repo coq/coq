@@ -345,13 +345,11 @@ let export_option_value = function
   | Goptions.BoolValue b   -> Interface.BoolValue b
   | Goptions.IntValue x    -> Interface.IntValue x
   | Goptions.StringValue s -> Interface.StringValue s
-  | Goptions.StringOptValue s -> Interface.StringOptValue s
 
 let import_option_value = function
   | Interface.BoolValue b   -> Goptions.BoolValue b
   | Interface.IntValue x    -> Goptions.IntValue x
   | Interface.StringValue s -> Goptions.StringValue s
-  | Interface.StringOptValue s -> Goptions.StringOptValue s
 
 let export_option_state s = {
   Interface.opt_sync  = true;
@@ -370,8 +368,6 @@ let set_options options =
   | BoolValue b -> Goptions.set_bool_option_value name b
   | IntValue i -> Goptions.set_int_option_value name i
   | StringValue s -> Goptions.set_string_option_value name s
-  | StringOptValue (Some s) -> Goptions.set_string_option_value name s
-  | StringOptValue None -> Goptions.unset_option_value_gen name
   in
   List.iter iter options
 
