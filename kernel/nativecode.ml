@@ -1280,9 +1280,6 @@ let ml_of_instance instance u =
   | Lmakeblock (prefix,(cn,_u),_,args) ->
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,args)
-  | Lconstruct (prefix, (cn,u)) ->
-     let uargs = ml_of_instance env.env_univ u in
-      mkMLapp (MLglobal (Gconstruct (prefix, cn))) uargs
   | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i

@@ -42,8 +42,6 @@ type lambda =
   | Lmakeblock    of prefix * pconstructor * int * lambda array
                   (* prefix, constructor Name.t, constructor tag, arguments *)
         (* A fully applied constructor *)
-  | Lconstruct    of prefix * pconstructor (* prefix, constructor Name.t *)
-        (* A partially applied constructor *)
   | Luint         of Uint63.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
@@ -121,7 +119,7 @@ let get_const_prefix env c =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Luint _
-  | Lconstruct _ | Llazy | Lforce | Lmeta _ -> lam
+  | Llazy | Lforce | Lmeta _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -222,7 +220,7 @@ let lam_subst_args subst args =
 let can_subst lam = 
   match lam with
   | Lrel _ | Lvar _ | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Llam _
-  | Lconstruct _ | Lmeta _ | Levar _ -> true
+  | Lmeta _ | Levar _ -> true
   | _ -> false
 
 let can_merge_if bt bf =
@@ -337,9 +335,20 @@ let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
     
 (* Translation of constructors *)	
+let expand_constructor prefix cstr tag nparams arity =
+  let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
+  let ids = Array.make (nparams + arity) anon in
+  let args = make_args arity 1 in
+  Llam(ids, Lmakeblock (prefix, cstr, tag, args))
 
-let makeblock env cn u tag args =
-  if Array.for_all is_value args && Array.length args > 0 then
+(* [nparams] is the number of parameters still expected *)
+let makeblock env cn u tag nparams arity args =
+  let nargs = Array.length args in
+  if nparams > 0 || nargs < arity then
+    let prefix = get_mind_prefix env (fst (fst cn)) in
+    mkLapp (expand_constructor prefix (cn,u) tag nparams arity) args
+  else
+  if Array.for_all is_value args && nargs > 0 then
     let args = Array.map get_value args in
     Lval (Nativevalues.mk_block tag args)
   else
@@ -573,16 +582,12 @@ and lambda_of_app cache env sigma f args =
           mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args cache env sigma 0 args)
       end
   | Construct (c,u) ->
-      let tag, nparams, arity = Cache.get_construct_info cache env c in
-      let expected = nparams + arity in
-      let nargs = Array.length args in
-      let prefix = get_mind_prefix env (fst (fst c)) in
-      if Int.equal nargs expected then 
-          let args = lambda_of_args cache env sigma nparams args in
-          makeblock env c u tag args
-      else
-        let args = lambda_of_args cache env sigma 0 args in
-            mkLapp (Lconstruct (prefix, (c,u))) args
+    let tag, nparams, arity = Cache.get_construct_info cache env c in
+    let nargs = Array.length args in
+    if nparams < nargs then (* got all parameters *)
+      let args = lambda_of_args cache env sigma nparams args in
+      makeblock env c u tag 0 arity args
+    else makeblock env c u tag (nparams - nargs) arity empty_args
   | _ -> 
       let f = lambda_of_constr cache env sigma f in
       let args = lambda_of_args cache env sigma 0 args in
