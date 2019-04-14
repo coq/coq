@@ -34,7 +34,7 @@ type lambda =
   | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
-  | Lmakeblock    of prefix * pconstructor * int * lambda array
+  | Lmakeblock    of prefix * constructor * int * lambda array
                   (* prefix, constructor Name.t, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t

@@ -40,7 +40,7 @@ type lambda =
   | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
-  | Lmakeblock    of prefix * pconstructor * int * lambda array
+  | Lmakeblock    of prefix * constructor * int * lambda array
                   (* prefix, constructor Name.t, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
@@ -342,11 +342,11 @@ let expand_constructor prefix cstr tag nparams arity =
   Llam(ids, Lmakeblock (prefix, cstr, tag, args))
 
 (* [nparams] is the number of parameters still expected *)
-let makeblock env cn u tag nparams arity args =
+let makeblock env cn tag nparams arity args =
   let nargs = Array.length args in
   if nparams > 0 || nargs < arity then
     let prefix = get_mind_prefix env (fst (fst cn)) in
-    mkLapp (expand_constructor prefix (cn,u) tag nparams arity) args
+    mkLapp (expand_constructor prefix cn tag nparams arity) args
   else
   (* The constructor is fully applied *)
   if Int.equal arity 0 then Lint tag
@@ -356,7 +356,7 @@ let makeblock env cn u tag nparams arity args =
     Lval (Nativevalues.mk_block tag args)
   else
     let prefix = get_mind_prefix env (fst (fst cn)) in
-    Lmakeblock(prefix, (cn,u), tag, args)
+    Lmakeblock(prefix, cn, tag, args)
 
 (* Translation of constants *)
 
@@ -584,13 +584,13 @@ and lambda_of_app cache env sigma f args =
           let prefix = get_const_prefix env kn in
           mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args cache env sigma 0 args)
       end
-  | Construct (c,u) ->
+  | Construct (c,_) ->
     let tag, nparams, arity = Cache.get_construct_info cache env c in
     let nargs = Array.length args in
     if nparams < nargs then (* got all parameters *)
       let args = lambda_of_args cache env sigma nparams args in
-      makeblock env c u tag 0 arity args
-    else makeblock env c u tag (nparams - nargs) arity empty_args
+      makeblock env c tag 0 arity args
+    else makeblock env c tag (nparams - nargs) arity empty_args
   | _ -> 
       let f = lambda_of_constr cache env sigma f in
       let args = lambda_of_args cache env sigma 0 args in

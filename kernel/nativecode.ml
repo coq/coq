@@ -1274,7 +1274,7 @@ let ml_of_instance instance u =
 
   | Lint tag -> MLapp(MLprimitive Mk_int, [|MLint tag|])
 
-  | Lmakeblock (prefix,(cn,_u),_,args) ->
+  | Lmakeblock (prefix,cn,_,args) ->
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,args)
   | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
