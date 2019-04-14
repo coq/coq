@@ -51,7 +51,6 @@ let fresh_lname n =
 (** Global names **)
 type gname = 
   | Gind of string * inductive (* prefix, inductive name *)
-  | Gconstruct of string * constructor (* prefix, constructor name *)
   | Gconstant of string * Constant.t (* prefix, constant name *)
   | Gproj of string * inductive * int (* prefix, inductive, index (start from 0) *)
   | Gcase of Label.t option * int
@@ -67,8 +66,6 @@ let eq_gname gn1 gn2 =
   match gn1, gn2 with
   | Gind (s1, ind1), Gind (s2, ind2) ->
      String.equal s1 s2 && eq_ind ind1 ind2
-  | Gconstruct (s1, c1), Gconstruct (s2, c2) ->
-      String.equal s1 s2 && eq_constructor c1 c2
   | Gconstant (s1, c1), Gconstant (s2, c2) ->
       String.equal s1 s2 && Constant.equal c1 c2
   | Gproj (s1, ind1, i1), Gproj (s2, ind2, i2) ->
@@ -88,7 +85,7 @@ let eq_gname gn1 gn2 =
   | Ginternal s1, Ginternal s2 -> String.equal s1 s2
   | Grel i1, Grel i2 -> Int.equal i1 i2
   | Gnamed id1, Gnamed id2 -> Id.equal id1 id2
-  | (Gind _| Gconstruct _ | Gconstant _ | Gproj _ | Gcase _ | Gpred _
+  | (Gind _| Gconstant _ | Gproj _ | Gcase _ | Gpred _
     | Gfixtype _ | Gnorm _ | Gnormtbl _ | Ginternal _ | Grel _ | Gnamed _), _ ->
       false
 
@@ -100,19 +97,17 @@ open Hashset.Combine
 let gname_hash gn = match gn with
 | Gind (s, ind) ->
    combinesmall 1 (combine (String.hash s) (ind_hash ind))
-| Gconstruct (s, c) ->
-   combinesmall 2 (combine (String.hash s) (constructor_hash c))
 | Gconstant (s, c) ->
-   combinesmall 3 (combine (String.hash s) (Constant.hash c))
-| Gcase (l, i) -> combinesmall 4 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gpred (l, i) -> combinesmall 5 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gfixtype (l, i) -> combinesmall 6 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gnorm (l, i) -> combinesmall 7 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gnormtbl (l, i) -> combinesmall 8 (combine (Option.hash Label.hash l) (Int.hash i))
-| Ginternal s -> combinesmall 9 (String.hash s)
-| Grel i -> combinesmall 10 (Int.hash i)
-| Gnamed id -> combinesmall 11 (Id.hash id)
-| Gproj (s, p, i) -> combinesmall 12 (combine (String.hash s) (combine (ind_hash p) i))
+   combinesmall 2 (combine (String.hash s) (Constant.hash c))
+| Gcase (l, i) -> combinesmall 3 (combine (Option.hash Label.hash l) (Int.hash i))
+| Gpred (l, i) -> combinesmall 4 (combine (Option.hash Label.hash l) (Int.hash i))
+| Gfixtype (l, i) -> combinesmall 5 (combine (Option.hash Label.hash l) (Int.hash i))
+| Gnorm (l, i) -> combinesmall 6 (combine (Option.hash Label.hash l) (Int.hash i))
+| Gnormtbl (l, i) -> combinesmall 7 (combine (Option.hash Label.hash l) (Int.hash i))
+| Ginternal s -> combinesmall 8 (String.hash s)
+| Grel i -> combinesmall 9 (Int.hash i)
+| Gnamed id -> combinesmall 10 (Id.hash id)
+| Gproj (s, p, i) -> combinesmall 11 (combine (String.hash s) (combine (ind_hash p) i))
 
 let case_ctr = ref (-1)
 
@@ -1530,8 +1525,6 @@ let string_of_gname g =
   match g with
   | Gind (prefix, (mind, i)) ->
       Format.sprintf "%sindaccu_%s_%i" prefix (string_of_mind mind) i
-  | Gconstruct (prefix, ((mind, i), j)) ->
-      Format.sprintf "%sconstruct_%s_%i_%i" prefix (string_of_mind mind) i (j-1)
   | Gconstant (prefix, c) ->
       Format.sprintf "%sconst_%s" prefix (string_of_con c)
   | Gproj (prefix, (mind, n), i) ->
@@ -1929,16 +1922,6 @@ let compile_mind mb mind stack =
       Glet(name, MLapp (MLprimitive Mk_ind, args))
     in
     let nparams = mb.mind_nparams in
-    let params = 
-      Array.init nparams (fun i -> {lname = param_name; luid = i}) in
-    let add_construct j acc (_,arity) = 
-      let args = Array.init arity (fun k -> {lname = arg_name; luid = k}) in 
-      let c = ind, (j+1) in
-	  Glet(Gconstruct ("", c),
-	     mkMLlam (Array.append params args)
-	       (MLconstruct("", c, Array.map (fun id -> MLlocal id) args)))::acc
-    in
-    let constructors = Array.fold_left_i add_construct [] ob.mind_reloc_tbl in
     let add_proj proj_arg acc _pb =
       let tbl = ob.mind_reloc_tbl in
       (* Building info *)
@@ -1969,7 +1952,7 @@ let compile_mind mb mind stack =
       let _, _, _, pbs = info.(i) in
       Array.fold_left_i add_proj [] pbs
     in
-    projs @ constructors @ gtype :: accu :: stack
+    projs @ gtype :: accu :: stack
   in
   Array.fold_left_i f stack mb.mind_packets
 
