@@ -1272,6 +1272,8 @@ let ml_of_instance instance u =
 	(lname, paramsi, body) in
       MLletrec(Array.mapi mkrec lf, lf_args.(start)) *)
 
+  | Lint tag -> MLapp(MLprimitive Mk_int, [|MLint tag|])
+
   | Lmakeblock (prefix,(cn,_u),_,args) ->
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,args)

@@ -39,9 +39,10 @@ type lambda =
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl
+  | Lint          of int (* a constant constructor *)
   | Lmakeblock    of prefix * pconstructor * int * lambda array
                   (* prefix, constructor Name.t, constructor tag, arguments *)
-        (* A fully applied constructor *)
+        (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
@@ -119,7 +120,7 @@ let get_const_prefix env c =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Luint _
-  | Llazy | Lforce | Lmeta _ -> lam
+  | Llazy | Lforce | Lmeta _ | Lint _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -318,16 +319,13 @@ and reduce_lapp substf lids body substa largs =
 
 let is_value lc =
   match lc with
-  | Lval _ -> true
-  | Lmakeblock(_,_,_,args) when Array.is_empty args -> true
-  | Luint _ -> true
+  | Lval _ | Lint _ | Luint _ -> true
   | _ -> false
 
 let get_value lc =
   match lc with
   | Lval v -> v
-  | Lmakeblock(_,_,tag,args) when Array.is_empty args ->
-      Nativevalues.mk_int tag
+  | Lint tag -> Nativevalues.mk_int tag
   | Luint i -> Nativevalues.mk_uint i
   | _ -> raise Not_found
 
@@ -338,6 +336,8 @@ let make_args start _end =
 let expand_constructor prefix cstr tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
+  if Int.equal arity 0 then mkLlam ids (Lint tag)
+  else
   let args = make_args arity 1 in
   Llam(ids, Lmakeblock (prefix, cstr, tag, args))
 
@@ -348,7 +348,10 @@ let makeblock env cn u tag nparams arity args =
     let prefix = get_mind_prefix env (fst (fst cn)) in
     mkLapp (expand_constructor prefix (cn,u) tag nparams arity) args
   else
-  if Array.for_all is_value args && nargs > 0 then
+  (* The constructor is fully applied *)
+  if Int.equal arity 0 then Lint tag
+  else
+  if Array.for_all is_value args then
     let args = Array.map get_value args in
     Lval (Nativevalues.mk_block tag args)
   else
