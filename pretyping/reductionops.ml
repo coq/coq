@@ -53,7 +53,7 @@ type effect_name = string
 let constant_effect_table = Summary.ref ~name:"reduction-side-effect" Cmap.empty
 
 (* Table bindings function key to effective functions *)
-let effect_table = Summary.ref ~name:"reduction-function-effect" String.Map.empty
+let effect_table = ref String.Map.empty
 
 (** a test to know whether a constant is actually the effect function *)
 let reduction_effect_hook env sigma con c =
