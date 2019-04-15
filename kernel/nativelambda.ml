@@ -40,8 +40,8 @@ type lambda =
   | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
-  | Lmakeblock    of prefix * constructor * int * lambda array
-                  (* prefix, constructor Name.t, constructor tag, arguments *)
+  | Lmakeblock    of prefix * inductive * int * lambda array
+                  (* prefix, inductive name, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
   | Lval          of Nativevalues.t
@@ -50,7 +50,10 @@ type lambda =
   | Llazy
   | Lforce
 
-and lam_branches = (constructor * Name.t Context.binder_annot array * lambda) array
+and lam_branches =
+  { constant_branches : lambda array;
+    nonconstant_branches : (Name.t Context.binder_annot array * lambda) array;
+  }
 
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
@@ -142,17 +145,26 @@ let map_lam_with_binders g f n lam =
   | Lprim(prefix,kn,op,args) ->
       let args' = Array.Smart.map (f n) args in
       if args == args' then lam else Lprim(prefix,kn,op,args')
-  | Lcase(annot,t,a,br) ->
-      let t' = f n t in
-      let a' = f n a in
-      let on_b b = 
-	let (cn,ids,body) = b in
-	let body' = 
-	  if Array.is_empty ids then f n body 
-	  else f (g (Array.length ids) n) body in
-	if body == body' then b else (cn,ids,body') in
-      let br' = Array.Smart.map on_b br in
-      if t == t' && a == a' && br == br' then lam else Lcase(annot,t',a',br')
+  | Lcase(annot,t,a,branches) ->
+    let const = branches.constant_branches in
+    let nonconst = branches.nonconstant_branches in
+    let t' = f n t in
+    let a' = f n a in
+    let const' = Array.Smart.map (f n) const in
+    let on_b b =
+      let (ids,body) = b in
+      let body' = f (g (Array.length ids) n) body in
+      if body == body' then b else (ids,body') in
+    let nonconst' = Array.Smart.map on_b nonconst in
+    let branches' =
+      if const == const' && nonconst == nonconst' then
+        branches
+      else
+        { constant_branches = const';
+          nonconstant_branches = nonconst' }
+    in
+    if t == t' && a == a' && branches == branches' then lam else
+      Lcase(annot,t',a',branches')
   | Lif(t,bt,bf) ->
       let t' = f n t in
       let bt' = f n bt in
@@ -333,20 +345,20 @@ let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
     
 (* Translation of constructors *)	
-let expand_constructor prefix cstr tag nparams arity =
+let expand_constructor prefix ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
   if Int.equal arity 0 then mkLlam ids (Lint tag)
   else
   let args = make_args arity 1 in
-  Llam(ids, Lmakeblock (prefix, cstr, tag, args))
+  Llam(ids, Lmakeblock (prefix, ind, tag, args))
 
 (* [nparams] is the number of parameters still expected *)
-let makeblock env cn tag nparams arity args =
+let makeblock env ind tag nparams arity args =
   let nargs = Array.length args in
   if nparams > 0 || nargs < arity then
-    let prefix = get_mind_prefix env (fst (fst cn)) in
-    mkLapp (expand_constructor prefix cn tag nparams arity) args
+    let prefix = get_mind_prefix env (fst ind) in
+    mkLapp (expand_constructor prefix ind tag nparams arity) args
   else
   (* The constructor is fully applied *)
   if Int.equal arity 0 then Lint tag
@@ -355,8 +367,8 @@ let makeblock env cn tag nparams arity args =
     let args = Array.map get_value args in
     Lval (Nativevalues.mk_block tag args)
   else
-    let prefix = get_mind_prefix env (fst (fst cn)) in
-    Lmakeblock(prefix, cn, tag, args)
+    let prefix = get_mind_prefix env (fst ind) in
+    Lmakeblock(prefix, ind, tag, args)
 
 (* Translation of constants *)
 
@@ -432,8 +444,6 @@ let empty_evars =
   { evars_val = (fun _ -> None);
     evars_metas = (fun _ -> assert false) }
 
-let empty_ids = [||]
-
 (** Extract the inductive type over which a fixpoint is decreasing *)
 let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
 | Prod (na, dom, t) ->
@@ -504,43 +514,51 @@ let rec lambda_of_constr cache env sigma c =
     let prefix = get_mind_prefix env (fst ind) in
     mkLapp (Lproj (prefix, ind, Projection.arg p)) [|lambda_of_constr cache env sigma c|]
 
-  | Case(ci,t,a,branches) ->  
-      let (mind,i as ind) = ci.ci_ind in
-      let mib = lookup_mind mind env in
-      let oib = mib.mind_packets.(i) in
-      let tbl = oib.mind_reloc_tbl in 
-      (* Building info *)
-      let prefix = get_mind_prefix env mind in
-      let annot_sw = 
-	    { asw_ind = ind;
-          asw_ci = ci;
-          asw_reloc = tbl; 
-          asw_finite = mib.mind_finite <> CoFinite;
-          asw_prefix = prefix}
-      in
-      (* translation of the argument *)
-      let la = lambda_of_constr cache env sigma a in
-      (* translation of the type *)
-      let lt = lambda_of_constr cache env sigma t in
-      (* translation of branches *)
-      let mk_branch i b =
-	let cn = (ind,i+1) in
-	let _, arity = tbl.(i) in
-        let b = lambda_of_constr cache env sigma b in
-	if Int.equal arity 0 then (cn, empty_ids, b)
-	else 
-	  match b with
-	  | Llam(ids, body) when Int.equal (Array.length ids) arity -> (cn, ids, body)
+  | Case(ci,t,a,branches) ->
+    let (mind,i as ind) = ci.ci_ind in
+    let mib = lookup_mind mind env in
+    let oib = mib.mind_packets.(i) in
+    let tbl = oib.mind_reloc_tbl in
+    (* Building info *)
+    let prefix = get_mind_prefix env mind in
+    let annot_sw =
+      { asw_ind = ind;
+        asw_ci = ci;
+        asw_reloc = tbl;
+        asw_finite = mib.mind_finite <> CoFinite;
+        asw_prefix = prefix}
+    in
+    (* translation of the argument *)
+    let la = lambda_of_constr cache env sigma a in
+    (* translation of the type *)
+    let lt = lambda_of_constr cache env sigma t in
+    (* translation of branches *)
+    let dummy = Lrel(Anonymous,0) in
+    let consts = Array.make oib.mind_nb_constant dummy in
+    let blocks = Array.make oib.mind_nb_args ([||],dummy) in
+    let rtbl = oib.mind_reloc_tbl in
+    for i = 0 to Array.length rtbl - 1 do
+      let tag, arity = rtbl.(i) in
+      let b = lambda_of_constr cache env sigma branches.(i) in
+      if arity = 0 then consts.(tag) <- b
+      else
+        let b =
+          match b with
+          | Llam(ids, body) when Array.length ids = arity -> (ids, body)
           | _ ->
-              (** TODO relevance *)
-              let anon = Context.make_annot Anonymous Sorts.Relevant in
-              let ids = Array.make arity anon in
-	      let args = make_args arity 1 in
-	      let ll = lam_lift arity b in
-	      (cn, ids, mkLapp  ll args) in
-      let bs = Array.mapi mk_branch branches in
-      Lcase(annot_sw, lt, la, bs)
-	
+            let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
+            let ids = Array.make arity anon in
+            let args = make_args arity 1 in
+            let ll = lam_lift arity b in
+            (ids, mkLapp  ll args)
+        in blocks.(tag-1) <- b
+    done;
+    let branches =
+      { constant_branches = consts;
+        nonconstant_branches = blocks }
+    in
+    Lcase(annot_sw, lt, la, branches)
+
   | Fix((pos, i), (names,type_bodies,rec_bodies)) ->
       let ltypes = lambda_of_args cache env sigma 0 type_bodies in
       let map i t =
@@ -584,13 +602,13 @@ and lambda_of_app cache env sigma f args =
           let prefix = get_const_prefix env kn in
           mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args cache env sigma 0 args)
       end
-  | Construct (c,_) ->
+  | Construct ((ind,_ as c),_) ->
     let tag, nparams, arity = Cache.get_construct_info cache env c in
     let nargs = Array.length args in
     if nparams < nargs then (* got all parameters *)
       let args = lambda_of_args cache env sigma nparams args in
-      makeblock env c tag 0 arity args
-    else makeblock env c tag (nparams - nargs) arity empty_args
+      makeblock env ind tag 0 arity args
+    else makeblock env ind tag (nparams - nargs) arity empty_args
   | _ -> 
       let f = lambda_of_constr cache env sigma f in
       let args = lambda_of_args cache env sigma 0 args in
