@@ -36,8 +36,6 @@ type lambda =
   | Lmakeblock    of prefix * pconstructor * int * lambda array
                   (* prefix, constructor Name.t, constructor tag, arguments *)
         (* A fully applied constructor *)
-  | Lconstruct    of prefix * pconstructor (* prefix, constructor Name.t *)
-        (* A partially applied constructor *)
   | Luint         of Uint63.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
