@@ -35,7 +35,7 @@
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=master}"
+: "${mtac2_CI_REF:=master-8.10}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -76,14 +76,14 @@
 ########################################################################
 # CoqHammer
 ########################################################################
-: "${coqhammer_CI_REF:=master}"
+: "${coqhammer_CI_REF:=7d97b70a34002ddf4f6a6a6cf27c5fe793ce40c2}"
 : "${coqhammer_CI_GITURL:=https://github.com/lukaszcz/coqhammer}"
 : "${coqhammer_CI_ARCHIVEURL:=${coqhammer_CI_GITURL}/archive}"
 
 ########################################################################
 # Ltac2
 ########################################################################
-: "${ltac2_CI_REF:=master}"
+: "${ltac2_CI_REF:=f1530a7f00799afa90882ffb584e51e9b9d5fb42}"
 : "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
 : "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
 
@@ -193,14 +193,14 @@
 ########################################################################
 # Equations
 ########################################################################
-: "${equations_CI_REF:=master}"
+: "${equations_CI_REF:=3a5f7384b25d621d09ab1083926b064ff9d7635c}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
 # Elpi
 ########################################################################
-: "${elpi_CI_REF:=coq-master}"
+: "${elpi_CI_REF:=f59fadf9dcd2fcc765996e44265e446d3daf4303}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
@@ -228,7 +228,7 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=master}"
+: "${quickchick_CI_REF:=fef810ad9176ad430bdac3173c15cee5610fbd73}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
@@ -249,7 +249,7 @@
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=master}"
+: "${paramcoq_CI_REF:=v8.10}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
