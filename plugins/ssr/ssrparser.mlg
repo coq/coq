@@ -224,20 +224,20 @@ let test_ssrslashnum b1 b2 strm =
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "/" ->
       (match Util.stream_nth 1 strm with
-      | Tok.INT _ when b1 ->
+      | Tok.NUMERAL _ when b1 ->
          (match Util.stream_nth 2 strm with
          | Tok.KEYWORD "=" | Tok.KEYWORD "/=" when not b2 -> ()
          | Tok.KEYWORD "/" ->
              if not b2 then () else begin
                match Util.stream_nth 3 strm with
-               | Tok.INT _ -> ()
+               | Tok.NUMERAL _ -> ()
                | _ -> raise Stream.Failure
              end
          | _ -> raise Stream.Failure)
       | Tok.KEYWORD "/" when not b1 ->
          (match Util.stream_nth 2 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
-         | Tok.INT _ when b2 ->
+         | Tok.NUMERAL _ when b2 ->
            (match Util.stream_nth 3 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)
@@ -248,7 +248,7 @@ let test_ssrslashnum b1 b2 strm =
   | Tok.KEYWORD "//" when not b1 ->
          (match Util.stream_nth 1 strm with
          | Tok.KEYWORD "=" when not b2 -> ()
-         | Tok.INT _ when b2 ->
+         | Tok.NUMERAL _ when b2 ->
            (match Util.stream_nth 2 strm with
            | Tok.KEYWORD "=" -> ()
            | _ -> raise Stream.Failure)
@@ -360,8 +360,8 @@ let interp_index ist gl idx =
         | Some c ->
           let rc = Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) c in
           begin match Notation.uninterp_prim_token rc with
-          | _, Constrexpr.Numeral (s,b) ->
-             let n = int_of_string s in if b then n else -n
+          | _, Constrexpr.Numeral (b,{NumTok.int = s; frac = ""; exp = ""}) ->
+             let n = int_of_string s in (match b with SPlus -> n | SMinus -> -n)
           | _ -> raise Not_found
           end
         | None -> raise Not_found

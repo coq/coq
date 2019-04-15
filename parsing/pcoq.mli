@@ -157,7 +157,7 @@ module Prim :
     val pattern_identref : lident Entry.t
     val base_ident : Id.t Entry.t
     val natural : int Entry.t
-    val bigint : Constrexpr.raw_natural_number Entry.t
+    val bigint : string Entry.t
     val integer : int Entry.t
     val string : string Entry.t
     val lstring : lstring Entry.t

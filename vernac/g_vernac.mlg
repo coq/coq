@@ -293,7 +293,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Conjectures" -> { ("Conjectures", (NoDischarge, Conjectural)) } ] ]
   ;
   inline:
-    [ [ IDENT "Inline"; "("; i = INT; ")" -> { InlineAt (int_of_string i) }
+    [ [ IDENT "Inline"; "("; i = natural; ")" -> { InlineAt i }
       | IDENT "Inline" -> { DefaultInline }
       | -> { NoInline } ] ]
   ;
@@ -606,8 +606,8 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   functor_app_annot:
-    [ [ "["; IDENT "inline"; "at"; IDENT "level"; i = INT; "]" ->
-        { InlineAt (int_of_string i) }
+    [ [ "["; IDENT "inline"; "at"; IDENT "level"; i = natural; "]" ->
+        { InlineAt i }
       | "["; IDENT "no"; IDENT "inline"; "]" -> { NoInline }
       | -> { DefaultInline }
       ] ]
@@ -846,8 +846,7 @@ GRAMMAR EXTEND Gram
   strategy_level:
     [ [ IDENT "expand" -> { Conv_oracle.Expand }
       | IDENT "opaque" -> { Conv_oracle.Opaque }
-      | n=INT -> { Conv_oracle.Level (int_of_string n) }
-      | "-"; n=INT -> { Conv_oracle.Level (- int_of_string n) }
+      | n=integer -> { Conv_oracle.Level n }
       | IDENT "transparent" -> { Conv_oracle.transparent } ] ]
   ;
   instance_name:

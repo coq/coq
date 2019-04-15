@@ -21,6 +21,10 @@ let _ = List.iter CLexer.add_keyword prim_kw
 
 let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
 
+let check_int loc = function
+  | { NumTok.int = i; frac = ""; exp = "" } -> i
+  | _ -> CErrors.user_err ~loc (Pp.str "This number is not an integer.")
+
 let my_int_of_string loc s =
   try
     int_of_string s
@@ -110,13 +114,13 @@ GRAMMAR EXTEND Gram
     [ [ s = string -> { CAst.make ~loc s } ] ]
   ;
   integer:
-    [ [ i = INT      -> { my_int_of_string loc i }
-      | "-"; i = INT -> { - my_int_of_string loc i } ] ]
+    [ [ i = NUMERAL      -> { my_int_of_string loc (check_int loc i) }
+      | "-"; i = NUMERAL -> { - my_int_of_string loc (check_int loc i) } ] ]
   ;
   natural:
-    [ [ i = INT -> { my_int_of_string loc i } ] ]
+    [ [ i = NUMERAL -> { my_int_of_string loc (check_int loc i) } ] ]
   ;
   bigint: (* Negative numbers are dealt with elsewhere *)
-    [ [ i = INT -> { i } ] ]
+    [ [ i = NUMERAL -> { check_int loc i } ] ]
   ;
 END

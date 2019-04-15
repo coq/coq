@@ -29,12 +29,38 @@ Ltac simpl_mult := rewrite ?Pos2Z.inj_mul.
 
 Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
 
+Definition of_decimal (d:Decimal.decimal) : Q :=
+  let '(i, f, e) :=
+    match d with
+    | Decimal.Decimal i f => (i, f, Decimal.Pos Decimal.Nil)
+    | Decimal.DecimalExp i f e => (i, f, e)
+    end in
+  let num := Z.of_int (Decimal.app_int i f) in
+  let e := Z.sub (Z.of_int e) (Z.of_nat (Decimal.nb_digits f)) in
+  match e with
+  | Z0 => Qmake num 1
+  | Zpos e => Qmake (Pos.iter (Z.mul 10) num e) 1
+  | Zneg e => Qmake num (Pos.iter (Pos.mul 10) 1%positive e)
+  end.
+
+Definition to_decimal (q:Q) : option Decimal.decimal :=
+  let num := Z.to_int (Qnum q) in
+  let (den, e_den) := Decimal.nztail (Pos.to_uint (Qden q)) in
+  match den with
+  | Decimal.D1 Decimal.Nil =>
+    match Z.of_nat e_den with
+    | Z0 => Some (Decimal.Decimal num Decimal.Nil)
+    | e => Some (Decimal.DecimalExp num Decimal.Nil (Z.to_int (Z.opp e)))
+    end
+  | _ => None
+  end.
+
+Numeral Notation Q of_decimal to_decimal : Q_scope.
+
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments inject_Z x%Z.
 
 Notation QDen p := (Zpos (Qden p)).
-Notation " 0 " := (0#1) : Q_scope.
-Notation " 1 " := (1#1) : Q_scope.
 
 Definition Qeq (p q : Q) := (Qnum p * QDen q)%Z = (Qnum q * QDen p)%Z.
 Definition Qle (x y : Q) := (Qnum x * QDen y <= Qnum y * QDen x)%Z.
