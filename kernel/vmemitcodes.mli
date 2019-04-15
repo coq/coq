@@ -19,7 +19,7 @@ type reloc_info =
 
 type to_patch
 
-val patch : to_patch -> (reloc_info -> int) -> Vmvalues.tcode
+val patch : to_patch -> (reloc_info -> 'a -> 'a * int) -> 'a -> 'a * Vmvalues.tcode
 
 type body_code =
   | BCdefined of to_patch * fv

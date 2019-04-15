@@ -83,11 +83,14 @@ let patch_int buff reloc =
   let () = CArray.iter iter reloc in
   buff
 
-let patch (buff, pl) f =
-  (** Order seems important here? *)
-  let reloc = CArray.map (fun (r, pos) -> (f r, pos)) pl.reloc_infos in
+let patch (buff, pl) f accu =
+  let fold accu (r, pos) =
+    let accu, r = f r accu in
+    accu, (r, pos)
+  in
+  let accu, reloc = CArray.fold_left_map fold accu pl.reloc_infos in
   let buff = patch_int buff reloc in
-  tcode_of_code buff
+  accu, tcode_of_code buff
 
 (* Buffering of bytecode *)
 
