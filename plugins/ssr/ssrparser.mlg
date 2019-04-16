@@ -86,6 +86,15 @@ GRAMMAR EXTEND Gram
   ssrtacarg: [[ tac = tactic_expr LEVEL "5" -> { tac } ]];
 END
 
+(* Copy of ssrtacarg with LEVEL "3", useful for: "under ... do ..." *)
+ARGUMENT EXTEND ssrtac3arg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
+| [ "YouShouldNotTypeThis" ] -> { CErrors.anomaly (Pp.str "Grammar placeholder match") }
+END
+GRAMMAR EXTEND Gram
+  GLOBAL: ssrtac3arg;
+  ssrtac3arg: [[ tac = tactic_expr LEVEL "3" -> { tac } ]];
+END
+
 {
 
 (* Lexically closed tactic for tacticals. *)
@@ -1063,6 +1072,13 @@ ARGUMENT EXTEND ssrhintarg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintar
 | [ "[" "]" ] -> { nullhint }
 | [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
 | [ ssrtacarg(arg) ] -> { mk_hint arg }
+END
+
+(* Copy of ssrhintarg with LEVEL "3", useful for: "under ... do ..." *)
+ARGUMENT EXTEND ssrhint3arg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintarg env sigma }
+| [ "[" "]" ] -> { nullhint }
+| [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
+| [ ssrtac3arg(arg) ] -> { mk_hint arg }
 END
 
 ARGUMENT EXTEND ssrortacarg TYPED AS ssrhintarg PRINTED BY { pr_ssrhintarg env sigma }
@@ -2686,11 +2702,11 @@ TACTIC EXTEND under
     check_under_arg arg;
     Ssrfwd.undertac ist (Some ipats) arg nohint
     }
-  | [ "under" ssrrwarg(arg) ssrintros_ne(ipats) "do" ssrhintarg(h) ] -> {
+  | [ "under" ssrrwarg(arg) ssrintros_ne(ipats) "do" ssrhint3arg(h) ] -> {
     check_under_arg arg;
     Ssrfwd.undertac ist (Some ipats) arg h
     }
-  | [ "under" ssrrwarg(arg) "do" ssrhintarg(h) ] -> { (* implicit "=> [*|*]" *)
+  | [ "under" ssrrwarg(arg) "do" ssrhint3arg(h) ] -> { (* implicit "=> [*|*]" *)
     check_under_arg arg;
     Ssrfwd.undertac ~pad_intro:true ist (Some [IPatAnon All]) arg h
     }
