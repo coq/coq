@@ -563,4 +563,5 @@ let _ =
   try
     coqdep ()
   with CoqlibError msg ->
-    eprintf "*** Error: %s@\n%!" msg
+    eprintf "*** Error: %s@\n%!" msg;
+    exit 1
