@@ -21,9 +21,14 @@ val load_obj : (string -> unit) ref
 
 val get_ml_filename : unit -> string * string
 
-val compile : string -> global list -> profile:bool -> bool * string
+(** [compile file code ~profile] will compile native [code] to [file],
+   and return the name of the object file; this name depends on
+   whether are in byte mode or not; file is expected to be .ml file *)
+val compile : string -> global list -> profile:bool -> string
 
-val compile_library : Names.DirPath.t -> global list -> string -> bool
+(** [compile_library lib code file] is similar to [compile file code]
+   but will perform some extra tweaks to handle [code] as a Coq lib. *)
+val compile_library : Names.DirPath.t -> global list -> string -> unit
 
 val call_linker :
   ?fatal:bool -> string -> string -> code_location_updates option -> unit

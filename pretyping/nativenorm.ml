@@ -492,25 +492,23 @@ let native_norm env sigma c ty =
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
   *)
-  let ml_filename, prefix = Nativelib.get_ml_filename () in
-  let code, upd = mk_norm_code env (evars_of_evar_map sigma) prefix c in
-  let profile = get_profiling_enabled () in
-  match Nativelib.compile ml_filename code ~profile:profile with
-    | true, fn ->
-        if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
-	let profiler_pid = if profile then start_profiler () else None in
-        let t0 = Sys.time () in
-        Nativelib.call_linker ~fatal:true prefix fn (Some upd);
-        let t1 = Sys.time () in
-	if profile then stop_profiler profiler_pid;
-        let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
-        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-        let res = nf_val env sigma !Nativelib.rt1 ty in
-        let t2 = Sys.time () in
-        let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
-        if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
-        EConstr.of_constr res
-    | _ -> anomaly (Pp.str "Compilation failure.") 
+    let ml_filename, prefix = Nativelib.get_ml_filename () in
+    let code, upd = mk_norm_code env (evars_of_evar_map sigma) prefix c in
+    let profile = get_profiling_enabled () in
+    let fn = Nativelib.compile ml_filename code ~profile:profile in
+    if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
+    let profiler_pid = if profile then start_profiler () else None in
+    let t0 = Sys.time () in
+    Nativelib.call_linker ~fatal:true prefix fn (Some upd);
+    let t1 = Sys.time () in
+    if profile then stop_profiler profiler_pid;
+    let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
+    if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
+    let res = nf_val env sigma !Nativelib.rt1 ty in
+    let t2 = Sys.time () in
+    let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
+    if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
+    EConstr.of_constr res
 
 let native_conv_generic pb sigma t =
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t
