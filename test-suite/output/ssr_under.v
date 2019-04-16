@@ -10,7 +10,7 @@ Axiom eq_G :
 Ltac show := match goal with [|-?g] => idtac g end.
 
 Lemma example_G (n : nat) : G (fun n => n - n) n >= 0.
-under eq_G => m do show; rewrite subnn.
+under eq_G => m do [show; rewrite subnn].
 show.
 Abort.
 
