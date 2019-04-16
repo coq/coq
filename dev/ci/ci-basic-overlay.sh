@@ -83,7 +83,7 @@
 ########################################################################
 # Ltac2
 ########################################################################
-: "${ltac2_CI_REF:=f1530a7f00799afa90882ffb584e51e9b9d5fb42}"
+: "${ltac2_CI_REF:=72ab28cc8c497a9a87647ab2c329b7e3ff40fa38}"
 : "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
 : "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
 
@@ -228,7 +228,7 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=fef810ad9176ad430bdac3173c15cee5610fbd73}"
+: "${quickchick_CI_REF:=48a269712fbd18831827e5486070117eef30782f}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
