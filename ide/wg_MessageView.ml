@@ -59,9 +59,10 @@ let message_view () : message_view =
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
   view#misc#show ();
-  let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in
-  let _ = background_color#connect#changed ~callback:cb in
-  let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in
+(* FIXME: handle this using CSS *)
+(*   let cb clr = view#misc#modify_bg [`NORMAL, `NAME clr] in *)
+(*   let _ = background_color#connect#changed ~callback:cb in *)
+(*   let _ = view#misc#connect#realize ~callback:(fun () -> cb background_color#get) in *)
   let cb ft = view#misc#modify_font (GPango.font_description_from_string ft) in
   stick text_font view cb;
 

@@ -88,7 +88,7 @@ val reset_on_tab_switch : bool preference
 val line_ending : line_ending preference
 val vertical_tabs : bool preference
 val opposite_tabs : bool preference
-val background_color : string preference
+(* val background_color : string preference *)
 val processing_color : string preference
 val processed_color : string preference
 val error_color : string preference
