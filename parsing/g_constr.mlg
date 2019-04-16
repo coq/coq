@@ -56,10 +56,10 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) : fix_expr =
   (id,ann,bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) : cofix_expr =
-  let _ = Option.map (fun { CAst.loc = aloc } ->
+  Option.iter (fun { CAst.loc = aloc } ->
     CErrors.user_err ?loc:aloc
       ~hdr:"Constr:mk_cofixb"
-      (Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
+      (Pp.str"Annotation forbidden in cofix expression.")) ann;
   let ty = match tyc with
       Some ty -> ty
     | None -> CAst.make @@ CHole (None, IntroAnonymous, None) in
@@ -440,10 +440,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=identref; "}" -> { (Some id, CStructRec) }
-    | "{"; IDENT "wf"; rel=constr; id=OPT identref; "}" -> { (id, CWfRec rel) }
+    [ [ "{"; IDENT "struct"; id=identref; "}" -> { CAst.make ~loc @@ CStructRec id }
+    | "{"; IDENT "wf"; rel=constr; id=identref; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
     | "{"; IDENT "measure"; m=constr; id=OPT identref;
-	rel=OPT constr; "}" -> { (id, CMeasureRec (m,rel)) }
+        rel=OPT constr; "}" -> { CAst.make ~loc @@ CMeasureRec (id,m,rel) }
     ] ]
   ;
   impl_name_head:
@@ -452,9 +452,9 @@ GRAMMAR EXTEND Gram
   binders_fixannot:
     [ [ na = impl_name_head; assum = impl_ident_tail; bl = binders_fixannot ->
           { (assum na :: fst bl), snd bl }
-      | f = fixannot -> { [], f }
+      | f = fixannot -> { [], Some f }
       | b = binder; bl = binders_fixannot -> { b @ fst bl, snd bl }
-      | -> { [], (None, CStructRec) }
+      | -> { [], None }
     ] ]
   ;
   open_binders:

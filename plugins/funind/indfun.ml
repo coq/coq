@@ -469,11 +469,6 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
         CAst.(with_val (fun x -> x))
 	(Constrexpr_ops.names_of_local_assums args)
     in
-    match wf_arg with
-      | None ->
-	if Int.equal (List.length names) 1 then 1
-	else error "Recursive argument must be specified"
-      | Some wf_arg ->
 	  List.index Name.equal (Name wf_arg) names
   in
   let unbounded_eq =
@@ -575,7 +570,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	  in
 	  wf_rel_with_mes,false
   in			       
-  register_wf ~is_mes:is_mes fname rec_impls wf_rel_from_mes (Some wf_arg)
+  register_wf ~is_mes:is_mes fname rec_impls wf_rel_from_mes wf_arg
     using_lemmas args ret_type body
 
 let map_option f = function 
@@ -623,15 +618,15 @@ and rebuild_nal aux bk bl' nal typ =
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
-  let fixl,ntns = ComFixpoint.extract_fixpoint_components false fixpoint_exprl in
+  let fixl,ntns = ComFixpoint.extract_fixpoint_components ~structonly:false fixpoint_exprl in
   let ((_,_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl ntns in
   let constr_expr_typel =
     with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
   let fixpoint_exprl_with_new_bl = 
-    List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
+    List.map2 (fun ((lna,rec_order_opt,bl,ret_typ,opt_body),notation_list) fix_typ ->
      
       let new_bl',new_ret_type = rebuild_bl [] bl fix_typ in 
-      (((lna,(rec_arg_opt,rec_order),new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+      (((lna,rec_order_opt,new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
     )
       fixpoint_exprl constr_expr_typel 
   in 
@@ -643,7 +638,7 @@ let do_generate_principle ~pstate pconstants on_error register_built interactive
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let pstate, _is_struct =
     match fixpoint_exprl with
-      | [((_,(wf_x,Constrexpr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
+      | [((_,Some {CAst.v = Constrexpr.CWfRec (wf_x,wf_rel)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},pl),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
@@ -665,9 +660,9 @@ let do_generate_principle ~pstate pconstants on_error register_built interactive
 	      true
 	  in
 	  if register_built
-          then register_wf name rec_impls wf_rel (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, false
+          then register_wf name rec_impls wf_rel wf_x.CAst.v using_lemmas args types body pre_hook, false
           else pstate, false
-      |[((_,(wf_x,Constrexpr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
+      |[((_,Some {CAst.v = Constrexpr.CMeasureRec(wf_x,wf_mes,wf_rel_opt)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},_),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
@@ -692,9 +687,9 @@ let do_generate_principle ~pstate pconstants on_error register_built interactive
           then register_mes name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, true
           else pstate, true
       | _ ->
-	  List.iter (function ((_na,(_,ord),_args,_body,_type),_not) ->
+          List.iter (function ((_na,ord,_args,_body,_type),_not) ->
 		       match ord with 
-			 | Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _ ->
+                         | Some { CAst.v = (Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _) } ->
 			     error
 			       ("Cannot use mutual definition with well-founded recursion or measure")
 			 | _ -> ()
@@ -869,38 +864,42 @@ let make_graph ~pstate (f_ref : GlobRef.t) =
 	     )
 	     ()
 	 in
-	 let (nal_tas,b,t)  = get_args extern_body extern_type in
-	 let expr_list =
-	   match b.CAst.v with
-	     | Constrexpr.CFix(l_id,fixexprl) ->
-		 let l =
-		   List.map
-		     (fun (id,(n,recexp),bl,t,b) ->
-                        let { CAst.loc; v=rec_id } = Option.get n in
-			let new_args =
-			  List.flatten
-			    (List.map
-			       (function
-				  | Constrexpr.CLocalDef (na,_,_)-> []
-				  | Constrexpr.CLocalAssum (nal,_,_) ->
-				      List.map
-                                        (fun {CAst.loc;v=n} -> CAst.make ?loc @@
-                                           CRef(Libnames.qualid_of_ident ?loc @@ Nameops.Name.get_id n,None))
-					nal
-                                  | Constrexpr.CLocalPattern _ -> assert false
-			       )
-			       nal_tas
-			    )
-			in
-                        let b' = add_args id.CAst.v new_args b in
-                        ((((id,None), ( Some CAst.(make rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
-		     )
-		     fixexprl
-		 in
-		 l
+  let (nal_tas,b,t)  = get_args extern_body extern_type in
+  let expr_list =
+    match b.CAst.v with
+    | Constrexpr.CFix(l_id,fixexprl) ->
+      let l =
+        List.map
+          (fun (id,recexp,bl,t,b) ->
+             let { CAst.loc; v=rec_id } = match Option.get recexp with
+               | { CAst.v = CStructRec id } -> id
+               | { CAst.v = CWfRec (id,_) } -> id
+               | { CAst.v = CMeasureRec (oid,_,_) } -> Option.get oid
+             in
+             let new_args =
+               List.flatten
+                 (List.map
+                    (function
+                      | Constrexpr.CLocalDef (na,_,_)-> []
+                      | Constrexpr.CLocalAssum (nal,_,_) ->
+                        List.map
+                          (fun {CAst.loc;v=n} -> CAst.make ?loc @@
+                            CRef(Libnames.qualid_of_ident ?loc @@ Nameops.Name.get_id n,None))
+                          nal
+                      | Constrexpr.CLocalPattern _ -> assert false
+                    )
+                    nal_tas
+                 )
+             in
+             let b' = add_args id.CAst.v new_args b in
+             ((((id,None), ( Some (CAst.make (CStructRec (CAst.make rec_id)))),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+          )
+                      fixexprl
+                  in
+                  l
 	     | _ ->
 		let id = Label.to_id (Constant.label c) in
-                 [((CAst.make id,None),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
+                 [((CAst.make id,None),None,nal_tas,t,Some b),[]]
 	 in
          let mp = Constant.modpath c in
          let pstate = do_generate_principle ~pstate [c,Univ.Instance.empty] error_error  false false expr_list in

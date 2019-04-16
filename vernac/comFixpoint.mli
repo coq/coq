@@ -62,7 +62,7 @@ val interp_recursive :
 (** Extracting the semantical components out of the raw syntax of
    (co)fixpoints declarations *)
 
-val extract_fixpoint_components : bool ->
+val extract_fixpoint_components : structonly:bool ->
   (fixpoint_expr * decl_notation list) list ->
     structured_fixpoint_expr list * decl_notation list
 

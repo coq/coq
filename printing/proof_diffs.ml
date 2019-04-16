@@ -438,18 +438,18 @@ let match_goals ot nt =
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (2)")
     in
     let recursion_order_expr ogname exp exp2 =
-      match exp, exp2 with
-      | CStructRec, CStructRec -> ()
-      | CWfRec c, CWfRec c2 ->
+      match exp.CAst.v, exp2.CAst.v with
+      | CStructRec _, CStructRec _ -> ()
+      | CWfRec (_,c), CWfRec (_,c2) ->
         constr_expr ogname c c2
-      | CMeasureRec (m,r), CMeasureRec (m2,r2) ->
+      | CMeasureRec (_,m,r), CMeasureRec (_,m2,r2) ->
         constr_expr ogname m m2;
         constr_expr_opt ogname r r2
       | _, _ -> raise (Diff_Failure "Unable to match goals between old and new proof states (3)")
     in
     let fix_expr ogname exp exp2 =
-      let (l,(lo,ro),lb,ce1,ce2), (l2,(lo2,ro2),lb2,ce12,ce22) = exp,exp2 in
-        recursion_order_expr ogname ro ro2;
+      let (l,ro,lb,ce1,ce2), (l2,ro2,lb2,ce12,ce22) = exp,exp2 in
+        Option.iter2 (recursion_order_expr ogname) ro ro2;
         iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22

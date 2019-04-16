@@ -35,10 +35,11 @@ val pr_patvar : Pattern.patvar -> Pp.t
 
 val pr_glob_level : Glob_term.glob_level -> Pp.t
 val pr_glob_sort : Glob_term.glob_sort -> Pp.t
-val pr_guard_annot : (constr_expr -> Pp.t) ->
-  local_binder_expr list ->
-  lident option * recursion_order_expr ->
-  Pp.t
+val pr_guard_annot
+  :  (constr_expr -> Pp.t)
+  -> local_binder_expr list
+  -> recursion_order_expr option
+  -> Pp.t
 
 val pr_record_body : (qualid * constr_expr) list -> Pp.t
 val pr_binders : Environ.env -> Evd.evar_map -> local_binder_expr list -> Pp.t

@@ -470,17 +470,19 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
   | GRec (GFix (ln,n), ids, decls, tl, cl) ->
-    if Array.exists (function (Some n, GStructRec) -> false | _ -> true) ln then
-      err ?loc (Pp.str "\"struct\" annotation is expected.")
-    else
-      let ln = Array.map (fst %> Option.get) ln in
-      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in
-      let tl = Array.map (fun (ctx,tl) -> it_mkPProd_or_LetIn tl ctx) ctxtl in
-      let vars = Array.fold_left (fun vars na -> Name na::vars) vars ids in
-      let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls cl in
-      let cl = Array.map (fun (ctx,cl) -> it_mkPLambda_or_LetIn cl ctx) ctxtl in
-      let names = Array.map (fun id -> Name id) ids in
-      PFix ((ln,n), (names, tl, cl))
+    let get_struct_arg = function
+      | Some n -> n
+      | None -> err ?loc (Pp.str "\"struct\" annotation is expected.")
+        (* TODO why can't the annotation be omitted? *)
+    in
+    let ln = Array.map get_struct_arg ln in
+    let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in
+    let tl = Array.map (fun (ctx,tl) -> it_mkPProd_or_LetIn tl ctx) ctxtl in
+    let vars = Array.fold_left (fun vars na -> Name na::vars) vars ids in
+    let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls cl in
+    let cl = Array.map (fun (ctx,cl) -> it_mkPLambda_or_LetIn cl ctx) ctxtl in
+    let names = Array.map (fun id -> Name id) ids in
+    PFix ((ln,n), (names, tl, cl))
 
   | GRec (GCoFix n, ids, decls, tl, cl) ->
       let ctxtl = Array.map2 (pat_of_glob_in_context metas vars) decls tl in

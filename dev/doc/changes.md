@@ -83,6 +83,11 @@ Libobject
   * `Libobject.superglobal_object`
   * `Libobject.superglobal_object_nodischarge`
 
+AST
+
+- Minor changes in the AST have been performed, for example
+  https://github.com/coq/coq/pull/9165
+
 Implicit Arguments
 
 - `Impargs.declare_manual_implicits` is restricted to only support declaration

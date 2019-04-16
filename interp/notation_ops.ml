@@ -957,7 +957,7 @@ let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
   | GCoFix n1, GCoFix n2 -> Int.equal n1 n2
   | GFix (nl1,n1), GFix (nl2,n2) ->
-      let test (n1, _) (n2, _) = match n1, n2 with
+      let test n1 n2 = match n1, n2 with
       | _, None -> true
       | Some id1, Some id2 -> Int.equal id1 id2
       | _ -> false
