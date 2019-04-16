@@ -403,7 +403,7 @@ let tag_var = tag Tag.variable
     match ro with
       | None -> mt ()
       | Some {loc; v = ro} ->
-        match (ro : Constrexpr.recursion_order_expr) with
+        match ro with
           | CStructRec { v = id } ->
             let names_of_binder = function
               | CLocalAssum (nal,_,_) -> nal

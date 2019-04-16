@@ -191,7 +191,7 @@ module Constr :
     val binder : local_binder_expr list Entry.t (* closed_binder or variable *)
     val binders : local_binder_expr list Entry.t (* list of binder *)
     val open_binders : local_binder_expr list Entry.t
-    val binders_fixannot : (local_binder_expr list * recursion_order_expr CAst.t option) Entry.t
+    val binders_fixannot : (local_binder_expr list * recursion_order_expr option) Entry.t
     val typeclass_constraint : (lname * bool * constr_expr) Entry.t
     val record_declaration : constr_expr Entry.t
     val appl_arg : (constr_expr * explicitation CAst.t option) Entry.t
