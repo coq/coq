@@ -440,10 +440,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=identref; "}" -> { CStructRec id }
-    | "{"; IDENT "wf"; rel=constr; id=identref; "}" -> { CWfRec(id,rel) }
+    [ [ "{"; IDENT "struct"; id=identref; "}" -> { CAst.make ~loc @@ CStructRec id }
+    | "{"; IDENT "wf"; rel=constr; id=identref; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
     | "{"; IDENT "measure"; m=constr; id=OPT identref;
-        rel=OPT constr; "}" -> { CMeasureRec (id,m,rel) }
+        rel=OPT constr; "}" -> { CAst.make ~loc @@ CMeasureRec (id,m,rel) }
     ] ]
   ;
   impl_name_head:
@@ -452,7 +452,7 @@ GRAMMAR EXTEND Gram
   binders_fixannot:
     [ [ na = impl_name_head; assum = impl_ident_tail; bl = binders_fixannot ->
           { (assum na :: fst bl), snd bl }
-      | f = fixannot -> { [], Some (CAst.make ~loc f) }
+      | f = fixannot -> { [], Some f }
       | b = binder; bl = binders_fixannot -> { b @ fst bl, snd bl }
       | -> { [], None }
     ] ]

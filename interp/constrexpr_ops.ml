@@ -198,7 +198,7 @@ and branch_expr_eq {CAst.v=(p1, e1)} {CAst.v=(p2, e2)} =
 
 and fix_expr_eq (id1,r1,bl1,a1,b1) (id2,r2,bl2,a2,b2) =
   (eq_ast Id.equal id1 id2) &&
-  Option.equal (eq_ast recursion_order_expr_eq) r1 r2 &&
+  Option.equal recursion_order_expr_eq r1 r2 &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
@@ -209,7 +209,7 @@ and cofix_expr_eq (id1,bl1,a1,b1) (id2,bl2,a2,b2) =
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
 
-and recursion_order_expr_eq r1 r2 = match r1, r2 with
+and recursion_order_expr_eq_r r1 r2 = match r1, r2 with
   | CStructRec i1, CStructRec i2 -> eq_ast Id.equal i1 i2
   | CWfRec (i1,e1), CWfRec (i2,e2) ->
     constr_expr_eq e1 e2
@@ -217,6 +217,8 @@ and recursion_order_expr_eq r1 r2 = match r1, r2 with
     Option.equal (eq_ast Id.equal) i1 i2 &&
     constr_expr_eq e1 e2 && Option.equal constr_expr_eq o1 o2
   | _ -> false
+
+and recursion_order_expr_eq r1 r2 = eq_ast recursion_order_expr_eq_r r1 r2
 
 and local_binder_eq l1 l2 = match l1, l2 with
   | CLocalDef (n1, e1, t1), CLocalDef (n2, e2, t2) ->
