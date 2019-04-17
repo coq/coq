@@ -607,10 +607,10 @@ let rec pretype ~program_mode ~poly k0 resolve_tc (tycon : type_constraint) (env
 		 fixpoints ?) *)
 	  let possible_indexes =
 	    Array.to_list (Array.mapi
-			     (fun i (n,_) -> match n with
+                             (fun i annot -> match annot with
 			     | Some n -> [n]
 			     | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
-			     vn)
+           vn)
 	  in
           let fixdecls = (names,ftys,fdefs) in
           let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in

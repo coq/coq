@@ -38,7 +38,7 @@ type notation_constr =
       notation_constr * notation_constr
   | NIf of notation_constr * (Name.t * notation_constr option) *
       notation_constr * notation_constr
-  | NRec of fix_kind * Id.t array *
+  | NRec of glob_fix_kind * Id.t array *
       (Name.t * notation_constr option * notation_constr) list array *
       notation_constr array * notation_constr array
   | NSort of glob_sort

@@ -399,12 +399,12 @@ let tag_var = tag Tag.variable
       pr_opt_type_spc pr t ++ str " :=" ++
       pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-  let pr_guard_annot pr_aux bl (n,ro) =
-    match n with
+  let pr_guard_annot pr_aux bl ro =
+    match ro with
       | None -> mt ()
-      | Some {loc; v = id} ->
-        match (ro : Constrexpr.recursion_order_expr) with
-          | CStructRec ->
+      | Some {loc; v = ro} ->
+        match ro with
+          | CStructRec { v = id } ->
             let names_of_binder = function
               | CLocalAssum (nal,_,_) -> nal
               | CLocalDef (_,_,_) -> []
@@ -413,10 +413,11 @@ let tag_var = tag Tag.variable
                if List.length ids > 1 then
                  spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
                else mt()
-          | CWfRec c ->
-            spc() ++ str "{" ++ keyword "wf" ++ spc () ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
-          | CMeasureRec (m,r) ->
-            spc() ++ str "{" ++ keyword "measure" ++ spc () ++ pr_aux m ++ spc() ++ pr_id id++
+          | CWfRec (id,c) ->
+            spc() ++ str "{" ++ keyword "wf" ++ spc () ++ pr_aux c ++ spc() ++ pr_lident id ++ str"}"
+          | CMeasureRec (id,m,r) ->
+            spc() ++ str "{" ++ keyword "measure" ++ spc () ++ pr_aux m ++
+            match id with None -> mt() | Some id -> spc () ++ pr_lident id ++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
   let pr_fixdecl pr prd dangling_with_for ({v=id},ro,bl,t,c) =

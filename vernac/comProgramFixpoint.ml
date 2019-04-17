@@ -85,7 +85,7 @@ let rec telescope sigma l =
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
 
-let build_wellfounded (recname,pl,n,bl,arityc,body) poly r measure notation =
+let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let open EConstr in
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
@@ -304,22 +304,26 @@ let do_program_recursive local poly fixkind fixl ntns =
 let do_program_fixpoint local poly l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
-    | [(n, CWfRec r)], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
-        let recarg =
-          match n with
-          | Some n -> mkIdentC n.CAst.v
-          | None ->
-              user_err ~hdr:"do_program_fixpoint"
-                (str "Recursive argument required for well-founded fixpoints")
-        in build_wellfounded (id, pl, n, bl, typ, out_def def) poly r recarg ntn
+    | [Some { CAst.v = CWfRec (n,r) }], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
+        let recarg = mkIdentC n.CAst.v in
+        build_wellfounded (id, pl, bl, typ, out_def def) poly r recarg ntn
 
-    | [(n, CMeasureRec (m, r))], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
-        build_wellfounded (id, pl, n, bl, typ, out_def def) poly
+    | [Some { CAst.v = CMeasureRec (n, m, r) }], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
+      (* We resolve here a clash between the syntax of Program Fixpoint and the one of funind *)
+      let r = match n, r with
+        | Some id, None ->
+          let loc = id.CAst.loc in
+          Some (CAst.make ?loc @@ CRef(qualid_of_ident ?loc id.CAst.v,None))
+        | Some _, Some _ ->
+          user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
+        | _, _ -> r
+      in
+        build_wellfounded (id, pl, bl, typ, out_def def) poly
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
 
-    | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
-        let fixl,ntns = extract_fixpoint_components true l in
-        let fixkind = Obligations.IsFixpoint g in
+    | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
+        let fixl,ntns = extract_fixpoint_components ~structonly:true l in
+        let fixkind = Obligations.IsFixpoint (List.map (fun d -> d.fix_annot) fixl) in
           do_program_recursive local poly fixkind fixl ntns
 
     | _, _ ->

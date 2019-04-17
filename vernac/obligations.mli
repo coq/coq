@@ -70,7 +70,7 @@ type notations =
     (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type fixpoint_kind =
-  | IsFixpoint of (lident option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of lident option list
   | IsCoFixpoint
 
 val add_mutual_definitions :

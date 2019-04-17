@@ -129,7 +129,7 @@ type definition_expr =
       * constr_expr option
 
 type fixpoint_expr =
-    ident_decl * (lident option * recursion_order_expr) * local_binder_expr list * constr_expr * constr_expr option
+    ident_decl * recursion_order_expr option * local_binder_expr list * constr_expr * constr_expr option
 
 type cofixpoint_expr =
     ident_decl * local_binder_expr list * constr_expr * constr_expr option

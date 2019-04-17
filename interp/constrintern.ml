@@ -1859,51 +1859,44 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	in
 	  apply_impargs c env imp subscopes l loc
 
-    | CFix ({ CAst.loc = locid; v = iddef}, dl) ->
+      | CFix ({ CAst.loc = locid; v = iddef}, dl) ->
         let lf = List.map (fun ({CAst.v = id},_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
-	let n =
-	  try List.index0 Id.equal iddef lf
+        let n =
+          try List.index0 Id.equal iddef lf
           with Not_found ->
-	    raise (InternalizationError (locid,UnboundFixName (false,iddef)))
-	in
-	let idl_temp = Array.map
-          (fun (id,(n,order),bl,ty,_) ->
-	     let intern_ro_arg f =
-	       let before, after = split_at_annot bl n in
-	       let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
-	       let ro = f (intern env') in
-	       let n' = Option.map (fun _ -> List.count (fun c -> match DAst.get c with
-                                                                  | GLocalAssum _ -> true
-                                                                  | _ -> false (* remove let-ins *))
-                        rbefore) n in
-		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
-	     in
-	     let n, ro, (env',rbl) =
-	       match order with
-	       | CStructRec ->
-		   intern_ro_arg (fun _ -> GStructRec)
-	       | CWfRec c ->
-		   intern_ro_arg (fun f -> GWfRec (f c))
-	       | CMeasureRec (m,r) ->
-		   intern_ro_arg (fun f -> GMeasureRec (f m, Option.map f r))
-	     in
-	     let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
-             ((n, ro), bl, intern_type env' ty, env')) dl in
+            raise (InternalizationError (locid,UnboundFixName (false,iddef)))
+        in
+        let idl_temp = Array.map
+            (fun (id,recarg,bl,ty,_) ->
+               let recarg = Option.map (function { CAst.v = v } -> match v with
+                 | CStructRec i -> i
+                 | _ -> anomaly Pp.(str "Non-structural recursive argument in non-program fixpoint")) recarg
+               in
+               let before, after = split_at_annot bl recarg in
+               let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
+               let n = Option.map (fun _ -> List.count (fun c -> match DAst.get c with
+                   | GLocalAssum _ -> true
+                   | _ -> false (* remove let-ins *))
+                   rbefore) recarg in
+               let (env',rbl) = List.fold_left intern_local_binder (env',rbefore) after in
+               let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
+               (n, bl, intern_type env' ty, env')) dl in
         let idl = Array.map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
-	     let env'' = List.fold_left_i (fun i en name -> 
-					     let (_,bli,tyi,_) = idl_temp.(i) in
-					     let fix_args = (List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli) in
-					       push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
-                                            en (CAst.make @@ Name name)) 0 env' lf in
-             (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
-	DAst.make ?loc @@
-          GRec (GFix
-	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
+            let env'' = List.fold_left_i (fun i en name ->
+                let (_,bli,tyi,_) = idl_temp.(i) in
+                let fix_args = (List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli) in
+                push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
+                  en (CAst.make @@ Name name)) 0 env' lf in
+            (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
+        DAst.make ?loc @@
+        GRec (GFix
+                (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
               Array.map (fun (_,bl,_,_) -> bl) idl,
               Array.map (fun (_,_,ty,_) -> ty) idl,
               Array.map (fun (_,_,_,bd) -> bd) idl)
+
     | CCoFix ({ CAst.loc = locid; v = iddef }, dl) ->
         let lf = List.map (fun ({CAst.v = id},_,_,_) -> id) dl in
         let dl = Array.of_list dl in

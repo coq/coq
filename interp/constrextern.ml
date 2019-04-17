@@ -938,13 +938,12 @@ let rec extern inctx (custom,scopes as allscopes) vars r =
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
                  let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
-		 let n =
-		   match fst nv.(i) with
-		     | None -> None
-                     | Some x -> Some (CAst.make @@ Name.get_id (List.nth assums x))
-		 in
-		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
-                 ((CAst.make fi), (n, ro), bl, extern_typ scopes vars0 ty,
+                 let n =
+                   match nv.(i) with
+                   | None -> None
+                   | Some x -> Some (CAst.make @@ CStructRec (CAst.make @@ Name.get_id (List.nth assums x)))
+                             in
+                 ((CAst.make fi), n, bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in
              CFix (CAst.(make ?loc idv.(n)), Array.to_list listdecl)
@@ -1159,13 +1158,6 @@ and extern_notation (custom,scopes as allscopes) lonely_seen vars t = function
         let lonely_seen = add_lonely keyrule lonely_seen in
         extern_notation allscopes lonely_seen vars t rules
 
-and extern_recursion_order scopes vars = function
-    GStructRec -> CStructRec
-  | GWfRec c -> CWfRec (extern true scopes vars c)
-  | GMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m,
-				     Option.map (extern true scopes vars) r)
-
-
 let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,(None,[])) vars c
 
@@ -1294,7 +1286,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
      let v = Array.map3
                (fun c t i -> Detyping.share_pattern_names glob_of_pat (i+1) [] def_avoid def_env sigma c (Patternops.lift_pattern n t))
     bl tl ln in
-     GRec(GFix (Array.map (fun i -> Some i, GStructRec) ln,i),Array.of_list (List.rev lfi),
+     GRec(GFix (Array.map (fun i -> Some i) ln,i),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
