@@ -1704,18 +1704,17 @@ let get_option_locality export local =
 let vernac_set_option0 ~local export key opt =
   let locality = get_option_locality export local in
   match opt with
-  | StringValue s -> set_string_option_value_gen ~locality key s
-  | StringOptValue (Some s) -> set_string_option_value_gen ~locality key s
-  | StringOptValue None -> unset_option_value_gen ~locality key
-  | IntValue n -> set_int_option_value_gen ~locality key n
-  | BoolValue b -> set_bool_option_value_gen ~locality key b
+  | OptionUnset -> unset_option_value_gen ~locality key
+  | OptionSetString s -> set_string_option_value_gen ~locality key s
+  | OptionSetInt n -> set_int_option_value_gen ~locality key (Some n)
+  | OptionSetTrue -> set_bool_option_value_gen ~locality key true
 
 let vernac_set_append_option ~local export key s =
   let locality = get_option_locality export local in
   set_string_option_append_value_gen ~locality key s
 
 let vernac_set_option ~local export table v = match v with
-| StringValue s ->
+| OptionSetString s ->
   (* We make a special case for warnings because appending is their
   natural semantics *)
   if CString.List.equal table ["Warnings"] then
@@ -1727,10 +1726,6 @@ let vernac_set_option ~local export table v = match v with
     else
       vernac_set_option0 ~local export table v
 | _ -> vernac_set_option0 ~local export table v
-
-let vernac_unset_option ~local export key =
-  let locality = get_option_locality export local in
-  unset_option_value_gen ~locality key
 
 let vernac_add_option key lv =
   let f = function
@@ -2458,9 +2453,6 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     pstate
   | VernacSetOption (export, key,v) ->
     vernac_set_option ~local:(only_locality atts) export key v;
-    pstate
-  | VernacUnsetOption (export, key) ->
-    vernac_unset_option ~local:(only_locality atts) export key;
     pstate
   | VernacRemoveOption (key,v) ->
     unsupported_attributes atts;

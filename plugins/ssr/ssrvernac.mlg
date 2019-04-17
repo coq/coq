@@ -183,7 +183,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: gallina_ext;
   gallina_ext:
    [ [ IDENT "Import"; IDENT "Prenex"; IDENT "Implicits" ->
-      { Vernacexpr.VernacUnsetOption (false, ["Printing"; "Implicit"; "Defensive"]) }
+      { Vernacexpr.VernacSetOption (false, ["Printing"; "Implicit"; "Defensive"], Vernacexpr.OptionUnset) }
    ] ]
   ;
 END

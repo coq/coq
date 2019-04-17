@@ -50,6 +50,41 @@ let print_memory_stat () =
 
 let _ = at_exit print_memory_stat
 
+let interp_set_option opt v old =
+  let open Goptions in
+  let err expect =
+    let opt = String.concat " " opt in
+    let got = v in (* avoid colliding with Pp.v *)
+    CErrors.user_err
+      Pp.(str "-set: " ++ str opt ++
+          str" expects " ++ str expect ++
+          str" but got " ++ str got)
+  in
+  match old with
+  | BoolValue _ ->
+    let v = match String.trim v with
+      | "true" -> true
+      | "false" | "" -> false
+      | _ -> err "a boolean"
+    in
+    BoolValue v
+  | IntValue _ ->
+    let v = String.trim v in
+    let v = match int_of_string_opt v with
+      | Some _ as v -> v
+      | None -> if v = "" then None else err "an int"
+    in
+    IntValue v
+  | StringValue _ -> StringValue v
+  | StringOptValue _ -> StringOptValue (Some v)
+
+let set_option = let open Goptions in function
+  | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
+  | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
+  | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
+
+let set_options = List.iter set_option
+
 (******************************************************************************)
 (* Input/Output State                                                         *)
 (******************************************************************************)
@@ -194,6 +229,8 @@ let init_toplevel ~help ~init custom_init arglist =
   Global.set_native_compiler (match opts.native_compiler with NativeOff -> false | NativeOn _ -> true);
   Global.set_allow_sprop opts.allow_sprop;
   if opts.cumulative_sprop then Global.make_sprop_cumulative ();
+
+  set_options opts.set_options;
 
   (* Allow the user to load an arbitrary state here *)
   inputstate opts;

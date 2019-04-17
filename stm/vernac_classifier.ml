@@ -57,6 +57,7 @@ let options_affecting_stm_scheduling =
     stm_allow_nested_proofs_option_name;
     Vernacentries.proof_mode_opt_name;
     Attributes.program_mode_option_name;
+    Proof_using.proof_using_opt_name;
   ]
 
 let classify_vernac e =
@@ -64,7 +65,7 @@ let classify_vernac e =
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
-    | ( VernacSetOption (_, l,_) | VernacUnsetOption (_, l))
+    | VernacSetOption (_, l,_)
       when CList.exists (CList.equal String.equal l)
         options_affecting_stm_scheduling ->
        VtSideff [], VtNow
@@ -91,9 +92,6 @@ let classify_vernac e =
         VtProofStep { parallel = `No;
                       proof_block_detection = Some "curly" },
         VtLater
-    (* Options changing parser *)
-    | VernacUnsetOption (_, ["Default";"Proof";"Using"])
-    | VernacSetOption (_, ["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
       VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i), VtLater
@@ -156,7 +154,7 @@ let classify_vernac e =
     | VernacReserve _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacUnsetOption _ | VernacSetOption _
+    | VernacSetOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
     | VernacGlobalCheck _
