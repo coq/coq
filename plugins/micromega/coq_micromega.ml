@@ -1653,6 +1653,26 @@ let formula_hyps_concl hyps concl =
      | _ -> (Mc.I(f,Some id,cc), id::ids))
     hyps (concl,[])
 
+let generalize_vars ids =
+  let open EConstr in
+  Proofview.Goal.enter begin fun gl ->
+    Refine.refine ~typecheck:false begin fun sigma ->
+      let concl = Proofview.Goal.concl gl in
+      let env = Proofview.Goal.env gl in
+      let ty = Vars.subst_vars (List.rev ids) concl in
+      let rec mk_ctx vars accu = function
+      | [] -> accu
+      | id :: rem ->
+        let decl = lookup_named id env in
+        let decl = Context.Named.Declaration.map_constr (fun c -> Vars.subst_vars vars c) decl in
+        mk_ctx (id :: vars) (Context.Named.Declaration.to_rel_decl decl :: accu) rem
+      in
+      let ctx = mk_ctx [] [] ids in
+      let ty = it_mkProd_or_LetIn ty ctx in
+      let (sigma, ev) = Evarutil.new_evar env sigma ~principal:true ty in
+      sigma, mkApp (ev, CArray.map_of_list mkVar ids)
+    end
+  end
 
 let micromega_tauto pre_process cnf spec prover env (polys1: (Names.Id.t * 'cst formula) list) (polys2: 'cst formula) gl =
 
@@ -1776,7 +1796,7 @@ let micromega_gen
          [
            kill_arith;
            (Tacticals.New.tclTHENLIST
-            [(Tactics.generalize (List.map EConstr.mkVar ids));
+            [(generalize_vars ids);
              Tactics.exact_check (EConstr.applist (EConstr.mkVar goal_name, arith_args))
             ] )
          ]
@@ -1880,7 +1900,7 @@ let micromega_genr prover tac =
          [
            kill_arith;
            (Tacticals.New.tclTHENLIST
-            [(Tactics.generalize (List.map EConstr.mkVar ids));
+            [(generalize_vars ids);
              Tactics.exact_check (EConstr.applist (EConstr.mkVar goal_name, arith_args))
             ] )
          ]
