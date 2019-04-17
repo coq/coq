@@ -132,7 +132,7 @@ extent influenced the development.
 
 Version 8.10 is the fifth release of |Coq| developed on a time-based
 development cycle. Its development spanned 6 months from the release of
-|Coq| 8.9. Vincent Laport is the release manager and maintainer of this
+|Coq| 8.9. Vincent Laporte is the release manager and maintainer of this
 release. This release is the result of ??? commits and ??? PRs
 merged, closing ??? issues.
 
@@ -166,7 +166,7 @@ Coqtop
 - the use of `coqtop` as a compiler has been deprecated, in favor of
   `coqc`. Consequently option `-compile` will stop to be accepted in
   the next release. `coqtop` is now reserved to interactive
-  use. (@ejgallego #9095)
+  use. Change by Emilio Gallego Arías.
 
 - new option -topfile filename, which will set the current module name
   (à la -top) based on the filename passed, taking into account the
@@ -186,7 +186,7 @@ Specification language, type inference
   an explicit `return _` clause.
 
 - Using non-projection values with the projection syntax is not
-  allowed. For instance "0.(S)" is not a valid way to write "S 0".
+  allowed. For instance :g:`0.(S)` is not a valid way to write :g:`S 0`.
   Projections from non-primitive (emulated) records are allowed with
   warning "nonprimitive-projection-syntax".
 
@@ -203,9 +203,9 @@ Kernel
 
 Notations
 
-- New command `Declare Scope` to explicitly declare a scope name
+- New command :cmd:`Declare Scope` to explicitly declare a scope name
   before any use of it. Implicit declaration of a scope at the time of
-  `Bind Scope`, `Delimit Scope`, `Undelimit Scope`, or `Notation` is
+  :cmd:`Bind Scope`, :cmd:`Delimit Scope`, :cmd:`Undelimit Scope`, or :cmd:`Notation` is
   deprecated.
 
 - New command `String Notation` to register string syntax for custom
@@ -233,7 +233,7 @@ Notations
 
 - Deprecated compatibility notations have actually been removed.  Uses
   of these notations are generally easy to fix thanks to the hint
-  contained in the deprecation warnings. For projects that require
+  contained in the deprecation warning emitted by the previous version of Coq. For projects that require
   more than a handful of such fixes, there is [a
   script](https://gist.github.com/JasonGross/9770653967de3679d131c59d42de6d17#file-replace-notations-py)
   that will do it automatically, using the output of coqc. The script
@@ -263,7 +263,7 @@ Tactics
 
 - Hint declaration and removal should now specify a database (e.g. `Hint Resolve
   foo : database`). When the database name is omitted, the hint is added to the
-  core database (as previously), but a deprecation warning is emitted.
+  `core` database (as previously), but a deprecation warning is emitted.
 
 - There are now tactics in `PreOmega.v` called
   `Z.div_mod_to_equations`, `Z.quot_rem_to_equations`, and
@@ -275,7 +275,7 @@ Tactics
 
 - Ltac backtraces can be turned on using the "Ltac Backtrace" option.
 
-- The syntax of the `autoapply` tactic was fixed to conform with preexisting
+- The syntax of the :tacn:`autoapply` tactic was fixed to conform with preexisting
   documentation: it now takes a `with` clause instead of a `using` clause.
 
 
@@ -285,7 +285,7 @@ Vernacular commands
 - `Combined Scheme` can now work when inductive schemes are generated in sort
   `Type`. It used to be limited to sort `Prop`.
 
-- Binders for an `Instance` now act more like binders for a `Theorem`.
+- Binders for an :cmd:`Instance` now act more like binders for a :cmd:`Theorem`.
   Names may not be repeated, and may not overlap with section variable names.
 
 - Removed the deprecated `Implicit Tactic` family of commands.
@@ -301,9 +301,9 @@ Vernacular commands
 - Computation of implicit arguments now properly handles local definitions in the
   binders for an `Instance`, and can be mixed with implicit binders `{x : T}`.
 
-- `Declare Instance` now requires an instance name.
+- :cmd:`Declare Instance` now requires an instance name.
 
-- Option `Refine Instance Mode` has been turned off by default, meaning that
+- Option :opt:`Refine Instance Mode` has been turned off by default, meaning that
   `Instance` no longer opens a proof when a body is provided.
 
 - `Instance`, when no body is provided, now always opens a proof. This is a
@@ -311,7 +311,7 @@ Vernacular commands
    class will have to be changed into `Instance foo : C := {}.` or
    `Instance foo : C. Proof. Qed.`.
 
-- Option `Program Mode` now means that the `Program` attribute is enabled
+- Option :opt:`Program Mode` now means that the `Program` attribute is enabled
   for all commands that support it. In particular, it does not have any effect
   on tactics anymore. May cause some incompatibilities.
 
@@ -327,10 +327,10 @@ Vernacular commands
 - Option `Refine Instance Mode` has been deprecated and will be removed in
   the next version.
 
-- `Coercion` does not warn ambiguous paths which are obviously convertible with
+- :cmd:`Coercion` does not warn ambiguous paths which are obviously convertible with
   existing ones.
 
-- A new flag `Fast Name Printing` has been introduced. It changes the
+- A new flag :opt:`Fast Name Printing` has been introduced. It changes the
   algorithm used for allocating bound variable names for a faster but less
   clever one.
 
@@ -380,7 +380,7 @@ Standard Library
 
 - The prelude used to be automatically Exported and is now only
   Imported. This should be relevant only when importing files which
-  don't use -noinit into files which do.
+  don't use `-noinit` into files which do.
 
 - Added `Coq.Structures.OrderedTypeEx.String_as_OT` to make strings an
   ordered type (using lexical order).
@@ -398,7 +398,7 @@ Universes
   Try for instance `Print Universes Subgraph(sigT2.u1 sigT_of_sigT2.u1 projT3_eq.u1 eq_sigT2_rect.u1).`
 
 - Added private universes for opaque polymorphic constants, see doc
-  for the "Private Polymorphic Universes" option (and Unset it to get
+  for the :opt"`Private Polymorphic Universes` option (and Unset it to get
   the previous behaviour).
 
 SProp
@@ -419,9 +419,9 @@ Funind
 
 Misc
 
-- Option "Typeclasses Axioms Are Instances" is deprecated. Use Declare Instance for axioms which should be instances.
+- Option :opt`Typeclasses Axioms Are Instances` (compatibility option introduced in the previous version) is deprecated. Use :cmd:`Declare Instance` for axioms which should be instances.
 
-- Removed option "Printing Primitive Projection Compatibility"
+- Removed option `Printing Primitive Projection Compatibility`
 
 SSReflect
 
