@@ -57,9 +57,9 @@ let coqide_known_option table = List.mem table [
   ["Diffs"]]
 
 let is_known_option cmd = match Vernacprop.under_control cmd with
-  | VernacSetOption (_, o, BoolValue true)
-  | VernacSetOption (_, o, StringValue _)
-  | VernacUnsetOption (_, o) -> coqide_known_option o
+  | VernacSetOption (_, o, OptionSetTrue)
+  | VernacSetOption (_, o, OptionSetString _)
+  | VernacSetOption (_, o, OptionUnset) -> coqide_known_option o
   | _ -> false
 
 (** Check whether a command is forbidden in the IDE *)
@@ -366,12 +366,13 @@ let get_options () =
   Goptions.OptionMap.fold fold table []
 
 let set_options options =
+  let open Goptions in
   let iter (name, value) = match import_option_value value with
-  | BoolValue b -> Goptions.set_bool_option_value name b
-  | IntValue i -> Goptions.set_int_option_value name i
-  | StringValue s -> Goptions.set_string_option_value name s
-  | StringOptValue (Some s) -> Goptions.set_string_option_value name s
-  | StringOptValue None -> Goptions.unset_option_value_gen name
+  | BoolValue b -> set_bool_option_value name b
+  | IntValue i -> set_int_option_value name i
+  | StringValue s -> set_string_option_value name s
+  | StringOptValue (Some s) -> set_string_option_value name s
+  | StringOptValue None -> unset_option_value_gen name
   in
   List.iter iter options
 

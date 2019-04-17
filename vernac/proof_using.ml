@@ -172,11 +172,12 @@ let value = ref None
 let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
 let using_from_string us = Pcoq.Entry.parse G_vernac.section_subset_expr (Pcoq.Parsable.make (Stream.of_string us))
 
+let proof_using_opt_name = ["Default";"Proof";"Using"]
 let () =
   Goptions.(declare_stringopt_option
     { optdepr  = false;
       optname  = "default value for Proof using";
-      optkey   = ["Default";"Proof";"Using"];
+      optkey   = proof_using_opt_name;
       optread  = (fun () -> Option.map using_to_string !value);
       optwrite = (fun b -> value := Option.map using_from_string b);
     })

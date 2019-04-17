@@ -173,15 +173,10 @@ open Pputils
       pr_opt (prlist_with_sep sep pr_option_ref_value) b
 
   let pr_set_option a b =
-    let pr_opt_value = function
-      | IntValue None -> assert false
-    (* This should not happen because of the grammar *)
-      | IntValue (Some n) -> spc() ++ int n
-      | StringValue s -> spc() ++ str s
-      | StringOptValue None -> mt()
-      | StringOptValue (Some s) -> spc() ++ str s
-      | BoolValue b -> mt()
-    in pr_printoption a None ++ pr_opt_value b
+    pr_printoption a None ++ (match b with
+        | OptionUnset | OptionSetTrue -> mt()
+        | OptionSetInt n -> spc() ++ int n
+        | OptionSetString s -> spc() ++ quote (str s))
 
   let pr_opt_hintbases l = match l with
     | [] -> mt()
@@ -1140,15 +1135,11 @@ open Pputils
           hov 1 (keyword "Strategy" ++ spc() ++
                    hv 0 (prlist_with_sep sep pr_line l))
         )
-      | VernacUnsetOption (export, na) ->
-        let export = if export then keyword "Export" ++ spc () else mt () in
-        return (
-          hov 1 (export ++ keyword "Unset" ++ spc() ++ pr_printoption na None)
-        )
       | VernacSetOption (export, na,v) ->
         let export = if export then keyword "Export" ++ spc () else mt () in
+        let set = if v == OptionUnset then "Unset" else "Set" in
         return (
-          hov 2 (export ++ keyword "Set" ++ spc() ++ pr_set_option na v)
+          hov 2 (export ++ keyword set ++ spc() ++ pr_set_option na v)
         )
       | VernacAddOption (na,l) ->
         return (

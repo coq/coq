@@ -875,10 +875,10 @@ GRAMMAR EXTEND Gram
   GLOBAL: command query_command class_rawexpr gallina_ext;
 
   gallina_ext:
-    [ [ IDENT "Export"; "Set"; table = option_table; v = option_value ->
+    [ [ IDENT "Export"; "Set"; table = option_table; v = option_setting ->
         { VernacSetOption (true, table, v) }
       | IDENT "Export"; IDENT "Unset"; table = option_table ->
-          { VernacUnsetOption (true, table) }
+          { VernacSetOption (true, table, OptionUnset) }
     ] ];
 
   command:
@@ -943,10 +943,10 @@ GRAMMAR EXTEND Gram
 	  { VernacAddMLPath (true, dir) }
 
       (* For acting on parameter tables *)
-      | "Set"; table = option_table; v = option_value ->
+      | "Set"; table = option_table; v = option_setting ->
           { VernacSetOption (false, table, v) }
       | IDENT "Unset"; table = option_table ->
-          { VernacUnsetOption (false, table) }
+          { VernacSetOption (false, table, OptionUnset) }
 
       | IDENT "Print"; IDENT "Table"; table = option_table ->
 	  { VernacPrintOption table }
@@ -1057,10 +1057,10 @@ GRAMMAR EXTEND Gram
       | IDENT "Library"; qid = global -> { LocateLibrary qid }
       | IDENT "Module"; qid = global -> { LocateModule qid } ] ]
   ;
-  option_value:
-    [ [ -> { BoolValue true }
-      | n  = integer   -> { IntValue (Some n) }
-      | s  = STRING    -> { StringValue s } ] ]
+  option_setting:
+    [ [ -> { OptionSetTrue }
+      | n  = integer   -> { OptionSetInt n }
+      | s  = STRING    -> { OptionSetString s } ] ]
   ;
   option_ref_value:
     [ [ id = global   -> { QualidRefValue id }
@@ -1130,10 +1130,10 @@ GRAMMAR EXTEND Gram
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], BoolValue true) }
+          { VernacSetOption (false, ["Ltac";"Debug"], OptionSetTrue) }
 
       |	IDENT "Debug"; IDENT "Off" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], BoolValue false) }
+          { VernacSetOption (false, ["Ltac";"Debug"], OptionUnset) }
 
 (* registration of a custom reduction *)
 

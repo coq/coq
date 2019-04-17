@@ -109,11 +109,11 @@ type onlyparsing_flag = Flags.compat_version option
     which this notation is trying to be compatible with *)
 type locality_flag  = bool (* true = Local *)
 
-type option_value = Goptions.option_value =
-  | BoolValue of bool
-  | IntValue of int option
-  | StringValue of string
-  | StringOptValue of string option
+type option_setting =
+  | OptionUnset
+  | OptionSetTrue
+  | OptionSetInt of int
+  | OptionSetString of string
 
 type option_ref_value =
   | StringRefValue of string
@@ -363,8 +363,7 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
-  | VernacUnsetOption of export_flag * Goptions.option_name
-  | VernacSetOption of export_flag * Goptions.option_name * option_value
+  | VernacSetOption of export_flag * Goptions.option_name * option_setting
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list

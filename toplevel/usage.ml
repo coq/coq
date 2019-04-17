@@ -74,6 +74,9 @@ let print_usage_common co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -mangle-names x        mangle auto-generated names using prefix x\
+\n  -set \"Foo Bar\"       enable Foo Bar (as Set Foo Bar. in a file)\
+\n  -set \"Foo Bar=value\" set Foo Bar to value (value is interpreted according to Foo Bar's type)\
+\n  -unset \"Foo Bar\"     disable Foo Bar (as Unset Foo Bar. in a file)\
 \n  -time                  display the time taken by each command\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
