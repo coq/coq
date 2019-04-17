@@ -227,6 +227,8 @@ Tools
   `coqc`/`make` as well as printing to stdout, on both python2 and
   python3.
 
+- Coq options can be set on the command line, eg `-set "Universe Polymorphism=true"`
+
 Standard Library
 
 - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about
