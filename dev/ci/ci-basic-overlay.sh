@@ -200,7 +200,7 @@
 ########################################################################
 # Elpi
 ########################################################################
-: "${elpi_CI_REF:=f59fadf9dcd2fcc765996e44265e446d3daf4303}"
+: "${elpi_CI_REF:=coq-v8.10}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
 
@@ -228,7 +228,7 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=48a269712fbd18831827e5486070117eef30782f}"
+: "${quickchick_CI_REF:=bf823751602407d0c9f8598c62e277ad5a5a8bcd}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
