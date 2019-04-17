@@ -56,14 +56,15 @@ let write_ml_code fn ?(header=[]) code =
   List.iter (pp_global fmt) (header@code);
   close_out ch_out
 
-let warn_native_compiler_failed =
-  let print = function
+let error_native_compiler_failed e =
+  let msg = match e with
+  | Inl (Unix.WEXITED 127) -> Pp.(strbrk "The OCaml compiler was not found. Make sure it is installed, together with findlib.")
   | Inl (Unix.WEXITED n) -> Pp.(strbrk "Native compiler exited with status" ++ str" " ++ int n)
   | Inl (Unix.WSIGNALED n) -> Pp.(strbrk "Native compiler killed by signal" ++ str" " ++ int n)
   | Inl (Unix.WSTOPPED n) -> Pp.(strbrk "Native compiler stopped by signal" ++ str" " ++ int n)
   | Inr e -> Pp.(strbrk "Native compiler failed with error: " ++ strbrk (Unix.error_message e))
   in
-  CWarnings.create ~name:"native-compiler-failed" ~category:"native-compiler" print
+  CErrors.user_err msg
 
 let call_compiler ?profile:(profile=false) ml_filename =
   let load_path = !get_load_paths () in
@@ -100,15 +101,12 @@ let call_compiler ?profile:(profile=false) ml_filename =
   if !Flags.debug then Feedback.msg_debug (Pp.str (Envars.ocamlfind () ^ " " ^ (String.concat " " args)));
   try
     let res = CUnix.sys_command (Envars.ocamlfind ()) args in
-    let res = match res with
-      | Unix.WEXITED 0 -> true
-      | Unix.WEXITED _n | Unix.WSIGNALED _n | Unix.WSTOPPED _n ->
-        warn_native_compiler_failed (Inl res); false
-    in
-    res, link_filename
+    match res with
+    | Unix.WEXITED 0 -> link_filename
+    | Unix.WEXITED _n | Unix.WSIGNALED _n | Unix.WSTOPPED _n ->
+      error_native_compiler_failed (Inl res)
   with Unix.Unix_error (e,_,_) ->
-    warn_native_compiler_failed (Inr e);
-    false, link_filename
+    error_native_compiler_failed (Inr e)
 
 let compile fn code ~profile:profile =
   write_ml_code fn code;
@@ -128,9 +126,8 @@ let compile_library dir code fn =
   in
   let fn = dirname / basename in
   write_ml_code fn ~header code;
-  let r = fst (call_compiler fn) in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
-  r
+  let _ = call_compiler fn in
+  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
 
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. *)
