@@ -195,6 +195,9 @@ Coqtop
   proper -R/-Q options. For example, given -R Foo foolib using
   -topfile foolib/bar.v will set the module name to Foo.Bar.
 
+- Experimental: Coq flags and options can now be set on the
+  command-line, e.g. `-set "Universe Polymorphism=true"`.
+
 Specification language, type inference
 
 - Fixing a missing check in interpreting instances of existential
