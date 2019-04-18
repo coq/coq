@@ -10,9 +10,9 @@ SProp (proof irrelevant propositions)
 This section describes the extension of |Coq| with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
 known as strict propositions). To use :math:`\SProp` you must pass
-``-allow-sprop`` to the |Coq| program or use :opt:`Allow StrictProp`.
+``-allow-sprop`` to the |Coq| program or use :flag:`Allow StrictProp`.
 
-.. opt:: Allow StrictProp
+.. flag:: Allow StrictProp
    :name: Allow StrictProp
 
    Allows using :math:`\SProp` when set and forbids it when unset. The
@@ -201,10 +201,10 @@ This means that some errors will be delayed until ``Qed``:
 
    Abort.
 
-.. opt:: Elaboration StrictProp Cumulativity
+.. flag:: Elaboration StrictProp Cumulativity
    :name: Elaboration StrictProp Cumulativity
 
-   Unset this option (it's on by default) to be strict with regard to
+   Unset this flag (it is on by default) to be strict with regard to
    :math:`\SProp` cumulativity during elaboration.
 
 The implementation of proof irrelevance uses inferred "relevance"
