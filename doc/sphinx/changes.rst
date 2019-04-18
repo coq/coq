@@ -9,81 +9,103 @@ Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
 |Coq| version 8.10 contains two major new features: support for a native
-fixed-precision integer type and a new sort `SProp` of strict
+fixed-precision integer type and a new sort :math:`\SProp` of strict
 propositions. It is also the result of refinements and stabilization of
 previous features, deprecations or removals of deprecated features,
 cleanups of the internals of the system and API. This release includes
 many user-visible changes, including deprecations that are documented in
-the following section, and new features that are documented in the
+the next section, and new features that are documented in the
 reference manual. Here are the most important user-visible changes:
 
 - Kernel:
 
   - A notion of primitive object was added to the calculus. Its first
     instance is primitive cyclic unsigned integers, axiomatized in
-    module UInt63(link), by Maxime Dénès, Benjamin Grégoire and Vincent
-    Laporte. See Section :ref:`primitive-integers`.
+    module :g:`UInt63`. See Section :ref:`primitive-integers`
+    (`#6914 <https://github.com/coq/coq/pull/6914>`_, by Maxime Dénès,
+    Benjamin Grégoire and Vincent Laporte).
 
   - The :math:`\SProp` sort of definitionally proof-irrelevant propositions was
-    introduced by Gaëtan Gilbert. :math:`\SProp` allows to mark proof
-    terms as irrelevant for conversion, and is treated like `Prop`
+    introduced. :math:`\SProp` allows to mark proof
+    terms as irrelevant for conversion, and is treated like :math:`\Prop`
     during extraction. It is enabled using the `-allow-sprop`
-    command-line flag. See Section :ref:`sprop`.
+    command-line flag or the :flag:`Allow StrictProp` flag.
+    See Chapter :ref:`sprop`
+    (`#8817 <https://github.com/coq/coq/pull/8817>`_, by Gaëtan Gilbert).
 
-  - The unfolding heuristic in termination checking was made more complete
-    by Enrico Tassi, allowing more constants to be unfolded to discover
-    valid recursive calls.
+  - The unfolding heuristic in termination checking was made more
+    complete, allowing more constants to be unfolded to discover valid
+    recursive calls
+    (`#9602 <https://github.com/coq/coq/pull/9602>`_, by Enrico Tassi).
 
 - Universes:
 
   - Added :cmd:`Print Universes Subgraph` variant of :cmd:`Print Universes` and
-    private universes for opaque polymorphic constants, by Gaëtan Gilbert.
+    private universes for opaque polymorphic constants
+    (`#8451 <https://github.com/coq/coq/pull/8451>`_, by Gaëtan Gilbert).
 
 - Notations:
 
   - New command :cmd:`String Notation` to register string syntax for custom
-    inductive types, by Jason Gross.
+    inductive types
+    (`#8965 <https://github.com/coq/coq/pull/8965>`_, by Jason Gross).
 
-  - Numeral Notations now parse decimal constants, by Pierre Roux.
+  - Numeral Notations now parse decimal constants
+    (`#8764 <https://github.com/coq/coq/pull/8764>`_, by Pierre Roux).
 
 - Ltac:
 
-  - Ltac backtraces can be turned on using the :opt:`Ltac Backtrace` option,
-    by Pierre-Marie Pédrot.
+  - Ltac backtraces can be turned on using the :flag:`Ltac Backtrace`
+    flag, which is off by default
+    (`#9142 <https://github.com/coq/coq/pull/9142>`_,
+    fixes `#7769 <https://github.com/coq/coq/issues/7769>`_
+    and `#7385 <https://github.com/coq/coq/issues/7385>`_,
+    by Pierre-Marie Pédrot).
 
+- The tactics :tacn:`lia`, :tacn:`nia`, :tacn:`lra`, :tacn:`nra` are now using a novel
+  Simplex-based proof engine
+  (`#8457 <https://github.com/coq/coq/pull/8457>`_, by Fréderic Besson).
 
-- The tactics :tac:`lia`, :tac:`nia`, :tac:`lra`, :tac:`nra` are now using a novel
-  Simplex-based proof engine, by Fréderic Besson.
-
-- SSReflect has new intro patterns and a consistent clear discipline, by
-  Enrico Tassi.
+- SSReflect has new intro patterns and a consistent clear discipline
+  (`#6705 <https://github.com/coq/coq/pull/6705>`_
+  and `#9341 <https://github.com/coq/coq/pull/9341>`_,
+  by Enrico Tassi).
 
 - :cmd:`Combined Scheme` now works when inductive schemes are generated in sort
-  `Type`, by Théo Winterhalter.
+  :math:`\Type`
+  (`#7634 <https://github.com/coq/coq/pull/7634>`_, by Théo Winterhalter).
 
 - A new registration mechanism for reference from ML code to Coq
-  constructs has been added, by Emilio Jesús Gallego Arias.
+  constructs has been added
+  (`#186 <https://github.com/coq/coq/pull/186>`_,
+  by Emilio Jesús Gallego Arias, Maxime Dénès and Vincent Laporte).
 
 - CoqIDE:
 
-  - Migrated to gtk+3 and lablgtk3 by Hugo Herbelin and Jacques Garrigue.
+  - Migrated to gtk+3 and lablgtk3
+    (`#9279 <https://github.com/coq/coq/pull/9279>`_,
+    by Hugo Herbelin, with help of Jacques Garrigue,
+    Emilio Jesús Gallego Arias, Michael Sogetrop and Vincent Laporte).
 
-  - Supports smart input for Unicode characters by Arthur Charguéraud.
+  - Supports smart input for Unicode characters
+    (`#8560 <https://github.com/coq/coq/pull/8560>`_, by Arthur Charguéraud).
 
 - Infrastructure:
 
   - Coq 8.10 requires OCaml >= 4.05.0, bumped from 4.02.3 See the
-    `INSTALL` file for more information on dependencies.
+    `INSTALL` file for more information on dependencies
+    (`#7522 <https://github.com/coq/coq/pull/7522>`_, by Emilio Jesús Gallego Arías).
 
   - Coq now supports building with Dune, in addition to the traditional
-    Makefile which is scheduled for deprecation, by Emilio Jesús Gallego
-    Arias and Rudi Grinberg. Experimental support for building Coq
-    projects has been integrated in Dune at the same time, providing an
-    [improved
-    experience](`https://coq.discourse.group/t/a-guide-to-building-your-coq-libraries-and-plugins-with-dune/`
+    Makefile which is scheduled for deprecation
+    (`#6857 <https://github.com/coq/coq/pull/6857>`_,
+    by Emilio Jesús Gallego Arias and Rudi Grinberg).
+
+    Experimental support for building Coq projects has been integrated
+    in Dune at the same time, providing an `improved experience
+    <https://coq.discourse.group/t/a-guide-to-building-your-coq-libraries-and-plugins-with-dune/>`_
     for plugin developers. We thank the Dune team for their work
     supporting Coq.
-
 
 Version 8.10 also comes with a bunch of smaller-scale changes and
 improvements regarding the different components of the system, including
@@ -140,8 +162,8 @@ merged, closing ??? issues.
 | Matthieu Sozeau for the |Coq| development team
 |
 
-Details of changes
-~~~~~~~~~~~~~~~~~~
+Details of changes in 8.10+beta1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 OCaml and dependencies
 
@@ -303,15 +325,16 @@ Vernacular commands
 
 - :cmd:`Declare Instance` now requires an instance name.
 
-- Option :opt:`Refine Instance Mode` has been turned off by default, meaning that
-  `Instance` no longer opens a proof when a body is provided.
+- The flag :flag:`Refine Instance Mode` has been turned off by default, meaning that
+  :cmd:`Instance` no longer opens a proof when a body is provided.
 
-- `Instance`, when no body is provided, now always opens a proof. This is a
-   breaking change, as instance of `Instance foo : C.` where `C` is a trivial
-   class will have to be changed into `Instance foo : C := {}.` or
-   `Instance foo : C. Proof. Qed.`.
+- Command :cmd:`Instance`, when no body is provided, now always opens
+  a proof. This is a breaking change, as instance of :n:`Instance
+  @ident__1 : @ident__2.` where :n:`@ident__2` is a trivial class will
+  have to be changed into :n:`Instance @ident__1 : @ident__2 := {}.`
+  or :n:`Instance @ident__1 : @ident__2. Proof. Qed.`.
 
-- Option :opt:`Program Mode` now means that the `Program` attribute is enabled
+- The flag :flag:`Program Mode` now means that the `Program` attribute is enabled
   for all commands that support it. In particular, it does not have any effect
   on tactics anymore. May cause some incompatibilities.
 
@@ -330,7 +353,7 @@ Vernacular commands
 - :cmd:`Coercion` does not warn ambiguous paths which are obviously convertible with
   existing ones.
 
-- A new flag :opt:`Fast Name Printing` has been introduced. It changes the
+- A new flag :flag:`Fast Name Printing` has been introduced. It changes the
   algorithm used for allocating bound variable names for a faster but less
   clever one.
 
@@ -372,7 +395,7 @@ Standard Library
   the upper bound of number represented by a vector.
   Allowed implicit vector length argument in `Ndigits.Bv2N`.
 
-- Added `Bvector.BVeq` that decides whether two `Bvector`s are equal.
+- Added `Bvector.BVeq` that decides whether two `Bvector`\s are equal.
 
 - Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`.
 
@@ -599,8 +622,8 @@ engineer working with Maxime Dénès in the |Coq| consortium.
 | Matthieu Sozeau for the |Coq| development team
 |
 
-Details of changes
-~~~~~~~~~~~~~~~~~~
+Details of changes in 8.9+beta1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Kernel
 
