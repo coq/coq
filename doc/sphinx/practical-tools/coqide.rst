@@ -252,6 +252,8 @@ use antialiased fonts or not, by setting the environment variable
 `GDK_USE_XFT` to 1 or 0 respectively.
 
 
+.. _coqide-unicode:
+
 Bindings for input of Unicode symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
