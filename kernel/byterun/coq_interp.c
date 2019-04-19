@@ -1652,6 +1652,12 @@ value coq_interprete
         double f;
         print_instr("CHECKFRSHIFTEXP");
         CheckFloat1();
+        /* frexp(infinity) incorrectly returns nan on mingw */
+#if defined(__MINGW32__) || defined(__MINGW64__)
+        if (fpclassify(Double_val(accu)) == FP_INFINITE) {
+          f = Double_val(accu);
+        } else
+#endif
         f = frexp(Double_val(accu), &exp);
         if (fpclassify(f) == FP_NORMAL) {
           exp += FLOAT_EXP_SHIFT;

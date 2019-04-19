@@ -3,8 +3,11 @@ Require Import Floats.
 Check 2%float.
 Check 2.5%float.
 Check (-2.5)%float.
-Check 2.5e20%float.
-Check (-2.5e-20)%float.
+(* Avoid exponents with less than three digits as they are usually
+   displayed with two digits (1e7 is displayed 1e+07) except on
+   Windows where three digits are used (1e+007). *)
+Check 2.5e123%float.
+Check (-2.5e-123)%float.
 Check (2 + 2)%float.
 Check (2.5 + 2.5)%float.
 
@@ -13,8 +16,8 @@ Open Scope float_scope.
 Check 2.
 Check 2.5.
 Check (-2.5).
-Check 2.5e20.
-Check (-2.5e-20).
+Check 2.5e123.
+Check (-2.5e-123).
 Check (2 + 2).
 Check (2.5 + 2.5).
 
