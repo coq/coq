@@ -6,6 +6,9 @@ case $1 in
         shift
         exe=_build/default/checker/coqchk.bc
         ;;
+    coqide)
+        exe=_build/default/ide/coqide_main.bc
+        ;;
     *)
         exe=_build/default/topbin/coqc_bin.bc
         ;;

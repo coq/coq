@@ -12,6 +12,7 @@
   (deps dune-dbg.in
         ../checker/coqchk.bc
         ../topbin/coqc_bin.bc
+        ../ide/coqide_main.bc
         ; This is not enough as the call to `ocamlfind` will fail :/
         top_printers.cma)
   (action (copy dune-dbg.in dune-dbg)))
