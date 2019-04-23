@@ -697,7 +697,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
 
 let reduct_in_concl (redfun,sty) =
   Proofview.Goal.enter begin fun gl ->
-    convert_concl_no_check (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
+    convert_concl ~check:false (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
   end
 
 let reduct_in_hyp ?(check=false) redfun (id,where) =
@@ -756,7 +756,7 @@ let e_change_in_concl (redfun,sty) =
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, c) = redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.concl gl) in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_concl_no_check c sty)
+    (convert_concl ~check:false c sty)
   end
 
 let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigma =
@@ -2174,7 +2174,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
     let nconstr = Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     check_number_of_constructors expctdnumopt i nconstr;
     Tacticals.New.tclTHENLIST [
-      convert_concl_no_check redcl DEFAULTcast;
+      convert_concl ~check:false redcl DEFAULTcast;
       intros;
       constructor_core with_evars (ind, i) lbind
     ]
@@ -2203,7 +2203,7 @@ let any_constructor with_evars tacopt =
       Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
     if Int.equal nconstr 0 then error "The type has no constructors.";
     Tacticals.New.tclTHENLIST [
-      convert_concl_no_check redcl DEFAULTcast;
+      convert_concl ~check:false redcl DEFAULTcast;
       intros;
       any_constr ind nconstr 1 ()
     ]
@@ -2647,9 +2647,9 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     in
       Tacticals.New.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
-        convert_concl_no_check newcl DEFAULTcast;
+        convert_concl ~check:false newcl DEFAULTcast;
         intro_gen (NamingMustBe (CAst.make id)) (decode_hyp lastlhyp) true false;
-        Tacticals.New.tclMAP convert_hyp_no_check depdecls;
+        Tacticals.New.tclMAP (convert_hyp ~check:false) depdecls;
         eq_tac ]
   end
 
@@ -4799,7 +4799,7 @@ let symmetry_red allowred =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (convert_concl_no_check concl DEFAULTcast)
+        (convert_concl ~check:false concl DEFAULTcast)
         (Tacticals.New.pf_constr_of_global eq_data.sym >>= apply)
   | None,eq,eq_kind -> prove_symmetry eq eq_kind
   end
@@ -4894,7 +4894,7 @@ let transitivity_red allowred t =
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
-        (convert_concl_no_check concl DEFAULTcast)
+        (convert_concl ~check:false concl DEFAULTcast)
         (match t with
 	  | None -> Tacticals.New.pf_constr_of_global eq_data.trans >>= eapply
 	  | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans >>= fun trans -> apply_list [trans; t])
