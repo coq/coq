@@ -154,8 +154,8 @@ type change_arg = patvar_map -> env -> evar_map -> evar_map * constr
 val make_change_arg   : constr -> change_arg
 val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
 val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
-val reduct_in_concl   : tactic_reduction * cast_kind -> unit Proofview.tactic
-val e_reduct_in_concl   : check:bool -> e_tactic_reduction * cast_kind -> unit Proofview.tactic
+val reduct_in_concl   : ?check:bool -> tactic_reduction * cast_kind -> unit Proofview.tactic
+val e_reduct_in_concl   : ?check:bool -> e_tactic_reduction * cast_kind -> unit Proofview.tactic
 val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
 val change_concl      : constr -> unit Proofview.tactic
 val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
