@@ -614,18 +614,22 @@ let cofix id = mutual_cofix id [] 0
 type tactic_reduction = Reductionops.reduction_function
 type e_tactic_reduction = Reductionops.e_reduction_function
 
-let pf_reduce_decl redfun where decl gl =
+let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigma =
   let open Context.Named.Declaration in
-  let redfun' c = Tacmach.New.pf_apply redfun gl c in
   match decl with
   | LocalAssum (id,ty) ->
       if where == InHypValueOnly then
         user_err  (Id.print id.binder_name ++ str " has no value.");
-      LocalAssum (id,redfun' ty)
+    let (sigma, ty') = redfun false env sigma ty in
+    (sigma, LocalAssum (id, ty'))
   | LocalDef (id,b,ty) ->
-      let b' = if where != InHypTypeOnly then redfun' b else b in
-      let ty' =	if where != InHypValueOnly then redfun' ty else ty in
-      LocalDef (id,b',ty')
+      let (sigma, b') =
+        if where != InHypTypeOnly then redfun true env sigma b else (sigma, b)
+      in
+      let (sigma, ty') =
+        if where != InHypValueOnly then redfun false env sigma ty else (sigma, ty)
+      in
+      (sigma, LocalDef (id,b',ty'))
 
 (* Possibly equip a reduction with the occurrences mentioned in an
    occurrence clause *)
@@ -695,41 +699,9 @@ let bind_red_expr_occurrences occs nbcl redexp =
    reduction function either to the conclusion or to a
    certain hypothesis *)
 
-let reduct_in_concl (redfun,sty) =
-  Proofview.Goal.enter begin fun gl ->
-    convert_concl ~check:false (Tacmach.New.pf_apply redfun gl (Tacmach.New.pf_concl gl)) sty
-  end
-
-let reduct_in_hyp ?(check=false) redfun (id,where) =
-  Proofview.Goal.enter begin fun gl ->
-  convert_hyp ~check (pf_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl)
-  end
-
-let revert_cast (redfun,kind as r) =
-  if kind == DEFAULTcast then (redfun,REVERTcast) else r
-
-let reduct_option ?(check=false) redfun = function
-  | Some id -> reduct_in_hyp ~check (fst redfun) id
-  | None    -> reduct_in_concl (revert_cast redfun)
-
 (** Tactic reduction modulo evars (for universes essentially) *)
 
-let pf_e_reduce_decl redfun where decl gl =
-  let open Context.Named.Declaration in
-  let sigma = Proofview.Goal.sigma gl in
-  let redfun sigma c = redfun (Tacmach.New.pf_env gl) sigma c in
-  match decl with
-  | LocalAssum (id,ty) ->
-      if where == InHypValueOnly then
-        user_err  (Id.print id.binder_name ++ str " has no value.");
-    let (sigma, ty') = redfun sigma ty in
-    (sigma, LocalAssum (id, ty'))
-  | LocalDef (id,b,ty) ->
-      let (sigma, b') = if where != InHypTypeOnly then redfun sigma b else (sigma, b) in
-      let (sigma, ty') = if where != InHypValueOnly then redfun sigma ty else (sigma, ty) in
-      (sigma, LocalDef (id, b', ty'))
-
-let e_reduct_in_concl ~check (redfun, sty) =
+let e_change_in_concl ?(check = false) (redfun, sty) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, c') = redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
@@ -737,53 +709,39 @@ let e_reduct_in_concl ~check (redfun, sty) =
     (convert_concl ~check c' sty)
   end
 
-let e_reduct_in_hyp ?(check=false) redfun (id, where) =
-  Proofview.Goal.enter begin fun gl ->
-    let (sigma, decl') = pf_e_reduce_decl redfun where (Tacmach.New.pf_get_hyp id gl) gl in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_hyp ~check decl')
-  end
-
-let e_reduct_option ?(check=false) redfun = function
-  | Some id -> e_reduct_in_hyp ~check (fst redfun) id
-  | None    -> e_reduct_in_concl ~check (revert_cast redfun)
-
-(** Versions with evars to maintain the unification of universes resulting
-    from conversions. *)
-
-let e_change_in_concl (redfun,sty) =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
-    let (sigma, c) = redfun (Proofview.Goal.env gl) sigma (Proofview.Goal.concl gl) in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_concl ~check:false c sty)
-  end
-
-let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigma =
-  let open Context.Named.Declaration in
-  match decl with
-  | LocalAssum (id,ty) ->
-      if where == InHypValueOnly then
-        user_err  (Id.print id.binder_name ++ str " has no value.");
-    let (sigma, ty') = redfun false env sigma ty in
-    (sigma, LocalAssum (id, ty'))
-  | LocalDef (id,b,ty) ->
-      let (sigma, b') =
-	if where != InHypTypeOnly then redfun true env sigma b else (sigma, b)
-      in
-      let (sigma, ty') =
-	if where != InHypValueOnly then redfun false env sigma ty else (sigma, ty)
-      in
-      (sigma, LocalDef (id,b',ty'))
-
-let e_change_in_hyp redfun (id,where) =
+let e_change_in_hyp ?(check = false) redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let hyp = Tacmach.New.pf_get_hyp id gl in
     let (sigma, c) = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (convert_hyp c)
+    (convert_hyp ~check c)
   end
+
+let e_reduct_in_concl = e_change_in_concl
+
+let reduct_in_concl ?(check = false) (redfun, sty) =
+  let redfun env sigma c = (sigma, redfun env sigma c) in
+  e_change_in_concl ~check (redfun, sty)
+
+let e_reduct_in_hyp ?(check=false) redfun (id, where) =
+  let redfun _ env sigma c = redfun env sigma c in
+  e_change_in_hyp ~check redfun (id, where)
+
+let reduct_in_hyp ?(check = false) redfun (id, where) =
+  let redfun _ env sigma c = (sigma, redfun env sigma c) in
+  e_change_in_hyp ~check redfun (id, where)
+
+let revert_cast (redfun,kind as r) =
+  if kind == DEFAULTcast then (redfun,REVERTcast) else r
+
+let e_reduct_option ?(check=false) redfun = function
+  | Some id -> e_reduct_in_hyp ~check (fst redfun) id
+  | None    -> e_change_in_concl ~check (revert_cast redfun)
+
+let reduct_option ?(check = false) (redfun, sty) where =
+  let redfun env sigma c = (sigma, redfun env sigma c) in
+  e_reduct_option ~check (redfun, sty) where
 
 type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> evar_map * EConstr.constr
 
@@ -837,10 +795,13 @@ let change_on_subterm cv_pb deep t where env sigma c =
   (sigma, c)
 
 let change_in_concl occl t =
-  e_change_in_concl ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
+  e_change_in_concl ~check:false ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp occl t id  =
-  e_change_in_hyp (fun x -> change_on_subterm Reduction.CONV x t occl) id
+  (* FIXME: we set the [check] flag only to reorder hypotheses in case of
+    introduction of dependencies in new variables. We should separate this
+    check from the conversion function. *)
+  e_change_in_hyp ~check:true (fun x -> change_on_subterm Reduction.CONV x t occl) id
 
 let change_option occl t = function
   | Some id -> change_in_hyp occl t id
