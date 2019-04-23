@@ -33,9 +33,10 @@ type lambda =
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * (string * inductive) array * int) * fix_decl
   | Lcofix        of int * fix_decl
-  | Lmakeblock    of prefix * pconstructor * int * lambda array
-                  (* prefix, constructor Name.t, constructor tag, arguments *)
-        (* A fully applied constructor *)
+  | Lint          of int (* a constant constructor *)
+  | Lmakeblock    of prefix * inductive * int * lambda array
+                  (* prefix, inductive name, constructor tag, arguments *)
+        (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
@@ -43,7 +44,10 @@ type lambda =
   | Llazy
   | Lforce
 
-and lam_branches = (constructor * Name.t Context.binder_annot array * lambda) array
+and lam_branches =
+  { constant_branches : lambda array;
+    nonconstant_branches : (Name.t Context.binder_annot array * lambda) array;
+  }
 
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
