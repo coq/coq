@@ -468,6 +468,9 @@ beautify: $(BEAUTYFILES)
 # Extensions can't assume when they run.
 
 install:
+	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
+	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
+	done; exit $$code
 	$(HIDE)for f in $(FILESTOINSTALL); do\
 	 df="`$(COQMKFILE) -destination-of "$$f" $(COQLIBS)`";\
 	 if [ "$$?" != "0" -o -z "$$df" ]; then\
