@@ -256,6 +256,9 @@ Other changes in 8.10+beta1
     and `#9705 <https://github.com/coq/coq/issues/9705>`_,
     by Jason Gross)
 
+  - coq_makefile's install target now errors if any file to install is missing
+    (`#9906 <https://github.com/coq/coq/pull/9906>`_, by Gaëtan Gilbert).
+
 - Specification language, type inference:
 
   - Fixing a missing check in interpreting instances of existential
