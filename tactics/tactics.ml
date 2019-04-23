@@ -718,6 +718,31 @@ let e_change_in_hyp ?(check = false) redfun (id,where) =
     (convert_hyp ~check c)
   end
 
+let e_change_in_hyps ?(check=true) f args =
+  Proofview.Goal.enter begin fun gl ->
+    let fold (env, sigma) arg =
+      let (redfun, id, where) = f arg in
+      let hyp =
+        try lookup_named id env
+        with Not_found ->
+          raise (RefinerError (env, sigma, NoSuchHyp id))
+      in
+      let (sigma, d) = e_pf_change_decl redfun where hyp env sigma in
+      let sign = Logic.convert_hyp check (named_context_val env) sigma d in
+      let env = reset_with_named_context sign env in
+      (env, sigma)
+    in
+    let env = Proofview.Goal.env gl in
+    let sigma = Tacmach.New.project gl in
+    let (env, sigma) = List.fold_left fold (env, sigma) args in
+    let ty = Proofview.Goal.concl gl in
+    Proofview.Unsafe.tclEVARS sigma
+    <*>
+    Refine.refine ~typecheck:false begin fun sigma ->
+      Evarutil.new_evar env sigma ~principal:true ty
+    end
+  end
+
 let e_reduct_in_concl = e_change_in_concl
 
 let reduct_in_concl ?(check = false) (redfun, sty) =
@@ -803,19 +828,27 @@ let change_in_hyp occl t id  =
     check from the conversion function. *)
   e_change_in_hyp ~check:true (fun x -> change_on_subterm Reduction.CONV x t occl) id
 
-let change_option occl t = function
-  | Some id -> change_in_hyp occl t id
-  | None -> change_in_concl occl t
+let concrete_clause_of enum_hyps cl = match cl.onhyps with
+| None ->
+  let f id = (id, AllOccurrences, InHyp) in
+  List.map f (enum_hyps ())
+| Some l ->
+  List.map (fun ((occs, id), w) -> (id, occs, w)) l
 
 let change chg c cls =
   Proofview.Goal.enter begin fun gl ->
-    let cls = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
-    Tacticals.New.tclMAP (function
-    | OnHyp (id,occs,where) ->
-       change_option (bind_change_occurrences occs chg) c (Some (id,where))
-    | OnConcl occs ->
-       change_option (bind_change_occurrences occs chg) c None)
-    cls
+    let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
+    begin match cls.concl_occs with
+    | NoOccurrences -> Proofview.tclUNIT ()
+    | occs -> change_in_concl (bind_change_occurrences occs chg) c
+    end
+    <*>
+    let f (id, occs, where) =
+      let occl = bind_change_occurrences occs chg in
+      let redfun deep env sigma t = change_on_subterm Reduction.CONV deep c occl env sigma t in
+      (redfun, id, where)
+    in
+    e_change_in_hyps ~check:true f hyps
   end
 
 let change_concl t = 
@@ -842,14 +875,6 @@ let pattern_option l = e_reduct_option (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
-let reduction_clause redexp cl =
-  let nbcl = List.length cl in
-  List.map (function
-    | OnHyp (id,occs,where) ->
-	(Some (id,where), bind_red_expr_occurrences occs nbcl redexp)
-    | OnConcl occs ->
-	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
-
 let reduce redexp cl =
   let trace env sigma =
     let open Printer in
@@ -858,12 +883,24 @@ let reduce redexp cl =
   in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
-  let cl' = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
-  let redexps = reduction_clause redexp cl' in
+  let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
+  let nbcl = (if cl.concl_occs = NoOccurrences then 0 else 1) + List.length hyps in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
-  Tacticals.New.tclMAP (fun (where,redexp) ->
-    e_reduct_option ~check
-      (Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp) where) redexps
+  begin match cl.concl_occs with
+  | NoOccurrences -> Proofview.tclUNIT ()
+  | occs ->
+    let redexp = bind_red_expr_occurrences occs nbcl redexp in
+    let redfun = Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp in
+    e_change_in_concl ~check (revert_cast redfun)
+  end
+  <*>
+  let f (id, occs, where) =
+    let redexp = bind_red_expr_occurrences occs nbcl redexp in
+    let (redfun, _) = Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp in
+    let redfun _ env sigma c = redfun env sigma c in
+    (redfun, id, where)
+  in
+  e_change_in_hyps ~check f hyps
   end
   end
 
