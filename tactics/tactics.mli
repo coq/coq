@@ -36,7 +36,9 @@ val introduction    : Id.t -> unit Proofview.tactic
 val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
 val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
+[@@ocaml.deprecated "use [Tactics.convert_concl]"]
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
+[@@ocaml.deprecated "use [Tactics.convert_hyp]"]
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
 val fix             : Id.t -> int -> unit Proofview.tactic
