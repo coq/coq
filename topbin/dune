@@ -28,6 +28,11 @@
  (libraries coq.toplevel)
  (link_flags -linkall))
 
+(install
+ (section bin)
+ (package coq)
+ (files (coqc_bin.bc as coqc.byte)))
+
 ; Workers
 (executables
  (names coqqueryworker_bin coqtacticworker_bin coqproofworker_bin)
