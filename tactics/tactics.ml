@@ -168,7 +168,7 @@ let convert_hyp ?(check=true) d =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let ty = Proofview.Goal.concl gl in
-    let sign = convert_hyp check (named_context_val env) sigma d in
+    let sign = convert_hyp ~check env sigma d in
     let env = reset_with_named_context sign env in
     Refine.refine ~typecheck:false begin fun sigma ->
       Evarutil.new_evar env sigma ~principal:true ty
@@ -728,7 +728,7 @@ let e_change_in_hyps ?(check=true) f args =
           raise (RefinerError (env, sigma, NoSuchHyp id))
       in
       let (sigma, d) = e_pf_change_decl redfun where hyp env sigma in
-      let sign = Logic.convert_hyp check (named_context_val env) sigma d in
+      let sign = Logic.convert_hyp ~check env sigma d in
       let env = reset_with_named_context sign env in
       (env, sigma)
     in

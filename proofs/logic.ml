@@ -548,10 +548,10 @@ and treat_case sigma goal ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_pp_info.cstr_tags
 
-let convert_hyp check sign sigma d =
+let convert_hyp ~check env sigma d =
   let id = NamedDecl.get_id d in
   let b = NamedDecl.get_value d in
-  let env = Global.env_of_context sign in
+  let sign = Environ.named_context_val env in
   match lookup_named_ctxt id sign with
   | exception Not_found ->
     if check then error_no_such_hypothesis env sigma id
