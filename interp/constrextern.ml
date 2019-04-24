@@ -67,7 +67,10 @@ let print_no_symbol = ref false
 
 (**********************************************************************)
 (* Turning notations and scopes on and off for printing *)
-module IRuleSet = InterpRuleSet
+module IRuleSet = Set.Make(struct
+    type t = interp_rule
+    let compare x y = Pervasives.compare x y
+  end)
 
 let inactive_notations_table =
   Summary.ref ~name:"inactive_notations_table" (IRuleSet.empty)

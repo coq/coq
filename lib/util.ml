@@ -20,12 +20,6 @@ let on_pi1 f (a,b,c) = (f a,b,c)
 let on_pi2 f (a,b,c) = (a,f b,c)
 let on_pi3 f (a,b,c) = (a,b,f c)
 
-(* Comparing pairs *)
-
-let pair_compare cmpx cmpy (x1,y1 as p1) (x2,y2 as p2) =
-  if p1 == p2 then 0 else
-  let c = cmpx x1 x2 in if c == 0 then cmpy y1 y2 else c
-
 (* Projections from triplets *)
 
 let pi1 (a,_,_) = a
