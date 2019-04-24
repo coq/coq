@@ -65,13 +65,6 @@ let get_current_context pf =
     let evd = Proof.in_proof p (fun x -> x) in
     evd, Global.env ()
 
-(* Improved error messages *)
-let run_tactic env tac pr =
-  try Proof.run_tactic env tac pr
-  with
-  | Proofview.NoSuchGoals i ->
-    raise Proof_bullet.(SuggestNoSuchGoals(i,pr))
-
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
       | None -> tac
@@ -80,6 +73,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       | None -> tac
       | Some _ -> Proofview.Trace.record_info_trace tac
     in
+    let nosuchgoal = Proofview.tclZERO (Proof_bullet.SuggestNoSuchGoals (1,pr)) in
     let tac = let open Goal_select in match gi with
       | SelectAlreadyFocused ->
         let open Proofview.Notations in
@@ -93,9 +87,9 @@ let solve ?with_end_tac gi info_lvl tac pr =
           in
           Proofview.tclZERO e
 
-      | SelectNth i -> Proofview.tclFOCUS i i tac
-      | SelectList l -> Proofview.tclFOCUSLIST l tac
-      | SelectId id -> Proofview.tclFOCUSID id tac
+      | SelectNth i -> Proofview.tclFOCUS ~nosuchgoal i i tac
+      | SelectList l -> Proofview.tclFOCUSLIST ~nosuchgoal l tac
+      | SelectId id -> Proofview.tclFOCUSID ~nosuchgoal id tac
       | SelectAll -> tac
     in
     let tac =
@@ -104,7 +98,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       else tac
     in
     let env = Global.env () in
-    let (p,(status,info)) = run_tactic env tac pr in
+    let (p,(status,info)) = Proof.run_tactic env tac pr in
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let () =

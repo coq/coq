@@ -352,11 +352,12 @@ let _ = CErrors.register_handler begin function
   | _ -> raise CErrors.Unhandled
 end
 
-(** [tclFOCUS_gen nosuchgoal i j t] applies [t] in a context where
+(** [tclFOCUS ?nosuchgoal i j t] applies [t] in a context where
     only the goals numbered [i] to [j] are focused (the rest of the goals
     is restored at the end of the tactic). If the range [i]-[j] is not
     valid, then it [tclFOCUS_gen nosuchgoal i j t] is [nosuchgoal]. *)
-let tclFOCUS_gen nosuchgoal i j t =
+let tclFOCUS ?nosuchgoal i j t =
+  let nosuchgoal = Option.default (tclZERO (NoSuchGoals (j+1-i))) nosuchgoal in
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -367,10 +368,9 @@ let tclFOCUS_gen nosuchgoal i j t =
     return result
   with CList.IndexOutOfRange -> nosuchgoal
 
-let tclFOCUS i j t = tclFOCUS_gen (tclZERO (NoSuchGoals (j+1-i))) i j t
-let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
+let tclTRYFOCUS i j t = tclFOCUS ~nosuchgoal:(tclUNIT ()) i j t
 
-let tclFOCUSLIST l t =
+let tclFOCUSLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
   let open Proof in
   Comb.get >>= fun comb ->
     let n = CList.length comb in
@@ -384,7 +384,7 @@ let tclFOCUSLIST l t =
     in
     let l = CList.map_filter sanitize l in
     match l with
-      | [] -> tclZERO (NoSuchGoals 0)
+      | [] -> nosuchgoal
       | (mi, _) :: _ ->
           (* Get the left-most goal to focus. This goal won't move, and we
              will then place all the other goals to focus to the right. *)
@@ -401,7 +401,7 @@ let tclFOCUSLIST l t =
 
 
 (** Like {!tclFOCUS} but selects a single goal by name. *)
-let tclFOCUSID id t =
+let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -421,7 +421,7 @@ let tclFOCUSID id t =
         t >>= fun result ->
       Comb.set initial.comb  >>
         return result
-  with Not_found -> tclZERO (NoSuchGoals 1)
+  with Not_found -> nosuchgoal
 
 (** {7 Dispatching on goals} *)
 

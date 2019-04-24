@@ -94,13 +94,6 @@ let with_current_proof f (ps, psl) =
   let ps = { ps with proof = newpr } in
   (ps, psl), ret
 
-(* Improved error messages *)
-let with_current_proof f ((ps,_) as pf) =
-  try with_current_proof f pf
-  with
-  | Proofview.NoSuchGoals i ->
-    raise Proof_bullet.(SuggestNoSuchGoals(i,ps.proof))
-
 let simple_with_current_proof f pf =
   let p, () = with_current_proof (fun t p -> f t p , ()) pf in p
 
