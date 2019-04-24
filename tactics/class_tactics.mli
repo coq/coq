@@ -27,9 +27,18 @@ type search_strategy = Dfs | Bfs
 
 val set_typeclasses_strategy : search_strategy -> unit
 
-val typeclasses_eauto : ?only_classes:bool -> ?st:TransparentState.t -> ?strategy:search_strategy ->
-                        depth:(Int.t option) ->
-                        Hints.hint_db_name list -> unit Proofview.tactic
+val typeclasses_eauto :
+  ?only_classes:bool
+  (** Should non-class goals be shelved and resolved at the end *)
+  -> ?st:TransparentState.t
+  (** The transparent_state used when working with local hypotheses  *)
+  -> ?strategy:search_strategy
+  (** Is a traversing-strategy specified? *)
+  -> depth:(Int.t option)
+  (** Bounded or unbounded search *)
+  -> Hints.hint_db_name list
+  (** The list of hint databases to use *)
+  -> unit Proofview.tactic
 
 val head_of_constr : Id.t -> constr -> unit Proofview.tactic
 
