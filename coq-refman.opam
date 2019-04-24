@@ -17,7 +17,7 @@ license: "Open Publication License"
 
 depends: [
   "dune"      { build }
-  "coq"       { build }
+  "coq"       { build & = version }
 ]
 
 build-env: [
