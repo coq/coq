@@ -21,7 +21,8 @@ reference manual. Here are the most important user-visible changes:
 
   - A notion of primitive object was added to the calculus. Its first
     instance is primitive cyclic unsigned integers, axiomatized in
-    module :g:`UInt63`. See Section :ref:`primitive-integers`
+    module :g:`UInt63`. See Section :ref:`primitive-integers`.
+    The `Coq.Numbers.Cyclic.Int31` library is deprecated
     (`#6914 <https://github.com/coq/coq/pull/6914>`_, by Maxime Dénès,
     Benjamin Grégoire and Vincent Laporte).
 
@@ -336,6 +337,7 @@ Other changes in 8.10+beta1
   - Tactic names are no longer allowed to clash, even if they are not defined in
     the same section. For example, the following is no longer accepted:
     :g:`Ltac foo := idtac. Section S. Ltac foo := fail. End S.`
+    (`#8555 <https://github.com/coq/coq/pull/8555>`_, by Maxime Dénès).
 
   - Names of existential variables occurring in Ltac functions
     (e.g. :g:`?[n]` or :g:`?n` in terms - not in patterns) are now interpreted
@@ -350,18 +352,23 @@ Other changes in 8.10+beta1
 
   - Hint declaration and removal should now specify a database (e.g. `Hint Resolve
     foo : database`). When the database name is omitted, the hint is added to the
-    `core` database (as previously), but a deprecation warning is emitted.
+    `core` database (as previously), but a deprecation warning is emitted
+    (`#8987 <https://github.com/coq/coq/pull/8987>`_, by Maxime Dénès).
 
   - There are now tactics in `PreOmega.v` called
     `Z.div_mod_to_equations`, `Z.quot_rem_to_equations`, and
     `Z.to_euclidean_division_equations` (which combines the `div_mod`
-    and `quot_rem` variants) which allow `lia`, `nia`, `romega`, etc to
+    and `quot_rem` variants) which allow :tacn:`lia`, :tacn:`nia`, etc to
     support `Z.div` and `Z.modulo` (`Z.quot` and `Z.rem`, respectively),
     by posing the specifying equation for `Z.div` and `Z.modulo` before
-    replacing them with atoms.
+    replacing them with atoms
+    (`#8062 <https://github.com/coq/coq/pull/8062>`_, by Jason Gross).
 
   - The syntax of the :tacn:`autoapply` tactic was fixed to conform with preexisting
-    documentation: it now takes a `with` clause instead of a `using` clause.
+    documentation: it now takes a `with` clause instead of a `using` clause
+    (`#9524 <https://github.com/coq/coq/pull/9524>`_,
+    closes `#7632 <https://github.com/coq/coq/issues/7632>`_,
+    by Théo Zimmermann).
 
   - SSReflect clear discipline made consistent across the entire proof language.
     Whenever a clear switch `{x..}` comes immediately before an existing proof
@@ -380,90 +387,127 @@ Other changes in 8.10+beta1
 - Vernacular commands:
 
   - Binders for an :cmd:`Instance` now act more like binders for a :cmd:`Theorem`.
-    Names may not be repeated, and may not overlap with section variable names.
+    Names may not be repeated, and may not overlap with section variable names
+    (`#8820 <https://github.com/coq/coq/pull/8820>`_,
+    closes `#8791 <https://github.com/coq/coq/issues/8791>`_,
+    by Jasper Hugunin).
 
-  - Removed the deprecated `Implicit Tactic` family of commands.
+  - Removed the deprecated `Implicit Tactic` family of commands
+    (`#8779 <https://github.com/coq/coq/pull/8779>`_, by Pierre-Marie Pédrot).
 
   - The `Automatic Introduction` option has been removed and is now the
-    default.
+    default
+    (`#9001 <https://github.com/coq/coq/pull/9001>`_,
+    by Emilio Jesús Gallego Arias).
 
-  - `Arguments` now accepts names for arguments provided with `extra_scopes`.
+  - `Arguments` now accepts names for arguments provided with `extra_scopes`
+    (`#9117 <https://github.com/coq/coq/pull/9117>`_, by Maxime Dénès).
 
   - The naming scheme for anonymous binders in a `Theorem` has changed to
-    avoid conflicts with explicitly named binders.
+    avoid conflicts with explicitly named binders
+    (`#9160 <https://github.com/coq/coq/pull/9160>`_,
+    closes `#8819 <https://github.com/coq/coq/issues/8819>`_,
+    by Jasper Hugunin).
 
   - Computation of implicit arguments now properly handles local definitions in the
-    binders for an `Instance`, and can be mixed with implicit binders `{x : T}`.
+    binders for an `Instance`, and can be mixed with implicit binders `{x : T}`
+    (`#9307 <https://github.com/coq/coq/pull/9307>`_,
+    closes `#9300 <https://github.com/coq/coq/issues/9300>`_,
+    by Jasper Hugunin).
 
   - :cmd:`Declare Instance` now requires an instance name.
 
-  - The flag :flag:`Refine Instance Mode` has been turned off by default, meaning that
-    :cmd:`Instance` no longer opens a proof when a body is provided.
+    The flag :flag:`Refine Instance Mode` has been turned off by default,
+    meaning that :cmd:`Instance` no longer opens a proof when a body is
+    provided. The flag has been deprecated and will be removed in the next
+    version.
+
+    (`#9270 <https://github.com/coq/coq/pull/9270>`_,
+    and `#9825 <https://github.com/coq/coq/pull/9825>`_,
+    by Maxime Dénès)
 
   - Command :cmd:`Instance`, when no body is provided, now always opens
     a proof. This is a breaking change, as instance of :n:`Instance
     @ident__1 : @ident__2.` where :n:`@ident__2` is a trivial class will
     have to be changed into :n:`Instance @ident__1 : @ident__2 := {}.`
-    or :n:`Instance @ident__1 : @ident__2. Proof. Qed.`.
+    or :n:`Instance @ident__1 : @ident__2. Proof. Qed.`
+    (`#9274 <https://github.com/coq/coq/pull/9274>`_, by Maxime Dénès).
 
   - The flag :flag:`Program Mode` now means that the `Program` attribute is enabled
     for all commands that support it. In particular, it does not have any effect
-    on tactics anymore. May cause some incompatibilities.
+    on tactics anymore. May cause some incompatibilities
+    (`#9410 <https://github.com/coq/coq/pull/9410>`_, by Maxime Dénès).
 
   - The algorithm computing implicit arguments now behaves uniformly for primitive
-    projection and application nodes (bug #9508).
+    projection and application nodes
+    (`#9509 <https://github.com/coq/coq/pull/9509>`_,
+    closes `#9508 <https://github.com/coq/coq/issues/9508>`_,
+    by Pierre-Marie Pédrot).
 
   - :cmd:`Hypotheses` and :cmd:`Variables` can now take implicit
-    binders inside sections.
+    binders inside sections
+    (`#9364 <https://github.com/coq/coq/pull/9364>`_,
+    closes `#9363 <https://github.com/coq/coq/issues/9363>`_,
+    by Jasper Hugunin).
 
-  - Removed deprecated option `Automatic Coercions Import`.
+  - Removed deprecated option `Automatic Coercions Import`
+    (`#8094 <https://github.com/coq/coq/pull/8094>`_, by Maxime Dénès).
 
-  - The ``Show Script`` command has been deprecated.
+  - The ``Show Script`` command has been deprecated
+    (`#9829 <https://github.com/coq/coq/pull/9829>`_, by Vincent Laporte).
 
-  - The flag :flag:`Refine Instance Mode` has been deprecated and will
-    be removed in the next version.
-
-  - :cmd:`Coercion` does not warn ambiguous paths which are obviously convertible with
-    existing ones.
+  - :cmd:`Coercion` does not warn ambiguous paths which are obviously
+    convertible with existing ones
+    (`#9743 <https://github.com/coq/coq/pull/9743>`_,
+    closes `#3219 <https://github.com/coq/coq/issues/3219>`_,
+    by Kazuhiko Sakaguchi).
 
   - A new flag :flag:`Fast Name Printing` has been introduced. It changes the
     algorithm used for allocating bound variable names for a faster but less
-    clever one.
+    clever one
+    (`#9078 <https://github.com/coq/coq/pull/9078>`_, by Pierre-Marie Pédrot).
 
   - Option ``Typeclasses Axioms Are Instances`` (compatibility option
     introduced in the previous version) is deprecated. Use :cmd:`Declare
-    Instance` for axioms which should be instances.
+    Instance` for axioms which should be instances
+    (`#8920 <https://github.com/coq/coq/pull/8920>`_, by Gaëtan Gilbert).
 
   - Removed option `Printing Primitive Projection Compatibility`
+    (`#9306 <https://github.com/coq/coq/pull/9306>`_, by Gaëtan Gilbert).
 
 - Standard Library:
 
+  - Added `Bvector.BVeq` that decides whether two `Bvector`\s are equal.
+    Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`
+    (`#8171 <https://github.com/coq/coq/pull/8171>`_, by Yishuai Li).
+
+  - Added `ByteVector` type that can convert to and from `string`
+    (`#8365 <https://github.com/coq/coq/pull/8365>`_, by Yishuai Li).
+
   - Added lemmas about monotonicity of `N.double` and `N.succ_double`, and about
     the upper bound of number represented by a vector.
-    Allowed implicit vector length argument in `Ndigits.Bv2N`.
-
-  - Added `Bvector.BVeq` that decides whether two `Bvector`\s are equal.
-
-  - Added notations for `BVxor`, `BVand`, `BVor`, `BVeq` and `BVneg`.
-
-  - Added `ByteVector` type that can convert to and from [string].
+    Allowed implicit vector length argument in `Ndigits.Bv2N`
+    (`#8815 <https://github.com/coq/coq/pull/8815>`_, by Yishuai Li).
 
   - The prelude used to be automatically Exported and is now only
     Imported. This should be relevant only when importing files which
-    don't use `-noinit` into files which do.
+    don't use `-noinit` into files which do
+    (`#9013 <https://github.com/coq/coq/pull/9013>`_, by Gaëtan Gilert).
 
   - Added `Coq.Structures.OrderedTypeEx.String_as_OT` to make strings an
-    ordered type (using lexical order).
+    ordered type, using lexical order
+    (`#7221 <https://github.com/coq/coq/pull/7221>`_, by Li Yao).
 
-  - The `Coq.Numbers.Cyclic.Int31` library is deprecated.
-
-  - Added lemmas about `Z.testbit`, `Z.ones`, and `Z.modulo`.
+  - Added lemmas about `Z.testbit`, `Z.ones`, and `Z.modulo`
+    (`#9425 <https://github.com/coq/coq/pull/9425>`_, by Andres Erbsen).
 
   - Moved the `auto` hints of the `FSet` library into a new
-    `fset` database.
+    `fset` database
+    (`#9725 <https://github.com/coq/coq/pull/9725>`_, by Frédéric Besson).
 
 - Some error messages that show problems with a pair of non-matching
-  values will now highlight the differences.
+  values will now highlight the differences
+  (`#8669 <https://github.com/coq/coq/pull/8669>`_, by Jim Fehrle).
 
 
 Version 8.9
