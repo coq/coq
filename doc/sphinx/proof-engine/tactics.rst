@@ -3875,7 +3875,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
    .. note::
 
       One can use an ``Extern`` hint with no pattern to do pattern matching on
-      hypotheses using ``match goal`` with inside the tactic.
+      hypotheses using ``match goal with`` inside the tactic.
 
 
 Hint databases defined in the Coq standard library
