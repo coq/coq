@@ -203,12 +203,6 @@ Termops
 - Internal printing functions have been placed under the
   `Termops.Internal` namespace.
 
-Notations:
-
-- Notation.availability_of_notation is not anymore needed: if a
-  delimiter is needed, it is provided by Notation.uninterp_notation
-  which fails in case the notation is not available.
-
 ### Unit testing
 
 The test suite now allows writing unit tests against OCaml code in the Coq
