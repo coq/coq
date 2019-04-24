@@ -181,23 +181,6 @@ Check r 2 3.
 
 End I.
 
-(* Fixing a bug reported by G. Gonthier in #9207 *)
-
-Module J.
-
-Module Import Mfoo.
-Module Foo.
-Definition FooCn := 2.
-Module Bar.
-Notation Cn := FooCn.
-End Bar.
-End Foo.
-Export Foo.Bar.
-End Mfoo.
-About Cn.
-
-End J.
-
 Require Import Coq.Numbers.Cyclic.Int63.Int63.
 Module NumeralNotations.
   Module Test17.
