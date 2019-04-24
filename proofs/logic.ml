@@ -78,14 +78,6 @@ let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoS
 let check = ref false
 let with_check = Flags.with_option check
 
-(* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
-   returns [tail::(f head (id,_,_) (rev tail))] *)
-let apply_to_hyp env sigma check sign id f =
-  try apply_to_hyp sign id f
-  with Hyp_not_found ->
-    if check then error_no_such_hypothesis env sigma id
-    else sign
-
 let check_typability env sigma c =
   if !check then let _ = unsafe_type_of env sigma (EConstr.of_constr c) in ()
 
@@ -559,22 +551,22 @@ and treat_case sigma goal ci lbrty lf acc' =
 let convert_hyp check sign sigma d =
   let id = NamedDecl.get_id d in
   let b = NamedDecl.get_value d in
-  let env = Global.env () in
-  let reorder = ref [] in
-  let sign' =
-    apply_to_hyp env sigma check sign id
-      (fun _ d' _ ->
-        let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
-        let env = Global.env_of_context sign in
-        if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
-	  user_err ~hdr:"Logic.convert_hyp"
-            (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
-        if check && not (Option.equal (is_conv env sigma) b c) then
-	  user_err ~hdr:"Logic.convert_hyp"
-            (str "Incorrect change of the body of "++ Id.print id ++ str ".");
-       if check then reorder := check_decl_position env sigma sign d;
-       map_named_decl EConstr.Unsafe.to_constr d) in
-  reorder_val_context env sigma sign' !reorder
+  let env = Global.env_of_context sign in
+  match lookup_named_ctxt id sign with
+  | exception Not_found ->
+    if check then error_no_such_hypothesis env sigma id
+    else sign
+  | d' ->
+    let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
+    if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
+      user_err ~hdr:"Logic.convert_hyp"
+        (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
+    if check && not (Option.equal (is_conv env sigma) b c) then
+      user_err ~hdr:"Logic.convert_hyp"
+        (str "Incorrect change of the body of "++ Id.print id ++ str ".");
+    let sign' = apply_to_hyp sign id (fun _ _ _ -> EConstr.Unsafe.to_named_decl d) in
+    if check then reorder_val_context env sigma sign' (check_decl_position env sigma sign d)
+    else sign'
 
 (************************************************************************)
 (************************************************************************)
