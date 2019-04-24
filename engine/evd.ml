@@ -1383,13 +1383,7 @@ module MiniEConstr = struct
   let unsafe_eq = Refl
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    let evar_value =
-      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
-      else fun ev ->
-        match safe_evar_value sigma ev with
-        | Some _ as v -> v
-        | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
-    in
+    let evar_value ev = safe_evar_value sigma ev in
     UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
   let to_constr_opt sigma c =
