@@ -46,6 +46,8 @@ Unreleased changes
 
 **Standard library**
 
+- Added Coq.Structures.EqualitiesFacts.PairUsualDecidableTypeFull
+
 
 **Infrastructure and dependencies**
 
