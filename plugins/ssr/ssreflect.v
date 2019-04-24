@@ -28,6 +28,11 @@ Declare ML Module "ssreflect_plugin".
         argumentType c == the T such that c : forall x : T, P x.
           returnType c == the R such that c : T -> R.
      {type of c for s} == P s where c : forall x : T, P x.
+           nonPropType == an interface for non-Prop Types: a nonPropType coerces
+                          to a Type, and only types that do _not_ have sort
+                          Prop are canonical nonPropType instances. This is
+                          useful for applied views (see mid-file comment).
+             notProp T == the nonPropType instance for type T.
            phantom T v == singleton type with inhabitant Phantom T v.
                phant T == singleton type with inhabitant Phant v.
                  =^~ r == the converse of rewriting rule r (e.g., in a
@@ -57,8 +62,6 @@ Declare ML Module "ssreflect_plugin".
  More information about these definitions and their use can be found in the
  ssreflect manual, and in specific comments below.                           **)
 
-
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -77,13 +80,47 @@ Reserved Notation "(* 69 *)" (at level 69).
 (**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
 Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)" (at level 8).
 
-Reserved Notation "<hidden n >" (at level 200).
+Reserved Notation "<hidden n >" (at level 0, n at level 0,
+  format "<hidden  n >").
 Reserved Notation "T (* n *)" (at level 200, format "T  (* n *)").
 
 End SsrSyntax.
 
 Export SsrMatchingSyntax.
 Export SsrSyntax.
+
+(** Save primitive notation that will be overloaded. **)
+Local Notation CoqGenericIf c vT vF := (if c then vT else vF) (only parsing).
+Local Notation CoqGenericDependentIf c x R vT vF :=
+  (if c as x return R then vT else vF) (only parsing).
+Local Notation CoqCast x T := (x : T) (only parsing).
+
+(** Reserve notation that introduced in this file. **)
+Reserved Notation "'if' c 'then' vT 'else' vF" (at level 200,
+  c, vT, vF at level 200, only parsing).
+Reserved Notation "'if' c 'return' R 'then' vT 'else' vF" (at level 200,
+  c, R, vT, vF at level 200, only parsing).
+Reserved Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" (at level 200,
+  c, R, vT, vF at level 200, x ident, only parsing).
+
+Reserved Notation "x : T" (at level 100, right associativity,
+  format "'[hv' x '/ '  :  T ']'").
+Reserved Notation "T : 'Type'" (at level 100, format "T  :  'Type'").
+Reserved Notation "P : 'Prop'" (at level 100, format "P  :  'Prop'").
+
+Reserved Notation "[ 'the' sT 'of' v 'by' f ]" (at level 0,
+  format "[ 'the'  sT  'of'  v  'by'  f ]").
+Reserved Notation "[ 'the' sT 'of' v ]" (at level 0,
+  format "[ 'the'  sT  'of'  v ]").
+Reserved Notation "{ 'type' 'of' c 'for' s }" (at level 0,
+  format "{ 'type'  'of'  c  'for'  s }").
+
+Reserved Notation "=^~ r" (at level 100, format "=^~  r").
+
+Reserved Notation "[ 'unlockable' 'of' C ]" (at level 0,
+  format "[ 'unlockable'  'of'  C ]").
+Reserved Notation "[ 'unlockable' 'fun' C ]" (at level 0,
+  format "[ 'unlockable'  'fun'  C ]").
 
 (**
  To define notations for tactic in intro patterns.
@@ -100,32 +137,28 @@ Delimit Scope ssripat_scope with ssripat.
 Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.
 
-Notation "'if' c 'then' v1 'else' v2" :=
-  (if c then v1 else v2)
-  (at level 200, c, v1, v2 at level 200, only parsing) : general_if_scope.
+Notation "'if' c 'then' vT 'else' vF" :=
+  (CoqGenericIf c vT vF) (only parsing) : general_if_scope.
 
-Notation "'if' c 'return' t 'then' v1 'else' v2" :=
-  (if c return t then v1 else v2)
-  (at level 200, c, t, v1, v2 at level 200, only parsing) : general_if_scope.
+Notation "'if' c 'return' R 'then' vT 'else' vF" :=
+  (CoqGenericDependentIf c c R vT vF) (only parsing) : general_if_scope.
 
-Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
-  (if c as x return t then v1 else v2)
-  (at level 200, c, t, v1, v2 at level 200, x ident, only parsing)
-     : general_if_scope.
+Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" :=
+  (CoqGenericDependentIf c x R vT vF) (only parsing) : general_if_scope.
 
 (**  Force boolean interpretation of simple if expressions.  **)
 
 Declare Scope boolean_if_scope.
 Delimit Scope boolean_if_scope with BOOL_IF.
 
-Notation "'if' c 'return' t 'then' v1 'else' v2" :=
-  (if c%bool is true in bool return t then v1 else v2) : boolean_if_scope.
+Notation "'if' c 'return' R 'then' vT 'else' vF" :=
+  (if c is true as c in bool return R then vT else vF) : boolean_if_scope.
 
-Notation "'if' c 'then' v1 'else' v2" :=
-  (if c%bool is true in bool return _ then v1 else v2) : boolean_if_scope.
+Notation "'if' c 'then' vT 'else' vF" :=
+  (if c%bool is true as _ in bool return _ then vT else vF) : boolean_if_scope.
 
-Notation "'if' c 'as' x 'return' t 'then' v1 'else' v2" :=
-  (if c%bool is true as x in bool return t then v1 else v2) : boolean_if_scope.
+Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" :=
+  (if c%bool is true as x in bool return R then vT else vF) : boolean_if_scope.
 
 Open Scope boolean_if_scope.
 
@@ -149,19 +182,15 @@ Open Scope form_scope.
  precedence of the notation, which binds less tightly than application),
  and put printing boxes that print the type of a long definition on a
  separate line rather than force-fit it at the right margin.                 **)
-Notation "x : T" := (x : T)
-  (at level 100, right associativity,
-   format "'[hv' x '/ '  :  T ']'") : core_scope.
+Notation "x : T" := (CoqCast x T) : core_scope.
 
 (**
  Allow the casual use of notations like nat * nat for explicit Type
  declarations. Note that (nat * nat : Type) is NOT equivalent to
  (nat * nat)%%type, whose inferred type is legacy type "Set".                **)
-Notation "T : 'Type'" := (T%type : Type)
-  (at level 100, only parsing) : core_scope.
+Notation "T : 'Type'" := (CoqCast T%type Type) (only parsing) : core_scope.
 (**  Allow similarly Prop annotation for, e.g., rewrite multirules. **)
-Notation "P : 'Prop'" := (P%type : Prop)
-  (at level 100, only parsing) : core_scope.
+Notation "P : 'Prop'" := (CoqCast P%type Prop) (only parsing) : core_scope.
 
 (**  Constants for abstract: and #[#: name #]# intro pattern  **)
 Definition abstract_lock := unit.
@@ -170,8 +199,10 @@ Definition abstract_key := tt.
 Definition abstract (statement : Type) (id : nat) (lock : abstract_lock) :=
   let: tt := lock in statement.
 
-Notation "<hidden n >" := (abstract _ n _).
-Notation "T (* n *)" := (abstract T n abstract_key).
+Declare Scope ssr_scope.
+Notation "<hidden n >" := (abstract _ n _) : ssr_scope.
+Notation "T (* n *)" := (abstract T n abstract_key) : ssr_scope.
+Open Scope ssr_scope.
 
 Register abstract_lock as plugins.ssreflect.abstract_lock.
 Register abstract_key as plugins.ssreflect.abstract_key.
@@ -222,28 +253,27 @@ Local Arguments get_by _%type_scope _%type_scope _ _ _ _.
 
 Notation "[ 'the' sT 'of' v 'by' f ]" :=
   (@get_by _ sT f _ _ ((fun v' (s : sT) => Put v' (f s) s) v _))
-  (at level 0, only parsing) : form_scope.
+  (only parsing) : form_scope.
 
-Notation "[ 'the' sT 'of' v ]" := (get ((fun s : sT => Put v (*coerce*)s s) _))
-  (at level 0, only parsing) : form_scope.
+Notation "[ 'the' sT 'of' v ]" := (get ((fun s : sT => Put v (*coerce*) s s) _))
+  (only parsing) : form_scope.
 
 (**
- The following are "format only" versions of the above notations. Since Coq
- doesn't provide this facility, we fake it by splitting the "the" keyword.
+ The following are "format only" versions of the above notations.
  We need to do this to prevent the formatter from being be thrown off by
  application collapsing, coercion insertion and beta reduction in the right
  hand side of the notations above.                                           **)
 
-Notation "[ 'th' 'e' sT 'of' v 'by' f ]" := (@get_by _ sT f v _ _)
-  (at level 0,  format "[ 'th' 'e'  sT  'of'  v  'by'  f ]") : form_scope.
+Notation "[ 'the' sT 'of' v 'by' f ]" := (@get_by _ sT f v _ _)
+  (only printing) : form_scope.
 
-Notation "[ 'th' 'e' sT 'of' v ]" := (@get _ sT v _ _)
-  (at level 0, format "[ 'th' 'e'  sT  'of'  v ]") : form_scope.
+Notation "[ 'the' sT 'of' v ]" := (@get _ sT v _ _)
+  (only printing) : form_scope.
 
 (**
  We would like to recognize
-Notation " #[# 'th' 'e' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
-  (at level 0, format " #[# 'th' 'e'  sT   'of'  v  :  'Type' #]#") : form_scope.
+Notation " #[# 'the' sT 'of' v : 'Type' #]#" := (@get Type sT v _ _)
+  (at level 0, format " #[# 'the'  sT   'of'  v  :  'Type' #]#") : form_scope.
  **)
 
 (**
@@ -278,8 +308,7 @@ Definition argumentType T P & forall x : T, P x := T.
 Definition dependentReturnType T P & forall x : T, P x := P.
 Definition returnType aT rT & aT -> rT := rT.
 
-Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s)
-  (at level 0, format "{ 'type'  'of'  c  'for'  s }") : type_scope.
+Notation "{ 'type' 'of' c 'for' s }" := (dependentReturnType c s) : type_scope.
 
 (**
  A generic "phantom" type (actually, a unit type with a phantom parameter).
@@ -330,7 +359,7 @@ Notation unkeyed x := (let flex := x in flex).
 
 (**  Ssreflect converse rewrite rule rule idiom.  **)
 Definition ssr_converse R (r : R) := (Logic.I, r).
-Notation "=^~ r" := (ssr_converse r) (at level 100) : form_scope.
+Notation "=^~ r" := (ssr_converse r) : form_scope.
 
 (**
  Term tagging (user-level).
@@ -397,11 +426,11 @@ Ltac ssrdone0 :=
 Structure unlockable T v := Unlockable {unlocked : T; _ : unlocked = v}.
 Lemma unlock T x C : @unlocked T x C = x. Proof. by case: C. Qed.
 
-Notation "[ 'unlockable' 'of' C ]" := (@Unlockable _ _ C (unlock _))
-  (at level 0, format "[ 'unlockable'  'of'  C ]") : form_scope.
+Notation "[ 'unlockable' 'of' C ]" :=
+  (@Unlockable _ _ C (unlock _)) : form_scope.
 
-Notation "[ 'unlockable' 'fun' C ]" := (@Unlockable _ (fun _ => _) C (unlock _))
-  (at level 0, format "[ 'unlockable'  'fun'  C ]") : form_scope.
+Notation "[ 'unlockable' 'fun' C ]" :=
+  (@Unlockable _ (fun _ => _) C (unlock _)) : form_scope.
 
 (**  Generic keyed constant locking.  **)
 
@@ -418,7 +447,7 @@ Proof. by case: k. Qed.
 Canonical locked_with_unlockable T k x :=
   @Unlockable T x (locked_with k x) (locked_withE k x).
 
-(**  More accurate variant of unlock, and safer alternative to locked_withE.  **)
+(**  More accurate variant of unlock, and safer alternative to locked_withE. **)
 Lemma unlock_with T k x : unlocked (locked_with_unlockable k x) = x :> T.
 Proof. exact: unlock. Qed.
 
@@ -597,3 +626,102 @@ Ltac over :=
      | apply: Under_iff.under_iff_done
      | rewrite over
      ].
+
+(** An interface for non-Prop types; used to avoid improper instantiation
+    of polymorphic lemmas with on-demand implicits when they are used as views.
+    For example: Some_inj {T} : forall x y : T, Some x = Some y -> x = y.
+    Using move/Some_inj on a goal of the form Some n = Some 0 will fail:
+    SSReflect will interpret the view as @Some_inj ?T _top_assumption_
+    since this is the well-typed application of the view with the minimal
+    number of inserted evars (taking ?T := Some n = Some 0), and then will
+    later complain that it cannot erase _top_assumption_ after having
+    abstracted the viewed assumption. Making x and y maximal implicits
+    would avoid this and force the intended @Some_inj nat x y _top_assumption_
+    interpretation, but is undesireable as it makes it harder to use Some_inj
+    with the many SSReflect and MathComp lemmas that have an injectivity
+    premise. Specifying {T : nonPropType} solves this more elegantly, as then
+    (?T : Type) no longer unifies with (Some n = Some 0), which has sort Prop.
+ **)
+
+Module NonPropType.
+
+(** Implementation notes:
+ We rely on three interface Structures:
+  - test_of r, the middle structure, performs the actual check: it has two
+    canonical instances whose 'condition' projection are maybeProj (?P : Prop)
+    and tt, and which set r := true and r := false, respectively. Unifying
+    condition (?t : test_of ?r) with maybeProj T will thus set ?r to true if
+    T is in Prop as the test_Prop T instance will apply, and otherwise simplify
+    maybeProp T to tt and use the test_negative instance and set ?r to false.
+  - call_of c r sets up a call to test_of on condition c with expected result r.
+    It has a default instance for its 'callee' projection to Type, which
+    sets c := maybeProj T and r := false whe unifying with a type T.
+  - type is a telescope on call_of c r, which checks that unifying test_of ?r1
+    with c indeed sets ?r1 := r; the type structure bundles the 'test' instance
+    and its 'result' value along with its call_of c r projection. The default
+    instance essentially provides eta-expansion for 'type'. This is only
+    essential for the first 'result' projection to bool; using the instance
+    for other projection merely avoids spurrious delta expansions that would
+    spoil the notProp T notation.
+ In detail, unifying T =~= ?S with ?S : nonPropType, i.e.,
+  (1)  T =~= @callee (@condition (result ?S) (test ?S)) (result ?S) (frame ?S)
+ first uses the default call instance with ?T := T to reduce (1) to
+  (2a) @condition (result ?S) (test ?S) =~= maybeProp T
+  (3)                         result ?S =~= false
+  (4)                          frame ?S =~= call T
+ along with some trivial universe-related checks which are irrelevant here.
+   Then the unification tries to use the test_Prop instance to reduce (2a) to
+  (6a)                        result ?S =~= true
+  (7a)                               ?P =~= T with ?P : Prop
+  (8a)                          test ?S =~= test_Prop ?P
+ Now the default 'check' instance with ?result := true resolves (6a) as
+  (9a)                               ?S := @check true ?test ?frame
+ Then (7a) can be solved precisely if T has sort at most (hence exactly) Prop,
+ and then (8a) is solved by the check instance, yielding ?test := test_Prop T,
+ and completing the solution of (2a), and _committing_ to it. But now (3) is
+ inconsistent with (9a), and this makes the entire problem (1) fails.
+   If on the othe hand T does not have sort Prop then (7a) fails and the
+ unification resorts to delta expanding (2a), which gives
+  (2b) @condition (result ?S) (test ?S) =~= tt
+ which is then reduced, using the test_negative instance, to
+  (6b)                        result ?S =~= false
+  (8b)                          test ?S =~= test_negative
+ Both are solved using the check default instance, as in the (2a) branch, giving
+  (9b)                               ?S := @check false test_negative ?frame
+ Then (3) and (4) are similarly soved using check, giving the final assignment
+  (9)                                ?S := notProp T
+ Observe that we _must_ perform the actual test unification on the arguments
+ of the initial canonical instance, and not on the instance itself as we do
+ in mathcomp/matrix and mathcomp/vector, because we want the unification to
+ fail when T has sort Prop. If both the test_of _and_ the result check
+ unifications were done as part of the structure telescope then the latter
+ would be a sub-problem of the former, and thus failing the check would merely
+ make the test_of unification backtrack and delta-expand and we would not get
+ failure.
+ **)
+
+Structure call_of (condition : unit) (result : bool) := Call {callee : Type}.
+Definition maybeProp (T : Type) := tt.
+Definition call T := Call (maybeProp T) false T.
+
+Structure test_of (result : bool) := Test {condition :> unit}.
+Definition test_Prop (P : Prop) := Test true (maybeProp P).
+Definition test_negative := Test false tt.
+
+Structure type :=
+  Check {result : bool; test : test_of result; frame : call_of test result}.
+Definition check result test frame := @Check result test frame.
+
+Module Exports.
+Canonical call.
+Canonical test_Prop.
+Canonical test_negative.
+Canonical check.
+Notation nonPropType := type.
+Coercion callee : call_of >-> Sortclass.
+Coercion frame : type >-> call_of.
+Notation notProp T := (@check false test_negative (call T)).
+End Exports.
+
+End NonPropType.
+Export NonPropType.Exports.
