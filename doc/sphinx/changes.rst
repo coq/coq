@@ -24,7 +24,8 @@ reference manual. Here are the most important user-visible changes:
     module :g:`UInt63`. See Section :ref:`primitive-integers`.
     The `Coq.Numbers.Cyclic.Int31` library is deprecated
     (`#6914 <https://github.com/coq/coq/pull/6914>`_, by Maxime Dénès,
-    Benjamin Grégoire and Vincent Laporte).
+    Benjamin Grégoire and Vincent Laporte,
+    with help and reviews from many others).
 
   - The :math:`\SProp` sort of definitionally proof-irrelevant propositions was
     introduced. :math:`\SProp` allows to mark proof
@@ -164,6 +165,8 @@ contributions from Gaëtan Gilbert, Pierre-Marie Pédrot, and Maxime Dénès.
 Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
 Soegtrop, Théo Zimmermann worked on maintaining and improving the
 continuous integration system and package building infrastructure.
+Coq is now continuously tested against OCaml trunk, in addition to the
+oldest supported and latest OCaml releases.
 
 The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi (who migrated it to opam 2)
