@@ -176,7 +176,7 @@ COQCHKEXTRAFLAGS?=
 COQDOCEXTRAFLAGS?=
 
 # these flags do NOT contain the libraries, to make them easier to overwrite
-COQFLAGS?=-q $(OPT) $(OTHERFLAGS) $(COQEXTRAFLAGS)
+COQFLAGS?=-q $(OTHERFLAGS) $(COQEXTRAFLAGS)
 COQCHKFLAGS?=-silent -o $(COQCHKEXTRAFLAGS)
 COQDOCFLAGS?=-interpolate -utf8 $(COQDOCEXTRAFLAGS)
 
