@@ -85,7 +85,7 @@ let union ctx ctx' =
     let declarenew g =
       LSet.fold (fun u g -> UGraph.add_universe u false g) newus g
     in
-    let names_rev = LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
+    let names_rev = LMap.lunion (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
         uctx_local = local;
         uctx_seff_univs = seff;

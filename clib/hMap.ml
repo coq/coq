@@ -290,6 +290,14 @@ struct
     in
     Int.Map.merge fm s1 s2
 
+  let union f s1 s2 =
+    let fm h m1 m2 =
+      let m = Map.union f m1 m2 in
+      if Map.is_empty m then None
+      else Some m
+    in
+    Int.Map.union fm s1 s2
+
   let compare f s1 s2 =
     let fc m1 m2 = Map.compare f m1 m2 in
     Int.Map.compare fc s1 s2
