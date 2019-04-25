@@ -223,8 +223,8 @@ module LMap :
 sig
   include CMap.ExtS with type key = Level.t and module Set := LSet
 
-  val union : 'a t -> 'a t -> 'a t
-  (** [union x y] favors the bindings in the first map. *)
+  val lunion : 'a t -> 'a t -> 'a t
+  (** [lunion x y] favors the bindings in the first map. *)
 
   val diff : 'a t -> 'a t -> 'a t
   (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
