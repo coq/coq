@@ -52,7 +52,7 @@ jobs:
   - script: |
       set -e
       brew update
-      brew install gnu-time opam pkg-config gtksourceview3
+      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme
       pip3 install macpack
     displayName: 'Install system dependencies'
 
