@@ -168,6 +168,12 @@ continuous integration system and package building infrastructure.
 Coq is now continuously tested against OCaml trunk, in addition to the
 oldest supported and latest OCaml releases.
 
+Coq's documentation for the development branch is now deployed
+continously at https://coq.github.io/doc/master/api (documentation of
+the ML API), https://coq.github.io/doc/master/refman (reference
+manual), and https://coq.github.io/doc/master/stdlib (documentation of
+the standard library). Similar links exist for the `v8.10` branch.
+
 The OPAM repository for |Coq| packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi (who migrated it to opam 2)
 with contributions from many users. A list of packages is available at
