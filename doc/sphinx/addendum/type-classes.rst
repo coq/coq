@@ -405,6 +405,8 @@ few other commands related to typeclasses.
      resolution with the local hypotheses use full conversion during
      unification.
 
+   + When considering local hypotheses, we use the union of all the modes
+     declared in the given databases.
 
    .. cmdv:: typeclasses eauto @num
 

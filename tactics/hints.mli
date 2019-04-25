@@ -162,6 +162,9 @@ module Hint_db :
     val cut : t -> hints_path
 
     val unfolds : t -> Id.Set.t * Cset.t
+
+    val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
+    val modes : t -> hint_mode array list GlobRef.Map.t
   end
 
 type hint_db = Hint_db.t

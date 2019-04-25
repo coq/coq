@@ -518,6 +518,8 @@ val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t
+val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
+val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
 
@@ -727,6 +729,15 @@ struct
   let cut db = db.hintdb_cut
 
   let unfolds db = db.hintdb_unfolds
+
+  let add_modes modes db =
+    let f gr e me =
+      Some { e with sentry_mode = me.sentry_mode @ e.sentry_mode }
+    in
+    let mode_entries = GlobRef.Map.map (fun m -> { empty_se with sentry_mode = m }) modes in
+    { db with hintdb_map = GlobRef.Map.union f db.hintdb_map mode_entries }
+
+  let modes db = GlobRef.Map.map (fun se -> se.sentry_mode) db.hintdb_map
 
   let use_dn db = db.use_dn
 
