@@ -520,7 +520,7 @@ Summary of changes
 of features and deprecations or removals of deprecated features,
 cleanups of the internals of the system and API along with a few new
 features. This release includes many user-visible changes, including
-deprecations that are documented in ``CHANGES.md`` and new features that
+deprecations that are documented in the next subsection and new features that
 are documented in the reference manual. Here are the most important
 changes:
 
@@ -534,7 +534,7 @@ changes:
     manual).
 
   - Deprecated notations of the standard library will be removed in the
-    next version of |Coq|, see the ``CHANGES.md`` file for a script to
+    next version of |Coq|, see the next subsection for a script to
     ease porting, by Jason Gross and Jean-Christophe Léchenet.
 
   - Added the :cmd:`Numeral Notation` command for registering decimal
@@ -587,7 +587,7 @@ changes:
 - Library: additions and changes in the ``VectorDef``, ``Ascii``, and
   ``String`` libraries. Syntax notations are now available only when using
   ``Import`` of libraries and not merely ``Require``, by various
-  contributors (source of incompatibility, see ``CHANGES.md`` for details).
+  contributors (source of incompatibility, see the next subsection for details).
 
 - Toplevels: ``coqtop`` and ``coqide`` can now display diffs between proof
   steps in color, using the :opt:`Diffs` option, by Jim Fehrle.
@@ -604,7 +604,7 @@ changes:
 
 Version 8.9 also comes with a bunch of smaller-scale changes and
 improvements regarding the different components of the system.  Most
-important ones are documented in the ``CHANGES.md`` file.
+important ones are documented in the next subsection file.
 
 On the implementation side, the ``dev/doc/changes.md`` file documents
 the numerous changes to the implementation and improvements of
@@ -932,7 +932,7 @@ version.
 
 Version 8.8 also comes with a bunch of smaller-scale changes and
 improvements regarding the different components of the system.
-Most important ones are documented in the ``CHANGES.md`` file.
+Most important ones are documented in the next subsection file.
 
 The efficiency of the whole system has seen improvements thanks to
 contributions from Gaëtan Gilbert, Pierre-Marie Pédrot, Maxime Dénès and
@@ -1292,7 +1292,7 @@ of integers and real constants are now represented using ``IZR`` (work by
 Guillaume Melquiond).
 
 Standard library additions and improvements by Jason Gross, Pierre Letouzey and
-others, documented in the ``CHANGES.md`` file.
+others, documented in the next subsection file.
 
 The mathematical proof language/declarative mode plugin was removed from the
 archive.
