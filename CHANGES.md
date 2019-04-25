@@ -18,6 +18,7 @@ Unreleased changes
 
 **Tactic language**
 
+- Modes are now taken into account by `typeclasses eauto` for local hypotheses.
 
 **SSReflect**
 
