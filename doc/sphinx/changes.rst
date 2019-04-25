@@ -675,15 +675,11 @@ Notations
 - Deprecated compatibility notations will actually be removed in the
   next version of Coq.  Uses of these notations are generally easy to
   fix thanks to the hint contained in the deprecation warnings. For
-  projects that require more than a handful of such fixes, there is [a
-  script](https://gist.github.com/JasonGross/9770653967de3679d131c59d42de6d17#file-replace-notations-py)
-  that will do it automatically, using the output of coqc. The script
+  projects that require more than a handful of such fixes, there is `a
+  script
+  <https://gist.github.com/JasonGross/9770653967de3679d131c59d42de6d17#file-replace-notations-py>`_
+  that will do it automatically, using the output of ``coqc``. The script
   contains documentation on its usage in a comment at the top.
-
-- When several notations are available for the same expression,
-  priority is given to latest notations defined in the scopes being
-  opened, in order, rather than to the latest notations defined
-  independently of whether they are in an opened scope or not.
 
 Tactics
 
@@ -768,7 +764,7 @@ Standard Library
   `Require Import Coq.Compat.Coq88` will make these notations
   available.  Users wishing to port their developments automatically
   may download `fix.py` from
-  <https://gist.github.com/JasonGross/5d4558edf8f5c2c548a3d96c17820169>
+  https://gist.github.com/JasonGross/5d4558edf8f5c2c548a3d96c17820169
   and run a command like `while true; do make -Okj 2>&1 |
   /path/to/fix.py; done` and get a cup of coffee.  (This command must
   be manually interrupted once the build finishes all the way though.
@@ -792,8 +788,8 @@ Tools
   If you would like to maintain this tool externally, please contact us.
 
 - Removed the Emacs modes distributed with Coq. You are advised to
-  use [Proof-General](https://proofgeneral.github.io/) (and optionally
-  [Company-Coq](https://github.com/cpitclaudel/company-coq)) instead.
+  use `Proof-General <https://proofgeneral.github.io/>`_ (and optionally
+  `Company-Coq <https://github.com/cpitclaudel/company-coq>`_) instead.
   If your use case is not covered by these alternative Emacs modes,
   please open an issue. We can help set up external maintenance as part
   of Proof-General, or independently as part of coq-community.
