@@ -550,18 +550,6 @@ Ltac2 Notation typeclasses_eauto := typeclasses_eauto.
 Ltac2 f_equal0 () := ltac1:(f_equal).
 Ltac2 Notation f_equal := f_equal0 ().
 
-(** Firstorder *)
-
-Ltac2 firstorder0 tac refs ids :=
-  let refs := default_list refs in
-  let ids := default_list ids in
-  Std.firstorder tac refs ids.
-
-Ltac2 Notation "firstorder"
-  tac(opt(thunk(tactic)))
-  refs(opt(seq("using", list1(reference, ","))))
-  ids(opt(seq("with", list1(ident)))) := firstorder0 tac refs ids.
-
 (** now *)
 
 Ltac2 now0 t := t (); ltac1:(easy).

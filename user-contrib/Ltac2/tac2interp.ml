@@ -164,7 +164,7 @@ and interp_case ist e cse0 cse1 =
     let ist = CArray.fold_left2 push_name ist ids args in
     interp ist e
 
-and interp_with ist e cse def = 
+and interp_with ist e cse def =
   let (kn, args) = Tac2ffi.to_open e in
   let br = try Some (KNmap.find kn cse) with Not_found -> None in
   begin match br with

@@ -570,9 +570,3 @@ end
 let () = define_prim3 "tac_typeclasses_eauto" (option strategy) (option int) (option (list ident)) begin fun str n dbs ->
   Tac2tactics.typeclasses_eauto str n dbs
 end
-
-(** Firstorder *)
-
-let () = define_prim3 "tac_firstorder" (option (thunk unit)) (list reference) (list ident) begin fun tac refs ids ->
-  Tac2tactics.firstorder tac refs ids
-end

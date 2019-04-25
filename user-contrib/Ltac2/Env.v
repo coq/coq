@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Ltac2.Init.
-Require Import Std.
+From Ltac2 Require Import Init Std.
 
 Ltac2 @ external get : ident list -> Std.reference option := "ltac2" "env_get".
 (** Returns the global reference corresponding to the absolute name given as

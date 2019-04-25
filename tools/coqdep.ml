@@ -529,6 +529,11 @@ let coqdep () =
     add_rec_dir_import add_known "plugins" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
     add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
+    let user = "user-contrib" in
+    if Sys.file_exists user then begin
+      add_rec_dir_no_import add_known user [];
+      add_rec_dir_no_import (fun _ -> add_caml_known) user [];
+    end;
   end else begin
     (* option_boot is actually always false in this branch *)
     Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));

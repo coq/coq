@@ -158,11 +158,14 @@ endif
 VDFILE := .vfiles
 MLDFILE := .mlfiles
 PLUGMLDFILE := plugins/.mlfiles
+USERCONTRIBMLDFILE := user-contrib/.mlfiles
 MLLIBDFILE := .mllibfiles
 PLUGMLLIBDFILE := plugins/.mllibfiles
+USERCONTRIBMLLIBDFILE := user-contrib/.mllibfiles
 
 DEPENDENCIES := \
- $(addsuffix .d, $(MLDFILE) $(MLLIBDFILE) $(PLUGMLDFILE) $(PLUGMLLIBDFILE) $(CFILES) $(VDFILE))
+ $(addsuffix .d, $(MLDFILE) $(MLLIBDFILE) $(PLUGMLDFILE) $(PLUGMLLIBDFILE) \
+ $(USERCONTRIBMLDFILE) $(USERCONTRIBMLLIBDFILE) $(CFILES) $(VDFILE))
 
 -include $(DEPENDENCIES)
 
@@ -209,12 +212,14 @@ BOOTCOQC=$(TIMER) $(COQC) -coqlib . -q $(COQOPTS)
 LOCALINCLUDES=$(addprefix -I ,$(SRCDIRS))
 MLINCLUDES=$(LOCALINCLUDES)
 
+USERCONTRIBINCLUDES=$(addprefix -I user-contrib/,$(USERCONTRIBDIRS))
+
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) $(FLAMBDA_FLAGS)
-DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter plugins/%,$@),, -I ide -I ide/protocol)
+DEPFLAGS=$(LOCALINCLUDES) -map gramlib/.pack/gramlib.ml $(if $(filter plugins/% user-contrib/%,$@),, -I ide -I ide/protocol)
 
 # On MacOS, the binaries are signed, except our private ones
 ifeq ($(shell which codesign > /dev/null 2>&1 && echo $(ARCH)),Darwin)
@@ -442,11 +447,11 @@ tools/coqdep_boot.cmx : tools/coqdep_common.cmx
 
 $(COQDEPBOOT): $(call bestobj, $(COQDEPBOOTSRC))
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I tools -package unix)
+	$(HIDE)$(call bestocaml, -I tools -package unix -package str)
 
 $(COQDEPBOOTBYTE): $(COQDEPBOOTSRC)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(call ocamlbyte, -I tools -package unix)
+	$(HIDE)$(call ocamlbyte, -I tools -package unix -package str)
 
 $(OCAMLLIBDEP): $(call bestobj, tools/ocamllibdep.cmo)
 	$(SHOW)'OCAMLBEST -o $@'
@@ -567,7 +572,7 @@ VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m -coqlib .
 
 validate: $(CHICKEN) | $(ALLVO:.$(VO)=.vo)
 	$(SHOW)'COQCHK <theories & plugins>'
-	$(HIDE)$(CHICKEN) $(VALIDOPTS) $(ALLMODS)
+	$(HIDE)$(CHICKEN) $(VALIDOPTS) $(ALLVO)
 
 $(ALLSTDLIB).v:
 	$(SHOW)'MAKE $(notdir $@)'
@@ -743,6 +748,10 @@ plugins/%.cmx: plugins/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
 
+user-contrib/%.cmx: user-contrib/%.ml
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
+
 kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 
 %.cmx: %.ml
@@ -776,8 +785,8 @@ kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 # Ocamldep is now used directly again (thanks to -ml-synonym in OCaml >= 3.12)
 OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 
-MAINMLFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLFILES) $(MLIFILES))
-MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
+MAINMLFILES := $(filter-out gramlib/.pack/% checker/% plugins/% user-contrib/%, $(MLFILES) $(MLIFILES))
+MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% plugins/% user-contrib/%, $(MLLIBFILES) $(MLPACKFILES))
 
 $(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES) $(GENGRAMFILES)
 	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'
@@ -795,6 +804,14 @@ $(PLUGMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLFILES) $(MLIFIL
 $(PLUGMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
 	$(SHOW)'OCAMLLIBDEP  plugins/MLLIBFILES plugins/MLPACKFILES'
 	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(filter plugins/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
+
+$(USERCONTRIBMLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter user-contrib/%, $(MLFILES) $(MLIFILES)) $(D_DEPEND_AFTER_SRC) $(GENFILES)
+	$(SHOW)'OCAMLDEP  user-contrib/MLFILES user-contrib/MLIFILES'
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $(filter user-contrib/%, $(MLFILES) $(MLIFILES)) $(TOTARGET)
+
+$(USERCONTRIBMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter user-contrib/%, $(MLLIBFILES) $(MLPACKFILES)) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
+	$(SHOW)'OCAMLLIBDEP  user-contrib/MLLIBFILES user-contrib/MLPACKFILES'
+	$(HIDE)$(OCAMLLIBDEP) $(DEPFLAGS) $(filter user-contrib/%, $(MLLIBFILES) $(MLPACKFILES)) $(TOTARGET)
 
 ###########################################################################
 # Compilation of .v files
@@ -861,7 +878,7 @@ endif
 
 $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) $(VFILES) $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) -Q user-contrib "" $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
 
 ###########################################################################
 

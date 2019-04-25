@@ -445,11 +445,3 @@ let inversion knd arg pat ids =
 let contradiction c =
   let c = Option.map mk_with_bindings c in
   Contradiction.contradiction c
-
-(** Firstorder *)
-
-let firstorder tac refs ids =
-  let open Ground_plugin in
-  let ids = List.map Id.to_string ids in
-  let tac = Option.map (fun tac -> thaw Tac2ffi.unit tac) tac in
-  G_ground.gen_ground_tac true tac refs ids

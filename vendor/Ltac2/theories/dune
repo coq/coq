@@ -1,6 +1,0 @@
-(coqlib
- (name Ltac2) ; This determines the -R flag
- (public_name ltac2.Ltac2)
- (synopsis "Ltac 2 Plugin")
- (libraries ltac2.plugin))
-

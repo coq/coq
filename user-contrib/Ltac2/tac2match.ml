@@ -49,7 +49,7 @@ let is_empty_subst = Id.Map.is_empty
    would ensure consistency. *)
 let equal_instances env sigma c1 c2 =
   (* How to compare instances? Do we want the terms to be convertible?
-     unifiable? Do we want the universe levels to be relevant? 
+     unifiable? Do we want the universe levels to be relevant?
      (historically, conv_x is used) *)
   Reductionops.is_conv env sigma c1 c2
 
@@ -152,10 +152,10 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** {6 Pattern-matching} *)
 
-  let pattern_match_term pat term = 
+  let pattern_match_term pat term =
     match pat with
     | MatchPattern p ->
-        begin 
+        begin
           try
             put_subst (Constr_matching.matches E.env E.sigma p term) <*>
             return None
