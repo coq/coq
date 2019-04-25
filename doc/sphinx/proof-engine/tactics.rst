@@ -3830,25 +3830,25 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       check with :cmd:`Print HintDb` to verify the current cut expression:
 
       .. productionlist:: regexp
-          e : `ident`    hint or instance identifier
-            : _          any hint
-            : `e` | `e`  disjunction
-            : `e` `e`    sequence
-            : `e` *      Kleene star
-            : emp        empty
-            : eps        epsilon
-            : ( `e` )
+          regexp : `ident`          (hint or instance identifier)
+                 : _             (any hint)
+                 : `regexp` | `regexp` (disjunction)
+                 : `regexp` `regexp`   (sequence)
+                 : `regexp` *       (Kleene star)
+                 : emp           (empty)
+                 : eps           (epsilon)
+                 : ( `regexp` )
 
       The `emp` regexp does not match any search path while `eps`
       matches the empty path. During proof search, the path of
       successive successful hints on a search branch is recorded, as a
-      list of identifiers for the hints (note that Hint Extern’s do not have
+      list of identifiers for the hints (note that :cmd:`Hint Extern`\’s do not have
       an associated identifier).
       Before applying any hint :n:`@ident` the current path `p` extended with
       :n:`@ident` is matched against the current cut expression `c` associated to
       the hint database. If matching succeeds, the hint is *not* applied. The
-      semantics of ``Hint Cut e`` is to set the cut expression to ``c | e``, the
-      initial cut expression being `emp`.
+      semantics of :n:`Hint Cut @regexp` is to set the cut expression
+      to :n:`c | regexp`, the initial cut expression being `emp`.
 
    .. cmdv:: Hint Mode @qualid {* (+ | ! | -)} : @ident
       :name: Hint Mode
