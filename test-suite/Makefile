@@ -33,10 +33,10 @@ include ../Makefile.common
 #######################################################################
 
 ifneq ($(wildcard ../_build),)
-BIN:=$(shell cd ..; pwd)/_build/install/default/bin/
-COQLIB:=$(shell cd ..; pwd)/_build/install/default/lib/coq
+BIN:='$(shell cd ..; pwd)'/_build/install/default/bin/
+COQLIB:='$(shell cd ..; pwd)'/_build/install/default/lib/coq
 else
-BIN := $(shell cd ..; pwd)/bin/
+BIN := '$(shell cd ..; pwd)'/bin/
 
 COQLIB?=
 ifeq ($(COQLIB),)
@@ -602,10 +602,10 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  export BIN="$(BIN)"; \
-	  export coqc="$(coqc)"; \
-	  export coqtop="$(coqc)"; \
-	  export coqdep="$(coqdep)"; \
+	  export BIN=$(BIN); \
+	  export coqc="eval $(coqc)"; \
+	  export coqtop="eval $(coqc)"; \
+	  export coqdep="eval $(coqdep)"; \
 	  "$<" 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
