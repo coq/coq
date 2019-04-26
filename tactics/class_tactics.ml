@@ -991,8 +991,6 @@ module Search = struct
     typeclasses_eauto env evd ?depth unique (modes,st) [db] p
 end
 
-(** Binding to either V85 or Search implementations. *)
-
 let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
                       ?strategy ~depth dbs =
   let dbs = List.map_filter
