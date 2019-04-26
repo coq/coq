@@ -42,6 +42,9 @@ val mk_rwarg :
 val norwmult : ssrdir * ssrmult
 val norwocc : (Ssrast.ssrclear option * Ssrast.ssrocc) * Ssrmatching.rpattern option
 
+val ssr_is_setoid :
+  Environ.env -> Evd.evar_map -> EConstr.t -> EConstr.t array -> bool
+
 val ssrinstancesofrule :
   Ltac_plugin.Tacinterp.interp_sign ->
   Ssrast.ssrdir ->
