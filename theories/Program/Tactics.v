@@ -173,6 +173,16 @@ Ltac on_application f tac T :=
 (** A variant of [apply] using [refine], doing as much conversion as necessary. *)
 
 Ltac rapply p :=
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
   refine (p _ _ _ _ _ _ _ _ _ _ _ _ _) ||
