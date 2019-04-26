@@ -10,6 +10,7 @@
 
 (* This file is (C) Copyright 2006-2015 Microsoft Corporation and Inria. *)
 
+open Ltac_plugin
 open Pp
 open Names
 open Constr
@@ -349,16 +350,25 @@ let intro_lock ipats =
         let env = Proofview.Goal.env gl in
         match EConstr.kind_of_type sigma c with
         | Term.AtomicType(hd, args) when
-            Ssrcommon.is_const_ref sigma hd (Coqlib.lib_ref "core.iff.type") &&
-           Array.length args = 2 && is_app_evar sigma args.(1) ->
-           Tactics.New.refine ~typecheck:true (fun sigma ->
-               let sigma, under_iff =
-                 Ssrcommon.mkSsrConst "Under_iff" env sigma in
-               let sigma, under_from_iff =
-                 Ssrcommon.mkSsrConst "Under_iff_from_iff" env sigma in
-               let ty = EConstr.mkApp (under_iff,args) in
-               let sigma, t = Evarutil.new_evar env sigma ty in
-               sigma, EConstr.mkApp(under_from_iff,Array.append args [|t|]))
+            Array.length args >= 2 && is_app_evar sigma (Array.last args) &&
+            Ssrequality.ssr_is_setoid env sigma hd args ->
+              Tactics.New.refine ~typecheck:true (fun sigma ->
+                let lm2 = Array.length args - 2 in
+                let sigma, carrier =
+                  Typing.type_of env sigma args.(lm2) in
+                let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
+                let rel_args = Array.sub args lm2 2 in
+                let sigma, refl =
+                  (* could raise Not_found in theory *)
+                  Rewrite.get_reflexive_proof env sigma carrier rel in
+                let sigma, under_rel =
+                  Ssrcommon.mkSsrConst "Under_rel" env sigma in
+                let sigma, under_from_rel =
+                  Ssrcommon.mkSsrConst "Under_rel_from_rel" env sigma in
+                let under_rel_args = Array.append [|carrier; rel; refl|] rel_args in
+                let ty = EConstr.mkApp (under_rel, under_rel_args) in
+                let sigma, t = Evarutil.new_evar env sigma ty in
+                sigma, EConstr.mkApp(under_from_rel,Array.append under_rel_args [|t|]))
         | _ ->
         let t = Reductionops.whd_all env sigma c in
         match EConstr.kind_of_type sigma t with

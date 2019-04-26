@@ -3756,8 +3756,9 @@ involves the following steps:
    the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
 4. Then :tacn:`under` checks that the first n subgoals
-   are (quantified) equalities or double implications between a
-   term and an evar (e.g. ``m - m = ?F2 m`` in the running example).
+   are (quantified) Leibniz equalities or registered Setoid equalities
+   between a term and an evar (e.g. ``m - m = ?F2 m`` in the running
+   example).
 
 5. If so :tacn:`under` protects these n goals against an
    accidental instantiation of the evar.

@@ -228,7 +228,27 @@ Qed.
 Arguments ex_iff [R P1] P2 iffP12.
 
 Require Import Setoid.
+
 Lemma test_ex_iff (P : nat -> Prop) : (exists x, P x) -> True.
 under ex_iff => n.
 by rewrite over.
-Abort.
+by move=> _.
+Qed.
+
+
+Section TestGeneric.
+Context {A B : Type} {R : nat -> relation B} `{!forall n : nat, Equivalence (R n)}.
+Variables (F : (A -> A -> B) -> B).
+Hypothesis ex_gen : forall (n : nat) (P1 P2 : A -> A -> B),
+  (forall x y : A, R n (P1 x y) (P2 x y)) -> (R n (F P1) (F P2)).
+Arguments ex_gen [n P1] P2 relP12.
+Lemma test_ex_gen (P1 P2 : A -> A -> B) (n : nat) :
+  (forall x y : A, P2 x y = P2 y x) ->
+  R n (F P1) (F P2) /\ True -> True.
+Proof.
+move=> P2C.
+under [X in R _ _ X]ex_gen => a b.
+  by rewrite P2C over.
+by move => _.
+Qed.
+End TestGeneric.

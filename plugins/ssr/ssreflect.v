@@ -531,7 +531,7 @@ Lemma abstract_context T (P : T -> Type) x :
 Proof. by move=> /(_ P); apply. Qed.
 
 (*****************************************************************************)
-(* Constants for under, to rewrite under binders using "Leibniz eta lemmas". *)
+(* Constants for under/over, to rewrite under binders using "context lemmas" *)
 
 Module Type UNDER_EQ.
 Parameter Under_eq :
@@ -576,54 +576,69 @@ Lemma under_eq_done :
 Proof. by []. Qed.
 End Under_eq.
 
-Register Under_eq as plugins.ssreflect.Under_eq.
-Register Under_eq_from_eq as plugins.ssreflect.Under_eq_from_eq.
+Register Under_eq.Under_eq as plugins.ssreflect.Under_eq.
+Register Under_eq.Under_eq_from_eq as plugins.ssreflect.Under_eq_from_eq.
 
-Module Type UNDER_IFF.
-Parameter Under_iff : Prop -> Prop -> Prop.
-Parameter Under_iff_from_iff : forall x y : Prop, @Under_iff x y -> x <-> y.
+Require Import Coq.Relations.Relation_Definitions.
+Require Import RelationClasses.
 
-(** [Over_iff, over_iff, over_iff_done]: for "by rewrite over_iff" *)
-Parameter Over_iff : Prop -> Prop -> Prop.
-Parameter over_iff :
-  forall (x : Prop) (y : Prop), @Under_iff x y = @Over_iff x y.
-Parameter over_iff_done :
-  forall (x : Prop), @Over_iff x x.
-Hint Extern 0 (@Over_iff _ _) => solve [ apply over_iff_done ] : core.
-Hint Resolve over_iff_done : core.
+Module Type UNDER_REL.
+Parameter Under_rel :
+  forall (A : Type) (eqA : relation A), Reflexive eqA -> relation A.
+Parameter Under_rel_from_rel :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+    @Under_rel A eqA EeqA x y -> eqA x y.
 
-(** [under_iff_done]: for Ltac-style over *)
-Parameter under_iff_done :
-  forall (x : Prop), @Under_iff x x.
-Notation "''Under[' x ]" := (@Under_iff x _)
+(** [Over_rel, over_rel, over_rel_done]: for "by rewrite over_rel" *)
+Parameter Over_rel :
+  forall (A : Type) (eqA : relation A), Reflexive eqA -> relation A.
+Parameter over_rel :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+    @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
+Parameter over_rel_done :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+    @Over_rel A eqA EeqA x x.
+Hint Extern 0 (@Over_rel _ _ _ _ _) => solve [ apply over_rel_done ] : core.
+Hint Resolve over_rel_done : core.
+
+(** [under_rel_done]: for Ltac-style over *)
+Parameter under_rel_done :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+    @Under_rel A eqA EeqA x x.
+Notation "''Under[' x ]" := (@Under_rel _ _ _ x _)
   (at level 8, format "''Under['  x  ]", only printing).
-End UNDER_IFF.
+End UNDER_REL.
 
-Module Export Under_iff : UNDER_IFF.
-Definition Under_iff := iff.
-Lemma Under_iff_from_iff (x y : Prop) :
-  @Under_iff x y -> x <-> y.
+Module Export Under_rel : UNDER_REL.
+Definition Under_rel (A : Type) (eqA : relation A) (_ : Reflexive eqA) :=
+  eqA.
+Lemma Under_rel_from_rel :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+    @Under_rel A eqA EeqA x y -> eqA x y.
 Proof. by []. Qed.
-Definition Over_iff := Under_iff.
-Lemma over_iff :
-  forall (x : Prop) (y : Prop), @Under_iff x y = @Over_iff x y.
+Definition Over_rel := Under_rel.
+Lemma over_rel :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+    @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
 Proof. by []. Qed.
-Lemma over_iff_done :
-  forall (x : Prop), @Over_iff x x.
+Lemma over_rel_done :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+    @Over_rel A eqA EeqA x x.
 Proof. by []. Qed.
-Lemma under_iff_done :
-  forall (x : Prop), @Under_iff x x.
+Lemma under_rel_done :
+  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+    @Under_rel A eqA EeqA x x.
 Proof. by []. Qed.
-End Under_iff.
+End Under_rel.
 
-Register Under_iff as plugins.ssreflect.Under_iff.
-Register Under_iff_from_iff as plugins.ssreflect.Under_iff_from_iff.
+Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
+Register Under_rel.Under_rel_from_rel as plugins.ssreflect.Under_rel_from_rel.
 
-Definition over := (over_eq, over_iff).
+Definition over := (over_eq, over_rel).
 
 Ltac over :=
   by [ apply: Under_eq.under_eq_done
-     | apply: Under_iff.under_iff_done
+     | apply: Under_rel.under_rel_done
      | rewrite over
      ].
 
