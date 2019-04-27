@@ -67,7 +67,10 @@ type 'c entry = {
 let mC = [`CONTROL]
 let mM = [`MOD1]
 
-let mod_of t x = List.for_all (fun m -> List.mem m (GdkEvent.Key.state t)) x
+let mod_of t x =
+  let y = GdkEvent.Key.state t in
+  List.for_all (fun m -> List.mem m y) x &&
+  List.for_all (fun m -> List.mem m x) y
 
 let pr_keymod l =
   if l = mC then "C-"
