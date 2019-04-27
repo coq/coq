@@ -325,7 +325,7 @@ let init w nb ags =
     then false
     else begin
     eprintf "got key %s\n%!" (pr_key t);
-    if nanoPG#get then begin
+    if microPG#get then begin
       match find gui !cur t with
       | `Do e ->
            eprintf "run (%s) %s on %s\n%!" e.keyname e.doc (pr_status !status);

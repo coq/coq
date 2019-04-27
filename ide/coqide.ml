@@ -561,7 +561,7 @@ let update_status sn =
       | None -> ""
       | Some n -> ", proving " ^ n
     in
-    display ("Ready"^ (if nanoPG#get then ", [μPG]" else "") ^ path ^ name);
+    display ("Ready"^ (if microPG#get then ", [μPG]" else "") ^ path ^ name);
     Coq.return ()
   in
   Coq.bind (Coq.status false) next
@@ -1200,7 +1200,7 @@ let build_ui () =
     item "Help for μPG mode" ~label:"Help for μPG mode"
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#default_route#clear;
-         sn.messages#default_route#add_string (NanoPG.get_documentation ())));
+         sn.messages#default_route#add_string (MicroPG.get_documentation ())));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
@@ -1234,7 +1234,7 @@ let build_ui () =
   let () = vbox#pack toolbar#coerce in
 
   (* Emacs/PG mode *)
-  NanoPG.init w notebook all_menus;
+  MicroPG.init w notebook all_menus;
 
   (* On tab switch, reset, update location *)
   let _ = notebook#connect#switch_page ~callback:(fun n ->
@@ -1251,7 +1251,7 @@ let build_ui () =
   let () = refresh_notebook_pos () in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let () = lower_hbox#pack ~expand:true status#coerce in
-  let () = push_info ("Ready"^ if nanoPG#get then ", [μPG]" else "")  in
+  let () = push_info ("Ready"^ if microPG#get then ", [μPG]" else "")  in
 
   (* Location display *)
   let l = GMisc.label
