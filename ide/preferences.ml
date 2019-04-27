@@ -658,15 +658,18 @@ let save_pref () =
   Config_lexer.print_file pref_file prefs
 
 let load_pref () =
+  (* Load main preference file *)
+  let () =
+    let m = Config_lexer.load_file loaded_pref_file in
+    let iter name v =
+      if Util.String.Map.mem name !preferences then
+        try (Util.String.Map.find name !preferences).set v with _ -> ()
+      else unknown_preferences := Util.String.Map.add name v !unknown_preferences
+    in
+    Util.String.Map.iter iter m in
+  (* Load file for bindings *)
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
-
-  let m = Config_lexer.load_file loaded_pref_file in
-  let iter name v =
-    if Util.String.Map.mem name !preferences then
-      try (Util.String.Map.find name !preferences).set v with _ -> ()
-    else unknown_preferences := Util.String.Map.add name v !unknown_preferences
-  in
-  Util.String.Map.iter iter m
+  ()
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get
