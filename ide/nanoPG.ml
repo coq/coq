@@ -333,4 +333,6 @@ let init w nb ags =
 
 
 
-let get_documentation () = print_keypaths pg
+let get_documentation () =
+  "Chars, words, lines and sentences below pertain to standard unicode segmentation rules\n" ^
+  print_keypaths pg
