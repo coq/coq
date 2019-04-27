@@ -263,8 +263,6 @@ let get_unicode_bindings_default_file () =
 
 (** Hooks *)
 
-(** New style preferences *)
-
 let cmd_coqtop =
   new preference ~name:["cmd_coqtop"] ~init:None ~repr:Repr.(option string)
 
@@ -644,8 +642,6 @@ end
 let tag_button () =
   let box = GPack.hbox () in
   new tag_button (Gobject.unsafe_cast box#as_widget)
-
-(** Old style preferences *)
 
 let save_pref () =
   if not (Sys.file_exists (Minilib.coqide_config_home ()))
