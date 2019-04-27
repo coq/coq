@@ -65,7 +65,13 @@ type 'c entry = {
 }
 
 let mC = [`CONTROL]
-let mM = [`MOD1]
+let mM =
+  if Coq_config.arch = "Darwin" then
+    (* We add both MOD2 and META because both are
+       returned when pressing Command on MacOS X *)
+    [`CONTROL;`MOD2;`META]
+  else
+    [`MOD1]
 
 let mod_of t x =
   let y = GdkEvent.Key.state t in
@@ -73,9 +79,13 @@ let mod_of t x =
   List.for_all (fun m -> List.mem m x) y
 
 let pr_keymod l =
-  if l = mC then "Ctrl-"
-  else if l = mM then "Meta-"
-  else ""
+  if l = mC then
+    "Ctrl-"
+  else
+    if l = mM then
+      if Coq_config.arch = "Darwin" then "Ctrl-Cmd-" else "Meta-"
+    else
+      ""
 
 let mkE ?(mods=mC) key keyname doc ?(alias=[]) contents =
   List.map (fun (mods, key, keyname) -> { mods; key; keyname; doc; contents })
