@@ -433,8 +433,8 @@ few other commands related to typeclasses.
 
 .. _TypeclassesTransparent:
 
-Typeclasses Transparent, Typclasses Opaque
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Typeclasses Transparent, Typeclasses Opaque
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Typeclasses Transparent {+ @ident}
 
