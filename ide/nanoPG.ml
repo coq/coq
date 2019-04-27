@@ -73,8 +73,8 @@ let mod_of t x =
   List.for_all (fun m -> List.mem m x) y
 
 let pr_keymod l =
-  if l = mC then "C-"
-  else if l = mM then "M-"
+  if l = mC then "Ctrl-"
+  else if l = mM then "Meta-"
   else ""
 
 let mkE ?(mods=mC) key keyname doc ?(alias=[]) contents =
