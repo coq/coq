@@ -299,9 +299,9 @@ let find gui (Step(here,konts)) t =
   else
     if k = _c && mod_of t mC && sel_nonempty () then
       ignore(run t gui (Action("Edit","Copy")) empty);
-    let cmp { key; mods } = key = k && mod_of t mods in
-    try `Do (List.find cmp here) with Not_found ->
-    try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
+  let cmp { key; mods } = key = k && mod_of t mods in
+  try `Do (List.find cmp here) with Not_found ->
+  try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
 
 let init w nb ags =
   let gui = { notebook = nb; action_groups = ags } in
