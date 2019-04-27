@@ -160,6 +160,13 @@ let emacs = insert emacs "Emacs" [] [
   mkE _e "e" "Move to end of line" (Motion(fun s i ->
     (if not i#ends_line then i#forward_to_line_end else i),
     { s with move = None }));
+  mkE ~mods:mM _Right "->" "Move to end of buffer" (Motion(fun s i ->
+    i#forward_to_end,
+    { s with move = None }));
+  mkE ~mods:mM _Left "<-" "Move to start of buffer" (Motion(fun s i ->
+    let buffer = new GText.buffer i#buffer in
+    buffer#start_iter,
+    { s with move = None }));
   mkE _a "a" "Move to beginning of line" (Motion(fun s i ->
     (i#set_line_offset 0), { s with move = None }));
   mkE ~mods:mM _e "e" "Move to end of sentence" (Motion(fun s i ->
