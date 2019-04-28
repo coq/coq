@@ -1770,7 +1770,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
       end
-  | TacChange (None,c,cl) ->
+  | TacChange (check,None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<change>") begin
       Proofview.Goal.enter begin fun gl ->
@@ -1792,10 +1792,10 @@ and interp_atomic ist tac : unit Proofview.tactic =
             then interp_type ist env sigma c
             else interp_constr ist env sigma c
         in
-        Tactics.change None c_interp (interp_clause ist (pf_env gl) (project gl) cl)
+        Tactics.change ~check None c_interp (interp_clause ist (pf_env gl) (project gl) cl)
       end
       end
-  | TacChange (Some op,c,cl) ->
+  | TacChange (check,Some op,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
       Proofview.Trace.name_tactic (fun _ _ -> Pp.str"<change>") begin
       Proofview.Goal.enter begin fun gl ->
@@ -1815,7 +1815,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             with e when to_catch e (* Hack *) ->
               user_err  (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
         in
-        Tactics.change (Some op) c_interp (interp_clause ist env sigma cl)
+        Tactics.change ~check (Some op) c_interp (interp_clause ist env sigma cl)
       end
       end
 
