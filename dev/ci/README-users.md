@@ -45,6 +45,26 @@ using [coqbot](https://github.com/coq/bot); meanwhile, a workaround is
 to give merge permissions to someone from the Coq team as to help with
 these kind of merges.
 
+### OCaml and plugin-specific considerations
+
+Developments that link against Coq's OCaml API [most of them are known
+as "plugins"] do have some special requirements:
+
+- Coq's OCaml API is not stable. We hope to improve this in the future
+  but as of today you should expect to have to merge a fair amount of
+  "overlays", usually in the form of Pull Requests from Coq developers
+  in order to keep your plugin compatible with Coq master.
+
+  In order to alleviate the load, you can delegate the merging of such
+  compatibility pull requests to Coq developers themselves, by
+  granting access to the plugin repository or by using `bots` such as
+  [Bors](https://github.com/apps/bors) that allow for automatic
+  management of Pull Requests.
+
+- Plugins in the CI should compile with the OCaml flags that Coq
+  uses. In particular, warnings that are considered fatal by the Coq
+  developers _must_ be also fatal for plugin CI code.
+
 ### Add your development by submitting a pull request
 
 Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
