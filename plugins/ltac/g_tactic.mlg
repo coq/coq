@@ -703,7 +703,11 @@ GRAMMAR EXTEND Gram
       | IDENT "change"; c = conversion; cl = clause_dft_concl ->
 	  { let (oc, c) = c in
 	  let p,cl = merge_occurrences loc cl oc in
-	  TacAtom (CAst.make ~loc @@ TacChange (p,c,cl)) }
+          TacAtom (CAst.make ~loc @@ TacChange (true,p,c,cl)) }
+      | IDENT "change_no_check"; c = conversion; cl = clause_dft_concl ->
+          { let (oc, c) = c in
+          let p,cl = merge_occurrences loc cl oc in
+          TacAtom (CAst.make ~loc @@ TacChange (false,p,c,cl)) }
     ] ]
   ;
 END

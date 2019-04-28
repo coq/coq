@@ -802,15 +802,21 @@ let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   | Some sigma -> (sigma, t')
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm cv_pb deep t where env sigma c =
+let change_on_subterm check cv_pb deep t where env sigma c =
   let mayneedglobalcheck = ref false in
   let (sigma, c) = match where with
-  | None -> change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
+  | None ->
+      if check then
+        change_and_check cv_pb mayneedglobalcheck deep (t Id.Map.empty) env sigma c
+      else
+        t Id.Map.empty env sigma
   | Some occl ->
       e_contextually false occl
         (fun subst ->
-          change_and_check Reduction.CONV mayneedglobalcheck true (t subst))
-        env sigma c in
+          if check then
+            change_and_check Reduction.CONV mayneedglobalcheck true (t subst)
+          else
+            fun env sigma _c -> t subst env sigma) env sigma c in
   if !mayneedglobalcheck then
     begin
       try ignore (Typing.unsafe_type_of env sigma c)
@@ -819,14 +825,15 @@ let change_on_subterm cv_pb deep t where env sigma c =
     end;
   (sigma, c)
 
-let change_in_concl occl t =
-  e_change_in_concl ~check:false ((change_on_subterm Reduction.CUMUL false t occl),DEFAULTcast)
+let change_in_concl ?(check=true) occl t =
+  (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
+  e_change_in_concl ~check:false ((change_on_subterm check Reduction.CUMUL false t occl),DEFAULTcast)
 
-let change_in_hyp occl t id  =
+let change_in_hyp ?(check=true) occl t id =
   (* FIXME: we set the [check] flag only to reorder hypotheses in case of
     introduction of dependencies in new variables. We should separate this
     check from the conversion function. *)
-  e_change_in_hyp ~check:true (fun x -> change_on_subterm Reduction.CONV x t occl) id
+  e_change_in_hyp ~check:true (fun x -> change_on_subterm check Reduction.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -835,24 +842,24 @@ let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | Some l ->
   List.map (fun ((occs, id), w) -> (id, occs, w)) l
 
-let change chg c cls =
+let change ?(check=true) chg c cls =
   Proofview.Goal.enter begin fun gl ->
     let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
     begin match cls.concl_occs with
     | NoOccurrences -> Proofview.tclUNIT ()
-    | occs -> change_in_concl (bind_change_occurrences occs chg) c
+    | occs -> change_in_concl ~check (bind_change_occurrences occs chg) c
     end
     <*>
     let f (id, occs, where) =
       let occl = bind_change_occurrences occs chg in
-      let redfun deep env sigma t = change_on_subterm Reduction.CONV deep c occl env sigma t in
+      let redfun deep env sigma t = change_on_subterm check Reduction.CONV deep c occl env sigma t in
       (redfun, id, where)
     in
     e_change_in_hyps ~check:true f hyps
   end
 
 let change_concl t = 
-  change_in_concl None (make_change_arg t)
+  change_in_concl ~check:true None (make_change_arg t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
@@ -3280,7 +3287,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
       Tacticals.New.tclTHEN
-        (change_in_hyp None (make_change_arg t) (hyp0,InHypTypeOnly))
+        (change_in_hyp ~check:false None (make_change_arg t) (hyp0,InHypTypeOnly))
         (tac avoid)
     else
       let c = List.nth argl (i-1) in
