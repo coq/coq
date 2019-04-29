@@ -433,22 +433,26 @@ few other commands related to typeclasses.
 
 .. _TypeclassesTransparent:
 
-Typeclasses Transparent, Typclasses Opaque
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Typeclasses Transparent, Typeclasses Opaque
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Typeclasses Transparent {+ @ident}
 
    This command makes the identifiers transparent during typeclass
    resolution.
+   Shortcut for :n:`Hint Transparent {+ @ident } : typeclass_instances`.
 
 .. cmd:: Typeclasses Opaque {+ @ident}
 
-   Make the identifiers opaque for typeclass search. It is useful when some
-   constants prevent some unifications and make resolution fail. It is also
-   useful to declare constants which should never be unfolded during
-   proof-search, like fixpoints or anything which does not look like an
-   abbreviation. This can additionally speed up proof search as the typeclass
-   map can be indexed by such rigid constants (see
+   Make the identifiers opaque for typeclass search.
+   Shortcut for :n:`Hint Opaque {+ @ident } : typeclass_instances`.
+
+   It is useful when some constants prevent some unifications and make
+   resolution fail. It is also useful to declare constants which
+   should never be unfolded during proof-search, like fixpoints or
+   anything which does not look like an abbreviation. This can
+   additionally speed up proof search as the typeclass map can be
+   indexed by such rigid constants (see
    :ref:`thehintsdatabasesforautoandeauto`).
 
 By default, all constants and local variables are considered transparent. One
@@ -457,8 +461,6 @@ type, like:
 
 .. coqdoc::
    Definition relation A := A -> A -> Prop.
-
-This is equivalent to ``Hint Transparent, Opaque ident : typeclass_instances``.
 
 
 Settings
