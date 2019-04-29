@@ -49,16 +49,15 @@ TO_SED_IN_BOTH=(
     -e s'/[0-9]*\.[0-9]*//g' # the precise timing numbers vary, so we strip them out
     -e s'/^-*$/------/g' # When none of the numbers get over 100 (or 1000, in per-file), the width of the table is different, so we normalize the number of dashes for table separators
     -e s'/+/-/g' # some code lines don't really change, but this can show up as either -0m00.01s or +0m00.01s, so we need to normalize the signs; additionally, some N/A's show up where we expect to get -∞ on the per-line file, and so the ∞-replacement gets the sign wrong, so we must correct it
+    -e s'/[0-9]//g' # sometimes the time is under 1 minute, sometimes it's over 1 minute, so we want to remove/normalize both instances; see https://github.com/coq/coq/issues/5675#issuecomment-487378622
 )
 
 TO_SED_IN_PER_FILE=(
-    -e s'/[0-9]//g' # unclear whether this is actually needed above and beyond s'/[0-9]*\.[0-9]*//g'; it's been here from the start
     -e s'/  */ /g' # unclear whether this is actually needed for per-file timing; it's been here from the start
     -e s'/\(Total.*\)-\(.*\)-/\1+\2+/g' # Overall time in the per-file timing diff should be around 0; if it comes out negative, we remove the sign
 )
 
 TO_SED_IN_PER_LINE=(
-    -e s'/0//g' # unclear whether this is actually needed above and beyond s'/[0-9]*\.[0-9]*//g'; it's been here from the start
     -e s'/  */ /g' # Sometimes 0 will show up as 0m00.s, sometimes it'll end up being more like 0m00.001s; we must strip out the spaces that result from left-aligning numbers of different widths based on how many digits Coq's [-time] gives
     )
 
