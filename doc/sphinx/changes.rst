@@ -204,8 +204,8 @@ extent influenced the development.
 Version 8.10 is the fifth release of |Coq| developed on a time-based
 development cycle. Its development spanned 6 months from the release of
 |Coq| 8.9. Vincent Laporte is the release manager and maintainer of this
-release. This release is the result of ??? commits and ??? PRs
-merged, closing ??? issues.
+release. This release is the result of ~2500 commits and ~650 PRs merged,
+closing 150+ issues.
 
 | Santiago de Chile, April 2019,
 | Matthieu Sozeau for the |Coq| development team
