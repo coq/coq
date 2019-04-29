@@ -19,8 +19,8 @@ dev-repo: "git+https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
 depends: [
-  "dune"      { build & >= "1.4.0" }
-  "coq"
+  "dune"      { build & >= "1.6.0" }
+  "coq"       {          = version }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
