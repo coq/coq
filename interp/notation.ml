@@ -21,7 +21,6 @@ open Notation_term
 open Glob_term
 open Glob_ops
 open Context.Named.Declaration
-open Classops
 
 (*i*)
 
@@ -50,25 +49,15 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
-let notation_entry_level_compare s1 s2 = match (s1,s2) with
-| InConstrEntrySomeLevel, InConstrEntrySomeLevel -> 0
-| InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) ->
-   pair_compare String.compare Int.compare (s1,n1) (s2,n2)
-| InConstrEntrySomeLevel, _ -> -1
-| InCustomEntryLevel _, _ -> 1
-
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_level_eq from1 from2 && String.equal ntn1 ntn2
 
 let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntrySomeLevel -> mt () | InCustomEntryLevel (s,n) -> str " in custom " ++ str s
 
-let notation_compare =
-  pair_compare notation_entry_level_compare String.compare
-
 module NotationOrd =
   struct
     type t = notation
-    let compare = notation_compare
+    let compare = Pervasives.compare
   end
 
 module NotationSet = Set.Make(NotationOrd)
@@ -167,8 +156,6 @@ let scope_eq s1 s2 = match s1, s2 with
 | Scope _, SingleNotation _
 | SingleNotation _, Scope _ -> false
 
-(* Scopes for interpretation *)
-
 let scope_stack = ref []
 
 let current_scopes () = !scope_stack
@@ -178,102 +165,14 @@ let scope_is_open_in_scopes sc l =
 
 let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
-(* Uninterpretation tables *)
-
-type interp_rule =
-  | NotationRule of scope_name option * notation
-  | SynDefRule of KerName.t
-
-type scoped_notation_rule_core = scope_name * notation * interpretation * int option
-type notation_rule_core = interp_rule * interpretation * int option
-type notation_rule = notation_rule_core * delimiters option * bool
-
-let interp_rule_compare r1 r2 = match r1, r2 with
-  | NotationRule (sc1,ntn1), NotationRule (sc2,ntn2) ->
-      pair_compare (Option.compare String.compare) notation_compare (sc1,ntn1) (sc2,ntn2)
-  | SynDefRule kn1, SynDefRule kn2 -> KerName.compare kn1 kn2
-  | (NotationRule _ | SynDefRule _), _ -> -1
-
-module InterpRuleSet = Set.Make(struct
-    type t = interp_rule
-    let compare = interp_rule_compare
-  end)
-
-(* Scopes for uninterpretation: includes abbreviations (i.e. syntactic definitions) and  *)
-
-type uninterp_scope_elem =
-  | UninterpScope of scope_name
-  | UninterpSingle of notation_rule_core
-
-let uninterp_scope_eq_weak s1 s2 = match s1, s2 with
-| UninterpScope s1, UninterpScope s2 -> String.equal s1 s2
-| UninterpSingle s1, UninterpSingle s2 -> false
-| (UninterpSingle _ | UninterpScope _), _ -> false
-
-module ScopeOrd =
-  struct
-    type t = scope_name option
-    let compare = Pervasives.compare
-  end
-
-module ScopeMap = CMap.Make(ScopeOrd)
-
-let uninterp_scope_stack = ref []
-
-let push_uninterp_scope sc scopes = UninterpScope sc :: scopes
-
-let push_uninterp_scopes = List.fold_right push_uninterp_scope
-
-(**********************************************************************)
-(* Mapping classes to scopes *)
-
-type scope_class = cl_typ
-
-let scope_class_compare : scope_class -> scope_class -> int =
-  cl_typ_ord
-
-let compute_scope_class sigma t =
-  let (cl,_,_) = find_class_type sigma t in
-  cl
-
-module ScopeClassOrd =
-struct
-  type t = scope_class
-  let compare = scope_class_compare
-end
-
-module ScopeClassMap = Map.Make(ScopeClassOrd)
-
-let initial_scope_class_map : scope_name ScopeClassMap.t =
-  ScopeClassMap.empty
-
-let scope_class_map = ref initial_scope_class_map
-
-let declare_scope_class sc cl =
-  scope_class_map := ScopeClassMap.add cl sc !scope_class_map
-
-let find_scope_class cl =
-  ScopeClassMap.find cl !scope_class_map
-
-let find_scope_class_opt = function
-  | None -> None
-  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
-
-let current_type_scope_name () =
-   find_scope_class_opt (Some CL_SORT)
-
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (* Exportation of scopes *)
 let open_scope i (_,(local,op,sc)) =
-  if Int.equal i 1 then begin
+  if Int.equal i 1 then
     scope_stack :=
-      if op then Scope sc :: !scope_stack
-      else List.except scope_eq (Scope sc) !scope_stack;
-    uninterp_scope_stack :=
-      if op then UninterpScope sc :: !uninterp_scope_stack
-      else List.except uninterp_scope_eq_weak (UninterpScope sc) !uninterp_scope_stack
-    end
+      if op then sc :: !scope_stack
+      else List.except scope_eq sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o
@@ -288,7 +187,7 @@ let discharge_scope (_,(local,_,_ as o)) =
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let inScope : bool * bool * scope_name -> obj =
+let inScope : bool * bool * scope_elem -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
@@ -297,7 +196,7 @@ let inScope : bool * bool * scope_name -> obj =
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
-  Lib.add_anonymous_leaf (inScope (local,opening,normalize_scope sc))
+  Lib.add_anonymous_leaf (inScope (local,opening,Scope (normalize_scope sc)))
 
 let empty_scope_stack = []
 
@@ -305,19 +204,8 @@ let push_scope sc scopes = Scope sc :: scopes
 
 let push_scopes = List.fold_right push_scope
 
-let make_type_scope_soft tmp_scope =
-  if Option.equal String.equal tmp_scope (current_type_scope_name ()) then
-    true, None
-  else
-    false, tmp_scope
-
 let make_current_scopes (tmp_scope,scopes) =
   Option.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
-
-let make_current_uninterp_scopes (tmp_scope,scopes) =
-  let istyp,tmp_scope = make_type_scope_soft tmp_scope in
-  istyp,Option.fold_right push_uninterp_scope tmp_scope
-    (push_uninterp_scopes scopes !uninterp_scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)
@@ -362,80 +250,40 @@ let find_delimiters_scope ?loc key =
     user_err ?loc ~hdr:"find_delimiters"
       (str "Unknown scope delimiting key " ++ str key ++ str ".")
 
+(* Uninterpretation tables *)
+
+type interp_rule =
+  | NotationRule of scope_name option * notation
+  | SynDefRule of KerName.t
+
 (* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 
 type key =
   | RefKey of GlobRef.t
-  | LambdaKey
-  | ProdKey
   | Oth
 
 let key_compare k1 k2 = match k1, k2 with
 | RefKey gr1, RefKey gr2 -> GlobRef.Ordered.compare gr1 gr2
-| RefKey _, _ -> -1
-| _, RefKey _ -> 1
-| k1, k2 -> Pervasives.compare k1 k2
+| RefKey _, Oth -> -1
+| Oth, RefKey _ -> 1
+| Oth, Oth -> 0
 
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
 
-let keymap_add key sc interp (scope_map,global_map) =
-  (* Adding to scope keymap for printing based on open scopes *)
-  let oldkeymap = try ScopeMap.find sc scope_map with Not_found -> KeyMap.empty in
-  let oldscmap = try KeyMap.find key oldkeymap with Not_found -> [] in
-  let newscmap = KeyMap.add key (interp :: oldscmap) oldkeymap in
-  let scope_map = ScopeMap.add sc newscmap scope_map in
-  (* Adding to global keymap of scoped notations in case the scope is not open *)
-  let global_map = match interp with
-  | NotationRule (Some sc,ntn), interp, c ->
-      let oldglobalkeymap = try KeyMap.find key global_map with Not_found -> [] in
-      KeyMap.add key ((sc,ntn,interp,c) :: oldglobalkeymap) global_map
-  | (NotationRule (None,_) | SynDefRule _), _, _ -> global_map in
-  (scope_map, global_map)
+type notation_rule = interp_rule * interpretation * int option
 
-let keymap_extract istype keys sc map =
-  let keymap =
-    try ScopeMap.find (Some sc) map
-    with Not_found -> KeyMap.empty in
-  let delim =
-    if istype && Option.equal String.equal (Some sc) (current_type_scope_name ()) then
-      (* A type is re-interpreted with type_scope on top, so never need a delimiter *)
-      None
-    else
-      (* Pass the delimiter so that it can be used if ever the notation is masked *)
-      (String.Map.find sc !scope_map).delimiters in
-  let add_scope rule = (rule,delim,false) in
-  List.map_append (fun key -> try List.map add_scope (KeyMap.find key keymap) with Not_found -> []) keys
+let keymap_add key interp map =
+  let old = try KeyMap.find key map with Not_found -> [] in
+  KeyMap.add key (interp :: old) map
 
-let find_with_delimiters istype = function
-  | None ->
-      None
-  | Some _ as scope when istype && Option.equal String.equal scope (current_type_scope_name ()) ->
-      (* This is in case type_scope (which by default is open in the
-         initial state) has been explicitly closed *)
-      Some None
-  | Some scope ->
-      match (String.Map.find scope !scope_map).delimiters with
-        | Some key -> Some (Some key)
-        | None -> None
-
-let rec keymap_extract_remainder istype scope_seen = function
-  | [] -> []
-  | (sc,ntn,interp,c) :: l ->
-      if String.Set.mem sc scope_seen then keymap_extract_remainder istype scope_seen l
-      else
-        match find_with_delimiters istype (Some sc) with
-        | None -> keymap_extract_remainder istype scope_seen l
-        | Some delim ->
-           let rule = (NotationRule (Some sc, ntn), interp, c) in
-           (rule,delim,true) :: keymap_extract_remainder istype scope_seen l
+let keymap_find key map =
+  try KeyMap.find key map
+  with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table =
-  ref ((ScopeMap.empty, KeyMap.empty) :
-       notation_rule_core list KeyMap.t ScopeMap.t *
-       scoped_notation_rule_core list KeyMap.t)
+let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 
 let glob_prim_constr_key c = match DAst.get c with
   | GRef (ref, _) -> Some (canonical_gr ref)
@@ -447,14 +295,12 @@ let glob_prim_constr_key c = match DAst.get c with
   | _ -> None
 
 let glob_constr_keys c = match DAst.get c with
-  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
   | GApp (c, _) ->
     begin match DAst.get c with
     | GRef (ref, _) -> [RefKey (canonical_gr ref); Oth]
     | _ -> [Oth]
     end
-  | GLambda _ -> [LambdaKey]
-  | GProd _ -> [ProdKey]
+  | GRef (ref,_) -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
 let cases_pattern_key c = match DAst.get c with
@@ -468,8 +314,6 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
       RefKey (canonical_gr ref), Some (List.length args)
   | NRef ref -> RefKey(canonical_gr ref), None
   | NApp (_,args) -> Oth, Some (List.length args)
-  | NLambda _ | NBinderList (_,_,NLambda _,_,_) | NList (_,_,NLambda _,_,_) -> LambdaKey, None
-  | NProd _ | NBinderList (_,_,NProd _,_,_) | NList (_,_,NProd _,_,_) -> ProdKey, None
   | _ -> Oth, None
 
 (**********************************************************************)
@@ -1211,31 +1055,37 @@ let check_required_module ?loc sc (sp,d) =
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
 
-let rec find_without_delimiters find (istype,ntn_scope,ntn as ntndata) = function
-  | UninterpScope scope :: scopes ->
+let find_with_delimiters = function
+  | None -> None
+  | Some scope ->
+      match (String.Map.find scope !scope_map).delimiters with
+        | Some key -> Some (Some scope, Some key)
+        | None -> None
+
+let rec find_without_delimiters find (ntn_scope,ntn) = function
+  | Scope scope :: scopes ->
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
       begin match ntn_scope with
       | Some scope' when String.equal scope scope' ->
-        Some None
+        Some (None,None)
       | _ ->
 	(* If the most recently open scope has a notation/numeral printer
     	   but not the expected one then we need delimiters *)
 	if find scope then
-          find_with_delimiters istype ntn_scope
+          find_with_delimiters ntn_scope
 	else
-          find_without_delimiters find ntndata scopes
+          find_without_delimiters find (ntn_scope,ntn) scopes
       end
-  | UninterpSingle (NotationRule (_,ntn'),_,_) :: scopes ->
+  | SingleNotation ntn' :: scopes ->
       begin match ntn_scope, ntn with
       | None, Some ntn when notation_eq ntn ntn' ->
-        Some None
+        Some (None, None)
       | _ ->
-        find_without_delimiters find ntndata  scopes
+        find_without_delimiters find (ntn_scope,ntn) scopes
       end
-  | UninterpSingle (SynDefRule _,_,_) :: scopes -> find_without_delimiters find ntndata  scopes
   | [] ->
       (* Can we switch to [scope]? Yes if it has defined delimiters *)
-      find_with_delimiters istype ntn_scope
+      find_with_delimiters ntn_scope
 
 (* The mapping between notations and their interpretation *)
 
@@ -1268,19 +1118,9 @@ let declare_notation_interpretation ntn scopt pat df ~onlyprint =
   | Some _ -> ()
   end
 
-let scope_of_rule = function
-  | NotationRule (None,_) | SynDefRule _ -> None
-  | NotationRule (Some sc as sco,_) -> sco
-
-let uninterp_scope_to_add pat n = function
-  | NotationRule (None,_) | SynDefRule _ as rule -> Some (UninterpSingle (rule,pat,n))
-  | NotationRule (Some sc,_) -> None
-
 let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  let sc = scope_of_rule rule in
-  notations_key_table := keymap_add key sc (rule,pat,n) !notations_key_table;
-  uninterp_scope_stack := Option.List.cons (uninterp_scope_to_add pat n rule) !uninterp_scope_stack
+  notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
@@ -1359,29 +1199,20 @@ let interp_notation ?loc ntn local_scopes =
     user_err ?loc 
     (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
-let extract_notations (istype,scopes) keys =
-  if keys == [] then [] (* shortcut *) else
-  let scope_map, global_map = !notations_key_table in
-  let rec aux scopes seen =
-  match scopes with
-  | UninterpScope sc :: scopes -> keymap_extract istype keys sc scope_map @ aux scopes (String.Set.add sc seen)
-  | UninterpSingle rule :: scopes -> (rule,None,false) :: aux scopes seen
-  | [] ->
-      let find key = try KeyMap.find key global_map with Not_found -> [] in
-      keymap_extract_remainder istype seen (List.flatten (List.map find keys))
-  in aux scopes String.Set.empty
+let uninterp_notations c =
+  List.map_append (fun key -> keymap_find key !notations_key_table)
+    (glob_constr_keys c)
 
-let uninterp_notations scopes c =
-  let scopes = make_current_uninterp_scopes scopes in
-  extract_notations scopes (glob_constr_keys c)
+let uninterp_cases_pattern_notations c =
+  keymap_find (cases_pattern_key c) !notations_key_table
 
-let uninterp_cases_pattern_notations scopes c =
-  let scopes = make_current_uninterp_scopes scopes in
-  extract_notations scopes [cases_pattern_key c]
+let uninterp_ind_pattern_notations ind =
+  keymap_find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
 
-let uninterp_ind_pattern_notations scopes ind =
-  let scopes = make_current_uninterp_scopes scopes in
-  extract_notations scopes [RefKey (canonical_gr (IndRef ind))]
+let availability_of_notation (ntn_scope,ntn) scopes =
+  let f scope =
+    NotationMap.mem ntn (String.Map.find scope !scope_map).notations in
+  find_without_delimiters f (ntn_scope,Some ntn) (make_current_scopes scopes)
 
 (* We support coercions from a custom entry at some level to an entry
    at some level (possibly the same), and from and to the constr entry. E.g.:
@@ -1538,10 +1369,12 @@ let availability_of_prim_token n printer_scope local_scopes =
         | _ -> false
     with Not_found -> false
   in
-  let istype,scopes = make_current_uninterp_scopes local_scopes in
-  find_without_delimiters f (istype,Some printer_scope,None) scopes
+  let scopes = make_current_scopes local_scopes in
+  Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)
+
+let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
 let notation_binder_source_eq s1 s2 = match s1, s2 with
 | NtnParsedAsIdent,  NtnParsedAsIdent -> true
@@ -1556,10 +1389,9 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeBinderList, NtnTypeBinderList -> true
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
-let var_attributes_eq (_, ((entry1, (tmpsc1, scl1)), tp1)) (_, ((entry2, (tmpsc2, scl2)), tp2)) =
+let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
   notation_entry_level_eq entry1 entry2 &&
-  Option.equal String.equal tmpsc1 tmpsc2 &&
-  List.equal String.equal scl1 scl2 &&
+  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1) (vars2, t2) =
@@ -1574,15 +1406,44 @@ let exists_notation_in_scope scopt ntn onlyprint r =
     interpretation_eq n.not_interp r
   with Not_found -> false
 
-let exists_notation_interpretation_in_scope scopt ntn =
-  let scope = match scopt with Some s -> s | None -> default_scope in
-  try
-    let sc = String.Map.find scope !scope_map in
-    let _ = NotationMap.find ntn sc.notations in
-    true
-  with Not_found -> false
-
 let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
+
+(**********************************************************************)
+(* Mapping classes to scopes *)
+
+open Classops
+
+type scope_class = cl_typ
+
+let scope_class_compare : scope_class -> scope_class -> int =
+  cl_typ_ord
+
+let compute_scope_class sigma t =
+  let (cl,_,_) = find_class_type sigma t in
+  cl
+
+module ScopeClassOrd =
+struct
+  type t = scope_class
+  let compare = scope_class_compare
+end
+
+module ScopeClassMap = Map.Make(ScopeClassOrd)
+
+let initial_scope_class_map : scope_name ScopeClassMap.t =
+  ScopeClassMap.empty
+
+let scope_class_map = ref initial_scope_class_map
+
+let declare_scope_class sc cl =
+  scope_class_map := ScopeClassMap.add cl sc !scope_class_map
+
+let find_scope_class cl =
+  ScopeClassMap.find cl !scope_class_map
+
+let find_scope_class_opt = function
+  | None -> None
+  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
@@ -1603,6 +1464,9 @@ let compute_arguments_scope sigma t = fst (compute_arguments_scope_full sigma t)
 
 let compute_type_scope sigma t =
   find_scope_class_opt (try Some (compute_scope_class sigma t) with Not_found -> None)
+
+let current_type_scope_name () =
+   find_scope_class_opt (Some CL_SORT)
 
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
@@ -1960,7 +1824,7 @@ let locate_notation prglob ntn scope =
     str "Notation" ++ fnl () ++
     prlist_with_sep fnl (fun (ntn,l) ->
       let scope = find_default ntn scopes in
-      prlist_with_sep fnl
+      prlist
 	(fun (sc,r,(_,df)) ->
 	  hov 0 (
 	    pr_notation_info prglob df r ++
@@ -2023,18 +1887,17 @@ let pr_visibility prglob = function
 (* Synchronisation with reset *)
 
 let freeze ~marshallable =
- (!scope_map, !scope_stack, !uninterp_scope_stack, !arguments_scope,
+ (!scope_map, !scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !scope_class_map,
   !prim_token_interp_infos, !prim_token_uninterp_infos,
   !entry_coercion_map, !entry_has_global_map,
   !entry_has_ident_map)
 
-let unfreeze (scm,scs,uscs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
+let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
   scope_map := scm;
   scope_stack := scs;
-  uninterp_scope_stack := uscs;
-  arguments_scope := asc;
   delimiters_map := dlm;
+  arguments_scope := asc;
   notations_key_table := fkm;
   scope_class_map := clsc;
   prim_token_interp_infos := ptii;
@@ -2045,9 +1908,8 @@ let unfreeze (scm,scs,uscs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
 
 let init () =
   init_scope_map ();
-  uninterp_scope_stack := [];
   delimiters_map := String.Map.empty;
-  notations_key_table := (ScopeMap.empty,KeyMap.empty);
+  notations_key_table := KeyMap.empty;
   scope_class_map := initial_scope_class_map;
   prim_token_interp_infos := String.Map.empty;
   prim_token_uninterp_infos := GlobRef.Map.empty

@@ -21,36 +21,10 @@ Let "x" e1 e2
      : expr
 Let "x" e1 e2
      : expr
-fun x : nat => (# x)%nat
-     : nat -> nat
-fun x : nat => ## x
-     : nat -> nat
-fun x : nat => # x
-     : nat -> nat
-fun x : nat => ### x
-     : nat -> nat
-fun x : nat => ## x
-     : nat -> nat
-fun x : nat => (x.-1)%pred
-     : nat -> nat
-∀ a : nat, a = 0
-     : Prop
-((∀ a : nat, a = 0) -> True)%type
-     : Prop
-#
-     : Prop
-# -> True
-     : Prop
-((∀ a : nat, a = 0) -> True)%type
-     : Prop
-##
-     : Prop
 myAnd1 True True
      : Prop
 r 2 3
      : Prop
-Notation Cn := Foo.FooCn
-Expands to: Notation Notations4.J.Mfoo.Foo.Bar.Cn
 let v := 0%test17 in v : myint63
      : myint63
 fun y : nat => # (x, z) |-> y & y
