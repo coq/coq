@@ -109,9 +109,11 @@ class completion_provider coqtop =
         let props = self#update_proposals w in
         self#add_proposals ctx props
       else
+        let cancel = ref false in
+        let _ = ctx#connect#cancelled ~callback:(fun () -> cancel := true) in
         let update props =
           let () = cache <- (start_offset, w, props) in
-          self#add_proposals ctx props;
+          if not !cancel then self#add_proposals ctx props
         in
         (* If not in the cache, we recompute it: first syntactic *)
         let synt = get_syntactic_completion buffer w Proposals.empty in
