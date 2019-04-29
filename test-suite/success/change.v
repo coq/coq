@@ -68,3 +68,11 @@ eassumption.
 match goal with |- ?x=1 => change (x=1) with (0+x=1) end.
 match goal with |- 0+1=1 => trivial end.
 Qed.
+
+(* Mini-check that no_check does not check *)
+
+Goal False.
+change_no_check True.
+exact I.
+Fail Qed.
+Abort.
