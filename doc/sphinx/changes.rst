@@ -269,6 +269,10 @@ Other changes in 8.10+beta1
   - coq_makefile's install target now errors if any file to install is missing
     (`#9906 <https://github.com/coq/coq/pull/9906>`_, by Gaëtan Gilbert).
 
+  - Preferences from ``coqide.keys`` are no longer overridden by
+    modifiers preferences in ``coqiderc``
+    (`#10014 <https://github.com/coq/coq/pull/10014>`_, by Hugo Herbelin).
+
 - Specification language, type inference:
 
   - Fixing a missing check in interpreting instances of existential
