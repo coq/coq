@@ -19,7 +19,7 @@
 
 
 #define Coq_stack_size (4096 * sizeof(value))
-#define Coq_stack_threshold (256 * sizeof(value))
+#define Coq_stack_threshold (256 * sizeof(value))  /* see kernel/cbytegen.ml */
 #define Coq_max_stack_size (256 * 1024)
 
 #define TRANSP 0
