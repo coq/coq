@@ -228,7 +228,7 @@
 ########################################################################
 # quickchick
 ########################################################################
-: "${quickchick_CI_REF:=bf823751602407d0c9f8598c62e277ad5a5a8bcd}"
+: "${quickchick_CI_REF:=d3145776b9d0a10b23712b8c552c0fb066795d90}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
