@@ -1,0 +1,4 @@
+Notation
+"n .+1" := S n : nat_scope (default interpretation)
+forall x : nat, x.+1 = x.+1
+     : Prop
