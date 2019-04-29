@@ -27,6 +27,8 @@ open Feedback
 open Vernacexpr
 open Vernacextend
 
+module PG_compat = Vernacstate.Proof_global [@@ocaml.warning "-3"]
+
 let is_vtkeep = function VtKeep _ -> true | _ -> false
 let get_vtkeep = function VtKeep x -> x | _ -> assert false
 
@@ -139,8 +141,8 @@ let may_pierce_opaque = function
   | _ -> false
 
 let update_global_env () =
-  if Vernacstate.Proof_global.there_are_pending_proofs () then
-    Vernacstate.Proof_global.update_global_env ()
+  if PG_compat.there_are_pending_proofs () then
+    PG_compat.update_global_env ()
 
 module Vcs_ = Vcs.Make(Stateid.Self)
 type future_proof = Proof_global.closed_proof_output Future.computation
@@ -948,7 +950,7 @@ end = struct (* {{{ *)
             let prev = (VCS.visit id).next in
             if is_cached_and_valid prev
             then { s with proof =
-                Vernacstate.Proof_global.copy_terminators
+                PG_compat.copy_terminators
                   ~src:((get_cached prev).proof) ~tgt:s.proof }
             else s
            with VCS.Expired -> s in
@@ -957,7 +959,7 @@ end = struct (* {{{ *)
          if is_cached_and_valid ontop then
            let s = get_cached ontop in
            let s = { s with proof =
-             Vernacstate.Proof_global.copy_terminators ~src:s.proof ~tgt:pstate } in
+             PG_compat.copy_terminators ~src:s.proof ~tgt:pstate } in
            let s = { s with system =
              States.replace_summary s.system
                begin
@@ -1009,8 +1011,8 @@ end = struct (* {{{ *)
       if feedback_processed then
         Hooks.(call state_computed ~doc id ~in_cache:false);
       VCS.reached id;
-      if Vernacstate.Proof_global.there_are_pending_proofs () then
-        VCS.goals id (Vernacstate.Proof_global.get_open_goals ())
+      if PG_compat.there_are_pending_proofs () then
+        VCS.goals id (PG_compat.get_open_goals ())
     with e ->
       let (e, info) = CErrors.push e in
       let good_id = !cur_id in
@@ -1130,9 +1132,9 @@ let show_script ?proof () =
   try
     let prf =
       try match proof with
-      | None -> Some (Vernacstate.Proof_global.get_current_proof_name ())
+      | None -> Some (PG_compat.get_current_proof_name ())
       | Some (p,_) -> Some (p.Proof_global.id)
-      with Vernacstate.Proof_global.NoCurrentProof -> None
+      with PG_compat.NoCurrentProof -> None
     in
     let cmds = get_script prf in
     let _,_,_,indented_cmds =
@@ -1295,7 +1297,7 @@ end = struct (* {{{ *)
             | Some vcs, _ -> vcs in
           let cb, _ =
             try Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs)
-            with Failure _ -> raise Vernacstate.Proof_global.NoCurrentProof in
+            with Failure _ -> raise PG_compat.NoCurrentProof in
           let n = fold_until (fun n (_,vcs,_,_,_) ->
             if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
             0 id in
@@ -1333,7 +1335,7 @@ end = struct (* {{{ *)
             | None -> true
         done;
         !rv
-    with Not_found | Vernacstate.Proof_global.NoCurrentProof -> None
+    with Not_found | PG_compat.NoCurrentProof -> None
 
 end (* }}} *)
 
@@ -1594,7 +1596,7 @@ end = struct (* {{{ *)
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at ?loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      let p = Vernacstate.Proof_global.return_proof ~allow_partial:drop_pt () in
+      let p = PG_compat.return_proof ~allow_partial:drop_pt () in
       if drop_pt then feedback ~id Complete;
       p)
 
@@ -1621,7 +1623,7 @@ end = struct (* {{{ *)
              to set the state manually here *)
           State.unfreeze st;
           let pobject, _ =
-            Vernacstate.Proof_global.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
+            PG_compat.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
           let terminator = (* The one sent by master is an InvalidKey *)
             Lemmas.(standard_proof_terminator []) in
 
@@ -1758,15 +1760,15 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false stop;
       if drop then
-        let _proof = Vernacstate.Proof_global.return_proof ~allow_partial:true () in
+        let _proof = PG_compat.return_proof ~allow_partial:true () in
         `OK_ADMITTED
       else begin
       (* The original terminator, a hook, has not been saved in the .vio*)
-      Vernacstate.Proof_global.set_terminator (Lemmas.standard_proof_terminator []);
+      PG_compat.set_terminator (Lemmas.standard_proof_terminator []);
 
       let opaque = Proof_global.Opaque in
       let proof =
-        Vernacstate.Proof_global.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
+        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false start;
@@ -2016,7 +2018,7 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:false id;
       State.purify (fun () ->
-       let Proof.{sigma=sigma0} = Proof.data (Vernacstate.Proof_global.give_me_the_proof ()) in
+       let Proof.{sigma=sigma0} = Proof.data (PG_compat.give_me_the_proof ()) in
        let g = Evd.find sigma0 r_goal in
        let is_ground c = Evarutil.is_ground_term sigma0 c in
        if not (
@@ -2028,7 +2030,7 @@ end = struct (* {{{ *)
            "goals only"))
        else begin
         let (i, ast) = r_ast in
-        Vernacstate.Proof_global.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
+        PG_compat.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
         (* STATE SPEC:
          * - start : id
          * - return: id
@@ -2037,7 +2039,7 @@ end = struct (* {{{ *)
         *)
         let st = Vernacstate.freeze_interp_state ~marshallable:false in
         ignore(stm_vernac_interp r_state_fb st ast);
-        let Proof.{sigma} = Proof.data (Vernacstate.Proof_global.give_me_the_proof ()) in
+        let Proof.{sigma} = Proof.data (PG_compat.give_me_the_proof ()) in
         match Evd.(evar_body (find sigma r_goal)) with
         | Evd.Evar_empty -> RespNoProgress
         | Evd.Evar_defined t ->
@@ -2084,7 +2086,7 @@ end = struct (* {{{ *)
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
     ignore(TaskQueue.with_n_workers nworkers (fun queue ->
-    Vernacstate.Proof_global.with_current_proof (fun _ p ->
+    PG_compat.with_current_proof (fun _ p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
@@ -2117,7 +2119,7 @@ end = struct (* {{{ *)
           let open Notations in
           match Future.join f with
           | Some (pt, uc) ->
-            let sigma, env = Vernacstate.Proof_global.get_current_context () in
+            let sigma, env = PG_compat.get_current_context () in
             stm_pperr_endline (fun () -> hov 0 (
               str"g=" ++ int (Evar.repr gid) ++ spc () ++
               str"t=" ++ (Printer.pr_constr_env env sigma pt) ++ spc () ++
@@ -2399,8 +2401,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               end in
            match (VCS.get_info base_state).state with
            | FullState { Vernacstate.proof } ->
-               Option.iter Vernacstate.Proof_global.unfreeze proof;
-               Vernacstate.Proof_global.with_current_proof (fun _ p ->
+               Option.iter PG_compat.unfreeze proof;
+               PG_compat.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Goal_select.SelectAll None tac p), ());
                (* STATE SPEC:
@@ -2570,7 +2572,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepDefined -> Proof_global.Transparent
                     in
                     let proof =
-                      Vernacstate.Proof_global.close_future_proof ~opaque ~feedback_id:id fp in
+                      PG_compat.close_future_proof ~opaque ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
@@ -2578,13 +2580,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
-                Vernacstate.Proof_global.discard_all ()
+                PG_compat.discard_all ()
               ), not redefine_qed, true
           | `Sync (name, `Immediate) -> (fun () ->
                 reach eop;
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 ignore(stm_vernac_interp id st x);
-                Vernacstate.Proof_global.discard_all ()
+                PG_compat.discard_all ()
               ), true, true
           | `Sync (name, reason) -> (fun () ->
                 log_processing_sync id name reason;
@@ -2603,7 +2605,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                      Some(Vernacstate.Proof_global.close_proof ~opaque
+                      Some(PG_compat.close_proof ~opaque
                                 ~keep_body_ucst_separate:false
                                 (State.exn_on id ~valid:eop)) in
                 if keep <> VtKeep VtKeepAxiom then
@@ -2614,7 +2616,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
-                Vernacstate.Proof_global.discard_all ()
+                PG_compat.discard_all ()
               ), true, true
           | `MaybeASync (start, nodes, name, delegate) -> (fun () ->
                 reach ~cache:true start;
@@ -2875,7 +2877,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
-       Exninfo.iraise (State.exn_on ~valid Stateid.dummy (Vernacstate.Proof_global.NoCurrentProof, Exninfo.null))
+       Exninfo.iraise (State.exn_on ~valid Stateid.dummy (PG_compat.NoCurrentProof, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
@@ -3067,7 +3069,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
             let st = Vernacstate.freeze_interp_state ~marshallable:false in
             ignore(stm_vernac_interp id st x);
             (* Vernac x may or may not start a proof *)
-            if not in_proof && Vernacstate.Proof_global.there_are_pending_proofs () then
+            if not in_proof && PG_compat.there_are_pending_proofs () then
             begin
               let bname = VCS.mk_branch_name x in
               let opacity_of_produced_term = function

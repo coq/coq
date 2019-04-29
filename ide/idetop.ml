@@ -238,7 +238,8 @@ let goals () =
       Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
     end else
       Some (export_pre_goals Proof.(data newp) process_goal)
-  with Vernacstate.Proof_global.NoCurrentProof -> None;;
+  with Vernacstate.Proof_global.NoCurrentProof -> None
+  [@@ocaml.warning "-3"];;
 
 let evars () =
   try
@@ -251,6 +252,7 @@ let evars () =
     let el = List.map map_evar exl in
     Some el
   with Vernacstate.Proof_global.NoCurrentProof -> None
+  [@@ocaml.warning "-3"]
 
 let hints () =
   try
@@ -264,7 +266,7 @@ let hints () =
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)
   with Vernacstate.Proof_global.NoCurrentProof -> None
-
+  [@@ocaml.warning "-3"]
 
 (** Other API calls *)
 
@@ -297,6 +299,7 @@ let status force =
     Interface.status_allproofs = allproofs;
     Interface.status_proofnum = Stm.current_proof_depth ~doc:(get_doc ());
   }
+  [@@ocaml.warning "-3"]
 
 let export_coq_object t = {
   Interface.coq_object_prefix = t.Search.coq_object_prefix;
@@ -340,6 +343,7 @@ let search flags =
   List.map export_coq_object (Search.interface_search ?pstate (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
+  [@@ocaml.warning "-3"]
 
 let export_option_value = function
   | Goptions.BoolValue b   -> Interface.BoolValue b
