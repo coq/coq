@@ -79,18 +79,31 @@ reference manual. Here are the most important user-visible changes:
   to get the venerable Fourier-based engine
   (`#8457 <https://github.com/coq/coq/pull/8457>`_, by Fréderic Besson).
 
-- New SSReflect intro patterns:
+- SSReflect:
 
-  - temporary introduction: `=> +`
-  - block introduction: `=> [^ prefix ] [^~ suffix ]`
-  - fast introduction: `=> >`
-  - tactics as views: `=> /ltac:mytac`
-  - replace hypothesis: `=> {}H`
+  - New intro patterns:
 
-  See Section :ref:`introduction_ssr`
-  (`#6705 <https://github.com/coq/coq/pull/6705>`_, by Enrico Tassi,
-  with help from Maxime Dénès,
-  ideas coming from various users).
+    - temporary introduction: `=> +`
+    - block introduction: `=> [^ prefix ] [^~ suffix ]`
+    - fast introduction: `=> >`
+    - tactics as views: `=> /ltac:mytac`
+    - replace hypothesis: `=> {}H`
+
+      See Section :ref:`introduction_ssr`
+      (`#6705 <https://github.com/coq/coq/pull/6705>`_, by Enrico Tassi,
+      with help from Maxime Dénès,
+      ideas coming from various users).
+
+  - New tactic :tacn:`under` to rewrite under binders, given an
+    extensionality lemma:
+
+    - interactive mode: :n:`under @term`, associated terminator: :tacn:`over`
+    - one-liner mode: `under @term do [@tactic | ...]`
+
+    It can take occurrence switches, contextual patterns, and intro patterns:
+    :g:`under {2}[in RHS]eq_big => [i|i ?] do ...`
+    (`#9651 <https://github.com/coq/coq/pull/9651>`_,
+    by Erik Martin-Dorel and Enrico Tassi).
 
 - :cmd:`Combined Scheme` now works when inductive schemes are generated in sort
   :math:`\Type`. It used to be limited to sort `Prop`
