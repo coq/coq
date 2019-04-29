@@ -2108,7 +2108,7 @@ let vernac_bullet (bullet : Proof_bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
     Proof_bullet.put p bullet)
 
-let vernac_show ~pstate =
+let vernac_show ~pstate oproof =
   match pstate with
   (* Show functions that don't require a proof state *)
   | None ->
@@ -2125,9 +2125,9 @@ let vernac_show ~pstate =
     | ShowGoal goalref ->
       let proof = Proof_global.give_me_the_proof pstate in
       begin match goalref with
-        | OpenSubgoals -> pr_open_subgoals ~proof
-        | NthGoal n -> pr_nth_open_subgoal ~proof n
-        | GoalId id -> pr_goal_by_id ~proof id
+        | OpenSubgoals -> print_and_diff oproof (Some proof)
+        | NthGoal n -> pr_nth_open_subgoal oproof ~proof n (Proof_diffs.show_diffs ())
+        | GoalId id -> pr_goal_by_id oproof ~proof id (Proof_diffs.show_diffs ())
       end
     | ShowExistentials -> show_top_evars ~pstate
     | ShowUniverses -> show_universes ~pstate
@@ -2229,7 +2229,11 @@ exception End_of_input
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
+let rec interp_expr ?xproof ~atts ~st c : Proof_global.t option =
+  let (proof, oproof) = match xproof with
+  | Some (proof, oproof) -> (proof, oproof)
+  | None -> (None, None)
+  in
   let pstate = st.Vernacstate.proof in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2253,7 +2257,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
      [vernac_load] is mutually-recursive with [interp_expr] *)
   | VernacLoad (verbosely,fname) ->
     unsupported_attributes atts;
-    vernac_load ?proof ~verbosely ~st fname
+    vernac_load ?xproof ~verbosely ~st fname
 
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
@@ -2530,7 +2534,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     Option.map (vernac_end_subproof ()) pstate
   | VernacShow s ->
     unsupported_attributes atts;
-    Feedback.msg_notice @@ vernac_show ~pstate s;
+    Feedback.msg_notice @@ vernac_show ~pstate oproof s;
     pstate
   | VernacCheckGuard ->
     unsupported_attributes atts;
@@ -2564,7 +2568,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
    the way the proof mode is set there makes the task non trivial
    without a considerable amount of refactoring.
  *)
-and vernac_load ?proof ~verbosely ~st fname =
+and vernac_load ?xproof ~verbosely ~st fname =
   let pstate = st.Vernacstate.proof in
   if there_are_pending_proofs ~pstate then
     CErrors.user_err Pp.(str "Load is not supported inside proofs.");
@@ -2587,7 +2591,7 @@ and vernac_load ?proof ~verbosely ~st fname =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in
       let pstate =
-        v_mod (interp_control ?proof ~st:{ st with Vernacstate.proof = pstate })
+        v_mod (interp_control ?xproof ~st:{ st with Vernacstate.proof = pstate })
           (parse_sentence proof_mode input) in
       load_loop ~pstate
     with
@@ -2600,19 +2604,19 @@ and vernac_load ?proof ~verbosely ~st fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   pstate
 
-and interp_control ?proof ~st v = match v with
+and interp_control ?xproof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->
-    interp_expr ?proof ~atts ~st cmd
+    interp_expr ?xproof ~atts ~st cmd
   | { v=VernacFail v } ->
-    with_fail ~st (fun () -> interp_control ?proof ~st v);
+    with_fail ~st (fun () -> interp_control ?xproof ~st v);
     st.Vernacstate.proof
   | { v=VernacTimeout (timeout,v) } ->
-    vernac_timeout ~timeout (interp_control ?proof ~st) v
+    vernac_timeout ~timeout (interp_control ?xproof ~st) v
   | { v=VernacRedirect (s, v) } ->
-    Topfmt.with_output_to_file s (interp_control ?proof ~st) v
+    Topfmt.with_output_to_file s (interp_control ?xproof ~st) v
   | { v=VernacTime (batch, cmd) }->
     let header = if batch then Topfmt.pr_cmd_header cmd else Pp.mt () in
-    System.with_time ~batch ~header (interp_control ?proof ~st) cmd
+    System.with_time ~batch ~header (interp_control ?xproof ~st) cmd
 
 let () =
   declare_int_option
@@ -2623,11 +2627,11 @@ let () =
       optwrite = ((:=) default_timeout) }
 
 (* Be careful with the cache here in case of an exception. *)
-let interp ?(verbosely=true) ?proof ~st cmd =
+let interp ?(verbosely=true) ?xproof ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let pstate = v_mod (interp_control ?proof ~st) cmd in
+      let pstate = v_mod (interp_control ?xproof ~st) cmd in
       Vernacstate.Proof_global.set pstate [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st

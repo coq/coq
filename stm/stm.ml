@@ -1285,21 +1285,22 @@ end = struct (* {{{ *)
 
   let get_prev_proof ~doc id =
     try
-      let np = get_proof ~doc id in
-      match np with
-      | None -> None
-      | Some cp ->
-        let did = ref id in
-        let rv = ref np in
-        let done_ = ref false in
-        while not !done_ do
-          did := fold_until back_tactic 1 !did;
-          rv := get_proof ~doc !did;
-          done_ := match !rv with
-            | Some rv -> not (Goal.Set.equal (Proof.all_goals rv) (Proof.all_goals cp))
-            | None -> true
-        done;
-        !rv
+      (* "Show" doesn't have a proof when it calls here; handle it *)
+      let did = ref (if get_proof ~doc id <> None then id
+        else
+          fold_until (fun n (id,_,_,_,_) ->
+                      if Int.equal n 0 then `Stop id else `Cont (n-1)) 1 id) in
+      let np = get_proof ~doc !did in
+      let rv = ref None in
+      let done_ = ref false in
+      while not !done_ do
+        did := fold_until back_tactic 1 !did;
+        rv := get_proof ~doc !did;
+        done_ := match np, !rv with
+          | Some rvp, Some npp -> not (Goal.Set.equal (Proof.all_goals rvp) (Proof.all_goals npp))
+          | _, _ -> !did = Stateid.initial
+      done;
+      !rv
     with Not_found | PG_compat.NoCurrentProof -> None
 
 end (* }}} *)
@@ -1335,7 +1336,14 @@ let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
       | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
       | _ ->
         stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
+        let oproof = match cmd with
+          | VernacShow (ShowGoal _) ->
+            let doc = get_doc 0 in
+            get_prev_proof ~doc (get_current_state ~doc)
+          | _ -> None
+        in
+        let xproof = Some (proof, oproof) in
+        try Vernacentries.interp ?verbosely:(Some verbose) ?xproof ~st expr
         with e ->
           let e = CErrors.push e in
           Exninfo.iraise Hooks.(call_process_error_once e)

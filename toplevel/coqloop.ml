@@ -356,7 +356,7 @@ let top_goal_print ~doc c oldp newp =
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-      Printer.print_and_diff dproof newp
+      Feedback.msg_notice (Printer.print_and_diff dproof newp)
     end
   with
   | exn ->

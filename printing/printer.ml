@@ -557,17 +557,36 @@ let pr_ne_evar_set hd tl sigma l =
   else
     mt ()
 
-let pr_selected_subgoal name sigma g =
-  let pg = pr_goal { sigma=sigma ; it=g; } in
+let pr_selected_subgoal ?og_s name sigma g diffs =
+  let pg = pr_goal ?diffs:(Some diffs) ?og_s { sigma=sigma ; it=g; } in
   let header = pr_goal_header name sigma g in
   v 0 (header ++ str " is:" ++ cut () ++ pg)
 
-let pr_subgoal n sigma =
+let make_os_map oproof proof diffs = match oproof with
+  | Some op when diffs ->
+    let Proof.{sigma=osigma} = Proof.data op in
+    let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
+    Some (osigma, diff_goal_map)
+  | _ -> None
+
+module GoalMap = Evar.Map
+
+let get_ogs os_map g =
+    match os_map with
+    | Some (osigma, diff_goal_map) ->
+      (* if Not_found, returning None treats the goal as new and it will be diff highlighted;
+         returning Some { it = g; sigma = sigma } will compare the new goal
+         to itself and it won't be highlighted *)
+      (try Some { it = GoalMap.find g diff_goal_map; sigma = osigma }
+      with Not_found -> None)
+    | None -> None
+
+let pr_subgoal ?os_map n sigma diffs =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
 	if Int.equal p 1 then
-          pr_selected_subgoal (int n) sigma g
+          pr_selected_subgoal ?og_s:(get_ogs os_map g) (int n) sigma g diffs
 	else
 	  prrec (p-1) rest
   in
@@ -658,8 +677,6 @@ let print_dependent_evars gl sigma seeds =
   in
   constraints ++ evars ()
 
-module GoalMap = Evar.Map
-
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
@@ -667,11 +684,6 @@ module GoalMap = Evar.Map
 (* [os_map] is derived from the previous proof step, used for diffs *)
 let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
                         close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
-  let diff_goal_map =
-    match os_map with
-    | Some (_, diff_goal_map) -> diff_goal_map
-    | None -> GoalMap.empty
-  in
 
   (* Printing functions for the extra informations. *)
   let rec print_stack a = function
@@ -706,27 +718,17 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     else str" " (* non-breakable space *)
   in
 
-  let get_ogs g =
-    match os_map with
-    | Some (osigma, _) ->
-      (* if Not_found, returning None treats the goal as new and it will be diff highlighted;
-         returning Some { it = g; sigma = sigma } will compare the new goal
-         to itself and it won't be highlighted *)
-      (try Some { it = GoalMap.find g diff_goal_map; sigma = osigma }
-      with Not_found -> None)
-    | None -> None
-  in
   let rec pr_rec n = function
     | [] -> (mt ())
     | g::rest ->
-       let og_s = get_ogs g in
+       let og_s = get_ogs os_map g in
        let pc = pr_concl n ~diffs ?og_s sigma g in
         let prest = pr_rec (n+1) rest in
         (cut () ++ pc ++ prest)
   in
   let print_multiple_goals g l =
     if pr_first then
-      let og_s = get_ogs g in
+      let og_s = get_ogs os_map g in
       pr_goal ~diffs ?og_s { it = g ; sigma = sigma }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
@@ -806,13 +808,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
-     let os_map = match oproof with
-       | Some op when diffs ->
-         let Proof.{sigma=osigma} = Proof.data op in
-         let diff_goal_map = Proof_diffs.make_goal_map oproof proof in
-         Some (osigma, diff_goal_map)
-       | _ -> None
-     in
+     let os_map = make_os_map oproof proof diffs in
      pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~seeds ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
@@ -820,15 +816,17 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
 let pr_open_subgoals ~proof =
   pr_open_subgoals_diff proof
 
-let pr_nth_open_subgoal ~proof n =
+let pr_nth_open_subgoal oproof ~proof n diffs =
   let Proof.{goals;sigma} = Proof.data proof in
-  pr_subgoal n sigma goals
+  let os_map = make_os_map oproof proof diffs in
+  pr_subgoal ?os_map n sigma diffs goals
 
-let pr_goal_by_id ~proof id =
+let pr_goal_by_id oproof ~proof id diffs =
   try
     Proof.in_proof proof (fun sigma ->
       let g = Evd.evar_key id sigma in
-      pr_selected_subgoal (pr_id id) sigma g)
+      let os_map = make_os_map oproof proof diffs in
+      pr_selected_subgoal ?og_s:(get_ogs os_map g) (pr_id id) sigma g diffs)
   with Not_found -> user_err Pp.(str "No such goal.")
 
 (* Printer function for sets of Assumptions.assumptions.
@@ -972,18 +970,15 @@ let pr_assumptionset env sigma s =
 (* print the proof step, possibly with diffs highlighted, *)
 let print_and_diff oldp newp =
   match newp with
-  | None -> ()
+  | None -> mt ()
   | Some proof ->
-    let output =
-      if Proof_diffs.show_diffs () then
-        try pr_open_subgoals_diff ~diffs:true ?oproof:oldp proof
-        with Pp_diff.Diff_Failure msg -> begin
-          (* todo: print the unparsable string (if we know it) *)
-          Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
-              ++ str "Showing results without diff highlighting" );
-          pr_open_subgoals ~proof
-        end
-      else
+    if Proof_diffs.show_diffs () then
+      try pr_open_subgoals_diff ~diffs:true ?oproof:oldp proof
+      with Pp_diff.Diff_Failure msg -> begin
+        (* todo: print the unparsable string (if we know it) *)
+        Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+            ++ str "Showing results without diff highlighting" );
         pr_open_subgoals ~proof
-    in
-    Feedback.msg_notice output;;
+      end
+    else
+      pr_open_subgoals ~proof

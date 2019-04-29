@@ -19,10 +19,15 @@ val proof_mode_opt_name : string list
 val vernac_require :
   Libnames.qualid option -> bool option -> Libnames.qualid list -> unit
 
-(** The main interpretation function of vernacular expressions *)
+(** The main interpretation function of vernacular expressions
+    The first component of ?xproof is based on Proof_global.closed_proof,
+    which is used throughout the interpreter.  The second component is based
+    on Proof.t, which is old proof for use in computing diffs in the "Show"
+    commands.
+*)
 val interp :
   ?verbosely:bool ->
-  ?proof:Proof_global.closed_proof ->
+  ?xproof:(Proof_global.closed_proof option * (Proof.t option)) ->
   st:Vernacstate.t -> Vernacexpr.vernac_control -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.

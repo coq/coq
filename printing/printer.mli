@@ -163,7 +163,7 @@ val pr_subgoals            : ?pr_first:bool -> ?diffs:bool -> ?os_map:(evar_map 
                              -> seeds:Goal.goal list -> shelf:Goal.goal list -> stack:int list
                              -> unfocused:Goal.goal list -> goals:Goal.goal list -> Pp.t
 
-val pr_subgoal             : int -> evar_map -> Goal.goal list -> Pp.t
+val pr_subgoal             : ?os_map:(evar_map * Goal.goal Evar.Map.t) -> int -> evar_map -> bool -> Goal.goal list -> Pp.t
 
 (** [pr_concl n ~diffs ~og_s sigma g] prints the conclusion of the goal [g] using [sigma].  The output
     is labelled "subgoal [n]".  If [diffs] is true, highlight the differences between the old conclusion,
@@ -178,14 +178,14 @@ val pr_concl               : int -> ?diffs:bool -> ?og_s:(Goal.goal sigma) -> ev
 *)
 val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:bool -> ?oproof:Proof.t -> Proof.t -> Pp.t
 val pr_open_subgoals       : proof:Proof.t -> Pp.t
-val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
+val pr_nth_open_subgoal    : Proof.t option -> proof:Proof.t -> int -> bool -> Pp.t
 val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
 val pr_evars_int           : evar_map -> shelf:Goal.goal list -> given_up:Goal.goal list -> int -> evar_info Evar.Map.t -> Pp.t
 val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
-val print_and_diff : Proof.t option -> Proof.t option -> unit
+val print_and_diff : Proof.t option -> Proof.t option -> Pp.t
 
 (** Declarations for the "Print Assumption" command *)
 type axiom =
@@ -205,5 +205,5 @@ module ContextObjectMap : CMap.ExtS
 
 val pr_assumptionset : env -> evar_map -> types ContextObjectMap.t -> Pp.t
 
-val pr_goal_by_id : proof:Proof.t -> Id.t -> Pp.t
+val pr_goal_by_id : Proof.t option -> proof:Proof.t -> Id.t -> bool -> Pp.t
 
