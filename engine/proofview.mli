@@ -244,15 +244,12 @@ val tclBREAK : (iexn -> iexn option) -> 'a tactic -> 'a tactic
 (** [tclFOCUS i j t] applies [t] after focusing on the goals number
     [i] to [j] (see {!focus}). The rest of the goals is restored after
     the tactic action. If the specified range doesn't correspond to
-    existing goals, fails with [NoSuchGoals] (a user error). this
-    exception is caught at toplevel with a default message + a hook
-    message that can be customized by [set_nosuchgoals_hook] below.
-    This hook is used to add a suggestion about bullets when
-    applicable. *)
+    existing goals, fails with the [nosuchgoal] argument, by default
+    raising [NoSuchGoals] (a user error). This exception is caught at
+    toplevel with a default message. *)
 exception NoSuchGoals of int
-val set_nosuchgoals_hook: (int -> Pp.t) -> unit
 
-val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
+val tclFOCUS : ?nosuchgoal:'a tactic -> int -> int -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSLIST li t] applies [t] on the list of focused goals
     described by [li]. Each element of [li] is a pair [(i, j)] denoting
@@ -261,13 +258,14 @@ val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
     intervals. If the set of such goals is not a single range, then it
     will move goals such that it is a single range. (So, for
     instance, [[1, 3-5]; idtac.] is not the identity.)
-    If the set of such goals is empty, it will fail. *)
-val tclFOCUSLIST : (int * int) list -> 'a tactic -> 'a tactic
+    If the set of such goals is empty, it will fail with [nosuchgoal],
+    by default raising [NoSuchGoals 0]. *)
+val tclFOCUSLIST : ?nosuchgoal:'a tactic ->  (int * int) list -> 'a tactic -> 'a tactic
 
 (** [tclFOCUSID x t] applies [t] on a (single) focused goal like
     {!tclFOCUS}. The goal is found by its name rather than its
-    number.*)
-val tclFOCUSID : Names.Id.t -> 'a tactic -> 'a tactic
+    number. Fails with [nosuchgoal], by default raising [NoSuchGoals 1]. *)
+val tclFOCUSID : ?nosuchgoal:'a tactic -> Names.Id.t -> 'a tactic -> 'a tactic
 
 (** [tclTRYFOCUS i j t] behaves like {!tclFOCUS}, except that if the
     specified range doesn't correspond to existing goals, behaves like
