@@ -427,6 +427,8 @@ Lemma leqnSn n : n <= n.+1.             Proof. by elim: n. Qed.
 
 Lemma leq_trans n m p : m <= n -> n <= p -> m <= p.
 Admitted.
+Lemma leq_ltn_trans n m p : m <= n -> n < p -> m < p.
+Admitted.
 Lemma leqW m n : m <= n -> m <= n.+1.
 Admitted.
 Hint Resolve leqnSn.

@@ -319,3 +319,172 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
     let _,ty,_,uc = pf_interp_ty ist gl c in let gl = pf_merge_uc uc gl in
     basecuttac "ssr_suff" ty gl in
   Tacticals.tclTHENS ctac [htac; Tacticals.tclTHEN (old_cleartac clr) (introstac (binders@simpl))]
+
+open Proofview.Notations
+
+let is_app_evar sigma t =
+  match EConstr.kind sigma t with
+  | Constr.Evar _ -> true
+  | Constr.App(t,_) ->
+      begin match EConstr.kind sigma t with
+      | Constr.Evar _ -> true
+      | _ -> false end
+  | _ -> false
+
+let rec ncons n e = match n with
+  | 0 -> []
+  | n when n > 0 -> e :: ncons (n - 1) e
+  | _ -> failwith "ncons"
+
+let intro_lock ipats =
+  let hnf' = Proofview.numgoals >>= fun ng ->
+             Proofview.tclDISPATCH
+               (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
+  let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
+    Proofview.tclORELSE
+      (Ssripats.tclIPAT [Ssripats.IOpTemporay; Ssripats.IOpEqGen (lock_eq ())])
+      (fun _exn -> Proofview.Goal.enter begin fun gl ->
+        let c = Proofview.Goal.concl gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        match EConstr.kind_of_type sigma c with
+        | Term.AtomicType(hd, args) when
+            Ssrcommon.is_const_ref sigma hd (Coqlib.lib_ref "core.iff.type") &&
+           Array.length args = 2 && is_app_evar sigma args.(1) ->
+           Tactics.New.refine ~typecheck:true (fun sigma ->
+               let sigma, under_iff =
+                 Ssrcommon.mkSsrConst "Under_iff" env sigma in
+               let sigma, under_from_iff =
+                 Ssrcommon.mkSsrConst "Under_iff_from_iff" env sigma in
+               let ty = EConstr.mkApp (under_iff,args) in
+               let sigma, t = Evarutil.new_evar env sigma ty in
+               sigma, EConstr.mkApp(under_from_iff,Array.append args [|t|]))
+        | _ ->
+        let t = Reductionops.whd_all env sigma c in
+        match EConstr.kind_of_type sigma t with
+        | Term.AtomicType(hd, args) when
+            Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
+            Array.length args = 3 && is_app_evar sigma args.(2) ->
+              Tactics.New.refine ~typecheck:true (fun sigma ->
+                let sigma, under =
+                  Ssrcommon.mkSsrConst "Under_eq" env sigma in
+                let sigma, under_from_eq =
+                  Ssrcommon.mkSsrConst "Under_eq_from_eq" env sigma in
+                let ty = EConstr.mkApp (under,args) in
+                let sigma, t = Evarutil.new_evar env sigma ty in
+                sigma, EConstr.mkApp(under_from_eq,Array.append args [|t|]))
+        | _ ->
+    ppdebug(lazy Pp.(str"under: stop:" ++ pr_econstr_env env sigma t));
+
+            Proofview.tclUNIT ()
+       end)
+    end
+  in
+  hnf' <*> Ssripats.tclIPATssr ipats <*> lock_eq ()
+
+let pretty_rename evar_map term varnames =
+  let rec aux term vars =
+    try
+      match vars with
+      | [] -> term
+      | Names.Name.Anonymous :: varnames ->
+          let name, types, body = EConstr.destLambda evar_map term in
+          let res = aux body varnames in
+          EConstr.mkLambda (name, types, res)
+      | Names.Name.Name _ as name :: varnames ->
+          let { Context.binder_relevance = r }, types, body =
+            EConstr.destLambda evar_map term in
+          let res = aux body varnames in
+          EConstr.mkLambda (Context.make_annot name r, types, res)
+    with DestKO -> term
+  in
+    aux term varnames
+
+let overtac = Proofview.V82.tactic (ssr_n_tac "over" ~-1)
+
+let check_numgoals ?(minus = 0) nh =
+  Proofview.numgoals >>= fun ng ->
+  if nh <> ng then
+    let errmsg =
+      str"Incorrect number of tactics" ++ spc() ++
+        str"(expected "++int (ng - minus)++str(String.plural ng " tactic") ++
+        str", was given "++ int (nh - minus)++str")."
+    in
+    CErrors.user_err errmsg
+  else
+    Proofview.tclUNIT ()
+
+let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
+
+  (* total number of implied hints *)
+  let nh = List.length (snd hint) + (if hint = nullhint then 2 else 1) in
+
+  let varnames =
+    let rec aux acc = function
+      | IPatId id :: rest -> aux (Names.Name.Name id :: acc) rest
+      | IPatClear _ :: rest -> aux acc rest
+      | IPatSimpl _ :: rest -> aux acc rest
+      | IPatAnon (One _ | Drop) :: rest ->
+          aux (Names.Name.Anonymous :: acc) rest
+      | _ -> List.rev acc in
+    aux [] @@ match ipats with
+              | None -> []
+              | Some (IPatCase(Regular (l :: _)) :: _) -> l
+              | Some l -> l in
+
+  (* If we find a "=> [|]" we add 1 | to get "=> [||]" for the extra
+   * goal (the one that is left once we run over) *)
+  let ipats =
+    match ipats with
+    | None -> [IPatNoop]
+    | Some l when pad_intro -> (* typically, ipats = Some [IPatAnon All] *)
+       let new_l = ncons (nh - 1) l in
+       [IPatCase(Regular (new_l @ [[]]))]
+    | Some (IPatCase(Regular []) :: _ as ipats) -> ipats
+    (* Erik: is the previous line correct/useful? *)
+    | Some (IPatCase(Regular l) :: rest) -> IPatCase(Regular(l @ [[]])) :: rest
+    | Some (IPatCase(Block _) :: _ as l) -> l
+    | Some l -> [IPatCase(Regular [l;[]])] in
+
+  let map_redex env evar_map ~before:_ ~after:t =
+    ppdebug(lazy Pp.(str"under vars: " ++ prlist Names.Name.print varnames));
+
+    let evar_map, ty = Typing.type_of env evar_map t in
+    let new_t = (* pretty-rename the bound variables *)
+      try begin match EConstr.destApp evar_map t with (f, ar) ->
+            let lam = Array.last ar in
+            ppdebug(lazy Pp.(str"under: mapping:" ++
+                             pr_econstr_env env evar_map lam));
+            let new_lam = pretty_rename evar_map lam varnames in
+            let new_ar, len1 = Array.copy ar, pred (Array.length ar) in
+            new_ar.(len1) <- new_lam;
+            EConstr.mkApp (f, new_ar)
+          end with
+      | DestKO ->
+        ppdebug(lazy Pp.(str"under: cannot pretty-rename bound variables with destApp"));
+        t
+    in
+    ppdebug(lazy Pp.(str"under: to:" ++ pr_econstr_env env evar_map new_t));
+    evar_map, new_t
+  in
+  let undertacs =
+    if hint = nohint then
+      Proofview.tclUNIT ()
+    else
+      let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
+      (* Usefulness of check_numgoals: tclDISPATCH would be enough,
+         except for the error message w.r.t. the number of
+         provided/expected tactics, as the last one is implied *)
+      check_numgoals ~minus:1 nh <*>
+        Proofview.tclDISPATCH
+          ((List.map (function None -> overtac
+                             | Some e -> ssrevaltac ist e <*>
+                                           overtac)
+              (if hint = nullhint then [None] else snd hint))
+           @ [betaiota])
+  in
+  let rew =
+    Proofview.V82.tactic
+      (Ssrequality.ssrrewritetac ~under:true ~map_redex ist [rule])
+  in
+  rew <*> intro_lock ipats <*> undertacs

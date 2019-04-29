@@ -293,12 +293,22 @@ Misc
 
 SSReflect
 
+- New tactic `under` to rewrite under binders, given an extensionality lemma:
+  - interactive mode: `under lem`, associated terminator: `over`
+  - one-liner mode: `under lem do [tac1 | ...]`
+
+  It can take occurrence switches, contextual patterns, and intro patterns:
+  `under {2}[in RHS]eq_big => [i|i ?] do ...`.
+
+  See the reference manual for the actual documentation.
+
 - New intro patterns:
   - temporary introduction: `=> +`
   - block introduction: `=> [^ prefix ] [^~ suffix ]`
   - fast introduction: `=> >`
   - tactics as views: `=> /ltac:mytac`
   - replace hypothesis: `=> {}H`
+
   See the reference manual for the actual documentation.
 
 - Clear discipline made consistent across the entire proof language.
