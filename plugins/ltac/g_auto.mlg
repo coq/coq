@@ -182,9 +182,18 @@ TACTIC EXTEND unify
   }
 END
 
+{
+let deprecated_convert_concl_no_check =
+  CWarnings.create
+    ~name:"convert_concl_no_check" ~category:"deprecated"
+    (fun () -> Pp.str "The syntax [convert_concl_no_check] is deprecated. Use [change_no_check] instead.")
+}
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> { Tactics.convert_concl ~check:false x DEFAULTcast }
+| ["convert_concl_no_check" constr(x) ] -> {
+    deprecated_convert_concl_no_check ();
+    Tactics.convert_concl ~check:false x DEFAULTcast
+  }
 END
 
 {
