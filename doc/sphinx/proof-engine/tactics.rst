@@ -4724,6 +4724,12 @@ Non-logical tactics
    from the shelf into focus, by appending them to the end of the current
    list of focused goals.
 
+.. tacn:: unshelve @tactic
+   :name: unshelve
+
+   Performs :n:`@tactic`, then unshelves existential variables added to the
+   shelf by the execution of :n:`@tactic`, prepending them to the current goal.
+
 .. tacn:: give_up
    :name: give_up
 
