@@ -68,6 +68,7 @@ GTKBIN=$(shell pkg-config --variable=prefix gtk+-3.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-3.0)
 PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
 SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-3.0)/share
+ADWAITASHARE=$(shell ls -d /usr/local/Cellar/adwaita-icon-theme/*)/share
 
 ###########################################################################
 # CoqIde special targets
@@ -255,6 +256,9 @@ $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/styles/{styles.rng,classic.xml} $@/gtksourceview-3.0/styles/
 	cp -R "$(GTKSHARE)/"locale $@
 	cp -R "$(GTKSHARE)/"themes $@
+	$(MKDIR) $@/glib-2.0/schemas
+	glib-compile-schemas --targetdir=$@/glib-2.0/schemas "$(GTKSHARE)/"glib-2.0/schemas/
+	cp -R "$(ADWAITASHARE)/"icons $@
 
 $(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
