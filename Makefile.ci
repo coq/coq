@@ -38,7 +38,7 @@ CI_TARGETS= \
     ci-mtac2 \
     ci-paramcoq \
     ci-quickchick \
-    ci-relation-algebra \
+    ci-relation_algebra \
     ci-sf \
     ci-simple-io \
     ci-stdlib2 \

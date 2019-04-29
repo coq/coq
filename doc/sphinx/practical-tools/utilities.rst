@@ -144,6 +144,10 @@ Here we describe only few of them.
 :CAMLFLAGS:
    can be used to specify additional flags to the |OCaml|
    compiler, like ``-bin-annot`` or ``-w``....
+:OCAMLWARN:
+   it contains a default of ``-warn-error +a-3``, useful to modify
+   this setting; beware this is not recommended for projects in
+   Coq's CI.
 :COQC, COQDEP, COQDOC:
    can be set in order to use alternative binaries
    (e.g. wrappers)

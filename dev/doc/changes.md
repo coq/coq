@@ -20,6 +20,15 @@ General deprecation
   removed. Please, make sure your plugin is warning-free in 8.8 before
   trying to port it over 8.9.
 
+Warnings
+
+- Coq now builds plugins with `-warn-error` enabled by default. The
+  amount of dangerous warnings in plugin code was very high, so we now
+  require plugins in the CI to adhere to the Coq warning policy. We
+  _strongly_ recommend against disabling the default set of warnings.
+  If you have special needs, see the documentation of your build
+  system and/or OCaml for further help.
+
 Names
 
 - Kernel names no longer contain a section path. They now have only two
