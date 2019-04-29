@@ -535,7 +535,7 @@ let focused_simpl path =
   let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
   let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  convert_concl_no_check newc DEFAULTcast
+  convert_concl ~check:false newc DEFAULTcast
   end
 
 let focused_simpl path = focused_simpl path
@@ -687,7 +687,7 @@ let simpl_coeffs path_init path_k =
   let n = Pervasives.(-) (List.length path_k) (List.length path_init) in
   let newc = context sigma (fun _ t -> loop n t) (List.rev path_init) (pf_concl gl)
   in
-  convert_concl_no_check newc DEFAULTcast
+  convert_concl ~check:false newc DEFAULTcast
   end
 
 let rec shuffle p (t1,t2) =
@@ -1849,12 +1849,12 @@ let destructure_hyps =
                     match destructurate_type env sigma typ with
 		    | Kapp(Nat,_) ->
                         (tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
+                           (Tactics.convert_hyp ~check:false (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (tclTHEN
-			   (convert_hyp_no_check (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
+                           (Tactics.convert_hyp ~check:false (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | _ -> loop lit

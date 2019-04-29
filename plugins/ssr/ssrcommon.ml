@@ -426,7 +426,7 @@ let mk_anon_id t gl_ids =
     (set s i (Char.chr (Char.code (get s i) + 1)); s) in
   Id.of_string_soft (Bytes.to_string (loop (n - 1)))
 
-let convert_concl_no_check t = Tactics.convert_concl_no_check t DEFAULTcast
+let convert_concl_no_check t = Tactics.convert_concl ~check:false t DEFAULTcast
 let convert_concl t = Tactics.convert_concl t DEFAULTcast
 
 let rename_hd_prod orig_name_ref gl =
@@ -1409,8 +1409,6 @@ let tclINTRO_ANON ?seed () =
   | Some seed -> tclINTRO ~id:(Seed seed) ~conclusion:return
 
 let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
-  let convert_concl_no_check t =
-    Tactics.convert_concl_no_check t DEFAULTcast in
   let concl = Goal.concl gl in
   let sigma = Goal.sigma gl in
   match EConstr.kind sigma concl with
