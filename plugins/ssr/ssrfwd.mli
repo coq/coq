@@ -57,3 +57,16 @@ val sufftac :
        (bool * Tacinterp.Value.t option list)) ->
   Tacmach.tactic
 
+(* pad_intro (by default false) indicates whether the intro-pattern
+   "=> i..." must be turned into "=> [i...|i...|i...|]" (n+1 branches,
+   assuming there are n provided tactics in the ssrhint argument
+   "do [...|...|...]"; it is useful when the intro-pattern is "=> *").
+   Otherwise, "=> i..." is turned into "=> [i...|]". *)
+val undertac :
+  ?pad_intro:bool ->
+  Ltac_plugin.Tacinterp.interp_sign ->
+  Ssrast.ssripats option -> Ssrequality.ssrrwarg ->
+  Ltac_plugin.Tacinterp.Value.t Ssrast.ssrhint -> unit Proofview.tactic
+
+val overtac :
+  unit Proofview.tactic

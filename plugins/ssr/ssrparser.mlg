@@ -86,6 +86,15 @@ GRAMMAR EXTEND Gram
   ssrtacarg: [[ tac = tactic_expr LEVEL "5" -> { tac } ]];
 END
 
+(* Copy of ssrtacarg with LEVEL "3", useful for: "under ... do ..." *)
+ARGUMENT EXTEND ssrtac3arg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
+| [ "YouShouldNotTypeThis" ] -> { CErrors.anomaly (Pp.str "Grammar placeholder match") }
+END
+GRAMMAR EXTEND Gram
+  GLOBAL: ssrtac3arg;
+  ssrtac3arg: [[ tac = tactic_expr LEVEL "3" -> { tac } ]];
+END
+
 {
 
 (* Lexically closed tactic for tacticals. *)
@@ -741,7 +750,25 @@ let pushIPatNoop = function
   | pats :: orpat -> (IPatNoop :: pats) :: orpat
   | [] -> []
 
+let test_ident_no_do strm =
+  match Util.stream_nth 0 strm with
+  | Tok.IDENT s when s <> "do" -> ()
+  | _ -> raise Stream.Failure
+
+let test_ident_no_do =
+  Pcoq.Entry.of_parser "test_ident_no_do" test_ident_no_do
+
 }
+
+ARGUMENT EXTEND ident_no_do PRINTED BY { fun _ _ _ -> Names.Id.print }
+| [ "YouShouldNotTypeThis" ident(id) ] -> { id }
+END
+
+
+GRAMMAR EXTEND Gram
+  GLOBAL: ident_no_do;
+  ident_no_do: [ [ test_ident_no_do; id = IDENT -> { Id.of_string id } ] ];
+END
 
 ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   INTERPRETED BY { interp_ipats }
@@ -749,7 +776,7 @@ ARGUMENT EXTEND ssripat TYPED AS ssripatrep list PRINTED BY { pr_ssripats }
   | [ "_" ] -> { [IPatAnon Drop] }
   | [ "*" ] -> { [IPatAnon All] }
   | [ ">" ] -> { [IPatFastNondep] }
-  | [ ident(id) ] -> { [IPatId id] }
+  | [ ident_no_do(id) ] -> { [IPatId id] }
   | [ "?" ] -> { [IPatAnon (One None)] }
   | [ "+" ] -> { [IPatAnon Temporary] }
   | [ "++" ] -> { [IPatAnon Temporary; IPatAnon Temporary] }
@@ -1045,6 +1072,13 @@ ARGUMENT EXTEND ssrhintarg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintar
 | [ "[" "]" ] -> { nullhint }
 | [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
 | [ ssrtacarg(arg) ] -> { mk_hint arg }
+END
+
+(* Copy of ssrhintarg with LEVEL "3", useful for: "under ... do ..." *)
+ARGUMENT EXTEND ssrhint3arg TYPED AS (bool * ssrortacs) PRINTED BY { pr_ssrhintarg env sigma }
+| [ "[" "]" ] -> { nullhint }
+| [ "[" ssrortacs(tacs) "]" ] -> { mk_orhint tacs }
+| [ ssrtac3arg(arg) ] -> { mk_hint arg }
 END
 
 ARGUMENT EXTEND ssrortacarg TYPED AS ssrhintarg PRINTED BY { pr_ssrhintarg env sigma }
@@ -2648,6 +2682,34 @@ TACTIC EXTEND ssrgenhave2
     ssr_idcomma(id) ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
   { let pats = augment_preclr clr pats in
     V82.tactic (wlogtac ist pats fwd hint false (`Gen id)) }
+END
+
+{
+
+let check_under_arg ((_dir,mult),((_occ,_rpattern),_rule)) =
+  if mult <> nomult then
+    CErrors.user_err Pp.(str"under does not support multipliers")
+
+}
+
+
+TACTIC EXTEND under
+  | [ "under" ssrrwarg(arg) ] -> {
+    check_under_arg arg;
+    Ssrfwd.undertac ist None arg nohint
+    }
+  | [ "under" ssrrwarg(arg) ssrintros_ne(ipats) ] -> {
+    check_under_arg arg;
+    Ssrfwd.undertac ist (Some ipats) arg nohint
+    }
+  | [ "under" ssrrwarg(arg) ssrintros_ne(ipats) "do" ssrhint3arg(h) ] -> {
+    check_under_arg arg;
+    Ssrfwd.undertac ist (Some ipats) arg h
+    }
+  | [ "under" ssrrwarg(arg) "do" ssrhint3arg(h) ] -> { (* implicit "=> [*|*]" *)
+    check_under_arg arg;
+    Ssrfwd.undertac ~pad_intro:true ist (Some [IPatAnon All]) arg h
+    }
 END
 
 {

@@ -73,11 +73,13 @@
       <keyword>suffices</keyword>
       <keyword>suff</keyword>
       <keyword>transitivity</keyword>
+      <keyword>under</keyword>
       <keyword>without loss</keyword>
       <keyword>wlog</keyword>
     </context>
     <context id="ssr-endtac" style-ref="endtactic">
       <keyword>by</keyword>
+      <keyword>over</keyword>
       <keyword>exact</keyword>
       <keyword>reflexivity</keyword>
     </context>

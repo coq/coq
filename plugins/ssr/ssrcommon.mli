@@ -312,6 +312,7 @@ val applyn :
            with_evars:bool ->
            ?beta:bool ->
            ?with_shelve:bool ->
+           ?first_goes_last:bool ->
            int ->
            EConstr.t -> v82tac
 exception NotEnoughProducts
@@ -348,7 +349,7 @@ val resolve_typeclasses :
 
 (*********************** Wrapped Coq  tactics *****************************)
 
-val rewritetac : ssrdir -> EConstr.t -> tactic
+val rewritetac : ?under:bool -> ssrdir -> EConstr.t -> tactic
 
 type name_hint = (int * EConstr.types array) option ref
 
@@ -482,3 +483,7 @@ module MakeState(S : StateType) : sig
   val get : Proofview.Goal.t -> S.state
 
 end
+
+val is_ind_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_construct_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_const_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
