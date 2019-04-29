@@ -22,6 +22,9 @@ Coqide
 - CoqIDE now properly sets the module name for a given file based on
   its path, see -topfile change entry for more details.
 
+- Preferences from coqide.keys are no longer overridden by modifiers
+  preferences in coqiderc.
+
 Coqtop
 
 - the use of `coqtop` as a compiler has been deprecated, in favor of
