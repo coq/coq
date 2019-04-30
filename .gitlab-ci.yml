@@ -88,6 +88,9 @@ before_script:
     - echo 'end:coq.install'
 
     - set +e
+  only:
+    variables:
+      - $DISABLED =~ /enabled/
 
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
@@ -105,6 +108,9 @@ before_script:
     paths:
       - _build/
     expire_in: 1 week
+  only:
+    variables:
+      - $DISABLED =~ /enabled/
 
 .dune-ci-template:
   stage: test
