@@ -380,7 +380,7 @@ IF "%RUNSETUP%"=="Y" (
     -P gettext-devel,libgettextpo-devel ^
     -P libglib2.0-devel,libgdk_pixbuf2.0-devel ^
     -P libfontconfig1 ^
-    -P gtk-update-icon-cache ^
+    -P gtk-update-icon-cache,adwaita-icon-theme ^
     -P libtool,automake ^
     -P intltool ^
     %EXTRAPACKAGES% ^
