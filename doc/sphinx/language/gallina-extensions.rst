@@ -2244,6 +2244,7 @@ Printing universes
       unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
 .. cmdv:: Print Universes Subgraph(@names)
+   :name: Print Universes Subgraph
 
    Prints the graph restricted to the requested names (adjusting
    constraints to preserve the implied transitive constraints between
