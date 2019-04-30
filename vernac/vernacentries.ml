@@ -1732,29 +1732,29 @@ let vernac_set_option ~local export table v = match v with
 
 let vernac_add_option key lv =
   let f = function
-    | StringRefValue s -> (get_string_table key)#add s
-    | QualidRefValue locqid -> (get_ref_table key)#add locqid
+    | StringRefValue s -> (get_string_table key).add (Global.env()) s
+    | QualidRefValue locqid -> (get_ref_table key).add (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_remove_option key lv =
   let f = function
-  | StringRefValue s -> (get_string_table key)#remove s
-  | QualidRefValue locqid -> (get_ref_table key)#remove locqid
+  | StringRefValue s -> (get_string_table key).remove (Global.env()) s
+  | QualidRefValue locqid -> (get_ref_table key).remove (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_mem_option key lv =
   let f = function
-  | StringRefValue s -> (get_string_table key)#mem s
-  | QualidRefValue locqid -> (get_ref_table key)#mem locqid
+  | StringRefValue s -> (get_string_table key).mem (Global.env()) s
+  | QualidRefValue locqid -> (get_ref_table key).mem (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_print_option key =
-  try (get_ref_table key)#print
+  try (get_ref_table key).print ()
   with Not_found ->
-  try (get_string_table key)#print
+  try (get_string_table key).print ()
   with Not_found ->
   try print_option_value key
   with Not_found -> error_undeclared_key key
