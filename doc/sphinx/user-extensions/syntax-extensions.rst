@@ -1376,6 +1376,8 @@ Abbreviations
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
 
+.. _numeral-notations:
+
 Numeral notations
 -----------------
 
