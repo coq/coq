@@ -15,6 +15,8 @@ Unreleased changes
 
 **Tactics**
 
+- New variant change_no_check of change (usable as a documented
+  replacement of convert_concl_no_check).
 
 **Tactic language**
 
