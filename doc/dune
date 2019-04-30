@@ -23,7 +23,7 @@
 (rule
  (targets unreleased.rst)
  (deps (source_tree changelog))
- (action (with-stdout-to %{targets} (bash "cat changelog/*.rst"))))
+ (action (with-stdout-to %{targets} (bash "cat changelog/00-title.rst changelog/*/*.rst"))))
 
 ; The install target still needs more work.
 ; (install
