@@ -54,6 +54,7 @@ dune* whitespace=blank-at-eol,tab-in-indent
 .gitattributes whitespace=blank-at-eol,tab-in-indent
 _CoqProject whitespace=blank-at-eol,tab-in-indent
 Dockerfile whitespace=blank-at-eol,tab-in-indent
+00000-title.rst -whitespace
 
 # tabs are allowed in Makefiles.
 Makefile* whitespace=blank-at-eol

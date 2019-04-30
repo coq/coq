@@ -14,9 +14,10 @@ entry in [`dev/doc/changes.md`](../../dev/doc/changes.md).
 
 ## How to add an entry? ##
 
-You should create a file in this folder. The name of the file should
-be `NNNNN-identifier.rst` where `NNNNN` is the number of the pull
-request on five digits and `identifier` is whatever you want.
+You should create a file in one of the sub-directories. The name of
+the file should be `NNNNN-identifier.rst` where `NNNNN` is the number
+of the pull request on five digits and `identifier` is whatever you
+want.
 
 This file should use the same format as the reference manual (as it
 will be copied in there). You may reference the documentation you just
