@@ -5,8 +5,8 @@ Module A.
 Declare Custom Entry myconstr.
 
 Notation "[ x ]" := x (x custom myconstr at level 6).
-Notation "x + y" := (Nat.add x y) (in custom myconstr at level 5) : nat_scope.
-Notation "x * y" := (Nat.mul x y) (in custom myconstr at level 4) : nat_scope.
+Notation "x + y" := (Nat.add x y) (in custom myconstr at level 5).
+Notation "x * y" := (Nat.mul x y) (in custom myconstr at level 4).
 Notation "< x >" := x (in custom myconstr at level 3, x constr at level 10).
 Check [ < 0 > + < 1 > * < 2 >].
 
@@ -95,76 +95,6 @@ Check (Let "x" e1 e2).
 
 End D.
 
-(* Check fix of #8551: a delimiter should be inserted because the
-   lonely notation hides the scope nat_scope, even though the latter
-   is open *)
-
-Module E.
-
-Notation "# x" := (S x) (at level 20) : nat_scope.
-Notation "# x" := (Some x).
-Check fun x => (# x)%nat.
-
-End E.
-
-(* Other tests of precedence *)
-
-Module F.
-
-Notation "# x" := (S x) (at level 20) : nat_scope.
-Notation "## x" := (S x) (at level 20).
-Check fun x => S x.
-Open Scope nat_scope.
-Check fun x => S x.
-Notation "### x" := (S x) (at level 20) : nat_scope.
-Check fun x => S x.
-Close Scope nat_scope.
-Check fun x => S x.
-
-End F.
-
-(* Lower priority of generic application rules *)
-
-Module G.
-
-Declare Scope predecessor_scope.
-Delimit Scope predecessor_scope with pred.
-Declare Scope app_scope.
-Delimit Scope app_scope with app.
-Notation "x .-1" := (Nat.pred x) (at level 10, format "x .-1") : predecessor_scope.
-Notation "f ( x )" := (f x) (at level 10, format "f ( x )") : app_scope.
-Check fun x => pred x.
-
-End G.
-
-(* Checking arbitration between in the presence of a notation in type scope *)
-
-Module H.
-
-Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
-  (at level 200, x binder, y binder, right associativity,
-  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
-Check forall a, a = 0.
-
-Close Scope type_scope.
-Check ((forall a, a = 0) -> True)%type.
-Open Scope type_scope.
-
-Notation "#" := (forall a, a = 0).
-Check #.
-Check # -> True.
-
-Close Scope type_scope.
-Check (# -> True)%type.
-Open Scope type_scope.
-
-Declare Scope my_scope.
-Notation "##" := (forall a, a = 0) : my_scope.
-Open Scope my_scope.
-Check ##.
-
-End H.
-
 (* Fixing bugs reported by G. Gonthier in #9207 *)
 
 Module I.
@@ -180,23 +110,6 @@ Axiom r : nat -> Pnat.
 Check r 2 3.
 
 End I.
-
-(* Fixing a bug reported by G. Gonthier in #9207 *)
-
-Module J.
-
-Module Import Mfoo.
-Module Foo.
-Definition FooCn := 2.
-Module Bar.
-Notation Cn := FooCn.
-End Bar.
-End Foo.
-Export Foo.Bar.
-End Mfoo.
-About Cn.
-
-End J.
 
 Require Import Coq.Numbers.Cyclic.Int63.Int63.
 Module NumeralNotations.
