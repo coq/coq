@@ -348,18 +348,3 @@ let update_global_env (pf : t) =
        let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
          (p, ()))) pf
   in res
-
-(* XXX: This hook is used to provide a better error w.r.t. bullets,
-   however the proof engine [surprise!] knows nothing about bullets so
-   here we have a layering violation. The right fix is to modify the
-   entry point to handle this and reraise the exception with the
-   needed information. *)
-(* let _ =
- *   let hook n =
- *     try
- *       let prf = give_me_the_proof pf in
- *       (Proof_bullet.suggest prf)
- *     with NoCurrentProof -> mt ()
- *   in
- *   Proofview.set_nosuchgoals_hook hook *)
-
