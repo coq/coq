@@ -157,7 +157,6 @@ let import c u d = globalize (Safe_typing.import c u d)
 let env_of_context hyps =
   reset_with_named_context hyps (env())
 
-let constr_of_global_in_context = Typeops.constr_of_global_in_context
 let type_of_global_in_context = Typeops.type_of_global_in_context
 
 let universes_of_global gr = 
