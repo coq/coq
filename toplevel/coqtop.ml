@@ -220,7 +220,6 @@ let init_toplevel ~help ~init custom_init arglist =
   let top_lp = Coqinit.toplevel_init_load_path () in
   List.iter Mltop.add_coq_path top_lp;
   let opts, extras = custom_init ~opts extras in
-  Flags.if_verbose print_header ();
   Mltop.init_known_plugins ();
 
   Global.set_engagement opts.impredicative_set;
@@ -296,6 +295,7 @@ let rec coqc_deprecated_check args acc extras =
 let coqtop_init ~opts extra =
   init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
+  Flags.if_verbose print_header ();
   opts, extra
 
 let coqtop_toplevel =
