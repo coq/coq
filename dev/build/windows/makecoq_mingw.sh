@@ -1293,6 +1293,8 @@ function copy_coq_gtk {
     install_glob "$PREFIX/share/gtksourceview-3.0/styles" '*'         "$PREFIXCOQ/share/gtksourceview-3.0/styles"
     install_rec  "$PREFIX/share/themes" '*'                           "$PREFIXCOQ/share/themes"
     install_rec  "$CYGWIN_INSTALLDIR_MFMT/usr/share/icons" '*'        "$PREFIXCOQ/share/icons"
+    mkdir -p "$PREFIXCOQ/share/glib-2.0/schemas"
+    glib-compile-schemas --targetdir="$PREFIXCOQ/share/glib-2.0/schemas" "$PREFIX/share/glib-2.0/schemas/"
 
     # This below item look like a bug in make install
     if [ -d "$PREFIXCOQ/share/coq/" ] ; then
