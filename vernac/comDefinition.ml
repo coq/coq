@@ -12,7 +12,6 @@ open Pp
 open Util
 open Entries
 open Redexpr
-open Declare
 open Constrintern
 open Pretyping
 
@@ -42,10 +41,9 @@ let check_imps ~impsty ~impsbody =
   if not b then warn_implicits_in_term ()
 
 let interp_definition ~program_mode pl bl poly red_option c ctypopt =
-  let open EConstr in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
-  let evd, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
   (* Build the parameters *)
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
   (* Build the type *)
@@ -66,24 +64,15 @@ let interp_definition ~program_mode pl bl poly red_option c ctypopt =
   in
   (* Do the reduction *)
   let evd, c = red_constant_body red_option env_bl evd c in
-  (* universe minimization *)
-  let evd = Evd.minimize_universes evd in
-  (* Substitute evars and universes, and add parameters.
-     Note: in program mode some evars may remain. *)
-  let ctx = List.map Termops.(map_rel_decl (to_constr ~abort_on_undefined_evars:false evd)) ctx in
-  let c = Term.it_mkLambda_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd c) ctx in
-  let tyopt = Option.map (fun ty -> Term.it_mkProd_or_LetIn (EConstr.to_constr ~abort_on_undefined_evars:false evd ty) ctx) tyopt in
-  (* Keep only useful universes. *)
-  let uvars_fold uvars c =
-    Univ.LSet.union uvars (universes_of_constr evd (of_constr c))
-  in
-  let uvars = List.fold_left uvars_fold Univ.LSet.empty (Option.List.cons tyopt [c]) in
-  let evd = Evd.restrict_universe_context evd uvars in
-  (* Check we conform to declared universes *)
-  let uctx = Evd.check_univ_decl ~poly evd decl in
-  (* We're done! *)
-  let ce = definition_entry ?types:tyopt ~univs:uctx c in
-  (ce, evd, decl, imps)
+
+  (* Declare the definition *)
+  let c = EConstr.it_mkLambda_or_LetIn c ctx in
+  let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
+
+  let evd, ce = DeclareDef.prepare_definition ~allow_evars:program_mode
+      ~opaque:false ~poly evd udecl ~types:tyopt ~body:c in
+
+  (ce, evd, udecl, imps)
 
 let check_definition ~program_mode (ce, evd, _, imps) =
   let env = Global.env () in
