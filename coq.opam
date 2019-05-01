@@ -29,6 +29,6 @@ depends: [
 ]
 
 build: [
-  [ "./configure" "-prefix" prefix "-native-compiler" "no" ]
+  [ "dune" "exec" "config/dune_config.exe" prefix ]
   [ "dune" "build" "-p" name "-j" jobs ]
 ]
