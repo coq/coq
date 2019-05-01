@@ -829,11 +829,9 @@ let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
   e_change_in_concl ~check:false ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
 
-let change_in_hyp ~check occl t id =
-  (* FIXME: we set the [check] flag only to reorder hypotheses in case of
-    introduction of dependencies in new variables. We should separate this
-    check from the conversion function. *)
-  e_change_in_hyp ~check ~reorder:check (fun x -> change_on_subterm ~check Reduction.CONV x t occl) id
+let change_in_hyp ~check occl t id  =
+  (* Same as above *)
+  e_change_in_hyp ~check:false ~reorder:check (fun x -> change_on_subterm ~check Reduction.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -855,8 +853,8 @@ let change ~check chg c cls =
       let redfun deep env sigma t = change_on_subterm ~check Reduction.CONV deep c occl env sigma t in
       (redfun, id, where)
     in
-    (* FIXME: don't check, we do it already *)
-    e_change_in_hyps ~check ~reorder:check f hyps
+    (* Don't check, we do it already in [change_on_subterm] *)
+    e_change_in_hyps ~check:false ~reorder:check f hyps
   end
 
 let change_concl t = 
@@ -894,6 +892,7 @@ let reduce redexp cl =
   let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
   let nbcl = (if cl.concl_occs = NoOccurrences then 0 else 1) + List.length hyps in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
+  let reorder = match redexp with Fold _ | Pattern _ -> true | _ -> false in
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
@@ -908,8 +907,7 @@ let reduce redexp cl =
     let redfun _ env sigma c = redfun env sigma c in
     (redfun, id, where)
   in
-  (* FIXME: sort out which flag is which *)
-  e_change_in_hyps ~check ~reorder:check f hyps
+  e_change_in_hyps ~check ~reorder f hyps
   end
   end
 
