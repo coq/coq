@@ -1849,12 +1849,12 @@ let destructure_hyps =
                     match destructurate_type env sigma typ with
 		    | Kapp(Nat,_) ->
                         (tclTHEN
-                           (Tactics.convert_hyp ~check:false (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
+                           (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | Kapp(Z,_) ->
                         (tclTHEN
-                           (Tactics.convert_hyp ~check:false (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
+                           (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
                                                                      decl))
 			   (loop lit))
 		    | _ -> loop lit

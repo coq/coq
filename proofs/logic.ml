@@ -548,7 +548,7 @@ and treat_case sigma goal ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_pp_info.cstr_tags
 
-let convert_hyp ~check env sigma d =
+let convert_hyp ~check ~reorder env sigma d =
   let id = NamedDecl.get_id d in
   let b = NamedDecl.get_value d in
   let sign = Environ.named_context_val env in
@@ -565,7 +565,7 @@ let convert_hyp ~check env sigma d =
       user_err ~hdr:"Logic.convert_hyp"
         (str "Incorrect change of the body of "++ Id.print id ++ str ".");
     let sign' = apply_to_hyp sign id (fun _ _ _ -> EConstr.Unsafe.to_named_decl d) in
-    if check then reorder_val_context env sigma sign' (check_decl_position env sigma sign d)
+    if reorder then reorder_val_context env sigma sign' (check_decl_position env sigma sign d)
     else sign'
 
 (************************************************************************)

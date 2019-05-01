@@ -34,7 +34,7 @@ val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
 
 val introduction    : Id.t -> unit Proofview.tactic
 val convert_concl   : check:bool -> types -> cast_kind -> unit Proofview.tactic
-val convert_hyp     : check:bool -> named_declaration -> unit Proofview.tactic
+val convert_hyp     : check:bool -> reorder:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
 [@@ocaml.deprecated "use [Tactics.convert_concl]"]
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
@@ -152,7 +152,7 @@ type e_tactic_reduction = Reductionops.e_reduction_function
 type change_arg = patvar_map -> env -> evar_map -> evar_map * constr
 
 val make_change_arg   : constr -> change_arg
-val reduct_in_hyp     : check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
+val reduct_in_hyp     : check:bool -> reorder:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
 val reduct_option     : check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
 val reduct_in_concl   : check:bool -> tactic_reduction * cast_kind -> unit Proofview.tactic
 val e_reduct_in_concl   : check:bool -> e_tactic_reduction * cast_kind -> unit Proofview.tactic
