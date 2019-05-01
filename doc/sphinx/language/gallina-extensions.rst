@@ -2448,3 +2448,45 @@ types and functions of a :g:`Uint63` module. Said module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
 can be taken from the kernel of Coq.
+
+Bidirectionality hints
+----------------------
+
+When type-checking an application, Coq normally does not use information from
+the context to infer the types of the arguments. It only checks after the fact
+that the type inferred for the application is coherent with the expected type.
+Bidirectionality hints make it possible to specify that after type-checking the
+first arguments of an application, typing information should be propagated from
+the context to help inferring the types of the remaining arguments.
+
+.. cmd:: Arguments @qualid {* @ident__1 } & {* @ident__2}
+   :name: Arguments (bidirectionality hints)
+
+   This commands tells the typechecking algorithm, when type-checking
+   applications of :n:`@qualid`, to first type-check the arguments in
+   :n:`@ident__1` and then propagate information from the typing context to
+   type-check the remaining arguments (in :n:`@ident__2`).
+
+.. example::
+
+   In a context where a coercion was declared from ``bool`` to ``nat``:
+
+   .. coqtop:: in reset
+
+      Definition b2n (b : bool) := if b then 1 else 0.
+      Coercion b2n : bool >-> nat.
+
+   Coq cannot automatically coerce existential statements over ``bool`` to
+   statements over ``nat``, because the need for inserting a coercion is known
+   only from the expected type of a subterm:
+
+   .. coqtop:: all
+
+      Fail Check (ex_intro _ true _ : exists n : nat, n > 0).
+
+   However, a suitable bidirectionality hint makes the example work:
+
+   .. coqtop:: all
+
+      Arguments ex_intro _ _ & _ _.
+      Check (ex_intro _ true _ : exists n : nat, n > 0).

@@ -304,6 +304,12 @@ let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids
     Notation.find_arguments_scope (Option.has_some) print_argument_scopes
 
+let print_bidi_hints gr =
+  match Pretyping.get_bidirectionality_hint gr with
+  | None -> []
+  | Some nargs ->
+    [str "Using typing information from context after typing the " ++ int nargs ++ str " first arguments"]
+
 (*********************)
 (* "Locate" commands *)
 
@@ -841,7 +847,8 @@ let print_about_any ?loc env sigma k udecl =
 	print_name_infos ref @
 	(if Pp.ismt rb then [] else [rb]) @
 	print_opacity ref @
-	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
+  print_bidi_hints ref @
+  [hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
     let () = match Syntax_def.search_syntactic_definition kn with
     | [],Notation_term.NRef ref -> Dumpglob.add_glob ?loc ref

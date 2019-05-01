@@ -1047,7 +1047,7 @@ open Pputils
                 | Some Flags.Current -> [SetOnlyParsing]
                 | Some v -> [SetCompatVersion v]))
         )
-      | VernacArguments (q, args, more_implicits, nargs, mods) ->
+      | VernacArguments (q, args, more_implicits, nargs, nargs_before_bidi, mods) ->
         return (
           hov 2 (
             keyword "Arguments" ++ spc() ++
@@ -1058,22 +1058,23 @@ open Pputils
                 | Impargs.Implicit -> str "[" ++ x ++ str "]"
                 | Impargs.MaximallyImplicit -> str "{" ++ x ++ str "}"
                 | Impargs.NotImplicit -> x in
-              let rec print_arguments n l =
-                match n, l with
-                  | Some 0, l -> spc () ++ str"/" ++ print_arguments None l
-                  | _, [] -> mt()
-                  | n, { name = id; recarg_like = k;
+              let rec print_arguments n nbidi l =
+                match n, nbidi, l with
+                  | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l
+                  | _, Some 0, l -> spc () ++ str"|" ++ print_arguments n None l
+                  | _, _, [] -> mt()
+                  | n, nbidi, { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
                     spc() ++ pr_br imp (pr_if k (str"!") ++ Name.print id ++ pr_s s) ++
-                      print_arguments (Option.map pred n) tl
+                    print_arguments (Option.map pred n) (Option.map pred nbidi) tl
               in
               let rec print_implicits = function
                 | [] -> mt ()
                 | (name, impl) :: rest ->
                    spc() ++ pr_br impl (Name.print name) ++ print_implicits rest
               in
-              print_arguments nargs args ++
+              print_arguments nargs nargs_before_bidi args ++
                 if not (List.is_empty more_implicits) then
                   prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++
@@ -1086,7 +1087,8 @@ open Pputils
                     | `Assert -> keyword "assert"
                     | `ExtraScopes -> keyword "extra scopes"
                     | `ClearImplicits -> keyword "clear implicits"
-                    | `ClearScopes -> keyword "clear scopes")
+                    | `ClearScopes -> keyword "clear scopes"
+                    | `ClearBidiHint -> keyword "clear bidirectionality hint")
                   mods)
         )
       | VernacReserve bl ->

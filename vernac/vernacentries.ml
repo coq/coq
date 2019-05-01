@@ -1204,6 +1204,36 @@ let vernac_syntactic_definition ~module_local lid x y =
   Dumpglob.dump_definition lid false "syndef";
   Metasyntax.add_syntactic_definition (Global.env()) lid.v x module_local y
 
+let cache_bidi_hints (_name, (gr, ohint)) =
+  match ohint with
+  | None -> Pretyping.clear_bidirectionality_hint gr
+  | Some nargs -> Pretyping.add_bidirectionality_hint gr nargs
+
+let load_bidi_hints _ r =
+  cache_bidi_hints r
+
+let subst_bidi_hints (subst, (gr, ohint as orig)) =
+  let gr' = subst_global_reference subst gr in
+  if gr == gr' then orig else (gr', ohint)
+
+let discharge_bidi_hints (_name, (gr, ohint)) =
+  if isVarRef gr && Lib.is_in_section gr then None
+  else
+    let vars = Lib.variable_section_segment_of_reference gr in
+    let n = List.length vars in
+    Some (gr, Option.map ((+) n) ohint)
+
+let inBidiHints =
+  let open Libobject in
+  declare_object { (default_object "BIDIRECTIONALITY-HINTS" ) with
+                   load_function = load_bidi_hints;
+                   cache_function = cache_bidi_hints;
+                   classify_function = (fun o -> Substitute o);
+                   subst_function = subst_bidi_hints;
+                   discharge_function = discharge_bidi_hints;
+                 }
+
+
 let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
          (fun sr ->
@@ -1216,7 +1246,7 @@ let warn_arguments_assert =
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
-let vernac_arguments ~section_local reference args more_implicits nargs_for_red flags =
+let vernac_arguments ~section_local reference args more_implicits nargs_for_red nargs_before_bidi flags =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let assert_flag = List.mem `Assert flags in
@@ -1227,6 +1257,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   let default_implicits_flag = List.mem `DefaultImplicits flags in
   let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
   let nomatch_flag = List.mem `ReductionDontExposeCase flags in
+  let clear_bidi_hint = List.mem `ClearBidiHint flags in
 
   let err_incompat x y =
     user_err Pp.(str ("Options \""^x^"\" and \""^y^"\" are incompatible.")) in
@@ -1284,6 +1315,9 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
 
   if Option.cata (fun n -> n > num_args) false nargs_for_red then
     user_err Pp.(str "The \"/\" modifier should be put before any extra scope.");
+
+  if Option.cata (fun n -> n > num_args) false nargs_before_bidi then
+    user_err Pp.(str "The \"&\" modifier should be put before any extra scope.");
 
   let scopes_specified = List.exists Option.has_some scopes in
   
@@ -1396,6 +1430,12 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
 
   let red_modifiers_specified = Option.has_some red_behavior in
 
+  let bidi_hint_specified = Option.has_some nargs_before_bidi in
+
+  if bidi_hint_specified && clear_bidi_hint then
+    err_incompat "clear bidirectionality hint" "&";
+
+
   (* Actions *)
 
   if renaming_specified then begin
@@ -1428,10 +1468,26 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
               strbrk "are relevant for constants only.")
   end;
 
+  if bidi_hint_specified then begin
+    let n = Option.get nargs_before_bidi in
+    if section_local then
+      Pretyping.add_bidirectionality_hint sr n
+    else
+      Lib.add_anonymous_leaf (inBidiHints (sr, Some n))
+    end;
+
+  if clear_bidi_hint then begin
+    if section_local then
+      Pretyping.clear_bidirectionality_hint sr
+    else
+      Lib.add_anonymous_leaf (inBidiHints (sr, None))
+  end;
+
  if not (renaming_specified ||
          implicits_specified ||
          scopes_specified ||
-         red_modifiers_specified) && (List.is_empty flags) then
+         red_modifiers_specified ||
+         bidi_hint_specified) && (List.is_empty flags) then
     warn_arguments_assert sr
 
 let default_env () = {
@@ -2437,8 +2493,8 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
   | VernacSyntacticDefinition (id,c,b) ->
     with_module_locality ~atts vernac_syntactic_definition id c b;
     pstate
-  | VernacArguments (qid, args, more_implicits, nargs, flags) ->
-    with_section_locality ~atts vernac_arguments qid args more_implicits nargs flags;
+  | VernacArguments (qid, args, more_implicits, nargs, nargs_before_bidi, flags) ->
+    with_section_locality ~atts vernac_arguments qid args more_implicits nargs nargs_before_bidi flags;
     pstate
   | VernacReserve bl ->
     unsupported_attributes atts;

@@ -362,8 +362,9 @@ type nonrec vernac_expr =
       vernac_argument_status list (* Main arguments status list *) *
         (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
       int option (* Number of args to trigger reduction *) *
+      int option (* Number of args before bidirectional typing *) *
         [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
-          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes |
+          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes | `ClearBidiHint |
           `DefaultImplicits ] list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
