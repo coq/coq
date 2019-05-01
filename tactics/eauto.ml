@@ -514,7 +514,7 @@ let autounfold_one db cl =
   in
     if did then
       match cl with
-      | Some hyp -> change_in_hyp None (make_change_arg c') hyp
+      | Some hyp -> change_in_hyp ~check:true None (make_change_arg c') hyp
       | None -> convert_concl ~check:false c' DEFAULTcast
     else Tacticals.New.tclFAIL 0 (str "Nothing to unfold")
   end

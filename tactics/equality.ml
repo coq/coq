@@ -1613,10 +1613,10 @@ let cutSubstInHyp l2r eqn id =
   tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (tclTHENFIRST
     (tclTHENLIST [
-       (change_in_hyp None (make_change_arg typ) (id,InHypTypeOnly));
+       (change_in_hyp ~check:true None (make_change_arg typ) (id,InHypTypeOnly));
        (replace_core (onHyp id) l2r eqn)
     ])
-    (change_in_hyp None (make_change_arg expected) (id,InHypTypeOnly)))
+    (change_in_hyp ~check:true None (make_change_arg expected) (id,InHypTypeOnly)))
   end
 
 let try_rewrite tac =

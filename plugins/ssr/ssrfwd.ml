@@ -56,7 +56,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
   | Cast(t, DEFAULTcast, ty) -> t, (gl, ty)
   | _ -> c, pfe_type_of gl c in
   let cl' = EConstr.mkLetIn (make_annot (Name id) Sorts.Relevant, c, cty, cl) in
-  Tacticals.tclTHEN (Proofview.V82.of_tactic (convert_concl cl')) (introid id) gl
+  Tacticals.tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl')) (introid id) gl
 
 open Util
 
@@ -161,7 +161,7 @@ let havetac ist
      let gl, ty = pfe_type_of gl t in
      let ctx, _ = EConstr.decompose_prod_n_assum (project gl) 1 ty in
      let assert_is_conv gl =
-       try Proofview.V82.of_tactic (convert_concl (EConstr.it_mkProd_or_LetIn concl ctx)) gl
+       try Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.it_mkProd_or_LetIn concl ctx)) gl
        with _ -> errorstrm (str "Given proof term is not of type " ++
          pr_econstr_env (pf_env gl) (project gl) (EConstr.mkArrow (EConstr.mkVar (Id.of_string "_")) Sorts.Relevant concl)) in
      gl, ty, Tacticals.tclTHEN assert_is_conv (Proofview.V82.of_tactic (Tactics.apply t)), id, itac_c
@@ -471,7 +471,7 @@ let undertac ?(pad_intro = false) ist ipats ((dir,_),_ as rule) hint =
     if hint = nohint then
       Proofview.tclUNIT ()
     else
-      let betaiota = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
+      let betaiota = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
       (* Usefulness of check_numgoals: tclDISPATCH would be enough,
          except for the error message w.r.t. the number of
          provided/expected tactics, as the last one is implied *)

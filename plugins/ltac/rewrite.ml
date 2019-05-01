@@ -1574,8 +1574,8 @@ let newfail n s =
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
-  let beta = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
-  let beta_hyp id = Tactics.reduct_in_hyp Reductionops.nf_betaiota (id, InHyp) in
+  let beta = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
+  let beta_hyp id = Tactics.reduct_in_hyp ~check:false Reductionops.nf_betaiota (id, InHyp) in
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")

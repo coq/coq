@@ -701,7 +701,7 @@ let mkDestructEq :
         let changefun patvars env sigma =
           pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2)
         in
-	Proofview.V82.of_tactic (change_in_concl None changefun) g2);
+        Proofview.V82.of_tactic (change_in_concl ~check:true None changefun) g2);
       Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
 

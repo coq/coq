@@ -145,7 +145,7 @@ let introduction id =
 
 let error msg = CErrors.user_err Pp.(str msg)
 
-let convert_concl ?(check=true) ty k =
+let convert_concl ~check ty k =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let conclty = Proofview.Goal.concl gl in
@@ -163,7 +163,7 @@ let convert_concl ?(check=true) ty k =
     end
   end
 
-let convert_hyp ?(check=true) d =
+let convert_hyp ~check d =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
@@ -701,7 +701,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
 
 (** Tactic reduction modulo evars (for universes essentially) *)
 
-let e_change_in_concl ?(check = false) (redfun, sty) =
+let e_change_in_concl ~check (redfun, sty) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, c') = redfun (Tacmach.New.pf_env gl) sigma (Tacmach.New.pf_concl gl) in
@@ -709,7 +709,7 @@ let e_change_in_concl ?(check = false) (redfun, sty) =
     (convert_concl ~check c' sty)
   end
 
-let e_change_in_hyp ?(check = false) redfun (id,where) =
+let e_change_in_hyp ~check redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let hyp = Tacmach.New.pf_get_hyp id gl in
@@ -718,7 +718,7 @@ let e_change_in_hyp ?(check = false) redfun (id,where) =
     (convert_hyp ~check c)
   end
 
-let e_change_in_hyps ?(check=true) f args =
+let e_change_in_hyps ~check f args =
   Proofview.Goal.enter begin fun gl ->
     let fold (env, sigma) arg =
       let (redfun, id, where) = f arg in
@@ -745,26 +745,26 @@ let e_change_in_hyps ?(check=true) f args =
 
 let e_reduct_in_concl = e_change_in_concl
 
-let reduct_in_concl ?(check = false) (redfun, sty) =
+let reduct_in_concl ~check (redfun, sty) =
   let redfun env sigma c = (sigma, redfun env sigma c) in
   e_change_in_concl ~check (redfun, sty)
 
-let e_reduct_in_hyp ?(check=false) redfun (id, where) =
+let e_reduct_in_hyp ~check redfun (id, where) =
   let redfun _ env sigma c = redfun env sigma c in
   e_change_in_hyp ~check redfun (id, where)
 
-let reduct_in_hyp ?(check = false) redfun (id, where) =
+let reduct_in_hyp ~check redfun (id, where) =
   let redfun _ env sigma c = (sigma, redfun env sigma c) in
   e_change_in_hyp ~check redfun (id, where)
 
 let revert_cast (redfun,kind as r) =
   if kind == DEFAULTcast then (redfun,REVERTcast) else r
 
-let e_reduct_option ?(check=false) redfun = function
+let e_reduct_option ~check redfun = function
   | Some id -> e_reduct_in_hyp ~check (fst redfun) id
   | None    -> e_change_in_concl ~check (revert_cast redfun)
 
-let reduct_option ?(check = false) (redfun, sty) where =
+let reduct_option ~check (redfun, sty) where =
   let redfun env sigma c = (sigma, redfun env sigma c) in
   e_reduct_option ~check (redfun, sty) where
 
@@ -802,7 +802,7 @@ let change_and_check cv_pb mayneedglobalcheck deep t env sigma c =
   | Some sigma -> (sigma, t')
 
 (* Use cumulativity only if changing the conclusion not a subterm *)
-let change_on_subterm check cv_pb deep t where env sigma c =
+let change_on_subterm ~check cv_pb deep t where env sigma c =
   let mayneedglobalcheck = ref false in
   let (sigma, c) = match where with
   | None ->
@@ -825,15 +825,15 @@ let change_on_subterm check cv_pb deep t where env sigma c =
     end;
   (sigma, c)
 
-let change_in_concl ?(check=true) occl t =
+let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
-  e_change_in_concl ~check:false ((change_on_subterm check Reduction.CUMUL false t occl),DEFAULTcast)
+  e_change_in_concl ~check:false ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
 
-let change_in_hyp ?(check=true) occl t id =
+let change_in_hyp ~check occl t id =
   (* FIXME: we set the [check] flag only to reorder hypotheses in case of
     introduction of dependencies in new variables. We should separate this
     check from the conversion function. *)
-  e_change_in_hyp ~check (fun x -> change_on_subterm check Reduction.CONV x t occl) id
+  e_change_in_hyp ~check (fun x -> change_on_subterm ~check Reduction.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -842,7 +842,7 @@ let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | Some l ->
   List.map (fun ((occs, id), w) -> (id, occs, w)) l
 
-let change ?(check=true) chg c cls =
+let change ~check chg c cls =
   Proofview.Goal.enter begin fun gl ->
     let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
     begin match cls.concl_occs with
@@ -852,7 +852,7 @@ let change ?(check=true) chg c cls =
     <*>
     let f (id, occs, where) =
       let occl = bind_change_occurrences occs chg in
-      let redfun deep env sigma t = change_on_subterm check Reduction.CONV deep c occl env sigma t in
+      let redfun deep env sigma t = change_on_subterm ~check Reduction.CONV deep c occl env sigma t in
       (redfun, id, where)
     in
     e_change_in_hyps ~check f hyps
@@ -862,23 +862,23 @@ let change_concl t =
   change_in_concl ~check:true None (make_change_arg t)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
-let red_in_hyp          = reduct_in_hyp    red_product
-let red_option          = reduct_option   (red_product,REVERTcast)
-let hnf_in_concl        = reduct_in_concl (hnf_constr,REVERTcast)
-let hnf_in_hyp          = reduct_in_hyp    hnf_constr
-let hnf_option          = reduct_option   (hnf_constr,REVERTcast)
-let simpl_in_concl      = reduct_in_concl (simpl,REVERTcast)
-let simpl_in_hyp        = reduct_in_hyp    simpl
-let simpl_option        = reduct_option   (simpl,REVERTcast)
-let normalise_in_concl  = reduct_in_concl (compute,REVERTcast)
-let normalise_in_hyp    = reduct_in_hyp    compute
-let normalise_option    = reduct_option   (compute,REVERTcast)
-let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
-let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
-let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
-let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
-let pattern_option l = e_reduct_option (pattern_occs l,DEFAULTcast)
+let red_in_concl        = reduct_in_concl ~check:false (red_product,REVERTcast)
+let red_in_hyp          = reduct_in_hyp ~check:false red_product
+let red_option          = reduct_option ~check:false (red_product,REVERTcast)
+let hnf_in_concl        = reduct_in_concl ~check:false (hnf_constr,REVERTcast)
+let hnf_in_hyp          = reduct_in_hyp ~check:false hnf_constr
+let hnf_option          = reduct_option ~check:false (hnf_constr,REVERTcast)
+let simpl_in_concl      = reduct_in_concl ~check:false (simpl,REVERTcast)
+let simpl_in_hyp        = reduct_in_hyp ~check:false simpl
+let simpl_option        = reduct_option ~check:false (simpl,REVERTcast)
+let normalise_in_concl  = reduct_in_concl ~check:false (compute,REVERTcast)
+let normalise_in_hyp    = reduct_in_hyp ~check:false compute
+let normalise_option    = reduct_option ~check:false (compute,REVERTcast)
+let normalise_vm_in_concl = reduct_in_concl ~check:false (Redexpr.cbv_vm,VMcast)
+let unfold_in_concl loccname = reduct_in_concl ~check:false (unfoldn loccname,REVERTcast)
+let unfold_in_hyp   loccname = reduct_in_hyp ~check:false (unfoldn loccname)
+let unfold_option   loccname = reduct_option ~check:false (unfoldn loccname,DEFAULTcast)
+let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
@@ -3061,8 +3061,8 @@ let unfold_body x =
   Tacticals.New.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
   let rfun _ _ c = replace_vars [x, xval] c in
-  let reducth h = reduct_in_hyp rfun h in
-  let reductc = reduct_in_concl (rfun, DEFAULTcast) in
+  let reducth h = reduct_in_hyp ~check:false rfun h in
+  let reductc = reduct_in_concl ~check:false (rfun, DEFAULTcast) in
   Tacticals.New.tclTHENLIST [Tacticals.New.tclMAP reducth hl; reductc]
   end
   end

@@ -167,7 +167,7 @@ let change pat c cl =
     delayed_of_tactic (Tac2ffi.app_fun1 c (array constr) constr subst) env sigma
   in
   let cl = mk_clause cl in
-  Tactics.change pat c cl
+  Tactics.change ~check:true pat c cl
   end
 
 let rewrite ev rw cl by =
