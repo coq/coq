@@ -173,6 +173,11 @@ let do_assumptions ~pstate ~program_mode kind nl l =
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
+  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
+     possible as we indeed declare several parameters; however,
+     restrict_universe_context should be called in a centralized place
+     IMO, thus I think we should adapt `prepare_parameter` to handle
+     this case too. *)
   let sigma = Evd.restrict_universe_context sigma uvars in
   let uctx = Evd.check_univ_decl ~poly:(pi2 kind) sigma udecl in
   let ubinders = Evd.universe_binders sigma in
