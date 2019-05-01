@@ -327,15 +327,12 @@ let instance_hook k info global imps ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
+let declare_instance_constant k info global imps ?hook id udecl poly sigma
+ (term : EConstr.t) (termtype : EConstr.t) =
   let kind = IsDefinition Instance in
-  let sigma =
-    let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
-                                 (CVars.universes_of_constr term) in
-    Evd.restrict_universe_context sigma levels
-  in
-  let uctx = Evd.check_univ_decl ~poly sigma decl in
-  let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
+  (* XXX: Type needs to be free of evars, not the body tho *)
+  let sigma, entry = DeclareDef.prepare_definition
+      ~allow_evars:true ~poly sigma udecl ~types:(Some termtype) ~body:term in
   let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
   Declare.definition_message id;
@@ -360,8 +357,10 @@ let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps (ConstRef cst)
 
-let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
+let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids (term : EConstr.t option) (termtype : EConstr.t) =
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+  (* We need to minimize univs before declaring the constant *)
+  let sigma = Evd.minimize_universes sigma in
   if program_mode then
     let hook _ _ vis gr =
       let cst = match gr with ConstRef kn -> kn | _ -> assert false in
@@ -372,11 +371,13 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
       declare_instance env sigma (Some pri) (not global) (ConstRef cst)
     in
     let obls, constr, typ =
+      let termtype = EConstr.to_constr sigma termtype in
       match term with
       | Some t ->
+        let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
         let obls, _, constr, typ =
-          Obligations.eterm_obligations env id sigma 0 t termtype
-        in obls, Some constr, typ
+          Obligations.eterm_obligations env id sigma 0 t termtype in
+        obls, Some constr, typ
       | None -> [||], None, termtype
     in
     let hook = Lemmas.mk_hook hook in
@@ -392,7 +393,10 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
            the refinement manually.*)
         let gls = List.rev (Evd.future_goals sigma) in
         let sigma = Evd.reset_future_goals sigma in
-        let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma (EConstr.of_constr termtype)
+        (* XXX: Actually we need to normalize these terms, otherwise Admitted / Qed fails!
+           This is hard to fix bug in proof_global :( :( ! *)
+        let termtype = Evarutil.nf_evar sigma termtype in
+        let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma termtype
           ~hook:(Lemmas.mk_hook
              (fun _ _ _ -> instance_hook k pri global imps ?hook)) in
         (* spiwack: I don't know what to do with the status here. *)
@@ -400,7 +404,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
           if not (Option.is_empty term) then
             let init_refine =
               Tacticals.New.tclTHENLIST [
-                Refine.refine ~typecheck:false (fun sigma -> (sigma,EConstr.of_constr (Option.get term)));
+                Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
                 Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
                 Tactics.New.reduce_after_refine;
               ]
@@ -492,12 +496,6 @@ let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program
   (* Try resolving fields that are typeclasses automatically. *)
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false env sigma in
   let sigma = Evarutil.nf_evar_map_undefined sigma in
-  (* Beware of this step, it is required as to minimize universes. *)
-  let sigma = Evd.minimize_universes sigma in
-  (* Check that the type is free of evars now. *)
-  Pretyping.check_evars env (Evd.from_env env) sigma termtype;
-  let termtype = to_constr sigma termtype in
-  let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
   let pstate =
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
       (declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype;

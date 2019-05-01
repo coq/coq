@@ -31,6 +31,7 @@ val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
 val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
+(* Unused in the main codebase *)
 val declare_instance_constant :
   typeclass ->
   Hints.hint_info_expr (** priority *) ->
@@ -41,8 +42,8 @@ val declare_instance_constant :
   UState.universe_decl ->
   bool (** polymorphic *) ->
   Evd.evar_map (** Universes *) ->
-  Constr.t (** body *) ->
-  Constr.types (** type *) ->
+  EConstr.t (** body *) ->
+  EConstr.types (** type *) ->
   unit
 
 val new_instance :
