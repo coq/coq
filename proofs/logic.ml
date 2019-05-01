@@ -153,11 +153,13 @@ let reorder_context env sigma sign ord =
   step ord ords sign mt_q []
 
 let reorder_val_context env sigma sign ord =
+match ord with
+| [] | [_] ->
+  (* Single variable-free definitions need not be reordered *)
+  sign
+| _ :: _ :: _ ->
   let open EConstr in
   val_of_named_context (reorder_context env sigma (named_context_of_val sign) ord)
-
-
-
 
 let check_decl_position env sigma sign d =
   let open EConstr in
