@@ -1669,7 +1669,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     (* so we recheck acyclicity *)
     if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
-    let evd', body = refresh_universes pbty env evd' body in
+    let evd', body = refresh_universes ~status:univ_flexible ~refreshset:true pbty env evd' body in
     instantiate_evar unify flags evd' evk body
   with
     | NotEnoughInformationToProgress sols ->

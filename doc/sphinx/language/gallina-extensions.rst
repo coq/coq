@@ -1956,25 +1956,6 @@ Explicit displaying of implicit arguments for pretty-printing
 
 .. seealso:: :flag:`Printing All`.
 
-Interaction with subtyping
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When an implicit argument can be inferred from the type of more than
-one of the other arguments, then only the type of the first of these
-arguments is taken into account, and not an upper type of all of them.
-As a consequence, the inference of the implicit argument of “=” fails
-in
-
-.. coqtop:: all
-
-   Fail Check nat = Prop.
-
-but succeeds in
-
-.. coqtop:: all
-
-   Check Prop = nat.
-
 
 Deactivation of implicit arguments for parsing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

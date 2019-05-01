@@ -66,9 +66,9 @@ Section poly.
 
   Fixpoint get_member (val : Type@{U}) p {struct p}
   : forall m, fields_get p m = @Some Type@{U} val -> member val m :=
-    match p as p return forall m, fields_get p m = @Some Type@{U} val -> member@{U} val m with
+    match p as p return forall m, fields_get p m = @Some Type@{U} val -> member@{} val m with
       | xH => fun m =>
-        match m as m return fields_get xH m = @Some Type@{U} val -> member@{U} val m with
+        match m as m return fields_get xH m = @Some Type@{U} val -> member@{} val m with
         | pm_Leaf => fun pf : None = @Some Type@{U} _ =>
                        match pf in _ = Z return match Z with
                                                 | Some _ => _
@@ -86,19 +86,19 @@ Section poly.
                                   | eq_refl => tt
                                   end
         | pm_Branch _ (Some x) _ => fun pf : @Some Type@{U} x = @Some Type@{U} val =>
-                                      match eq_sym pf in _ = Z return member@{U} val (pm_Branch _ Z _) with
+                                      match eq_sym pf in _ = Z return member@{} val (pm_Branch _ Z _) with
                                       | eq_refl => pmm_H
                                       end
         end
       | xO p' => fun m =>
-        match m as m return fields_get (xO p') m = @Some Type@{U} val -> member@{U} val m with
+        match m as m return fields_get (xO p') m = @Some Type@{U} val -> member@{} val m with
         | pm_Leaf => fun pf : fields_get p' pm_Leaf = @Some Type@{U} val =>
                        @get_member _ p' pm_Leaf pf
         | pm_Branch l _ _ => fun pf : fields_get p' l = @Some Type@{U} val =>
                        @pmm_L _ _ _ _ (@get_member _ p' l pf)
         end
       | xI p' => fun m =>
-        match m as m return fields_get (xI p') m = @Some Type@{U} val -> member@{U} val m with
+        match m as m return fields_get (xI p') m = @Some Type@{U} val -> member@{} val m with
         | pm_Leaf => fun pf : fields_get p' pm_Leaf = @Some Type@{U} val =>
                        @get_member _ p' pm_Leaf pf
         | pm_Branch l _ r => fun pf : fields_get p' r = @Some Type@{U} val =>

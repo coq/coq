@@ -460,5 +460,5 @@ Module ObligationRegression.
   (** Test for a regression encountered when fixing obligations for
       stronger restriction of universe context. *)
   Require Import CMorphisms.
-  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _  _ _ _}.
+  Check trans_co_eq_inv_arrow_morphism@{_ _ _ _ _ _}.
 End ObligationRegression.
