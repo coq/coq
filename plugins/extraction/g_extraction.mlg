@@ -179,5 +179,11 @@ END
 
 VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY
 | ![ proof ] [ "Show" "Extraction" ]
-  -> { fun ~pstate -> let () = show_extraction ~pstate in pstate }
+  -> { fun ~pstate:ontop ->
+    let pstate = Option.map Proof_global.get_current_pstate ontop in
+    let pstate = match pstate with
+      | None -> CErrors.user_err Pp.(str "No ongoing proof")
+      | Some pstate -> pstate
+    in
+    let () = show_extraction ~pstate in ontop }
 END

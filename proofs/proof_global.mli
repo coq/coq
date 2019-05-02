@@ -12,16 +12,20 @@
      toplevel. In particular it defines the global proof
      environment. *)
 
+type pstate
 type t
-val get_current_proof_name : t -> Names.Id.t
-val get_current_persistence : t -> Decl_kinds.goal_kind
+
+val get_current_pstate : t -> pstate
+
+val get_current_proof_name : pstate -> Names.Id.t
+val get_current_persistence : pstate -> Decl_kinds.goal_kind
 val get_all_proof_names : t -> Names.Id.t list
 
 val discard : Names.lident -> t -> t option
 val discard_current : t -> t option
 
-val give_me_the_proof : t -> Proof.t
-val compact_the_proof : t -> t
+val give_me_the_proof : pstate -> Proof.t
+val compact_the_proof : pstate -> pstate
 
 (** When a proof is closed, it is reified into a [proof_object], where
     [id] is the name of the proof, [entries] the list of the proof terms
@@ -52,6 +56,10 @@ type closed_proof = proof_object * proof_terminator
 val make_terminator : (proof_ending -> unit) -> proof_terminator
 val apply_terminator : proof_terminator -> proof_ending -> unit
 
+val push : ontop:t option -> pstate -> t
+
+val maybe_push : ontop:t option -> pstate option -> t option
+
 (** [start_proof ~ontop id str pl goals terminator] starts a proof of name
    [id] with goals [goals] (a list of pairs of environment and
    conclusion); [str] describes what kind of theorem/definition this
@@ -60,25 +68,26 @@ val apply_terminator : proof_terminator -> proof_ending -> unit
    morphism). The proof is started in the evar map [sigma] (which can
    typically contain universe constraints), and with universe bindings
    pl. *)
-val start_proof : ontop:t option ->
+val start_proof :
   Evd.evar_map -> Names.Id.t -> ?pl:UState.universe_decl ->
   Decl_kinds.goal_kind -> (Environ.env * EConstr.types) list  ->
-    proof_terminator -> t
+    proof_terminator -> pstate
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
-val start_dependent_proof : ontop:t option ->
+val start_dependent_proof :
   Names.Id.t -> ?pl:UState.universe_decl -> Decl_kinds.goal_kind ->
-  Proofview.telescope -> proof_terminator -> t
+  Proofview.telescope -> proof_terminator -> pstate
 
 (** Update the proofs global environment after a side-effecting command
   (e.g. a sublemma definition) has been run inside it. Assumes
   there_are_pending_proofs. *)
-val update_global_env : t -> t
+val update_global_env : pstate -> pstate
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> t -> closed_proof
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn ->
+  pstate -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The former is supposed to be
@@ -88,15 +97,15 @@ type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * USt
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
-val return_proof : ?allow_partial:bool -> t -> closed_proof_output
-val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> t ->
+val return_proof : ?allow_partial:bool -> pstate -> closed_proof_output
+val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> pstate ->
   closed_proof_output Future.computation -> closed_proof
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-val get_terminator : t -> proof_terminator
-val set_terminator : proof_terminator -> t -> t
-val get_open_goals : t -> int
+val get_terminator : pstate -> proof_terminator
+val set_terminator : proof_terminator -> pstate -> pstate
+val get_open_goals : pstate -> int
 
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
     no current proof.
@@ -106,18 +115,24 @@ val with_current_proof :
 val simple_with_current_proof :
   (unit Proofview.tactic -> Proof.t -> Proof.t) -> t -> t
 
+val with_proof : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> pstate -> pstate * 'a
+val modify_proof : (Proof.t -> Proof.t) -> pstate -> pstate
+
+val with_current_pstate : (pstate -> pstate * 'a) -> t -> t * 'a
+val modify_current_pstate : (pstate -> pstate) -> t -> t
+
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+val set_endline_tactic : Genarg.glob_generic_argument -> pstate -> pstate
 
 (** Sets the section variables assumed by the proof, returns its closure
  * (w.r.t. type dependencies and let-ins covered by it) + a list of
  * ids to be cleared *)
-val set_used_variables : t ->
-  Names.Id.t list -> (Constr.named_context * Names.lident list) * t
+val set_used_variables : pstate ->
+  Names.Id.t list -> (Constr.named_context * Names.lident list) * pstate
 
-val get_used_variables : t -> Constr.named_context option
+val get_used_variables : pstate -> Constr.named_context option
 
 (** Get the universe declaration associated to the current proof. *)
-val get_universe_decl : t -> UState.universe_decl
+val get_universe_decl : pstate -> UState.universe_decl
 
 val copy_terminators : src:t -> tgt:t -> t

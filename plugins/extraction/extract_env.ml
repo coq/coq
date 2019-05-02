@@ -751,10 +751,6 @@ let extract_and_compile l =
 
 (* Show the extraction of the current ongoing proof *)
 let show_extraction ~pstate =
-  let pstate = match pstate with
-    | None -> CErrors.user_err Pp.(str "No ongoing proof")
-    | Some pstate -> pstate
-  in
   init ~inner:true false false;
   let prf = Proof_global.give_me_the_proof pstate in
   let sigma, env = Pfedit.get_current_context pstate in

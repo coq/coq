@@ -89,7 +89,7 @@ val add_setoid : pstate:Proof_global.t option ->
   rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
   Id.t -> Proof_global.t option
 
-val add_morphism_infer : pstate:Proof_global.t option -> rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t option
+val add_morphism_infer : rewrite_attributes -> constr_expr -> Id.t -> Proof_global.pstate option
 
 val add_morphism : pstate:Proof_global.t option ->
   rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> Proof_global.t option

@@ -101,8 +101,8 @@ let start_deriving f suchthat lemma =
       in
 
   let terminator = Proof_global.make_terminator terminator in
-  let pstate = Proof_global.start_dependent_proof ~ontop:None lemma kind goals terminator in
-  Proof_global.simple_with_current_proof begin fun _ p ->
+  let pstate = Proof_global.start_dependent_proof lemma kind goals terminator in
+  Proof_global.modify_proof begin fun p ->
     let p,_,() =  Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p in
     p
   end pstate

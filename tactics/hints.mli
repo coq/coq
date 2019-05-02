@@ -292,7 +292,7 @@ val wrap_hint_warning_fun : env -> evar_map ->
 (** Printing  hints *)
 
 val pr_searchtable : env -> evar_map -> Pp.t
-val pr_applicable_hint : Proof_global.t -> Pp.t
+val pr_applicable_hint : Proof_global.pstate -> Pp.t
 val pr_hint_ref : env -> evar_map -> GlobRef.t -> Pp.t
 val pr_hint_db_by_name : env -> evar_map -> hint_db_name -> Pp.t
 val pr_hint_db_env : env -> evar_map -> Hint_db.t -> Pp.t

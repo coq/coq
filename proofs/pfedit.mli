@@ -23,17 +23,17 @@ exception NoSuchGoal
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
 
-val get_goal_context : Proof_global.t -> int -> Evd.evar_map * env
+val get_goal_context : Proof_global.pstate -> int -> Evd.evar_map * env
 
 (** [get_current_goal_context ()] works as [get_goal_context 1] *)
-val get_current_goal_context : Proof_global.t -> Evd.evar_map * env
+val get_current_goal_context : Proof_global.pstate -> Evd.evar_map * env
 
 (** [get_current_context ()] returns the context of the
   current focused goal. If there is no focused goal but there
   is a proof in progress, it returns the corresponding evar_map.
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
-val get_current_context : Proof_global.t -> Evd.evar_map * env
+val get_current_context : Proof_global.pstate -> Evd.evar_map * env
 
 (** {6 ... } *)
 
@@ -49,7 +49,7 @@ val solve : ?with_end_tac:unit Proofview.tactic ->
     focused proof.
     Returns [false] if an unsafe tactic has been used. *)
 
-val by : unit Proofview.tactic -> Proof_global.t -> Proof_global.t * bool
+val by : unit Proofview.tactic -> Proof_global.pstate -> Proof_global.pstate * bool
 
 (** Option telling if unification heuristics should be used. *)
 val use_unification_heuristics : unit -> bool
