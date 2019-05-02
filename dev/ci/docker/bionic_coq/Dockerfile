@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-03-12-V1"
+# CACHEKEY: "bionic_coq-v8.10-V2019-05-03-V1"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -47,11 +47,11 @@ ENV COQIDE_OPAM="cairo2.0.6 lablgtk3-sourceview3.3.0.beta5"
 # packages "lablgtk3-gtksourceview3"
 
 # base switch
-RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
+RUN opam init -a --disable-sandboxing --compiler=ocaml-base-compiler."$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
     opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM
 
 # base+32bit switch
-RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
+RUN opam switch create ocaml-base-compiler."${COMPILER}+32bit" "${COMPILER}+32bit" && eval $(opam env) && \
     opam install $BASE_OPAM
 
 # EDGE switch
