@@ -46,7 +46,7 @@ let compact el ({ solution } as pv) =
   let apply_subst_einfo _ ei =
     Evd.({ ei with
        evar_concl =  nf ei.evar_concl;
-       evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
+       evar_hyps = Environ.map_named_val (fun d -> map_constr nf0 d) ei.evar_hyps;
        evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in

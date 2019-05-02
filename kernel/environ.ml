@@ -187,7 +187,7 @@ let match_named_context_val c = match c.env_named_ctx with
 let map_named_val f ctxt =
   let open Context.Named.Declaration in
   let fold accu d =
-    let d' = map_constr f d in
+    let d' = f d in
     let accu =
       if d == d' then accu
       else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu

@@ -134,9 +134,9 @@ val ids_of_named_context_val : named_context_val -> Id.Set.t
 
 (** [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
-   *** /!\ ***   [f t] should be convertible with t *)
+   *** /!\ ***   [f t] should be convertible with t, and preserve the name *)
 val map_named_val :
-   (constr -> constr) -> named_context_val -> named_context_val
+   (named_declaration -> named_declaration) -> named_context_val -> named_context_val
 
 val push_named : Constr.named_declaration -> env -> env
 val push_named_context : Constr.named_context -> env -> env
