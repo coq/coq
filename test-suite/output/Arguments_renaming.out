@@ -62,7 +62,7 @@ Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
 The reduction tactics unfold myplus when the 2nd and
-  3rd arguments evaluate to a constructor 
+  3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
 @myplus
@@ -101,7 +101,7 @@ Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
 The reduction tactics unfold myplus when the 2nd and
-  3rd arguments evaluate to a constructor 
+  3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
 @myplus

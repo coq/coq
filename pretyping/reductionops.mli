@@ -21,13 +21,12 @@ exception Elimconst
 
 (** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig
-  type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
 
-(** [set is_local ref (recargs, nargs, flags)] *)
-  val set :
-    bool -> GlobRef.t -> (int list * int * flag list) -> unit
-  val get :
-    GlobRef.t -> (int list * int * flag list) option
+  type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
+  and when_flags = { recargs : int list ; nargs : int option }
+
+  val set : local:bool -> GlobRef.t -> t -> unit
+  val get : GlobRef.t -> t option
   val print : GlobRef.t -> Pp.t
 end
 
