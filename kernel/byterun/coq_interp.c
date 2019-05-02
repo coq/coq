@@ -1374,40 +1374,11 @@ value coq_interprete
       Instruct (CHECKDIV21INT63) {
         print_instr("DIV21INT63");
         CheckInt3();
-        /* spiwack: takes three int31 (the two first ones represent an
-                    int62) and performs the euclidian division of the
-                    int62 by the int31 */
-        /* TODO: implement this
-        bigint = UI64_of_value(accu);
-        bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
-        uint64 divisor;
-        divisor = UI64_of_value(*sp++);
-        Alloc_small(accu, 2, 1); */ /* ( _ , arity, tag ) */
-        /* if (I64_is_zero (divisor)) {
-           Field(accu, 0) = 1; */ /* 2*0+1 */
-        /* Field(accu, 1) = 1; */ /* 2*0+1 */
-        /* }
-        else {
-          uint64 quo, mod;
-          I64_udivmod(bigint, divisor, &quo, &mod);
-          Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
-          Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
-        } */
-        int b;
-        Uint63_eq0(b, sp[1]);
-        if (b) {
-          AllocPair();
-          Field(accu, 0) = sp[1];
-          Field(accu, 1) = sp[1];
-	}
-        else {
-          Uint63_div21(accu, sp[0], sp[1], sp);
-          sp[1] = sp[0];
-          Swap_accu_sp;
-          AllocPair();
-          Field(accu, 0) = sp[1];
-          Field(accu, 1) = sp[0];
-	}
+        Uint63_div21(accu, sp[0], sp[1], &(sp[1]));
+        Swap_accu_sp;
+        AllocPair();
+        Field(accu, 0) = sp[1];
+        Field(accu, 1) = sp[0];
         sp += 2;
         Next;
       }

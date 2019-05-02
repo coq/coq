@@ -177,21 +177,6 @@ Proof.
  inversion W;rewrite Zmult_comm;trivial.
 Qed.
 
-Lemma diveucl_21_spec_aux : forall a1 a2 b,
-      wB/2 <= [|b|] ->
-      [|a1|] < [|b|] ->
-      let (q,r) := diveucl_21 a1 a2 b in
-      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
-      0 <= [|r|] < [|b|].
-Proof.
- intros a1 a2 b H1 H2;assert (W:= diveucl_21_spec a1 a2 b).
- assert (W1:= to_Z_bounded a1).
- assert ([|b|]>0) by (auto with zarith).
- generalize (Z_div_mod ([|a1|]*wB+[|a2|]) [|b|] H).
- destruct (diveucl_21 a1 a2 b);destruct (Z.div_eucl ([|a1|]*wB+[|a2|]) [|b|]).
- inversion W;rewrite (Zmult_comm [|b|]);trivial.
-Qed.
-
 Lemma shift_unshift_mod_2 : forall n p a, 0 <= p <= n ->
    ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) =
    a mod 2 ^ p.
