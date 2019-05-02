@@ -614,7 +614,7 @@ let cofix id = mutual_cofix id [] 0
 type tactic_reduction = Reductionops.reduction_function
 type e_tactic_reduction = Reductionops.e_reduction_function
 
-let e_pf_change_decl (redfun : bool -> e_reduction_function) where decl env sigma =
+let e_pf_change_decl (redfun : bool -> e_reduction_function) where env sigma decl =
   let open Context.Named.Declaration in
   match decl with
   | LocalAssum (id,ty) ->
@@ -713,7 +713,7 @@ let e_change_in_hyp ~check ~reorder redfun (id,where) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let hyp = Tacmach.New.pf_get_hyp id gl in
-    let (sigma, c) = e_pf_change_decl redfun where hyp (Proofview.Goal.env gl) sigma in
+    let (sigma, c) = e_pf_change_decl redfun where (Proofview.Goal.env gl) sigma hyp in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (convert_hyp ~check ~reorder c)
   end
@@ -721,13 +721,13 @@ let e_change_in_hyp ~check ~reorder redfun (id,where) =
 let e_change_in_hyps ~check ~reorder f args =
   Proofview.Goal.enter begin fun gl ->
     let fold (env, sigma) arg =
-      let (redfun, id, where) = f arg in
+      let (id, redfun) = f arg in
       let hyp =
         try lookup_named id env
         with Not_found ->
           raise (RefinerError (env, sigma, NoSuchHyp id))
       in
-      let (sigma, d) = e_pf_change_decl redfun where hyp env sigma in
+      let (sigma, d) = redfun env sigma hyp in
       let sign = Logic.convert_hyp ~check ~reorder env sigma d in
       let env = reset_with_named_context sign env in
       (env, sigma)
@@ -851,7 +851,8 @@ let change ~check chg c cls =
     let f (id, occs, where) =
       let occl = bind_change_occurrences occs chg in
       let redfun deep env sigma t = change_on_subterm ~check Reduction.CONV deep c occl env sigma t in
-      (redfun, id, where)
+      let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
+      (id, redfun)
     in
     (* Don't check, we do it already in [change_on_subterm] *)
     e_change_in_hyps ~check:false ~reorder:check f hyps
@@ -905,7 +906,8 @@ let reduce redexp cl =
     let redexp = bind_red_expr_occurrences occs nbcl redexp in
     let (redfun, _) = Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp in
     let redfun _ env sigma c = redfun env sigma c in
-    (redfun, id, where)
+    let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
+    (id, redfun)
   in
   e_change_in_hyps ~check ~reorder f hyps
   end
