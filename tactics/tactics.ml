@@ -916,6 +916,22 @@ let pattern_option l = e_reduct_option ~check:false (pattern_occs l,DEFAULTcast)
 
 (* The main reduction function *)
 
+let is_local_flag env flags =
+  if flags.rDelta then false
+  else
+    let check = function
+    | EvalVarRef _ -> false
+    | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (ConstRef c))
+    in
+    List.for_all check flags.rConst
+
+let is_local_unfold env flags =
+  let check (_, c) = match c with
+  | EvalVarRef _ -> false
+  | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (ConstRef c))
+  in
+  List.for_all check flags
+
 let reduce redexp cl =
   let trace env sigma =
     let open Printer in
@@ -924,27 +940,34 @@ let reduce redexp cl =
   in
   Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let hyps = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cl in
   let nbcl = (if cl.concl_occs = NoOccurrences then 0 else 1) + List.length hyps in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
-  let reorder = match redexp with Fold _ | Pattern _ -> true | _ -> false in
+  let reorder = match redexp with
+  | Fold _ | Pattern _ -> AnyHypConv
+  | Simpl (flags, _) | Cbv flags | Cbn flags | Lazy flags ->
+    if is_local_flag env flags then LocalHypConv else StableHypConv
+  | Unfold flags ->
+    if is_local_unfold env flags then LocalHypConv else StableHypConv
+  | Red _ | Hnf | CbvVm _ | CbvNative _ -> StableHypConv
+  | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
+  in
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->
     let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let redfun = Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp in
+    let redfun = Redexpr.reduction_of_red_expr env redexp in
     e_change_in_concl ~check (revert_cast redfun)
   end
   <*>
   let f (id, occs, where) =
     let redexp = bind_red_expr_occurrences occs nbcl redexp in
-    let (redfun, _) = Redexpr.reduction_of_red_expr (Tacmach.New.pf_env gl) redexp in
+    let (redfun, _) = Redexpr.reduction_of_red_expr env redexp in
     let redfun _ env sigma c = redfun env sigma c in
     let redfun env sigma d = e_pf_change_decl redfun where env sigma d in
     (id, redfun)
   in
-  (* FIXME: use local flag *)
-  let reorder = if reorder then AnyHypConv else StableHypConv in
   e_change_in_hyps ~check ~reorder f hyps
   end
   end
