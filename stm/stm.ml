@@ -1537,7 +1537,7 @@ end = struct (* {{{ *)
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_vernac_interp stop
-            ~proof:(pobject, Lemmas.default_lemma_info) st
+            ~proof:(pobject, Lemmas.Info.make ()) st
             { verbose = false; indentation = 0; strlen = 0;
               expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
         ignore(Future.join checked_proof);
@@ -1677,7 +1677,7 @@ end = struct (* {{{ *)
       let pterm, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
 
-      let proof = pterm, Lemmas.default_lemma_info in
+      let proof = pterm, Lemmas.Info.make () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)

@@ -994,10 +994,11 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
-    (mk_equation_id f_id)
-    Decl_kinds.(Global ImportDefaultBehavior, false, Proof Theorem)
-    evd
-  lemma_type
+      ~name:(mk_equation_id f_id)
+      ~kind:Decl_kinds.(Global ImportDefaultBehavior, false, Proof Theorem)
+
+      evd
+      lemma_type
   in
   let lemma,_ = Lemmas.by (Proofview.V82.tactic prove_replacement) lemma in
   let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in

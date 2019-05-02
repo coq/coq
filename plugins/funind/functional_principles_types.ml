@@ -308,9 +308,8 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   evd := sigma;
   let hook = DeclareDef.Hook.make (hook new_principle_type) in
   let lemma =
-    Lemmas.start_lemma
-      new_princ_name
-      Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
+    Lemmas.start_lemma ~name:new_princ_name
+      ~kind:Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
       !evd
       (EConstr.of_constr new_principle_type)
   in

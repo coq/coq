@@ -492,7 +492,8 @@ let rec solve_obligation prg num tac =
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
   let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
-  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~proof_ending ~hook in
+  let info = Lemmas.Info.make ~hook ~proof_ending () in
+  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign ~name:obl.obl_name ~kind ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma

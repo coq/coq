@@ -131,7 +131,7 @@ module Proof_global = struct
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Proof_global.proof_object * Lemmas.lemma_info
+  type closed_proof = Proof_global.proof_object * Lemmas.Info.t
 
 
   let return_proof ?allow_partial () = cc (return_proof ?allow_partial)

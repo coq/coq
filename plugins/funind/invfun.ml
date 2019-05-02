@@ -804,10 +804,10 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
          let lem_id = mk_correct_id f_id in
          let (typ,_) = lemmas_types_infos.(i) in
          let lemma = Lemmas.start_lemma
-           lem_id
-           Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
-           !evd
-           typ in
+             ~name:lem_id
+             ~kind:Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
+             !evd
+             typ in
          let lemma = fst @@ Lemmas.by
                    (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
                                                       (proving_tac i))) lemma in
@@ -865,8 +865,8 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
              Ensures by: obvious
            i*)
          let lem_id = mk_complete_id f_id in
-         let lemma = Lemmas.start_lemma lem_id
-           Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem) sigma
+         let lemma = Lemmas.start_lemma ~name:lem_id
+           ~kind:Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem) sigma
          (fst lemmas_types_infos.(i)) in
          let lemma = fst (Lemmas.by
            (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")

@@ -2007,9 +2007,10 @@ let add_morphism_interactive atts m n : Lemmas.t =
     | _ -> assert false
   in
   let hook = DeclareDef.Hook.make hook in
+  let info = Lemmas.Info.make ~hook () in
   Flags.silently
     (fun () ->
-       let lemma = Lemmas.start_lemma ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+       let lemma = Lemmas.start_lemma ~name:instance_id ~kind ~info (Evd.from_ctx uctx) (EConstr.of_constr instance) in
        fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =

@@ -374,9 +374,9 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.(Global ImportDefaultBehavior, poly, DefinitionBody Instance) in
-  let lemma = Lemmas.start_lemma id ~udecl kind sigma (EConstr.of_constr termtype)
-      ~hook:(DeclareDef.Hook.make
-               (fun _ _ _ -> instance_hook pri global imps ?hook)) in
+  let hook = DeclareDef.Hook.make (fun _ _ _ -> instance_hook pri global imps ?hook) in
+  let info = Lemmas.Info.make ~udecl ~hook () in
+  let lemma = Lemmas.start_lemma ~name:id ~kind ~info sigma (EConstr.of_constr termtype) in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     if not (Option.is_empty term) then

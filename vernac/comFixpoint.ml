@@ -255,7 +255,7 @@ let interp_fixpoint ~cofix l ntns =
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 
-let declare_fixpoint_interactive_generic ?indexes local poly ((fixnames,_fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+let declare_fixpoint_interactive_generic ?indexes local poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
   let fix_kind, cofix, indexes = match indexes with
     | Some indexes -> Fixpoint, false, indexes
     | None -> CoFixpoint, true, []
@@ -269,8 +269,8 @@ let declare_fixpoint_interactive_generic ?indexes local poly ((fixnames,_fixrs,f
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) fixdefs) in
   let evd = Evd.from_ctx ctx in
   let lemma =
-    Lemmas.start_lemma_with_initialization (local,poly,DefinitionBody fix_kind)
-      evd pl (Some(cofix,indexes,init_tac)) thms None in
+    Lemmas.start_lemma_with_initialization ~kind:(local,poly,DefinitionBody fix_kind) ~udecl
+      evd (Some(cofix,indexes,init_tac)) thms None in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   lemma

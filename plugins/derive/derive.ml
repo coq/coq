@@ -39,8 +39,8 @@ let start_deriving f suchthat name : Lemmas.t =
                 TNil sigma))))))
   in
 
-  let proof_ending = Lemmas.Proof_ending.(End_derive {f; name}) in
-  let lemma = Lemmas.start_dependent_lemma name kind goals ~proof_ending in
+  let info = Lemmas.Info.make ~proof_ending:(Lemmas.Proof_ending.(End_derive {f; name})) () in
+  let lemma = Lemmas.start_dependent_lemma ~name ~kind ~info goals in
   Lemmas.pf_map (Proof_global.map_proof begin fun p ->
     Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
   end) lemma

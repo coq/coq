@@ -582,7 +582,7 @@ let start_proof_and_print ~program_mode ?hook k l =
       in Some hook
     else None
   in
-  start_lemma_com ~program_mode ?inference_hook ?hook k l
+  start_lemma_com ~program_mode ?inference_hook ?hook ~kind:k l
 
 let vernac_definition_hook p = function
 | Coercion ->
