@@ -80,8 +80,8 @@ GRAMMAR EXTEND Gram
 
 open Obligations
 
-let obligation ~pstate obl tac = Some (with_tac (fun t -> Obligations.obligation ~ontop:pstate obl t) tac)
-let next_obligation ~pstate obl tac = Some (with_tac (fun t -> Obligations.next_obligation ~ontop:pstate obl t) tac)
+let obligation ~pstate obl tac = Some (Proof_global.push ~ontop:pstate (with_tac (fun t -> Obligations.obligation obl t) tac))
+let next_obligation ~pstate obl tac = Some (Proof_global.push ~ontop:pstate (with_tac (fun t -> Obligations.next_obligation obl t) tac))
 
 let classify_obbl _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpacity,[]), VtLater)
 

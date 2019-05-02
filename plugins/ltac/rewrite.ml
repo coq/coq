@@ -1974,7 +1974,7 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer ~pstate atts m n : Proof_global.t option =
+let add_morphism_infer atts m n : Proof_global.pstate option =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
@@ -1991,7 +1991,7 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
       add_instance (Classes.mk_instance
                       (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
       declare_projection n instance_id (ConstRef cst);
-      pstate
+      None
     else
       let kind = Decl_kinds.Global, atts.polymorphic,
                  Decl_kinds.DefinitionBody Decl_kinds.Instance
@@ -2008,7 +2008,7 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
       let hook = Lemmas.mk_hook hook in
       Flags.silently
         (fun () ->
-           let pstate = Lemmas.start_proof ~ontop:pstate ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+           let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
            Some (fst Pfedit.(by (Tacinterp.interp tac) pstate))) ()
 
 let add_morphism ~pstate atts binders m s n =

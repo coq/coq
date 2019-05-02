@@ -56,6 +56,10 @@ let vernac_require_open_proof ~pstate f =
   | Some pstate -> f ~pstate
   | None -> user_err Pp.(str "Command not supported (No proof-editing in progress)")
 
+let with_pstate ~pstate f =
+  vernac_require_open_proof ~pstate
+    (fun ~pstate -> f ~pstate:(Proof_global.get_current_pstate pstate))
+
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
@@ -540,7 +544,7 @@ let () =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ~program_mode ~pstate ?hook k l =
+let start_proof_and_print ~program_mode ?hook k l =
   let inference_hook =
     if program_mode then
       let hook env sigma ev =
@@ -562,7 +566,7 @@ let start_proof_and_print ~program_mode ~pstate ?hook k l =
       in Some hook
     else None
   in
-  start_proof_com ~program_mode ~ontop:pstate ?inference_hook ?hook k l
+  start_proof_com ~program_mode ?inference_hook ?hook k l
 
 let vernac_definition_hook p = function
 | Coercion ->
@@ -573,7 +577,7 @@ let vernac_definition_hook p = function
   Some (Class.add_subclass_hook p)
 | _ -> None
 
-let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
+let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def ~pstate =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
@@ -593,9 +597,10 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
-      Some (start_proof_and_print ~program_mode ~pstate (local, atts.polymorphic, DefinitionBody kind)
+      Some (start_proof_and_print ~program_mode (local, atts.polymorphic, DefinitionBody kind)
               ?hook [(CAst.make ?loc name, pl), (bl, t)])
     | DefineBody (bl,red_option,c,typ_opt) ->
+      let pstate = Option.map Proof_global.get_current_pstate pstate in
       let red_option = match red_option with
         | None -> None
         | Some r ->
@@ -603,30 +608,31 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
           Some (snd (Hook.get f_interp_redexp env sigma r)) in
       ComDefinition.do_definition ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
-      pstate
+      None
   )
 
-let vernac_start_proof ~atts ~pstate kind l =
+(* NB: pstate argument to use combinators easily *)
+let vernac_start_proof ~atts kind l ~pstate =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  Some (start_proof_and_print ~pstate ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
+  Some (start_proof_and_print ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
 
-let vernac_end_proof ?pstate ?proof = function
+let vernac_end_proof ?pstate:ontop ?proof = function
   | Admitted ->
-    vernac_require_open_proof ~pstate (save_proof_admitted ?proof);
-    pstate
+    with_pstate ~pstate:ontop (save_proof_admitted ?proof);
+    ontop
   | Proved (opaque,idopt) ->
-    save_proof_proved ?pstate ?proof ~opaque ~idopt
+    save_proof_proved ?ontop ?proof ~opaque ~idopt
 
-let vernac_exact_proof ~pstate c =
+let vernac_exact_proof ~pstate:ontop c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
-  let pstate, status = Pfedit.by (Tactics.exact_proof c) pstate in
-  let pstate = save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
+  let pstate, status = Pfedit.by (Tactics.exact_proof c) (Proof_global.get_current_pstate ontop) in
+  let () = save_pstate_proved ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;
-  pstate
+  Proof_global.discard_current ontop
 
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
@@ -804,7 +810,7 @@ let vernac_inductive ~atts cum lo finite indl =
       in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
     *)
 
-let vernac_fixpoint ~atts ~pstate discharge l : Proof_global.t option =
+let vernac_fixpoint ~atts discharge l ~pstate =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -813,11 +819,11 @@ let vernac_fixpoint ~atts ~pstate discharge l : Proof_global.t option =
   let do_fixpoint = if atts.program then
       fun local sign l -> ComProgramFixpoint.do_fixpoint local sign l; None
     else
-      ComFixpoint.do_fixpoint ~ontop:pstate
+      ComFixpoint.do_fixpoint
   in
   do_fixpoint local atts.polymorphic l
 
-let vernac_cofixpoint ~atts ~pstate discharge l =
+let vernac_cofixpoint ~atts discharge l ~pstate =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   if Dumpglob.dump () then
@@ -825,7 +831,7 @@ let vernac_cofixpoint ~atts ~pstate discharge l =
   let do_cofixpoint = if atts.program then
       fun local sign l -> ComProgramFixpoint.do_cofixpoint local sign l; None
     else
-      ComFixpoint.do_cofixpoint ~ontop:pstate
+      ComFixpoint.do_cofixpoint
   in
   do_cofixpoint local atts.polymorphic l
 
@@ -1104,7 +1110,7 @@ let vernac_set_end_tac ~pstate tac =
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
   Proof_global.set_endline_tactic tac pstate
 
-let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
+let vernac_set_used_variables ~(pstate : Proof_global.pstate) e : Proof_global.pstate =
   let env = Global.env () in
   let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
   let tys =
@@ -1118,9 +1124,7 @@ let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
         (str "Unknown variable: " ++ Id.print id))
     l;
   let _, pstate = Proof_global.set_used_variables pstate l in
-  fst @@ Proof_global.with_current_proof begin fun _ p ->
-    (p, ())
-  end pstate
+  pstate
 
 (*****************************)
 (* Auxiliary file management *)
@@ -1829,6 +1833,7 @@ let query_command_selector ?loc = function
       (str "Query commands only support the single numbered goal selector.")
 
 let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
+  let pstate = Option.map Proof_global.get_current_pstate pstate in
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
   let sigma, c = interp_open_constr env sigma rc in
@@ -1929,6 +1934,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~(pstate : Proof_global.t option) ~atts =
+  let pstate = Option.map Proof_global.get_current_pstate pstate in
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTables -> print_tables ()
@@ -2040,6 +2046,7 @@ let () =
       optwrite = (:=) search_output_name_only }
 
 let vernac_search ~pstate ~atts s gopt r =
+  let pstate = Option.map Proof_global.get_current_pstate pstate in
   let gopt = query_command_selector gopt in
   let r = interp_search_restriction r in
   let env,gopt =
@@ -2077,6 +2084,7 @@ let vernac_locate ~pstate = function
   | LocateTerm {v=AN qid} -> print_located_term qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
+    let pstate = Option.map Proof_global.get_current_pstate pstate in
     let _, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
@@ -2132,6 +2140,7 @@ let vernac_unfocus () =
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused ~pstate =
+  let pstate = Proof_global.get_current_pstate pstate in
   let p = Proof_global.give_me_the_proof pstate in
   if Proof.unfocused p then
     str"The proof is indeed fully unfocused."
@@ -2162,18 +2171,19 @@ let vernac_bullet (bullet : Proof_bullet.t) =
   Proof_global.simple_with_current_proof (fun _ p ->
     Proof_bullet.put p bullet)
 
-let vernac_show ~pstate =
-  match pstate with
+let vernac_show ~pstate:ontop =
+  match ontop with
   (* Show functions that don't require a proof state *)
   | None ->
     begin function
-      | ShowProof -> show_proof ~pstate
+      | ShowProof -> show_proof ~pstate:None
       | ShowMatch id -> show_match id
       | _ ->
         user_err (str "This command requires an open proof.")
     end
   (* Show functions that require a proof state *)
-  | Some pstate ->
+  | Some ontop ->
+    let pstate = Proof_global.get_current_pstate ontop in
     begin function
     | ShowGoal goalref ->
       let proof = Proof_global.give_me_the_proof pstate in
@@ -2185,7 +2195,7 @@ let vernac_show ~pstate =
     | ShowExistentials -> show_top_evars ~pstate
     | ShowUniverses -> show_universes ~pstate
     | ShowProofNames ->
-      pr_sequence Id.print (Proof_global.get_all_proof_names pstate)
+      pr_sequence Id.print (Proof_global.get_all_proof_names ontop)
     | ShowIntros all -> show_intro ~pstate all
     | ShowProof -> show_proof ~pstate:(Some pstate)
     | ShowMatch id -> show_match id
@@ -2222,6 +2232,10 @@ let with_def_attributes ~atts f =
   let atts = DefAttributes.parse atts in
   if atts.DefAttributes.program then Obligations.check_program_libraries ();
   f ~atts
+
+let with_maybe_open_proof ~pstate f =
+  let opt = f ~pstate in
+  Proof_global.maybe_push ~ontop:pstate opt
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -2339,9 +2353,9 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),lid,d) ->
-    with_def_attributes ~atts vernac_definition ~pstate discharge kind lid d
+    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_definition discharge kind lid d)
   | VernacStartTheoremProof (k,l) ->
-    with_def_attributes ~atts vernac_start_proof ~pstate k l
+    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_start_proof k l)
   | VernacEndProof e ->
     unsupported_attributes atts;
     vernac_end_proof ?proof ?pstate e
@@ -2355,9 +2369,9 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     vernac_inductive ~atts cum priv finite l;
     pstate
   | VernacFixpoint (discharge, l) ->
-    with_def_attributes ~atts vernac_fixpoint ~pstate discharge l
+    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_fixpoint discharge l)
   | VernacCoFixpoint (discharge, l) ->
-    with_def_attributes ~atts vernac_cofixpoint ~pstate discharge l
+    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_cofixpoint discharge l)
   | VernacScheme l ->
     unsupported_attributes atts;
     vernac_scheme l;
@@ -2587,7 +2601,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
   | VernacCheckGuard ->
     unsupported_attributes atts;
     Feedback.msg_notice @@
-      vernac_require_open_proof ~pstate (vernac_check_guard);
+      with_pstate ~pstate (vernac_check_guard);
     pstate
   | VernacProof (tac, using) ->
     unsupported_attributes atts;
@@ -2596,10 +2610,14 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     let usings = if Option.is_empty using then "using:no" else "using:yes" in
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
     let pstate =
-      vernac_require_open_proof ~pstate (fun ~pstate ->
+      vernac_require_open_proof ~pstate (fun ~pstate:ontop ->
+          Proof_global.modify_current_pstate (fun pstate ->
+          let pstate = Proof_global.get_current_pstate ontop in
           let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
           Option.cata (vernac_set_used_variables ~pstate) pstate using)
-    in Some pstate
+            ontop)
+    in
+    Some pstate
   | VernacProofMode mn ->
     unsupported_attributes atts;
     pstate

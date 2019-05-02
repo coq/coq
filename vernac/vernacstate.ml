@@ -96,17 +96,21 @@ module Proof_global = struct
     | None -> raise NoCurrentProof
     | Some x -> f x
 
+  let cc1 f = cc (fun p -> f (Proof_global.get_current_pstate p))
+
   let dd f = match !s_proof with
     | None -> raise NoCurrentProof
     | Some x -> s_proof := Some (f x)
 
-  let there_are_pending_proofs () = !s_proof <> None
-  let get_open_goals () = cc get_open_goals
+  let dd1 f = dd (fun p -> Proof_global.modify_current_pstate f p)
 
-  let set_terminator x = dd (set_terminator x)
-  let give_me_the_proof_opt () = Option.map give_me_the_proof !s_proof
-  let give_me_the_proof () = cc give_me_the_proof
-  let get_current_proof_name () = cc get_current_proof_name
+  let there_are_pending_proofs () = !s_proof <> None
+  let get_open_goals () = cc1 get_open_goals
+
+  let set_terminator x = dd1 (set_terminator x)
+  let give_me_the_proof_opt () = Option.map (fun p -> give_me_the_proof (Proof_global.get_current_pstate p)) !s_proof
+  let give_me_the_proof () = cc1 give_me_the_proof
+  let get_current_proof_name () = cc1 get_current_proof_name
 
   let simple_with_current_proof f =
     dd (simple_with_current_proof f)
@@ -118,18 +122,18 @@ module Proof_global = struct
   let install_state s = s_proof := Some s
 
   let return_proof ?allow_partial () =
-    cc (return_proof ?allow_partial)
+    cc1 (return_proof ?allow_partial)
 
   let close_future_proof ~opaque ~feedback_id pf =
-    cc (fun st -> close_future_proof ~opaque ~feedback_id st pf)
+    cc1 (fun st -> close_future_proof ~opaque ~feedback_id st pf)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
-    cc (close_proof ~opaque ~keep_body_ucst_separate f)
+    cc1 (close_proof ~opaque ~keep_body_ucst_separate f)
 
   let discard_all () = s_proof := None
-  let update_global_env () = dd update_global_env
+  let update_global_env () = dd1 update_global_env
 
-  let get_current_context () = cc Pfedit.get_current_context
+  let get_current_context () = cc1 Pfedit.get_current_context
 
   let get_all_proof_names () =
     try cc get_all_proof_names

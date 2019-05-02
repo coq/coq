@@ -803,7 +803,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 i*)
 	 let lem_id = mk_correct_id f_id in
          let (typ,_) = lemmas_types_infos.(i) in
-         let pstate = Lemmas.start_proof ~ontop:None
+         let pstate = Lemmas.start_proof
 	   lem_id
            (Decl_kinds.Global,false,((Decl_kinds.Proof Decl_kinds.Theorem)))
            !evd
@@ -811,7 +811,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
          let pstate = fst @@ Pfedit.by
 		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
                                                       (proving_tac i))) pstate in
-         let _ = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
+         let () = Lemmas.save_pstate_proved ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
 	 let _,lem_cst_constr = Evd.fresh_global
@@ -865,13 +865,13 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	     Ensures by: obvious
 	   i*)
 	 let lem_id = mk_complete_id f_id in
-         let pstate = Lemmas.start_proof ~ontop:None lem_id
+         let pstate = Lemmas.start_proof lem_id
            (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem)) sigma
          (fst lemmas_types_infos.(i)) in
          let pstate = fst (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
               (proving_tac i))) pstate) in
-         let _pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
+         let () = Lemmas.save_pstate_proved ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in

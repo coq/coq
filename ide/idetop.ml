@@ -340,6 +340,7 @@ let import_search_constraint = function
 
 let search flags =
   let pstate = Vernacstate.Proof_global.get () in
+  let pstate = Option.map Proof_global.get_current_pstate pstate in
   List.map export_coq_object (Search.interface_search ?pstate (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )
