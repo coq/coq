@@ -29,13 +29,6 @@
 #include "coq_uint63_emul.h"
 #endif
 
-/* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) (((uint32_t)(val)) >> 1)
-#define value_of_uint32(i)   ((value)((((uint32_t)(i)) << 1) | 1))
-#define UI64_of_uint32(lo) ((uint64_t)((uint32_t)(lo)))
-#define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
-/* /spiwack */
-
 
 
 /* Registers for the abstract machine:
@@ -1298,12 +1291,6 @@ value coq_interprete
         /*returns the multiplication on a pair */
         print_instr("MULCINT63");
         CheckInt2();
-        /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
-        /* TODO: implement
-        p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
-        AllocPair(); */
-        /* Field(accu, 0) = (value)(I64_lsr(p,31)|1) ; */ /*higher part*/
-        /* Field(accu, 1) = (value)(I64_to_int32(p)|1); */ /*lower part*/
         Uint63_mulc(accu, *sp, sp);
         *--sp = accu;
         AllocPair();
@@ -1587,7 +1574,7 @@ value coq_push_vstack(value stk, value max_stack_size) {
   print_instr("push_vstack");print_int(len);
    for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
   sp = coq_sp;
-  CHECK_STACK(uint32_of_value(max_stack_size));
+  CHECK_STACK(uint_of_value(max_stack_size));
   return Val_unit;
 }
 

@@ -1,5 +1,6 @@
 #define Is_uint63(v) (Is_long(v))
 
+#define uint_of_value(val) (((uint64_t)(val)) >> 1)
 #define uint63_of_value(val) ((uint64_t)(val) >> 1)
 
 /* 2^63 * y + x as a value */
