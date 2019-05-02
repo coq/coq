@@ -59,8 +59,8 @@ jobs:
   - script: |
       set -e
       export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
-      opam init -a -j "$NJOBS" --compiler=$COMPILER
-      opam switch set $COMPILER
+      opam init -a -j "$NJOBS" --compiler=ocaml-base-compiler.$COMPILER
+      opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
       opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
