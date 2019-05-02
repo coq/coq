@@ -23,7 +23,7 @@ val register_primitive : ?local:bool ->
 
 val register_struct
   :  ?local:bool
-  -> pstate:Proof_global.t option
+  -> pstate:Proof_global.pstate option
   -> strexpr
   -> unit
 

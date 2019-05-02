@@ -309,7 +309,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   evd := sigma;
   let hook = Lemmas.mk_hook (hook new_principle_type) in
   let pstate =
-    Lemmas.start_proof ~ontop:None
+    Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
       !evd
@@ -328,8 +328,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let { id; entries; persistence } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pstate in
   match entries with
   | [entry] ->
-    let pstate = discard_current pstate in
-    (id,(entry,persistence)), hook, pstate
+    (id,(entry,persistence)), hook
   | _ ->
     CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
 
@@ -381,7 +380,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       register_with_sort InProp;
       register_with_sort InSet
   in
-  let ((id,(entry,g_kind)),hook,pstate) =
+  let ((id,(entry,g_kind)),hook) =
     build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
     proof_tac hook
   in
@@ -520,7 +519,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	s::l_schemes -> s,l_schemes
       | _ -> anomaly (Pp.str "")
   in
-  let ((_,(const,_)),_,pstate) =
+  let ((_,(const,_)),_) =
     try
       build_functional_principle evd false
 	first_type
@@ -580,7 +579,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	   (* If we reach this point, the two principle are not mutually recursive
 	      We fall back to the previous method
 	   *)
-             let ((_,(const,_)),_,pstate) =
+             let ((_,(const,_)),_) =
 	       build_functional_principle
 		 evd
 		 false

@@ -42,7 +42,8 @@ VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
        * should be used instead, and the `env, sigma` parameteter to the
        * numeral notation command removed.
        *)
-      fun ~pstate ->
+      fun ~pstate:ontop ->
+        let pstate = Option.map Proof_global.get_current_pstate ontop in
         let sigma, env = match pstate with
         | None ->
           let env = Global.env () in
@@ -52,5 +53,5 @@ VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
           Pfedit.get_current_context pstate
         in
       vernac_numeral_notation env sigma (Locality.make_module_locality locality) ty f g (Id.to_string sc) o;
-      pstate }
+      ontop }
 END
