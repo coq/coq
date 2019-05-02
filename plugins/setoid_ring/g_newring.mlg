@@ -87,7 +87,8 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
     { let l = match l with None -> [] | Some l -> l in add_theory id t l }
   | ![proof] [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
-    fun ~pstate ->
+    fun ~pstate:ontop ->
+    let pstate = Option.map Proof_global.get_current_pstate ontop in
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
       (* We should use the global env here as this shouldn't contain proof
@@ -99,7 +100,7 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
           str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
     ) !from_name;
-    pstate }
+    ontop }
 END
 
 TACTIC EXTEND ring_lookup
@@ -136,7 +137,8 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
   { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
 | ![proof] [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
-    fun ~pstate ->
+    fun ~pstate:ontop ->
+    let pstate = Option.map Proof_global.get_current_pstate ontop in
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
       (* We should use the global env here as this shouldn't
@@ -148,7 +150,7 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
           str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
     ) !field_from_name;
-    pstate }
+    ontop }
 END
 
 TACTIC EXTEND field_lookup

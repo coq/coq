@@ -280,7 +280,8 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
     (* This command may or may not open a goal *)
     => { (if Lib.is_modtype() then VtSideff([n]) else VtStartProof(GuaranteesOpacity, [n])), VtLater }
     -> {
-          add_morphism_infer atts m n
+      fun ~pstate:ontop ->
+        Option.cata (fun ps -> Some (Proof_global.push ~ontop ps)) ontop (add_morphism_infer atts m n)
        }
   | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]), VtLater }
@@ -313,9 +314,10 @@ VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
 | ![ proof ] [ "Print" "Rewrite" "HintDb" preident(s) ] ->
   { (* This command should not use the proof env, keeping previous
        behavior as requested in review. *)
-    fun ~pstate ->
+    fun ~pstate:ontop ->
+      let pstate = Option.map Proof_global.get_current_pstate ontop in
       let sigma, env = Option.cata Pfedit.get_current_context
           (let e = Global.env () in Evd.from_env e, e) pstate in
     Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s);
-    pstate }
+    ontop }
 END

@@ -108,7 +108,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
+let by tac = Proof_global.with_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
 
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
@@ -121,7 +121,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global, false, Proof Theo
   let evd = Evd.from_ctx ctx in
   let terminator = Proof_global.make_terminator (fun _ -> ()) in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = Proof_global.start_proof ~ontop:None evd id goal_kind goals terminator in
+  let pf = Proof_global.start_proof evd id goal_kind goals terminator in
   try
     let pf, status = by tac pf in
     let open Proof_global in

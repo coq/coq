@@ -31,20 +31,6 @@ val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
 val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
-val declare_instance_constant :
-  typeclass ->
-  Hints.hint_info_expr (** priority *) ->
-  bool (** globality *) ->
-  Impargs.manual_explicitation list (** implicits *) ->
-  ?hook:(GlobRef.t -> unit) ->
-  Id.t (** name *) ->
-  UState.universe_decl ->
-  bool (** polymorphic *) ->
-  Evd.evar_map (** Universes *) ->
-  Constr.t (** body *) ->
-  Constr.types (** type *) ->
-  unit
-
 val new_instance :
   pstate:Proof_global.t option
   -> ?global:bool (** Not global by default. *)

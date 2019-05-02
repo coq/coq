@@ -891,7 +891,7 @@ let classify_ltac2 = function
 
 VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
 | #[ local = locality ] ![proof] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
-  fun ~pstate -> Tac2entries.register_struct ?local ~pstate e; pstate
+  fun ~pstate -> Tac2entries.register_struct ?local ~pstate:(Option.map Proof_global.get_current_pstate pstate) e; pstate
   }
 END
 

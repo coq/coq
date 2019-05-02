@@ -1101,7 +1101,7 @@ END
 
 VERNAC COMMAND EXTEND OptimizeProof
 | ![ proof ] [ "Optimize" "Proof" ] => { classify_as_proofstep } ->
-  { fun ~pstate -> Option.map Proof_global.compact_the_proof pstate }
+  { fun ~pstate -> Option.map Proof_global.(modify_current_pstate compact_the_proof) pstate }
 | [ "Optimize" "Heap" ] => { classify_as_proofstep } ->
   { Gc.compact () }
 END
