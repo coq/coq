@@ -180,34 +180,34 @@ TACTIC EXTEND setoid_rewrite
 END
 
 VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
         "symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
       { declare_relation atts a aeq n (Some lemma1) (Some lemma2) None }
 
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
         "as" ident(n) ] ->
       { declare_relation atts a aeq n (Some lemma1) None None }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
       { declare_relation atts a aeq n None None None }
 END
 
 VERNAC COMMAND EXTEND AddRelation2 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
       { declare_relation atts a aeq n None (Some lemma2) None }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
       { declare_relation atts a aeq n None (Some lemma2) (Some lemma3) }
 END
 
 VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
       { declare_relation atts a aeq n (Some lemma1) None (Some lemma3) }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
       "as" ident(n) ] ->
       { declare_relation atts a aeq n (Some lemma1) (Some lemma2) (Some lemma3) }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
         "as" ident(n) ] ->
       { declare_relation atts a aeq n None None (Some lemma3) }
 END
@@ -234,66 +234,59 @@ GRAMMAR EXTEND Gram
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
         "reflexivity" "proved" "by" constr(lemma1)
         "symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n (Some lemma1) (Some lemma2) None }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
         "reflexivity" "proved" "by" constr(lemma1)
         "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n (Some lemma1) None None }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n None None None }
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation2 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n None (Some lemma2) None }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n None (Some lemma2) (Some lemma3) }
 END
 
 VERNAC COMMAND EXTEND AddParametricRelation3 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n (Some lemma1) None (Some lemma3) }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
       "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
         "as" ident(n) ] ->
       { declare_relation atts ~binders:b a aeq n None None (Some lemma3) }
 END
 
 VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      {
          add_setoid atts [] a aeq t n
      }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+  | #[ atts = rewrite_attributes; ] [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      {
          add_setoid atts binders a aeq t n
      }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Morphism" constr(m) ":" ident(n) ]
+  | #[ atts = rewrite_attributes; ] ![ maybe_open_proof ] [ "Add" "Morphism" constr(m) ":" ident(n) ]
     (* This command may or may not open a goal *)
     => { (if Lib.is_modtype() then VtSideff([n]) else VtStartProof(GuaranteesOpacity, [n])), VtLater }
-    -> {
-      fun ~pstate:ontop ->
-        Option.cata (fun ps -> Some (Proof_global.push ~ontop ps)) ontop (add_morphism_infer atts m n)
-       }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
+    -> { add_morphism_infer atts m n }
+  | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]), VtLater }
-    -> {
-          add_morphism atts [] m s n
-       }
-  | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
+    -> { add_morphism atts [] m s n }
+  | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" ident(n) ]
     => { VtStartProof(GuaranteesOpacity,[n]), VtLater }
-    -> {
-          add_morphism atts binders m s n
-       }
+    -> { add_morphism atts binders m s n }
 END
 
 TACTIC EXTEND setoid_symmetry

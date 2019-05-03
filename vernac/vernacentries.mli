@@ -44,6 +44,10 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
 (** Helper *)
 val vernac_require_open_proof : pstate:Proof_global.t option -> (pstate:Proof_global.t -> 'a) -> 'a
 
+val with_pstate : pstate:Proof_global.t option -> (pstate:Proof_global.pstate -> 'a) -> 'a
+
+val modify_pstate : pstate:Proof_global.t option -> (pstate:Proof_global.pstate -> Proof_global.pstate) -> Proof_global.t option
+
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)
 val test_mode : bool ref

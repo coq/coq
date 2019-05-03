@@ -145,13 +145,11 @@ END
   it gives an error message that is basically impossible to understand. *)
 
 VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
-| ![ proof ] [ "Cmd9" ] ->
-  { fun ~pstate:ontop ->
-    Option.iter (fun ontop ->
-        let pstate = Proof_global.get_current_pstate ontop in
-        let sigma, env = Pfedit.get_current_context pstate in
-        let pprf = Proof.partial_proof Proof_global.(give_me_the_proof pstate) in
-        Feedback.msg_notice
-          (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)) ontop;
-    ontop }
+| ![ proof_query ] [ "Cmd9" ] ->
+  { fun ~pstate ->
+    let sigma, env = Pfedit.get_current_context pstate in
+    let pprf = Proof.partial_proof Proof_global.(give_me_the_proof pstate) in
+    Feedback.msg_notice
+      (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)
+  }
 END
