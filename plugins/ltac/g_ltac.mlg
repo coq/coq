@@ -376,7 +376,7 @@ let () = declare_int_option {
 
 let vernac_solve ~pstate n info tcom b =
   let open Goal_select in
-  let pstate, status = Proof_global.with_current_proof (fun etac p ->
+  let pstate, status = Proof_global.with_proof (fun etac p ->
       let with_end_tac = if b then Some etac else None in
       let global = match n with SelectAll | SelectList _ -> true | _ -> false in
       let info = Option.append info !print_info_trace in
@@ -388,7 +388,7 @@ let vernac_solve ~pstate n info tcom b =
       let p = Proof.maximal_unfocus Vernacentries.command_focus p in
       p,status) pstate in
   if not status then Feedback.feedback Feedback.AddedAxiom;
-  Some pstate
+  pstate
 
 let pr_ltac_selector s = Pptactic.pr_goal_selector ~toplevel:true s
 
@@ -438,7 +438,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve
 | ![ proof ] [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     { classify_as_proofstep } -> {
     let g = Option.default (Goal_select.get_default_goal_selector ()) g in
-    Vernacentries.vernac_require_open_proof vernac_solve g n t def
+    vernac_solve g n t def
   }
 | ![ proof ] [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     {
@@ -450,7 +450,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve
       VtLater
     } -> {
       let t = rm_abstract t in
-      Vernacentries.vernac_require_open_proof vernac_solve Goal_select.SelectAll n t def
+      vernac_solve Goal_select.SelectAll n t def
     }
 END
 

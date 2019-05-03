@@ -34,24 +34,8 @@ VERNAC ARGUMENT EXTEND numnotoption
 END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF
-  | #[ locality = Attributes.locality; ] ![proof][ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
+  | #[ locality = Attributes.locality; ] [ "Numeral" "Notation" reference(ty) reference(f) reference(g) ":"
       ident(sc) numnotoption(o) ] ->
 
-    { (* It is a bug to use the proof context here, but at the request of
-       * the reviewers we keep this broken behavior for now. The Global env
-       * should be used instead, and the `env, sigma` parameteter to the
-       * numeral notation command removed.
-       *)
-      fun ~pstate:ontop ->
-        let pstate = Option.map Proof_global.get_current_pstate ontop in
-        let sigma, env = match pstate with
-        | None ->
-          let env = Global.env () in
-          let sigma = Evd.from_env env in
-          sigma, env
-        | Some pstate ->
-          Pfedit.get_current_context pstate
-        in
-      vernac_numeral_notation env sigma (Locality.make_module_locality locality) ty f g (Id.to_string sc) o;
-      ontop }
+    { vernac_numeral_notation (Locality.make_module_locality locality) ty f g (Id.to_string sc) o }
 END

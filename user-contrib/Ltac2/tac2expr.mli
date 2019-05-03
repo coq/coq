@@ -168,8 +168,6 @@ type strexpr =
   (** Syntactic extensions *)
 | StrMut of qualid * raw_tacexpr
   (** Redefinition of mutable globals *)
-| StrRun of raw_tacexpr
-  (** Toplevel evaluation of an expression *)
 
 (** {5 Dynamic semantics} *)
 

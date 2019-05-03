@@ -25,6 +25,8 @@ type t = {
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
+val pstate : t -> Proof_global.pstate option
+
 val freeze_interp_state : marshallable:bool -> t
 val unfreeze_interp_state : t -> unit
 

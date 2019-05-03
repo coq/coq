@@ -177,7 +177,7 @@ let () =
 
 (* TASSI: n'importe quoi ! *)
 VERNAC COMMAND EXTEND Function
-| ![ proof ] ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
+| ![ maybe_open_proof ] ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
     => { let hard = List.exists (function
            | _,((_,(Some { CAst.v = CMeasureRec _ }
              | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
@@ -190,9 +190,7 @@ VERNAC COMMAND EXTEND Function
          | Vernacextend.VtSideff ids, _ when hard ->
              Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
          | x -> x }
-    -> { fun ~pstate:ontop ->
-      let pstate = do_generate_principle false (List.map snd recsl) in
-      Proof_global.maybe_push ~ontop pstate}
+    -> { do_generate_principle false (List.map snd recsl) }
 END
 
 {
@@ -227,33 +225,32 @@ let warning_error names e =
 }
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
-| ![ proof ] ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
+| ![ maybe_open_proof ] ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
    => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
-    { fun ~pstate:ontop ->
-      begin
+    { begin
         try
-          Functional_principles_types.build_scheme fas; ontop
+          Functional_principles_types.build_scheme fas; None
         with
         | Functional_principles_types.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                let ontop = make_graph ~ontop (Smartlocate.global_with_alias fun_name) in
-                try Functional_principles_types.build_scheme fas; ontop
+                let pstate = make_graph (Smartlocate.global_with_alias fun_name) in
+                try Functional_principles_types.build_scheme fas; pstate
                 with
                 | Functional_principles_types.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
-                  warning_error names e; ontop
+                  warning_error names e; pstate
               end
 	      | _ -> assert false (* we can only have non empty  list *)
           end
         | e when CErrors.noncritical e ->
           let names = List.map (fun (_,na,_) -> na) fas in
-          warning_error names e; ontop
+          warning_error names e; None
       end
     }
 END
@@ -267,6 +264,6 @@ END
 
 (***** debug only ***)
 VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
-| ![ proof ] ["Generate" "graph" "for" reference(c)] ->
-  { fun ~pstate:ontop -> make_graph ~ontop (Smartlocate.global_with_alias c) }
+| ![ maybe_open_proof ] ["Generate" "graph" "for" reference(c)] ->
+  { make_graph (Smartlocate.global_with_alias c) }
 END
