@@ -34,6 +34,8 @@ type t = {
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
+let pstate st = Option.map Proof_global.get_current_pstate st.proof
+
 let s_cache = ref None
 let s_proof = ref None
 

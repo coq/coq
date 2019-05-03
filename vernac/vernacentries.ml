@@ -60,6 +60,10 @@ let with_pstate ~pstate f =
   vernac_require_open_proof ~pstate
     (fun ~pstate -> f ~pstate:(Proof_global.get_current_pstate pstate))
 
+let modify_pstate ~pstate f =
+  vernac_require_open_proof ~pstate (fun ~pstate ->
+      Some (Proof_global.modify_current_pstate (fun pstate -> f ~pstate) pstate))
+
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
@@ -1105,7 +1109,7 @@ let focus_command_cond = Proof.no_cond command_focus
      all tactics fail if there are no further goals to prove. *)
 
 let vernac_solve_existential ~pstate n com =
-  Proof_global.simple_with_current_proof (fun _ p ->
+  Proof_global.modify_proof (fun p ->
       let intern env sigma = Constrintern.intern_constr env sigma com in
       Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
@@ -2393,7 +2397,8 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
 
   (* Type classes *)
   | VernacInstance (sup, inst, props, info) ->
-    snd @@ with_def_attributes ~atts (vernac_instance ~pstate sup inst props info)
+    with_maybe_open_proof ~pstate (fun ~pstate:_ ->
+        snd @@ (with_def_attributes ~atts (vernac_instance sup inst props info)))
   | VernacDeclareInstance (sup, inst, info) ->
     with_def_attributes ~atts vernac_declare_instance sup inst info;
     pstate
@@ -2411,7 +2416,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
   (* Solving *)
   | VernacSolveExistential (n,c) ->
     unsupported_attributes atts;
-    Some (vernac_require_open_proof ~pstate (vernac_solve_existential n c))
+    modify_pstate ~pstate (vernac_solve_existential n c)
 
   (* Auxiliary file and library management *)
   | VernacAddLoadPath (isrec,s,alias) ->

@@ -32,7 +32,6 @@ val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
 val new_instance :
-  pstate:Proof_global.t option ->
   ?global:bool (** Not global by default. *) ->
   program_mode:bool ->
   Decl_kinds.polymorphic ->
@@ -44,7 +43,7 @@ val new_instance :
   ?hook:(GlobRef.t -> unit) ->
   Hints.hint_info_expr ->
   (* May open a proof *)
-  Id.t * Proof_global.t option
+  Id.t * Proof_global.pstate option
 
 val declare_new_instance :
   ?global:bool (** Not global by default. *) ->

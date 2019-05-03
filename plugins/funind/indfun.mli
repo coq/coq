@@ -17,4 +17,4 @@ val functional_induction :
   Ltac_plugin.Tacexpr.or_and_intro_pattern option ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
-val make_graph : ontop:Proof_global.t option -> GlobRef.t -> Proof_global.t option
+val make_graph : GlobRef.t -> Proof_global.pstate option

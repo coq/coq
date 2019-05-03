@@ -769,13 +769,12 @@ let perform_eval ~pstate e =
 
 (** Toplevel entries *)
 
-let register_struct ?local ~pstate str = match str with
+let register_struct ?local str = match str with
 | StrVal (mut, isrec, e) -> register_ltac ?local ~mut isrec e
 | StrTyp (isrec, t) -> register_type ?local isrec t
 | StrPrm (id, t, ml) -> register_primitive ?local id t ml
 | StrSyn (tok, lev, e) -> register_notation ?local tok lev e
 | StrMut (qid, e) -> register_redefinition ?local qid e
-| StrRun e -> perform_eval ~pstate e
 
 (** Toplevel exception *)
 
@@ -857,7 +856,7 @@ let print_ltac qid =
 (** Calling tactics *)
 
 let solve ~pstate default tac =
-  let pstate, status = Proof_global.with_current_proof begin fun etac p ->
+  let pstate, status = Proof_global.with_proof begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Pfedit.solve g None tac ?with_end_tac p in

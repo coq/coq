@@ -404,7 +404,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
   | None ->
     pstate
 
-let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -487,17 +487,18 @@ let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode ct
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
       let term = to_constr sigma (Option.get term) in
       (declare_instance_constant pri global imps ?hook id decl poly sigma term termtype;
-       pstate)
+       None)
     else if program_mode then
-      (declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype ; pstate)
+      (declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype;
+       None)
     else if Option.is_empty props then
-      let pstate' =
+      let pstate =
         Flags.silently (fun () ->
             declare_instance_open sigma ?hook ~tac ~global ~poly
               id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
           ()
       in
-      Some (Proof_global.push ~ontop:pstate pstate')
+      Some pstate
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
   id, pstate
 
@@ -543,7 +544,7 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
 
-let new_instance ~pstate ?(global=false) ~program_mode
+let new_instance ?(global=false) ~program_mode
     poly ctx (instid, bk, cl) props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -559,7 +560,7 @@ let new_instance ~pstate ?(global=false) ~program_mode
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode
+  do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
 let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =
