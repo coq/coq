@@ -2863,17 +2863,21 @@ let generalize_dep ?(with_let=false) c =
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let body =
-    if with_let then
-      match EConstr.kind sigma c with
-      | Var id -> id |> (fun id -> pf_get_hyp id gl) |> NamedDecl.get_value
-      | _ -> None
-    else None
+  let is_var, body = match EConstr.kind sigma c with
+  | Var id ->
+    let body = NamedDecl.get_value (pf_get_hyp id gl) in
+    let is_var = Option.is_empty body && not (List.mem id init_ids) in
+    if with_let then is_var, body else is_var, None
+  | _ -> false, None
   in
   let cl'',evd = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous)
     (cl',project gl) in
   (* Check that the generalization is indeed well-typed *)
-  let (evd, _) = Typing.type_of env evd cl'' in
+  let evd =
+    (* No need to retype for variables, term is statically well-typed *)
+    if is_var then evd
+    else fst (Typing.type_of env evd cl'')
+  in
   let args = Context.Named.to_instance mkVar to_quantify_rev in
   tclTHENLIST
     [ Proofview.Unsafe.tclEVARS evd;
