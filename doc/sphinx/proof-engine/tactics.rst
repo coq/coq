@@ -4821,15 +4821,15 @@ Performance-oriented tactic variants
    For advanced usage. Similar to :n:`change @term`, but as an optimization,
    it skips checking that :n:`@term` is convertible to the goal.
 
-   Recall the Coq kernel typechecks proofs again when they are concluded to
+   Recall that the Coq kernel typechecks proofs again when they are concluded to
    ensure safety. Hence, using :tacn:`change` checks convertibility twice
-   overall, while :tacn:`convert_concl_no_check` can produce ill-typed terms,
+   overall, while :tacn:`change_no_check` can produce ill-typed terms,
    but checks convertibility only once.
-   Hence, :tacn:`convert_concl_no_check` can be useful to speed up certain proof
+   Hence, :tacn:`change_no_check` can be useful to speed up certain proof
    scripts, especially if one knows by construction that the argument is
    indeed convertible to the goal.
 
-   In the following example, :tacn:`convert_concl_no_check` replaces :g:`False` by
+   In the following example, :tacn:`change_no_check` replaces :g:`False` by
    :g:`True`, but :g:`Qed` then rejects the proof, ensuring consistency.
 
    .. example::
@@ -4852,7 +4852,7 @@ Performance-oriented tactic variants
 
    For advanced usage. Similar to :n:`exact @term`, but as an optimization,
    it skips checking that :n:`@term` has the goal's type, relying on the kernel
-   check instead. See :tacn:`convert_concl_no_check` for more explanations.
+   check instead. See :tacn:`change_no_check` for more explanations.
 
    .. example::
 
