@@ -101,7 +101,9 @@ let type_error_of g ty =
      str " to Decimal.int or (option Decimal.int)." ++ fnl () ++
      str "Instead of Decimal.int, the types Decimal.uint or Z or Int63.int or Decimal.decimal could be used (you may need to require BinNums or Decimal or Int63 first).")
 
-let vernac_numeral_notation env sigma local ty f g scope opts =
+let vernac_numeral_notation local ty f g scope opts =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   let dec_ty = locate_decimal () in
   let z_pos_ty = locate_z () in
   let int63_ty = locate_int63 () in

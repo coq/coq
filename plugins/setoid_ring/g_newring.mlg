@@ -86,9 +86,8 @@ END
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods_opt(l) ] ->
     { let l = match l with None -> [] | Some l -> l in add_theory id t l }
-  | ![proof] [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
-    fun ~pstate:ontop ->
-    let pstate = Option.map Proof_global.get_current_pstate ontop in
+  | ![proof_opt_query] [ "Print" "Rings" ] => { Vernacextend.classify_as_query } -> {
+    fun ~pstate ->
     Feedback.msg_notice (strbrk "The following ring structures have been declared:");
     Spmap.iter (fun fn fi ->
       (* We should use the global env here as this shouldn't contain proof
@@ -99,8 +98,8 @@ VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
-    ) !from_name;
-    ontop }
+    ) !from_name
+  }
 END
 
 TACTIC EXTEND ring_lookup
@@ -136,9 +135,8 @@ END
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods_opt(l) ] ->
   { let l = match l with None -> [] | Some l -> l in add_field_theory id t l }
-| ![proof] [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
-    fun ~pstate:ontop ->
-    let pstate = Option.map Proof_global.get_current_pstate ontop in
+| ![proof_opt_query] [ "Print" "Fields" ] => {Vernacextend.classify_as_query} -> {
+    fun ~pstate ->
     Feedback.msg_notice (strbrk "The following field structures have been declared:");
     Spmap.iter (fun fn fi ->
       (* We should use the global env here as this shouldn't
@@ -149,8 +147,8 @@ VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
         (Ppconstr.pr_id (Libnames.basename fn)++spc()++
           str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
           str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
-    ) !field_from_name;
-    ontop }
+    ) !field_from_name
+  }
 END
 
 TACTIC EXTEND field_lookup

@@ -839,7 +839,9 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
     | _ -> [],b,t
 
 
-let make_graph env sigma (f_ref : GlobRef.t) =
+let make_graph (f_ref : GlobRef.t) =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
   let c,c_body =
     match f_ref with
     | ConstRef c ->
@@ -906,12 +908,5 @@ let make_graph env sigma (f_ref : GlobRef.t) =
            (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
            expr_list;
          pstate)
-
-let make_graph ~ontop f_ref =
-  let pstate = Option.map Proof_global.get_current_pstate ontop in
-  let sigma, env = Option.cata Pfedit.get_current_context
-      (let e = Global.env () in Evd.from_env e, e) pstate in
-  Option.cata (fun ps -> Some (Proof_global.push ~ontop ps)) ontop
-    (make_graph env sigma f_ref)
 
 let do_generate_principle = do_generate_principle [] warning_error true

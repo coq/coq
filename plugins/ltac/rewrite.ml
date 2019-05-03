@@ -23,7 +23,6 @@ open Tacticals.New
 open Tactics
 open Pretype_errors
 open Typeclasses
-open Classes
 open Constrexpr
 open Globnames
 open Evd
@@ -1795,17 +1794,17 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let anew_instance ~pstate atts binders (name,t) fields =
+let anew_instance atts binders (name,t) fields =
   let program_mode = atts.program in
-  let _id, pstate = new_instance ~pstate ~program_mode atts.polymorphic
+  let _id, proof = Classes.new_instance ~program_mode atts.polymorphic
       name binders t (Some (true, CAst.make @@ CRecord (fields)))
       ~global:atts.global ~generalize:false Hints.empty_hint_info
   in
-  pstate
+  assert (Option.is_empty proof) (* refine:false with term *)
 
-let declare_instance_refl ~pstate atts binders a aeq n lemma =
+let declare_instance_refl atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
-  in anew_instance ~pstate atts binders instance
+  in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "reflexivity"),lemma)]
 
 let declare_instance_sym atts binders a aeq n lemma =
@@ -1818,41 +1817,41 @@ let declare_instance_trans atts binders a aeq n lemma =
   in anew_instance atts binders instance
        [(qualid_of_ident (Id.of_string "transitivity"),lemma)]
 
-let declare_relation ~pstate atts ?(binders=[]) a aeq n refl symm trans =
+let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation" in
-  let pstate = anew_instance ~pstate atts binders instance [] in
+  let () = anew_instance atts binders instance [] in
   match (refl,symm,trans) with
-    (None, None, None) -> pstate
+    (None, None, None) -> ()
   | (Some lemma1, None, None) ->
-    declare_instance_refl ~pstate atts binders a aeq n lemma1
+    declare_instance_refl atts binders a aeq n lemma1
   | (None, Some lemma2, None) ->
-    declare_instance_sym ~pstate atts binders a aeq n lemma2
+    declare_instance_sym atts binders a aeq n lemma2
   | (None, None, Some lemma3) ->
-    declare_instance_trans ~pstate atts binders a aeq n lemma3
+    declare_instance_trans atts binders a aeq n lemma3
   | (Some lemma1, Some lemma2, None) ->
-    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-    declare_instance_sym ~pstate atts binders a aeq n lemma2
+    let () = declare_instance_refl atts binders a aeq n lemma1 in
+    declare_instance_sym atts binders a aeq n lemma2
   | (Some lemma1, None, Some lemma3) ->
-    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let () = declare_instance_refl atts binders a aeq n lemma1 in
+    let () = declare_instance_trans atts binders a aeq n lemma3 in
     let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" in
-    anew_instance ~pstate atts binders instance
+    anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
        (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)]
   | (None, Some lemma2, Some lemma3) ->
-    let pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
-    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let () = declare_instance_sym atts binders a aeq n lemma2 in
+    let () = declare_instance_trans atts binders a aeq n lemma3 in
     let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" in
-    anew_instance ~pstate atts binders instance
+    anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
        (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)]
   | (Some lemma1, Some lemma2, Some lemma3) ->
-    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-    let pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
-    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let () = declare_instance_refl atts binders a aeq n lemma1 in
+    let () = declare_instance_sym atts binders a aeq n lemma2 in
+    let () = declare_instance_trans atts binders a aeq n lemma3 in
     let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" in
-    anew_instance ~pstate atts binders instance
+    anew_instance atts binders instance
       [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
        (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
        (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)]
@@ -1951,15 +1950,15 @@ let warn_add_setoid_deprecated =
   CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
       Pp.(str "Add Setoid is deprecated, please use Add Parametric Relation."))
 
-let add_setoid ~pstate atts binders a aeq t n =
+let add_setoid atts binders a aeq t n =
   warn_add_setoid_deprecated ?loc:a.CAst.loc ();
   init_setoid ();
-  let pstate = declare_instance_refl ~pstate atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let pstate = declare_instance_sym ~pstate atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let pstate = declare_instance_trans ~pstate atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
+  let () = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
+  let () = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let () = declare_instance_trans atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in
-  anew_instance ~pstate atts binders instance
+  anew_instance atts binders instance
     [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
      (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
      (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
@@ -1988,7 +1987,7 @@ let add_morphism_infer atts m n : Proof_global.pstate option =
              (None,(instance,uctx),None),
            Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-      add_instance (Classes.mk_instance
+      Classes.add_instance (Classes.mk_instance
                       (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
       declare_projection n instance_id (ConstRef cst);
       None
@@ -1999,7 +1998,7 @@ let add_morphism_infer atts m n : Proof_global.pstate option =
       let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
       let hook _ _ _ = function
         | Globnames.ConstRef cst ->
-          add_instance (Classes.mk_instance
+          Classes.add_instance (Classes.mk_instance
                           (PropGlobal.proper_class env evd) Hints.empty_hint_info
                           atts.global (ConstRef cst));
           declare_projection n instance_id (ConstRef cst)
@@ -2011,7 +2010,7 @@ let add_morphism_infer atts m n : Proof_global.pstate option =
            let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
            Some (fst Pfedit.(by (Tacinterp.interp tac) pstate))) ()
 
-let add_morphism ~pstate atts binders m s n =
+let add_morphism atts binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let instance_name = (CAst.make @@ Name instance_id),None in
@@ -2021,12 +2020,12 @@ let add_morphism ~pstate atts binders m s n =
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let _, pstate = new_instance ~pstate
+  let _, pstate = Classes.new_instance
       ~program_mode:atts.program ~global:atts.global atts.polymorphic
       instance_name binders instance_t None
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in
-  pstate
+  Option.get pstate (* no instance body -> always open proof *)
 
 (** Bind to "rewrite" too *)
 
