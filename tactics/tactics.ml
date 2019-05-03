@@ -833,7 +833,7 @@ let change_in_hyp ?(check=true) occl t id =
   (* FIXME: we set the [check] flag only to reorder hypotheses in case of
     introduction of dependencies in new variables. We should separate this
     check from the conversion function. *)
-  e_change_in_hyp ~check:true (fun x -> change_on_subterm check Reduction.CONV x t occl) id
+  e_change_in_hyp ~check (fun x -> change_on_subterm check Reduction.CONV x t occl) id
 
 let concrete_clause_of enum_hyps cl = match cl.onhyps with
 | None ->
@@ -855,7 +855,7 @@ let change ?(check=true) chg c cls =
       let redfun deep env sigma t = change_on_subterm check Reduction.CONV deep c occl env sigma t in
       (redfun, id, where)
     in
-    e_change_in_hyps ~check:true f hyps
+    e_change_in_hyps ~check f hyps
   end
 
 let change_concl t = 

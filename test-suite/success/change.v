@@ -71,8 +71,13 @@ Qed.
 
 (* Mini-check that no_check does not check *)
 
-Goal False.
-change_no_check True.
-exact I.
+Goal True -> False.
+intro H.
+change_no_check nat.
+apply S.
+change_no_check nat with bool.
+change_no_check nat in H.
+change_no_check nat with (bool->bool) in H.
+exact (H true).
 Fail Qed.
 Abort.
