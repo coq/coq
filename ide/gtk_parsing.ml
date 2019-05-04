@@ -10,11 +10,11 @@
 
 let underscore = Glib.Utf8.to_unichar "_" ~pos:(ref 0)
 let prime = Glib.Utf8.to_unichar "'" ~pos:(ref 0)
-
+let dot = Glib.Utf8.to_unichar "." ~pos:(ref 0)
 
 (* TODO: avoid num and prime at the head of a word *)
 let is_word_char c =
-  Glib.Unichar.isalnum c || c = underscore || c = prime
+  Glib.Unichar.isalnum c || c = underscore || c = prime || c = dot
 
 
 let starts_word (it:GText.iter) =
