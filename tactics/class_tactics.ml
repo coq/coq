@@ -548,7 +548,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
           make_apply_entry ~name env sigma flags pri false])
     else []
 
-let make_hints g st only_classes sign =
+let make_hints g (modes,st) only_classes sign =
   let hintlist =
     List.fold_left
       (fun hints hyp ->
@@ -565,7 +565,9 @@ let make_hints g st only_classes sign =
           in hint @ hints
         else hints)
       ([]) sign
-  in Hint_db.add_list (pf_env g) (project g) hintlist (Hint_db.empty st true)
+  in
+  let db = Hint_db.add_modes modes @@ Hint_db.empty st true in
+  Hint_db.add_list (pf_env g) (project g) hintlist db
 
 module Search = struct
   type autoinfo =
@@ -578,29 +580,29 @@ module Search = struct
 
   (** Local hints *)
   let autogoal_cache = Summary.ref ~name:"autogoal_cache"
-      (DirPath.empty, true, Context.Named.empty,
+      (DirPath.empty, true, Context.Named.empty, GlobRef.Map.empty,
        Hint_db.empty TransparentState.full true)
 
-  let make_autogoal_hints only_classes ?(st=TransparentState.full) g =
+  let make_autogoal_hints only_classes (modes,st as mst) g =
     let open Proofview in
     let open Tacmach.New in
     let sign = Goal.hyps g in
-    let (dir, onlyc, sign', cached_hints) = !autogoal_cache in
+    let (dir, onlyc, sign', cached_modes, cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
     let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
            Context.Named.equal eq sign sign' &&
-             Hint_db.transparent_state cached_hints == st
+             cached_modes == modes
     then cached_hints
     else
       let hints = make_hints {it = Goal.goal g; sigma = project g}
-                             st only_classes sign
+                             mst only_classes sign
       in
-      autogoal_cache := (cwd, only_classes, sign, hints); hints
+      autogoal_cache := (cwd, only_classes, sign, modes, hints); hints
 
-  let make_autogoal ?(st=TransparentState.full) only_classes dep cut i g =
-    let hints = make_autogoal_hints only_classes ~st g in
+  let make_autogoal mst only_classes dep cut i g =
+    let hints = make_autogoal_hints only_classes mst g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
@@ -695,7 +697,8 @@ module Search = struct
           if b && not (Context.Named.equal eq (Goal.hyps gl') (Goal.hyps gl))
           then
             let st = Hint_db.transparent_state info.search_hints in
-            make_autogoal_hints info.search_only_classes ~st gl'
+            let modes = Hint_db.modes info.search_hints in
+            make_autogoal_hints info.search_only_classes (modes,st) gl'
           else info.search_hints
         in
         let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
@@ -830,19 +833,19 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl ?st only_classes dep hints depth i sigma gls gl :
+  let search_tac_gl mst only_classes dep hints depth i sigma gls gl :
         unit Proofview.tactic =
     let open Proofview in
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-    let info = make_autogoal ?st only_classes dep (cut_of_hints hints) i gl in
+    let info = make_autogoal mst only_classes dep (cut_of_hints hints) i gl in
     search_tac hints depth 1 info
 
-  let search_tac ?(st=TransparentState.full) only_classes dep hints depth =
+  let search_tac mst only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.enter
         begin fun gl ->
-          search_tac_gl ~st only_classes dep hints depth (succ i) sigma gls gl end
+          search_tac_gl mst only_classes dep hints depth (succ i) sigma gls gl end
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
@@ -867,11 +870,11 @@ module Search = struct
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
 
-  let eauto_tac ?(st=TransparentState.full) ?(unique=false)
+  let eauto_tac mst ?(unique=false)
                 ~only_classes ?strategy ~depth ~dep hints =
     let open Proofview in
     let tac =
-      let search = search_tac ~st only_classes dep hints in
+      let search = search_tac mst only_classes dep hints in
       let dfs =
         match strategy with
         | None -> not (get_typeclasses_iterative_deepening ())
@@ -915,8 +918,8 @@ module Search = struct
                                             | Some i -> str ", with depth limit " ++ int i));
     tac
 
-  let eauto_tac ?st ?unique ~only_classes ?strategy ~depth ~dep hints =
-    Hints.wrap_hint_warning @@ eauto_tac ?st ?unique ~only_classes ?strategy ~depth ~dep hints
+  let eauto_tac mst ?unique ~only_classes ?strategy ~depth ~dep hints =
+    Hints.wrap_hint_warning @@ eauto_tac mst ?unique ~only_classes ?strategy ~depth ~dep hints
 
   let run_on_evars env evm p tac =
     match evars_to_goals p evm with
@@ -968,8 +971,8 @@ module Search = struct
          else raise Not_found
        with Logic_monad.TacticFailure _ -> raise Not_found
 
-  let evars_eauto env evd depth only_classes unique dep st hints p =
-    let eauto_tac = eauto_tac ~st ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
+  let evars_eauto env evd depth only_classes unique dep mst hints p =
+    let eauto_tac = eauto_tac mst ~unique ~only_classes ~depth ~dep:(unique || dep) hints in
     let res = run_on_evars env evd p eauto_tac in
     match res with
     | None -> evd
@@ -983,10 +986,10 @@ module Search = struct
 
   let typeclasses_resolve env evd debug depth unique p =
     let db = searchtable_map typeclasses_db in
-    typeclasses_eauto env evd ?depth unique (Hint_db.transparent_state db) [db] p
+    let st = Hint_db.transparent_state db in
+    let modes = Hint_db.modes db in
+    typeclasses_eauto env evd ?depth unique (modes,st) [db] p
 end
-
-(** Binding to either V85 or Search implementations. *)
 
 let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
                       ?strategy ~depth dbs =
@@ -996,8 +999,10 @@ let typeclasses_eauto ?(only_classes=false) ?(st=TransparentState.full)
               dbs
   in
   let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
+  let modes = List.map Hint_db.modes dbs in
+  let modes = List.fold_left (GlobRef.Map.union (fun _ m1 m2 -> Some (m1@m2))) GlobRef.Map.empty modes in
   let depth = match depth with None -> get_typeclasses_depth () | Some l -> Some l in
-  Search.eauto_tac ~st ~only_classes ?strategy ~depth ~dep:true dbs
+  Search.eauto_tac (modes,st) ~only_classes ?strategy ~depth ~dep:true dbs
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
@@ -1140,11 +1145,12 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let st = Hint_db.transparent_state hints in
+  let modes = Hint_db.modes hints in
   let depth = get_typeclasses_depth () in
   let gls' =
       try
         Proofview.V82.of_tactic
-        (Search.eauto_tac ~st ~only_classes:true ~depth [hints] ~dep:true) gls
+        (Search.eauto_tac (modes,st) ~only_classes:true ~depth [hints] ~dep:true) gls
       with Refiner.FailError _ -> raise Not_found
   in
   let evd = sig_sig gls' in
