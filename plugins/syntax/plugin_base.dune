@@ -3,7 +3,7 @@
  (public_name coq.plugins.numeral_notation)
  (synopsis "Coq numeral notation plugin")
  (modules g_numeral numeral)
- (libraries coq.plugins.ltac))
+ (libraries coq.vernac))
 
 (library
  (name string_notation_plugin)

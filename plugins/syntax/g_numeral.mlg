@@ -16,18 +16,17 @@ open Notation
 open Numeral
 open Pp
 open Names
-open Ltac_plugin
 open Stdarg
 open Pcoq.Prim
 
-let pr_numnot_option _ _ _ = function
+let pr_numnot_option = function
   | Nop -> mt ()
   | Warning n -> str "(warning after " ++ str n ++ str ")"
   | Abstract n -> str "(abstract after " ++ str n ++ str ")"
 
 }
 
-ARGUMENT EXTEND numnotoption
+VERNAC ARGUMENT EXTEND numnotoption
   PRINTED BY { pr_numnot_option }
 | [ ] -> { Nop }
 | [ "(" "warning" "after" bigint(waft) ")" ] -> { Warning waft }
