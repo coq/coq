@@ -200,20 +200,20 @@ let classify_vernac e =
         try Vernacextend.get_vernac_classifier s l
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
-  let rec static_control_classifier = function
+  let rec static_control_classifier v = v |> CAst.with_val (function
     | VernacExpr (f, e) ->
       let poly = Attributes.(parse_drop_extra polymorphic_nowarn f) in
       static_classifier ~poly e
-    | VernacTimeout (_,{v=e}) -> static_control_classifier e
-    | VernacTime (_,{v=e}) | VernacRedirect (_, {v=e}) ->
+    | VernacTimeout (_,e) -> static_control_classifier e
+    | VernacTime (_,e) | VernacRedirect (_, e) ->
        static_control_classifier e
-    | VernacFail {v=e} -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
+    | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match static_control_classifier e with
         | ( VtQuery | VtProofStep _ | VtSideff _
           | VtMeta), _ as x -> x
         | VtQed _, _ ->
             VtProofStep { parallel = `No; proof_block_detection = None },
             VtLater
-        | (VtStartProof _ | VtUnknown | VtProofMode _), _ -> VtQuery, VtLater)
+        | (VtStartProof _ | VtUnknown | VtProofMode _), _ -> VtQuery, VtLater))
   in
   static_control_classifier e

@@ -64,7 +64,7 @@ let is_known_option cmd = match Vernacprop.under_control cmd with
 
 (** Check whether a command is forbidden in the IDE *)
 
-let ide_cmd_checks ~last_valid {CAst.loc;v=ast} =
+let ide_cmd_checks ~last_valid ({ CAst.loc; _ } as cmd) =
   let user_error s =
     try CErrors.user_err ?loc ~hdr:"IDE" (str s)
     with e ->
@@ -72,14 +72,14 @@ let ide_cmd_checks ~last_valid {CAst.loc;v=ast} =
       let info = Stateid.add info ~valid:last_valid Stateid.dummy in
       Exninfo.raise ~info e
   in
-  if is_debug ast then
+  if is_debug cmd then
     user_error "Debug mode not available in the IDE"
 
-let ide_cmd_warns ~id {CAst.loc;v=ast} =
+let ide_cmd_warns ~id ({ CAst.loc; _ } as cmd) =
   let warn msg = Feedback.(feedback ~id (Message (Warning, loc, strbrk msg))) in
-  if is_known_option ast then
+  if is_known_option cmd then
     warn "Set this option from the IDE menu instead";
-  if is_navigation_vernac ast || is_undo ast then
+  if is_navigation_vernac cmd || is_undo cmd then
     warn "Use IDE navigation instead"
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
@@ -137,7 +137,7 @@ let annotate phrase =
   | None -> Richpp.richpp_of_pp 78 (Pp.mt ())
   | Some ast ->
     (* XXX: Width should be a parameter of annotate... *)
-    Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast.CAst.v)
+    Richpp.richpp_of_pp 78 (Ppvernac.pr_vernac ast)
 
 (** Goal display *)
 

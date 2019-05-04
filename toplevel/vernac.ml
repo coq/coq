@@ -20,12 +20,12 @@ open Vernacprop
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-let checknav_simple {CAst.loc;v=cmd} =
+let checknav_simple ({ CAst.loc; _ } as cmd) =
   if is_navigation_vernac cmd && not (is_reset cmd) then
     CErrors.user_err ?loc (str "Navigation commands forbidden in files.")
 
-let checknav_deep {CAst.loc;v=ast} =
-  if is_deep_navigation_vernac ast then
+let checknav_deep ({ CAst.loc; _ } as cmd) =
+  if is_deep_navigation_vernac cmd then
     CErrors.user_err ?loc (str "Navigation commands forbidden in nested commands.")
 
 (* Echo from a buffer based on position.
@@ -163,10 +163,7 @@ let beautify_pass ~doc ~comments ~ids ~filename =
      set the comments, then we call print. This has to be done for
      each file. *)
   Pputils.beautify_comments := comments;
-  List.iter (fun id ->
-      Option.iter (fun (loc,ast) ->
-          pr_new_syntax ?loc ft_beautify (Some ast))
-        (Stm.get_ast ~doc id)) ids;
+  List.iter (fun id -> pr_new_syntax ft_beautify (Stm.get_ast ~doc id)) ids;
 
   (* Is this called so comments at EOF are printed? *)
   pr_new_syntax ~loc:(Loc.make_loc (max_int,max_int)) ft_beautify None;

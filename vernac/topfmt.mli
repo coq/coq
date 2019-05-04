@@ -73,4 +73,4 @@ val print_err_exn : exn -> unit
     redirected to a file [file] *)
 val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
 
-val pr_cmd_header : Vernacexpr.vernac_control CAst.t -> Pp.t
+val pr_cmd_header : Vernacexpr.vernac_control -> Pp.t

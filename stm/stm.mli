@@ -111,7 +111,7 @@ val parse_sentence :
    If [newtip] is provided, then the returned state id is guaranteed
    to be [newtip] *)
 val add : doc:doc -> ontop:Stateid.t -> ?newtip:Stateid.t ->
-  bool -> Vernacexpr.vernac_control CAst.t ->
+  bool -> Vernacexpr.vernac_control ->
   doc * Stateid.t * [ `NewTip | `Unfocus of Stateid.t ]
 
 (* Returns the proof state before the last tactic that was applied at or before
@@ -175,7 +175,7 @@ val get_current_state : doc:doc -> Stateid.t
 val get_ldir : doc:doc -> Names.DirPath.t
 
 (* This returns the node at that position *)
-val get_ast : doc:doc -> Stateid.t -> (Vernacexpr.vernac_control Loc.located) option
+val get_ast : doc:doc -> Stateid.t -> Vernacexpr.vernac_control option
 
 (* Filename *)
 val set_compilation_hints : string -> unit

@@ -77,11 +77,11 @@ let parse_compat_version = let open Flags in function
 GRAMMAR EXTEND Gram
   GLOBAL: vernac_control gallina_ext noedit_mode subprf;
   vernac_control: FIRST
-    [ [ IDENT "Time"; c = located_vernac -> { VernacTime (false,c) }
-      | IDENT "Redirect"; s = ne_string; c = located_vernac -> { VernacRedirect (s, c) }
-      | IDENT "Timeout"; n = natural; v = located_vernac -> { VernacTimeout(n,v) }
-      | IDENT "Fail"; v = located_vernac -> { VernacFail v }
-      | v = decorated_vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
+    [ [ IDENT "Time"; c = vernac_control -> { CAst.make ~loc @@ VernacTime (false,c) }
+      | IDENT "Redirect"; s = ne_string; c = vernac_control -> { CAst.make ~loc @@ VernacRedirect (s, c) }
+      | IDENT "Timeout"; n = natural; v = vernac_control -> { CAst.make ~loc @@ VernacTimeout(n,v) }
+      | IDENT "Fail"; v = vernac_control -> { CAst.make ~loc @@ VernacFail v }
+      | v = decorated_vernac -> { let (f, v) = v in CAst.make ~loc @@ VernacExpr(f, v) } ]
     ]
   ;
   decorated_vernac:
@@ -147,9 +147,6 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
 
-  located_vernac:
-    [ [ v = vernac_control -> { CAst.make ~loc v } ] ]
-  ;
 END
 
 {

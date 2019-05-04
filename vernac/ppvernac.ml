@@ -1262,15 +1262,15 @@ let pr_vernac_attributes =
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in
-    match v with
+    match v.v with
     | VernacExpr (f, v') -> pr_vernac_attributes f ++ pr_vernac_expr v' ++ sep_end v'
-    | VernacTime (_,{v}) ->
+    | VernacTime (_,v) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
-    | VernacRedirect (s, {v}) ->
+    | VernacRedirect (s, v) ->
       return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
-    | VernacTimeout(n,{v}) ->
+    | VernacTimeout(n,v) ->
       return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)
-    | VernacFail {v} ->
+    | VernacFail v->
       return (keyword "Fail" ++ spc() ++ pr_vernac_control v)
 
     let pr_vernac v =
