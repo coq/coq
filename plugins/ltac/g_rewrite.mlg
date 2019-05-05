@@ -304,12 +304,6 @@ TACTIC EXTEND setoid_transitivity
 END
 
 VERNAC COMMAND EXTEND PrintRewriteHintDb CLASSIFIED AS QUERY
-| ![ proof_opt_query ] [ "Print" "Rewrite" "HintDb" preident(s) ] ->
-  { (* This command should not use the proof env, keeping previous
-       behavior as requested in review. *)
-    fun ~pstate ->
-      let sigma, env = Option.cata Pfedit.get_current_context
-          (let e = Global.env () in Evd.from_env e, e) pstate in
-    Feedback.msg_notice (Autorewrite.print_rewrite_hintdb env sigma s)
-  }
+| [ "Print" "Rewrite" "HintDb" preident(s) ] ->
+  { Feedback.msg_notice (Autorewrite.print_rewrite_hintdb s) }
 END
