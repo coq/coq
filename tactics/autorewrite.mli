@@ -42,7 +42,7 @@ val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> uni
 
 val auto_multi_rewrite_with : ?conds:conditions -> unit Proofview.tactic -> string list -> Locus.clause -> unit Proofview.tactic
 
-val print_rewrite_hintdb : Environ.env -> Evd.evar_map -> string -> Pp.t
+val print_rewrite_hintdb : string -> Pp.t
 
 open Clenv
 
