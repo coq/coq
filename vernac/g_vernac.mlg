@@ -50,7 +50,6 @@ let def_body = Entry.create "vernac:def_body"
 let decl_notation = Entry.create "vernac:decl_notation"
 let record_field = Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Entry.create "vernac:of_type_with_opt_coercion"
-let instance_name = Entry.create "vernac:instance_name"
 let section_subset_expr = Entry.create "vernac:section_subset_expr"
 
 let make_bullet s =
@@ -683,7 +682,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)
 GRAMMAR EXTEND Gram
-  GLOBAL: gallina_ext instance_name hint_info;
+  GLOBAL: gallina_ext hint_info;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
