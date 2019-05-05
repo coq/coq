@@ -1978,7 +1978,6 @@ let warn_add_morphism_deprecated =
 let add_morphism_infer ~pstate atts m n : Proof_global.t option =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
-  (* NB: atts.program is ignored, program mode automatically set by vernacentries *)
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
   let evd = Evd.from_env env in
