@@ -526,6 +526,7 @@ object (self)
     stick spaces_instead_of_tabs self self#set_insert_spaces_instead_of_tabs;
     stick tab_length self self#set_tab_width;
     stick auto_complete self self#set_auto_complete;
+    stick auto_complete_delay self (fun d -> self#completion#set_auto_complete_delay d);
 
     let cb ft = self#misc#modify_font (GPango.font_description_from_string ft) in
     stick text_font self cb;
