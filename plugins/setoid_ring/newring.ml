@@ -329,6 +329,18 @@ module Cmap = Map.Make(Constr)
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
 let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
 
+let print_rings () =
+  Feedback.msg_notice (strbrk "The following ring structures have been declared:");
+  Spmap.iter (fun fn fi ->
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Feedback.msg_notice
+        (hov 2
+           (Ppconstr.pr_id (Libnames.basename fn)++spc()++
+            str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
+            str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
+    ) !from_name
+
 let ring_for_carrier r = Cmap.find r !from_carrier
 
 let find_ring_structure env sigma l =
@@ -825,6 +837,18 @@ let dest_field env evd th_spec =
 
 let field_from_carrier = Summary.ref Cmap.empty ~name:"field-tac-carrier-table"
 let field_from_name = Summary.ref Spmap.empty ~name:"field-tac-name-table"
+
+let print_fields () =
+  Feedback.msg_notice (strbrk "The following field structures have been declared:");
+  Spmap.iter (fun fn fi ->
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Feedback.msg_notice
+        (hov 2
+           (Ppconstr.pr_id (Libnames.basename fn)++spc()++
+            str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
+            str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
+    ) !field_from_name
 
 let field_for_carrier r = Cmap.find r !field_from_carrier
 
