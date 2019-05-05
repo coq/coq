@@ -1798,9 +1798,11 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance ~pstate atts binders instance fields =
   let program_mode = atts.program in
-  new_instance ~pstate ~program_mode atts.polymorphic
-    binders instance (Some (true, CAst.make @@ CRecord (fields)))
-    ~global:atts.global ~generalize:false Hints.empty_hint_info
+  let _id, pstate = new_instance ~pstate ~program_mode atts.polymorphic
+      binders instance (Some (true, CAst.make @@ CRecord (fields)))
+      ~global:atts.global ~generalize:false Hints.empty_hint_info
+  in
+  pstate
 
 let declare_instance_refl ~pstate atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
@@ -1820,41 +1822,41 @@ let declare_instance_trans atts binders a aeq n lemma =
 let declare_relation ~pstate atts ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation" in
-  let _, pstate = anew_instance ~pstate atts binders instance [] in
+  let pstate = anew_instance ~pstate atts binders instance [] in
   match (refl,symm,trans) with
-      (None, None, None) -> pstate
-    | (Some lemma1, None, None) ->
-      snd @@ declare_instance_refl ~pstate atts binders a aeq n lemma1
-    | (None, Some lemma2, None) ->
-      snd @@ declare_instance_sym ~pstate atts binders a aeq n lemma2
-    | (None, None, Some lemma3) ->
-      snd @@ declare_instance_trans ~pstate atts binders a aeq n lemma3
-    | (Some lemma1, Some lemma2, None) ->
-      let _lemma_refl, pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-      snd @@ declare_instance_sym ~pstate atts binders a aeq n lemma2
-    | (Some lemma1, None, Some lemma3) ->
-        let _lemma_refl, pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-        let _lemma_trans, pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
-        let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" in
-        snd @@ anew_instance ~pstate atts binders instance
-              [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
-               (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)]
-    | (None, Some lemma2, Some lemma3) ->
-        let _lemma_sym, pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
-        let _lemma_trans, pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
-        let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" in
-        snd @@ anew_instance ~pstate atts binders instance
-              [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
-               (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)]
-     | (Some lemma1, Some lemma2, Some lemma3) ->
-        let _lemma_refl, pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
-        let _lemma_sym, pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
-        let _lemma_trans, pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
-        let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" in
-        snd @@ anew_instance ~pstate atts binders instance
-            [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
-             (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
-             (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)]
+    (None, None, None) -> pstate
+  | (Some lemma1, None, None) ->
+    declare_instance_refl ~pstate atts binders a aeq n lemma1
+  | (None, Some lemma2, None) ->
+    declare_instance_sym ~pstate atts binders a aeq n lemma2
+  | (None, None, Some lemma3) ->
+    declare_instance_trans ~pstate atts binders a aeq n lemma3
+  | (Some lemma1, Some lemma2, None) ->
+    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
+    declare_instance_sym ~pstate atts binders a aeq n lemma2
+  | (Some lemma1, None, Some lemma3) ->
+    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
+    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" in
+    anew_instance ~pstate atts binders instance
+      [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
+       (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)]
+  | (None, Some lemma2, Some lemma3) ->
+    let pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
+    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" in
+    anew_instance ~pstate atts binders instance
+      [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
+       (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)]
+  | (Some lemma1, Some lemma2, Some lemma3) ->
+    let pstate = declare_instance_refl ~pstate atts binders a aeq n lemma1 in
+    let pstate = declare_instance_sym ~pstate atts binders a aeq n lemma2 in
+    let pstate = declare_instance_trans ~pstate atts binders a aeq n lemma3 in
+    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" in
+    anew_instance ~pstate atts binders instance
+      [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
+       (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
+       (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)]
 
 let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)
 
@@ -1953,15 +1955,15 @@ let warn_add_setoid_deprecated =
 let add_setoid ~pstate atts binders a aeq t n =
   warn_add_setoid_deprecated ?loc:a.CAst.loc ();
   init_setoid ();
-  let _lemma_refl, pstate = declare_instance_refl ~pstate atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let _lemma_sym, pstate = declare_instance_sym ~pstate atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let _lemma_trans, pstate = declare_instance_trans ~pstate atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
+  let pstate = declare_instance_refl ~pstate atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
+  let pstate = declare_instance_sym ~pstate atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let pstate = declare_instance_trans ~pstate atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in
-  snd @@ anew_instance ~pstate atts binders instance
-      [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-       (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-       (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
+  anew_instance ~pstate atts binders instance
+    [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
+     (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
+     (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
 
 
 let make_tactic name =
