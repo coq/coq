@@ -75,7 +75,9 @@ let find_matches bas pat =
   let res = HintDN.search_pattern base pat in
   List.map snd res
 
-let print_rewrite_hintdb env sigma bas =
+let print_rewrite_hintdb bas =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   (str "Database " ++ str bas ++ fnl () ++
 	   prlist_with_sep fnl
 	   (fun h ->
