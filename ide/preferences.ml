@@ -388,6 +388,9 @@ let window_height =
 let auto_complete =
   new preference ~name:["auto_complete"] ~init:false ~repr:Repr.(bool)
 
+let auto_complete_delay =
+  new preference ~name:["auto_complete_delay"] ~init:250 ~repr:Repr.(int)
+
 let stop_before =
   new preference ~name:["stop_before"] ~init:true ~repr:Repr.(bool)
 
@@ -831,10 +834,26 @@ let configure ?(apply=(fun () -> ())) parent =
       let but = GButton.check_button ~label:text ~active ~packing:box#pack () in
       ignore (but#connect#toggled ~callback:(fun () -> pref#set but#active))
     in
+    let spin text ~min ~max (pref : int preference) =
+      let box = GPack.hbox ~packing:box#pack () in
+      let but = GEdit.spin_button
+        ~numeric:true ~update_policy:`IF_VALID ~digits:0
+        ~packing:box#pack ()
+      in
+      let _ = GMisc.label ~text:"Delay (ms)" ~packing:box#pack () in
+      let () = but#adjustment#set_bounds
+        ~lower:(float_of_int min) ~upper:(float_of_int max)
+        ~step_incr:1.
+        ()
+      in
+      let () = but#set_value (float_of_int pref#get) in
+      ignore (but#connect#value_changed ~callback:(fun () -> pref#set but#value_as_int))
+    in
     let () = button "Dynamic word wrap" dynamic_word_wrap in
     let () = button "Show line number" show_line_number in
     let () = button "Auto indentation" auto_indent in
     let () = button "Auto completion" auto_complete in
+    let () = spin "Auto completion delay" ~min:0 ~max:5000 auto_complete_delay in
     let () = button "Show spaces" show_spaces in
     let () = button "Show right margin" show_right_margin in
     let () = button "Show progress bar" show_progress_bar in
