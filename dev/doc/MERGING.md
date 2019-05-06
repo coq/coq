@@ -71,8 +71,9 @@ those external projects should have been prepared (cf. the relevant sub-section
 in the [CI README](../ci/README.md#Breaking-changes) and the PR can be tested
 with these fixes thanks to ["overlays"](../ci/user-overlays/README.md).
 
-Moreover the PR must absolutely update the [`CHANGES.md`](../../CHANGES.md) or
-the [`dev/doc/changes.md`](changes.md) file.
+Moreover the PR author *must* add an entry to the [unreleased
+changelog](../../doc/changelog/README.md) or to the
+[`dev/doc/changes.md`](changes.md) file.
 
 If overlays are missing, ask the author to prepare them and label the PR with
 the [needs: overlay](https://github.com/coq/coq/labels/needs%3A%20overlay) label.

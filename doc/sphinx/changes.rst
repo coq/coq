@@ -2,6 +2,8 @@
 Recent changes
 --------------
 
+.. include:: ../unreleased.rst
+
 Version 8.10
 ------------
 
