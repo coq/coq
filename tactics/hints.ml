@@ -289,8 +289,6 @@ let lookup_tacs sigma concl st se =
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
-module Constr_map = Map.Make(GlobRef.Ordered)
-
 let is_transparent_gr ts = function
   | VarRef id -> TransparentState.is_transparent_variable ts id
   | ConstRef cst -> TransparentState.is_transparent_constant ts cst
@@ -520,6 +518,8 @@ val add_cut : hints_path -> t -> t
 val add_mode : GlobRef.t -> hint_mode array -> t -> t
 val cut : t -> hints_path
 val unfolds : t -> Id.Set.t * Cset.t
+val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
+val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
 
@@ -532,7 +532,7 @@ struct
     hintdb_unfolds : Id.Set.t * Cset.t;
     hintdb_max_id : int;
     use_dn : bool;
-    hintdb_map : search_entry Constr_map.t;
+    hintdb_map : search_entry GlobRef.Map.t;
     (* A list of unindexed entries starting with an unfoldable constant
        or with no associated pattern. *)
     hintdb_nopat : (GlobRef.t option * stored_data) list;
@@ -548,12 +548,12 @@ struct
 			  hintdb_unfolds = (Id.Set.empty, Cset.empty);
 			  hintdb_max_id = 0;
 			  use_dn = use_dn;
-			  hintdb_map = Constr_map.empty;
+                          hintdb_map = GlobRef.Map.empty;
 			  hintdb_nopat = [];
 			  hintdb_name = name; }
 
   let find key db =
-    try Constr_map.find key db.hintdb_map
+    try GlobRef.Map.find key db.hintdb_map
     with Not_found -> empty_se
  
   let realize_tac secvars (id,tac) =
@@ -650,11 +650,11 @@ struct
 	  else db
       | Some gr ->
 	  let oval = find gr db in
-	    { db with hintdb_map = Constr_map.add gr (add_tac pat idv dnst oval) db.hintdb_map }
+            { db with hintdb_map = GlobRef.Map.add gr (add_tac pat idv dnst oval) db.hintdb_map }
 
   let rebuild_db st' db =
     let db' =
-      { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map;
+      { db with hintdb_map = GlobRef.Map.map (rebuild_dn st') db.hintdb_map;
 	hintdb_state = st'; hintdb_nopat = [] }
     in
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
@@ -693,7 +693,7 @@ struct
   let remove_list grs db =
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
-    let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
+    let hintmap = GlobRef.Map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
@@ -706,11 +706,11 @@ struct
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
     f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat);
-    Constr_map.iter iter_se db.hintdb_map
+    GlobRef.Map.iter iter_se db.hintdb_map
 
   let fold f db accu =
     let accu = f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat) accu in
-    Constr_map.fold (fun k se -> f (Some k) se.sentry_mode (get_entry se)) db.hintdb_map accu
+    GlobRef.Map.fold (fun k se -> f (Some k) se.sentry_mode (get_entry se)) db.hintdb_map accu
 
   let transparent_state db = db.hintdb_state
 
@@ -724,11 +724,20 @@ struct
   let add_mode gr m db =
     let se = find gr db in
     let se = { se with sentry_mode = m :: se.sentry_mode } in
-    { db with hintdb_map = Constr_map.add gr se db.hintdb_map }
+    { db with hintdb_map = GlobRef.Map.add gr se db.hintdb_map }
 
   let cut db = db.hintdb_cut
 
   let unfolds db = db.hintdb_unfolds
+
+  let add_modes modes db =
+    let f gr e me =
+      Some { e with sentry_mode = me.sentry_mode @ e.sentry_mode }
+    in
+    let mode_entries = GlobRef.Map.map (fun m -> { empty_se with sentry_mode = m }) modes in
+    { db with hintdb_map = GlobRef.Map.union f db.hintdb_map mode_entries }
+
+  let modes db = GlobRef.Map.map (fun se -> se.sentry_mode) db.hintdb_map
 
   let use_dn db = db.use_dn
 

@@ -231,18 +231,15 @@ module LMap = struct
   module M = HMap.Make (Level)
   include M
 
-  let union l r = 
-    merge (fun _k l r ->
-      match l, r with
-      | Some _, _ -> l
-      | _, _ -> r) l r
+  let lunion l r =
+    union (fun _k l _r -> Some l) l r
 
-  let subst_union l r = 
-    merge (fun _k l r ->
+  let subst_union l r =
+    union (fun _k l r ->
       match l, r with
-      | Some (Some _), _ -> l
-      | Some None, None -> l
-      | _, _ -> r) l r
+      | Some _, _ -> Some l
+      | None, None -> Some l
+      | _, _ -> Some r) l r
 
   let diff ext orig =
     fold (fun u v acc -> 

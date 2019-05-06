@@ -203,7 +203,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
           (acc, [], LMap.empty, LMap.empty) l
         in
         let left = CList.uniquize (List.filter (not_lower lower) left) in
-        (acc, left, LMap.union newlow lower)
+        (acc, left, LMap.lunion newlow lower)
     in
     let instantiate_lbound lbound =
       let alg = LSet.mem u algs in
