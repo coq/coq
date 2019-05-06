@@ -148,6 +148,7 @@ type record_field_attr = {
   rf_subclass: instance_flag; (* the projection is an implicit coercion or an instance *)
   rf_priority: int option; (* priority of the instance, if relevant *)
   rf_notation: decl_notation list;
+  rf_canonical: bool; (* use this projection in the search for canonical instances *)
   }
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =

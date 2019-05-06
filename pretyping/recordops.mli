@@ -23,8 +23,6 @@ type proj_kind = {
   pk_canonical: bool;
 }
 
-val mk_proj_kind : Name.t -> bool -> proj_kind
-
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;

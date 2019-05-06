@@ -744,7 +744,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
-            { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] } in
+            { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     vernac_record ~template udecl cum (Class true) poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)

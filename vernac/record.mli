@@ -14,12 +14,17 @@ open Constrexpr
 
 val primitive_flag : bool ref
 
+type projection_flags = {
+  pf_subclass: bool;
+  pf_canonical: bool;
+}
+
 val declare_projections :
   inductive ->
   Entries.universes_entry ->
   ?kind:Decl_kinds.definition_object_kind ->
   Id.t ->
-  bool list ->
+  projection_flags list ->
   Impargs.manual_implicits list ->
   Constr.rel_context ->
     Recordops.proj_kind list * Constant.t option list

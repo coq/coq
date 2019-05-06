@@ -44,9 +44,6 @@ type proj_kind = {
   pk_canonical: bool;
 }
 
-let mk_proj_kind pk_name pk_true_proj : proj_kind =
-  { pk_name ; pk_true_proj ; pk_canonical = true }
-
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;

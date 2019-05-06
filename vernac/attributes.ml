@@ -219,3 +219,6 @@ let only_polymorphism atts = parse polymorphic atts
 
 let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
 let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
+
+let canonical =
+  bool_attribute ~name:"Canonical projection" ~on:"canonical" ~off:"not_canonical"
