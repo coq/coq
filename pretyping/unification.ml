@@ -489,8 +489,8 @@ let unfold_projection env p stk =
 let expand_key ts env sigma = function
   | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
   | Some (IsProj (p, c)) -> 
-    let red = Stack.zip sigma (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma
-                               Cst_stack.empty (c, unfold_projection env p [])))
+    let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
+                               (c, unfold_projection env p []))
     in if EConstr.eq_constr sigma (EConstr.mkProj (p, c)) red then None else Some red
   | None -> None
 
@@ -597,8 +597,8 @@ let constr_cmp pb env sigma flags t u =
     None
     
 let do_reduce ts (env, nb) sigma c =
-  Stack.zip sigma (fst (whd_betaiota_deltazeta_for_iota_state
-		  ts env sigma Cst_stack.empty (c, Stack.empty)))
+  Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state
+                  ts env sigma (c, Stack.empty))
 
 let isAllowedEvar sigma flags c = match EConstr.kind sigma c with
   | Evar (evk,_) -> not (Evar.Set.mem evk flags.frozen_evars)

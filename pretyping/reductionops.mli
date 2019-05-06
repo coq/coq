@@ -312,8 +312,7 @@ val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
-  state * Cst_stack.t
+  TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr

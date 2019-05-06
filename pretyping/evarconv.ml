@@ -146,8 +146,8 @@ let flex_kind_of_term flags env evd c sk =
 let apprec_nohdbeta flags env evd c =
   let (t,sk as appr) = Reductionops.whd_nored_state evd (c, []) in
   if flags.modulo_betaiota && Stack.not_purely_applicative sk
-  then Stack.zip evd (fst (whd_betaiota_deltazeta_for_iota_state
-                   flags.open_ts env evd Cst_stack.empty appr))
+  then Stack.zip evd (whd_betaiota_deltazeta_for_iota_state
+                   flags.open_ts env evd appr)
   else c
 
 let position_problem l2r = function
@@ -496,8 +496,8 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
         let term2 = apprec_nohdbeta flags env evd term2 in
 	let default () = 
           evar_eqappr_x flags env evd pbty
-            (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
-            (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
+            (whd_nored_state evd (term1,Stack.empty))
+            (whd_nored_state evd (term2,Stack.empty))
 	in
           begin match EConstr.kind evd term1, EConstr.kind evd term2 with
           | Evar ev, _ when Evd.is_undefined evd (fst ev) && not (is_frozen flags ev) ->
@@ -525,7 +525,7 @@ let rec evar_conv_x flags env evd pbty term1 term2 =
         end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
-    ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
+    (term1, sk1 as appr1) (term2, sk2 as appr2) =
   let quick_fail i = (* not costly, loses info *)
     UnifFailure (i, NotSameHead)
   in
@@ -555,8 +555,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let c = nf_evar evd c1 in
     let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
-      flags.open_ts env' evd Cst_stack.empty (c'1, Stack.empty) in
-    let out2 = whd_nored_state evd
+      flags.open_ts env' evd (c'1, Stack.empty) in
+    let out2, _ = whd_nored_state evd
       (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty),
       Cst_stack.empty in
     if onleft then evar_eqappr_x flags env' evd CONV out1 out2
@@ -636,11 +636,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	    else quick_fail i)
             ev lF tM i
   in
-  let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) vM =
+  let flex_maybeflex on_left ev (termF,skF as apprF) (termM, skM as apprM) vM =
     let switch f a b = if on_left then f a b else f b a in
     let delta i =
-      switch (evar_eqappr_x flags env i pbty) (apprF,cstsF)
-        (whd_betaiota_deltazeta_for_iota_state flags.open_ts env i cstsM (vM,skM))
+      switch (evar_eqappr_x flags env i pbty) apprF
+        (whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (vM,skM))
     in    
     let default i = ise_try i [miller on_left ev apprF apprM;
                                consume on_left apprF apprM;
@@ -658,11 +658,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	      let f =
 		try 
 		  let termM' = Retyping.expand_projection env evd p c [] in
-		  let apprM', cstsM' = 
-                    whd_betaiota_deltazeta_for_iota_state flags.open_ts env evd cstsM (termM',skM)
+                  let apprM' =
+                    whd_betaiota_deltazeta_for_iota_state flags.open_ts env evd (termM',skM)
 		  in
 		  let delta' i = 
-                    switch (evar_eqappr_x flags env i pbty) (apprF,cstsF) (apprM',cstsM')
+                    switch (evar_eqappr_x flags env i pbty) apprF apprM'
 		  in
                   fun i -> ise_try i [miller on_left ev apprF apprM';
                                    consume on_left apprF apprM'; delta']
@@ -718,7 +718,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                           (position_problem true pbty,destEvar i' ev1',term2)
        else
          evar_eqappr_x flags env evd pbty
-                       ((ev1', sk1), csts1) ((term2, sk2), csts2)
+                       (ev1', sk1) (term2, sk2)
     | Some (r,[]), Success i' ->
        (* We have sk1'[] = sk2[] for some sk1' s.t. sk1[]=sk1'[r[]] *)
        (* we now unify r[?ev1] and ?ev2 *)
@@ -728,7 +728,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                           (position_problem false pbty,destEvar i' ev2',Stack.zip i' (term1,r))
        else
          evar_eqappr_x flags env evd pbty
-                       ((ev2', sk1), csts1) ((term2, sk2), csts2)
+                       (ev2', sk1) (term2, sk2)
     | Some ([],r), Success i' ->
        (* Symmetrically *)
        (* We have sk1[] = sk2'[] for some sk2' s.t. sk2[]=sk2'[r[]] *)
@@ -738,7 +738,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
          solve_simple_eqn (conv_fun evar_conv_x) flags env i'
                           (position_problem true pbty,destEvar i' ev1',Stack.zip i' (term2,r))
        else evar_eqappr_x flags env evd pbty
-                          ((ev1', sk1), csts1) ((term2, sk2), csts2)
+                          (ev1', sk1) (term2, sk2)
     | None, (UnifFailure _ as x) ->
        (* sk1 and sk2 have no common outer part *)
        if Stack.not_purely_applicative sk2 then
@@ -808,10 +808,10 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         ise_try evd [f1; f2; f3; f4; f5]
 
     | Flexible ev1, MaybeFlexible v2 ->
-      flex_maybeflex true ev1 (appr1,csts1) (appr2,csts2) v2
+      flex_maybeflex true ev1 appr1 appr2 v2
 
     | MaybeFlexible v1, Flexible ev2 -> 
-      flex_maybeflex false ev2 (appr2,csts2) (appr1,csts1) v1
+      flex_maybeflex false ev2 appr2 appr1 v1
 
     | MaybeFlexible v1, MaybeFlexible v2 -> begin
         match EConstr.kind evd term1, EConstr.kind evd term2 with
@@ -829,8 +829,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
         and f2 i =
-          let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts1 (v1,sk1)
-          and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts2 (v2,sk2)
+          let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v1,sk1)
+          and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v2,sk2)
           in evar_eqappr_x flags env i pbty out1 out2
 	in
 	ise_try evd [f1; f2]
@@ -841,8 +841,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             [(fun i -> evar_conv_x flags env i CONV c c');
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
 	  and f2 i =
-            let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts1 (v1,sk1)
-            and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i csts2 (v2,sk2)
+            let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v1,sk1)
+            and out2 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v2,sk2)
             in evar_eqappr_x flags env i pbty out1 out2
 	  in
 	    ise_try evd [f1; f2]
@@ -855,8 +855,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	  in
 	    (match res with 
 	    | Some (f1,args1) -> 
-              evar_eqappr_x flags env evd pbty ((f1,Stack.append_app args1 sk1),csts1)
-		(appr2,csts2)
+              evar_eqappr_x flags env evd pbty (f1,Stack.append_app args1 sk1)
+                appr2
 	    | None -> UnifFailure (evd,NotSameHead))
 	      
 	| Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
@@ -866,7 +866,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	  in 
 	    (match res with
 	    | Some (f2,args2) ->
-              evar_eqappr_x flags env evd pbty (appr1,csts1) ((f2,Stack.append_app args2 sk2),csts2)
+              evar_eqappr_x flags env evd pbty appr1 (f2,Stack.append_app args2 sk2)
 	    | None -> UnifFailure (evd,NotSameHead))
 	      
 	| _, _ ->
@@ -906,16 +906,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	    (* false (* immediate solution without Canon Struct *)*)
             | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) -> is_unnamed
-	     (fst (whd_betaiota_deltazeta_for_iota_state
-                      flags.open_ts env i Cst_stack.empty (subst1 b c, args)))
+             (whd_betaiota_deltazeta_for_iota_state
+                      flags.open_ts env i (subst1 b c, args))
 	    | Fix _ -> true (* Partially applied fix can be the result of a whd call *)
 	    | Proj (p, _) -> Projection.unfolded p || Stack.not_purely_applicative args
             | Case _ | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
 	    let applicative_stack = fst (Stack.strip_app sk2) in
 	    is_unnamed
-	      (fst (whd_betaiota_deltazeta_for_iota_state
-                      flags.open_ts env i Cst_stack.empty (v2, applicative_stack))) in
+              (whd_betaiota_deltazeta_for_iota_state
+                      flags.open_ts env i (v2, applicative_stack)) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
 
@@ -923,12 +923,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	    && (not (Stack.not_purely_applicative sk1)) then
             evar_eqappr_x ~rhs_is_already_stuck flags env i pbty
 	      (whd_betaiota_deltazeta_for_iota_state
-                 flags.open_ts env i (Cst_stack.add_cst term1 csts1) (v1,sk1))
-	      (appr2,csts2)
+                 flags.open_ts env i(v1,sk1))
+              appr2
 	  else
-            evar_eqappr_x flags env i pbty (appr1,csts1)
+            evar_eqappr_x flags env i pbty appr1
 	      (whd_betaiota_deltazeta_for_iota_state
-                 flags.open_ts env i (Cst_stack.add_cst term2 csts2) (v2,sk2))
+                 flags.open_ts env i (v2,sk2))
 	in
 	ise_try evd [f1; f2; f3]
     end
@@ -957,8 +957,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	and f4 i =
           evar_eqappr_x flags env i pbty
 	    (whd_betaiota_deltazeta_for_iota_state
-               flags.open_ts env i (Cst_stack.add_cst term1 csts1) (v1,sk1))
-	    (appr2,csts2)
+               flags.open_ts env i (v1,sk1))
+            appr2
 	in
 	  ise_try evd [f3; f4]
 
@@ -969,9 +969,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              else conv_record flags env i (check_conv_record env i appr2 appr1)
            with Not_found -> UnifFailure (i,NoCanonicalStructure))
 	and f4 i =
-          evar_eqappr_x flags env i pbty (appr1,csts1)
+          evar_eqappr_x flags env i pbty appr1
 	    (whd_betaiota_deltazeta_for_iota_state
-               flags.open_ts env i (Cst_stack.add_cst term2 csts2) (v2,sk2))
+               flags.open_ts env i (v2,sk2))
 	in
 	  ise_try evd [f3; f4]
 
