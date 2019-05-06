@@ -212,3 +212,14 @@ Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Defined.
 
 End PairUsualDecidableType.
+
+(** And also for pairs of UsualDecidableTypeFull *)
+
+Module PairUsualDecidableTypeFull (D1 D2:UsualDecidableTypeFull)
+  <: UsualDecidableTypeFull.
+
+ Module M := PairUsualDecidableType D1 D2.
+ Include Backport_DT (M).
+ Include HasEqDec2Bool.
+
+End PairUsualDecidableTypeFull.
