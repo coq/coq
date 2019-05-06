@@ -1592,7 +1592,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	    tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
+            convert_hyp ~check:false (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
             beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1606,7 +1606,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             end
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_concl_no_check newt DEFAULTcast
+            convert_concl ~check:false newt DEFAULTcast
   in
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
