@@ -34,6 +34,7 @@ type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 type clear_flag = bool option (* true = clear hyp, false = keep hyp, None = use default *)
+type check_flag = bool     (* true = check    false = do not check *)
 
 type ('c,'d,'id) inversion_strength =
   | NonDepInversion of
@@ -125,7 +126,7 @@ type 'a gen_atomic_tactic_expr =
 
   (* Conversion *)
   | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
-  | TacChange of 'pat option * 'dtrm * 'nam clause_expr
+  | TacChange of check_flag * 'pat option * 'dtrm * 'nam clause_expr
 
   (* Equality and inversion *)
   | TacRewrite of evars_flag *

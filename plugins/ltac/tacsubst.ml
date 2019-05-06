@@ -156,8 +156,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
-  | TacChange (op,c,cl) ->
-      TacChange (Option.map (subst_glob_constr_or_pattern subst) op,
+  | TacChange (check,op,c,cl) ->
+      TacChange (check,Option.map (subst_glob_constr_or_pattern subst) op,
         subst_glob_constr subst c, cl)
 
   (* Equality and inversion *)

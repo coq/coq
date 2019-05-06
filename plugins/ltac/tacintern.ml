@@ -551,7 +551,7 @@ let rec intern_atomic lf ist x =
   | TacReduce (r,cl) ->
       dump_glob_red_expr r;
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
-  | TacChange (None,c,cl) ->
+  | TacChange (check,None,c,cl) ->
       let is_onhyps = match cl.onhyps with
       | None | Some [] -> true
       | _ -> false
@@ -560,17 +560,17 @@ let rec intern_atomic lf ist x =
       | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
       | _ -> false
       in
-      TacChange (None,
+      TacChange (check,None,
         (if is_onhyps && is_onconcl
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
-  | TacChange (Some p,c,cl) ->
+  | TacChange (check,Some p,c,cl) ->
       let { ltacvars } = ist in
       let metas,pat = intern_typed_pattern ist ~as_type:false ~ltacvars p in
       let fold accu x = Id.Set.add x accu in
       let ltacvars = List.fold_left fold ltacvars metas in
       let ist' = { ist with ltacvars } in
-      TacChange (Some pat,intern_constr ist' c,
+      TacChange (check,Some pat,intern_constr ist' c,
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equality and inversion *)
