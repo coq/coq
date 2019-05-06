@@ -348,21 +348,16 @@ let push_rel_decl_to_named_context
   let map_decl f d =
     NamedDecl.map_constr f d
   in
-  let replace_var_named_declaration id0 id nc =
-    let rec replace = function
-    | [] -> false, []
-    | decl :: nc ->
-      let seen, nc = replace nc in
-      if seen then
-        let vsubst = [id0 , mkVar id] in
-        true, (map_decl (fun c -> replace_vars vsubst c) decl) :: nc
-      else if Id.equal id0 (NamedDecl.get_id decl) then
-        true, (NamedDecl.set_id id decl) :: nc
-      else
-        false, decl :: nc
-    in
-    let (_, nc) = replace nc in
-    nc
+  let rec replace_var_named_declaration id0 id = function
+  | [] -> []
+  | decl :: nc ->
+    if Id.equal id0 (NamedDecl.get_id decl) then
+      (* Stop here, the variable cannot occur before its definition *)
+      (NamedDecl.set_id id decl) :: nc
+    else
+      let nc = replace_var_named_declaration id0 id nc in
+      let vsubst = [id0 , mkVar id] in
+      map_decl (fun c -> replace_vars vsubst c) decl :: nc
   in
   let extract_if_neq id = function
     | Anonymous -> None
