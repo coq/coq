@@ -4811,3 +4811,83 @@ references to automatically generated names.
    :name: Mangle Names Prefix
 
    Specifies the prefix to use when generating names.
+
+Performance-oriented tactic variants
+------------------------------------
+
+.. tacn:: change_no_check @term
+   :name: change_no_check
+
+   For advanced usage. Similar to :n:`change @term`, but as an optimization,
+   it skips checking that :n:`@term` is convertible to the goal.
+
+   Recall that the Coq kernel typechecks proofs again when they are concluded to
+   ensure safety. Hence, using :tacn:`change` checks convertibility twice
+   overall, while :tacn:`change_no_check` can produce ill-typed terms,
+   but checks convertibility only once.
+   Hence, :tacn:`change_no_check` can be useful to speed up certain proof
+   scripts, especially if one knows by construction that the argument is
+   indeed convertible to the goal.
+
+   In the following example, :tacn:`change_no_check` replaces :g:`False` by
+   :g:`True`, but :g:`Qed` then rejects the proof, ensuring consistency.
+
+   .. example::
+
+      .. coqtop:: all abort
+
+         Goal False.
+           change_no_check True.
+           exact I.
+         Fail Qed.
+
+   .. tacv:: convert_concl_no_check @term
+      :name: convert_concl_no_check
+
+      Deprecated old name for :tacn:`change_no_check`. Does not support any of its
+      variants.
+
+.. tacn:: exact_no_check @term
+   :name: exact_no_check
+
+   For advanced usage. Similar to :n:`exact @term`, but as an optimization,
+   it skips checking that :n:`@term` has the goal's type, relying on the kernel
+   check instead. See :tacn:`change_no_check` for more explanations.
+
+   .. example::
+
+      .. coqtop:: all abort
+
+         Goal False.
+           exact_no_check I.
+         Fail Qed.
+
+   .. tacv:: vm_cast_no_check @term
+      :name: vm_cast_no_check
+
+      For advanced usage. Similar to :n:`exact_no_check @term`, but additionally
+      instructs the kernel to use :tacn:`vm_compute` to compare the
+      goal's type with the :n:`@term`'s type.
+
+      .. example::
+
+        .. coqtop:: all abort
+
+            Goal False.
+              vm_cast_no_check I.
+            Fail Qed.
+
+   .. tacv:: native_cast_no_check @term
+      :name: native_cast_no_check
+
+      for advanced usage. similar to :n:`exact_no_check @term`, but additionally
+      instructs the kernel to use :tacn:`native_compute` to compare the goal's
+      type with the :n:`@term`'s type.
+
+      .. example::
+
+        .. coqtop:: all abort
+
+            Goal False.
+              native_cast_no_check I.
+            Fail Qed.
