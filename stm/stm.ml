@@ -315,6 +315,8 @@ type stm_doc_type =
 type doc = int
 let dummy_doc : doc = 0
 
+let get_doc did = dummy_doc
+
 (* Imperative wrap around VCS to obtain _the_ VCS that is the
  * representation of the document Coq is currently processing *)
 module VCS : sig
@@ -802,6 +804,8 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+let get_current_state ~doc = VCS.cur_tip ()
+
 let state_of_id ~doc id =
   try match VCS.get_state id with
     | FullState s -> `Valid (Some s)
@@ -1145,44 +1149,6 @@ let show_script ?proof () =
 
 end
 
-(* Wrapper for Vernacentries.interp to set the feedback id *)
-(* It is currently called 19 times, this number should be certainly
-   reduced... *)
-let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
-  (* The Stm will gain the capability to interpret commmads affecting
-     the whole document state, such as backtrack, etc... so we start
-     to design the stm command interpreter now *)
-  set_id_for_feedback ?route dummy_doc id;
-  Aux_file.record_in_aux_set_at ?loc:expr.CAst.loc ();
-  (* We need to check if a command should be filtered from
-   * vernac_entries, as it cannot handle it. This should go away in
-   * future refactorings.
-  *)
-  let is_filtered_command = function
-    | VernacResetName _ | VernacResetInitial | VernacBack _
-    | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacAbortAll | VernacAbort _ -> true
-    | _ -> false
-  in
-  let aux_interp st expr =
-    (* XXX unsupported attributes *)
-    let cmd = Vernacprop.under_control expr in
-    if is_filtered_command cmd then
-      (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
-    else
-      match cmd with
-      | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
-      | _ ->
-        stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
-        with e ->
-          let e = CErrors.push e in
-          Exninfo.iraise Hooks.(call_process_error_once e)
-  in aux_interp st expr
-
-(****************************** CRUFT *****************************************)
-(******************************************************************************)
-
 (* The backtrack module simulates the classic behavior of a linear document *)
 module Backtrack : sig
 
@@ -1339,6 +1305,44 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 let get_prev_proof = Backtrack.get_prev_proof
+
+(* Wrapper for Vernacentries.interp to set the feedback id *)
+(* It is currently called 19 times, this number should be certainly
+   reduced... *)
+let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
+  (* The Stm will gain the capability to interpret commmads affecting
+     the whole document state, such as backtrack, etc... so we start
+     to design the stm command interpreter now *)
+  set_id_for_feedback ?route dummy_doc id;
+  Aux_file.record_in_aux_set_at ?loc:expr.CAst.loc ();
+  (* We need to check if a command should be filtered from
+   * vernac_entries, as it cannot handle it. This should go away in
+   * future refactorings.
+  *)
+  let is_filtered_command = function
+    | VernacResetName _ | VernacResetInitial | VernacBack _
+    | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
+    | VernacAbortAll | VernacAbort _ -> true
+    | _ -> false
+  in
+  let aux_interp st expr =
+    (* XXX unsupported attributes *)
+    let cmd = Vernacprop.under_control expr in
+    if is_filtered_command cmd then
+      (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
+    else
+      match cmd with
+      | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
+      | _ ->
+        stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
+        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
+        with e ->
+          let e = CErrors.push e in
+          Exninfo.iraise Hooks.(call_process_error_once e)
+  in aux_interp st expr
+
+(****************************** CRUFT *****************************************)
+(******************************************************************************)
 
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =
@@ -3335,10 +3339,7 @@ let edit_at ~doc id =
         VCS.print ();
         Exninfo.iraise (e, info)
 
-let get_current_state ~doc = VCS.cur_tip ()
 let get_ldir ~doc = VCS.get_ldir ()
-
-let get_doc did = dummy_doc
 
 (*********************** TTY API (PG, coqtop, coqc) ***************************)
 (******************************************************************************)
