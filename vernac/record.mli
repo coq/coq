@@ -22,7 +22,7 @@ val declare_projections :
   bool list ->
   Impargs.manual_implicits list ->
   Constr.rel_context ->
-    (Name.t * bool) list * Constant.t option list
+    Recordops.proj_kind list * Constant.t option list
 
 val declare_structure_entry : Recordops.struc_tuple -> unit
 

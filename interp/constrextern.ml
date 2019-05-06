@@ -850,10 +850,10 @@ let rec extern inctx scopes vars r =
 		     | Some c :: q ->
 		         match locs with
 			   | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
-			   | (_, false) :: locs' ->
+                           | { Recordops.pk_true_proj = false } :: locs' ->
 			       (* we don't want to print locals *)
 			       ip q locs' args acc
-			   | (_, true) :: locs' ->
+                           | { Recordops.pk_true_proj = true } :: locs' ->
 			       match args with
 				 | [] -> raise No_match
 				     (* we give up since the constructor is not complete *)

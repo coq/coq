@@ -368,7 +368,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,i,NoProjection fi::subst) in
-      (nfi-1,i,(fi, is_local_assum decl)::kinds,sp_projs,subst))
+      (nfi - 1, i, Recordops.mk_proj_kind fi (is_local_assum decl) :: kinds, sp_projs, subst))
       (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
