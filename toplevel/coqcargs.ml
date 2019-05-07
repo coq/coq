@@ -56,6 +56,13 @@ let error_missing_arg s =
   prerr_endline "See -help for the syntax of supported options";
   exit 1
 
+let check_compilation_output_name_consistency args =
+  match args.compilation_output_name, args.compile_list with
+  | Some _, _::_::_ ->
+    prerr_endline ("Error: option -o is not valid when more than one");
+    prerr_endline ("file have to be compiled")
+  | _ -> ()
+
 let add_compile ?echo copts s =
   (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
   let echo = Option.default copts.echo echo in
@@ -185,5 +192,7 @@ let parse arglist : t =
   in
   try
     let opts, extra = parse default in
-    List.fold_left add_compile opts extra
+    let args = List.fold_left add_compile opts extra in
+    check_compilation_output_name_consistency args;
+    args
   with any -> fatal_error any
