@@ -82,6 +82,14 @@ let set_vio_checking_j opts opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
+let set_compilation_mode opts mode =
+  match opts.compilation_mode with
+  | BuildVo -> { opts with compilation_mode = mode }
+  | mode' when mode <> mode' ->
+    prerr_endline "Options -quick and -vio2vo are exclusive";
+    exit 1
+  | _ -> opts
+
 let get_task_list s =
   List.map (fun s ->
       try int_of_string s
@@ -145,7 +153,7 @@ let parse arglist : t =
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
-          { oval with compilation_mode = BuildVio }
+          set_compilation_mode oval BuildVio
         | "-check-vio-tasks" ->
           let tno = get_task_list (next ()) in
           let tfile = next () in
@@ -164,7 +172,7 @@ let parse arglist : t =
 
         | "-vio2vo" ->
           let oval = add_compile ~echo:false oval (next ()) in
-          { oval with compilation_mode = Vio2Vo }
+          set_compilation_mode oval Vio2Vo
 
         | "-outputstate" ->
           set_outputstate oval (next ())
