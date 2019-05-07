@@ -638,9 +638,6 @@ plugin:ci-equations:
 plugin:ci-fiat_parsers:
   extends: .ci-template
 
-plugin:ci-ltac2:
-  extends: .ci-template
-
 plugin:ci-mtac2:
   extends: .ci-template
 
