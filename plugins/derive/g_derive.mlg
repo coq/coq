@@ -22,7 +22,7 @@ let classify_derive_command _ = Vernacextend.(VtStartProof (Doesn'tGuaranteeOpac
 
 }
 
-VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command }
-| ![ open_proof ] [ "Derive" ident(f) "SuchThat" constr(suchthat) "As" ident(lemma) ] ->
+VERNAC COMMAND EXTEND Derive CLASSIFIED BY { classify_derive_command } STATE open_proof
+| [ "Derive" ident(f) "SuchThat" constr(suchthat) "As" ident(lemma) ] ->
   { Derive.(start_deriving f suchthat lemma) }
 END
