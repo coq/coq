@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** This file is about parsing command-line arguments of coqc *)
+
 (** Compilation modes:
   - BuildVo      : process statements and proofs (standard compilation),
                    and also output an empty .vos file

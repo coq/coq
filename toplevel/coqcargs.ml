@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** This file is about parsing command-line arguments of coqc *)
+
 type compilation_mode = BuildVo | BuildVio | Vio2Vo | BuildVos | BuildVok
 
 type t =
