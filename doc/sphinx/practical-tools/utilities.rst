@@ -909,7 +909,7 @@ Command line options
   :--coqlib url: Set base URL for the Coq standard library (default is
     `<http://coq.inria.fr/library/>`_). This is equivalent to ``--external url
     Coq``.
-  :-R dir coqdir: Map physical directory dir to |Coq| logical
+  :-R dir coqdir: Recursively map physical directory dir to |Coq| logical
     directory  ``coqdir`` (similarly to |Coq| option ``-R``).
   :-Q dir coqdir: Map physical directory dir to |Coq| logical
     directory  ``coqdir`` (similarly to |Coq| option ``-Q``).
