@@ -3561,7 +3561,7 @@ Automation
 .. tacn:: autorewrite with {+ @ident}
    :name: autorewrite
 
-   This tactic [4]_ carries out rewritings according to the rewriting rule
+   This tactic carries out rewritings according to the rewriting rule
    bases :n:`{+ @ident}`.
 
    Each rewriting rule from the base :n:`@ident` is applied to the main subgoal until
@@ -4661,9 +4661,12 @@ Non-logical tactics
 
 .. example::
 
-   .. coqtop:: all reset
+   .. coqtop:: none reset
 
       Parameter P : nat -> Prop.
+
+   .. coqtop:: all abort
+
       Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
       repeat split.
       all: cycle 2.
@@ -4679,9 +4682,8 @@ Non-logical tactics
 
 .. example::
 
-   .. coqtop:: reset all
+   .. coqtop:: all abort
 
-      Parameter P : nat -> Prop.
       Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
       repeat split.
       all: swap 1 3.
@@ -4694,9 +4696,8 @@ Non-logical tactics
 
    .. example::
 
-      .. coqtop:: all reset
+      .. coqtop:: all abort
 
-         Parameter P : nat -> Prop.
          Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
          repeat split.
          all: revgoals.
@@ -4717,7 +4718,7 @@ Non-logical tactics
 
       .. example::
 
-         .. coqtop:: all reset
+         .. coqtop:: all abort
 
             Goal exists n, n=0.
             refine (ex_intro _ _ _).
@@ -4745,39 +4746,6 @@ Non-logical tactics
 
    The ``give_up`` tactic can be used while editing a proof, to choose to
    write the proof script in a non-sequential order.
-
-Simple tactic macros
--------------------------
-
-A simple example has more value than a long explanation:
-
-.. example::
-
-   .. coqtop:: reset all
-
-      Ltac Solve := simpl; intros; auto.
-
-      Ltac ElimBoolRewrite b H1 H2 :=
-      elim b; [ intros; rewrite H1; eauto | intros; rewrite H2; eauto ].
-
-The tactics macros are synchronous with the Coq section mechanism: a
-tactic definition is deleted from the current environment when you
-close the section (see also :ref:`section-mechanism`) where it was
-defined. If you want that a tactic macro defined in a module is usable in the
-modules that require it, you should put it outside of any section.
-
-:ref:`ltac` gives examples of more complex
-user-defined tactics.
-
-.. [1] Actually, only the second subgoal will be generated since the
-  other one can be automatically checked.
-.. [2] This corresponds to the cut rule of sequent calculus.
-.. [3] Reminder: opaque constants will not be expanded by δ reductions.
-.. [4] The behavior of this tactic has changed a lot compared to the
-  versions available in the previous distributions (V6). This may cause
-  significant changes in your theories to obtain the same result. As a
-  drawback of the re-engineering of the code, this tactic has also been
-  completely revised to get a very compact and readable version.
 
 Delaying solving unification constraints
 ----------------------------------------
@@ -4917,3 +4885,8 @@ Performance-oriented tactic variants
             Goal False.
               native_cast_no_check I.
             Fail Qed.
+
+.. [1] Actually, only the second subgoal will be generated since the
+  other one can be automatically checked.
+.. [2] This corresponds to the cut rule of sequent calculus.
+.. [3] Reminder: opaque constants will not be expanded by δ reductions.
