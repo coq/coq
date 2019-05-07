@@ -3863,9 +3863,9 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       terms and input heads *must not* contain existential variables or be
       existential variables respectively, while outputs can be any term. Multiple
       modes can be declared for a single identifier, in that case only one mode
-      needs to match the arguments for the hints to be applied.The head of a term
+      needs to match the arguments for the hints to be applied. The head of a term
       is understood here as the applicative head, or the match or projection
-      scrutinee’s head, recursively, casts being ignored. ``Hint Mode`` is
+      scrutinee’s head, recursively, casts being ignored. :cmd:`Hint Mode` is
       especially useful for typeclasses, when one does not want to support default
       instances and avoid ambiguity in general. Setting a parameter of a class as an
       input forces proof-search to be driven by that index of the class, with ``!``
@@ -3874,8 +3874,14 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
    .. note::
 
-      One can use an ``Extern`` hint with no pattern to do pattern matching on
-      hypotheses using ``match goal with`` inside the tactic.
+      + One can use a :cmd:`Hint Extern` with no pattern to do
+        pattern matching on hypotheses using ``match goal with``
+        inside the tactic.
+
+      + If you want to add hints such as :cmd:`Hint Transparent`,
+        :cmd:`Hint Cut`, or :cmd:`Hint Mode`, for typeclass
+        resolution, do not forget to put them in the
+        ``typeclass_instances`` hint database.
 
 
 Hint databases defined in the Coq standard library
