@@ -4841,6 +4841,26 @@ Performance-oriented tactic variants
            exact I.
          Fail Qed.
 
+   :tacn:`change_no_check` supports all of `change`'s variants.
+
+   .. tacv:: change_no_check @term with @term’
+      :undocumented:
+
+   .. tacv:: change_no_check @term at {+ @num} with @term’
+      :undocumented:
+
+   .. tacv:: change_no_check @term {? {? at {+ @num}} with @term} in @ident
+
+      .. example::
+
+         .. coqtop:: all abort
+
+            Goal True -> False.
+              intro H.
+              change_no_check False in H.
+              exact H.
+            Fail Qed.
+
    .. tacv:: convert_concl_no_check @term
       :name: convert_concl_no_check
 
