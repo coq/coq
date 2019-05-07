@@ -33,7 +33,8 @@ let check_constant_declaration env kn cb =
     match Environ.body_of_constant_body env cb with
     | Some bd ->
       let j = infer env' (fst bd) in
-      conv_leq env' j.uj_type ty
+      (try conv_leq env' j.uj_type ty
+       with NotConvertible -> Type_errors.error_actual_type env j ty)
     | None -> ()
   in
   let env =
