@@ -699,8 +699,7 @@ let definition_structure udecl kind ~template cum poly finite records =
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
-      let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-      let coe = List.map (fun coe -> not (Option.is_empty coe)) coers in
+      let coe = List.map (fun (((coe, _), _), _) -> not (Option.is_empty coe)) cfs in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
