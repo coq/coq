@@ -191,41 +191,33 @@ let warn_projection_no_head_constant =
 
 (* Intended to always succeed *)
 let compute_canonical_projections env ~warn (con,ind) =
-  let ctx = Environ.constant_context env con in
-  let u = Univ.make_abstract_instance ctx in
-  let v = (mkConstU (con,u)) in
+  let o_CTX = Environ.constant_context env con in
+  let u = Univ.make_abstract_instance o_CTX in
+  let o_DEF = mkConstU (con, u) in
   let c = Environ.constant_value_in env (con,u) in
   let sign,t = Reductionops.splay_lam env (Evd.from_env env) (EConstr.of_constr c) in
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
-  let lt = List.rev_map snd sign in
+  let o_TABS = List.rev_map snd sign in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
-  let params, projs = List.chop p args in
+  let o_TPARAMS, projs = List.chop p args in
+  let o_NPARAMS = List.length o_TPARAMS in
   let lpj = keep_true_projections lpj kl in
-  let lps = List.combine lpj projs in
   let nenv = Termops.push_rels_assum sign env in
-  let comp =
-    List.fold_left
-      (fun l (spopt,t) -> (* comp=components *)
-	 match spopt with
-           | Some proji_sp ->
-	       begin
-		 try
-		   let patt, n , args = cs_pattern_of_constr nenv t in
-		     ((ConstRef proji_sp, patt, t, n, args) :: l)
-		 with Not_found ->
-                   if warn then warn_projection_no_head_constant (sign,env,t,con,proji_sp);
-                   l
-	       end
-	   | _ -> l)
-      [] lps in
-  List.map (fun (refi,c,t,inj,argj) ->
-    (refi,(c,t)),
-    {o_DEF=v; o_CTX=ctx; o_INJ=inj; o_TABS=lt;
-     o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
-    comp
+  List.fold_left2 (fun acc spopt t ->
+      Option.cata (fun proji_sp ->
+          match cs_pattern_of_constr nenv t with
+          | patt, o_INJ, o_TCOMPS ->
+            ((ConstRef proji_sp, (patt, t)),
+             { o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
+            :: acc
+          | exception Not_found ->
+            if warn then warn_projection_no_head_constant (sign, env, t, con, proji_sp);
+            acc
+        ) acc spopt
+    ) [] lpj projs
 
 let pr_cs_pattern = function
     Const_cs c -> Nametab.pr_global_env Id.Set.empty c
