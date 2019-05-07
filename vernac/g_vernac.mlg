@@ -1004,6 +1004,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  { PrintGrammar ent }
+      | IDENT "Custom"; IDENT "Grammar"; ent = IDENT ->
+          (* Should also be in "syntax" section *)
+          { PrintCustomGrammar ent }
       | IDENT "LoadPath"; dir = OPT dirpath -> { PrintLoadPath dir }
       | IDENT "Modules" ->
           { user_err Pp.(str "Print Modules is obsolete; use Print Libraries instead") }
