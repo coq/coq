@@ -447,8 +447,10 @@ GRAMMAR EXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-  [ [ bd = record_binder; pri = OPT [ "|"; n = natural -> { n } ];
-      ntn = decl_notation -> { (bd,pri),ntn } ] ]
+  [ [ bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
+      rf_notation = decl_notation -> {
+      let rf_subclass, rf_decl = bd in
+      rf_decl, { rf_subclass ; rf_priority ; rf_notation } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }

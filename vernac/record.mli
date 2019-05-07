@@ -33,7 +33,7 @@ val definition_structure :
   (coercion_flag *
   Names.lident *
   local_binder_expr list *
-  (local_decl_expr with_instance with_priority with_notation) list *
+  (local_decl_expr * record_field_attr) list *
   Id.t * constr_expr option) list ->
   GlobRef.t list
 
