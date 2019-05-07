@@ -911,11 +911,13 @@ Command line options
     Coq``.
   :-R dir coqdir: Map physical directory dir to |Coq| logical
     directory  ``coqdir`` (similarly to |Coq| option ``-R``).
+  :-Q dir coqdir: Map physical directory dir to |Coq| logical
+    directory  ``coqdir`` (similarly to |Coq| option ``-Q``).
 
     .. note::
 
-       option ``-R`` only has
-       effect on the files *following* it on the command line, so you will
+       options ``-R`` and ``-Q`` only have
+       effect on the files *following* them on the command line, so you will
        probably need to put this option first.
 
 
