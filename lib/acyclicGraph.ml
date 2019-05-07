@@ -721,7 +721,10 @@ module Make (Point:Point) = struct
     let rmap, csts = PSet.fold (fun u (rmap,csts) ->
         let arcu = repr g u in
         if PSet.mem arcu.canon kept then
-          PMap.add arcu.canon arcu.canon rmap, Constraint.add (u,Eq,arcu.canon) csts
+          let csts = if Point.equal u arcu.canon then csts
+            else Constraint.add (u,Eq,arcu.canon) csts
+          in
+          PMap.add arcu.canon arcu.canon rmap, csts
         else
           match PMap.find arcu.canon rmap with
           | v -> rmap, Constraint.add (u,Eq,v) csts
