@@ -66,7 +66,7 @@ FIND_SKIP_DIRS:='(' \
 ')' -prune -o
 
 define find
- $(shell find . $(FIND_SKIP_DIRS) '(' -name $(1) ')' -print | sed 's|^\./||')
+ $(shell find . user-contrib/Ltac2 $(FIND_SKIP_DIRS) '(' -name $(1) ')' -print | sed 's|^\./||')
 endef
 
 define findindir

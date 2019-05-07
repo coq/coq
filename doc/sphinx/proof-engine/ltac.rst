@@ -1,7 +1,7 @@
 .. _ltac:
 
-The tactic language
-===================
+Ltac
+====
 
 This chapter gives a compact documentation of |Ltac|, the tactic language
 available in |Coq|. We start by giving the syntax, and next, we present the

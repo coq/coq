@@ -214,7 +214,7 @@ let record_dune d ff =
   if Sys.file_exists sd && Sys.is_directory sd then
     let out = open_out (bpath [sd;"dune"]) in
     let fmt = formatter_of_out_channel out in
-    if List.nth d 0 = "plugins" then
+    if List.nth d 0 = "plugins" || List.nth d 0 = "user-contrib" then
       fprintf fmt "(include plugin_base.dune)@\n";
     out_install fmt d ff;
     List.iter (pp_dep d fmt) ff;
@@ -224,17 +224,20 @@ let record_dune d ff =
     eprintf "error in coq_dune, a directory disappeared: %s@\n%!" sd
 
 (* File Scanning *)
-let scan_mlg m d =
-  let dir = ["plugins"; d] in
+let scan_mlg ~root m d =
+  let dir = [root; d] in
   let m = DirMap.add dir [] m in
   let mlg = Sys.(List.filter (fun f -> Filename.(check_suffix f ".mlg"))
                    Array.(to_list @@ readdir (bpath dir))) in
-  List.fold_left (fun m f -> add_map_list ["plugins"; d] (MLG f) m) m mlg
+  List.fold_left (fun m f -> add_map_list [root; d] (MLG f) m) m mlg
 
-let scan_plugins m =
+let scan_dir ~root m =
   let is_plugin_directory dir = Sys.(is_directory dir && file_exists (bpath [dir;"plugin_base.dune"])) in
-  let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath ["plugins";f]) Array.(to_list @@ readdir "plugins")) in
-  List.fold_left scan_mlg m dirs
+  let dirs = Sys.(List.filter (fun f -> is_plugin_directory @@ bpath [root;f]) Array.(to_list @@ readdir root)) in
+  List.fold_left (scan_mlg ~root) m dirs
+
+let scan_plugins m = scan_dir ~root:"plugins" m
+let scan_usercontrib m = scan_dir ~root:"user-contrib" m
 
 (* This will be removed when we drop support for Make *)
 let fix_cmo_cma file =
@@ -291,5 +294,6 @@ let exec_ifile f =
 let _ =
   exec_ifile (fun ic ->
       let map = scan_plugins DirMap.empty in
+      let map = scan_usercontrib map in
       let map = read_vfiles ic map in
       out_map map)

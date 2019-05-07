@@ -17,6 +17,9 @@ open Coqdep_common
     options (see for instance [option_natdynlk] below).
 *)
 
+let split_period = Str.split (Str.regexp (Str.quote "."))
+let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
+
 let rec parse = function
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
@@ -33,6 +36,7 @@ let rec parse = function
        add_caml_dir r;
        norec_dirs := StrSet.add r !norec_dirs;
        parse ll
+  | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
