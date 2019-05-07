@@ -2663,3 +2663,39 @@ let interp ?(verbosely=true) ?proof ~st cmd =
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.invalidate_cache ();
     iraise exn
+
+(* mlg helpers *)
+
+type functional_vernac =
+  | VtDefault of (unit -> unit)
+  | VtModifyProofStack of (pstate:Proof_global.t option -> Proof_global.t option)
+  | VtMaybeOpenProof of (unit -> Proof_global.pstate option)
+  | VtOpenProof of (unit -> Proof_global.pstate)
+  | VtModifyProof of (pstate:Proof_global.pstate -> Proof_global.pstate)
+  | VtReadProofOpt of (pstate:Proof_global.pstate option -> unit)
+  | VtReadProof of (pstate:Proof_global.pstate -> unit)
+
+let interp_functional_vernac c ~st =
+  let open Proof_global in
+  let open Vernacstate in
+  match c with
+  | VtDefault f -> f (); st
+  | VtModifyProofStack f ->
+    let proof = f ~pstate:st.proof in { st with proof }
+  | VtMaybeOpenProof f ->
+    let pstate = f () in
+    let proof = maybe_push ~ontop:st.proof pstate in
+    { st with proof }
+  | VtOpenProof f ->
+    let pstate = f () in
+    let proof = Some (push ~ontop:st.proof pstate) in
+    { st with proof }
+  | VtModifyProof f ->
+    let proof = modify_pstate f ~pstate:st.proof in
+    { st with proof }
+  | VtReadProofOpt f ->
+    f ~pstate:(Option.map get_current_pstate st.proof);
+    st
+  | VtReadProof f ->
+    with_pstate ~pstate:st.proof f;
+    st

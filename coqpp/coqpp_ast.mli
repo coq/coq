@@ -103,7 +103,7 @@ type classification =
 
 type vernac_rule = {
   vernac_atts : (string * string) list option;
-  vernac_state: string option;
+  vernac_state : string option;
   vernac_toks : ext_token list;
   vernac_class : code option;
   vernac_depr : bool;
@@ -114,6 +114,7 @@ type vernac_ext = {
   vernacext_name : string;
   vernacext_entry : code option;
   vernacext_class : classification;
+  vernacext_state : string option;
   vernacext_rules : vernac_rule list;
 }
 

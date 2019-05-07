@@ -176,8 +176,8 @@ let () =
 }
 
 (* TASSI: n'importe quoi ! *)
-VERNAC COMMAND EXTEND Function
-| ![ maybe_open_proof ] ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
+VERNAC COMMAND EXTEND Function STATE maybe_open_proof
+| ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
     => { let hard = List.exists (function
            | _,((_,(Some { CAst.v = CMeasureRec _ }
              | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
@@ -224,8 +224,8 @@ let warning_error names e =
 
 }
 
-VERNAC COMMAND EXTEND NewFunctionalScheme
-| ![ maybe_open_proof ] ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
+VERNAC COMMAND EXTEND NewFunctionalScheme STATE maybe_open_proof
+| ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
    => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
     { begin
@@ -263,7 +263,7 @@ VERNAC COMMAND EXTEND NewFunctionalCase
 END
 
 (***** debug only ***)
-VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
-| ![ maybe_open_proof ] ["Generate" "graph" "for" reference(c)] ->
+VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY STATE maybe_open_proof
+| ["Generate" "graph" "for" reference(c)] ->
   { make_graph (Smartlocate.global_with_alias c) }
 END
