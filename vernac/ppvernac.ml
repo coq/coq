@@ -446,15 +446,15 @@ open Pputils
     | Some true -> str" :>"
     | Some false -> str" :>>"
 
-  let pr_record_field ((x, pri), ntn) =
+  let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = ntn }) =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let prx = match x with
-      | (oc,AssumExpr (id,t)) ->
+      | AssumExpr (id,t) ->
         hov 1 (pr_lname id ++
                  pr_oc oc ++ spc() ++
                  pr_lconstr_expr env sigma t)
-      | (oc,DefExpr(id,b,opt)) -> (match opt with
+      | DefExpr(id,b,opt) -> (match opt with
           | Some t ->
             hov 1 (pr_lname id ++
                      pr_oc oc ++ spc() ++

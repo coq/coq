@@ -634,7 +634,7 @@ let declare_existing_class g =
 open Vernacexpr
 
 let check_unique_names records =
-  let extract_name acc (((_, bnd), _), _) = match bnd with
+  let extract_name acc (rf_decl, _) = match rf_decl with
       Vernacexpr.AssumExpr({CAst.v=Name id},_) -> id::acc
     | Vernacexpr.DefExpr ({CAst.v=Name id},_,_) -> id::acc
     | _ -> acc in
@@ -649,15 +649,15 @@ let check_unique_names records =
 let check_priorities kind records =
   let isnot_class = match kind with Class false -> false | _ -> true in
   let has_priority (_, _, _, cfs, _, _) =
-    List.exists (fun ((_, pri), _) -> not (Option.is_empty pri)) cfs
+    List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
   if isnot_class && List.exists has_priority records then
     user_err Pp.(str "Priorities only allowed for type class substructures")
 
 let extract_record_data records =
   let map (is_coe, id, _, cfs, idbuild, s) =
-    let fs = List.map (fun (((_, f), _), _) -> f) cfs in
-    id.CAst.v, s, List.map snd cfs, fs
+    let fs = List.map fst cfs in
+    id.CAst.v, s, List.map (fun (_, { rf_notation }) -> rf_notation) cfs, fs
   in
   let data = List.map map records in
   let pss = List.map (fun (_, _, ps, _, _, _) -> ps) records in
@@ -691,15 +691,15 @@ let definition_structure udecl kind ~template cum poly finite records =
     | [r], [d] -> r, d
     | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
     in
-    let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
-    let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
+    let priorities = List.map (fun (_, { rf_priority }) -> {hint_priority = rf_priority ; hint_pattern = None}) cfs in
+    let coers = List.map (fun (_, { rf_subclass }) -> rf_subclass) cfs in
     declare_class def cum ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
-      let coe = List.map (fun (((coe, _), _), _) -> not (Option.is_empty coe)) cfs in
+      let coe = List.map (fun (_, { rf_subclass }) -> not (Option.is_empty rf_subclass)) cfs in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in

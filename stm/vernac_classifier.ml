@@ -137,7 +137,7 @@ let classify_vernac e =
         | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some {v=x} -> [x] | _ -> []) @
            CList.map_filter (function
-            | ((_,AssumExpr({v=Names.Name n},_)),_),_ -> Some n
+            | AssumExpr({v=Names.Name n},_), _ -> Some n
             | _ -> None) l) l in
         VtSideff (List.flatten ids), VtLater
     | VernacScheme l ->
