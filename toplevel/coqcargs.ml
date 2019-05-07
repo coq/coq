@@ -126,10 +126,9 @@ let set_outputstate opts s =
 let parse arglist : t =
   let echo = ref false in
   let args = ref arglist in
-  let extras = ref [] in
   let rec parse (oval : t) = match !args with
     | [] ->
-      (oval, List.rev !extras)
+      oval
     | opt :: rem ->
       args := rem;
       let next () = match !args with
@@ -199,14 +198,13 @@ let parse arglist : t =
 
         (* Rest *)
         | s ->
-          extras := s :: !extras;
-          oval
+          if is_not_dash_option (Some s) then add_compile oval s
+          else (prerr_endline ("Unknown option " ^ s); exit 1)
       end in
       parse noval
   in
   try
-    let opts, extra = parse default in
-    let args = List.fold_left add_compile opts extra in
+    let args = parse default in
     check_compilation_output_name_consistency args;
     args
   with any -> Coqargs.fatal_error any
