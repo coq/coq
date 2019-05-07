@@ -113,7 +113,6 @@ let fatal_error_exn exn =
 let init_color opts =
   let has_color = match opts.color with
   | `OFF -> false
-  | `EMACS -> false
   | `ON -> true
   | `AUTO ->
     Terminal.has_style Unix.stdout &&
@@ -134,13 +133,10 @@ let init_color opts =
       Topfmt.default_styles (); false                 (* textual markers, no color *)
     end
   in
-  if opts.color = `EMACS then
-    Topfmt.set_emacs_print_strings ()
-  else if not term_color then begin
-      Proof_diffs.write_color_enabled term_color;
-    if Proof_diffs.show_diffs () then
-      (prerr_endline "Error: -diffs requires enabling -color"; exit 1)
-  end;
+  if not term_color then
+    Proof_diffs.write_color_enabled term_color;
+  if Proof_diffs.show_diffs () && not term_color then
+    (prerr_endline "Error: -diffs requires enabling -color"; exit 1);
   Topfmt.init_terminal_output ~color:term_color
 
 let print_style_tags opts =

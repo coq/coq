@@ -196,18 +196,6 @@ let init_tag_map styles =
 let default_styles () =
   init_tag_map (default_tag_map ())
 
-let set_emacs_print_strings () =
-  let open Terminal in
-  let diff = "diff." in
-  List.iter (fun b ->
-      let (name, attrs) = b in
-      if diff = (String.sub name 0 (String.length diff)) then
-        tag_map := CString.Map.add name
-          { attrs with prefix = Some (Printf.sprintf "<%s>" name);
-                       suffix = Some (Printf.sprintf "</%s>" name) }
-          !tag_map)
-    (CString.Map.bindings !tag_map)
-
 let parse_color_config str =
   let styles = Terminal.parse str in
   init_tag_map styles
@@ -276,13 +264,13 @@ let make_printing_functions () =
     let (tpfx, ttag) = split_tag tag in
     if tpfx <> end_pfx then
       let style = get_style ttag in
-      match style.Terminal.prefix with Some s -> Format.pp_print_as ft 0 s | None -> () in
+      match style.Terminal.prefix with Some s -> Format.pp_print_string ft s | None -> () in
 
   let print_suffix ft tag =
     let (tpfx, ttag) = split_tag tag in
     if tpfx <> start_pfx then
       let style = get_style ttag in
-      match style.Terminal.suffix with Some s -> Format.pp_print_as ft 0 s | None -> () in
+      match style.Terminal.suffix with Some s -> Format.pp_print_string ft s | None -> () in
 
   print_prefix, print_suffix
 

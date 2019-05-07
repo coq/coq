@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type color = [`ON | `AUTO | `EMACS | `OFF]
+type color = [`ON | `AUTO | `OFF]
 
 val default_toplevel : Names.DirPath.t
 

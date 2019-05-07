@@ -34,7 +34,7 @@ let set_type_in_type () =
 
 (******************************************************************************)
 
-type color = [`ON | `AUTO | `EMACS | `OFF]
+type color = [`ON | `AUTO | `OFF]
 
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
@@ -171,7 +171,7 @@ let add_load_vernacular opts verb s =
 (** Options for proof general *)
 let set_emacs opts =
   Printer.enable_goal_tags_printing := true;
-  { opts with color = `EMACS; print_emacs = true }
+  { opts with color = `OFF; print_emacs = true }
 
 let set_color opts = function
 | "yes" | "on" -> { opts with color = `ON }
