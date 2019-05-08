@@ -73,13 +73,17 @@ let ensure_bname src tgt =
 
 let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
 
-let ensure_v v = ensure ".v" v v
-let ensure_vo v vo = ensure ".vo" v vo
-let ensure_vio v vio = ensure ".vio" v vio
-
 let ensure_exists f =
   if not (Sys.file_exists f) then
     fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
+
+let ensure_exists_with_prefix f_in f_out src_suffix tgt_suffix =
+  let long_f_dot_src = ensure src_suffix f_in f_in in
+  ensure_exists long_f_dot_src;
+  let long_f_dot_tgt = match f_out with
+    | None -> chop_extension long_f_dot_src ^ tgt_suffix
+    | Some f -> ensure tgt_suffix long_f_dot_src f in
+  long_f_dot_src, long_f_dot_tgt
 
 (* Compile a vernac file *)
 let compile opts copts ~echo ~f_in ~f_out =
@@ -102,12 +106,9 @@ let compile opts copts ~echo ~f_in ~f_out =
   match copts.compilation_mode with
   | BuildVo ->
       Flags.record_aux_file := true;
-      let long_f_dot_v = ensure_v f_in in
-      ensure_exists long_f_dot_v;
-      let long_f_dot_vo =
-        match f_out with
-        | None -> long_f_dot_v ^ "o"
-        | Some f -> ensure_vo long_f_dot_v f in
+
+      let long_f_dot_v, long_f_dot_vo =
+        ensure_exists_with_prefix f_in f_out ".v" ".vo" in
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
@@ -138,13 +139,8 @@ let compile opts copts ~echo ~f_in ~f_out =
       Flags.record_aux_file := false;
       Dumpglob.noglob ();
 
-      let long_f_dot_v = ensure_v f_in in
-      ensure_exists long_f_dot_v;
-
-      let long_f_dot_vio =
-        match f_out with
-        | None -> long_f_dot_v ^ "io"
-        | Some f -> ensure_vio long_f_dot_v f in
+      let long_f_dot_v, long_f_dot_vio =
+        ensure_exists_with_prefix f_in f_out ".v" ".vio" in
 
       (* We need to disable error resiliency, otherwise some errors
          will be ignored in batch mode. c.f. #6707
@@ -175,13 +171,15 @@ let compile opts copts ~echo ~f_in ~f_out =
       Stm.reset_task_queue ()
 
   | Vio2Vo ->
-      let open Filename in
+
       Flags.record_aux_file := false;
       Dumpglob.noglob ();
-      let f = if check_suffix f_in ".vio" then chop_extension f_in else f_in in
-      let lfdv, sum, lib, univs, disch, tasks, proofs = Library.load_library_todo f in
-      let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
-      Library.save_library_raw lfdv sum lib univs proofs
+      let long_f_dot_vio, long_f_dot_vo =
+        ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
+      let sum, lib, univs, disch, tasks, proofs =
+        Library.load_library_todo long_f_dot_vio in
+      let univs, proofs = Stm.finish_tasks long_f_dot_vo univs disch proofs tasks in
+      Library.save_library_raw long_f_dot_vo sum lib univs proofs
 
 let compile opts copts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);
@@ -205,16 +203,22 @@ let compile_files opts copts =
 (******************************************************************************)
 let check_vio_tasks copts =
   let rc =
-    List.fold_left (fun acc t -> Vio_checking.check_vio t && acc)
+    List.fold_left (fun acc (n,f) ->
+        let f_in = ensure ".vio" f f in
+        ensure_exists f_in;
+        Vio_checking.check_vio (n,f_in) && acc)
       true (List.rev copts.vio_tasks) in
   if not rc then fatal_error Pp.(str "VIO Task Check failed")
 
 (* vio files *)
 let schedule_vio copts =
+  let l =
+    List.map (fun f -> let f_in = ensure ".vio" f f in ensure_exists f_in; f_in)
+      copts.vio_files in
   if copts.vio_checking then
-    Vio_checking.schedule_vio_checking copts.vio_files_j copts.vio_files
+    Vio_checking.schedule_vio_checking copts.vio_files_j l
   else
-    Vio_checking.schedule_vio_compilation copts.vio_files_j copts.vio_files
+    Vio_checking.schedule_vio_compilation copts.vio_files_j l
 
 let do_vio opts copts =
   (* We must initialize the loadpath here as the vio scheduling
