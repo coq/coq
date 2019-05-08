@@ -60,14 +60,12 @@ type coqargs_base_query =
 
 type coqargs_queries = {
   queries : coqargs_base_query list;
-  filteropts : bool;
+  filteropts : string list option;
 }
-
-type coqargs_interactive = Interactive | Batch
 
 type coqargs_main =
   | Queries of coqargs_queries
-  | Run of coqargs_interactive
+  | Run
 
 type coqargs_post = {
   memory_stat : bool;

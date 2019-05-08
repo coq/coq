@@ -25,19 +25,16 @@ type 'a custom_toplevel =
 
 (** [init_toplevel custom]
     Customized Coq initialization and argument parsing *)
-val init_batch_toplevel
-  :  help:(unit -> unit)
-  -> init:Coqargs.t
-  -> Coqargs.t extra_args_fn
-  -> string list
-  -> Coqargs.t * string list
+val init_toplevel : 'a custom_toplevel -> Coqargs.t * 'a
 
-val coqtop_toplevel : Coqargs.t custom_toplevel
+type run_mode = Interactive | Batch
 
-(** The Coq main module. [start custom] will parse the command line,
+(** The generic Coq main module. [start custom] will parse the command line,
    print the banner, initialize the load path, load the input state,
    load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch
    [custom.run]. *)
+val start_coq : run_mode custom_toplevel -> unit
 
-val start_coq : Coqargs.t custom_toplevel -> unit
+(** The specific characterization of the coqtop_toplevel *)
+val coqtop_toplevel : run_mode custom_toplevel

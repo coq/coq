@@ -85,14 +85,12 @@ type coqargs_base_query =
 
 type coqargs_queries = {
   queries : coqargs_base_query list;
-  filteropts : bool;
+  filteropts : string list option;
 }
-
-type coqargs_interactive = Interactive | Batch
 
 type coqargs_main =
   | Queries of coqargs_queries
-  | Run of coqargs_interactive
+  | Run
 
 type coqargs_post = {
   memory_stat : bool;
@@ -151,11 +149,8 @@ let default_pre = {
 
 let default_queries = {
   queries = [];
-  filteropts = false;
+  filteropts = None;
 }
-
-let default_main =
-  Run Interactive
 
 let default_post = {
   memory_stat  = false;
@@ -165,7 +160,7 @@ let default_post = {
 let default = {
   config = default_config;
   pre    = default_pre;
-  main   = default_main;
+  main   = Run;
   post   = default_post;
 }
 
@@ -209,26 +204,21 @@ let set_color opts = function
   | _ ->
     error_wrong_arg ("Error: on/off/auto expected after option color")
 
-let set_batch opts =
-  { opts with main = match opts.main with
-  | Run _ -> Run Batch
-  | Queries _ as x -> x }
-
 let add_query { queries; filteropts } q =
   { queries = queries@[q]; filteropts }
 
 let set_query opts q =
   { opts with main = match opts.main with
-  | Run _ -> Queries (add_query default_queries q)
+  | Run -> Queries (add_query default_queries q)
   | Queries queries -> Queries (add_query queries q)
   }
 
 let add_filteropts { queries } =
-  { queries; filteropts = true }
+  { queries; filteropts = Some [] }
 
 let set_filteropts opts =
   { opts with main = match opts.main with
-  | Run _ -> Queries (add_filteropts default_queries)
+  | Run -> Queries (add_filteropts default_queries)
   | Queries queries -> Queries (add_filteropts queries)
   }
 
@@ -548,9 +538,6 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_never_reopen_branch = true
       }}}
-    |"-batch" ->
-      Flags.quiet := true;
-      set_batch oval
     |"-test-mode" -> Vernacentries.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-bt" -> Backtrace.record_backtrace true; oval

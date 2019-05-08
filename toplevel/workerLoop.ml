@@ -14,7 +14,7 @@ let rec parse = function
   | [] -> []
 
 let worker_parse_extra ~opts extra_args =
-  opts, parse extra_args
+  Coqtop.Interactive, parse extra_args
 
 let worker_init init ~opts =
   Flags.quiet := true;

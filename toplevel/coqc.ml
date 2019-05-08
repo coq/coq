@@ -30,11 +30,9 @@ let coqc_main () =
       init = coqc_init;
       parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
     } in
-  let opts, extras =
+  let opts, copts =
     Topfmt.(in_phase ~phase:Initialization)
-      Coqtop.(init_batch_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default (fun ~opts extras -> coqc_init ~opts; (opts, extras))) List.(tl (Array.to_list Sys.argv)) in
-
-  let copts, extras = custom_coqc.Coqtop.parse_extra ~opts extras in
+      Coqtop.init_toplevel custom_coqc in
 
   if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
 
