@@ -30,23 +30,18 @@ let print_header () =
   Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
-let memory_stat = ref false
 let print_memory_stat () =
-  begin (* -m|--memory from the command-line *)
-    if !memory_stat then
-    Feedback.msg_notice
-      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
-  end;
-  begin
-    (* operf-macro interface:
-       https://github.com/OCamlPro/operf-macro *)
-    try
-      let fn = Sys.getenv "OCAML_GC_STATS" in
-      let oc = open_out fn in
-      Gc.print_stat oc;
-      close_out oc
-    with _ -> ()
-  end
+  (* -m|--memory from the command-line *)
+  Feedback.msg_notice
+    (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ());
+  (* operf-macro interface:
+     https://github.com/OCamlPro/operf-macro *)
+  try
+    let fn = Sys.getenv "OCAML_GC_STATS" in
+    let oc = open_out fn in
+    Gc.print_stat oc;
+    close_out oc
+  with _ -> ()
 
 let interp_set_option opt v old =
   let open Goptions in
