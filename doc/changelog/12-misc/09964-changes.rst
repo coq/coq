@@ -8,6 +8,7 @@
   `#9668 <https://github.com/coq/coq/pull/9668>`_,
   `#9939 <https://github.com/coq/coq/pull/9939>`_,
   `#9964 <https://github.com/coq/coq/pull/9964>`_,
+  and `#10085 <https://github.com/coq/coq/pull/10085>`_,
   by Théo Zimmermann,
-  with help and ideas from Emilio Jesús Gallego Arias,
-  Clément Pit-Claudel, Matthieu Sozeau, and Enrico Tassi).
+  with help and ideas from Emilio Jesús Gallego Arias, Gaëtan
+  Gilbert, Clément Pit-Claudel, Matthieu Sozeau, and Enrico Tassi).
