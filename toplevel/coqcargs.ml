@@ -82,7 +82,14 @@ let set_vio_checking_j opts opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
+let get_task_list s =
+  List.map (fun s ->
+      try int_of_string s
+      with Failure _ ->
+        prerr_endline "Option -check-vio-tasks expects a comma-separated list";
+        prerr_endline "of integers followed by a list of files";
+        exit 1)
+    (Str.split (Str.regexp ",") s)
 
 let is_not_dash_option = function
   | Some f when String.length f > 0 && f.[0] <> '-' -> true
