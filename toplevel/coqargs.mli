@@ -53,18 +53,13 @@ type coqargs_pre = {
   inputstate  : string option;
 }
 
-type coqargs_base_query =
+type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of (unit -> unit)
 
-type coqargs_queries = {
-  queries : coqargs_base_query list;
-  filteropts : string list option;
-}
-
 type coqargs_main =
-  | Queries of coqargs_queries
+  | Queries of coqargs_query list
   | Run
 
 type coqargs_post = {

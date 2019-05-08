@@ -78,18 +78,13 @@ type coqargs_pre = {
   inputstate  : string option;
 }
 
-type coqargs_base_query =
+type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of (unit -> unit)
 
-type coqargs_queries = {
-  queries : coqargs_base_query list;
-  filteropts : string list option;
-}
-
 type coqargs_main =
-  | Queries of coqargs_queries
+  | Queries of coqargs_query list
   | Run
 
 type coqargs_post = {
@@ -147,10 +142,7 @@ let default_pre = {
   inputstate   = None;
 }
 
-let default_queries = {
-  queries = [];
-  filteropts = None;
-}
+let default_queries = []
 
 let default_post = {
   memory_stat  = false;
@@ -204,22 +196,10 @@ let set_color opts = function
   | _ ->
     error_wrong_arg ("Error: on/off/auto expected after option color")
 
-let add_query { queries; filteropts } q =
-  { queries = queries@[q]; filteropts }
-
 let set_query opts q =
   { opts with main = match opts.main with
-  | Run -> Queries (add_query default_queries q)
-  | Queries queries -> Queries (add_query queries q)
-  }
-
-let add_filteropts { queries } =
-  { queries; filteropts = Some [] }
-
-let set_filteropts opts =
-  { opts with main = match opts.main with
-  | Run -> Queries (add_filteropts default_queries)
-  | Queries queries -> Queries (add_filteropts queries)
+  | Run -> Queries (default_queries@[q])
+  | Queries queries -> Queries (queries@[q])
   }
 
 let warn_deprecated_inputstate =
@@ -553,7 +533,6 @@ let parse_args ~help ~init arglist : t * string list =
                   { oval with config = { oval.config with diffs_set = true }}
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
-    |"-filteropts" -> set_filteropts oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
     |"-allow-sprop" -> set_logic (fun o -> { o with allow_sprop = true }) oval

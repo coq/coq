@@ -155,22 +155,13 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
-let print_queries opts q =
-  let print_query = function
-    | PrintVersion -> Usage.version ()
-    | PrintMachineReadableVersion -> Usage.machine_readable_version ()
-    | PrintWhere -> print_endline (Envars.coqlib ())
-    | PrintHelp f -> f ()
-    | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
-    | PrintTags -> print_style_tags opts.config in
-  List.iter print_query q.queries;
-  match q.filteropts with
-  | Some extras ->
-    if q.queries <> [] && extras <> [] then
-      error_wrong_arg "Queries are exclusive of other arguments"
-    else
-      print_string (String.concat "\n" extras)
-  | None -> ()
+let print_query opts = function
+  | PrintVersion -> Usage.version ()
+  | PrintMachineReadableVersion -> Usage.machine_readable_version ()
+  | PrintWhere -> print_endline (Envars.coqlib ())
+  | PrintHelp f -> f ()
+  | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
+  | PrintTags -> print_style_tags opts.config
 
 (** GC tweaking *)
 
@@ -268,7 +259,7 @@ let init_toplevel custom =
   let () = init_setup opts.config.coqlib in
   (* Querying or running? *)
   match opts.main with
-  | Queries q -> print_queries opts q; exit 0
+  | Queries q -> List.iter (print_query opts) q; exit 0
   | Run ->
     let customstate = init_execution opts (custom.init customopts) in
     opts, customopts, customstate
