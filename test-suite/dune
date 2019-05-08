@@ -20,6 +20,8 @@
    ../dev/header.ml
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
+   ; For the changelog test
+   ../config/coq_config.py
    (package coq)
    ; For fake_ide
    (package coqide-server)
