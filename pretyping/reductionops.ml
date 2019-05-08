@@ -1675,7 +1675,7 @@ let is_sort env sigma t =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
+let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let refold = false in
   let tactic_mode = false in
   let rec whrec csts s =
@@ -1696,7 +1696,8 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
           whrec Cst_stack.empty (Stack.nth stack_o (Projection.npars p + Projection.arg p), stack'')
 	else s,csts'
       |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s,csts'
-  in whrec csts s
+  in
+  fst (whrec Cst_stack.empty s)
 
 let find_conclusion env sigma =
   let rec decrec env c =

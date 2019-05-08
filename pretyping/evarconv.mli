@@ -144,7 +144,7 @@ val evar_unify : Evarsolve.unifier
 (* For debugging *)
 val evar_eqappr_x : ?rhs_is_already_stuck:bool -> unify_flags ->
   env -> evar_map ->
-    conv_pb -> state * Cst_stack.t -> state * Cst_stack.t ->
+    conv_pb -> state -> state ->
       Evarsolve.unification_result
 
 val occur_rigidly : Evarsolve.unify_flags ->
