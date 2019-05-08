@@ -81,7 +81,7 @@ type coqargs_pre = {
 type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp of (unit -> unit)
+  | PrintHelp of (out_channel -> unit)
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -290,6 +290,7 @@ let usage_no_coqlib = CWarnings.create ~name:"usage-no-coqlib" ~category:"filesy
 
 exception NoCoqLib
 
+(* Is this still useful for displaying help? *)
 let usage help =
   begin
     try Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib)
@@ -298,7 +299,7 @@ let usage help =
   let lp = Coqinit.toplevel_init_load_path () in
   (* Necessary for finding the toplevels below *)
   List.iter Loadpath.add_coq_path lp;
-  help ()
+  help
 
 (* Main parsing routine *)
 let parse_args ~help ~init arglist : t * string list =
@@ -554,7 +555,8 @@ let parse_args ~help ~init arglist : t * string list =
     |"-type-in-type" -> set_type_in_type (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> set_query oval PrintWhere
-    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp (fun () -> usage help))
+    |"-h"|"-H"|"-?"|"-help"|"--help" ->
+     set_query oval (PrintHelp (fun co -> usage (help co)))
     |"-v"|"--version" -> set_query oval PrintVersion
     |"-print-version"|"--print-version" -> set_query oval PrintMachineReadableVersion
 

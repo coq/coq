@@ -552,8 +552,10 @@ let rec parse = function
        x :: parse rest
   | [] -> []
 
-let () = Usage.add_to_usage "coqidetop"
-"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
+let () = Usage.add_to_usage "coqidetop" "" "\n\
+coqidetop specific options:\n\
+\n  --xml_formatinclude dir           (idem)\
+\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
 
 let islave_parse ~opts extra_args =
@@ -580,7 +582,7 @@ let () =
   let open Coqtop in
   let custom = {
       parse_extra = islave_parse ;
-      help = (fun _ -> output_string stderr "Same options as coqtop");
+      help = Usage.print_usage "coqidetop";
       init = islave_init;
       run = loop;
       opts = islave_default_opts } in

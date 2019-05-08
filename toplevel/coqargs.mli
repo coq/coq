@@ -56,7 +56,7 @@ type coqargs_pre = {
 type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp of (unit -> unit)
+  | PrintHelp of (out_channel -> unit)
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -77,7 +77,7 @@ type t = {
 (* Default options *)
 val default : t
 
-val parse_args : help:(unit -> unit) -> init:t -> string list -> t * string list
+val parse_args : help:(out_channel -> unit) -> init:t -> string list -> t * string list
 val error_wrong_arg : string -> unit
 
 val require_libs : t -> (string * string option * bool option) list

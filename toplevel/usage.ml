@@ -20,7 +20,8 @@ let machine_readable_version () =
 (* print the usage of coqtop (or coqc) on channel co *)
 
 let extra_usage = ref []
-let add_to_usage name text = extra_usage := (name,text) :: !extra_usage
+let add_to_usage name extra text =
+  extra_usage := (name,(extra,text)) :: !extra_usage
 
 let print_usage_common co command =
   output_string co command;
@@ -98,42 +99,13 @@ let print_usage_common co command =
 \n  -bytecode-compiler (yes|no)        enable the vm_compute reduction machine\
 \n  -native-compiler (yes|no|ondemand) enable the native_compute reduction machine\
 \n  -h, -help, --help      print this list of options\
-\n";
-  List.iter (fun (name, text) ->
-    output_string co
-     ("\nWith the flag '-toploop "^name^
-        "' these extra option are also available:\n"^
-      text^"\n"))
-    !extra_usage
+\n"
 
-(* print the usage on standard error *)
+(* print the usage *)
 
-let print_usage_coqtop () =
-  print_usage_common stderr "Usage: coqtop <options>\n\n";
-  output_string stderr "\n\
-coqtop specific options:\
-\n\
-\n  -batch                 batch mode (exits just after argument parsing)\
-\n";
-  flush stderr ;
-  exit 1
-
-let print_usage_coqc () =
-  print_usage_common stderr "Usage: coqc <options> <Coq options> file...\n\n";
-  output_string stderr "\n\
-coqc specific options:\
-\n\
-\n  -o f.vo                use f.vo as the output file name\
-\n  -verbose               compile and output the input file\
-\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
-\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
-\n                         into fi.vo\
-\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
-\n                         proofs in each fi.vio\
-\n\
-\nUndocumented:\
-\n  -vio2vo                [see manual]\
-\n  -check-vio-tasks       [see manual]\
-\n";
-  flush stderr ;
-  exit 1
+let print_usage binfile co =
+  let extra, text =
+    try List.assoc binfile !extra_usage
+    with Not_found -> ("","") in
+  print_usage_common co ("Usage: " ^ binfile ^ " <options> " ^ extra ^ "\n\n");
+  output_string co text

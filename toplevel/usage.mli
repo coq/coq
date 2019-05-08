@@ -13,10 +13,10 @@
 val version : unit -> unit
 val machine_readable_version : unit -> unit
 
-(** {6 Enable toploop plugins to insert some text in the usage message. } *)
-val add_to_usage : string -> string -> unit
+(** {6 [add_to_usage name extra_args extra_options] tell what extra
+     arguments or options to print when asking usage for command [name]. } *)
+val add_to_usage : string -> string -> string -> unit
 
 (** {6 Prints the usage on the error output. } *)
-val print_usage_coqtop : unit -> unit
-val print_usage_coqc : unit -> unit
+val print_usage : string -> out_channel -> unit
 

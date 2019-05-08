@@ -159,7 +159,7 @@ let print_query opts = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere -> print_endline (Envars.coqlib ())
-  | PrintHelp f -> f ()
+  | PrintHelp f -> f stderr
   | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
   | PrintTags -> print_style_tags opts.config
 
@@ -246,7 +246,7 @@ type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
 
 type ('a,'b) custom_toplevel =
   { parse_extra : 'a extra_args_fn
-  ; help : unit -> unit
+  ; help : out_channel -> unit
   ; init : 'a -> opts:Coqargs.t -> 'b
   ; run : 'a -> opts:Coqargs.t -> 'b -> unit
   ; opts : Coqargs.t
@@ -324,9 +324,14 @@ let coqtop_run run_mode ~opts state =
   | Interactive -> Coqloop.loop ~opts ~state;
   | Batch -> exit 0
 
+let () = Usage.add_to_usage "coqtop" "" "\n\
+coqtop specific options:\n\
+\n  -batch                 batch mode (exits after interpretation of command line)\
+\n"
+
 let coqtop_toplevel =
   { parse_extra = coqtop_parse_extra
-  ; help = Usage.print_usage_coqtop
+  ; help = Usage.print_usage "coqtop"
   ; init = coqtop_init
   ; run = coqtop_run
   ; opts = Coqargs.default

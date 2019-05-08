@@ -19,6 +19,21 @@ let coqc_init _copts ~opts =
   Coqtop.init_color opts.Coqargs.config;
   if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ()
 
+let () = Usage.add_to_usage "coqc" "file..." "\n\
+coqc specific options:\
+\n  -o f.vo                use f.vo as the output file name\
+\n  -verbose               compile and output the input file\
+\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
+\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
+\n                         into fi.vo\
+\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
+\n                         proofs in each fi.vio\
+\n\
+\nUndocumented:\
+\n  -vio2vo                [see manual]\
+\n  -check-vio-tasks       [see manual]\
+\n"
+
 let coqc_main copts ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_files opts copts;
@@ -53,7 +68,7 @@ let coqc_run copts ~opts () =
 
 let custom_coqc = Coqtop.{
   parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
-  help = Usage.print_usage_coqc;
+  help = Usage.print_usage "coqc";
   init = coqc_init;
   run = coqc_run;
   opts = Coqargs.default;

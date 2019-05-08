@@ -11,4 +11,4 @@
 module W = AsyncTaskQueue.MakeWorker(Stm.ProofTask) ()
 
 let () =
-  WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop
+  WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop "coqproofworker"

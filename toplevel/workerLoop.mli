@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Register a STM worker *)
+(* Register a STM worker of a given executable name *)
 val start :
   init:(unit -> unit) ->
-  loop:(unit -> unit) -> unit
+  loop:(unit -> unit) -> string -> unit
