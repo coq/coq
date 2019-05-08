@@ -2,7 +2,9 @@
 Recent changes
 --------------
 
-.. include:: ../unreleased.rst
+.. ifconfig:: not coq_config.is_a_released_version
+
+   .. include:: ../unreleased.rst
 
 Version 8.10
 ------------
