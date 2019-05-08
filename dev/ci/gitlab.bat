@@ -41,7 +41,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
   SET EXTRA_ADDONS=^
     -addon=bignums ^
     -addon=equations ^
-    -addon=ltac2 ^
     -addon=mtac2 ^
     -addon=mathcomp ^
     -addon=menhir ^
