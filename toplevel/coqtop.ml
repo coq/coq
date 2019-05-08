@@ -257,8 +257,7 @@ type custom_toplevel =
   ; opts : Coqargs.t
   }
 
-
-let init_toploop opts =
+let init_document opts =
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.stm_flags in
@@ -268,8 +267,12 @@ let init_toploop opts =
            { doc_type = Interactive opts.toplevel_name;
              iload_path; require_libs; stm_options;
            }) in
-  let state = { doc; sid; proof = None; time = opts.time } in
-  Ccompile.load_init_vernaculars opts ~state, opts
+  { doc; sid; proof = None; time = opts.time }
+
+let init_toploop opts =
+  let state = init_document opts in
+  let state = Ccompile.load_init_vernaculars opts ~state in
+  state
 
 let coqtop_init ~opts extra =
   init_color opts;
@@ -297,7 +300,7 @@ let start_coq custom =
         prerr_endline "See -help for the list of supported options";
         exit 1
       end;
-      init_toploop opts
+      init_toploop opts, opts
     with any ->
       flush_all();
       fatal_error_exn any in
