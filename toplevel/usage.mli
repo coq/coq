@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** {6 Prints the version number on the standard output and exits (with 0). } *)
+(** {6 Prints the version number on the standard output. } *)
 
-val version : int -> 'a
-val machine_readable_version : int -> 'a
+val version : unit -> unit
+val machine_readable_version : unit -> unit
 
 (** {6 Enable toploop plugins to insert some text in the usage message. } *)
 val add_to_usage : string -> string -> unit

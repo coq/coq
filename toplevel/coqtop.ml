@@ -48,8 +48,6 @@ let print_memory_stat () =
     with _ -> ()
   end
 
-let _ = at_exit print_memory_stat
-
 let interp_set_option opt v old =
   let open Goptions in
   let err expect =
@@ -159,6 +157,22 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
+
+let print_queries opts extras q =
+  let print_query = function
+    | PrintVersion -> Usage.version ()
+    | PrintMachineReadableVersion -> Usage.machine_readable_version ()
+    | PrintWhere -> print_endline (Envars.coqlib ())
+    | PrintHelp f -> f ()
+    | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
+    | PrintTags -> print_style_tags opts.config in
+  List.iter print_query q.queries;
+  if q.filteropts then
+    if q.queries <> [] && extras <> [] then
+      error_wrong_arg "Queries are exclusive of other arguments"
+    else
+      print_string (String.concat "\n" extras)
+
 (** GC tweaking *)
 
 (** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
@@ -184,6 +198,10 @@ let init_gc () =
              Gc.minor_heap_size = 33554432; (* 4M *)
              Gc.space_overhead = 120}
 
+let init_setup = function
+  | None -> Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  | Some s -> Envars.set_user_coqlib s
+
 (** Main init routine *)
 let init_toplevel ~help ~init custom_init arglist =
   (* Coq's init process, phase 1:
@@ -199,57 +217,43 @@ let init_toplevel ~help ~init custom_init arglist =
      Basic Coq environment, load-path, plugins.
    *)
   let opts, extras = parse_args ~help ~init arglist in
-  memory_stat := opts.memory_stat;
+  if opts.post.memory_stat then at_exit print_memory_stat;
 
   (* If we have been spawned by the Spawn module, this has to be done
    * early since the master waits us to connect back *)
   Spawned.init_channels ();
-  Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-  if opts.print_where then begin
-    print_endline (Envars.coqlib ());
-    exit (exitcode opts)
-  end;
-  if opts.print_config then begin
-    Envars.print_config stdout Coq_config.all_src_dirs;
-    exit (exitcode opts)
-  end;
-  if opts.print_tags then begin
-    print_style_tags opts;
-    exit (exitcode opts)
-  end;
-  if opts.filter_opts then begin
-    print_string (String.concat "\n" extras);
-    exit 0;
-  end;
+  init_setup opts.config.coqlib;
+  (* Querying or running? *)
+  match opts.main with
+  | Queries q -> print_queries opts extras q; exit 0
+  | Run batch ->
+  (* Initialization *)
   let top_lp = Coqinit.toplevel_init_load_path () in
   List.iter Loadpath.add_coq_path top_lp;
   let opts, extras = custom_init ~opts extras in
   Mltop.init_known_plugins ();
+  (* Configuration *)
+  Global.set_engagement opts.config.logic.impredicative_set;
+  Global.set_indices_matter opts.config.logic.indices_matter;
+  Global.set_VM opts.config.enable_VM;
+  Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
+  Global.set_allow_sprop opts.config.logic.allow_sprop;
+  if opts.config.logic.cumulative_sprop then Global.make_sprop_cumulative ();
 
-  Global.set_engagement opts.impredicative_set;
-  Global.set_indices_matter opts.indices_matter;
-  Global.set_VM opts.enable_VM;
-  Global.set_native_compiler (match opts.native_compiler with NativeOff -> false | NativeOn _ -> true);
-  Global.set_allow_sprop opts.allow_sprop;
-  if opts.cumulative_sprop then Global.make_sprop_cumulative ();
-
-  set_options opts.set_options;
+  set_options opts.config.set_options;
 
   (* Allow the user to load an arbitrary state here *)
-  inputstate opts;
+  inputstate opts.pre;
 
   (* This state will be shared by all the documents *)
   Stm.init_core ();
-
-  (* Coq init process, phase 3: Stm initialization, backtracking state.
-
-     It is essential that the module system is in a consistent
-     state before we take the first snapshot. This was not
-     guaranteed in the past, but now is thanks to the STM API.
-  *)
-  opts, extras
+  batch, opts, extras
 
 type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
+
+let init_batch_toplevel ~help ~init custom_init args =
+  let run_mode, opts, extras = init_toplevel ~help ~init custom_init args in
+  opts, extras
 
 type custom_toplevel =
   { init : init_fn
@@ -258,16 +262,22 @@ type custom_toplevel =
   }
 
 let init_document opts =
+  (* Coq init process, phase 3: Stm initialization, backtracking state.
+
+     It is essential that the module system is in a consistent
+     state before we take the first snapshot. This was not
+     guaranteed in the past, but now is thanks to the STM API.
+  *)
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
-  let stm_options = opts.stm_flags in
+  let stm_options = opts.config.stm_flags in
   let open Vernac.State in
   let doc, sid =
     Stm.(new_doc
-           { doc_type = Interactive opts.toplevel_name;
+           { doc_type = Interactive opts.config.logic.toplevel_name;
              iload_path; require_libs; stm_options;
            }) in
-  { doc; sid; proof = None; time = opts.time }
+  { doc; sid; proof = None; time = opts.config.time }
 
 let init_toploop opts =
   let state = init_document opts in
@@ -275,7 +285,7 @@ let init_toploop opts =
   state
 
 let coqtop_init ~opts extra =
-  init_color opts;
+  init_color opts.config;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
   Flags.if_verbose print_header ();
   opts, extra
@@ -289,9 +299,9 @@ let coqtop_toplevel =
 let start_coq custom =
   let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   (* Init phase *)
-  let state, opts =
+  let run_mode, state, opts =
     try
-      let opts, extras =
+      let run_mode, opts, extras =
         init_toplevel
           ~help:Usage.print_usage_coqtop ~init:default custom.init
           (List.tl (Array.to_list Sys.argv)) in
@@ -300,10 +310,12 @@ let start_coq custom =
         prerr_endline "See -help for the list of supported options";
         exit 1
       end;
-      init_toploop opts, opts
+      let state = init_toploop opts in
+      run_mode, state, opts
     with any ->
       flush_all();
       fatal_error_exn any in
   Feedback.del_feeder init_feeder;
-  if not opts.batch then custom.run ~opts ~state;
-  exit 0
+  match run_mode with
+  | Interactive -> custom.run ~opts ~state;
+  | Batch -> exit 0

@@ -40,52 +40,70 @@ type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
 type option_command = OptionSet of string option | OptionUnset
 
-type t = {
+type coqargs_logic_config = {
+  impredicative_set : Declarations.set_predicativity;
+  indices_matter    : bool;
+  toplevel_name     : Stm.interactive_top;
+  allow_sprop       : bool;
+  cumulative_sprop  : bool;
+}
 
+type coqargs_config = {
+  logic       : coqargs_logic_config;
+  rcfile      : string option;
+  coqlib      : string option;
+  color       : color;
+  enable_VM   : bool;
+  native_compiler : native_compiler;
+  stm_flags   : Stm.AsyncOpts.stm_opt;
+  debug       : bool;
+  diffs_set   : bool;
+  time        : bool;
+  glob_opt    : bool;
+  print_emacs : bool;
+  set_options : (Goptions.option_name * option_command) list;
+}
+
+type coqargs_pre = {
   load_init   : bool;
   load_rcfile : bool;
-  rcfile      : string option;
 
   ml_includes : Loadpath.coq_path list;
   vo_includes : Loadpath.coq_path list;
   vo_requires : (string * string option * bool option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
-  toplevel_name : Stm.interactive_top;
-
   load_vernacular_list : (string * bool) list;
-  batch : bool;
-
-  color : color;
-
-  impredicative_set : Declarations.set_predicativity;
-  indices_matter : bool;
-  enable_VM : bool;
-  native_compiler : native_compiler;
-  allow_sprop : bool;
-  cumulative_sprop : bool;
-
-  set_options : (Goptions.option_name * option_command) list;
-
-  stm_flags   : Stm.AsyncOpts.stm_opt;
-  debug       : bool;
-  diffs_set   : bool;
-  time        : bool;
-
-  filter_opts : bool;
-
-  glob_opt    : bool;
-
-  memory_stat : bool;
-  print_tags  : bool;
-  print_where : bool;
-  print_config: bool;
-  output_context : bool;
-
-  print_emacs : bool;
 
   inputstate  : string option;
+}
 
+type coqargs_base_query =
+  | PrintTags | PrintWhere | PrintConfig
+  | PrintVersion | PrintMachineReadableVersion
+  | PrintHelp of (unit -> unit)
+
+type coqargs_queries = {
+  queries : coqargs_base_query list;
+  filteropts : bool;
+}
+
+type coqargs_interactive = Interactive | Batch
+
+type coqargs_main =
+  | Queries of coqargs_queries
+  | Run of coqargs_interactive
+
+type coqargs_post = {
+  memory_stat : bool;
+  output_context : bool;
+}
+
+type t = {
+  config : coqargs_config;
+  pre : coqargs_pre;
+  main : coqargs_main;
+  post : coqargs_post;
 }
 
 let default_toplevel = Names.(DirPath.make [Id.of_string "Top"])
@@ -95,69 +113,77 @@ let default_native =
   then NativeOn {ondemand=true}
   else NativeOff
 
-let default = {
-
-  load_init   = true;
-  load_rcfile = true;
-  rcfile      = None;
-
-  ml_includes = [];
-  vo_includes = [];
-  vo_requires = [];
-
-  toplevel_name = Stm.TopLogical default_toplevel;
-
-  load_vernacular_list = [];
-  batch = false;
-
-  color = `AUTO;
-
+let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
-  enable_VM = true;
-  native_compiler = default_native;
+  toplevel_name = Stm.TopLogical default_toplevel;
   allow_sprop = false;
   cumulative_sprop = false;
+}
 
-  set_options = [];
-
+let default_config = {
+  logic        = default_logic_config;
+  rcfile       = None;
+  coqlib       = None;
+  color        = `AUTO;
+  enable_VM    = true;
+  native_compiler = default_native;
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   diffs_set    = false;
   time         = false;
-
-  filter_opts  = false;
-
   glob_opt     = false;
-
-  memory_stat  = false;
-  print_tags   = false;
-  print_where  = false;
-  print_config = false;
-  output_context = false;
-
-  print_emacs = false;
+  print_emacs  = false;
+  set_options  = [];
 
   (* Quiet / verbosity options should be here *)
+}
 
-  inputstate  = None;
+let default_pre = {
+  load_init    = true;
+  load_rcfile  = true;
+  ml_includes  = [];
+  vo_includes  = [];
+  vo_requires  = [];
+  load_vernacular_list = [];
+  inputstate   = None;
+}
+
+let default_queries = {
+  queries = [];
+  filteropts = false;
+}
+
+let default_main =
+  Run Interactive
+
+let default_post = {
+  memory_stat  = false;
+  output_context = false;
+}
+
+let default = {
+  config = default_config;
+  pre    = default_pre;
+  main   = default_main;
+  post   = default_post;
 }
 
 (******************************************************************************)
 (* Functional arguments                                                       *)
 (******************************************************************************)
 let add_ml_include opts s =
-  Loadpath.{ opts with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.ml_includes }
+  Loadpath.{ opts with pre = { opts.pre with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.pre.ml_includes }}
 
 let add_vo_include opts unix_path coq_path implicit =
   let open Loadpath in
   let coq_path = Libnames.dirpath_of_string coq_path in
-  { opts with vo_includes = {
+  { opts with pre = { opts.pre with vo_includes = {
         recursive = true;
-        path_spec = VoPath { unix_path; coq_path; has_ml = AddNoML; implicit } } :: opts.vo_includes }
+        path_spec = VoPath { unix_path; coq_path; has_ml = AddNoML; implicit } } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d p export =
-  { opts with vo_requires = (d, p, export) :: opts.vo_requires }
+  { opts with pre = { opts.pre with vo_requires = (d, p, export) :: opts.pre.vo_requires }}
 
 let add_compat_require opts v =
   match v with
@@ -166,19 +192,45 @@ let add_compat_require opts v =
   | Flags.Current -> add_vo_require opts "Coq.Compat.Coq810" None (Some false)
 
 let add_load_vernacular opts verb s =
-  { opts with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.load_vernacular_list }
+  { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
 
 (** Options for proof general *)
 let set_emacs opts =
   Printer.enable_goal_tags_printing := true;
-  { opts with color = `EMACS; print_emacs = true }
+  { opts with config = { opts.config with color = `OFF; print_emacs = true }}
+
+let set_logic f oval =
+  { oval with config = { oval.config with logic = f oval.config.logic }}
 
 let set_color opts = function
-| "yes" | "on" -> { opts with color = `ON }
-| "no" | "off" -> { opts with color = `OFF }
-| "auto" -> { opts with color = `AUTO }
-| _ ->
-  error_wrong_arg ("Error: on/off/auto expected after option color")
+  | "yes" | "on" -> { opts with config = { opts.config with color = `ON }}
+  | "no" | "off" -> { opts with config = { opts.config with color = `OFF }}
+  | "auto" -> { opts with config = { opts.config with color = `AUTO }}
+  | _ ->
+    error_wrong_arg ("Error: on/off/auto expected after option color")
+
+let set_batch opts =
+  { opts with main = match opts.main with
+  | Run _ -> Run Batch
+  | Queries _ as x -> x }
+
+let add_query { queries; filteropts } q =
+  { queries = queries@[q]; filteropts }
+
+let set_query opts q =
+  { opts with main = match opts.main with
+  | Run _ -> Queries (add_query default_queries q)
+  | Queries queries -> Queries (add_query queries q)
+  }
+
+let add_filteropts { queries } =
+  { queries; filteropts = true }
+
+let set_filteropts opts =
+  { opts with main = match opts.main with
+  | Run _ -> Queries (add_filteropts default_queries)
+  | Queries queries -> Queries (add_filteropts queries)
+  }
 
 let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
@@ -190,9 +242,7 @@ let warn_deprecated_simple_require =
 
 let set_inputstate opts s =
   warn_deprecated_inputstate ();
-  { opts with inputstate = Some s }
-
-let exitcode opts = if opts.filter_opts then 2 else 0
+  { opts with pre = { opts.pre with inputstate = Some s }}
 
 (******************************************************************************)
 (* Parsing helpers                                                            *)
@@ -320,54 +370,54 @@ let parse_args ~help ~init arglist : t * string list =
 
     (* Options with one arg *)
     |"-coqlib" ->
-      Envars.set_user_coqlib (next ());
-      oval
+      { oval with config = { oval.config with coqlib = Some (next ())
+      }}
 
     |"-async-proofs" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_mode = get_async_proofs_mode opt (next())
-      }}
+      }}}
     |"-async-proofs-j" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_n_workers = (get_int opt (next ()))
-      }}
+      }}}
     |"-async-proofs-cache" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_cache = get_cache opt (next ())
-      }}
+      }}}
 
     |"-async-proofs-tac-j" ->
       let j = get_int opt (next ()) in
       if j <= 0 then begin
         error_wrong_arg ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1")
       end;
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_n_tacworkers = j
-      }}
+      }}}
 
     |"-async-proofs-worker-priority" ->
       CoqworkmgrApi.async_proofs_worker_priority := get_priority opt (next ());
       oval
 
     |"-async-proofs-private-flags" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_private_flags = Some (next ());
-      }}
+      }}}
 
     |"-async-proofs-tactic-error-resilience" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_tac_error_resilience = get_error_resilience opt (next ())
-      }}
+      }}}
 
     |"-async-proofs-command-error-resilience" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_cmd_error_resilience = get_bool opt (next ())
-      }}
+      }}}
 
     |"-async-proofs-delegation-threshold" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_delegation_threshold = get_float opt (next ())
-      }}
+      }}}
 
     |"-worker-id" -> set_worker_id opt (next ()); oval
 
@@ -378,7 +428,7 @@ let parse_args ~help ~init arglist : t * string list =
 
     |"-dump-glob" ->
       Dumpglob.dump_into_file (next ());
-      { oval with glob_opt = true }
+      { oval with config = { oval.config with glob_opt = true }}
 
     |"-feedback-glob" ->
       Dumpglob.feedback_glob (); oval
@@ -387,7 +437,7 @@ let parse_args ~help ~init arglist : t * string list =
       System.exclude_directory (next ()); oval
 
     |"-init-file" ->
-      { oval with rcfile = Some (next ()); }
+      { oval with config = { oval.config with rcfile = Some (next ()); }}
 
     |"-inputstate"|"-is" ->
       set_inputstate oval (next ())
@@ -441,10 +491,10 @@ let parse_args ~help ~init arglist : t * string list =
       let topname = Libnames.dirpath_of_string (next ()) in
       if Names.DirPath.is_empty topname then
         CErrors.user_err Pp.(str "Need a non empty toplevel module name");
-      { oval with toplevel_name = Stm.TopLogical topname }
+      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopLogical topname }}}
 
     |"-topfile" ->
-      { oval with toplevel_name = Stm.TopPhysical (next()) }
+      { oval with config = { oval.config with logic = { oval.config.logic with toplevel_name = Stm.TopPhysical (next()) }}}
 
     |"-main-channel" ->
       Spawned.main_channel := get_host_port opt (next()); oval
@@ -462,7 +512,7 @@ let parse_args ~help ~init arglist : t * string list =
         oval
 
     |"-bytecode-compiler" ->
-      { oval with enable_VM = get_bool opt (next ()) }
+      { oval with config = { oval.config with enable_VM = get_bool opt (next ()) }}
 
     |"-native-compiler" ->
 
@@ -479,68 +529,67 @@ let parse_args ~help ~init arglist : t * string list =
         | _ ->
           error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler")
       in
-      { oval with native_compiler }
+      { oval with config = { oval.config with native_compiler }}
 
     | "-set" ->
       let opt = next() in
       let opt, v = parse_option_set opt in
-      { oval with set_options = (opt, OptionSet v) :: oval.set_options }
+      { oval with config = { oval.config with set_options = (opt, OptionSet v) :: oval.config.set_options }}
 
     | "-unset" ->
       let opt = next() in
       let opt = to_opt_key opt in
-      { oval with set_options = (opt, OptionUnset) :: oval.set_options }
+      { oval with config = { oval.config with set_options = (opt, OptionUnset) :: oval.config.set_options }}
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
     |"-async-proofs-always-delegate"
     |"-async-proofs-never-reopen-branch" ->
-      { oval with stm_flags = { oval.stm_flags with
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_never_reopen_branch = true
-      }}
+      }}}
     |"-batch" ->
       Flags.quiet := true;
-      { oval with batch = true }
+      set_batch oval
     |"-test-mode" -> Vernacentries.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-bt" -> Backtrace.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
-    |"-config"|"--config" -> { oval with print_config = true }
+    |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> Coqinit.set_debug (); oval
     |"-diffs" -> let opt = next () in
                   if List.exists (fun x -> opt = x) ["off"; "on"; "removed"] then
                     Proof_diffs.write_diffs_option opt
                   else
                     error_wrong_arg "Error: on|off|removed expected after -diffs";
-                  { oval with diffs_set = true }
+                  { oval with config = { oval.config with diffs_set = true }}
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
-    |"-filteropts" -> { oval with filter_opts = true }
+    |"-filteropts" -> set_filteropts oval
     |"-impredicative-set" ->
-      { oval with impredicative_set = Declarations.ImpredicativeSet }
-    |"-allow-sprop" -> { oval with allow_sprop = true }
-    |"-disallow-sprop" -> { oval with allow_sprop = false }
-    |"-sprop-cumulative" -> { oval with cumulative_sprop = true }
-    |"-indices-matter" -> { oval with indices_matter = true }
-    |"-m"|"--memory" -> { oval with memory_stat = true }
-    |"-noinit"|"-nois" -> { oval with load_init = false }
-    |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with glob_opt = true }
-    |"-output-context" -> { oval with output_context = true }
+      set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
+    |"-allow-sprop" -> set_logic (fun o -> { o with allow_sprop = true }) oval
+    |"-disallow-sprop" -> set_logic (fun o -> { o with allow_sprop = false }) oval
+    |"-sprop-cumulative" -> set_logic (fun o -> { o with cumulative_sprop = true }) oval
+    |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
+    |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
+    |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
+    |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with config = { oval.config with glob_opt = true }}
+    |"-output-context" -> { oval with post = { oval.post with output_context = true }}
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
-    |"-q" -> { oval with load_rcfile = false; }
+    |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
     |"-quiet"|"-silent" ->
       Flags.quiet := true;
       Flags.make_warn false;
       oval
-    |"-list-tags" -> { oval with print_tags = true }
-    |"-time" -> { oval with time = true }
+    |"-list-tags" -> set_query oval PrintTags
+    |"-time" -> { oval with config = { oval.config with time = true }}
     |"-type-in-type" -> set_type_in_type (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
-    |"-where" -> { oval with print_where = true }
-    |"-h"|"-H"|"-?"|"-help"|"--help" -> usage help; oval
-    |"-v"|"--version" -> Usage.version (exitcode oval)
-    |"-print-version"|"--print-version" ->
-      Usage.machine_readable_version (exitcode oval)
+    |"-where" -> set_query oval PrintWhere
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp (fun () -> usage help))
+    |"-v"|"--version" -> set_query oval PrintVersion
+    |"-print-version"|"--print-version" -> set_query oval PrintMachineReadableVersion
 
     (* Unknown option *)
     | s ->
@@ -560,11 +609,11 @@ let parse_args ~help ~init arglist : t * string list =
 let prelude_data = "Prelude", Some "Coq", Some false
 
 let require_libs opts =
-  if opts.load_init then prelude_data :: opts.vo_requires else opts.vo_requires
+  if opts.pre.load_init then prelude_data :: opts.pre.vo_requires else opts.pre.vo_requires
 
 let cmdline_load_path opts =
-  List.rev opts.vo_includes @ List.(rev opts.ml_includes)
+  List.rev opts.pre.vo_includes @ List.(rev opts.pre.ml_includes)
 
 let build_load_path opts =
-  Coqinit.libs_init_load_path ~load_init:opts.load_init @
+  Coqinit.libs_init_load_path ~load_init:opts.pre.load_init @
   cmdline_load_path opts

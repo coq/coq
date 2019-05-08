@@ -28,11 +28,11 @@ let coqc_main () =
   in
   let opts, extras =
     Topfmt.(in_phase ~phase:Initialization)
-      Coqtop.(init_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default coqc_init) List.(tl (Array.to_list Sys.argv)) in
+      Coqtop.(init_batch_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default coqc_init) List.(tl (Array.to_list Sys.argv)) in
 
   let copts = Coqcargs.parse extras in
 
-  if not opts.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
+  if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
 
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_files opts copts;
@@ -47,7 +47,7 @@ let coqc_main () =
 
   flush_all();
 
-  if opts.Coqargs.output_context then begin
+  if opts.Coqargs.post.Coqargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
     Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
   end;

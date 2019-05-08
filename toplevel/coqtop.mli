@@ -23,7 +23,7 @@ type custom_toplevel =
 
 (** [init_toplevel ~help ~init custom_init arg_list]
     Common Coq initialization and argument parsing *)
-val init_toplevel
+val init_batch_toplevel
   :  help:(unit -> unit)
   -> init:Coqargs.t
   -> init_fn

@@ -444,7 +444,7 @@ let drop_args = ref None
 let loop ~opts ~state =
   drop_args := Some opts;
   let open Coqargs in
-  print_emacs := opts.print_emacs;
+  print_emacs := opts.config.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
   if Dumpglob.dump () then begin
