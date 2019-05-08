@@ -553,12 +553,25 @@ let () = Usage.add_to_usage "coqidetop"
 "  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
 
-let islave_init ~opts extra_args =
-  let args = parse extra_args in
-  CoqworkmgrApi.(init High);
-  opts, args
+let islave_parse ~opts extra_args =
+  let open Coqtop in
+  let run_mode, extra_args = coqtop_toplevel.parse_extra ~opts extra_args in
+  let extra_args = parse extra_args in
+  (* One of the role of coqidetop is to find the name of buffers to open *)
+  (* in the command line; Coqide is waiting these names on stdout *)
+  (* (see filter_coq_opts in coq.ml), so we send them now *)
+  print_string (String.concat "\n" extra_args);
+  run_mode, []
+
+let islave_init ~opts =
+  CoqworkmgrApi.(init High)
 
 let () =
   let open Coqtop in
-  let custom = { init = islave_init; run = loop; opts = Coqargs.default } in
+  let custom = {
+      parse_extra = islave_parse ;
+      help = (fun _ -> output_string stderr "Same options as coqtop");
+      init = islave_init;
+      run = loop;
+      opts = Coqargs.default } in
   start_coq custom

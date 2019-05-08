@@ -13,18 +13,21 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let arg_init init ~opts extra_args =
-  let extra_args = parse extra_args in
+let worker_parse_extra ~opts extra_args =
+  opts, parse extra_args
+
+let worker_init init ~opts =
   Flags.quiet := true;
   init ();
-  CoqworkmgrApi.(init !async_proofs_worker_priority);
-  opts, extra_args
+  CoqworkmgrApi.(init !async_proofs_worker_priority)
 
 let start ~init ~loop =
   let open Coqtop in
   let custom = {
+    parse_extra = worker_parse_extra;
+    help = (fun _ -> output_string stderr "Same options as coqtop");
     opts = Coqargs.default;
-    init = arg_init init;
+    init = worker_init init;
     run = (fun ~opts:_ ~state:_ -> loop ());
   } in
   start_coq custom

@@ -13,24 +13,26 @@
     [run] launches a custom toplevel.
 *)
 
-type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
+type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
 
-type custom_toplevel =
-  { init : init_fn
+type 'a custom_toplevel =
+  { parse_extra : 'a extra_args_fn
+  ; help : unit -> unit
+  ; init : opts:Coqargs.t -> unit
   ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
   ; opts : Coqargs.t
   }
 
-(** [init_toplevel ~help ~init custom_init arg_list]
-    Common Coq initialization and argument parsing *)
+(** [init_toplevel custom]
+    Customized Coq initialization and argument parsing *)
 val init_batch_toplevel
   :  help:(unit -> unit)
   -> init:Coqargs.t
-  -> init_fn
+  -> Coqargs.t extra_args_fn
   -> string list
   -> Coqargs.t * string list
 
-val coqtop_toplevel : custom_toplevel
+val coqtop_toplevel : Coqargs.t custom_toplevel
 
 (** The Coq main module. [start custom] will parse the command line,
    print the banner, initialize the load path, load the input state,
@@ -38,4 +40,4 @@ val coqtop_toplevel : custom_toplevel
    produce the output state if any, and finally will launch
    [custom.run]. *)
 
-val start_coq : custom_toplevel -> unit
+val start_coq : Coqargs.t custom_toplevel -> unit

@@ -244,14 +244,16 @@ let init_toplevel ~help ~init custom_init arglist =
   Stm.init_core ();
   batch, opts, extras
 
-type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
-
 let init_batch_toplevel ~help ~init custom_init args =
   let run_mode, opts, extras = init_toplevel ~help ~init custom_init args in
   opts, extras
 
-type custom_toplevel =
-  { init : init_fn
+type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
+
+type 'a custom_toplevel =
+  { parse_extra : 'a extra_args_fn
+  ; help : unit -> unit
+  ; init : opts:Coqargs.t -> unit
   ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
   ; opts : Coqargs.t
   }
@@ -279,14 +281,18 @@ let init_toploop opts =
   let state = Ccompile.load_init_vernaculars opts ~state in
   state
 
-let coqtop_init ~opts extra =
+let coqtop_init ~opts =
   init_color opts.config;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
-  Flags.if_verbose print_header ();
-  opts, extra
+  Flags.if_verbose print_header ()
+
+let coqtop_parse_extra ~opts extras =
+  opts, extras
 
 let coqtop_toplevel =
-  { init = coqtop_init
+  { parse_extra = coqtop_parse_extra
+  ; help = Usage.print_usage_coqtop
+  ; init = coqtop_init
   ; run = Coqloop.loop
   ; opts = Coqargs.default
   }
@@ -298,7 +304,7 @@ let start_coq custom =
     try
       let run_mode, opts, extras =
         init_toplevel
-          ~help:Usage.print_usage_coqtop ~init:default custom.init
+          ~help:Usage.print_usage_coqtop ~init:default (fun ~opts extras -> let opts, extras = custom.parse_extra ~opts extras in custom.init ~opts; (opts, extras))
           (List.tl (Array.to_list Sys.argv)) in
       if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);

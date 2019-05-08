@@ -21,16 +21,20 @@ let coqc_main () =
   (* Careful because init_toplevel will call Summary.init_summaries,
      thus options such as `quiet` have to be set after the main
      initialisation is run. *)
-  let coqc_init ~opts args =
+  let coqc_init ~opts =
     set_noninteractive_mode ();
-    let opts, args = Coqtop.(coqtop_toplevel.init) ~opts args in
-    opts, args
-  in
+    Coqtop.(coqtop_toplevel.init) ~opts in
+  let custom_coqc = Coqtop.{
+      coqtop_toplevel with
+      help = Usage.print_usage_coqc;
+      init = coqc_init;
+      parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
+    } in
   let opts, extras =
     Topfmt.(in_phase ~phase:Initialization)
-      Coqtop.(init_batch_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default coqc_init) List.(tl (Array.to_list Sys.argv)) in
+      Coqtop.(init_batch_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default (fun ~opts extras -> coqc_init ~opts; (opts, extras))) List.(tl (Array.to_list Sys.argv)) in
 
-  let copts = Coqcargs.parse extras in
+  let copts, extras = custom_coqc.Coqtop.parse_extra ~opts extras in
 
   if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
 
