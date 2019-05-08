@@ -150,6 +150,7 @@ let explicit_flags =
     [print_universes; print_implicits; print_coercions; print_no_symbol] (* and more! *) ]
 
 let with_diffs pm pn =
+  if not (Proof_diffs.show_diffs ()) then pm, pn else
   try
     let tokenize_string = Proof_diffs.tokenize_string in
     Pp_diff.diff_pp ~tokenize_string pm pn
