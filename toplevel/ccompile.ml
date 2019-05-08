@@ -20,6 +20,16 @@ let fatal_error msg =
 (******************************************************************************)
 (* Interactive Load File Simulation                                           *)
 (******************************************************************************)
+
+let load_init_file opts ~state =
+  if opts.load_rcfile then
+    Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
+        Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
+  else begin
+    Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
+    state
+  end
+
 let load_vernacular opts ~state =
   List.fold_left
     (fun state (f_in, echo) ->
@@ -32,16 +42,9 @@ let load_vernacular opts ~state =
     ) state (List.rev opts.load_vernacular_list)
 
 let load_init_vernaculars opts ~state =
-  let state =
-    if opts.load_rcfile then
-      Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-          Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
-    else begin
-      Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-      state
-    end in
-
-  load_vernacular opts ~state
+  let state = load_init_file opts ~state in
+  let state = load_vernacular opts ~state in
+  state
 
 (******************************************************************************)
 (* File Compilation                                                           *)
