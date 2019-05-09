@@ -3376,17 +3376,8 @@ let unify ?(state=TransparentState.full) x y =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   try
-    let core_flags =
-      { (default_unify_flags ()).core_unify_flags with
-        modulo_delta = state;
-        modulo_conv_on_closed_terms = Some state} in
-    (* What to do on merge and subterm flags?? *)
-    let flags = { (default_unify_flags ()) with
-      core_unify_flags = core_flags;
-      merge_unify_flags = core_flags;
-      subterm_unify_flags = { core_flags with modulo_delta = TransparentState.empty } }
-    in
-    let sigma = w_unify (Tacmach.pf_env gl) sigma Conversion.CONV ~flags x y in
+    let flags = Evarconv.default_flags_of ~subterm_ts:state state in
+    let sigma = Evarconv.unify (Tacmach.pf_env gl) sigma Conversion.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
     let e, info = Exninfo.capture e in
