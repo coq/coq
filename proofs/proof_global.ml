@@ -345,6 +345,6 @@ let update_global_env (pf : t) =
   with_current_proof (fun _ p ->
      Proof.in_proof p (fun sigma ->
        let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-       let (p,(status,info)) = Proof.run_tactic (Global.env ()) tac p in
+       let (p,(status,info),()) = Proof.run_tactic (Global.env ()) tac p in
          (p, ()))) pf
   in res

@@ -740,7 +740,6 @@ let register_redefinition ?(local = false) qid e =
   Lib.add_anonymous_leaf (inTac2Redefinition def)
 
 let perform_eval ~pstate e =
-  let open Proofview.Notations in
   let env = Global.env () in
   let (e, ty) = Tac2intern.intern ~strict:false e in
   let v = Tac2interp.interp Tac2interp.empty_environment e in
@@ -761,12 +760,8 @@ let perform_eval ~pstate e =
   | Goal_select.SelectAll -> v
   | Goal_select.SelectAlreadyFocused -> assert false (* TODO **)
   in
-  (* HACK: the API doesn't allow to return a value *)
-  let ans = ref None in
-  let tac = (v >>= fun r -> ans := Some r; Proofview.tclUNIT ()) in
-  let (proof, _) = Proof.run_tactic (Global.env ()) tac proof in
+  let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
   let sigma = Proof.in_proof proof (fun sigma -> sigma) in
-  let ans = match !ans with None -> assert false | Some r -> r in
   let name = int_name () in
   Feedback.msg_notice (str "- : " ++ pr_glbtype name (snd ty)
     ++ spc () ++  str "=" ++ spc () ++

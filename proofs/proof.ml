@@ -372,7 +372,7 @@ let run_tactic env tac pr =
   let sp = pr.proofview in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
-    tac >>= fun () ->
+    tac >>= fun result ->
     Proofview.tclEVARMAP >>= fun sigma ->
     (* Already solved goals are not to be counted as shelved. Nor are
       they to be marked as unresolvable. *)
@@ -383,10 +383,10 @@ let run_tactic env tac pr =
       CErrors.anomaly Pp.(str "Evars generated outside of proof engine (e.g. V82, clear, ...) are not supposed to be explicitly given up.");
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-    Proofview.tclUNIT retrieved
+    Proofview.tclUNIT (result,retrieved)
   in
   let { name; poly } = pr in
-  let (retrieved,proofview,(status,to_shelve,give_up),info_trace) =
+  let ((result,retrieved),proofview,(status,to_shelve,give_up),info_trace) =
     Proofview.apply ~name ~poly env tac sp
   in
   let sigma = Proofview.return proofview in
@@ -400,7 +400,7 @@ let run_tactic env tac pr =
   in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
-  { pr with proofview ; shelf ; given_up },(status,info_trace)
+  { pr with proofview ; shelf ; given_up },(status,info_trace),result
 
 (*** Commands ***)
 
