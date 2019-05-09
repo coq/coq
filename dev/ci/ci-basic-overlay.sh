@@ -9,8 +9,8 @@
 ########################################################################
 # MathComp
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${mathcomp_CI_REF:=5f8d45b54aa98732ec3de43d91814459d5a2f2e4}"
+# Latest release tag as of April 8th 2019
+: "${mathcomp_CI_REF:=mathcomp-1.8.0}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
@@ -29,13 +29,13 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${unicoq_CI_REF:=1cec038ab34e03109f5587a8aecda1f6c53495dd}"
+# This is the latest tag for 8.9 as of April 8 2019
+: "${unicoq_CI_REF:=v1.3-8.9}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-# Latest commit on master-sync as of Sep 27, 2018
-: "${mtac2_CI_REF:=e65c2560e5098df5e7333f19db97e9f39e46c3ee}"
+# This is the latest tag for 8.9 as of April 8 2019
+: "${mtac2_CI_REF:=v1.1-coq8.9}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -81,6 +81,11 @@
 ########################################################################
 # Ltac2
 ########################################################################
+# The v8.9 branch looks unmaintained-
+# the last two commits (as of April 4 2019) are:
+# Commits on Oct 23, 2018
+# Commits on Jul 2, 2018
+# master does not build
 : "${ltac2_CI_REF:=v8.9}"
 : "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
 : "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
@@ -104,11 +109,7 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-# The URL for downloading a tgz snapshot of the master branch is
-# https://scm.gforge.inria.fr/anonscm/gitweb?p=coquelicot/coquelicot.git;a=snapshot;h=refs/heads/master;sf=tgz
-# See https://gforge.inria.fr/scm/browser.php?group_id=3599
-# Since this URL doesn't fit to our standard mechanism and since Coquelicot doesn't seem to change frequently,
-# we use a fixed version, which has a download path which does fit to our standard mechanism.
+# Latest release version as of April 8th, 2019
 # ATTENTION: The archive URL might depend on the version!
 : "${Coquelicot_CI_REF:=coquelicot-3.0.2}"
 : "${Coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
@@ -117,16 +118,16 @@
 ########################################################################
 # CompCert
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${CompCert_CI_REF:=020be062488d755236f296fff760c7491e11997b}"
+# Latest release tag as of April 8th, 2019
+: "${CompCert_CI_REF:=v3.5}"
 : "${CompCert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
 : "${CompCert_CI_ARCHIVEURL:=${CompCert_CI_GITURL}/archive}"
 
 ########################################################################
 # VST
 ########################################################################
-# Latest commit on master as of Dec 10, 2018
-: "${VST_CI_REF:=f6afb456db69df66c366c36b2d0218d92813f546}"
+# Latest release tag as of April 8th 2019
+: "${VST_CI_REF:=v2.3}"
 : "${VST_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${VST_CI_ARCHIVEURL:=${VST_CI_GITURL}/archive}"
 
@@ -195,8 +196,11 @@
 ########################################################################
 # Bignums
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${bignums_CI_REF:=f1a63cb4cce9a79e4406275fbb0ee2269947f8d2}"
+# There is no 8.9 branch
+# Below is the latest commit (Feb 4, 2019) on master as of April 4, 2019
+# 0cd435d0a3c731605536c83d0a731c3fc336cce7 => fails (requires Cyclic63)
+# This is the latest working commit (Feb 1, 2019) on master as of April 4, 2019
+: "${bignums_CI_REF:=5a7ba3d02d8c095ce31fc5f0a0dbc118c58dd433}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
@@ -211,8 +215,8 @@
 ########################################################################
 # Equations
 ########################################################################
-# Latest commit on master as of Sep 26, 2018
-: "${Equations_CI_REF:=477cb9d8aac85e03dad3f992f99646e14d803a0c}"
+# Latest 8.9 release tag  as of April 8th, 2019
+: "${Equations_CI_REF:=v1.2-beta2-8.9}"
 : "${Equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${Equations_CI_ARCHIVEURL:=${Equations_CI_GITURL}/archive}"
 
@@ -227,7 +231,7 @@
 # fcsl-pcm
 ########################################################################
 # Latest commit on master as of Sep 27, 2018
-: "${fcsl_pcm_CI_REF:=51ade0a882ae2ac7df071b41d468df1813504c81}"
+: "${fcsl_pcm_CI_REF:=v1.1.0}"
 : "${fcsl_pcm_CI_GITURL:=https://github.com/imdea-software/fcsl-pcm}"
 : "${fcsl_pcm_CI_ARCHIVEURL:=${fcsl_pcm_CI_GITURL}/archive}"
 
@@ -242,24 +246,24 @@
 ########################################################################
 # ext-lib
 ########################################################################
-# Latest commit on master as of Nov 13, 2018
-: "${ext_lib_CI_REF:=e49214f49e467b01b01682ba499441074218672b}"
+# Latest non beta tag as of April 8th 2019
+: "${ext_lib_CI_REF:=v0.10.1}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
 ########################################################################
 # simple-io
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${simple_io_CI_REF:=e627c087ed8225d70aa7aafe882448fea31fef32}"
+# Latest release tag as of April 8th 2019
+: "${simple_io_CI_REF:=1.0.0}"
 : "${simple_io_CI_GITURL:=https://github.com/Lysxia/coq-simple-io}"
 : "${simple_io_CI_ARCHIVEURL:=${simple_io_CI_GITURL}/archive}"
 
 ########################################################################
 # quickchick
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${quickchick_CI_REF:=fae47245b75f049c462601d88e4df2e063841a3b}"
+# Latest version (March 2019) on 8.9 branch as of April 8th, 2019
+: "${quickchick_CI_REF:=34a63b6a61564b99892917441fd35143dc0d10e2}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
@@ -274,15 +278,17 @@
 ########################################################################
 # menhirlib
 ########################################################################
-# Latest commit on master as of Sep 27, 2018
-: "${menhirlib_CI_REF:=9e4b304bdbcc1f8d433e005a46eb10480e7ae880}"
+# Latest commit on master as of April 8th, 2019
+# Note: the latest release tag is quite old (August 2018)
+#       and there seem to be significant changes since then
+: "${menhirlib_CI_REF:=f0842e17a90366c8e328e9a2c2f089013887edc5}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
 
 ########################################################################
 # aac-tactics
 ########################################################################
-# Latest commit on v8.9 as of Dec 17, 2018
-: "${aactactis_CI_REF:=c469b26e409b1bde6a64546df85226079796dbe7}"
+# Latest commit on v8.9 as of April 8th, 2019
+: "${aactactis_CI_REF:=069dc3bd125ca18f5712759d54edcf9addb4cdd4}"
 : "${aactactis_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aactactis_CI_ARCHIVEURL:=${aactactis_CI_GITURL}/archive}"

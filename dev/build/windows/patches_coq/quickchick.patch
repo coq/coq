@@ -1,15 +1,15 @@
-diff/patch file created on Mon, Aug 27, 2018  9:21:52 AM with:
-difftar-folder.sh tarballs/quickchick-v1.0.2.tar.gz quickchick-v1.0.2 1
-TARFILE= tarballs/quickchick-v1.0.2.tar.gz
-FOLDER= quickchick-v1.0.2
+diff/patch file created on Mon, Apr  8, 2019  7:11:39 PM with:
+difftar-folder.sh tarballs/quickchick-34a63b6a61564b99892917441fd35143dc0d10e2.tar.gz quickchick-34a63b6a61564b99892917441fd35143dc0d10e2 1
+TARFILE= tarballs/quickchick-34a63b6a61564b99892917441fd35143dc0d10e2.tar.gz
+FOLDER= quickchick-34a63b6a61564b99892917441fd35143dc0d10e2
 TARSTRIP= 1
-TARPREFIX= QuickChick-1.0.2/
-ORIGFOLDER= quickchick-v1.0.2.orig
---- quickchick-v1.0.2.orig/Makefile	2018-08-22 18:21:39.000000000 +0200
-+++ quickchick-v1.0.2/Makefile	2018-08-27 09:21:04.710461100 +0200
+TARPREFIX= QuickChick-34a63b6a61564b99892917441fd35143dc0d10e2/
+ORIGFOLDER= quickchick-34a63b6a61564b99892917441fd35143dc0d10e2.orig
+--- quickchick-34a63b6a61564b99892917441fd35143dc0d10e2.orig/Makefile	2019-03-29 03:51:50.000000000 +0100
++++ quickchick-34a63b6a61564b99892917441fd35143dc0d10e2/Makefile	2019-04-08 19:09:42.319628000 +0200
 @@ -2,7 +2,7 @@
  .PHONY: plugin install install-plugin clean quickChickTool
- 
+
  QCTOOL_DIR=quickChickTool
 -QCTOOL_EXE=quickChickTool.byte
 +QCTOOL_EXE=quickChickTool.native
@@ -20,7 +20,17 @@ ORIGFOLDER= quickchick-v1.0.2.orig
  install: all
  	$(V)$(MAKE) -f Makefile.coq install > $(TEMPFILE)
  # Manually copying the remaining files
--	$(V)cp $(QCTOOL_EXE) $(shell opam config var bin)/quickChick
-+	$(V)cp $(QCTOOL_EXE) "$(COQBIN)/quickChick"
+-	$(V)cp $(QCTOOL_DIR)/$(QCTOOL_EXE) $(shell opam config var bin)/quickChick
++	$(V)cp $(QCTOOL_DIR)/$(QCTOOL_EXE) $(COQBIN)/quickChick
  #	 $(V)cp src/quickChickLib.cmx $(COQLIB)/user-contrib/QuickChick
  #	 $(V)cp src/quickChickLib.o $(COQLIB)/user-contrib/QuickChick
+
+@@ -41,7 +41,7 @@
+
+ uninstall:
+ 	$(V)if [ -e Makefile.coq ]; then $(MAKE) -f Makefile.coq uninstall; fi
+-	$(RM) $(shell opam config var bin)/quickChick
++	$(RM) $(COQBIN)/quickChick
+
+ src/%.cmo : src/%.ml
+ 	ocamlc -I src -c $<

@@ -1139,7 +1139,7 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20180530 tar.gz 1 ; then
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20181113 menhir-20181113 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all PREFIX="$PREFIXOCAML"
     log2 make install PREFIX="$PREFIXOCAML"
@@ -1903,6 +1903,18 @@ function make_addon_quickchick {
   if build_prep_overlay quickchick; then
     installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
     log1 make
+    log2 make install
+    build_post
+  fi
+}
+
+# FCSL-PCM (Partial Commutative Monoids)
+
+function make_addon_fcslpcm {
+  installer_addon_dependency fcslpcm
+  if build_prep_overlay fcsl_pcm; then
+    installer_addon_section fcslpcm "FCSL-PCM" "Coq library providing Partial Commutative Monoids (PCMs)" ""
+    log1 make $MAKE_OPT
     log2 make install
     build_post
   fi
