@@ -1,4 +1,4 @@
-(* coq-prog-args: ("-color" "on" "-async-proofs" "off") *)
+(* coq-prog-args: ("-color" "on" "-diffs" "on" "-async-proofs" "off") *)
 (* Re: -async-proofs off, see https://github.com/coq/coq/issues/9671 *)
 (* Shows diffs in an error message for an "Unable to unify" error *)
 Require Import Arith List Bool.
