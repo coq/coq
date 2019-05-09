@@ -13,7 +13,7 @@ endif
 ###########################################################################
 
 THEORIESVO := $(patsubst %.v,%.$(VO),$(shell find theories -type f -name "*.v"))
-PLUGINSVO := $(patsubst %.v,%.$(VO),$(shell find plugins user-contrib -type f -name "*.v"))
+PLUGINSVO := $(patsubst %.v,%.$(VO),$(shell find plugins $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name "*.v"))
 ALLVO := $(THEORIESVO) $(PLUGINSVO)
 VFILES := $(ALLVO:.$(VO)=.v)
 
