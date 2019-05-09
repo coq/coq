@@ -1630,19 +1630,6 @@ function make_addon_ssreflect {
   fi
 }
 
-# Ltac-2 plugin
-# A new (experimental) tactic language
-
-function make_addon_ltac2 {
-  installer_addon_dependency ltac2
-  if build_prep_overlay ltac2; then
-    installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactic language" ""
-    log1 make $MAKE_OPT all
-    log2 make install
-    build_post
-  fi
-}
-
 # UniCoq plugin
 # An alternative unification algorithm
 function make_addon_unicoq {
