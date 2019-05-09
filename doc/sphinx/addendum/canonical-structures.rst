@@ -209,7 +209,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
                         LE_class : LE.class T;
                         extra : mixin (EQ.Pack T EQ_class) (LE.cmp T LE_class) }.
 
-    Structure type := _Pack { obj : Type; #[not_canonical] class_of : class obj }.
+    Structure type := _Pack { obj : Type; #[canonical(false)] class_of : class obj }.
 
     Arguments Mixin {e le} _.
 

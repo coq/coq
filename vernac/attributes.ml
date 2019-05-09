@@ -82,9 +82,12 @@ let assert_empty k v =
   if v <> VernacFlagEmpty
   then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
+let error_twice ~name : 'a =
+  user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
+
 let assert_once ~name prev =
   if Option.has_some prev then
-    user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
+    error_twice ~name
 
 let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =
   let rec p extra v = function
@@ -106,6 +109,24 @@ let single_key_parser ~name ~key v prev args =
 let bool_attribute ~name ~on ~off : bool option attribute =
   attribute_of_list [(on, single_key_parser ~name ~key:on true);
                (off, single_key_parser ~name ~key:off false)]
+
+(* Variant of the [bool] attribute with only two values (bool has three). *)
+let get_bool_value ~key ~default =
+  function
+  | VernacFlagEmpty -> default
+  | VernacFlagList [ "true", VernacFlagEmpty ] -> true
+  | VernacFlagList [ "false", VernacFlagEmpty ] -> false
+  | _ -> user_err Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
+
+let enable_attribute ~key ~default : bool attribute =
+  fun atts ->
+  let default = default () in
+  let this, extra = List.partition (fun (k, _) -> String.equal key k) atts in
+  extra,
+  match this with
+  | [] -> default
+  | [ _, value ] -> get_bool_value ~key ~default:true value
+  | _ -> error_twice ~name:key
 
 let qualify_attribute qual (parser:'a attribute) : 'a attribute =
   fun atts ->
@@ -139,11 +160,8 @@ let () = let open Goptions in
       optread  = (fun () -> !program_mode);
       optwrite = (fun b -> program_mode:=b) }
 
-let program_opt = bool_attribute ~name:"Program mode" ~on:"program" ~off:"noprogram"
-
-let program = program_opt >>= function
-  | Some b -> return b
-  | None -> return (!program_mode)
+let program =
+  enable_attribute ~key:"program" ~default:(fun () -> !program_mode)
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
@@ -221,4 +239,4 @@ let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmp
 let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
 
 let canonical =
-  bool_attribute ~name:"Canonical projection" ~on:"canonical" ~off:"not_canonical"
+  enable_attribute ~key:"canonical" ~default:(fun () -> true)

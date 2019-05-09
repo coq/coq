@@ -52,7 +52,7 @@ val program : bool attribute
 val template : bool option attribute
 val locality : bool option attribute
 val deprecation : deprecation option attribute
-val canonical : bool option attribute
+val canonical : bool attribute
 
 val program_mode_option_name : string list
 (** For internal use when messing with the global option. *)
