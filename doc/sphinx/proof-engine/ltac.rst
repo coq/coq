@@ -9,7 +9,7 @@ We start by giving the syntax, and next, we present the informal
 semantics. To learn more about the language and
 especially about its foundations, please refer to :cite:`Del00`.
 
-.. example::
+.. example:: Basic tactic macros
 
    Here are some examples of simple tactic macros that the
    language lets you write.
@@ -1179,140 +1179,151 @@ Printing |Ltac| tactics
 Examples of using |Ltac|
 -------------------------
 
-
 About the cardinality of the set of natural numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first example shows how to use pattern matching over the
-proof context to prove that natural numbers have more
-than two elements. This can be done as follows:
+.. example:: About the cardinality of the set of natural numbers
 
-.. coqtop:: in reset
+   The first example shows how to use pattern matching over the proof
+   context to prove that natural numbers have at least two
+   elements. This can be done as follows:
 
-   Lemma card_nat :
-     ~ exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z.
-   Proof.
+   .. coqtop:: reset all
 
-.. coqtop:: in
+      Lemma card_nat :
+        ~ exists x y : nat, forall z:nat, x = z \/ y = z.
+      Proof.
+      intros (x & y & Hz).
+      destruct (Hz 0), (Hz 1), (Hz 2).
 
-   red; intros (x, (y, Hy)).
+   At this point, the :tacn:`congruence` tactic would finish the job:
 
-.. coqtop:: in
+   .. coqtop:: all abort
 
-   elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
+      all: congruence.
 
-   match goal with
-       | _ : ?a = ?b, _ : ?a = ?c |- _ =>
-           cut (b = c); [ discriminate | transitivity a; auto ]
-   end.
+   But for the purpose of the example, let's craft our own custom
+   tactic to solve this:
 
-.. coqtop:: in
+   .. coqtop:: none
 
-   Qed.
+      Lemma card_nat :
+        ~ exists x y : nat, forall z:nat, x = z \/ y = z.
+      Proof.
+      intros (x & y & Hz).
+      destruct (Hz 0), (Hz 1), (Hz 2).
 
-Notice that all the (very similar) cases coming from the three
-eliminations (with three distinct natural numbers) are successfully
-solved by a match goal structure and, in particular, with only one
-pattern (use of non-linear matching).
+   .. coqtop:: all abort
 
+      all: match goal with
+           | _ : ?a = ?b, _ : ?a = ?c |- _ => assert (b = c) by now transitivity a
+           end.
+      all: discriminate.
 
-Permutations of lists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A more complex example is the problem of permutations of
-lists. The aim is to show that a list is a permutation of
-another list.
-
-.. coqtop:: in reset
-
-   Section Sort.
-
-.. coqtop:: in
-
-   Variable A : Set.
-
-.. coqtop:: in
-
-   Inductive perm : list A -> list A -> Prop :=
-       | perm_refl : forall l, perm l l
-       | perm_cons : forall a l0 l1, perm l0 l1 -> perm (a :: l0) (a :: l1)
-       | perm_append : forall a l, perm (a :: l) (l ++ a :: nil)
-       | perm_trans : forall l0 l1 l2, perm l0 l1 -> perm l1 l2 -> perm l0 l2.
-
-.. coqtop:: in
-
-   End Sort.
-
-First, we define the permutation predicate as shown above.
-
-.. coqtop:: none
-
-   Require Import List.
+   Notice that all the (very similar) cases coming from the three
+   eliminations (with three distinct natural numbers) are successfully
+   solved by a ``match goal`` structure and, in particular, with only one
+   pattern (use of non-linear matching).
 
 
-.. coqtop:: in
+Proving that a list is a permutation of a second list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Ltac perm_aux n :=
-   match goal with
-       | |- (perm _ ?l ?l) => apply perm_refl
-       | |- (perm _ (?a :: ?l1) (?a :: ?l2)) =>
+.. example:: Proving that a list is a permutation of a second list
+
+   Let's first define the permutation predicate:
+
+   .. coqtop:: in reset
+
+      Section Sort.
+
+        Variable A : Set.
+
+        Inductive perm : list A -> list A -> Prop :=
+        | perm_refl : forall l, perm l l
+        | perm_cons : forall a l0 l1, perm l0 l1 -> perm (a :: l0) (a :: l1)
+        | perm_append : forall a l, perm (a :: l) (l ++ a :: nil)
+        | perm_trans : forall l0 l1 l2, perm l0 l1 -> perm l1 l2 -> perm l0 l2.
+
+      End Sort.
+
+   .. coqtop:: none
+
+      Require Import List.
+
+
+   Next we define an auxiliary tactic :g:`perm_aux` which takes an
+   argument used to control the recursion depth. This tactic works as
+   follows: If the lists are identical (i.e. convertible), it
+   completes the proof. Otherwise, if the lists have identical heads,
+   it looks at their tails.  Finally, if the lists have different
+   heads, it rotates the first list by putting its head at the end.
+
+   Every time we perform a rotation, we decrement :g:`n`. When :g:`n`
+   drops down to :g:`1`, we stop performing rotations and we fail.
+   The idea is to give the length of the list as the initial value of
+   :g:`n`. This way of counting the number of rotations will avoid
+   going back to a head that had been considered before.
+
+   From Section :ref:`ltac-syntax` we know that Ltac has a primitive
+   notion of integers, but they are only used as arguments for
+   primitive tactics and we cannot make computations with them. Thus,
+   instead, we use Coq's natural number type :g:`nat`.
+
+   .. coqtop:: in
+
+      Ltac perm_aux n :=
+        match goal with
+        | |- (perm _ ?l ?l) => apply perm_refl
+        | |- (perm _ (?a :: ?l1) (?a :: ?l2)) =>
            let newn := eval compute in (length l1) in
                (apply perm_cons; perm_aux newn)
-       | |- (perm ?A (?a :: ?l1) ?l2) =>
+        | |- (perm ?A (?a :: ?l1) ?l2) =>
            match eval compute in n with
-               | 1 => fail
-               | _ =>
-                   let l1' := constr:(l1 ++ a :: nil) in
-                       (apply (perm_trans A (a :: l1) l1' l2);
-                       [ apply perm_append | compute; perm_aux (pred n) ])
+           | 1 => fail
+           | _ =>
+               let l1' := constr:(l1 ++ a :: nil) in
+               (apply (perm_trans A (a :: l1) l1' l2);
+               [ apply perm_append | compute; perm_aux (pred n) ])
            end
-   end.
+        end.
 
-Next we define an auxiliary tactic ``perm_aux`` which takes an argument
-used to control the recursion depth. This tactic works as follows: If
-the lists are identical (i.e. convertible), it concludes. Otherwise, if
-the lists have identical heads, it looks at their tails.
-Finally, if the lists have different heads, it rotates the first list by
-putting its head at the end if the new head hasn't been the head previously. To check this, we keep track of the
-number of performed rotations using the argument ``n``. We do this by
-decrementing ``n`` each time we perform a rotation. It works because
-for a list of length ``n`` we can make exactly ``n - 1`` rotations
-to generate at most ``n`` distinct lists. Notice that we use the natural
-numbers of Coq for the rotation counter. From :ref:`ltac-syntax` we know
-that it is possible to use the usual natural numbers, but they are only
-used as arguments for primitive tactics and they cannot be handled, so,
-in particular, we cannot make computations with them. Thus the natural
-choice is to use Coq data structures so that Coq makes the computations
-(reductions) by ``eval compute in`` and we can get the terms back by match.
 
-.. coqtop:: in
+   The main tactic is :g:`solve_perm`. It computes the lengths of the
+   two lists and uses them as arguments to call :g:`perm_aux` if the
+   lengths are equal. (If they aren't, the lists cannot be
+   permutations of each other.)
 
-   Ltac solve_perm :=
-   match goal with
-       | |- (perm _ ?l1 ?l2) =>
+   .. coqtop:: in
+
+      Ltac solve_perm :=
+        match goal with
+        | |- (perm _ ?l1 ?l2) =>
            match eval compute in (length l1 = length l2) with
-               | (?n = ?n) => perm_aux n
+           | (?n = ?n) => perm_aux n
            end
-   end.
+        end.
 
-The main tactic is ``solve_perm``. It computes the lengths of the two lists
-and uses them as arguments to call ``perm_aux`` if the lengths are equal. (If they
-aren't, the lists cannot be permutations of each other.) Using this tactic we
-can now prove lemmas as follows:
+   And now, here is how we can use the tactic :g:`solve_perm`:
 
-.. coqtop:: in
+   .. coqtop:: out
 
-   Lemma solve_perm_ex1 :
-     perm nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
-   Proof. solve_perm. Qed.
+      Goal perm nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
 
-.. coqtop:: in
+   .. coqtop:: all abort
 
-   Lemma solve_perm_ex2 :
-     perm nat
-       (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
-         (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
-   Proof. solve_perm. Qed.
+      solve_perm.
+
+   .. coqtop:: out
+
+      Goal perm nat
+             (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
+             (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
+
+   .. coqtop:: all abort
+
+      solve_perm.
+
 
 Deciding intuitionistic propositional logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
