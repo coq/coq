@@ -781,93 +781,98 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
     let (IndType (indf,realargs)) =
       try find_rectype !!env sigma cj.uj_type
       with Not_found ->
-	let cloc = loc_of_glob_constr c in
-          error_case_not_inductive ?loc:cloc !!env sigma cj
+        let cloc = loc_of_glob_constr c in
+        error_case_not_inductive ?loc:cloc !!env sigma cj
     in
     let ind = fst (fst (dest_ind_family indf)) in
     let cstrs = get_constructors !!env indf in
     if not (Int.equal (Array.length cstrs) 1) then
       user_err ?loc  (str "Destructing let is only for inductive types" ++
-	str " with one constructor.");
+                      str " with one constructor.");
     let cs = cstrs.(0) in
     if not (Int.equal (List.length nal) cs.cs_nargs) then
       user_err ?loc:loc (str "Destructing let on this type expects " ++ 
-	int cs.cs_nargs ++ str " variables.");
-    let fsign, record = 
+                         int cs.cs_nargs ++ str " variables.");
+    let fsign, primprojs =
       let set_name na d = set_name na (map_rel_decl EConstr.of_constr d) in
       match Environ.get_projections !!env ind with
       | None ->
-	 List.map2 set_name (List.rev nal) cs.cs_args, false
+        List.map2 set_name (List.rev nal) cs.cs_args, None
       | Some ps ->
-	let rec aux n k names l =
-	  match names, l with
-          | na :: names, (LocalAssum (na', t) :: l) ->
-            let t = EConstr.of_constr t in
-	    let proj = Projection.make ps.(cs.cs_nargs - k) true in
-            LocalDef ({na' with binder_name = na},
-                      lift (cs.cs_nargs - n) (mkProj (proj, cj.uj_val)), t)
-	    :: aux (n+1) (k + 1) names l
-	  | na :: names, (decl :: l) ->
-	    set_name na decl :: aux (n+1) k names l
-	  | [], [] -> []
-	  | _ -> assert false
-	in aux 1 1 (List.rev nal) cs.cs_args, true in
+        let rec aux k names l =
+          match names, l with
+          | na :: names, (LocalAssum (na', t) as decl :: l) ->
+            let proj = Projection.make ps.(cs.cs_nargs - k) true in
+            let ctx, projs = aux (k+1) names l in
+              set_name na decl :: ctx, mkProj (proj, cj.uj_val) :: projs
+          | na :: names, (decl :: l) ->
+            let ctx, projs = aux k names l in
+            set_name na decl :: ctx, projs
+          | [], [] -> [], []
+          | _ -> assert false
+        in
+        let ctx, projs = aux 1 (List.rev nal) cs.cs_args in
+        ctx, Some projs
+    in
     let fsign = Context.Rel.map (whd_betaiota sigma) fsign in
     let hypnaming = if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames in
     let fsign,env_f = push_rel_context ~hypnaming sigma fsign env in
     let obj ind rci p v f =
-      if not record then
+      match primprojs with
+      | None ->
         let f = it_mkLambda_or_LetIn f fsign in
         let ci = make_case_info !!env (fst ind) rci LetStyle in
-          mkCase (ci, p, cj.uj_val,[|f|])
-      else it_mkLambda_or_LetIn f fsign
+        mkCase (ci, p, cj.uj_val,[|f|])
+      | Some projs ->
+        let f = it_mkLambda_or_LetIn f fsign in
+        mkApp (f, Array.rev_of_list projs)
     in
     (* Make dependencies from arity signature impossible *)
     let arsgn, indr =
       let arsgn,s = get_arity !!env indf in
       List.map (set_name Anonymous) arsgn, Sorts.relevance_of_sort_family s
     in
-      let indt = build_dependent_inductive !!env indf in
-      let psign = LocalAssum (make_annot na indr, indt) :: arsgn in (* For locating names in [po] *)
-      let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
-      let predenv = Cases.make_return_predicate_ltac_lvar env sigma na c cj.uj_val in
-      let nar = List.length arsgn in
-      let psign',env_p = push_rel_context ~hypnaming ~force_names:true sigma psign predenv in
-	  (match po with
-	  | Some p ->
-            let sigma, pj = pretype_type empty_valcon env_p sigma p in
-            let ccl = nf_evar sigma pj.utj_val in
-	    let p = it_mkLambda_or_LetIn ccl psign' in
-	    let inst =
-	      (Array.map_to_list EConstr.of_constr cs.cs_concl_realargs)
-	      @[EConstr.of_constr (build_dependent_constructor cs)] in
-	    let lp = lift cs.cs_nargs p in
-            let fty = hnf_lam_applist !!env sigma lp inst in
-            let sigma, fj = pretype (mk_tycon fty) env_f sigma d in
-	    let v =
-	      let ind,_ = dest_ind_family indf in
-                let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                obj ind rci p cj.uj_val fj.uj_val
-            in
-            sigma, { uj_val = v; uj_type = (substl (realargs@[cj.uj_val]) ccl) }
+    let indt = build_dependent_inductive !!env indf in
+    let psign = LocalAssum (make_annot na indr, indt) :: arsgn in (* For locating names in [po] *)
+    let psign = List.map (fun d -> map_rel_decl EConstr.of_constr d) psign in
+    let predenv = Cases.make_return_predicate_ltac_lvar env sigma na c cj.uj_val in
+    let nar = List.length arsgn in
+    let psign',env_p = push_rel_context ~hypnaming ~force_names:true sigma psign predenv in
+    (match po with
+     | Some p ->
+       let sigma, pj = pretype_type empty_valcon env_p sigma p in
+       let ccl = nf_evar sigma pj.utj_val in
+       let p = it_mkLambda_or_LetIn ccl psign' in
+       let inst =
+         (Array.map_to_list EConstr.of_constr cs.cs_concl_realargs)
+         @[EConstr.of_constr (build_dependent_constructor cs)] in
+       let lp = lift cs.cs_nargs p in
+       let fty = hnf_lam_applist !!env sigma lp inst in
+       let sigma, fj = pretype (mk_tycon fty) env_f sigma d in
+       let v =
+         let ind,_ = dest_ind_family indf in
+         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
+         obj ind rci p cj.uj_val fj.uj_val
+       in
+       sigma, { uj_val = v; uj_type = (substl (realargs@[cj.uj_val]) ccl) }
 
-	  | None ->
-	    let tycon = lift_tycon cs.cs_nargs tycon in
-            let sigma, fj = pretype tycon env_f sigma d in
-            let ccl = nf_evar sigma fj.uj_type in
-	    let ccl =
-              if noccur_between sigma 1 cs.cs_nargs ccl then
-		lift (- cs.cs_nargs) ccl
-	      else
-                error_cant_find_case_type ?loc !!env sigma
-		  cj.uj_val in
-		 (* let ccl = refresh_universes ccl in *)
-	    let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign' in
-	    let v =
-	      let ind,_ = dest_ind_family indf in
-                let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
-                obj ind rci p cj.uj_val fj.uj_val
-            in sigma, { uj_val = v; uj_type = ccl })
+     | None ->
+       let tycon = lift_tycon cs.cs_nargs tycon in
+       let sigma, fj = pretype tycon env_f sigma d in
+       let ccl = nf_evar sigma fj.uj_type in
+       let ccl =
+         if noccur_between sigma 1 cs.cs_nargs ccl then
+           lift (- cs.cs_nargs) ccl
+         else
+           error_cant_find_case_type ?loc !!env sigma
+             cj.uj_val in
+       (* let ccl = refresh_universes ccl in *)
+       let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign' in
+       let v =
+         let ind,_ = dest_ind_family indf in
+         let rci = Typing.check_allowed_sort !!env sigma ind cj.uj_val p in
+         obj ind rci p cj.uj_val fj.uj_val
+       in sigma, { uj_val = v; uj_type = ccl })
 
   | GIf (c,(na,po),b1,b2) ->
     let sigma, cj = pretype empty_tycon env sigma c in
