@@ -40,6 +40,10 @@ val rem     : t -> t -> t
       (* Specific arithmetic operations *)
 val mulc    : t -> t -> t * t
 val addmuldiv : t -> t -> t -> t
+
+(** [div21 xh xl y] returns [q % 2^63, r]
+    s.t. [xh * 2^63 + xl = q * y + r] and [r < y].
+    When [y] is [0], returns [0, 0]. *)
 val div21   : t -> t -> t -> t * t
 
       (* comparison *)

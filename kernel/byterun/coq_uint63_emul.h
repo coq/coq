@@ -6,6 +6,8 @@
 
 #define Is_uint63(v) (Tag_val(v) == Custom_tag)
 
+#define uint_of_value(val) (((uint32_t)(val)) >> 1)
+
 # define DECLARE_NULLOP(name) \
 value uint63_##name() { \
   static value* cb = 0; \
