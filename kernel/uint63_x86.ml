@@ -94,26 +94,35 @@ let le128 xh xl yh yl =
   lt xh yh || (xh = yh && le xl yl)
 
     (* division of two numbers by one *)
+(* precondition: y <> 0 *)
+(* outputs: q % 2^63, r s.t. x = q * y + r, r < y *)
 let div21 xh xl y =
   let maskh = ref zero in
   let maskl = ref one in
   let dh = ref zero in
   let dl = ref y in
   let cmp = ref true in
-  while le zero !dh && !cmp do
-    cmp := lt128 !dh !dl xh xl;
+  (* n = ref 0 *)
+  (* loop invariant: mask = 2^n, d = mask * y, (2 * d <= x -> cmp), n >= 0 *)
+  while Int64.equal (l_sr !dh (of_int (uint_size - 1))) zero && !cmp do
     (* We don't use addmuldiv below to avoid checks on 1 *)
     dh := l_or (l_sl !dh one) (l_sr !dl (of_int (uint_size - 1)));
     dl := l_sl !dl one;
     maskh := l_or (l_sl !maskh one) (l_sr !maskl (of_int (uint_size - 1)));
-    maskl := l_sl !maskl one
-  done; (* mask = 2^N, d = 2^N * d, d >= x *)
+    maskl := l_sl !maskl one;
+    (* incr n *)
+    cmp := lt128 !dh !dl xh xl;
+  done; (* mask = 2^n, d = 2^n * d, 2 * d > x *)
   let remh = ref xh in
   let reml = ref xl in
-  let quotient = ref zero in
+  (* quotienth = ref 0 *)
+  let quotientl = ref zero in
+  (* loop invariant: x = quotient * y + rem, y * 2^(n+1) > r,
+     mask = floor(2^n), d = mask * y, n >= -1 *)
   while not (Int64.equal (l_or !maskh !maskl) zero) do
     if le128 !dh !dl !remh !reml then begin (* if rem >= d, add one bit and subtract d *)
-      quotient := l_or !quotient !maskl;
+      (* quotienth := !quotienth lor !maskh *)
+      quotientl := l_or !quotientl !maskl;
       remh := if lt !reml !dl then sub (sub !remh !dh) one else sub !remh !dh;
       reml := sub !reml !dl
     end;
@@ -121,9 +130,11 @@ let div21 xh xl y =
     maskh := l_sr !maskh one;
     dl := l_or (l_sr !dl one) (l_sl !dh (of_int (uint_size - 1)));
     dh := l_sr !dh one
+    (* decr n *)
   done;
-  !quotient, !reml
+  !quotientl, !reml
 
+let div21 xh xl y = if Int64.equal y zero then zero, zero else div21 xh xl y
 
      (* exact multiplication *)
 let mulc x y =

@@ -102,26 +102,35 @@ let le128 xh xl yh yl =
   lt xh yh || (xh = yh && le xl yl)
 
     (* division of two numbers by one *)
+(* precondition: y <> 0 *)
+(* outputs: q % 2^63, r s.t. x = q * y + r, r < y *)
 let div21 xh xl y =
   let maskh = ref 0 in
   let maskl = ref 1 in
   let dh = ref 0 in
   let dl = ref y in
   let cmp = ref true in
-  while !dh >= 0 && !cmp do
-    cmp := lt128 !dh !dl xh xl;
+  (* n = ref 0 *)
+  (* loop invariant: mask = 2^n, d = mask * y, (2 * d <= x -> cmp), n >= 0 *)
+  while !dh >= 0 && !cmp do (* dh >= 0 tests that dh highest bit is zero *)
     (* We don't use addmuldiv below to avoid checks on 1 *)
     dh := (!dh lsl 1) lor (!dl lsr (uint_size - 1));
     dl := !dl lsl 1;
     maskh := (!maskh lsl 1) lor (!maskl lsr (uint_size - 1));
-    maskl := !maskl lsl 1
-  done; (* mask = 2^N, d = 2^N * d, d >= x *)
+    maskl := !maskl lsl 1;
+    (* incr n *)
+    cmp := lt128 !dh !dl xh xl;
+  done; (* mask = 2^n, d = 2^n * y, 2 * d > x *)
   let remh = ref xh in
   let reml = ref xl in
-  let quotient = ref 0 in
+  (* quotienth = ref 0 *)
+  let quotientl = ref 0 in
+  (* loop invariant: x = quotient * y + rem, y * 2^(n+1) > r,
+     mask = floor(2^n), d = mask * y, n >= -1 *)
   while !maskh lor !maskl <> 0 do
     if le128 !dh !dl !remh !reml then begin (* if rem >= d, add one bit and subtract d *)
-      quotient := !quotient lor !maskl;
+      (* quotienth := !quotienth lor !maskh *)
+      quotientl := !quotientl lor !maskl;
       remh := if lt !reml !dl then !remh - !dh - 1 else !remh - !dh;
       reml := !reml - !dl;
     end;
@@ -129,8 +138,11 @@ let div21 xh xl y =
     maskh := !maskh lsr 1;
     dl := (!dl lsr 1) lor (!dh lsl (uint_size - 1));
     dh := !dh lsr 1;
+    (* decr n *)
   done;
-  !quotient, !reml
+  !quotientl, !reml
+
+let div21 xh xl y = if y = 0 then 0, 0 else div21 xh xl y
 
      (* exact multiplication *)
 (* TODO: check that none of these additions could be a logical or *)

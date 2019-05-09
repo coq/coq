@@ -29,13 +29,6 @@
 #include "coq_uint63_emul.h"
 #endif
 
-/* spiwack: I append here a few macros for value/number manipulation */
-#define uint32_of_value(val) (((uint32_t)(val)) >> 1)
-#define value_of_uint32(i)   ((value)((((uint32_t)(i)) << 1) | 1))
-#define UI64_of_uint32(lo) ((uint64_t)((uint32_t)(lo)))
-#define UI64_of_value(val) (UI64_of_uint32(uint32_of_value(val)))
-/* /spiwack */
-
 
 
 /* Registers for the abstract machine:
@@ -1298,12 +1291,6 @@ value coq_interprete
         /*returns the multiplication on a pair */
         print_instr("MULCINT63");
         CheckInt2();
-        /*accu = 2v+1, *sp=2w+1 ==> p = 2v*w */
-        /* TODO: implement
-        p = I64_mul (UI64_of_value (accu), UI64_of_uint32 ((*sp++)^1));
-        AllocPair(); */
-        /* Field(accu, 0) = (value)(I64_lsr(p,31)|1) ; */ /*higher part*/
-        /* Field(accu, 1) = (value)(I64_to_int32(p)|1); */ /*lower part*/
         Uint63_mulc(accu, *sp, sp);
         *--sp = accu;
         AllocPair();
@@ -1374,40 +1361,11 @@ value coq_interprete
       Instruct (CHECKDIV21INT63) {
         print_instr("DIV21INT63");
         CheckInt3();
-        /* spiwack: takes three int31 (the two first ones represent an
-                    int62) and performs the euclidian division of the
-                    int62 by the int31 */
-        /* TODO: implement this
-        bigint = UI64_of_value(accu);
-        bigint = I64_or(I64_lsl(bigint, 31),UI64_of_value(*sp++));
-        uint64 divisor;
-        divisor = UI64_of_value(*sp++);
-        Alloc_small(accu, 2, 1); */ /* ( _ , arity, tag ) */
-        /* if (I64_is_zero (divisor)) {
-           Field(accu, 0) = 1; */ /* 2*0+1 */
-        /* Field(accu, 1) = 1; */ /* 2*0+1 */
-        /* }
-        else {
-          uint64 quo, mod;
-          I64_udivmod(bigint, divisor, &quo, &mod);
-          Field(accu, 0) = value_of_uint32(I64_to_int32(quo));
-          Field(accu, 1) = value_of_uint32(I64_to_int32(mod));
-        } */
-        int b;
-        Uint63_eq0(b, sp[1]);
-        if (b) {
-          AllocPair();
-          Field(accu, 0) = sp[1];
-          Field(accu, 1) = sp[1];
-	}
-        else {
-          Uint63_div21(accu, sp[0], sp[1], sp);
-          sp[1] = sp[0];
-          Swap_accu_sp;
-          AllocPair();
-          Field(accu, 0) = sp[1];
-          Field(accu, 1) = sp[0];
-	}
+        Uint63_div21(accu, sp[0], sp[1], &(sp[1]));
+        Swap_accu_sp;
+        AllocPair();
+        Field(accu, 0) = sp[1];
+        Field(accu, 1) = sp[0];
         sp += 2;
         Next;
       }
@@ -1616,7 +1574,7 @@ value coq_push_vstack(value stk, value max_stack_size) {
   print_instr("push_vstack");print_int(len);
    for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
   sp = coq_sp;
-  CHECK_STACK(uint32_of_value(max_stack_size));
+  CHECK_STACK(uint_of_value(max_stack_size));
   return Val_unit;
 }
 
