@@ -1179,10 +1179,10 @@ Printing |Ltac| tactics
 Examples of using |Ltac|
 -------------------------
 
-About the cardinality of the set of natural numbers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Proof that the natural numbers have at least two elements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. example:: About the cardinality of the set of natural numbers
+.. example:: Proof that the natural numbers have at least two elements
 
    The first example shows how to use pattern matching over the proof
    context to prove that natural numbers have at least two
