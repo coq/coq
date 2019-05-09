@@ -6,13 +6,13 @@ The tactic language
 This chapter documents the tactic language |Ltac|.
 
 We start by giving the syntax, and next, we present the informal
-semantics. If you want to know more regarding this language and
-especially about its foundations, you can refer to :cite:`Del00`.
+semantics. To learn more about the language and
+especially about its foundations, please refer to :cite:`Del00`.
 
 .. example::
 
-   Here are some examples of the kind of tactic macros that this
-   language allows to write.
+   Here are some examples of simple tactic macros that the
+   language lets you write.
 
    .. coqdoc::
 
@@ -21,7 +21,7 @@ especially about its foundations, you can refer to :cite:`Del00`.
       Ltac destruct_bool_and_rewrite b H1 H2 :=
         destruct b; [ rewrite H1; eauto | rewrite H2; eauto ].
 
-   Some more advanced examples are given in Section :ref:`ltac-examples`.
+   See Section :ref:`ltac-examples` for more advanced examples.
 
 .. _ltac-syntax:
 
@@ -1183,8 +1183,8 @@ Examples of using |Ltac|
 About the cardinality of the set of natural numbers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first example which shows how to use pattern matching over the
-proof context is a proof of the fact that natural numbers have more
+The first example shows how to use pattern matching over the
+proof context to prove that natural numbers have more
 than two elements. This can be done as follows:
 
 .. coqtop:: in reset
@@ -1210,7 +1210,7 @@ than two elements. This can be done as follows:
 
    Qed.
 
-We can notice that all the (very similar) cases coming from the three
+Notice that all the (very similar) cases coming from the three
 eliminations (with three distinct natural numbers) are successfully
 solved by a match goal structure and, in particular, with only one
 pattern (use of non-linear matching).
@@ -1269,9 +1269,9 @@ First, we define the permutation predicate as shown above.
    end.
 
 Next we define an auxiliary tactic ``perm_aux`` which takes an argument
-used to control the recursion depth. This tactic behaves as follows. If
+used to control the recursion depth. This tactic works as follows: If
 the lists are identical (i.e. convertible), it concludes. Otherwise, if
-the lists have identical heads, it proceeds to look at their tails.
+the lists have identical heads, it looks at their tails.
 Finally, if the lists have different heads, it rotates the first list by
 putting its head at the end if the new head hasn't been the head previously. To check this, we keep track of the
 number of performed rotations using the argument ``n``. We do this by
@@ -1296,8 +1296,8 @@ choice is to use Coq data structures so that Coq makes the computations
    end.
 
 The main tactic is ``solve_perm``. It computes the lengths of the two lists
-and uses them as arguments to call ``perm_aux`` if the lengths are equal (if they
-aren't, the lists cannot be permutations of each other). Using this tactic we
+and uses them as arguments to call ``perm_aux`` if the lengths are equal. (If they
+aren't, the lists cannot be permutations of each other.) Using this tactic we
 can now prove lemmas as follows:
 
 .. coqtop:: in
@@ -1317,7 +1317,7 @@ can now prove lemmas as follows:
 Deciding intuitionistic propositional logic
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Pattern matching on goals allows a powerful backtracking when returning tactic
+Pattern matching on goals allows powerful backtracking when returning tactic
 values. An interesting application is the problem of deciding intuitionistic
 propositional logic. Considering the contraction-free sequent calculi LJT* of
 Roy Dyckhoff :cite:`Dyc92`, it is quite natural to code such a tactic using the
@@ -1405,7 +1405,7 @@ Having defined ``my_tauto``, we can prove tautologies like these:
 Deciding type isomorphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A more tricky problem is to decide equalities between types modulo
+A trickier problem is to decide equalities between types modulo
 isomorphisms. Here, we choose to use the isomorphisms of the simply
 typed λ-calculus with Cartesian product and unit type (see, for
 example, :cite:`RC95`). The axioms of this λ-calculus are given below.
@@ -1528,11 +1528,11 @@ example, :cite:`RC95`). The axioms of this λ-calculus are given below.
 The tactic to judge equalities modulo this axiomatization is shown above.
 The algorithm is quite simple. First types are simplified using axioms that
 can be oriented (this is done by ``simplify_type`` and ``simplify_type_eq``).
-The normal forms are sequences of Cartesian products without Cartesian product
+The normal forms are sequences of Cartesian products without a Cartesian product
 in the left component. These normal forms are then compared modulo permutation
 of the components by the tactic ``compare_structure``. If they have the same
-lengths, the tactic ``solve_type_eq`` attempts to prove that the types are equal.
-The main tactic that puts all these components together is called ``solve_iso``.
+length, the tactic ``solve_type_eq`` attempts to prove that the types are equal.
+The main tactic that puts all these components together is ``solve_iso``.
 
 Here are examples of what can be solved by ``solve_iso``.
 
