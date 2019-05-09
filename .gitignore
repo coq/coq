@@ -167,6 +167,7 @@ ide/index_urls.txt
 
 /user-contrib/*
 !/user-contrib/Ltac2
+
 .*.sw*
 .#*
 
@@ -184,5 +185,6 @@ plugins/*/dune
 theories/*/dune
 theories/*/*/dune
 theories/*/*/*/dune
+/user-contrib/Ltac2/dune
 *.install
 !Makefile.install
