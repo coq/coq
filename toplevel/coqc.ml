@@ -8,34 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let set_noninteractive_mode () =
-  Flags.quiet := true;
-  System.trust_file_cache := true
-
 let outputstate opts =
   Option.iter (fun ostate_file ->
     let fname = CUnix.make_suffix ostate_file ".coq" in
     States.extern_state fname) opts.Coqcargs.outputstate
 
-let coqc_main () =
-  (* Careful because init_toplevel will call Summary.init_summaries,
-     thus options such as `quiet` have to be set after the main
-     initialisation is run. *)
-  let coqc_init ~opts =
-    set_noninteractive_mode ();
-    Coqtop.(coqtop_toplevel.init) ~opts in
-  let custom_coqc = Coqtop.{
-      coqtop_toplevel with
-      help = Usage.print_usage_coqc;
-      init = coqc_init;
-      parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
-    } in
-  let opts, copts =
-    Topfmt.(in_phase ~phase:Initialization)
-      Coqtop.init_toplevel custom_coqc in
+let coqc_init _copts ~opts =
+  Flags.quiet := true;
+  System.trust_file_cache := true;
+  Coqtop.init_color opts.Coqargs.config;
+  if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ()
 
-  if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
-
+let coqc_main copts ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_files opts copts;
 
@@ -55,10 +39,10 @@ let coqc_main () =
   end;
   CProfile.print_profile ()
 
-let main () =
+let coqc_run copts ~opts () =
   let _feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   try
-    coqc_main ();
+    coqc_main ~opts copts;
     exit 0
   with exn ->
     flush_all();
@@ -66,3 +50,14 @@ let main () =
     flush_all();
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
+
+let custom_coqc = Coqtop.{
+  parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
+  help = Usage.print_usage_coqc;
+  init = coqc_init;
+  run = coqc_run;
+  opts = Coqargs.default;
+}
+
+let main () =
+  Coqtop.start_coq custom_coqc

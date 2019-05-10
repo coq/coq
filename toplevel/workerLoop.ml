@@ -14,11 +14,12 @@ let rec parse = function
   | [] -> []
 
 let worker_parse_extra ~opts extra_args =
-  Coqtop.Interactive, parse extra_args
+  (), parse extra_args
 
-let worker_init init ~opts =
+let worker_init init () ~opts =
   Flags.quiet := true;
-  init ()
+  init ();
+  Coqtop.init_toploop opts
 
 let start ~init ~loop =
   let open Coqtop in
@@ -27,6 +28,6 @@ let start ~init ~loop =
     help = (fun _ -> output_string stderr "Same options as coqtop");
     opts = Coqargs.default;
     init = worker_init init;
-    run = (fun ~opts:_ ~state:_ -> loop ());
+    run = (fun () ~opts:_ _state (* why is state not used *) -> loop ());
   } in
   start_coq custom

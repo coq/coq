@@ -232,7 +232,6 @@ let init_execution opts custom_init =
   if opts.post.memory_stat then at_exit print_memory_stat;
   let top_lp = Coqinit.toplevel_init_load_path () in
   List.iter Loadpath.add_coq_path top_lp;
-  custom_init ~opts;
   CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
   Mltop.init_known_plugins ();
   (* Configuration *)
@@ -249,15 +248,16 @@ let init_execution opts custom_init =
   inputstate opts.pre;
 
   (* This state will be shared by all the documents *)
-  Stm.init_core ()
+  Stm.init_core ();
+  custom_init ~opts
 
 type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
 
-type 'a custom_toplevel =
+type ('a,'b) custom_toplevel =
   { parse_extra : 'a extra_args_fn
   ; help : unit -> unit
-  ; init : opts:Coqargs.t -> unit
-  ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
+  ; init : 'a -> opts:Coqargs.t -> 'b
+  ; run : 'a -> opts:Coqargs.t -> 'b -> unit
   ; opts : Coqargs.t
   }
 
@@ -270,8 +270,8 @@ let init_toplevel custom =
   match opts.main with
   | Queries q -> print_queries opts q; exit 0
   | Run ->
-    let () = init_execution opts custom.init in
-    opts, customopts
+    let customstate = init_execution opts (custom.init customopts) in
+    opts, customopts, customstate
 
 let init_document opts =
   (* Coq init process, phase 3: Stm initialization, backtracking state.
@@ -291,32 +291,33 @@ let init_document opts =
            }) in
   { doc; sid; proof = None; time = opts.config.time }
 
+let start_coq custom =
+  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
+  (* Init phase *)
+  let opts, custom_opts, state =
+    try init_toplevel custom
+    with any ->
+      flush_all();
+      fatal_error_exn any in
+  Feedback.del_feeder init_feeder;
+  (* Run phase *)
+  custom.run ~opts custom_opts state
+
+(** ****************************************)
+(** Specific support for coqtop executable *)
+
+type run_mode = Interactive | Batch
+
 let init_toploop opts =
   let state = init_document opts in
   let state = Ccompile.load_init_vernaculars opts ~state in
   state
 
-type run_mode = Interactive | Batch
-
-let start_coq custom =
-  let init_feeder = Feedback.add_feeder Coqloop.coqloop_feed in
-  (* Init phase *)
-  let run_mode, state, opts =
-    try
-      let opts, run_mode = init_toplevel custom in
-      let state = init_toploop opts in
-      run_mode, state, opts
-    with any ->
-      flush_all();
-      fatal_error_exn any in
-  Feedback.del_feeder init_feeder;
-  match run_mode with
-  | Interactive -> custom.run ~opts ~state;
-  | Batch -> exit 0
-
-let coqtop_init ~opts =
+let coqtop_init run_mode ~opts =
+  if run_mode = Batch then Flags.quiet := true;
   init_color opts.config;
-  Flags.if_verbose print_header ()
+  Flags.if_verbose print_header ();
+  init_toploop opts
 
 let coqtop_parse_extra ~opts extras =
   let rec parse_extra run_mode = function
@@ -327,10 +328,15 @@ let coqtop_parse_extra ~opts extras =
   let run_mode, extras = parse_extra Interactive extras in
   run_mode, extras
 
+let coqtop_run run_mode ~opts state =
+  match run_mode with
+  | Interactive -> Coqloop.loop ~opts ~state;
+  | Batch -> exit 0
+
 let coqtop_toplevel =
   { parse_extra = coqtop_parse_extra
   ; help = Usage.print_usage_coqtop
   ; init = coqtop_init
-  ; run = Coqloop.loop
+  ; run = coqtop_run
   ; opts = Coqargs.default
   }

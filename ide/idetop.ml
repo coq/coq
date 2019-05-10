@@ -496,7 +496,10 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop ~opts:_ ~state =
+let loop run_mode ~opts:_ state =
+  match run_mode with
+  | Coqtop.Batch -> exit 0
+  | Coqtop.Interactive ->
   let open Vernac.State in
   set_doc state.doc;
   init_signal_handler ();
@@ -563,7 +566,9 @@ let islave_parse ~opts extra_args =
   print_string (String.concat "\n" extra_args);
   run_mode, []
 
-let islave_init ~opts = ()
+let islave_init run_mode ~opts =
+  if run_mode = Coqtop.Batch then Flags.quiet := true;
+  Coqtop.init_toploop opts
 
 let islave_default_opts =
   Coqargs.{ default with
