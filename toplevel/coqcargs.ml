@@ -47,17 +47,6 @@ let default =
 let depr opt =
   Feedback.msg_warning Pp.(seq[str "Option "; str opt; str " is a noop and deprecated"])
 
-(* XXX Remove this duplication with Coqargs *)
-let fatal_error exn =
-  Topfmt.(in_phase ~phase:ParsingCommandLine print_err_exn exn);
-  let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
-  exit exit_code
-
-let error_missing_arg s =
-  prerr_endline ("Error: extra argument expected after option "^s);
-  prerr_endline "See -help for the syntax of supported options";
-  exit 1
-
 let check_compilation_output_name_consistency args =
   match args.compilation_output_name, args.compile_list with
   | Some _, _::_::_ ->
@@ -141,7 +130,7 @@ let parse arglist : t =
       args := rem;
       let next () = match !args with
         | x::rem -> args := rem; x
-        | [] -> error_missing_arg opt
+        | [] -> Coqargs.error_missing_arg opt
       in
       let peek_next () = match !args with
         | x::_ -> Some x
@@ -216,7 +205,7 @@ let parse arglist : t =
     let args = List.fold_left add_compile opts extra in
     check_compilation_output_name_consistency args;
     args
-  with any -> fatal_error any
+  with any -> Coqargs.fatal_error any
 
 let parse args =
   let opts = parse args in

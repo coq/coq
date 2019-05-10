@@ -547,9 +547,8 @@ let rec parse = function
         msg_format := (fun () -> Xmlprotocol.Ppcmds); parse rest
   | x :: rest ->
      if String.length x > 0 && x.[0] = '-' then
-       (prerr_endline ("Unknown option " ^ x); exit 1)
-     else
-       x :: parse rest
+       Coqargs.error_wrong_arg ("Unknown option " ^ x);
+     x :: parse rest
   | [] -> []
 
 let coqidetop_specific_usage = Usage.{

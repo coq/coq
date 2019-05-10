@@ -77,7 +77,10 @@ type t = {
 val default : t
 
 val parse_args : help:Usage.specific_usage -> init:t -> string list -> t * string list
-val error_wrong_arg : string -> unit
+
+val fatal_error : exn -> 'a
+val error_missing_arg : string -> 'a
+val error_wrong_arg : string -> 'a
 
 val require_libs : t -> (string * string option * bool option) list
 val build_load_path : t -> Loadpath.coq_path list
