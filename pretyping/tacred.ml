@@ -664,18 +664,38 @@ let whd_nothing_for_iota env sigma s =
    it fails if no redex is around *)
 
 let rec red_elim_const env sigma ref u largs =
+  let open ReductionBehaviour in
   let nargs = List.length largs in
   let largs, unfold_anyway, unfold_nonelim, nocase =
     match recargs ref with
     | None -> largs, false, false, false
-    | Some (_,n,f) when nargs < n || List.mem `ReductionNeverUnfold f -> raise Redelimination
-    | Some (x::l,_,_) when nargs <= List.fold_left max x l -> raise Redelimination
-    | Some (l,n,f) ->
-        let is_empty = match l with [] -> true | _ -> false in
-	  reduce_params env sigma largs l, 
-	  n >= 0 && is_empty && nargs >= n,
-          n >= 0 && not is_empty && nargs >= n,
-	  List.mem `ReductionDontExposeCase f
+    | Some NeverUnfold -> raise Redelimination
+    | Some (UnfoldWhen { nargs = Some n } | UnfoldWhenNoMatch { nargs = Some n })
+      when nargs < n -> raise Redelimination
+    | Some (UnfoldWhen { recargs = x::l } | UnfoldWhenNoMatch { recargs = x::l })
+      when nargs <= List.fold_left max x l -> raise Redelimination
+    | Some (UnfoldWhen { recargs; nargs = None }) ->
+      reduce_params env sigma largs recargs,
+      false,
+      false,
+      false
+    | Some (UnfoldWhenNoMatch { recargs; nargs = None }) ->
+      reduce_params env sigma largs recargs,
+      false,
+      false,
+      true
+    | Some (UnfoldWhen { recargs; nargs = Some n }) ->
+      let is_empty = List.is_empty recargs in
+      reduce_params env sigma largs recargs,
+      is_empty && nargs >= n,
+      not is_empty && nargs >= n,
+      false
+    | Some (UnfoldWhenNoMatch { recargs; nargs = Some n }) ->
+      let is_empty = List.is_empty recargs in
+      reduce_params env sigma largs recargs,
+      is_empty && nargs >= n,
+      not is_empty && nargs >= n,
+      true
   in
   try match reference_eval env sigma ref with
     | EliminationCases n when nargs >= n ->
@@ -737,6 +757,7 @@ and reduce_params env sigma stack l =
    a reducible iota/fix/cofix redex (the "simpl" tactic) *)
 
 and whd_simpl_stack env sigma =
+  let open ReductionBehaviour in
   let rec redrec s =
     let (x, stack) = decompose_app_vect sigma s in
     let stack = Array.to_list stack in
@@ -761,30 +782,30 @@ and whd_simpl_stack env sigma =
 	  with Redelimination -> s')
 
       | Proj (p, c) ->
-        (try 
-	   let unf = Projection.unfolded p in
-	     if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
-               let npars = Projection.npars p in
- 		 (match unf, ReductionBehaviour.get (ConstRef (Projection.constant p)) with
- 		 | false, Some (l, n, f) when List.mem `ReductionNeverUnfold f -> 
-                   (* simpl never *) s'
-		 | false, Some (l, n, f) when not (List.is_empty l) ->
-		   let l' = List.map_filter (fun i -> 
-                     let idx = (i - (npars + 1)) in
-		       if idx < 0 then None else Some idx) l in
-		   let stack = reduce_params env sigma stack l' in
-                     (match reduce_projection env sigma p ~npars
-		       (whd_construct_stack env sigma c) stack 
-		      with
-		      | Reduced s' -> redrec (applist s')
-		      | NotReducible -> s')
- 		 | _ ->
-                   match reduce_projection env sigma p ~npars (whd_construct_stack env sigma c) stack with
-		   | Reduced s' -> redrec (applist s')
-		   | NotReducible -> s')
-	   else s'
-	 with Redelimination -> s')
-	  
+        (try
+           let unf = Projection.unfolded p in
+           if unf || is_evaluable env (EvalConstRef (Projection.constant p)) then
+             let npars = Projection.npars p in
+             (match unf, get (ConstRef (Projection.constant p)) with
+              | false, Some NeverUnfold -> s'
+              | false, Some (UnfoldWhen { recargs } | UnfoldWhenNoMatch { recargs })
+                when not (List.is_empty recargs) ->
+                let l' = List.map_filter (fun i ->
+                    let idx = (i - (npars + 1)) in
+                    if idx < 0 then None else Some idx) recargs in
+                let stack = reduce_params env sigma stack l' in
+                (match reduce_projection env sigma p ~npars
+                         (whd_construct_stack env sigma c) stack
+                 with
+                 | Reduced s' -> redrec (applist s')
+                 | NotReducible -> s')
+              | _ ->
+                match reduce_projection env sigma p ~npars (whd_construct_stack env sigma c) stack with
+                | Reduced s' -> redrec (applist s')
+                            | NotReducible -> s')
+                 else s'
+               with Redelimination -> s')
+
       | _ -> 
         match match_eval_ref env sigma x stack with
 	| Some (ref, u) ->

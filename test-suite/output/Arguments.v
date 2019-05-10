@@ -55,3 +55,12 @@ Arguments w  x%F y%B : extra scopes.
 Check (w $ $ = tt).
 Fail Arguments w  _%F _%B.
 
+Definition volatilematch (n : nat) :=
+  match n with
+  | O => O
+  | S p => p
+  end.
+
+Arguments volatilematch / n : simpl nomatch.
+About volatilematch.
+Eval simpl in fun n => volatilematch n.

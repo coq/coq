@@ -90,48 +90,43 @@ module ReductionBehaviour = struct
   open Names
   open Libobject
 
-  type t = {
-    b_nargs: int;
-    b_recargs: int list;
-    b_dont_expose_case: bool;
-  }
+  type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
+  and when_flags = { recargs : int list ; nargs : int option }
+
+  let more_args_when k { recargs; nargs } =
+    { nargs = Option.map ((+) k) nargs;
+      recargs = List.map ((+) k) recargs;
+    }
+
+  let more_args k = function
+    | NeverUnfold -> NeverUnfold
+    | UnfoldWhen x -> UnfoldWhen (more_args_when k x)
+    | UnfoldWhenNoMatch x -> UnfoldWhenNoMatch (more_args_when k x)
 
   let table =
     Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
-
-  type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
-  type req =
-    | ReqLocal
-    | ReqGlobal of GlobRef.t * (int list * int * flag list)
 
   let load _ (_,(_,(r, b))) =
     table := GlobRef.Map.add r b !table
 
   let cache o = load 1 o
 
-  let classify = function
-    | ReqLocal, _ -> Dispose
-    | ReqGlobal _, _ as o -> Substitute o
+  let classify (local,_ as o) = if local then Dispose else Substitute o
 
-  let subst (subst, (_, (r,o as orig))) =
-    ReqLocal,
-    let r' = fst (subst_global subst r) in if r==r' then orig else (r',o)
+  let subst (subst, (local, (r,o) as orig)) =
+    let r' = subst_global_reference subst r in if r==r' then orig
+    else (local,(r',o))
 
   let discharge = function
-    | _,(ReqGlobal (ConstRef c as gr, req), (_, b)) ->
+    | _,(false, (gr, b)) ->
       let b =
         if Lib.is_in_section gr then
           let vars = Lib.variable_section_segment_of_reference gr in
           let extra = List.length vars in
-          let nargs' =
-             if b.b_nargs = max_int then max_int
-             else if b.b_nargs < 0 then b.b_nargs
-             else b.b_nargs + extra in
-          let recargs' = List.map ((+) extra) b.b_recargs in
-          { b with b_nargs = nargs'; b_recargs = recargs' }
+          more_args extra b
         else b
       in
-      Some (ReqGlobal (gr, req), (ConstRef c, b))
+      Some (false, (gr, b))
     | _ -> None
 
   let rebuild = function
@@ -148,55 +143,45 @@ module ReductionBehaviour = struct
 			rebuild_function = rebuild;
 		      }
 
-  let set local r (recargs, nargs, flags as req) =
-    let nargs = if List.mem `ReductionNeverUnfold flags then max_int else nargs in
-    let behaviour = {
-      b_nargs = nargs; b_recargs = recargs;
-      b_dont_expose_case = List.mem `ReductionDontExposeCase flags } in
-    let req = if local then ReqLocal else ReqGlobal (r, req) in
-    Lib.add_anonymous_leaf (inRedBehaviour (req, (r, behaviour)))
-  ;;
+  let set ~local r b =
+    Lib.add_anonymous_leaf (inRedBehaviour (local, (r, b)))
 
-  let get r =
-    try
-      let b = GlobRef.Map.find r !table in
-      let flags =
-	if Int.equal b.b_nargs max_int then [`ReductionNeverUnfold]
-	else if b.b_dont_expose_case then [`ReductionDontExposeCase] else [] in
-      Some (b.b_recargs, (if Int.equal b.b_nargs max_int then -1 else b.b_nargs), flags)
-    with Not_found -> None
+  let get r = GlobRef.Map.find_opt r !table
 
   let print ref =
     let open Pp in
     let pr_global = Nametab.pr_global_env Id.Set.empty in
     match get ref with
     | None -> mt ()
-    | Some (recargs, nargs, flags) ->
-       let never = List.mem `ReductionNeverUnfold flags in
-       let nomatch = List.mem `ReductionDontExposeCase flags in
-       let pp_nomatch = spc() ++ if nomatch then
-				   str "but avoid exposing match constructs" else str"" in
-       let pp_recargs = spc() ++ str "when the " ++
+    | Some b ->
+       let pp_nomatch = spc () ++ str "but avoid exposing match constructs" in
+       let pp_recargs recargs = spc() ++ str "when the " ++
 			  pr_enum (fun x -> pr_nth (x+1)) recargs ++ str (String.plural (List.length recargs) " argument") ++
 			  str (String.plural (if List.length recargs >= 2 then 1 else 2) " evaluate") ++
 			  str " to a constructor" in
-       let pp_nargs =
-	 spc() ++ str "when applied to " ++ int nargs ++
-	   str (String.plural nargs " argument") in
-       hov 2 (str "The reduction tactics " ++
-		 match recargs, nargs, never with
-		 | _,_, true -> str "never unfold " ++ pr_global ref
-		 | [], 0, _ -> str "always unfold " ++ pr_global ref
-		 | _::_, n, _ when n < 0 ->
-		    str "unfold " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
-		 | _::_, n, _ when n > List.fold_left max 0 recargs ->
-		    str "unfold " ++ pr_global ref ++ pp_recargs ++
-		      str " and" ++ pp_nargs ++ pp_nomatch
-		 | _::_, _, _ ->
-		    str "unfold " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
-		 | [], n, _ when n > 0 ->
-		    str "unfold " ++ pr_global ref ++ pp_nargs ++ pp_nomatch
-		 | _ -> str "unfold " ++ pr_global ref ++ pp_nomatch )
+       let pp_nargs nargs =
+         spc() ++ str "when applied to " ++ int nargs ++
+         str (String.plural nargs " argument") in
+       let pp_when = function
+         | { recargs = []; nargs = Some 0 } ->
+           str "always unfold " ++ pr_global ref
+         | { recargs = []; nargs = Some n } ->
+           str "unfold " ++ pr_global ref ++ pp_nargs n
+         | { recargs = []; nargs = None } ->
+           str "unfold " ++ pr_global ref
+         | { recargs; nargs = Some n } when n > List.fold_left max 0 recargs ->
+           str "unfold " ++ pr_global ref ++ pp_recargs recargs ++
+           str " and" ++ pp_nargs n
+         | { recargs; nargs = _ } ->
+           str "unfold " ++ pr_global ref ++ pp_recargs recargs
+       in
+       let pp_behavior = function
+         | NeverUnfold -> str "never unfold " ++ pr_global ref
+         | UnfoldWhen x -> pp_when x
+         | UnfoldWhenNoMatch x -> pp_when x ++ pp_nomatch
+       in
+       hov 2 (str "The reduction tactics " ++ pp_behavior b)
+
 end
 
 (** Machinery about stack of unfolded constants *)
@@ -928,6 +913,7 @@ let equal_stacks sigma (x, l) (y, l') =
 
 let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
+  let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
     let () = if !debug_RAKAM then
 	let open Pp in
@@ -974,37 +960,42 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
           else (* Looks for ReductionBehaviour *)
             match ReductionBehaviour.get (Globnames.ConstRef c) with
             | None -> whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
-            | Some (recargs, nargs, flags) ->
-              if (List.mem `ReductionNeverUnfold flags
-                  || (nargs > 0 && Stack.args_size stack < nargs))
-              then fold ()
-              else (* maybe unfolds *)
-              if List.mem `ReductionDontExposeCase flags then
-                let app_sk,sk = Stack.strip_app stack in
-                let (tm',sk'),cst_l' =
-                  whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk)
-                in
-                let rec is_case x = match EConstr.kind sigma x with
-                  | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
-                  | App (hd, _) -> is_case hd
-                  | Case _ -> true
-                  | _ -> false in
-                if equal_stacks sigma (x, app_sk) (tm', sk')
-                || Stack.will_expose_iota sk'
-                || is_case tm'
-                then fold ()
-                else whrec cst_l' (tm', sk' @ sk)
-              else match recargs with
-                |[] -> (* if nargs has been specified *)
-                  (* CAUTION : the constant is NEVER refold
-                                          (even when it hides a (co)fix) *)
-                  whrec cst_l (body, stack)
-                |curr::remains -> match Stack.strip_n_app curr stack with
-                              | None -> fold ()
-                              | Some (bef,arg,s') ->
-                                whrec Cst_stack.empty
-                                        (arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
-         end
+            | Some behavior ->
+              begin match behavior with
+              | NeverUnfold -> fold ()
+              | (UnfoldWhen { nargs = Some n } |
+                 UnfoldWhenNoMatch { nargs = Some n } )
+                when Stack.args_size stack < n ->
+                fold ()
+              | UnfoldWhenNoMatch { recargs } -> (* maybe unfolds *)
+                  let app_sk,sk = Stack.strip_app stack in
+                  let (tm',sk'),cst_l' =
+                    whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, app_sk)
+                  in
+                  let rec is_case x = match EConstr.kind sigma x with
+                    | Lambda (_,_, x) | LetIn (_,_,_, x) | Cast (x, _,_) -> is_case x
+                    | App (hd, _) -> is_case hd
+                    | Case _ -> true
+                    | _ -> false in
+                  if equal_stacks sigma (x, app_sk) (tm', sk')
+                  || Stack.will_expose_iota sk'
+                  || is_case tm'
+                  then fold ()
+                  else whrec cst_l' (tm', sk' @ sk)
+              | UnfoldWhen { recargs } -> (* maybe unfolds *)
+                begin match recargs with
+                  |[] -> (* if nargs has been specified *)
+                    (* CAUTION : the constant is NEVER refold
+                                            (even when it hides a (co)fix) *)
+                    whrec cst_l (body, stack)
+                  |curr::remains -> match Stack.strip_n_app curr stack with
+                    | None -> fold ()
+                    | Some (bef,arg,s') ->
+                      whrec Cst_stack.empty
+                        (arg,Stack.Cst(Stack.Cst_const (fst const, u'),curr,remains,bef,cst_l)::s')
+                end
+              end
+        end
        | exception NotEvaluableConst (IsPrimitive p) when Stack.check_native_args p stack ->
           let kargs = CPrimitives.kind p in
           let (kargs,o) = Stack.get_next_primitive_args kargs stack in
@@ -1015,41 +1006,45 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       else fold ()
     | Proj (p, c) when CClosure.RedFlags.red_projection flags p ->
       (let npars = Projection.npars p in
-         if not tactic_mode then
-           let stack' = (c, Stack.Proj (p, Cst_stack.empty (*cst_l*)) :: stack) in
-	     whrec Cst_stack.empty stack'
-         else match ReductionBehaviour.get (Globnames.ConstRef (Projection.constant p)) with
-	 | None ->
+       if not tactic_mode then
+         let stack' = (c, Stack.Proj (p, Cst_stack.empty (*cst_l*)) :: stack) in
+         whrec Cst_stack.empty stack'
+       else match ReductionBehaviour.get (Globnames.ConstRef (Projection.constant p)) with
+         | None ->
            let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
-	   let stack'', csts = whrec Cst_stack.empty stack' in
-	     if equal_stacks sigma stack' stack'' then fold ()
-	     else stack'', csts
-	 | Some (recargs, nargs, flags) ->
-	   if (List.mem `ReductionNeverUnfold flags
-	       || (nargs > 0 && Stack.args_size stack < (nargs - (npars + 1))))
-	   then fold ()
-	   else
-	     let recargs = List.map_filter (fun x -> 
-	       let idx = x - npars in 
-		 if idx < 0 then None else Some idx) recargs
-	     in
-	       match recargs with
-	       |[] -> (* if nargs has been specified *)
-		(* CAUTION : the constant is NEVER refold
-                   (even when it hides a (co)fix) *)
+           let stack'', csts = whrec Cst_stack.empty stack' in
+           if equal_stacks sigma stack' stack'' then fold ()
+           else stack'', csts
+         | Some behavior ->
+           begin match behavior with
+             | NeverUnfold -> fold ()
+             | (UnfoldWhen { nargs = Some n }
+               | UnfoldWhenNoMatch { nargs = Some n })
+               when Stack.args_size stack < n - (npars + 1) -> fold ()
+             | UnfoldWhen { recargs }
+             | UnfoldWhenNoMatch { recargs }-> (* maybe unfolds *)
+               let recargs = List.map_filter (fun x ->
+                   let idx = x - npars in
+                   if idx < 0 then None else Some idx) recargs
+               in
+               match recargs with
+               |[] -> (* if nargs has been specified *)
+                 (* CAUTION : the constant is NEVER refold
+                                  (even when it hides a (co)fix) *)
                  let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
-		   whrec Cst_stack.empty(* cst_l *) stack'
-	       | curr::remains -> 
-		 if curr == 0 then (* Try to reduce the record argument *)
-		   whrec Cst_stack.empty 
-		     (c, Stack.Cst(Stack.Cst_proj p,curr,remains,Stack.empty,cst_l)::stack)
-		 else
-		   match Stack.strip_n_app curr stack with
-		   | None -> fold ()
-		   | Some (bef,arg,s') ->
-		     whrec Cst_stack.empty 
-		       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
-				      Stack.append_app [|c|] bef,cst_l)::s'))
+                 whrec Cst_stack.empty(* cst_l *) stack'
+               | curr::remains ->
+                 if curr == 0 then (* Try to reduce the record argument *)
+                   whrec Cst_stack.empty
+                     (c, Stack.Cst(Stack.Cst_proj p,curr,remains,Stack.empty,cst_l)::stack)
+                 else
+                   match Stack.strip_n_app curr stack with
+                   | None -> fold ()
+                   | Some (bef,arg,s') ->
+                     whrec Cst_stack.empty
+                       (arg,Stack.Cst(Stack.Cst_proj p,curr,remains,
+                                      Stack.append_app [|c|] bef,cst_l)::s')
+           end)
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
       apply_subst (fun _ -> whrec) [b] sigma refold cst_l c stack

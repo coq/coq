@@ -1231,16 +1231,13 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   let clear_implicits_flag = List.mem `ClearImplicits flags in
   let default_implicits_flag = List.mem `DefaultImplicits flags in
   let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
+  let nomatch_flag = List.mem `ReductionDontExposeCase flags in
 
   let err_incompat x y =
     user_err Pp.(str ("Options \""^x^"\" and \""^y^"\" are incompatible.")) in
 
   if assert_flag && rename_flag then
     err_incompat "assert" "rename";
-  if Option.has_some nargs_for_red && never_unfold_flag then
-    err_incompat "simpl never" "/";
-  if never_unfold_flag && List.mem `ReductionDontExposeCase flags then
-    err_incompat "simpl never" "simpl nomatch";
   if clear_scopes_flag && extra_scopes_flag then
     err_incompat "clear scopes" "extra scopes";
   if clear_implicits_flag && default_implicits_flag then
@@ -1385,19 +1382,24 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
       (Util.List.map_i (fun i { recarg_like = b } -> i, b) 0 args)
   in
 
-  let rec narrow = function
-    | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
-    | [] -> [] | _ :: tl -> narrow tl
-  in
-  let red_flags = narrow flags in
-  let red_modifiers_specified =
-    not (List.is_empty rargs) || Option.has_some nargs_for_red
-    || not (List.is_empty red_flags)
+  let red_behavior =
+    let open Reductionops.ReductionBehaviour in
+    match never_unfold_flag, nomatch_flag, rargs, nargs_for_red with
+    | true, false, [], None -> Some NeverUnfold
+    | true, true, _, _ -> err_incompat "simpl never" "simpl nomatch"
+    | true, _, _::_, _ -> err_incompat "simpl never" "!"
+    | true, _, _, Some _ -> err_incompat "simpl never" "/"
+    | false, false, [], None  -> None
+    | false, false, _, _ -> Some (UnfoldWhen { nargs = nargs_for_red;
+                                               recargs = rargs;
+                                             })
+    | false, true, _, _ -> Some (UnfoldWhenNoMatch { nargs = nargs_for_red;
+                                                     recargs = rargs;
+                                                   })
   in
 
-  if not (List.is_empty rargs) && never_unfold_flag then
-    err_incompat "simpl never" "!";
 
+  let red_modifiers_specified = Option.has_some red_behavior in
 
   (* Actions *)
 
@@ -1424,8 +1426,8 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         section_local c
-         (rargs, Option.default ~-1 nargs_for_red, red_flags)
+         ~local:section_local c (Option.get red_behavior)
+
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
               strbrk "are relevant for constants only.")
