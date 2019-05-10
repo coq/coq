@@ -68,10 +68,10 @@ module type Task = sig
   type request
   type response
 
-  (** UID of the task kind, for -toploop *)
+  (** UID of the task kind *)
   val name : string ref
 
-  (** Extra arguments of the task kind, for -toploop *)
+  (** Extra arguments of the task kind *)
   val extra_env : unit -> string array
 
   (** {5 Master API, it is run by the master, on a thread} *)

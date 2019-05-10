@@ -155,8 +155,8 @@ module Make(T : Task) () = struct
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-    let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
-    Worker.spawn ~env worker_name args in
+      let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
+      Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 
   let manager cpanel (id, proc, ic, oc) =
