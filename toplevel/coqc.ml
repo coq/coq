@@ -19,7 +19,10 @@ let coqc_init _copts ~opts =
   Coqtop.init_color opts.Coqargs.config;
   if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ()
 
-let () = Usage.add_to_usage "coqc" "file..." "\n\
+let coqc_specific_usage = Usage.{
+  executable_name = "coqc";
+  extra_args = "file...";
+  extra_options = "\n\
 coqc specific options:\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -verbose               compile and output the input file\
@@ -33,6 +36,7 @@ coqc specific options:\
 \n  -vio2vo                [see manual]\
 \n  -check-vio-tasks       [see manual]\
 \n"
+}
 
 let coqc_main copts ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
@@ -68,7 +72,7 @@ let coqc_run copts ~opts () =
 
 let custom_coqc = Coqtop.{
   parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
-  help = Usage.print_usage "coqc";
+  help = coqc_specific_usage;
   init = coqc_init;
   run = coqc_run;
   opts = Coqargs.default;

@@ -17,7 +17,7 @@ type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
 
 type ('a,'b) custom_toplevel =
   { parse_extra : 'a extra_args_fn
-  ; help : out_channel -> unit
+  ; help : Usage.specific_usage
   ; init : 'a -> opts:Coqargs.t -> 'b
   ; run : 'a -> opts:Coqargs.t -> 'b -> unit
   ; opts : Coqargs.t

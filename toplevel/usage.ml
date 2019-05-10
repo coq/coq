@@ -19,10 +19,6 @@ let machine_readable_version () =
 
 (* print the usage of coqtop (or coqc) on channel co *)
 
-let extra_usage = ref []
-let add_to_usage name extra text =
-  extra_usage := (name,(extra,text)) :: !extra_usage
-
 let print_usage_common co command =
   output_string co command;
   output_string co "Coq options are:\n";
@@ -103,9 +99,12 @@ let print_usage_common co command =
 
 (* print the usage *)
 
-let print_usage binfile co =
-  let extra, text =
-    try List.assoc binfile !extra_usage
-    with Not_found -> ("","") in
-  print_usage_common co ("Usage: " ^ binfile ^ " <options> " ^ extra ^ "\n\n");
-  output_string co text
+type specific_usage = {
+  executable_name : string;
+  extra_args : string;
+  extra_options : string;
+}
+
+let print_usage co { executable_name; extra_args; extra_options } =
+  print_usage_common co ("Usage: " ^ executable_name ^ " <options> " ^ extra_args ^ "\n\n");
+  output_string co extra_options

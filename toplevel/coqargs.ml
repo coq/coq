@@ -81,7 +81,7 @@ type coqargs_pre = {
 type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp of (out_channel -> unit)
+  | PrintHelp of Usage.specific_usage
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -281,27 +281,9 @@ let parse_option_set opt =
     let v = String.sub opt (eqi+1) (len - eqi - 1) in
     to_opt_key (String.sub opt 0 eqi), Some v
 
-(*s Parsing of the command line.
-    We no longer use [Arg.parse], in order to use share [Usage.print_usage]
-    between coqtop and coqc. *)
-
-let usage_no_coqlib = CWarnings.create ~name:"usage-no-coqlib" ~category:"filesystem"
-    (fun () -> Pp.str "cannot guess a path for Coq libraries; dynaminally loaded flags will not be mentioned")
-
-exception NoCoqLib
-
-(* Is this still useful for displaying help? *)
-let usage help =
-  begin
-    try Envars.set_coqlib ~fail:(fun x -> raise NoCoqLib)
-    with NoCoqLib -> usage_no_coqlib ()
-  end;
-  let lp = Coqinit.toplevel_init_load_path () in
-  (* Necessary for finding the toplevels below *)
-  List.iter Loadpath.add_coq_path lp;
-  help
-
 (* Main parsing routine *)
+(*s Parsing of the command line *)
+
 let parse_args ~help ~init arglist : t * string list =
   let args = ref arglist in
   let extras = ref [] in
@@ -555,8 +537,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-type-in-type" -> set_type_in_type (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> set_query oval PrintWhere
-    |"-h"|"-H"|"-?"|"-help"|"--help" ->
-     set_query oval (PrintHelp (fun co -> usage (help co)))
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp help)
     |"-v"|"--version" -> set_query oval PrintVersion
     |"-print-version"|"--print-version" -> set_query oval PrintMachineReadableVersion
 

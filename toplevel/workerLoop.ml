@@ -21,13 +21,18 @@ let worker_init init () ~opts =
   init ();
   Coqtop.init_toploop opts
 
+let worker_specific_usage name = Usage.{
+  executable_name = name;
+  extra_args = "";
+  extra_options = ("\n" ^ name ^ " specific options:\
+\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
+}
+
 let start ~init ~loop name =
-  let _ = Usage.add_to_usage name "" ("\n" ^ name ^ " specific options:\
-\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n") in
   let open Coqtop in
   let custom = {
     parse_extra = worker_parse_extra;
-    help = Usage.print_usage name;
+    help = worker_specific_usage name;
     opts = Coqargs.default;
     init = worker_init init;
     run = (fun () ~opts:_ _state (* why is state not used *) -> loop ());
