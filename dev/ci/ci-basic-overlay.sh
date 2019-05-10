@@ -98,7 +98,8 @@
 # Coquelicot
 ########################################################################
 : "${coquelicot_CI_REF:=master}"
-: "${coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
+: "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
+: "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
 # CompCert

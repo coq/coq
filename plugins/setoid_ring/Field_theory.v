@@ -1235,12 +1235,19 @@ Notation ring_correct :=
  (ring_correct Rsth Reqe ARth CRmorph pow_th cdiv_th).
 
 (* simplify a field expression into a fraction *)
-(* TODO: simplify when den is constant... *)
 Definition display_linear l num den :=
-  NPphi_dev l num / NPphi_dev l den.
+  let lnum := NPphi_dev l num in
+    match den with
+    | Pc c => if ceqb c cI then lnum else lnum / NPphi_dev l den
+    | _ => lnum / NPphi_dev l den
+    end.
 
 Definition display_pow_linear l num den :=
-  NPphi_pow l num / NPphi_pow l den.
+  let lnum := NPphi_pow l num in
+    match den with
+    | Pc c => if ceqb c cI then lnum else lnum / NPphi_pow l den
+    | _ => lnum / NPphi_pow l den
+    end.
 
 Theorem Field_rw_correct n lpe l :
    Ninterp_PElist l lpe ->
@@ -1252,7 +1259,18 @@ Theorem Field_rw_correct n lpe l :
 Proof.
   intros Hlpe lmp lmp_eq fe nfe eq_nfe H; subst nfe lmp.
   rewrite (Fnorm_FEeval_PEeval _ _ H).
-  unfold display_linear; apply rdiv_ext;
+  unfold display_linear.
+  destruct (Nnorm _ _ _) as [c | | ] eqn: HN;
+  try ( apply rdiv_ext;
+        eapply ring_rw_correct; eauto).
+  destruct (ceqb_spec c cI).
+    set (nnum := NPphi_dev _ _).
+    apply eq_trans with (nnum / NPphi_dev l (Pc c)).
+      apply rdiv_ext;
+      eapply ring_rw_correct; eauto.
+    rewrite Pphi_dev_ok; try eassumption.
+    now simpl; rewrite H0, phi_1, <- rdiv1.
+  apply rdiv_ext;
   eapply ring_rw_correct; eauto.
 Qed.
 
@@ -1266,8 +1284,19 @@ Theorem Field_rw_pow_correct n lpe l :
 Proof.
   intros Hlpe lmp lmp_eq fe nfe eq_nfe H; subst nfe lmp.
   rewrite (Fnorm_FEeval_PEeval _ _ H).
-  unfold display_pow_linear; apply rdiv_ext;
-  eapply ring_rw_pow_correct;eauto.
+  unfold display_pow_linear.
+  destruct (Nnorm _ _ _) as [c | | ] eqn: HN;
+  try ( apply rdiv_ext;
+        eapply ring_rw_pow_correct; eauto).
+  destruct (ceqb_spec c cI).
+    set (nnum := NPphi_pow _ _).
+    apply eq_trans with (nnum / NPphi_pow l (Pc c)).
+      apply rdiv_ext;
+      eapply ring_rw_pow_correct; eauto.
+    rewrite Pphi_pow_ok; try eassumption.
+    now simpl; rewrite H0, phi_1, <- rdiv1.
+  apply rdiv_ext;
+  eapply ring_rw_pow_correct; eauto.
 Qed.
 
 Theorem Field_correct n l lpe fe1 fe2 :
