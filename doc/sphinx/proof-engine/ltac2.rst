@@ -823,9 +823,9 @@ Ltac2 features a toplevel loop that can be used to evaluate expressions.
 Debug
 -----
 
-.. opt:: Ltac2 Backtrace
+.. flag:: Ltac2 Backtrace
 
-   When this option is set, toplevel failures will be printed with a backtrace.
+   When this flag is set, toplevel failures will be printed with a backtrace.
 
 Compatibility layer with Ltac1
 ------------------------------
