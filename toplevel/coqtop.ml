@@ -317,7 +317,7 @@ let coqtop_parse_extra ~opts extras =
 let coqtop_run copts ~opts state =
   let open Coqtopargs in
   match copts.run_mode with
-  | Interactive -> Coqloop.loop ~opts ~state;
+  | Interactive -> Coqloop.loop ~opts copts ~state;
   | Batch -> exit 0
 
 let coqtop_specific_usage = Usage.{

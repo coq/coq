@@ -495,7 +495,7 @@ let rec loop ~state =
 
 let drop_args = ref None
 
-let loop ~opts ~state =
+let loop ~opts copts ~state =
   drop_args := Some opts;
   let open Coqargs in
   print_emacs := opts.config.print_emacs;

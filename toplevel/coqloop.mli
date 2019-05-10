@@ -34,4 +34,4 @@ val drop_last_doc : Vernac.State.t option ref
 val drop_args : Coqargs.t option ref
 
 (** Main entry point of Coq: read and execute vernac commands. *)
-val loop : opts:Coqargs.t -> state:Vernac.State.t -> unit
+val loop : opts:Coqargs.t -> Coqtopargs.t -> state:Vernac.State.t -> unit
