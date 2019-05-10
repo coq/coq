@@ -75,8 +75,7 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> false
 
-let check_kelim k1 k2 =
-  List.for_all (fun x -> List.mem_f Sorts.family_equal x k2) k1
+let check_kelim k1 k2 = Sorts.family_leq k1 k2
 
 (* Use [eq_ind_chk] because when we rebuild the recargs we have lost
    the knowledge of who is the canonical version.

@@ -117,12 +117,12 @@ let check_branch_types env sigma (ind,u) cj (lfj,explft) =
     sigma lfj explft
 
 let max_sort l =
-  if Sorts.List.mem InType l then InType else
-  if Sorts.List.mem InSet l then InSet else InProp
+  if List.mem_f Sorts.family_equal InType l then InType else
+  if List.mem_f Sorts.family_equal InSet l then InSet else InProp
 
 let is_correct_arity env sigma c pj ind specif params =
   let arsign = make_arity_signature env sigma true (make_ind_family (ind,params)) in
-  let allowed_sorts = elim_sorts specif in
+  let allowed_sorts = sorts_below (elim_sort specif) in
   let error () = Pretype_errors.error_elim_arity env sigma ind c pj None in
   let rec srec env sigma pt ar =
     let pt' = whd_all env sigma pt in
@@ -135,7 +135,7 @@ let is_correct_arity env sigma c pj ind specif params =
       end
     | Sort s, [] ->
         let s = ESorts.kind sigma s in
-        if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
+        if not (List.mem_f Sorts.family_equal (Sorts.family s) allowed_sorts)
         then error ()
         else sigma, s
     | Evar (ev,_), [] ->
@@ -199,13 +199,13 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let specif = lookup_mind_specif env (fst ind) in
-  let sorts = elim_sorts specif in
+  let sorts = elim_sort specif in
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = splay_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
   | Sort s -> Sorts.family (ESorts.kind sigma s)
   | _ -> error_elim_arity env sigma ind c pj None in
-  if not (List.exists ((==) ksort) sorts) then
+  if not (Sorts.family_leq ksort sorts) then
     let s = inductive_sort_family (snd specif) in
     error_elim_arity env sigma ind c pj
       (Some(sorts,ksort,s,Type_errors.error_elim_explain ksort s))

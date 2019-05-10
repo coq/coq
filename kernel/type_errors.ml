@@ -49,7 +49,7 @@ type ('constr, 'types) ptype_error =
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * 'constr
   | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
-      * (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
+      * (Sorts.family * Sorts.family * Sorts.family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int

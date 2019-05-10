@@ -22,7 +22,7 @@ open Declarations
     - for each inductive,
       (arity * constructors) (with params)
       * (indices * splayed constructor types) (both without params)
-      * allowed eliminations
+      * top allowed elimination
  *)
 val typecheck_inductive : env -> mutual_inductive_entry ->
   env
@@ -31,5 +31,5 @@ val typecheck_inductive : env -> mutual_inductive_entry ->
   * Constr.rel_context
   * ((inductive_arity * Constr.types array) *
      (Constr.rel_context * (Constr.rel_context * Constr.types) array) *
-     Sorts.family list)
+     Sorts.family)
     array

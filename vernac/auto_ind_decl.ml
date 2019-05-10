@@ -331,8 +331,8 @@ let build_beq_scheme mode kn =
         eff := Safe_typing.concat_private eff' !eff
     done;
       (Array.init nb_ind (fun i ->
-      let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
-	if not (Sorts.List.mem InSet kelim) then
+      let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
+        if not (Sorts.family_leq InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
         let fix = match mib.mind_finite with
         | CoFinite ->

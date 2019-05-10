@@ -232,18 +232,9 @@ let check_record data =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let all_sorts = [InSProp;InProp;InSet;InType]
-let small_sorts = [InSProp;InProp;InSet]
-let logical_sorts = [InSProp;InProp]
-let sprop_sorts = [InSProp]
-
 let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_} =
-  if not ind_squashed then all_sorts
-  else match Sorts.family (Sorts.sort_of_univ ind_univ) with
-    | InType -> assert false
-    | InSet -> small_sorts
-    | InProp -> logical_sorts
-    | InSProp -> sprop_sorts
+  if not ind_squashed then InType
+  else Sorts.family (Sorts.sort_of_univ ind_univ)
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter (starting

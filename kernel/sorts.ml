@@ -91,6 +91,8 @@ let family_compare a b = match a,b with
 
 let family_equal = (==)
 
+let family_leq a b = family_compare a b <= 0
+
 open Hashset.Combine
 
 let hash = function
@@ -100,11 +102,6 @@ let hash = function
   | Type u ->
     let h = Univ.Universe.hash u in
     combinesmall 2 h
-
-module List = struct
-  let mem = List.memq
-  let intersect l l' = CList.intersect family_equal l l'
-end
 
 module Hsorts =
   Hashcons.Make(

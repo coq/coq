@@ -289,7 +289,7 @@ let get_instantiated_arity (_ind,u) (mib,mip) params =
   let sign, s = mind_arity mip in
   full_inductive_instantiate mib u params sign, s
 
-let elim_sorts (_,mip) = mip.mind_kelim
+let elim_sort (_,mip) = mip.mind_kelim
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) = 
@@ -305,12 +305,12 @@ let build_dependent_inductive ind (_,mip) params =
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
 (* This exception is local *)
-exception LocalArity of (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
+exception LocalArity of (Sorts.family * Sorts.family * Sorts.family * arity_error) option
 
 let check_allowed_sort ksort specif =
-  if not (CList.exists (Sorts.family_equal ksort) (elim_sorts specif)) then
+  if not (Sorts.family_leq ksort (elim_sort specif)) then
     let s = inductive_sort_family (snd specif) in
-    raise (LocalArity (Some(elim_sorts specif, ksort,s,error_elim_explain ksort s)))
+    raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
 
 let is_correct_arity env c pj ind specif params =
   let arsign,_ = get_instantiated_arity ind specif params in
