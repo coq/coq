@@ -62,7 +62,7 @@ type 'id move_location =
 val pr_move_location :
   ('a -> Pp.t) -> 'a move_location -> Pp.t
 
-val convert_hyp : bool -> Environ.named_context_val -> evar_map ->
+val convert_hyp : check:bool -> reorder:bool -> Environ.env -> evar_map ->
   EConstr.named_declaration -> Environ.named_context_val
 
 val move_hyp_in_named_context : Environ.env -> Evd.evar_map -> Id.t -> Id.t move_location ->

@@ -252,7 +252,7 @@ val ssrevaltac :
   Tacinterp.interp_sign -> Tacinterp.Value.t -> unit Proofview.tactic
 
 val convert_concl_no_check : EConstr.t -> unit Proofview.tactic
-val convert_concl : EConstr.t -> unit Proofview.tactic
+val convert_concl : check:bool -> EConstr.t -> unit Proofview.tactic
 
 val red_safe :
   Reductionops.reduction_function ->

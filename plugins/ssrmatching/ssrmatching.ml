@@ -1299,7 +1299,7 @@ let ssrpatterntac _ist arg gl =
   let concl_x = EConstr.of_constr concl_x in
   let gl, tty = pf_type_of gl t in
   let concl = EConstr.mkLetIn (make_annot (Name (Id.of_string "selected")) Sorts.Relevant, t, tty, concl_x) in
-  Proofview.V82.of_tactic (convert_concl concl DEFAULTcast) gl
+  Proofview.V82.of_tactic (convert_concl ~check:true concl DEFAULTcast) gl
 
 (* Register "ssrpattern" tactic *)
 let () =
