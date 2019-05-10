@@ -40,6 +40,4 @@ val init_toploop : Coqargs.t -> Vernac.State.t
 
 (** The specific characterization of the coqtop_toplevel *)
 
-type run_mode = Interactive | Batch
-
-val coqtop_toplevel : (run_mode,Vernac.State.t) custom_toplevel
+val coqtop_toplevel : (Coqtopargs.t,Vernac.State.t) custom_toplevel

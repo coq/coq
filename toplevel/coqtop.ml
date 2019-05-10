@@ -299,30 +299,24 @@ let start_coq custom =
 (** ****************************************)
 (** Specific support for coqtop executable *)
 
-type run_mode = Interactive | Batch
-
 let init_toploop opts =
   let state = init_document opts in
   let state = Ccompile.load_init_vernaculars opts ~state in
   state
 
-let coqtop_init run_mode ~opts =
-  if run_mode = Batch then Flags.quiet := true;
+let coqtop_init copts ~opts =
+  if copts.Coqtopargs.run_mode = Coqtopargs.Batch then Flags.quiet := true;
   init_color opts.config;
   Flags.if_verbose print_header ();
   init_toploop opts
 
 let coqtop_parse_extra ~opts extras =
-  let rec parse_extra run_mode = function
-  | "-batch" :: rest -> parse_extra Batch rest
-  | x :: rest ->
-    let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
-  | [] -> run_mode, [] in
-  let run_mode, extras = parse_extra Interactive extras in
-  run_mode, extras
+  let coqtopargs, extras = Coqtopargs.parse extras in
+  coqtopargs, extras
 
-let coqtop_run run_mode ~opts state =
-  match run_mode with
+let coqtop_run copts ~opts state =
+  let open Coqtopargs in
+  match copts.run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
   | Batch -> exit 0
 

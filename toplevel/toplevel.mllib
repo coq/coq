@@ -3,6 +3,7 @@ Usage
 Coqinit
 Coqargs
 Coqcargs
+Coqtopargs
 G_toplevel
 Coqloop
 Ccompile
