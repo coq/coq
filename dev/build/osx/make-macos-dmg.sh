@@ -10,6 +10,7 @@ brew install opam gnu-time gtk+ expat gtksourceview gdk-pixbuf
 brew unlink python@2
 brew link python3
 pip3 install macpack
+export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
 opam init -a -y -j 2 --compiler=ocaml-base-compiler.4.07.1 default https://opam.ocaml.org
 opam switch ocaml-base-compiler.4.07.1
 eval $(opam config env)
