@@ -28,6 +28,8 @@ type valexpr =
   (** Open constructors *)
 | ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
   (** Arbitrary data *)
+| ValUint63 of Uint63.t
+  (** Primitive integers *)
 
 type 'a arity
 
@@ -142,6 +144,10 @@ val repr_ext : 'a Val.tag -> 'a repr
 val of_open : KerName.t * valexpr array -> valexpr
 val to_open : valexpr -> KerName.t * valexpr array
 val open_ : (KerName.t * valexpr array) repr
+
+val of_uint63 : Uint63.t -> valexpr
+val to_uint63 : valexpr -> Uint63.t
+val uint63 : Uint63.t repr
 
 type ('a, 'b) fun1
 

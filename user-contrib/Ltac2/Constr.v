@@ -38,6 +38,7 @@ Ltac2 Type kind := [
 | Fix (int array, int, ident option array, constr array, constr array)
 | CoFix (int, ident option array, constr array, constr array)
 | Proj (projection, constr)
+| Uint63 (uint63)
 ].
 
 Ltac2 @ external kind : constr -> kind := "ltac2" "constr_kind".
