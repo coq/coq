@@ -45,6 +45,7 @@ Ltac2 Type kind := [
 | CoFix (int, ident option binder_annot array, constr array, constr array)
 | Proj (projection, constr)
 | Uint63 (uint63)
+| Float (float)
 ].
 
 Ltac2 @ external kind : constr -> kind := "ltac2" "constr_kind".

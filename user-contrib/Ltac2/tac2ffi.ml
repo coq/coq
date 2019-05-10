@@ -33,6 +33,8 @@ type valexpr =
   (** Arbitrary data *)
 | ValUint63 of Uint63.t
   (** Primitive integers *)
+| ValFloat of Float64.t
+  (** Primitive floats *)
 
 and closure = MLTactic : (valexpr, 'v) arity0 * 'v -> closure
 
@@ -50,21 +52,21 @@ type t = valexpr
 
 let is_int = function
 | ValInt _ -> true
-| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ -> false
+| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ -> false
 
 let tag v = match v with
 | ValBlk (n, _) -> n
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let field v n = match v with
 | ValBlk (_, v) -> v.(n)
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let set_field v n w = match v with
 | ValBlk (_, v) -> v.(n) <- w
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ ->
+| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let make_block tag v = ValBlk (tag, v)
@@ -196,7 +198,7 @@ let of_closure cls = ValCls cls
 
 let to_closure = function
 | ValCls cls -> cls
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ | ValUint63 _ -> assert false
+| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ | ValUint63 _ | ValFloat _ -> assert false
 
 let closure = {
   r_of = of_closure;
@@ -330,6 +332,17 @@ let to_uint63 = function
 let uint63 = {
   r_of = of_uint63;
   r_to = to_uint63;
+  r_id = false;
+}
+
+let of_float f = ValFloat f
+let to_float = function
+| ValFloat f -> f
+| _ -> assert false
+
+let float = {
+  r_of = of_float;
+  r_to = to_float;
   r_id = false;
 }
 
