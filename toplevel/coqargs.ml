@@ -386,8 +386,9 @@ let parse_args ~help ~init arglist : t * string list =
       }}}
 
     |"-async-proofs-worker-priority" ->
-      CoqworkmgrApi.async_proofs_worker_priority := get_priority opt (next ());
-      oval
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
+        Stm.AsyncOpts.async_proofs_worker_priority = get_priority opt (next ())
+      }}}
 
     |"-async-proofs-private-flags" ->
       { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with

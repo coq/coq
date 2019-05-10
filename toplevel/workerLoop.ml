@@ -18,8 +18,7 @@ let worker_parse_extra ~opts extra_args =
 
 let worker_init init ~opts =
   Flags.quiet := true;
-  init ();
-  CoqworkmgrApi.(init !async_proofs_worker_priority)
+  init ()
 
 let start ~init ~loop =
   let open Coqtop in

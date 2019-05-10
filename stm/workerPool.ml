@@ -19,7 +19,7 @@ type 'a cpanel = {
 module type PoolModel = sig
   (* this shall come from a Spawn.* model *)
   type process
-  val spawn : int -> worker_id * process * CThread.thread_ic * out_channel
+  val spawn : int -> CoqworkmgrApi.priority -> worker_id * process * CThread.thread_ic * out_channel
 
   (* this defines the main loop of the manager *)
   type extra
@@ -79,20 +79,20 @@ let locking { lock; pool = p } f =
     x
   with e -> Mutex.unlock lock; raise e
 
-let rec create_worker extra pool id =
+let rec create_worker extra pool priority id =
   let cancel = ref false in
-  let name, process, ic, oc as worker = Model.spawn id in
+  let name, process, ic, oc as worker = Model.spawn id priority in
   master_handshake name ic oc;
-  let exit () = cancel := true; cleanup pool; Thread.exit () in
+  let exit () = cancel := true; cleanup pool priority; Thread.exit () in
   let cancelled () = !cancel in
   let cpanel = { exit; cancelled; extra } in
   let manager = CThread.create (Model.manager cpanel) worker in
   { name; cancel; manager; process }
   
-and cleanup x = locking x begin fun { workers; count; extra_arg } ->
+and cleanup x priority = locking x begin fun { workers; count; extra_arg } ->
   workers := List.map (function
     | { cancel } as w when !cancel = false -> w
-    | _ -> let n = !count in incr count; create_worker extra_arg x n)
+    | _ -> let n = !count in incr count; create_worker extra_arg x priority n)
   !workers
 end
 
@@ -102,7 +102,7 @@ end
 
 let is_empty x = locking x begin fun { workers } -> !workers = [] end
 
-let create extra_arg ~size = let x = {
+let create extra_arg ~size priority = let x = {
     lock = Mutex.create ();
     pool = {
       extra_arg;
@@ -110,7 +110,7 @@ let create extra_arg ~size = let x = {
       count = ref size;
   }} in
   locking x begin fun { workers } ->
-     workers := CList.init size (create_worker extra_arg x)
+     workers := CList.init size (create_worker extra_arg x priority)
   end;
   x
 

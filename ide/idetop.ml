@@ -563,8 +563,13 @@ let islave_parse ~opts extra_args =
   print_string (String.concat "\n" extra_args);
   run_mode, []
 
-let islave_init ~opts =
-  CoqworkmgrApi.(init High)
+let islave_init ~opts = ()
+
+let islave_default_opts =
+  Coqargs.{ default with
+    config = { default.config with
+      stm_flags = { default.config.stm_flags with
+         Stm.AsyncOpts.async_proofs_worker_priority = CoqworkmgrApi.High }}}
 
 let () =
   let open Coqtop in
@@ -573,5 +578,5 @@ let () =
       help = (fun _ -> output_string stderr "Same options as coqtop");
       init = islave_init;
       run = loop;
-      opts = Coqargs.default } in
+      opts = islave_default_opts } in
   start_coq custom

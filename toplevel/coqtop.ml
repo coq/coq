@@ -233,6 +233,7 @@ let init_execution opts custom_init =
   let top_lp = Coqinit.toplevel_init_load_path () in
   List.iter Loadpath.add_coq_path top_lp;
   custom_init ~opts;
+  CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
   Mltop.init_known_plugins ();
   (* Configuration *)
   Global.set_engagement opts.config.logic.impredicative_set;
@@ -315,7 +316,6 @@ let start_coq custom =
 
 let coqtop_init ~opts =
   init_color opts.config;
-  CoqworkmgrApi.(init !async_proofs_worker_priority);
   Flags.if_verbose print_header ()
 
 let coqtop_parse_extra ~opts extras =
