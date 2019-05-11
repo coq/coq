@@ -537,7 +537,11 @@ let rec parse = function
         Xmlprotocol.document Xml_printer.to_string_fmt; exit 0
   | "--xml_format=Ppcmds" :: rest ->
         msg_format := (fun () -> Xmlprotocol.Ppcmds); parse rest
-  | x :: rest -> x :: parse rest
+  | x :: rest ->
+     if String.length x > 0 && x.[0] = '-' then
+       (prerr_endline ("Unknown option " ^ x); exit 1)
+     else
+       x :: parse rest
   | [] -> []
 
 let () = Usage.add_to_usage "coqidetop"
