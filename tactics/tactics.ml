@@ -1390,7 +1390,6 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
 
 type eliminator = {
   elimindex : int option;  (* None = find it automatically *)
-  elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
   elimbody : EConstr.constr with_bindings
 }
 
@@ -1459,8 +1458,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let elim = EConstr.of_constr elim in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
   (general_elim with_evars clear_flag (c,lbindc)
-   {elimindex = None; elimbody = (elim,NoBindings);
-    elimrename = Some (false, constructors_nrealdecls env (fst mind))})
+   {elimindex = None; elimbody = (elim,NoBindings); })
   end
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -1491,8 +1489,7 @@ let find_eliminator c gl =
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
   if is_nonrec ind then raise IsNonrec;
   let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
-    evd, {elimindex = None; elimbody = (c,NoBindings);
-          elimrename = Some (true, constructors_nrealdecls (Global.env()) ind)}
+    evd, { elimindex = None; elimbody = (c,NoBindings) }
 
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
@@ -1512,7 +1509,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
 let elim_in_context with_evars clear_flag c = function
   | Some elim ->
       general_elim with_evars clear_flag c
-        {elimindex = Some (-1); elimbody = elim; elimrename = None}
+        { elimindex = Some (-1); elimbody = elim }
   | None -> default_elim with_evars clear_flag c
 
 let elim with_evars clear_flag (c,lbindc as cx) elim =
@@ -4164,7 +4161,7 @@ let find_induction_type isrec elim hyp0 gl =
 	let scheme = compute_elim_sig sigma ~elimc elimt in
 	if Option.is_empty scheme.indarg then error "Cannot find induction type";
 	let indsign = compute_scheme_signature evd scheme hyp0 ind_guess in
-	let elim = ({elimindex = Some(-1); elimbody = elimc; elimrename = None},elimt) in
+        let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
 	scheme, ElimUsing (elim,indsign)
   in
   match scheme.indref with
@@ -4191,10 +4188,7 @@ let get_eliminator elim dep s gl =
   | ElimOver (isrec,id) ->
       let evd, (elimc,elimt),_ as elims = guess_elim isrec dep s id gl in
       let _, (l, s) = compute_elim_signature elims id in
-      let branchlengthes = List.map (fun d -> assert (RelDecl.is_local_assum d); pi1 (decompose_prod_letin (Tacmach.New.project gl) (RelDecl.get_type d)))
-                                    (List.rev s.branches)
-      in
-      evd, isrec, ({elimindex = None; elimbody = elimc; elimrename = Some (isrec,Array.of_list branchlengthes)}, elimt), l
+      evd, isrec, ({ elimindex = None; elimbody = elimc }, elimt), l
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
@@ -4238,7 +4232,7 @@ let recolle_clenv i params args elimclause gl =
 let induction_tac with_evars params indvars elim =
   Proofview.Goal.enter begin fun gl ->
   let sigma = Tacmach.New.project gl in
-  let ({elimindex=i;elimbody=(elimc,lbindelimc);elimrename=rename},elimt) = elim in
+  let ({ elimindex=i;elimbody=(elimc,lbindelimc) },elimt) = elim in
   let i = match i with None -> index_of_ind_arg sigma elimt | Some i -> i in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
   let elimc = contract_letin_in_lam_header sigma elimc in
@@ -4343,7 +4337,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac with_evars params realindvars elim;
   ] in
-  let elim = ElimUsing (({elimindex = Some (-1); elimbody = Option.get scheme.elimc; elimrename = None}, scheme.elimt), indsign) in
+  let elim = ElimUsing (({ elimindex = Some (-1); elimbody = Option.get scheme.elimc }, scheme.elimt), indsign) in
   apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end
 

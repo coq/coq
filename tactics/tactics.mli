@@ -282,7 +282,6 @@ val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_
 (** elim principle with the index of its inductive arg *)
 type eliminator = {
   elimindex : int option;  (** None = find it automatically *)
-  elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
   elimbody : constr with_bindings
 }
 
