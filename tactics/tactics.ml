@@ -1360,22 +1360,25 @@ let rec contract_letin_in_lam_header sigma c =
   | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
   | _ -> c
 
-let elimination_clause_scheme with_evars ?(with_classes=true) ?(flags=elim_flags ()) 
-    rename i (elim, elimty, bindings) indclause =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
-  let elim = contract_letin_in_lam_header sigma elim in
-  let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
-  let indmv =
-    (match EConstr.kind sigma (nth_arg sigma i elimclause.templval.rebus) with
-       | Meta mv -> mv
-       | _  -> user_err ~hdr:"elimination_clause"
-             (str "The type of elimination clause is not well-formed."))
+let elimination_in_clause_scheme env sigma with_evars ~flags
+    id hypmv elimclause =
+  let hyp = mkVar id in
+  let hyp_typ = Retyping.get_type_of env sigma hyp in
+  let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
+  let elimclause'' =
+    (* The evarmap of elimclause is assumed to be an extension of hypclause, so
+      we do not need to merge the universes coming from hypclause. *)
+    try clenv_fchain ~with_univs:false ~flags hypmv elimclause hypclause
+    with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
+      (* Set the hypothesis name in the message *)
+      raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
   in
-  let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
-  Clenvtac.res_pf elimclause' ~with_evars ~with_classes ~flags
-  end
+  let new_hyp_typ  = clenv_type elimclause'' in
+  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
+    user_err ~hdr:"general_rewrite_in"
+      (str "Nothing to rewrite in " ++ Id.print id ++ str".");
+  clenv_refine_in with_evars id id sigma elimclause''
+    (fun id -> Proofview.tclUNIT ())
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -1391,7 +1394,7 @@ type eliminator = {
   elimbody : EConstr.constr with_bindings
 }
 
-let general_elim_clause_gen elimtac indclause elim =
+let general_elim_clause with_evars flags where indclause elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.New.project gl in
@@ -1399,7 +1402,27 @@ let general_elim_clause_gen elimtac indclause elim =
   let elimt = Retyping.get_type_of env sigma elimc in
   let i =
     match elim.elimindex with None -> index_of_ind_arg sigma elimt | Some i -> i in
-  elimtac elim.elimrename i (elimc, elimt, lbindelimc) indclause
+  let elimc = contract_letin_in_lam_header sigma elimc in
+  let elimclause = make_clenv_binding env sigma (elimc, elimt) lbindelimc in
+  let indmv =
+    (match EConstr.kind sigma (nth_arg sigma i elimclause.templval.rebus) with
+       | Meta mv -> mv
+       | _  -> user_err ~hdr:"elimination_clause"
+             (str "The type of elimination clause is not well-formed."))
+  in
+  match where with
+  | None ->
+    let elimclause = clenv_fchain ~flags indmv elimclause indclause in
+    Clenvtac.res_pf elimclause ~with_evars ~with_classes:true ~flags
+  | Some id ->
+    let hypmv =
+      match List.remove Int.equal indmv (clenv_independent elimclause) with
+      | [a] -> a
+      | _ -> user_err ~hdr:"elimination_clause"
+              (str "The type of elimination clause is not well-formed.")
+    in
+    let elimclause = clenv_fchain ~flags indmv elimclause indclause in
+    elimination_in_clause_scheme env sigma with_evars ~flags id hypmv elimclause
   end
 
 let general_elim with_evars clear_flag (c, lbindc) elim =
@@ -1408,12 +1431,12 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let sigma = Tacmach.New.project gl in
   let ct = Retyping.get_type_of env sigma c in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
-  let elimtac = elimination_clause_scheme with_evars in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
   let sigma = meta_merge sigma (clear_metas indclause.evd) in
+  let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.New.tclTHEN
-    (general_elim_clause_gen elimtac indclause elim)
+    (general_elim_clause with_evars flags None indclause elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
   end
 
@@ -1514,48 +1537,6 @@ let simplest_elim c = default_elim false None (c,NoBindings)
    but this generalizes to any elimination scheme with one constructor
    (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
 *)
-
-let clenv_fchain_in id ?(flags=elim_flags ()) mv elimclause hypclause =
-  (* The evarmap of elimclause is assumed to be an extension of hypclause, so
-     we do not need to merge the universes coming from hypclause. *)
-  try clenv_fchain ~with_univs:false ~flags mv elimclause hypclause
-  with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
-    (* Set the hypothesis name in the message *)
-    raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
-
-let elimination_in_clause_scheme with_evars ?(flags=elim_flags ()) 
-    id rename i (elim, elimty, bindings) indclause =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
-  let elim = contract_letin_in_lam_header sigma elim in
-  let elimclause = make_clenv_binding env sigma (elim, elimty) bindings in
-  let indmv = destMeta sigma (nth_arg sigma i elimclause.templval.rebus) in
-  let hypmv =
-    match List.remove Int.equal indmv (clenv_independent elimclause) with
-    | [a] -> a
-    | _ -> user_err ~hdr:"elimination_clause"
-             (str "The type of elimination clause is not well-formed.")
-  in
-  let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
-  let hyp = mkVar id in
-  let hyp_typ = Retyping.get_type_of env sigma hyp in
-  let hypclause = mk_clenv_from_env env sigma (Some 0) (hyp, hyp_typ) in
-  let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
-  let new_hyp_typ  = clenv_type elimclause'' in
-  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
-    user_err ~hdr:"general_rewrite_in"
-      (str "Nothing to rewrite in " ++ Id.print id ++ str".");
-  clenv_refine_in with_evars id id sigma elimclause''
-    (fun id -> Proofview.tclUNIT ())
-  end
-
-let general_elim_clause with_evars flags id c e =
-  let elim = match id with
-  | None -> elimination_clause_scheme with_evars ~with_classes:true ~flags
-  | Some id -> elimination_in_clause_scheme with_evars ~flags id
-  in
-  general_elim_clause_gen elim c e
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
