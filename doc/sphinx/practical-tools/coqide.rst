@@ -181,7 +181,14 @@ presented as a notebook.
 The first section is for selecting the text font used for scripts,
 goal and message windows.
 
-The second section is devoted to file management: you may configure
+The second and third sections are for controlling colors and style.
+
+The fourth section is for customizing the editor. It includes in
+particular the ability to activate an Emacs mode named
+micro-Proof-General (use the Help menu to know more about the
+available bindings).
+
+The next section is devoted to file management: you may configure
 automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *revert* feature: in case a opened file is modified on the disk by a

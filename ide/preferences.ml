@@ -561,7 +561,8 @@ let tab_length =
 let highlight_current_line =
   new preference ~name:["highlight_current_line"] ~init:false ~repr:Repr.(bool)
 
-let nanoPG =
+let microPG =
+  (* Legacy name in preference is "nanoPG" *)
   new preference ~name:["nanoPG"] ~init:false ~repr:Repr.(bool)
 
 let user_queries =
@@ -799,7 +800,7 @@ let configure ?(apply=(fun () -> ())) parent =
     let () = button "Show progress bar" show_progress_bar in
     let () = button "Insert spaces instead of tabs" spaces_instead_of_tabs in
     let () = button "Highlight current line" highlight_current_line in
-    let () = button "Emacs/PG keybindings (μPG mode)" nanoPG in
+    let () = button "Emacs/PG keybindings (μPG mode)" microPG in
     let callback () = () in
     custom ~label box callback true
   in
