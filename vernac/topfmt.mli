@@ -46,6 +46,7 @@ val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 val default_styles : unit -> unit
 val parse_color_config : string -> unit
 val dump_tags : unit -> (string * Terminal.style) list
+val init_tag_map : (string * Terminal.style) list -> unit
 val set_emacs_print_strings : unit -> unit
 
 (** Initialization of interpretation of tags *)

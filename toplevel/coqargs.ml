@@ -69,8 +69,8 @@ type coqargs_pre = {
   load_rcfile : bool;
 
   ml_includes : Loadpath.coq_path list;
-  vo_includes : Loadpath.coq_path list;
-  vo_requires : (string * string option * bool option) list;
+  vo_includes : Loadpath.coq_path list; (* = "Add LoadPath" *)
+  vo_requires : (string * string option * bool option) list; (* = "Require [Import|Export]" *)
   (* None = No Import; Some false = Import; Some true = Export *)
 
   load_vernacular_list : (string * bool) list;

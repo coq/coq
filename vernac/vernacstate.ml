@@ -66,7 +66,8 @@ type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
-  shallow : bool                   (* is the state trimmed down (libstack) *)
+  shallow : bool;                  (* is the state trimmed down (libstack) *)
+  static  : Staticstate.static_state;
 }
 
 let s_cache = ref None
@@ -93,12 +94,15 @@ let freeze_interp_state ~marshallable =
     lemmas = !s_lemmas;
     shallow = false;
     parsing = Parser.cur_state ();
+    static = Staticstate.freeze_static_state ();
   }
 
-let unfreeze_interp_state { system; lemmas; parsing } =
+let unfreeze_interp_state { system; lemmas; parsing; static } =
   do_if_not_cached s_cache States.unfreeze system;
   s_lemmas := lemmas;
-  Pcoq.unfreeze parsing
+  Pcoq.unfreeze parsing;
+  Staticstate.unfreeze_static_state static;
+  ()
 
 let make_shallow st =
   let lib = States.lib_of_state st.system in

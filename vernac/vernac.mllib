@@ -36,8 +36,10 @@ ComFixpoint
 ComProgramFixpoint
 Record
 Assumptions
-Mltop
 Topfmt
+Staticstate
+Vernacstate
+Mltop
 Loadpath
 ComArguments
 Vernacentries

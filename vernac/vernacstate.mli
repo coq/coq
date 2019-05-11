@@ -39,6 +39,8 @@ type t =
   (** proofs of lemmas currently opened *)
   ; shallow : bool
   (** is the state trimmed down (libstack) *)
+  ; static  : Staticstate.static_state
+  (* static part of a Coq process *)
   }
 
 val freeze_interp_state : marshallable:bool -> t

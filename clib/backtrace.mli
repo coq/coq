@@ -54,6 +54,8 @@ val print_frame : frame -> string
 
 (** {5 Exception handling} *)
 
+val is_recording : bool ref
+
 val record_backtrace : bool -> unit
 (** Whether to activate the backtrace recording mechanism. Note that it will
     only work whenever the program was compiled with the [debug] flag. *)
