@@ -44,10 +44,23 @@ let print_usage_common co command =
 \n  -load-ml-source f      load ML file f\
 \n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
-\n  -require path          load Coq library path and import it (Require Import path.)\
 \n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\
 \n  -lv f	           (idem)\
-\n  -load-vernac-object path  load Coq library path (Require path)\
+\n  -load-vernac-object lib, -r lib\
+\n                         load Coq library lib (Require lib)\
+\n  -rfrom root lib        load Coq library lib (From root Require lib.)\
+\n  -require-import lib, -ri lib\
+\n                         load and import Coq library lib\
+\n                         (equivalent to Require Import lib.)\
+\n  -require-export lib, -re lib\
+\n                         load and transitively import Coq library lib\
+\n                         (equivalent to Require Export lib.)\
+\n  -require-import-from root lib, -rifrom lib\
+\n                         load and import Coq library lib\
+\n                         (equivalent to From root Require Import lib.)\
+\n  -require-export-from root lib, -refrom lib\
+\n                         load and transitively import Coq library lib\
+\n                         (equivalent to From root Require Export lib.)\
 \n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
