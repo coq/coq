@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val start_dump_glob : vfile:string -> vofile:string -> unit
-val end_dump_glob : unit -> unit
-
 val dump : unit -> bool
 
 type glob_output =
@@ -18,6 +15,9 @@ type glob_output =
   | Feedback
   | MultFiles                   (* one glob file per .v file *)
   | File of string              (* Single file for all coqc arguments *)
+
+val start_dump_glob : vfile:string -> vofile:string -> glob_output -> unit
+val end_dump_glob : unit -> unit
 
 (* Default "NoGlob" *)
 val set_glob_output : glob_output -> unit

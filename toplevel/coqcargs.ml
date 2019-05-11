@@ -56,6 +56,8 @@ let check_compilation_output_name_consistency args =
 
 let is_dash_argument s = String.length s > 0 && s.[0] = '-'
 
+let set_no_glob opts = { opts with glob_out = Dumpglob.NoGlob }
+
 let add_compile ?echo copts s =
   if is_dash_argument s then (prerr_endline ("Unknown option " ^ s); exit 1);
   (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
@@ -154,24 +156,24 @@ let parse arglist : t =
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
-          set_compilation_mode oval BuildVio
+          set_no_glob (set_compilation_mode oval BuildVio)
         |"-vos" ->
           Flags.load_vos_libraries := true;
-          { oval with compilation_mode = BuildVos }
+          set_no_glob { oval with compilation_mode = BuildVos }
         |"-vok" ->
           Flags.load_vos_libraries := true;
-          { oval with compilation_mode = BuildVok }
+          set_no_glob { oval with compilation_mode = BuildVok }
 
         | "-check-vio-tasks" ->
           let tno = get_task_list (next ()) in
           let tfile = next () in
-          add_vio_task oval (tno,tfile)
+          add_vio_task (set_no_glob oval) (tno,tfile)
 
         | "-schedule-vio-checking" ->
           let oval = { oval with vio_checking = true } in
           let oval = set_vio_checking_j oval opt (next ()) in
           let oval = add_vio_file oval (next ()) in
-          add_vio_args peek_next next oval
+          add_vio_args peek_next next (set_no_glob oval)
 
         | "-schedule-vio2vo" ->
           let oval = set_vio_checking_j oval opt (next ()) in
@@ -180,7 +182,7 @@ let parse arglist : t =
 
         | "-vio2vo" ->
           let oval = add_compile ~echo:false oval (next ()) in
-          set_compilation_mode oval Vio2Vo
+          set_compilation_mode (set_no_glob oval) Vio2Vo
 
         | "-outputstate" ->
           set_outputstate oval (next ())

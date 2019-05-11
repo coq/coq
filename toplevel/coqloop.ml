@@ -501,6 +501,7 @@ let loop ~opts copts ~state =
   print_emacs := opts.config.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
+  assert (not (Dumpglob.dump ()));
   let _ = loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

@@ -37,8 +37,9 @@ let dump_string s =
   if dump () && !glob_output != Feedback then
     output_string !glob_file s
 
-let start_dump_glob ~vfile ~vofile =
-  match !glob_output with
+let start_dump_glob ~vfile ~vofile glob_out =
+  glob_output := glob_out;
+  match glob_out with
   | MultFiles ->
       open_glob_file (Filename.chop_extension vofile ^ ".glob");
       output_string !glob_file "DIGEST ";

@@ -136,7 +136,7 @@ let compile opts copts ~echo ~f_in ~f_out =
         ~v_file:long_f_dot_in);
 
       Dumpglob.set_glob_output copts.glob_out;
-      Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out;
+      Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out copts.glob_out;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
 
       let wall_clock1 = Unix.gettimeofday () in
@@ -157,6 +157,7 @@ let compile opts copts ~echo ~f_in ~f_out =
       Dumpglob.end_dump_glob ()
 
   | BuildVio | BuildVos ->
+      assert (not (Dumpglob.dump ()));
       (* We need to disable error resiliency, otherwise some errors
          will be ignored in batch mode. c.f. #6707
 
@@ -188,6 +189,7 @@ let compile opts copts ~echo ~f_in ~f_out =
 
   | Vio2Vo ->
 
+      assert (not (Dumpglob.dump ()));
       let sum, lib, univs, tasks, proofs =
         Library.load_library_todo long_f_dot_in in
       let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in

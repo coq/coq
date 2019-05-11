@@ -33,6 +33,8 @@ coqc specific options:\
 \n  -vos                   process statements but ignore opaque proofs, and produce a .vos file\
 \n  -vok                   process the file by loading .vos instead of .vo files for\
 \n                         dependencies, and produce an empty .vok file on success\
+\n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
+\n  -noglob                do not dump globalizations\
 \n\
 \nUndocumented:\
 \n  -vio2vo                [see manual]\
