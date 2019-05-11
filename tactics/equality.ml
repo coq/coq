@@ -417,7 +417,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   find_elim hdcncl lft2rgt dep cls (Some t) >>= fun elim ->
       general_elim_clause with_evars frzevars tac cls c t l
       (match lft2rgt with None -> false | Some b -> b)
-      {elimindex = None; elimbody = (elim,NoBindings); elimrename = None}
+      {elimindex = None; elimbody = (elim,NoBindings) }
   end
 
 let adjust_rewriting_direction args lft2rgt =
