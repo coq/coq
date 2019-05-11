@@ -1302,14 +1302,11 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) 
-    targetid id sigma0 clenv tac =
+let clenv_refine_in with_evars targetid id sigma0 clenv tac =
   let clenv = Clenvtac.clenv_pose_dependent_evars ~with_evars clenv in
   let clenv =
-    if with_classes then
       { clenv with evd = Typeclasses.resolve_typeclasses 
 	  ~fail:(not with_evars) clenv.env clenv.evd }
-    else clenv
   in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
@@ -1321,11 +1318,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true)
   let with_clear = do_replace (Some id) naming in
   Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas clenv.evd))
-    (if sidecond_first then
-       Tacticals.New.tclTHENFIRST
-         (assert_before_then_gen with_clear naming new_hyp_typ tac) exact_tac
-     else
-       Tacticals.New.tclTHENLAST
+    (Tacticals.New.tclTHENLAST
          (assert_after_then_gen with_clear naming new_hyp_typ tac) exact_tac)
 
 (********************************************)
@@ -1806,7 +1799,7 @@ let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
-let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
+let apply_in_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{ CAst.loc; v= d,lbind}) tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
@@ -1827,7 +1820,7 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags innerclause env sigma (loc,c,lbind) in
-      clenv_refine_in ~sidecond_first with_evars targetid id sigma clause
+      clenv_refine_in with_evars targetid id sigma clause
         (fun id ->
           Tacticals.New.tclTHENLIST [
             apply_clear_request clear_flag false c;
@@ -1844,14 +1837,14 @@ let apply_in_once ?(respect_opaque = false) sidecond_first with_delta
   aux [] with_destruct d
   end
 
-let apply_in_delayed_once ?(respect_opaque = false) sidecond_first with_delta
+let apply_in_delayed_once ?(respect_opaque = false) with_delta
     with_destruct with_evars naming id (clear_flag,{CAst.loc;v=f}) tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let (sigma, c) = f env sigma in
     Tacticals.New.tclWITHHOLES with_evars 
-      (apply_in_once ~respect_opaque sidecond_first with_delta with_destruct with_evars
+      (apply_in_once ~respect_opaque with_delta with_destruct with_evars
          naming id (clear_flag,CAst.(make ?loc c)) tac)
       sigma
   end
@@ -2471,7 +2464,7 @@ and intro_pattern_action ?loc with_evars b style pat thin destopt tac id =
           clear [id] in
       let f env sigma = let (sigma, c) = f env sigma in (sigma,(c, NoBindings))
       in
-      apply_in_delayed_once false true true with_evars naming id (None,CAst.make ?loc:loc' f)
+      apply_in_delayed_once true true with_evars naming id (None,CAst.make ?loc:loc' f)
         (fun id -> Tacticals.New.tclTHENLIST [doclear; tac_ipat id; tac thin None []])
 
 and prepare_intros ?loc with_evars dft destopt = function
@@ -2539,10 +2532,10 @@ let assert_as first hd ipat t =
 
 (* apply in as *)
 
-let general_apply_in ?(respect_opaque=false) sidecond_first with_delta
+let general_apply_in ?(respect_opaque=false) with_delta
     with_destruct with_evars id lemmas ipat =
   let tac (naming,lemma) tac id =
-    apply_in_delayed_once ~respect_opaque sidecond_first with_delta
+    apply_in_delayed_once ~respect_opaque with_delta
       with_destruct with_evars naming id lemma tac in
   Proofview.Goal.enter begin fun gl ->
   let destopt =
@@ -2571,10 +2564,10 @@ let general_apply_in ?(respect_opaque=false) sidecond_first with_delta
 
 let apply_in simple with_evars id lemmas ipat =
   let lemmas = List.map (fun (k,{CAst.loc;v=l}) -> k, CAst.make ?loc (fun _ sigma -> (sigma,l))) lemmas in
-  general_apply_in false simple simple with_evars id lemmas ipat
+  general_apply_in simple simple with_evars id lemmas ipat
 
 let apply_delayed_in simple with_evars id lemmas ipat =
-  general_apply_in ~respect_opaque:true false simple simple with_evars id lemmas ipat
+  general_apply_in ~respect_opaque:true simple simple with_evars id lemmas ipat
 
 (*****************************)
 (* Tactics abstracting terms *)
