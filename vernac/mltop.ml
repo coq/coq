@@ -46,7 +46,7 @@ open System
    to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref [Sys.getcwd ()]
+let coq_mlpath_copy = Summary.ref ~name:"mlpath" [Sys.getcwd ()]
 let keep_copy_mlpath path =
   let cpath = CUnix.canonical_path_name path in
   let filter path' = not (String.equal cpath path')
