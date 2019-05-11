@@ -486,7 +486,12 @@ let parse_args ~help ~init arglist : t * string list =
         Stm.AsyncOpts.async_proofs_never_reopen_branch = true
       }}}
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
-    |"-beautify" -> Flags.beautify := true; oval
+    |"-beautify" ->
+      Flags.beautify := true;
+      (* force non asynchronous mode *)
+      { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
+        Stm.AsyncOpts.async_proofs_mode = get_async_proofs_mode opt (next())
+      }}}
     |"-bt" -> Backtrace.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
