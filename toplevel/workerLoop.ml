@@ -8,9 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+let set_worker_id s =
+  if s = "master" then Coqargs.error_wrong_arg "Error: master is a reserved worker id";
+  Flags.async_proofs_worker_id := s
+
 let rec parse = function
   | "--xml_format=Ppcmds" :: rest -> parse rest
-  | x :: rest -> x :: parse rest
+  | "-worker-id" :: s :: rest -> set_worker_id s; parse rest
+  | x :: rest -> Coqargs.error_wrong_arg ("Don't know what to do with " ^ x)
   | [] -> []
 
 let worker_parse_extra ~opts extra_args =
@@ -25,7 +30,9 @@ let worker_specific_usage name = Usage.{
   executable_name = name;
   extra_args = "";
   extra_options = ("\n" ^ name ^ " specific options:\
-\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
+\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
+\n  -worker-id name        set name of the coq worker\
+\n");
 }
 
 let start ~init ~loop name =

@@ -24,9 +24,6 @@ let error_missing_arg s =
 (******************************************************************************)
 (* Imperative effects! This must be fixed at some point.                      *)
 (******************************************************************************)
-let set_worker_id opt s =
-  assert (s <> "master");
-  Flags.async_proofs_worker_id := s
 
 let set_type_in_type () =
   let typing_flags = Environ.typing_flags (Global.env ()) in
@@ -374,8 +371,6 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_delegation_threshold = get_float opt (next ())
       }}}
-
-    |"-worker-id" -> set_worker_id opt (next ()); oval
 
     |"-compat" ->
       let v = G_vernac.parse_compat_version (next ()) in
