@@ -56,6 +56,7 @@ type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
+  | PrintModUid of string list
 
 type coqargs_main =
   | Queries of coqargs_query list

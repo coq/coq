@@ -82,6 +82,7 @@ type coqargs_query =
   | PrintTags | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
+  | PrintModUid of string list
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -262,14 +263,6 @@ let get_cache opt = function
   | _ ->
     error_wrong_arg ("Error: force expected after "^opt)
 
-
-let get_native_name s =
-  (* We ignore even critical errors because this mode has to be super silent *)
-  try
-    String.concat "/" [Filename.dirname s;
-      Nativelib.output_dir; Library.native_name_from_filename s]
-  with _ -> ""
-
 let to_opt_key = Str.(split (regexp " +"))
 
 let parse_option_set opt =
@@ -407,7 +400,7 @@ let parse_args ~help ~init arglist : t * string list =
       oval
 
     |"-print-mod-uid" ->
-      let s = String.concat " " (List.map get_native_name rem) in print_endline s; exit 0
+      set_query oval (PrintModUid rem) (* XXX: add more consistency tests on rem? *)
 
     |"-profile-ltac-cutoff" ->
       Flags.profile_ltac := true;

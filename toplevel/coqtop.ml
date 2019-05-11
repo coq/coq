@@ -155,6 +155,13 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
+let get_native_name s =
+  (* We ignore even critical errors because this mode has to be super silent *)
+  try
+    String.concat "/" [Filename.dirname s;
+      Nativelib.output_dir; Library.native_name_from_filename s]
+  with _ -> ""
+
 let print_query opts = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
@@ -162,6 +169,8 @@ let print_query opts = function
   | PrintHelp h -> Usage.print_usage stderr h
   | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
   | PrintTags -> print_style_tags opts.config
+  | PrintModUid l ->
+      let s = String.concat " " (List.map get_native_name l) in print_endline s
 
 (** GC tweaking *)
 
