@@ -418,7 +418,7 @@ class ProductionObject(CoqObject):
     Example::
 
         .. prodn:: term += let: @pattern := @term in @term
-        .. prodn:: occ_switch ::= { {? + %| - } {* @num } }
+        .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
 
     """
     subdomain = "prodn"

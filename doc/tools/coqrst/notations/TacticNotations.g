@@ -13,21 +13,38 @@ grammar TacticNotations;
 // needs rendering (in particular whitespace (kept in output) vs. WHITESPACE
 // (discarded)).
 
+// The distinction between nopipeblock and block is needed because we only want
+// to require escaping within alternative blocks, so that e.g. `first [ x | y ]`
+// can be written without escaping the `|`.
+
 top: blocks EOF;
 blocks: block ((whitespace)? block)*;
-block: atomic | meta | hole | repeat | curlies;
-repeat: LGROUP (ATOM)? WHITESPACE blocks (WHITESPACE)? RBRACE;
+
+block: pipe | nopipeblock;
+nopipeblock: atomic | escaped | hole | alternative | repeat | curlies;
+
+alternative: LALT (WHITESPACE)? altblocks (WHITESPACE)? RBRACE;
+altblocks: altblock ((WHITESPACE)? altsep (WHITESPACE)? altblock)+;
+altblock: nopipeblock ((whitespace)? nopipeblock)*;
+
+repeat: LGROUP (ATOM | PIPE)? WHITESPACE blocks (WHITESPACE)? RBRACE;
 curlies: LBRACE (whitespace)? blocks (whitespace)? RBRACE;
+
+pipe: PIPE;
+altsep: PIPE;
 whitespace: WHITESPACE;
-meta: METACHAR;
+escaped: ESCAPED;
 atomic: ATOM (SUB)?;
 hole: ID (SUB)?;
 
-LGROUP: '{' [+*?];
+
+LALT: '{|';
+LGROUP: '{+' | '{*' | '{?';
 LBRACE: '{';
 RBRACE: '}';
-METACHAR: '%' [|(){}];
-ATOM: '@' | '_' | ~[@_{} ]+;
+ESCAPED: '%{' | '%}' | '%|';
+PIPE: '|';
+ATOM: '@' | '_' | ~[@_{}| ]+;
 ID: '@' ('_'? [a-zA-Z0-9])+;
 SUB: '_' '_' [a-zA-Z0-9]+;
 WHITESPACE: ' '+;

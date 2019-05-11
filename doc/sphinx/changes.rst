@@ -457,7 +457,7 @@ Other changes in 8.10+beta1
   - Command :cmd:`Instance`, when no body is provided, now always opens
     a proof. This is a breaking change, as instance of :n:`Instance
     @ident__1 : @ident__2.` where :n:`@ident__2` is a trivial class will
-    have to be changed into :n:`Instance @ident__1 : @ident__2 := {}.`
+    have to be changed into :n:`Instance @ident__1 : @ident__2 := %{%}.`
     or :n:`Instance @ident__1 : @ident__2. Proof. Qed.`
     (`#9274 <https://github.com/coq/coq/pull/9274>`_, by Maxime Dénès).
 
@@ -3881,7 +3881,7 @@ Vernacular commands
   Equality Schemes", this replaces deprecated option "Equality Scheme").
 - Made support for automatic generation of case analysis schemes available
   to user (governed by option "Set Case Analysis Schemes").
-- New command :n:`{? Global } Generalizable [All|No] [Variable|Variables] {* @ident}` to
+- New command :n:`{? Global } Generalizable {| All | No } {| Variable | Variables } {* @ident}` to
   declare which identifiers are generalizable in `` `{} `` and `` `() `` binders.
 - New command "Print Opaque Dependencies" to display opaque constants in
   addition to all variables, parameters or axioms a theorem or

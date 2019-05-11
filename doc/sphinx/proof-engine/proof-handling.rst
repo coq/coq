@@ -322,7 +322,7 @@ Navigation in the proof tree
 .. index:: {
            }
 
-.. cmd:: %{ %| %}
+.. cmd:: {| %{ | %} }
 
    The command ``{`` (without a terminating period) focuses on the first
    goal, much like :cmd:`Focus` does, however, the subproof can only be
@@ -430,7 +430,7 @@ not go beyond enclosing ``{`` and ``}``, so bullets can be reused as further
 nesting levels provided they are delimited by these. Bullets are made of
 repeated ``-``, ``+`` or ``*`` symbols:
 
-.. prodn:: bullet ::= {+ - } %| {+ + } %| {+ * }
+.. prodn:: bullet ::= {| {+ - } | {+ + } | {+ * } }
 
 Note again that when a focused goal is proved a message is displayed
 together with a suggestion about the right bullet or ``}`` to unfocus it
@@ -492,7 +492,7 @@ The following example script illustrates all these features:
 
 Set Bullet Behavior
 ```````````````````
-.. opt:: Bullet Behavior  %( "None" %| "Strict Subproofs" %)
+.. opt:: Bullet Behavior {| "None" | "Strict Subproofs" }
    :name: Bullet Behavior
 
    This option controls the bullet behavior and can take two possible values:
@@ -680,7 +680,7 @@ This image shows an error message with diff highlighting in CoqIDE:
 How to enable diffs
 ```````````````````
 
-.. opt:: Diffs %( "on" %| "off" %| "removed" %)
+.. opt:: Diffs {| "on" | "off" | "removed" }
    :name: Diffs
 
    The “on” setting highlights added tokens in green, while the “removed” setting

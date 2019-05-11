@@ -311,7 +311,7 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {? @binders} : @class t1 … tn [| priority] := { field1 := b1 ; …; fieldi := bi }
+.. cmd:: Instance @ident {? @binders} : @class t1 … tn {? | priority } := { field1 := b1 ; …; fieldi := bi }
 
    This command is used to declare a typeclass instance named
    :token:`ident` of the class :token:`class` with parameters ``t1`` to ``tn`` and
@@ -324,7 +324,7 @@ Summary of the commands
    :tacn:`auto` hints. If the priority is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
-   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n [| priority] := @term
+   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n {? | priority } := @term
 
       This syntax is used for declaration of singleton class instances or
       for directly giving an explicit term of type :n:`forall @binders, @class
@@ -356,7 +356,7 @@ Summary of the commands
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
 few other commands related to typeclasses.
 
-.. cmd:: Existing Instance {+ @ident} [| priority]
+.. cmd:: Existing Instance {+ @ident} {? | priority }
 
    This command adds an arbitrary list of constants whose type ends with
    an applied typeclass to the instance database with an optional
@@ -579,7 +579,7 @@ Settings
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Typeclasses eauto := {? debug} {? (dfs) | (bfs) } @num
+.. cmd:: Typeclasses eauto := {? debug} {? {| (dfs) | (bfs) } } @num
    :name: Typeclasses eauto
 
    This command allows more global customization of the typeclass
