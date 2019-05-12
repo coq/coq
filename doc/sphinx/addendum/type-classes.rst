@@ -311,7 +311,7 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {? @binders} : @class t1 … tn {? | priority } := { field1 := b1 ; …; fieldi := bi }
+.. cmd:: Instance @ident {? @binders} : @class t1 … tn {? | priority} := { field1 := b1 ; …; fieldi := bi }
 
    This command is used to declare a typeclass instance named
    :token:`ident` of the class :token:`class` with parameters ``t1`` to ``tn`` and
@@ -324,11 +324,11 @@ Summary of the commands
    :tacn:`auto` hints. If the priority is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
-   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n {? | priority } := @term
+   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class {+ @term} {? | @priority } := @term
 
       This syntax is used for declaration of singleton class instances or
       for directly giving an explicit term of type :n:`forall @binders, @class
-      @term__1 … @term__n`.  One need not even mention the unique field name for
+      {+ @term}`.  One need not even mention the unique field name for
       singleton classes.
 
    .. cmdv:: Global Instance
@@ -356,7 +356,7 @@ Summary of the commands
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
 few other commands related to typeclasses.
 
-.. cmd:: Existing Instance {+ @ident} {? | priority }
+.. cmd:: Existing Instance {+ @ident} {? | @priority}
 
    This command adds an arbitrary list of constants whose type ends with
    an applied typeclass to the instance database with an optional
@@ -408,7 +408,7 @@ few other commands related to typeclasses.
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.
 
-   .. cmdv:: typeclasses eauto @num
+   .. tacv:: typeclasses eauto @num
 
       .. warning::
          The semantics for the limit :n:`@num`
@@ -417,7 +417,7 @@ few other commands related to typeclasses.
          counted, which might result in larger limits being necessary when
          searching with ``typeclasses eauto`` than with :tacn:`auto`.
 
-   .. cmdv:: typeclasses eauto with {+ @ident}
+   .. tacv:: typeclasses eauto with {+ @ident}
 
       This variant runs resolution with the given hint databases. It treats
       typeclass subgoals the same as other subgoals (no shelving of
