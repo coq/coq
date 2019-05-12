@@ -48,8 +48,8 @@ val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
 
-val private_con_of_con : safe_environment -> Constant.t -> private_constants
-val private_con_of_scheme : kind:string -> safe_environment -> (inductive * Constant.t) list -> private_constants
+val private_constant : safe_environment -> Entries.side_effect_role -> Constant.t -> private_constants
+(** Constant must be the last definition of the safe_environment. *)
 
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :

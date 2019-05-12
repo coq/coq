@@ -147,9 +147,10 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let const = define mode id c (Declareops.inductive_is_polymorphic mib) ctx in
+  let role = Entries.Schema (ind, kind) in
+  let neff = Safe_typing.private_constant (Global.safe_env ()) role const in
   declare_scheme kind [|ind,const|];
-  const, Safe_typing.concat_private
-     (Safe_typing.private_con_of_scheme ~kind (Global.safe_env()) [ind,const]) eff
+  const, Safe_typing.concat_private neff eff
 
 let define_individual_scheme kind mode names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
@@ -163,15 +164,16 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-  let consts = Array.map2 (fun id cl -> 
-     define mode id cl (Declareops.inductive_is_polymorphic mib) ctx) ids cl in
+  let fold i effs id cl =
+    let cst = define mode id cl (Declareops.inductive_is_polymorphic mib) ctx in
+    let role = Entries.Schema ((mind, i), kind)in
+    let neff = Safe_typing.private_constant (Global.safe_env ()) role cst in
+    (Safe_typing.concat_private neff effs, cst)
+  in
+  let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
-  consts,
-  Safe_typing.concat_private
-    (Safe_typing.private_con_of_scheme
-      ~kind (Global.safe_env()) (Array.to_list schemes))
-    eff 
+  consts, eff
 
 let define_mutual_scheme kind mode names mind =
   match Hashtbl.find scheme_object_table kind with

@@ -174,7 +174,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
-  let eff = private_con_of_con (Global.safe_env ()) cst in
+  let eff = private_constant (Global.safe_env ()) Entries.Subproof cst in
   let effs = concat_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
