@@ -170,12 +170,12 @@ compatibility constraints.
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd::  Add Parametric Relation (x1 : T1) ... (xn : Tk) : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by refl} {? symmetry proved by sym} {? transitivity proved by trans} as @ident
+.. cmd::  Add Parametric Relation @binders : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by @term} {? symmetry proved by @term} {? transitivity proved by @term} as @ident
 
    This command declares a parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
    :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)`.
 
-   The :token:`ident` gives a unique name to the morphism and it is used
+   The final :token:`ident` gives a unique name to the morphism and it is used
    by the command to generate fresh names for automatically provided
    lemmas used internally.
 
@@ -219,15 +219,16 @@ replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism (x1 : T1) ... (xk : Tk) : (f t1 ... tn) with signature sig as @ident
+.. cmd:: Add Parametric Morphism @binders : (@ident {+ @term__1}) with signature @term__2 as @ident
 
-   This command declares ``f`` as a parametric morphism of signature ``sig``. The
-   identifier :token:`ident` gives a unique name to the morphism and it is used as
-   the base name of the typeclass instance definition and as the name of
-   the lemma that proves the well-definedness of the morphism. The
-   parameters of the morphism as well as the signature may refer to the
-   context of variables. The command asks the user to prove interactively
-   that ``f`` respects the relations identified from the signature.
+   This command declares a parametric morphism :n:`@ident {+ @term__1}` of
+   signature :n:`@term__2`.  The final identifier :token:`ident` gives a unique
+   name to the morphism and it is used as the base name of the typeclass
+   instance definition and as the name of the lemma that proves the
+   well-definedness of the morphism. The parameters of the morphism as well as
+   the signature may refer to the context of variables. The command asks the
+   user to prove interactively that the function denoted by the first
+   :token:`ident` respects the relations identified from the signature.
 
 .. example::
 
@@ -577,7 +578,7 @@ Deprecated syntax and backward incompatibilities
    Notice that the syntax is not completely backward compatible since the
    identifier was not required.
 
-.. cmd:: Add Morphism f : @ident
+.. cmd:: Add Morphism @ident : @ident
    :name: Add Morphism
 
    This command is restricted to the declaration of morphisms
