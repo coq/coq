@@ -228,6 +228,12 @@ let check_engagement env expected_impredicative_set =
 
 (** {6 Stm machinery } *)
 
+type seff_env =
+  [ `Nothing
+  (* The proof term and its universes.
+     Same as the constant_body's but not in an ephemeron *)
+  | `Opaque of Constr.t * Univ.ContextSet.t ]
+
 let get_opaque_body env cbo =
   match cbo.const_body with
   | Undef _ -> assert false
@@ -238,9 +244,16 @@ let get_opaque_body env cbo =
         (Opaqueproof.force_proof (Environ.opaque_tables env) opaque,
          Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
 
+type side_eff = {
+  seff_constant : Constant.t;
+  seff_body : Declarations.constant_body;
+  seff_env : seff_env;
+  seff_role : Entries.side_effect_role;
+}
+
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
-  eff      : Entries.side_eff list;
+  eff      : side_eff list;
 }
 
 module SideEffects :
@@ -254,7 +267,6 @@ end =
 struct
 
 module SeffOrd = struct
-open Entries
 type t = side_effect
 let compare e1 e2 =
   let cmp e1 e2 = Constant.CanOrd.compare e1.seff_constant e2.seff_constant in
@@ -282,6 +294,14 @@ let side_effects_of_private_constants l =
   let ans = List.rev (SideEffects.repr l) in
   List.map_append (fun { eff; _ } -> eff) ans
 
+let push_private_constants env eff =
+  let eff = side_effects_of_private_constants eff in
+  let add_if_undefined env eff =
+    try ignore(Environ.lookup_constant eff.seff_constant env); env
+    with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
+  in
+  List.fold_left add_if_undefined env eff
+
 let empty_private_constants = SideEffects.empty
 let add_private mb eff effs =
   let from_env = CEphemeron.create mb in
@@ -289,7 +309,6 @@ let add_private mb eff effs =
 let concat_private = SideEffects.concat
 
 let make_eff env cst r =
-  let open Entries in
   let cbo = Environ.lookup_constant cst env.env in
   {
     seff_constant = cst;
@@ -309,7 +328,6 @@ let private_con_of_scheme ~kind env cl =
   add_private env.revstruct eff empty_private_constants
 
 let universes_of_private eff =
-  let open Entries in
   let fold acc eff =
     let acc = match eff.seff_env with
     | `Nothing -> acc
@@ -588,7 +606,6 @@ let add_constant_aux ~in_section senv (kn, cb) =
 let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
 
 let inline_side_effects env body side_eff =
-  let open Entries in
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
   let filter { eff = se; from_env = mb } =
@@ -725,7 +742,6 @@ let constant_entry_of_side_effect cb u =
     const_entry_inline_code = cb.const_inline_code }
 
 let turn_direct orig =
-  let open Entries in
   let cb = orig.seff_body in
   if Declareops.is_opaque cb then
     let p = match orig.seff_env with
@@ -738,7 +754,6 @@ let turn_direct orig =
   else orig
 
 let export_eff eff =
-  let open Entries in
   (eff.seff_constant, eff.seff_body, eff.seff_role)
 
 let export_side_effects mb env c =
