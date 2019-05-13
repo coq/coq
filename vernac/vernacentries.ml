@@ -74,6 +74,24 @@ let cl_of_qualid = function
 let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
 
+let warn_definition_not_visible =
+  CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
+    Pp.(fun names ->
+        let n = List.length names in
+        let names = List.rev names in
+        strbrk "Section definition" ++ str(if n=1 then " " else "s ") ++
+        prlist_with_sep spc Names.Id.print names ++ spc() ++ str (CString.conjugate_verb_to_be n) ++ strbrk " not visible from current goals")
+
+let maybe_warn_definition_not_visible ?loc oldnames =
+  let names = Global.named_context() in
+  if names == oldnames.Environ.env_named_ctx then () else
+    let names = CList.map_filter (fun d ->
+        let name = Context.Named.Declaration.get_id d in
+        try ignore(Environ.lookup_named_ctxt name oldnames); None with Not_found -> Some name)
+        names
+    in
+    if names <> [] then warn_definition_not_visible ?loc names
+
 (** Standard attributes for definition-like commands. *)
 module DefAttributes = struct
   type t = {
@@ -605,7 +623,7 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
         | Some r ->
           let sigma, env = get_current_or_global_context ~pstate in
           Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~ontop:pstate ~program_mode name
+      ComDefinition.do_definition ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
       pstate
   )
@@ -632,7 +650,7 @@ let vernac_exact_proof ~pstate c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 
-let vernac_assumption ~atts ~pstate discharge kind l nl =
+let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
@@ -642,7 +660,7 @@ let vernac_assumption ~atts ~pstate discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~pstate ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -1075,8 +1093,8 @@ let vernac_declare_instance ~atts sup inst pri =
   Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
-let vernac_context ~pstate ~poly l =
-  if not (ComAssumption.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~poly l =
+  if not (ComAssumption.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -2232,7 +2250,7 @@ exception End_of_input
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
+let rec interp_expr_core ?proof ~atts ~st c : Proof_global.t option =
   let pstate = st.Vernacstate.proof in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2300,7 +2318,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     unsupported_attributes atts;
     vernac_require_open_proof ~pstate (vernac_exact_proof c)
   | VernacAssumption ((discharge,kind),nl,l) ->
-    with_def_attributes ~atts vernac_assumption ~pstate discharge kind l nl;
+    with_def_attributes ~atts vernac_assumption discharge kind l nl;
     pstate
   | VernacInductive (cum, priv, finite, l) ->
     vernac_inductive ~atts cum priv finite l;
@@ -2383,7 +2401,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     with_def_attributes ~atts vernac_declare_instance sup inst info;
     pstate
   | VernacContext sup ->
-    let () = vernac_context ~pstate ~poly:(only_polymorphism atts) sup in
+    let () = vernac_context ~poly:(only_polymorphism atts) sup in
     pstate
   | VernacExistingInstance insts ->
     with_section_locality ~atts vernac_existing_instance insts;
@@ -2602,6 +2620,12 @@ and vernac_load ?proof ~verbosely ~st fname =
   if there_are_pending_proofs ~pstate then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   pstate
+
+and interp_expr ?proof ~atts ~st cmd =
+  let oldnames = Global.named_context_val() in
+  let st = interp_expr_core ?proof ~atts ~st cmd in
+  if Option.has_some st && Option.is_empty proof (* wtf *) then maybe_warn_definition_not_visible oldnames;
+  st
 
 and interp_control ?proof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->

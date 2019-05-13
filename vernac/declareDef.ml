@@ -14,12 +14,6 @@ open Entries
 open Globnames
 open Impargs
 
-let warn_definition_not_visible =
-  CWarnings.create ~name:"definition-not-visible" ~category:"implicits"
-    Pp.(fun ident ->
-        strbrk "Section definition " ++
-        Names.Id.print ident ++ strbrk " is not visible from current goals")
-
 let warn_local_declaration =
   CWarnings.create ~name:"local-declaration" ~category:"scope"
     Pp.(fun (id,kind) ->
@@ -33,12 +27,11 @@ let get_locality id ~kind = function
 | Local -> true
 | Global -> false
 
-let declare_definition ~ontop ident (local, p, k) ?hook_data ce pl imps =
+let declare_definition ident (local, p, k) ?hook_data ce pl imps =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let gr = match local with
   | Discharge when Lib.sections_are_opened () ->
       let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in
-      let () = if Option.has_some ontop then warn_definition_not_visible ident in
       VarRef ident
   | Discharge | Local | Global ->
       let local = get_locality ident ~kind:"definition" local in
@@ -57,9 +50,9 @@ let declare_definition ~ontop ident (local, p, k) ?hook_data ce pl imps =
   end;
   gr
 
-let declare_fix ~ontop ?(opaque = false) ?hook_data (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
+let declare_fix ?(opaque = false) ?hook_data (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
-  declare_definition ~ontop f kind ?hook_data ce pl imps
+  declare_definition f kind ?hook_data ce pl imps
 
 let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in

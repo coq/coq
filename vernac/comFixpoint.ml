@@ -284,7 +284,7 @@ let declare_fixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx
     let ctx = Evd.check_univ_decl ~poly evd pl in
     let pl = Evd.universe_binders evd in
     let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
-    ignore (List.map4 (DeclareDef.declare_fix ~ontop (local, poly, Fixpoint) pl ctx)
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
               fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -319,7 +319,7 @@ let declare_cofixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,c
     let evd = Evd.restrict_universe_context evd vars in
     let ctx = Evd.check_univ_decl ~poly evd pl in
     let pl = Evd.universe_binders evd in
-    ignore (List.map4 (DeclareDef.declare_fix ~ontop (local, poly, CoFixpoint) pl ctx)
+    ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
               fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames;
