@@ -27,16 +27,27 @@ open Reductionops
 (*s A structure S is a non recursive inductive type with a single
    constructor (the name of which defaults to Build_S) *)
 
-(* Table des structures: le nom de la structure (un [inductive]) donne
-   le nom du constructeur, le nombre de paramètres et pour chaque
-   argument réel du constructeur, le nom de la projection
-   correspondante, si valide, et un booléen disant si c'est une vraie
-   projection ou bien une fonction constante (associée à un LetIn) *)
+(* Table of structures.
+   It maps to each structure name (of type [inductive]):
+     - the name of its constructor;
+     - the number of parameters;
+     - for each true argument, some data about the corresponding projection:
+         * its name (may be anonymous);
+         * whether it is a true projection (as opposed to a constant function, LetIn);
+         * whether it should be used as a canonical hint;
+         * the constant realizing this projection (if any).
+*)
+
+type proj_kind = {
+  pk_name: Name.t;
+  pk_true_proj: bool;
+  pk_canonical: bool;
+}
 
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
-  s_PROJKIND : (Name.t * bool) list;
+  s_PROJKIND : proj_kind list;
   s_PROJ : Constant.t option list }
 
 let structure_table =
@@ -47,7 +58,7 @@ let projection_table =
 (* TODO: could be unify struc_typ and struc_tuple ? *)
 
 type struc_tuple =
-    constructor * (Name.t * bool) list * Constant.t option list
+    constructor * proj_kind list * Constant.t option list
 
 let register_structure env (id,kl,projs) =
   let open Declarations in
@@ -161,7 +172,7 @@ let canonical_projections () =
     !object_table []
 
 let keep_true_projections projs kinds =
-  let filter (p, (_, b)) = if b then Some p else None in
+  let filter (p, { pk_true_proj ; pk_canonical }) = if pk_true_proj then Some (p, pk_canonical) else None in
   List.map_filter filter (List.combine projs kinds)
 
 let rec cs_pattern_of_constr env t =
@@ -206,17 +217,20 @@ let compute_canonical_projections env ~warn (con,ind) =
   let o_NPARAMS = List.length o_TPARAMS in
   let lpj = keep_true_projections lpj kl in
   let nenv = Termops.push_rels_assum sign env in
-  List.fold_left2 (fun acc spopt t ->
-      Option.cata (fun proji_sp ->
-          match cs_pattern_of_constr nenv t with
-          | patt, o_INJ, o_TCOMPS ->
-            ((ConstRef proji_sp, (patt, t)),
-             { o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
-            :: acc
-          | exception Not_found ->
-            if warn then warn_projection_no_head_constant (sign, env, t, con, proji_sp);
-            acc
-        ) acc spopt
+  List.fold_left2 (fun acc (spopt, canonical) t ->
+      if canonical
+      then
+        Option.cata (fun proji_sp ->
+            match cs_pattern_of_constr nenv t with
+            | patt, o_INJ, o_TCOMPS ->
+              ((ConstRef proji_sp, (patt, t)),
+               { o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
+              :: acc
+            | exception Not_found ->
+              if warn then warn_projection_no_head_constant (sign, env, t, con, proji_sp);
+              acc
+          ) acc spopt
+      else acc
     ) [] lpj projs
 
 let pr_cs_pattern = function
@@ -288,7 +302,7 @@ let check_and_decompose_canonical_structure env sigma ref =
     with Not_found ->
       error_not_structure ref
         (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env sigma (EConstr.mkInd indsp)) in
-  let ntrue_projs = List.count snd s.s_PROJKIND in
+  let ntrue_projs = List.count (fun { pk_true_proj } -> pk_true_proj) s.s_PROJKIND in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref (str "Got too few arguments to the record or structure constructor.");
   (sp,indsp)

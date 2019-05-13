@@ -17,14 +17,20 @@ open Constr
 (** A structure S is a non recursive inductive type with a single
    constructor (the name of which defaults to Build_S) *)
 
+type proj_kind = {
+  pk_name: Name.t;
+  pk_true_proj: bool;
+  pk_canonical: bool;
+}
+
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
-  s_PROJKIND : (Name.t * bool) list;
+  s_PROJKIND : proj_kind list;
   s_PROJ : Constant.t option list }
 
 type struc_tuple =
-    constructor * (Name.t * bool) list * Constant.t option list
+    constructor * proj_kind list * Constant.t option list
 
 val register_structure : Environ.env -> struc_tuple -> unit
 val subst_structure : Mod_subst.substitution -> struc_tuple -> struc_tuple

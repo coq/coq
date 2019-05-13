@@ -1368,7 +1368,7 @@ let sort_fields ~complete loc fields completer =
                  let first_field = GlobRef.equal field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch.")
-                    | (_, regular) :: proj_kinds ->
+                    | { Recordops.pk_true_proj = regular } :: proj_kinds ->
                        (* "regular" is false when the field is defined
                            by a let-in in the record declaration
                            (its value is fixed from other fields). *)

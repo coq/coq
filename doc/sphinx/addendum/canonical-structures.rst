@@ -209,7 +209,7 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
                         LE_class : LE.class T;
                         extra : mixin (EQ.Pack T EQ_class) (LE.cmp T LE_class) }.
 
-    Structure type := _Pack { obj : Type; class_of : class obj }.
+    Structure type := _Pack { obj : Type; #[canonical(false)] class_of : class obj }.
 
     Arguments Mixin {e le} _.
 
@@ -218,6 +218,9 @@ We need to define a new class that inherits from both ``EQ`` and ``LE``.
 The mixin component of the ``LEQ`` class contains all the extra content we
 are adding to ``EQ`` and ``LE``. In particular it contains the requirement
 that the two relations we are combining are compatible.
+
+The `class_of` projection of the `type` structure is annotated as *not canonical*;
+it plays no role in the search for instances.
 
 Unfortunately there is still an obstacle to developing the algebraic
 theory of this new class.
@@ -313,9 +316,7 @@ constructor ``*``. It also tests that they work as expected.
 Unfortunately, these declarations are very verbose. In the following
 subsection we show how to make them more compact.
 
-.. FIXME shouldn't warn
-
-.. coqtop:: all warn
+.. coqtop:: all
 
   Module Add_instance_attempt.
 
@@ -420,9 +421,7 @@ the reader can refer to :cite:`CSwcu`.
 
 The declaration of canonical instances can now be way more compact:
 
-.. FIXME should not warn
-
-.. coqtop:: all warn
+.. coqtop:: all
 
   Canonical Structure nat_LEQty := Eval hnf in Pack nat nat_LEQmx.
   

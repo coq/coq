@@ -2048,6 +2048,21 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
+   .. note::
+      To prevent a field from being involved in the inference of canonical instances,
+      its declaration can be annotated with the :g:`#[canonical(false)]` attribute.
+
+      .. example::
+
+         For instance, when declaring the :g:`Setoid` structure above, the
+         :g:`Prf_equiv` field declaration could be written as follows.
+
+         .. coqdoc::
+
+            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
+
+      See :ref:`canonicalstructures` for a more realistic example.
+
    .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
 
       This is equivalent to a regular definition of :token:`ident` followed by the
@@ -2067,6 +2082,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Print Canonical Projections.
 
+      .. note::
+
+         The last line would not show up if the corresponding projection (namely
+         :g:`Prf_equiv`) were annotated as not canonical, as described above.
 
 Implicit types of variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
