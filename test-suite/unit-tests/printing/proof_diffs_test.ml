@@ -71,6 +71,13 @@ let _ = add_test "tokenize_string examples" t
 
 open Pp
 
+(* example that was failing from #8922 *)
+let t () =
+  Proof_diffs.write_diffs_option "removed";
+  ignore (diff_str "X : ?Goal" "X : forall x : ?Goal0, ?Goal1");
+  Proof_diffs.write_diffs_option "on"
+let _ = add_test "shorten_diff_span failure from #8922" t
+
 (* note pp_to_string concatenates adjacent strings, could become one token,
 e.g. str " a" ++ str "b " will give a token "ab" *)
 (* checks background is present and correct *)
