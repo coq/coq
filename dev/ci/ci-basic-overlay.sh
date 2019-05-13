@@ -257,7 +257,7 @@
 ########################################################################
 # relation_algebra
 ########################################################################
-: "${relation_algebra_CI_REF:=master}"
+: "${relation_algebra_CI_REF:=c85b4cb1532bad331bcfb5923f20dd65eade3142}"
 : "${relation_algebra_CI_GITURL:=https://github.com/damien-pous/relation-algebra}"
 : "${relation_algebra_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
 
