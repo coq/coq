@@ -1885,6 +1885,7 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintSectionContext qid -> print_sec_context_typ env sigma qid
   | PrintInspect n -> inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
+  | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
   | PrintModule qid -> print_module qid
