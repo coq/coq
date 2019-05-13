@@ -840,10 +840,11 @@ gives a way to let any arbitrary expression which is not handled by the
 custom entry ``expr`` be parsed or printed by the main grammar of term
 up to the insertion of a pair of curly brackets.
 
-.. cmd:: Print Grammar @ident.
+.. cmd:: Print Custom Grammar @ident.
+   :name: Print Custom Grammar
 
-   This displays the state of the grammar for terms and grammar for
-   patterns associated to the custom entry :token:`ident`.
+   This displays the state of the grammar for terms associated to
+   the custom entry :token:`ident`.
 
 Summary
 ~~~~~~~

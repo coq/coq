@@ -50,10 +50,10 @@ let pr_entry e =
   str (Buffer.contents entry_buf)
 
 let pr_registered_grammar name =
-  let gram = try Some (Pcoq.find_grammars_by_name name) with Not_found -> None in
+  let gram = Pcoq.find_grammars_by_name name in
   match gram with
-  | None -> user_err Pp.(str "Unknown or unprintable grammar entry.")
-  | Some entries ->
+  | [] -> user_err Pp.(str "Unknown or unprintable grammar entry.")
+  | entries ->
     let pr_one (Pcoq.AnyEntry e) =
       str "Entry " ++ str (Pcoq.Entry.name e) ++ str " is" ++ fnl () ++
       pr_entry e
@@ -84,6 +84,8 @@ let pr_grammar = function
       str "Entry gallina_ext is" ++ fnl () ++
       pr_entry Pvernac.Vernac_.gallina_ext
   | name -> pr_registered_grammar name
+
+let pr_custom_grammar name = pr_registered_grammar ("constr:"^name)
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
