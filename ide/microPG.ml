@@ -65,14 +65,27 @@ type 'c entry = {
 }
 
 let mC = [`CONTROL]
-let mM = [`MOD1]
+let mM =
+  if Coq_config.arch = "Darwin" then
+    (* We add both MOD2 and META because both are
+       returned when pressing Command on MacOS X *)
+    [`CONTROL;`MOD2;`META]
+  else
+    [`MOD1]
 
-let mod_of t x = List.for_all (fun m -> List.mem m (GdkEvent.Key.state t)) x
+let mod_of t x =
+  let y = GdkEvent.Key.state t in
+  List.for_all (fun m -> List.mem m y) x &&
+  List.for_all (fun m -> List.mem m x) y
 
 let pr_keymod l =
-  if l = mC then "C-"
-  else if l = mM then "M-"
-  else ""
+  if l = mC then
+    "Ctrl-"
+  else
+    if l = mM then
+      if Coq_config.arch = "Darwin" then "Ctrl-Cmd-" else "Meta-"
+    else
+      ""
 
 let mkE ?(mods=mC) key keyname doc ?(alias=[]) contents =
   List.map (fun (mods, key, keyname) -> { mods; key; keyname; doc; contents })
@@ -146,6 +159,13 @@ let emacs = insert emacs "Emacs" [] [
   (* motion *)
   mkE _e "e" "Move to end of line" (Motion(fun s i ->
     (if not i#ends_line then i#forward_to_line_end else i),
+    { s with move = None }));
+  mkE ~mods:mM _Right "->" "Move to end of buffer" (Motion(fun s i ->
+    i#forward_to_end,
+    { s with move = None }));
+  mkE ~mods:mM _Left "<-" "Move to start of buffer" (Motion(fun s i ->
+    let buffer = new GText.buffer i#buffer in
+    buffer#start_iter,
     { s with move = None }));
   mkE _a "a" "Move to beginning of line" (Motion(fun s i ->
     (i#set_line_offset 0), { s with move = None }));
@@ -286,9 +306,9 @@ let find gui (Step(here,konts)) t =
   else
     if k = _c && mod_of t mC && sel_nonempty () then
       ignore(run t gui (Action("Edit","Copy")) empty);
-    let cmp { key; mods } = key = k && mod_of t mods in
-    try `Do (List.find cmp here) with Not_found ->
-    try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
+  let cmp { key; mods } = key = k && mod_of t mods in
+  try `Do (List.find cmp here) with Not_found ->
+  try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
 
 let init w nb ags =
   let gui = { notebook = nb; action_groups = ags } in
@@ -305,7 +325,7 @@ let init w nb ags =
     then false
     else begin
     eprintf "got key %s\n%!" (pr_key t);
-    if nanoPG#get then begin
+    if microPG#get then begin
       match find gui !cur t with
       | `Do e ->
            eprintf "run (%s) %s on %s\n%!" e.keyname e.doc (pr_status !status);
@@ -320,4 +340,6 @@ let init w nb ags =
 
 
 
-let get_documentation () = print_keypaths pg
+let get_documentation () =
+  "Chars, words, lines and sentences below pertain to standard unicode segmentation rules\n" ^
+  print_keypaths pg
