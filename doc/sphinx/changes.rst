@@ -419,6 +419,15 @@ Other changes in 8.10+beta1
     `#10059 <https://github.com/coq/coq/pull/10059>`_,
     by Hugo Herbelin and Paolo G. Giarrusso).
 
+  - The simplified value returned by :tacn:`field_simplify` is not
+    always a fraction anymore.  When the denominator is :g:`1`, it
+    returns :g:`x` while previously it was returning :g:`x/1`.  This
+    change could break codes that were post-processing application of
+    :tacn:`field_simplify` to get rid of these :g:`x/1`
+    (`#9854 <https://github.com/coq/coq/pull/9854>`_,
+    by Laurent Théry,
+    with help from Michael Soegtrop, Maxime Dénès, and Vincent Laporte).
+
 - SSReflect:
 
   - Clear discipline made consistent across the entire proof language.
