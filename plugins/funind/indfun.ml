@@ -414,7 +414,7 @@ let register_struct ~pstate is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * V
   match fixpoint_exprl with
     | [(({CAst.v=fname},pl),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
-      ComDefinition.do_definition ~ontop:pstate
+      ComDefinition.do_definition
         ~program_mode:false
 	fname
         (Decl_kinds.Global,false,Decl_kinds.Definition) pl
