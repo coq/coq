@@ -355,6 +355,11 @@ Other changes in 8.10+beta1
     that will do it automatically, using the output of ``coqc``
     (`#8638 <https://github.com/coq/coq/pull/8638>`_, by Jason Gross).
 
+  - Allow inspecting custom grammar entries by :cmd:`Print Custom Grammar`
+    (`#10061 <https://github.com/coq/coq/pull/10061>`_,
+    fixes `#9681 <http://github.com/coq/coq/pull/9681>`_,
+    by Jasper Hugunin, review by Pierre-Marie Pédrot and Hugo Herbelin).
+
 - The `quote plugin
   <https://coq.inria.fr/distrib/V8.9.0/refman/proof-engine/detailed-tactic-examples.html#quote>`_
   was removed. If some users are interested in maintaining this plugin
@@ -400,7 +405,23 @@ Other changes in 8.10+beta1
     closes `#7632 <https://github.com/coq/coq/issues/7632>`_,
     by Théo Zimmermann).
 
-  - SSReflect clear discipline made consistent across the entire proof language.
+  - Modes are now taken into account by :tacn:`typeclasses eauto` for
+    local hypotheses
+    (`#9996 <https://github.com/coq/coq/pull/9996>`_,
+    fixes `#5752 <https://github.com/coq/coq/issues/5752>`_,
+    by Maxime Dénès, review by Pierre-Marie Pédrot).
+
+  - New variant :tacn:`change_no_check` of :tacn:`change`, usable as a
+    documented replacement of :tacn:`convert_concl_no_check`
+    (`#10012 <https://github.com/coq/coq/pull/10012>`_,
+    `#10017 <https://github.com/coq/coq/pull/10017>`_,
+    `#10053 <https://github.com/coq/coq/pull/10053>`_, and
+    `#10059 <https://github.com/coq/coq/pull/10059>`_,
+    by Hugo Herbelin and Paolo G. Giarrusso).
+
+- SSReflect:
+
+  - Clear discipline made consistent across the entire proof language.
     Whenever a clear switch `{x..}` comes immediately before an existing proof
     context entry (used as a view, as a rewrite rule or as name for a new
     context entry) then such entry is cleared too.
@@ -413,6 +434,15 @@ Other changes in 8.10+beta1
     - `rewrite {x..} H`  ->  `rewrite E {x..H}`
 
     (`#9341 <https://github.com/coq/coq/pull/9341>`_, by Enrico Tassi).
+
+  - `inE` now expands `y \in r x` when `r` is a `simpl_rel`.
+    New `{pred T}` notation for a `pred T` alias in the `pred_sort` coercion
+    class, simplified `predType` interface: `pred_class` and `mkPredType`
+    deprecated, `{pred T}` and `PredType` should be used instead.
+    `if c return t then ...` now expects `c` to be a variable bound in `t`.
+    New `nonPropType` interface matching types that do _not_ have sort `Prop`.
+    New `relpre R f` definition for the preimage of a relation R under f
+    (`#9995 <https://github.com/coq/coq/pull/9995>`_, by Georges Gonthier).
 
 - Vernacular commands:
 
@@ -535,10 +565,28 @@ Other changes in 8.10+beta1
     `fset` database
     (`#9725 <https://github.com/coq/coq/pull/9725>`_, by Frédéric Besson).
 
+  - Added :g:`Coq.Structures.EqualitiesFacts.PairUsualDecidableTypeFull`
+    (`#9984 <https://github.com/coq/coq/pull/9984>`_,
+    by Jean-Christophe Léchenet and Oliver Nash).
+
 - Some error messages that show problems with a pair of non-matching
   values will now highlight the differences
   (`#8669 <https://github.com/coq/coq/pull/8669>`_, by Jim Fehrle).
 
+- Changelog has been moved from a specific file `CHANGES.md` to the
+  reference manual; former Credits chapter of the reference manual has
+  been split in two parts: a History chapter which was enriched with
+  additional historical information about Coq versions 1 to 5, and a
+  Changes chapter which was enriched with the content formerly in
+  `CHANGES.md` and `COMPATIBILITY`
+  (`#9133 <https://github.com/coq/coq/pull/9133>`_,
+  `#9668 <https://github.com/coq/coq/pull/9668>`_,
+  `#9939 <https://github.com/coq/coq/pull/9939>`_,
+  `#9964 <https://github.com/coq/coq/pull/9964>`_,
+  and `#10085 <https://github.com/coq/coq/pull/10085>`_,
+  by Théo Zimmermann,
+  with help and ideas from Emilio Jesús Gallego Arias, Gaëtan
+  Gilbert, Clément Pit-Claudel, Matthieu Sozeau, and Enrico Tassi).
 
 Version 8.9
 -----------
