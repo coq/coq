@@ -84,10 +84,18 @@
   Coq has been tagged.
 - [ ] Have some people test the recently auto-generated Windows and MacOS
   packages.
-- [ ] Change the version name from alpha to beta1 (see
+- [ ] In a PR:
+  - Change the version name from alpha to beta1 (see
   [#7009](https://github.com/coq/coq/pull/7009/files)).
-  We generally do not update the magic numbers at this point.
+  - We generally do not update the magic numbers at this point.
+  - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X+beta1` tag using `git tag -s`.
+- [ ] Check using `git push --tags --dry-run` that you are not
+  pushing anything else than the new tag. If needed, remove spurious
+  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Set `is_a_released_version` to `false` in `configure.ml`
+  (if you forget about it, you'll be reminded whenever you try to
+  backport a PR with a changelog entry).
 
 ### These steps are the same for all releases (beta, final, patch-level) ###
 
@@ -112,9 +120,17 @@
 
 ## At the final release time ##
 
-- [ ] Change the version name to X.X.0 and the magic numbers (see
+- [ ] In a PR:
+  - Change the version name from X.X.0 and the magic numbers (see
   [#7271](https://github.com/coq/coq/pull/7271/files)).
+  - Set `is_a_released_version` to `true` in `configure.ml`.
 - [ ] Put the `VX.X.0` tag.
+- [ ] Check using `git push --tags --dry-run` that you are not
+  pushing anything else than the new tag. If needed, remove spurious
+  tags with `git tag -d`. When this is OK, proceed with `git push --tags`.
+- [ ] Set `is_a_released_version` to `false` in `configure.ml`
+  (if you forget about it, you'll be reminded whenever you try to
+  backport a PR with a changelog entry).
 
 Repeat the generic process documented above for all releases.
 
