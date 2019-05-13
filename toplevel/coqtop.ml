@@ -271,31 +271,6 @@ let init_toploop opts =
   let state = { doc; sid; proof = None; time = opts.time } in
   Ccompile.load_init_vernaculars opts ~state, opts
 
-(* To remove in 8.11 *)
-let call_coqc args =
-  let remove str arr = Array.(of_list List.(filter (fun l -> not String.(equal l str)) (to_list arr))) in
-  let coqc_name = Filename.remove_extension (System.get_toplevel_path "coqc") in
-  let args = remove "-compile" args in
-  Unix.execv coqc_name args
-
-let deprecated_coqc_warning = CWarnings.(create
-    ~name:"deprecate-compile-arg"
-    ~category:"toplevel"
-    ~default:Enabled
-    (fun opt_name -> Pp.(seq [str "The option "; str opt_name; str" is deprecated, please use coqc."])))
-
-let rec coqc_deprecated_check args acc extras =
-  match extras with
-  | [] -> acc
-  | "-o" :: _ :: rem ->
-    deprecated_coqc_warning "-o";
-    coqc_deprecated_check args acc rem
-  | ("-compile"|"-compile-verbose") :: file :: rem ->
-    deprecated_coqc_warning "-compile";
-    call_coqc args
-  | x :: rem ->
-    coqc_deprecated_check args (x::acc) rem
-
 let coqtop_init ~opts extra =
   init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
@@ -317,7 +292,6 @@ let start_coq custom =
         init_toplevel
           ~help:Usage.print_usage_coqtop ~init:default custom.init
           (List.tl (Array.to_list Sys.argv)) in
-      let extras = coqc_deprecated_check Sys.argv [] extras in
       if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";

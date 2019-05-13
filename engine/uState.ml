@@ -116,8 +116,6 @@ let univ_entry ~poly uctx =
     Polymorphic_entry (nas, uctx)
   else Monomorphic_entry (context_set uctx)
 
-let const_univ_entry = univ_entry
-
 let of_context_set ctx = { empty with uctx_local = ctx }
 
 let subst ctx = ctx.uctx_univ_variables

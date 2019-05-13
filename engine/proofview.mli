@@ -505,10 +505,6 @@ module Goal : sig
   (** Type of goals. *)
   type t
 
-  (** Normalises the argument goal. *)
-  val normalize : t -> t tactic
-  [@@ocaml.deprecated "Normalization is enforced by EConstr, [normalize] is not needed anymore"]
-
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the

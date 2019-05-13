@@ -1104,13 +1104,6 @@ module Goal = struct
         tclZERO ~info e
     end
     end
-
-  let normalize { self; state } =
-    Env.get >>= fun env ->
-    tclEVARMAP >>= fun sigma ->
-    let (gl,sigma) = nf_gmake env sigma (goal_with_state self state) in
-    tclTHEN (Unsafe.tclEVARS sigma) (tclUNIT gl)
-
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in

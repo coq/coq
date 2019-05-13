@@ -34,30 +34,6 @@
 (* Type of a proof. *)
 type t
 
-(* Returns a stylised view of a proof for use by, for instance,
-   ide-s. *)
-(* spiwack: the type of [proof] will change as we push more refined
-   functions to ide-s. This would be better than spawning a new nearly
-   identical function everytime. Hence the generic name. *)
-(* In this version: returns the focused goals, a representation of the
-   focus stack (the goals at each level), a representation of the
-   shelf (the list of goals on the shelf), a representation of the
-   given up goals (the list of the given up goals) and the underlying
-   evar_map *)
-val proof : t ->
-  Goal.goal list
-  * (Goal.goal list * Goal.goal list) list
-  * Goal.goal list
-  * Goal.goal list
-  * Evd.evar_map
-[@@ocaml.deprecated "use [Proof.data]"]
-
-val initial_goals : t -> (EConstr.constr * EConstr.types) list
-[@@ocaml.deprecated "use [Proof.data]"]
-
-val initial_euctx : t -> UState.t
-[@@ocaml.deprecated "use [Proof.data]"]
-
 type data =
   { sigma : Evd.evar_map
   (** A representation of the evar_map [EJGA wouldn't it better to just return the proofview?] *)
@@ -80,29 +56,6 @@ type data =
   }
 
 val data : t -> data
-
-(* Generic records structured like the return type of proof *)
-type 'a pre_goals = {
-  fg_goals : 'a list;
-  [@ocaml.deprecated "use [Proof.data]"]
-  (** List of the focussed goals *)
-  bg_goals : ('a list * 'a list) list;
-  [@ocaml.deprecated "use [Proof.data]"]
-  (** Zipper representing the unfocussed background goals *)
-  shelved_goals : 'a list;
-  [@ocaml.deprecated "use [Proof.data]"]
-  (** List of the goals on the shelf. *)
-  given_up_goals : 'a list;
-  [@ocaml.deprecated "use [Proof.data]"]
-  (** List of the goals that have been given up *)
-}
-[@@ocaml.deprecated "use [Proof.data]"]
-
-(* needed in OCaml 4.05.0, not needed in newer ones *)
-[@@@ocaml.warning "-3"]
-val map_structured_proof : t -> (Evd.evar_map -> Goal.goal -> 'a) -> ('a pre_goals) [@ocaml.warning "-3"]
-[@@ocaml.deprecated "use [Proof.data]"]
-[@@@ocaml.warning "+3"]
 
 (*** General proof functions ***)
 val start

@@ -43,12 +43,6 @@ module GlobDirRef = struct
 
 end
 
-type global_dir_reference = GlobDirRef.t
-[@@ocaml.deprecated "Use [GlobDirRef.t]"]
-
-let eq_global_dir_reference = GlobDirRef.equal
-[@@ocaml.deprecated "Use [GlobDirRef.equal]"]
-
 exception GlobalizationError of qualid
 
 let error_global_not_found qid =
@@ -516,10 +510,6 @@ let exists_cci sp = ExtRefTab.exists sp !the_ccitab
 
 let exists_dir dir = DirTab.exists dir !the_dirtab
 
-let exists_section = exists_dir
-
-let exists_module = exists_dir
-
 let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
 let exists_universe kn = UnivTab.exists kn !the_univtab
@@ -585,10 +575,3 @@ let global_inductive qid =
   | ref ->
       user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
         (pr_qualid qid ++ spc () ++ str "is not an inductive type")
-
-(********************************************************************)
-
-(* Deprecated synonyms *)
-
-let extended_locate = locate_extended
-let absolute_reference = global_of_path

@@ -89,13 +89,6 @@ module GlobDirRef : sig
   val equal : t -> t -> bool
 end
 
-type global_dir_reference = GlobDirRef.t
-[@@ocaml.deprecated "Use [GlobDirRef.t]"]
-
-val eq_global_dir_reference :
-  GlobDirRef.t -> GlobDirRef.t -> bool
-[@@ocaml.deprecated "Use [GlobDirRef.equal]"]
-
 exception GlobalizationError of qualid
 
 (** Raises a globalization error *)
@@ -170,10 +163,6 @@ val extended_global_of_path : full_path -> extended_global_reference
 val exists_cci : full_path -> bool
 val exists_modtype : full_path -> bool
 val exists_dir : DirPath.t -> bool
-val exists_section : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
-
-val exists_module : DirPath.t -> bool (** deprecated synonym of [exists_dir] *)
-
 val exists_universe : full_path -> bool
 
 (** {6 These functions locate qualids into full user names } *)
@@ -219,11 +208,6 @@ val shortest_qualid_of_syndef : ?loc:Loc.t -> Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_universe : ?loc:Loc.t -> Univ.Level.UGlobal.t -> qualid
-
-(** Deprecated synonyms *)
-
-val extended_locate : qualid -> extended_global_reference (*= locate_extended *)
-val absolute_reference : full_path -> GlobRef.t (** = global_of_path *)
 
 (** {5 Generic name handling} *)
 

@@ -120,8 +120,6 @@ let argument_position_eq p1 p2 = match p1, p2 with
 | Hyp h1, Hyp h2 -> Int.equal h1 h2
 | _ -> false
 
-let explicitation_eq = Constrexpr_ops.explicitation_eq
-
 type implicit_explanation =
   | DepRigid of argument_position
   | DepFlex of argument_position

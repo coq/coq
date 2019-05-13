@@ -207,7 +207,7 @@ struct
     * ZMicromega.v
     *)
 
-  let gen_constant_in_modules s m n = EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.gen_reference_in_modules s m n)
+  let gen_constant_in_modules s m n = EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.gen_reference_in_modules s m n)
   let init_constant = gen_constant_in_modules "ZMicromega" Coqlib.init_modules
   [@@@ocaml.warning "+3"]
 

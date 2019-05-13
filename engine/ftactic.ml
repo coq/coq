@@ -56,13 +56,6 @@ let bind (type a) (type b) (m : a t) (f : a -> b t) : b t = m >>= function
 
 let goals = Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l)
 
-let nf_enter f =
-  bind goals
-    (fun gl ->
-      gl >>= fun gl ->
-      Proofview.Goal.normalize gl >>= fun nfgl ->
-      Proofview.V82.wrap_exceptions (fun () -> f nfgl)) [@warning "-3"]
-
 let enter f =
   bind goals
     (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))

@@ -615,9 +615,6 @@ val to_universe_context : evar_map -> Univ.UContext.t
 
 val univ_entry : poly:bool -> evar_map -> Entries.universes_entry
 
-val const_univ_entry : poly:bool -> evar_map -> Entries.universes_entry
-[@@ocaml.deprecated "Use [univ_entry]."]
-
 val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> Entries.universes_entry
 
 val merge_universe_context : evar_map -> UState.t -> evar_map

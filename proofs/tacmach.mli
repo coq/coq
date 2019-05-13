@@ -68,8 +68,6 @@ val pf_conv_x_leq  : Goal.goal sigma -> constr -> constr -> bool
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : Goal.goal sigma -> Pp.t
-val pr_glls   : Goal.goal list sigma -> Pp.t
-[@@ocaml.deprecated "Please move to \"new\" proof engine"]
 
 (** Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig

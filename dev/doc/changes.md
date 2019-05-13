@@ -1,3 +1,10 @@
+## Changes between Coq 8.10 and Coq 8.11
+
+### ML API
+
+- Functions and types deprecated in 8.10 have been removed in Coq
+  8.11.
+
 ## Changes between Coq 8.9 and Coq 8.10
 
 ### ML4 Pre Processing

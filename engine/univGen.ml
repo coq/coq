@@ -25,11 +25,6 @@ let new_univ_global () =
 let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
-(* TODO: remove *)
-let new_univ () = Univ.Universe.make (fresh_level ())
-let new_Type () = mkType (new_univ ())
-let new_Type_sort () = sort_of_univ (new_univ ())
-
 let fresh_instance auctx =
   let inst = Array.init (AUContext.size auctx) (fun _ -> fresh_level()) in
   let ctx = Array.fold_right LSet.add inst LSet.empty in
@@ -83,10 +78,6 @@ let constr_of_monomorphic_global gr =
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 
-let constr_of_global gr = constr_of_monomorphic_global gr
-
-let constr_of_global_univ = mkRef
-
 let fresh_global_or_constr_instance env = function
   | IsConstr c -> c, ContextSet.empty
   | IsGlobal gr -> fresh_global_instance env gr
@@ -99,34 +90,6 @@ let global_of_constr c =
   | Var id -> VarRef id, Instance.empty
   | _ -> raise Not_found
 
-open Declarations
-
-let type_of_reference env r =
-  match r with
-  | VarRef id -> Environ.named_type id env, ContextSet.empty
-
-  | ConstRef c ->
-     let cb = Environ.lookup_constant c env in
-     let ty = cb.const_type in
-     let auctx = Declareops.constant_polymorphic_context cb in
-     let inst, ctx = fresh_instance auctx in
-     Vars.subst_instance_constr inst ty, ctx
-
-  | IndRef ind ->
-    let (mib, _ as specif) = Inductive.lookup_mind_specif env ind in
-    let auctx = Declareops.inductive_polymorphic_context mib in
-    let inst, ctx = fresh_instance auctx in
-    let ty = Inductive.type_of_inductive env (specif, inst) in
-    ty, ctx
-
-  | ConstructRef (ind,_ as cstr) ->
-    let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
-    let auctx = Declareops.inductive_polymorphic_context mib in
-    let inst, ctx = fresh_instance auctx in
-    Inductive.type_of_constructor (cstr,inst) specif, ctx
-
-let type_of_global t = type_of_reference (Global.env ()) t
-
 let fresh_sort_in_family = function
   | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty
@@ -134,11 +97,6 @@ let fresh_sort_in_family = function
   | InType ->
     let u = fresh_level () in
       sort_of_univ (Univ.Universe.make u), ContextSet.singleton u
-
-let new_sort_in_family sf =
-  fst (fresh_sort_in_family sf)
-
-let extend_context = Univ.extend_in_context_set
 
 let new_global_univ () =
   let u = fresh_level () in
