@@ -1,0 +1,86 @@
+diff/patch file created on Sat, Jan 19, 2019  5:10:57 PM with:
+difftar-folder.sh tarballs/Gappa_Plugin-gappalib-coq-1.4.0.tar.gz Gappa_Plugin-gappalib-coq-1.4.0/ 1
+TARFILE= tarballs/Gappa_Plugin-gappalib-coq-1.4.0.tar.gz
+FOLDER= Gappa_Plugin-gappalib-coq-1.4.0/
+TARSTRIP= 1
+TARPREFIX= gappalib-coq-1.4.0/
+ORIGFOLDER= Gappa_Plugin-gappalib-coq-1.4.0/.orig
+--- Gappa_Plugin-gappalib-coq-1.4.0/.orig/configure.in	2018-07-18 12:39:18.000000000 +0200
++++ Gappa_Plugin-gappalib-coq-1.4.0//configure.in	2019-01-19 17:08:05.943511300 +0100
+@@ -50,7 +50,17 @@
+ AC_MSG_CHECKING([for camlpXo])
+ if test ! "$CAMLP4O"; then
+   CAMLP4O=`$COQC -config | sed -n -e 's/^CAMLP.O=\(.*\)/\1/p'`
+-  CAMLP4O=`which $CAMLP4O`
++  case `uname -s` in
++    CYGWIN*)
++      case "$CAMLP4O" in
++        *:*) CAMLP4O=`cygpath -m "$CAMLP4O"` ;;
++        *)   CAMLP4O=`cygpath -u "$CAMLP4O"` ;;
++      esac
++      ;;
++    *)
++      CAMLP4O=`which $CAMLP4O`
++      ;;
++  esac
+ fi
+ AC_MSG_RESULT([$CAMLP4O])
+
+@@ -78,10 +88,10 @@
+ rm -f conftest.v conftest.vo conftest.err
+
+ AC_SUBST(OCAMLLIB)
+-OCAMLLIB=`$OCAMLC -where`
++OCAMLLIB=`$OCAMLC -where | tr -d '\r' | tr '\\' '/'`
+
+ AC_SUBST(COQLIB)
+-COQLIB=`$COQC -where`
++COQLIB=`$COQC -where | tr -d '\r' | tr '\\' '/'`
+
+ if test "$libdir" = '${exec_prefix}/lib'; then
+   libdir="$COQLIB/user-contrib/Gappa"
+--- Gappa_Plugin-gappalib-coq-1.4.0/.orig/configure	2018-07-18 12:39:18.000000000 +0200
++++ Gappa_Plugin-gappalib-coq-1.4.0//configure	2019-01-19 17:08:36.979358700 +0100
+@@ -2409,7 +2397,17 @@
+ $as_echo_n "checking for camlpXo... " >&6; }
+ if test ! "$CAMLP4O"; then
+   CAMLP4O=`$COQC -config | sed -n -e 's/^CAMLP.O=\(.*\)/\1/p'`
+-  CAMLP4O=`which $CAMLP4O`
++  case `uname -s` in
++    CYGWIN*)
++      case "$CAMLP4O" in
++        *:*) CAMLP4O=`cygpath -m "$CAMLP4O"` ;;
++        *)   CAMLP4O=`cygpath -u "$CAMLP4O"` ;;
++      esac
++      ;;
++    *)
++      CAMLP4O=`which $CAMLP4O`
++      ;;
++  esac
+ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CAMLP4O" >&5
+ $as_echo "$CAMLP4O" >&6; }
+@@ -2456,10 +2454,10 @@
+ rm -f conftest.v conftest.vo conftest.err
+
+
+-OCAMLLIB=`$OCAMLC -where`
++OCAMLLIB=`$OCAMLC -where | tr -d '\r' | tr '\\' '/'`
+
+
+-COQLIB=`$COQC -where`
++COQLIB=`$COQC -where | tr -d '\r' | tr '\\' '/'`
+
+ if test "$libdir" = '${exec_prefix}/lib'; then
+   libdir="$COQLIB/user-contrib/Gappa"
+--- Gappa_Plugin-gappalib-coq-1.4.0/.orig/Remakefile.in	2018-07-18 12:39:18.000000000 +0200
++++ Gappa_Plugin-gappalib-coq-1.4.0//Remakefile.in	2019-01-19 15:43:12.430269600 +0100
+@@ -43,7 +43,7 @@
+ 	@COQC@ -R src Gappa -I src $<
+
+ COQSUBTREES = clib engine kernel interp intf lib library ltac parsing pretyping printing proofs tactics toplevel vernac plugins/ltac
+-COQINCLUDES = $(addprefix -I @COQLIB@/, $(COQSUBTREES))
++COQINCLUDES = $(addprefix -I "@COQLIB@"/, $(COQSUBTREES))
+
+ src/gappatac.cmo: src/gappatac.ml
+ 	@OCAMLC@ -pp "@CAMLP4O@ @COQPPLIBS@ pa_macro.cmo -D@COQDEFINE@" -rectypes $(COQINCLUDES) -c $< -o $@

@@ -56,6 +56,10 @@ call %CI_PROJECT_DIR%\dev\build\windows\MakeCoq_MinGW.bat -threads=1 ^
   -addon=coquelicot ^
   -addon=vst ^
   -addon=aactactics ^
+  -addon=flocq ^
+  -addon=interval ^
+  -addon=gappa_tool ^
+  -addon=gappa ^
   -make=N ^
   -setup %CI_PROJECT_DIR%\%SETUP% || GOTO ErrorCopyLogFilesAndExit
 
