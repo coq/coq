@@ -107,7 +107,7 @@ coqtop specific options:\
   exit 1
 
 let print_usage_coqc () =
-  print_usage_common stderr "Usage: coqc <options> <Coq options> file...";
+  print_usage_common stderr "Usage: coqc <options> <Coq options> file...\n\n";
   output_string stderr "\n\
 coqc specific options:\
 \n\
