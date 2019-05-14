@@ -214,7 +214,8 @@ let process_universe_constraints ctx cstrs =
   | Inr l, Inl r | Inl r, Inr l ->
     let alg = LSet.mem l ctx.uctx_univ_algebraic in
     let inst = univ_level_rem l r r in
-      if alg then (instantiate_variable l inst vars; local)
+      if alg && not (LSet.mem l (Universe.levels inst)) then
+        (instantiate_variable l inst vars; local)
       else
         let lu = Universe.make l in
         if univ_level_mem l r then
