@@ -1218,6 +1218,35 @@ let warn_arguments_assert =
             strbrk "to clear implicit arguments add ': clear implicits'. " ++
             strbrk "If you want to clear notation scopes add ': clear scopes'")
 
+let load_arguments _ (_name, (r, b)) =
+  Reductionops.ReductionBehaviour.set r b
+
+let cache_arguments o = load_arguments 1 o
+
+let classify_arguments o = Libobject.Substitute o
+
+let subst_arguments (subst, ((r,o) as orig)) =
+  let r' = subst_global_reference subst r in if r==r' then orig
+  else (r',o)
+
+let discharge_arguments (_name, (gr, red as orig)) =
+  Some (gr, Reductionops.ReductionBehaviour.discharge orig)
+
+let rebuild_arguments (gr, red as orig) =
+  (gr, Reductionops.ReductionBehaviour.rebuild orig)
+
+let inArguments = let open Libobject in
+  declare_object {
+                (default_object "ARGUMENTS") with
+                load_function = load_arguments;
+                cache_function = cache_arguments;
+                classify_function = classify_arguments;
+                subst_function = subst_arguments;
+                discharge_function = discharge_arguments;
+                rebuild_function = rebuild_arguments;
+        }
+
+
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
@@ -1425,8 +1454,10 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   if red_modifiers_specified then begin
     match sr with
     | ConstRef _ as c ->
-       Reductionops.ReductionBehaviour.set
-         ~local:section_local c (Option.get red_behavior)
+      if section_local then
+        Reductionops.ReductionBehaviour.set c (Option.get red_behavior)
+      else
+        Lib.add_anonymous_leaf (inArguments (c, Option.get red_behavior))
 
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++

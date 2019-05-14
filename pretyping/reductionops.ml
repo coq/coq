@@ -88,7 +88,6 @@ let set_reduction_effect x funkey =
 module ReductionBehaviour = struct
   open Globnames
   open Names
-  open Libobject
 
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
@@ -106,45 +105,19 @@ module ReductionBehaviour = struct
   let table =
     Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
 
-  let load _ (_,(_,(r, b))) =
-    table := GlobRef.Map.add r b !table
-
-  let cache o = load 1 o
-
-  let classify (local,_ as o) = if local then Dispose else Substitute o
-
-  let subst (subst, (local, (r,o) as orig)) =
-    let r' = subst_global_reference subst r in if r==r' then orig
-    else (local,(r',o))
-
-  let discharge = function
-    | _,(false, (gr, b)) ->
-      let b =
-        if Lib.is_in_section gr then
-          let vars = Lib.variable_section_segment_of_reference gr in
-          let extra = List.length vars in
-          more_args extra b
-        else b
-      in
-      Some (false, (gr, b))
-    | _ -> None
+  let discharge (gr, b) =
+    if Lib.is_in_section gr then
+      let vars = Lib.variable_section_segment_of_reference gr in
+      let extra = List.length vars in
+      more_args extra b
+    else b
 
   let rebuild = function
-    | req, (ConstRef c, _ as x) -> req, x
+    | (ConstRef c, b) -> b
     | _ -> assert false
 
-  let inRedBehaviour = declare_object {
-			(default_object "REDUCTIONBEHAVIOUR") with
-			load_function = load;
-			cache_function = cache;
-			classify_function = classify;
-			subst_function = subst;
-			discharge_function = discharge;
-			rebuild_function = rebuild;
-		      }
-
-  let set ~local r b =
-    Lib.add_anonymous_leaf (inRedBehaviour (local, (r, b)))
+  let set r b =
+    table := GlobRef.Map.add r b !table
 
   let get r = GlobRef.Map.find_opt r !table
 
