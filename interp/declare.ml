@@ -78,7 +78,8 @@ let cache_constant ((sp,kn), obj) =
       then Constant.make1 kn
       else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(basename sp) ++ str".")
     | Some r ->
-      Global.add_constant ~in_section:(Lib.sections_are_opened ()) id (GlobalRecipe r)
+      let kn, _ = Global.add_constant ~in_section:(Lib.sections_are_opened ()) id (GlobalRecipe r) in
+      kn
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
@@ -149,7 +150,7 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let define_constant ?(export_seff=false) id cd =
+let define_constant ?role ?(export_seff=false) id cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let is_poly de = match de.const_entry_universes with
   | Monomorphic_entry _ -> false
@@ -167,16 +168,22 @@ let define_constant ?(export_seff=false) id cd =
       export, ConstantEntry (PureEntry, DefinitionEntry de)
     | _ -> [], ConstantEntry (EffectEntry, cd)
   in
-  let kn = Global.add_constant ~in_section id decl in
-  kn, export
+  let kn, eff = Global.add_constant ?role ~in_section id decl in
+  kn, eff, export
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
   let () = check_exists id in
-  let kn, export = define_constant ~export_seff id cd in
+  let kn, _eff, export = define_constant ~export_seff id cd in
   (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
   let () = register_constant kn kind local in
   kn
+
+let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = false) id (cd, kind) =
+  let kn, eff, export = define_constant ~role id cd in
+  let () = assert (List.is_empty export) in
+  let () = register_constant kn kind local in
+  kn, eff
 
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)

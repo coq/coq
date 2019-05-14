@@ -116,8 +116,7 @@ let compute_name internal id =
   | InternalTacticRequest ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
-let define internal id c poly univs =
-  let fd = declare_constant ~internal in
+let define internal role id c poly univs =
   let id = compute_name internal id in
   let ctx = UState.minimize univs in
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
@@ -133,12 +132,12 @@ let define internal id c poly univs =
     const_entry_inline_code = false;
     const_entry_feedback = None;
   } in
-  let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
+  let kn, eff = declare_private_constant ~role ~internal id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
     | InternalTacticRequest -> ()
     | _-> definition_message id
   in
-  kn
+  kn, eff
 
 let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let (c, ctx), eff = f mode ind in
@@ -146,9 +145,8 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let const = define mode id c (Declareops.inductive_is_polymorphic mib) ctx in
   let role = Entries.Schema (ind, kind) in
-  let neff = Safe_typing.private_constant (Global.safe_env ()) role const in
+  let const, neff = define mode role id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
   const, Safe_typing.concat_private neff eff
 
@@ -165,9 +163,8 @@ let define_mutual_scheme_base kind suff f mode names mind =
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
-    let cst = define mode id cl (Declareops.inductive_is_polymorphic mib) ctx in
     let role = Entries.Schema ((mind, i), kind)in
-    let neff = Safe_typing.private_constant (Global.safe_env ()) role cst in
+    let cst, neff = define mode role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Safe_typing.concat_private neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in

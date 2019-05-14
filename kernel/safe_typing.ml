@@ -797,7 +797,7 @@ let export_private_constants ~in_section ce senv =
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
 
-let add_constant ~in_section l decl senv =
+let add_constant ?role ~in_section l decl senv =
   let kn = Constant.make2 senv.modpath l in
   let senv =
     let cb = 
@@ -822,7 +822,11 @@ let add_constant ~in_section l decl senv =
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
-  kn, senv
+  let eff = match role with
+  | None -> empty_private_constants
+  | Some role -> private_constant senv role kn
+  in
+  (kn, eff), senv
 
 (** Insertion of inductive types *)
 
