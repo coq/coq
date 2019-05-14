@@ -11,6 +11,7 @@
 #install_printer  (* universes *)  ppuniverses;;
 #install_printer  (* univ level *) ppuni_level;;
 #install_printer  (* univ context *) ppuniverse_context;;
+#install_printer  (* univ context *) ppaucontext;;
 #install_printer  (* univ context future *) ppuniverse_context_future;;
 #install_printer  (* univ context set *) ppuniverse_context_set;;
 #install_printer  (* univ set *) ppuniverse_set;;
