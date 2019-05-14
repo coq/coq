@@ -404,7 +404,7 @@ struct
     * pp_*      functions pretty-print Coq terms.
     *)
 
-  exception ParseError of string option
+  exception ParseError of string
 
   (* A simple but useful getter function *)
 
@@ -414,9 +414,9 @@ struct
     | App(l,rst) ->
        (match EConstr.kind sigma l with
         | Construct((_,i),_) -> (i,rst)
-        |   _     -> raise (ParseError None)
+        |   _     -> raise (ParseError "")
        )
-    | _ ->   raise (ParseError None)
+    | _ ->   raise (ParseError "")
 
   (* Access the Micromega module *)
   
@@ -427,7 +427,7 @@ struct
     match i with
      | 1 -> Mc.O
      | 2 -> Mc.S (parse_nat sigma (c.(0)))
-     | i -> raise (ParseError (Some "parse_nat"))
+     | i -> raise (ParseError "parse_nat")
 
   let pp_nat o n = Printf.fprintf o "%i" (CoqToCaml.nat n)
 
@@ -442,7 +442,7 @@ struct
      | 1 -> Mc.XI (parse_positive sigma c.(0))
      | 2 -> Mc.XO (parse_positive sigma c.(0))
      | 3 -> Mc.XH
-     | i -> raise (ParseError (Some "parse_positive"))
+     | i -> raise (ParseError "parse_positive")
 
   let rec dump_positive x =
    match x with
@@ -490,7 +490,7 @@ struct
      | 1 -> Mc.Z0
      | 2 -> Mc.Zpos (parse_positive sigma c.(0))
      | 3 -> Mc.Zneg (parse_positive sigma c.(0))
-     | i -> raise (ParseError (Some "parse_z"))
+     | i -> raise (ParseError "parse_z")
 
   let dump_z x =
    match x with
@@ -508,8 +508,8 @@ struct
      match EConstr.kind sigma term with
        | App(c, args) -> if EConstr.eq_constr sigma c (Lazy.force coq_Qmake) then
              {Mc.qnum = parse_z sigma args.(0) ; Mc.qden = parse_positive sigma args.(1) }
-       else raise (ParseError (Some "parse_q"))
-   |  _ -> raise (ParseError (Some "parse_q"))
+       else raise (ParseError "parse_q")
+   |  _ -> raise (ParseError "parse_q")
 
 
   let rec pp_Rcst o cst = 
@@ -660,7 +660,7 @@ struct
    try
    snd (List.find (fun (x',y) -> EConstr.eq_constr sigma x (Lazy.force x')) l)
    with
-     Not_found -> raise (ParseError None)
+     Not_found -> raise (ParseError "")
 
   let zop_table = [
    coq_Zgt, Mc.OpGt ;
@@ -692,8 +692,8 @@ struct
     | [| ty ; a1 ; a2|] ->
        if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl ty (Lazy.force coq_Z)
        then (Mc.OpEq, args.(1), args.(2))
-       else raise (ParseError (Some "parse_zop"))
-    |  _ -> raise (ParseError (Some "parse_zop"))
+       else raise (ParseError "parse_zop")
+    |  _ -> raise (ParseError "parse_zop")
 
   let parse_rop gl (op,args) =
     let sigma = gl.sigma in
@@ -702,13 +702,13 @@ struct
     | [| ty ; a1 ; a2|] ->
        if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl ty (Lazy.force coq_R)
        then (Mc.OpEq, a1, a2)
-       else raise (ParseError (Some "parse_rop"))
-    |   _ -> raise (ParseError (Some "parse_rop"))
+       else raise (ParseError "parse_rop")
+    |   _ -> raise (ParseError "parse_rop")
 
   let parse_qop gl (op,args) =
     if Array.length args = 2
     then (assoc_const gl.sigma op qop_table, args.(0) , args.(1))
-    else raise (ParseError (Some "parse_qop"))
+    else raise (ParseError "parse_qop")
 
   type 'a op =
     | Binop of ('a Mc.pExpr -> 'a Mc.pExpr -> 'a Mc.pExpr)
@@ -886,7 +886,7 @@ struct
         if debug then Feedback.msg_debug Pp.(str "try harder");
         if is_ground_term gl.env gl.sigma t
         then parse gl (Redexpr.cbv_vm gl.env gl.sigma t)
-        else raise (ParseError (Some "parse_more_constant"))
+        else raise (ParseError "parse_more_constant")
       end
 
   let zconstant = parse_constant parse_z
@@ -910,7 +910,7 @@ struct
   and parse_zconstant  gl e =
     let (e,_) = parse_zexpr  gl (Env.empty gl) e in
     match Mc.zeval_const e with
-    | None -> raise (ParseError (Some "zconsant_expr"))
+    | None -> raise (ParseError "zconsant_expr")
     | Some z -> z
 
 
@@ -939,7 +939,7 @@ struct
          then Mc.C0
         else if EConstr.eq_constr sigma term (Lazy.force coq_R1)
          then Mc.C1
-         else raise (ParseError None)
+         else raise (ParseError "")
       | App(op,args) ->
          begin
            try
@@ -954,7 +954,7 @@ struct
 		| op when EConstr.eq_constr sigma op (Lazy.force coq_Rinv) ->
                   let arg = rconstant args.(0) in
                   if Mc.qeq_bool (Mc.q_of_Rcst arg) {Mc.qnum = Mc.Z0 ; Mc.qden = Mc.XH}
-                  then raise (ParseError None) (* This is a division by zero -- no semantics *)
+                  then raise (ParseError "") (* This is a division by zero -- no semantics *)
                   else Mc.CInv(arg) 
                 | op when EConstr.eq_constr sigma op (Lazy.force coq_Rpower) ->
                      Mc.CPow(rconstant args.(0) , Mc.Inr (parse_more_constant nconstant gl args.(1)))
@@ -962,9 +962,9 @@ struct
                      Mc.CQ (qconstant gl args.(0))
                 | op when EConstr.eq_constr sigma op   (Lazy.force coq_IZR)  ->
                      Mc.CZ (parse_more_constant zconstant gl args.(0))
-                | _ ->  raise (ParseError None)
+                | _ ->  raise (ParseError "")
 	end
-      |  _ -> raise (ParseError None) in
+      |  _ -> raise (ParseError "") in
 
     rconstant term
 
@@ -988,7 +988,7 @@ struct
               begin
                 match expr with
                 | Mc.PEc q -> Mc.PEc (Mc.qpower q exp)
-                |     _    -> print_string "parse_qexpr parse error" ; flush stdout ; raise (ParseError None)
+                |     _    -> print_string "parse_qexpr parse error" ; flush stdout ; raise (ParseError "")
               end
           | _     ->  let exp = Mc.Z.to_N  exp in
                         Mc.PEpow(expr,exp))
@@ -1076,7 +1076,7 @@ struct
              else if EConstr.eq_constr sigma term (Lazy.force coq_False)
              then Mc.(FF,env,tg)
              else if is_prop term then Mc.X(term),env,tg
-             else raise (ParseError (Some "parse_formula"))
+             else raise (ParseError "parse_formula")
     in
     xparse_formula env tg  ((*Reductionops.whd_zeta*) term)
 
