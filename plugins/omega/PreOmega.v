@@ -359,7 +359,10 @@ Ltac zify_positive_rel :=
 
 Ltac zify_positive_op :=
  match goal with
-  (* Zneg -> -Zpos (except for numbers) *)
+ (* Z.pow_pos -> Z.pow *)
+ | H : context [ Z.pow_pos ?a ?b ] |- _ => change (Z.pow_pos a b) with (Z.pow a (Z.pos b)) in H
+ | |- context [ Z.pow_pos ?a ?b ]  => change (Z.pow_pos a b) with (Z.pow a (Z.pos b))
+ (* Zneg -> -Zpos (except for numbers) *)
   | H : context [ Zneg ?a ] |- _ =>
      let isp := isPcst a in
      match isp with
@@ -374,6 +377,10 @@ Ltac zify_positive_op :=
      end
 
   (* misc type conversions: nat to positive *)
+  | H : context [ Zpos (Pos.of_succ_nat ?a) ] |- _ => rewrite (Zpos_P_of_succ_nat a) in H
+  | |- context [ Zpos (Pos.of_succ_nat ?a) ] => rewrite (Zpos_P_of_succ_nat a)
+
+  (* Z.power_pos *)
   | H : context [ Zpos (Pos.of_succ_nat ?a) ] |- _ => rewrite (Zpos_P_of_succ_nat a) in H
   | |- context [ Zpos (Pos.of_succ_nat ?a) ] => rewrite (Zpos_P_of_succ_nat a)
 

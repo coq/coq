@@ -55,7 +55,7 @@ Extract Constant Rinv   => "fun x -> 1 / x".
     extraction is only performed as a test in the test suite. *)
 (*Extraction "micromega.ml"
            Tauto.mapX Tauto.foldA Tauto.collect_annot Tauto.ids_of_formula Tauto.map_bformula
-           ZMicromega.cnfZ ZMicromega.bound_problem_fr QMicromega.cnfQ
+           ZMicromega.cnfZ ZMicromega.Zeval_const ZMicromega.bound_problem_fr QMicromega.cnfQ
            List.map simpl_cone (*map_cone  indexes*)
            denorm Qpower vm_add
    normZ normQ normQ n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.

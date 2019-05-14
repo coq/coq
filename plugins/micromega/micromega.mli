@@ -86,6 +86,8 @@ module Coq_Pos :
 
   val mul : positive -> positive -> positive
 
+  val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1
+
   val size_nat : positive -> nat
 
   val compare_cont : comparison -> positive -> positive -> comparison
@@ -124,6 +126,10 @@ module Z :
 
   val mul : z -> z -> z
 
+  val pow_pos : z -> positive -> z
+
+  val pow : z -> z -> z
+
   val compare : z -> z -> comparison
 
   val leb : z -> z -> bool
@@ -139,6 +145,8 @@ module Z :
   val to_N : z -> n
 
   val of_nat : nat -> z
+
+  val of_N : n -> z
 
   val pos_div_eucl : positive -> z -> z * z
 
@@ -179,20 +187,20 @@ val paddC : ('a1 -> 'a1 -> 'a1) -> 'a1 pol -> 'a1 -> 'a1 pol
 val psubC : ('a1 -> 'a1 -> 'a1) -> 'a1 pol -> 'a1 -> 'a1 pol
 
 val paddI :
-  ('a1 -> 'a1 -> 'a1) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1 pol -> positive -> 'a1
-  pol -> 'a1 pol
+  ('a1 -> 'a1 -> 'a1) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1 pol -> positive -> 'a1 pol
+  -> 'a1 pol
 
 val psubI :
   ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1 pol ->
   positive -> 'a1 pol -> 'a1 pol
 
 val paddX :
-  'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1 pol ->
-  positive -> 'a1 pol -> 'a1 pol
+  'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1 pol -> positive ->
+  'a1 pol -> 'a1 pol
 
 val psubX :
-  'a1 -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol -> 'a1 pol) ->
-  'a1 pol -> positive -> 'a1 pol -> 'a1 pol
+  'a1 -> ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol -> 'a1 pol) -> 'a1
+  pol -> positive -> 'a1 pol -> 'a1 pol
 
 val padd :
   'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol
@@ -205,20 +213,19 @@ val pmulC_aux :
   'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 -> 'a1 pol
 
 val pmulC :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 -> 'a1
-  pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 -> 'a1 pol
 
 val pmulI :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol ->
-  'a1 pol) -> 'a1 pol -> positive -> 'a1 pol -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1 pol -> 'a1 pol -> 'a1
+  pol) -> 'a1 pol -> positive -> 'a1 pol -> 'a1 pol
 
 val pmul :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  'a1 pol -> 'a1 pol -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1
+  pol -> 'a1 pol -> 'a1 pol
 
 val psquare :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  'a1 pol -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1
+  pol -> 'a1 pol
 
 type 'c pExpr =
 | PEc of 'c
@@ -232,16 +239,16 @@ type 'c pExpr =
 val mk_X : 'a1 -> 'a1 -> positive -> 'a1 pol
 
 val ppow_pos :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  ('a1 pol -> 'a1 pol) -> 'a1 pol -> 'a1 pol -> positive -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1
+  pol -> 'a1 pol) -> 'a1 pol -> 'a1 pol -> positive -> 'a1 pol
 
 val ppow_N :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  ('a1 pol -> 'a1 pol) -> 'a1 pol -> n -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1
+  pol -> 'a1 pol) -> 'a1 pol -> n -> 'a1 pol
 
 val norm_aux :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol
 
 type ('tA, 'tX, 'aA, 'aF) gFormula =
 | TT
@@ -253,8 +260,7 @@ type ('tA, 'tX, 'aA, 'aF) gFormula =
 | N of ('tA, 'tX, 'aA, 'aF) gFormula
 | I of ('tA, 'tX, 'aA, 'aF) gFormula * 'aF option * ('tA, 'tX, 'aA, 'aF) gFormula
 
-val mapX :
-  ('a2 -> 'a2) -> ('a1, 'a2, 'a3, 'a4) gFormula -> ('a1, 'a2, 'a3, 'a4) gFormula
+val mapX : ('a2 -> 'a2) -> ('a1, 'a2, 'a3, 'a4) gFormula -> ('a1, 'a2, 'a3, 'a4) gFormula
 
 val foldA : ('a5 -> 'a3 -> 'a5) -> ('a1, 'a2, 'a3, 'a4) gFormula -> 'a5 -> 'a5
 
@@ -278,37 +284,36 @@ val cnf_tt : ('a1, 'a2) cnf
 val cnf_ff : ('a1, 'a2) cnf
 
 val add_term :
-  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2) clause ->
-  ('a1, 'a2) clause option
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2) clause -> ('a1,
+  'a2) clause option
 
 val or_clause :
-  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1, 'a2)
-  clause -> ('a1, 'a2) clause option
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1, 'a2) clause ->
+  ('a1, 'a2) clause option
 
 val or_clause_cnf :
-  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1, 'a2) cnf
-  -> ('a1, 'a2) cnf
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1, 'a2) cnf ->
+  ('a1, 'a2) cnf
 
 val or_cnf :
-  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf ->
-  ('a1, 'a2) cnf
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1,
+  'a2) cnf
 
 val and_cnf : ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf
 
 type ('term, 'annot, 'tX, 'aF) tFormula = ('term, 'tX, 'annot, 'aF) gFormula
 
 val xcnf :
-  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) ->
-  ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-  'a3) cnf
+  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> ('a1 ->
+  'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf
 
 val radd_term :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) -> ('a1, 'a2) clause ->
   (('a1, 'a2) clause, 'a2 list) sum
 
 val ror_clause :
-  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause
-  -> (('a1, 'a2) clause, 'a2 list) sum
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause ->
+  (('a1, 'a2) clause, 'a2 list) sum
 
 val ror_clause_cnf :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1, 'a2) clause
@@ -319,17 +324,16 @@ val ror_cnf :
   clause list -> ('a1, 'a2) cnf * 'a2 list
 
 val rxcnf :
-  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) ->
-  ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2,
-  'a3) cnf * 'a3 list
+  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> ('a1 ->
+  'a3 -> ('a2, 'a3) cnf) -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf * 'a3
+  list
 
-val cnf_checker :
-  (('a1 * 'a2) list -> 'a3 -> bool) -> ('a1, 'a2) cnf -> 'a3 list -> bool
+val cnf_checker : (('a1 * 'a2) list -> 'a3 -> bool) -> ('a1, 'a2) cnf -> 'a3 list -> bool
 
 val tauto_checker :
-  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) ->
-  ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> (('a2 * 'a3) list -> 'a4 -> bool) -> ('a1, __,
-  'a3, unit0) gFormula -> 'a4 list -> bool
+  ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3) cnf) -> ('a1 ->
+  'a3 -> ('a2, 'a3) cnf) -> (('a2 * 'a3) list -> 'a4 -> bool) -> ('a1, __, 'a3, unit0)
+  gFormula -> 'a4 list -> bool
 
 val cneqb : ('a1 -> 'a1 -> bool) -> 'a1 -> 'a1 -> bool
 
@@ -363,27 +367,27 @@ val map_option : ('a1 -> 'a2 option) -> 'a1 option -> 'a2 option
 val map_option2 : ('a1 -> 'a2 -> 'a3 option) -> 'a1 option -> 'a2 option -> 'a3 option
 
 val pexpr_times_nformula :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  'a1 polC -> 'a1 nFormula -> 'a1 nFormula option
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1
+  polC -> 'a1 nFormula -> 'a1 nFormula option
 
 val nformula_times_nformula :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  'a1 nFormula -> 'a1 nFormula -> 'a1 nFormula option
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1
+  nFormula -> 'a1 nFormula -> 'a1 nFormula option
 
 val nformula_plus_nformula :
-  'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> 'a1 nFormula
-  -> 'a1 nFormula option
+  'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> 'a1 nFormula ->
+  'a1 nFormula option
 
 val eval_Psatz :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> 'a1 nFormula option
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1
+  -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> 'a1 nFormula option
 
 val check_inconsistent :
   'a1 -> ('a1 -> 'a1 -> bool) -> ('a1 -> 'a1 -> bool) -> 'a1 nFormula -> bool
 
 val check_normalised_formulas :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) ->
-  ('a1 -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> bool
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> ('a1
+  -> 'a1 -> bool) -> 'a1 nFormula list -> 'a1 psatz -> bool
 
 type op2 =
 | OpEq
@@ -396,8 +400,8 @@ type op2 =
 type 't formula = { flhs : 't pExpr; fop : op2; frhs : 't pExpr }
 
 val norm :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pExpr -> 'a1 pol
 
 val psub0 :
   'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1) -> ('a1 -> 'a1 ->
@@ -407,20 +411,20 @@ val padd0 :
   'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 pol -> 'a1 pol -> 'a1 pol
 
 val xnormalise :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula list
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula list
 
 val cnf_normalise :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf
 
 val xnegate :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula list
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a1 nFormula list
 
 val cnf_negate :
-  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) ->
-  ('a1 -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf
+  'a1 -> 'a1 -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1 -> 'a1 -> 'a1) -> ('a1
+  -> 'a1) -> ('a1 -> 'a1 -> bool) -> 'a1 formula -> 'a2 -> ('a1 nFormula, 'a2) cnf
 
 val xdenorm : positive -> 'a1 pol -> 'a1 pExpr
 
@@ -474,6 +478,8 @@ val find : 'a1 -> 'a1 t -> positive -> 'a1
 val singleton : 'a1 -> positive -> 'a1 -> 'a1 t
 
 val vm_add : 'a1 -> positive -> 'a1 -> 'a1 t -> 'a1 t
+
+val zeval_const : z pExpr -> z option
 
 type zWitness = z psatz
 
@@ -563,12 +569,12 @@ val bound_var : positive -> z formula
 val mk_eq_pos : positive -> positive -> positive -> z formula
 
 val bound_vars :
-  (positive -> positive -> bool option -> 'a2) -> positive -> Vars.t -> (z formula,
-  'a1, 'a2, 'a3) gFormula
+  (positive -> positive -> bool option -> 'a2) -> positive -> Vars.t -> (z formula, 'a1,
+  'a2, 'a3) gFormula
 
 val bound_problem_fr :
-  (positive -> positive -> bool option -> 'a2) -> positive -> (z formula, 'a1, 'a2,
-  'a3) gFormula -> (z formula, 'a1, 'a2, 'a3) gFormula
+  (positive -> positive -> bool option -> 'a2) -> positive -> (z formula, 'a1, 'a2, 'a3)
+  gFormula -> (z formula, 'a1, 'a2, 'a3) gFormula
 
 val zChecker : z nFormula list -> zArithProof -> bool
 
