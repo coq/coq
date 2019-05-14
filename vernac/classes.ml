@@ -374,6 +374,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
     let obls, constr, typ =
       match term with
       | Some t ->
+        let termtype = EConstr.of_constr termtype in
         let obls, _, constr, typ =
           Obligations.eterm_obligations env id sigma 0 t termtype
         in obls, Some constr, typ
@@ -400,7 +401,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
           if not (Option.is_empty term) then
             let init_refine =
               Tacticals.New.tclTHENLIST [
-                Refine.refine ~typecheck:false (fun sigma -> (sigma,EConstr.of_constr (Option.get term)));
+                Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
                 Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
                 Tactics.New.reduce_after_refine;
               ]
@@ -497,10 +498,10 @@ let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
-  let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
   let pstate =
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
-      (declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype;
+      let term = to_constr sigma (Option.get term) in
+      (declare_instance_constant k pri global imps ?hook id decl poly sigma term termtype;
        None)
     else if program_mode || refine || Option.is_empty props then
       declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype

@@ -26,14 +26,14 @@ val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
 val eterm_obligations : env -> Id.t -> evar_map -> int ->
-  ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
+  ?status:Evar_kinds.obligation_definition_status -> EConstr.constr -> EConstr.types ->
   (Id.t * types * Evar_kinds.t Loc.located *
      (bool * Evar_kinds.obligation_definition_status) * Int.Set.t *
       unit Proofview.tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
-  * ((Evar.t * Id.t) list * ((Id.t -> constr) -> constr -> constr)) *
+  * ((Evar.t * Id.t) list * ((Id.t -> EConstr.constr) -> EConstr.constr -> constr)) *
     constr * types
     (* Translations from existential identifiers to obligation identifiers 
        and for terms with existentials to closed terms, given a 

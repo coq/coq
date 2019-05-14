@@ -823,33 +823,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _             -> None
 
-(** The following functions return the set of evars immediately
-    contained in the object *)
-
-(* excluding defined evars *)
-
-let evars_of_term c =
-  let rec evrec acc c =
-    match kind c with
-    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
-    | _ -> Constr.fold evrec acc c
-  in
-  evrec Evar.Set.empty c
-
-let evars_of_named_context nc =
-  Context.Named.fold_outside
-    (NamedDecl.fold_constr (fun constr s -> Evar.Set.union s (evars_of_term constr)))
-    nc
-    ~init:Evar.Set.empty
-
-let evars_of_filtered_evar_info evi =
-  Evar.Set.union (evars_of_term evi.evar_concl)
-    (Evar.Set.union
-	(match evi.evar_body with
-	| Evar_empty -> Evar.Set.empty
-	| Evar_defined b -> evars_of_term b)
-	(evars_of_named_context (evar_filtered_context evi)))
-
 (**********************************************************)
 (* Sort variables *)
 
@@ -1404,3 +1377,30 @@ module MiniEConstr = struct
   let to_rel_decl sigma d = Context.Rel.Declaration.map_constr (to_constr sigma) d
 
 end
+
+(** The following functions return the set of evars immediately
+    contained in the object *)
+
+(* excluding defined evars *)
+
+let evars_of_term evd c =
+  let rec evrec acc c =
+    match MiniEConstr.kind evd c with
+    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | _ -> Constr.fold evrec acc c
+  in
+  evrec Evar.Set.empty c
+
+let evars_of_named_context evd nc =
+  Context.Named.fold_outside
+    (NamedDecl.fold_constr (fun constr s -> Evar.Set.union s (evars_of_term evd constr)))
+    nc
+    ~init:Evar.Set.empty
+
+let evars_of_filtered_evar_info evd evi =
+  Evar.Set.union (evars_of_term evd evi.evar_concl)
+    (Evar.Set.union
+       (match evi.evar_body with
+       | Evar_empty -> Evar.Set.empty
+       | Evar_defined b -> evars_of_term evd b)
+       (evars_of_named_context evd (evar_filtered_context evi)))

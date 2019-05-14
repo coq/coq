@@ -425,7 +425,7 @@ module V82 = struct
     { Evd.it=List.hd gls ; sigma=sigma; }
 
   let top_evars p =
-    Proofview.V82.top_evars p.entry
+    Proofview.V82.top_evars p.entry p.proofview
 
   let grab_evars p =
     if not (is_done p) then
