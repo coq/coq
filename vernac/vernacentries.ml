@@ -1219,11 +1219,13 @@ type arguments =
   { args_gr : GlobRef.t;
     args_red_behavior : Reductionops.ReductionBehaviour.t option;
     args_scopes : Notation_term.scope_name option list option;
+    args_names : Name.t list option;
   }
 
-let load_arguments _ (_name, { args_gr; args_red_behavior; args_scopes }) =
+let load_arguments _ (_name, { args_gr; args_red_behavior; args_scopes; args_names }) =
   Option.iter (Reductionops.ReductionBehaviour.set args_gr) args_red_behavior;
-  Option.iter (Notation.declare_arguments_scope args_gr) args_scopes
+  Option.iter (Notation.declare_arguments_scope args_gr) args_scopes;
+  Option.iter (Arguments_renaming.rename_arguments args_gr) args_names
 
 let cache_arguments o = load_arguments 1 o
 
@@ -1464,21 +1466,22 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     else None
   in
 
+  let names =
+    if renaming_specified then Some names else None
+  in
+
   (* Actions *)
 
   let args = { args_gr = gr;
                args_red_behavior = red_behavior;
                args_scopes = scopes;
+               args_names = names;
              } in
 
   if section_local then
     cache_arguments ((), args)
   else
     Lib.add_anonymous_leaf (inArguments args);
-
-  if renaming_specified then begin
-    Arguments_renaming.rename_arguments section_local gr names
-  end;
 
   if implicits_specified || clear_implicits_flag then
     Impargs.set_implicits section_local (smart_global reference) implicits;

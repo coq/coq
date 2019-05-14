@@ -12,7 +12,8 @@ open Names
 open Environ
 open Constr
 
-val rename_arguments : bool -> GlobRef.t -> Name.t list -> unit
+val rename_arguments : GlobRef.t -> Name.t list -> unit
+val discharge_rename_args : (GlobRef.t * Name.t list) -> (GlobRef.t * Name.t list) option
 
 (** [Not_found] is raised if no names are defined for [r] *)
 val arguments_names : GlobRef.t -> Name.t list
