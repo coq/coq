@@ -75,6 +75,21 @@ Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
 
 Definition eval_expr := eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
+Fixpoint Zeval_const  (e: PExpr Z) : option Z :=
+  match e with
+  | PEc c => Some c
+  | PEX _ x => None
+  | PEadd e1 e2 => map_option2 (fun x y => Some (x + y))
+                               (Zeval_const e1) (Zeval_const e2)
+  | PEmul e1 e2 => map_option2 (fun x y => Some (x * y))
+                               (Zeval_const e1) (Zeval_const e2)
+  | PEpow e1 n  => map_option (fun x => Some (Z.pow x (Z.of_N n)))
+                                 (Zeval_const e1)
+  | PEsub e1 e2 => map_option2 (fun x y => Some (x - y))
+                               (Zeval_const e1)  (Zeval_const e2)
+  | PEopp e   => map_option (fun x => Some (Z.opp x)) (Zeval_const e)
+  end.
+
 Lemma ZNpower : forall r n, r ^ Z.of_N n = pow_N 1 Z.mul r n.
 Proof.
   destruct n.
