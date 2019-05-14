@@ -2085,8 +2085,8 @@ end = struct (* {{{ *)
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
-    ignore(TaskQueue.with_n_workers nworkers (fun queue ->
-    PG_compat.with_current_proof (fun _ p ->
+    TaskQueue.with_n_workers nworkers (fun queue ->
+    PG_compat.simple_with_current_proof (fun _ p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
@@ -2131,7 +2131,8 @@ end = struct (* {{{ *)
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         end)
       in
-      Proof.run_tactic (Global.env()) assign_tac p)))) ())
+      let p,_,() = Proof.run_tactic (Global.env()) assign_tac p in
+      p))) ())
 
 end (* }}} *)
 

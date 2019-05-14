@@ -395,10 +395,10 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
       let pstate = start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
-      let pstate, _ = Proof_global.with_current_proof (fun _ p ->
+      let pstate = Proof_global.simple_with_current_proof (fun _ p ->
           match init_tac with
-          | None -> p,(true,[])
-          | Some tac -> Proof.run_tactic Global.(env ()) tac p) pstate in
+          | None -> p
+          | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p) pstate in
       pstate
 
 let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
