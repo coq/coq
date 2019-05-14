@@ -507,9 +507,6 @@ let vernac_bind_scope ~module_local sc cll =
 let vernac_open_close_scope ~section_local (b,s) =
   Notation.open_close_scope (section_local,b,s)
 
-let vernac_arguments_scope ~section_local r scl =
-  Notation.declare_arguments_scope section_local (smart_global r) scl
-
 let vernac_infix ~module_local =
   Metasyntax.add_infix module_local (Global.env())
 
@@ -1218,22 +1215,35 @@ let warn_arguments_assert =
             strbrk "to clear implicit arguments add ': clear implicits'. " ++
             strbrk "If you want to clear notation scopes add ': clear scopes'")
 
-let load_arguments _ (_name, (r, b)) =
-  Reductionops.ReductionBehaviour.set r b
+type arguments =
+  { args_gr : GlobRef.t;
+    args_red_behavior : Reductionops.ReductionBehaviour.t option;
+    args_scopes : Notation_term.scope_name option list option;
+  }
+
+let load_arguments _ (_name, { args_gr; args_red_behavior; args_scopes }) =
+  Option.iter (Reductionops.ReductionBehaviour.set args_gr) args_red_behavior;
+  Option.iter (Notation.declare_arguments_scope args_gr) args_scopes
 
 let cache_arguments o = load_arguments 1 o
 
 let classify_arguments o = Libobject.Substitute o
 
-let subst_arguments (subst, ((r,o) as orig)) =
-  let r' = subst_global_reference subst r in if r==r' then orig
-  else (r',o)
+let subst_arguments (subst, args) =
+  let r = subst_global_reference subst args.args_gr in if args.args_gr==r then args
+  else { args with args_gr = r }
 
-let discharge_arguments (_name, (gr, red as orig)) =
-  Some (gr, Reductionops.ReductionBehaviour.discharge orig)
+let discharge_arguments (_name, args) =
+  let args_red_behavior =
+    Option.map (fun b -> Reductionops.ReductionBehaviour.discharge (args.args_gr, b)) args.args_red_behavior
+  in
+  Some { args with args_red_behavior }
 
-let rebuild_arguments (gr, red as orig) =
-  (gr, Reductionops.ReductionBehaviour.rebuild orig)
+let rebuild_arguments args =
+  let args_red_behavior =
+    Option.map (fun b -> Reductionops.ReductionBehaviour.rebuild (args.args_gr,b)) args.args_red_behavior
+  in
+  { args with args_red_behavior }
 
 let inArguments = let open Libobject in
   declare_object {
@@ -1272,13 +1282,13 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   if clear_implicits_flag && default_implicits_flag then
     err_incompat "clear implicits" "default implicits";
 
-  let sr = smart_global reference in
+  let gr = smart_global reference in
   let inf_names =
-    let ty, _ = Typeops.type_of_global_in_context env sr in
+    let ty, _ = Typeops.type_of_global_in_context env gr in
     Impargs.compute_implicits_names env sigma (EConstr.of_constr ty)
   in
   let prev_names =
-    try Arguments_renaming.arguments_names sr with Not_found -> inf_names
+    try Arguments_renaming.arguments_names gr with Not_found -> inf_names
   in
   let num_args = List.length inf_names in
   assert (Int.equal num_args (List.length prev_names));
@@ -1427,48 +1437,54 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
                                                    })
   in
 
-
   let red_modifiers_specified = Option.has_some red_behavior in
 
-  (* Actions *)
+  if red_modifiers_specified then
+    begin match gr with
+    | VarRef _ | IndRef _ | ConstructRef _ -> user_err
+             (strbrk "Modifiers of the behavior of the simpl tactic "++
+              strbrk "are relevant for constants only.")
+    | _ -> ()
+    end;
 
-  if renaming_specified then begin
-    Arguments_renaming.rename_arguments section_local sr names
-  end;
+    if not (renaming_specified ||
+            implicits_specified ||
+            scopes_specified ||
+            red_modifiers_specified) && (List.is_empty flags) then
+      warn_arguments_assert gr;
 
-  if scopes_specified || clear_scopes_flag then begin
-      let scopes = List.map (Option.map (fun {loc;v=k} ->
+  let scopes =
+    if scopes_specified || clear_scopes_flag then
+    let scopes = List.map (Option.map (fun {loc;v=k} ->
         try ignore (Notation.find_scope k); k
         with UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
-      in
-      vernac_arguments_scope ~section_local reference scopes
-    end;
+    in
+    Some scopes
+    else None
+  in
+
+  (* Actions *)
+
+  let args = { args_gr = gr;
+               args_red_behavior = red_behavior;
+               args_scopes = scopes;
+             } in
+
+  if section_local then
+    cache_arguments ((), args)
+  else
+    Lib.add_anonymous_leaf (inArguments args);
+
+  if renaming_specified then begin
+    Arguments_renaming.rename_arguments section_local gr names
+  end;
 
   if implicits_specified || clear_implicits_flag then
     Impargs.set_implicits section_local (smart_global reference) implicits;
 
   if default_implicits_flag then
-    Impargs.declare_implicits section_local (smart_global reference);
-
-  if red_modifiers_specified then begin
-    match sr with
-    | ConstRef _ as c ->
-      if section_local then
-        Reductionops.ReductionBehaviour.set c (Option.get red_behavior)
-      else
-        Lib.add_anonymous_leaf (inArguments (c, Option.get red_behavior))
-
-    | _ -> user_err
-             (strbrk "Modifiers of the behavior of the simpl tactic "++
-              strbrk "are relevant for constants only.")
-  end;
-
- if not (renaming_specified ||
-         implicits_specified ||
-         scopes_specified ||
-         red_modifiers_specified) && (List.is_empty flags) then
-    warn_arguments_assert sr
+    Impargs.declare_implicits section_local (smart_global reference)
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;

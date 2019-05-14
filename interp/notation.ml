@@ -1491,7 +1491,6 @@ let arguments_scope = ref GlobRef.Map.empty
 type arguments_scope_discharge_request =
   | ArgsScopeAuto
   | ArgsScopeManual
-  | ArgsScopeNoDischarge
 
 let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
@@ -1513,10 +1512,10 @@ let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
   let cls' = List.Smart.map subst_cl cls in
-  (ArgsScopeNoDischarge,r',n,scl,cls')
+  (req,r',n,scl,cls')
 
 let discharge_arguments_scope (_,(req,r,n,l,_)) =
-  if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
+  if isVarRef r && Lib.is_in_section r then None
   else
     let n =
       try
@@ -1527,11 +1526,10 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
     Some (req,r,n,l,[])
 
 let classify_arguments_scope (req,_,_,_,_ as obj) =
-  if req == ArgsScopeNoDischarge then Dispose else Substitute obj
+  Substitute obj
 
 let rebuild_arguments_scope sigma (req,r,n,l,_) =
   match req with
-    | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
       let env = Global.env () in (*FIXME?*)
       let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
@@ -1564,16 +1562,13 @@ let inArgumentsScope : arguments_scope_obj -> obj =
       (* XXX: Should we pass the sigma here or not, see @herbelin's comment in 6511 *)
       rebuild_function = rebuild_arguments_scope Evd.empty }
 
-let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
-
 let declare_arguments_scope_gen req r n (scl,cls) =
   Lib.add_anonymous_leaf (inArgumentsScope (req,r,n,scl,cls))
 
-let declare_arguments_scope local r scl =
-  let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual in
+let declare_arguments_scope r scl =
   (* We empty the list of argument classes to disable further scope
      re-computations and keep these manually given scopes. *)
-  declare_arguments_scope_gen req r 0 (scl,[])
+  cache_arguments_scope ((), (ArgsScopeManual,r,0,scl,[]))
 
 let find_arguments_scope r =
   try

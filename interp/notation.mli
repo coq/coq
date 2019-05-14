@@ -248,8 +248,7 @@ val exists_notation_in_scope : scope_name option -> notation ->
       bool -> interpretation -> bool
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
-val declare_arguments_scope :
-  bool (** true=local *) -> GlobRef.t -> scope_name option list -> unit
+val declare_arguments_scope : GlobRef.t -> scope_name option list -> unit
 
 val find_arguments_scope : GlobRef.t -> scope_name option list
 
