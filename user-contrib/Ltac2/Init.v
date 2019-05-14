@@ -14,6 +14,7 @@ Ltac2 Type int.
 Ltac2 Type string.
 Ltac2 Type char.
 Ltac2 Type ident.
+Ltac2 Type uint63.
 
 (** Constr-specific built-in types *)
 Ltac2 Type meta.

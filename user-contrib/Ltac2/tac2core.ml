@@ -424,8 +424,8 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_ext Value.val_projection p;
       Value.of_constr c;
     |]
-  | Int _ ->
-    assert false
+  | Int n ->
+    v_blk 17 [|Value.of_uint63 n|]
   end
 end
 
@@ -503,6 +503,9 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let p = Value.to_ext Value.val_projection p in
     let c = Value.to_constr c in
     EConstr.mkProj (p, c)
+  | (17, [|n|]) ->
+    let n = Value.to_uint63 n in
+    EConstr.mkInt n
   | _ -> assert false
   in
   return (Value.of_constr c)
