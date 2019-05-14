@@ -236,6 +236,15 @@ let ppnamedcontextval e =
   let sigma = Evd.from_env env in
   pp (pr_named_context env sigma (named_context_of_val e))
 
+let ppaucontext auctx =
+  let nas = AUContext.names auctx in
+  let prlev l = match Level.var_index l with
+    | Some n -> Name.print nas.(n)
+    | None -> prlev l
+  in
+  pp (pr_universe_context prlev (AUContext.repr auctx))
+
+
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]")
