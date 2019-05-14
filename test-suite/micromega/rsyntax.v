@@ -57,15 +57,7 @@ Require Import Lia.
 
 Goal ( 1 ^ (2 + 2) = 1)%Z.
 Proof.
-  Fail lia.
-  reflexivity.
-Qed.
-
-Instance DZplus : DeclaredConstant Z.add := {}.
-
-Goal ( 1 ^ (2 + 2) = 1)%Z.
-Proof.
-  lia.
+  lia. (* exponent is a constant expr *)
 Qed.
 
 
