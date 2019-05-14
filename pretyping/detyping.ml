@@ -708,9 +708,6 @@ type binder_kind = BProd | BLambda | BLetIn
 (**********************************************************************)
 (* Main detyping function                                             *)
 
-let detype_anonymous = ref (fun ?loc n -> anomaly ~label:"detype" (Pp.str "index to an anonymous variable."))
-let set_detype_anonymous f = detype_anonymous := f
-
 let detype_level sigma l =
   let l = hack_qualid_of_univ_level sigma l in
   GType (UNamed l)
@@ -732,11 +729,13 @@ and detype_r d flags avoid env sigma t =
   match EConstr.kind sigma (collapse_appl sigma t) with
     | Rel n ->
       (try match lookup_name_of_rel n (fst env) with
-	 | Name id   -> GVar id
-	 | Anonymous -> GVar (!detype_anonymous n)
+         | Name id   -> GVar id
+         | Anonymous ->
+           let s = "_ANONYMOUS_REL_"^(string_of_int n) in
+           GVar (Id.of_string s)
        with Not_found ->
-	 let s = "_UNBOUND_REL_"^(string_of_int n)
-	 in GVar (Id.of_string s))
+         let s = "_UNBOUND_REL_"^(string_of_int n)
+         in GVar (Id.of_string s))
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
         if n = Constr_matching.special_meta then

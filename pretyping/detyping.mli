@@ -68,9 +68,6 @@ val detype_closed_glob : ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> clo
 val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
 val lookup_index_as_renamed : env -> evar_map -> constr -> int -> int option
 
-(* XXX: This is a hack and should go away *)
-val set_detype_anonymous : (?loc:Loc.t -> int -> Id.t) -> unit
-
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 
