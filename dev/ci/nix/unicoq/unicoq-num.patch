@@ -4,19 +4,6 @@ Date:   Thu Nov 29 08:59:22 2018 +0000
 
     Make explicit dependency to num
 
-diff --git a/Make b/Make
-index 550dc6a..8aa1309 100644
---- a/Make
-+++ b/Make
-@@ -9,7 +9,7 @@ src/logger.ml
- src/munify.mli
- src/munify.ml
- src/unitactics.mlg
--src/unicoq.mllib
-+src/unicoq.mlpack
- theories/Unicoq.v
- test-suite/munifytest.v
- test-suite/microtests.v
 diff --git a/Makefile.local b/Makefile.local
 new file mode 100644
 index 0000000..88be365
@@ -24,21 +11,3 @@ index 0000000..88be365
 +++ b/Makefile.local
 @@ -0,0 +1 @@
 +CAMLPKGS += -package num
-diff --git a/src/unicoq.mllib b/src/unicoq.mllib
-deleted file mode 100644
-index 2b84e2d..0000000
---- a/src/unicoq.mllib
-+++ /dev/null
-@@ -1,3 +0,0 @@
--Logger
--Munify
--Unitactics
-diff --git a/src/unicoq.mlpack b/src/unicoq.mlpack
-new file mode 100644
-index 0000000..2b84e2d
---- /dev/null
-+++ b/src/unicoq.mlpack
-@@ -0,0 +1,3 @@
-+Logger
-+Munify
-+Unitactics
