@@ -97,7 +97,8 @@ if (sp - num_args < coq_stack_threshold) {                                     \
    several architectures.
 */
 
-#if defined(__GNUC__) && !defined(DEBUG)
+#if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) \
+    && !defined(__llvm__)
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
@@ -126,7 +127,7 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define SP_REG asm("%edi")
 #define ACCU_REG
 #endif
-#if defined(PPC) || defined(_POWER) || defined(_IBMR2)
+#if defined(__ppc__) || defined(__ppc64__)
 #define PC_REG asm("26")
 #define SP_REG asm("27")
 #define ACCU_REG asm("28")
@@ -141,8 +142,9 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define SP_REG asm("a4")
 #define ACCU_REG asm("d7")
 #endif
-#if defined(__arm__) && !defined(__thumb2__)
-#define PC_REG asm("r9")
+/* OCaml PR#4953: these specific registers not available in Thumb mode */
+#if defined(__arm__) && !defined(__thumb__)
+#define PC_REG asm("r6")
 #define SP_REG asm("r8")
 #define ACCU_REG asm("r7")
 #endif
@@ -151,6 +153,17 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define SP_REG asm("37")
 #define ACCU_REG asm("38")
 #define JUMPTBL_BASE_REG asm("39")
+#endif
+#ifdef __x86_64__
+#define PC_REG asm("%r15")
+#define SP_REG asm("%r14")
+#define ACCU_REG asm("%r13")
+#endif
+#ifdef __aarch64__
+#define PC_REG asm("%x19")
+#define SP_REG asm("%x20")
+#define ACCU_REG asm("%x21")
+#define JUMPTBL_BASE_REG asm("%x22")
 #endif
 #endif
 
