@@ -201,7 +201,7 @@ let set_emacs_print_strings () =
   let diff = "diff." in
   List.iter (fun b ->
       let (name, attrs) = b in
-      if diff = (String.sub name 0 (String.length diff)) then
+      if CString.is_sub diff name 0 then
         tag_map := CString.Map.add name
           { attrs with prefix = Some (Printf.sprintf "<%s>" name);
                        suffix = Some (Printf.sprintf "</%s>" name) }
