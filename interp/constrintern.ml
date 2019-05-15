@@ -193,7 +193,7 @@ let compute_explicitable_implicit imps = function
 let compute_internalization_data env sigma ty typ impl =
   let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
   let expls_impl = compute_explicitable_implicit impl ty in
-  (ty, expls_impl, impl, compute_arguments_scope sigma typ)
+  (ty, expls_impl, impl, argument_scopes_from_classes sigma typ)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
   List.fold_left3

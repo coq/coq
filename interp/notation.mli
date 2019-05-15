@@ -264,7 +264,7 @@ val subst_scope_class :
 val declare_scope_class : scope_name -> scope_class -> unit
 val declare_ref_arguments_scope : Evd.evar_map -> GlobRef.t -> unit
 
-val compute_arguments_scope : Evd.evar_map -> EConstr.types -> scope_name option list
+val argument_scopes_from_classes : Evd.evar_map -> EConstr.types -> scope_name option list
 val compute_type_scope : Evd.evar_map -> EConstr.types -> scope_name option
 
 (** Get the current scope bound to Sortclass, if it exists *)

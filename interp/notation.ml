@@ -1441,61 +1441,76 @@ let declare_scope_class sc cl =
 let find_scope_class cl =
   ScopeClassMap.find cl !scope_class_map
 
-let find_scope_class_opt = function
-  | None -> None
-  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
+let find_scope_class_opt cl =
+  try Some (find_scope_class cl) with Not_found -> None
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
-let rec compute_arguments_classes sigma t =
+type argument_scope_value =
+  | ArgScopeManual of scope_name option
+  | ArgScopeAuto of scope_class option
+
+(*
+let scope_of_arg = function
+  | ArgScopeNone -> None
+  | ArgScopeManual scope | ArgScopeFromClass (scope,_) -> scope
+   *)
+
+let rec argument_classes sigma t =
   match EConstr.kind sigma (Reductionops.whd_betaiotazeta sigma t) with
     | Prod (_,t,u) ->
         let cl = try Some (compute_scope_class sigma t) with Not_found -> None in
-        cl :: compute_arguments_classes sigma u
+        cl :: argument_classes sigma u
     | _ -> []
 
-let compute_arguments_scope_full sigma t =
-  let cls = compute_arguments_classes sigma t in
-  let scs = List.map find_scope_class_opt cls in
-  scs, cls
-
-let compute_arguments_scope sigma t = fst (compute_arguments_scope_full sigma t)
+let argument_scopes_from_classes sigma t =
+  let cls = argument_classes sigma t in
+  List.map (fun ocl -> Option.bind ocl find_scope_class_opt) cls
 
 let compute_type_scope sigma t =
-  find_scope_class_opt (try Some (compute_scope_class sigma t) with Not_found -> None)
+  Option.bind (try Some (compute_scope_class sigma t) with Not_found -> None) find_scope_class_opt
 
 let current_type_scope_name () =
-   find_scope_class_opt (Some CL_SORT)
+  find_scope_class_opt CL_SORT
 
 let scope_class_of_class (x : cl_typ) : scope_class =
   x
 
-(** Updating a scope list, thanks to a list of argument classes
-    and the current Bind Scope base. When some current scope
-    have been manually given, the corresponding argument class
-    is emptied below, so this manual scope will be preserved. *)
+let argument_scopes_from_vals vals =
+  let aux = function
+    | ArgScopeManual scope -> scope
+    | ArgScopeAuto cl -> Option.bind cl find_scope_class_opt
+  in
+  List.map aux vals
 
-let update_scope cl sco =
-  match find_scope_class_opt cl with
-  | None -> sco
-  | sco' -> sco'
+type argument_scopes_entry =
+  { arg_scopes_vals : argument_scope_value list;
+    arg_scopes_cache : scope_name option list;
+    arg_scopes_stamp : scope_name ScopeClassMap.t;
+  }
 
-let rec update_scopes cls scl = match cls, scl with
-  | [], _ -> scl
-  | _, [] -> List.map find_scope_class_opt cls
-  | cl :: cls, sco :: scl -> update_scope cl sco :: update_scopes cls scl
+let arguments_scope = ref (GlobRef.Map.empty : argument_scopes_entry GlobRef.Map.t)
 
-let arguments_scope = ref GlobRef.Map.empty
+type arguments_scope_obj =
+  { arg_scopes_gr : GlobRef.t;
+    arg_scopes_nvars : int;
+    (* Used to communicate information from discharge to rebuild *)
+    (* set to 0 otherwise *)
+    arg_scopes_vals : argument_scope_value list;
+  }
 
-type arguments_scope_discharge_request =
-  | ArgsScopeAuto
-  | ArgsScopeManual
-
-let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
-  List.iter (Option.iter check_scope) scl;
-  let initial_stamp = ScopeClassMap.empty in
-  arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope
+let load_arguments_scope _ (_,obj) =
+  let arg_scopes_stamp = !scope_class_map in
+  let arg_scopes_cache = argument_scopes_from_vals obj.arg_scopes_vals in
+  List.iter (fun s -> Option.iter check_scope s) arg_scopes_cache;
+  let entry = {
+    arg_scopes_vals = obj.arg_scopes_vals;
+    arg_scopes_stamp;
+    arg_scopes_cache
+  }
+  in
+  arguments_scope := GlobRef.Map.add obj.arg_scopes_gr entry !arguments_scope
 
 let cache_arguments_scope o =
   load_arguments_scope 1 o
@@ -1503,18 +1518,20 @@ let cache_arguments_scope o =
 let subst_scope_class subst cs =
   try Some (subst_cl_typ subst cs) with Not_found -> None
 
-let subst_arguments_scope (subst,(req,r,n,scl,cls)) =
-  let r' = fst (subst_global subst r) in
-  let subst_cl ocl = match ocl with
-    | None -> ocl
-    | Some cl ->
+let subst_arguments_scope (subst,obj) =
+  let arg_scopes_gr = subst_global_reference subst obj.arg_scopes_gr in
+  let subst_arg_scope arg_scope = match arg_scope with
+    | ArgScopeManual _ -> arg_scope
+    | ArgScopeAuto None -> arg_scope
+    | ArgScopeAuto (Some cl) ->
         match subst_scope_class subst cl with
-        | Some cl'  as ocl' when cl' != cl -> ocl'
-        | _ -> ocl in
-  let cls' = List.Smart.map subst_cl cls in
-  (req,r',n,scl,cls')
+        | Some cl' as ocl when cl' != cl -> ArgScopeAuto ocl
+        | _ -> arg_scope in
+  let arg_scopes_vals = List.Smart.map subst_arg_scope obj.arg_scopes_vals in
+  { obj with arg_scopes_vals; arg_scopes_gr }
 
-let discharge_arguments_scope (_,(req,r,n,l,_)) =
+let discharge_arguments_scope (_,obj) =
+  let r = obj.arg_scopes_gr in
   if isVarRef r && Lib.is_in_section r then None
   else
     let n =
@@ -1523,33 +1540,17 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
         vars |> List.map fst |> List.filter is_local_assum |> List.length
       with
         Not_found (* Not a ref defined in this section *) -> 0 in
-    Some (req,r,n,l,[])
+    Some { obj with arg_scopes_nvars = n }
 
-let classify_arguments_scope (req,_,_,_,_ as obj) = Substitute obj
+let classify_arguments_scope obj = Substitute obj
 
-let rebuild_arguments_scope sigma (req,r,n,l,_) =
-  match req with
-    | ArgsScopeAuto ->
-      let env = Global.env () in (*FIXME?*)
-      let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
-      let scs,cls = compute_arguments_scope_full sigma typ in
-      (req,r,List.length scs,scs,cls)
-    | ArgsScopeManual ->
-      (* Add to the manually given scopes the one found automatically
-         for the extra parameters of the section. Discard the classes
-         of the manually given scopes to avoid further re-computations. *)
-      let env = Global.env () in (*FIXME?*)
-      let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env r) in
-      let l',cls = compute_arguments_scope_full sigma typ in
-      let l1 = List.firstn n l' in
-      let cls1 = List.firstn n cls in
-      (req,r,0,l1@l,cls1)
-
-type arguments_scope_obj =
-    arguments_scope_discharge_request * GlobRef.t *
-    (* Used to communicate information from discharge to rebuild *)
-    (* set to 0 otherwise *) int *
-    scope_name option list * scope_class option list
+let rebuild_arguments_scope sigma obj =
+  let env = Global.env () in (*FIXME?*)
+  let typ = EConstr.of_constr @@ fst (Typeops.type_of_global_in_context env obj.arg_scopes_gr) in
+  let cls = argument_classes sigma typ in
+  let n = obj.arg_scopes_nvars in
+  let new_arg_vals = List.firstn n @@ List.map (fun s -> ArgScopeAuto s) cls in
+  { obj with arg_scopes_vals = new_arg_vals@obj.arg_scopes_vals }
 
 let inArgumentsScope : arguments_scope_obj -> obj =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -1563,32 +1564,45 @@ let inArgumentsScope : arguments_scope_obj -> obj =
 
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
-let declare_arguments_scope_gen req r n (scl,cls) =
-  Lib.add_anonymous_leaf (inArgumentsScope (req,r,n,scl,cls))
+let declare_arguments_scope_gen r arg_scopes =
+  let obj = {
+    arg_scopes_gr = r;
+    arg_scopes_vals = arg_scopes;
+    arg_scopes_nvars = 0;
+  }
+  in
+  Lib.add_anonymous_leaf (inArgumentsScope obj)
 
-let declare_arguments_scope local r scl =
-  (* We empty the list of argument classes to disable further scope
-     re-computations and keep these manually given scopes. *)
-  if is_local local r then cache_arguments_scope ((), (ArgsScopeManual,r,0,scl,[]))
-  else declare_arguments_scope_gen ArgsScopeManual r 0 (scl,[])
+let declare_arguments_scope local r scopes =
+  let arg_scopes = List.map (fun s -> ArgScopeManual s) scopes in
+  let obj = {
+    arg_scopes_gr = r;
+    arg_scopes_vals = arg_scopes;
+    arg_scopes_nvars = 0;
+  }
+  in
+  if is_local local r then cache_arguments_scope ((), obj)
+  else Lib.add_anonymous_leaf (inArgumentsScope obj)
 
 let find_arguments_scope r =
   try
-    let (scl,cls,stamp) = GlobRef.Map.find r !arguments_scope in
+    let entry = GlobRef.Map.find r !arguments_scope in
     let cur_stamp = !scope_class_map in
-    if stamp == cur_stamp then scl
+    if entry.arg_scopes_stamp == cur_stamp then entry.arg_scopes_cache
     else
       (* Recent changes in the Bind Scope base, we re-compute the scopes *)
-      let scl' = update_scopes cls scl in
-      arguments_scope := GlobRef.Map.add r (scl',cls,cur_stamp) !arguments_scope;
-      scl'
+      let arg_scopes_cache = argument_scopes_from_vals entry.arg_scopes_vals in
+      let entry = { entry with arg_scopes_cache; arg_scopes_stamp = cur_stamp } in
+      arguments_scope := GlobRef.Map.add r entry !arguments_scope;
+      arg_scopes_cache
   with Not_found -> []
 
 let declare_ref_arguments_scope sigma ref =
   let env = Global.env () in (* FIXME? *)
   let typ = EConstr.of_constr @@ fst @@ Typeops.type_of_global_in_context env ref in
-  let (scs,cls as o) = compute_arguments_scope_full sigma typ in
-  declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o
+  let cls = argument_classes sigma typ in
+  let vals = List.map (fun s -> ArgScopeAuto s) cls in
+  declare_arguments_scope_gen ref vals
 
 (********************************)
 (* Encoding notations as string *)
