@@ -13,7 +13,7 @@ open Declarations
 
 (** {6 Cooking the constants. } *)
 
-type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
+type recipe = { from : Opaqueproof.opaque constant_body; info : Opaqueproof.cooking_info }
 
 type inline = bool
 

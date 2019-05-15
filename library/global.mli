@@ -84,7 +84,7 @@ val add_module_parameter :
 (** {6 Queries in the global environment } *)
 
 val lookup_named     : variable -> Constr.named_declaration
-val lookup_constant  : Constant.t -> Declarations.constant_body
+val lookup_constant  : Constant.t -> Opaqueproof.opaque Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_pinductive : Constr.pinductive -> 
@@ -105,7 +105,7 @@ val body_of_constant : Constant.t -> (Constr.constr * Univ.AUContext.t) option
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
 
-val body_of_constant_body : Declarations.constant_body -> (Constr.constr * Univ.AUContext.t) option
+val body_of_constant_body : Opaqueproof.opaque Declarations.constant_body -> (Constr.constr * Univ.AUContext.t) option
 (** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** {6 Compiled libraries } *)

@@ -72,11 +72,11 @@ val labels_of_ref : GlobRef.t -> ModPath.t * Label.t list
    [mutual_inductive_body] as checksum. In both case, we should ideally
    also check the env *)
 
-val add_typedef : Constant.t -> constant_body -> ml_type -> unit
-val lookup_typedef : Constant.t -> constant_body -> ml_type option
+val add_typedef : Constant.t -> Opaqueproof.opaque constant_body -> ml_type -> unit
+val lookup_typedef : Constant.t -> Opaqueproof.opaque constant_body -> ml_type option
 
-val add_cst_type : Constant.t -> constant_body -> ml_schema -> unit
-val lookup_cst_type : Constant.t -> constant_body -> ml_schema option
+val add_cst_type : Constant.t -> Opaqueproof.opaque constant_body -> ml_schema -> unit
+val lookup_cst_type : Constant.t -> Opaqueproof.opaque constant_body -> ml_schema option
 
 val add_ind : MutInd.t -> mutual_inductive_body -> ml_ind -> unit
 val lookup_ind : MutInd.t -> mutual_inductive_body -> ml_ind option

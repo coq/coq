@@ -31,7 +31,7 @@ open Mod_subst
    an inductive type. It can also be useful to allow reorderings in
    inductive types *)
 type namedobject =
-  | Constant of constant_body
+  | Constant of Opaqueproof.opaque constant_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
 

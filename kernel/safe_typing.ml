@@ -247,7 +247,7 @@ let get_opaque_body env cbo =
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   seff_constant : Constant.t;
-  seff_body : Declarations.constant_body;
+  seff_body : Opaqueproof.opaque Declarations.constant_body;
   seff_env : seff_env;
   seff_role : Entries.side_effect_role;
 }
