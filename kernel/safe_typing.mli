@@ -88,7 +88,6 @@ type 'a effect_entry =
 
 type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
-  | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
   Constant.t * Entries.side_effect_role
@@ -102,6 +101,9 @@ val export_private_constants : in_section:bool ->
 val add_constant :
   ?role:Entries.side_effect_role -> in_section:bool -> Label.t -> global_declaration ->
     (Constant.t * private_constants) safe_transformer
+
+val add_recipe :
+  in_section:bool -> Label.t -> Cooking.recipe -> Constant.t safe_transformer
 
 (** Adding an inductive type *)
 

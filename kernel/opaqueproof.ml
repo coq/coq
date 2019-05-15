@@ -100,6 +100,10 @@ let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
         let fp = snd (Int.Map.find i prfs) in
         join except fp
 
+let force_direct = function
+| Direct (_, cu) -> Future.force cu
+| Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
+
 let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
