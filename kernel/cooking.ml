@@ -156,7 +156,7 @@ type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
 type result = {
-  cook_body : constr Mod_subst.substituted constant_def;
+  cook_body : (constr Mod_subst.substituted, Opaqueproof.opaque) constant_def;
   cook_type : types;
   cook_universes : universes;
   cook_private_univs : Univ.ContextSet.t option;

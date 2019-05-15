@@ -47,10 +47,10 @@ type inline = int option
     transparent body, or an opaque one *)
 
 (* Global declarations (i.e. constants) can be either: *)
-type 'a constant_def =
+type ('a, 'opaque) constant_def =
   | Undef of inline                       (** a global assumption *)
   | Def of 'a                             (** or a transparent global definition *)
-  | OpaqueDef of Opaqueproof.opaque       (** or an opaque global definition *)
+  | OpaqueDef of 'opaque                  (** or an opaque global definition *)
   | Primitive of CPrimitives.t            (** or a primitive operation *)
 
 type universes =
@@ -89,7 +89,7 @@ type typing_flags = {
  * the OpaqueDef *)
 type constant_body = {
     const_hyps : Constr.named_context; (** New: younger hyp at top *)
-    const_body : Constr.t Mod_subst.substituted constant_def;
+    const_body : (Constr.t Mod_subst.substituted, Opaqueproof.opaque) constant_def;
     const_type : types;
     const_relevance : Sorts.relevance;
     const_body_code : Cemitcodes.to_patch_substituted option;

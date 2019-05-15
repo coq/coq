@@ -215,7 +215,7 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** Conversion auxiliary functions to do step by step normalisation *)
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : clos_infos -> clos_tab -> table_key -> fconstr constant_def
+val unfold_reference : clos_infos -> clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
 
 (***********************************************************************
   i This is for lazy debug *)
