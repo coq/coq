@@ -43,24 +43,22 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 
 type private_constants
 
-val side_effects_of_private_constants :
-  private_constants -> Entries.side_eff list
-(** Return the list of individual side-effects in the order of their
-    creation. *)
-
 val empty_private_constants : private_constants
 val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
 
-val private_con_of_con : safe_environment -> Constant.t -> private_constants
-val private_con_of_scheme : kind:string -> safe_environment -> (inductive * Constant.t) list -> private_constants
+val private_constant : safe_environment -> Entries.side_effect_role -> Constant.t -> private_constants
+(** Constant must be the last definition of the safe_environment. *)
 
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :
   Environ.env -> Constr.constr -> private_constants -> Constr.constr
 val inline_private_constants_in_definition_entry :
   Environ.env -> private_constants Entries.definition_entry -> unit Entries.definition_entry
+
+val push_private_constants : Environ.env -> private_constants -> Environ.env
+(** Push the constants in the environment if not already there. *)
 
 val universes_of_private : private_constants -> Univ.ContextSet.t list
 

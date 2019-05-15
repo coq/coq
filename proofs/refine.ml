@@ -44,17 +44,6 @@ let typecheck_evar ev env sigma =
   let sigma, _ = Typing.sort_of env sigma (Evd.evar_concl info) in
   sigma
 
-(* Get the side-effect's constant declarations to update the monad's
-  * environmnent *)
-let add_if_undefined env eff =
-  let open Entries in
-  try ignore(Environ.lookup_constant eff.seff_constant env); env
-  with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
-
-(* Add the side effects to the monad's environment, if not already done. *)
-let add_side_effects env eff =
-  List.fold_left add_if_undefined env eff
-
 let generic_refine ~typecheck f gl =
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
@@ -71,8 +60,7 @@ let generic_refine ~typecheck f gl =
   let evs = Evd.save_future_goals sigma in
   (* Redo the effects in sigma in the monad's env *)
   let privates_csts = Evd.eval_side_effects sigma in
-  let sideff = Safe_typing.side_effects_of_private_constants privates_csts in
-  let env = add_side_effects env sideff in
+  let env = Safe_typing.push_private_constants env privates_csts in
   (* Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
   let sigma = if typecheck then Evd.fold_future_goals fold sigma evs else sigma in

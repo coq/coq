@@ -228,6 +228,12 @@ let check_engagement env expected_impredicative_set =
 
 (** {6 Stm machinery } *)
 
+type seff_env =
+  [ `Nothing
+  (* The proof term and its universes.
+     Same as the constant_body's but not in an ephemeron *)
+  | `Opaque of Constr.t * Univ.ContextSet.t ]
+
 let get_opaque_body env cbo =
   match cbo.const_body with
   | Undef _ -> assert false
@@ -240,7 +246,10 @@ let get_opaque_body env cbo =
 
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
-  eff      : Entries.side_eff list;
+  seff_constant : Constant.t;
+  seff_body : Declarations.constant_body;
+  seff_env : seff_env;
+  seff_role : Entries.side_effect_role;
 }
 
 module SideEffects :
@@ -254,11 +263,9 @@ end =
 struct
 
 module SeffOrd = struct
-open Entries
 type t = side_effect
 let compare e1 e2 =
-  let cmp e1 e2 = Constant.CanOrd.compare e1.seff_constant e2.seff_constant in
-  List.compare cmp e1.eff e2.eff
+  Constant.CanOrd.compare e1.seff_constant e2.seff_constant
 end
 
 module SeffSet = Set.Make(SeffOrd)
@@ -279,37 +286,37 @@ end
 type private_constants = SideEffects.t
 
 let side_effects_of_private_constants l =
-  let ans = List.rev (SideEffects.repr l) in
-  List.map_append (fun { eff; _ } -> eff) ans
+  List.rev (SideEffects.repr l)
+
+let push_private_constants env eff =
+  let eff = side_effects_of_private_constants eff in
+  let add_if_undefined env eff =
+    try ignore(Environ.lookup_constant eff.seff_constant env); env
+    with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
+  in
+  List.fold_left add_if_undefined env eff
 
 let empty_private_constants = SideEffects.empty
-let add_private mb eff effs =
-  let from_env = CEphemeron.create mb in
-  SideEffects.add { eff; from_env } effs
 let concat_private = SideEffects.concat
 
-let make_eff env cst r =
-  let open Entries in
+let private_constant env role cst =
+  (** The constant must be the last entry of the safe environment *)
+  let () = match env.revstruct with
+  | (lbl, SFBconst _) :: _ -> assert (Label.equal lbl (Constant.label cst))
+  | _ -> assert false
+  in
+  let from_env = CEphemeron.create env.revstruct in
   let cbo = Environ.lookup_constant cst env.env in
-  {
+  let eff = {
+    from_env = from_env;
     seff_constant = cst;
     seff_body = cbo;
     seff_env = get_opaque_body env.env cbo;
-    seff_role = r;
-  }
-
-let private_con_of_con env c =
-  let open Entries in
-  let eff = [make_eff env c Subproof] in
-  add_private env.revstruct eff empty_private_constants
-
-let private_con_of_scheme ~kind env cl =
-  let open Entries in
-  let eff = List.map (fun (i, c) -> make_eff env c (Schema (i, kind))) cl in
-  add_private env.revstruct eff empty_private_constants
+    seff_role = role;
+  } in
+  SideEffects.add eff empty_private_constants
 
 let universes_of_private eff =
-  let open Entries in
   let fold acc eff =
     let acc = match eff.seff_env with
     | `Nothing -> acc
@@ -588,22 +595,17 @@ let add_constant_aux ~in_section senv (kn, cb) =
 let mk_pure_proof c = (c, Univ.ContextSet.empty), SideEffects.empty
 
 let inline_side_effects env body side_eff =
-  let open Entries in
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
-  let filter { eff = se; from_env = mb } =
-    let map e = (e.seff_constant, e.seff_body, e.seff_env) in
-    let cbl = List.map map se in
-    let not_exists (c,_,_) =
-      try ignore(Environ.lookup_constant c env); false
-      with Not_found -> true in
-    let cbl = List.filter not_exists cbl in
-    (cbl, mb)
+  let filter e =
+    let cb = (e.seff_constant, e.seff_body, e.seff_env) in
+    try ignore (Environ.lookup_constant e.seff_constant env); None
+    with Not_found -> Some (cb, e.from_env)
   in
   (* CAVEAT: we assure that most recent effects come first *)
-  let side_eff = List.map filter (SideEffects.repr side_eff) in
-  let sigs = List.rev_map (fun (cbl, mb) -> mb, List.length cbl) side_eff in
-  let side_eff = List.fold_left (fun accu (cbl, _) -> cbl @ accu) [] side_eff in
+  let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
+  let sigs = List.rev_map (fun (_, mb) -> mb) side_eff in
+  let side_eff = List.fold_left (fun accu (cb, _) -> cb :: accu) [] side_eff in
   let side_eff = List.rev side_eff in
   (** Most recent side-effects first in side_eff *)
   if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs)
@@ -675,24 +677,22 @@ let inline_private_constants_in_definition_entry env ce =
 let inline_private_constants_in_constr env body side_eff =
   pi1 (inline_side_effects env body side_eff)
 
-let rec is_nth_suffix n l suf =
-  if Int.equal n 0 then l == suf
-  else match l with
-  | [] -> false
-  | _ :: l -> is_nth_suffix (pred n) l suf
+let is_suffix l suf = match l with
+| [] -> false
+| _ :: l -> l == suf
 
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct.
    Returns the number of effects that can be trusted. *)
 let check_signatures curmb sl =
-  let is_direct_ancestor accu (mb, how_many) =
+  let is_direct_ancestor accu mb =
     match accu with
     | None -> None
     | Some (n, curmb) ->
         try
           let mb = CEphemeron.get mb in
-          if is_nth_suffix how_many mb curmb
-          then Some (n + how_many, mb)
+          if is_suffix mb curmb
+          then Some (n + 1, mb)
           else None
         with CEphemeron.InvalidKey -> None in
   let sl = List.fold_left is_direct_ancestor (Some (0, curmb)) sl in
@@ -725,7 +725,6 @@ let constant_entry_of_side_effect cb u =
     const_entry_inline_code = cb.const_inline_code }
 
 let turn_direct orig =
-  let open Entries in
   let cb = orig.seff_body in
   if Declareops.is_opaque cb then
     let p = match orig.seff_env with
@@ -738,7 +737,6 @@ let turn_direct orig =
   else orig
 
 let export_eff eff =
-  let open Entries in
   (eff.seff_constant, eff.seff_body, eff.seff_role)
 
 let export_side_effects mb env c =
@@ -751,10 +749,9 @@ let export_side_effects mb env c =
       let not_exists e =
         try ignore(Environ.lookup_constant e.seff_constant env); false
         with Not_found -> true in
-      let aux (acc,sl) { eff = se; from_env = mb } =
-        let cbl = List.filter not_exists se in
-        if List.is_empty cbl then acc, sl
-        else cbl :: acc, (mb,List.length cbl) :: sl in
+      let aux (acc,sl) e =
+        if not (not_exists e) then acc, sl
+        else e :: acc, e.from_env :: sl in
       let seff, signatures = List.fold_left aux ([],[]) (SideEffects.repr eff) in
       let trusted = check_signatures mb signatures in
       let push_seff env eff =
@@ -772,10 +769,9 @@ let export_side_effects mb env c =
       let rec translate_seff sl seff acc env =
         match seff with
         | [] -> List.rev acc, ce
-        | cbs :: rest ->
+        | eff :: rest ->
           if Int.equal sl 0 then
-           let env, cbs =
-             List.fold_left (fun (env,cbs) eff ->
+           let env, cb =
               let { seff_constant = kn; seff_body = ocb; seff_env = u ; _ } = eff in
                let ce = constant_entry_of_side_effect ocb u in
                let cb = Term_typing.translate_constant Term_typing.Pure env kn ce in
@@ -783,15 +779,14 @@ let export_side_effects mb env c =
                 seff_body = cb;
                 seff_env = `Nothing;
                } in
-               (push_seff env eff, export_eff eff :: cbs))
-             (env,[]) cbs in
-           translate_seff 0 rest (cbs @ acc) env
+               (push_seff env eff, export_eff eff)
+            in
+            translate_seff 0 rest (cb :: acc) env
           else
-           let cbs_len = List.length cbs in
-           let cbs = List.map turn_direct cbs in
-           let env = List.fold_left push_seff env cbs in
-           let ecbs = List.map export_eff cbs in
-           translate_seff (sl - cbs_len) rest (ecbs @ acc) env
+           let cb = turn_direct eff in
+           let env = push_seff env cb in
+           let ecb = export_eff cb in
+           translate_seff (sl - 1) rest (ecb :: acc) env
      in
        translate_seff trusted seff [] env
 
