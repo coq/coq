@@ -1208,7 +1208,7 @@ Controlling the locality of commands
      effect of the command to the current module if the command does not occur in a
      section and the Global modifier extends the effect outside the current
      sections and current module if the command occurs in a section. As an example,
-     the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+     the :cmd:`Arguments <Arguments (implicits)>`, :cmd:`Ltac` or :cmd:`Notation` commands belong
      to this category. Notice that a subclass of these commands do not support
      extension of their scope outside sections at all and the Global modifier is not
      applicable to them.
