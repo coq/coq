@@ -85,7 +85,7 @@ module DefAttributes = struct
     locality : bool option;
     polymorphic : bool;
     program : bool;
-    deprecated : deprecation option;
+    deprecated : Deprecation.t option;
   }
 
   let parse f =
@@ -95,6 +95,8 @@ module DefAttributes = struct
     in
     { polymorphic; program; locality; deprecated }
 end
+
+let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
 
 let with_locality ~atts f =
   let local = Attributes.(parse locality atts) in
@@ -106,8 +108,7 @@ let with_section_locality ~atts f =
   f ~section_local
 
 let with_module_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  let module_local = make_module_locality local in
+  let module_local = Attributes.(parse module_locality atts) in
   f ~module_local
 
 let with_def_attributes ~atts f =
@@ -511,7 +512,7 @@ let dump_global r =
 
 let vernac_syntax_extension ~module_local infix l =
   if infix then Metasyntax.check_infix_modifiers (snd l);
-  Metasyntax.add_syntax_extension module_local l
+  Metasyntax.add_syntax_extension ~local:module_local l
 
 let vernac_declare_scope ~module_local sc =
   Metasyntax.declare_scope module_local sc
@@ -530,11 +531,13 @@ let vernac_open_close_scope ~section_local (b,s) =
 let vernac_arguments_scope ~section_local r scl =
   Notation.declare_arguments_scope section_local (smart_global r) scl
 
-let vernac_infix ~module_local =
-  Metasyntax.add_infix module_local (Global.env())
+let vernac_infix ~atts =
+  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
+  Metasyntax.add_infix ~local:module_local deprecation (Global.env())
 
-let vernac_notation ~module_local =
-  Metasyntax.add_notation module_local (Global.env())
+let vernac_notation ~atts =
+  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
+  Metasyntax.add_notation ~local:module_local deprecation (Global.env())
 
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
@@ -1261,9 +1264,10 @@ let vernac_hints ~atts dbnames h =
   let local = enforce_module_locality local in
   Hints.add_hints ~local dbnames (Hints.interp_hints poly h)
 
-let vernac_syntactic_definition ~module_local lid x y =
+let vernac_syntactic_definition ~atts lid x compat =
+  let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
   Dumpglob.dump_definition lid false "syndef";
-  Metasyntax.add_syntactic_definition (Global.env()) lid.v x module_local y
+  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid.v x compat
 
 let cache_bidi_hints (_name, (gr, ohint)) =
   match ohint with
@@ -2374,9 +2378,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacOpenCloseScope (b, s) ->
     VtDefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
   | VernacInfix (mv,qid,sc) ->
-    VtDefault(fun () -> with_module_locality ~atts vernac_infix mv qid sc)
+    VtDefault(fun () -> vernac_infix ~atts mv qid sc)
   | VernacNotation (c,infpl,sc) ->
-    VtDefault(fun () -> with_module_locality ~atts vernac_notation c infpl sc)
+    VtDefault(fun () -> vernac_notation ~atts c infpl sc)
   | VernacNotationAddFormat(n,k,v) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
@@ -2554,8 +2558,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtDefault(fun () ->
         vernac_hints ~atts dbnames hints)
   | VernacSyntacticDefinition (id,c,b) ->
-    VtDefault(fun () ->
-        with_module_locality ~atts vernac_syntactic_definition id c b)
+    VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
   | VernacArguments (qid, args, more_implicits, nargs, bidi, flags) ->
     VtDefault(fun () ->
         with_section_locality ~atts (vernac_arguments qid args more_implicits nargs bidi flags))

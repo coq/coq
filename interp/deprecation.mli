@@ -8,17 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open Notation_term
+type t = { since : string option ; note : string option }
 
-(** Syntactic definitions. *)
+val make : ?since:string -> ?note:string -> unit -> t
 
-type syndef_interpretation = (Id.t * subscopes) list * notation_constr
-
-val declare_syntactic_definition : local:bool -> Deprecation.t option -> Id.t ->
-  onlyparsing:bool -> syndef_interpretation -> unit
-
-val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> syndef_interpretation
-
-val search_filtered_syntactic_definition : ?loc:Loc.t ->
-  (syndef_interpretation -> 'a option) -> KerName.t -> 'a option
+val create_warning : object_name:string -> warning_name:string ->
+  ('b -> Pp.t) -> ?loc:Loc.t -> 'b * t -> unit

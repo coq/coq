@@ -73,11 +73,6 @@ module Notations = struct
 end
 open Notations
 
-type deprecation = { since : string option ; note : string option }
-
-let mk_deprecation ?(since=None) ?(note=None) () =
-  { since ; note }
-
 let assert_empty k v =
   if v <> VernacFlagEmpty
   then user_err Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
@@ -213,19 +208,16 @@ let polymorphic =
   universe_transform ~warn_unqualified:true >>
   qualify_attribute ukey polymorphic_base
 
-let deprecation_parser : deprecation key_parser = fun orig args ->
+let deprecation_parser : Deprecation.t key_parser = fun orig args ->
   assert_once ~name:"deprecation" orig;
   match args with
   | VernacFlagList [ "since", VernacFlagLeaf since ; "note", VernacFlagLeaf note ]
   | VernacFlagList [ "note", VernacFlagLeaf note ; "since", VernacFlagLeaf since ] ->
-    let since = Some since and note = Some note in
-    mk_deprecation ~since ~note ()
+    Deprecation.make ~since ~note ()
   | VernacFlagList [ "since", VernacFlagLeaf since ] ->
-    let since = Some since in
-    mk_deprecation ~since ()
+    Deprecation.make ~since ()
   | VernacFlagList [ "note", VernacFlagLeaf note ] ->
-    let note = Some note in
-    mk_deprecation ~note ()
+    Deprecation.make ~note ()
   |  _ -> CErrors.user_err (Pp.str "Ill formed “deprecated” attribute")
 
 let deprecation = attribute_of_list ["deprecated",deprecation_parser]

@@ -732,12 +732,7 @@ type syntax_extension = {
   synext_notgram : notation_grammar;
   synext_unparsing : unparsing list;
   synext_extra : (string * string) list;
-  synext_compat : Flags.compat_version option;
 }
-
-let is_active_compat = function
-| None -> true
-| Some v -> 0 <= Flags.version_compare v !Flags.compat_version
 
 type syntax_extension_obj = locality_flag * syntax_extension
 
@@ -759,7 +754,7 @@ let cache_one_syntax_extension se =
     let oldprec = Notgram_ops.level_of_notation ~onlyprint ntn in
     if not (Notgram_ops.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
   with Not_found ->
-    if is_active_compat se.synext_compat then begin
+    begin
       (* Reserve the notation level *)
       Notgram_ops.declare_notation_level ntn prec ~onlyprint;
       (* Declare the parsing rule *)
@@ -933,10 +928,6 @@ let is_only_parsing mods =
 let is_only_printing mods =
   let test = function SetOnlyPrinting -> true | _ -> false in
   List.exists test mods
-
-let get_compat_version mods =
-  let test = function SetCompatVersion v -> Some v | _ -> None in
-  try Some (List.find_map test mods) with Not_found -> None
 
 (* Compute precedences from modifiers (or find default ones) *)
 
@@ -1177,7 +1168,7 @@ module SynData = struct
     (* Fields coming from the vernac-level modifiers *)
     only_parsing  : bool;
     only_printing : bool;
-    compat        : Flags.compat_version option;
+    deprecation   : Deprecation.t option;
     format        : lstring option;
     extra         : (string * string) list;
 
@@ -1222,12 +1213,32 @@ let check_locality_compatibility local custom i_typs =
                     strbrk " which is local."))
       (List.uniquize allcustoms)
 
-let compute_syntax_data local df modifiers =
+let warn_deprecated_compat =
+  CWarnings.create ~name:"deprecated-compat" ~category:"deprecated"
+    (fun () -> Pp.(str"The \"compat\" modifier is deprecated." ++ spc () ++
+                   str"Please use the \"deprecated\" attributed instead."))
+
+(* Returns the new deprecation and the onlyparsing status. This should be
+removed together with the compat syntax modifier. *)
+let merge_compat_deprecation compat deprecation =
+  match compat, deprecation with
+  | Some Flags.Current, _ -> deprecation, true
+  | Some _, Some _ ->
+    CErrors.user_err Pp.(str"The \"compat\" modifier cannot be used with the \"deprecated\" attribute."
+                        ++ spc () ++ str"Please use only the latter.")
+  | Some v, None ->
+    warn_deprecated_compat ();
+    Some (Deprecation.make ~since:(Flags.pr_version v) ()), true
+  | None, Some _ -> deprecation, true
+  | None, None -> deprecation, false
+
+let compute_syntax_data ~local deprecation df modifiers =
   let open SynData in
   let open NotationMods in
   let mods = interp_modifiers modifiers in
   let onlyprint = mods.only_printing in
   let onlyparse = mods.only_parsing in
+  let deprecation, _ = merge_compat_deprecation mods.compat deprecation in
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
   let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
@@ -1265,7 +1276,7 @@ let compute_syntax_data local df modifiers =
 
     only_parsing  = mods.only_parsing;
     only_printing = mods.only_printing;
-    compat        = mods.compat;
+    deprecation;
     format        = mods.format;
     extra         = mods.extra;
 
@@ -1281,9 +1292,9 @@ let compute_syntax_data local df modifiers =
     not_data    = sy_fulldata;
   }
 
-let compute_pure_syntax_data local df mods =
+let compute_pure_syntax_data ~local df mods =
   let open SynData in
-  let sd = compute_syntax_data local df mods in
+  let sd = compute_syntax_data ~local None df mods in
   let msgs =
     if sd.only_parsing then
       (Feedback.msg_warning ?loc:None,
@@ -1301,7 +1312,7 @@ type notation_obj = {
   notobj_coercion : entry_coercion_kind option;
   notobj_onlyparse : bool;
   notobj_onlyprint : bool;
-  notobj_compat : Flags.compat_version option;
+  notobj_deprecation : Deprecation.t option;
   notobj_notation : notation * notation_location;
 }
 
@@ -1323,11 +1334,11 @@ let open_notation i (_, nobj) =
   let (ntn, df) = nobj.notobj_notation in
   let pat = nobj.notobj_interp in
   let onlyprint = nobj.notobj_onlyprint  in
+  let deprecation = nobj.notobj_deprecation in
   let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
-  let active = is_active_compat nobj.notobj_compat in
-  if Int.equal i 1 && fresh && active then begin
+  if Int.equal i 1 && fresh then begin
     (* Declare the interpretation *)
-    let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint in
+    let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
     (* Declare the uninterpretation *)
     if not nobj.notobj_onlyparse then
       Notation.declare_uninterpretation (NotationRule (scope, ntn)) pat;
@@ -1388,7 +1399,6 @@ let recover_notation_syntax ntn =
       synext_notgram = pa_rule;
       synext_unparsing = pp_rule;
       synext_extra = pp_extra_rules;
-      synext_compat = None;
     }
   with Not_found ->
     raise NoSyntaxRule
@@ -1437,7 +1447,6 @@ let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
     synext_notgram  = { notgram_onlyprinting = sd.only_printing; notgram_rules = pa_rule };
     synext_unparsing = pp_rule;
     synext_extra  = sd.extra;
-    synext_compat = sd.compat;
   }
 
 (**********************************************************************)
@@ -1447,9 +1456,9 @@ let to_map l =
   let fold accu (x, v) = Id.Map.add x v accu in
   List.fold_left fold Id.Map.empty l
 
-let add_notation_in_scope local df env c mods scope =
+let add_notation_in_scope ~local deprecation df env c mods scope =
   let open SynData in
-  let sd = compute_syntax_data local df mods in
+  let sd = compute_syntax_data ~local deprecation df mods in
   (* Prepare the interpretation *)
   (* Prepare the parsing and printing rules *)
   let sy_rules = make_syntax_rules sd in
@@ -1470,7 +1479,7 @@ let add_notation_in_scope local df env c mods scope =
     notobj_onlyparse = onlyparse;
     notobj_coercion = coe;
     notobj_onlyprint = sd.only_printing;
-    notobj_compat = sd.compat;
+    notobj_deprecation = sd.deprecation;
     notobj_notation = sd.info;
   } in
   (* Ready to change the global state *)
@@ -1479,7 +1488,7 @@ let add_notation_in_scope local df env c mods scope =
   Lib.add_anonymous_leaf (inNotation notation);
   sd.info
 
-let add_notation_interpretation_core local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint compat =
+let add_notation_interpretation_core ~local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint deprecation =
   let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint df in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
   let level, i_typs, onlyprint = if not (is_numeral symbs) then begin
@@ -1510,7 +1519,7 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
     notobj_onlyparse = onlyparse;
     notobj_coercion = coe;
     notobj_onlyprint = onlyprint;
-    notobj_compat = compat;
+    notobj_deprecation = deprecation;
     notobj_notation = df';
   } in
   Lib.add_anonymous_leaf (inNotation notation);
@@ -1518,41 +1527,40 @@ let add_notation_interpretation_core local df env ?(impls=empty_internalization_
 
 (* Notations without interpretation (Reserved Notation) *)
 
-let add_syntax_extension local ({CAst.loc;v=df},mods) = let open SynData in
-  let psd = compute_pure_syntax_data local df mods in
-  let sy_rules = make_syntax_rules {psd with compat = None} in
+let add_syntax_extension ~local ({CAst.loc;v=df},mods) = let open SynData in
+  let psd = compute_pure_syntax_data ~local df mods in
+  let sy_rules = make_syntax_rules {psd with deprecation = None} in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) psd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
 (* Notations with only interpretation *)
 
 let add_notation_interpretation env ({CAst.loc;v=df},c,sc) =
-  let df' = add_notation_interpretation_core false df env c sc false false None in
+  let df' = add_notation_interpretation_core ~local:false df env c sc false false None in
   Dumpglob.dump_notation (loc,df') sc true
 
 let set_notation_for_interpretation env impls ({CAst.v=df},c,sc) =
   (try ignore
-    (Flags.silently (fun () -> add_notation_interpretation_core false df env ~impls c sc false false None) ());
+    (Flags.silently (fun () -> add_notation_interpretation_core ~local:false df env ~impls c sc false false None) ());
   with NoSyntaxRule ->
     user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
-let add_notation local env c ({CAst.loc;v=df},modifiers) sc =
+let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
   let df' =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
     let onlyparse = is_only_parsing modifiers in
     let onlyprint = is_only_printing modifiers in
-    let compat = get_compat_version modifiers in
-    try add_notation_interpretation_core local df env c sc onlyparse onlyprint compat
+    try add_notation_interpretation_core ~local df env c sc onlyparse onlyprint deprecation
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
-      add_notation_in_scope local df env c modifiers sc
+      add_notation_in_scope ~local deprecation df env c modifiers sc
    else
     (* Declare both syntax and interpretation *)
-    add_notation_in_scope local df env c modifiers sc
+    add_notation_in_scope ~local deprecation df env c modifiers sc
   in
   Dumpglob.dump_notation (loc,df') sc true
 
@@ -1566,7 +1574,7 @@ let add_notation_extra_printing_rule df k v =
 
 let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None)
 
-let add_infix local env ({CAst.loc;v=inf},modifiers) pr sc =
+let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
   let vars = names_of_constr_expr pr in
@@ -1575,7 +1583,7 @@ let add_infix local env ({CAst.loc;v=inf},modifiers) pr sc =
   let metas = [inject_var x; inject_var y] in
   let c = mkAppC (pr,metas) in
   let df = CAst.make ?loc @@ Id.to_string x ^" "^(quote_notation_token inf)^" "^Id.to_string y in
-  add_notation local env c (df,modifiers) sc
+  add_notation ~local deprecation env c (df,modifiers) sc
 
 (**********************************************************************)
 (* Scopes, delimiters and classes bound to scopes                     *)
@@ -1651,7 +1659,7 @@ let try_interp_name_alias = function
   | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
   | _ -> raise Not_found
 
-let add_syntactic_definition env ident (vars,c) local onlyparse =
+let add_syntactic_definition ~local deprecation env ident (vars,c) compat =
   let vars,reversibility,pat =
     try [], APrioriReversible, NRef (try_interp_name_alias (vars,c))
     with Not_found ->
@@ -1665,11 +1673,9 @@ let add_syntactic_definition env ident (vars,c) local onlyparse =
       let map id = let (_,sc) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, reversibility, pat
   in
-  let onlyparse = match onlyparse with
-    | None when fst (printability None false reversibility pat) -> Some Flags.Current
-    | p -> p
-  in
-  Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
+  let deprecation, onlyparsing = merge_compat_deprecation compat deprecation in
+  let onlyparsing = onlyparsing || fst (printability None false reversibility pat) in
+  Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)

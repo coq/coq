@@ -55,7 +55,7 @@ type alias = KerName.t
 type alias_tactic =
   { alias_args: Id.t list;
     alias_body: glob_tactic_expr;
-    alias_deprecation: Attributes.deprecation option;
+    alias_deprecation: Deprecation.t option;
   }
 
 let alias_map = Summary.ref ~name:"tactic-alias"
@@ -121,7 +121,7 @@ type ltac_entry = {
   tac_for_ml : bool;
   tac_body : glob_tactic_expr;
   tac_redef : ModPath.t list;
-  tac_deprecation : Attributes.deprecation option
+  tac_deprecation : Deprecation.t option
 }
 
 let mactab =
@@ -178,7 +178,7 @@ let subst_md (subst, (local, id, b, t, deprecation)) =
 let classify_md (local, _, _, _, _ as o) = Substitute o
 
 let inMD : bool * ltac_constant option * bool * glob_tactic_expr *
-           Attributes.deprecation option -> obj =
+           Deprecation.t option -> obj =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;

@@ -12,11 +12,10 @@
 
 open Vernacexpr
 open Tacexpr
-open Attributes
 
 (** {5 Tactic Definitions} *)
 
-val register_ltac : locality_flag -> ?deprecation:deprecation ->
+val register_ltac : locality_flag -> ?deprecation:Deprecation.t ->
   Tacexpr.tacdef_body list -> unit
 (** Adds new Ltac definitions to the environment. *)
 
@@ -36,7 +35,7 @@ type argument = Genarg.ArgT.any Extend.user_symbol
     leaves. *)
 
 val add_tactic_notation :
-  locality_flag -> int -> ?deprecation:deprecation -> raw_argument
+  locality_flag -> int -> ?deprecation:Deprecation.t -> raw_argument
   grammar_tactic_prod_item_expr list -> raw_tactic_expr -> unit
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
@@ -49,7 +48,7 @@ val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -
     to finding an argument by name (as in {!Genarg}) if there is none
     matching. *)
 
-val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:deprecation ->
+val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:Deprecation.t ->
   argument grammar_tactic_prod_item_expr list list -> unit
 (** A low-level variant of {!add_tactic_notation} used by the TACTIC EXTEND
     ML-side macro. *)
@@ -80,7 +79,7 @@ type _ ty_sig =
 type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
 val tactic_extend : string -> string -> level:Int.t ->
-  ?deprecation:deprecation -> ty_ml list -> unit
+  ?deprecation:Deprecation.t -> ty_ml list -> unit
 
 (** {5 ARGUMENT EXTEND} *)
 
