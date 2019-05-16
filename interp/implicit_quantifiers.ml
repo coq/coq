@@ -196,10 +196,9 @@ let combine_params avoid fn applied needed =
 	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
-let combine_params_freevar =
-  fun avoid (_, decl) ->
-    let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (CAst.make @@ CRef (qualid_of_ident id',None), Id.Set.add id' avoid)
+let combine_params_freevar avoid (_, decl) =
+  let id' = next_name_away_from (RelDecl.get_name decl) avoid in
+  (CAst.make @@ CRef (qualid_of_ident id',None), Id.Set.add id' avoid)
 
 let destClassApp cl =
   let open CAst in

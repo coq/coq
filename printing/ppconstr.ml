@@ -339,8 +339,7 @@ let tag_var = tag Tag.variable
 
   let pr_binder many pr (nal,k,t) =
     match k with
-      | Generalized (b, b', t') ->
-        assert (match b with Implicit -> true | _ -> false);
+      | Generalized (b', t') ->
         begin match nal with
           |[{loc; v=Anonymous}] ->
             hov 1 (str"`" ++ (surround_impl b'

@@ -34,8 +34,8 @@ let abstraction_kind_eq ak1 ak2 = match ak1, ak2 with
 
 let binder_kind_eq b1 b2 = match b1, b2 with
 | Default bk1, Default bk2 -> binding_kind_eq bk1 bk2
-| Generalized (bk1, ck1, b1), Generalized (bk2, ck2, b2) ->
-  binding_kind_eq bk1 bk2 && binding_kind_eq ck1 ck2 &&
+| Generalized (ck1, b1), Generalized (ck2, b2) ->
+  binding_kind_eq ck1 ck2 &&
   (if b1 then b2 else not b2)
 | _ -> false
 
