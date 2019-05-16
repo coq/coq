@@ -1062,18 +1062,18 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance ~atts sup inst props pri =
+let vernac_instance ~atts name bl t props pri =
   let open DefAttributes in
   let global = not (make_section_locality atts.locality) in
-  Dumpglob.dump_constraint (fst (pi1 inst)) false "inst";
+  Dumpglob.dump_constraint (fst name) false "inst";
   let program_mode = atts.program in
-  Classes.new_instance ~program_mode ~global atts.polymorphic sup inst props pri
+  Classes.new_instance ~program_mode ~global atts.polymorphic name bl t props pri
 
-let vernac_declare_instance ~atts sup inst pri =
+let vernac_declare_instance ~atts id bl inst pri =
   let open DefAttributes in
   let global = not (make_section_locality atts.locality) in
-  Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
-  Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
+  Dumpglob.dump_definition (fst id) false "inst";
+  Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic id bl inst pri
 
 let vernac_context ~pstate ~poly l =
   if not (ComAssumption.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
@@ -2377,10 +2377,10 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     pstate
 
   (* Type classes *)
-  | VernacInstance (sup, inst, props, info) ->
-    snd @@ with_def_attributes ~atts (vernac_instance ~pstate sup inst props info)
-  | VernacDeclareInstance (sup, inst, info) ->
-    with_def_attributes ~atts vernac_declare_instance sup inst info;
+  | VernacInstance (name, bl, t, props, info) ->
+    snd @@ with_def_attributes ~atts (vernac_instance ~pstate name bl t props info)
+  | VernacDeclareInstance (id, bl, inst, info) ->
+    with_def_attributes ~atts vernac_declare_instance id bl inst info;
     pstate
   | VernacContext sup ->
     let () = vernac_context ~pstate ~poly:(only_polymorphism atts) sup in

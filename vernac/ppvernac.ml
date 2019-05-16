@@ -911,7 +911,7 @@ open Pputils
               spc() ++ pr_class_rawexpr c2)
         )
 
-      | VernacInstance (sup, (instid, bk, cl), props, info) ->
+      | VernacInstance (instid, sup, cl, props, info) ->
         return (
           hov 1 (
             keyword "Instance" ++
@@ -920,7 +920,6 @@ open Pputils
              | { v = Anonymous }, _ -> mt ()) ++
             pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
-              (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
               pr_constr env sigma cl ++ pr_hint_info (pr_constr_pattern_expr env sigma) info ++
               (match props with
                 | Some (true, { v = CRecord l}) -> spc () ++ str":=" ++ spc () ++ str"{" ++ pr_record_body l ++ str "}"
@@ -929,13 +928,12 @@ open Pputils
                 | None -> mt()))
         )
 
-      | VernacDeclareInstance (sup, (instid, bk, cl), info) ->
+      | VernacDeclareInstance (instid, sup, cl, info) ->
         return (
           hov 1 (
             keyword "Declare Instance" ++ spc () ++ pr_ident_decl instid ++ spc () ++
             pr_and_type_binders_arg sup ++
               str":" ++ spc () ++
-              (match bk with Implicit -> str "! " | Explicit -> mt ()) ++
               pr_constr env sigma cl ++ pr_hint_info (pr_constr_pattern_expr env sigma) info)
         )
 

@@ -94,7 +94,7 @@ Program Instance unit_eqdec : EqDec unit eq := fun x y => in_left.
 Obligation Tactic := unfold complement, equiv ; program_simpl.
 
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
-  ! EqDec (prod A B) eq :=
+  EqDec (prod A B) eq :=
   { equiv_dec x y :=
     let '(x1, x2) := x in
     let '(y1, y2) := y in
@@ -115,7 +115,7 @@ Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
 (** Objects of function spaces with countable domains like bool have decidable
   equality. Proving the reflection requires functional extensionality though. *)
 
-Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
+Program Instance bool_function_eqdec `(EqDec A eq) : EqDec (bool -> A) eq :=
   { equiv_dec f g :=
     if f true == g true then
       if f false == g false then in_left
@@ -130,7 +130,7 @@ Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
 
 Require Import List.
 
-Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
+Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
   { equiv_dec :=
     fix aux (x y : list A) :=
     match x, y with
