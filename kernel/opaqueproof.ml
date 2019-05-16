@@ -115,6 +115,10 @@ let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
         | None -> Univ.ContextSet.empty
         | Some u -> Future.force u
 
+let get_direct_constraints = function
+| Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
+| Direct (_, cu) -> Future.chain cu snd
+
 let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> Some(Future.chain cu snd)
   | Indirect (_,dp,i) ->
