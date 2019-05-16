@@ -1143,8 +1143,8 @@ Binding types of arguments to an interpretation scope
    scope of operations on the natural numbers), it may be convenient to bind it
    to this type. When a scope ``scope`` is bound to a type ``type``, any new function
    defined later on gets its arguments of type ``type`` interpreted by default in
-   scope scope (this default behavior can however be overwritten by explicitly
-   using the command :cmd:`Arguments`).
+   scope ``scope`` (this default behavior can however be overwritten by explicitly
+   using the command :cmd:`Arguments <Arguments (scopes)>`).
 
    Whether the argument of a function has some type ``type`` is determined
    statically. For instance, if ``f`` is a polymorphic function of type

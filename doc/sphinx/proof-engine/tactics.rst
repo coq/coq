@@ -3159,7 +3159,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    + A constant can be marked to be unfolded only if applied to enough
      arguments. The number of arguments required can be specified using the
-     ``/`` symbol in the argument list of the :cmd:`Arguments` vernacular command.
+     ``/`` symbol in the argument list of the :cmd:`Arguments <Arguments (implicits)>` vernacular command.
 
      .. example::
 
