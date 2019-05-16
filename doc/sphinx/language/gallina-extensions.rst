@@ -1662,6 +1662,7 @@ Declaring Implicit Arguments
    of :token:`qualid`.
 
 .. cmd:: Arguments @qualid : clear implicits
+   :name: Arguments (clear implicits)
 
    This command clears implicit arguments.
 
@@ -1738,6 +1739,7 @@ Automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Arguments @qualid : default implicits
+   :name: Arguments (default implicits)
 
    This command tells |Coq| to automatically detect what are the implicit arguments of a
    defined object.
@@ -1908,6 +1910,7 @@ Renaming implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. cmd:: Arguments @qualid {* @name} : @rename
+   :name: Arguments (rename)
 
    This command is used to redefine the names of implicit arguments.
 
