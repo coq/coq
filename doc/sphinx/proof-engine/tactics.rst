@@ -4400,6 +4400,11 @@ Equality
    This tactic applies to a goal that has the form :g:`t=u` and transforms it
    into the two subgoals :n:`t=@term` and :n:`@term=u`.
 
+   .. tacv:: etransitivity
+
+      This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
+      a concrete :token:`term`.
+
 
 Equality and inductive sets
 ---------------------------
