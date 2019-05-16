@@ -2204,7 +2204,7 @@ let with_fail ~st f =
     try let _ = f () in raise HasNotFailed
     with
     | HasNotFailed as e -> raise e
-    | e ->
+    | e when CErrors.noncritical e || e = Timeout ->
       let e = CErrors.push e in
       raise (HasFailed (CErrors.iprint
                           (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
