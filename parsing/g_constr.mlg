@@ -500,9 +500,9 @@ GRAMMAR EXTEND Gram
       | "{"; id=name; idl=LIST1 name; "}" ->
           { List.map (fun id -> CLocalAssum ([id],Default Implicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
-	  { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Explicit, b), t)) tc }
+          { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Explicit, b), t)) tc }
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
-	  { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, Implicit, b), t)) tc }
+          { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, b), t)) tc }
       | "'"; p = pattern LEVEL "0" ->
           { let (p, ty) =
             match p.CAst.v with
