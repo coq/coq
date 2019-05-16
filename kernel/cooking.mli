@@ -27,7 +27,7 @@ type 'opaque result = {
   cook_context : Constr.named_context option;
 }
 
-val cook_constant : hcons:bool -> recipe -> Opaqueproof.opaque result
+val cook_constant : recipe -> Opaqueproof.opaque result
 val cook_constr : Opaqueproof.cooking_info -> constr -> constr
 
 (** {6 Utility functions used in module [Discharge]. } *)

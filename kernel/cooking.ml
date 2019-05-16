@@ -212,7 +212,7 @@ let lift_univs cb subst auctx0 =
       let auctx' = Univ.subst_univs_level_abstract_universe_context substf auctx in
       subst, (Polymorphic (AUContext.union auctx0 auctx'))
 
-let cook_constant ~hcons { from = cb; info } =
+let cook_constant { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
@@ -220,10 +220,7 @@ let cook_constant ~hcons { from = cb; info } =
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps0 = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps0 in
-  let map c =
-    let c = abstract_constant_body (expmod c) hyps in
-    if hcons then Constr.hcons c else c
-  in
+  let map c = abstract_constant_body (expmod c) hyps in
   let body = on_body modlist (hyps0, usubst, abs_ctx)
     map
     cb.const_body

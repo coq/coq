@@ -555,6 +555,8 @@ let add_constant_aux ~in_section senv (kn, cb) =
     end
   | Undef _ | Def _ | Primitive _ | OpaqueDef _ -> []
   in
+  (* This is the only place where we hashcons the contents of a constant body *)
+  let cb = if in_section then cb else Declareops.hcons_const_body cb in
   let cb, otab = match cb.const_body with
     | OpaqueDef lc when not in_section ->
       (* In coqc, opaque constants outside sections will be stored
@@ -771,8 +773,7 @@ let export_private_constants ~in_section ce senv =
 
 let add_recipe ~in_section l r senv =
   let kn = Constant.make2 senv.modpath l in
-  let cb = Term_typing.translate_recipe ~hcons:(not in_section) senv.env kn r in
-  let cb = if in_section then cb else Declareops.hcons_const_body cb in
+  let cb = Term_typing.translate_recipe senv.env kn r in
   let senv = add_constant_aux ~in_section senv (kn, cb) in
   kn, senv
 

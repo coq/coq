@@ -74,7 +74,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let j = Typeops.infer env t in
       let usubst, univs = Declareops.abstract_universes uctx in
       let r = Typeops.assumption_of_judgment env j in
-      let t = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
+      let t = Vars.subst_univs_level_constr usubst j.uj_val in
       {
         Cooking.cook_body = Undef nl;
         cook_type = t;
@@ -95,7 +95,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       | Some typ ->
         let typ = Typeops.infer_type env typ in
         Typeops.check_primitive_type env op_t typ.utj_val;
-        Constr.hcons typ.utj_val
+        typ.utj_val
       | None ->
         match op_t with
         | CPrimitives.OT_op op -> Typeops.type_of_prim env op
@@ -151,7 +151,7 @@ the polymorphic case
             let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
             j, uctx
           in
-          let c = Constr.hcons j.uj_val in
+          let c = j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
       let def = OpaqueDef proofterm in
@@ -205,7 +205,7 @@ the polymorphic case
            let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
            Vars.subst_univs_level_constr usubst tj.utj_val
       in
-      let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
+      let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = 
         if opaque then OpaqueDef (Future.from_val (def, Univ.ContextSet.empty))
 	else Def (Mod_subst.from_val def) 
@@ -328,9 +328,9 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_recipe ~hcons env _kn r =
+let translate_recipe env _kn r =
   let open Cooking in
-  let result = Cooking.cook_constant ~hcons r in
+  let result = Cooking.cook_constant r in
   let univs = result.cook_universes in
   let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs result.cook_body in
   let tps = Option.map Cemitcodes.from_val res in
