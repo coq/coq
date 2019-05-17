@@ -121,6 +121,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : solve [ `expr` | ... | `expr` ]
                      : idtac [ `message_token` ... `message_token`]
                      : fail [`natural`] [`message_token` ... `message_token`]
+                     : gfail [`natural`] [`message_token` ... `message_token`]
                      : fresh [ `component` … `component` ]
                      : context `ident` [`term`]
                      : eval `redexpr` in `term`
@@ -582,11 +583,11 @@ Failing
       the call to :n:`fail @num` is not enclosed in a :n:`+` command,
       respecting the algebraic identity.
 
-   .. tacv:: fail {* message_token}
+   .. tacv:: fail {* @message_token}
 
       The given tokens are used for printing the failure message.
 
-   .. tacv:: fail @num {* message_token}
+   .. tacv:: fail @num {* @message_token}
 
       This is a combination of the previous variants.
 
@@ -597,8 +598,8 @@ Failing
       Similarly, ``gfail`` fails even when used after ``all:`` and there are no
       goals left. See the example for clarification.
 
-   .. tacv:: gfail {* message_token}
-             gfail @num {* message_token}
+   .. tacv:: gfail {* @message_token}
+             gfail @num {* @message_token}
 
       These variants fail with an error message or an error level even if
       there are no goals left. Be careful however if Coq terms have to be

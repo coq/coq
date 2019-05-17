@@ -1032,11 +1032,11 @@ Local opening of an interpretation scope
 +++++++++++++++++++++++++++++++++++++++++
 
 It is possible to locally extend the interpretation scope stack using the syntax
-:g:`(term)%key` (or simply :g:`term%key` for atomic terms), where key is a
+:n:`(@term)%@ident` (or simply :n:`@term%@ident` for atomic terms), where :token:`ident` is a
 special identifier called *delimiting key* and bound to a given scope.
 
 In such a situation, the term term, and all its subterms, are
-interpreted in the scope stack extended with the scope bound tokey.
+interpreted in the scope stack extended with the scope bound to :token:`ident`.
 
 .. cmd:: Delimit Scope @scope with @ident
 
@@ -1051,15 +1051,15 @@ interpreted in the scope stack extended with the scope bound tokey.
 Binding arguments of a constant to an interpretation scope
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. cmd:: Arguments @qualid {+ @name%@scope}
+.. cmd:: Arguments @qualid {+ @name%@ident}
    :name: Arguments (scopes)
 
    It is possible to set in advance that some arguments of a given constant have
    to be interpreted in a given scope. The command is
-   :n:`Arguments @qualid {+ @name%@scope}` where the list is a prefix of the
-   arguments of ``qualid`` eventually annotated with their ``scope``. Grouping
+   :n:`Arguments @qualid {+ @name%@ident}` where the list is a prefix of the
+   arguments of ``qualid`` optionally annotated with their scope :token:`ident`. Grouping
    round parentheses can be used to decorate multiple arguments with the same
-   scope. ``scope`` can be either a scope name or its delimiting key. For
+   scope. :token:`ident` can be either a scope name or its delimiting key. For
    example the following command puts the first two arguments of :g:`plus_fct`
    in the scope delimited by the key ``F`` (``Rfun_scope``) and the last
    argument in the scope delimited by the key ``R`` (``R_scope``).
@@ -1070,13 +1070,13 @@ Binding arguments of a constant to an interpretation scope
 
    The ``Arguments`` command accepts scopes decoration to all grouping
    parentheses. In the following example arguments A and B are marked as
-   maximally inserted implicit arguments and are put into the type_scope scope.
+   maximally inserted implicit arguments and are put into the ``type_scope`` scope.
 
    .. coqdoc::
 
       Arguments respectful {A B}%type (R R')%signature _ _.
 
-   When interpreting a term, if some of the arguments of qualid are built
+   When interpreting a term, if some of the arguments of :token:`qualid` are built
    from a notation, then this notation is interpreted in the scope stack
    extended by the scope bound (if any) to this argument. The effect of
    the scope is limited to the argument itself. It does not propagate to
@@ -1088,21 +1088,21 @@ Binding arguments of a constant to an interpretation scope
 
       This command can be used to clear argument scopes of :token:`qualid`.
 
-   .. cmdv:: Arguments @qualid {+ @name%scope} : extra scopes
+   .. cmdv:: Arguments @qualid {+ @name%@ident} : extra scopes
 
       Defines extra argument scopes, to be used in case of coercion to ``Funclass``
       (see the :ref:`implicitcoercions` chapter) or with a computed type.
 
-   .. cmdv:: Global Arguments @qualid {+ @name%@scope}
+   .. cmdv:: Global Arguments @qualid {+ @name%@ident}
 
-      This behaves like :n:`Arguments qualid {+ @name%@scope}` but survives when a
+      This behaves like :n:`Arguments qualid {+ @name%@ident}` but survives when a
       section is closed instead of stopping working at section closing. Without the
       ``Global`` modifier, the effect of the command stops when the section it belongs
       to ends.
 
-   .. cmdv:: Local Arguments @qualid {+ @name%@scope}
+   .. cmdv:: Local Arguments @qualid {+ @name%@ident}
 
-      This behaves like :n:`Arguments @qualid {+ @name%@scope}` but does not
+      This behaves like :n:`Arguments @qualid {+ @name%@ident}` but does not
       survive modules and files. Without the ``Local`` modifier, the effect of the
       command is visible from within other modules or files.
 
