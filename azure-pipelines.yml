@@ -43,7 +43,7 @@ jobs:
     vmImage: 'macOS-10.13'
 
   variables:
-    MACOSX_DEPLOYMENT_TARGET: '10.12'
+    MACOSX_DEPLOYMENT_TARGET: '10.11'
 
   steps:
   - checkout: self
