@@ -2703,33 +2703,33 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
       Uses the equality :n:`@term`:sub:`1` :n:`= @term` :sub:`2` from right to left
 
-   .. tacv:: rewrite @term in clause
+   .. tacv:: rewrite @term in @goal_occurrences
 
       Analogous to :n:`rewrite @term` but rewriting is done following clause
       (similarly to :ref:`performing computations <performingcomputations>`). For instance:
 
-      + :n:`rewrite H in H`:sub:`1` will rewrite `H` in the hypothesis
-        `H`:sub:`1` instead of the current goal.
-      + :n:`rewrite H in H`:sub:`1` :g:`at 1, H`:sub:`2` :g:`at - 2 |- *` means
-        :n:`rewrite H; rewrite H in H`:sub:`1` :g:`at 1; rewrite H in H`:sub:`2` :g:`at - 2.`
+      + :n:`rewrite H in H'` will rewrite `H` in the hypothesis
+        ``H'`` instead of the current goal.
+      + :n:`rewrite H in H' at 1, H'' at - 2 |- *` means
+        :n:`rewrite H; rewrite H in H' at 1; rewrite H in H'' at - 2.`
         In particular a failure will happen if any of these three simpler tactics
         fails.
-      + :n:`rewrite H in * |-` will do :n:`rewrite H in H`:sub:`i` for all hypotheses
-        :g:`H`:sub:`i` different from :g:`H`.
+      + :n:`rewrite H in * |-` will do :n:`rewrite H in H'` for all hypotheses
+        :g:`H'` different from :g:`H`.
         A success will happen as soon as at least one of these simpler tactics succeeds.
       + :n:`rewrite H in *` is a combination of :n:`rewrite H` and :n:`rewrite H in * |-`
         that succeeds if at least one of these two tactics succeeds.
 
       Orientation :g:`->` or :g:`<-` can be inserted before the :token:`term` to rewrite.
 
-   .. tacv:: rewrite @term at occurrences
+   .. tacv:: rewrite @term at @occurrences
 
       Rewrite only the given occurrences of :token:`term`. Occurrences are
       specified from left to right as for pattern (:tacn:`pattern`). The rewrite is
       always performed using setoid rewriting, even for Leibniz’s equality, so one
       has to ``Import Setoid`` to use this variant.
 
-   .. tacv:: rewrite @term by tactic
+   .. tacv:: rewrite @term by @tactic
 
       Use tactic to completely solve the side-conditions arising from the
       :tacn:`rewrite`.
@@ -2799,13 +2799,14 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       Replaces :n:`@term` with :n:`@term’` using the first assumption whose type has
       the form :n:`@term’ = @term`
 
-   .. tacv:: replace @term {? with @term} in clause {? by @tactic}
-             replace -> @term in clause
-             replace <- @term in clause
+   .. tacv:: replace @term {? with @term} in @goal_occurences {? by @tactic}
+             replace -> @term in @goal_occurences
+             replace <- @term in @goal_occurences
 
-      Acts as before but the replacements take place in the specified clause (see
-      :ref:`performingcomputations`) and not only in the conclusion of the goal. The
-      clause argument must not contain any ``type of`` nor ``value of``.
+      Acts as before but the replacements take place in the specified clauses
+      (:token:`goal_occurences`) (see :ref:`performingcomputations`) and not
+      only in the conclusion of the goal. The clause argument must not contain
+      any ``type of`` nor ``value of``.
 
    .. tacv:: cutrewrite <- (@term = @term’)
       :name: cutrewrite
@@ -2893,7 +2894,7 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
       This applies :n:`stepl @term` then applies :token:`tactic` to the second goal.
 
-   .. tacv:: stepr @term stepr @term by tactic
+   .. tacv:: stepr @term by @tactic
       :name: stepr
 
       This behaves as :tacn:`stepl` but on the right-hand-side of the binary
@@ -3299,12 +3300,12 @@ the conversion in hypotheses :n:`{+ @ident}`.
    an expression defining a notation (e.g. `"_ + _"`), and this notation refers to an unfoldable constant, then the
    tactic unfolds it.
 
-.. tacv:: unfold @string%key
+.. tacv:: unfold @string%@ident
 
    This is variant of :n:`unfold @string` where :n:`@string` gets its
-   interpretation from the scope bound to the delimiting key :n:`key`
+   interpretation from the scope bound to the delimiting key :token:`ident`
    instead of its default interpretation (see :ref:`Localinterpretationrulesfornotations`).
-.. tacv:: unfold {+, qualid_or_string at {+, @num}}
+.. tacv:: unfold {+, @qualid_or_string at {+, @num}}
 
    This is the most general form, where :n:`qualid_or_string` is either a
    :n:`@qualid` or a :n:`@string` referring to a notation.
@@ -3382,14 +3383,13 @@ the conversion in hypotheses :n:`{+ @ident}`.
 Conversion tactics applied to hypotheses
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tacn:: conv_tactic in {+, @ident}
+.. tacn:: @tactic in {+, @ident}
 
-   Applies the conversion tactic :n:`conv_tactic` to the hypotheses
-   :n:`{+ @ident}`. The tactic :n:`conv_tactic` is any of the conversion tactics
-   listed in this section.
+   Applies :token:`tactic` (any of the conversion tactics listed in this
+   section) to the hypotheses :n:`{+ @ident}`.
 
-   If :n:`@ident` is a local definition, then :n:`@ident` can be replaced by
-   (type of :n:`@ident`) to address not the body but the type of the local
+   If :token:`ident` is a local definition, then :token:`ident` can be replaced by
+   :n:`type of @ident` to address not the body but the type of the local
    definition.
 
    Example: :n:`unfold not in (type of H1) (type of H3)`.
@@ -3550,9 +3550,9 @@ Automation
    This tactic unfolds constants that were declared through a :cmd:`Hint Unfold`
    in the given databases.
 
-.. tacv:: autounfold with {+ @ident} in clause
+.. tacv:: autounfold with {+ @ident} in @goal_occurences
 
-   Performs the unfolding in the given clause.
+   Performs the unfolding in the given clause (:token:`goal_occurences`).
 
 .. tacv:: autounfold with *
 
@@ -3981,7 +3981,7 @@ use one or several databases specific to your development.
    Adds the rewriting rules :n:`{+ @term}` with a right-to-left orientation in
    the bases :n:`{+ @ident}`.
 
-.. cmd:: Hint Rewrite {+ @term} using tactic : {+ @ident}
+.. cmd:: Hint Rewrite {+ @term} using @tactic : {+ @ident}
 
    When the rewriting rules :n:`{+ @term}` in :n:`{+ @ident}` will be used, the
    tactic ``tactic`` will be applied to the generated subgoals, the main subgoal
@@ -4202,7 +4202,7 @@ some incompatibilities.
   Adds lemmas from :tacn:`auto` hint bases :n:`{+ @ident}` to the proof-search
   environment.
 
-.. tacv:: firstorder tactic using {+ @qualid} with {+ @ident}
+.. tacv:: firstorder @tactic using {+ @qualid} with {+ @ident}
 
   This combines the effects of the different variants of :tacn:`firstorder`.
 
