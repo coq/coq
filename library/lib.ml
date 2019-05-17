@@ -474,9 +474,6 @@ let extract_hyps (secs,ohyps) =
 let instance_from_variable_context =
   List.map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
 
-let named_of_variable_context =
-  List.map fst
-
 let name_instance inst =
   (* FIXME: this should probably be done at an upper level, by storing the
      name information in the section data structure. *)

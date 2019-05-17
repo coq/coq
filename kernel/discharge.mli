@@ -13,4 +13,5 @@ open Entries
 open Opaqueproof
 
 val process_inductive :
-  Lib.abstr_info -> work_list -> mutual_inductive_body -> mutual_inductive_entry
+  Constr.named_context ->
+  Univ.Instance.t -> Univ.AUContext.t -> work_list -> mutual_inductive_body -> mutual_inductive_entry

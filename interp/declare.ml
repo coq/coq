@@ -91,7 +91,8 @@ let discharge_constant ((sp, kn), obj) =
   let from = Global.lookup_constant con in
   let modlist = replacement_context () in
   let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
-  let abstract = (named_of_variable_context hyps, subst, uctx) in
+  let named_ctx = List.map fst hyps in
+  let abstract = (named_ctx, subst, uctx) in
   let new_decl = { from; info = { Opaqueproof.modlist; abstract } } in
   (* This is a hack: when leaving a section, we lose the constant definition, so
      we have to store it in the libobject to be able to retrieve it after. *)
@@ -314,7 +315,8 @@ let discharge_inductive ((sp,kn),mie) =
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
   let info = section_segment_of_mutual_inductive mind in
-  Some (Discharge.process_inductive info repl mie)
+  let hyps = List.map fst info.abstr_ctx in
+  Some (Discharge.process_inductive hyps info.abstr_subst info.abstr_uctx repl mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;
