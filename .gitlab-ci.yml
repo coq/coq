@@ -259,6 +259,7 @@ build:macOS:
   script:
     - dev/build/osx/make-macos-dmg.sh
   variables:
+    MACOSX_DEPLOYMENT_TARGET: '10.11'
     NJOBS: "2"
   only:
     variables:
