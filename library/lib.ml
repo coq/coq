@@ -572,6 +572,7 @@ let is_in_section ref =
 (*************)
 (* Sections. *)
 let open_section ~poly id =
+  let () = Global.open_section ~poly in
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
@@ -612,7 +613,7 @@ let close_section () =
   lib_state := { !lib_state with lib_stk = before };
   pop_path_prefix ();
   let newdecls = List.map discharge_item secdecls in
-  Summary.unfreeze_summaries fs;
+  let () = Global.close_section fs in
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 
 (* State and initialization. *)

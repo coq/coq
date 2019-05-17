@@ -113,8 +113,16 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
+(** Sections can be nested with the proviso that no monomorphic section can be
+    opened inside a polymorphic one. The reverse is allowed. *)
+type sections = {
+  sec_poly : int;
+  sec_mono : int;
+}
+
 type safe_environment =
   { env : Environ.env;
+    sections : sections;
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
@@ -142,6 +150,11 @@ let rec library_dp_of_senv senv =
   | SIG(_,senv) -> library_dp_of_senv senv
   | STRUCT(_,senv) -> library_dp_of_senv senv
 
+let empty_sections = {
+  sec_poly = 0;
+  sec_mono = 0;
+}
+
 let empty_environment =
   { env = Environ.empty_env;
     modpath = ModPath.initial;
@@ -151,6 +164,7 @@ let empty_environment =
     revstruct = [];
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
+    sections = empty_sections;
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
@@ -385,8 +399,11 @@ let check_current_library dir senv = match senv.modvariant with
 
 (** When operating on modules, we're normally outside sections *)
 
+let is_empty_sections s =
+  Int.equal s.sec_poly 0 && Int.equal s.sec_mono 0
+
 let check_empty_context senv =
-  assert (Environ.empty_context senv.env)
+  assert (Environ.empty_context senv.env && is_empty_sections senv.sections)
 
 (** When adding a parameter to the current module/modtype,
     it must have been freshly started *)
@@ -435,12 +452,14 @@ let safe_push_named d env =
 
 
 let push_named_def (id,de) senv =
+  let () = assert (not @@ is_empty_sections senv.sections) in
   let c, r, typ = Term_typing.translate_local_def senv.env id de in
   let x = Context.make_annot id r in
   let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
   { senv with env = env'' }
 
 let push_named_assum (x,t) senv =
+  let () = assert (not @@ is_empty_sections senv.sections) in
   let t, r = Term_typing.translate_local_assum senv.env t in
   let x = Context.make_annot x r in
   let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
@@ -902,6 +921,29 @@ let add_module l me inl senv =
   in
   (mp,mb.mod_delta),senv''
 
+(** {6 Interactive sections *)
+
+let open_section ~poly senv =
+  let sections = senv.sections in
+  if poly then
+    let sections = { sections with sec_poly = sections.sec_poly + 1 } in
+    { senv with sections }
+  else if Int.equal sections.sec_poly 0 then
+    let sections = { sections with sec_mono = sections.sec_mono + 1 } in
+    { senv with sections }
+  else
+    CErrors.anomaly (Pp.str "Cannot open a monomorphic section inside a polymorphic one")
+
+let close_section senv =
+  let sections = senv.sections in
+  if not (Int.equal sections.sec_poly 0) then
+    let sections = { sections with sec_poly = sections.sec_poly - 1 } in
+    { senv with sections }
+  else if not (Int.equal sections.sec_mono 0) then
+    let sections = { sections with sec_mono = sections.sec_mono - 1 } in
+    { senv with sections }
+  else
+    CErrors.anomaly (Pp.str "No open section")
 
 (** {6 Starting / ending interactive modules and module types } *)
 

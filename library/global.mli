@@ -71,6 +71,11 @@ val add_include :
   Entries.module_struct_entry -> bool -> Declarations.inline ->
     Mod_subst.delta_resolver
 
+(** Sections *)
+
+val open_section : poly:bool -> unit
+val close_section : Summary.frozen -> unit
+
 (** Interactive modules and module types *)
 
 val start_module : Id.t -> ModPath.t
