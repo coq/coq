@@ -77,11 +77,6 @@ let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
   | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
 
-let iter_direct_opaque f = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-  | Direct (d,cu) ->
-      Direct (d,Future.chain cu (fun (c, u) -> f c; c, u))
-
 let discharge_direct_opaque ~cook_constr ci = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
@@ -99,10 +94,6 @@ let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
       if DirPath.equal dp odp then
         let fp = snd (Int.Map.find i prfs) in
         join except fp
-
-let force_direct = function
-| Direct (_, cu) -> Future.force cu
-| Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
 
 let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->

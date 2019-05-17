@@ -232,7 +232,7 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let build_constant_declaration ~force ~iter env result =
+let build_constant_declaration env result =
   let open Cooking in
   let typ = result.cook_type in
   let check declared inferred =
@@ -271,7 +271,7 @@ let build_constant_declaration ~force ~iter env result =
         | Undef _ | Primitive _ -> Id.Set.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
-            let (lc, _) = force lc in
+            let (lc, _) = Future.force lc in
             let vars = global_vars_set env lc in
             if !Flags.record_aux_file then record_aux env ids_typ vars;
             vars
@@ -293,6 +293,7 @@ let build_constant_declaration ~force ~iter env result =
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
+          let iter k cu = Future.chain cu (fun (c, _ as p) -> k c; p) in
           let kont c =
             let ids_typ = global_vars_set env typ in
             let ids_def = global_vars_set env c in
@@ -319,9 +320,7 @@ let build_constant_declaration ~force ~iter env result =
 (*s Global and local constant declaration. *)
 
 let translate_constant mb env _kn ce =
-  let force cu = Future.force cu in
-  let iter k cu = Future.chain cu (fun (c, _ as p) -> k c; p) in
-  build_constant_declaration ~force ~iter env
+  build_constant_declaration env
     (infer_declaration ~trust:mb env ce)
 
 let translate_local_assum env t =
@@ -330,9 +329,20 @@ let translate_local_assum env t =
     j.uj_val, t
 
 let translate_recipe ~hcons env _kn r =
-  let force o = Opaqueproof.force_direct o in
-  let iter k o = Opaqueproof.iter_direct_opaque k o in
-  build_constant_declaration ~force ~iter env (Cooking.cook_constant ~hcons r)
+  let open Cooking in
+  let result = Cooking.cook_constant ~hcons r in
+  let univs = result.cook_universes in
+  let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs result.cook_body in
+  let tps = Option.map Cemitcodes.from_val res in
+  { const_hyps = Option.get result.cook_context;
+    const_body = result.cook_body;
+    const_type = result.cook_type;
+    const_body_code = tps;
+    const_universes = univs;
+    const_private_poly_univs = result.cook_private_univs;
+    const_relevance = result.cook_relevance;
+    const_inline_code = result.cook_inline;
+    const_typing_flags = Environ.typing_flags env }
 
 let translate_local_def env _id centry =
   let open Cooking in

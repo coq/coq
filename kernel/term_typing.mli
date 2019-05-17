@@ -43,6 +43,4 @@ val infer_declaration : trust:'a trust -> env ->
   'a constant_entry -> Opaqueproof.proofterm Cooking.result
 
 val build_constant_declaration :
-  force:('a -> constr * 'b) ->
-  iter:((constr -> unit) -> 'a -> 'a) ->
-  env -> 'a Cooking.result -> 'a constant_body
+  env -> Opaqueproof.proofterm Cooking.result -> Opaqueproof.proofterm constant_body
