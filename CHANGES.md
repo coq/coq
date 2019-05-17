@@ -1,10 +1,10 @@
 Changes from 8.9.0 to 8.9.1
 ===========================
 
-- Fix Makefile.checker which used a non-portable sed invocation.
-
-- The algorithm computing implicit arguments now behaves uniformly for primitive
-  projection and application nodes (bug #9508).
+- Some quality-of-life fixes.
+- Numerous improvements to the documentation.
+- Fix a critical bug related to primitive projections and `native_compute`.
+- Ship several additional Coq libraries with the Windows installer.
 
 Changes from 8.9+beta1 to 8.9.0
 ===============================
