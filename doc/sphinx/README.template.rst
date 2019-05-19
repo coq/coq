@@ -60,8 +60,11 @@ The signatures of most objects can be written using a succinct DSL for Coq notat
 ``{*, …}``, ``{+, …}``
   an optional or mandatory repeatable block, with repetitions separated by commas
 
-``%|``, ``%{``, …
-  an escaped character (rendered without the leading ``%``)
+``{| … | … | … }``
+  an alternative, indicating than one of multiple constructs can be used
+
+``%{``, ``%}``, ``%|``
+  an escaped character (rendered without the leading ``%``).  In most cases, escaping is not necessary.  In particular, the following expressions are all parsed as plain text, and do not need escaping: ``{ xyz }``, ``x |- y``.  But the following escapes *are* needed: ``{| a b %| c | d }``, ``all: %{``.  (We use ``%`` instead of the usual ``\`` because you'd have to type ``\`` twice in your reStructuredText file.)
 
 ..
    FIXME document the new subscript support

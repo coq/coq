@@ -13,12 +13,24 @@ Uses the dominate package.
 """
 
 from dominate import tags
+from dominate.utils import text
 
 from .parsing import parse
 from .TacticNotationsParser import TacticNotationsParser
 from .TacticNotationsVisitor import TacticNotationsVisitor
 
 class TacticNotationsToHTMLVisitor(TacticNotationsVisitor):
+    def visitAlternative(self, ctx:TacticNotationsParser.AlternativeContext):
+        with tags.span(_class='alternative'):
+            self.visitChildren(ctx)
+
+    def visitAltblock(self, ctx:TacticNotationsParser.AltblockContext):
+        with tags.span(_class='alternative-block'):
+            self.visitChildren(ctx)
+
+    def visitAltsep(self, ctx:TacticNotationsParser.AltsepContext):
+        tags.span('\u200b', _class="alternative-separator")
+
     def visitRepeat(self, ctx:TacticNotationsParser.RepeatContext):
         with tags.span(_class="repeat-wrapper"):
             with tags.span(_class="repeat"):
@@ -39,21 +51,20 @@ class TacticNotationsToHTMLVisitor(TacticNotationsVisitor):
     def visitAtomic(self, ctx:TacticNotationsParser.AtomicContext):
         tags.span(ctx.ATOM().getText())
 
+    def visitPipe(self, ctx:TacticNotationsParser.PipeContext):
+        text("|")
+
     def visitHole(self, ctx:TacticNotationsParser.HoleContext):
         tags.span(ctx.ID().getText()[1:], _class="hole")
         sub = ctx.SUB()
         if sub:
             tags.sub(sub.getText()[1:])
 
-    def visitMeta(self, ctx:TacticNotationsParser.MetaContext):
-        txt = ctx.METACHAR().getText()[1:]
-        if (txt == "{") or (txt == "}"):
-            tags.span(txt)
-        else:
-            tags.span(txt, _class="meta")
+    def visitEscaped(self, ctx:TacticNotationsParser.EscapedContext):
+        tags.span(ctx.ESCAPED().getText()[1:])
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
-        tags.span(" ")          # TODO: no need for a <span> here
+        text(" ")
 
 def htmlize(notation):
     """Translate notation to a dominate HTML tree"""

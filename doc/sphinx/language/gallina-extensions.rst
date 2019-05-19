@@ -931,7 +931,7 @@ In the syntax of module application, the ! prefix indicates that any
    :token:`module_binding`. The output module type
    is verified against each :token:`module_type`.
 
-.. cmdv:: Module [ Import | Export ]
+.. cmdv:: Module {| Import | Export }
 
    Behaves like :cmd:`Module`, but automatically imports or exports the module.
 
@@ -1648,7 +1648,7 @@ Declaring Implicit Arguments
 
 
 
-.. cmd:: Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmd:: Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
    :name: Arguments (implicits)
 
    This command is used to set implicit arguments *a posteriori*,
@@ -1665,20 +1665,20 @@ Declaring Implicit Arguments
 
    This command clears implicit arguments.
 
-.. cmdv:: Global Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmdv:: Global Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
 
    This command is used to recompute the implicit arguments of
    :token:`qualid` after ending of the current section if any, enforcing the
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmdv:: Local Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
 
    When in a module, tell not to activate the
    implicit arguments of :token:`qualid` declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | { @ident } | @ident } }
+.. cmdv:: {? {| Global | Local } } Arguments @qualid {*, {+ {| [ @ident ] | { @ident } | @ident } } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of
@@ -2167,7 +2167,7 @@ that specify which variables should be generalizable.
 
    Disable implicit generalization  entirely. This is the default behavior.
 
-.. cmd:: Generalizable (Variable | Variables) {+ @ident }
+.. cmd:: Generalizable {| Variable | Variables } {+ @ident }
 
    Allow generalization of the given identifiers only. Calling this command multiple times
    adds to the allowed identifiers.

@@ -668,7 +668,7 @@ A scope is a name given to a grammar entry used to produce some Ltac2 expression
 at parsing time. Scopes are described using a form of S-expression.
 
 .. prodn::
-   ltac2_scope ::= @string %| @integer %| @lident ({+, @ltac2_scope})
+   ltac2_scope ::= {| @string | @integer | @lident ({+, @ltac2_scope}) }
 
 A few scopes contain antiquotation features. For sake of uniformity, all
 antiquotations are introduced by the syntax :n:`$@lident`.
@@ -751,7 +751,7 @@ Notations
 
 The Ltac2 parser can be extended by syntactic notations.
 
-.. cmd:: Ltac2 Notation {+ @lident (@ltac2_scope) %| @string } {? : @integer} := @ltac2_term
+.. cmd:: Ltac2 Notation {+ {| @lident (@ltac2_scope) | @string } } {? : @integer} := @ltac2_term
    :name: Ltac2 Notation
 
    A Ltac2 notation adds a parsing rule to the Ltac2 grammar, which is expanded
@@ -823,9 +823,9 @@ Ltac2 features a toplevel loop that can be used to evaluate expressions.
 Debug
 -----
 
-.. opt:: Ltac2 Backtrace
+.. flag:: Ltac2 Backtrace
 
-   When this option is set, toplevel failures will be printed with a backtrace.
+   When this flag is set, toplevel failures will be printed with a backtrace.
 
 Compatibility layer with Ltac1
 ------------------------------
@@ -966,7 +966,7 @@ errors produced by the typechecker.
 In Ltac expressions
 +++++++++++++++++++
 
-.. exn:: Unbound ( value | constructor ) X
+.. exn:: Unbound {| value | constructor } X
 
    * if `X` is meant to be a term from the current stactic environment, replace
      the problematic use by `'X`.

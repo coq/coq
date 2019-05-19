@@ -45,13 +45,44 @@
     width: 2.2em;
 }
 
-.notation .repeat {
+.notation .repeat, .notation .alternative {
     background: #EAEAEA;
     border: 1px solid #AAA;
     display: inline-block;
-    padding-right: 0.6em; /* Space for the left half of the sub- and sup-scripts */
-    padding-left: 0.2em;
+    padding: 0 0.2em 0 0.3em;
     margin: 0.25em 0;
+}
+
+.notation .repeated-alternative {
+    display: inline-table;
+}
+
+.notation .alternative {
+    display: inline-table;
+    padding: 0 0.2em;
+}
+
+.notation .alternative-block {
+    display: table-cell;
+    padding: 0 0.5em;
+}
+
+.notation .alternative-separator {
+    border-left: 1px solid black; /* Display a thin bar */
+    display: table-cell;
+    width: 0;
+}
+
+.alternative-block:first-child {
+  padding-left: 0;
+}
+
+.alternative-block:last-child {
+  padding-right: 0;
+}
+
+.notation .repeat {
+    padding-right: 0.6em; /* Space for the left half of the sub- and sup-scripts */
 }
 
 .notation .repeat-wrapper {

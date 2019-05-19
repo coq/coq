@@ -617,7 +617,7 @@ Abbreviations
      selected occurrences of a term.
 
 .. prodn::
-   occ_switch ::= { {? + %| - } {* @num } }
+   occ_switch ::= { {? {| + | - } } {* @num } }
 
 where:
 
@@ -2273,7 +2273,7 @@ to the others.
 Iteration
 ~~~~~~~~~
 
-.. tacn:: do {? @num } ( @tactic | [ {+| @tactic } ] )
+.. tacn:: do {? @num } {| @tactic | [ {+| @tactic } ] }
    :name: do (ssreflect)
 
    This tactical offers an accurate control on the repetition of tactics.
@@ -2300,7 +2300,7 @@ tactic should be repeated on the current subgoal.
 There are four kinds of multipliers:
 
 .. prodn::
-   mult ::= @num ! %| ! %| @num ? %| ?
+   mult ::= {| @num ! | ! | @num ? | ? }
 
 Their meaning is:
 
@@ -5444,7 +5444,7 @@ equivalences are indeed taken into account, otherwise only single
 |SSR| searching tool
 --------------------
 
-.. cmd:: Search {? @pattern }  {* {? - } %( @string %| @pattern %) {? % @ident} } {? in {+ {? - } @qualid } }
+.. cmd:: Search {? @pattern }  {* {? - } {| @string | @pattern } {? % @ident} } {? in {+ {? - } @qualid } }
    :name: Search (ssreflect)
 
    This is the |SSR| extension of the Search command. :token:`qualid` is the
@@ -5686,7 +5686,7 @@ respectively.
 
    local cofix definition
 
-.. tacn:: set @ident {? : @term } := {? @occ_switch } %( @term %| ( @c_pattern) %)
+.. tacn:: set @ident {? : @term } := {? @occ_switch } {| @term | ( @c_pattern) }
 
    abbreviation (see :ref:`abbreviations_ssr`)
 
@@ -5714,26 +5714,26 @@ introduction see :ref:`introduction_ssr`
 
 localization see :ref:`localization_ssr`
 
-.. prodn:: tactic += do {? @mult } %( @tactic %| [ {+| @tactic } ] %)
+.. prodn:: tactic += do {? @mult } {| @tactic | [ {+| @tactic } ] }
 
 iteration  see :ref:`iteration_ssr`
 
-.. prodn:: tactic += @tactic ; %( first %| last %) {? @num } %( @tactic %| [ {+| @tactic } ] %)
+.. prodn:: tactic += @tactic ; {| first | last } {? @num } {| @tactic | [ {+| @tactic } ] }
 
 selector  see :ref:`selectors_ssr`
 
-.. prodn:: tactic += @tactic ; %( first %| last %) {? @num }
+.. prodn:: tactic += @tactic ; {| first | last } {? @num }
 
 rotation see :ref:`selectors_ssr`
 
-.. prodn:: tactic += by %( @tactic %| [ {*| @tactic } ] %)
+.. prodn:: tactic += by {| @tactic | [ {*| @tactic } ] }
 
 closing see :ref:`terminators_ssr`
 
 Commands
 ~~~~~~~~
 
-.. cmd:: Hint View for %( move %| apply %) / @ident {? | @num }
+.. cmd:: Hint View for {| move | apply } / @ident {? | @num }
 
    view hint declaration (see :ref:`declaring_new_hints_ssr`)
 

@@ -3777,8 +3777,8 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       discrimination network to relax or constrain it in the case of discriminated
       databases.
 
-   .. cmdv:: Hint Variables %( Transparent %| Opaque %) : @ident
-             Hint Constants %( Transparent %| Opaque %) : @ident
+   .. cmdv:: Hint Variables {| Transparent | Opaque } : @ident
+             Hint Constants {| Transparent | Opaque } : @ident
       :name: Hint Variables; Hint Constants
 
       This sets the transparency flag used during unification of
@@ -3850,7 +3850,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       semantics of :n:`Hint Cut @regexp` is to set the cut expression
       to :n:`c | regexp`, the initial cut expression being `emp`.
 
-   .. cmdv:: Hint Mode @qualid {* (+ | ! | -)} : @ident
+   .. cmdv:: Hint Mode @qualid {* {| + | ! | - } } : @ident
       :name: Hint Mode
 
       This sets an optional mode of use of the identifier :n:`@qualid`. When
@@ -4016,7 +4016,7 @@ We propose a smooth transitional path by providing the :opt:`Loose Hint Behavior
 option which accepts three flags allowing for a fine-grained handling of
 non-imported hints.
 
-.. opt:: Loose Hint Behavior %( "Lax" %| "Warn" %| "Strict" %)
+.. opt:: Loose Hint Behavior {| "Lax" | "Warn" | "Strict" }
    :name: Loose Hint Behavior
 
    This option accepts three values, which control the behavior of hints w.r.t.

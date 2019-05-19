@@ -99,7 +99,7 @@ Extraction Options
 Setting the target language
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Extraction Language ( OCaml | Haskell | Scheme )
+.. cmd:: Extraction Language {| OCaml | Haskell | Scheme }
    :name: Extraction Language
 
    The ability to fix target language is the first and more important
