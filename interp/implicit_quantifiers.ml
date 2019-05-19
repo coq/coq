@@ -279,7 +279,7 @@ let implicits_of_glob_constr ?(with_products=true) l =
           | _ -> ()
         in []
     | GLambda (na, bk, t, b) -> abs na bk b
-    | GLetIn (na, b, t, c) -> aux i b
+    | GLetIn (na, b, t, c) -> aux i c
     | GRec (fix_kind, nas, args, tys, bds) ->
       let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
       List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
