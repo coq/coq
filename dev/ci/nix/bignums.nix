@@ -1,5 +1,5 @@
 { ocamlPackages }:
 
 {
-  buildInputs = with ocamlPackages; [ ocaml findlib camlp5 ];
+  buildInputs = [ ocamlPackages.ocaml ];
 }
