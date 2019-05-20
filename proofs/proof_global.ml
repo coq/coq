@@ -45,7 +45,7 @@ type proof_ending =
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
 
-type pstate = {
+type t = {
   terminator : proof_terminator CEphemeron.key;
   endline_tactic : Genarg.glob_generic_argument option;
   section_vars : Constr.named_context option;
@@ -56,7 +56,7 @@ type pstate = {
 
 (* The head of [t] is the actual current proof, the other ones are
    to be resumed when the current proof is closed or aborted. *)
-type stack = pstate * pstate list
+type stack = t * t list
 
 let pstate_map f (pf, pfl) = (f pf, List.map f pfl)
 
