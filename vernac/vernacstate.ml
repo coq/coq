@@ -30,7 +30,7 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.t option; (* proof state *)
+  proof   : Proof_global.stack option; (* proof state *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 

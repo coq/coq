@@ -56,7 +56,7 @@ type pstate = {
 
 (* The head of [t] is the actual current proof, the other ones are
    to be resumed when the current proof is closed or aborted. *)
-type t = pstate * pstate list
+type stack = pstate * pstate list
 
 let pstate_map f (pf, pfl) = (f pf, List.map f pfl)
 
@@ -77,7 +77,7 @@ let maybe_push ~ontop = function
 
 (*** Proof Global manipulation ***)
 
-let get_all_proof_names (pf : t) =
+let get_all_proof_names (pf : stack) =
   let (pn, pns) = pstate_map Proof.(function pf -> (data pf.proof).name) pf in
   pn :: pns
 

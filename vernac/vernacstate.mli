@@ -21,7 +21,7 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.t option; (* proof state *)
+  proof   : Proof_global.stack option; (* proof state *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
@@ -41,11 +41,11 @@ module Proof_global : sig
   open Proof_global
 
   (* Low-level stuff *)
-  val get : unit -> t option
-  val set : t option -> unit
+  val get : unit -> stack option
+  val set : stack option -> unit
 
-  val freeze : marshallable:bool -> t option
-  val unfreeze : t -> unit
+  val freeze : marshallable:bool -> stack option
+  val unfreeze : stack -> unit
 
   exception NoCurrentProof
 
@@ -63,7 +63,7 @@ module Proof_global : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val install_state : t -> unit
+  val install_state : stack -> unit
 
   val return_proof : ?allow_partial:bool -> unit -> closed_proof_output
 
@@ -81,7 +81,7 @@ module Proof_global : sig
 
   val get_all_proof_names : unit -> Names.Id.t list
 
-  val copy_terminators : src:t option -> tgt:t option -> t option
+  val copy_terminators : src:stack option -> tgt:stack option -> stack option
 
 end
 [@@ocaml.deprecated "This module is internal and should not be used, instead, thread the proof state"]

@@ -13,16 +13,16 @@
      environment. *)
 
 type pstate
-type t
+type stack
 
-val get_current_pstate : t -> pstate
+val get_current_pstate : stack -> pstate
 
 val get_current_proof_name : pstate -> Names.Id.t
 val get_current_persistence : pstate -> Decl_kinds.goal_kind
-val get_all_proof_names : t -> Names.Id.t list
+val get_all_proof_names : stack -> Names.Id.t list
 
-val discard : Names.lident -> t -> t option
-val discard_current : t -> t option
+val discard : Names.lident -> stack -> stack option
+val discard_current : stack -> stack option
 
 val give_me_the_proof : pstate -> Proof.t
 val compact_the_proof : pstate -> pstate
@@ -56,9 +56,9 @@ type closed_proof = proof_object * proof_terminator
 val make_terminator : (proof_ending -> unit) -> proof_terminator
 val apply_terminator : proof_terminator -> proof_ending -> unit
 
-val push : ontop:t option -> pstate -> t
+val push : ontop:stack option -> pstate -> stack
 
-val maybe_push : ontop:t option -> pstate option -> t option
+val maybe_push : ontop:stack option -> pstate option -> stack option
 
 (** [start_proof ~ontop id str pl goals terminator] starts a proof of name
    [id] with goals [goals] (a list of pairs of environment and
@@ -111,15 +111,15 @@ val get_open_goals : pstate -> int
     no current proof.
     The return boolean is set to [false] if an unsafe tactic has been used. *)
 val with_current_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> stack -> stack * 'a
 val simple_with_current_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t) -> t -> t
+  (unit Proofview.tactic -> Proof.t -> Proof.t) -> stack -> stack
 
 val with_proof : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> pstate -> pstate * 'a
 val modify_proof : (Proof.t -> Proof.t) -> pstate -> pstate
 
-val with_current_pstate : (pstate -> pstate * 'a) -> t -> t * 'a
-val modify_current_pstate : (pstate -> pstate) -> t -> t
+val with_current_pstate : (pstate -> pstate * 'a) -> stack -> stack * 'a
+val modify_current_pstate : (pstate -> pstate) -> stack -> stack
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : Genarg.glob_generic_argument -> pstate -> pstate
@@ -135,4 +135,4 @@ val get_used_variables : pstate -> Constr.named_context option
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : pstate -> UState.universe_decl
 
-val copy_terminators : src:t -> tgt:t -> t
+val copy_terminators : src:stack -> tgt:stack -> stack
