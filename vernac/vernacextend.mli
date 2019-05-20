@@ -71,18 +71,18 @@ type vernac_classification = vernac_type * vernac_when
 
 (** Interpretation of extended vernac phrases. *)
 
-type 'a vernac_command = 'a -> atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
+type vernac_command = atts:Attributes.vernac_flags -> pstate:Proof_global.t option -> Proof_global.t option
 
 type plugin_args = Genarg.raw_generic_argument list
 
-val call : Vernacexpr.extend_name -> plugin_args -> atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
+val call : Vernacexpr.extend_name -> plugin_args -> vernac_command
 
 (** {5 VERNAC EXTEND} *)
 
 type classifier = Genarg.raw_generic_argument list -> vernac_classification
 
 type (_, _) ty_sig =
-| TyNil : (atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, vernac_classification) ty_sig
+| TyNil : (vernac_command, vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal :
   ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig ->

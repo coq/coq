@@ -2581,9 +2581,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
 
   (* Extensions *)
   | VernacExtend (opn,args) ->
-    (* XXX: Here we are returning the state! :) *)
-    let st : Vernacstate.t = Vernacextend.call ~atts opn args ~st in
-    st.Vernacstate.proof
+    Vernacextend.call ~atts opn args ~pstate
 
 (* XXX: This won't properly set the proof mode, as of today, it is
    controlled by the STM. Thus, we would need access information from
@@ -2675,27 +2673,22 @@ type functional_vernac =
   | VtReadProofOpt of (pstate:Proof_global.pstate option -> unit)
   | VtReadProof of (pstate:Proof_global.pstate -> unit)
 
-let interp_functional_vernac c ~st =
+let interp_functional_vernac c ~pstate =
   let open Proof_global in
-  let open Vernacstate in
   match c with
-  | VtDefault f -> f (); st
-  | VtModifyProofStack f ->
-    let proof = f ~pstate:st.proof in { st with proof }
+  | VtDefault f -> f (); pstate
+  | VtModifyProofStack f -> f ~pstate
   | VtMaybeOpenProof f ->
-    let pstate = f () in
-    let proof = maybe_push ~ontop:st.proof pstate in
-    { st with proof }
+    let proof = f () in
+    let pstate = maybe_push ~ontop:pstate proof in
+    pstate
   | VtOpenProof f ->
-    let pstate = f () in
-    let proof = Some (push ~ontop:st.proof pstate) in
-    { st with proof }
+    Some (push ~ontop:pstate (f ()))
   | VtModifyProof f ->
-    let proof = modify_pstate f ~pstate:st.proof in
-    { st with proof }
+    modify_pstate f ~pstate
   | VtReadProofOpt f ->
-    f ~pstate:(Option.map get_current_pstate st.proof);
-    st
+    f ~pstate:(Option.map get_current_pstate pstate);
+    pstate
   | VtReadProof f ->
-    with_pstate ~pstate:st.proof f;
-    st
+    with_pstate ~pstate f;
+    pstate
