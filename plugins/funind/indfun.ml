@@ -852,61 +852,61 @@ let make_graph (f_ref : GlobRef.t) =
     | _ -> raise (UserError (None, str "Not a function reference") )
   in
   (match Global.body_of_constant_body c_body with
-     | None -> error "Cannot build a graph over an axiom!"
-     | Some (body, _) ->
-       let env = Global.env () in
-	 let extern_body,extern_type =
-	   with_full_print (fun () ->
-		(Constrextern.extern_constr false env sigma (EConstr.of_constr body),
-		 Constrextern.extern_type false env sigma
-                   (EConstr.of_constr (*FIXME*) c_body.const_type)
-		)
-	     )
-	     ()
-	 in
-  let (nal_tas,b,t)  = get_args extern_body extern_type in
-  let expr_list =
-    match b.CAst.v with
-    | Constrexpr.CFix(l_id,fixexprl) ->
-      let l =
-        List.map
-          (fun (id,recexp,bl,t,b) ->
-             let { CAst.loc; v=rec_id } = match Option.get recexp with
-               | { CAst.v = CStructRec id } -> id
-               | { CAst.v = CWfRec (id,_) } -> id
-               | { CAst.v = CMeasureRec (oid,_,_) } -> Option.get oid
-             in
-             let new_args =
-               List.flatten
-                 (List.map
-                    (function
-                      | Constrexpr.CLocalDef (na,_,_)-> []
-                      | Constrexpr.CLocalAssum (nal,_,_) ->
-                        List.map
-                          (fun {CAst.loc;v=n} -> CAst.make ?loc @@
-                            CRef(Libnames.qualid_of_ident ?loc @@ Nameops.Name.get_id n,None))
-                          nal
-                      | Constrexpr.CLocalPattern _ -> assert false
+   | None -> error "Cannot build a graph over an axiom!"
+   | Some (body, _) ->
+     let env = Global.env () in
+     let extern_body,extern_type =
+       with_full_print (fun () ->
+           (Constrextern.extern_constr false env sigma (EConstr.of_constr body),
+            Constrextern.extern_type false env sigma
+              (EConstr.of_constr (*FIXME*) c_body.const_type)
+           )
+         )
+         ()
+     in
+     let (nal_tas,b,t)  = get_args extern_body extern_type in
+     let expr_list =
+       match b.CAst.v with
+       | Constrexpr.CFix(l_id,fixexprl) ->
+         let l =
+           List.map
+             (fun (id,recexp,bl,t,b) ->
+                let { CAst.loc; v=rec_id } = match Option.get recexp with
+                  | { CAst.v = CStructRec id } -> id
+                  | { CAst.v = CWfRec (id,_) } -> id
+                  | { CAst.v = CMeasureRec (oid,_,_) } -> Option.get oid
+                in
+                let new_args =
+                  List.flatten
+                    (List.map
+                       (function
+                         | Constrexpr.CLocalDef (na,_,_)-> []
+                         | Constrexpr.CLocalAssum (nal,_,_) ->
+                           List.map
+                             (fun {CAst.loc;v=n} -> CAst.make ?loc @@
+                               CRef(Libnames.qualid_of_ident ?loc @@ Nameops.Name.get_id n,None))
+                             nal
+                         | Constrexpr.CLocalPattern _ -> assert false
+                       )
+                       nal_tas
                     )
-                    nal_tas
-                 )
-             in
-             let b' = add_args id.CAst.v new_args b in
-             ((((id,None), ( Some (CAst.make (CStructRec (CAst.make rec_id)))),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
-          )
-                      fixexprl
-                  in
-                  l
-	     | _ ->
-		let id = Label.to_id (Constant.label c) in
-                 [((CAst.make id,None),None,nal_tas,t,Some b),[]]
-	 in
-         let mp = Constant.modpath c in
-         let pstate = do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list in
-	 (* We register the infos *)
-	 List.iter
-           (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
-           expr_list;
-         pstate)
+                in
+                let b' = add_args id.CAst.v new_args b in
+                ((((id,None), ( Some (CAst.make (CStructRec (CAst.make rec_id)))),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+             )
+             fixexprl
+         in
+         l
+       | _ ->
+         let id = Label.to_id (Constant.label c) in
+         [((CAst.make id,None),None,nal_tas,t,Some b),[]]
+     in
+     let mp = Constant.modpath c in
+     let pstate = do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list in
+     assert (Option.is_empty pstate);
+     (* We register the infos *)
+     List.iter
+       (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
+       expr_list)
 
 let do_generate_principle = do_generate_principle [] warning_error true
