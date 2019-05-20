@@ -53,14 +53,14 @@ type vernac_when =
   | VtLater
 type vernac_classification = vernac_type * vernac_when
 
-type 'a vernac_command = 'a -> atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t
+type vernac_command = atts:Attributes.vernac_flags -> pstate:Proof_global.t option -> Proof_global.t option
 
 type plugin_args = Genarg.raw_generic_argument list
 
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 211 :
-    (Vernacexpr.extend_name, bool * plugin_args vernac_command) Hashtbl.t)
+    (Vernacexpr.extend_name, bool * (plugin_args -> vernac_command)) Hashtbl.t)
 
 let vinterp_add depr s f =
   try
@@ -83,7 +83,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let call opn converted_args ~atts ~st =
+let call opn converted_args ~atts ~pstate =
   let phase = ref "Looking up command" in
   try
     let depr, callback = vinterp_map opn in
@@ -99,7 +99,7 @@ let call opn converted_args ~atts ~st =
     phase := "Checking arguments";
     let hunk = callback converted_args in
     phase := "Executing command";
-    hunk ~atts ~st
+    hunk ~atts ~pstate
   with
     | reraise ->
         let reraise = CErrors.push reraise in
@@ -125,7 +125,7 @@ let classify_as_sideeff = VtSideff [], VtLater
 let classify_as_proofstep = VtProofStep { parallel = `No; proof_block_detection = None}, VtLater
 
 type (_, _) ty_sig =
-| TyNil : (atts:Attributes.vernac_flags -> st:Vernacstate.t -> Vernacstate.t, vernac_classification) ty_sig
+| TyNil : (vernac_command, vernac_classification) ty_sig
 | TyTerminal : string * ('r, 's) ty_sig -> ('r, 's) ty_sig
 | TyNonTerminal : ('a, 'b, 'c) Extend.ty_user_symbol * ('r, 's) ty_sig -> ('a -> 'r, 'a -> 's) ty_sig
 
@@ -151,7 +151,7 @@ let rec untype_classifier : type r s. (r, s) ty_sig -> s -> classifier = functio
   end
 
 (** Stupid GADTs forces us to duplicate the definition just for typing *)
-let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args vernac_command = function
+let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args -> vernac_command = function
 | TyNil -> fun f args ->
   begin match args with
   | [] -> f

@@ -63,4 +63,7 @@ type functional_vernac =
   | VtReadProofOpt of (pstate:Proof_global.pstate option -> unit)
   | VtReadProof of (pstate:Proof_global.pstate -> unit)
 
-val interp_functional_vernac : functional_vernac -> st:Vernacstate.t -> Vernacstate.t
+val interp_functional_vernac
+  : functional_vernac
+  -> pstate:Proof_global.t option
+  -> Proof_global.t option
