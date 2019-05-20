@@ -360,7 +360,7 @@ Detecting progress
 
 We can check if a tactic made progress with:
 
-.. tacn:: progress expr
+.. tacn:: progress @expr
    :name: progress
 
    :n:`@expr` is evaluated to v which must be a tactic value. The tactic value ``v``
@@ -555,7 +555,7 @@ Identity
 The constant :n:`idtac` is the identity tactic: it leaves any goal unchanged but
 it appears in the proof script.
 
-.. tacn:: idtac {* message_token}
+.. tacn:: idtac {* @message_token}
    :name: idtac
 
    This prints the given tokens. Strings and integers are printed
@@ -684,7 +684,7 @@ Timing a tactic that evaluates to a term
 Tactic expressions that produce terms can be timed with the experimental
 tactic
 
-.. tacn:: time_constr expr
+.. tacn:: time_constr @expr
    :name: time_constr
 
    which evaluates :n:`@expr ()` and displays the time the tactic expression
@@ -880,7 +880,7 @@ We can perform pattern matching on goals using the following expression:
 
 .. we should provide the full grammar here
 
-.. tacn:: match goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
+.. tacn:: match goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
    :name: match goal
 
    If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i = 1, ..., m\ :sub:`1` is
@@ -918,7 +918,7 @@ We can perform pattern matching on goals using the following expression:
       first), but it possible to reverse this order (oldest first)
       with the :n:`match reverse goal with` variant.
 
-   .. tacv:: multimatch goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
+   .. tacv:: multimatch goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
 
       Using :n:`multimatch` instead of :n:`match` will allow subsequent tactics
       to backtrack into a right-hand side tactic which has backtracking points
@@ -929,7 +929,7 @@ We can perform pattern matching on goals using the following expression:
       The syntax :n:`match [reverse] goal …` is, in fact, a shorthand for
       :n:`once multimatch [reverse] goal …`.
 
-   .. tacv:: lazymatch goal with {+| {+ hyp} |- @cpattern => @expr } | _ => @expr end
+   .. tacv:: lazymatch goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
 
       Using lazymatch instead of match will perform the same pattern matching
       procedure but will commit to the first matching branch with the first
@@ -1135,10 +1135,14 @@ Defining |Ltac| functions
 
 Basically, |Ltac| toplevel definitions are made as follows:
 
-.. cmd:: Ltac @ident {* @ident} := @expr
+.. cmd:: {? Local} Ltac @ident {* @ident} := @expr
+   :name: Ltac
 
    This defines a new |Ltac| function that can be used in any tactic
    script or new |Ltac| toplevel definition.
+
+   If preceded by the keyword ``Local``, the tactic definition will not be
+   exported outside the current module.
 
    .. note::
 
@@ -1146,21 +1150,17 @@ Basically, |Ltac| toplevel definitions are made as follows:
 
       :n:`Ltac @ident := fun {+ @ident} => @expr`
 
-   Recursive and mutual recursive function definitions are also possible
-   with the syntax:
-
    .. cmdv:: Ltac @ident {* @ident} {* with @ident {* @ident}} := @expr
 
-      It is also possible to *redefine* an existing user-defined tactic using the syntax:
+      This syntax allows recursive and mutual recursive function definitions.
 
    .. cmdv:: Ltac @qualid {* @ident} ::= @expr
+
+      This syntax *redefines* an existing user-defined tactic.
 
       A previous definition of qualid must exist in the environment. The new
       definition will always be used instead of the old one and it goes across
       module boundaries.
-
-   If preceded by the keyword Local the tactic definition will not be
-   exported outside the current module.
 
 Printing |Ltac| tactics
 ~~~~~~~~~~~~~~~~~~~~~~~

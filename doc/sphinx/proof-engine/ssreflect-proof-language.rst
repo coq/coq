@@ -2571,7 +2571,7 @@ destruction of existential assumptions like in the tactic:
 An alternative use of the ``have`` tactic is to provide the explicit proof
 term for the intermediate lemma, using tactics of the form:
 
-.. tacv:: have {? @ident } := term
+.. tacv:: have {? @ident } := @term
 
    This tactic creates a new assumption of type the type of :token:`term`.
    If the

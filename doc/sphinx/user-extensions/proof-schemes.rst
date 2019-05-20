@@ -336,29 +336,32 @@ Generation of induction principles with ``Functional`` ``Scheme``
 Generation of inversion principles with ``Derive`` ``Inversion``
 -----------------------------------------------------------------
 
-.. cmd:: Derive Inversion @ident with forall (x : T), I t Sort sort
+.. cmd:: Derive Inversion @ident with @ident Sort @sort
+         Derive Inversion @ident with (forall @binders, @ident @term) Sort @sort
 
    This command generates an inversion principle for the
-   :tacn:`inversion ... using ...`  tactic. Let :g:`I` be an inductive
-   predicate and :g:`x` the variables occurring in t. This command
-   generates and stocks the inversion lemma for the sort :g:`sort`
-   corresponding to the instance :g:`∀ (x:T), I t` with the name
-   :n:`@ident` in the global environment. When applied, it is
-   equivalent to having inverted the instance with the tactic
-   :g:`inversion`.
+   :tacn:`inversion ... using ...` tactic.  The first :token:`ident` is the name
+   of the generated principle.  The second :token:`ident` should be an inductive
+   predicate, and :token:`binders` the variables occurring in the term
+   :token:`term`. This command generates the inversion lemma for the sort
+   :token:`sort` corresponding to the instance :n:`forall @binders, @ident @term`.
+   When applied, it is equivalent to having inverted the instance with the
+   tactic :g:`inversion`.
 
-
-.. cmdv:: Derive Inversion_clear @ident with forall (x:T), I t Sort @sort
+.. cmdv:: Derive Inversion_clear @ident with @ident Sort @sort
+          Derive Inversion_clear @ident with (forall @binders, @ident @term) Sort @sort
 
    When applied, it is equivalent to having inverted the instance with the
    tactic inversion replaced by the tactic `inversion_clear`.
 
-.. cmdv:: Derive Dependent Inversion @ident with forall (x:T), I t Sort @sort
+.. cmdv:: Derive Dependent Inversion @ident with @ident Sort @sort
+          Derive Dependent Inversion @ident with (forall @binders, @ident @term) Sort @sort
 
    When applied, it is equivalent to having inverted the instance with
    the tactic `dependent inversion`.
 
-.. cmdv:: Derive Dependent Inversion_clear @ident with forall(x:T), I t Sort @sort
+.. cmdv:: Derive Dependent Inversion_clear @ident with @ident Sort @sort
+          Derive Dependent Inversion_clear @ident with (forall @binders, @ident @term) Sort @sort
 
    When applied, it is equivalent to having inverted the instance
    with the tactic `dependent inversion_clear`.

@@ -311,24 +311,24 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {? @binders} : @class t1 … tn {? | priority } := { field1 := b1 ; …; fieldi := bi }
+.. cmd:: Instance @ident {? @binders} : @term__0 {+ @term} {? | @num} := { {*; @field_def} }
 
    This command is used to declare a typeclass instance named
-   :token:`ident` of the class :token:`class` with parameters ``t1`` to ``tn`` and
-   fields ``b1`` to ``bi``, where each field must be a declared field of
+   :token:`ident` of the class :n:`@term__0` with parameters :token:`term` and
+   fields defined by :token:`field_def`, where each field must be a declared field of
    the class.  Missing fields must be filled in interactive proof mode.
 
    An arbitrary context of :token:`binders` can be put after the name of the
    instance and before the colon to declare a parameterized instance. An
    optional priority can be declared, 0 being the highest priority as for
-   :tacn:`auto` hints. If the priority is not specified, it defaults to the number
+   :tacn:`auto` hints. If the priority :token:`num` is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
-   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @class @term__1 … @term__n {? | priority } := @term
+   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @term__0 {+ @term} {? | @num } := @term
 
       This syntax is used for declaration of singleton class instances or
-      for directly giving an explicit term of type :n:`forall @binders, @class
-      @term__1 … @term__n`.  One need not even mention the unique field name for
+      for directly giving an explicit term of type :n:`forall @binders, @term__0
+      {+ @term}`.  One need not even mention the unique field name for
       singleton classes.
 
    .. cmdv:: Global Instance
@@ -356,11 +356,11 @@ Summary of the commands
 Besides the :cmd:`Class` and :cmd:`Instance` vernacular commands, there are a
 few other commands related to typeclasses.
 
-.. cmd:: Existing Instance {+ @ident} {? | priority }
+.. cmd:: Existing Instance {+ @ident} {? | @num}
 
    This command adds an arbitrary list of constants whose type ends with
    an applied typeclass to the instance database with an optional
-   priority.  It can be used for redeclaring instances at the end of
+   priority :token:`num`.  It can be used for redeclaring instances at the end of
    sections, or declaring structure projections as instances. This is
    equivalent to ``Hint Resolve ident : typeclass_instances``, except it
    registers instances for :cmd:`Print Instances`.
@@ -408,7 +408,7 @@ few other commands related to typeclasses.
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.
 
-   .. cmdv:: typeclasses eauto @num
+   .. tacv:: typeclasses eauto @num
 
       .. warning::
          The semantics for the limit :n:`@num`
@@ -417,7 +417,7 @@ few other commands related to typeclasses.
          counted, which might result in larger limits being necessary when
          searching with ``typeclasses eauto`` than with :tacn:`auto`.
 
-   .. cmdv:: typeclasses eauto with {+ @ident}
+   .. tacv:: typeclasses eauto with {+ @ident}
 
       This variant runs resolution with the given hint databases. It treats
       typeclass subgoals the same as other subgoals (no shelving of

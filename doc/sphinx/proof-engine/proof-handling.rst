@@ -544,9 +544,9 @@ Requesting information
 
       ``<Your Tactic Text here>``.
 
-     .. deprecated:: 8.10
+      .. deprecated:: 8.10
 
-        Please use a text editor.
+         Please use a text editor.
 
    .. cmdv:: Show Proof
       :name: Show Proof
