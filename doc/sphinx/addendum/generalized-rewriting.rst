@@ -809,7 +809,7 @@ Usage
 ~~~~~
 
 
-.. tacn:: rewrite_strat @s [in @ident]
+.. tacn:: rewrite_strat @s {? in @ident }
    :name: rewrite_strat
 
    Rewrite using the strategy s in hypothesis ident or the conclusion.

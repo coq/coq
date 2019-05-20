@@ -39,14 +39,29 @@ from sphinx.ext import mathbase
 from . import coqdoc
 from .repl import ansicolors
 from .repl.coqtop import CoqTop, CoqTopError
+from .notations.parsing import ParseError
 from .notations.sphinx import sphinxify
 from .notations.plain import stringify_with_ellipses
 
-def parse_notation(notation, source, line, rawtext=None):
+PARSE_ERROR = """Parse error in notation!
+Offending notation: {}
+Error message: {}"""
+
+def notation_to_sphinx(notation, source, line, rawtext=None):
     """Parse notation and wrap it in an inline node"""
-    node = nodes.inline(rawtext or notation, '', *sphinxify(notation), classes=['notation'])
-    node.source, node.line = source, line
-    return node
+    try:
+        node = nodes.inline(rawtext or notation, '', *sphinxify(notation), classes=['notation'])
+        node.source, node.line = source, line
+        return node
+    except ParseError as e:
+        raise ExtensionError(PARSE_ERROR.format(notation, e.msg)) from e
+
+def notation_to_string(notation):
+    """Parse notation and format it as a string with ellipses."""
+    try:
+        return stringify_with_ellipses(notation)
+    except ParseError as e:
+        raise ExtensionError(PARSE_ERROR.format(notation, e.msg)) from e
 
 def highlight_using_coqdoc(sentence):
     """Lex sentence using coqdoc, and yield inline nodes for each token"""
@@ -136,7 +151,7 @@ class CoqObject(ObjectDescription):
         self._render_signature(signature, signode)
         name = self._names.get(signature)
         if name is None:
-            name = self._name_from_signature(signature)
+            name = self._name_from_signature(signature) # pylint: disable=assignment-from-none
             # remove trailing ‘.’ found in commands, but not ‘...’ (ellipsis)
             if name is not None and name.endswith(".") and not name.endswith("..."):
                 name = name[:-1]
@@ -248,7 +263,7 @@ class NotationObject(DocumentableObject):
     """
     def _render_signature(self, signature, signode):
         position = self.state_machine.get_source_and_line(self.lineno)
-        tacn_node = parse_notation(signature, *position)
+        tacn_node = notation_to_sphinx(signature, *position)
         signode += addnodes.desc_name(signature, '', tacn_node)
 
 class GallinaObject(PlainObject):
@@ -353,7 +368,7 @@ class OptionObject(NotationObject):
     annotation = "Option"
 
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        return notation_to_string(signature)
 
 
 class FlagObject(NotationObject):
@@ -372,7 +387,7 @@ class FlagObject(NotationObject):
     annotation = "Flag"
 
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        return notation_to_string(signature)
 
 
 class TableObject(NotationObject):
@@ -390,7 +405,7 @@ class TableObject(NotationObject):
     annotation = "Table"
 
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        return notation_to_string(signature)
 
 class ProductionObject(CoqObject):
     r"""A grammar production.
@@ -410,7 +425,7 @@ class ProductionObject(CoqObject):
     Example::
 
         .. prodn:: term += let: @pattern := @term in @term
-        .. prodn:: occ_switch ::= { {? + %| - } {* @num } }
+        .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
 
     """
     subdomain = "prodn"
@@ -439,7 +454,7 @@ class ProductionObject(CoqObject):
         lhs_node = nodes.literal(lhs_op, lhs_op)
 
         position = self.state_machine.get_source_and_line(self.lineno)
-        rhs_node = parse_notation(rhs, *position)
+        rhs_node = notation_to_sphinx(rhs, *position)
         signode += addnodes.desc_name(signature, '', lhs_node, rhs_node)
 
         return ('token', lhs) if op == '::=' else None
@@ -482,7 +497,7 @@ class ExceptionObject(NotationObject):
 
     # Generate names automatically
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        return notation_to_string(signature)
 
 class WarningObject(NotationObject):
     """An warning raised by a Coq command or tactic..
@@ -504,7 +519,7 @@ class WarningObject(NotationObject):
 
     # Generate names automatically
     def _name_from_signature(self, signature):
-        return stringify_with_ellipses(signature)
+        return notation_to_string(signature)
 
 def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=unused-argument, dangerous-default-value
@@ -523,7 +538,7 @@ def NotationRole(role, rawtext, text, lineno, inliner, options={}, content=[]):
     """
     notation = utils.unescape(text, 1)
     position = inliner.reporter.get_source_and_line(lineno)
-    return [nodes.literal(rawtext, '', parse_notation(notation, *position, rawtext=rawtext))], []
+    return [nodes.literal(rawtext, '', notation_to_sphinx(notation, *position, rawtext=rawtext))], []
 
 def coq_code_role(role, rawtext, text, lineno, inliner, options={}, content=[]):
     #pylint: disable=dangerous-default-value

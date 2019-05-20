@@ -11,9 +11,21 @@ from .TacticNotationsLexer import TacticNotationsLexer
 from .TacticNotationsParser import TacticNotationsParser
 
 from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.ErrorListener import ErrorListener
 
 SUBSTITUTIONS = [#("@bindings_list", "{+ (@id := @val) }"),
                  ("@qualid_or_string", "@id|@string")]
+
+class ParseError(Exception):
+    def __init__(self, msg):
+        super().__init__()
+        self.msg = msg
+
+class ExceptionRaisingErrorListener(ErrorListener):
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        raise ParseError("{}:{}: {}".format(line, column, msg))
+
+ERROR_LISTENER = ExceptionRaisingErrorListener()
 
 def substitute(notation):
     """Perform common substitutions in the notation string.
@@ -27,11 +39,13 @@ def substitute(notation):
     return notation
 
 def parse(notation):
-    """Parse a notation string.
+    """Parse a notation string, optionally reporting errors to `error_listener`.
 
     :return: An ANTLR AST. Use one of the supplied visitors (or write your own)
              to turn it into useful output.
     """
     substituted = substitute(notation)
     lexer = TacticNotationsLexer(InputStream(substituted))
-    return TacticNotationsParser(CommonTokenStream(lexer)).top()
+    parser = TacticNotationsParser(CommonTokenStream(lexer))
+    parser.addErrorListener(ERROR_LISTENER)
+    return parser.top()

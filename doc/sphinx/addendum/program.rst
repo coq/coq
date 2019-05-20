@@ -283,7 +283,7 @@ optional identifier is used when multiple functions have unsolved
 obligations (e.g. when defining mutually recursive blocks). The
 optional tactic is replaced by the default one if not specified.
 
-.. cmd:: {? Local|Global} Obligation Tactic := @tactic
+.. cmd:: {? {| Local | Global } } Obligation Tactic := @tactic
    :name: Obligation Tactic
 
    Sets the default obligation solving tactic applied to all obligations
