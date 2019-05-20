@@ -493,9 +493,7 @@ class ProductionObject(CoqObject):
         pass
 
     def _target_id(self, name):
-        # Use `name[1]` instead of ``nodes.make_id(name[1])`` to work around
-        # https://github.com/sphinx-doc/sphinx/issues/4983
-        return 'grammar-token-{}'.format(name[1])
+        return 'grammar-token-{}'.format(nodes.make_id(name[1]))
 
     def _record_name(self, name, targetid):
         env = self.state.document.settings.env
