@@ -277,7 +277,7 @@ Requests to the environment
       :token:`term_pattern` (holes of the pattern are either denoted by `_` or by
       :n:`?@ident` when non linear patterns are expected).
 
-   .. cmdv:: Search { + [-]@term_pattern_string }
+   .. cmdv:: Search {+ {? -}@term_pattern_string}
 
       where
       :n:`@term_pattern_string` is a term_pattern, a string, or a string followed
@@ -289,17 +289,17 @@ Requests to the environment
       prefixed by `-`, the search excludes the objects that mention that
       term_pattern or that string.
 
-   .. cmdv:: Search @term_pattern_string … @term_pattern_string inside {+ @qualid }
+   .. cmdv:: Search {+ {? -}@term_pattern_string} inside {+ @qualid }
 
       This restricts the search to constructions defined in the modules
       named by the given :n:`qualid` sequence.
 
-   .. cmdv:: Search @term_pattern_string … @term_pattern_string outside {+ @qualid }
+   .. cmdv:: Search {+ {? -}@term_pattern_string} outside {+ @qualid }
 
       This restricts the search to constructions not defined in the modules
       named by the given :n:`qualid` sequence.
 
-   .. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string
+   .. cmdv:: @selector: Search {+ {? -}@term_pattern_string}
 
       This specifies the goal on which to search hypothesis (see
       Section :ref:`invocation-of-tactics`).
@@ -353,7 +353,7 @@ Requests to the environment
       This restricts the search to constructions defined in the modules named
       by the given :n:`qualid` sequence.
 
-   .. cmdv:: SearchHead term outside {+ @qualid }
+   .. cmdv:: SearchHead @term outside {+ @qualid }
 
       This restricts the search to constructions not defined in the modules
       named by the given :n:`qualid` sequence.
@@ -443,7 +443,7 @@ Requests to the environment
 
          SearchRewrite (_ + _ + _).
 
-   .. cmdv:: SearchRewrite term inside {+ @qualid }
+   .. cmdv:: SearchRewrite @term inside {+ @qualid }
 
       This restricts the search to constructions defined in the modules
       named by the given :n:`qualid` sequence.

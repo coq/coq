@@ -1749,7 +1749,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       They combine the effects of the ``with``, ``as``, ``eqn:``, ``using``,
       and ``in`` clauses.
 
-.. tacn:: case term
+.. tacn:: case @term
    :name: case
 
    The tactic :n:`case` is a more basic tactic to perform case analysis without
@@ -1982,7 +1982,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    :n:`induction @ident; induction @ident` (or
    :n:`induction @ident ; destruct @ident` depending on the exact needs).
 
-.. tacv:: double induction num1 num2
+.. tacv:: double induction @num__1 @num__2
 
    This tactic is deprecated and should be replaced by
    :n:`induction num1; induction num3` where :n:`num3` is the result
@@ -2271,11 +2271,11 @@ and an explanation of the underlying technique.
          :undocumented:
 
    .. tacv:: injection @term {? with @bindings_list} as {+ @simple_intropattern}
-             injection @num as {+ simple_intropattern}
-             injection as {+ simple_intropattern}
-             einjection @term {? with @bindings_list} as {+ simple_intropattern}
-             einjection @num as {+ simple_intropattern}
-             einjection as {+ simple_intropattern}
+             injection @num as {+ @simple_intropattern}
+             injection as {+ @simple_intropattern}
+             einjection @term {? with @bindings_list} as {+ @simple_intropattern}
+             einjection @num as {+ @simple_intropattern}
+             einjection as {+ @simple_intropattern}
 
       These variants apply :n:`intros {+ @simple_intropattern}` after the call to
       :tacn:`injection` or :tacn:`einjection` so that all equalities generated are moved in
@@ -2637,7 +2637,7 @@ and an explanation of the underlying technique.
    is correct at some time of the interactive development of a proof, use
    the command ``Guarded`` (see Section :ref:`requestinginformation`).
 
-.. tacv:: fix @ident @num with {+ (ident {+ @binder} [{struct @ident}] : @type)}
+.. tacv:: fix @ident @num with {+ (@ident {+ @binder} [{struct @ident}] : @type)}
 
    This starts a proof by mutual induction. The statements to be simultaneously
    proved are respectively :g:`forall binder ... binder, type`.
@@ -4048,7 +4048,7 @@ Setting implicit automation tactics
    .. seealso:: :cmd:`Proof` in :ref:`proof-editing-mode`.
 
 
-   .. cmdv:: Proof with tactic using {+ @ident}
+   .. cmdv:: Proof with @tactic using {+ @ident}
 
       Combines in a single line ``Proof with`` and ``Proof using``, see :ref:`proof-editing-mode`
 
@@ -4399,6 +4399,11 @@ Equality
 
    This tactic applies to a goal that has the form :g:`t=u` and transforms it
    into the two subgoals :n:`t=@term` and :n:`@term=u`.
+
+   .. tacv:: etransitivity
+
+      This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
+      a concrete :token:`term`.
 
 
 Equality and inductive sets

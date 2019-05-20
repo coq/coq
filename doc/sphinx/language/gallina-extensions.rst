@@ -85,7 +85,7 @@ To build an object of type :token:`ident`, one should provide the constructor
 
   .. productionlist::
     record_term : {| [`field_def` ; … ; `field_def`] |}
-    field_def : name [binders] := `record_term`
+    field_def : `ident` [`binders`] := `term`
 
 Alternatively, the following syntax allows creating objects by using named fields, as
 shown in this grammar. The fields do not have to be in any particular order, nor do they have
@@ -831,16 +831,16 @@ Sections create local contexts which can be shared across multiple definitions.
 
       Links :token:`type` to each :token:`ident`.
 
-   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
+   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
 
       Declare one or more variables with various types.
 
-   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
-             Hypothesis {+ ( {+ @ident } : @type) }
-             Hypotheses {+ ( {+ @ident } : @type) }
+   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
+             Hypothesis {+ ( {+ @ident } : @type) }
+             Hypotheses {+ ( {+ @ident } : @type) }
       :name: Variables; Hypothesis; Hypotheses
 
-      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
 
 .. cmd:: Let @ident := @term
 

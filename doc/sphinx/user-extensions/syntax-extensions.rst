@@ -327,22 +327,29 @@ symbols.
 Reserving notations
 ~~~~~~~~~~~~~~~~~~~
 
-A given notation may be used in different contexts. Coq expects all
-uses of the notation to be defined at the same precedence and with the
-same associativity. To avoid giving the precedence and associativity
-every time, it is possible to declare a parsing rule in advance
-without giving its interpretation. Here is an example from the initial
-state of Coq.
+.. cmd:: Reserved Notation @string {? (@modifiers) }
 
-.. coqtop:: in
+   A given notation may be used in different contexts. Coq expects all
+   uses of the notation to be defined at the same precedence and with the
+   same associativity. To avoid giving the precedence and associativity
+   every time, this command declares a parsing rule (:token:`string`) in advance
+   without giving its interpretation. Here is an example from the initial
+   state of Coq.
 
-   Reserved Notation "x = y" (at level 70, no associativity).
+   .. coqtop:: in
 
-Reserving a notation is also useful for simultaneously defining an
-inductive type or a recursive constant and a notation for it.
+      Reserved Notation "x = y" (at level 70, no associativity).
 
-.. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
-          their precedence and associativity cannot be changed.
+   Reserving a notation is also useful for simultaneously defining an
+   inductive type or a recursive constant and a notation for it.
+
+   .. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
+             their precedence and associativity cannot be changed.
+
+   .. cmdv:: Reserved Infix "@symbol" {* @modifiers}
+
+      This command declares an infix parsing rule without giving its
+      interpretation.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
