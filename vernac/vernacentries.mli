@@ -42,11 +42,11 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
   Evd.evar_map * Redexpr.red_expr) Hook.t
 
 (** Helper *)
-val vernac_require_open_proof : pstate:Proof_global.t option -> (pstate:Proof_global.t -> 'a) -> 'a
+val vernac_require_open_proof : pstate:Proof_global.stack option -> (pstate:Proof_global.stack -> 'a) -> 'a
 
-val with_pstate : pstate:Proof_global.t option -> (pstate:Proof_global.pstate -> 'a) -> 'a
+val with_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.pstate -> 'a) -> 'a
 
-val modify_pstate : pstate:Proof_global.t option -> (pstate:Proof_global.pstate -> Proof_global.pstate) -> Proof_global.t option
+val modify_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.pstate -> Proof_global.pstate) -> Proof_global.stack option
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)
@@ -56,7 +56,7 @@ val test_mode : bool ref
 
 type functional_vernac =
   | VtDefault of (unit -> unit)
-  | VtModifyProofStack of (pstate:Proof_global.t option -> Proof_global.t option)
+  | VtModifyProofStack of (pstate:Proof_global.stack option -> Proof_global.stack option)
   | VtMaybeOpenProof of (unit -> Proof_global.pstate option)
   | VtOpenProof of (unit -> Proof_global.pstate)
   | VtModifyProof of (pstate:Proof_global.pstate -> Proof_global.pstate)
@@ -65,5 +65,5 @@ type functional_vernac =
 
 val interp_functional_vernac
   : functional_vernac
-  -> pstate:Proof_global.t option
-  -> Proof_global.t option
+  -> pstate:Proof_global.stack option
+  -> Proof_global.stack option
