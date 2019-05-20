@@ -34,7 +34,6 @@ from sphinx.util.logging import getLogger, get_node_location
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.domains.std import token_xrefs
-from sphinx.ext import mathbase
 
 from . import coqdoc
 from .repl import ansicolors
@@ -74,8 +73,7 @@ def make_target(objtype, targetid):
     return "coq:{}.{}".format(objtype, targetid)
 
 def make_math_node(latex, docname, nowrap):
-    node = mathbase.displaymath()
-    node['latex'] = latex
+    node = nodes.math_block(latex, latex)
     node['label'] = None # Otherwise equations are numbered
     node['nowrap'] = nowrap
     node['docname'] = docname
