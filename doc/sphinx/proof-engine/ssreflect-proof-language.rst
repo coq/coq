@@ -1499,7 +1499,7 @@ side of an equation.
 The abstract tactic
 ```````````````````
 
-.. tacn:: abstract: {+ d_item}
+.. tacn:: abstract: {+ @d_item}
    :name: abstract (ssreflect)
 
    This tactic assigns an abstract constant previously introduced with the

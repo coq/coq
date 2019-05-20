@@ -3305,6 +3305,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This is variant of :n:`unfold @string` where :n:`@string` gets its
    interpretation from the scope bound to the delimiting key :token:`ident`
    instead of its default interpretation (see :ref:`Localinterpretationrulesfornotations`).
+
 .. tacv:: unfold {+, @qualid_or_string at {+, @num}}
 
    This is the most general form, where :n:`qualid_or_string` is either a
@@ -4243,10 +4244,10 @@ some incompatibilities.
       congruence.
       Qed.
 
-.. tacv:: congruence n
+.. tacv:: congruence @num
 
-  Tries to add at most `n` instances of hypotheses stating quantified equalities
-  to the problem in order to solve it. A bigger value of `n` does not make
+  Tries to add at most :token:`num` instances of hypotheses stating quantified equalities
+  to the problem in order to solve it. A bigger value of :token:`num` does not make
   success slower, only failure. You might consider adding some lemmas as
   hypotheses using assert in order for :tacn:`congruence` to use them.
 

@@ -965,7 +965,7 @@ system decide a name with the intro tactic is not so good since it is
 very awkward to retrieve the name the system gave. The following
 expression returns an identifier:
 
-.. tacn:: fresh {* component}
+.. tacn:: fresh {* @component}
 
    It evaluates to an identifier unbound in the goal. This fresh identifier
    is obtained by concatenating the value of the :n:`@component`\ s (each of them
