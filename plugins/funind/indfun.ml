@@ -903,10 +903,10 @@ let make_graph (f_ref : GlobRef.t) =
 	 in
          let mp = Constant.modpath c in
          let pstate = do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list in
+         assert (Option.is_empty pstate);
 	 (* We register the infos *)
 	 List.iter
            (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
-           expr_list;
-         pstate)
+           expr_list)
 
 let do_generate_principle = do_generate_principle [] warning_error true

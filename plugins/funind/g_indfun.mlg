@@ -224,33 +224,33 @@ let warning_error names e =
 
 }
 
-VERNAC COMMAND EXTEND NewFunctionalScheme STATE maybe_open_proof
+VERNAC COMMAND EXTEND NewFunctionalScheme
 | ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
    => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
     { begin
         try
-          Functional_principles_types.build_scheme fas; None
+          Functional_principles_types.build_scheme fas
         with
         | Functional_principles_types.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                let pstate = make_graph (Smartlocate.global_with_alias fun_name) in
-                try Functional_principles_types.build_scheme fas; pstate
+                make_graph (Smartlocate.global_with_alias fun_name);
+                try Functional_principles_types.build_scheme fas
                 with
                 | Functional_principles_types.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
-                  warning_error names e; pstate
+                  warning_error names e
               end
 	      | _ -> assert false (* we can only have non empty  list *)
           end
         | e when CErrors.noncritical e ->
           let names = List.map (fun (_,na,_) -> na) fas in
-          warning_error names e; None
+          warning_error names e
       end
     }
 END
@@ -263,7 +263,7 @@ VERNAC COMMAND EXTEND NewFunctionalCase
 END
 
 (***** debug only ***)
-VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY STATE maybe_open_proof
+VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
 | ["Generate" "graph" "for" reference(c)] ->
   { make_graph (Smartlocate.global_with_alias c) }
 END
