@@ -1496,7 +1496,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
-    generate_induction_principle using_lemmas : Proof_global.pstate option =
+    generate_induction_principle using_lemmas : Proof_global.t option =
   let open Term in
   let open Constr in
   let open CVars in

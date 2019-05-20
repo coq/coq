@@ -1975,7 +1975,7 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer atts m n : Proof_global.pstate option =
+let add_morphism_infer atts m n : Proof_global.t option =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
