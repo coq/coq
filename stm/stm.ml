@@ -1837,22 +1837,23 @@ end = struct (* {{{ *)
         let o = match c.Declarations.const_body with
           | Declarations.OpaqueDef o -> o
           | _ -> assert false in
-        let uc =
-          Option.get
-            (Opaqueproof.get_constraints (Global.opaque_tables ()) o) in
+        (* No need to delay the computation, the future has been forced by
+           the call to [check_task_aux] above. *)
+        let uc = Opaqueproof.force_constraints (Global.opaque_tables ()) o in
+        let uc = Univ.hcons_universe_context_set uc in
         (* We only manipulate monomorphic terms here. *)
         let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
-        let pr =
-          Future.from_val (map (Option.get (Global.body_of_constant_body c))) in
-        let uc =
-          Future.chain uc Univ.hcons_universe_context_set in
-        let pr = Future.chain pr discharge in
-        let pr = Future.chain pr Constr.hcons in
-        Future.sink pr;
-        let extra = Future.join uc in
-        u.(bucket) <- uc;
-        p.(bucket) <- pr;
-        u, Univ.ContextSet.union cst extra, false
+        let pr = map (Option.get (Global.body_of_constant_body c)) in
+        let pr = discharge pr in
+        let pr = Constr.hcons pr in
+        let return c =
+          let fc = Future.from_val c in
+          let _ = Future.join fc in
+          fc
+        in
+        u.(bucket) <- return uc;
+        p.(bucket) <- return pr;
+        u, Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
     match check_task_aux "" name l i with

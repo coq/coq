@@ -40,8 +40,6 @@ val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 val force_proof : opaquetab -> opaque -> constr
 val force_constraints : opaquetab -> opaque -> Univ.ContextSet.t
 val get_direct_constraints : opaque -> Univ.ContextSet.t Future.computation
-val get_constraints :
-  opaquetab -> opaque -> Univ.ContextSet.t Future.computation option
 
 val subst_opaque : substitution -> opaque -> opaque
 
