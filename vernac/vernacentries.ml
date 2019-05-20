@@ -1115,7 +1115,7 @@ let vernac_set_end_tac ~pstate tac =
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
   Proof_global.set_endline_tactic tac pstate
 
-let vernac_set_used_variables ~(pstate : Proof_global.pstate) e : Proof_global.pstate =
+let vernac_set_used_variables ~(pstate : Proof_global.t) e : Proof_global.t =
   let env = Global.env () in
   let initial_goals pf = Proofview.initial_goals Proof.(data pf).Proof.entry in
   let tys =
@@ -2662,11 +2662,11 @@ let interp ?(verbosely=true) ?proof ~st cmd =
 type functional_vernac =
   | VtDefault of (unit -> unit)
   | VtModifyProofStack of (pstate:Proof_global.stack option -> Proof_global.stack option)
-  | VtMaybeOpenProof of (unit -> Proof_global.pstate option)
-  | VtOpenProof of (unit -> Proof_global.pstate)
-  | VtModifyProof of (pstate:Proof_global.pstate -> Proof_global.pstate)
-  | VtReadProofOpt of (pstate:Proof_global.pstate option -> unit)
-  | VtReadProof of (pstate:Proof_global.pstate -> unit)
+  | VtMaybeOpenProof of (unit -> Proof_global.t option)
+  | VtOpenProof of (unit -> Proof_global.t)
+  | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
+  | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
+  | VtReadProof of (pstate:Proof_global.t -> unit)
 
 let interp_functional_vernac c ~pstate =
   let open Proof_global in

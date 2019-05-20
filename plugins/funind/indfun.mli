@@ -8,7 +8,7 @@ val warn_cannot_define_principle : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 val do_generate_principle :
   bool ->
   (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
-  Proof_global.pstate option
+  Proof_global.t option
 
 val functional_induction :
   bool ->

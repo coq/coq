@@ -634,7 +634,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   
 
 let do_generate_principle pconstants on_error register_built interactive_proof
-    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.pstate option =
+    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.t option =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let pstate, _is_struct =
     match fixpoint_exprl with
