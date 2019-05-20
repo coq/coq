@@ -43,7 +43,7 @@ val new_instance :
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
-  -> Id.t * Proof_global.pstate option (* May open a proof *)
+  -> Id.t * Proof_global.t option (* May open a proof *)
 
 val declare_new_instance
   : ?global:bool (** Not global by default. *)
