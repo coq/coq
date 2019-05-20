@@ -1846,13 +1846,8 @@ end = struct (* {{{ *)
         let pr = map (Option.get (Global.body_of_constant_body c)) in
         let pr = discharge pr in
         let pr = Constr.hcons pr in
-        let return c =
-          let fc = Future.from_val c in
-          let _ = Future.join fc in
-          fc
-        in
-        u.(bucket) <- return uc;
-        p.(bucket) <- return pr;
+        u.(bucket) <- Some uc;
+        p.(bucket) <- Some pr;
         u, Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

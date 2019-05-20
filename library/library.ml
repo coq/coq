@@ -276,8 +276,8 @@ let in_import_library : DirPath.t list * bool -> obj =
 (** Delayed / available tables of opaque terms *)
 
 type 'a table_status =
-  | ToFetch of 'a Future.computation array delayed
-  | Fetched of 'a Future.computation array
+  | ToFetch of 'a option array delayed
+  | Fetched of 'a option array
 
 let opaque_tables =
   ref (LibraryMap.empty : (Constr.constr table_status) LibraryMap.t)
@@ -315,7 +315,7 @@ let access_opaque_table dp i =
 let access_univ_table dp i =
   try
     let what = "universe contexts of opaque proofs" in
-    Some (access_table what univ_tables dp i)
+    access_table what univ_tables dp i
   with Not_found -> None
 
 let () =
@@ -328,9 +328,9 @@ let () =
 type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
-  Univ.ContextSet.t Future.computation array * Univ.ContextSet.t * bool
+  Univ.ContextSet.t option array * Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
-type seg_proofs = Constr.constr Future.computation array
+type seg_proofs = Constr.constr option array
 
 let mk_library sd md digests univs =
   {
@@ -590,7 +590,7 @@ let save_library_to ?todo ~output_native_objects dir f otab =
         List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
-  let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump otab in
+  let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump ~except otab in
   let tasks, utab, dtab =
     match todo with
     | None -> None, None, None
@@ -603,16 +603,6 @@ let save_library_to ?todo ~output_native_objects dir f otab =
         Some (tasks,rcbackup),
         Some (univ_table,Univ.ContextSet.empty,false),
         Some disch_table in
-  let except =
-    Future.UUIDSet.fold (fun uuid acc ->
-      try Int.Set.add (Future.UUIDMap.find uuid f2t_map) acc
-      with Not_found -> acc)
-      except Int.Set.empty in
-  let is_done_or_todo i x = Future.is_val x || Int.Set.mem i except in
-  Array.iteri (fun i x ->
-    if not(is_done_or_todo i x) then CErrors.user_err ~hdr:"library"
-      Pp.(str"Proof object "++int i++str" is not checked nor to be checked"))
-    opaque_table;
   let sd = {
     md_name = dir;
     md_deps = Array.of_list (current_deps ());

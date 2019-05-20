@@ -43,6 +43,8 @@ let default_get_univ dp _ =
   CErrors.user_err (Pp.pr_sequence Pp.str [
     "Cannot access universe constraints of opaque proofs in library ";
     DirPath.to_string dp])
+let not_here () =
+  CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 
 let get_opaque = ref default_get_opaque
 let get_univ = ref default_get_univ
@@ -102,7 +104,10 @@ let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
       let pt =
         if DirPath.equal dp odp
         then Future.chain (snd (Int.Map.find i prfs)) fst
-        else !get_opaque dp i in
+        else match !get_opaque dp i with
+        | None -> not_here ()
+        | Some v -> Future.from_val v
+      in
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
@@ -113,7 +118,7 @@ let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
       then snd (Future.force (snd (Int.Map.find i prfs)))
       else match !get_univ dp i with
         | None -> Univ.ContextSet.empty
-        | Some u -> Future.force u
+        | Some u -> u
 
 let get_direct_constraints = function
 | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
@@ -121,22 +126,23 @@ let get_direct_constraints = function
 
 module FMap = Future.UUIDMap
 
-let a_constr = Future.from_val (mkRel 1)
-let a_univ = Future.from_val Univ.ContextSet.empty
-let a_discharge : cooking_info list = []
-
-let dump { opaque_val = otab; opaque_len = n; _ } =
-  let opaque_table = Array.make n a_constr in
-  let univ_table = Array.make n a_univ in
-  let disch_table = Array.make n a_discharge in
+let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
+  let opaque_table = Array.make n None in
+  let univ_table = Array.make n None in
+  let disch_table = Array.make n [] in
   let f2t_map = ref FMap.empty in
-  Int.Map.iter (fun n (d,cu) ->
-    let c, u = Future.split2 cu in
-    Future.sink u;
-    Future.sink c;
-    opaque_table.(n) <- c;
-    univ_table.(n) <- u;
-    disch_table.(n) <- d;
-    f2t_map := FMap.add (Future.uuid cu) n !f2t_map)
-  otab;
+  let iter n (d, cu) =
+    let uid = Future.uuid cu in
+    let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
+    if Future.is_val cu then
+      let (c, u) = Future.force cu in
+      let () = univ_table.(n) <- Some u in
+      opaque_table.(n) <- Some c
+    else if Future.UUIDSet.mem uid except then
+      disch_table.(n) <- d
+    else
+      CErrors.anomaly
+        Pp.(str"Proof object "++int n++str" is not checked nor to be checked")
+  in
+  let () = Int.Map.iter iter otab in
   opaque_table, univ_table, disch_table, !f2t_map

@@ -50,7 +50,7 @@ let pr_path sp =
 
 type compilation_unit_name = DirPath.t
 
-type seg_proofs = Constr.constr Future.computation array
+type seg_proofs = Constr.constr option array
 
 type library_t = {
   library_name : compilation_unit_name;

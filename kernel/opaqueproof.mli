@@ -59,9 +59,9 @@ val discharge_direct_opaque :
 
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
-val dump : opaquetab ->
-  Constr.t Future.computation array *
-  Univ.ContextSet.t Future.computation array *
+val dump : ?except:Future.UUIDSet.t -> opaquetab ->
+  Constr.t option array *
+  Univ.ContextSet.t option array *
   cooking_info list array *
   int Future.UUIDMap.t
 
@@ -73,7 +73,7 @@ val dump : opaquetab ->
 *)
 
 val set_indirect_opaque_accessor :
-  (DirPath.t -> int -> constr Future.computation) -> unit
+  (DirPath.t -> int -> constr option) -> unit
 val set_indirect_univ_accessor :
-  (DirPath.t -> int -> Univ.ContextSet.t Future.computation option) -> unit
+  (DirPath.t -> int -> Univ.ContextSet.t option) -> unit
 

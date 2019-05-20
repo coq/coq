@@ -53,7 +53,6 @@ let v_enum name n = Sum(name,n,[||])
 let v_pair v1 v2 = v_tuple "*" [|v1; v2|]
 let v_bool = v_enum "bool" 2
 let v_unit = v_enum "unit" 1
-let v_ref v = v_tuple "ref" [|v|]
 
 let v_set v =
   let rec s = Sum ("Set.t",1,
@@ -69,13 +68,6 @@ let v_hset v = v_map Int (v_set v)
 let v_hmap vk vd = v_map Int (v_map vk vd)
 
 let v_pred v = v_pair v_bool (v_set v)
-
-(* lib/future *)
-let v_computation f =
-  Annot ("Future.computation",
-  v_ref
-    (v_sum "Future.comput" 0
-      [| [| Fail "Future.ongoing" |]; [| f |] |]))
 
 (** kernel/names *)
 
@@ -391,6 +383,6 @@ let v_libsum =
 let v_lib =
   Tuple ("library",[|v_compiled_lib;v_libraryobjs|])
 
-let v_opaques = Array (v_computation v_constr)
+let v_opaques = Array (Opt v_constr)
 let v_univopaques =
-  Opt (Tuple ("univopaques",[|Array (v_computation v_context_set);v_context_set;v_bool|]))
+  Opt (Tuple ("univopaques",[|Array (Opt v_context_set);v_context_set;v_bool|]))
