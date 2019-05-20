@@ -1937,7 +1937,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     print_about env sigma ref_or_by_not udecl
 
-let vernac_print ~(pstate : Proof_global.t option) ~atts =
+let vernac_print ~(pstate : Proof_global.stack option) ~atts =
   let pstate = Option.map Proof_global.get_current_pstate pstate in
   let sigma, env = get_current_or_global_context ~pstate in
   function
@@ -2299,7 +2299,7 @@ exception End_of_input
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
+let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
   let pstate = st.Vernacstate.proof in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2714,7 +2714,7 @@ let interp ?(verbosely=true) ?proof ~st cmd =
 
 type functional_vernac =
   | VtDefault of (unit -> unit)
-  | VtModifyProofStack of (pstate:Proof_global.t option -> Proof_global.t option)
+  | VtModifyProofStack of (pstate:Proof_global.stack option -> Proof_global.stack option)
   | VtMaybeOpenProof of (unit -> Proof_global.pstate option)
   | VtOpenProof of (unit -> Proof_global.pstate)
   | VtModifyProof of (pstate:Proof_global.pstate -> Proof_global.pstate)
