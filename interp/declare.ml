@@ -53,6 +53,13 @@ let load_constant i ((sp,kn), obj) =
   Nametab.push (Nametab.Until i) sp (ConstRef con);
   add_constant_kind con obj.cst_kind
 
+let cooking_info segment =
+  let modlist = replacement_context () in
+  let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = segment in
+  let named_ctx = List.map fst hyps in
+  let abstract = (named_ctx, subst, uctx) in
+  { Opaqueproof.modlist; abstract }
+
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn), obj) =
   (* Never open a local definition *)
@@ -89,14 +96,10 @@ let cache_constant ((sp,kn), obj) =
 let discharge_constant ((sp, kn), obj) =
   let con = Constant.make1 kn in
   let from = Global.lookup_constant con in
-  let modlist = replacement_context () in
-  let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
-  let named_ctx = List.map fst hyps in
-  let abstract = (named_ctx, subst, uctx) in
-  let new_decl = { from; info = { Opaqueproof.modlist; abstract } } in
+  let info = cooking_info (section_segment_of_constant con) in
   (* This is a hack: when leaving a section, we lose the constant definition, so
      we have to store it in the libobject to be able to retrieve it after. *)
-  Some { obj with cst_decl = Some new_decl; }
+  Some { obj with cst_decl = Some { from; info } }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant cst = {
@@ -313,10 +316,8 @@ let cache_inductive ((sp,kn),mie) =
 let discharge_inductive ((sp,kn),mie) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
-  let repl = replacement_context () in
-  let info = section_segment_of_mutual_inductive mind in
-  let hyps = List.map fst info.abstr_ctx in
-  Some (Discharge.process_inductive hyps info.abstr_subst info.abstr_uctx repl mie)
+  let info = cooking_info (section_segment_of_mutual_inductive mind) in
+  Some (Discharge.process_inductive info mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;

@@ -10,8 +10,6 @@
 
 open Declarations
 open Entries
-open Opaqueproof
 
 val process_inductive :
-  Constr.named_context ->
-  Univ.Instance.t -> Univ.AUContext.t -> work_list -> mutual_inductive_body -> mutual_inductive_entry
+  Opaqueproof.cooking_info -> mutual_inductive_body -> mutual_inductive_entry

@@ -86,7 +86,8 @@ let discharge_abstract_universe_context subst abs_ctx auctx =
   let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
   subst, AUContext.union abs_ctx auctx
 
-let process_inductive section_decls subst abs_uctx modlist mib =
+let process_inductive { Opaqueproof.modlist; abstract } mib =
+  let (section_decls, subst, abs_uctx) = abstract in
   let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
   let subst, ind_univs =
     match mib.mind_universes with
