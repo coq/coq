@@ -31,16 +31,6 @@ module NamedDecl = Context.Named.Declaration
 open Decl_kinds
 open Entries
 
-let refine_instance = ref false
-
-let () = Goptions.(declare_bool_option {
-  optdepr  = true;
-  optname  = "definition of instances by refining";
-  optkey   = ["Refine";"Instance";"Mode"];
-  optread  = (fun () -> !refine_instance);
-  optwrite = (fun b -> refine_instance := b)
-})
-
 let set_typeclass_transparency c local b = 
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
@@ -419,7 +409,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         | None ->
           pstate) ())
 
-let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -503,7 +493,7 @@ let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program
       let term = to_constr sigma (Option.get term) in
       (declare_instance_constant k pri global imps ?hook id decl poly sigma term termtype;
        None)
-    else if program_mode || refine || Option.is_empty props then
+    else if program_mode || Option.is_empty props then
       declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
   id, pstate
@@ -550,7 +540,7 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
 
-let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mode
+let new_instance ~pstate ?(global=false) ~program_mode
     poly ctx (instid, bk, cl) props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -566,7 +556,7 @@ let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mo
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
+  do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
 let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =

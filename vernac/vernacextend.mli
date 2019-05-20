@@ -52,7 +52,6 @@ type vernac_type =
   | VtProofMode of string
   (* To be removed *)
   | VtMeta
-  | VtUnknown
 and vernac_start = opacity_guarantee * Names.Id.t list
 and vernac_sideff_type = Names.Id.t list
 and opacity_guarantee =

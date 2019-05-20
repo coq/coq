@@ -1800,7 +1800,7 @@ let anew_instance ~pstate atts binders instance fields =
   let program_mode = atts.program in
   new_instance ~pstate ~program_mode atts.polymorphic
     binders instance (Some (true, CAst.make @@ CRecord (fields)))
-    ~global:atts.global ~generalize:false ~refine:false Hints.empty_hint_info
+    ~global:atts.global ~generalize:false Hints.empty_hint_info
 
 let declare_instance_refl ~pstate atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"

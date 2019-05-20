@@ -48,7 +48,6 @@ val declare_instance_constant :
 val new_instance :
   pstate:Proof_global.t option ->
   ?global:bool (** Not global by default. *) ->
-  ?refine:bool (** Allow refinement *) ->
   program_mode:bool ->
   Decl_kinds.polymorphic ->
   local_binder_expr list ->

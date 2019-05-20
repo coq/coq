@@ -14,4 +14,3 @@ Local Set Warnings "-deprecated".
 Require Export Coq.Compat.Coq810.
 
 Unset Private Polymorphic Universes.
-Set Refine Instance Mode.
