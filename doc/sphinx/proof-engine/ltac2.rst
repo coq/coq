@@ -124,13 +124,13 @@ Type declarations
 
 One can define new types by the following commands.
 
-.. cmd:: Ltac2 Type @ltac2_typeparams @lident
+.. cmd:: Ltac2 Type {? @ltac2_typeparams } @lident
    :name: Ltac2 Type
 
    This command defines an abstract type. It has no use for the end user and
    is dedicated to types representing data coming from the OCaml world.
 
-.. cmdv:: Ltac2 Type {? rec} @ltac2_typeparams @lident := @ltac2_typedef
+.. cmdv:: Ltac2 Type {? rec} {? @ltac2_typeparams } @lident := @ltac2_typedef
 
    This command defines a type with a manifest. There are four possible
    kinds of such definitions: alias, variant, record and open variant types.
@@ -154,7 +154,7 @@ One can define new types by the following commands.
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
 
-   .. cmdv:: Ltac2 Type @ltac2_typeparams @ltac2_qualid := [ @ltac2_constructordef ]
+   .. cmdv:: Ltac2 Type {? @ltac2_typeparams } @ltac2_qualid := [ @ltac2_constructordef ]
 
       Open variants are a special kind of variant types whose constructors are not
       statically defined, but can instead be extended dynamically. A typical example
