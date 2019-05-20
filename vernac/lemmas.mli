@@ -61,7 +61,7 @@ val standard_proof_terminator :
   ?hook:declaration_hook -> Proof_global.lemma_possible_guards ->
   Proof_global.proof_terminator
 
-val fresh_name_for_anonymous_theorem : pstate:Proof_global.t option -> Id.t
+val fresh_name_for_anonymous_theorem : pstate:Proof_global.stack option -> Id.t
 
 (* Prepare global named context for proof session: remove proofs of
    opaque section definitions and remove vm-compiled code *)
@@ -77,10 +77,10 @@ val save_proof_admitted
 
 val save_proof_proved
   :  ?proof:Proof_global.closed_proof
-  -> ?ontop:Proof_global.t
+  -> ?ontop:Proof_global.stack
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
-  -> Proof_global.t option
+  -> Proof_global.stack option
 
 val save_pstate_proved
   : pstate:Proof_global.pstate

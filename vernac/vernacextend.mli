@@ -71,7 +71,7 @@ type vernac_classification = vernac_type * vernac_when
 
 (** Interpretation of extended vernac phrases. *)
 
-type vernac_command = atts:Attributes.vernac_flags -> pstate:Proof_global.t option -> Proof_global.t option
+type vernac_command = atts:Attributes.vernac_flags -> pstate:Proof_global.stack option -> Proof_global.stack option
 
 type plugin_args = Genarg.raw_generic_argument list
 
