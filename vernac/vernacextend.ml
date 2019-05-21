@@ -55,6 +55,7 @@ type vernac_classification = vernac_type * vernac_when
 
 type vernac_interp_phase =
   | VtDefault of (unit -> unit)
+  | VtNoProof of (unit -> unit)
   | VtCloseProof of (lemma:Lemmas.t -> unit)
   | VtMaybeOpenProof of (unit -> Lemmas.t option)
   | VtOpenProof of (unit -> Lemmas.t)
@@ -92,7 +93,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let call opn converted_args ~atts =
+let encode opn converted_args ~atts =
   let phase = ref "Looking up command" in
   try
     let depr, callback = vinterp_map opn in

@@ -73,6 +73,7 @@ type vernac_classification = vernac_type * vernac_when
 
 type vernac_interp_phase =
   | VtDefault of (unit -> unit)
+  | VtNoProof of (unit -> unit)
   | VtCloseProof of (lemma:Lemmas.t -> unit)
   | VtMaybeOpenProof of (unit -> Lemmas.t option)
   | VtOpenProof of (unit -> Lemmas.t)
@@ -84,7 +85,7 @@ type vernac_command = atts:Attributes.vernac_flags -> vernac_interp_phase
 
 type plugin_args = Genarg.raw_generic_argument list
 
-val call : Vernacexpr.extend_name -> plugin_args -> vernac_command
+val encode : Vernacexpr.extend_name -> plugin_args -> vernac_command
 
 (** {5 VERNAC EXTEND} *)
 
