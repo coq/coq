@@ -1,4 +1,9 @@
-Notation D1 := (forall {T : Type} ( x : T ) , Type).
+(* See discussion in #668 for whether manual implicit arguments should
+   be allowed in notations or not *)
+
+Set Warnings "+syntax".
+
+Fail Notation D1 := (forall {T : Type} ( x : T ) , Type).
 
 Definition DD1 ( A : forall {T : Type} (x : T), Type ) := A 1.
 Fail Definition DD1' ( A : D1 ) := A 1. (* Toplevel input, characters 32-33:
