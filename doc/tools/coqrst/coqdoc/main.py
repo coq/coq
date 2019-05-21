@@ -52,7 +52,7 @@ def is_whitespace_string(elem):
     return isinstance(elem, NavigableString) and elem.strip() == ""
 
 def strip_soup(soup, pred):
-    """Strip elements maching pred from front and tail of soup."""
+    """Strip elements matching pred from front and tail of soup."""
     while soup.contents and pred(soup.contents[-1]):
         soup.contents.pop()
 

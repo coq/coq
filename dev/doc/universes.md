@@ -163,9 +163,9 @@ only, it's just a matter of using `Evd.fresh_global` /
 The universe graph
 ------------------
 
-To accomodate universe polymorphic definitions, the graph structure in
+To accommodate universe polymorphic definitions, the graph structure in
 kernel/univ.ml was modified. The new API forces every universe to be
-declared before it is mentionned in any constraint. This forces to
+declared before it is mentioned in any constraint. This forces to
 declare every universe to be >= Set or > Set. Every universe variable
 introduced during elaboration is >= Set. Every _global_ universe is now
 declared explicitly > Set, _after_ typechecking the definition. In

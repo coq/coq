@@ -110,7 +110,7 @@ advantage of special hardware, debuggers, and the like. We hope that |Coq|
 can be of use to researchers interested in experimenting with this new
 methodology.
 
-.. [#years] At the time of writting, i.e. 1995.
+.. [#years] At the time of writing, i.e. 1995.
 
 Versions 1 to 5
 ---------------
@@ -305,7 +305,7 @@ Michel Mauny, Ascander Suarez and Pierre Weis.
 V3.1 was started in the summer of 1986, V3.2 was frozen at the end of
 November 1986. V3.4 was developed in the first half of 1987.
 
-Thierry Coquand held a post-doctoral position in Cambrige University
+Thierry Coquand held a post-doctoral position in Cambridge University
 in 1986-87, where he developed a variant implementation in SML, with
 which he wrote some developments on fixpoints in Scott's domains.
 
@@ -345,7 +345,7 @@ lemmas when local hypotheses of proofs were discharged. This gave a
 notion of global mathematical environment with local sections.
 
 Another significant practical change was that the system, originally
-developped on the VAX central computer of our lab, was transferred on
+developed on the VAX central computer of our lab, was transferred on
 SUN personal workstations, allowing a level of distributed
 development.  The extraction algorithm was modified, with three
 annotations ``Pos``, ``Null`` and ``Typ`` decorating the sorts ``Prop``
@@ -503,7 +503,7 @@ of CNRS-ENS Lyon.
 Chetan Murthy joined the team in 1991 and became the main software
 architect of Version 5. He completely rehauled the implementation for
 efficiency.  Versions 5.6 and 5.8 were major distributed versions,
-with complete documentation and a library of users' developements. The
+with complete documentation and a library of users' developments. The
 use of the RCS revision control system, and systematic ChangeLog
 files, allow a more precise tracking of the software developments.
 
@@ -1330,7 +1330,7 @@ Language
 
 - Inductive definitions now accept ">" in constructor types to declare
   the corresponding constructor as a coercion.
-- Idem for assumptions declarations and constants when the type is mentionned.
+- Idem for assumptions declarations and constants when the type is mentioned.
 - The "Coercion" and "Canonical Structure" keywords now accept the
   same syntax as "Definition", i.e. "hyps :=c (:t)?" or "hyps :t".
 - Theorem-like declaration now accepts the syntax "Theorem thm [x:t;...] : u".
@@ -1383,7 +1383,7 @@ Tactics
   it can also recognize 'False' in the hypothesis and use it to solve the
   goal.
 - Coercions now handled in "with" bindings
-- "Subst x" replaces all ocurrences of x by t in the goal and hypotheses
+- "Subst x" replaces all occurrences of x by t in the goal and hypotheses
   when an hypothesis x=t or x:=t or t=x exists
 - Fresh names for Assert and Pose now based on collision-avoiding
   Intro naming strategy (exceptional source of incompatibilities)

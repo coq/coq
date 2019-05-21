@@ -3714,7 +3714,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
    .. cmdv:: Hint Resolve -> @term : @ident
 
       Adds the left-to-right implication of an equivalence as a hint (informally
-      the hint will be used as :n:`apply <- @term`, although as mentionned
+      the hint will be used as :n:`apply <- @term`, although as mentioned
       before, the tactic actually used is a restricted version of
       :tacn:`apply`).
 
@@ -3783,7 +3783,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
       This sets the transparency flag used during unification of
       hints in the database for all constants or all variables,
-      overwritting the existing settings of opacity. It is advised
+      overwriting the existing settings of opacity. It is advised
       to use this just after a :cmd:`Create HintDb` command.
 
    .. cmdv:: Hint Extern @num {? @pattern} => @tactic : @ident

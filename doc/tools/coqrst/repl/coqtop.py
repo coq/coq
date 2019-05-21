@@ -47,7 +47,7 @@ class CoqTop:
         :param coqtop_bin: The path to coqtop; uses $COQBIN by default, falling back to "coqtop"
         :param color:      When True, tell coqtop to produce ANSI color codes (see
                            the ansicolors module)
-        :param args:       Additional arugments to coqtop.
+        :param args:       Additional arguments to coqtop.
         """
         self.coqtop_bin = coqtop_bin or os.path.join(os.getenv('COQBIN', ""), "coqtop")
         if not pexpect.utils.which(self.coqtop_bin):
@@ -68,7 +68,7 @@ class CoqTop:
         self.coqtop.kill(9)
 
     def next_prompt(self):
-        """Wait for the next coqtop prompt, and return the output preceeding it."""
+        """Wait for the next coqtop prompt, and return the output preceding it."""
         self.coqtop.expect(CoqTop.COQTOP_PROMPT, timeout = 10)
         return self.coqtop.before
 

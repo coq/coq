@@ -3,7 +3,7 @@
 (* Caml script to include for debugging the checker.
    Usage: from the checker/ directory launch ocaml toplevel and then
    type #use"include";;
-   This command loads the relevent modules, defines some pretty
+   This command loads the relevant modules, defines some pretty
    printers, and provides functions to interactively check modules
    (mainly run_l and norec).
  *)

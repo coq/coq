@@ -853,7 +853,7 @@ An *occurrence switch* can be:
   algorithm in a local definition, instead of copying large terms by
   hand.
 
-It is important to remember that matching *preceeds* occurrence
+It is important to remember that matching *precedes* occurrence
 selection.
 
   .. example::
@@ -2455,7 +2455,7 @@ the holes are abstracted in term.
      Lemma test : True.
      have: _ * 0 = 0.
 
-  The invokation of ``have`` is equivalent to:
+  The invocation of ``have`` is equivalent to:
 
   .. coqtop:: reset none
 
@@ -4927,7 +4927,7 @@ bookkeeping steps.
      apply/PQequiv.
 
   thus in this case, the tactic ``apply/PQequiv`` is equivalent to
-  ``apply: (iffRL (PQequiv _ _))``, where ``iffRL`` is tha analogue of
+  ``apply: (iffRL (PQequiv _ _))``, where ``iffRL`` is the analogue of
   ``iffRL`` for the converse implication.
 
 Any |SSR| term whose type coerces to a double implication can be

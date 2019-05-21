@@ -285,9 +285,9 @@ SET RESULT_INSTALLDIR_WFMT=%DESTCOQ%
 SET TARGET_ARCH=%ARCH%-w64-mingw32
 SET BASH=%CYGWIN_INSTALLDIR_WFMT%\bin\bash
 
-REM Convert pathes to various formats
+REM Convert paths to various formats
 REM WFMT = windows format (C:\..)          Used in this batch file.
-REM CFMT = cygwin format (\cygdrive\c\..)  Used for Cygwin PATH varible, which is : separated, so C: doesn't work.
+REM CFMT = cygwin format (\cygdrive\c\..)  Used for Cygwin PATH variable, which is : separated, so C: doesn't work.
 REM MFMT = MinGW format (C:/...)           Used for the build, because \\ requires escaping. Mingw can handle \ and /.
 
 SET CYGWIN_INSTALLDIR_MFMT=%CYGWIN_INSTALLDIR_WFMT:\=/%
@@ -429,13 +429,13 @@ ECHO ========== BATCH FUNCTIONS ==========
   REM  01234567890123456789012345678901234567890123456789012345678901234567890123456789
   ECHO -arch     ^<i686 or x86_64^> Set cygwin, ocaml and coq to 32 or 64 bit
   ECHO -mode     ^<mingwincygwin = install coq in default cygwin mingw sysroot^>
-  ECHO           ^<absoloute = install coq in -destcoq absulute path^>
+  ECHO           ^<absolute = install coq in -destcoq absolute path^>
   ECHO           ^<relocatable = install relocatable coq in -destcoq path^>
   ECHO -installer^<Y or N^> create a windows installer (will be in /build/coq/dev/nsis)
   ECHO -ocaml    ^<Y or N^> install OCaml in Coq folder (Y) or just in cygwin folder (N)
   ECHO -make     ^<Y or N^> install GNU Make in Coq folder (Y) or not (N)
   ECHO -destcyg  ^<path to cygwin destination folder^>
-  ECHO -destcoq  ^<path to coq destination folder (mode=absoloute/relocatable)^>
+  ECHO -destcoq  ^<path to coq destination folder (mode=absolute/relocatable)^>
   ECHO -setup    ^<cygwin setup program name^> (auto adjusted to -arch)
   ECHO -proxy    ^<internet proxy^>
   ECHO -cygrepo  ^<cygwin download repository^>

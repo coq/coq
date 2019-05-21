@@ -385,7 +385,7 @@ few other commands related to typeclasses.
 
      .. note::
         As of Coq 8.6, ``all:once (typeclasses eauto)`` faithfully
-        mimicks what happens during typeclass resolution when it is called
+        mimics what happens during typeclass resolution when it is called
         during refinement/type inference, except that *only* declared class
         subgoals are considered at the start of resolution during type
         inference, while ``all`` can select non-class subgoals as well. It might

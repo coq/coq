@@ -145,7 +145,7 @@ module Shelf : State with type t = goal list
     of the tactic. *)
 module Giveup : Writer with type t = goal list
 
-(** Lens and utilies pertaining to the info trace *)
+(** Lens and utilities pertaining to the info trace *)
 module InfoL : sig
   (** [record_trace t] behaves like [t] and compute its [info] trace. *)
   val record_trace : 'a Logical.t -> 'a Logical.t

@@ -77,7 +77,7 @@ ADWAITASHARE=$(shell ls -d /usr/local/Cellar/adwaita-icon-theme/*)/share
 .PHONY: coqide coqide-opt coqide-byte coqide-bindings coqide-files coqide-binaries
 .PHONY: ide-toploop ide-byteloop ide-optloop
 
-# target to build CoqIde (native version) and the stuff needed to lauch it
+# target to build CoqIde (native version) and the stuff needed to launch it
 coqide: coqide-files coqide-opt theories/Init/Prelude.$(VO) $(TOPBIN)
 
 # target to build CoqIde (in native and byte versions), and no more

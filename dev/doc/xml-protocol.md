@@ -437,7 +437,7 @@ Searches for objects that satisfy a list of constraints. If `${positiveConstrain
 * Type pattern: `${constraintType} = "type_pattern"`; `${constraintValue}` is a pattern (???: an open gallina term) string.
 * SubType pattern: `${constraintType} = "subtype_pattern"`; `${constraintValue}` is a pattern (???: an open gallina term) string.
 * In module: `${constraintType} = "in_module"`; `${constraintValue}` is a list of strings specifying the module/directory structure.
-* Include blacklist: `${constraintType} = "include_blacklist"`; `${constraintValue}` *is ommitted*.
+* Include blacklist: `${constraintType} = "include_blacklist"`; `${constraintValue}` *is omitted*.
 
 -------------------------------
 

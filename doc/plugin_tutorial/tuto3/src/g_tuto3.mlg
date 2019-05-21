@@ -33,7 +33,7 @@ TACTIC EXTEND collapse_hyps
 END
 
 (* More advanced examples, where automatic proof happens but
-   no tactic is being called explicitely.  The first one uses
+   no tactic is being called explicitly.  The first one uses
    type classes. *)
 VERNAC COMMAND EXTEND TriggerClasses CLASSIFIED AS QUERY
 | [ "Tuto3_3" int(n) ] -> { example_classes n }

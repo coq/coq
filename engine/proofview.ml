@@ -31,7 +31,7 @@ type entry = (EConstr.constr * EConstr.types) list
     ide-s. *)
 (* spiwack: the type of [proofview] will change as we push more
    refined functions to ide-s. This would be better than spawning a
-   new nearly identical function everytime. Hence the generic name. *)
+   new nearly identical function every time. Hence the generic name. *)
 (* In this version: returns the list of focused goals together with
    the [evar_map] context. *)
 let proofview p =
@@ -114,7 +114,7 @@ type focus_context = goal_with_state list * goal_with_state list
     instance, ide-s. *)
 (* spiwack: the type of [focus_context] will change as we push more
    refined functions to ide-s. This would be better than spawning a
-   new nearly identical function everytime. Hence the generic name. *)
+   new nearly identical function every time. Hence the generic name. *)
 (* In this version: the goals in the context, as a "zipper" (the first
    list is in reversed order). *)
 let focus_context (left,right) =
@@ -123,7 +123,7 @@ let focus_context (left,right) =
 (** This (internal) function extracts a sublist between two indices,
     and returns this sublist together with its context: if it returns
     [(a,(b,c))] then [a] is the sublist and [(rev b) @ a @ c] is the
-    original list.  The focused list has lenght [j-i-1] and contains
+    original list.  The focused list has length [j-i-1] and contains
     the goals from number [i] to number [j] (both included) the first
     goal of the list being numbered [1].  [focus_sublist i j l] raises
     [IndexOutOfRange] if [i > length l], or [j > length l] or [j <
@@ -245,7 +245,7 @@ let tclUNIT = Proof.return
 (** Bind operation of the tactic monad. *)
 let tclBIND = Proof.(>>=)
 
-(** Interpretes the ";" (semicolon) of Ltac. As a monadic operation,
+(** Interprets the ";" (semicolon) of Ltac. As a monadic operation,
     it's a specialized "bind". *)
 let tclTHEN = Proof.(>>)
 

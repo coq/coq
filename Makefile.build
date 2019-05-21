@@ -150,7 +150,7 @@ endif
 
 ###########################################################################
 
-# This include below will lauch the build of all .d.
+# This include below will launch the build of all .d.
 # The - at front is for disabling warnings about currently missing ones.
 # For creating the missing .d, make will recursively build things like
 # coqdep_boot (for the .v.d files) or coqpp (for .mlg -> .ml -> .ml.d).

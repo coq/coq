@@ -449,7 +449,7 @@ underscore or by omitting the annotation to a polymorphic definition.
    This option, on by default, removes universes which appear only in
    the body of an opaque polymorphic definition from the definition's
    universe arguments. As such, no value needs to be provided for
-   these universes when instanciating the definition. Universe
+   these universes when instantiating the definition. Universe
    constraints are automatically adjusted.
 
    Consider the following definition:

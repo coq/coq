@@ -765,7 +765,7 @@ function make_ncurses {
   # gettext make/make install work anyway
   #
   # CONFIGURE PARAMETERS
-  # --enable-term-driver --enable-sp-funcs is rewuired for mingw (see README.MinGW)
+  # --enable-term-driver --enable-sp-funcs is required for mingw (see README.MinGW)
   # additional changes
   # ADD --with-pkg-config
   # ADD --enable-pc-files
@@ -1281,7 +1281,7 @@ function copy_coq_objects {
   done
 }
 
-# Copy required GTK config and suport files
+# Copy required GTK config and support files
 
 function copy_coq_gtk {
   echo 'gtk-theme-name = "Default"'     >  "$PREFIX/etc/gtk-3.0/gtkrc"

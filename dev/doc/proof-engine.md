@@ -121,7 +121,7 @@ a limited set of derivation rules), it is recommended to generate proofs as
 much as possible by refining in ML tactics when it is possible and easy enough.
 Indeed, this prevents dependence on fragile constructions such as unification.
 
-Obviously, it does not forbid the use of tacticals to mimick what one would do
+Obviously, it does not forbid the use of tacticals to mimic what one would do
 in Ltac. Each Ltac primitive has a corresponding ML counterpart with simple
 semantics. A list of such tacticals can be found in the `Tacticals` module. Most
 of them are a porting of the tacticals from the old engine to the new one, so

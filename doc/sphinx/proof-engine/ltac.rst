@@ -708,7 +708,7 @@ tactic
       for printing.
 
    By copying the definition of :tacn:`time_constr` from the standard library,
-   users can achive support for a fixed pattern of nesting by passing
+   users can achieve support for a fixed pattern of nesting by passing
    different :token:`string` parameters to :tacn:`restart_timer` and
    :tacn:`finish_timing` at each level of nesting.
 
@@ -1676,7 +1676,7 @@ It is possible to measure the time spent in invocations of primitive
 tactics as well as tactics defined in |Ltac| and their inner
 invocations. The primary use is the development of complex tactics,
 which can sometimes be so slow as to impede interactive usage. The
-reasons for the performence degradation can be intricate, like a slowly
+reasons for the performance degradation can be intricate, like a slowly
 performing |Ltac| match or a sub-tactic whose performance only
 degrades in certain situations. The profiler generates a call tree and
 indicates the time spent in a tactic depending on its calling context. Thus
