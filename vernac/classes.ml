@@ -318,6 +318,7 @@ let instance_hook k info global imps ?hook cst =
   (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
+  (* XXX: Duplication of the declare_constant path *)
   let kind = IsDefinition Instance in
   let sigma =
     let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
@@ -339,14 +340,9 @@ let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-  let sigma = Evd.minimize_universes sigma in
-  Pretyping.check_evars env (Evd.from_env env) sigma termtype;
-  let univs = Evd.check_univ_decl ~poly sigma decl in
-  let termtype = to_constr sigma termtype in
+  let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-      (ParameterEntry
-         (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-  in
+      (ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps (ConstRef cst)
 
