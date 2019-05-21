@@ -11,12 +11,11 @@
 open CErrors
 open Util
 
-let papp evdref r args =
+let papp sigma r args =
   let open EConstr in
   let gr = delayed_force r in
-  let evd, hd = Evarutil.new_global !evdref gr in
-  evdref := evd;
-  mkApp (hd, args)
+  let evd, hd = Evarutil.new_global sigma gr in
+  sigma, mkApp (hd, args)
 
 let sig_typ   () = Coqlib.lib_ref "core.sig.type"
 let sig_intro () = Coqlib.lib_ref "core.sig.intro"

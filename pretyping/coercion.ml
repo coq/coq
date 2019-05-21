@@ -93,19 +93,23 @@ let inh_pattern_coerce_to ?loc env pat ind1 ind2 =
 
 open Program
 
-let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env evdref c =
+let make_existential ?loc ?(opaque = not (get_proofs_transparency ())) na env sigma c =
   let src = Loc.tag ?loc (Evar_kinds.QuestionMark {
       Evar_kinds.default_question_mark with
       Evar_kinds.qm_obligation=Evar_kinds.Define opaque;
       Evar_kinds.qm_name=na;
   }) in
-  let evd, v = Evarutil.new_evar env !evdref ~src c in
-  let evd = Evd.set_obligation_evar evd (fst (destEvar evd v)) in
-  evdref := evd;
-  v
+  let sigma, v = Evarutil.new_evar env sigma ~src c in
+  let sigma = Evd.set_obligation_evar sigma (fst (destEvar sigma v)) in
+  sigma, v
 
-let app_opt env evdref f t =
-  whd_betaiota !evdref (app_opt f t)
+let app_opt env sigma f t =
+  let sigma, t =
+  match f with
+  | None -> sigma, t
+  | Some f -> f sigma t
+  in
+  sigma, whd_betaiota sigma t
 
 let pair_of_array a = (a.(0), a.(1))
 
@@ -126,8 +130,8 @@ let disc_subset sigma x =
 
 exception NoSubtacCoercion
 
-let hnf env evd c = whd_all env evd c
-let hnf_nodelta env evd c = whd_betaiota evd c
+let hnf env sigma c = whd_all env sigma c
+let hnf_nodelta env sigma c = whd_betaiota sigma c
 
 let lift_args n sign =
   let rec liftrec k = function
@@ -136,222 +140,219 @@ let lift_args n sign =
   in
     liftrec (List.length sign) sign
 
-let coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
-    : (EConstr.constr -> EConstr.constr) option
-    =
+let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
+  : evar_map * (evar_map -> EConstr.constr -> evar_map * EConstr.constr) option
+  =
   let open Context.Rel.Declaration in
-  let rec coerce_unify env x y =
-    let x = hnf env !evdref x and y = hnf env !evdref y in
-      try
-        evdref := Evarconv.unify_leq_delay env !evdref x y;
-        None
-      with UnableToUnify _ -> coerce' env x y
-  and coerce' env x y : (EConstr.constr -> EConstr.constr) option =
-    let subco () = subset_coerce env evdref x y in
+  let rec coerce_unify env sigma x y =
+    let x = hnf env sigma x and y = hnf env sigma y in
+    try
+      (Evarconv.unify_leq_delay env sigma x y, None)
+    with UnableToUnify _ -> coerce' env sigma x y
+  and coerce' env sigma x y : evar_map * (evar_map -> EConstr.constr -> evar_map * EConstr.constr) option =
+    let subco sigma = subset_coerce env sigma x y in
     let dest_prod c =
-      match Reductionops.splay_prod_n env (!evdref) 1 c with
+      match Reductionops.splay_prod_n env sigma 1 c with
       | [LocalAssum (na,t) | LocalDef (na,_,t)], c -> (na, t), c
       | _ -> raise NoSubtacCoercion
     in
-    let coerce_application typ typ' c c' l l' =
+    let coerce_application sigma typ typ' c c' l l' =
       let len = Array.length l in
-      let rec aux tele typ typ' i co =
+      let rec aux sigma tele typ typ' i co =
         if i < len then
           let hdx = l.(i) and hdy = l'.(i) in
-            try evdref := unify_leq_delay env !evdref hdx hdy;
-              let (n, eqT), restT = dest_prod typ in
-              let (n', eqT'), restT' = dest_prod typ' in
-                aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
-            with UnableToUnify _ ->
-              let (n, eqT), restT = dest_prod typ in
-              let (n', eqT'), restT' = dest_prod typ' in
-              let () =
-                try evdref := unify_leq_delay env !evdref eqT eqT'
-                with UnableToUnify _ -> raise NoSubtacCoercion
-              in
-                (* Disallow equalities on arities *)
-                if Reductionops.is_arity env !evdref eqT then raise NoSubtacCoercion;
-                let restargs = lift_args 1
-                  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
-                in
-                let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
-                let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
-                let eq = papp evdref coq_eq_ind [| eqT; hdx; hdy |] in
-                let evar = make_existential ?loc n.binder_name env evdref eq in
-                let eq_app x = papp evdref coq_eq_rect
-                  [| eqT; hdx; pred; x; hdy; evar|]
-                in
-                  aux (hdy :: tele) (subst1 hdx restT)
-                    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
-        else Some (fun x ->
-          let term = co x in
-          let sigma, term = Typing.solve_evars env !evdref term in
-          evdref := sigma; term)
+          try
+            let sigma = unify_leq_delay env sigma hdx hdy in
+            let (n, eqT), restT = dest_prod typ in
+            let (n', eqT'), restT' = dest_prod typ' in
+            aux sigma (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
+          with UnableToUnify _ ->
+            let (n, eqT), restT = dest_prod typ in
+            let (n', eqT'), restT' = dest_prod typ' in
+            let sigma =
+              try
+                unify_leq_delay env sigma eqT eqT'
+              with UnableToUnify _ -> raise NoSubtacCoercion
+            in
+            (* Disallow equalities on arities *)
+            if Reductionops.is_arity env sigma eqT then raise NoSubtacCoercion;
+            let restargs = lift_args 1
+                (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
+            in
+            let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
+            let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
+            let sigma, eq = papp sigma coq_eq_ind [| eqT; hdx; hdy |] in
+            let sigma, evar = make_existential ?loc n.binder_name env sigma eq in
+            let eq_app sigma x = papp sigma coq_eq_rect
+                [| eqT; hdx; pred; x; hdy; evar|]
+            in
+            aux sigma (hdy :: tele) (subst1 hdx restT)
+              (subst1 hdy restT') (succ i)  (fun sigma x -> let sigma, x = co sigma x in eq_app sigma x)
+        else
+          sigma, Some (fun sigma x ->
+              let sigma, term = co sigma x in
+              let sigma, term = Typing.solve_evars env sigma term in
+              sigma, term)
       in
-        if isEvar !evdref c || isEvar !evdref c' || not (Program.is_program_generalized_coercion ()) then
-          (* Second-order unification needed. *)
-          raise NoSubtacCoercion;
-        aux [] typ typ' 0 (fun x -> x)
+      if isEvar sigma c || isEvar sigma c' || not (Program.is_program_generalized_coercion ()) then
+        (* Second-order unification needed. *)
+        raise NoSubtacCoercion;
+      aux sigma [] typ typ' 0 (fun sigma x -> sigma, x)
     in
-      match (EConstr.kind !evdref x, EConstr.kind !evdref y) with
-      | Sort s, Sort s' ->
-        (match ESorts.kind !evdref s, ESorts.kind !evdref s' with
-        | Prop, Prop | Set, Set -> None
-        | (Prop | Set), Type _ -> None
-        | Type x, Type y when Univ.Universe.equal x y -> None (* false *)
-        | _ -> subco ())
-      | Prod (name, a, b), Prod (name', a', b') ->
-          let name' =
-            {name' with
-             binder_name =
-               Name (Namegen.next_ident_away
-                       Namegen.default_dependent_ident (Termops.vars_of_env env))}
-          in
-          let env' = push_rel (LocalAssum (name', a')) env in
-          let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
-            (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
-          let coec1 = app_opt env' evdref c1 (mkRel 1) in
-            (* env, x : a' |- c1[x] : lift 1 a *)
-          let c2 = coerce_unify env' (subst1 coec1 (liftn 1 2 b)) b' in
-            (* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
-            (match c1, c2 with
-             | None, None -> None
-             | _, _ ->
-                 Some
-                   (fun f ->
-                      mkLambda (name', a',
-                                app_opt env' evdref c2
-                                  (mkApp (lift 1 f, [| coec1 |])))))
+    match (EConstr.kind sigma x, EConstr.kind sigma y) with
+    | Sort s, Sort s' ->
+      (match ESorts.kind sigma s, ESorts.kind sigma s' with
+       | Prop, Prop | Set, Set -> sigma, None
+       | (Prop | Set), Type _ -> sigma, None
+       | Type x, Type y when Univ.Universe.equal x y -> sigma, None (* false *)
+       | _ -> subco sigma)
+    | Prod (name, a, b), Prod (name', a', b') ->
+      let name' =
+        {name' with
+         binder_name =
+           Name (Namegen.next_ident_away
+                   Namegen.default_dependent_ident (Termops.vars_of_env env))}
+      in
+      let env' = push_rel (LocalAssum (name', a')) env in
+      let sigma, c1 = coerce_unify env' sigma (lift 1 a') (lift 1 a) in
+      (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
+      let sigma, coec1 = app_opt env' sigma c1 (mkRel 1) in
+      (* env, x : a' |- c1[x] : lift 1 a *)
+      let sigma, c2 = coerce_unify env' sigma (subst1 coec1 (liftn 1 2 b)) b' in
+      (* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
+      (match c1, c2 with
+       | None, None -> sigma, None
+       | _, _ ->
+         sigma,
+         Some (fun sigma f ->
+             let sigma, t = app_opt env' sigma c2
+                 (mkApp (lift 1 f, [| coec1 |])) in
+             sigma, mkLambda (name', a', t)))
 
-      | App (c, l), App (c', l') ->
-          (match EConstr.kind !evdref c, EConstr.kind !evdref c' with
-           Ind (i, u), Ind (i', u') -> (* Inductive types *)
-             let len = Array.length l in
-             let sigT = delayed_force sigT_typ in
-             let prod = delayed_force prod_typ in
-               (* Sigma types *)
-               if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
-                 && (eq_ind i (destIndRef sigT) || eq_ind i (destIndRef prod))
-               then
-                 if eq_ind i (destIndRef sigT)
-                 then
-                   begin
-                     let (a, pb), (a', pb') =
-                       pair_of_array l, pair_of_array l'
-                     in
-                     let c1 = coerce_unify env a a' in
-                     let remove_head a c =
-                       match EConstr.kind !evdref c with
-                       | Lambda (n, t, t') -> c, t'
-                       | Evar (k, args) ->
-                           let (evs, t) = Evardefine.define_evar_as_lambda env !evdref (k,args) in
-                             evdref := evs;
-                             let (n, dom, rng) = destLambda !evdref t in
-                               if isEvar !evdref dom then
-                                 let (domk, args) = destEvar !evdref dom in
-                                   evdref := define domk a !evdref;
-                               else ();
-                               t, rng
-                       | _ -> raise NoSubtacCoercion
-                     in
-                     let (pb, b), (pb', b') = remove_head a pb, remove_head a' pb' in
-                     let ra = Retyping.relevance_of_type env !evdref a in
-                     let env' = push_rel
-                         (LocalAssum (make_annot (Name Namegen.default_dependent_ident) ra, a))
-                         env
-                     in
-                     let c2 = coerce_unify env' b b' in
-                       match c1, c2 with
-                       | None, None -> None
-                       | _, _ ->
-                           Some
-                             (fun x ->
-                                let x, y =
-                                  app_opt env' evdref c1 (papp evdref sigT_proj1
-                                                            [| a; pb; x |]),
-                                  app_opt env' evdref c2 (papp evdref sigT_proj2
-                                                          [| a; pb; x |])
-                                in
-                                  papp evdref sigT_intro [| a'; pb'; x ; y |])
-                   end
-                 else
-                   begin
-                     let (a, b), (a', b') =
-                       pair_of_array l, pair_of_array l'
-                     in
-                     let c1 = coerce_unify env a a' in
-                     let c2 = coerce_unify env b b' in
-                       match c1, c2 with
-                       | None, None -> None
-                       | _, _ ->
-                           Some
-                             (fun x ->
-                                let x, y =
-                                  app_opt env evdref c1 (papp evdref prod_proj1
-                                                           [| a; b; x |]),
-                                  app_opt env evdref c2 (papp evdref prod_proj2
-                                                           [| a; b; x |])
-                                in
-                                  papp evdref prod_intro [| a'; b'; x ; y |])
-                   end
-               else
-                 if eq_ind i i' && Int.equal len (Array.length l') then
-                   let evm = !evdref in
-                     (try subco ()
-                      with NoSubtacCoercion ->
-                        let typ = Typing.unsafe_type_of env evm c in
-                        let typ' = Typing.unsafe_type_of env evm c' in
-                          coerce_application typ typ' c c' l l')
-                 else
-                   subco ()
-           | x, y when EConstr.eq_constr !evdref c c' ->
-               if Int.equal (Array.length l) (Array.length l') then
-                 let evm =  !evdref in
-                 let lam_type = Typing.unsafe_type_of env evm c in
-                 let lam_type' = Typing.unsafe_type_of env evm c' in
-                   coerce_application lam_type lam_type' c c' l l'
-               else subco ()
-           | _ -> subco ())
-      | _, _ ->  subco ()
+    | App (c, l), App (c', l') ->
+      (match EConstr.kind sigma c, EConstr.kind sigma c' with
+         Ind (i, u), Ind (i', u') -> (* Inductive types *)
+         let len = Array.length l in
+         let sigT = delayed_force sigT_typ in
+         let prod = delayed_force prod_typ in
+         (* Sigma types *)
+         if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
+            && (eq_ind i (destIndRef sigT) || eq_ind i (destIndRef prod))
+         then
+           if eq_ind i (destIndRef sigT)
+           then
+             begin
+               let (a, pb), (a', pb') =
+                 pair_of_array l, pair_of_array l'
+               in
+               let sigma, c1 = coerce_unify env sigma a a' in
+               let remove_head sigma a c =
+                 match EConstr.kind sigma c with
+                 | Lambda (n, t, t') -> sigma, (c, t')
+                 | Evar (k, args) ->
+                   let (sigma, t) = Evardefine.define_evar_as_lambda env sigma (k,args) in
+                   let (n, dom, rng) = destLambda sigma t in
+                   let sigma =
+                     if isEvar sigma dom then
+                       let (domk, args) = destEvar sigma dom in
+                       define domk a sigma
+                     else sigma
+                   in
+                   sigma, (t, rng)
+                 | _ -> raise NoSubtacCoercion
+               in
+               let sigma, (pb, b) = remove_head sigma a pb in
+               let sigma, (pb', b') = remove_head sigma a' pb' in
+               let ra = Retyping.relevance_of_type env sigma a in
+               let env' = push_rel
+                   (LocalAssum (make_annot (Name Namegen.default_dependent_ident) ra, a))
+                   env
+               in
+               let sigma, c2 = coerce_unify env' sigma b b' in
+               match c1, c2 with
+               | None, None -> sigma, None
+               | _, _ ->
+                 sigma,
+                 Some (fun sigma x ->
+                     let sigma, t1 = papp sigma sigT_proj1 [| a; pb; x |] in
+                     let sigma, t2 = papp sigma sigT_proj2 [| a; pb; x |] in
+                     let sigma, x =  app_opt env' sigma c1 t1 in
+                     let sigma, y = app_opt env' sigma c2 t2 in
+                     papp sigma sigT_intro [| a'; pb'; x ; y |])
+             end
+           else
+             begin
+               let (a, b), (a', b') =
+                 pair_of_array l, pair_of_array l'
+               in
+               let sigma, c1 = coerce_unify env sigma a a' in
+               let sigma, c2 = coerce_unify env sigma b b' in
+               match c1, c2 with
+               | None, None -> sigma, None
+               | _, _ ->
+                 sigma,
+                 Some (fun sigma x ->
+                     let sigma, t1 = papp sigma prod_proj1 [| a; b; x |] in
+                     let sigma, t2 = papp sigma prod_proj2 [| a; b; x |] in
+                     let sigma, x = app_opt env sigma c1 t1 in
+                     let sigma, y = app_opt env sigma c2 t2 in
+                     papp sigma prod_intro [| a'; b'; x ; y |])
+             end
+         else
+         if eq_ind i i' && Int.equal len (Array.length l') then
+           (try subco sigma
+            with NoSubtacCoercion ->
+              let sigma, typ = Typing.type_of env sigma c in
+              let sigma, typ' = Typing.type_of env sigma c' in
+              coerce_application sigma typ typ' c c' l l')
+         else
+           subco sigma
+       | x, y when EConstr.eq_constr sigma c c' ->
+         if Int.equal (Array.length l) (Array.length l') then
+           let sigma, lam_type = Typing.type_of env sigma c in
+           let sigma, lam_type' = Typing.type_of env sigma c' in
+           coerce_application sigma lam_type lam_type' c c' l l'
+         else subco sigma
+       | _ -> subco sigma)
+    | _, _ ->  subco sigma
 
-  and subset_coerce env evdref x y =
-    match disc_subset !evdref x with
-    Some (u, p) ->
-      let c = coerce_unify env u y in
-      let f x =
-        app_opt env evdref c (papp evdref sig_proj1 [| u; p; x |])
-      in Some f
+  and subset_coerce env sigma x y =
+    match disc_subset sigma x with
+      Some (u, p) ->
+      let sigma, c = coerce_unify env sigma u y in
+      let f sigma x =
+        let sigma, t = papp sigma sig_proj1 [| u; p; x |] in
+        app_opt env sigma c t
+      in sigma, Some f
     | None ->
-        match disc_subset !evdref y with
+      match disc_subset sigma y with
         Some (u, p) ->
-          let c = coerce_unify env x u in
-            Some
-              (fun x ->
-                 let cx = app_opt env evdref c x in
-                 let evar = make_existential ?loc Anonymous env evdref (mkApp (p, [| cx |]))
-                 in
-                   (papp evdref sig_intro [| u; p; cx; evar |]))
-        | None ->
-            raise NoSubtacCoercion
-  in coerce_unify env x y
+        let sigma, c = coerce_unify env sigma x u in
+        sigma, Some
+          (fun sigma x ->
+             let sigma, cx = app_opt env sigma c x in
+             let sigma, evar = make_existential ?loc Anonymous env sigma (mkApp (p, [| cx |]))
+             in
+             (papp sigma sig_intro [| u; p; cx; evar |]))
+      | None ->
+        raise NoSubtacCoercion
+  in coerce_unify env sigma x y
 
-let app_coercion env evdref coercion v =
+let app_coercion env sigma coercion v =
   match coercion with
-  | None -> v
+  | None -> sigma, v
   | Some f ->
-    let sigma, v' = Typing.solve_evars env !evdref (f v) in
-    evdref := sigma;
-    whd_betaiota !evdref v'
+    let sigma, v' = f sigma v in
+    let sigma, v' = Typing.solve_evars env sigma v' in
+    sigma, whd_betaiota sigma v'
 
-let coerce_itf ?loc env evd v t c1 =
-  let evdref = ref evd in
-  let coercion = coerce ?loc env evdref t c1 in
-  let t = app_coercion env evdref coercion v in
-  !evdref, t
+let coerce_itf ?loc env sigma v t c1 =
+  let sigma, coercion = coerce ?loc env sigma t c1 in
+  app_coercion env sigma coercion v
 
-let saturate_evd env evd =
+let saturate_evd env sigma =
   Typeclasses.resolve_typeclasses
-    ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
+    ~filter:Typeclasses.no_goals ~split:true ~fail:false env sigma
 
 type coercion_trace =
   | IdCoe
@@ -389,7 +390,7 @@ let rec reapply_coercions sigma trace c = match trace with
 
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
-  let j,t,trace,evd =
+  let j,t,trace,sigma =
     List.fold_left
       (fun (ja,typ_cl,trace,sigma) i ->
          let isid = i.coe_is_identity in
@@ -416,129 +417,126 @@ let apply_coercion env sigma p hj typ_cl =
          in
          jres, jres.uj_type, trace, sigma)
       (hj,typ_cl,IdCoe,sigma) p
-  in evd, j, trace
+  in sigma, j, trace
 
-let mu env evdref t =
+let mu env sigma t =
   let rec aux v =
-    let v' = hnf env !evdref v in
-      match disc_subset !evdref v' with
+    let v' = hnf env sigma v in
+      match disc_subset sigma v' with
       | Some (u, p) ->
-        let f, ct, trace = aux u in
-        let p = hnf_nodelta env !evdref p in
+        let sigma, (f, ct, trace) = aux u in
+        let p = hnf_nodelta env sigma p in
         let p1 = delayed_force sig_proj1 in
-        let evd, p1 = Evarutil.new_global !evdref p1 in
-        evdref := evd;
-          (Some (fun x ->
-                   app_opt env evdref
+        let sigma, p1 = Evarutil.new_global sigma p1 in
+        sigma,
+          (Some (fun sigma x ->
+                   app_opt env sigma
                      f (mkApp (p1, [| u; p; x |]))),
            ct,
            Coe {head=p1; args=[u;p]; previous=trace})
-      | None -> (None, v, IdCoe)
+      | None -> sigma, (None, v, IdCoe)
   in aux t
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
-let inh_app_fun_core ~program_mode env evd j =
-  let t = whd_all env evd j.uj_type in
-    match EConstr.kind evd t with
-    | Prod _ -> (evd,j,IdCoe)
+let inh_app_fun_core ~program_mode env sigma j =
+  let t = whd_all env sigma j.uj_type in
+    match EConstr.kind sigma t with
+    | Prod _ -> (sigma,j,IdCoe)
     | Evar ev ->
-        let (evd',t) = Evardefine.define_evar_as_product env evd ev in
-          (evd',{ uj_val = j.uj_val; uj_type = t },IdCoe)
+        let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+          (sigma,{ uj_val = j.uj_val; uj_type = t },IdCoe)
     | _ ->
         try let t,p =
-          lookup_path_to_fun_from env evd j.uj_type in
-            apply_coercion env evd p j t
+          lookup_path_to_fun_from env sigma j.uj_type in
+            apply_coercion env sigma p j t
        with Not_found | NoCoercion ->
          if program_mode then
            try
-             let evdref = ref evd in
-             let coercef, t, trace = mu env evdref t in
-             let res = { uj_val = app_opt env evdref coercef j.uj_val; uj_type = t } in
-             (!evdref, res, trace)
+             let sigma, (coercef, t, trace) = mu env sigma t in
+             let sigma, uj_val = app_opt env sigma coercef j.uj_val in
+             let res = { uj_val ; uj_type = t } in
+             (sigma, res, trace)
            with NoSubtacCoercion | NoCoercion ->
-             (evd,j,IdCoe)
+             (sigma,j,IdCoe)
          else raise NoCoercion
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
-let inh_app_fun ~program_mode resolve_tc env evd j =
-  try inh_app_fun_core ~program_mode env evd j
+let inh_app_fun ~program_mode resolve_tc env sigma j =
+  try inh_app_fun_core ~program_mode env sigma j
   with
   | NoCoercion when not resolve_tc
-    || not (get_use_typeclasses_for_conversion ()) -> (evd, j, IdCoe)
+    || not (get_use_typeclasses_for_conversion ()) -> (sigma, j, IdCoe)
   | NoCoercion ->
-    try inh_app_fun_core ~program_mode env (saturate_evd env evd) j
-    with NoCoercion -> (evd, j, IdCoe)
+    try inh_app_fun_core ~program_mode env (saturate_evd env sigma) j
+    with NoCoercion -> (sigma, j, IdCoe)
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
     | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
     | _ -> error_not_a_type env sigma j
 
-let inh_tosort_force ?loc env evd j =
+let inh_tosort_force ?loc env sigma j =
   try
-    let t,p = lookup_path_to_sort_from env evd j.uj_type in
-    let evd,j1,_trace = apply_coercion env evd p j t in
-    let j2 = Environ.on_judgment_type (whd_evar evd) j1 in
-      (evd,type_judgment env evd j2)
+    let t,p = lookup_path_to_sort_from env sigma j.uj_type in
+    let sigma,j1,_trace = apply_coercion env sigma p j t in
+    let j2 = Environ.on_judgment_type (whd_evar sigma) j1 in
+      (sigma,type_judgment env sigma j2)
   with Not_found | NoCoercion ->
-    error_not_a_type ?loc env evd j
+    error_not_a_type ?loc env sigma j
 
-let inh_coerce_to_sort ?loc env evd j =
-  let typ = whd_all env evd j.uj_type in
-    match EConstr.kind evd typ with
-    | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = ESorts.kind evd s })
+let inh_coerce_to_sort ?loc env sigma j =
+  let typ = whd_all env sigma j.uj_type in
+    match EConstr.kind sigma typ with
+    | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = ESorts.kind sigma s })
     | Evar ev ->
-        let (evd',s) = Evardefine.define_evar_as_sort env evd ev in
-          (evd',{ utj_val = j.uj_val; utj_type = s })
+        let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
+          (sigma,{ utj_val = j.uj_val; utj_type = s })
     | _ ->
-        inh_tosort_force ?loc env evd j
+        inh_tosort_force ?loc env sigma j
 
-let inh_coerce_to_base ?loc ~program_mode env evd j =
+let inh_coerce_to_base ?loc ~program_mode env sigma j =
   if program_mode then
-    let evdref = ref evd in
-    let ct, typ', trace = mu env evdref j.uj_type in
-    let res =
-      { uj_val = (app_coercion env evdref ct j.uj_val);
-        uj_type = typ' }
-    in !evdref, res
-  else (evd, j)
+    let sigma, (ct, typ', _trace) = mu env sigma j.uj_type in
+    let sigma, uj_val = app_coercion env sigma ct j.uj_val in
+    let res = { uj_val; uj_type = typ' } in
+    sigma, res
+  else (sigma, j)
 
-let inh_coerce_to_prod ?loc ~program_mode env evd t =
+let inh_coerce_to_prod ?loc ~program_mode env sigma t =
   if program_mode then
-    let evdref = ref evd in
-    let _, typ', _trace = mu env evdref t in
-      !evdref, typ'
-  else (evd, t)
+    let sigma, (_, typ', _trace) = mu env sigma t in
+    sigma, typ'
+  else (sigma, t)
 
-let inh_coerce_to_fail flags env evd rigidonly v t c1 =
+let inh_coerce_to_fail flags env sigma rigidonly v t c1 =
   if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
   then
     raise NoCoercion
   else
-    let evd, v', t', trace =
+    let sigma, v', t', trace =
       try
-        let t2,t1,p = lookup_path_between env evd (t,c1) in
-        let evd,j,trace =
-          apply_coercion env evd p
+        let t2,t1,p = lookup_path_between env sigma (t,c1) in
+        let sigma,j,trace =
+          apply_coercion env sigma p
             {uj_val = v; uj_type = t} t2
         in
-        evd, j.uj_val, j.uj_type, trace
+        sigma, j.uj_val, j.uj_type, trace
       with Not_found -> raise NoCoercion
     in
-    try (unify_leq_delay ~flags env evd t' c1, v', trace)
+    try (unify_leq_delay ~flags env sigma t' c1, v', trace)
     with UnableToUnify _ -> raise NoCoercion
 
 let default_flags_of env =
   default_flags_of TransparentState.full
 
-let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigidonly v t c1 =
-  try (unify_leq_delay ~flags env evd t c1, v, IdCoe)
-  with UnableToUnify (best_failed_evd,e) ->
-    try inh_coerce_to_fail flags env evd rigidonly v t c1
+let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rigidonly v t c1 =
+  try (unify_leq_delay ~flags env sigma t c1, v, IdCoe)
+  with UnableToUnify (best_failed_sigma,e) ->
+    try inh_coerce_to_fail flags env sigma rigidonly v t c1
     with NoCoercion ->
       match
-      EConstr.kind evd (whd_all env evd t),
-      EConstr.kind evd (whd_all env evd c1)
+      EConstr.kind sigma (whd_all env sigma t),
+      EConstr.kind sigma (whd_all env sigma c1)
       with
       | Prod (name,t1,t2), Prod (_,u1,u2) ->
           (* Conversion did not work, we may succeed with a coercion. *)
@@ -552,45 +550,46 @@ let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigid
             | na -> na) name in
           let open Context.Rel.Declaration in
           let env1 = push_rel (LocalAssum (name,u1)) env in
-          let (evd', v1, trace1) =
-            inh_conv_coerce_to_fail ?loc env1 evd rigidonly
+          let (sigma, v1, trace1) =
+            inh_conv_coerce_to_fail ?loc env1 sigma rigidonly
               (mkRel 1) (lift 1 u1) (lift 1 t1) in
-          let v2 = beta_applist evd' (lift 1 v,[v1]) in
-          let t2 = Retyping.get_type_of env1 evd' v2 in
-          let (evd'',v2',trace2) = inh_conv_coerce_to_fail ?loc env1 evd' rigidonly v2 t2 u2 in
+          let v2 = beta_applist sigma (lift 1 v,[v1]) in
+          let t2 = Retyping.get_type_of env1 sigma v2 in
+          let (sigma,v2',trace2) = inh_conv_coerce_to_fail ?loc env1 sigma rigidonly v2 t2 u2 in
           let trace = ProdCoe { na=name; ty=u1; dom=trace1; body=trace2 } in
-          (evd'', mkLambda (name, u1, v2'), trace)
-      | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
+          (sigma, mkLambda (name, u1, v2'), trace)
+      | _ -> raise (NoCoercionNoUnifier (best_failed_sigma,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env evd cj t =
-  let (evd', val', otrace) =
+let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env sigma cj t =
+  let (sigma, val', otrace) =
     try
-      let (evd', val', trace) = inh_conv_coerce_to_fail ?loc env evd ~flags rigidonly cj.uj_val cj.uj_type t in
-      (evd', val', Some trace)
-    with NoCoercionNoUnifier (best_failed_evd,e) ->
+      let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
+      (sigma, val', Some trace)
+    with NoCoercionNoUnifier (best_failed_sigma,e) ->
       try
         if program_mode then
-          let (evd', val') = coerce_itf ?loc env evd cj.uj_val cj.uj_type t in
-          (evd', val', None)
+          let (sigma, val') = coerce_itf ?loc env sigma cj.uj_val cj.uj_type t in
+          (sigma, val', None)
         else raise NoSubtacCoercion
       with
       | NoSubtacCoercion when not resolve_tc || not (get_use_typeclasses_for_conversion ()) ->
-          error_actual_type ?loc env best_failed_evd cj t e
+          error_actual_type ?loc env best_failed_sigma cj t e
       | NoSubtacCoercion ->
-        let evd' = saturate_evd env evd in
+        let sigma' = saturate_evd env sigma in
           try
-            if evd' == evd then
-              error_actual_type ?loc env best_failed_evd cj t e
+            if sigma' == sigma then
+              error_actual_type ?loc env best_failed_sigma cj t e
             else
-              let (evd', val', trace) = inh_conv_coerce_to_fail ?loc env evd' rigidonly cj.uj_val cj.uj_type t in
-              (evd', val', Some trace)
-          with NoCoercionNoUnifier (_evd,_error) ->
-            error_actual_type ?loc env best_failed_evd cj t e
+              let sigma = sigma' in
+              let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma rigidonly cj.uj_val cj.uj_type t in
+              (sigma, val', Some trace)
+          with NoCoercionNoUnifier (_sigma,_error) ->
+            error_actual_type ?loc env best_failed_sigma cj t e
   in
-  (evd',{ uj_val = val'; uj_type = t },otrace)
+  (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false flags env evd
-let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc true flags env evd
+let inh_conv_coerce_to ?loc ~program_mode resolve_tc env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc true flags env sigma
