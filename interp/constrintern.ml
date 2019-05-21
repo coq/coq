@@ -372,6 +372,9 @@ let check_hidden_implicit_parameters ?loc id impls =
       strbrk "a parameter of the inductive type; bound variables in " ++
       strbrk "the type of a constructor shall use a different name.")
 
+let pure_push_name_env (id,implargs) env =
+  {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
+
 let push_name_env ?(global_level=false) ntnvars implargs env =
   let open CAst in
   function
@@ -386,7 +389,16 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
       set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
       if global_level then Dumpglob.dump_definition CAst.(make ?loc id) true "var"
       else Dumpglob.dump_binding ?loc id;
-      {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
+      pure_push_name_env (id,implargs) env
+
+let remember_binders_impargs env bl =
+  List.map_filter (fun (na,_,_,_) ->
+      match na with
+      | Anonymous -> None
+      | Name id -> Some (id,Id.Map.find id env.impls)) bl
+
+let restore_binders_impargs env l =
+  List.fold_right pure_push_name_env l env
 
 let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env {loc;v=na} b b' t ty =
@@ -1867,14 +1879,18 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                    rbefore) recarg in
                let (env',rbl) = List.fold_left intern_local_binder (env',rbefore) after in
                let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
-               (n, bl, intern_type env' ty, env')) dl in
-        let idl = Array.map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
-            let env'' = List.fold_left_i (fun i en name ->
-                let (_,bli,tyi,_) = idl_temp.(i) in
-                let fix_args = (List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli) in
-                push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
-                  en (CAst.make @@ Name name)) 0 env' lf in
-            (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
+               let bl_impls = remember_binders_impargs env' bl in
+               (n, bl, intern_type env' ty, bl_impls)) dl in
+        (* We add the recursive functions to the environment *)
+        let env_rec = List.fold_left_i (fun i en name ->
+           let (_,bli,tyi,_) = idl_temp.(i) in
+           let fix_args = (List.map (fun (na, bk, _, _) -> build_impls bk na) bli) in
+           push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
+           en (CAst.make @@ Name name)) 0 env lf in
+        let idl = Array.map2 (fun (_,_,_,_,bd) (n,bl,ty,before_impls) ->
+            (* We add the binders common to body and type to the environment *)
+            let env_body = restore_binders_impargs env_rec before_impls in
+            (n,bl,ty,intern {env_body with tmp_scope = None} bd)) dl idl_temp in
         DAst.make ?loc @@
         GRec (GFix
                 (Array.map (fun (ro,_,_,_) -> ro) idl,n),
@@ -1894,15 +1910,18 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl_tmp = Array.map
           (fun ({ CAst.loc; v = id },bl,ty,_) ->
             let (env',rbl) = List.fold_left intern_local_binder (env,[]) bl in
-            (List.rev (List.map glob_local_binder_of_extended rbl),
-             intern_type env' ty,env')) dl in
-	let idl = Array.map2 (fun (_,_,_,bd) (b,c,env') ->
-	     let env'' = List.fold_left_i (fun i en name ->
-					     let (bli,tyi,_) = idl_tmp.(i) in
-					     let cofix_args =  List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli in
-	       push_name_env ntnvars (impls_type_list ~args:cofix_args tyi)
-                                            en (CAst.make @@ Name name)) 0 env' lf in
-             (b,c,intern {env'' with tmp_scope = None} bd)) dl idl_tmp in
+            let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
+            let bl_impls = remember_binders_impargs env' bl in
+            (bl,intern_type env' ty,bl_impls)) dl in
+        let env_rec = List.fold_left_i (fun i en name ->
+          let (bli,tyi,_) = idl_tmp.(i) in
+          let cofix_args =  List.map (fun (na, bk, _, _) -> build_impls bk na) bli in
+          push_name_env ntnvars (impls_type_list ~args:cofix_args tyi)
+            en (CAst.make @@ Name name)) 0 env lf in
+        let idl = Array.map2 (fun (_,_,_,bd) (b,c,bl_impls) ->
+          (* We add the binders common to body and type to the environment *)
+          let env_body = restore_binders_impargs env_rec bl_impls in
+          (b,c,intern {env_body with tmp_scope = None} bd)) dl idl_tmp in
 	DAst.make ?loc @@
 	GRec (GCoFix n,
               Array.of_list lf,
