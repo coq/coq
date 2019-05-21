@@ -369,22 +369,19 @@ let understand_state = function
 let print_body_state state fmt r =
   let state = match r.vernac_state with Some _ as s -> s | None -> state in
   match state with
-  | None -> fprintf fmt "Vernacentries.VtDefault (fun () -> %a)" print_code r.vernac_body
+  | None -> fprintf fmt "Vernacextend.VtDefault (fun () -> %a)" print_code r.vernac_body
   | Some "CUSTOM" -> print_code fmt r.vernac_body
   | Some state ->
     let state, unit_wrap = understand_state state in
-    fprintf fmt "Vernacentries.%s (%s%a)" state (if unit_wrap then "fun () ->" else "")
+    fprintf fmt "Vernacextend.%s (%s%a)" state (if unit_wrap then "fun () ->" else "")
       print_code r.vernac_body
-
-let print_body_wrapper state fmt r =
-  fprintf fmt "Vernacentries.interp_functional_vernac (%a)" (print_body_state state) r
 
 let print_body_fun state fmt r =
   fprintf fmt "let coqpp_body %a%a = @[%a@] in "
-    print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_wrapper state) r
+    print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
 
 let print_body state fmt r =
-  fprintf fmt "@[(%afun %a~atts@ ~pstate@ -> coqpp_body %a%a ~pstate)@]"
+  fprintf fmt "@[(%afun %a~atts@ -> coqpp_body %a%a)@]"
     (print_body_fun state) r print_binders r.vernac_toks
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 
