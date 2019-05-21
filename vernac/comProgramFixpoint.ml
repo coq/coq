@@ -176,7 +176,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
         Constrintern.Recursive full_arity impls
     in
     let newimpls = Id.Map.singleton recname
-        (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
+        (r, l, impls @ [Some (ExplByName (Id.of_string "recproof"), Impargs.Manual, (true, false))],
          scopes @ [None]) in
     interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)

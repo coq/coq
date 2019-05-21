@@ -320,8 +320,8 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 (* Utilities for binders                                              *)
 let build_impls = function
   |Implicit -> (function
-		  |Name id ->  Some (id, Impargs.Manual, (true,true))
-		  |Anonymous -> Some (Id.of_string "_", Impargs.Manual, (true,true)))
+                  |Name id ->  Some (ExplByName id, Impargs.Manual, (true,true))
+                  |Anonymous -> Some (ExplByName (Id.of_string "_"), Impargs.Manual, (true,true)))
   |Explicit -> fun _ -> None
 
 let impls_type_list ?(args = []) =

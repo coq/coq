@@ -291,7 +291,7 @@ type force_inference = bool (* true = always infer, never turn into evar/subgoal
 
 type implicit_status =
     (* None = Not implicit *)
-    (Id.t * implicit_explanation * (maximal_insertion * force_inference)) option
+    (explicitation * implicit_explanation * (maximal_insertion * force_inference)) option
 
 type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
@@ -301,9 +301,12 @@ let is_status_implicit = function
   | None -> false
   | _ -> true
 
+let name_of_pos k = Id.of_string ("arg_" ^ string_of_int k)
+
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
-  | Some (id,_,_) -> id
+  | Some (ExplByName id,_,_) -> id
+  | Some (ExplByPos (k,_),_,_) -> name_of_pos k
 
 let maximal_insertion_of = function
   | Some (_,_,(b,_)) -> b
@@ -338,7 +341,7 @@ let rec prepare_implicits f = function
   | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
   | (Name id, Some imp)::imps ->
       let imps' = prepare_implicits f imps in
-      Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
+      Some (ExplByName id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
 (*
@@ -396,15 +399,14 @@ let set_manual_implicits flags enriching autoimps l =
        let imps' = merge (k+1) autoimps explimps in
        begin match autoimp, explimp with
        | (Name id,_), Some (_, (b, fi, _)) ->
-          Some (id, Manual, (set_maximality imps' b, fi))
+          Some (ExplByName id, Manual, (set_maximality imps' b, fi))
        | (Name id,Some exp), None when enriching ->
-          Some (id, exp, (set_maximality imps' flags.maximal, true))
+          Some (ExplByName id, exp, (set_maximality imps' flags.maximal, true))
        | (Name _,_), None -> None
        | (Anonymous,_), Some (Some id, (b, fi, true)) ->
-          Some (id,Manual,(b,fi))
+          Some (ExplByName id,Manual,(b,fi))
        | (Anonymous,_), Some (None, (b, fi, true)) ->
-          let id = Id.of_string ("arg_" ^ string_of_int k) in
-          Some (id,Manual,(b,fi))
+          Some (ExplByPos (k,None),Manual,(b,fi))
        | (Anonymous,_), Some (_, (_, _, false)) -> None
        | (Anonymous,_), None -> None
        end :: imps'
@@ -513,7 +515,7 @@ let implicits_of_global ref =
         | [], _ -> []
         | _, [] -> implicits
         | Some (_, x,y) :: implicits, Name id :: names ->
-           Some (id, x,y) :: rename implicits names
+           Some (ExplByName id, x,y) :: rename implicits names
         | imp :: implicits, _ :: names -> imp :: rename implicits names
       in
       List.map (fun (t, il) -> t, rename il rename_l) l
@@ -536,7 +538,7 @@ let subst_implicits (subst,(req,l)) =
 
 let impls_of_context ctx =
   let map (decl, impl) = match impl with
-  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
+  | Implicit -> Some (ExplByName (NamedDecl.get_id decl), Manual, (true, true))
   | _ -> None
   in
   List.rev_map map (List.filter (fst %> NamedDecl.is_local_assum) ctx)
@@ -701,12 +703,12 @@ let compute_implicit_statuses autoimps l =
   let rec aux i = function
     | _ :: autoimps, NotImplicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
     | Name id :: autoimps, MaximallyImplicit :: manualimps ->
-       Some (id, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
+       Some (ExplByName id, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
     | Name id :: autoimps, Implicit :: manualimps ->
        let imps' = aux (i+1) (autoimps, manualimps) in
        let max = set_maximality imps' false in
        if max then warn_set_maximal_deprecated i;
-       Some (id, Manual, (max, true)) :: imps'
+       Some (ExplByName id, Manual, (max, true)) :: imps'
     | Anonymous :: _, (Implicit | MaximallyImplicit) :: _ ->
        user_err ~hdr:"set_implicits"
          (strbrk ("Argument number " ^ string_of_int i ^ " (anonymous in original definition) cannot be declared implicit."))
