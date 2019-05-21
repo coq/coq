@@ -358,7 +358,7 @@ let print_atts_right fmt = function
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
 
 let understand_state = function
-  | "proof_stack" -> "VtModifyProofStack", false
+  | "close_proof" -> "VtCloseProof", false
   | "maybe_open_proof" -> "VtMaybeOpenProof", true
   | "open_proof" -> "VtOpenProof", true
   | "proof" -> "VtModifyProof", false
