@@ -56,7 +56,7 @@ val test_mode : bool ref
 
 type functional_vernac =
   | VtDefault of (unit -> unit)
-  | VtModifyProofStack of (pstate:Proof_global.stack option -> Proof_global.stack option)
+  | VtCloseProof of (pstate:Proof_global.t -> unit)
   | VtMaybeOpenProof of (unit -> Proof_global.t option)
   | VtOpenProof of (unit -> Proof_global.t)
   | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)

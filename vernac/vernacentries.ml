@@ -2714,7 +2714,7 @@ let interp ?(verbosely=true) ?proof ~st cmd =
 
 type functional_vernac =
   | VtDefault of (unit -> unit)
-  | VtModifyProofStack of (pstate:Proof_global.stack option -> Proof_global.stack option)
+  | VtCloseProof of (pstate:Proof_global.t -> unit)
   | VtMaybeOpenProof of (unit -> Proof_global.t option)
   | VtOpenProof of (unit -> Proof_global.t)
   | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
@@ -2725,7 +2725,10 @@ let interp_functional_vernac c ~pstate =
   let open Proof_global in
   match c with
   | VtDefault f -> f (); pstate
-  | VtModifyProofStack f -> f ~pstate
+  | VtCloseProof f ->
+    vernac_require_open_proof ~pstate (fun ~pstate ->
+        f ~pstate:(Proof_global.get_current_pstate pstate);
+        Proof_global.discard_current pstate)
   | VtMaybeOpenProof f ->
     let proof = f () in
     let pstate = maybe_push ~ontop:pstate proof in
