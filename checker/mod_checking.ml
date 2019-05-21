@@ -29,10 +29,16 @@ let check_constant_declaration env kn cb =
   in
   let ty = cb.const_type in
   let _ = infer_type env' ty in
+  let otab = Environ.opaque_tables env in
+  let body = match cb.const_body with
+  | Undef _ | Primitive _ -> None
+  | Def c -> Some (Mod_subst.force_constr c)
+  | OpaqueDef o -> Some (Opaqueproof.force_proof otab o)
+  in
   let () =
-    match Environ.body_of_constant_body env cb with
+    match body with
     | Some bd ->
-      let j = infer env' (fst bd) in
+      let j = infer env' bd in
       (try conv_leq env' j.uj_type ty
        with NotConvertible -> Type_errors.error_actual_type env j ty)
     | None -> ()
