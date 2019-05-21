@@ -16,8 +16,7 @@ open Decl_kinds
 (** {6 Parameters/Assumptions} *)
 
 val do_assumptions
-  :  pstate:Proof_global.t option
-  -> program_mode:bool
+  : program_mode:bool
   -> locality * polymorphic * assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
@@ -26,8 +25,7 @@ val do_assumptions
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
 val declare_assumption
-  :  pstate:Proof_global.t option
-  -> coercion_flag
+  : coercion_flag
   -> assumption_kind
   -> Constr.types Entries.in_universes_entry
   -> UnivNames.universe_binders
@@ -42,8 +40,7 @@ val declare_assumption
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
 val context
-  :  pstate:Proof_global.t option
-  -> Decl_kinds.polymorphic
+  : Decl_kinds.polymorphic
   -> local_binder_expr list
   -> bool
 

@@ -454,7 +454,7 @@ let obligation_substitution expand prg =
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
-let declare_definition ~ontop prg =
+let declare_definition prg =
   let varsubst = obligation_substitution true prg in
   let body, typ = subst_prog varsubst prg in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst (fun x -> None)
@@ -473,7 +473,7 @@ let declare_definition ~ontop prg =
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition ~ontop prg.prg_name
+  DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
@@ -552,7 +552,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~ontop:None ~opaque (local, poly, kind) UnivNames.empty_binders univs)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
@@ -759,7 +759,7 @@ let update_obls prg obls rem =
     else (
       match prg'.prg_deps with
       | [] ->
-          let kn = declare_definition ~ontop:None prg' in
+          let kn = declare_definition prg' in
 	    progmap_remove prg';
 	    Defined kn
       | l ->
@@ -1110,7 +1110,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
-    let cst = declare_definition ~ontop:None prg in
+    let cst = declare_definition prg in
       Defined cst)
   else (
     let len = Array.length obls in
