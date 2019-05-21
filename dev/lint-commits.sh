@@ -34,6 +34,6 @@ if [ "${#bad[@]}" != 0 ]
 then
     >&2 echo "Whitespace errors!"
     >&2 echo "In commits ${bad[*]}"
-    >&2 echo "If you use emacs, you can prevent this kind of error from reocurring by installing ws-butler and enabling ws-butler-convert-leading-tabs-or-spaces."
+    >&2 echo "If you use emacs, you can prevent this kind of error from reoccurring by installing ws-butler and enabling ws-butler-convert-leading-tabs-or-spaces."
     exit 1
 fi

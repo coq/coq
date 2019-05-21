@@ -877,7 +877,7 @@ let compare_constructor_instances evd u u' =
     [u] up to existential variable instantiation and equalisable
     universes. The term [t] is interpreted in [sigma1] while [u] is
     interpreted in [sigma2]. The universe constraints in [sigma2] are
-    assumed to be an extention of those in [sigma1]. *)
+    assumed to be an extension of those in [sigma1]. *)
 let eq_constr_univs_test sigma1 sigma2 t u =
   (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
   let open Evd in

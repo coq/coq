@@ -441,7 +441,7 @@ First class setoids and morphisms
 The implementation is based on a first-class representation of
 properties of relations and morphisms as typeclasses. That is, the
 various combinations of properties on relations and morphisms are
-represented as records and instances of theses classes are put in a
+represented as records and instances of these classes are put in a
 hint database. For example, the declaration:
 
 .. coqdoc::

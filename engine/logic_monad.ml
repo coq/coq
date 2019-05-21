@@ -151,7 +151,7 @@ struct
   (** Double-continuation backtracking monads are reasonable folklore
       for "search" implementations (including the Tac interactive
       prover's tactics). Yet it's quite hard to wrap your head around
-      these.  I recommand reading a few times the "Backtracking,
+      these.  I recommend reading a few times the "Backtracking,
       Interleaving, and Terminating Monad Transformers" paper by
       O. Kiselyov, C. Shan, D. Friedman, and A. Sabry.  The peculiar
       shape of the monadic type is reminiscent of that of the

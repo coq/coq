@@ -6,7 +6,7 @@
 
 ;SetCompress off
 SetCompressor lzma
-; Comment out after debuging.
+; Comment out after debugging.
 
 ; The VERSION should be passed as an argument at compile time using :
 ;

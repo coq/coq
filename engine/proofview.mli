@@ -24,7 +24,7 @@ type proofview
     ide-s. *)
 (* spiwack: the type of [proofview] will change as we push more
    refined functions to ide-s. This would be better than spawning a
-   new nearly identical function everytime. Hence the generic name. *)
+   new nearly identical function every time. Hence the generic name. *)
 (* In this version: returns the list of focused goals together with
    the [evar_map] context. *)
 val proofview : proofview -> Evar.t list * Evd.evar_map
@@ -95,7 +95,7 @@ type focus_context
     instance, ide-s. *)
 (* spiwack: the type of [focus_context] will change as we push more
    refined functions to ide-s. This would be better than spawning a
-   new nearly identical function everytime. Hence the generic name. *)
+   new nearly identical function every time. Hence the generic name. *)
 (* In this version: the goals in the context, as a "zipper" (the first
    list is in reversed order). *)
 val focus_context : focus_context -> Evar.t list * Evar.t list

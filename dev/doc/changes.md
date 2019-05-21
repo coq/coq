@@ -1271,7 +1271,7 @@ next_global_ident_away true -> next_ident_away_in_goal
 next_global_ident_away false -> next_global_ident_away
 ```
 
-### Cleaning in commmand.ml
+### Cleaning in command.ml
 
 Functions about starting/ending a lemma are in lemmas.ml
 Functions about inductive schemes are in indschemes.ml
@@ -1586,7 +1586,7 @@ Other kinds of objects:
 
 #### Writing subst_thing functions
 
-The subst_thing shoud not copy the thing if it hasn't actually
+The subst_thing should not copy the thing if it hasn't actually
 changed. There are some cool emacs macros in dev/objects.el 
 to help writing subst functions this way quickly and without errors.
 Also there are *_smartmap functions in Util.

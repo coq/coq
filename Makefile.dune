@@ -5,7 +5,7 @@
 .PHONY: coq coqide coqide-server                      # Package targets
 .PHONY: quickbyte quickopt quickide                   # Partial / quick developer targets
 .PHONY: refman-html stdlib-html apidoc                # Documentation targets
-.PHONY: test-suite release                            # Accesory targets
+.PHONY: test-suite release                            # Accessory targets
 .PHONY: ocheck trunk ireport clean                    # Maintenance targets
 
 # use DUNEOPT=--display=short for a more verbose build

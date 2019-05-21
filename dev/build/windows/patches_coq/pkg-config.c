@@ -1,5 +1,5 @@
 // MinGW personality wrapper for pkgconf
-// This is an excutable replacement for the shell scripts /bin/ARCH-pkg-config
+// This is an executable replacement for the shell scripts /bin/ARCH-pkg-config
 // Compile with e.g.
 // gcc pkg-config.c -DARCH=x86_64-w64-mingw32 -o pkg-config.exe
 // gcc pkg-config.c -DARCH=i686-w64-mingw32 -o pkg-config.exe

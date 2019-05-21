@@ -451,7 +451,7 @@ let coq_profile_flag = if !prefs.profile then "-p" else ""
 let coq_annot_flag = if !prefs.annot then "-annot" else ""
 let coq_bin_annot_flag = if !prefs.bin_annot then "-bin-annot" else ""
 
-(* This variable can be overriden only for debug purposes, use with
+(* This variable can be overridden only for debug purposes, use with
    care. *)
 let coq_safe_string = "-safe-string"
 let coq_strict_sequence = "-strict-sequence"
