@@ -46,7 +46,7 @@ val save_library_to :
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
 val load_library_todo :
-  string -> string * seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+  string -> seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
 val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 
 (** {6 Interrogate the status of libraries } *)

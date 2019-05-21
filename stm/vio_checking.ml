@@ -10,11 +10,11 @@
 
 open Util
 
-let check_vio (ts,f) =
+let check_vio (ts,f_in) =
   Dumpglob.noglob ();
-  let long_f_dot_v, _, _, _, _, tasks, _ = Library.load_library_todo f in
-  Stm.set_compilation_hints long_f_dot_v;
-  List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
+  let _, _, _, _, tasks, _ = Library.load_library_todo f_in in
+  Stm.set_compilation_hints f_in;
+  List.fold_left (fun acc ids -> Stm.check_task f_in tasks ids && acc) true ts
 
 module Worker = Spawn.Sync ()
 
@@ -28,15 +28,12 @@ module Pool = Map.Make(IntOT)
 let schedule_vio_checking j fs =
   if j < 1 then CErrors.user_err Pp.(str "The number of workers must be bigger than 0");
   let jobs = ref [] in
-  List.iter (fun f ->
-    let f =
-      if Filename.check_suffix f ".vio" then Filename.chop_extension f
-      else f in
-    let long_f_dot_v, _,_,_,_, tasks, _ = Library.load_library_todo f in
-    Stm.set_compilation_hints long_f_dot_v;
+  List.iter (fun long_f_dot_vio ->
+    let _,_,_,_, tasks, _ = Library.load_library_todo long_f_dot_vio in
+    Stm.set_compilation_hints long_f_dot_vio;
     let infos = Stm.info_tasks tasks in
     let eta = List.fold_left (fun a (_,t,_) -> a +. t) 0.0 infos in
-    if infos <> [] then jobs := (f, eta, infos) :: !jobs)
+    if infos <> [] then jobs := (long_f_dot_vio, eta, infos) :: !jobs)
   fs;
   let cmp_job (_,t1,_) (_,t2,_) = compare t2 t1 in
   jobs := List.sort cmp_job !jobs;
@@ -103,16 +100,12 @@ let schedule_vio_checking j fs =
 let schedule_vio_compilation j fs =
   if j < 1 then CErrors.user_err Pp.(str "The number of workers must be bigger than 0");
   let jobs = ref [] in
-  List.iter (fun f ->
-    let f =
-      if Filename.check_suffix f ".vio" then Filename.chop_extension f
-      else f in
-    let long_f_dot_v = Loadpath.locate_file (f^".v") in
-    let aux = Aux_file.load_aux_file_for long_f_dot_v in
+  List.iter (fun long_f_dot_vio ->
+    let aux = Aux_file.load_aux_file_for long_f_dot_vio in
     let eta =
       try float_of_string (Aux_file.get aux "vo_compile_time")
       with Not_found -> 0.0 in
-    jobs := (f, eta) :: !jobs)
+    jobs := (long_f_dot_vio, eta) :: !jobs)
   fs;
   let cmp_job (_,t1) (_,t2) = compare t2 t1 in
   jobs := List.sort cmp_job !jobs;
@@ -146,7 +139,7 @@ let schedule_vio_compilation j fs =
     (* set the access and last modification time of all files to the same t
      * not to confuse make into thinking that some of them are outdated *)
     let t = Unix.gettimeofday () in
-    List.iter (fun (f,_) -> Unix.utimes (f^".vo") t t) all_jobs;
+    List.iter (fun (f,_) -> Unix.utimes (Filename.chop_extension f^".vo") t t) all_jobs;
   end;
   exit !rc
 

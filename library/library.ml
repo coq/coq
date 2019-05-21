@@ -612,8 +612,6 @@ let import_module export modl =
 (*s Initializing the compilation of a library. *)
 
 let load_library_todo f =
-  let longf = Loadpath.locate_file (f^".v") in
-  let f = longf^"io" in
   let ch = raw_intern_library f in
   let (s0 : seg_sum), _, _ = System.marshal_in_segment f ch in
   let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
@@ -626,7 +624,7 @@ let load_library_todo f =
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s3 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if pi3 (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
-  longf, s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
+  s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
@@ -727,14 +725,13 @@ let save_library_to ?todo ~output_native_objects dir f otab =
     iraise reraise
 
 let save_library_raw f sum lib univs proofs =
-  let f' = f^"o" in
-  let ch = raw_extern_library f' in
-  System.marshal_out_segment f' ch (sum        : seg_sum);
-  System.marshal_out_segment f' ch (lib        : seg_lib);
-  System.marshal_out_segment f' ch (Some univs : seg_univ option);
-  System.marshal_out_segment f' ch (None       : seg_discharge option);
-  System.marshal_out_segment f' ch (None       : 'tasks option);
-  System.marshal_out_segment f' ch (proofs     : seg_proofs);
+  let ch = raw_extern_library f in
+  System.marshal_out_segment f ch (sum        : seg_sum);
+  System.marshal_out_segment f ch (lib        : seg_lib);
+  System.marshal_out_segment f ch (Some univs : seg_univ option);
+  System.marshal_out_segment f ch (None       : seg_discharge option);
+  System.marshal_out_segment f ch (None       : 'tasks option);
+  System.marshal_out_segment f ch (proofs     : seg_proofs);
   close_out ch
 
 module StringOrd = struct type t = string let compare = String.compare end

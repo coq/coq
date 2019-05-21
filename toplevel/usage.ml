@@ -42,12 +42,12 @@ let print_usage_common co command =
 \n\
 \n  -load-ml-object f      load ML object file f\
 \n  -load-ml-source f      load ML file f\
-\n  -load-vernac-source f  load Coq file f.v (Load f.)\
+\n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
-\n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)\
-\n  -lv f	                 (idem)\
-\n  -load-vernac-object f  load Coq object file f.vo\
 \n  -require path          load Coq library path and import it (Require Import path.)\
+\n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\
+\n  -lv f	           (idem)\
+\n  -load-vernac-object path  load Coq library path (Require path)\
 \n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
@@ -74,9 +74,9 @@ let print_usage_common co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -mangle-names x        mangle auto-generated names using prefix x\
-\n  -set \"Foo Bar\"       enable Foo Bar (as Set Foo Bar. in a file)\
-\n  -set \"Foo Bar=value\" set Foo Bar to value (value is interpreted according to Foo Bar's type)\
-\n  -unset \"Foo Bar\"     disable Foo Bar (as Unset Foo Bar. in a file)\
+\n  -set \"Foo Bar\"         enable Foo Bar (as Set Foo Bar. in a file)\
+\n  -set \"Foo Bar=value\"   set Foo Bar to value (value is interpreted according to Foo Bar's type)\
+\n  -unset \"Foo Bar\"       disable Foo Bar (as Unset Foo Bar. in a file)\
 \n  -time                  display the time taken by each command\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
@@ -113,7 +113,7 @@ coqtop specific options:\
   exit 1
 
 let print_usage_coqc () =
-  print_usage_common stderr "Usage: coqc <options> <Coq options> file...";
+  print_usage_common stderr "Usage: coqc <options> <Coq options> file...\n\n";
   output_string stderr "\n\
 coqc specific options:\
 \n\
