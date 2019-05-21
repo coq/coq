@@ -87,6 +87,10 @@ val intern_gen : typing_constraint -> env -> evar_map ->
   ?impls:internalization_env -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> glob_constr
 
+val intern_gen_with_implicits : typing_constraint -> env -> evar_map ->
+  ?impls:internalization_env -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
+  constr_expr -> glob_constr * Impargs.manual_implicits
+
 val intern_pattern : env -> cases_pattern_expr ->
   lident list * (Id.t Id.Map.t * cases_pattern) list
 

@@ -143,3 +143,13 @@ Check let f := fun {x:nat} y => y=true in f false.
 (* Isn't the name "arg_0" a bit fragile, here? *)
 
 Check fun f : forall {_:nat}, nat => f (arg_0:=0).
+
+(* Check consistency of manual implicit arguments between term and type *)
+
+Fail Definition g := fix f (a:nat) : forall (b:nat), b=0 -> Type := fun {c} e =>
+  match a with
+  | 0 => True
+  | S n => f n eq_refl
+  end.
+
+Fail Check let f : forall (b:nat), b=0 -> Type := fun {c} e => c = c in f eq_refl.

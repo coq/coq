@@ -795,6 +795,7 @@ Section ex.
     destruct q; simpl in *.
     destruct p; reflexivity.
   Qed.
+About eq_ex_uncurried.
 
   Definition eq_ex {A : Type} {P : A -> Prop} (u1 v1 : A) (u2 : P u1) (v2 : P v1)
              (p : u1 = v1) (q : rew p in u2 = v2)

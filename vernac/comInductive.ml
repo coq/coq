@@ -141,8 +141,7 @@ let make_conclusion_flexible sigma = function
      | _ -> sigma)
 
 let interp_ind_arity env sigma ind =
-  let c = intern_gen IsType env sigma ind.ind_arity in
-  let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
+  let c,impls = intern_gen_with_implicits IsType env sigma ind.ind_arity in
   let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   let pseudo_poly = check_anonymous_type c in
   match Reductionops.sort_of_arity env sigma t with

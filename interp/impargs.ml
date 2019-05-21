@@ -758,6 +758,11 @@ let lift_implicits n =
 	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
       | _ -> x)
 
+let lift_implicits2 n =
+  List.map (CAst.map (function
+      | Some (ExplByPos (k, id), m, c) -> Some (ExplByPos (k + n, id), m, c)
+      | x -> x))
+
 let make_implicits_list l = [DefaultImpArgs, l]
 
 let rec drop_first_implicits p l =

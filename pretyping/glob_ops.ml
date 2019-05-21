@@ -156,6 +156,14 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
 
+(** Mapping [fold_cast_type] *)
+
+let map_fold_cast_type f = function
+  | CastConv a -> let (e,a) = f a in (Some e, CastConv a)
+  | CastVM a -> let (e,a) = f a in (Some e, CastVM a)
+  | CastCoerce -> (None, CastCoerce)
+  | CastNative a -> let (e,a) = f a in (Some e, CastNative a)
+
 (** Mapping [cast_type] *)
 
 let map_cast_type f = function

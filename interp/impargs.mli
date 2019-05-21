@@ -133,6 +133,8 @@ val extract_impargs_data :
 
 val lift_implicits : int -> manual_implicits -> manual_implicits
 
+val lift_implicits2 : int -> implicit_status CAst.t list -> implicit_status CAst.t list
+
 val make_implicits_list : implicit_status list -> implicits_list list
 
 val drop_first_implicits : int -> implicits_list -> implicits_list
