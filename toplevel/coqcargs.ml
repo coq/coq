@@ -56,6 +56,13 @@ let error_missing_arg s =
   prerr_endline "See -help for the syntax of supported options";
   exit 1
 
+let check_compilation_output_name_consistency args =
+  match args.compilation_output_name, args.compile_list with
+  | Some _, _::_::_ ->
+    prerr_endline ("Error: option -o is not valid when more than one");
+    prerr_endline ("file have to be compiled")
+  | _ -> ()
+
 let add_compile ?echo copts s =
   (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
   let echo = Option.default copts.echo echo in
@@ -82,7 +89,22 @@ let set_vio_checking_j opts opt j =
     prerr_endline "setting the J variable like in 'make vio2vo J=3'";
     exit 1
 
-let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
+let set_compilation_mode opts mode =
+  match opts.compilation_mode with
+  | BuildVo -> { opts with compilation_mode = mode }
+  | mode' when mode <> mode' ->
+    prerr_endline "Options -quick and -vio2vo are exclusive";
+    exit 1
+  | _ -> opts
+
+let get_task_list s =
+  List.map (fun s ->
+      try int_of_string s
+      with Failure _ ->
+        prerr_endline "Option -check-vio-tasks expects a comma-separated list";
+        prerr_endline "of integers followed by a list of files";
+        exit 1)
+    (Str.split (Str.regexp ",") s)
 
 let is_not_dash_option = function
   | Some f when String.length f > 0 && f.[0] <> '-' -> true
@@ -138,7 +160,7 @@ let parse arglist : t =
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
-          { oval with compilation_mode = BuildVio }
+          set_compilation_mode oval BuildVio
         | "-check-vio-tasks" ->
           let tno = get_task_list (next ()) in
           let tfile = next () in
@@ -157,7 +179,7 @@ let parse arglist : t =
 
         | "-vio2vo" ->
           let oval = add_compile ~echo:false oval (next ()) in
-          { oval with compilation_mode = Vio2Vo }
+          set_compilation_mode oval Vio2Vo
 
         | "-outputstate" ->
           set_outputstate oval (next ())
@@ -170,5 +192,7 @@ let parse arglist : t =
   in
   try
     let opts, extra = parse default in
-    List.fold_left add_compile opts extra
+    let args = List.fold_left add_compile opts extra in
+    check_compilation_output_name_consistency args;
+    args
   with any -> fatal_error any
