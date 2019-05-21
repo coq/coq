@@ -222,7 +222,7 @@ let map_evar_body f = function
 let map_evar_info f evi =
   {evi with
     evar_body = map_evar_body f evi.evar_body;
-    evar_hyps = map_named_val f evi.evar_hyps;
+    evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
     evar_concl = f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
