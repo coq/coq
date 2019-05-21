@@ -18,8 +18,8 @@ See http://www.gnu.org/software/make/manual/make.htmlPrerequisite-Types
 * Annotation before commands: +/-/@
 
 a command starting by - is always successful (errors are ignored)
-a command starting by + is ran even if option -n is given to make
-a command starting by @ is not echoed before being ran
+a command starting by + is run even if option -n is given to make
+a command starting by @ is not echoed before being run
 
 * Custom functions
 
