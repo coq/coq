@@ -51,19 +51,3 @@ val modify_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.t -
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)
 val test_mode : bool ref
-
-(** For mlg *)
-
-type functional_vernac =
-  | VtDefault of (unit -> unit)
-  | VtCloseProof of (pstate:Proof_global.t -> unit)
-  | VtMaybeOpenProof of (unit -> Proof_global.t option)
-  | VtOpenProof of (unit -> Proof_global.t)
-  | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
-  | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
-  | VtReadProof of (pstate:Proof_global.t -> unit)
-
-val interp_functional_vernac
-  : functional_vernac
-  -> pstate:Proof_global.stack option
-  -> Proof_global.stack option

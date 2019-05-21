@@ -53,7 +53,16 @@ type vernac_when =
   | VtLater
 type vernac_classification = vernac_type * vernac_when
 
-type vernac_command = atts:Attributes.vernac_flags -> pstate:Proof_global.stack option -> Proof_global.stack option
+type vernac_interp_phase =
+  | VtDefault of (unit -> unit)
+  | VtCloseProof of (pstate:Proof_global.t -> unit)
+  | VtMaybeOpenProof of (unit -> Proof_global.t option)
+  | VtOpenProof of (unit -> Proof_global.t)
+  | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
+  | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
+  | VtReadProof of (pstate:Proof_global.t -> unit)
+
+type vernac_command = atts:Attributes.vernac_flags -> vernac_interp_phase
 
 type plugin_args = Genarg.raw_generic_argument list
 
@@ -83,7 +92,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let call opn converted_args ~atts ~pstate =
+let call opn converted_args ~atts =
   let phase = ref "Looking up command" in
   try
     let depr, callback = vinterp_map opn in
@@ -99,7 +108,7 @@ let call opn converted_args ~atts ~pstate =
     phase := "Checking arguments";
     let hunk = callback converted_args in
     phase := "Executing command";
-    hunk ~atts ~pstate
+    hunk ~atts
   with
     | reraise ->
         let reraise = CErrors.push reraise in
