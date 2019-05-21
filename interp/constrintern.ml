@@ -1845,7 +1845,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 	in
 	  apply_impargs c env imp subscopes l loc
 
-      | CFix ({ CAst.loc = locid; v = iddef}, dl) ->
+    | CFix ({ CAst.loc = locid; v = iddef}, dl) ->
         let lf = List.map (fun ({CAst.v = id},_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
         let n =
