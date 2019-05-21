@@ -17,6 +17,7 @@ type t
     interactively *)
 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+(** [set_endline_tactic tac lemma] set ending tactic for [lemma] *)
 
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
 (** [pf_map f l] map the underlying proof object *)

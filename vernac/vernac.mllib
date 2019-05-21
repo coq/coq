@@ -16,6 +16,7 @@ Metasyntax
 DeclareDef
 DeclareObl
 Canonical
+RecLemmas
 Lemmas
 Class
 Auto_ind_decl

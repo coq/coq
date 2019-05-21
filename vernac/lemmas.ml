@@ -16,7 +16,6 @@ open Util
 open Pp
 open Names
 open Constr
-open Declarations
 open Declareops
 open Entries
 open Nameops
@@ -153,93 +152,6 @@ let adjust_guardness_conditions const = function
                 (mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }
 
-let find_mutually_recursive_statements sigma thms =
-    let n = List.length thms in
-    let inds = List.map (fun (id,(t,impls)) ->
-      let (hyps,ccl) = EConstr.decompose_prod_assum sigma t in
-      let x = (id,(t,impls)) in
-      let whnf_hyp_hds = EConstr.map_rel_context_in_env
-        (fun env c -> fst (Reductionops.whd_all_stack env sigma c))
-        (Global.env()) hyps in
-      let ind_hyps =
-        List.flatten (List.map_i (fun i decl ->
-          let t = RelDecl.get_type decl in
-          match EConstr.kind sigma t with
-          | Ind ((kn,_ as ind),u) when
-                let mind = Global.lookup_mind kn in
-                mind.mind_finite <> Declarations.CoFinite ->
-              [ind,x,i]
-          | _ ->
-              []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
-      let ind_ccl =
-        let cclenv = EConstr.push_rel_context hyps (Global.env()) in
-        let whnf_ccl,_ = whd_all_stack cclenv Evd.empty ccl in
-        match EConstr.kind sigma whnf_ccl with
-        | Ind ((kn,_ as ind),u) when
-              let mind = Global.lookup_mind kn in
-              Int.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
-            [ind,x,0]
-        | _ ->
-            [] in
-      ind_hyps,ind_ccl) thms in
-    let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> MutInd.equal kn kn' in
-    (* Check if all conclusions are coinductive in the same type *)
-    (* (degenerated cartesian product since there is at most one coind ccl) *)
-    let same_indccl =
-      List.cartesians_filter (fun hyp oks ->
-        if List.for_all (of_same_mutind hyp) oks
-        then Some (hyp::oks) else None) [] ind_ccls in
-    let ordered_same_indccl =
-      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
-    (* Check if some hypotheses are inductive in the same type *)
-    let common_same_indhyp =
-      List.cartesians_filter (fun hyp oks ->
-        if List.for_all (of_same_mutind hyp) oks
-        then Some (hyp::oks) else None) [] inds_hyps in
-    let ordered_inds,finite,guard =
-      match ordered_same_indccl, common_same_indhyp with
-      | indccl::rest, _ ->
-          assert (List.is_empty rest);
-          (* One occ. of common coind ccls and no common inductive hyps *)
-          if not (List.is_empty common_same_indhyp) then
-            Flags.if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
-          flush_all ();
-          indccl, true, []
-      | [], _::_ ->
-          let () = match same_indccl with
-          | ind :: _ ->
-            if List.distinct_f ind_ord (List.map pi1 ind)
-            then
-              Flags.if_verbose Feedback.msg_info
-                (strbrk
-                   ("Coinductive statements do not follow the order of "^
-                    "definition, assuming the proof to be by induction."));
-            flush_all ()
-          | _ -> ()
-          in
-          let possible_guards = List.map (List.map pi3) inds_hyps in
-          (* assume the largest indices as possible *)
-          List.last common_same_indhyp, false, possible_guards
-      | _, [] ->
-        user_err Pp.(str
-            ("Cannot find common (mutual) inductive premises or coinductive" ^
-             " conclusions in the statements."))
-    in
-    (finite,guard,None), ordered_inds
-
-let look_for_possibly_mutual_statements sigma = function
-  | [id,(t,impls)] ->
-      (* One non recursively proved theorem *)
-      None,[id,(t,impls)],None
-  | _::_ as thms ->
-    (* More than one statement and/or an explicit decreasing mark: *)
-    (* we look for a common inductive hyp or a common coinductive conclusion *)
-    let recguard,ordered_inds = find_mutually_recursive_statements sigma thms in
-    let thms = List.map pi2 ordered_inds in
-    Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
-  | [] -> anomaly (Pp.str "Empty list of theorems.")
-
 let default_thm_id = Id.of_string "Unnamed_thm"
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
@@ -249,8 +161,7 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
-let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
-    { Recthm.name; typ; impargs } =
+let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recthm.name; typ; impargs } =
   let t_i = norm typ in
   let kind = Decls.(IsAssumption Conjectural) in
   match body with
@@ -384,7 +295,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?inference_hook ?hook thms 
           (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
            (ids, imps @ imps'))))
       evd thms in
-  let recguard,thms,snl = look_for_possibly_mutual_statements evd thms in
+  let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   (* XXX: This nf_evar is critical too!! We are normalizing twice if
      you look at the previous lines... *)
@@ -403,18 +314,8 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?inference_hook ?hook thms 
   start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 (************************************************************************)
-(* Admitting a lemma-like constant                                      *)
+(* Commom constant saving path                                          *)
 (************************************************************************)
-
-let check_anonymity id save_ident =
-  if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
-    user_err Pp.(str "This command can only be used for unnamed theorem.")
-
-(* Admitted *)
-let warn_let_as_axiom =
-  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
-                   (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
-                                spc () ++ strbrk "declared as an axiom.")
 
 (* This declares implicits and calls the hooks for all the theorems,
    including the main one *)
@@ -431,6 +332,16 @@ let process_recthms ?fix_exn ?hook env sigma uctx ~udecl ~poly ~scope dref imps 
   List.iter (fun (dref,imps) ->
       maybe_declare_manual_implicits false dref imps;
       DeclareDef.Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref})) thms_data
+
+(************************************************************************)
+(* Admitting a lemma-like constant                                      *)
+(************************************************************************)
+
+(* Admitted *)
+let warn_let_as_axiom =
+  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
+                   (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
+                                spc () ++ strbrk "declared as an axiom.")
 
 let get_keep_admitted_vars =
   Goptions.declare_bool_option_and_ref
@@ -482,6 +393,10 @@ let save_lemma_admitted ~(lemma : t) : unit =
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
+
+let check_anonymity id save_ident =
+  if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
+    user_err Pp.(str "This command can only be used for unnamed theorem.")
 
 let finish_proved env sigma idopt po info =
   let open Proof_global in
