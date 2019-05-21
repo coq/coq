@@ -2295,6 +2295,30 @@ let locate_if_not_already ?loc (e, info) =
 
 exception End_of_input
 
+let vernac_interp_phase c ~pstate =
+  let open Proof_global in
+  let open Vernacextend in
+  match c with
+  | VtDefault f -> f (); pstate
+  | VtCloseProof f ->
+    vernac_require_open_proof ~pstate (fun ~pstate ->
+        f ~pstate:(Proof_global.get_current_pstate pstate);
+        Proof_global.discard_current pstate)
+  | VtMaybeOpenProof f ->
+    let proof = f () in
+    let pstate = maybe_push ~ontop:pstate proof in
+    pstate
+  | VtOpenProof f ->
+    Some (push ~ontop:pstate (f ()))
+  | VtModifyProof f ->
+    modify_pstate f ~pstate
+  | VtReadProofOpt f ->
+    f ~pstate:(Option.map get_current_pstate pstate);
+    pstate
+  | VtReadProof f ->
+    with_pstate ~pstate f;
+    pstate
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
@@ -2629,7 +2653,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
 
   (* Extensions *)
   | VernacExtend (opn,args) ->
-    Vernacextend.call ~atts opn args ~pstate
+    vernac_interp_phase (Vernacextend.call ~atts opn args) ~pstate
 
 (* XXX: This won't properly set the proof mode, as of today, it is
    controlled by the STM. Thus, we would need access information from
@@ -2709,37 +2733,3 @@ let interp ?(verbosely=true) ?proof ~st cmd =
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.invalidate_cache ();
     iraise exn
-
-(* mlg helpers *)
-
-type functional_vernac =
-  | VtDefault of (unit -> unit)
-  | VtCloseProof of (pstate:Proof_global.t -> unit)
-  | VtMaybeOpenProof of (unit -> Proof_global.t option)
-  | VtOpenProof of (unit -> Proof_global.t)
-  | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
-  | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
-  | VtReadProof of (pstate:Proof_global.t -> unit)
-
-let interp_functional_vernac c ~pstate =
-  let open Proof_global in
-  match c with
-  | VtDefault f -> f (); pstate
-  | VtCloseProof f ->
-    vernac_require_open_proof ~pstate (fun ~pstate ->
-        f ~pstate:(Proof_global.get_current_pstate pstate);
-        Proof_global.discard_current pstate)
-  | VtMaybeOpenProof f ->
-    let proof = f () in
-    let pstate = maybe_push ~ontop:pstate proof in
-    pstate
-  | VtOpenProof f ->
-    Some (push ~ontop:pstate (f ()))
-  | VtModifyProof f ->
-    modify_pstate f ~pstate
-  | VtReadProofOpt f ->
-    f ~pstate:(Option.map get_current_pstate pstate);
-    pstate
-  | VtReadProof f ->
-    with_pstate ~pstate f;
-    pstate
