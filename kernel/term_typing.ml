@@ -154,7 +154,7 @@ the polymorphic case
           let c = Constr.hcons j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, uctx) in
-      let def = OpaqueDef (Opaqueproof.create proofterm) in
+      let def = OpaqueDef proofterm in
       {
         Cooking.cook_body = def;
         cook_type = tyj.utj_val;
@@ -207,7 +207,7 @@ the polymorphic case
       in
       let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
-	if opaque then OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty)))
+        if opaque then OpaqueDef (Future.from_val (def, Univ.ContextSet.empty))
 	else Def (Mod_subst.from_val def) 
       in
 	feedback_completion_typecheck feedback_id;
@@ -232,7 +232,7 @@ let record_aux env s_ty s_bo =
         (keep_hyps env s_bo)) in
   Aux_file.record_in_aux "context_used" v
 
-let build_constant_declaration _kn env result =
+let build_constant_declaration env result =
   let open Cooking in
   let typ = result.cook_type in
   let check declared inferred =
@@ -271,11 +271,8 @@ let build_constant_declaration _kn env result =
         | Undef _ | Primitive _ -> Id.Set.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
-            let vars =
-              global_vars_set env
-                (Opaqueproof.force_proof (opaque_tables env) lc) in
-            (* we force so that cst are added to the env immediately after *)
-            ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
+            let (lc, _) = Future.force lc in
+            let vars = global_vars_set env lc in
             if !Flags.record_aux_file then record_aux env ids_typ vars;
             vars
         in
@@ -296,11 +293,15 @@ let build_constant_declaration _kn env result =
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
-            OpaqueDef (Opaqueproof.iter_direct_opaque (fun c ->
-              let ids_typ = global_vars_set env typ in
-              let ids_def = global_vars_set env c in
-              let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
-              check declared inferred) lc) in
+          let iter k cu = Future.chain cu (fun (c, _ as p) -> k c; p) in
+          let kont c =
+            let ids_typ = global_vars_set env typ in
+            let ids_def = global_vars_set env c in
+            let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
+            check declared inferred
+          in
+          OpaqueDef (iter kont lc)
+  in
   let univs = result.cook_universes in
   let tps = 
     let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs def in
@@ -318,8 +319,8 @@ let build_constant_declaration _kn env result =
 
 (*s Global and local constant declaration. *)
 
-let translate_constant mb env kn ce =
-  build_constant_declaration kn env
+let translate_constant mb env _kn ce =
+  build_constant_declaration env
     (infer_declaration ~trust:mb env ce)
 
 let translate_local_assum env t =
@@ -327,8 +328,21 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     j.uj_val, t
 
-let translate_recipe ~hcons env kn r =
-  build_constant_declaration kn env (Cooking.cook_constant ~hcons r)
+let translate_recipe ~hcons env _kn r =
+  let open Cooking in
+  let result = Cooking.cook_constant ~hcons r in
+  let univs = result.cook_universes in
+  let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs result.cook_body in
+  let tps = Option.map Cemitcodes.from_val res in
+  { const_hyps = Option.get result.cook_context;
+    const_body = result.cook_body;
+    const_type = result.cook_type;
+    const_body_code = tps;
+    const_universes = univs;
+    const_private_poly_univs = result.cook_private_univs;
+    const_relevance = result.cook_relevance;
+    const_inline_code = result.cook_inline;
+    const_typing_flags = Environ.typing_flags env }
 
 let translate_local_def env _id centry =
   let open Cooking in
@@ -351,8 +365,7 @@ let translate_local_def env _id centry =
     | Def _ -> ()
     | OpaqueDef lc ->
        let ids_typ = global_vars_set env typ in
-       let ids_def = global_vars_set env
-         (Opaqueproof.force_proof (opaque_tables env) lc) in
+       let ids_def = global_vars_set env (fst (Future.force lc)) in
        record_aux env ids_typ ids_def
   end;
   let () = match decl.cook_universes with
@@ -362,8 +375,7 @@ let translate_local_def env _id centry =
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c
   | OpaqueDef o ->
-    let p = Opaqueproof.force_proof (Environ.opaque_tables env) o in
-    let cst = Opaqueproof.force_constraints (Environ.opaque_tables env) o in
+    let (p, cst) = Future.force o in
     (** Let definitions are ensured to have no extra constraints coming from
         the body by virtue of the typing of [Entries.section_def_entry]. *)
     let () = assert (Univ.ContextSet.is_empty cst) in

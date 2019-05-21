@@ -46,7 +46,7 @@ type link_info =
   | LinkedInteractive of string
   | NotLinked
 
-type constant_key = constant_body * (link_info ref * key)
+type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 

@@ -109,7 +109,7 @@ let labels_of_ref r =
 
 (*s Constants tables. *)
 
-let typedefs = ref (Cmap_env.empty : (constant_body * ml_type) Cmap_env.t)
+let typedefs = ref (Cmap_env.empty : (Opaqueproof.opaque constant_body * ml_type) Cmap_env.t)
 let init_typedefs () = typedefs := Cmap_env.empty
 let add_typedef kn cb t =
   typedefs := Cmap_env.add kn (cb,t) !typedefs
@@ -120,7 +120,7 @@ let lookup_typedef kn cb =
   with Not_found -> None
 
 let cst_types =
-  ref (Cmap_env.empty : (constant_body * ml_schema) Cmap_env.t)
+  ref (Cmap_env.empty : (Opaqueproof.opaque constant_body * ml_schema) Cmap_env.t)
 let init_cst_types () = cst_types := Cmap_env.empty
 let add_cst_type kn cb s = cst_types := Cmap_env.add kn (cb,s) !cst_types
 let lookup_cst_type kn cb =

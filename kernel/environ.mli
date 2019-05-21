@@ -42,7 +42,7 @@ type link_info =
 
 type key = int CEphemeron.key option ref
 
-type constant_key = constant_body * (link_info ref * key)
+type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
@@ -174,19 +174,19 @@ val reset_with_named_context : named_context_val -> env -> env
 val pop_rel_context : int -> env -> env
 
 (** Useful for printing *)
-val fold_constants : (Constant.t -> constant_body -> 'a -> 'a) -> env -> 'a -> 'a
+val fold_constants : (Constant.t -> Opaqueproof.opaque constant_body -> 'a -> 'a) -> env -> 'a -> 'a
 
 (** {5 Global constants }
   {6 Add entries to global environment } *)
 
-val add_constant : Constant.t -> constant_body -> env -> env
-val add_constant_key : Constant.t -> constant_body -> link_info ->
+val add_constant : Constant.t -> Opaqueproof.opaque constant_body -> env -> env
+val add_constant_key : Constant.t -> Opaqueproof.opaque constant_body -> link_info ->
   env -> env
 val lookup_constant_key :  Constant.t -> env -> constant_key
 
 (** Looks up in the context of global constant names 
    raises [Not_found] if the required path is not found *)
-val lookup_constant    : Constant.t -> env -> constant_body
+val lookup_constant    : Constant.t -> env -> Opaqueproof.opaque constant_body
 val evaluable_constant : Constant.t -> env -> bool
 
 (** New-style polymorphism *)
@@ -219,7 +219,7 @@ val constant_context : env -> Constant.t -> Univ.AUContext.t
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
-val body_of_constant_body : env -> constant_body -> (Constr.constr * Univ.AUContext.t) option
+val body_of_constant_body : env -> Opaqueproof.opaque constant_body -> (Constr.constr * Univ.AUContext.t) option
 
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 

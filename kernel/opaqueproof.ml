@@ -77,11 +77,6 @@ let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
   | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
 
-let iter_direct_opaque f = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-  | Direct (d,cu) ->
-      Direct (d,Future.chain cu (fun (c, u) -> f c; c, u))
-
 let discharge_direct_opaque ~cook_constr ci = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->

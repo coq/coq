@@ -389,7 +389,7 @@ type clos_infos = {
   i_flags : reds;
   i_cache : infos_cache }
 
-type clos_tab = fconstr constant_def KeyTable.t
+type clos_tab = (fconstr, Empty.t) constant_def KeyTable.t
 
 let info_flags info = info.i_flags
 let info_env info = info.i_cache.i_env

@@ -145,7 +145,7 @@ let mkSTACK = function
 
 type cbv_infos = {
   env : Environ.env;
-  tab : cbv_value Declarations.constant_def KeyTable.t;
+  tab : (cbv_value, Empty.t) Declarations.constant_def KeyTable.t;
   reds : RedFlags.reds;
   sigma : Evd.evar_map
 }

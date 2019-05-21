@@ -43,7 +43,6 @@ val get_constraints :
   opaquetab -> opaque -> Univ.ContextSet.t Future.computation option
 
 val subst_opaque : substitution -> opaque -> opaque
-val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
 
 type work_list = (Univ.Instance.t * Id.t array) Cmap.t * 
   (Univ.Instance.t * Id.t array) Mindmap.t

@@ -57,7 +57,6 @@ val segment_of_objects :
 
 val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
-val pull_to_head : Libobject.object_name -> unit
 
 (** this operation adds all objects with the same name and calls [load_object]
    for each of them *)

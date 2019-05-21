@@ -26,21 +26,21 @@ val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->
 
 (** {6 Constants} *)
 
-val subst_const_body : substitution -> constant_body -> constant_body
+val subst_const_body : substitution -> Opaqueproof.opaque constant_body -> Opaqueproof.opaque constant_body
 
 (** Is there a actual body in const_body ? *)
 
-val constant_has_body : constant_body -> bool
+val constant_has_body : 'a constant_body -> bool
 
-val constant_polymorphic_context : constant_body -> AUContext.t
+val constant_polymorphic_context : 'a constant_body -> AUContext.t
 
 (** Is the constant polymorphic? *)
-val constant_is_polymorphic : constant_body -> bool
+val constant_is_polymorphic : 'a constant_body -> bool
 
 (** Return the universe context, in case the definition is polymorphic, otherwise
     the context is empty. *)
 
-val is_opaque : constant_body -> bool
+val is_opaque : 'a constant_body -> bool
 
 (** {6 Inductive types} *)
 
@@ -83,7 +83,7 @@ val safe_flags : Conv_oracle.oracle -> typing_flags
     of the structure, but simply hash-cons all inner constr
     and other known elements *)
 
-val hcons_const_body : constant_body -> constant_body
+val hcons_const_body : 'a constant_body -> 'a constant_body
 val hcons_mind : mutual_inductive_body -> mutual_inductive_body
 val hcons_module_body : module_body -> module_body
 val hcons_module_type : module_type_body -> module_type_body

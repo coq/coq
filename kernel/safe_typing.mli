@@ -48,9 +48,6 @@ val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
 
-val private_constant : safe_environment -> Entries.side_effect_role -> Constant.t -> private_constants
-(** Constant must be the last definition of the safe_environment. *)
-
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
 val inline_private_constants_in_constr :
   Environ.env -> Constr.constr -> private_constants -> Constr.constr
@@ -91,7 +88,6 @@ type 'a effect_entry =
 
 type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
-  | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
   Constant.t * Entries.side_effect_role
@@ -103,8 +99,11 @@ val export_private_constants : in_section:bool ->
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)
 val add_constant :
-  in_section:bool -> Label.t -> global_declaration ->
-    Constant.t safe_transformer
+  ?role:Entries.side_effect_role -> in_section:bool -> Label.t -> global_declaration ->
+    (Constant.t * private_constants) safe_transformer
+
+val add_recipe :
+  in_section:bool -> Label.t -> Cooking.recipe -> Constant.t safe_transformer
 
 (** Adding an inductive type *)
 

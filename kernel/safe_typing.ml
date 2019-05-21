@@ -228,27 +228,10 @@ let check_engagement env expected_impredicative_set =
 
 (** {6 Stm machinery } *)
 
-type seff_env =
-  [ `Nothing
-  (* The proof term and its universes.
-     Same as the constant_body's but not in an ephemeron *)
-  | `Opaque of Constr.t * Univ.ContextSet.t ]
-
-let get_opaque_body env cbo =
-  match cbo.const_body with
-  | Undef _ -> assert false
-  | Primitive _ -> assert false
-  | Def _ -> `Nothing
-  | OpaqueDef opaque ->
-      `Opaque
-        (Opaqueproof.force_proof (Environ.opaque_tables env) opaque,
-         Opaqueproof.force_constraints (Environ.opaque_tables env) opaque)
-
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   seff_constant : Constant.t;
-  seff_body : Declarations.constant_body;
-  seff_env : seff_env;
+  seff_body : (Constr.t * Univ.ContextSet.t) Declarations.constant_body;
   seff_role : Entries.side_effect_role;
 }
 
@@ -288,39 +271,38 @@ type private_constants = SideEffects.t
 let side_effects_of_private_constants l =
   List.rev (SideEffects.repr l)
 
+(* Only used to push in an Environ.env. *)
+let lift_constant c =
+  let body = match c.const_body with
+  | OpaqueDef _ -> Undef None
+  | Def _ | Undef _ | Primitive _ as body -> body
+  in
+  { c with const_body = body }
+
+let map_constant f c =
+  let body = match c.const_body with
+  | OpaqueDef o -> OpaqueDef (f o)
+  | Def _ | Undef _ | Primitive _ as body -> body
+  in
+  { c with const_body = body }
+
 let push_private_constants env eff =
   let eff = side_effects_of_private_constants eff in
   let add_if_undefined env eff =
     try ignore(Environ.lookup_constant eff.seff_constant env); env
-    with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
+    with Not_found -> Environ.add_constant eff.seff_constant (lift_constant eff.seff_body) env
   in
   List.fold_left add_if_undefined env eff
 
 let empty_private_constants = SideEffects.empty
 let concat_private = SideEffects.concat
 
-let private_constant env role cst =
-  (** The constant must be the last entry of the safe environment *)
-  let () = match env.revstruct with
-  | (lbl, SFBconst _) :: _ -> assert (Label.equal lbl (Constant.label cst))
-  | _ -> assert false
-  in
-  let from_env = CEphemeron.create env.revstruct in
-  let cbo = Environ.lookup_constant cst env.env in
-  let eff = {
-    from_env = from_env;
-    seff_constant = cst;
-    seff_body = cbo;
-    seff_env = get_opaque_body env.env cbo;
-    seff_role = role;
-  } in
-  SideEffects.add eff empty_private_constants
-
 let universes_of_private eff =
   let fold acc eff =
-    let acc = match eff.seff_env with
-    | `Nothing -> acc
-    | `Opaque (_, ctx) -> ctx :: acc
+    let acc = match eff.seff_body.const_body with
+    | Def _ -> acc
+    | OpaqueDef (_, ctx) -> ctx :: acc
+    | Primitive _ | Undef _ -> assert false
     in
     match eff.seff_body.const_universes with
     | Monomorphic ctx -> ctx :: acc
@@ -565,7 +547,6 @@ type 'a effect_entry =
 
 type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
-  | GlobalRecipe of Cooking.recipe
 
 type exported_private_constant = 
   Constant.t * Entries.side_effect_role
@@ -598,7 +579,7 @@ let inline_side_effects env body side_eff =
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
   let filter e =
-    let cb = (e.seff_constant, e.seff_body, e.seff_env) in
+    let cb = (e.seff_constant, e.seff_body) in
     try ignore (Environ.lookup_constant e.seff_constant env); None
     with Not_found -> Some (cb, e.from_env)
   in
@@ -612,10 +593,10 @@ let inline_side_effects env body side_eff =
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
-    let fold (subst, var, ctx, args) (c, cb, b) =
-      let (b, opaque) = match cb.const_body, b with
-      | Def b, _ -> (Mod_subst.force_constr b, false)
-      | OpaqueDef _, `Opaque (b,_) -> (b, true)
+    let fold (subst, var, ctx, args) (c, cb) =
+      let (b, opaque) = match cb.const_body with
+      | Def b -> (Mod_subst.force_constr b, false)
+      | OpaqueDef (b, _) -> (b, true)
       | _ -> assert false
       in
       match cb.const_universes with
@@ -701,7 +682,8 @@ let check_signatures curmb sl =
   | Some (n, _) -> n
 
 
-let constant_entry_of_side_effect cb u =
+let constant_entry_of_side_effect eff =
+  let cb = eff.seff_body in
   let open Entries in
   let univs =
     match cb.const_universes with
@@ -711,9 +693,9 @@ let constant_entry_of_side_effect cb u =
       Polymorphic_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
   in
   let pt =
-    match cb.const_body, u with
-    | OpaqueDef _, `Opaque (b, c) -> b, c
-    | Def b, `Nothing -> Mod_subst.force_constr b, Univ.ContextSet.empty
+    match cb.const_body with
+    | OpaqueDef (b, c) -> b, c
+    | Def b -> Mod_subst.force_constr b, Univ.ContextSet.empty
     | _ -> assert false in
   DefinitionEntry {
     const_entry_body = Future.from_val (pt, ());
@@ -723,18 +705,6 @@ let constant_entry_of_side_effect cb u =
     const_entry_universes = univs;
     const_entry_opaque = Declareops.is_opaque cb;
     const_entry_inline_code = cb.const_inline_code }
-
-let turn_direct orig =
-  let cb = orig.seff_body in
-  if Declareops.is_opaque cb then
-    let p = match orig.seff_env with
-    | `Opaque (b, c) -> (b, c)
-    | _ -> assert false
-    in
-    let const_body = OpaqueDef (Opaqueproof.create (Future.from_val p)) in
-    let cb = { cb with const_body } in
-    { orig with seff_body = cb }
-  else orig
 
 let export_eff eff =
   (eff.seff_constant, eff.seff_body, eff.seff_role)
@@ -756,13 +726,14 @@ let export_side_effects mb env c =
       let trusted = check_signatures mb signatures in
       let push_seff env eff =
         let { seff_constant = kn; seff_body = cb ; _ } = eff in
-        let env = Environ.add_constant kn cb env in
+        let env = Environ.add_constant kn (lift_constant cb) env in
         match cb.const_universes with
         | Polymorphic _ -> env
         | Monomorphic ctx ->
-          let ctx = match eff.seff_env with
-          | `Nothing -> ctx
-          | `Opaque(_, ctx') -> Univ.ContextSet.union ctx' ctx
+          let ctx = match eff.seff_body.const_body with
+          | Def _ -> ctx
+          | OpaqueDef (_, ctx') -> Univ.ContextSet.union ctx' ctx
+          | Undef _ | Primitive _ -> assert false
           in
           Environ.push_context_set ~strict:true ctx env
       in
@@ -771,35 +742,39 @@ let export_side_effects mb env c =
         | [] -> List.rev acc, ce
         | eff :: rest ->
           if Int.equal sl 0 then
-           let env, cb =
-              let { seff_constant = kn; seff_body = ocb; seff_env = u ; _ } = eff in
-               let ce = constant_entry_of_side_effect ocb u in
+            let env, cb =
+              let kn = eff.seff_constant in
+               let ce = constant_entry_of_side_effect eff in
                let cb = Term_typing.translate_constant Term_typing.Pure env kn ce in
-               let eff = { eff with
-                seff_body = cb;
-                seff_env = `Nothing;
-               } in
+               let cb = map_constant Future.force cb in
+               let eff = { eff with seff_body = cb } in
                (push_seff env eff, export_eff eff)
             in
             translate_seff 0 rest (cb :: acc) env
           else
-           let cb = turn_direct eff in
-           let env = push_seff env cb in
-           let ecb = export_eff cb in
+           let env = push_seff env eff in
+           let ecb = export_eff eff in
            translate_seff (sl - 1) rest (ecb :: acc) env
      in
        translate_seff trusted seff [] env
 
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let bodies = List.map (fun (kn, cb, _) -> (kn, cb)) exported in
+  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create (Future.from_val p)) cb) in
+  let bodies = List.map map exported in
   let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
 
-let add_constant ~in_section l decl senv =
+let add_recipe ~in_section l r senv =
   let kn = Constant.make2 senv.modpath l in
-  let senv =
+  let cb = Term_typing.translate_recipe ~hcons:(not in_section) senv.env kn r in
+  let cb = if in_section then cb else Declareops.hcons_const_body cb in
+  let senv = add_constant_aux ~in_section senv (kn, cb) in
+  kn, senv
+
+let add_constant ?role ~in_section l decl senv =
+  let kn = Constant.make2 senv.modpath l in
     let cb = 
       match decl with
       | ConstantEntry (EffectEntry, ce) ->
@@ -811,9 +786,9 @@ let add_constant ~in_section l decl senv =
         Term_typing.translate_constant (Term_typing.SideEffects handle) senv.env kn ce
       | ConstantEntry (PureEntry, ce) ->
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
-      | GlobalRecipe r ->
-        let cb = Term_typing.translate_recipe ~hcons:(not in_section) senv.env kn r in
-        if in_section then cb else Declareops.hcons_const_body cb in
+    in
+  let senv =
+    let cb = map_constant Opaqueproof.create cb in
     add_constant_aux ~in_section senv (kn, cb) in
   let senv =
     match decl with
@@ -822,7 +797,20 @@ let add_constant ~in_section l decl senv =
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
-  kn, senv
+  let eff = match role with
+  | None -> empty_private_constants
+  | Some role ->
+    let cb = map_constant Future.force cb in
+    let from_env = CEphemeron.create senv.revstruct in
+    let eff = {
+      from_env = from_env;
+      seff_constant = kn;
+      seff_body = cb;
+      seff_role = role;
+    } in
+    SideEffects.add eff empty_private_constants
+  in
+  (kn, eff), senv
 
 (** Insertion of inductive types *)
 

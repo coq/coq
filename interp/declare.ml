@@ -36,9 +36,8 @@ type internal_flag =
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
-  cst_decl : global_declaration option;
-  (** [None] when the declaration is a side-effect and has already been defined
-      in the global environment. *)
+  cst_decl : Cooking.recipe option;
+  (** Non-empty only when rebuilding a constant after a section *)
   cst_kind : logical_kind;
   cst_locl : bool;
 }
@@ -65,21 +64,21 @@ let open_constant i ((sp,kn), obj) =
 let exists_name id =
   variable_exists id || Global.exists_objlabel (Label.of_id id)
 
-let check_exists sp =
-  let id = basename sp in
+let check_exists id =
   if exists_name id then alreadydeclared (Id.print id ++ str " already exists")
 
 let cache_constant ((sp,kn), obj) =
+  (* Invariant: the constant must exist in the logical environment, except when
+     redefining it when exiting a section. See [discharge_constant]. *)
   let id = basename sp in
   let kn' =
     match obj.cst_decl with
     | None ->
       if Global.exists_objlabel (Label.of_id (basename sp))
       then Constant.make1 kn
-      else CErrors.anomaly Pp.(str"Ex seff not found: " ++ Id.print(basename sp) ++ str".")
-    | Some decl ->
-      let () = check_exists sp in
-      Global.add_constant ~in_section:(Lib.sections_are_opened ()) id decl
+      else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(basename sp) ++ str".")
+    | Some r ->
+      Global.add_recipe ~in_section:(Lib.sections_are_opened ()) id r
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
@@ -93,7 +92,9 @@ let discharge_constant ((sp, kn), obj) =
   let modlist = replacement_context () in
   let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = section_segment_of_constant con in
   let abstract = (named_of_variable_context hyps, subst, uctx) in
-  let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
+  let new_decl = { from; info = { Opaqueproof.modlist; abstract } } in
+  (* This is a hack: when leaving a section, we lose the constant definition, so
+     we have to store it in the libobject to be able to retrieve it after. *)
   Some { obj with cst_decl = Some new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
@@ -121,26 +122,21 @@ let update_tables c =
   declare_constant_implicits c;
   Notation.declare_ref_arguments_scope Evd.empty (ConstRef c)
 
-let register_side_effect (c, role) =
+let register_constant kn kind local =
   let o = inConstant {
     cst_decl = None;
-    cst_kind = IsProof Theorem;
-    cst_locl = false;
+    cst_kind = kind;
+    cst_locl = local;
   } in
-  let id = Label.to_id (Constant.label c) in
-  ignore(add_leaf id o);
-  update_tables c;
+  let id = Label.to_id (Constant.label kn) in
+  let _ = add_leaf id o in
+  update_tables kn
+
+let register_side_effect (c, role) =
+  let () = register_constant c (IsProof Theorem) false in
   match role with
   | Subproof -> ()
   | Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
-
-let declare_constant_common id cst =
-  let o = inConstant cst in
-  let _, kn as oname = add_leaf id o in
-  pull_to_head oname;
-  let c = Global.constant_of_delta_kn kn in
-  update_tables c;
-  c
 
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
@@ -153,7 +149,8 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+let define_constant ?role ?(export_seff=false) id cd =
+  (* Logically define the constant and its subproofs, no libobject tampering *)
   let is_poly de = match de.const_entry_universes with
   | Monomorphic_entry _ -> false
   | Polymorphic_entry _ -> true
@@ -165,20 +162,27 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(e
         export_seff ||
         not de.const_entry_opaque ||
         is_poly de ->
-      (* This globally defines the side-effects in the environment. We mark
-         exported constants as being side-effect not to redeclare them at
-         caching time. *)
+      (* This globally defines the side-effects in the environment. *)
       let de, export = Global.export_private_constants ~in_section de in
       export, ConstantEntry (PureEntry, DefinitionEntry de)
     | _ -> [], ConstantEntry (EffectEntry, cd)
   in
+  let kn, eff = Global.add_constant ?role ~in_section id decl in
+  kn, eff, export
+
+let declare_constant ?(internal = UserIndividualRequest) ?(local = false) id ?(export_seff=false) (cd, kind) =
+  let () = check_exists id in
+  let kn, _eff, export = define_constant ~export_seff id cd in
+  (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
-  let cst = {
-    cst_decl = Some decl;
-    cst_kind = kind;
-    cst_locl = local;
-  } in
-  declare_constant_common id cst
+  let () = register_constant kn kind local in
+  kn
+
+let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = false) id (cd, kind) =
+  let kn, eff, export = define_constant ~role id cd in
+  let () = assert (List.is_empty export) in
+  let () = register_constant kn kind local in
+  kn, eff
 
 let declare_definition ?(internal=UserIndividualRequest)
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
@@ -297,7 +301,7 @@ let open_inductive i ((sp,kn),mie) =
 
 let cache_inductive ((sp,kn),mie) =
   let names = inductive_names sp kn mie in
-  List.iter check_exists (List.map fst names);
+  List.iter check_exists (List.map (fun p -> basename (fst p)) names);
   let id = basename sp in
   let kn' = Global.add_mind id mie in
   assert (MutInd.equal kn' (MutInd.make1 kn));
