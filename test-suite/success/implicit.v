@@ -124,3 +124,22 @@ Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
 (* Check global implicit declaration over ref not in section *)
 
 Section D. Global Arguments eq [A] _ _. End D.
+
+(* Check local manual implicit arguments *)
+(* Gives a warning and make the second x anonymous *)
+(* Isn't the name "arg_1" a bit fragile though? *)
+
+Check fun f : forall {x:nat} {x:bool} (x:unit), unit => f (x:=1) (arg_1:=true) tt.
+
+(* Test failure when implicit arguments are mentioned in subterms
+   which are not types of variables *)
+
+Fail Check (id (forall {a}, a)).
+
+(* Miscellaneous tests *)
+
+Check let f := fun {x:nat} y => y=true in f false.
+
+(* Isn't the name "arg_0" a bit fragile, here? *)
+
+Check fun f : forall {_:nat}, nat => f (arg_0:=0).
