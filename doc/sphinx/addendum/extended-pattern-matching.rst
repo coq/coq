@@ -21,10 +21,10 @@ type is considered to be a variable. A variable name cannot occur more
 than once in a given pattern. It is recommended to start variable
 names by a lowercase letter.
 
-If a pattern has the form ``(c x)`` where ``c`` is a constructor symbol and x
+If a pattern has the form ``c x`` where ``c`` is a constructor symbol and x
 is a linear vector of (distinct) variables, it is called *simple*: it
 is the kind of pattern recognized by the basic version of match. On
-the opposite, if it is a variable ``x`` or has the form ``(c p)`` with ``p`` not
+the opposite, if it is a variable ``x`` or has the form ``c p`` with ``p`` not
 only made of variables, the pattern is called *nested*.
 
 A variable pattern matches any value, and the identifier is bound to
@@ -216,7 +216,8 @@ Here is an example:
      end.
 
 
-Here is another example using disjunctive subpatterns.
+Nested disjunctive patterns are allowed, inside parentheses, with the
+notation :n:`({+| @pattern})`, as in:
 
 .. coqtop:: in
 

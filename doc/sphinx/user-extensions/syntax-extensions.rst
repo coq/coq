@@ -924,6 +924,17 @@ notations are given below. The optional :production:`scope` is described in
           given to some notation, say ``"{ y } & { z }"`` in fact applies to the
           underlying ``"{ x }"``\-free rule which is ``"y & z"``).
 
+.. note:: Notations such as ``"( p | q )"`` (or starting with ``"( x | "``,
+          more generally) are deprecated as they conflict with the syntax for
+          nested disjunctive patterns (see :ref:`extendedpatternmatching`),
+          and are not honored in pattern expressions.
+
+          .. warn:: Use of @string Notation is deprecated as it is inconsistent with pattern syntax.
+
+             This warning is disabled by default to avoid spurious diagnostics
+             due to legacy notation in the Coq standard library.
+             It can be turned on with the ``-w disj-pattern-notation`` flag.
+
 Persistence of notations
 ++++++++++++++++++++++++
 

@@ -303,7 +303,7 @@ GRAMMAR EXTEND Gram
     [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
          cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
                 ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
-              | ext = [ "}" -> { true } | "|}" -> { false } ] -> { ([], ext) } ]
+              | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
          ->
          { let open UState in
          { univdecl_instance = l;

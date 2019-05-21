@@ -1642,15 +1642,13 @@ let drop_notations_pattern looked_for genv =
     | CPatCast (_,_) ->
       (* We raise an error if the pattern contains a cast, due to
          current restrictions on casts in patterns. Cast in patterns
-         are supported only in local binders and only at top
-         level. In fact, they are currently eliminated by the
-         parser. The only reason why they are in the
-         [cases_pattern_expr] type is that the parser needs to factor
-         the "(c : t)" notation with user defined notations (such as
-         the pair). In the long term, we will try to support such
-         casts everywhere, and use them to print the domains of
-         lambdas in the encoding of match in constr. This check is
-         here and not in the parser because it would require
+         are supported only in local binders and only at top level.
+         The only reason they are in the [cases_pattern_expr] type
+         is that the parser needs to factor the "c : t" notation
+         with user defined notations. In the long term, we will try to
+         support such casts everywhere, and perhaps use them to print
+         the domains of lambdas in the encoding of match in constr.
+         This check is here and not in the parser because it would require
          duplicating the levels of the [pattern] rule. *)
       CErrors.user_err ?loc ~hdr:"drop_notations_pattern"
                             (Pp.strbrk "Casts are not supported in this pattern.")
