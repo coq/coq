@@ -336,14 +336,14 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   let sigma, p = (* The resulting goal *)
     Evarutil.new_evar env sigma (beta (EConstr.Vars.subst1 new_rdx pred)) in
   let pred = EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdx_ty pred in
-  let elim, gl = 
+  let elim, gl =
     let ((kn, i) as ind, _), unfolded_c_ty = pf_reduce_to_quantified_ind gl c_ty in
     let sort = elimination_sort_of_goal gl in
     let elim, gl = pf_fresh_global (Indrec.lookup_eliminator env ind sort) gl in
     if dir = R2L then elim, gl else (* taken from Coq's rewrite *)
     let elim, _ = destConst elim in
     let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical elim)) in
-    let l' = Label.of_id (Nameops.add_suffix (Label.to_id l) "_r")  in 
+    let l' = Label.of_id (Nameops.add_suffix (Label.to_id l) "_r")  in
     let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make2 mp l')) in
     mkConst c1', gl in
   let elim = EConstr.of_constr elim in

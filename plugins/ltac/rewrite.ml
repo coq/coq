@@ -947,9 +947,9 @@ let fold_match ?(force=false) env sigma c =
 	  if dep then case_dep_scheme_kind_from_prop
 	  else case_scheme_kind_from_prop
 	else (
-	  if dep
-	  then case_dep_scheme_kind_from_type_in_prop
-	  else case_scheme_kind_from_type)
+          if dep
+          then case_dep_scheme_kind_from_type_in_prop
+          else case_scheme_kind_from_type)
       else ((* sortc <> InProp by typing *)
 	if dep
 	then case_dep_scheme_kind_from_type

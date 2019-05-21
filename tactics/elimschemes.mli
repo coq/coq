@@ -33,6 +33,7 @@ val sind_dep_scheme_kind_from_type : individual scheme_kind
 val rec_scheme_kind_from_type : individual scheme_kind
 val rec_dep_scheme_kind_from_type : individual scheme_kind
 
+val nondep_elim_scheme : Sorts.family -> Sorts.family -> individual scheme_kind
 
 (** Case analysis schemes *)
 

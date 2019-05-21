@@ -59,7 +59,7 @@ let build_induction_scheme_in_type dep sort ind =
   let sigma, pind = Evd.fresh_inductive_instance env sigma ind in
   let sigma, c = build_induction_scheme env sigma pind dep sort in
     c, Evd.evar_universe_context sigma
- 
+
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
     (fun _ x -> build_induction_scheme_in_type false InType x, Safe_typing.empty_private_constants)
@@ -108,6 +108,16 @@ let sind_scheme_kind_from_prop =
   declare_individual_scheme_object "_sind" ~aux:"_sind_from_prop"
   (fun _ x -> build_induction_scheme_in_type false InSProp x, Safe_typing.empty_private_constants)
 
+let nondep_elim_scheme from_kind to_kind =
+  match from_kind, to_kind with
+  | InProp, InProp  -> ind_scheme_kind_from_prop
+  | InProp, InSProp -> sind_scheme_kind_from_prop
+  | InProp, InSet   -> rec_scheme_kind_from_prop
+  | InProp, InType  -> rect_scheme_kind_from_prop
+  | _     , InProp  -> ind_scheme_kind_from_type
+  | _     , InSProp -> sind_scheme_kind_from_type
+  | _     , InSet   -> rec_scheme_kind_from_type
+  | _     , InType  -> rect_scheme_kind_from_type
 
 (* Case analysis *)
 
