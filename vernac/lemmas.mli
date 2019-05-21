@@ -61,7 +61,7 @@ val standard_proof_terminator :
   ?hook:declaration_hook -> Proof_global.lemma_possible_guards ->
   Proof_global.proof_terminator
 
-val fresh_name_for_anonymous_theorem : pstate:Proof_global.stack option -> Id.t
+val fresh_name_for_anonymous_theorem : unit -> Id.t
 
 (* Prepare global named context for proof session: remove proofs of
    opaque section definitions and remove vm-compiled code *)

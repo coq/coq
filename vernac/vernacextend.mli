@@ -71,19 +71,20 @@ type vernac_classification = vernac_type * vernac_when
 
 (** Interpretation of extended vernac phrases. *)
 
-type vernac_interp_phase =
+type typed_vernac =
   | VtDefault of (unit -> unit)
+  | VtNoProof of (unit -> unit)
   | VtCloseProof of (pstate:Proof_global.t -> unit)
   | VtOpenProof of (unit -> Proof_global.t)
   | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
   | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
   | VtReadProof of (pstate:Proof_global.t -> unit)
 
-type vernac_command = atts:Attributes.vernac_flags -> vernac_interp_phase
+type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
 
 type plugin_args = Genarg.raw_generic_argument list
 
-val call : Vernacexpr.extend_name -> plugin_args -> vernac_command
+val type_vernac : Vernacexpr.extend_name -> plugin_args -> vernac_command
 
 (** {5 VERNAC EXTEND} *)
 

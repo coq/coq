@@ -207,12 +207,8 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let fresh_name_for_anonymous_theorem ~pstate =
-  let avoid = match pstate with
-  | None -> Id.Set.empty
-  | Some pstate -> Id.Set.of_list (Proof_global.get_all_proof_names pstate)
-  in
-  next_global_ident_away default_thm_id avoid
+let fresh_name_for_anonymous_theorem () =
+  next_global_ident_away default_thm_id Id.Set.empty
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
