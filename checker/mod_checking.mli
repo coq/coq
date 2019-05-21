@@ -8,4 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val set_indirect_accessor : (Names.DirPath.t -> int -> Constr.t option) -> unit
+
 val check_module : Environ.env -> Names.ModPath.t -> Declarations.module_body -> unit

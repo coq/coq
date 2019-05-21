@@ -413,7 +413,7 @@ let get_funs_constant mp =
   in
   function const ->
     let find_constant_body const =
-      match Global.body_of_constant const with
+      match Global.body_of_constant Library.indirect_accessor const with
 	| Some (body, _) ->
 	    let body = Tacred.cbv_norm_flags
 	      (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])

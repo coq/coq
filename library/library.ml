@@ -318,9 +318,10 @@ let access_univ_table dp i =
     access_table what univ_tables dp i
   with Not_found -> None
 
-let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_univ_table
+let indirect_accessor = {
+  Opaqueproof.access_proof = access_opaque_table;
+  Opaqueproof.access_constraints = access_univ_table;
+}
 
 (************************************************************************)
 (* Internalise libraries *)

@@ -35,10 +35,19 @@ val create : proofterm -> opaque
   used so far *)
 val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
+type indirect_accessor = {
+  access_proof : DirPath.t -> int -> constr option;
+  access_constraints : DirPath.t -> int -> Univ.ContextSet.t option;
+}
+(** When stored indirectly, opaque terms are indexed by their library
+    dirpath and an integer index. The two functions above activate
+    this indirect storage, by telling how to retrieve terms.
+*)
+
 (** From a [opaque] back to a [constr]. This might use the
-    indirect opaque accessor configured below. *)
-val force_proof : opaquetab -> opaque -> constr
-val force_constraints : opaquetab -> opaque -> Univ.ContextSet.t
+    indirect opaque accessor given as an argument. *)
+val force_proof : indirect_accessor -> opaquetab -> opaque -> constr
+val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.ContextSet.t
 val get_direct_constraints : opaque -> Univ.ContextSet.t Future.computation
 
 val subst_opaque : substitution -> opaque -> opaque
@@ -64,16 +73,3 @@ val dump : ?except:Future.UUIDSet.t -> opaquetab ->
   Univ.ContextSet.t option array *
   cooking_info list array *
   int Future.UUIDMap.t
-
-(** When stored indirectly, opaque terms are indexed by their library
-    dirpath and an integer index. The following two functions activate
-    this indirect storage, by telling how to store and retrieve terms.
-    Default creator always returns [None], preventing the creation of
-    any indirect link, and default accessor always raises an error.
-*)
-
-val set_indirect_opaque_accessor :
-  (DirPath.t -> int -> constr option) -> unit
-val set_indirect_univ_accessor :
-  (DirPath.t -> int -> Univ.ContextSet.t option) -> unit
-

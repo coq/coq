@@ -73,3 +73,6 @@ val overwrite_library_filenames : string -> unit
 
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string
+
+(** {6 Opaque accessors} *)
+val indirect_accessor : Opaqueproof.indirect_accessor

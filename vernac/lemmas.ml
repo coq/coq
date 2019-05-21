@@ -57,7 +57,7 @@ let retrieve_first_recthm uctx = function
       let uctx = UState.context uctx in
       let inst = Univ.UContext.instance uctx in
       let map (c, ctx) = Vars.subst_instance_constr inst c in
-      (Option.map map (Global.body_of_constant_body cb), is_opaque cb)
+      (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
   | _ -> assert false
 
 let adjust_guardness_conditions const = function

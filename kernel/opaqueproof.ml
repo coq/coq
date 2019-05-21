@@ -16,6 +16,11 @@ open Mod_subst
 type work_list = (Instance.t * Id.t array) Cmap.t * 
   (Instance.t * Id.t array) Mindmap.t
 
+type indirect_accessor = {
+  access_proof : DirPath.t -> int -> constr option;
+  access_constraints : DirPath.t -> int -> Univ.ContextSet.t option;
+}
+
 type cooking_info = { 
   modlist : work_list; 
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
@@ -36,22 +41,8 @@ let empty_opaquetab = {
   opaque_dir = DirPath.initial;
 }
 
-(* hooks *)
-let default_get_opaque dp _ =
-  CErrors.user_err Pp.(pr_sequence str ["Cannot access opaque proofs in library"; DirPath.to_string dp])
-let default_get_univ dp _ =
-  CErrors.user_err (Pp.pr_sequence Pp.str [
-    "Cannot access universe constraints of opaque proofs in library ";
-    DirPath.to_string dp])
 let not_here () =
   CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
-
-let get_opaque = ref default_get_opaque
-let get_univ = ref default_get_univ
-
-let set_indirect_opaque_accessor f = (get_opaque := f)
-let set_indirect_univ_accessor f = (get_univ := f)
-(* /hooks *)
 
 let create cu = Direct ([],cu)
 
@@ -97,26 +88,26 @@ let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
         let fp = snd (Int.Map.find i prfs) in
         join except fp
 
-let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
+let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
       fst(Future.force cu)
   | Indirect (l,dp,i) ->
       let pt =
         if DirPath.equal dp odp
         then Future.chain (snd (Int.Map.find i prfs)) fst
-        else match !get_opaque dp i with
+        else match access.access_proof dp i with
         | None -> not_here ()
         | Some v -> Future.from_val v
       in
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
+let force_constraints access { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then snd (Future.force (snd (Int.Map.find i prfs)))
-      else match !get_univ dp i with
+      else match access.access_constraints dp i with
         | None -> Univ.ContextSet.empty
         | Some u -> u
 

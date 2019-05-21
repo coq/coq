@@ -100,16 +100,7 @@ let access_opaque_table dp i =
   assert (i < Array.length t);
   t.(i)
 
-let access_opaque_univ_table dp i =
-  try
-    let t = LibraryMap.find dp !opaque_univ_tables in
-    assert (i < Array.length t);
-    Some t.(i)
-  with Not_found -> None
-
-let () =
-  Opaqueproof.set_indirect_opaque_accessor access_opaque_table;
-  Opaqueproof.set_indirect_univ_accessor access_opaque_univ_table
+let () = Mod_checking.set_indirect_accessor access_opaque_table
 
 let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in

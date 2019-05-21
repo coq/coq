@@ -132,7 +132,7 @@ let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
 let opaque_tables () = Environ.opaque_tables (env ())
 
-let body_of_constant_body env cb =
+let body_of_constant_body access env cb =
   let open Declarations in
   let otab = Environ.opaque_tables env in
   match cb.const_body with
@@ -141,11 +141,11 @@ let body_of_constant_body env cb =
   | Def c ->
      Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
-     Some (Opaqueproof.force_proof otab o, Declareops.constant_polymorphic_context cb)
+     Some (Opaqueproof.force_proof access otab o, Declareops.constant_polymorphic_context cb)
 
-let body_of_constant_body ce = body_of_constant_body (env ()) ce
+let body_of_constant_body access ce = body_of_constant_body access (env ()) ce
 
-let body_of_constant cst = body_of_constant_body (lookup_constant cst)
+let body_of_constant access cst = body_of_constant_body access (lookup_constant cst)
 
 (** Operations on kernel names *)
 

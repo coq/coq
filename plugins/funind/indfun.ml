@@ -851,7 +851,7 @@ let make_graph ~pstate (f_ref : GlobRef.t) =
       end
     | _ -> raise (UserError (None, str "Not a function reference") )
   in
-  (match Global.body_of_constant_body c_body with
+  (match Global.body_of_constant_body Library.indirect_accessor c_body with
      | None -> error "Cannot build a graph over an axiom!"
      | Some (body, _) ->
        let env = Global.env () in

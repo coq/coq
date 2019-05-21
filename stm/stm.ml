@@ -1839,11 +1839,11 @@ end = struct (* {{{ *)
           | _ -> assert false in
         (* No need to delay the computation, the future has been forced by
            the call to [check_task_aux] above. *)
-        let uc = Opaqueproof.force_constraints (Global.opaque_tables ()) o in
+        let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
         let uc = Univ.hcons_universe_context_set uc in
         (* We only manipulate monomorphic terms here. *)
         let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
-        let pr = map (Option.get (Global.body_of_constant_body c)) in
+        let pr = map (Option.get (Global.body_of_constant_body Library.indirect_accessor c)) in
         let pr = discharge pr in
         let pr = Constr.hcons pr in
         u.(bucket) <- Some uc;
