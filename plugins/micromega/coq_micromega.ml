@@ -346,7 +346,9 @@ struct
   let coq_PsatzC  = lazy (constant "PsatzC")
   let coq_PsatzZ    = lazy (constant "PsatzZ")
 
-  let coq_GT     = lazy (m_constant "GT")
+  (*  let coq_GT     = lazy (m_constant "GT")*)
+
+  let coq_DeclaredConstant = lazy (m_constant "DeclaredConstant")
 
   let coq_TT = lazy
    (gen_constant_in_modules "ZMicromega"
@@ -462,13 +464,24 @@ struct
       what to consider as a constant (see [parse_constant])
    *)
 
-  let is_ground_term env sigma term =
-    let typ =     Retyping.get_type_of env sigma term in
-    try
-    ignore (Typeclasses.resolve_one_typeclass env sigma (EConstr.mkApp(Lazy.force coq_GT,[| typ;term|]))) ;
-      true
-    with
-    | Not_found -> false
+  let is_declared_term env evd t =
+    match EConstr.kind evd t with
+    | Const _ | Construct _ -> (* Restrict typeclass resolution to trivial cases *)
+       begin
+       let typ = Retyping.get_type_of env evd t in
+       try
+         ignore (Typeclasses.resolve_one_typeclass env evd (EConstr.mkApp(Lazy.force coq_DeclaredConstant,[| typ;t|]))) ; true
+       with Not_found -> false
+       end
+    |  _ -> false
+
+  let rec is_ground_term env evd term =
+    match EConstr.kind evd term with
+    | App(c,args) ->
+       is_declared_term env evd c &&
+         Array.for_all (is_ground_term env evd) args
+    | Const _ | Construct _ -> is_declared_term env evd term
+    |  _      -> false
 
 
   let parse_z sigma term =
@@ -674,26 +687,28 @@ struct
 
   let parse_zop gl (op,args) =
     let sigma = gl.sigma in
-    match EConstr.kind sigma op with
-    | Const (x,_) -> (assoc_const sigma op zop_table, args.(0) , args.(1))
-    | Ind((n,0),_) ->
-        if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_Z)
-        then (Mc.OpEq, args.(1), args.(2))
-        else raise ParseError
-    |   _ -> failwith "parse_zop"
+    match args with
+    | [| a1 ; a2|] ->  assoc_const sigma op zop_table, a1, a2
+    | [| ty ; a1 ; a2|] ->
+       if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl ty (Lazy.force coq_Z)
+       then (Mc.OpEq, args.(1), args.(2))
+       else raise ParseError
+    |  _ -> raise ParseError
 
   let parse_rop gl (op,args) =
     let sigma = gl.sigma in
-    match EConstr.kind sigma op with
-     | Const (x,_) -> (assoc_const sigma op rop_table, args.(0) , args.(1))
-     | Ind((n,0),_) ->
-        if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl args.(0) (Lazy.force coq_R)
-        then (Mc.OpEq, args.(1), args.(2))
-        else raise ParseError
-    |   _ -> failwith "parse_zop"
+    match args with
+    | [| a1 ; a2|] -> assoc_const sigma op rop_table, a1 , a2
+    | [| ty ; a1 ; a2|] ->
+       if EConstr.eq_constr sigma op (Lazy.force coq_Eq) && is_convertible gl ty (Lazy.force coq_R)
+       then (Mc.OpEq, a1, a2)
+       else raise ParseError
+    |   _ -> raise ParseError
 
   let parse_qop gl (op,args) =
-    (assoc_const gl.sigma op qop_table, args.(0) , args.(1))
+    if Array.length args = 2
+    then (assoc_const gl.sigma op qop_table, args.(0) , args.(1))
+    else raise ParseError
 
   type 'a op =
     | Binop of ('a Mc.pExpr -> 'a Mc.pExpr -> 'a Mc.pExpr)
@@ -804,7 +819,7 @@ struct
       (op expr1 expr2,env) in
 
        try (Mc.PEc (parse_constant gl term) , env)
-       with ParseError -> 
+       with ParseError ->
          match EConstr.kind gl.sigma term with
            | App(t,args) ->
                (
@@ -820,7 +835,7 @@ struct
                            let (expr,env) = parse_expr env args.(0) in
                            let power = (parse_exp expr args.(1)) in
                            (power  , env)
-			 with e when CErrors.noncritical e ->
+                         with ParseError ->
                            (* if the exponent is a variable *)
                            let (env,n) = Env.compute_rank_add env  term in (Mc.PEX n, env)
                               end
@@ -858,18 +873,47 @@ struct
       coq_Ropp   , Opp ;
       coq_Rpower , Power]
 
-  (** [parse_constant parse gl t] returns the reification of term [t].
+  let parse_constant parse gl t =   parse gl.sigma t
+
+  (** [parse_more_constant parse gl t] returns the reification of term [t].
       If [t] is a ground term, then it is first reduced to normal form
       before using a 'syntactic' parser *)
-  let parse_constant parse gl t =
-    if  is_ground_term gl.env gl.sigma t
-    then
-      parse gl.sigma (Redexpr.cbv_vm gl.env gl.sigma t)
-    else raise ParseError
+  let parse_more_constant parse gl t =
+    try
+      parse gl t
+    with ParseError  ->
+      begin
+        if debug then Feedback.msg_debug Pp.(str "try harder");
+        if is_ground_term gl.env gl.sigma t
+        then parse gl (Redexpr.cbv_vm gl.env gl.sigma t)
+        else raise ParseError
+      end
 
   let zconstant = parse_constant parse_z
   let qconstant = parse_constant parse_q
   let nconstant = parse_constant parse_nat
+
+  (** [parse_more_zexpr parse_constant gl] improves the parsing of exponent
+      which can be arithmetic expressions (without variables).
+      [parse_constant_expr] returns a constant if the argument is an expression without variables. *)
+
+  let rec parse_zexpr gl =
+    parse_expr gl
+      zconstant
+      (fun expr (x:EConstr.t) ->
+        let z = parse_zconstant gl x in
+        match z with
+        | Mc.Zneg _ -> Mc.PEc Mc.Z0
+        |   _     ->  Mc.PEpow(expr, Mc.Z.to_N z)
+    )
+    zop_spec
+  and parse_zconstant  gl e =
+    let (e,_) = parse_zexpr  gl (Env.empty gl) e in
+    match Mc.zeval_const e with
+    | None -> raise ParseError
+    | Some z -> z
+
+
 
   (* NB: R is a different story.
      Because it is axiomatised, reducing would not be effective.
@@ -905,7 +949,7 @@ struct
              let b = rconstant args.(1) in
              f a b
            with
-	      ParseError -> 
+              ParseError ->
 		match op with
 		| op when EConstr.eq_constr sigma op (Lazy.force coq_Rinv) ->
                   let arg = rconstant args.(0) in
@@ -913,12 +957,12 @@ struct
                   then raise ParseError (* This is a division by zero -- no semantics *)
                   else Mc.CInv(arg) 
                 | op when EConstr.eq_constr sigma op (Lazy.force coq_Rpower) ->
-                     Mc.CPow(rconstant args.(0) , Mc.Inr (nconstant gl args.(1)))
+                     Mc.CPow(rconstant args.(0) , Mc.Inr (parse_more_constant nconstant gl args.(1)))
                 | op when EConstr.eq_constr sigma op (Lazy.force coq_IQR)  ->
                      Mc.CQ (qconstant gl args.(0))
                 | op when EConstr.eq_constr sigma op   (Lazy.force coq_IZR)  ->
-                     Mc.CZ (zconstant gl args.(0))
-		| _ ->  raise ParseError
+                     Mc.CZ (parse_more_constant zconstant gl args.(0))
+                | _ ->  raise ParseError
 	end
       |  _ -> raise ParseError in
 
@@ -934,14 +978,6 @@ struct
       res
 
 
-  let parse_zexpr gl =  parse_expr gl
-    zconstant
-    (fun expr x ->
-      let exp = (zconstant gl x) in
-        match exp with
-          | Mc.Zneg _ -> Mc.PEc Mc.Z0
-          |   _     ->  Mc.PEpow(expr, Mc.Z.to_N exp))
-    zop_spec
 
   let parse_qexpr gl =  parse_expr gl
    qconstant
@@ -952,7 +988,7 @@ struct
               begin
                 match expr with
                 | Mc.PEc q -> Mc.PEc (Mc.qpower q exp)
-                |     _    -> print_string "parse_qexpr parse error" ; flush stdout ; raise ParseError
+                |     _    -> raise ParseError
               end
           | _     ->  let exp = Mc.Z.to_N  exp in
                         Mc.PEpow(expr,exp))
@@ -1031,14 +1067,16 @@ struct
           let g,env,tg = xparse_formula env tg b in
           mkformula_binary mkIff term f g,env,tg
         | _ -> parse_atom env tg term)
-      | Prod(typ,a,b) when EConstr.Vars.noccurn sigma 1 b ->
+      | Prod(typ,a,b) when typ.binder_name = Anonymous || EConstr.Vars.noccurn sigma 1 b ->
         let f,env,tg = xparse_formula env tg a in
         let g,env,tg = xparse_formula env tg b in
         mkformula_binary mkI term f g,env,tg
-      | _ when EConstr.eq_constr sigma term (Lazy.force coq_True) -> (Mc.TT,env,tg)
-      | _ when EConstr.eq_constr sigma term (Lazy.force coq_False) -> Mc.(FF,env,tg)
-      | _ when is_prop term -> Mc.X(term),env,tg
-      | _ -> raise ParseError
+      | _ -> if EConstr.eq_constr sigma term (Lazy.force coq_True)
+             then (Mc.TT,env,tg)
+             else if EConstr.eq_constr sigma term (Lazy.force coq_False)
+             then Mc.(FF,env,tg)
+             else if is_prop term then Mc.X(term),env,tg
+             else raise ParseError
     in
     xparse_formula env tg  ((*Reductionops.whd_zeta*) term)
 
@@ -1358,19 +1396,11 @@ let rec parse_hyps gl parse_arith env tg hyps =
        let (c,env,tg) = parse_formula gl parse_arith env  tg t in
 	((i,c)::lhyps, env,tg)
       with e when CErrors.noncritical e -> (lhyps,env,tg)
-       (*(if debug then Printf.printf "parse_arith : %s\n" x);*)
-
-
-(*exception ParseError*)
-
-
 
 let parse_goal gl parse_arith (env:Env.t) hyps term =
- (*  try*)
  let (f,env,tg) = parse_formula gl parse_arith env (Tag.from 0) term in
  let (lhyps,env,tg) = parse_hyps gl parse_arith env tg hyps in
   (lhyps,f,env)
-   (*  with Failure x -> raise ParseError*)
 
 (**
   * The datastructures that aggregate theory-dependent proof values.
@@ -1886,7 +1916,7 @@ let micromega_genr prover tac =
          ]
 
     with
-    | ParseError  -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
+    | ParseError -> Tacticals.New.tclFAIL 0 (Pp.str "Bad logical fragment")
     | Mfourier.TimeOut  -> Tacticals.New.tclFAIL 0 (Pp.str "Timeout")
     | CsdpNotFound -> flush stdout ;
      Tacticals.New.tclFAIL 0 (Pp.str 
