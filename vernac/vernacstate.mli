@@ -45,12 +45,9 @@ module Proof_global : sig
   val give_me_the_proof_opt : unit -> Proof.t option
   val get_current_proof_name : unit -> Names.Id.t
 
-  val simple_with_current_proof :
-      (unit Proofview.tactic -> Proof.t -> Proof.t) -> unit
-
+  val map_proof : (Proof.t -> Proof.t) -> unit
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
-
 
   val return_proof : ?allow_partial:bool -> unit -> Proof_global.closed_proof_output
 

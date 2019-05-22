@@ -90,12 +90,9 @@ val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> t ->
 
 val get_open_goals : t -> int
 
-(** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
-    no current proof.
-    The return boolean is set to [false] if an unsafe tactic has been used. *)
-val with_proof : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
-val simple_with_proof : (unit Proofview.tactic -> Proof.t -> Proof.t) -> t -> t
-val modify_proof : (Proof.t -> Proof.t) -> t -> t
+val map_proof : (Proof.t -> Proof.t) -> t -> t
+val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
+val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t

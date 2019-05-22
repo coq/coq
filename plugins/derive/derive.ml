@@ -101,6 +101,6 @@ let start_deriving f suchthat name : Lemmas.t =
 
   let terminator ?hook _ = Lemmas.Internal.make_terminator terminator in
   let lemma = Lemmas.start_dependent_lemma name kind goals ~terminator in
-  Lemmas.simple_with_proof begin fun _ p ->
+  Lemmas.pf_map (Proof_global.map_proof begin fun p ->
     Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
-  end lemma
+  end) lemma
