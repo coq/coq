@@ -856,7 +856,7 @@ let print_ltac qid =
 (** Calling tactics *)
 
 let solve ~pstate default tac =
-  let pstate, status = Proof_global.with_proof begin fun etac p ->
+  let pstate, status = Proof_global.map_fold_proof_endline begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Pfedit.solve g None tac ?with_end_tac p in

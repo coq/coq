@@ -108,7 +108,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
 
-let by tac = Proof_global.with_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
+let by tac = Proof_global.map_fold_proof (solve (Goal_select.SelectNth 1) None tac)
 
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)

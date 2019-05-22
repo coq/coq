@@ -2032,7 +2032,7 @@ end = struct (* {{{ *)
            "goals only"))
        else begin
         let (i, ast) = r_ast in
-        PG_compat.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
+        PG_compat.map_proof (fun p -> Proof.focus focus_cond () i p);
         (* STATE SPEC:
          * - start : id
          * - return: id
@@ -2088,7 +2088,7 @@ end = struct (* {{{ *)
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
     TaskQueue.with_n_workers nworkers (fun queue ->
-    PG_compat.simple_with_current_proof (fun _ p ->
+    PG_compat.map_proof (fun p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->

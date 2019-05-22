@@ -1115,7 +1115,7 @@ let focus_command_cond = Proof.no_cond command_focus
      all tactics fail if there are no further goals to prove. *)
 
 let vernac_solve_existential ~pstate n com =
-  Proof_global.modify_proof (fun p ->
+  Proof_global.map_proof (fun p ->
       let intern env sigma = Constrintern.intern_constr env sigma com in
       Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
@@ -2080,7 +2080,7 @@ let vernac_register ~stack qid r =
 (* Proof management *)
 
 let vernac_focus gln =
-  Proof_global.simple_with_proof (fun _ p ->
+  Proof_global.map_proof (fun p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -2090,8 +2090,8 @@ let vernac_focus gln =
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.simple_with_proof
-    (fun _ p -> Proof.unfocus command_focus p ())
+  Proof_global.map_proof
+    (fun p -> Proof.unfocus command_focus p ())
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused ~pstate =
@@ -2109,7 +2109,7 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  Proof_global.simple_with_proof (fun _ p ->
+  Proof_global.map_proof (fun p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some (Goal_select.SelectNth n) -> Proof.focus subproof_cond () n p
@@ -2118,11 +2118,11 @@ let vernac_subproof gln =
              (str "Brackets do not support multi-goal selectors."))
 
 let vernac_end_subproof () =
-  Proof_global.simple_with_proof (fun _ p ->
+  Proof_global.map_proof (fun p ->
     Proof.unfocus subproof_kind p ())
 
 let vernac_bullet (bullet : Proof_bullet.t) =
-  Proof_global.simple_with_proof (fun _ p ->
+  Proof_global.map_proof (fun p ->
     Proof_bullet.put p bullet)
 
 (* Stack is needed due to show proof names, should deprecate / remove

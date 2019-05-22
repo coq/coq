@@ -49,9 +49,11 @@ type t =
 let get_proof ps = ps.proof
 let get_proof_name ps = (Proof.data ps.proof).Proof.name
 let get_persistence ps = ps.strength
-let modify_proof f p = { p with proof = f p.proof }
 
-let with_proof f ps =
+let map_proof f p = { p with proof = f p.proof }
+let map_fold_proof f p = let proof, res = f p.proof in { p with proof }, res
+
+let map_fold_proof_endline f ps =
   let et =
     match ps.endline_tactic with
     | None -> Proofview.tclUNIT ()
@@ -66,10 +68,7 @@ let with_proof f ps =
   let ps = { ps with proof = newpr } in
   ps, ret
 
-let simple_with_proof f ps =
-  let ps, () = with_proof (fun t ps -> f t ps, ()) ps in ps
-
-let compact_the_proof pf = simple_with_proof (fun _ -> Proof.compact) pf
+let compact_the_proof pf = map_proof Proof.compact pf
 
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
 let set_endline_tactic tac ps =
@@ -284,11 +283,9 @@ let close_proof ~opaque ~keep_body_ucst_separate fix_exn ps =
   close_proof ~opaque ~keep_body_ucst_separate ~now:true
     (Future.from_val ~fix_exn (return_proof ps)) ps
 
-let update_global_env pf =
-  let res, () =
-  with_proof (fun _ p ->
-        Proof.in_proof p (fun sigma ->
-            let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-            let p,(status,info),_ = Proof.run_tactic (Global.env ()) tac p in
-            (p, ()))) pf
-  in res
+let update_global_env =
+  map_proof (fun p ->
+      Proof.in_proof p (fun sigma ->
+          let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+          let p,(status,info),_ = Proof.run_tactic (Global.env ()) tac p in
+          p))
