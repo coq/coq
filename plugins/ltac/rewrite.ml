@@ -1994,7 +1994,8 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
-  let kind = Decl_kinds.Global Decl_kinds.ImportDefaultBehavior, atts.polymorphic,
+  let poly = atts.polymorphic in
+  let kind = Decl_kinds.(Global ImportDefaultBehavior),
              Decl_kinds.DefinitionBody Decl_kinds.Instance
   in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
@@ -2010,7 +2011,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let info = Lemmas.Info.make ~hook () in
   Flags.silently
     (fun () ->
-       let lemma = Lemmas.start_lemma ~name:instance_id ~kind ~info (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+       let lemma = Lemmas.start_lemma ~name:instance_id ~poly ~kind ~info (Evd.from_ctx uctx) (EConstr.of_constr instance) in
        fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =

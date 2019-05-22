@@ -123,7 +123,7 @@ open Declare
 
 let definition_message = Declare.definition_message
 
-let save id const ?hook uctx (locality,_,kind) =
+let save id const ?hook uctx (locality,kind) =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match locality with
     | Discharge ->

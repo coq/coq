@@ -995,8 +995,8 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       Ensures by: obvious
       i*)
       ~name:(mk_equation_id f_id)
-      ~kind:Decl_kinds.(Global ImportDefaultBehavior, false, Proof Theorem)
-
+      ~poly:false
+      ~kind:(Decl_kinds.(Global ImportDefaultBehavior, Proof Theorem))
       evd
       lemma_type
   in

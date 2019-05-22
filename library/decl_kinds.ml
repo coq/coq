@@ -67,7 +67,7 @@ type goal_object_kind =
   | DefinitionBody of definition_object_kind
   | Proof of theorem_kind
 
-type goal_kind = locality * polymorphic * goal_object_kind
+type goal_kind = locality * goal_object_kind
 
 (** Kinds used in library *)
 

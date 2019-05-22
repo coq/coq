@@ -103,8 +103,8 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
      question, how does abstract behave when discharge is local for example?
   *)
   let goal_kind, suffix = if opaque
-    then (Global ImportDefaultBehavior,poly,Proof Theorem), "_subproof"
-    else (Global ImportDefaultBehavior,poly,DefinitionBody Definition), "_subterm" in
+    then (Global ImportDefaultBehavior,Proof Theorem), "_subproof"
+    else (Global ImportDefaultBehavior,DefinitionBody Definition), "_subterm" in
   let id, goal_kind = name_op_to_name ~name_op ~name ~goal_kind suffix in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -141,7 +141,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~goal_kind id ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~poly ~goal_kind id ectx secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it

@@ -93,6 +93,7 @@ end
 (** Starts the proof of a constant *)
 val start_lemma
   :  name:Id.t
+  -> poly:bool
   -> kind:goal_kind
   -> ?udecl:UState.universe_decl
   -> ?sign:Environ.named_context_val
@@ -103,6 +104,7 @@ val start_lemma
 
 val start_dependent_lemma
   :  name:Id.t
+  -> poly:bool
   -> kind:goal_kind
   -> ?udecl:UState.universe_decl
   -> ?info:Info.t
@@ -114,6 +116,7 @@ type lemma_possible_guards = int list list
 (** Pretty much internal, only used in ComFixpoint *)
 val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
+  -> poly:bool
   -> kind:goal_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
@@ -127,6 +130,7 @@ val default_thm_id : Names.Id.t
 (** Main [Lemma foo args : type.] command *)
 val start_lemma_com
   :  program_mode:bool
+  -> poly:bool
   -> kind:goal_kind
   -> ?inference_hook:Pretyping.inference_hook
   -> ?hook:DeclareDef.Hook.t

@@ -560,7 +560,7 @@ let () =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ~program_mode ?hook k l =
+let start_proof_and_print ~program_mode ~poly ?hook k l =
   let inference_hook =
     if program_mode then
       let hook env sigma ev =
@@ -582,7 +582,7 @@ let start_proof_and_print ~program_mode ?hook k l =
       in Some hook
     else None
   in
-  start_lemma_com ~program_mode ?inference_hook ?hook ~kind:k l
+  start_lemma_com ~program_mode ?inference_hook ?hook ~poly ~kind:k l
 
 let vernac_definition_hook p = function
 | Coercion ->
@@ -614,8 +614,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let program_mode = atts.program in
+  let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
-  start_proof_and_print ~program_mode (local, atts.polymorphic, DefinitionBody kind) ?hook [(name, pl), (bl, t)]
+  start_proof_and_print ~program_mode ~poly (local, DefinitionBody kind) ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -638,7 +639,7 @@ let vernac_start_proof ~atts kind l =
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l
+  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic (local, Proof kind) l
 
 let vernac_end_proof ?stack ?proof = let open Vernacexpr in function
   | Admitted ->

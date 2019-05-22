@@ -39,6 +39,7 @@ type 'a proof_entry = {
 type proof_object =
   { id : Names.Id.t
   ; entries : Evd.side_effects proof_entry list
+  ; poly : bool
   ; persistence : Decl_kinds.goal_kind
   ; universes: UState.t
   ; udecl : UState.universe_decl
@@ -69,7 +70,8 @@ let map_fold_proof_endline f ps =
     | None -> Proofview.tclUNIT ()
     | Some tac ->
       let open Geninterp in
-      let ist = { lfun = Id.Map.empty; poly = pi2 ps.strength; extra = TacStore.empty } in
+      let {Proof.poly} = Proof.data ps.proof in
+      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
       let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
       let tac = Geninterp.interp tag ist tac in
       Ftactic.run tac (fun _ -> Proofview.tclUNIT ())
@@ -92,16 +94,16 @@ let set_endline_tactic tac ps =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma name udecl kind goals =
-  { proof = Proof.start ~name ~poly:(pi2 kind) sigma goals
+let start_proof sigma name udecl ~poly kind goals =
+  { proof = Proof.start ~name ~poly sigma goals
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
   ; strength = kind
   }
 
-let start_dependent_proof name udecl kind goals =
-  { proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals
+let start_dependent_proof name udecl ~poly kind goals =
+  { proof = Proof.dependent_start ~name ~poly goals
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
@@ -254,7 +256,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       proof_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { id = name; entries = entries; persistence = strength; universes; udecl }
+  { id = name; entries = entries; poly; persistence = strength; universes; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in

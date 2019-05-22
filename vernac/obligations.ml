@@ -388,16 +388,14 @@ let deps_remaining obls deps =
     deps []
 
 
-let goal_kind poly =
-  Decl_kinds.(Global ImportNeedQualified, poly, DefinitionBody Definition)
+let goal_kind = Decl_kinds.(Global ImportNeedQualified, DefinitionBody Definition)
+let goal_proof_kind = Decl_kinds.(Global ImportNeedQualified, Proof Lemma)
 
-let goal_proof_kind poly =
-  Decl_kinds.(Global ImportNeedQualified, poly, Proof Lemma)
-
-let kind_of_obligation poly o =
+let kind_of_obligation o =
   match o with
-  | Evar_kinds.Define false | Evar_kinds.Expand -> goal_kind poly
-  | _ -> goal_proof_kind poly
+  | Evar_kinds.Define false
+  | Evar_kinds.Expand -> goal_kind
+  | _ -> goal_proof_kind
 
 let rec string_of_list sep f = function
     [] -> ""
@@ -415,7 +413,7 @@ let solve_by_tac ?loc name evi t poly ctx =
   try
     let (entry,_,ctx') =
       Pfedit.build_constant_by_tactic
-        id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
+        id ~poly ~goal_kind ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
     let (body, eff) = Future.force entry.Proof_global.proof_entry_body in
     let body = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
@@ -486,14 +484,15 @@ let rec solve_obligation prg num tac =
         ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
   in
   let obl = subst_deps_obl obls obl in
-  let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
+  let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
   let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
   let info = Lemmas.Info.make ~hook ~proof_ending () in
-  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign ~name:obl.obl_name ~kind ~info evd (EConstr.of_constr obl.obl_type) in
+  let poly = pi2 prg.prg_kind in
+  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign ~name:obl.obl_name ~poly ~kind ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma

@@ -46,6 +46,7 @@ type 'a proof_entry = {
 type proof_object =
   { id : Names.Id.t
   ; entries : Evd.side_effects proof_entry list
+  ; poly : bool
   ; persistence : Decl_kinds.goal_kind
   ; universes: UState.t
   ; udecl : UState.universe_decl
@@ -65,6 +66,7 @@ val start_proof
   :  Evd.evar_map
   -> Names.Id.t
   -> UState.universe_decl
+  -> poly:bool
   -> Decl_kinds.goal_kind
   -> (Environ.env * EConstr.types) list
   -> t
@@ -74,6 +76,7 @@ val start_proof
 val start_dependent_proof
   :  Names.Id.t
   -> UState.universe_decl
+  -> poly:bool
   -> Decl_kinds.goal_kind
   -> Proofview.telescope
   -> t
