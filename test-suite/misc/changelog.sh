@@ -1,11 +1,9 @@
 #!/bin/sh
 
-while read line; do
-  if [ "$line" = "is_a_released_version = False" ]; then
+if grep -q -F "is_a_released_version = False" ../config/coq_config.py; then
     echo "This is not a released version: nothing to test."
     exit 0
-  fi
-done < ../config/coq_config.py
+fi
 
 for d in ../doc/changelog/*; do
   if [ -d "$d" ]; then
