@@ -173,24 +173,41 @@ let () =
   let raw_printer env sigma _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
   Pptactic.declare_extra_vernac_genarg_pprule wit_function_rec_definition_loc raw_printer
 
+let is_proof_termination_interactively_checked recsl =
+  List.exists (function
+  | _,((_,( Some { CAst.v = CMeasureRec _ }
+          | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
+  | _,((_,Some { CAst.v = CStructRec _ },_,_,_),_)
+  | _,((_,None,_,_,_),_) -> false) recsl
+
+let classify_as_Fixpoint recsl =
+ Vernac_classifier.classify_vernac
+    (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
+
+let classify_funind recsl =
+  match classify_as_Fixpoint recsl with
+  | Vernacextend.VtSideff ids, _
+    when is_proof_termination_interactively_checked recsl ->
+      Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
+  | x -> x
+
+let is_interactive recsl =
+  match classify_funind recsl with
+  | Vernacextend.VtStartProof _, _ -> true
+  | _ -> false
+
 }
 
-(* TASSI: n'importe quoi ! *)
-VERNAC COMMAND EXTEND Function STATE maybe_open_proof
+VERNAC COMMAND EXTEND Function STATE CUSTOM
 | ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
-    => { let hard = List.exists (function
-           | _,((_,(Some { CAst.v = CMeasureRec _ }
-             | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
-           | _,((_,Some { CAst.v = CStructRec _ },_,_,_),_)
-           | _,((_,None,_,_,_),_) -> false) recsl in
-         match
-           Vernac_classifier.classify_vernac
-             (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
-         with
-         | Vernacextend.VtSideff ids, _ when hard ->
-             Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
-         | x -> x }
-    -> { do_generate_principle false (List.map snd recsl) }
+    => { classify_funind recsl }
+    -> {
+         if is_interactive recsl then
+           Vernacextend.VtOpenProof (fun () ->
+             do_generate_principle_interactive (List.map snd recsl))
+         else
+           Vernacextend.VtDefault (fun () ->
+             do_generate_principle (List.map snd recsl)) }
 END
 
 {

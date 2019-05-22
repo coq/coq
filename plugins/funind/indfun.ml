@@ -459,7 +459,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
     tcc_lemma_ref is_mes  rec_arg_num rec_arg_type relation
 
 
-let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
+let register_wf interactive_proof ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
   let type_of_f = Constrexpr_ops.mkCProdN args ret_type in
@@ -500,8 +500,8 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
       (* No proof done *)
       ()
   in
-  Recdef.recursive_definition
-    is_mes fname rec_impls
+  Recdef.recursive_definition ~interactive_proof
+    ~is_mes fname rec_impls
     type_of_f
     wf_rel_expr
     rec_arg_num
@@ -510,7 +510,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     using_lemmas
 
 
-let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas args ret_type body =
+let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas args ret_type body =
   let wf_arg_type,wf_arg =
     match wf_arg with
       | None ->
@@ -570,7 +570,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	  in
 	  wf_rel_with_mes,false
   in			       
-  register_wf ~is_mes:is_mes fname rec_impls wf_rel_from_mes wf_arg
+  register_wf interactive_proof ~is_mes:is_mes fname rec_impls wf_rel_from_mes wf_arg
     using_lemmas args ret_type body
 
 let map_option f = function 
@@ -633,7 +633,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   fixpoint_exprl_with_new_bl
   
 
-let do_generate_principle pconstants on_error register_built interactive_proof
+let do_generate_principle_aux pconstants on_error register_built interactive_proof
     (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.t option =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let pstate, _is_struct =
@@ -660,7 +660,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      true
 	  in
 	  if register_built
-          then register_wf name rec_impls wf_rel wf_x.CAst.v using_lemmas args types body pre_hook, false
+          then register_wf interactive_proof name rec_impls wf_rel wf_x.CAst.v using_lemmas args types body pre_hook, false
           else None, false
       |[((_,Some {CAst.v = Constrexpr.CMeasureRec(wf_x,wf_mes,wf_rel_opt)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},_),_,args,types,body)),_)  as fixpoint_expr =
@@ -684,7 +684,7 @@ let do_generate_principle pconstants on_error register_built interactive_proof
 	      true
 	  in
 	  if register_built
-          then register_mes name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, true
+          then register_mes interactive_proof name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, true
           else None, true
       | _ ->
           List.iter (function ((_na,ord,_args,_body,_type),_not) ->
@@ -902,11 +902,27 @@ let make_graph (f_ref : GlobRef.t) =
                  [((CAst.make id,None),None,nal_tas,t,Some b),[]]
 	 in
          let mp = Constant.modpath c in
-         let pstate = do_generate_principle [c,Univ.Instance.empty] error_error  false false expr_list in
+         let pstate = do_generate_principle_aux [c,Univ.Instance.empty] error_error  false false expr_list in
          assert (Option.is_empty pstate);
 	 (* We register the infos *)
 	 List.iter
            (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
            expr_list)
 
-let do_generate_principle = do_generate_principle [] warning_error true
+(* *************** statically typed entrypoints ************************* *)
+
+let do_generate_principle_interactive fixl : Proof_global.t =
+  match
+    do_generate_principle_aux [] warning_error true true fixl
+  with
+  | Some pstate -> pstate
+  | None ->
+      CErrors.anomaly
+       (Pp.str"indfun: leaving no open proof in interactive mode")
+
+let do_generate_principle fixl : unit =
+  match do_generate_principle_aux [] warning_error true false fixl  with
+  | Some _pstate ->
+      CErrors.anomaly
+        (Pp.str"indfun: leaving a goal open in non-interactive mode")
+  | None -> ()

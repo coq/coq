@@ -737,7 +737,7 @@ used by ``Function``. A more precise description is given below.
       decreases at each recursive call of :token:`term`. The order must be well-founded.
       Parameters of the function are bound in :token:`term`.
 
-   Depending on the annotation, the user is left with some proof
+   If the annotation is ``measure`` or ``fw``, the user is left with some proof
    obligations that will be used to define the function. These proofs
    are: proofs that each recursive call is actually decreasing with
    respect to the given criteria, and (if the criteria is `wf`) a proof

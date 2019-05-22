@@ -6,9 +6,11 @@ val warn_cannot_define_graph : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 val warn_cannot_define_principle : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 
 val do_generate_principle :
-  bool ->
+  (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> unit
+
+val do_generate_principle_interactive :
   (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
-  Proof_global.t option
+  Proof_global.t
 
 val functional_induction :
   bool ->

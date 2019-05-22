@@ -1395,12 +1395,10 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	       ) tclIDTAC)
             g end) pstate
   in
-  try
-    Some (fst @@ by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
-  with UserError _ ->
-    (defined pstate; None)
+  if Proof_global.get_open_goals pstate = 0 then (defined pstate; None) else Some pstate
 
 let com_terminate
+    interactive_proof
     tcc_lemma_name
     tcc_lemma_ref
     is_mes
@@ -1430,8 +1428,8 @@ let com_terminate
   with EmptySubgoals ->
     (* a non recursive function declared with measure ! *)
     tcc_lemma_ref := Not_needed;
-    defined pstate;
-    None
+    if interactive_proof then Some pstate
+    else (defined pstate; None)
 
 let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
   (cont_tactic:Id.t list -> tactic) g =
@@ -1494,7 +1492,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
 
 
-let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
+let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : Proof_global.t option =
   let open Term in
   let open Constr in
@@ -1585,6 +1583,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   (* XXX STATE Why do we need this... why is the toplevel protection not enough *)
   funind_purify (fun () ->
       let pstate = com_terminate
+          interactive_proof
           tcc_lemma_name
           tcc_lemma_constr
           is_mes functional_ref
