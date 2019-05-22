@@ -455,7 +455,7 @@ the latter can be replaced by the open syntax ``of term`` or
 following extension of the binder syntax:
 
 .. prodn::
-   binder += & @term | of @term
+   binder += {| & @term | of @term }
 
 Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
 of a binder list. For instance, the usual two-constructor polymorphic
@@ -1340,7 +1340,7 @@ The general syntax of the discharging tactical ``:`` is:
    :undocumented:
 
 .. prodn::
-   d_item ::= {? @occ_switch %| @clear_switch } @term
+   d_item ::= {? {| @occ_switch | @clear_switch } } @term
 .. prodn::
    clear_switch ::= { {+ @ident } }
 
@@ -1556,19 +1556,19 @@ whose general syntax is
    :undocumented:
 
 .. prodn::
-   i_item ::= @i_pattern %| @s_item %| @clear_switch %| @i_view %| @i_block
+   i_item ::= {| @i_pattern | @s_item | @clear_switch | @i_view | @i_block }
 
 .. prodn::
-   s_item ::= /= %| // %| //=
+   s_item ::= {| /= | // | //= }
 
 .. prodn::
-   i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
+   i_view ::= {? %{%} } {| /@term | /ltac:( @tactic ) }
 
 .. prodn::
-   i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch }<- %| [ {?| @i_item } ] %| - %| [: {+ @ident } ]
+   i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?| @i_item } ] | - | [: {+ @ident } ] }
 
 .. prodn::
-   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
+   i_block ::= {| [^ @ident ] | [^~ {| @ident | @num } ] }
 
 The ``=>`` tactical first executes :token:`tactic`, then the :token:`i_item`\s,
 left to right. An :token:`s_item` specifies a
@@ -2390,7 +2390,7 @@ of a local definition during the generalization phase, the name of the
 local definition must be written between parentheses, like in
 ``rewrite H in H1 (def_n) H2.``
 
-.. tacv:: @tactic in {+ @clear_switch | {? @  } @ident | ( @ident ) | ( {? @  } @ident := @c_pattern ) } {? * }
+.. tacv:: @tactic in {+ {| @clear_switch | {? @}@ident | ( @ident ) | ( {? @}@ident := @c_pattern ) } } {? * }
 
    This is the most general form of the ``in`` tactical.
    In its simplest form the last option lets one rename hypotheses that
@@ -2492,7 +2492,7 @@ tactic:
 The behavior of the defective have tactic makes it possible to
 generalize it in the following general construction:
 
-.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item | {+ @ssr_binder } } {? : @term } {? := @term | by @tactic }
+.. tacn:: have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } {? : @term } {? {| := @term | by @tactic } }
    :undocumented:
 
 Open syntax is supported for both :token:`term`. For the description
@@ -2920,7 +2920,7 @@ Advanced generalization
 The complete syntax for the items on the left hand side of the ``/``
 separator is the following one:
 
-.. tacv:: wlog … : {? @clear_switch | {? @  } @ident | ( {? @  } @ident := @c_pattern) } / @term
+.. tacv:: wlog … : {? {| @clear_switch | {? @}@ident | ( {? @}@ident := @c_pattern) } } / @term
    :undocumented:
 
 Clear operations are intertwined with generalization operations. This
@@ -3020,13 +3020,13 @@ A rewrite step :token:`rstep` has the general form:
    rstep ::= {? @r_prefix } @r_item
 
 .. prodn::
-   r_prefix ::= {? - } {? @mult } {? @occ_switch %| @clear_switch } {? [ @r_pattern ] }
+   r_prefix ::= {? - } {? @mult } {? {| @occ_switch | @clear_switch } } {? [ @r_pattern ] }
 
 .. prodn::
-   r_pattern ::= @term %| in {? @ident in } @term %| %( @term in %| @term as %) @ident in @term
+   r_pattern ::= {| @term | in {? @ident in } @term | {| @term in | @term as } @ident in @term }
 
 .. prodn::
-   r_item ::= {? / } @term %| @s_item
+   r_item ::= {| {? / } @term | @s_item }
 
 An :token:`r_prefix` contains annotations to qualify where and how the rewrite
 operation should be performed:
@@ -3702,7 +3702,7 @@ The under tactic
 
 The convenience :tacn:`under` tactic supports the following syntax:
 
-.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do ( @tactic | [ {*| @tactic } ] ) }
+.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do {| @tactic | [ {*| @tactic } ] } }
    :name: under
 
    Operate under the context proved to be extensional by
@@ -5167,7 +5167,7 @@ Interpreting assumptions
 
 The general form of an assumption view tactic is:
 
-.. tacv:: [move | case] / @term
+.. tacv:: {| move | case } / @term
    :undocumented:
 
 The term , called the *view lemma* can be:
@@ -5514,7 +5514,7 @@ Parameters
 |SSR| tactics
 
 .. prodn::
-   d_tactic ::= elim %| case %| congr %| apply %| exact %| move
+   d_tactic ::= {| elim | case | congr | apply | exact | move }
 
 Notation scope
 
@@ -5526,7 +5526,7 @@ Module name
 
 Natural number
 
-.. prodn:: natural ::= @num %| @ident
+.. prodn:: natural ::= {| @num | @ident }
 
 where :token:`ident` is an Ltac variable denoting a standard |Coq| numeral
 (should not be the name of a tactic which can be followed by a
@@ -5535,7 +5535,7 @@ bracket ``[``, like ``do``, ``have``,…)
 Items and switches
 ~~~~~~~~~~~~~~~~~~
 
-.. prodn:: ssr_binder ::= @ident %| ( @ident {? : @term } )
+.. prodn:: ssr_binder ::= {| @ident | ( @ident {? : @term } ) }
 
 binder see :ref:`abbreviations_ssr`.
 
@@ -5543,33 +5543,33 @@ binder see :ref:`abbreviations_ssr`.
 
 clear switch see :ref:`discharge_ssr`
 
-.. prodn:: c_pattern ::= {? @term in %| @term as } @ident in @term
+.. prodn:: c_pattern ::= {? {| @term in | @term as } } @ident in @term
 
 context pattern see :ref:`contextual_patterns_ssr`
 
-.. prodn:: d_item ::= {? @occ_switch %| @clear_switch } {? @term %| ( @c_pattern ) }
+.. prodn:: d_item ::= {? {| @occ_switch | @clear_switch } } {? {| @term | ( @c_pattern ) } }
 
 discharge item see :ref:`discharge_ssr`
 
-.. prodn:: gen_item ::= {? @  } @ident %| ( @ident ) %| ( {? @  } @ident := @c_pattern )
+.. prodn:: gen_item ::= {| {? @  } @ident | ( @ident ) | ( {? @  } @ident := @c_pattern ) }
 
 generalization item see :ref:`structure_ssr`
 
-.. prodn:: i_pattern ::= @ident %| > %| _ %| ? %| * %| + %| {? @occ_switch } -> %| {? @occ_switch } <- %| [ {?|  @i_item } ] %| - %| [: {+ @ident } ]
+.. prodn:: i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?|  @i_item } ] | - | [: {+ @ident } ] }
 
 intro pattern :ref:`introduction_ssr`
 
-.. prodn:: i_item ::= @clear_switch %| @s_item %| @i_pattern %| @i_view %| @i_block
+.. prodn:: i_item ::= {| @clear_switch | @s_item | @i_pattern | @i_view | @i_block }
 
 view :ref:`introduction_ssr`
 
 .. prodn::
-   i_view ::= {? %{%} } /@term %| /ltac:( @tactic )
+   i_view ::= {? %{%} } {| /@term | /ltac:( @tactic ) }
 
 intro block :ref:`introduction_ssr`
 
 .. prodn::
-   i_block ::= [^ @ident ] %| [^~ @ident ] %| [^~ @num ]
+   i_block ::= {| [^ @ident ] | [^~ {| @ident |  @num } ] }
 
 intro item  see :ref:`introduction_ssr`
 
@@ -5577,7 +5577,7 @@ intro item  see :ref:`introduction_ssr`
 
 multiplier  see :ref:`iteration_ssr`
 
-.. prodn:: occ_switch ::= { {? + %| - } {* @num } }
+.. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
 
 occur. switch see :ref:`occurrence_selection_ssr`
 
@@ -5585,19 +5585,19 @@ occur. switch see :ref:`occurrence_selection_ssr`
 
 multiplier see :ref:`iteration_ssr`
 
-.. prodn:: mult_mark ::= ? %| !
+.. prodn:: mult_mark ::= {| ? | ! }
 
 multiplier mark see :ref:`iteration_ssr`
 
-.. prodn:: r_item ::= {? / } @term %| @s_item
+.. prodn:: r_item ::= {| {? / } @term | @s_item }
 
 rewrite item see :ref:`rewriting_ssr`
 
-.. prodn:: r_prefix ::= {? - } {? @int_mult } {? @occ_switch %| @clear_switch } {? [ @r_pattern ] }
+.. prodn:: r_prefix ::= {? - } {? @int_mult } {? {| @occ_switch | @clear_switch } } {? [ @r_pattern ] }
 
 rewrite prefix see :ref:`rewriting_ssr`
 
-.. prodn:: r_pattern ::= @term %| @c_pattern %| in {? @ident in } @term
+.. prodn:: r_pattern ::= {| @term | @c_pattern | in {? @ident in } @term }
 
 rewrite pattern see :ref:`rewriting_ssr`
 
@@ -5605,7 +5605,7 @@ rewrite pattern see :ref:`rewriting_ssr`
 
 rewrite step see :ref:`rewriting_ssr`
 
-.. prodn:: s_item ::= /= %| // %| //=
+.. prodn:: s_item ::= {| /= | // | //= }
 
 simplify switch see :ref:`introduction_ssr`
 
@@ -5640,7 +5640,7 @@ respectively.
 
    rewrite (see :ref:`rewriting_ssr`)
 
-.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do ( @tactic | [ {*| @tactic } ] )}
+.. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do {| @tactic | [ {*| @tactic } ] } }
 
    under (see :ref:`under_ssr`)
 
@@ -5648,8 +5648,8 @@ respectively.
 
    over (see :ref:`over_ssr`)
 
-.. tacn:: have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } {? : @term } := @term
-          have {* @i_item } {? @i_pattern } {? @s_item %| {+ @ssr_binder } } : @term {? by @tactic }
+.. tacn:: have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } {? : @term } := @term
+          have {* @i_item } {? @i_pattern } {? {| @s_item | {+ @ssr_binder } } } : @term {? by @tactic }
           have suff {? @clear_switch } {? @i_pattern } {? : @term } := @term
           have suff {? @clear_switch } {? @i_pattern } : @term {? by @tactic }
           gen have {? @ident , } {? @i_pattern } : {+ @gen_item } / @term {? by @tactic }
@@ -5658,7 +5658,7 @@ respectively.
 
    forward chaining (see :ref:`structure_ssr`)
 
-.. tacn:: wlog {? suff } {? @i_item } : {* @gen_item %| @clear_switch } / @term
+.. tacn:: wlog {? suff } {? @i_item } : {* {| @gen_item | @clear_switch } } / @term
 
    specializing (see :ref:`structure_ssr`)
 
@@ -5710,7 +5710,7 @@ discharge :ref:`discharge_ssr`
 
 introduction see :ref:`introduction_ssr`
 
-.. prodn:: tactic += @tactic in {+ @gen_item %| @clear_switch } {? * }
+.. prodn:: tactic += @tactic in {+ {| @gen_item | @clear_switch } } {? * }
 
 localization see :ref:`localization_ssr`
 
