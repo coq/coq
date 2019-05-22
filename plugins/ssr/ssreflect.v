@@ -132,7 +132,7 @@ Delimit Scope ssripat_scope with ssripat.
  Make the general "if" into a notation, so that we can override it below.
  The notations are "only parsing" because the Coq decompiler will not
  recognize the expansion of the boolean if; using the default printer
- avoids a spurrious trailing %%GEN_IF. **)
+ avoids a spurious trailing %%GEN_IF. **)
 
 Declare Scope general_if_scope.
 Delimit Scope general_if_scope with GEN_IF.
@@ -347,10 +347,10 @@ Register protect_term as plugins.ssreflect.protect_term.
 
 (**
  The ssreflect idiom for a non-keyed pattern:
-  - unkeyed t wiil match any subterm that unifies with t, regardless of
+  - unkeyed t will match any subterm that unifies with t, regardless of
     whether it displays the same head symbol as t.
   - unkeyed t a b will match any application of a term f unifying with t,
-    to two arguments unifying with with a and b, repectively, regardless of
+    to two arguments unifying with with a and b, respectively, regardless of
     apparent head symbols.
   - unkeyed x where x is a variable will match any subterm with the same
     type as x (when x would raise the 'indeterminate pattern' error).        **)
@@ -380,7 +380,7 @@ Notation "=^~ r" := (ssr_converse r) : form_scope.
   locked_with k t is equal but not convertible to t, much like locked t,
     but supports explicit tagging with a value k : unit. This is used to
     mitigate a flaw in the term comparison heuristic of the Coq kernel,
-    which treats all terms of the form locked t as equal and conpares their
+    which treats all terms of the form locked t as equal and compares their
     arguments recursively, leading to an exponential blowup of comparison.
     For this reason locked_with should be used rather than locked when
     defining ADT operations. The unlock tactic does not support locked_with
@@ -523,7 +523,7 @@ Hint View for apply/ iffRLn|2 iffLRn|2 iffRL|2 iffLR|2.
    elim/abstract_context: (pattern) => G defG.
    vm_compute; rewrite {}defG {G}.
  Note that vm_cast are not stored in the proof term
- for reductions occuring in the context, hence
+ for reductions occurring in the context, hence
    set here := pattern; vm_compute in (value of here)
  blows up at Qed time.                                        **)
 Lemma abstract_context T (P : T -> Type) x :
@@ -637,7 +637,7 @@ Ltac over :=
     later complain that it cannot erase _top_assumption_ after having
     abstracted the viewed assumption. Making x and y maximal implicits
     would avoid this and force the intended @Some_inj nat x y _top_assumption_
-    interpretation, but is undesireable as it makes it harder to use Some_inj
+    interpretation, but is undesirable as it makes it harder to use Some_inj
     with the many SSReflect and MathComp lemmas that have an injectivity
     premise. Specifying {T : nonPropType} solves this more elegantly, as then
     (?T : Type) no longer unifies with (Some n = Some 0), which has sort Prop.
@@ -655,13 +655,13 @@ Module NonPropType.
     maybeProp T to tt and use the test_negative instance and set ?r to false.
   - call_of c r sets up a call to test_of on condition c with expected result r.
     It has a default instance for its 'callee' projection to Type, which
-    sets c := maybeProj T and r := false whe unifying with a type T.
+    sets c := maybeProj T and r := false when unifying with a type T.
   - type is a telescope on call_of c r, which checks that unifying test_of ?r1
     with c indeed sets ?r1 := r; the type structure bundles the 'test' instance
     and its 'result' value along with its call_of c r projection. The default
     instance essentially provides eta-expansion for 'type'. This is only
     essential for the first 'result' projection to bool; using the instance
-    for other projection merely avoids spurrious delta expansions that would
+    for other projection merely avoids spurious delta expansions that would
     spoil the notProp T notation.
  In detail, unifying T =~= ?S with ?S : nonPropType, i.e.,
   (1)  T =~= @callee (@condition (result ?S) (test ?S)) (result ?S) (frame ?S)

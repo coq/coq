@@ -129,7 +129,7 @@ Proof.
 intros n m H1 H2; rewrite H2 in H1; now apply H1.
 Qed.
 
-(* Propeties of plus, minus and opp *)
+(* Properties of plus, minus and opp *)
 
 Theorem Rplus_0_l : forall n : R, 0 + n == n.
 Proof.

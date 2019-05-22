@@ -40,7 +40,7 @@ type internal_flag =
   | InternalTacticRequest
   | UserIndividualRequest
 
-(* Defaut definition entries, transparent with no secctx or proj information *)
+(* Default definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->

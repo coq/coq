@@ -726,7 +726,7 @@ let univ_level_rem u v min =
   | Some u' -> if Level.equal u u' then min else v
   | None -> List.filter (fun (l, n) -> not (Int.equal n 0 && Level.equal u l)) v
 
-(* Is u mentionned in v (or equals to v) ? *)
+(* Is u mentioned in v (or equals to v) ? *)
 
 
 (**********************************************************************)

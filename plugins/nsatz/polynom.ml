@@ -357,7 +357,7 @@ let remP v p =
   moinsP p (multP (coefDom v p) (puisP (x v) (deg v p)))
 
 
-(* first interger coefficient of p *)
+(* first integer coefficient of p *)
 let rec coef_int_tete p =
   let v = max_var_pol p in
     if v>0
@@ -526,7 +526,7 @@ let div_pol_rat p q=
 
 (* pseudo division :
    q = c*x^m+q1
-   retruns (r,c,d,s) s.t. c^d*p = s*q + r.
+   returns (r,c,d,s) s.t. c^d*p = s*q + r.
 *)
 
 let pseudo_div p q x =

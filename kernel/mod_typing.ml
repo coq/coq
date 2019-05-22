@@ -188,7 +188,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       in
       let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
-	 with the identity substitution accompagned by the new resolver*)
+         with the identity substitution accompanied by the new resolver*)
       let id_subst = map_mp mp' mp' new_mb.mod_delta in
       let new_after = subst_structure id_subst after in
       before@(lab,SFBmodule new_mb')::new_after, new_equiv, cst

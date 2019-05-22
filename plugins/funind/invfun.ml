@@ -591,7 +591,7 @@ let rec reflexivity_with_destruct_cases g =
 
 
 (* [prove_fun_complete funs graphs schemes lemmas_types_infos i]
-   is the tactic used to prove completness lemma.
+   is the tactic used to prove completeness lemma.
 
    [funcs], [graphs] [schemes] [lemmas_types_infos] are the mutually recursive functions
    (resp. definitions of the graphs of the functions, principles and correctness lemma types) to prove correct.
@@ -748,7 +748,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let map (c, u) = mkConstU (c, EInstance.make u) in
   let funs_constr = Array.map map funs  in
-  (* XXX STATE Why do we need this... why is the toplevel protection not enought *)
+  (* XXX STATE Why do we need this... why is the toplevel protection not enough *)
   funind_purify
     (fun () ->
      let env = Global.env () in
@@ -928,7 +928,7 @@ let revert_graph kn post_tac hid g =
    [hid] is the hypothesis to invert, [fconst] is the function to invert and  [f_correct]
    is the correctness lemma for [fconst].
 
-   The sketch is the follwing~:
+   The sketch is the following~:
    \begin{enumerate}
    \item Transforms the hypothesis [hid] such that its type is now $res\ =\ f\ t_1 \ldots t_n$
    (fails if it is not possible)

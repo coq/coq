@@ -55,7 +55,7 @@ val change_vars : Id.t Id.Map.t -> glob_constr -> glob_constr
     Glob_term.cases_pattern * Id.Map.key list *
       Id.t Id.Map.t
 
-(* [alpha_rt avoid rt] alpha convert [rt] s.t. the result repects barendregt
+(* [alpha_rt avoid rt] alpha convert [rt] s.t. the result respects barendregt
    conventions and  does not share bound variables with avoid
 *)
 val alpha_rt : Id.t list -> glob_constr -> glob_constr

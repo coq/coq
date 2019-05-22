@@ -48,7 +48,7 @@ let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
     match onlyparse with
     | None ->
       (* Redeclare it to be used as (short) name in case an other (distfix)
-	 notation was declared inbetween *)
+         notation was declared in between *)
       Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
     | _ -> ()
   end

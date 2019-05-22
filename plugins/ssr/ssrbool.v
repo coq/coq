@@ -49,7 +49,7 @@ Require Import ssreflect ssrfun.
                             altP (idP my_formula) but circumventing the
                             dependent index capture issue; destructing
                             boolP my_formula generates two subgoals with
-                            assumtions my_formula and ~~ myformula. As
+                            assumptions my_formula and ~~ myformula. As
                             with altP, my_formula must be an application.
             \unless C, P <-> we can assume property P when a something that
                             holds under condition C (such as C itself).
@@ -64,7 +64,7 @@ Require Import ssreflect ssrfun.
                          := forall b : bool, (P -> b) -> b.
                             This is equivalent to ~ (~ P) when P : Prop.
              implies P Q == wrapper variant type that coerces to P -> Q and
-                            can be used as a P -> Q view unambigously.
+                            can be used as a P -> Q view unambiguously.
                             Useful to avoid spurious insertion of <-> views
                             when Q is a conjunction of foralls, as in Lemma
                             all_and2 below; conversely, avoids confusion in
@@ -1003,7 +1003,7 @@ Proof. by case: a; case: b. Qed.
 Lemma negb_or (a b : bool) : ~~ (a || b) = ~~ a && ~~ b.
 Proof. by case: a; case: b. Qed.
 
-(**  Pseudo-cancellation -- i.e, absorbtion  **)
+(**  Pseudo-cancellation -- i.e, absorption  **)
 
 Lemma andbK a b : a && b || a = a.  Proof. by case: a; case: b. Qed.
 Lemma andKb a b : a || b && a = a.  Proof. by case: a; case: b. Qed.
@@ -1245,7 +1245,7 @@ Notation "[ 'pred' x : T | E1 & E2 ]" :=
 (** Coercions for simpl_pred.
    As simpl_pred T values are used both applicatively and collectively we
  need simpl_pred to coerce to both pred T _and_ {pred T}. However it is
- undesireable to have two distinct constants for what are essentially identical
+ undesirable to have two distinct constants for what are essentially identical
  coercion functions, as this confuses the SSReflect keyed matching algorithm.
  While the Coq Coercion declarations appear to disallow such Coercion aliasing,
  it is possible to work around this limitation with a combination of modules
@@ -1331,9 +1331,9 @@ Variant mem_pred T := Mem of pred T.
   Similarly to pred_of_simpl, it will usually not be inserted by type
   inference, as all mem_pred mp =~= pred_sort ?pT unification problems will
   be solve by the memPredType instance below; pred_of_mem will however
-  be used if a mem_pred T is used as a {pred T}, which is desireable as it
+  be used if a mem_pred T is used as a {pred T}, which is desirable as it
   will avoid a redundant mem in a collective, e.g., passing (mem A) to a lemma
-  expection a generic collective predicate p : {pred T} and premise x \in P
+  exception a generic collective predicate p : {pred T} and premise x \in P
   will display a subgoal x \in A rathere than x \in mem A.
     Conversely, pred_of_mem will _not_ if it is used id (mem A) is used
   applicatively or as a pred T; there the simpl_of_mem coercion defined below
@@ -1396,7 +1396,7 @@ Notation "[ 'rel' x y 'in' A & B ]" :=
 Notation "[ 'rel' x y 'in' A | E ]" := [rel x y in A & A | E] : fun_scope.
 Notation "[ 'rel' x y 'in' A ]" := [rel x y in A & A] : fun_scope.
 
-(** Aliases of pred T that let us tag intances of simpl_pred as applicative
+(** Aliases of pred T that let us tag instances of simpl_pred as applicative
   or collective, via bespoke coercions. This tagging will give control over
   the simplification behaviour of inE and othe rewriting lemmas below.
     For this control to work it is crucial that collective_of_simpl _not_
@@ -1428,7 +1428,7 @@ Implicit Types (mp : mem_pred T).
   - registered_applicative_pred: this user-facing structure is used to
     declare values of type pred T meant to be used applicatively. The
     structure parameter merely displays this same value, and is used to avoid
-    undesireable, visible occurrence of the structure in the right hand side
+    undesirable, visible occurrence of the structure in the right hand side
     of rewrite rules such as app_predE.
       There is a canonical instance of registered_applicative_pred for values
     of the applicative_of_simpl coercion, which handles the
@@ -1454,7 +1454,7 @@ Implicit Types (mp : mem_pred T).
     has been fixed earlier by the manifest_mem_pred match. In particular the
     definition of a predicate using the applicative_pred_of_simpl idiom above
     will not be expanded - this very case is the reason in_applicative uses
-    a mem_pred telescope in its left hand side. The more straighforward
+    a mem_pred telescope in its left hand side. The more straightforward
     ?x \in applicative_pred_value ?ap (equivalent to in_mem ?x (Mem ?ap))
     with ?ap : registered_applicative_pred ?p would set ?p := [pred x | ...]
     rather than ?p := Apred in the example above.

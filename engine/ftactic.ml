@@ -18,8 +18,8 @@ type 'a focus =
 
 (** Type of tactics potentially goal-dependent. If it contains a [Depends],
     then the length of the inner list is guaranteed to be the number of
-    currently focussed goals. Otherwise it means the tactic does not depend
-    on the current set of focussed goals. *)
+    currently focused goals. Otherwise it means the tactic does not depend
+    on the current set of focused goals. *)
 type 'a t = 'a focus Proofview.tactic
 
 let return (x : 'a) : 'a t = Proofview.tclUNIT (Uniform x)

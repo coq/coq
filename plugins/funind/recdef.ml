@@ -1584,7 +1584,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 			   spc () ++ str"is defined" )
       )
   in
-  (* XXX STATE Why do we need this... why is the toplevel protection not enought *)
+  (* XXX STATE Why do we need this... why is the toplevel protection not enough *)
   funind_purify (fun () ->
       let pstate = com_terminate
           tcc_lemma_name

@@ -13,7 +13,7 @@ val of_uint : int -> t
 
 val hash : t -> int
 
-     (* convertion to a string *)
+     (* conversion to a string *)
 val to_string : t -> string
 val of_string : string -> t
 

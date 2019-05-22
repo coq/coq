@@ -87,7 +87,7 @@ type modifiers_param = {
              (** The value, as a list of modifiers and a key code *)
     md_editable : bool ; (** indicates if the value can be changed *)
     md_f_apply : Gdk.Tags.modifier list -> unit ;
-             (** the function to call to apply the new value of the paramter *)
+             (** the function to call to apply the new value of the parameter *)
     md_help : string option ; (** optional help string *)
     md_expand : bool ; (** expand or not *)
     md_allow : Gdk.Tags.modifier list
