@@ -310,10 +310,10 @@ The syntax for adding a new ring is
    .. productionlist:: coq
       ring_mod : abstract | decidable `term` | morphism `term`
                : setoid `term` `term`
-               : constants [`ltac`]
-               : preprocess [`ltac`]
-               : postprocess [`ltac`]
-               : power_tac `term` [`ltac`]
+               : constants [ `tactic` ]
+               : preprocess [ `tactic` ]
+               : postprocess [ `tactic` ]
+               : power_tac `term` [ `tactic` ]
                : sign `term`
                : div `term`
 
@@ -341,31 +341,31 @@ The syntax for adding a new ring is
       This modifier needs not be used if the setoid and morphisms have been
       declared.
 
-   constants [ :n:`@ltac` ]
-      specifies a tactic expression :n:`@ltac` that, given a
+   constants [ :n:`@tactic` ]
+      specifies a tactic expression :n:`@tactic` that, given a
       term, returns either an object of the coefficient set that is mapped
       to the expression via the morphism, or returns
       ``InitialRing.NotConstant``. The default behavior is to map only 0 and 1
       to their counterpart in the coefficient set. This is generally not
       desirable for non trivial computational rings.
 
-   preprocess [ :n:`@ltac` ]
-      specifies a tactic :n:`@ltac` that is applied as a
+   preprocess [ :n:`@tactic` ]
+      specifies a tactic :n:`@tactic` that is applied as a
       preliminary step for :tacn:`ring` and :tacn:`ring_simplify`. It can be used to
       transform a goal so that it is better recognized. For instance, ``S n``
       can be changed to ``plus 1 n``.
 
-   postprocess [ :n:`@ltac` ]
-      specifies a tactic :n:`@ltac` that is applied as a final
+   postprocess [ :n:`@tactic` ]
+      specifies a tactic :n:`@tactic` that is applied as a final
       step for :tacn:`ring_simplify`. For instance, it can be used to undo
       modifications of the preprocessor.
 
-   power_tac :n:`@term` [ :n:`@ltac` ]
+   power_tac :n:`@term` [ :n:`@tactic` ]
       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize
       power expressions with a constant positive integer exponent (example:
       :math:`x^2` ). The term :n:`@term` is a proof that a given power function satisfies
       the specification of a power function (term has to be a proof of
-      ``Ring_theory.power_theory``) and :n:`@ltac` specifies a tactic expression
+      ``Ring_theory.power_theory``) and :n:`@tactic` specifies a tactic expression
       that, given a term, “abstracts” it into an object of type |N| whose
       interpretation via ``Cp_phi`` (the evaluation function of power
       coefficient) is the original term, or returns ``InitialRing.NotConstant``

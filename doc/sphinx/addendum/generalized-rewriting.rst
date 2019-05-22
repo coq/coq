@@ -528,7 +528,7 @@ pass additional arguments such as ``using relation``.
 .. tacv:: setoid_reflexivity
           setoid_symmetry {? in @ident}
           setoid_transitivity
-          setoid_rewrite {? @orientation} @term {? at @occs} {? in @ident}
+          setoid_rewrite {? @orientation} @term {? at @occurrences} {? in @ident}
           setoid_replace @term with @term {? using relation @term} {? in @ident} {? by @tactic}
    :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_rewrite; setoid_replace
 
@@ -567,13 +567,13 @@ Printing relations and morphisms
 Deprecated syntax and backward incompatibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Add Setoid @A @Aeq @ST as @ident
+.. cmd:: Add Setoid @qualid__1 @qualid__2 @qualid__3 as @ident
 
    This command for declaring setoids and morphisms is also accepted due
    to backward compatibility reasons.
 
-   Here ``Aeq`` is a congruence relation without parameters, ``A`` is its carrier
-   and ``ST`` is an object of type (``Setoid_Theory A Aeq``) (i.e. a record
+   Here :n:`@qualid__2` is a congruence relation without parameters, :n:`@qualid__1` is its carrier
+   and :n:`@qualid__3` is an object of type (:n:`Setoid_Theory @qualid__1 @qualid__2`) (i.e. a record
    packing together the reflexivity, symmetry and transitivity lemmas).
    Notice that the syntax is not completely backward compatible since the
    identifier was not required.
@@ -708,91 +708,65 @@ Definitions
 The generalized rewriting tactic is based on a set of strategies that can be
 combined to obtain custom rewriting procedures. Its set of strategies is based
 on Elan’s rewriting strategies :cite:`Luttik97specificationof`. Rewriting
-strategies are applied using the tactic ``rewrite_strat s`` where ``s`` is a
+strategies are applied using the tactic :n:`rewrite_strat @strategy` where :token:`strategy` is a
 strategy expression. Strategies are defined inductively as described by the
 following grammar:
 
-.. productionlist:: rewriting
-   s, t, u : `strategy`
-           : `lemma`
-           : `lemma_right_to_left`
-           : `failure`
-           : `identity`
-           : `reflexivity`
-           : `progress`
-           : `failure_catch`
-           : `composition`
-           : `left_biased_choice`
-           : `iteration_one_or_more`
-           : `iteration_zero_or_more`
-           : `one_subterm`
-           : `all_subterms`
-           : `innermost_first`
-           : `outermost_first`
-           : `bottom_up`
-           : `top_down`
-           : `apply_hint`
-           : `any_of_the_terms`
-           : `apply_reduction`
-           : `fold_expression`
-
-.. productionlist:: rewriting
-   strategy : ( `s` )
-   lemma : `c`
-   lemma_right_to_left : <- `c`
-   failure : fail
-   identity : id
-   reflexivity : refl
-   progress : progress `s`
-   failure_catch : try `s`
-   composition : `s` ; `u`
-   left_biased_choice : choice `s` `t`
-   iteration_one_or_more : repeat `s`
-   iteration_zero_or_more : any `s`
-   one_subterm : subterm `s`
-   all_subterms : subterms `s`
-   innermost_first : innermost `s`
-   outermost_first : outermost `s`
-   bottom_up : bottomup `s`
-   top_down : topdown `s`
-   apply_hint : hints `hintdb`
-   any_of_the_terms : terms (`c`)+
-   apply_reduction : eval `redexpr`
-   fold_expression : fold `c`
-
+.. productionlist:: coq
+   strategy : `qualid`                   (lemma, left to right)
+            : <- `qualid`                (lemma, right to left)
+            : fail                    (failure)
+            : id                      (identity)
+            : refl                    (reflexivity)
+            : progress `strategy`        (progress)
+            : try `strategy`             (try catch)
+            : `strategy` ; `strategy`       (composition)
+            : choice `strategy` `strategy`  (left_biased_choice)
+            : repeat `strategy`          (one or more)
+            : any `strategy`             (zero or more)
+            : subterm `strategy`         (one subterm)
+            : subterms `strategy`        (all subterms)
+            : innermost `strategy`       (innermost first)
+            : outermost `strategy`       (outermost first)
+            : bottomup `strategy`        (bottom-up)
+            : topdown `strategy`         (top-down)
+            : hints `ident`              (apply hints from hint database)
+            : terms `term` ... `term`      (any of the terms)
+            : eval `redexpr`             (apply reduction)
+            : fold `term`               (unify)
+            : ( `strategy` )
 
 Actually a few of these are defined in term of the others using a
 primitive fixpoint operator:
 
-.. productionlist:: rewriting
-   try `s` : choice `s` `id`
-   any `s` : fix `u`. try (`s` ; `u`)
-   repeat `s` : `s` ; any `s`
-   bottomup s : fix `bu`. (choice (progress (subterms bu)) s) ; try bu
-   topdown s : fix `td`. (choice s (progress (subterms td))) ; try td
-   innermost s : fix `i`. (choice (subterm i) s)
-   outermost s : fix `o`. (choice s (subterm o))
+- :n:`try @strategy := choice @strategy id`
+- :n:`any @strategy := fix @ident. try (@strategy ; @ident)`
+- :n:`repeat @strategy := @strategy; any @strategy`
+- :n:`bottomup @strategy := fix @ident. (choice (progress (subterms @ident)) @strategy) ; try @ident`
+- :n:`topdown @strategy := fix @ident. (choice @strategy (progress (subterms @ident))) ; try @ident`
+- :n:`innermost @strategy := fix @ident. (choice (subterm @ident) @strategy)`
+- :n:`outermost @strategy := fix @ident. (choice @strategy (subterm @ident))`
 
 The basic control strategy semantics are straightforward: strategies
 are applied to subterms of the term to rewrite, starting from the root
 of the term. The lemma strategies unify the left-hand-side of the
 lemma with the current subterm and on success rewrite it to the right-
 hand-side. Composition can be used to continue rewriting on the
-current subterm. The fail strategy always fails while the identity
+current subterm. The ``fail`` strategy always fails while the identity
 strategy succeeds without making progress. The reflexivity strategy
 succeeds, making progress using a reflexivity proof of rewriting.
-Progress tests progress of the argument strategy and fails if no
+``progress`` tests progress of the argument :token:`strategy` and fails if no
 progress was made, while ``try`` always succeeds, catching failures.
-Choice is left-biased: it will launch the first strategy and fall back
+``choice`` is left-biased: it will launch the first strategy and fall back
 on the second one in case of failure. One can iterate a strategy at
 least 1 time using ``repeat`` and at least 0 times using ``any``.
 
-The ``subterm`` and ``subterms`` strategies apply their argument strategy ``s`` to
+The ``subterm`` and ``subterms`` strategies apply their argument :token:`strategy` to
 respectively one or all subterms of the current term under
 consideration, left-to-right. ``subterm`` stops at the first subterm for
-which ``s`` made progress. The composite strategies ``innermost`` and ``outermost``
+which :token:`strategy` made progress. The composite strategies ``innermost`` and ``outermost``
 perform a single innermost or outermost rewrite using their argument
-strategy. Their counterparts ``bottomup`` and ``topdown`` perform as many
+:token:`strategy`. Their counterparts ``bottomup`` and ``topdown`` perform as many
 rewritings as possible, starting from the bottom or the top of the
 term.
 
@@ -802,15 +776,15 @@ lemmas at the current subterm. The ``terms`` strategy takes the lemma
 names directly as arguments. The ``eval`` strategy expects a reduction
 expression (see :ref:`performingcomputations`) and succeeds
 if it reduces the subterm under consideration. The ``fold`` strategy takes
-a term ``c`` and tries to *unify* it to the current subterm, converting it to ``c``
-on success, it is stronger than the tactic ``fold``.
+a :token:`term` and tries to *unify* it to the current subterm, converting it to :token:`term`
+on success. It is stronger than the tactic ``fold``.
 
 
 Usage
 ~~~~~
 
 
-.. tacn:: rewrite_strat @s {? in @ident }
+.. tacn:: rewrite_strat @strategy {? in @ident }
    :name: rewrite_strat
 
    Rewrite using the strategy s in hypothesis ident or the conclusion.

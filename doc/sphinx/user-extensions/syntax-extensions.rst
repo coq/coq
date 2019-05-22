@@ -109,7 +109,7 @@ the associativity of disjunction and conjunction, so let us apply for instance a
 right associativity (which is the choice of Coq).
 
 Precedence levels and associativity rules of notations have to be
-given between parentheses in a list of modifiers that the :cmd:`Notation`
+given between parentheses in a list of :token:`modifiers` that the :cmd:`Notation`
 command understands. Here is how the previous examples refine.
 
 .. coqtop:: in
@@ -249,7 +249,7 @@ bar of the notation.
    Check (sig (fun x : nat => x=x)).
 
 The second, more powerful control on printing is by using the format
-modifier. Here is an example
+:token:`modifier`. Here is an example
 
 .. coqtop:: all
 
@@ -298,8 +298,8 @@ expression is performed at definition time. Type checking is done only
 at the time of use of the notation.
 
 .. note:: Sometimes, a notation is expected only for the parser. To do
-          so, the option ``only parsing`` is allowed in the list of modifiers
-          of :cmd:`Notation`. Conversely, the ``only printing`` modifier can be
+          so, the option ``only parsing`` is allowed in the list of :token:`modifiers`
+          of :cmd:`Notation`. Conversely, the ``only printing`` :token:`modifier` can be
           used to declare that a notation should only be used for printing and
           should not declare a parsing rule. In particular, such notations do
           not modify the parser.
@@ -310,11 +310,11 @@ The Infix command
 The :cmd:`Infix` command is a shortening for declaring notations of infix
 symbols.
 
-.. cmd:: Infix "@symbol" := @term ({+, @modifier}).
+.. cmd:: Infix "@symbol" := @term {? (@modifiers) }.
 
    This command is equivalent to
 
-       :n:`Notation "x @symbol y" := (@term x y) ({+, @modifier}).`
+       :n:`Notation "x @symbol y" := (@term x y) {? (@modifiers) }.`
 
    where ``x`` and ``y`` are fresh names. Here is an example.
 
@@ -437,7 +437,7 @@ application of the notation:
 
    Check sigma z : nat, z = 0.
 
-Notice the modifier ``x ident`` in the declaration of the
+Notice the :token:`modifier` ``x ident`` in the declaration of the
 notation. It tells to parse :g:`x` as a single identifier.
 
 Binders bound in the notation and parsed as patterns
@@ -457,7 +457,7 @@ binder. Here is an example:
 
    Check subset '(x,y), x+y=0.
 
-The modifier ``p pattern`` in the declaration of the notation tells to parse
+The :token:`modifier` ``p pattern`` in the declaration of the notation tells to parse
 :g:`p` as a pattern. Note that a single variable is both an identifier and a
 pattern, so, e.g., the following also works:
 
@@ -467,7 +467,7 @@ pattern, so, e.g., the following also works:
 
 If one wants to prevent such a notation to be used for printing when the
 pattern is reduced to a single identifier, one has to use instead
-the modifier ``p strict pattern``. For parsing, however, a
+the :token:`modifier` ``p strict pattern``. For parsing, however, a
 ``strict pattern`` will continue to include the case of a
 variable. Here is an example showing the difference:
 
@@ -507,7 +507,7 @@ that ``x`` is parsed as a term at level 99 (as done in the notation for
 :g:`sumbool`), but that this term has actually to be an identifier.
 
 The notation :g:`{ x | P }` is already defined in the standard
-library with the ``as ident`` modifier. We cannot redefine it but
+library with the ``as ident`` :token:`modifier`. We cannot redefine it but
 one can define an alternative notation, say :g:`{ p such that P }`,
 using instead ``as pattern``.
 
@@ -527,7 +527,7 @@ is just an identifier, one could have said
 ``p at level 99 as strict pattern``.
 
 Note also that in the absence of a ``as ident``, ``as strict pattern`` or
-``as pattern`` modifiers, the default is to consider sub-expressions occurring
+``as pattern`` :token:`modifier`\s, the default is to consider sub-expressions occurring
 in binding position and parsed as terms to be ``as ident``.
 
 .. _NotationsWithBinders:
@@ -628,7 +628,7 @@ except that in the iterator
 position of the binding variable of a ``fun`` or a ``forall``.
 
 To specify that the part “``x .. y``” of the notation parses a sequence of
-binders, ``x`` and ``y`` must be marked as ``binder`` in the list of modifiers
+binders, ``x`` and ``y`` must be marked as ``binder`` in the list of :token:`modifiers`
 of the notation. The binders of the parsed sequence are used to fill the
 occurrences of the first placeholder of the iterating pattern which is
 repeatedly nested as many times as the number of binders generated. If ever the
@@ -678,7 +678,7 @@ Predefined entries
 ~~~~~~~~~~~~~~~~~~
 
 By default, sub-expressions are parsed as terms and the corresponding
-grammar entry is called :n:`@constr`. However, one may sometimes want
+grammar entry is called ``constr``. However, one may sometimes want
 to restrict the syntax of terms in a notation. For instance, the
 following notation will accept to parse only global reference in
 position of :g:`x`:
@@ -866,16 +866,17 @@ notations are given below. The optional :production:`scope` is described in
 :ref:`Scopes`.
 
 .. productionlist:: coq
-   notation      : [Local] Notation `string` := `term` [`modifiers`] [: `scope`].
-                 : [Local] Infix `string` := `qualid` [`modifiers`] [: `scope`].
-                 : [Local] Reserved Notation `string` [`modifiers`] .
+   notation      : [Local] Notation `string` := `term` [(`modifiers`)] [: `scope`].
+                 : [Local] Infix `string` := `qualid` [(`modifiers`)] [: `scope`].
+                 : [Local] Reserved Notation `string` [(`modifiers`)] .
                  : Inductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
                  : CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
                  : Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
                  : CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
                  : [Local] Declare Custom Entry `ident`.
    decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
-   modifiers     : at level `num`
+   modifiers     : `modifier`, … , `modifier`
+   modifier      : at level `num`
                  : in custom `ident`
                  : in custom `ident` at level `num`
                  : `ident` , … , `ident` at level `num` [`binderinterp`]
@@ -1657,15 +1658,15 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
    tacn                 : Tactic Notation [`tactic_level`] [`prod_item` … `prod_item`] := `tactic`.
    prod_item            : `string` | `tactic_argument_type`(`ident`)
    tactic_level         : (at level `num`)
-   tactic_argument_type : `ident` | `simple_intropattern` | `reference`
-                        : `hyp` | `hyp_list` | `ne_hyp_list`
-                        : `constr` | `uconstr` | `constr_list` | `ne_constr_list`
-                        : `integer` | `integer_list` | `ne_integer_list`
-                        : `int_or_var` | `int_or_var_list` | `ne_int_or_var_list`
-                        : `tactic` | `tactic0` | `tactic1` | `tactic2` | `tactic3`
-                        : `tactic4` | `tactic5`
+   tactic_argument_type : ident | simple_intropattern | reference
+                        : hyp | hyp_list | ne_hyp_list
+                        : constr | uconstr | constr_list | ne_constr_list
+                        : integer | integer_list | ne_integer_list
+                        : int_or_var | int_or_var_list | ne_int_or_var_list
+                        : tactic | tactic0 | tactic1 | tactic2 | tactic3
+                        : tactic4 | tactic5
 
-.. cmd:: Tactic Notation {? (at level @level)} {+ @prod_item} := @tactic.
+.. cmd:: Tactic Notation {? (at level @num)} {+ @prod_item} := @tactic.
 
    A tactic notation extends the parser and pretty-printer of tactics with a new
    rule made of the list of production items. It then evaluates into the
