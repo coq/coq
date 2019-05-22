@@ -288,8 +288,10 @@ val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
 (** User adds a sentence to the document (after parsing) *)
 val document_add_hook : (Vernacexpr.vernac_control -> Stateid.t -> unit) Hook.t
+
 (** User edits a sentence in the document *)
 val document_edit_hook : (Stateid.t -> unit) Hook.t
+
 (** User requests evaluation of a sentence *)
 val sentence_exec_hook : (Stateid.t -> unit) Hook.t
 
