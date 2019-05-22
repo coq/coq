@@ -121,7 +121,7 @@ before_script:
     OPAM_VARIANT: "+flambda"
   artifacts:
     name: "$CI_JOB_NAME"
-    expire_in: 1 month
+    expire_in: 2 months
 
 # every non build job must set dependencies otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -140,6 +140,7 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _install_ci/share/doc/coq/
+    expire_in: 2 months
 
 # set dependencies when using
 .test-suite-template:
@@ -159,6 +160,8 @@ before_script:
     when: on_failure
     paths:
       - test-suite/logs
+    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
+    # expire_in: never
   variables:
     timeout: ""
 
@@ -177,7 +180,7 @@ before_script:
     name: "$CI_JOB_NAME.logs"
     paths:
       - coqchk.log
-    expire_in: 1 month
+    expire_in: 2 months
 
 .ci-template:
   stage: test
@@ -341,6 +344,8 @@ pkg:opam:
     when: on_failure
     paths:
       - nix-build-coq.drv-0/*/test-suite/logs
+    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
+    # expire_in: never
 
 pkg:nix:deploy:
   extends: .nix-template
@@ -465,6 +470,8 @@ test-suite:egde:dune:dev:
     when: on_failure
     paths:
       - _build/default/test-suite/logs
+    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
+    # expire_in: never
 
 test-suite:edge+trunk+make:
   stage: test
