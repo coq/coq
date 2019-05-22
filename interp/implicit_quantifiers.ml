@@ -196,10 +196,9 @@ let combine_params avoid fn applied needed =
 	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
-let combine_params_freevar =
-  fun avoid (_, decl) ->
-    let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-      (CAst.make @@ CRef (qualid_of_ident id',None), Id.Set.add id' avoid)
+let combine_params_freevar avoid (_, decl) =
+  let id' = next_name_away_from (RelDecl.get_name decl) avoid in
+  (CAst.make @@ CRef (qualid_of_ident id',None), Id.Set.add id' avoid)
 
 let destClassApp cl =
   let open CAst in
@@ -222,34 +221,34 @@ let implicit_application env ?(allow_partial=true) f ty =
   let is_class =
     try
       let ({CAst.v=(qid, _, _)} as clapp) = destClassAppExpl ty in
-      let gr = Nametab.locate qid in
-	if Typeclasses.is_class gr then Some (clapp, gr) else None
+      if Libnames.idset_mem_qualid qid env then None
+      else
+        let gr = Nametab.locate qid in
+        if Typeclasses.is_class gr then Some (clapp, gr) else None
     with Not_found -> None
   in
-    match is_class with
-    | None -> ty, env
-    | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
-	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
-	let c, avoid =
-   let env = Global.env () in
-   let sigma = Evd.from_env env in
-   let c = class_info env sigma gr in
-   let (ci, rd) = c.cl_context in
-   if not allow_partial then
-     begin
-       let opt_succ x n = match x with
-         | None -> succ n
-         | Some _ -> n
-       in
-       let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
-       let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
-       if not (Int.equal needlen applen) then
-         mismatched_ctx_inst_err (Global.env ()) Typeclasses_errors.Parameters (List.map fst par) rd
-     end;
-   let pars = List.rev (List.combine ci rd) in
-   let args, avoid = combine_params avoid f par pars in
-   CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
- in c, avoid
+  match is_class with
+  | None -> ty, env
+  | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
+    let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let c = class_info env sigma gr in
+    let (ci, rd) = c.cl_context in
+    if not allow_partial then
+      begin
+        let opt_succ x n = match x with
+          | None -> succ n
+          | Some _ -> n
+        in
+        let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
+        let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
+        if not (Int.equal needlen applen) then
+          mismatched_ctx_inst_err (Global.env ()) Typeclasses_errors.Parameters (List.map fst par) rd
+      end;
+    let pars = List.rev (List.combine ci rd) in
+    let args, avoid = combine_params avoid f par pars in
+    CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
   CWarnings.create ~name:"ignoring_implicit_status" ~category:"implicits"

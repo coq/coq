@@ -162,6 +162,9 @@ let qualid_basename qid =
 let qualid_path qid =
   qid.CAst.v.dirpath
 
+let idset_mem_qualid qid s =
+  qualid_is_ident qid && Id.Set.mem (qualid_basename qid) s
+
 (* Default paths *)
 let default_library = Names.DirPath.initial (* = ["Top"] *)
 

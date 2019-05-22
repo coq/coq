@@ -389,7 +389,7 @@ let push_name_env ?(global_level=false) ntnvars implargs env =
       {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
 
 let intern_generalized_binder ?(global_level=false) intern_type ntnvars
-    env {loc;v=na} b b' t ty =
+    env {loc;v=na} b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
     if t then ty, ids else
@@ -403,7 +403,7 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env fvs in
   let bl = List.map
     CAst.(map (fun id ->
-      (Name id, b, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
+      (Name id, Implicit, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
     fvs
   in
   let na = match na with
@@ -433,8 +433,8 @@ let intern_assumption intern ntnvars env nal bk ty =
           (push_name_env ntnvars impls env locna,
            (make ?loc (na,k,locate_if_hole ?loc na ty))::bl))
 	(env, []) nal
-  | Generalized (b,b',t) ->
-     let env, b = intern_generalized_binder intern_type ntnvars env (List.hd nal) b b' t ty in
+  | Generalized (b',t) ->
+     let env, b = intern_generalized_binder intern_type ntnvars env (List.hd nal) b' t ty in
      env, b
 
 let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
