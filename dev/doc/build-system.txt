@@ -18,8 +18,8 @@ See http://www.gnu.org/software/make/manual/make.htmlPrerequisite-Types
 * Annotation before commands: +/-/@
 
 a command starting by - is always successful (errors are ignored)
-a command starting by + is runned even if option -n is given to make
-a command starting by @ is not echoed before being runned
+a command starting by + is run even if option -n is given to make
+a command starting by @ is not echoed before being run
 
 * Custom functions
 
@@ -36,7 +36,7 @@ If the file given to -include doesn't exist, make tries to build it,
 and even retries again if necessary, but doesn't care if this build
 finally fails. We used to rely on this "feature", but this should not
 be the case anymore. We kept "-include" instead of "include" for
-avoiding warnings about initially non-existant files.
+avoiding warnings about initially non-existent files.
 
 Changes (for old-timers)
 ------------------------

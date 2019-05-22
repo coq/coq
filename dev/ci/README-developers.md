@@ -31,7 +31,7 @@ PR by running GitLab CI on your private branches. To do so follow these steps:
 6. You are encouraged to go to the CI / CD general settings and increase the
    timeout from 1h to 2h for better reliability.
 
-Now everytime you push (including force-push unless you changed the default
+Now every time you push (including force-push unless you changed the default
 GitLab setting) to your fork on GitHub, it will be synchronized on GitLab and
 CI will be run. You will receive an e-mail with a report of the failures if
 there are some.

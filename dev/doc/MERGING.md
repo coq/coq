@@ -92,7 +92,7 @@ When fixes are ready, there are two cases to consider:
 Once all reviewers approved the PR, the assignee is expected to check that CI
 completed without relevant failures, and that the PR comes with appropriate
 documentation and test cases. If not, they should leave a comment on the PR and
-put the approriate label. Otherwise, they are expected to merge the PR using the
+put the appropriate label. Otherwise, they are expected to merge the PR using the
 [merge script](../tools/merge-pr.sh).
 
 When CI has a few failures which look spurious, restarting the corresponding

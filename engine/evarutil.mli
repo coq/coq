@@ -208,7 +208,7 @@ val kind_of_term_upto : evar_map -> Constr.constr ->
     [u] up to existential variable instantiation and equalisable
     universes. The term [t] is interpreted in [sigma1] while [u] is
     interpreted in [sigma2]. The universe constraints in [sigma2] are
-    assumed to be an extention of those in [sigma1]. *)
+    assumed to be an extension of those in [sigma1]. *)
 val eq_constr_univs_test : evar_map -> evar_map -> constr -> constr -> bool
 
 (** [compare_cumulative_instances cv_pb variance u1 u2 sigma] Returns

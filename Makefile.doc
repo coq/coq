@@ -167,7 +167,7 @@ doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Li
 	$(PDFLATEX) -interaction=batchmode Library;\
 	../tools/show_latex_messages -no-overfull Library.log)
 
-### Standard library (full version if you're crazy enouth to try)
+### Standard library (full version if you're crazy enough to try)
 
 doc/stdlib/FullLibrary.tex: doc/stdlib/Library.tex
 	sed -e 's/Library.coqdoc/FullLibrary.coqdoc/g;s/\\begin{document}/\\newcommand{\\textlambda}{\\ensuremath{\\lambda}}\\newcommand{\\textPi}{\\ensuremath{\\Pi}}\\begin{document}/' $< > $@

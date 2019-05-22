@@ -8,7 +8,7 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-# Extra targets for developpers :
+# Extra targets for developers :
 # debug printers, revision, partial targets ...
 
 #########################

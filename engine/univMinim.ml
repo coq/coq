@@ -353,7 +353,7 @@ let normalize_context_set g ctx us algs weak =
       noneqs Constraint.empty
   in
   (* Compute the left and right set of flexible variables, constraints
-     mentionning other variables remain in noneqs. *)
+     mentioning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr =
     Constraint.fold (fun (l,d,r as cstr) (noneq, ucstrsl, ucstrsr) ->
       let lus = LMap.mem l us and rus = LMap.mem r us in

@@ -20,7 +20,7 @@ val is_value : glb_tacexpr -> bool
 val check_unit : ?loc:Loc.t -> type_scheme -> unit
 
 val check_subtype : type_scheme -> type_scheme -> bool
-(** [check_subtype t1 t2] returns [true] iff all values of intances of type [t1]
+(** [check_subtype t1 t2] returns [true] iff all values of instances of type [t1]
     also have type [t2]. *)
 
 val subst_type : substitution -> 'a glb_typexpr -> 'a glb_typexpr

@@ -173,7 +173,7 @@ type strexpr =
 
 (** {5 Dynamic semantics} *)
 
-(** Values are represented in a way similar to OCaml, i.e. they constrast
+(** Values are represented in a way similar to OCaml, i.e. they contrast
     immediate integers (integers, constructors without arguments) and structured
     blocks (tuples, arrays, constructors with arguments), as well as a few other
     base cases, namely closures, strings, named constructors, and dynamic type

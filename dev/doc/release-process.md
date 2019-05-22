@@ -113,7 +113,7 @@
 - [ ] Upload the new version of the reference manual to the website.
   *TODO: setup some continuous deployment for this.*
 - [ ] Merge the website update, publish the release
-  and send annoucement e-mails.
+  and send announcement e-mails.
 - [ ] Ping **@Zimmi48** to publish a new version on Zenodo.
   *TODO: automate this.*
 - [ ] Close the milestone
