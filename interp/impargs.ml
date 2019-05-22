@@ -96,11 +96,11 @@ let set_maximality imps b =
   this kind if there is enough arguments to infer them)
 
 - [DepFlex] means that the implicit argument can be found by unification
-  along a collapsable path only (e.g. as x in (P x) where P is another
+  along a collapsible path only (e.g. as x in (P x) where P is another
   argument) (we do (defensively) print the arguments of this kind)
 
 - [DepFlexAndRigid] means that the least argument from which the
-  implicit argument can be inferred is following a collapsable path
+  implicit argument can be inferred is following a collapsible path
   but there is a greater argument from where the implicit argument is
   inferable following a rigid path (useful to know how to print a
   partial application)

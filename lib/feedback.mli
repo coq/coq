@@ -56,7 +56,7 @@ type feedback = {
 
 (** {6 Feedback sent, even asynchronously, to the user interface} *)
 
-(* The interpreter assignes an state_id to the ast, and feedbacks happening
+(* The interpreter assigns a state_id to the ast, and feedbacks happening
  * during interpretation are attached to it.
  *)
 

@@ -28,7 +28,7 @@ type 'a summary_declaration = {
 
     Beware: for tables registered dynamically after the initialization
     of Coq, their init functions may not be run immediately. It is hence
-    the responsability of plugins to initialize themselves properly.
+    the responsibility of plugins to initialize themselves properly.
 *)
 
 val declare_summary : string -> 'a summary_declaration -> unit

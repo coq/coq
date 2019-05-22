@@ -200,7 +200,7 @@ For the moment there are:
 	Wf.well_founded_induction
 	Wf.well_founded_induction_type
 Those constants does not match the auto-inlining criterion based on strictness.
-Of course, you can still overide this behaviour via some Extraction NoInline. 
+Of course, you can still override this behaviour via some Extraction NoInline. 
 
 * There is now a web page showing the extraction of all standard theories: 
 http://www.lri.fr/~letouzey/extraction

@@ -163,7 +163,7 @@ val super : Universe.t -> Universe.t
 
 val universe_level : Universe.t -> Level.t option
 
-(** [univ_level_mem l u] Is l is mentionned in u ? *)
+(** [univ_level_mem l u] Is l is mentioned in u ? *)
 
 val univ_level_mem : Level.t -> Universe.t -> bool
 

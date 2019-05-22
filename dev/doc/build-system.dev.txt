@@ -88,7 +88,7 @@ Cons:
 
 
 Makefiles hierarchy
-------------------
+-------------------
 
 The Makefile is separated in several files :
 
@@ -101,7 +101,7 @@ The Makefile is separated in several files :
 
 
 FIND_SKIP_DIRS
----------------
+--------------
 
 The recommended style of using FIND_SKIP_DIRS is for example
 

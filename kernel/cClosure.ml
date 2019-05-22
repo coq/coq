@@ -226,7 +226,7 @@ let unfold_red kn =
  * this constant or abstraction.
  *  * i_tab is the cache table of the results
  *
- * ref_value_cache searchs in the tab, otherwise uses i_repr to
+ * ref_value_cache searches in the tab, otherwise uses i_repr to
  * compute the result and store it in the table. If the constant can't
  * be unfolded, returns None, but does not store this failure.  * This
  * doesn't take the RESET into account. You mustn't keep such a table
@@ -645,7 +645,7 @@ and subst_constr subst c = match [@ocaml.warning "-4"] Constr.kind c with
 and comp_subs el s =
   Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s
 
-(* This function defines the correspondance between constr and
+(* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
    then we directly return the constr to avoid possibly huge
    reallocation. *)

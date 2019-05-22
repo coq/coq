@@ -855,7 +855,7 @@ let interp_binding_name ist env sigma = function
   | NamedHyp id ->
       (* If a name is bound, it has to be a quantified hypothesis *)
       (* user has to use other names for variables if these ones clash with *)
-      (* a name intented to be used as a (non-variable) identifier *)
+      (* a name intended to be used as a (non-variable) identifier *)
       try try_interp_ltac_var (coerce_to_quantified_hypothesis sigma) ist (Some (env,sigma)) (make id)
       with Not_found -> NamedHyp id
 
@@ -2075,7 +2075,7 @@ let _ =
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
     let tac = interp_tactic ist tac in
-    (* EJGA: We sould also pass the proof name if desired, for now
+    (* EJGA: We should also pass the proof name if desired, for now
        poly seems like enough to get reasonable behavior in practice
      *)
     let name, poly = Id.of_string "ltac_gen", poly in

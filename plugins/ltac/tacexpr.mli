@@ -24,7 +24,7 @@ type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 type lazy_flag =
   | General (* returns all possible successes *)
   | Select  (* returns all successes of the first matching branch *)
-  | Once    (* returns the first success in a maching branch
+  | Once    (* returns the first success in a matching branch
                (not necessarily the first) *)
 type global_flag = (* [gfail] or [fail] *)
   | TacGlobal

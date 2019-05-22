@@ -573,7 +573,7 @@ let pp_ocaml_gen k mp rls olab =
 	if is_mp_bound base then pp_ocaml_bound base rls
 	else pp_ocaml_extern k base rls
 
-(* For Haskell, things are simplier: we have removed (almost) all structures *)
+(* For Haskell, things are simpler: we have removed (almost) all structures *)
 
 let pp_haskell_gen k mp rls = match rls with
   | [] -> assert false
@@ -590,7 +590,7 @@ let pp_global k r =
   let s = List.hd ls in
   let mp,l = repr_of_r r in
   if ModPath.equal mp (top_visible_mp ()) then
-    (* simpliest situation: definition of r (or use in the same context) *)
+    (* simplest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
     (add_visible (k,s) l; unquote s)
   else
@@ -607,7 +607,7 @@ let pp_module mp =
   let ls = mp_renaming mp in
   match mp with
     | MPdot (mp0,l) when ModPath.equal mp0 (top_visible_mp ()) ->
-	(* simpliest situation: definition of mp (or use in the same context) *)
+        (* simplest situation: definition of mp (or use in the same context) *)
 	(* we update the visible environment *)
 	let s = List.hd ls in
 	add_visible (Mod,s) l; s

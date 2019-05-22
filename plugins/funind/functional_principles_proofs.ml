@@ -658,7 +658,7 @@ let instantiate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 
 	*)
 	(fun g ->
-(* 	   observe (str "Instanciation: removing hyp " ++ Ppconstr.pr_id hid); *)
+(* 	   observe (str "Instantiation: removing hyp " ++ Ppconstr.pr_id hid); *)
 	   thin [hid] g
 	)
       )

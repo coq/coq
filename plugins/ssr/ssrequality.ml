@@ -128,7 +128,7 @@ let newssrcongrtac arg ist gl =
     x, re_sig si sigma in
   let arr, gl = pf_mkSsrConst "ssr_congr_arrow" gl in
   let ssr_congr lr = EConstr.mkApp (arr, lr) in
-  (* here thw two cases: simple equality or arrow *)
+  (* here the two cases: simple equality or arrow *)
   let equality, _, eq_args, gl' =
     let eq, gl = pf_fresh_global Coqlib.(lib_ref "core.eq.type") gl in
     pf_saturate gl (EConstr.of_constr eq) 3 in
@@ -313,7 +313,7 @@ let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar i
 (* Coq has a more general form of "equation" (any type with a single *)
 (* constructor with no arguments with_rect_r elimination lemmas).    *)
 (* However there is no clear way of determining the LHS and RHS of   *)
-(* such a generic Leibnitz equation -- short of inspecting the type  *)
+(* such a generic Leibniz equation -- short of inspecting the type  *)
 (* of the elimination lemmas.                                        *)
 
 let rec strip_prod_assum c = match Constr.kind c with

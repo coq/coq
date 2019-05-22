@@ -207,7 +207,7 @@ end) = struct
   let mk_relation env evd a = 
     app_poly env evd relation [| a |]
 
-  (** Build an infered signature from constraints on the arguments and expected output
+  (** Build an inferred signature from constraints on the arguments and expected output
       relation *)
     
   let build_signature evars env m (cstrs : (types * types option) option list)

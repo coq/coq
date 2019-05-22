@@ -25,7 +25,7 @@ Ltac2 @ external empty_context : unit -> context :=
 Ltac2 @ external matches : t -> constr -> (ident * constr) list :=
   "ltac2" "pattern_matches".
 (** If the term matches the pattern, returns the bound variables. If it doesn't,
-    fail with [Match_failure]. Panics if not focussed. *)
+    fail with [Match_failure]. Panics if not focused. *)
 
 Ltac2 @ external matches_subterm : t -> constr -> context * ((ident * constr) list) :=
   "ltac2" "pattern_matches_subterm".

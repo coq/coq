@@ -222,7 +222,7 @@ let is_before : type s1 s2 r1 r2 a1 a2. (s1, r1, a1) ty_symbol -> (s2, r2, a2) t
   | Stoken _, _ -> true
   | _ -> false
 
-(** Ancilliary datatypes *)
+(** Ancillary datatypes *)
 
 type 'a ty_rec = MayRec : ty_mayrec ty_rec | NoRec : ty_norec ty_rec
 
