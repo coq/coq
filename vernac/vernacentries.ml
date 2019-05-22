@@ -2304,10 +2304,6 @@ let vernac_interp_phase c ~pstate =
     vernac_require_open_proof ~pstate (fun ~pstate ->
         f ~pstate:(Proof_global.get_current_pstate pstate);
         Proof_global.discard_current pstate)
-  | VtMaybeOpenProof f ->
-    let proof = f () in
-    let pstate = maybe_push ~ontop:pstate proof in
-    pstate
   | VtOpenProof f ->
     Some (push ~ontop:pstate (f ()))
   | VtModifyProof f ->

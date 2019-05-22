@@ -359,7 +359,6 @@ let print_atts_right fmt = function
 
 let understand_state = function
   | "close_proof" -> "VtCloseProof", false
-  | "maybe_open_proof" -> "VtMaybeOpenProof", true
   | "open_proof" -> "VtOpenProof", true
   | "proof" -> "VtModifyProof", false
   | "proof_opt_query" -> "VtReadProofOpt", false

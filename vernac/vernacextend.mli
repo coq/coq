@@ -74,7 +74,6 @@ type vernac_classification = vernac_type * vernac_when
 type vernac_interp_phase =
   | VtDefault of (unit -> unit)
   | VtCloseProof of (pstate:Proof_global.t -> unit)
-  | VtMaybeOpenProof of (unit -> Proof_global.t option)
   | VtOpenProof of (unit -> Proof_global.t)
   | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
   | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
