@@ -189,18 +189,13 @@ Requests to the environment
    This command displays the type of :n:`@term`. When called in proof mode, the
    term is checked in the local context of the current subgoal.
 
-
-   .. TODO : selector is not a syntax entry
-
    .. cmdv:: @selector: Check @term
 
       This variant specifies on which subgoal to perform typing
       (see Section :ref:`invocation-of-tactics`).
 
 
-.. TODO : convtactic is not a syntax entry
-
-.. cmd:: Eval @convtactic in @term
+.. cmd:: Eval @redexpr in @term
 
    This command performs the specified reduction on :n:`@term`, and displays
    the resulting term with its type. The term to be reduced may depend on
@@ -1167,19 +1162,19 @@ described first.
       Print all the currently non-transparent strategies.
 
 
-.. cmd:: Declare Reduction @ident := @convtactic
+.. cmd:: Declare Reduction @ident := @redexpr
 
    This command allows giving a short name to a reduction expression, for
-   instance lazy beta delta [foo bar]. This short name can then be used
+   instance ``lazy beta delta [foo bar]``. This short name can then be used
    in :n:`Eval @ident in` or ``eval`` directives. This command
    accepts the
-   Local modifier, for discarding this reduction name at the end of the
-   file or module. For the moment the name cannot be qualified. In
+   ``Local`` modifier, for discarding this reduction name at the end of the
+   file or module. For the moment, the name is not qualified. In
    particular declaring the same name in several modules or in several
-   functor applications will be refused if these declarations are not
+   functor applications will be rejected if these declarations are not
    local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
    nothing prevents the user to also perform a
-   :n:`Ltac @ident := @convtactic`.
+   :n:`Ltac @ident := @redexpr`.
 
    .. seealso:: :ref:`performingcomputations`
 

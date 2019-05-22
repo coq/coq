@@ -3478,7 +3478,7 @@ efficient ones, e.g. for the purpose of a correctness proof.
 Wildcards vs abstractions
 `````````````````````````
 
-The rewrite tactic supports :token:`r_items` containing holes. For example, in
+The rewrite tactic supports :token:`r_item`\s containing holes. For example, in
 the tactic ``rewrite (_ : _ * 0 = 0).``
 the term ``_ * 0 = 0`` is interpreted as ``forall n : nat, n * 0 = 0.``
 Anyway this tactic is *not* equivalent to
@@ -3753,7 +3753,7 @@ involves the following steps:
 
 3. If so :tacn:`under` puts these n goals in head normal form (using
    the defective form of the tactic :tacn:`move`), then executes
-   the corresponding intro pattern :n:`@ipat__i` in each goal.
+   the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
 4. Then :tacn:`under` checks that the first n subgoals
    are (quantified) equalities or double implications between a
@@ -3802,11 +3802,11 @@ One-liner mode
 
 The Ltac expression:
 
-:n:`under @term => [ @i_item__1 | … | @i_item__n ] do [ @tac__1 | … | @tac__n ].`
+:n:`under @term => [ @i_item__1 | … | @i_item__n ] do [ @tactic__1 | … | @tactic__n ].`
 
 can be seen as a shorter form for the following expression:
 
-:n:`(under @term) => [ @i_item__1 | … | @i_item__n | ]; [ @tac__1; over | … | @tac__n; over | cbv beta iota ].`
+:n:`(under @term) => [ @i_item__1 | … | @i_item__n | ]; [ @tactic__1; over | … | @tactic__n; over | cbv beta iota ].`
 
 Notes:
 
@@ -3819,14 +3819,14 @@ Notes:
   involving the `bigop` theory from the Mathematical Components library.
 
 + If there is only one tactic, the brackets can be omitted, e.g.:
-  :n:`under @term => i do @tac.` and that shorter form should be
+  :n:`under @term => i do @tactic.` and that shorter form should be
   preferred.
 
 + If the ``do`` clause is provided and the intro pattern is omitted,
   then the default :token:`i_item` ``*`` is applied to each branch.
   E.g., the Ltac expression:
-  :n:`under @term do [ @tac__1 | … | @tac__n ]` is equivalent to:
-  :n:`under @term => [ * | … | * ] do [ @tac__1 | … | @tac__n ]`
+  :n:`under @term do [ @tactic__1 | … | @tactic__n ]` is equivalent to:
+  :n:`under @term => [ * | … | * ] do [ @tactic__1 | … | @tactic__n ]`
   (and it can be noted here that the :tacn:`under` tactic performs a
   ``move.`` before processing the intro patterns ``=> [ * | … | * ]``).
 
@@ -4237,7 +4237,7 @@ selecting a specific redex and has been described in the previous
 sections. We have seen so far that the possibility of selecting a
 redex using a term with holes is already a powerful means of redex
 selection. Similarly, any terms provided by the user in the more
-complex forms of :token:`c_patterns`
+complex forms of :token:`c_pattern`\s
 presented in the tables above can contain
 holes.
 
