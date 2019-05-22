@@ -47,12 +47,13 @@ with open("refman-preamble.rst") as s:
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.7.8'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.ifconfig',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinxcontrib.bibtex',
@@ -100,6 +101,7 @@ def copy_formatspecific_files(app):
 
 def setup(app):
     app.connect('builder-inited', copy_formatspecific_files)
+    app.add_config_value('coq_config', coq_config, 'env')
 
 # The master toctree document.
 # We create this file in `copy_master_doc` above.

@@ -75,13 +75,7 @@ let adjust_guardness_conditions const = function
 	  List.interval 0 (List.length ((lam_assum c))))
 	  lemma_guard (Array.to_list fixdefs) in
 *)
-              let fold env eff =
-                try
-                  let _ = Environ.lookup_constant eff.seff_constant env in
-                  env
-                with Not_found -> Environ.add_constant eff.seff_constant eff.seff_body env
-              in
-              let env = List.fold_left fold env (Safe_typing.side_effects_of_private_constants eff) in
+              let env = Safe_typing.push_private_constants env eff in
               let indexes =
                 search_guard env
                   possible_indexes fixdecls in
@@ -395,10 +389,10 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
       let pstate = start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
-      let pstate, _ = Proof_global.with_current_proof (fun _ p ->
+      let pstate = Proof_global.simple_with_current_proof (fun _ p ->
           match init_tac with
-          | None -> p,(true,[])
-          | Some tac -> Proof.run_tactic Global.(env ()) tac p) pstate in
+          | None -> p
+          | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p) pstate in
       pstate
 
 let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =

@@ -446,15 +446,15 @@ open Pputils
     | Some true -> str" :>"
     | Some false -> str" :>>"
 
-  let pr_record_field ((x, pri), ntn) =
+  let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = ntn }) =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let prx = match x with
-      | (oc,AssumExpr (id,t)) ->
+      | AssumExpr (id,t) ->
         hov 1 (pr_lname id ++
                  pr_oc oc ++ spc() ++
                  pr_lconstr_expr env sigma t)
-      | (oc,DefExpr(id,b,opt)) -> (match opt with
+      | DefExpr(id,b,opt) -> (match opt with
           | Some t ->
             hov 1 (pr_lname id ++
                      pr_oc oc ++ spc() ++
@@ -476,6 +476,8 @@ open Pputils
       keyword "Print Section" ++ spc() ++ Libnames.pr_qualid s
     | PrintGrammar ent ->
       keyword "Print Grammar" ++ spc() ++ str ent
+    | PrintCustomGrammar ent ->
+      keyword "Print Custom Grammar" ++ spc() ++ str ent
     | PrintLoadPath dir ->
       keyword "Print LoadPath" ++ pr_opt DirPath.print dir
     | PrintModules ->
@@ -1262,15 +1264,15 @@ let pr_vernac_attributes =
 
   let rec pr_vernac_control v =
     let return = tag_vernac v in
-    match v with
+    match v.v with
     | VernacExpr (f, v') -> pr_vernac_attributes f ++ pr_vernac_expr v' ++ sep_end v'
-    | VernacTime (_,{v}) ->
+    | VernacTime (_,v) ->
       return (keyword "Time" ++ spc() ++ pr_vernac_control v)
-    | VernacRedirect (s, {v}) ->
+    | VernacRedirect (s, v) ->
       return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
-    | VernacTimeout(n,{v}) ->
+    | VernacTimeout(n,v) ->
       return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)
-    | VernacFail {v} ->
+    | VernacFail v->
       return (keyword "Fail" ++ spc() ++ pr_vernac_control v)
 
     let pr_vernac v =

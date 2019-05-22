@@ -94,20 +94,31 @@ Require Import ssreflect ssrfun.
                             like terms from boolean equalities (can fail).
  This file provides a theory of boolean predicates and relations:
                   pred T == the type of bool predicates (:= T -> bool).
-            simpl_pred T == the type of simplifying bool predicates, using
-                            the simpl_fun from ssrfun.v.
+            simpl_pred T == the type of simplifying bool predicates, based on
+                            the simpl_fun type from ssrfun.v.
+              mem_pred T == a specialized form of simpl_pred for "collective"
+                            predicates (see below).
                    rel T == the type of bool relations.
                          := T -> pred T or T -> T -> bool.
              simpl_rel T == type of simplifying relations.
+                         := T -> simpl_pred T
                 predType == the generic predicate interface, supported for
                             for lists and sets.
-              pred_class == a coercion class for the predType projection to
-                            pred; declaring a coercion to pred_class is an
-                            alternative way of equipping a type with a
-                            predType structure, which interoperates better
-                            with coercion subtyping. This is used, e.g.,
-                            for finite sets, so that finite groups inherit
-                            the membership operation by coercing to sets.
+               pred_sort == the predType >-> Type projection; pred_sort is
+                            itself a Coercion target class. Declaring a
+                            coercion to pred_sort is an alternative way of
+                            equiping a type with a predType structure, which
+                            interoperates better with coercion subtyping.
+                            This is used, e.g., for finite sets, so that finite
+                            groups inherit the membership operation by
+                            coercing to sets.
+                {pred T} == a type convertible to pred T, but whose head
+                            constant is pred_sort. This type should be used
+                            for parameters that can be used as collective
+                            predicates (see below), as this will allow passing
+                            in directly collections that implement predType
+                            by coercion as described above, e.g., finite sets.
+                         := pred_sort (predPredType T)
  If P is a predicate the proposition "x satisfies P" can be written
  applicatively as (P x), or using an explicit connective as (x \in P); in
  the latter case we say that P is a "collective" predicate. We use A, B
@@ -119,8 +130,14 @@ Require Import ssreflect ssrfun.
  pred T value of one type needs to be passed as the other the following
  conversions should be used explicitly:
              SimplPred P == a (simplifying) applicative equivalent of P.
-                   mem A == an applicative equivalent of A:
-                            mem A x simplifies to x \in A.
+                   mem A == an applicative equivalent of collective predicate A:
+                            mem A x simplifies to x \in A, as mem A has in
+                            fact type mem_pred T.
+ --> In user notation collective predicates _only_ occur as arguments to mem:
+     A only appears as (mem A). This is hidden by notation, e.g.,
+     x \in A := in_mem x (mem A) here, enum A := enum_mem (mem A) in fintype.
+     This makes it possible to unify the various ways in which A can be
+     interpreted as a predicate, for both pattern matching and display.
  Alternatively one can use the syntax for explicit simplifying predicates
  and relations (in the following x is bound in E):
             #[#pred x | E#]# == simplifying (see ssrfun) predicate x => E.
@@ -135,11 +152,11 @@ Require Import ssreflect ssrfun.
            #[#predD A & B#]# == difference of collective predicates A and B.
                #[#predC A#]# == complement of the collective predicate A.
           #[#preim f of A#]# == preimage under f of the collective predicate A.
-          predU P Q, ... == union, etc of applicative predicates.
-                   pred0 == the empty predicate.
-                   predT == the total (always true) predicate.
-                            if T : predArgType, then T coerces to predT.
-                   {: T} == T cast to predArgType (e.g., {: bool * nat})
+   predU P Q, ..., preim f P == union, etc of applicative predicates.
+                       pred0 == the empty predicate.
+                       predT == the total (always true) predicate.
+                                if T : predArgType, then T coerces to predT.
+                       {: T} == T cast to predArgType (e.g., {: bool * nat}).
  In the following, x and y are bound in E:
            #[#rel x y | E#]# == simplifying relation x, y => E.
        #[#rel x y : T | E#]# == simplifying relation with arguments cast.
@@ -147,7 +164,9 @@ Require Import ssreflect ssrfun.
       #[#rel x y in A & B#]# == #[#rel x y | (x \in A) && (y \in B) #]#.
       #[#rel x y in A | E#]# == #[#rel x y in A & A | E#]#.
           #[#rel x y in A#]# == #[#rel x y in A & A#]#.
-                relU R S == union of relations R and S.
+                    relU R S == union of relations R and S.
+                  relpre f R == preimage of relation R under f.
+        xpredU, ..., xrelpre == lambda terms implementing predU, ..., etc.
  Explicit values of type pred T (i.e., lamdba terms) should always be used
  applicatively, while values of collection types implementing the predType
  interface, such as sequences or sets should always be used as collective
@@ -177,7 +196,7 @@ Require Import ssreflect ssrfun.
      applicative and collective styles.
  Purely for aesthetics, we provide a subtype of collective predicates:
    qualifier q T == a pred T pretty-printing wrapper. An A : qualifier q T
-                    coerces to pred_class and thus behaves as a collective
+                    coerces to pred_sort and thus behaves as a collective
                     predicate, but x \in A and x \notin A are displayed as:
              x \is A and x \isn't A when q = 0,
          x \is a A and x \isn't a A when q = 1,
@@ -189,11 +208,11 @@ Require Import ssreflect ssrfun.
  We provide an internal interface to support attaching properties (such as
  being multiplicative) to predicates:
     pred_key p == phantom type that will serve as a support for properties
-                  to be attached to p : pred_class; instances should be
+                  to be attached to p : {pred _}; instances should be
                   created with Fact/Qed so as to be opaque.
  KeyedPred k_p == an instance of the interface structure that attaches
                   (k_p : pred_key P) to P; the structure projection is a
-                  coercion to pred_class.
+                  coercion to pred_sort.
  KeyedQualifier k_q == an instance of the interface structure that attaches
                   (k_q : pred_key q) to (q : qualifier n T).
  DefaultPredKey p == a default value for pred_key p; the vernacular command
@@ -235,17 +254,20 @@ Require Import ssreflect ssrfun.
            {in A &, P2} <-> forall x y, x \in A -> y \in A -> Qxy.
   {in A1 & A2 & A3, Q3} <-> forall x y z,
                             x \in A1 -> y \in A2 -> z \in A3 -> Qxyz.
-     {in A1 & A2 &, Q3} == {in A1 & A2 & A2, Q3}.
-      {in A1 && A3, Q3} == {in A1 & A1 & A3, Q3}.
-          {in A &&, Q3} == {in A & A & A, Q3}.
-    {in A, bijective f} == f has a right inverse in A.
-             {on C, P1} == forall x, (f x) \in C -> Qx
-                           when P1 is also convertible to Pf f.
+     {in A1 & A2 &, Q3} := {in A1 & A2 & A2, Q3}.
+      {in A1 && A3, Q3} := {in A1 & A1 & A3, Q3}.
+          {in A &&, Q3} := {in A & A & A, Q3}.
+    {in A, bijective f} <-> f has a right inverse in A.
+             {on C, P1} <-> forall x, (f x) \in C -> Qx
+                           when P1 is also convertible to Pf f, e.g.,
+                           {on C, involutive f}.
            {on C &, P2} == forall x y, f x \in C -> f y \in C -> Qxy
-                           when P2 is also convertible to Pf f.
+                           when P2 is also convertible to Pf f, e.g.,
+                           {on C &, injective f}.
         {on C, P1' & g} == forall x, (f x) \in cd -> Qx
                            when P1' is convertible to Pf f
-                           and P1' g is convertible to forall x, Qx.
+                           and P1' g is convertible to forall x, Qx, e.g.,
+                           {on C, cancel f & g}.
     {on C, bijective f} == f has a right inverse on C.
  This file extends the lemma name suffix conventions of ssrfun as follows:
    A -- associativity, as in andbA : associative andb.
@@ -282,13 +304,119 @@ Notation ReflectF := Bool.ReflectF.
 
 Reserved Notation "~~ b" (at level 35, right associativity).
 Reserved Notation "b ==> c" (at level 55, right associativity).
-Reserved Notation "b1  (+)  b2" (at level 50, left associativity).
-Reserved Notation "x \in A"
-  (at level 70, format "'[hv' x '/ '  \in  A ']'", no associativity).
-Reserved Notation "x \notin A"
-  (at level 70, format "'[hv' x '/ '  \notin  A ']'", no associativity).
-Reserved Notation "p1 =i p2"
-  (at level 70, format "'[hv' p1 '/ '  =i  p2 ']'", no associativity).
+Reserved Notation "b1 (+) b2" (at level 50, left associativity).
+
+Reserved Notation "x \in A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \in  A ']'").
+Reserved Notation "x \notin A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \notin  A ']'").
+Reserved Notation "x \is A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \is  A ']'").
+Reserved Notation "x \isn't A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \isn't  A ']'").
+Reserved Notation "x \is 'a' A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \is  'a'  A ']'").
+Reserved Notation "x \isn't 'a' A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \isn't  'a'  A ']'").
+Reserved Notation "x \is 'an' A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \is  'an'  A ']'").
+Reserved Notation "x \isn't 'an' A" (at level 70, no associativity,
+  format "'[hv' x '/ '  \isn't  'an'  A ']'").
+Reserved Notation "p1 =i p2" (at level 70, no associativity,
+  format "'[hv' p1 '/ '  =i  p2 ']'").
+Reserved Notation "{ 'subset' A <= B }" (at level 0, A, B at level 69,
+  format "'[hv' { 'subset'  A '/    '  <=  B } ']'").
+
+Reserved Notation "{ : T }" (at level 0, format "{ :  T }").
+Reserved Notation "{ 'pred' T }" (at level 0, format "{ 'pred'  T }").
+Reserved Notation "[ 'predType' 'of' T ]" (at level 0,
+  format "[ 'predType'  'of'  T ]").
+
+Reserved Notation "[ 'pred' : T | E ]" (at level 0,
+  format "'[hv' [ 'pred' :  T  | '/ '  E ] ']'").
+Reserved Notation "[ 'pred' x | E ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  | '/ '  E ] ']'").
+Reserved Notation "[ 'pred' x : T | E ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  :  T  | '/ '  E ] ']'").
+Reserved Notation "[ 'pred' x | E1 & E2 ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  | '/ '  E1  & '/ '  E2 ] ']'").
+Reserved Notation "[ 'pred' x : T | E1 & E2 ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  :  T  | '/ '  E1  &  E2 ] ']'").
+Reserved Notation "[ 'pred' x 'in' A ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  'in'  A ] ']'").
+Reserved Notation "[ 'pred' x 'in' A | E ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E ] ']'").
+Reserved Notation "[ 'pred' x 'in' A | E1 & E2 ]" (at level 0, x ident,
+  format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E1  & '/ '  E2 ] ']'").
+
+Reserved Notation "[ 'qualify' x | P ]" (at level 0, x at level 99,
+  format "'[hv' [  'qualify'  x  | '/ '  P ] ']'").
+Reserved Notation "[ 'qualify' x : T | P ]" (at level 0, x at level 99,
+  format "'[hv' [  'qualify'  x  :  T  | '/ '  P ] ']'").
+Reserved Notation "[ 'qualify' 'a' x | P ]" (at level 0, x at level 99,
+  format "'[hv' [ 'qualify'  'a'  x  | '/ '  P ] ']'").
+Reserved Notation "[ 'qualify' 'a' x : T | P ]" (at level 0, x at level 99,
+  format "'[hv' [ 'qualify'  'a'  x  :  T  | '/ '  P ] ']'").
+Reserved Notation "[ 'qualify' 'an' x | P ]" (at level 0, x at level 99,
+  format "'[hv' [ 'qualify'  'an'  x  | '/ '  P ] ']'").
+Reserved Notation "[ 'qualify' 'an' x : T | P ]" (at level 0, x at level 99,
+  format "'[hv' [ 'qualify'  'an'  x  :  T  | '/ '  P ] ']'").
+
+Reserved Notation "[ 'rel' x y | E ]"  (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  | '/ '  E ] ']'").
+Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  :  T  | '/ '  E ] ']'").
+Reserved Notation "[ 'rel' x y 'in' A & B | E ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  'in'  A  &  B  | '/ '  E ] ']'").
+Reserved Notation "[ 'rel' x y 'in' A & B ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  'in'  A  &  B ] ']'").
+Reserved Notation "[ 'rel' x y 'in' A | E ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  'in'  A  | '/ '  E ] ']'").
+Reserved Notation "[ 'rel' x y 'in' A ]" (at level 0, x ident, y ident,
+  format "'[hv' [ 'rel'  x  y  'in'  A ] ']'").
+
+Reserved Notation "[ 'mem' A ]" (at level 0, format "[ 'mem'  A ]").
+Reserved Notation "[ 'predI' A & B ]" (at level 0,
+  format "[ 'predI'  A  &  B ]").
+Reserved Notation "[ 'predU' A & B ]" (at level 0,
+  format "[ 'predU'  A  &  B ]").
+Reserved Notation "[ 'predD' A & B ]" (at level 0,
+  format "[ 'predD'  A  &  B ]").
+Reserved Notation "[ 'predC' A ]" (at level 0,
+  format "[ 'predC'  A ]").
+Reserved Notation "[ 'preim' f 'of' A ]" (at level 0,
+  format "[ 'preim'  f  'of'  A ]").
+
+Reserved Notation "\unless C , P" (at level 200, C at level 100,
+  format "'[hv' \unless  C , '/ '  P ']'").
+
+Reserved Notation "{ 'for' x , P }" (at level 0,
+  format "'[hv' { 'for'  x , '/ '  P } ']'").
+Reserved Notation "{ 'in' d , P }" (at level 0,
+  format "'[hv' { 'in'  d , '/ '  P } ']'").
+Reserved Notation "{ 'in' d1 & d2 , P }" (at level 0,
+  format "'[hv' { 'in'  d1  &  d2 , '/ '  P } ']'").
+Reserved Notation "{ 'in' d & , P }" (at level 0,
+  format "'[hv' { 'in'  d  & , '/ '  P } ']'").
+Reserved Notation "{ 'in' d1 & d2 & d3 , P }" (at level 0,
+  format "'[hv' { 'in'  d1  &  d2  &  d3 , '/ '  P } ']'").
+Reserved Notation "{ 'in' d1 & & d3 , P }" (at level 0,
+  format "'[hv' { 'in'  d1  &  &  d3 , '/ '  P } ']'").
+Reserved Notation "{ 'in' d1 & d2 & , P }" (at level 0,
+  format "'[hv' { 'in'  d1  &  d2  & , '/ '  P } ']'").
+Reserved Notation "{ 'in' d & & , P }" (at level 0,
+  format "'[hv' { 'in'  d  &  & , '/ '  P } ']'").
+Reserved Notation "{ 'on' cd , P }" (at level 0,
+  format "'[hv' { 'on'  cd , '/ '  P } ']'").
+Reserved Notation "{ 'on' cd & , P }" (at level 0,
+  format "'[hv' { 'on'  cd  & , '/ '  P } ']'").
+Reserved Notation "{ 'on' cd , P & g }" (at level 0, g at level 8,
+  format "'[hv' { 'on'  cd , '/ '  P  &  g } ']'").
+Reserved Notation "{ 'in' d , 'bijective' f }" (at level 0, f at level 8,
+   format "'[hv' { 'in'  d , '/ '  'bijective'  f } ']'").
+Reserved Notation "{ 'on' cd , 'bijective' f }" (at level 0, f at level 8,
+   format "'[hv' { 'on'  cd , '/ '  'bijective'  f } ']'").
+
 
 (**
  We introduce a number of n-ary "list-style" notations that share a common
@@ -334,18 +462,6 @@ Reserved Notation "[ || b1 , b2 , .. , bn | c ]" (at level 0, format
 Reserved Notation "[ ==> b1 => c ]" (at level 0, only parsing).
 Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
   "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
-
-Reserved Notation "[ 'pred' : T => E ]" (at level 0, format
-  "'[hv' [ 'pred' :  T  => '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x => E ]" (at level 0, x at level 8, format
-  "'[hv' [ 'pred'  x  => '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x : T => E ]" (at level 0, x at level 8, format
-  "'[hv' [ 'pred'  x  :  T  => '/ '  E ] ']'").
-
-Reserved Notation "[ 'rel' x y => E ]" (at level 0, x, y at level 8, format
-  "'[hv' [ 'rel'  x   y  => '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y : T => E ]" (at level 0, x, y at level 8, format
-  "'[hv' [ 'rel'  x  y :  T  => '/ '  E ] ']'").
 
 (**  Shorter delimiter  **)
 Delimit Scope bool_scope with B.
@@ -622,9 +738,7 @@ Hint View for apply/ impliesPn|2 impliesP|2.
 Definition unless condition property : Prop :=
  forall goal : Prop, (condition -> goal) -> (property -> goal) -> goal.
 
-Notation "\unless C , P" := (unless C P)
-  (at level 200, C at level 100,
-   format "'[' \unless  C , '/ '  P ']'") : type_scope.
+Notation "\unless C , P" := (unless C P) : type_scope.
 
 Lemma unlessL C P : implies C (\unless C, P).
 Proof. by split=> hC G /(_ hC). Qed.
@@ -1002,8 +1116,7 @@ Ltac bool_congr :=
  Moreover these infix forms are convertible to their prefix counterpart
  (e.g., predI P Q x which in turn simplifies to P x && Q x). The converse
  is not true, however; collective predicate types cannot, in general, be
- general, be used applicatively, because of the "uniform inheritance"
- restriction on implicit coercions.
+ used applicatively, because of restrictions on implicit coercions.
    However, we do define an explicit generic coercion
  - mem : forall (pT : predType), pT -> mem_pred T
    where mem_pred T is a variant of simpl_pred T that preserves the infix
@@ -1019,319 +1132,391 @@ Ltac bool_congr :=
  not to use it applicatively; this avoids the burden of having to declare a
  different predicate type for each predicate parameter of each section or
  lemma.
-   This trick is made possible by the fact that the constructor of the
- mem_pred T type aligns the unification process, forcing a generic
- "collective" predicate A : pred T to unify with the actual collective B,
- which mem has coerced to pred T via an internal, hidden implicit coercion,
- supplied by the predType structure for B. Users should take care not to
- inadvertently "strip" (mem B) down to the coerced B, since this will
- expose the internal coercion: Coq will display a term B x that cannot be
- typed as such. The topredE lemma can be used to restore the x \in B
- syntax in this case. While -topredE can conversely be used to change
- x \in P into P x, it is safer to use the inE and memE lemmas instead, as
- they do not run the risk of exposing internal coercions. As a consequence
- it is better to explicitly cast a generic applicative pred T to simpl_pred
- using the SimplPred constructor, when it is used as a collective predicate
- (see, e.g., Lemma eq_big in bigop).
+   In detail, we ensure that the head normal form of mem A is always of the
+ eta-long MemPred (fun x => pA x) form, where pA is the pred interpretation of
+ A following its predType pT, i.e., the _expansion_ of topred A. For a pred T
+ evar ?P, (mem ?P) converts MemPred (fun x => ?P x), whose argument is a Miller
+ pattern and therefore always unify: unifying (mem A) with (mem ?P) always
+ yields ?P = pA, because the rigid constant MemPred aligns the unification.
+ Furthermore, we ensure pA is always either A or toP .... A where toP ... is
+ the expansion of @topred T pT, and toP is declared as a Coercion, so pA will
+ _display_ as A in either case, and the instances of @mem T (predPredType T) pA
+ appearing in the premises or right-hand side of a generic lemma parametrized
+ by ?P will be indistinguishable from @mem T pT A.
+   Users should take care not to inadvertently "strip" (mem A) down to the
+ coerced A, since this will expose the internal toP coercion: Coq could then
+ display terms A x that cannot be typed as such. The topredE lemma can be used
+ to restore the x \in A syntax in this case. While -topredE can conversely be
+ used to change x \in P into P x for an applicative P, it is safer to use the
+ inE, unfold_in or and memE lemmas instead, as they do not run the risk of
+ exposing internal coercions. As a consequence it is better to explicitly
+ cast a generic applicative predicate to simpl_pred using the SimplPred
+ constructor when it is used as a collective predicate (see, e.g.,
+ Lemma eq_big in bigop).
    We also sometimes "instantiate" the predType structure by defining a
- coercion to the sort of the predPredType structure. This works better for
- types such as {set T} that have subtypes that coerce to them, since the
- same coercion will be inserted by the application of mem. It also lets us
- turn any Type aT : predArgType into the total predicate over that type,
- i.e., fun _: aT => true. This allows us to write, e.g., ##|'I_n| for the
- cardinal of the (finite) type of integers less than n.
-   Collective predicates have a specific extensional equality,
-   - A =i B,
- while applicative predicates use the extensional equality of functions,
-   - P =1 Q
- The two forms are convertible, however.
- We lift boolean operations to predicates, defining:
- - predU (union), predI (intersection), predC (complement),
-   predD (difference), and preim (preimage, i.e., composition)
- For each operation we define three forms, typically:
- - predU : pred T -> pred T -> simpl_pred T
- - #[#predU A & B#]#, a Notation for predU (mem A) (mem B)
- - xpredU, a Notation for the lambda-expression inside predU,
-     which is mostly useful as an argument of =1, since it exposes the head
-     head constant of the expression to the ssreflect matching algorithm.
- The syntax for the preimage of a collective predicate A is
- - #[#preim f of A#]#
- Finally, the generic syntax for defining a simpl_pred T is
- - #[#pred x : T | P(x) #]#, #[#pred x | P(x) #]#, #[#pred x in A | P(x) #]#, etc.
- We also support boolean relations, but only the applicative form, with
- types
- - rel T, an alias for T -> pred T
- - simpl_rel T, an auto-simplifying version, and syntax
-   #[#rel x y | P(x,y) #]#, #[#rel x y in A & B | P(x,y) #]#, etc.
- The notation #[#rel of fA#]# can be used to coerce a function returning a
- collective predicate to one returning pred T.
-   Finally, note that there is specific support for ambivalent predicates
- that can work in either style, as per this file's head descriptor.          **)
+ coercion to the sort of the predPredType structure, conveniently denoted
+ {pred T}. This works better for types such as {set T} that have subtypes that
+ coerce to them, since the same coercion will be inserted by the application
+ of mem, or of any lemma that expects a generic collective predicates with
+ type {pred T} := pred_sort (predPredType T) = pred T; thus {pred T} should be
+ the preferred type for generic collective predicate parameters.
+   This device also lets us turn any Type aT : predArgType into the total
+ predicate over that type, i.e., fun _: aT => true. This allows us to write,
+ e.g., ##|'I_n| for the cardinal of the (finite) type of integers less than n.
+ **)
 
+(** Boolean predicates. *)
 
 Definition pred T := T -> bool.
-
 Identity Coercion fun_of_pred : pred >-> Funclass.
 
-Definition rel T := T -> pred T.
+Definition subpred T (p1 p2 : pred T) := forall x : T, p1 x -> p2 x.
 
-Identity Coercion fun_of_rel : rel >-> Funclass.
+(* Notation for some manifest predicates. *)
 
-Notation xpred0 := (fun _ => false).
-Notation xpredT := (fun _ => true).
+Notation xpred0 := (fun=> false).
+Notation xpredT := (fun=> true).
 Notation xpredI := (fun (p1 p2 : pred _) x => p1 x && p2 x).
 Notation xpredU := (fun (p1 p2 : pred _) x => p1 x || p2 x).
 Notation xpredC := (fun (p : pred _) x => ~~ p x).
 Notation xpredD := (fun (p1 p2 : pred _) x => ~~ p2 x && p1 x).
 Notation xpreim := (fun f (p : pred _) x => p (f x)).
-Notation xrelU := (fun (r1 r2 : rel _) x y => r1 x y || r2 x y).
 
-Section Predicates.
-
-Variables T : Type.
-
-Definition subpred (p1 p2 : pred T) := forall x, p1 x -> p2 x.
-
-Definition subrel (r1 r2 : rel T) := forall x y, r1 x y -> r2 x y.
-
-Definition simpl_pred := simpl_fun T bool.
-Definition applicative_pred := pred T.
-Definition collective_pred := pred T.
-
-Definition SimplPred (p : pred T) : simpl_pred := SimplFun p.
-
-Coercion pred_of_simpl (p : simpl_pred) : pred T := fun_of_simpl p.
-Coercion applicative_pred_of_simpl (p : simpl_pred) : applicative_pred :=
-  fun_of_simpl p.
-Coercion collective_pred_of_simpl (p : simpl_pred) : collective_pred :=
-  fun x => (let: SimplFun f := p in fun _ => f x) x.
-(**
- Note: applicative_of_simpl is convertible to pred_of_simpl, while
- collective_of_simpl is not.  **)
-
-Definition pred0 := SimplPred xpred0.
-Definition predT := SimplPred xpredT.
-Definition predI p1 p2 := SimplPred (xpredI p1 p2).
-Definition predU p1 p2 := SimplPred (xpredU p1 p2).
-Definition predC p := SimplPred (xpredC p).
-Definition predD p1 p2 := SimplPred (xpredD p1 p2).
-Definition preim rT f (d : pred rT) := SimplPred (xpreim f d).
-
-Definition simpl_rel := simpl_fun T (pred T).
-
-Definition SimplRel (r : rel T) : simpl_rel := [fun x => r x].
-
-Coercion rel_of_simpl_rel (r : simpl_rel) : rel T := fun x y => r x y.
-
-Definition relU r1 r2 := SimplRel (xrelU r1 r2).
-
-Lemma subrelUl r1 r2 : subrel r1 (relU r1 r2).
-Proof. by move=> *; apply/orP; left. Qed.
-
-Lemma subrelUr r1 r2 : subrel r2 (relU r1 r2).
-Proof. by move=> *; apply/orP; right. Qed.
+(** The packed class interface for pred-like types. **)
 
 #[universes(template)]
-Variant mem_pred := Mem of pred T.
+Structure predType T :=
+   PredType {pred_sort :> Type; topred : pred_sort -> pred T}.
 
-Definition isMem pT topred mem := mem = (fun p : pT => Mem [eta topred p]).
+Definition clone_pred T U :=
+  fun pT & @pred_sort T pT -> U =>
+  fun toP (pT' := @PredType T U toP) & phant_id pT' pT => pT'.
+Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ id) : form_scope.
 
-#[universes(template)]
-Structure predType := PredType {
-  pred_sort :> Type;
-  topred : pred_sort -> pred T;
-  _ : {mem | isMem topred mem}
-}.
+Canonical predPredType T := PredType (@id (pred T)).
+Canonical boolfunPredType T := PredType (@id (T -> bool)).
 
-Definition mkPredType pT toP := PredType (exist (@isMem pT toP) _ (erefl _)).
+(** The type of abstract collective predicates.
+ While {pred T} is contertible to pred T, it presents the pred_sort coercion
+ class, which crucially does _not_ coerce to Funclass. Term whose type P coerces
+ to {pred T} cannot be applied to arguments, but they _can_ be used as if P
+ had a canonical predType instance, as the coercion will be inserted if the
+ unification P =~= pred_sort ?pT fails, changing the problem into the trivial
+ {pred T} =~= pred_sort ?pT (solution ?pT := predPredType P).
+   Additional benefits of this approach are that any type coercing to P will
+ also inherit this behaviour, and that the coercion will be apparent in the
+ elaborated expression. The latter may be important if the coercion is also
+ a canonical structure projector - see mathcomp/fingroup/fingroup.v. The
+ main drawback of implementing predType by coercion in this way is that the
+ type of the value must be known when the unification constraint is imposed:
+ if we only register the constraint and then later discover later that the
+ expression had type P it will be too late of insert a coercion, whereas a
+ canonical instance of predType fo P would have solved the deferred constraint.
+   Finally, definitions, lemmas and sections should use type {pred T} for
+ their generic collective type parameters, as this will make it possible to
+ apply such definitions and lemmas directly to values of types that implement
+ predType by coercion to {pred T} (values of types that implement predType
+ without coercing to {pred T} will have to be coerced explicitly using topred).
+**)
+Notation "{ 'pred' T }" := (pred_sort (predPredType T)) : type_scope.
 
-Canonical predPredType := Eval hnf in @mkPredType (pred T) id.
-Canonical simplPredType := Eval hnf in mkPredType pred_of_simpl.
-Canonical boolfunPredType := Eval hnf in @mkPredType (T -> bool) id.
+(** The type of self-simplifying collective predicates. **)
+Definition simpl_pred T := simpl_fun T bool.
+Definition SimplPred {T} (p : pred T) : simpl_pred T := SimplFun p.
 
-Coercion pred_of_mem mp : pred_sort predPredType := let: Mem p := mp in [eta p].
-Canonical memPredType := Eval hnf in mkPredType pred_of_mem.
+(** Some simpl_pred constructors. **)
 
-Definition clone_pred U :=
-  fun pT & pred_sort pT -> U =>
-  fun a mP (pT' := @PredType U a mP) & phant_id pT' pT => pT'.
+Definition pred0 {T} := @SimplPred T xpred0.
+Definition predT {T} := @SimplPred T xpredT.
+Definition predI {T} (p1 p2 : pred T) := SimplPred (xpredI p1 p2).
+Definition predU {T} (p1 p2 : pred T) := SimplPred (xpredU p1 p2).
+Definition predC {T} (p : pred T) := SimplPred (xpredC p).
+Definition predD {T} (p1 p2 : pred T) := SimplPred (xpredD p1 p2).
+Definition preim {aT rT} (f : aT -> rT) (d : pred rT) := SimplPred (xpreim f d).
 
-End Predicates.
+Notation "[ 'pred' : T | E ]" := (SimplPred (fun _ : T => E%B)) : fun_scope.
+Notation "[ 'pred' x | E ]" := (SimplPred (fun x => E%B)) : fun_scope.
+Notation "[ 'pred' x | E1 & E2 ]" := [pred x | E1 && E2 ] : fun_scope.
+Notation "[ 'pred' x : T | E ]" :=
+  (SimplPred (fun x : T => E%B)) (only parsing) : fun_scope.
+Notation "[ 'pred' x : T | E1 & E2 ]" :=
+  [pred x : T | E1 && E2 ] (only parsing) : fun_scope.
 
-Arguments pred0 {T}.
-Arguments predT {T}.
-Prenex Implicits pred0 predT predI predU predC predD preim relU.
+(** Coercions for simpl_pred.
+   As simpl_pred T values are used both applicatively and collectively we
+ need simpl_pred to coerce to both pred T _and_ {pred T}. However it is
+ undesireable to have two distinct constants for what are essentially identical
+ coercion functions, as this confuses the SSReflect keyed matching algorithm.
+ While the Coq Coercion declarations appear to disallow such Coercion aliasing,
+ it is possible to work around this limitation with a combination of modules
+ and functors, which we do below.
+   In addition we also give a predType instance for simpl_pred, which will
+ be preferred to the {pred T} coercion to solve simpl_pred T =~= pred_sort ?pT
+ constraints; not however that the pred_of_simpl coercion _will_ be used
+ when a simpl_pred T is passed as a {pred T}, since the simplPredType T
+ structure for simpl_pred T is _not_ convertible to predPredType T.  **)
 
-Notation "[ 'pred' : T | E ]" := (SimplPred (fun _ : T => E%B))
-  (at level 0, format "[ 'pred' :  T  |  E ]") : fun_scope.
-Notation "[ 'pred' x | E ]" := (SimplPred (fun x => E%B))
-  (at level 0, x ident, format "[ 'pred'  x  |  E ]") : fun_scope.
-Notation "[ 'pred' x | E1 & E2 ]" := [pred x | E1 && E2 ]
-  (at level 0, x ident, format "[ 'pred'  x  |  E1  &  E2 ]") : fun_scope.
-Notation "[ 'pred' x : T | E ]" := (SimplPred (fun x : T => E%B))
-  (at level 0, x ident, only parsing) : fun_scope.
-Notation "[ 'pred' x : T | E1 & E2 ]" := [pred x : T | E1 && E2 ]
-  (at level 0, x ident, only parsing) : fun_scope.
-Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B))
-  (at level 0, x ident, y ident, format "[ 'rel'  x  y  |  E ]") : fun_scope.
-Notation "[ 'rel' x y : T | E ]" := (SimplRel (fun x y : T => E%B))
-  (at level 0, x ident, y ident, only parsing) : fun_scope.
+Module PredOfSimpl.
+Definition coerce T (sp : simpl_pred T) : pred T := fun_of_simpl sp.
+End PredOfSimpl.
+Notation pred_of_simpl := PredOfSimpl.coerce.
+Coercion pred_of_simpl : simpl_pred >-> pred.
+Canonical simplPredType T := PredType (@pred_of_simpl T).
 
-Notation "[ 'predType' 'of' T ]" := (@clone_pred _ T _ id _ _ id)
-  (at level 0, format "[ 'predType'  'of'  T ]") : form_scope.
+Module Type PredSortOfSimplSignature.
+Parameter coerce : forall T, simpl_pred T -> {pred T}.
+End PredSortOfSimplSignature.
+Module DeclarePredSortOfSimpl (PredSortOfSimpl : PredSortOfSimplSignature).
+Coercion PredSortOfSimpl.coerce : simpl_pred >-> pred_sort.
+End DeclarePredSortOfSimpl.
+Module Export PredSortOfSimplCoercion := DeclarePredSortOfSimpl PredOfSimpl.
 
-(**
- This redundant coercion lets us "inherit" the simpl_predType canonical
- instance by declaring a coercion to simpl_pred. This hack is the only way
- to put a predType structure on a predArgType. We use simpl_pred rather
- than pred to ensure that /= removes the identity coercion. Note that the
- coercion will never be used directly for simpl_pred, since the canonical
- instance should always be resolved.                                        **)
-
-Notation pred_class := (pred_sort (predPredType _)).
-Coercion sort_of_simpl_pred T (p : simpl_pred T) : pred_class := p : pred T.
-
-(**
- This lets us use some types as a synonym for their universal predicate.
- Unfortunately, this won't work for existing types like bool, unless we
- redefine bool, true, false and all bool ops.                                **)
+(** Type to pred coercion.
+   This lets us use types of sort predArgType as a synonym for their universal
+ predicate. We define this predicate as a simpl_pred T rather than a pred T or
+ a {pred T} so that /= and inE reduce (T x) and x \in T to true, respectively.
+   Unfortunately, this can't be used for existing types like bool whose sort
+ is already fixed (at least, not without redefining bool, true, false and
+ all bool operations and lemmas); we provide syntax to recast a given type
+ in predArgType as a workaround. **)
 Definition predArgType := Type.
 Bind Scope type_scope with predArgType.
 Identity Coercion sort_of_predArgType : predArgType >-> Sortclass.
 Coercion pred_of_argType (T : predArgType) : simpl_pred T := predT.
+Notation "{ : T }" := (T%type : predArgType) : type_scope.
 
-Notation "{ : T }" := (T%type : predArgType)
-  (at level 0, format "{ :  T }") : type_scope.
+(** Boolean relations.
+ Simplifying relations follow the coding pattern of 2-argument simplifying
+ functions: the simplifying type constructor is applied to the _last_
+ argument. This design choice will let the in_simpl componenent of inE expand
+ membership in simpl_rel as well. We provide an explicit coercion to rel T
+ to avoid eta-expansion during coercion; this coercion self-simplifies so it
+ should be invisible.
+ **)
+
+Definition rel T := T -> pred T.
+Identity Coercion fun_of_rel : rel >-> Funclass.
+
+Definition subrel T (r1 r2 : rel T) := forall x y : T, r1 x y -> r2 x y.
+
+Definition simpl_rel T := T -> simpl_pred T.
+
+Coercion rel_of_simpl T (sr : simpl_rel T) : rel T := fun x : T => sr x.
+Arguments rel_of_simpl {T} sr x /.
+
+Notation xrelU := (fun (r1 r2 : rel _) x y => r1 x y || r2 x y).
+Notation xrelpre := (fun f (r : rel _) x y => r (f x) (f y)).
+
+Definition SimplRel {T} (r : rel T) : simpl_rel T := fun x => SimplPred (r x).
+Definition relU {T} (r1 r2 : rel T) := SimplRel (xrelU r1 r2).
+Definition relpre {aT rT} (f : aT -> rT) (r : rel rT) := SimplRel (xrelpre f r).
+
+Notation "[ 'rel' x y | E ]" := (SimplRel (fun x y => E%B)) : fun_scope.
+Notation "[ 'rel' x y : T | E ]" :=
+  (SimplRel (fun x y : T => E%B)) (only parsing) : fun_scope.
+
+Lemma subrelUl T (r1 r2 : rel T) : subrel r1 (relU r1 r2).
+Proof. by move=> x y r1xy; apply/orP; left. Qed.
+
+Lemma subrelUr T (r1 r2 : rel T) : subrel r2 (relU r1 r2).
+Proof. by move=> x y r2xy; apply/orP; right. Qed.
+
+(** Variant of simpl_pred specialised to the membership operator. **)
+
+#[universes(template)]
+Variant mem_pred T := Mem of pred T.
 
 (**
- These must be defined outside a Section because "cooking" kills the
- nosimpl tag.                                                                **)
+  We mainly declare pred_of_mem as a coercion so that it is not displayed.
+  Similarly to pred_of_simpl, it will usually not be inserted by type
+  inference, as all mem_pred mp =~= pred_sort ?pT unification problems will
+  be solve by the memPredType instance below; pred_of_mem will however
+  be used if a mem_pred T is used as a {pred T}, which is desireable as it
+  will avoid a redundant mem in a collective, e.g., passing (mem A) to a lemma
+  expection a generic collective predicate p : {pred T} and premise x \in P
+  will display a subgoal x \in A rathere than x \in mem A.
+    Conversely, pred_of_mem will _not_ if it is used id (mem A) is used
+  applicatively or as a pred T; there the simpl_of_mem coercion defined below
+  will be used, resulting in a subgoal that displays as mem A x by simplifies
+  to x \in A.
+ **)
+Coercion pred_of_mem {T} mp : {pred T} := let: Mem p := mp in [eta p].
+Canonical memPredType T := PredType (@pred_of_mem T).
 
-Definition mem T (pT : predType T) : pT -> mem_pred T :=
-  nosimpl (let: @PredType _ _ _ (exist _ mem _) := pT return pT -> _ in mem).
-Definition in_mem T x mp := nosimpl pred_of_mem T mp x.
+Definition in_mem {T} (x : T) mp := pred_of_mem mp x.
+Definition eq_mem {T} mp1 mp2 := forall x : T, in_mem x mp1 = in_mem x mp2.
+Definition sub_mem {T} mp1 mp2 := forall x : T, in_mem x mp1 -> in_mem x mp2.
 
-Prenex Implicits mem.
-
-Coercion pred_of_mem_pred T mp := [pred x : T | in_mem x mp].
-
-Definition eq_mem T p1 p2 := forall x : T, in_mem x p1 = in_mem x p2.
-Definition sub_mem T p1 p2 := forall x : T, in_mem x p1 -> in_mem x p2.
-
+Arguments in_mem {T} x mp : simpl never.
 Typeclasses Opaque eq_mem.
+Typeclasses Opaque sub_mem.
 
-Lemma sub_refl T (p : mem_pred T) : sub_mem p p. Proof. by []. Qed.
-Arguments sub_refl {T p}.
+(** The [simpl_of_mem; pred_of_simpl] path provides a new mem_pred >-> pred
+  coercion, but does _not_ override the pred_of_mem : mem_pred >-> pred_sort
+  explicit coercion declaration above.
+ **)
+Coercion simpl_of_mem {T} mp := SimplPred (fun x : T => in_mem x mp).
+
+Lemma sub_refl T (mp : mem_pred T) : sub_mem mp mp. Proof. by []. Qed.
+Arguments sub_refl {T mp} [x] mp_x.
+
+(**
+ It is essential to interlock the production of the Mem constructor inside
+ the branch of the predType match, to ensure that unifying mem A with
+ Mem [eta ?p] sets ?p := toP A (or ?p := P if toP = id and A = [eta P]),
+ rather than topred pT A, had we put mem A := Mem (topred A).
+**)
+Definition mem T (pT : predType T) : pT -> mem_pred T :=
+  let: PredType toP := pT in fun A => Mem [eta toP A].
+Arguments mem {T pT} A : rename, simpl never.
 
 Notation "x \in A" := (in_mem x (mem A)) : bool_scope.
 Notation "x \in A" := (in_mem x (mem A)) : bool_scope.
 Notation "x \notin A" := (~~ (x \in A)) : bool_scope.
 Notation "A =i B" := (eq_mem (mem A) (mem B)) : type_scope.
-Notation "{ 'subset' A <= B }" := (sub_mem (mem A) (mem B))
-  (at level 0, A, B at level 69,
-   format "{ '[hv' 'subset'  A '/   '  <=  B ']' }") : type_scope.
-Notation "[ 'mem' A ]" := (pred_of_simpl (pred_of_mem_pred (mem A)))
-  (at level 0, only parsing) : fun_scope.
-Notation "[ 'rel' 'of' fA ]" := (fun x => [mem (fA x)])
-  (at level 0, format "[ 'rel'  'of'  fA ]") : fun_scope.
-Notation "[ 'predI' A & B ]" := (predI [mem A] [mem B])
-  (at level 0, format "[ 'predI'  A  &  B ]") : fun_scope.
-Notation "[ 'predU' A & B ]" := (predU [mem A] [mem B])
-  (at level 0, format "[ 'predU'  A  &  B ]") : fun_scope.
-Notation "[ 'predD' A & B ]" := (predD [mem A] [mem B])
-  (at level 0, format "[ 'predD'  A  &  B ]") : fun_scope.
-Notation "[ 'predC' A ]" := (predC [mem A])
-  (at level 0, format "[ 'predC'  A ]") : fun_scope.
-Notation "[ 'preim' f 'of' A ]" := (preim f [mem A])
-  (at level 0, format "[ 'preim'  f  'of'  A ]") : fun_scope.
+Notation "{ 'subset' A <= B }" := (sub_mem (mem A) (mem B)) : type_scope.
 
-Notation "[ 'pred' x 'in' A ]" := [pred x | x \in A]
-  (at level 0, x ident, format "[ 'pred'  x  'in'  A ]") : fun_scope.
-Notation "[ 'pred' x 'in' A | E ]" := [pred x | x \in A & E]
-  (at level 0, x ident, format "[ 'pred'  x  'in'  A  |  E ]") : fun_scope.
-Notation "[ 'pred' x 'in' A | E1 & E2 ]" := [pred x | x \in A & E1 && E2 ]
-  (at level 0, x ident,
-   format "[ 'pred'  x  'in'  A  |  E1  &  E2 ]") : fun_scope.
+Notation "[ 'mem' A ]" :=
+  (pred_of_simpl (simpl_of_mem (mem A))) (only parsing) : fun_scope.
+
+Notation "[ 'predI' A & B ]" := (predI [mem A] [mem B]) : fun_scope.
+Notation "[ 'predU' A & B ]" := (predU [mem A] [mem B]) : fun_scope.
+Notation "[ 'predD' A & B ]" := (predD [mem A] [mem B]) : fun_scope.
+Notation "[ 'predC' A ]" := (predC [mem A]) : fun_scope.
+Notation "[ 'preim' f 'of' A ]" := (preim f [mem A]) : fun_scope.
+Notation "[ 'pred' x 'in' A ]" := [pred x | x \in A] : fun_scope.
+Notation "[ 'pred' x 'in' A | E ]" := [pred x | x \in A & E] : fun_scope.
+Notation "[ 'pred' x 'in' A | E1 & E2 ]" :=
+  [pred x | x \in A & E1 && E2 ] : fun_scope.
+
 Notation "[ 'rel' x y 'in' A & B | E ]" :=
-  [rel x y | (x \in A) && (y \in B) && E]
-  (at level 0, x ident, y ident,
-   format "[ 'rel'  x  y  'in'  A  &  B  |  E ]") : fun_scope.
-Notation "[ 'rel' x y 'in' A & B ]" := [rel x y | (x \in A) && (y \in B)]
-  (at level 0, x ident, y ident,
-   format "[ 'rel'  x  y  'in'  A  &  B ]") : fun_scope.
-Notation "[ 'rel' x y 'in' A | E ]" := [rel x y in A & A | E]
-  (at level 0, x ident, y ident,
-   format "[ 'rel'  x  y  'in'  A  |  E ]") : fun_scope.
-Notation "[ 'rel' x y 'in' A ]" := [rel x y in A & A]
-  (at level 0, x ident, y ident,
-   format "[ 'rel'  x  y  'in'  A ]") : fun_scope.
+  [rel x y | (x \in A) && (y \in B) && E] : fun_scope.
+Notation "[ 'rel' x y 'in' A & B ]" :=
+  [rel x y | (x \in A) && (y \in B)] : fun_scope.
+Notation "[ 'rel' x y 'in' A | E ]" := [rel x y in A & A | E] : fun_scope.
+Notation "[ 'rel' x y 'in' A ]" := [rel x y in A & A] : fun_scope.
 
-Section simpl_mem.
+(** Aliases of pred T that let us tag intances of simpl_pred as applicative
+  or collective, via bespoke coercions. This tagging will give control over
+  the simplification behaviour of inE and othe rewriting lemmas below.
+    For this control to work it is crucial that collective_of_simpl _not_
+  be convertible to either applicative_of_simpl or pred_of_simpl. Indeed
+  they differ here by a commutattive conversion (of the match and lambda).
+ **)
+Definition applicative_pred T := pred T.
+Definition collective_pred T := pred T.
+Coercion applicative_pred_of_simpl T (sp : simpl_pred T) : applicative_pred T :=
+  fun_of_simpl sp.
+Coercion collective_pred_of_simpl T (sp : simpl_pred T) : collective_pred T :=
+  let: SimplFun p := sp in p.
 
-Variables (T : Type) (pT : predType T).
-Implicit Types (x : T) (p : pred T) (sp : simpl_pred T) (pp : pT).
+(** Explicit simplification rules for predicate application and membership. **)
+Section PredicateSimplification.
+
+Variables T : Type.
+
+Implicit Types (p : pred T) (pT : predType T) (sp : simpl_pred T).
+Implicit Types (mp : mem_pred T).
 
 (**
- Bespoke structures that provide fine-grained control over matching the
- various forms of the \in predicate; note in particular the different forms
- of hoisting that are used. We had to work around several bugs in the
- implementation of unification, notably improper expansion of telescope
- projections and overwriting of a variable assignment by a later
- unification (probably due to conversion cache cross-talk).                  **)
+ The following four bespoke structures provide fine-grained control over
+ matching the various predicate forms. While all four follow a common pattern
+ of using a canonical projection to match a particular form of predicate
+ (in pred T, simpl_pred, mem_pred and mem_pred, respectively), and display
+ the matched predicate in the structure type, each is in fact used for a
+ different, specific purpose:
+  - registered_applicative_pred: this user-facing structure is used to
+    declare values of type pred T meant to be used applicatively. The
+    structure parameter merely displays this same value, and is used to avoid
+    undesireable, visible occurrence of the structure in the right hand side
+    of rewrite rules such as app_predE.
+      There is a canonical instance of registered_applicative_pred for values
+    of the applicative_of_simpl coercion, which handles the
+       Definition Apred : applicative_pred T := [pred x | ...] idiom.
+    This instance is mainly intended for the in_applicative component of inE,
+    in conjunction with manifest_mem_pred and applicative_mem_pred.
+  - manifest_simpl_pred: the only instance of this structure matches manifest
+    simpl_pred values of the form SimplPred p, displaying p in the structure
+    type. This structure is used in in_simpl to detect and selectively expand
+    collective predicates of this form. An explicit SimplPred p pattern would
+    _NOT_ work for this purpose, as then the left-hand side of in_simpl would
+    reduce to in_mem ?x (Mem [eta ?p]) and would thus match _any_ instance
+    of \in, not just those arising from a manifest simpl_pred.
+  - manifest_mem_pred: similar to manifest_simpl_pred, the one instance of this
+    structure matches manifest mem_pred values of the form Mem [eta ?p]. The
+    purpose is different however: to match and display in ?p the actual
+    predicate appearing in an ... \in ... expression matched by the left hand
+    side of the in_applicative component of inE; then
+  - applicative_mem_pred is a telescope refinement of manifest_mem_pred p with
+    a default constructor that checks that the predicate p is the value of a
+    registered_applicative_pred; any unfolding occurring during this check
+    does _not_ affect the value of p passed to in_applicative, since that
+    has been fixed earlier by the manifest_mem_pred match. In particular the
+    definition of a predicate using the applicative_pred_of_simpl idiom above
+    will not be expanded - this very case is the reason in_applicative uses
+    a mem_pred telescope in its left hand side. The more straighforward
+    ?x \in applicative_pred_value ?ap (equivalent to in_mem ?x (Mem ?ap))
+    with ?ap : registered_applicative_pred ?p would set ?p := [pred x | ...]
+    rather than ?p := Apred in the example above.
+ Also note that the in_applicative component of inE must be come before the
+ in_simpl one, as the latter also matches terms of the form x \in Apred.
+ Finally, no component of inE matches x \in Acoll, when
+   Definition Acoll : collective_pred T := [pred x | ...].
+ as the collective_pred_of_simpl is _not_ convertible to pred_of_simpl.  **)
+
 #[universes(template)]
-Structure manifest_applicative_pred p := ManifestApplicativePred {
-  manifest_applicative_pred_value :> pred T;
-  _ : manifest_applicative_pred_value = p
+Structure registered_applicative_pred p := RegisteredApplicativePred {
+  applicative_pred_value :> pred T;
+  _ : applicative_pred_value = p
 }.
-Definition ApplicativePred p := ManifestApplicativePred (erefl p).
+Definition ApplicativePred p := RegisteredApplicativePred (erefl p).
 Canonical applicative_pred_applicative sp :=
   ApplicativePred (applicative_pred_of_simpl sp).
 
 #[universes(template)]
 Structure manifest_simpl_pred p := ManifestSimplPred {
-  manifest_simpl_pred_value :> simpl_pred T;
-  _ : manifest_simpl_pred_value = SimplPred p
+  simpl_pred_value :> simpl_pred T;
+  _ : simpl_pred_value = SimplPred p
 }.
 Canonical expose_simpl_pred p := ManifestSimplPred (erefl (SimplPred p)).
 
 #[universes(template)]
 Structure manifest_mem_pred p := ManifestMemPred {
-  manifest_mem_pred_value :> mem_pred T;
-  _ : manifest_mem_pred_value= Mem [eta p]
+  mem_pred_value :> mem_pred T;
+  _ : mem_pred_value = Mem [eta p]
 }.
-Canonical expose_mem_pred p :=  @ManifestMemPred p _ (erefl _).
+Canonical expose_mem_pred p := ManifestMemPred (erefl (Mem [eta p])).
 
 #[universes(template)]
 Structure applicative_mem_pred p :=
   ApplicativeMemPred {applicative_mem_pred_value :> manifest_mem_pred p}.
-Canonical check_applicative_mem_pred p (ap : manifest_applicative_pred p) mp :=
-  @ApplicativeMemPred ap mp.
+Canonical check_applicative_mem_pred p (ap : registered_applicative_pred p) :=
+  [eta @ApplicativeMemPred ap].
 
-Lemma mem_topred (pp : pT) : mem (topred pp) = mem pp.
-Proof. by rewrite /mem; case: pT pp => T1 app1 [mem1 /= ->]. Qed.
+Lemma mem_topred pT (pp : pT) : mem (topred pp) = mem pp.
+Proof. by case: pT pp. Qed.
 
-Lemma topredE x (pp : pT) : topred pp x = (x \in pp).
+Lemma topredE pT x (pp : pT) : topred pp x = (x \in pp).
 Proof. by rewrite -mem_topred. Qed.
 
-Lemma app_predE x p (ap : manifest_applicative_pred p) : ap x = (x \in p).
+Lemma app_predE x p (ap : registered_applicative_pred p) : ap x = (x \in p).
 Proof. by case: ap => _ /= ->. Qed.
 
 Lemma in_applicative x p (amp : applicative_mem_pred p) : in_mem x amp = p x.
-Proof. by case: amp => [[_ /= ->]]. Qed.
+Proof. by case: amp => -[_ /= ->]. Qed.
 
 Lemma in_collective x p (msp : manifest_simpl_pred p) :
   (x \in collective_pred_of_simpl msp) = p x.
 Proof. by case: msp => _ /= ->. Qed.
 
 Lemma in_simpl x p (msp : manifest_simpl_pred p) :
-  in_mem x (Mem [eta fun_of_simpl (msp : simpl_pred T)]) = p x.
+  in_mem x (Mem [eta pred_of_simpl msp]) = p x.
 Proof. by case: msp => _ /= ->. Qed.
 
 (**
  Because of the explicit eta expansion in the left-hand side, this lemma
- should only be used in a right-to-left direction. The 8.3 hack allowing
- partial right-to-left use does not work with the improved expansion
- heuristics in 8.4.                                                          **)
+ should only be used in the left-to-right direction.
+ **)
 Lemma unfold_in x p : (x \in ([eta p] : pred T)) = p x.
 Proof. by []. Qed.
 
@@ -1345,55 +1530,39 @@ Proof. by []. Qed.
 
 Definition memE := mem_simpl. (* could be extended *)
 
-Lemma mem_mem (pp : pT) : (mem (mem pp) = mem pp) * (mem [mem pp] = mem pp).
-Proof. by rewrite -mem_topred. Qed.
+Lemma mem_mem mp :
+  (mem mp = mp) * (mem (mp : simpl_pred T) = mp) * (mem (mp : pred T) = mp).
+Proof. by case: mp. Qed.
 
-End simpl_mem.
+End PredicateSimplification.
 
 (**  Qualifiers and keyed predicates.  **)
 
 #[universes(template)]
-Variant qualifier (q : nat) T := Qualifier of predPredType T.
+Variant qualifier (q : nat) T := Qualifier of {pred T}.
 
-Coercion has_quality n T (q : qualifier n T) : pred_class :=
+Coercion has_quality n T (q : qualifier n T) : {pred T} :=
   fun x => let: Qualifier _ p := q in p x.
 Arguments has_quality n {T}.
 
 Lemma qualifE n T p x : (x \in @Qualifier n T p) = p x. Proof. by []. Qed.
 
-Notation "x \is A" := (x \in has_quality 0 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ '  \is  A ']'") : bool_scope.
-Notation "x \is 'a' A" := (x \in has_quality 1 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ '  \is  'a'  A ']'") : bool_scope.
-Notation "x \is 'an' A" := (x \in has_quality 2 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ ' \is  'an'  A ']'") : bool_scope.
-Notation "x \isn't A" := (x \notin has_quality 0 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ '  \isn't  A ']'") : bool_scope.
-Notation "x \isn't 'a' A" := (x \notin has_quality 1 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ '  \isn't  'a'  A ']'") : bool_scope.
-Notation "x \isn't 'an' A" := (x \notin has_quality 2 A)
-  (at level 70, no associativity,
-   format "'[hv' x '/ ' \isn't  'an'  A ']'") : bool_scope.
-Notation "[ 'qualify' x | P ]" := (Qualifier 0 (fun x => P%B))
-  (at level 0, x at level 99,
-   format "'[hv' [  'qualify'  x  | '/ '  P ] ']'") : form_scope.
-Notation "[ 'qualify' x : T | P ]" := (Qualifier 0 (fun x : T => P%B))
-  (at level 0, x at level 99, only parsing) : form_scope.
-Notation "[ 'qualify' 'a' x | P ]" := (Qualifier 1 (fun x => P%B))
-  (at level 0, x at level 99,
-   format "'[hv' [ 'qualify'  'a'  x  | '/ '  P ] ']'") : form_scope.
-Notation "[ 'qualify' 'a' x : T | P ]" := (Qualifier 1 (fun x : T => P%B))
-  (at level 0, x at level 99, only parsing) : form_scope.
-Notation "[ 'qualify' 'an' x | P ]" := (Qualifier 2 (fun x => P%B))
-  (at level 0, x at level 99,
-   format "'[hv' [ 'qualify'  'an'  x  | '/ '  P ] ']'") : form_scope.
-Notation "[ 'qualify' 'an' x : T | P ]" := (Qualifier 2 (fun x : T => P%B))
-  (at level 0, x at level 99, only parsing) : form_scope.
+Notation "x \is A" := (x \in has_quality 0 A) : bool_scope.
+Notation "x \is 'a' A" := (x \in has_quality 1 A) : bool_scope.
+Notation "x \is 'an' A" := (x \in has_quality 2 A) : bool_scope.
+Notation "x \isn't A" := (x \notin has_quality 0 A) : bool_scope.
+Notation "x \isn't 'a' A" := (x \notin has_quality 1 A) : bool_scope.
+Notation "x \isn't 'an' A" := (x \notin has_quality 2 A) : bool_scope.
+Notation "[ 'qualify' x | P ]" := (Qualifier 0 (fun x => P%B)) : form_scope.
+Notation "[ 'qualify' x : T | P ]" :=
+  (Qualifier 0 (fun x : T => P%B)) (only parsing) : form_scope.
+Notation "[ 'qualify' 'a' x | P ]" := (Qualifier 1 (fun x => P%B)) : form_scope.
+Notation "[ 'qualify' 'a' x : T | P ]" :=
+  (Qualifier 1 (fun x : T => P%B)) (only parsing) : form_scope.
+Notation "[ 'qualify' 'an' x | P ]" :=
+  (Qualifier 2 (fun x => P%B)) : form_scope.
+Notation "[ 'qualify' 'an' x : T | P ]" :=
+  (Qualifier 2 (fun x : T => P%B)) (only parsing) : form_scope.
 
 (**  Keyed predicates: support for property-bearing predicate interfaces.  **)
 
@@ -1401,12 +1570,12 @@ Section KeyPred.
 
 Variable T : Type.
 #[universes(template)]
-Variant pred_key (p : predPredType T) := DefaultPredKey.
+Variant pred_key (p : {pred T}) := DefaultPredKey.
 
-Variable p : predPredType T.
+Variable p : {pred T}.
 #[universes(template)]
 Structure keyed_pred (k : pred_key p) :=
-  PackKeyedPred {unkey_pred :> pred_class; _ : unkey_pred =i p}.
+  PackKeyedPred {unkey_pred :> {pred T}; _ : unkey_pred =i p}.
 
 Variable k : pred_key p.
 Definition KeyedPred := @PackKeyedPred k p (frefl _).
@@ -1418,10 +1587,10 @@ Lemma keyed_predE : k_p =i p. Proof. by case: k_p. Qed.
  Instances that strip the mem cast; the first one has "pred_of_mem" as its
  projection head value, while the second has "pred_of_simpl". The latter
  has the side benefit of preempting accidental misdeclarations.
- Note: pred_of_mem is the registered mem >-> pred_class coercion, while
- simpl_of_mem; pred_of_simpl is the mem >-> pred >=> Funclass coercion. We
+ Note: pred_of_mem is the registered mem >-> pred_sort coercion, while
+ [simpl_of_mem; pred_of_simpl] is the mem >-> pred >=> Funclass coercion. We
  must write down the coercions explicitly as the Canonical head constant
- computation does not strip casts !!                                         **)
+ computation does not strip casts.                                        **)
 Canonical keyed_mem :=
   @PackKeyedPred k (pred_of_mem (mem k_p)) keyed_predE.
 Canonical keyed_mem_simpl :=
@@ -1429,8 +1598,8 @@ Canonical keyed_mem_simpl :=
 
 End KeyPred.
 
-Notation "x \i 'n' S" := (x \in @unkey_pred _ S _ _)
-  (at level 70, format "'[hv' x '/ '  \i 'n'  S ']'") : bool_scope.
+Local Notation in_unkey x S := (x \in @unkey_pred _ S _ _) (only parsing).
+Notation "x \in S" := (in_unkey x S) (only printing) : bool_scope.
 
 Section KeyedQualifier.
 
@@ -1447,12 +1616,12 @@ Canonical keyed_qualifier_keyed := PackKeyedPred k keyed_qualifier_suproof.
 
 End KeyedQualifier.
 
-Notation "x \i 's' A" := (x \i n has_quality 0 A)
-  (at level 70, format "'[hv' x '/ '  \i 's'  A ']'") : bool_scope.
-Notation "x \i 's' 'a' A" := (x \i n has_quality 1 A)
-  (at level 70, format "'[hv' x '/ '  \i 's'  'a'  A ']'") : bool_scope.
-Notation "x \i 's' 'an' A" := (x \i n has_quality 2 A)
-  (at level 70, format "'[hv' x '/ '  \i 's'  'an'  A ']'") : bool_scope.
+Notation "x \is A" :=
+  (in_unkey x (has_quality 0 A)) (only printing) : bool_scope.
+Notation "x \is 'a' A" :=
+  (in_unkey x (has_quality 1 A)) (only printing) : bool_scope.
+Notation "x \is 'an' A" :=
+  (in_unkey x (has_quality 2 A)) (only printing) : bool_scope.
 
 Module DefaultKeying.
 
@@ -1592,7 +1761,7 @@ Definition prop_on2 Pf P & phantom T3 (Pf f) & ph {all2 P} :=
 End LocalProperties.
 
 Definition inPhantom := Phantom Prop.
-Definition onPhantom T P (x : T) := Phantom Prop (P x).
+Definition onPhantom {T} P (x : T) := Phantom Prop (P x).
 
 Definition bijective_in aT rT (d : mem_pred aT) (f : aT -> rT) :=
   exists2 g, prop_in1 d (inPhantom (cancel f g))
@@ -1602,59 +1771,30 @@ Definition bijective_on aT rT (cd : mem_pred rT) (f : aT -> rT) :=
   exists2 g, prop_on1 cd (Phantom _ (cancel f)) (onPhantom (cancel f) g)
            & prop_in1 cd (inPhantom (cancel g f)).
 
-Notation "{ 'for' x , P }" :=
-  (prop_for x (inPhantom P))
-  (at level 0, format "{ 'for'  x ,  P }") : type_scope.
-
-Notation "{ 'in' d , P }" :=
-  (prop_in1 (mem d) (inPhantom P))
-  (at level 0, format "{ 'in'  d ,  P }") : type_scope.
-
+Notation "{ 'for' x , P }" := (prop_for x (inPhantom P)) : type_scope.
+Notation "{ 'in' d , P }" := (prop_in1 (mem d) (inPhantom P)) : type_scope.
 Notation "{ 'in' d1 & d2 , P }" :=
-  (prop_in11 (mem d1) (mem d2) (inPhantom P))
-  (at level 0, format "{ 'in'  d1  &  d2 ,  P }") : type_scope.
-
-Notation "{ 'in' d & , P }" :=
-  (prop_in2 (mem d) (inPhantom P))
-  (at level 0, format "{ 'in'  d  & ,  P }") : type_scope.
-
+  (prop_in11 (mem d1) (mem d2) (inPhantom P)) : type_scope.
+Notation "{ 'in' d & , P }" := (prop_in2 (mem d) (inPhantom P)) : type_scope.
 Notation "{ 'in' d1 & d2 & d3 , P }" :=
-  (prop_in111 (mem d1) (mem d2) (mem d3) (inPhantom P))
-  (at level 0, format "{ 'in'  d1  &  d2  &  d3 ,  P }") : type_scope.
-
+  (prop_in111 (mem d1) (mem d2) (mem d3) (inPhantom P)) : type_scope.
 Notation "{ 'in' d1 & & d3 , P }" :=
-  (prop_in21 (mem d1) (mem d3) (inPhantom P))
-  (at level 0, format "{ 'in'  d1  &  &  d3 ,  P }") : type_scope.
-
+  (prop_in21 (mem d1) (mem d3) (inPhantom P)) : type_scope.
 Notation "{ 'in' d1 & d2 & , P }" :=
-  (prop_in12 (mem d1) (mem d2) (inPhantom P))
-  (at level 0, format "{ 'in'  d1  &  d2  & ,  P }") : type_scope.
-
-Notation "{ 'in' d & & , P }" :=
-  (prop_in3 (mem d) (inPhantom P))
-  (at level 0, format "{ 'in'  d  &  & ,  P }") : type_scope.
-
+  (prop_in12 (mem d1) (mem d2) (inPhantom P)) : type_scope.
+Notation "{ 'in' d & & , P }" := (prop_in3 (mem d) (inPhantom P)) : type_scope.
 Notation "{ 'on' cd , P }" :=
-  (prop_on1 (mem cd) (inPhantom P) (inPhantom P))
-  (at level 0, format "{ 'on'  cd ,  P }") : type_scope.
+  (prop_on1 (mem cd) (inPhantom P) (inPhantom P)) : type_scope.
 
 Notation "{ 'on' cd & , P }" :=
-  (prop_on2 (mem cd) (inPhantom P) (inPhantom P))
-  (at level 0, format "{ 'on'  cd  & ,  P }") : type_scope.
+  (prop_on2 (mem cd) (inPhantom P) (inPhantom P)) : type_scope.
 
-Local Arguments onPhantom {_%type_scope} _ _.
-
+Local Arguments onPhantom : clear scopes.
 Notation "{ 'on' cd , P & g }" :=
-  (prop_on1 (mem cd) (Phantom (_ -> Prop) P) (onPhantom P g))
-  (at level 0, format "{ 'on'  cd ,  P  &  g }") : type_scope.
-
-Notation "{ 'in' d , 'bijective' f }" := (bijective_in (mem d) f)
-  (at level 0, f at level 8,
-   format "{ 'in'  d ,  'bijective'  f }") : type_scope.
-
-Notation "{ 'on' cd , 'bijective' f }" := (bijective_on (mem cd) f)
-  (at level 0, f at level 8,
-   format "{ 'on'  cd ,  'bijective'  f }") : type_scope.
+  (prop_on1 (mem cd) (Phantom (_ -> Prop) P) (onPhantom P g)) : type_scope.
+Notation "{ 'in' d , 'bijective' f }" := (bijective_in (mem d) f) : type_scope.
+Notation "{ 'on' cd , 'bijective' f }" :=
+  (bijective_on (mem cd) f) : type_scope.
 
 (**
  Weakening and monotonicity lemmas for localized predicates.
@@ -1666,7 +1806,7 @@ Notation "{ 'on' cd , 'bijective' f }" := (bijective_on (mem cd) f)
 Section LocalGlobal.
 
 Variables T1 T2 T3 : predArgType.
-Variables (D1 : pred T1) (D2 : pred T2) (D3 : pred T3).
+Variables (D1 : {pred T1}) (D2 : {pred T2}) (D3 : {pred T3}).
 Variables (d1 d1' : mem_pred T1) (d2 d2' : mem_pred T2) (d3 d3' : mem_pred T3).
 Variables (f f' : T1 -> T2) (g : T2 -> T1) (h : T3).
 Variables (P1 : T1 -> Prop) (P2 : T1 -> T2 -> Prop).
@@ -1850,7 +1990,7 @@ End MonoHomoMorphismTheory.
 Section MonoHomoMorphismTheory_in.
 
 Variables (aT rT sT : predArgType) (f : aT -> rT) (g : rT -> aT).
-Variable (aD : pred aT).
+Variable (aD : {pred aT}).
 Variable (aP : pred aT) (rP : pred rT) (aR : rel aT) (rR : rel rT).
 
 Notation rD := [pred x | g x \in aD].

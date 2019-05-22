@@ -165,7 +165,9 @@ ide/index_urls.txt
 # coqide generated files (when testing)
 *.crashcoqide
 
-user-contrib
+/user-contrib/*
+!/user-contrib/Ltac2
+
 .*.sw*
 .#*
 
@@ -183,5 +185,6 @@ plugins/*/dune
 theories/*/dune
 theories/*/*/dune
 theories/*/*/*/dune
+/user-contrib/Ltac2/dune
 *.install
 !Makefile.install

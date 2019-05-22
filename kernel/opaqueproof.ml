@@ -77,29 +77,23 @@ let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
   | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
 
-let iter_direct_opaque f = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-  | Direct (d,cu) ->
-      Direct (d,Future.chain cu (fun (c, u) -> f c; c, u))
-
 let discharge_direct_opaque ~cook_constr ci = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
   | Direct (d,cu) ->
       Direct (ci::d,Future.chain cu (fun (c, u) -> cook_constr c, u))
 
-let join_opaque { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> ignore(Future.join cu)
+let join except cu = match except with
+| None -> ignore (Future.join cu)
+| Some except ->
+  if Future.UUIDSet.mem (Future.uuid cu) except then ()
+  else ignore (Future.join cu)
+
+let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
+  | Direct (_,cu) -> join except cu
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp then
         let fp = snd (Int.Map.find i prfs) in
-        ignore(Future.join fp)
-
-let uuid_opaque { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> Some (Future.uuid cu)
-  | Indirect (_,dp,i) ->
-      if DirPath.equal dp odp
-      then Some (Future.uuid (snd (Int.Map.find i prfs)))
-      else None
+        join except fp
 
 let force_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) ->
@@ -128,16 +122,6 @@ let get_constraints { opaque_val = prfs; opaque_dir = odp; _ } = function
       then Some(Future.chain (snd (Int.Map.find i prfs)) snd)
       else !get_univ dp i
 
-let get_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> Future.chain cu fst
-  | Indirect (l,dp,i) ->
-      let pt =
-        if DirPath.equal dp odp
-        then Future.chain (snd (Int.Map.find i prfs)) fst
-        else !get_opaque dp i in
-      Future.chain pt (fun c ->
-        force_constr (List.fold_right subst_substituted l (from_val c)))
- 
 module FMap = Future.UUIDMap
 
 let a_constr = Future.from_val (mkRel 1)

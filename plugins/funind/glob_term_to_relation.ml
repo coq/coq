@@ -1518,7 +1518,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-            Ppvernac.pr_vernac Vernacexpr.(VernacExpr([], VernacInductive(None,false,Declarations.Finite,repacked_rel_inds)))
+            Ppvernac.pr_vernac Vernacexpr.(CAst.make @@ VernacExpr([], VernacInductive(None,false,Declarations.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    msg
 	in
@@ -1533,7 +1533,7 @@ let do_build_inductive
 	in
 	let msg =
 	  str "while trying to define"++ spc () ++
-            Ppvernac.pr_vernac Vernacexpr.(VernacExpr([], VernacInductive(None,false,Declarations.Finite,repacked_rel_inds)))
+            Ppvernac.pr_vernac Vernacexpr.(CAst.make @@ VernacExpr([], VernacInductive(None,false,Declarations.Finite,repacked_rel_inds)))
 	    ++ fnl () ++
 	    CErrors.print reraise
 	in

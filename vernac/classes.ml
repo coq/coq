@@ -31,16 +31,6 @@ module NamedDecl = Context.Named.Declaration
 open Decl_kinds
 open Entries
 
-let refine_instance = ref false
-
-let () = Goptions.(declare_bool_option {
-  optdepr  = true;
-  optname  = "definition of instances by refining";
-  optkey   = ["Refine";"Instance";"Mode"];
-  optread  = (fun () -> !refine_instance);
-  optwrite = (fun b -> refine_instance := b)
-})
-
 let set_typeclass_transparency c local b = 
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
@@ -328,6 +318,7 @@ let instance_hook k info global imps ?hook cst =
   (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
+  (* XXX: Duplication of the declare_constant path *)
   let kind = IsDefinition Instance in
   let sigma =
     let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
@@ -349,14 +340,9 @@ let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-  let sigma = Evd.minimize_universes sigma in
-  Pretyping.check_evars env (Evd.from_env env) sigma termtype;
-  let univs = Evd.check_univ_decl ~poly sigma decl in
-  let termtype = to_constr sigma termtype in
+  let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-      (ParameterEntry
-         (None,(termtype,univs),None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-  in
+      (ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook k pri global imps (ConstRef cst)
 
@@ -374,6 +360,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
     let obls, constr, typ =
       match term with
       | Some t ->
+        let termtype = EConstr.of_constr termtype in
         let obls, _, constr, typ =
           Obligations.eterm_obligations env id sigma 0 t termtype
         in obls, Some constr, typ
@@ -400,7 +387,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
           if not (Option.is_empty term) then
             let init_refine =
               Tacticals.New.tclTHENLIST [
-                Refine.refine ~typecheck:false (fun sigma -> (sigma,EConstr.of_constr (Option.get term)));
+                Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
                 Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
                 Tactics.New.reduce_after_refine;
               ]
@@ -418,7 +405,7 @@ let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~po
         | None ->
           pstate) ())
 
-let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
   let props =
     match props with
     | Some (true, { CAst.v = CRecord fs }) ->
@@ -497,12 +484,12 @@ let do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
-  let term = Option.map (to_constr ~abort_on_undefined_evars:false sigma) term in
   let pstate =
     if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
-      (declare_instance_constant k pri global imps ?hook id decl poly sigma (Option.get term) termtype;
+      let term = to_constr sigma (Option.get term) in
+      (declare_instance_constant k pri global imps ?hook id decl poly sigma term termtype;
        None)
-    else if program_mode || refine || Option.is_empty props then
+    else if program_mode || Option.is_empty props then
       declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
   id, pstate
@@ -549,7 +536,7 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
 
-let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mode
+let new_instance ~pstate ?(global=false) ~program_mode
     poly ctx (instid, bk, cl) props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
@@ -565,7 +552,7 @@ let new_instance ~pstate ?(global=false) ?(refine= !refine_instance) ~program_mo
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  do_instance ~pstate env env' sigma ?hook ~refine ~tac ~global ~poly ~program_mode
+  do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
 let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =

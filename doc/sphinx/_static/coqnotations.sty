@@ -18,6 +18,9 @@
 \newlength{\nscriptsize}
 \setlength{\nscriptsize}{0.8em}
 
+\newlength{\nboxsep}
+\setlength{\nboxsep}{2pt}
+
 \newcommand*{\scriptsmallsquarebox}[1]{%
   % Force width
   \makebox[\nscriptsize]{%
@@ -31,7 +34,8 @@
 \newcommand*{\nsup}[1]{^{\nscript{0.15}{#1}}}
 \newcommand*{\nsub}[1]{_{\nscript{0.35}{#1}}}
 \newcommand*{\nnotation}[1]{#1}
-\newcommand*{\nrepeat}[1]{\text{\adjustbox{cfbox=nbordercolor 0.5pt 2pt,bgcolor=nbgcolor}{#1\hspace{.5\nscriptsize}}}}
+\newcommand*{\nbox}[1]{\adjustbox{cfbox=nbordercolor 0.5pt \nboxsep,bgcolor=nbgcolor}{#1}}
+\newcommand*{\nrepeat}[1]{\text{\nbox{#1\hspace{.5\nscriptsize}}}}
 \newcommand*{\nwrapper}[1]{\ensuremath{\displaystyle#1}} % https://tex.stackexchange.com/questions/310877/
 \newcommand*{\nhole}[1]{\textit{\color{nholecolor}#1}}
 
@@ -42,9 +46,32 @@
 }
 % </magic>
 
+% https://tex.stackexchange.com/questions/490262/
+\def\naltsep{}
+\newsavebox{\nsavedalt}
+\newlength{\naltvruleht}
+\newlength{\naltvruledp}
+\def\naltvrule{\smash{\vrule height\naltvruleht depth\naltvruledp}}
+\newcommand{\nalternative}[2]{%
+  % First measure the contents of the box without the bar
+  \bgroup%
+  \def\naltsep{}%
+  \savebox{\nsavedalt}{#1}%
+  \setlength{\naltvruleht}{\ht\nsavedalt}%
+  \setlength{\naltvruledp}{\dp\nsavedalt}%
+  \addtolength{\naltvruleht}{#2}%
+  \addtolength{\naltvruledp}{#2}%
+  % Then redraw it with the bar
+  \def\naltsep{\naltvrule}%
+  #1\egroup}
+
 \newcssclass{notation-sup}{\nsup{#1}}
 \newcssclass{notation-sub}{\nsub{#1}}
 \newcssclass{notation}{\nnotation{#1}}
 \newcssclass{repeat}{\nrepeat{#1}}
 \newcssclass{repeat-wrapper}{\nwrapper{#1}}
 \newcssclass{hole}{\nhole{#1}}
+\newcssclass{alternative}{\nalternative{\nbox{#1}}{0pt}}
+\newcssclass{alternative-block}{#1}
+\newcssclass{repeated-alternative}{\nalternative{#1}{\nboxsep}}
+\newcssclass{alternative-separator}{\quad\naltsep{}\quad}

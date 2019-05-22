@@ -505,10 +505,6 @@ module Goal : sig
   (** Type of goals. *)
   type t
 
-  (** Normalises the argument goal. *)
-  val normalize : t -> t tactic
-  [@@ocaml.deprecated "Normalization is enforced by EConstr, [normalize] is not needed anymore"]
-
   (** [concl], [hyps], [env] and [sigma] given a goal [gl] return
       respectively the conclusion of [gl], the hypotheses of [gl], the
       environment of [gl] (i.e. the global environment and the
@@ -599,7 +595,7 @@ module V82 : sig
   val top_goals : entry -> proofview -> Evar.t list Evd.sigma
 
   (* returns the existential variable used to start the proof *)
-  val top_evars : entry -> Evar.t list
+  val top_evars : entry -> proofview -> Evar.t list
 
   (* Caution: this function loses quite a bit of information. It
      should be avoided as much as possible.  It should work as

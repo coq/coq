@@ -219,25 +219,113 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Declare Scope fun_scope.
-Delimit Scope fun_scope with FUN.
-Open Scope fun_scope.
+(** Parsing / printing declarations. *)
+Reserved Notation "p .1" (at level 2, left associativity, format "p .1").
+Reserved Notation "p .2" (at level 2, left associativity, format "p .2").
+Reserved Notation "f ^~ y" (at level 10, y at level 8, no associativity,
+  format "f ^~  y").
+Reserved Notation "@^~ x" (at level 10, x at level 8, no associativity,
+  format "@^~  x").
+Reserved Notation "[ 'eta' f ]" (at level 0, format "[ 'eta'  f ]").
+Reserved Notation "'fun' => E" (at level 200, format "'fun' =>  E").
 
-(**  Notations for argument transpose  **)
-Notation "f ^~ y" := (fun x => f x y)
-  (at level 10, y at level 8, no associativity, format "f ^~  y") : fun_scope.
-Notation "@^~ x" := (fun f => f x)
-  (at level 10, x at level 8, no associativity, format "@^~  x") : fun_scope.
+Reserved Notation "[ 'fun' : T => E ]" (at level 0,
+  format "'[hv' [ 'fun' :  T  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' x => E ]" (at level 0,
+  x ident, format "'[hv' [ 'fun'  x  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' x : T => E ]" (at level 0,
+  x ident, format "'[hv' [ 'fun'  x  :  T  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' x y => E ]" (at level 0,
+  x ident, y ident, format "'[hv' [ 'fun'  x  y  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' x y : T => E ]" (at level 0,
+  x ident, y ident, format "'[hv' [ 'fun'  x  y  :  T  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' ( x : T ) y => E ]" (at level 0,
+  x ident, y ident, format "'[hv' [ 'fun'  ( x  :  T )  y  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' x ( y : T ) => E ]" (at level 0,
+  x ident, y ident, format "'[hv' [ 'fun'  x  ( y  :  T )  => '/ '  E ] ']'").
+Reserved Notation "[ 'fun' ( x : T ) ( y : U ) => E ]" (at level 0,
+  x ident, y ident, format "[ 'fun'  ( x  :  T )  ( y  :  U )  =>  E ]" ).
+
+Reserved Notation "f =1 g" (at level 70, no associativity).
+Reserved Notation "f =1 g :> A" (at level 70, g at next level, A at level 90).
+Reserved Notation "f =2 g" (at level 70, no associativity).
+Reserved Notation "f =2 g :> A" (at level 70, g at next level, A at level 90).
+Reserved Notation "f \o g" (at level 50, format "f  \o '/ '  g").
+Reserved Notation "f \; g" (at level 60, right associativity,
+  format "f  \; '/ '  g").
+
+Reserved Notation "{ 'morph' f : x / a >-> r }" (at level 0, f at level 99,
+  x ident, format "{ 'morph'  f  :  x  /  a  >->  r }").
+Reserved Notation "{ 'morph' f : x / a }" (at level 0, f at level 99,
+  x ident, format "{ 'morph'  f  :  x  /  a }").
+Reserved Notation "{ 'morph' f : x y / a >-> r }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'morph'  f  :  x  y  /  a  >->  r }").
+Reserved Notation "{ 'morph' f : x y / a }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'morph'  f  :  x  y  /  a }").
+Reserved Notation "{ 'homo' f : x / a >-> r }" (at level 0, f at level 99,
+  x ident, format "{ 'homo'  f  :  x  /  a  >->  r }").
+Reserved Notation "{ 'homo' f : x / a }"  (at level 0, f at level 99,
+  x ident, format "{ 'homo'  f  :  x  /  a }").
+Reserved Notation "{ 'homo' f : x y / a >-> r }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'homo'  f  :  x  y  /  a  >->  r }").
+Reserved Notation "{ 'homo' f : x y / a }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'homo'  f  :  x  y  /  a }").
+Reserved Notation "{ 'homo' f : x y /~ a }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'homo'  f  :  x  y  /~  a }").
+Reserved Notation "{ 'mono' f : x / a >-> r }" (at level 0, f at level 99,
+  x ident, format "{ 'mono'  f  :  x  /  a  >->  r }").
+Reserved Notation "{ 'mono' f : x / a }" (at level 0, f at level 99,
+  x ident, format "{ 'mono'  f  :  x  /  a }").
+Reserved Notation "{ 'mono' f : x y / a >-> r }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'mono'  f  :  x  y  /  a  >->  r }").
+Reserved Notation "{ 'mono' f : x y / a }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'mono'  f  :  x  y  /  a }").
+Reserved Notation "{ 'mono' f : x y /~ a }" (at level 0, f at level 99,
+  x ident, y ident, format "{ 'mono'  f  :  x  y  /~  a }").
+
+Reserved Notation "@ 'id' T" (at level 10, T at level 8, format "@ 'id'  T").
+Reserved Notation "@ 'sval'" (at level 10, format "@ 'sval'").
+
+(**
+ Syntax for defining auxiliary recursive function.
+  Usage:
+ Section FooDefinition.
+ Variables (g1 : T1) (g2 : T2).  (globals)
+ Fixoint foo_auxiliary (a3 : T3) ... :=
+        body, using #[#rec e3, ... #]# for recursive calls
+ where " #[# 'rec' a3 , a4 , ... #]#" := foo_auxiliary.
+ Definition foo x y .. := #[#rec e1, ... #]#.
+ + proofs about foo
+ End FooDefinition.                                          **)
+
+Reserved Notation "[ 'rec' a ]" (at level 0,
+  format "[ 'rec'  a ]").
+Reserved Notation "[ 'rec' a , b ]" (at level 0,
+  format "[ 'rec'  a ,  b ]").
+Reserved Notation "[ 'rec' a , b , c ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ]").
+Reserved Notation "[ 'rec' a , b , c , d ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ]").
+Reserved Notation "[ 'rec' a , b , c , d , e ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ]").
+Reserved Notation "[ 'rec' a , b , c , d , e , f ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ,  f ]").
+Reserved Notation "[ 'rec' a , b , c , d , e , f , g ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ,  f ,  g ]").
+Reserved Notation "[ 'rec' a , b , c , d , e , f , g , h ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ,  f ,  g ,  h ]").
+Reserved Notation "[ 'rec' a , b , c , d , e , f , g , h , i ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ,  f ,  g ,  h ,  i ]").
+Reserved Notation "[ 'rec' a , b , c , d , e , f , g , h , i , j ]" (at level 0,
+  format "[ 'rec'  a ,  b ,  c ,  d ,  e ,  f ,  g ,  h ,  i ,  j ]").
 
 Declare Scope pair_scope.
 Delimit Scope pair_scope with PAIR.
 Open Scope pair_scope.
 
 (**  Notations for pair/conjunction projections  **)
-Notation "p .1" := (fst p)
-  (at level 2, left associativity, format "p .1") : pair_scope.
-Notation "p .2" := (snd p)
-  (at level 2, left associativity, format "p .2") : pair_scope.
+Notation "p .1" := (fst p) : pair_scope.
+Notation "p .2" := (snd p) : pair_scope.
 
 Coercion pair_of_and P Q (PandQ : P /\ Q) := (proj1 PandQ, proj2 PandQ).
 
@@ -291,41 +379,13 @@ Canonical wrap T x := @Wrap T x.
 
 Prenex Implicits unwrap wrap Wrap.
 
-(**
- Syntax for defining auxiliary recursive function.
-  Usage:
- Section FooDefinition.
- Variables (g1 : T1) (g2 : T2).  (globals)
- Fixoint foo_auxiliary (a3 : T3) ... :=
-        body, using #[#rec e3, ... #]# for recursive calls
- where " #[# 'rec' a3 , a4 , ... #]#" := foo_auxiliary.
- Definition foo x y .. := #[#rec e1, ... #]#.
- + proofs about foo
- End FooDefinition.                                          **)
+Declare Scope fun_scope.
+Delimit Scope fun_scope with FUN.
+Open Scope fun_scope.
 
-Reserved Notation "[ 'rec' a0 ]"
-  (at level 0, format "[ 'rec'  a0 ]").
-Reserved Notation "[ 'rec' a0 , a1 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ,  a2 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 , a6 ]"
-  (at level 0, format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ,  a6 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 , a6 , a7 ]"
-  (at level 0,
-  format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ,  a6 ,  a7 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 ]"
-  (at level 0,
-  format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ,  a6 ,  a7 ,  a8 ]").
-Reserved Notation "[ 'rec' a0 , a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 ]"
-  (at level 0,
-  format "[ 'rec'  a0 ,  a1 ,  a2 ,  a3 ,  a4 ,  a5 ,  a6 ,  a7 ,  a8 ,  a9 ]").
+(**  Notations for argument transpose  **)
+Notation "f ^~ y" := (fun x => f x y) : fun_scope.
+Notation "@^~ x" := (fun f => f x) : fun_scope.
 
 (**
  Definitions and notation for explicit functions with simplification,
@@ -344,33 +404,19 @@ Coercion fun_of_simpl : simpl_fun >-> Funclass.
 
 End SimplFun.
 
-Notation "[ 'fun' : T => E ]" := (SimplFun (fun _ : T => E))
-  (at level 0,
-   format "'[hv' [ 'fun' :  T  => '/ '  E ] ']'") : fun_scope.
-
-Notation "[ 'fun' x => E ]" := (SimplFun (fun x => E))
-  (at level 0, x ident,
-   format "'[hv' [ 'fun'  x  => '/ '  E ] ']'") : fun_scope.
-
+Notation "[ 'fun' : T => E ]" := (SimplFun (fun _ : T => E)) : fun_scope.
+Notation "[ 'fun' x => E ]" := (SimplFun (fun x => E)) : fun_scope.
+Notation "[ 'fun' x y => E ]" := (fun x => [fun y => E]) : fun_scope.
 Notation "[ 'fun' x : T => E ]" := (SimplFun (fun x : T => E))
-  (at level 0, x ident, only parsing) : fun_scope.
-
-Notation "[ 'fun' x y => E ]" := (fun x => [fun y => E])
-  (at level 0, x ident, y ident,
-   format "'[hv' [ 'fun'  x  y  => '/ '  E ] ']'") : fun_scope.
-
+  (only parsing) : fun_scope.
 Notation "[ 'fun' x y : T => E ]" := (fun x : T => [fun y : T => E])
-  (at level 0, x ident, y ident, only parsing) : fun_scope.
-
+  (only parsing) : fun_scope.
 Notation "[ 'fun' ( x : T ) y => E ]" := (fun x : T => [fun y => E])
-  (at level 0, x ident, y ident, only parsing) : fun_scope.
-
+  (only parsing) : fun_scope.
 Notation "[ 'fun' x ( y : T ) => E ]" := (fun x => [fun y : T => E])
-  (at level 0, x ident, y ident, only parsing) : fun_scope.
-
-Notation "[ 'fun' ( x : xT ) ( y : yT ) => E ]" :=
-    (fun x : xT => [fun y : yT => E])
-  (at level 0, x ident, y ident, only parsing) : fun_scope.
+  (only parsing) : fun_scope.
+Notation "[ 'fun' ( x : T ) ( y : U ) => E ]" := (fun x : T => [fun y : U => E])
+  (only parsing) : fun_scope.
 
 (**  For delta functions in eqtype.v.  **)
 Definition SimplFunDelta aT rT (f : aT -> aT -> rT) := [fun z => f z z].
@@ -402,51 +448,38 @@ Typeclasses Opaque eqrel.
 
 Hint Resolve frefl rrefl : core.
 
-Notation "f1 =1 f2" := (eqfun f1 f2)
-  (at level 70, no associativity) : fun_scope.
-Notation "f1 =1 f2 :> A" := (f1 =1 (f2 : A))
-  (at level 70, f2 at next level, A at level 90) : fun_scope.
-Notation "f1 =2 f2" := (eqrel f1 f2)
-  (at level 70, no associativity) : fun_scope.
-Notation "f1 =2 f2 :> A" := (f1 =2 (f2 : A))
-  (at level 70, f2 at next level, A at level 90) : fun_scope.
+Notation "f1 =1 f2" := (eqfun f1 f2) : fun_scope.
+Notation "f1 =1 f2 :> A" := (f1 =1 (f2 : A)) : fun_scope.
+Notation "f1 =2 f2" := (eqrel f1 f2) : fun_scope.
+Notation "f1 =2 f2 :> A" := (f1 =2 (f2 : A)) : fun_scope.
 
 Section Composition.
 
 Variables A B C : Type.
 
-Definition funcomp u (f : B -> A) (g : C -> B) x := let: tt := u in f (g x).
-Definition catcomp u g f := funcomp u f g.
-Local Notation comp := (funcomp tt).
-
+Definition comp (f : B -> A) (g : C -> B) x := f (g x).
+Definition catcomp g f := comp f g.
 Definition pcomp (f : B -> option A) (g : C -> option B) x := obind f (g x).
 
 Lemma eq_comp f f' g g' : f =1 f' -> g =1 g' -> comp f g =1 comp f' g'.
-Proof. by move=> eq_ff' eq_gg' x; rewrite /= eq_gg' eq_ff'. Qed.
+Proof. by move=> eq_ff' eq_gg' x; rewrite /comp eq_gg' eq_ff'. Qed.
 
 End Composition.
 
-Notation comp := (funcomp tt).
-Notation "@ 'comp'" := (fun A B C => @funcomp A B C tt).
-Notation "f1 \o f2" := (comp f1 f2)
-  (at level 50, format "f1  \o '/ '  f2") : fun_scope.
-Notation "f1 \; f2" := (catcomp tt f1 f2)
-  (at level 60, right associativity, format "f1  \; '/ '  f2") : fun_scope.
+Arguments comp {A B C} f g x /.
+Arguments catcomp {A B C} g f x /.
+Notation "f1 \o f2" := (comp f1 f2) : fun_scope.
+Notation "f1 \; f2" := (catcomp f1 f2) : fun_scope.
 
-Notation "[ 'eta' f ]" := (fun x => f x)
-  (at level 0, format "[ 'eta'  f ]") : fun_scope.
+Notation "[ 'eta' f ]" := (fun x => f x) : fun_scope.
 
-Notation "'fun' => E" := (fun _ => E) (at level 200, only parsing) : fun_scope.
+Notation "'fun' => E" := (fun _ => E) : fun_scope.
 
 Notation id := (fun x => x).
-Notation "@ 'id' T" := (fun x : T => x)
-  (at level 10, T at level 8, only parsing) : fun_scope.
+Notation "@ 'id' T" := (fun x : T => x) (only parsing) : fun_scope.
 
-Definition id_head T u x : T := let: tt := u in x.
-Definition explicit_id_key := tt.
-Notation idfun := (id_head tt).
-Notation "@ 'idfun' T " := (@id_head T explicit_id_key)
-  (at level 10, T at level 8, format "@ 'idfun'  T") : fun_scope.
+Definition idfun T x : T := x.
+Arguments idfun {T} x /.
 
 Definition phant_id T1 T2 v1 v2 := phantom T1 v1 -> phantom T2 v2.
 
@@ -542,74 +575,33 @@ Definition monomorphism_2 (aR rR : _ -> _ -> sT) :=
 End Morphism.
 
 Notation "{ 'morph' f : x / a >-> r }" :=
-  (morphism_1 f (fun x => a) (fun x => r))
-  (at level 0, f at level 99, x ident,
-   format "{ 'morph'  f  :  x  /  a  >->  r }") : type_scope.
-
+  (morphism_1 f (fun x => a) (fun x => r)) : type_scope.
 Notation "{ 'morph' f : x / a }" :=
-  (morphism_1 f (fun x => a) (fun x => a))
-  (at level 0, f at level 99, x ident,
-   format "{ 'morph'  f  :  x  /  a }") : type_scope.
-
+  (morphism_1 f (fun x => a) (fun x => a)) : type_scope.
 Notation "{ 'morph' f : x y / a >-> r }" :=
-  (morphism_2 f (fun x y => a) (fun x y => r))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'morph'  f  :  x  y  /  a  >->  r }") : type_scope.
-
+  (morphism_2 f (fun x y => a) (fun x y => r)) : type_scope.
 Notation "{ 'morph' f : x y / a }" :=
-  (morphism_2 f (fun x y => a) (fun x y => a))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'morph'  f  :  x  y  /  a }") : type_scope.
-
+  (morphism_2 f (fun x y => a) (fun x y => a)) : type_scope.
 Notation "{ 'homo' f : x / a >-> r }" :=
-  (homomorphism_1 f (fun x => a) (fun x => r))
-  (at level 0, f at level 99, x ident,
-   format "{ 'homo'  f  :  x  /  a  >->  r }") : type_scope.
-
+  (homomorphism_1 f (fun x => a) (fun x => r)) : type_scope.
 Notation "{ 'homo' f : x / a }" :=
-  (homomorphism_1 f (fun x => a) (fun x => a))
-  (at level 0, f at level 99, x ident,
-   format "{ 'homo'  f  :  x  /  a }") : type_scope.
-
+  (homomorphism_1 f (fun x => a) (fun x => a)) : type_scope.
 Notation "{ 'homo' f : x y / a >-> r }" :=
-  (homomorphism_2 f (fun x y => a) (fun x y => r))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'homo'  f  :  x  y  /  a  >->  r }") : type_scope.
-
+  (homomorphism_2 f (fun x y => a) (fun x y => r)) : type_scope.
 Notation "{ 'homo' f : x y / a }" :=
-  (homomorphism_2 f (fun x y => a) (fun x y => a))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'homo'  f  :  x  y  /  a }") : type_scope.
-
+  (homomorphism_2 f (fun x y => a) (fun x y => a)) : type_scope.
 Notation "{ 'homo' f : x y /~ a }" :=
-  (homomorphism_2 f (fun y x => a) (fun x y => a))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'homo'  f  :  x  y  /~  a }") : type_scope.
-
+  (homomorphism_2 f (fun y x => a) (fun x y => a)) : type_scope.
 Notation "{ 'mono' f : x / a >-> r }" :=
-  (monomorphism_1 f (fun x => a) (fun x => r))
-  (at level 0, f at level 99, x ident,
-   format "{ 'mono'  f  :  x  /  a  >->  r }") : type_scope.
-
+  (monomorphism_1 f (fun x => a) (fun x => r)) : type_scope.
 Notation "{ 'mono' f : x / a }" :=
-  (monomorphism_1 f (fun x => a) (fun x => a))
-  (at level 0, f at level 99, x ident,
-   format "{ 'mono'  f  :  x  /  a }") : type_scope.
-
+  (monomorphism_1 f (fun x => a) (fun x => a)) : type_scope.
 Notation "{ 'mono' f : x y / a >-> r }" :=
-  (monomorphism_2 f (fun x y => a) (fun x y => r))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'mono'  f  :  x  y  /  a  >->  r }") : type_scope.
-
+  (monomorphism_2 f (fun x y => a) (fun x y => r)) : type_scope.
 Notation "{ 'mono' f : x y / a }" :=
-  (monomorphism_2 f (fun x y => a) (fun x y => a))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'mono'  f  :  x  y  /  a }") : type_scope.
-
+  (monomorphism_2 f (fun x y => a) (fun x y => a)) : type_scope.
 Notation "{ 'mono' f : x y /~ a }" :=
-  (monomorphism_2 f (fun y x => a) (fun x y => a))
-  (at level 0, f at level 99, x ident, y ident,
-   format "{ 'mono'  f  :  x  y  /~  a }") : type_scope.
+  (monomorphism_2 f (fun y x => a) (fun x y => a)) : type_scope.
 
 (**
  In an intuitionistic setting, we have two degrees of injectivity. The
@@ -620,9 +612,6 @@ Notation "{ 'mono' f : x y /~ a }" :=
 
 Section Injections.
 
-(**
- rT must come first so we can use @ to mitigate the Coq 1st order
- unification bug (e..g., Coq can't infer rT from a "cancel" lemma).  **)
 Variables (rT aT : Type) (f : aT -> rT).
 
 Definition injective := forall x1 x2, f x1 = f x2 -> x1 = x2.
@@ -650,10 +639,8 @@ Proof. by move=> fK <-. Qed.
 
 End Injections.
 
-Lemma Some_inj {T} : injective (@Some T). Proof. by move=> x y []. Qed.
-
-(**  Force implicits to use as a view.  **)
-Prenex Implicits Some_inj.
+Lemma Some_inj {T : nonPropType} : injective (@Some T).
+Proof. by move=> x y []. Qed.
 
 (**  cancellation lemmas for dependent type casts. **)
 Lemma esymK T x y : cancel (@esym T x y) (@esym T y x).

@@ -21,13 +21,12 @@ exception Elimconst
 
 (** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig
-  type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
 
-(** [set is_local ref (recargs, nargs, flags)] *)
-  val set :
-    bool -> GlobRef.t -> (int list * int * flag list) -> unit
-  val get :
-    GlobRef.t -> (int list * int * flag list) option
+  type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
+  and when_flags = { recargs : int list ; nargs : int option }
+
+  val set : local:bool -> GlobRef.t -> t -> unit
+  val get : GlobRef.t -> t option
   val print : GlobRef.t -> Pp.t
 end
 
@@ -312,8 +311,7 @@ val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  TransparentState.t -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
-  state * Cst_stack.t
+  TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr

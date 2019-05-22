@@ -27,7 +27,6 @@ open Clenv
 let _ = Detyping.print_evar_arguments := true
 let _ = Detyping.print_universes := true
 let _ = Goptions.set_bool_option_value ["Printing";"Matching"] false
-let _ = Detyping.set_detype_anonymous (fun ?loc _ -> raise Not_found)
 
 (* std_ppcmds *)
 let pp   x = Pp.pp_with !Topfmt.std_ft x
@@ -235,6 +234,15 @@ let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   pp (pr_named_context env sigma (named_context_of_val e))
+
+let ppaucontext auctx =
+  let nas = AUContext.names auctx in
+  let prlev l = match Level.var_index l with
+    | Some n -> Name.print nas.(n)
+    | None -> prlev l
+  in
+  pp (pr_universe_context prlev (AUContext.repr auctx))
+
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++

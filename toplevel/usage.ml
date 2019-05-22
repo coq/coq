@@ -42,12 +42,12 @@ let print_usage_common co command =
 \n\
 \n  -load-ml-object f      load ML object file f\
 \n  -load-ml-source f      load ML file f\
-\n  -load-vernac-source f  load Coq file f.v (Load f.)\
+\n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
-\n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)\
-\n  -lv f	                 (idem)\
-\n  -load-vernac-object f  load Coq object file f.vo\
 \n  -require path          load Coq library path and import it (Require Import path.)\
+\n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\
+\n  -lv f	           (idem)\
+\n  -load-vernac-object path  load Coq library path (Require path)\
 \n\
 \n  -where                 print Coq's standard library location and exit\
 \n  -config, --config      print Coq's configuration information and exit\
@@ -74,9 +74,9 @@ let print_usage_common co command =
 \n  -indices-matter        levels of indices (and nonuniform parameters) contribute to the level of inductives\
 \n  -type-in-type          disable universe consistency checking\
 \n  -mangle-names x        mangle auto-generated names using prefix x\
-\n  -set \"Foo Bar\"       enable Foo Bar (as Set Foo Bar. in a file)\
-\n  -set \"Foo Bar=value\" set Foo Bar to value (value is interpreted according to Foo Bar's type)\
-\n  -unset \"Foo Bar\"     disable Foo Bar (as Unset Foo Bar. in a file)\
+\n  -set \"Foo Bar\"         enable Foo Bar (as Set Foo Bar. in a file)\
+\n  -set \"Foo Bar=value\"   set Foo Bar to value (value is interpreted according to Foo Bar's type)\
+\n  -unset \"Foo Bar\"       disable Foo Bar (as Unset Foo Bar. in a file)\
 \n  -time                  display the time taken by each command\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
@@ -102,18 +102,12 @@ let print_usage_coqtop () =
 coqtop specific options:\
 \n\
 \n  -batch                 batch mode (exits just after argument parsing)\
-\n\
-\nDeprecated options [use coqc instead]:\
-\n\
-\n  -compile f.v           compile Coq file f.v (implies -batch)\
-\n  -compile-verbose f.v   verbosely compile Coq file f.v (implies -batch)\
-\n  -o f.vo                use f.vo as the output file name\
 \n";
   flush stderr ;
   exit 1
 
 let print_usage_coqc () =
-  print_usage_common stderr "Usage: coqc <options> <Coq options> file...";
+  print_usage_common stderr "Usage: coqc <options> <Coq options> file...\n\n";
   output_string stderr "\n\
 coqc specific options:\
 \n\
@@ -128,14 +122,6 @@ coqc specific options:\
 \nUndocumented:\
 \n  -vio2vo                [see manual]\
 \n  -check-vio-tasks       [see manual]\
-\n\
-\nDeprecated options:\
-\n\
-\n  -image f               specify an alternative executable for Coq\
-\n  -opt                   run the native-code version of Coq\
-\n  -byte                  run the bytecode version of Coq\
-\n  -t                     keep temporary files\
-\n  -outputstate file      save summary state in file \
 \n";
   flush stderr ;
   exit 1

@@ -72,6 +72,7 @@ let projects = {
   CoLoR = callPackage ./CoLoR.nix {};
   CompCert = callPackage ./CompCert.nix {};
   coq_dpdgraph = callPackage ./coq_dpdgraph.nix {};
+  coquelicot = callPackage ./coquelicot.nix {};
   Corn = callPackage ./Corn.nix {};
   cross_crypto = callPackage ./cross_crypto.nix {};
   Elpi = callPackage ./Elpi.nix {};

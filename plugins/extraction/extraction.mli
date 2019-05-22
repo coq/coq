@@ -16,9 +16,9 @@ open Environ
 open Evd
 open Miniml
 
-val extract_constant : env -> Constant.t -> constant_body -> ml_decl
+val extract_constant : env -> Constant.t -> Opaqueproof.opaque constant_body -> ml_decl
 
-val extract_constant_spec : env -> Constant.t -> constant_body -> ml_spec
+val extract_constant_spec : env -> Constant.t -> 'a constant_body -> ml_spec
 
 (** For extracting "module ... with ..." declaration *)
 

@@ -25,8 +25,6 @@ val isConstRef : GlobRef.t -> bool
 val isIndRef : GlobRef.t -> bool
 val isConstructRef : GlobRef.t -> bool
 
-val eq_gr : GlobRef.t -> GlobRef.t -> bool
-[@@ocaml.deprecated "Use Names.GlobRef.equal"]
 val canonical_gr : GlobRef.t -> GlobRef.t
 
 val destVarRef : GlobRef.t -> variable
@@ -47,22 +45,6 @@ val printable_constr_of_global : GlobRef.t -> constr
 (** Turn a construction denoting a global reference into a global reference;
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> GlobRef.t
-
-module RefOrdered = Names.GlobRef.Ordered
-[@@ocaml.deprecated "Use Names.GlobRef.Ordered"]
-
-module RefOrdered_env = Names.GlobRef.Ordered_env
-[@@ocaml.deprecated "Use Names.GlobRef.Ordered_env"]
-
-module Refset = Names.GlobRef.Set
-[@@ocaml.deprecated "Use Names.GlobRef.Set"]
-module Refmap = Names.GlobRef.Map
-[@@ocaml.deprecated "Use Names.GlobRef.Map"]
-
-module Refset_env = GlobRef.Set_env
-[@@ocaml.deprecated "Use Names.GlobRef.Set_env"]
-module Refmap_env = GlobRef.Map_env
-[@@ocaml.deprecated "Use Names.GlobRef.Map_env"]
 
 (** {6 Extended global references } *)
 

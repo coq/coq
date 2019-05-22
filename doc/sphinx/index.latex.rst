@@ -41,6 +41,7 @@ The proof engine
    proof-engine/proof-handling
    proof-engine/tactics
    proof-engine/ltac
+   proof-engine/ltac2
    proof-engine/detailed-tactic-examples
    proof-engine/ssreflect-proof-language
 

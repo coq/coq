@@ -65,7 +65,7 @@ val empty_updates : code_location_updates
 val register_native_file : string -> unit
 
 val compile_constant_field : env -> string -> Constant.t ->
-  global list -> constant_body -> global list
+  global list -> 'a constant_body -> global list
 
 val compile_mind_field : ModPath.t -> Label.t ->
   global list -> mutual_inductive_body -> global list

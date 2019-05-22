@@ -13,7 +13,7 @@ endif
 ###########################################################################
 
 THEORIESVO := $(patsubst %.v,%.$(VO),$(shell find theories -type f -name "*.v"))
-PLUGINSVO := $(patsubst %.v,%.$(VO),$(shell find plugins -type f -name "*.v"))
+PLUGINSVO := $(patsubst %.v,%.$(VO),$(shell find plugins $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name "*.v"))
 ALLVO := $(THEORIESVO) $(PLUGINSVO)
 VFILES := $(ALLVO:.$(VO)=.v)
 
@@ -24,16 +24,16 @@ THEORIESLIGHTVO:= \
 
 # convert a (stdlib) filename into a module name:
 # remove .vo, replace theories and plugins by Coq, and replace slashes by dots
-vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=))))
+vo_to_mod = $(subst /,.,$(patsubst user-contrib/%,%,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=)))))
 
 ALLMODS:=$(call vo_to_mod,$(ALLVO:.$(VO)=.vo))
 
 
 # Converting a stdlib filename into native compiler filenames
 # Used for install targets
-vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.cm*)))))
+vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%, N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.cm*))))))
 
-vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.o)))))
+vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%, N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.o))))))
 
 ifdef QUICK
 GLOBFILES:=

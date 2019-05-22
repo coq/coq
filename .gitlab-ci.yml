@@ -169,9 +169,15 @@ before_script:
     - not-a-real-job
   script:
     - cd _install_ci
-    - find lib/coq/ -name '*.vo' -print0 > vofiles
-    - for regexp in 's/.vo//' 's:lib/coq/plugins:Coq:' 's:lib/coq/theories:Coq:' 's:/:.:g'; do sed -z -i "$regexp" vofiles; done
-    - xargs -0 --arg-file=vofiles bin/coqchk -silent -o -m -coqlib lib/coq/
+    - find lib/coq/ -name '*.vo' -fprint0 vofiles
+    - xargs -0 --arg-file=vofiles bin/coqchk -o -m -coqlib lib/coq/ > ../coqchk.log 2>&1 || touch coqchk.failed
+    - tail -n 1000 ../coqchk.log # the log is too big for gitlab so pipe to a file and display the tail
+    - "[ ! -f coqchk.failed ]" # needs quoting for yml syntax reasons
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    paths:
+      - coqchk.log
+    expire_in: 1 month
 
 .ci-template:
   stage: test
@@ -638,9 +644,6 @@ plugin:ci-equations:
   extends: .ci-template
 
 plugin:ci-fiat_parsers:
-  extends: .ci-template
-
-plugin:ci-ltac2:
   extends: .ci-template
 
 plugin:ci-mtac2:

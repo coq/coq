@@ -121,7 +121,6 @@ let async_proofs_workers_extra_env = ref [||]
 
 type aast = {
   verbose : bool;
-  loc : Loc.t option;
   indentation : int;
   strlen : int;
   mutable expr : vernac_control; (* mutable: Proof using hinted by aux file *)
@@ -365,7 +364,6 @@ module VCS : sig
   val set_parsing_state : id -> Vernacstate.Parser.state -> unit
   val get_parsing_state : id -> Vernacstate.Parser.state option
   val get_proof_mode : id -> Pvernac.proof_mode option
-  val set_proof_mode : id -> Pvernac.proof_mode option -> unit
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : block_start:id -> block_stop:id -> vcs
@@ -573,6 +571,7 @@ end = struct (* {{{ *)
     (match Vernacprop.under_control x with
     | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
     | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
+    | VernacInstance (_,(({CAst.v=Name i},_),_,_),_,_) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
@@ -612,7 +611,6 @@ end = struct (* {{{ *)
     info.state <- new_state
 
   let get_proof_mode id = (get_info id).proof_mode
-  let set_proof_mode id pm = (get_info id).proof_mode <- pm
 
   let reached id =
     let info = get_info id in
@@ -1149,12 +1147,12 @@ end
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
    reduced... *)
-let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t =
+let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
   set_id_for_feedback ?route dummy_doc id;
-  Aux_file.record_in_aux_set_at ?loc ();
+  Aux_file.record_in_aux_set_at ?loc:expr.CAst.loc ();
   (* We need to check if a command should be filtered from
    * vernac_entries, as it cannot handle it. This should go away in
    * future refactorings.
@@ -1175,7 +1173,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; loc; expr } : Vernacstate.t
       | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
       | _ ->
         stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st (CAst.make ?loc expr)
+        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
         with e ->
           let e = CErrors.push e in
           Exninfo.iraise Hooks.(call_process_error_once e)
@@ -1630,8 +1628,8 @@ end = struct (* {{{ *)
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_vernac_interp stop
             ~proof:(pobject, terminator) st
-            { verbose = false; loc; indentation = 0; strlen = 0;
-              expr = VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
+            { verbose = false; indentation = 0; strlen = 0;
+              expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1780,8 +1778,8 @@ end = struct (* {{{ *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
       ignore(stm_vernac_interp stop ~proof st
-        { verbose = false; loc; indentation = 0; strlen = 0;
-          expr = VernacExpr ([], VernacEndProof (Proved (opaque,None))) });
+        { verbose = false; indentation = 0; strlen = 0;
+          expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) });
       `OK proof
       end
     with e ->
@@ -1793,10 +1791,11 @@ end = struct (* {{{ *)
             spc () ++ iprint (e, info))
       | Some (_, cur) ->
           match VCS.visit cur with
-          | { step = `Cmd { cast = { loc } } }
-          | { step = `Fork (( { loc }, _, _, _), _) }
-          | { step = `Qed ( { qast = { loc } }, _) }
-          | { step = `Sideff (ReplayCommand { loc }, _) } ->
+          | { step = `Cmd { cast } }
+          | { step = `Fork (( cast, _, _, _), _) }
+          | { step = `Qed ( { qast = cast }, _) }
+          | { step = `Sideff (ReplayCommand cast, _) } ->
+              let loc = cast.expr.CAst.loc in
               let start, stop = Option.cata Loc.unloc (0,0) loc in
               msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
@@ -2073,20 +2072,20 @@ end = struct (* {{{ *)
       f ()
 
   let vernac_interp ~solve ~abstract ~cancel_switch nworkers safe_id id
-    { indentation; verbose; loc; expr = e; strlen } : unit
+    { indentation; verbose; expr = e; strlen } : unit
   =
     let e, time, batch, fail =
-      let rec find ~time ~batch ~fail = function
-        | VernacTime (batch,{CAst.v=e}) -> find ~time:true ~batch ~fail e
-        | VernacRedirect (_,{CAst.v=e}) -> find ~time ~batch ~fail e
-        | VernacFail {CAst.v=e} -> find ~time ~batch ~fail:true e
-        | e -> e, time, batch, fail in
+      let rec find ~time ~batch ~fail v = CAst.with_loc_val (fun ?loc -> function
+        | VernacTime (batch,e) -> find ~time:true ~batch ~fail e
+        | VernacRedirect (_,e) -> find ~time ~batch ~fail e
+        | VernacFail e -> find ~time ~batch ~fail:true e
+        | e -> CAst.make ?loc e, time, batch, fail) v in
       find ~time:false ~batch:false ~fail:false e in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
-    ignore(TaskQueue.with_n_workers nworkers (fun queue ->
-    PG_compat.with_current_proof (fun _ p ->
+    TaskQueue.with_n_workers nworkers (fun queue ->
+    PG_compat.simple_with_current_proof (fun _ p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
@@ -2094,7 +2093,7 @@ end = struct (* {{{ *)
           Future.create_delegate
             ~name:(Printf.sprintf "subgoal %d" i)
             (State.exn_on id ~valid:safe_id) in
-        let t_ast = (i, { indentation; verbose; loc; expr = e; strlen }) in
+        let t_ast = (i, { indentation; verbose; expr = e; strlen }) in
         let t_name = Goal.uid g in
         TaskQueue.enqueue_task queue
           { t_state = safe_id; t_state_fb = id;
@@ -2131,7 +2130,8 @@ end = struct (* {{{ *)
             if solve then Tacticals.New.tclSOLVE [] else tclUNIT ()
         end)
       in
-      Proof.run_tactic (Global.env()) assign_tac p)))) ())
+      let p,_,() = Proof.run_tactic (Global.env()) assign_tac p in
+      p))) ())
 
 end (* }}} *)
 
@@ -2243,7 +2243,7 @@ let collect_proof keep cur hd brkind id =
  let name = function
    | [] -> no_name
    | id :: _ -> Names.Id.to_string id in
- let loc = (snd cur).loc in
+ let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
    | VernacEndProof (Proved (Proof_global.Transparent,_)) -> true
    | _ -> false in
@@ -2309,7 +2309,7 @@ let collect_proof keep cur hd brkind id =
         (try
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
-          v.expr <- VernacExpr([], VernacProof(t, Some hint));
+          v.expr <- CAst.map (fun _ -> VernacExpr([], VernacProof(t, Some hint))) v.expr;
           `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2412,7 +2412,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                (* STATE: We use an updated state with proof *)
                let st = Vernacstate.freeze_interp_state ~marshallable:false in
                Option.iter (fun expr -> ignore(stm_vernac_interp id st {
-                  verbose = true; loc = None; expr; indentation = 0;
+                  verbose = true; expr; indentation = 0;
                   strlen = 0 } ))
                recovery_command
            | _ -> assert false
@@ -2532,7 +2532,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
             | `ASync (block_start, nodes, name, delegate) -> (fun () ->
                 let keep' = get_vtkeep keep in
                 let drop_pt = keep' == VtKeepAxiom in
-                let block_stop, exn_info, loc = eop, (id, eop), x.loc in
+                let block_stop, exn_info, loc = eop, (id, eop), x.expr.CAst.loc in
                 log_processing_async id name;
                 VCS.create_proof_task_box nodes ~qed:id ~block_start;
                 begin match brinfo, qed.fproof with
@@ -2592,7 +2592,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 log_processing_sync id name reason;
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
-                record_pb_time name ?loc:x.loc (wall_clock -. !wall_clock_last_fork);
+                record_pb_time name ?loc:x.expr.CAst.loc (wall_clock -. !wall_clock_last_fork);
                 let proof =
                   match keep with
                   | VtDrop -> None
@@ -2614,7 +2614,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 ignore(stm_vernac_interp id ?proof st x);
                 let wall_clock3 = Unix.gettimeofday () in
-                Aux_file.record_in_aux_at ?loc:x.loc "proof_check_time"
+                Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));
                 PG_compat.discard_all ()
               ), true, true
@@ -2684,7 +2684,7 @@ let doc_type_module_name (std : stm_doc_type) =
 
 (* Document edit notifiers *)
 type document_edit_notifiers =
-  { add_hook  : Vernacexpr.vernac_control CAst.t -> Stateid.t -> unit
+  { add_hook  : Vernacexpr.vernac_control -> Stateid.t -> unit
   (** User adds a sentence to the document (after parsing) *)
   ; edit_hook : Stateid.t -> unit
   (** User edits a sentence in the document *)
@@ -2951,7 +2951,7 @@ let get_allow_nested_proofs =
 
 (** [process_transaction] adds a node in the document *)
 let process_transaction ~doc ?(newtip=Stateid.fresh ())
-  ({ verbose; loc; expr } as x) c =
+  ({ verbose; expr } as x) c =
   stm_pperr_endline (fun () -> str "{{{ processing: " ++ pr_ast x);
   let vcs = VCS.backup () in
   try
@@ -3066,53 +3066,6 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
               VCS.set_parsing_state id parsing_state) new_ids;
           `Ok
 
-      (* Unknown: we execute it, check for open goals and propagate sideeff *)
-      | VtUnknown, VtNow ->
-          let in_proof = not (VCS.Branch.equal head VCS.Branch.master) in
-          if not (get_allow_nested_proofs ()) && in_proof then
-            "Commands which may open proofs are not allowed in a proof unless you turn option Nested Proofs Allowed on."
-            |> Pp.str
-            |> (fun s -> (UserError (None, s), Exninfo.null))
-            |> State.exn_on ~valid:Stateid.dummy newtip
-            |> Exninfo.iraise
-          else
-            let id = VCS.new_node ~id:newtip proof_mode () in
-          let head_id = VCS.get_branch_pos head in
-          let _st : unit = Reach.known_state ~doc ~cache:true head_id in (* ensure it is ok *)
-          let step () =
-            VCS.checkout VCS.Branch.master;
-            let mid = VCS.get_branch_pos VCS.Branch.master in
-            let _st' : unit = Reach.known_state ~doc ~cache:(VCS.is_interactive ()) mid in
-            let st = Vernacstate.freeze_interp_state ~marshallable:false in
-            ignore(stm_vernac_interp id st x);
-            (* Vernac x may or may not start a proof *)
-            if not in_proof && PG_compat.there_are_pending_proofs () then
-            begin
-              let bname = VCS.mk_branch_name x in
-              let opacity_of_produced_term = function
-                (* This AST is ambiguous, hence we check it dynamically *)
-                | VernacInstance (_,_ , None, _) -> GuaranteesOpacity
-                | _ -> Doesn'tGuaranteeOpacity in
-              VCS.commit id (Fork (x,bname,opacity_of_produced_term (Vernacprop.under_control x.expr),[]));
-              VCS.set_proof_mode id (Some (Vernacentries.get_default_proof_mode ()));
-              VCS.branch bname (`Proof (VCS.proof_nesting () + 1));
-            end else begin
-              begin match (VCS.get_branch head).VCS.kind with
-              | `Edit _ -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-              | `Master -> VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-              | `Proof _ ->
-                  VCS.commit id (mkTransCmd x [] in_proof `MainQueue);
-                  (* We hope it can be replayed, but we can't really know *)
-                  ignore(VCS.propagate_sideff ~action:(ReplayCommand x));
-              end;
-              VCS.checkout_shallowest_proof_branch ();
-            end in
-          State.define ~doc ~safe_id:head_id ~cache:true step id;
-          Backtrack.record (); `Ok
-
-      | VtUnknown, VtLater ->
-          anomaly(str"classifier: VtUnknown must imply VtNow.")
-
       | VtProofMode pm, VtNow ->
         let proof_mode = Pvernac.lookup_proof_mode pm in
         let id = VCS.new_node ~id:newtip proof_mode () in
@@ -3122,7 +3075,6 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 
       | VtProofMode _, VtLater ->
           anomaly(str"classifier: VtProofMode must imply VtNow.")
-
     end in
     let pr_rc rc = match rc with
       | `Ok -> Pp.(seq [str "newtip ("; str (Stateid.to_string (VCS.cur_tip ())); str ")"])
@@ -3137,11 +3089,11 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
 
 let get_ast ~doc id =
   match VCS.visit id with
-  | { step = `Cmd { cast = { loc; expr } } }
-  | { step = `Fork (({ loc; expr }, _, _, _), _) }
-  | { step = `Sideff ((ReplayCommand {loc; expr}) , _) }
-  | { step = `Qed ({ qast = { loc; expr } }, _) } ->
-         Some (Loc.tag ?loc expr)
+  | { step = `Cmd { cast = { expr } } }
+  | { step = `Fork (({ expr }, _, _, _), _) }
+  | { step = `Sideff ((ReplayCommand { expr }) , _) }
+  | { step = `Qed ({ qast = { expr } }, _) } ->
+    Some expr
   | _ -> None
 
 let stop_worker n = Slaves.cancel_worker n
@@ -3158,8 +3110,8 @@ let parse_sentence ~doc sid ~entry pa =
 let ind_len_loc_of_id sid =
   if Stateid.equal sid Stateid.initial then None
   else match (VCS.visit sid).step with
-  | `Cmd { ctac = true; cast = { indentation; strlen; loc } } ->
-         Some (indentation, strlen, loc)
+  | `Cmd { ctac = true; cast = { indentation; strlen; expr } } ->
+    Some (indentation, strlen, expr.CAst.loc)
   | _ -> None
 
 (* the indentation logic works like this: if the beginning of the
@@ -3186,8 +3138,9 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
     eff_indent, len
   ) (0, 0) loc
 
-let add ~doc ~ontop ?newtip verb ({ CAst.loc; v=ast } as last) =
-  Hook.(get document_edit_notify).add_hook last ontop;
+let add ~doc ~ontop ?newtip verb ast =
+  Hook.(get document_edit_notify).add_hook ast ontop;
+  let loc = ast.CAst.loc in
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
     user_err ?loc ~hdr:"Stm.add"
@@ -3197,7 +3150,7 @@ let add ~doc ~ontop ?newtip verb ({ CAst.loc; v=ast } as last) =
   let indentation, strlen = compute_indentation ?loc ontop in
   (* XXX: Classifiy vernac should be moved inside process transaction *)
   let clas = Vernac_classifier.classify_vernac ast in
-  let aast = { verbose = verb; indentation; strlen; loc; expr = ast } in
+  let aast = { verbose = verb; indentation; strlen; expr = ast } in
   match process_transaction ~doc ?newtip aast clas with
   | `Ok -> doc, VCS.cur_tip (), `NewTip
   | `Unfocus qed_id -> doc, qed_id, `Unfocus (VCS.cur_tip ())
@@ -3217,14 +3170,15 @@ let query ~doc ~at ~route s =
       let rec loop () =
         match parse_sentence ~doc at ~entry:Pvernac.main_entry s with
         | None -> ()
-        | Some {CAst.loc; v=ast} ->
-           let indentation, strlen = compute_indentation ?loc at in
-           let st = State.get_cached at in
-           let aast = {
-             verbose = true; indentation; strlen;
-             loc; expr = ast } in
-           ignore(stm_vernac_interp ~route at st aast);
-           loop ()
+        | Some ast ->
+          let loc = ast.CAst.loc in
+          let indentation, strlen = compute_indentation ?loc at in
+          let st = State.get_cached at in
+          let aast = {
+            verbose = true; indentation; strlen;
+            expr = ast } in
+          ignore(stm_vernac_interp ~route at st aast);
+          loop ()
       in
       loop ()
   )

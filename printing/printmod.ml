@@ -63,7 +63,7 @@ let keyword s = tag_keyword (str s)
 let get_new_id locals id =
   let rec get_id l id =
     let dir = DirPath.make [id] in
-      if not (Nametab.exists_module dir) then
+      if not (Nametab.exists_dir dir) then
 	id
       else
 	get_id (Id.Set.add id l) (Namegen.next_ident_away id l)

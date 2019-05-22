@@ -426,8 +426,8 @@ let mk_anon_id t gl_ids =
     (set s i (Char.chr (Char.code (get s i) + 1)); s) in
   Id.of_string_soft (Bytes.to_string (loop (n - 1)))
 
-let convert_concl_no_check t = Tactics.convert_concl_no_check t DEFAULTcast
-let convert_concl t = Tactics.convert_concl t DEFAULTcast
+let convert_concl_no_check t = Tactics.convert_concl ~check:false t DEFAULTcast
+let convert_concl ~check t = Tactics.convert_concl ~check t DEFAULTcast
 
 let rename_hd_prod orig_name_ref gl =
   match EConstr.kind (project gl) (pf_concl gl) with
@@ -799,7 +799,7 @@ let discharge_hyp (id', (id, mode)) gl =
   | NamedDecl.LocalDef (_, v, t), _ ->
     let id' = {(NamedDecl.get_annot decl) with binder_name = Name id'} in
      Proofview.V82.of_tactic
-       (convert_concl (EConstr.of_constr (mkLetIn (id', v, t, cl')))) gl
+       (convert_concl ~check:true (EConstr.of_constr (mkLetIn (id', v, t, cl')))) gl
 
 (* wildcard names *)
 let clear_wilds wilds gl =
@@ -1170,7 +1170,7 @@ let gentac gen gl =
   ppdebug(lazy(str"c@gentac=" ++ pr_econstr_env (pf_env gl) (project gl) c));
   let gl = pf_merge_uc ucst gl in
   if conv
-  then tclTHEN (Proofview.V82.of_tactic (convert_concl cl)) (old_cleartac clr) gl
+  then tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true cl)) (old_cleartac clr) gl
   else genclrtac cl [c] clr gl
 
 let genstac (gens, clr) =
@@ -1215,7 +1215,7 @@ let unprotecttac gl =
   let prot, _ = EConstr.destConst (project gl) c in
   Tacticals.onClause (fun idopt ->
     let hyploc = Option.map (fun id -> id, InHyp) idopt in
-    Proofview.V82.of_tactic (Tactics.reduct_option 
+    Proofview.V82.of_tactic (Tactics.reduct_option ~check:false
       (Reductionops.clos_norm_flags 
         (CClosure.RedFlags.mkflags 
           [CClosure.RedFlags.fBETA;
@@ -1282,10 +1282,10 @@ let clr_of_wgen gen clrs = match gen with
   | clr, _ -> old_cleartac clr :: clrs
 
 
-let reduct_in_concl t = Tactics.reduct_in_concl (t, DEFAULTcast)
+let reduct_in_concl ~check t = Tactics.reduct_in_concl ~check (t, DEFAULTcast)
 let unfold cl =
   let module R = Reductionops in let module F = CClosure.RedFlags in
-  reduct_in_concl (R.clos_norm_flags (F.mkflags
+  reduct_in_concl ~check:false (R.clos_norm_flags (F.mkflags
     (List.map (fun c -> F.fCONST (fst (destConst (EConstr.Unsafe.to_constr c)))) cl @
        [F.fBETA; F.fMATCH; F.fFIX; F.fCOFIX])))
 
@@ -1409,8 +1409,6 @@ let tclINTRO_ANON ?seed () =
   | Some seed -> tclINTRO ~id:(Seed seed) ~conclusion:return
 
 let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
-  let convert_concl_no_check t =
-    Tactics.convert_concl_no_check t DEFAULTcast in
   let concl = Goal.concl gl in
   let sigma = Goal.sigma gl in
   match EConstr.kind sigma concl with

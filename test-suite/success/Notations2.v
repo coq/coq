@@ -151,8 +151,8 @@ Module M16.
   Local Notation "##" := 0 (in custom foo2).
 
   (* Test Print Grammar *)
-  Print Grammar foo.
-  Print Grammar foo2.
+  Print Custom Grammar foo.
+  Print Custom Grammar foo2.
 End M16.
 
 (* Example showing the need for strong evaluation of

@@ -55,6 +55,9 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
 val declare_constant :
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
+val declare_private_constant :
+  role:side_effect_role -> ?internal:internal_flag -> ?local:bool -> Id.t -> constant_declaration -> Constant.t * Safe_typing.private_constants
+
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> Id.t -> ?types:constr ->

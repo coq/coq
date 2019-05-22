@@ -278,7 +278,7 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
      }
   | #[ atts = rewrite_attributes; ] ![ proof ] [ "Add" "Morphism" constr(m) ":" ident(n) ]
     (* This command may or may not open a goal *)
-    => { VtUnknown, VtNow }
+    => { (if Lib.is_modtype() then VtSideff([n]) else VtStartProof(GuaranteesOpacity, [n])), VtLater }
     -> {
           add_morphism_infer atts m n
        }

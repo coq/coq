@@ -17,16 +17,12 @@ sig
   val is_empty : string -> bool
   val explode : string -> string list
   val implode : string list -> string
-  val strip : string -> string
-  [@@ocaml.deprecated "Use [trim]"]
   val drop_simple_quotes : string -> string
   val string_index_from : string -> int -> string -> int
   val string_contains : where:string -> what:string -> bool
   val plural : int -> string -> string
   val conjugate_verb_to_be : int -> string
   val ordinal : int -> string
-  val split : char -> string -> string list
-  [@@ocaml.deprecated "Use [split_on_char]"]
   val is_sub : string -> string -> int -> bool
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
@@ -58,8 +54,6 @@ let explode s =
 let implode sl = String.concat "" sl
 
 let is_empty s = String.length s = 0
-
-let strip = String.trim
 
 let drop_simple_quotes s =
   let n = String.length s in
@@ -123,8 +117,6 @@ let ordinal n =
   string_of_int n ^ s
 
 (* string parsing *)
-
-let split = String.split_on_char
 
 module Self =
 struct

@@ -42,13 +42,12 @@ let error_undeclared_key key =
 (****************************************************************************)
 (* 1- Tables                                                                *)
 
-class type ['a] table_of_A =
-object
-  method add : 'a -> unit
-  method remove : 'a -> unit
-  method mem : 'a -> unit
-  method print : unit
-end
+type 'a table_of_A =  {
+  add : Environ.env -> 'a -> unit;
+  remove : Environ.env -> 'a -> unit;
+  mem : Environ.env -> 'a -> unit;
+  print : unit -> unit;
+}
 
 module MakeTable =
   functor
@@ -109,18 +108,17 @@ module MakeTable =
 		 (fun a b -> spc () ++ printer a ++ b)
 		 table (mt ()) ++ str "." ++ fnl ())))
 
-    class table_of_A () =
-    object
-      method add x = add_option (A.encode (Global.env()) x)
-      method remove x = remove_option (A.encode (Global.env()) x)
-      method mem x =
-        let y = A.encode (Global.env()) x in
+    let table_of_A = {
+       add = (fun env x -> add_option (A.encode env x));
+       remove = (fun env x -> remove_option (A.encode env x));
+       mem = (fun env x ->
+        let y = A.encode env x in
         let answer = MySet.mem y !t in
-        Feedback.msg_info (A.member_message y answer)
-      method print = print_table A.title A.printer !t
-    end
+        Feedback.msg_info (A.member_message y answer));
+       print = (fun () -> print_table A.title A.printer !t);
+     }
 
-    let _ = A.table := (nick,new table_of_A ())::!A.table
+    let _ = A.table := (nick, table_of_A)::!A.table
     let active c = MySet.mem c !t
     let elements () = MySet.elements !t
   end

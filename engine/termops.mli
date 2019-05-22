@@ -16,12 +16,6 @@ open Constr
 open Environ
 open EConstr
 
-(** printers *)
-val pr_sort_family : Sorts.family -> Pp.t
-[@@ocaml.deprecated "Use [Sorts.pr_sort_family]"]
-val pr_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
-[@@ocaml.deprecated "Use [Constr.debug_print_fix]"]
-
 (** about contexts *)
 val push_rel_assum : Name.t Context.binder_annot * types -> env -> env
 val push_rels_assum : (Name.t Context.binder_annot * Constr.types) list -> env -> env
@@ -84,12 +78,6 @@ val fold_constr_with_full_binders : Evd.evar_map ->
   ('a -> 'b -> constr -> 'b) ->
   'a -> 'b -> constr -> 'b
 
-val iter_constr_with_full_binders : Evd.evar_map ->
-  (rel_declaration -> 'a -> 'a) ->
-  ('a -> constr -> unit) -> 'a ->
-  constr -> unit
-[@@ocaml.deprecated "Use [EConstr.iter_with_full_binders]."]
-
 (**********************************************************************)
 
 val strip_head_cast : Evd.evar_map -> constr -> constr
@@ -120,9 +108,6 @@ val dependent_in_decl : Evd.evar_map -> constr -> named_declaration -> bool
 val count_occurrences : Evd.evar_map -> constr -> constr -> int
 val collect_metas : Evd.evar_map -> constr -> int list
 val collect_vars : Evd.evar_map -> constr -> Id.Set.t (** for visible vars only *)
-
-val vars_of_global_reference : env -> GlobRef.t -> Id.Set.t
-[@@ocaml.deprecated "Use [Environ.vars_of_global]"]
 
 (* Substitution of metavariables *)
 type meta_value_map = (metavariable * Constr.constr) list
@@ -291,15 +276,6 @@ val is_Set : Evd.evar_map -> constr -> bool
 val is_Type : Evd.evar_map -> constr -> bool
 
 val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid option
-
-(** Combinators on judgments *)
-
-val on_judgment       : ('a -> 'b) -> ('a, 'a) punsafe_judgment -> ('b, 'b) punsafe_judgment
-[@@ocaml.deprecated "Use [Environ.on_judgment]."]
-val on_judgment_value : ('c -> 'c) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
-[@@ocaml.deprecated "Use [Environ.on_judgment_value]."]
-val on_judgment_type  : ('t -> 't) -> ('c, 't) punsafe_judgment -> ('c, 't) punsafe_judgment
-[@@ocaml.deprecated "Use [Environ.on_judgment_type]."]
 
 (** {5 Debug pretty-printers} *)
 

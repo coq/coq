@@ -104,10 +104,6 @@ let db_pr_goal sigma g =
 let pr_gls gls =
   hov 0 (pr_evar_map (Some 2) (pf_env gls) (sig_sig gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
 
-let pr_glls glls =
-  hov 0 (pr_evar_map (Some 2) (Global.env()) (sig_sig glls) ++ fnl () ++
-         prlist_with_sep fnl (db_pr_goal (project glls)) (sig_it glls))
-
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
 

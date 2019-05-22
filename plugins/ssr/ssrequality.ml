@@ -118,7 +118,7 @@ let newssrcongrtac arg ist gl =
     match try Some (pf_unify_HO gl_c (pf_concl gl) c)
           with exn when CErrors.noncritical exn -> None with
     | Some gl_c ->
-        tclTHEN (Proofview.V82.of_tactic (convert_concl (fs gl_c c)))
+        tclTHEN (Proofview.V82.of_tactic (convert_concl ~check:true (fs gl_c c)))
           (t_ok (proj gl_c)) gl
     | None -> t_fail () gl in 
   let mk_evar gl ty = 
@@ -276,7 +276,7 @@ let unfoldintac occ rdx t (kt,_) gl =
     try beta env0 (EConstr.of_constr (eval_pattern env0 sigma0 concl0 rdx occ unfold)) 
     with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl concl) gl
+  Proofview.V82.of_tactic (convert_concl ~check:true concl) gl
 ;;
 
 let foldtac occ rdx ft gl = 
@@ -303,7 +303,7 @@ let foldtac occ rdx ft gl =
   let concl0 = EConstr.Unsafe.to_constr concl0 in
   let concl = eval_pattern env0 sigma0 concl0 rdx occ fold in
   let _ = conclude () in
-  Proofview.V82.of_tactic (convert_concl (EConstr.of_constr concl)) gl
+  Proofview.V82.of_tactic (convert_concl ~check:true (EConstr.of_constr concl)) gl
 ;;
 
 let converse_dir = function L2R -> R2L | R2L -> L2R
@@ -406,7 +406,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let gl = pf_merge_uc_of sigma gl in
-          Proofview.V82.of_tactic (convert_concl cl'), rewritetac ?under dir r', gl
+          Proofview.V82.of_tactic (convert_concl ~check:true cl'), rewritetac ?under dir r', gl
     else
       let dc, r2 = EConstr.decompose_lam_n_assum (project gl) n r' in
       let r3, _, r3t  = 
@@ -446,7 +446,7 @@ let lz_setoid_relation =
   | Some (env', srel) when env' == env -> srel
   | _ ->
     let srel =
-       try Some (UnivGen.constr_of_global @@
+       try Some (UnivGen.constr_of_monomorphic_global @@
                  Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with _ -> None in
     last_srel := Some (env, srel); srel
@@ -491,7 +491,7 @@ let rwprocess_rule dir rule gl =
           | _ ->
             let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
             EConstr.mkApp (pi2, ra), sigma in
-        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_global @@ Coqlib.(lib_ref "core.True.type"))) then
+        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.(lib_ref "core.True.type"))) then
          let s, sigma = sr sigma 2 in
          loop (converse_dir d) sigma s a.(1) rs 0
         else
@@ -644,7 +644,7 @@ let unfoldtac occ ko t kt gl =
   let cl' = EConstr.Vars.subst1 (pf_unfoldn [OnlyOccurrences [1], get_evalref env (project gl) c] gl c) cl in
   let f = if ko = None then CClosure.betaiotazeta else CClosure.betaiota in
   Proofview.V82.of_tactic
-    (convert_concl (pf_reduce (Reductionops.clos_norm_flags f) gl cl')) gl
+    (convert_concl ~check:true (pf_reduce (Reductionops.clos_norm_flags f) gl cl')) gl
 
 let unlocktac ist args gl =
   let utac (occ, gt) gl =

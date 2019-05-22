@@ -616,34 +616,34 @@ has type :token:`type`.
 
       Adds several parameters with specification :token:`type`.
 
-   .. cmdv:: Parameter {+ ( {+ @ident } : @type ) }
+   .. cmdv:: Parameter {+ ( {+ @ident } : @type ) }
 
       Adds blocks of parameters with different specifications.
 
-   .. cmdv:: Local Parameter {+ ( {+ @ident } : @type ) }
+   .. cmdv:: Local Parameter {+ ( {+ @ident } : @type ) }
       :name: Local Parameter
 
       Such parameters are never made accessible through their unqualified name by
       :cmd:`Import` and its variants. You have to explicitly give their fully
       qualified name to refer to them.
 
-   .. cmdv:: {? Local } Parameters {+ ( {+ @ident } : @type ) }
-             {? Local } Axiom {+ ( {+ @ident } : @type ) }
-             {? Local } Axioms {+ ( {+ @ident } : @type ) }
-             {? Local } Conjecture {+ ( {+ @ident } : @type ) }
-             {? Local } Conjectures {+ ( {+ @ident } : @type ) }
+   .. cmdv:: {? Local } Parameters {+ ( {+ @ident } : @type ) }
+             {? Local } Axiom {+ ( {+ @ident } : @type ) }
+             {? Local } Axioms {+ ( {+ @ident } : @type ) }
+             {? Local } Conjecture {+ ( {+ @ident } : @type ) }
+             {? Local } Conjectures {+ ( {+ @ident } : @type ) }
       :name: Parameters; Axiom; Axioms; Conjecture; Conjectures
 
-      These variants are synonyms of :n:`{? Local } Parameter {+ ( {+ @ident } : @type ) }`.
+      These variants are synonyms of :n:`{? Local } Parameter {+ ( {+ @ident } : @type ) }`.
 
-   .. cmdv:: Variable  {+ ( {+ @ident } : @type ) }
-             Variables {+ ( {+ @ident } : @type ) }
-             Hypothesis {+ ( {+ @ident } : @type ) }
-             Hypotheses {+ ( {+ @ident } : @type ) }
+   .. cmdv:: Variable  {+ ( {+ @ident } : @type ) }
+             Variables {+ ( {+ @ident } : @type ) }
+             Hypothesis {+ ( {+ @ident } : @type ) }
+             Hypotheses {+ ( {+ @ident } : @type ) }
       :name: Variable (outside a section); Variables (outside a section); Hypothesis (outside a section); Hypotheses (outside a section)
 
       Outside of any section, these variants are synonyms of
-      :n:`Local Parameter {+ ( {+ @ident } : @type ) }`.
+      :n:`Local Parameter {+ ( {+ @ident } : @type ) }`.
       For their meaning inside a section, see :cmd:`Variable` in
       :ref:`section-mechanism`.
 

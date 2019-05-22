@@ -43,7 +43,7 @@ let should_axiom_into_instance = function
     true
   | Global | Local -> !axiom_into_instance
 
-let declare_assumption ~pstate is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
+let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
 match local with
 | Discharge when Lib.sections_are_opened () ->
   let ctx = match ctx with
@@ -53,11 +53,6 @@ match local with
   let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
-  let () =
-    if not !Flags.quiet && Option.has_some pstate then
-    Feedback.msg_info Pp.(str"Variable" ++ spc () ++ Id.print ident ++
-    strbrk " is not visible from current goals")
-  in
   let r = VarRef ident in
   let () = maybe_declare_manual_implicits true r imps in
   let env = Global.env () in
@@ -101,11 +96,11 @@ let next_uctx =
   | Polymorphic_entry _ as uctx -> uctx
   | Monomorphic_entry _ -> empty_uctx
 
-let declare_assumptions ~pstate idl is_coe k (c,uctx) pl imps nl =
+let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-        declare_assumption ~pstate is_coe k (c,uctx) pl imps false nl id in
+        declare_assumption is_coe k (c,uctx) pl imps false nl id in
       (ref',u')::refs, status' && status, next_uctx uctx)
       ([],true,uctx) idl
   in
@@ -137,7 +132,7 @@ let process_assumptions_udecls kind l =
   in
   udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
 
-let do_assumptions ~pstate ~program_mode kind nl l =
+let do_assumptions ~program_mode kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
   let udecl, l = process_assumptions_udecls kind l in
@@ -173,12 +168,17 @@ let do_assumptions ~pstate ~program_mode kind nl l =
       uvars, (coe,t,imps))
       Univ.LSet.empty l
   in
+  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
+     possible as we indeed declare several parameters; however,
+     restrict_universe_context should be called in a centralized place
+     IMO, thus I think we should adapt `prepare_parameter` to handle
+     this case too. *)
   let sigma = Evd.restrict_universe_context sigma uvars in
   let uctx = Evd.check_univ_decl ~poly:(pi2 kind) sigma udecl in
   let ubinders = Evd.universe_binders sigma in
   pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
       let t = replace_vars subst t in
-      let refs, status' = declare_assumptions ~pstate  idl is_coe kind (t,uctx) ubinders imps nl in
+      let refs, status' = declare_assumptions  idl is_coe kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
           (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
@@ -226,7 +226,7 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let context ~pstate poly l =
+let context poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, (_, ((env', fullctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
@@ -291,12 +291,12 @@ let context ~pstate poly l =
       let decl = (Discharge, poly, Definitional) in
       let nstatus = match b with
       | None ->
-        pi3 (declare_assumption ~pstate false decl (t, univs) UnivNames.empty_binders [] impl
+        pi3 (declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition ~ontop:pstate id decl entry UnivNames.empty_binders [] in
+        let _gr = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
         status && nstatus

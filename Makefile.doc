@@ -66,7 +66,7 @@ SPHINX_DEPS := coq
 endif
 
 # refman-html and refman-latex
-refman-%: $(SPHINX_DEPS)
+refman-%: $(SPHINX_DEPS) doc/unreleased.rst
 	$(SHOW)'SPHINXBUILD doc/sphinx ($*)'
 	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
 		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
@@ -115,6 +115,12 @@ plugin-tutorial: states tools
 
 doc/common/version.tex: config/Makefile
 	printf '\\newcommand{\\coqversion}{$(VERSION)}' > doc/common/version.tex
+
+### Changelog
+
+doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
+	$(SHOW)'AGGREGATE $@'
+	$(HIDE)cat doc/changelog/00-title.rst doc/changelog/*/*.rst > $@
 
 ######################################################################
 # Standard library

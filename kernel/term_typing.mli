@@ -33,14 +33,14 @@ val translate_local_assum : env -> types -> types * Sorts.relevance
 
 val translate_constant :
   'a trust -> env -> Constant.t -> 'a constant_entry ->
-    constant_body
+    Opaqueproof.proofterm constant_body
 
-val translate_recipe : hcons:bool -> env -> Constant.t -> Cooking.recipe -> constant_body
+val translate_recipe : hcons:bool -> env -> Constant.t -> Cooking.recipe -> Opaqueproof.opaque constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
 val infer_declaration : trust:'a trust -> env ->
-  'a constant_entry -> Cooking.result
+  'a constant_entry -> Opaqueproof.proofterm Cooking.result
 
 val build_constant_declaration :
-  Constant.t -> env -> Cooking.result -> constant_body
+  env -> Opaqueproof.proofterm Cooking.result -> Opaqueproof.proofterm constant_body

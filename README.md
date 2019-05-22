@@ -69,9 +69,12 @@ for additional user-contributed documentation.
 
 ## Changes
 
-There is a file named [`CHANGES.md`](CHANGES.md) that explains the differences and the
-incompatibilities since last versions. If you upgrade Coq, please read
-it carefully.
+The [Recent
+changes](https://coq.github.io/doc/master/refman/changes.html) chapter
+of the reference manual explains the differences and the
+incompatibilities of each new version of Coq. If you upgrade Coq,
+please read it carefully as it contains important advice on how to
+approach some problems you may encounter.
 
 ## Questions and discussion
 

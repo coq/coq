@@ -1574,8 +1574,8 @@ let newfail n s =
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
-  let beta = Tactics.reduct_in_concl (Reductionops.nf_betaiota, DEFAULTcast) in
-  let beta_hyp id = Tactics.reduct_in_hyp Reductionops.nf_betaiota (id, InHyp) in
+  let beta = Tactics.reduct_in_concl ~check:false (Reductionops.nf_betaiota, DEFAULTcast) in
+  let beta_hyp id = Tactics.reduct_in_hyp ~check:false ~reorder:false Reductionops.nf_betaiota (id, InHyp) in
   let treat sigma res = 
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
@@ -1596,7 +1596,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 	    tclTHENFIRST (assert_replacing id newt tac) (beta_hyp id)
 	| Some id, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_hyp_no_check (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
+            convert_hyp ~check:false ~reorder:false (LocalAssum (make_annot id Sorts.Relevant, newt)) <*>
             beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
@@ -1610,7 +1610,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             end
 	| None, None ->
             Proofview.Unsafe.tclEVARS undef <*>
-            convert_concl_no_check newt DEFAULTcast
+            convert_concl ~check:false newt DEFAULTcast
   in
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
@@ -1800,7 +1800,7 @@ let anew_instance ~pstate atts binders instance fields =
   let program_mode = atts.program in
   new_instance ~pstate ~program_mode atts.polymorphic
     binders instance (Some (true, CAst.make @@ CRecord (fields)))
-    ~global:atts.global ~generalize:false ~refine:false Hints.empty_hint_info
+    ~global:atts.global ~generalize:false Hints.empty_hint_info
 
 let declare_instance_refl ~pstate atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"

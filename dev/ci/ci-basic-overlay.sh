@@ -81,13 +81,6 @@
 : "${coqhammer_CI_ARCHIVEURL:=${coqhammer_CI_GITURL}/archive}"
 
 ########################################################################
-# Ltac2
-########################################################################
-: "${ltac2_CI_REF:=master}"
-: "${ltac2_CI_GITURL:=https://github.com/ppedrot/ltac2}"
-: "${ltac2_CI_ARCHIVEURL:=${ltac2_CI_GITURL}/archive}"
-
-########################################################################
 # GeoCoq
 ########################################################################
 : "${GeoCoq_CI_REF:=master}"
@@ -105,7 +98,8 @@
 # Coquelicot
 ########################################################################
 : "${coquelicot_CI_REF:=master}"
-: "${coquelicot_CI_GITURL:=https://scm.gforge.inria.fr/anonscm/git/coquelicot/coquelicot}"
+: "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
+: "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
 # CompCert

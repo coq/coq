@@ -13,19 +13,20 @@
 
 open Vernacexpr
 
-let rec under_control = function
+let rec under_control v = v |> CAst.with_val (function
   | VernacExpr (_, c) -> c
-  | VernacRedirect (_,{CAst.v=c})
-  | VernacTime (_,{CAst.v=c})
-  | VernacFail {CAst.v=c}
-  | VernacTimeout (_,{CAst.v=c}) -> under_control c
+  | VernacRedirect (_,c)
+  | VernacTime (_,c)
+  | VernacFail c
+  | VernacTimeout (_,c) -> under_control c
+  )
 
-let rec has_Fail = function
+let rec has_Fail v = v |> CAst.with_val (function
   | VernacExpr _ -> false
-  | VernacRedirect (_,{CAst.v=c})
-  | VernacTime (_,{CAst.v=c})
-  | VernacTimeout (_,{CAst.v=c}) -> has_Fail c
-  | VernacFail _ -> true
+  | VernacRedirect (_,c)
+  | VernacTime (_,c)
+  | VernacTimeout (_,c) -> has_Fail c
+  | VernacFail _ -> true)
 
 (* Navigation commands are allowed in a coqtop session but not in a .v file *)
 let is_navigation_vernac_expr = function
@@ -38,17 +39,17 @@ let is_navigation_vernac_expr = function
 let is_navigation_vernac c =
   is_navigation_vernac_expr (under_control c)
 
-let rec is_deep_navigation_vernac = function
-  | VernacTime (_,{CAst.v=c}) -> is_deep_navigation_vernac c
-  | VernacRedirect (_, {CAst.v=c})
-  | VernacTimeout (_,{CAst.v=c}) | VernacFail {CAst.v=c} -> is_navigation_vernac c
-  | VernacExpr _ -> false
+let rec is_deep_navigation_vernac v = v |> CAst.with_val (function
+  | VernacTime (_,c) -> is_deep_navigation_vernac c
+  | VernacRedirect (_, c)
+  | VernacTimeout (_, c) | VernacFail c -> is_navigation_vernac c
+  | VernacExpr _ -> false)
 
 (* NB: Reset is now allowed again as asked by A. Chlipala *)
-let is_reset = function
+let is_reset = CAst.with_val (function
   | VernacExpr ( _, VernacResetInitial)
   | VernacExpr (_, VernacResetName _) -> true
-  | _ -> false
+  | _ -> false)
 
 let is_debug cmd = match under_control cmd with
   | VernacSetOption (_, ["Ltac";"Debug"], _) -> true

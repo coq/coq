@@ -158,9 +158,9 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_constant ~internal:Declare.InternalTacticRequest ~local:true id decl
+    Declare.declare_private_constant ~role:Entries.Subproof ~internal:Declare.InternalTacticRequest ~local:true id decl
   in
-  let cst = Impargs.with_implicit_protection cst () in
+  let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.Entries.const_entry_universes with
   | Entries.Monomorphic_entry _ -> EInstance.empty
   | Entries.Polymorphic_entry (_, ctx) ->
@@ -174,7 +174,6 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
   let open Safe_typing in
-  let eff = private_con_of_con (Global.safe_env ()) cst in
   let effs = concat_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =

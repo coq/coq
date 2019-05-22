@@ -57,6 +57,7 @@ val add_syntactic_definition : env -> Id.t -> Id.t list * constr_expr ->
 (** Print the Camlp5 state of a grammar *)
 
 val pr_grammar : string -> Pp.t
+val pr_custom_grammar : string -> Pp.t
 
 val check_infix_modifiers : syntax_modifier list -> unit
 

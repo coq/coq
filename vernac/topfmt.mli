@@ -46,6 +46,7 @@ val emacs_logger : ?pre_hdr:Pp.t -> Feedback.level -> Pp.t -> unit
 val default_styles : unit -> unit
 val parse_color_config : string -> unit
 val dump_tags : unit -> (string * Terminal.style) list
+val set_emacs_print_strings : unit -> unit
 
 (** Initialization of interpretation of tags *)
 val init_terminal_output : color:bool -> unit
@@ -72,4 +73,4 @@ val print_err_exn : exn -> unit
     redirected to a file [file] *)
 val with_output_to_file : string -> ('a -> 'b) -> 'a -> 'b
 
-val pr_cmd_header : Vernacexpr.vernac_control CAst.t -> Pp.t
+val pr_cmd_header : Vernacexpr.vernac_control -> Pp.t

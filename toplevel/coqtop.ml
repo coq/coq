@@ -113,6 +113,7 @@ let fatal_error_exn exn =
 let init_color opts =
   let has_color = match opts.color with
   | `OFF -> false
+  | `EMACS -> false
   | `ON -> true
   | `AUTO ->
     Terminal.has_style Unix.stdout &&
@@ -133,10 +134,13 @@ let init_color opts =
       Topfmt.default_styles (); false                 (* textual markers, no color *)
     end
   in
-  if not term_color then
-    Proof_diffs.write_color_enabled term_color;
-  if Proof_diffs.show_diffs () && not term_color then
-    (prerr_endline "Error: -diffs requires enabling -color"; exit 1);
+  if opts.color = `EMACS then
+    Topfmt.set_emacs_print_strings ()
+  else if not term_color then begin
+      Proof_diffs.write_color_enabled term_color;
+    if Proof_diffs.show_diffs () then
+      (prerr_endline "Error: -diffs requires enabling -color"; exit 1)
+  end;
   Topfmt.init_terminal_output ~color:term_color
 
 let print_style_tags opts =
@@ -220,7 +224,6 @@ let init_toplevel ~help ~init custom_init arglist =
   let top_lp = Coqinit.toplevel_init_load_path () in
   List.iter Mltop.add_coq_path top_lp;
   let opts, extras = custom_init ~opts extras in
-  Flags.if_verbose print_header ();
   Mltop.init_known_plugins ();
 
   Global.set_engagement opts.impredicative_set;
@@ -268,34 +271,10 @@ let init_toploop opts =
   let state = { doc; sid; proof = None; time = opts.time } in
   Ccompile.load_init_vernaculars opts ~state, opts
 
-(* To remove in 8.11 *)
-let call_coqc args =
-  let remove str arr = Array.(of_list List.(filter (fun l -> not String.(equal l str)) (to_list arr))) in
-  let coqc_name = Filename.remove_extension (System.get_toplevel_path "coqc") in
-  let args = remove "-compile" args in
-  Unix.execv coqc_name args
-
-let deprecated_coqc_warning = CWarnings.(create
-    ~name:"deprecate-compile-arg"
-    ~category:"toplevel"
-    ~default:Enabled
-    (fun opt_name -> Pp.(seq [str "The option "; str opt_name; str" is deprecated, please use coqc."])))
-
-let rec coqc_deprecated_check args acc extras =
-  match extras with
-  | [] -> acc
-  | "-o" :: _ :: rem ->
-    deprecated_coqc_warning "-o";
-    coqc_deprecated_check args acc rem
-  | ("-compile"|"-compile-verbose") :: file :: rem ->
-    deprecated_coqc_warning "-compile";
-    call_coqc args
-  | x :: rem ->
-    coqc_deprecated_check args (x::acc) rem
-
 let coqtop_init ~opts extra =
   init_color opts;
   CoqworkmgrApi.(init !async_proofs_worker_priority);
+  Flags.if_verbose print_header ();
   opts, extra
 
 let coqtop_toplevel =
@@ -313,7 +292,6 @@ let start_coq custom =
         init_toplevel
           ~help:Usage.print_usage_coqtop ~init:default custom.init
           (List.tl (Array.to_list Sys.argv)) in
-      let extras = coqc_deprecated_check Sys.argv [] extras in
       if not (CList.is_empty extras) then begin
         prerr_endline ("Don't know what to do with "^String.concat " " extras);
         prerr_endline "See -help for the list of supported options";

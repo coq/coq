@@ -150,6 +150,7 @@ let explicit_flags =
     [print_universes; print_implicits; print_coercions; print_no_symbol] (* and more! *) ]
 
 let with_diffs pm pn =
+  if not (Proof_diffs.show_diffs ()) then pm, pn else
   try
     let tokenize_string = Proof_diffs.tokenize_string in
     Pp_diff.diff_pp ~tokenize_string pm pn
@@ -1346,9 +1347,6 @@ let explain_pattern_matching_error env sigma = function
       explain_non_exhaustive env tms
   | CannotInferPredicate typs ->
       explain_cannot_infer_predicate env sigma typs
-
-let map_pguard_error = map_pguard_error
-let map_ptype_error = map_ptype_error
 
 let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->

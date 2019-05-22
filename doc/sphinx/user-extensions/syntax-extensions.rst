@@ -327,22 +327,29 @@ symbols.
 Reserving notations
 ~~~~~~~~~~~~~~~~~~~
 
-A given notation may be used in different contexts. Coq expects all
-uses of the notation to be defined at the same precedence and with the
-same associativity. To avoid giving the precedence and associativity
-every time, it is possible to declare a parsing rule in advance
-without giving its interpretation. Here is an example from the initial
-state of Coq.
+.. cmd:: Reserved Notation @string {? (@modifiers) }
 
-.. coqtop:: in
+   A given notation may be used in different contexts. Coq expects all
+   uses of the notation to be defined at the same precedence and with the
+   same associativity. To avoid giving the precedence and associativity
+   every time, this command declares a parsing rule (:token:`string`) in advance
+   without giving its interpretation. Here is an example from the initial
+   state of Coq.
 
-   Reserved Notation "x = y" (at level 70, no associativity).
+   .. coqtop:: in
 
-Reserving a notation is also useful for simultaneously defining an
-inductive type or a recursive constant and a notation for it.
+      Reserved Notation "x = y" (at level 70, no associativity).
 
-.. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
-          their precedence and associativity cannot be changed.
+   Reserving a notation is also useful for simultaneously defining an
+   inductive type or a recursive constant and a notation for it.
+
+   .. note:: The notations mentioned in the module :ref:`init-notations` are reserved. Hence
+             their precedence and associativity cannot be changed.
+
+   .. cmdv:: Reserved Infix "@symbol" {* @modifiers}
+
+      This command declares an infix parsing rule without giving its
+      interpretation.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -840,10 +847,11 @@ gives a way to let any arbitrary expression which is not handled by the
 custom entry ``expr`` be parsed or printed by the main grammar of term
 up to the insertion of a pair of curly brackets.
 
-.. cmd:: Print Grammar @ident.
+.. cmd:: Print Custom Grammar @ident.
+   :name: Print Custom Grammar
 
-   This displays the state of the grammar for terms and grammar for
-   patterns associated to the custom entry :token:`ident`.
+   This displays the state of the grammar for terms associated to
+   the custom entry :token:`ident`.
 
 Summary
 ~~~~~~~
@@ -1375,6 +1383,8 @@ Abbreviations
    Abbreviations disappear when a section is closed. No typing of the
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
+
+.. _numeral-notations:
 
 Numeral notations
 -----------------

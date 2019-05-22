@@ -39,7 +39,7 @@ let check_evars env evm =
 
 type oblinfo =
   { ev_name: int * Id.t;
-    ev_hyps: Constr.named_context;
+    ev_hyps: EConstr.named_context;
     ev_status: bool * Evar_kinds.obligation_definition_status;
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
@@ -50,11 +50,11 @@ type oblinfo =
 (** Substitute evar references in t using de Bruijn indices,
   where n binders were passed through. *)
 
-let subst_evar_constr evs n idf t =
+let subst_evar_constr evm evs n idf t =
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
-  let rec substrec (depth, fixrels) c = match Constr.kind c with
+  let rec substrec (depth, fixrels) c = match EConstr.kind evm c with
     | Evar (k, args) ->
 	let { ev_name = (id, idstr) ;
 	      ev_hyps = hyps ; ev_chop = chop } =
@@ -84,18 +84,18 @@ let subst_evar_constr evs n idf t =
 	  in aux hyps args []
 	in
 	  if List.exists
-            (fun x -> match Constr.kind x with
+            (fun x -> match EConstr.kind evm x with
             | Rel n -> Int.List.mem n fixrels
             | _ -> false) args
           then
 	    transparent := Id.Set.add idstr !transparent;
-	  mkApp (idf idstr, Array.of_list args)
+          EConstr.mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
-	Constr.map_with_binders succfix substrec (depth, 1 :: fixrels) c
-    | _ -> Constr.map_with_binders succfix substrec (depth, fixrels) c
+        EConstr.map_with_binders evm succfix substrec (depth, 1 :: fixrels) c
+    | _ -> EConstr.map_with_binders evm succfix substrec (depth, fixrels) c
   in
   let t' = substrec (0, []) t in
-    t', !seen, !transparent
+    EConstr.to_constr evm t', !seen, !transparent
 
 
 (** Substitute variable references in t using de Bruijn indices,
@@ -112,18 +112,18 @@ let subst_vars acc n t =
     to a product : forall H1 : t1, ..., forall Hn : tn, concl.
     Changes evars and hypothesis references to variable references.
 *)
-let etype_of_evar evs hyps concl =
+let etype_of_evar evm evs hyps concl =
   let open Context.Named.Declaration in
   let rec aux acc n = function
       decl :: tl ->
-	let t', s, trans = subst_evar_constr evs n mkVar (NamedDecl.get_type decl) in
+        let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar (NamedDecl.get_type decl) in
 	let t'' = subst_vars acc 0 t' in
 	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
 	let s' = Int.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
 	  (match decl with
             | LocalDef (id,c,_) ->
-		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
+                let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
 		let c' = subst_vars acc 0 c' in
                   mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
 		Int.Set.union s'' s',
@@ -131,7 +131,7 @@ let etype_of_evar evs hyps concl =
             | LocalAssum (id,_) ->
                 mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
-	let t', s, trans = subst_evar_constr evs n mkVar concl in
+        let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
 	  subst_vars acc 0 t', s, trans
   in aux [] 0 (List.rev hyps)
 
@@ -151,7 +151,7 @@ let evar_dependencies evm oev =
   let one_step deps =
     Evar.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
-      let deps' = evars_of_filtered_evar_info evi in
+      let deps' = evars_of_filtered_evar_info evm evi in
       if Evar.Set.mem oev deps' then
         invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ Pp.string_of_ppcmds @@ Evar.print oev)
       else Evar.Set.union deps' s)
@@ -209,9 +209,7 @@ let eterm_obligations env name evm fs ?status t ty =
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Evd.evar_filtered_context ev in
          let hyps = trunc_named_context nc_len hyps in
-         let hyps = EConstr.Unsafe.to_named_context hyps in
-         let concl = EConstr.Unsafe.to_constr ev.evar_concl in
-         let evtyp, deps, transp = etype_of_evar l hyps concl in
+         let evtyp, deps, transp = etype_of_evar evm l hyps ev.evar_concl in
 	 let evtyp, hyps, chop =
 	   match chop_product fs evtyp with
 	   | Some t -> t, trunc_named_context fs hyps, fs
@@ -237,9 +235,9 @@ let eterm_obligations env name evm fs ?status t ty =
       evn []
   in
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
-    subst_evar_constr evts 0 mkVar t 
+    subst_evar_constr evm evts 0 EConstr.mkVar t
   in
-  let ty, _, _ = subst_evar_constr evts 0 mkVar ty in
+  let ty, _, _ = subst_evar_constr evm evts 0 EConstr.mkVar ty in
   let evars = 
     List.map (fun (ev, info) ->
       let { ev_name = (_, name); ev_status = force_status, status;
@@ -252,7 +250,7 @@ let eterm_obligations env name evm fs ?status t ty =
       in name, typ, src, (force_status, status), deps, tac) evts
   in
   let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
-  let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
+  let evmap f c = pi1 (subst_evar_constr evm evts 0 f c) in
     Array.of_list (List.rev evars), (evnames, evmap), t', ty
 
 let hide_obligation () =
@@ -456,7 +454,7 @@ let obligation_substitution expand prg =
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
-let declare_definition ~ontop prg =
+let declare_definition prg =
   let varsubst = obligation_substitution true prg in
   let body, typ = subst_prog varsubst prg in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst (fun x -> None)
@@ -475,7 +473,7 @@ let declare_definition ~ontop prg =
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition ~ontop prg.prg_name
+  DeclareDef.declare_definition prg.prg_name
     prg.prg_kind ce ubinders prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
@@ -554,7 +552,7 @@ let declare_mutual_definition l =
   (* Declare the recursive definitions *)
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
-  let kns = List.map4 (DeclareDef.declare_fix ~ontop:None ~opaque (local, poly, kind) UnivNames.empty_binders univs)
+  let kns = List.map4 (DeclareDef.declare_fix ~opaque (local, poly, kind) UnivNames.empty_binders univs)
     fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter (Metasyntax.add_notation_interpretation (Global.env())) first.prg_notations;
@@ -761,7 +759,7 @@ let update_obls prg obls rem =
     else (
       match prg'.prg_deps with
       | [] ->
-          let kn = declare_definition ~ontop:None prg' in
+          let kn = declare_definition prg' in
 	    progmap_remove prg';
 	    Defined kn
       | l ->
@@ -1112,7 +1110,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
-    let cst = declare_definition ~ontop:None prg in
+    let cst = declare_definition prg in
       Defined cst)
   else (
     let len = Array.length obls in

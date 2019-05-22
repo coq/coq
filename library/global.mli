@@ -46,7 +46,8 @@ val export_private_constants : in_section:bool ->
   unit Entries.definition_entry * Safe_typing.exported_private_constant list
 
 val add_constant :
-  in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t
+  ?role:Entries.side_effect_role -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * Safe_typing.private_constants
+val add_recipe : in_section:bool -> Id.t -> Cooking.recipe -> Constant.t
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
@@ -84,7 +85,7 @@ val add_module_parameter :
 (** {6 Queries in the global environment } *)
 
 val lookup_named     : variable -> Constr.named_declaration
-val lookup_constant  : Constant.t -> Declarations.constant_body
+val lookup_constant  : Constant.t -> Opaqueproof.opaque Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_pinductive : Constr.pinductive -> 
@@ -105,7 +106,7 @@ val body_of_constant : Constant.t -> (Constr.constr * Univ.AUContext.t) option
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
 
-val body_of_constant_body : Declarations.constant_body -> (Constr.constr * Univ.AUContext.t) option
+val body_of_constant_body : Opaqueproof.opaque Declarations.constant_body -> (Constr.constr * Univ.AUContext.t) option
 (** Same as {!body_of_constant} but on {!Declarations.constant_body}. *)
 
 (** {6 Compiled libraries } *)
@@ -130,18 +131,6 @@ val is_joined_environment : unit -> bool
 val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
 val is_type_in_type : GlobRef.t -> bool
-
-val constr_of_global_in_context : Environ.env ->
-  GlobRef.t -> Constr.types * Univ.AUContext.t
-  [@@ocaml.deprecated "alias of [Typeops.constr_of_global_in_context]"]
-
-val type_of_global_in_context : Environ.env -> 
-  GlobRef.t -> Constr.types * Univ.AUContext.t
-  [@@ocaml.deprecated "alias of [Typeops.type_of_global_in_context]"]
-
-(** Returns the universe context of the global reference (whatever its polymorphic status is). *)
-val universes_of_global : GlobRef.t -> Univ.AUContext.t
-[@@ocaml.deprecated "Use [Environ.universes_of_global]"]
 
 (** {6 Retroknowledge } *)
 

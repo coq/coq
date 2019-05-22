@@ -462,28 +462,6 @@ let type_of_global_in_context env r =
     let inst = Univ.make_abstract_instance univs in
     Inductive.type_of_constructor (cstr,inst) specif, univs
 
-(* Build a fresh instance for a given context, its associated substitution and
-   the instantiated constraints. *)
-
-let constr_of_global_in_context env r =
-  let open GlobRef in
-  match r with
-  | VarRef id -> mkVar id, Univ.AUContext.empty
-  | ConstRef c ->
-    let cb = lookup_constant c env in
-    let univs = Declareops.constant_polymorphic_context cb in
-    mkConstU (c, Univ.make_abstract_instance univs), univs
-  | IndRef ind ->
-    let (mib,_) = Inductive.lookup_mind_specif env ind in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkIndU (ind, Univ.make_abstract_instance univs), univs
-  | ConstructRef cstr ->
-    let (mib,_) =
-      Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
-    in
-    let univs = Declareops.inductive_polymorphic_context mib in
-    mkConstructU (cstr, Univ.make_abstract_instance univs), univs
-
 (************************************************************************)
 (************************************************************************)
 

@@ -376,9 +376,6 @@ module KerName = struct
     { modpath; knlabel; refhash = -1; }
   let repr kn = (kn.modpath, kn.knlabel)
 
-  let make2 = make
-  [@@ocaml.deprecated "Please use [KerName.make]"]
-
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
 

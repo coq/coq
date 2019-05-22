@@ -24,16 +24,7 @@ val new_univ_id : unit -> univ_unique_id (** for the stm *)
 val new_univ_global : unit -> Level.UGlobal.t
 val fresh_level : unit -> Level.t
 
-val new_univ : unit -> Universe.t
-[@@ocaml.deprecated "Use [new_univ_level]"]
-val new_Type : unit -> types
-[@@ocaml.deprecated "Use [new_univ_level]"]
-val new_Type_sort : unit -> Sorts.t
-[@@ocaml.deprecated "Use [new_univ_level]"]
-
 val new_global_univ : unit -> Universe.t in_universe_context_set
-val new_sort_in_family : Sorts.family -> Sorts.t
-[@@ocaml.deprecated "Use [fresh_sort_in_family]"]
 
 (** Build a fresh instance for a given context, its associated substitution and
     the instantiated constraints. *)
@@ -66,27 +57,9 @@ val fresh_universe_context_set_instance : ContextSet.t ->
 (** Raises [Not_found] if not a global reference. *)
 val global_of_constr : constr -> GlobRef.t puniverses
 
-val constr_of_global_univ : GlobRef.t puniverses -> constr
-[@@ocaml.deprecated "Use [Constr.mkRef]"]
-
-val extend_context : 'a in_universe_context_set -> ContextSet.t ->
-  'a in_universe_context_set
-[@@ocaml.deprecated "Use [Univ.extend_in_context_set]"]
-
 (** Create a fresh global in the global environment, without side effects.
     BEWARE: this raises an error on polymorphic constants/inductives:
     the constraints should be properly added to an evd.
     See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
     the proper way to get a fresh copy of a polymorphic global reference. *)
 val constr_of_monomorphic_global : GlobRef.t -> constr
-
-val constr_of_global : GlobRef.t -> constr
-[@@ocaml.deprecated "constr_of_global will crash on polymorphic constants,\
-                     use [constr_of_monomorphic_global] if the reference is guaranteed to\
-                     be monomorphic, [Evarutil.new_global] or [Tacmach.New.pf_constr_of_global] otherwise"]
-
-(** Returns the type of the global reference, by creating a fresh instance of polymorphic
-    references and computing their instantiated universe context. (side-effect on the
-    universe counter, use with care). *)
-val type_of_global : GlobRef.t -> types in_universe_context_set
-[@@ocaml.deprecated "use [Typeops.type_of_global]"]

@@ -29,6 +29,7 @@ type printable =
   | PrintSectionContext of qualid
   | PrintInspect of int
   | PrintGrammar of string
+  | PrintCustomGrammar of string
   | PrintLoadPath of DirPath.t option
   | PrintModules
   | PrintModule of qualid
@@ -143,13 +144,17 @@ type decl_notation = lstring * constr_expr * scope_name option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
-type 'a with_instance = instance_flag * 'a
-type 'a with_notation = 'a * decl_notation list
-type 'a with_priority = 'a * int option
+(* Attributes of a record field declaration *)
+type record_field_attr = {
+  rf_subclass: instance_flag; (* the projection is an implicit coercion or an instance *)
+  rf_priority: int option; (* priority of the instance, if relevant *)
+  rf_notation: decl_notation list;
+  rf_canonical: bool; (* use this projection in the search for canonical instances *)
+  }
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
+  | RecordDecl of lident option * (local_decl_expr * record_field_attr) list
 type inductive_expr =
   ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr
@@ -398,11 +403,12 @@ type nonrec vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-type vernac_control =
+type vernac_control_r =
   | VernacExpr of Attributes.vernac_flags * vernac_expr
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
-  | VernacTime of bool * vernac_control CAst.t
-  | VernacRedirect of string * vernac_control CAst.t
-  | VernacTimeout of int * vernac_control CAst.t
-  | VernacFail of vernac_control CAst.t
+  | VernacTime of bool * vernac_control
+  | VernacRedirect of string * vernac_control
+  | VernacTimeout of int * vernac_control
+  | VernacFail of vernac_control
+and vernac_control = vernac_control_r CAst.t

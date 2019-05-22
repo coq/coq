@@ -85,7 +85,7 @@ To build an object of type :token:`ident`, one should provide the constructor
 
   .. productionlist::
     record_term : {| [`field_def` ; … ; `field_def`] |}
-    field_def : name [binders] := `record_term`
+    field_def : `ident` [`binders`] := `term`
 
 Alternatively, the following syntax allows creating objects by using named fields, as
 shown in this grammar. The fields do not have to be in any particular order, nor do they have
@@ -831,16 +831,16 @@ Sections create local contexts which can be shared across multiple definitions.
 
       Links :token:`type` to each :token:`ident`.
 
-   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
+   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
 
       Declare one or more variables with various types.
 
-   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
-             Hypothesis {+ ( {+ @ident } : @type) }
-             Hypotheses {+ ( {+ @ident } : @type) }
+   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
+             Hypothesis {+ ( {+ @ident } : @type) }
+             Hypotheses {+ ( {+ @ident } : @type) }
       :name: Variables; Hypothesis; Hypotheses
 
-      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
+      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
 
 .. cmd:: Let @ident := @term
 
@@ -931,7 +931,7 @@ In the syntax of module application, the ! prefix indicates that any
    :token:`module_binding`. The output module type
    is verified against each :token:`module_type`.
 
-.. cmdv:: Module [ Import | Export ]
+.. cmdv:: Module {| Import | Export }
 
    Behaves like :cmd:`Module`, but automatically imports or exports the module.
 
@@ -1648,7 +1648,7 @@ Declaring Implicit Arguments
 
 
 
-.. cmd:: Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmd:: Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
    :name: Arguments (implicits)
 
    This command is used to set implicit arguments *a posteriori*,
@@ -1665,20 +1665,20 @@ Declaring Implicit Arguments
 
    This command clears implicit arguments.
 
-.. cmdv:: Global Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmdv:: Global Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
 
    This command is used to recompute the implicit arguments of
    :token:`qualid` after ending of the current section if any, enforcing the
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* [ @ident ] | { @ident } | @ident }
+.. cmdv:: Local Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
 
    When in a module, tell not to activate the
    implicit arguments of :token:`qualid` declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? Global | Local } Arguments @qualid {*, {+ [ @ident ] | { @ident } | @ident } }
+.. cmdv:: {? {| Global | Local } } Arguments @qualid {*, {+ {| [ @ident ] | { @ident } | @ident } } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of
@@ -2048,6 +2048,21 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
+   .. note::
+      To prevent a field from being involved in the inference of canonical instances,
+      its declaration can be annotated with the :g:`#[canonical(false)]` attribute.
+
+      .. example::
+
+         For instance, when declaring the :g:`Setoid` structure above, the
+         :g:`Prf_equiv` field declaration could be written as follows.
+
+         .. coqdoc::
+
+            #[canonical(false)] Prf_equiv : equivalence Carrier Equal
+
+      See :ref:`canonicalstructures` for a more realistic example.
+
    .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
 
       This is equivalent to a regular definition of :token:`ident` followed by the
@@ -2067,6 +2082,10 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Print Canonical Projections.
 
+      .. note::
+
+         The last line would not show up if the corresponding projection (namely
+         :g:`Prf_equiv`) were annotated as not canonical, as described above.
 
 Implicit types of variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2148,7 +2167,7 @@ that specify which variables should be generalizable.
 
    Disable implicit generalization  entirely. This is the default behavior.
 
-.. cmd:: Generalizable (Variable | Variables) {+ @ident }
+.. cmd:: Generalizable {| Variable | Variables } {+ @ident }
 
    Allow generalization of the given identifiers only. Calling this command multiple times
    adds to the allowed identifiers.
@@ -2244,6 +2263,7 @@ Printing universes
       unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
 .. cmdv:: Print Universes Subgraph(@names)
+   :name: Print Universes Subgraph
 
    Prints the graph restricted to the requested names (adjusting
    constraints to preserve the implied transitive constraints between

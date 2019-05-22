@@ -76,7 +76,7 @@ end
 
 (** The functor [MakeRefTable] declares a new table of objects of type
    [A.t] practically denoted by [reference]; the encoding function
-   [encode : reference -> A.t] is typically a globalization function,
+   [encode : env -> reference -> A.t] is typically a globalization function,
    possibly with some restriction checks; the function
    [member_message] say what to print when invoking the "Test Toto
    Titi foo." command; at the end [title] is the table name printed
@@ -139,19 +139,17 @@ val declare_bool_option_and_ref : depr:bool -> name:string -> key:option_name ->
 
 module OptionMap : CSig.MapS with type key = option_name
 
-val get_string_table :
-  option_name ->
-    < add : string -> unit;
-      remove : string -> unit;
-      mem : string -> unit;
-      print : unit >
+type 'a table_of_A =  {
+  add : Environ.env -> 'a -> unit;
+  remove : Environ.env -> 'a -> unit;
+  mem : Environ.env -> 'a -> unit;
+  print : unit -> unit;
+}
 
+val get_string_table :
+  option_name -> string table_of_A
 val get_ref_table :
-  option_name ->
-    < add : qualid -> unit;
-      remove : qualid -> unit;
-      mem : qualid -> unit;
-      print : unit >
+  option_name -> qualid table_of_A
 
 (** The first argument is a locality flag. *)
 val set_int_option_value_gen    : ?locality:option_locality -> option_name -> int option -> unit

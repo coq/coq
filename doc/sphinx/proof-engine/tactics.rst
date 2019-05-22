@@ -1749,7 +1749,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       They combine the effects of the ``with``, ``as``, ``eqn:``, ``using``,
       and ``in`` clauses.
 
-.. tacn:: case term
+.. tacn:: case @term
    :name: case
 
    The tactic :n:`case` is a more basic tactic to perform case analysis without
@@ -1982,7 +1982,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    :n:`induction @ident; induction @ident` (or
    :n:`induction @ident ; destruct @ident` depending on the exact needs).
 
-.. tacv:: double induction num1 num2
+.. tacv:: double induction @num__1 @num__2
 
    This tactic is deprecated and should be replaced by
    :n:`induction num1; induction num3` where :n:`num3` is the result
@@ -2271,11 +2271,11 @@ and an explanation of the underlying technique.
          :undocumented:
 
    .. tacv:: injection @term {? with @bindings_list} as {+ @simple_intropattern}
-             injection @num as {+ simple_intropattern}
-             injection as {+ simple_intropattern}
-             einjection @term {? with @bindings_list} as {+ simple_intropattern}
-             einjection @num as {+ simple_intropattern}
-             einjection as {+ simple_intropattern}
+             injection @num as {+ @simple_intropattern}
+             injection as {+ @simple_intropattern}
+             einjection @term {? with @bindings_list} as {+ @simple_intropattern}
+             einjection @num as {+ @simple_intropattern}
+             einjection as {+ @simple_intropattern}
 
       These variants apply :n:`intros {+ @simple_intropattern}` after the call to
       :tacn:`injection` or :tacn:`einjection` so that all equalities generated are moved in
@@ -2637,7 +2637,7 @@ and an explanation of the underlying technique.
    is correct at some time of the interactive development of a proof, use
    the command ``Guarded`` (see Section :ref:`requestinginformation`).
 
-.. tacv:: fix @ident @num with {+ (ident {+ @binder} [{struct @ident}] : @type)}
+.. tacv:: fix @ident @num with {+ (@ident {+ @binder} [{struct @ident}] : @type)}
 
    This starts a proof by mutual induction. The statements to be simultaneously
    proved are respectively :g:`forall binder ... binder, type`.
@@ -3561,7 +3561,7 @@ Automation
 .. tacn:: autorewrite with {+ @ident}
    :name: autorewrite
 
-   This tactic [4]_ carries out rewritings according to the rewriting rule
+   This tactic carries out rewritings according to the rewriting rule
    bases :n:`{+ @ident}`.
 
    Each rewriting rule from the base :n:`@ident` is applied to the main subgoal until
@@ -3777,8 +3777,8 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       discrimination network to relax or constrain it in the case of discriminated
       databases.
 
-   .. cmdv:: Hint Variables %( Transparent %| Opaque %) : @ident
-             Hint Constants %( Transparent %| Opaque %) : @ident
+   .. cmdv:: Hint Variables {| Transparent | Opaque } : @ident
+             Hint Constants {| Transparent | Opaque } : @ident
       :name: Hint Variables; Hint Constants
 
       This sets the transparency flag used during unification of
@@ -3850,7 +3850,7 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       semantics of :n:`Hint Cut @regexp` is to set the cut expression
       to :n:`c | regexp`, the initial cut expression being `emp`.
 
-   .. cmdv:: Hint Mode @qualid {* (+ | ! | -)} : @ident
+   .. cmdv:: Hint Mode @qualid {* {| + | ! | - } } : @ident
       :name: Hint Mode
 
       This sets an optional mode of use of the identifier :n:`@qualid`. When
@@ -3863,9 +3863,9 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
       terms and input heads *must not* contain existential variables or be
       existential variables respectively, while outputs can be any term. Multiple
       modes can be declared for a single identifier, in that case only one mode
-      needs to match the arguments for the hints to be applied.The head of a term
+      needs to match the arguments for the hints to be applied. The head of a term
       is understood here as the applicative head, or the match or projection
-      scrutinee’s head, recursively, casts being ignored. ``Hint Mode`` is
+      scrutinee’s head, recursively, casts being ignored. :cmd:`Hint Mode` is
       especially useful for typeclasses, when one does not want to support default
       instances and avoid ambiguity in general. Setting a parameter of a class as an
       input forces proof-search to be driven by that index of the class, with ``!``
@@ -3874,8 +3874,14 @@ The general command to add a hint to some databases :n:`{+ @ident}` is
 
    .. note::
 
-      One can use an ``Extern`` hint with no pattern to do pattern matching on
-      hypotheses using ``match goal with`` inside the tactic.
+      + One can use a :cmd:`Hint Extern` with no pattern to do
+        pattern matching on hypotheses using ``match goal with``
+        inside the tactic.
+
+      + If you want to add hints such as :cmd:`Hint Transparent`,
+        :cmd:`Hint Cut`, or :cmd:`Hint Mode`, for typeclass
+        resolution, do not forget to put them in the
+        ``typeclass_instances`` hint database.
 
 
 Hint databases defined in the Coq standard library
@@ -4010,7 +4016,7 @@ We propose a smooth transitional path by providing the :opt:`Loose Hint Behavior
 option which accepts three flags allowing for a fine-grained handling of
 non-imported hints.
 
-.. opt:: Loose Hint Behavior %( "Lax" %| "Warn" %| "Strict" %)
+.. opt:: Loose Hint Behavior {| "Lax" | "Warn" | "Strict" }
    :name: Loose Hint Behavior
 
    This option accepts three values, which control the behavior of hints w.r.t.
@@ -4042,7 +4048,7 @@ Setting implicit automation tactics
    .. seealso:: :cmd:`Proof` in :ref:`proof-editing-mode`.
 
 
-   .. cmdv:: Proof with tactic using {+ @ident}
+   .. cmdv:: Proof with @tactic using {+ @ident}
 
       Combines in a single line ``Proof with`` and ``Proof using``, see :ref:`proof-editing-mode`
 
@@ -4394,6 +4400,11 @@ Equality
    This tactic applies to a goal that has the form :g:`t=u` and transforms it
    into the two subgoals :n:`t=@term` and :n:`@term=u`.
 
+   .. tacv:: etransitivity
+
+      This tactic behaves like :tacn:`transitivity`, using a fresh evar instead of
+      a concrete :token:`term`.
+
 
 Equality and inductive sets
 ---------------------------
@@ -4655,9 +4666,12 @@ Non-logical tactics
 
 .. example::
 
-   .. coqtop:: all reset
+   .. coqtop:: none reset
 
       Parameter P : nat -> Prop.
+
+   .. coqtop:: all abort
+
       Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
       repeat split.
       all: cycle 2.
@@ -4673,9 +4687,8 @@ Non-logical tactics
 
 .. example::
 
-   .. coqtop:: reset all
+   .. coqtop:: all abort
 
-      Parameter P : nat -> Prop.
       Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
       repeat split.
       all: swap 1 3.
@@ -4688,9 +4701,8 @@ Non-logical tactics
 
    .. example::
 
-      .. coqtop:: all reset
+      .. coqtop:: all abort
 
-         Parameter P : nat -> Prop.
          Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
          repeat split.
          all: revgoals.
@@ -4711,7 +4723,7 @@ Non-logical tactics
 
       .. example::
 
-         .. coqtop:: all reset
+         .. coqtop:: all abort
 
             Goal exists n, n=0.
             refine (ex_intro _ _ _).
@@ -4739,39 +4751,6 @@ Non-logical tactics
 
    The ``give_up`` tactic can be used while editing a proof, to choose to
    write the proof script in a non-sequential order.
-
-Simple tactic macros
--------------------------
-
-A simple example has more value than a long explanation:
-
-.. example::
-
-   .. coqtop:: reset all
-
-      Ltac Solve := simpl; intros; auto.
-
-      Ltac ElimBoolRewrite b H1 H2 :=
-      elim b; [ intros; rewrite H1; eauto | intros; rewrite H2; eauto ].
-
-The tactics macros are synchronous with the Coq section mechanism: a
-tactic definition is deleted from the current environment when you
-close the section (see also :ref:`section-mechanism`) where it was
-defined. If you want that a tactic macro defined in a module is usable in the
-modules that require it, you should put it outside of any section.
-
-:ref:`ltac` gives examples of more complex
-user-defined tactics.
-
-.. [1] Actually, only the second subgoal will be generated since the
-  other one can be automatically checked.
-.. [2] This corresponds to the cut rule of sequent calculus.
-.. [3] Reminder: opaque constants will not be expanded by δ reductions.
-.. [4] The behavior of this tactic has changed a lot compared to the
-  versions available in the previous distributions (V6). This may cause
-  significant changes in your theories to obtain the same result. As a
-  drawback of the re-engineering of the code, this tactic has also been
-  completely revised to get a very compact and readable version.
 
 Delaying solving unification constraints
 ----------------------------------------
@@ -4811,3 +4790,108 @@ references to automatically generated names.
    :name: Mangle Names Prefix
 
    Specifies the prefix to use when generating names.
+
+Performance-oriented tactic variants
+------------------------------------
+
+.. tacn:: change_no_check @term
+   :name: change_no_check
+
+   For advanced usage. Similar to :n:`change @term`, but as an optimization,
+   it skips checking that :n:`@term` is convertible to the goal.
+
+   Recall that the Coq kernel typechecks proofs again when they are concluded to
+   ensure safety. Hence, using :tacn:`change` checks convertibility twice
+   overall, while :tacn:`change_no_check` can produce ill-typed terms,
+   but checks convertibility only once.
+   Hence, :tacn:`change_no_check` can be useful to speed up certain proof
+   scripts, especially if one knows by construction that the argument is
+   indeed convertible to the goal.
+
+   In the following example, :tacn:`change_no_check` replaces :g:`False` by
+   :g:`True`, but :g:`Qed` then rejects the proof, ensuring consistency.
+
+   .. example::
+
+      .. coqtop:: all abort
+
+         Goal False.
+           change_no_check True.
+           exact I.
+         Fail Qed.
+
+   :tacn:`change_no_check` supports all of `change`'s variants.
+
+   .. tacv:: change_no_check @term with @term’
+      :undocumented:
+
+   .. tacv:: change_no_check @term at {+ @num} with @term’
+      :undocumented:
+
+   .. tacv:: change_no_check @term {? {? at {+ @num}} with @term} in @ident
+
+      .. example::
+
+         .. coqtop:: all abort
+
+            Goal True -> False.
+              intro H.
+              change_no_check False in H.
+              exact H.
+            Fail Qed.
+
+   .. tacv:: convert_concl_no_check @term
+      :name: convert_concl_no_check
+
+      Deprecated old name for :tacn:`change_no_check`. Does not support any of its
+      variants.
+
+.. tacn:: exact_no_check @term
+   :name: exact_no_check
+
+   For advanced usage. Similar to :n:`exact @term`, but as an optimization,
+   it skips checking that :n:`@term` has the goal's type, relying on the kernel
+   check instead. See :tacn:`change_no_check` for more explanations.
+
+   .. example::
+
+      .. coqtop:: all abort
+
+         Goal False.
+           exact_no_check I.
+         Fail Qed.
+
+   .. tacv:: vm_cast_no_check @term
+      :name: vm_cast_no_check
+
+      For advanced usage. Similar to :n:`exact_no_check @term`, but additionally
+      instructs the kernel to use :tacn:`vm_compute` to compare the
+      goal's type with the :n:`@term`'s type.
+
+      .. example::
+
+        .. coqtop:: all abort
+
+            Goal False.
+              vm_cast_no_check I.
+            Fail Qed.
+
+   .. tacv:: native_cast_no_check @term
+      :name: native_cast_no_check
+
+      for advanced usage. similar to :n:`exact_no_check @term`, but additionally
+      instructs the kernel to use :tacn:`native_compute` to compare the goal's
+      type with the :n:`@term`'s type.
+
+      .. example::
+
+        .. coqtop:: all abort
+
+            Goal False.
+              native_cast_no_check I.
+            Fail Qed.
+
+.. [1] Actually, only the second subgoal will be generated since the
+  other one can be automatically checked.
+.. [2] This corresponds to the cut rule of sequent calculus.
+.. [3] Reminder: opaque constants will not be expanded by δ reductions.

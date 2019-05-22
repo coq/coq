@@ -1,5 +1,6 @@
 #define Is_uint63(v) (Is_long(v))
 
+#define uint_of_value(val) (((uint64_t)(val)) >> 1)
 #define uint63_of_value(val) ((uint64_t)(val) >> 1)
 
 /* 2^63 * y + x as a value */
@@ -109,37 +110,56 @@ value uint63_mulc(value x, value y, value* h) {
 #define lt128(xh,xl,yh,yl) (uint63_lt(xh,yh) || (uint63_eq(xh,yh) && uint63_lt(xl,yl)))
 #define le128(xh,xl,yh,yl) (uint63_lt(xh,yh) || (uint63_eq(xh,yh) && uint63_leq(xl,yl)))
 
-value uint63_div21(value xh, value xl, value y, value* q) {
-  xh = (uint64_t)xh >> 1;
-  xl = ((uint64_t)xl >> 1) | ((uint64_t)xh << 63);
-  xh = (uint64_t)xh >> 1;
+#define maxuint63 ((uint64_t)0x7FFFFFFFFFFFFFFF)
+/* precondition: y <> 0 */
+/* outputs r and sets ql to q % 2^63 s.t. x = q * y + r, r < y */
+static value uint63_div21_aux(value xh, value xl, value y, value* ql) {
+  xh = uint63_of_value(xh);
+  xl = uint63_of_value(xl);
+  y = uint63_of_value(y);
   uint64_t maskh = 0;
   uint64_t maskl = 1;
   uint64_t dh = 0;
-  uint64_t dl = (uint64_t)y >> 1;
+  uint64_t dl = y;
   int cmp = 1;
-  while (dh >= 0 && cmp) {
+  /* int n = 0 */
+  /* loop invariant: mask = 2^n, d = mask * y, (2 * d <= x -> cmp), n >= 0, d < 2^(2*63) */
+  while (!(dh >> (63 - 1)) && cmp) {
+    dh = (dh << 1) | (dl >> (63 - 1));
+    dl = (dl << 1) & maxuint63;
+    maskh = (maskh << 1) | (maskl >> (63 - 1));
+    maskl = (maskl << 1) & maxuint63;
+    /* ++n */
     cmp = lt128(dh,dl,xh,xl);
-    dh = (dh << 1) | (dl >> 63);
-    dl = dl << 1;
-    maskh = (maskh << 1) | (maskl >> 63);
-    maskl = maskl << 1;
   }
   uint64_t remh = xh;
   uint64_t reml = xl;
-  uint64_t quotient = 0;
+  /* uint64_t quotienth = 0; */
+  uint64_t quotientl = 0;
+  /* loop invariant: x = quotient * y + rem, y * 2^(n+1) > r,
+     mask = floor(2^n), d = mask * y, n >= -1 */
   while (maskh | maskl) {
-    if (le128(dh,dl,remh,reml)) {
-      quotient = quotient | maskl;
-      if (uint63_lt(reml,dl)) {remh = remh - dh - 1;} else {remh = remh - dh;}
+    if (le128(dh,dl,remh,reml)) { /* if rem >= d, add one bit and subtract d */
+      /* quotienth = quotienth | maskh */
+      quotientl = quotientl | maskl;
+      remh = (uint63_lt(reml,dl)) ? (remh - dh - 1) : (remh - dh);
       reml = reml - dl;
     }
-    maskl = (maskl >> 1) | (maskh << 63);
+    maskl = (maskl >> 1) | ((maskh << (63 - 1)) & maxuint63);
     maskh = maskh >> 1;
-    dl = (dl >> 1) | (dh << 63);
+    dl = (dl >> 1) | ((dh << (63 - 1)) & maxuint63);
     dh = dh >> 1;
+    /* decr n */
   }
-  *q = Val_int(quotient);
+  *ql = Val_int(quotientl);
   return Val_int(reml);
+}
+value uint63_div21(value xh, value xl, value y, value* ql) {
+  if (uint63_of_value(y) == 0) {
+    *ql = Val_int(0);
+    return Val_int(0);
+  } else {
+    return uint63_div21_aux(xh, xl, y, ql);
+  }
 }
 #define Uint63_div21(xh, xl, y, q) (accu = uint63_div21(xh, xl, y, q))

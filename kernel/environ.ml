@@ -46,7 +46,7 @@ type link_info =
   | LinkedInteractive of string
   | NotLinked
 
-type constant_key = constant_body * (link_info ref * key)
+type constant_key = Opaqueproof.opaque constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
@@ -187,7 +187,7 @@ let match_named_context_val c = match c.env_named_ctx with
 let map_named_val f ctxt =
   let open Context.Named.Declaration in
   let fold accu d =
-    let d' = map_constr f d in
+    let d' = f d in
     let accu =
       if d == d' then accu
       else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu

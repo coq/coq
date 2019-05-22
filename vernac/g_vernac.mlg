@@ -43,6 +43,7 @@ let query_command = Entry.create "vernac:query_command"
 
 let subprf = Entry.create "vernac:subprf"
 
+let quoted_attributes = Entry.create "vernac:quoted_attributes"
 let class_rawexpr = Entry.create "vernac:class_rawexpr"
 let thm_token = Entry.create "vernac:thm_token"
 let def_body = Entry.create "vernac:def_body"
@@ -75,13 +76,13 @@ let parse_compat_version = let open Flags in function
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: vernac_control gallina_ext noedit_mode subprf;
+  GLOBAL: vernac_control quoted_attributes gallina_ext noedit_mode subprf;
   vernac_control: FIRST
-    [ [ IDENT "Time"; c = located_vernac -> { VernacTime (false,c) }
-      | IDENT "Redirect"; s = ne_string; c = located_vernac -> { VernacRedirect (s, c) }
-      | IDENT "Timeout"; n = natural; v = located_vernac -> { VernacTimeout(n,v) }
-      | IDENT "Fail"; v = located_vernac -> { VernacFail v }
-      | v = decorated_vernac -> { let (f, v) = v in VernacExpr(f, v) } ]
+    [ [ IDENT "Time"; c = vernac_control -> { CAst.make ~loc @@ VernacTime (false,c) }
+      | IDENT "Redirect"; s = ne_string; c = vernac_control -> { CAst.make ~loc @@ VernacRedirect (s, c) }
+      | IDENT "Timeout"; n = natural; v = vernac_control -> { CAst.make ~loc @@ VernacTimeout(n,v) }
+      | IDENT "Fail"; v = vernac_control -> { CAst.make ~loc @@ VernacFail v }
+      | v = decorated_vernac -> { let (f, v) = v in CAst.make ~loc @@ VernacExpr(f, v) } ]
     ]
   ;
   decorated_vernac:
@@ -147,9 +148,6 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
 
-  located_vernac:
-    [ [ v = vernac_control -> { CAst.make ~loc v } ] ]
-  ;
 END
 
 {
@@ -450,8 +448,12 @@ GRAMMAR EXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-  [ [ bd = record_binder; pri = OPT [ "|"; n = natural -> { n } ];
-      ntn = decl_notation -> { (bd,pri),ntn } ] ]
+  [ [ attr = LIST0 quoted_attributes ;
+      bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
+      rf_notation = decl_notation -> {
+      let rf_canonical = attr |> List.flatten |> parse canonical in
+      let rf_subclass, rf_decl = bd in
+      rf_decl, { rf_subclass ; rf_priority ; rf_notation ; rf_canonical } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
@@ -1004,6 +1006,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  { PrintGrammar ent }
+      | IDENT "Custom"; IDENT "Grammar"; ent = IDENT ->
+          (* Should also be in "syntax" section *)
+          { PrintCustomGrammar ent }
       | IDENT "LoadPath"; dir = OPT dirpath -> { PrintLoadPath dir }
       | IDENT "Modules" ->
           { user_err Pp.(str "Print Modules is obsolete; use Print Libraries instead") }

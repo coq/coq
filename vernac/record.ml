@@ -276,8 +276,13 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
   let subst' = List.init ntypes (fun i -> mkIndU ((ind, ntypes - i - 1), u)) in
   Termops.substl_rel_context (subst @ subst') fields
 
+type projection_flags = {
+  pf_subclass: bool;
+  pf_canonical: bool;
+}
+
 (* We build projections *)
-let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers fieldimpls fields =
+let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
@@ -299,7 +304,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
   in
   let (_,_,kinds,sp_projs,_) =
     List.fold_left3
-      (fun (nfi,i,kinds,sp_projs,subst) coe decl impls ->
+      (fun (nfi,i,kinds,sp_projs,subst) flags decl impls ->
         let fi = RelDecl.get_name decl in
         let ti = RelDecl.get_type decl in
 	let (sp_projs,i,subst) =
@@ -359,17 +364,17 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
 	    in
 	    let refi = ConstRef kn in
 	    Impargs.maybe_declare_manual_implicits false refi impls;
-	    if coe then begin
+            if flags.pf_subclass then begin
 	      let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
 	    end;
 	    let i = if is_local_assum decl then i+1 else i in
 	      (Some kn::sp_projs, i, Projection term::subst)
             with NotDefinable why ->
-	      warning_or_error coe indsp why;
+              warning_or_error flags.pf_subclass indsp why;
 	      (None::sp_projs,i,NoProjection fi::subst) in
-      (nfi-1,i,(fi, is_local_assum decl)::kinds,sp_projs,subst))
-      (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
+      (nfi - 1, i, { Recordops.pk_name = fi ; pk_true_proj = is_local_assum decl ; pk_canonical = flags.pf_canonical } :: kinds, sp_projs, subst))
+      (List.length fields,0,[],[],[]) flags (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
 open Typeclasses
@@ -525,7 +530,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       in
       [cref, [Name proj_name, sub, Some proj_cst]]
     | _ ->
-      let record_data = [id, idbuild, arity, fieldimpls, fields, false, List.map (fun _ -> false) fields] in
+      let record_data = [id, idbuild, arity, fieldimpls, fields, false,
+                         List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields] in
       let inds = declare_structure ~cum Declarations.BiFinite ubinders univs paramimpls
         params template ~kind:Method ~name:[|binder_name|] record_data
       in
@@ -634,7 +640,7 @@ let declare_existing_class g =
 open Vernacexpr
 
 let check_unique_names records =
-  let extract_name acc (((_, bnd), _), _) = match bnd with
+  let extract_name acc (rf_decl, _) = match rf_decl with
       Vernacexpr.AssumExpr({CAst.v=Name id},_) -> id::acc
     | Vernacexpr.DefExpr ({CAst.v=Name id},_,_) -> id::acc
     | _ -> acc in
@@ -649,15 +655,15 @@ let check_unique_names records =
 let check_priorities kind records =
   let isnot_class = match kind with Class false -> false | _ -> true in
   let has_priority (_, _, _, cfs, _, _) =
-    List.exists (fun ((_, pri), _) -> not (Option.is_empty pri)) cfs
+    List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
   if isnot_class && List.exists has_priority records then
     user_err Pp.(str "Priorities only allowed for type class substructures")
 
 let extract_record_data records =
   let map (is_coe, id, _, cfs, idbuild, s) =
-    let fs = List.map (fun (((_, f), _), _) -> f) cfs in
-    id.CAst.v, s, List.map snd cfs, fs
+    let fs = List.map fst cfs in
+    id.CAst.v, s, List.map (fun (_, { rf_notation }) -> rf_notation) cfs, fs
   in
   let data = List.map map records in
   let pss = List.map (fun (_, _, ps, _, _, _) -> ps) records in
@@ -691,16 +697,19 @@ let definition_structure udecl kind ~template cum poly finite records =
     | [r], [d] -> r, d
     | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
     in
-    let priorities = List.map (fun ((_, id), _) -> {hint_priority = id; hint_pattern = None}) cfs in
-    let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
+    let priorities = List.map (fun (_, { rf_priority }) -> {hint_priority = rf_priority ; hint_pattern = None}) cfs in
+    let coers = List.map (fun (_, { rf_subclass }) -> rf_subclass) cfs in
     declare_class def cum ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
-      let coers = List.map (fun (((coe, _), _), _) -> coe) cfs in
-      let coe = List.map (fun coe -> not (Option.is_empty coe)) coers in
+      let coe = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
+          { pf_subclass = not (Option.is_empty rf_subclass);
+            pf_canonical = rf_canonical })
+          cfs
+      in
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in

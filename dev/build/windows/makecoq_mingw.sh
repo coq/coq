@@ -1316,7 +1316,6 @@ function copy_coq_license {
     # FIXME: this is not the micromega license
     # It only applies to code that was copied into one single file!
     install -D README.md                      "$PREFIXCOQ/license_readme/coq/ReadMe.md"
-    install -D CHANGES.md                     "$PREFIXCOQ/license_readme/coq/Changes.md"
     install -D INSTALL                        "$PREFIXCOQ/license_readme/coq/Install.txt"
     install -D doc/README.md                  "$PREFIXCOQ/license_readme/coq/ReadMeDoc.md" || true
   fi
@@ -1628,19 +1627,6 @@ function make_addon_ssreflect {
       logn make-install   make -f Makefile.coq install
       build_post
     fi
-  fi
-}
-
-# Ltac-2 plugin
-# A new (experimental) tactic language
-
-function make_addon_ltac2 {
-  installer_addon_dependency ltac2
-  if build_prep_overlay ltac2; then
-    installer_addon_section ltac2 "Ltac-2" "Coq plugin with the Ltac-2 enhanced tactic language" ""
-    log1 make $MAKE_OPT all
-    log2 make install
-    build_post
   fi
 }
 

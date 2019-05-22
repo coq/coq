@@ -15,3 +15,11 @@ Check (eq_refl (4611686018427387904, 1) <: diveucl_21 3 1 2 = (46116860184273879
 Check (eq_refl (4611686018427387904, 1) <<: diveucl_21 3 1 2 = (4611686018427387904, 1)).
 Definition compute2 := Eval compute in diveucl_21 3 1 2.
 Check (eq_refl compute2 : (4611686018427387904, 1) = (4611686018427387904, 1)).
+
+Check (eq_refl : diveucl_21 1 1 0 = (0,0)).
+Check (eq_refl (0,0) <: diveucl_21 1 1 0 = (0,0)).
+Check (eq_refl (0,0) <<: diveucl_21 1 1 0 = (0,0)).
+
+Check (eq_refl : diveucl_21 9223372036854775807 0 1 = (0,0)).
+Check (eq_refl (0,0) <: diveucl_21 9223372036854775807 0 1 = (0,0)).
+Check (eq_refl (0,0) <<: diveucl_21 9223372036854775807 0 1 = (0,0)).

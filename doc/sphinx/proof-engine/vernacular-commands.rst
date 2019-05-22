@@ -91,13 +91,13 @@ and tables:
 Flags, options and tables are identified by a series of identifiers, each with an initial
 capital letter.
 
-.. cmd::  {? Local | Global | Export } Set @flag
+.. cmd::  {? {| Local | Global | Export } } Set @flag
    :name: Set
 
    Sets :token:`flag` on. Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
 
-.. cmd:: {? Local | Global | Export } Unset @flag
+.. cmd:: {? {| Local | Global | Export } } Unset @flag
    :name: Unset
 
    Sets :token:`flag` off. Scoping qualifiers are
@@ -108,13 +108,13 @@ capital letter.
    Prints the current value of :token:`flag`.
 
 
-.. cmd:: {? Local | Global | Export } Set @option ( @num | @string )
+.. cmd:: {? {| Local | Global | Export } } Set @option {| @num | @string }
    :name: Set @option
 
    Sets :token:`option` to the specified value.  Scoping qualifiers are
    described :ref:`here <set_unset_scope_qualifiers>`.
 
-.. cmd:: {? Local | Global | Export } Unset @option
+.. cmd:: {? {| Local | Global | Export } } Unset @option
    :name: Unset @option
 
    Sets :token:`option` to its default value.  Scoping qualifiers are
@@ -129,17 +129,17 @@ capital letter.
    Prints the current value of all flags and options, and the names of all tables.
 
 
-.. cmd:: Add @table ( @string | @qualid )
+.. cmd:: Add @table {| @string | @qualid }
    :name: Add @table
 
    Adds the specified value to :token:`table`.
 
-.. cmd:: Remove @table ( @string | @qualid )
+.. cmd:: Remove @table {| @string | @qualid }
    :name: Remove @table
 
    Removes the specified value from :token:`table`.
 
-.. cmd:: Test @table for ( @string | @qualid )
+.. cmd:: Test @table for {| @string | @qualid }
    :name: Test @table for
 
    Reports whether :token:`table` contains the specified value.
@@ -162,7 +162,7 @@ capital letter.
 Scope qualifiers for :cmd:`Set` and :cmd:`Unset`
 `````````````````````````````````````````````````
 
-:n:`{? Local | Global | Export }`
+:n:`{? {| Local | Global | Export } }`
 
 Flag and option settings can be global in scope or local to nested scopes created by
 :cmd:`Module` and :cmd:`Section` commands.  There are four alternatives:
@@ -277,7 +277,7 @@ Requests to the environment
       :token:`term_pattern` (holes of the pattern are either denoted by `_` or by
       :n:`?@ident` when non linear patterns are expected).
 
-   .. cmdv:: Search { + [-]@term_pattern_string }
+   .. cmdv:: Search {+ {? -}@term_pattern_string}
 
       where
       :n:`@term_pattern_string` is a term_pattern, a string, or a string followed
@@ -289,17 +289,17 @@ Requests to the environment
       prefixed by `-`, the search excludes the objects that mention that
       term_pattern or that string.
 
-   .. cmdv:: Search @term_pattern_string … @term_pattern_string inside {+ @qualid }
+   .. cmdv:: Search {+ {? -}@term_pattern_string} inside {+ @qualid }
 
       This restricts the search to constructions defined in the modules
       named by the given :n:`qualid` sequence.
 
-   .. cmdv:: Search @term_pattern_string … @term_pattern_string outside {+ @qualid }
+   .. cmdv:: Search {+ {? -}@term_pattern_string} outside {+ @qualid }
 
       This restricts the search to constructions not defined in the modules
       named by the given :n:`qualid` sequence.
 
-   .. cmdv:: @selector: Search [-]@term_pattern_string … [-]@term_pattern_string
+   .. cmdv:: @selector: Search {+ {? -}@term_pattern_string}
 
       This specifies the goal on which to search hypothesis (see
       Section :ref:`invocation-of-tactics`).
@@ -353,7 +353,7 @@ Requests to the environment
       This restricts the search to constructions defined in the modules named
       by the given :n:`qualid` sequence.
 
-   .. cmdv:: SearchHead term outside {+ @qualid }
+   .. cmdv:: SearchHead @term outside {+ @qualid }
 
       This restricts the search to constructions not defined in the modules
       named by the given :n:`qualid` sequence.
@@ -443,7 +443,7 @@ Requests to the environment
 
          SearchRewrite (_ + _ + _).
 
-   .. cmdv:: SearchRewrite term inside {+ @qualid }
+   .. cmdv:: SearchRewrite @term inside {+ @qualid }
 
       This restricts the search to constructions defined in the modules
       named by the given :n:`qualid` sequence.
@@ -622,7 +622,7 @@ file is a particular case of module called *library file*.
       but if a further module, say `A`, contains a command :cmd:`Require Export` `B`,
       then the command :cmd:`Require Import` `A` also imports the module `B.`
 
-   .. cmdv:: Require [Import | Export] {+ @qualid }
+   .. cmdv:: Require {| Import | Export } {+ @qualid }
 
       This loads the
       modules named by the :token:`qualid` sequence and their recursive
@@ -988,7 +988,7 @@ Controlling display
 
    This option controls the normal displaying.
 
-.. opt:: Warnings "{+, {? %( - %| + %) } @ident }"
+.. opt:: Warnings "{+, {? {| - | + } } @ident }"
    :name: Warnings
 
    This option configures the display of warnings. It is experimental, and

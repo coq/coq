@@ -46,7 +46,7 @@ let compact el ({ solution } as pv) =
   let apply_subst_einfo _ ei =
     Evd.({ ei with
        evar_concl =  nf ei.evar_concl;
-       evar_hyps = Environ.map_named_val nf0 ei.evar_hyps;
+       evar_hyps = Environ.map_named_val (fun d -> map_constr nf0 d) ei.evar_hyps;
        evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
@@ -641,7 +641,7 @@ let shelve_goals l =
     [sigma]. *)
 let depends_on sigma src tgt =
   let evi = Evd.find sigma tgt in
-  Evar.Set.mem src (Evd.evars_of_filtered_evar_info (Evarutil.nf_evar_info sigma evi))
+  Evar.Set.mem src (Evd.evars_of_filtered_evar_info sigma (Evarutil.nf_evar_info sigma evi))
 
 let unifiable_delayed g l =
   CList.exists (fun (tgt, lazy evs) -> not (Evar.equal g tgt) && Evar.Set.mem g evs) l
@@ -1104,13 +1104,6 @@ module Goal = struct
         tclZERO ~info e
     end
     end
-
-  let normalize { self; state } =
-    Env.get >>= fun env ->
-    tclEVARMAP >>= fun sigma ->
-    let (gl,sigma) = nf_gmake env sigma (goal_with_state self state) in
-    tclTHEN (Unsafe.tclEVARS sigma) (tclUNIT gl)
-
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in
@@ -1258,9 +1251,9 @@ module V82 = struct
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in
     { Evd.it = goals ; sigma=solution; }
 
-  let top_evars initial =
+  let top_evars initial { solution=sigma; } =
     let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evars_of_term (EConstr.Unsafe.to_constr c))
+      Evar.Set.elements (Evd.evars_of_term sigma c)
     in
     CList.flatten (CList.map evars_of_initial initial)
 

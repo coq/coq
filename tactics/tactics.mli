@@ -33,10 +33,12 @@ val is_quantified_hypothesis : Id.t -> Proofview.Goal.t -> bool
 (** {6 Primitive tactics. } *)
 
 val introduction    : Id.t -> unit Proofview.tactic
-val convert_concl   : ?check:bool -> types -> cast_kind -> unit Proofview.tactic
-val convert_hyp     : ?check:bool -> named_declaration -> unit Proofview.tactic
+val convert_concl   : check:bool -> types -> cast_kind -> unit Proofview.tactic
+val convert_hyp     : check:bool -> reorder:bool -> named_declaration -> unit Proofview.tactic
 val convert_concl_no_check : types -> cast_kind -> unit Proofview.tactic
+[@@ocaml.deprecated "use [Tactics.convert_concl]"]
 val convert_hyp_no_check : named_declaration -> unit Proofview.tactic
+[@@ocaml.deprecated "use [Tactics.convert_hyp]"]
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> unit Proofview.tactic
 val fix             : Id.t -> int -> unit Proofview.tactic
@@ -150,13 +152,13 @@ type e_tactic_reduction = Reductionops.e_reduction_function
 type change_arg = patvar_map -> env -> evar_map -> evar_map * constr
 
 val make_change_arg   : constr -> change_arg
-val reduct_in_hyp     : ?check:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
-val reduct_option     : ?check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
-val reduct_in_concl   : tactic_reduction * cast_kind -> unit Proofview.tactic
+val reduct_in_hyp     : check:bool -> reorder:bool -> tactic_reduction -> hyp_location -> unit Proofview.tactic
+val reduct_option     : check:bool -> tactic_reduction * cast_kind -> goal_location -> unit Proofview.tactic
+val reduct_in_concl   : check:bool -> tactic_reduction * cast_kind -> unit Proofview.tactic
 val e_reduct_in_concl   : check:bool -> e_tactic_reduction * cast_kind -> unit Proofview.tactic
-val change_in_concl   : (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
+val change_in_concl   : check:bool -> (occurrences * constr_pattern) option -> change_arg -> unit Proofview.tactic
 val change_concl      : constr -> unit Proofview.tactic
-val change_in_hyp     : (occurrences * constr_pattern) option -> change_arg ->
+val change_in_hyp     : check:bool -> (occurrences * constr_pattern) option -> change_arg ->
                         hyp_location -> unit Proofview.tactic
 val red_in_concl      : unit Proofview.tactic
 val red_in_hyp        : hyp_location -> unit Proofview.tactic
@@ -178,7 +180,7 @@ val unfold_in_hyp     :
 val unfold_option     :
   (occurrences * evaluable_global_reference) list -> goal_location -> unit Proofview.tactic
 val change            :
-  constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
+  check:bool -> constr_pattern option -> change_arg -> clause -> unit Proofview.tactic
 val pattern_option    :
   (occurrences * constr) list -> goal_location -> unit Proofview.tactic
 val reduce            : red_expr -> clause -> unit Proofview.tactic
@@ -280,7 +282,6 @@ val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_
 (** elim principle with the index of its inductive arg *)
 type eliminator = {
   elimindex : int option;  (** None = find it automatically *)
-  elimrename : (bool * int array) option; (** None = don't rename Prop hyps with H-names *)
   elimbody : constr with_bindings
 }
 

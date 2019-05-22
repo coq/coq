@@ -608,11 +608,7 @@ let clean_bounded_mod_expr sign =
 (** {6 Stm machinery } *)
 let join_constant_body except otab cb =
   match cb.const_body with
-  | OpaqueDef o ->
-      (match Opaqueproof.uuid_opaque otab o with
-      | Some uuid when not(Future.UUIDSet.mem uuid except) ->
-          Opaqueproof.join_opaque otab o
-      | _ -> ())
+  | OpaqueDef o -> Opaqueproof.join_opaque ~except otab o
   | _ -> ()
 
 let join_structure except otab s =

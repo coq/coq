@@ -68,3 +68,16 @@ eassumption.
 match goal with |- ?x=1 => change (x=1) with (0+x=1) end.
 match goal with |- 0+1=1 => trivial end.
 Qed.
+
+(* Mini-check that no_check does not check *)
+
+Goal True -> False.
+intro H.
+change_no_check nat.
+apply S.
+change_no_check nat with bool.
+change_no_check nat in H.
+change_no_check nat with (bool->bool) in H.
+exact (H true).
+Fail Qed.
+Abort.

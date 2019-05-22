@@ -14,15 +14,20 @@ open Constrexpr
 
 val primitive_flag : bool ref
 
+type projection_flags = {
+  pf_subclass: bool;
+  pf_canonical: bool;
+}
+
 val declare_projections :
   inductive ->
   Entries.universes_entry ->
   ?kind:Decl_kinds.definition_object_kind ->
   Id.t ->
-  bool list ->
+  projection_flags list ->
   Impargs.manual_implicits list ->
   Constr.rel_context ->
-    (Name.t * bool) list * Constant.t option list
+    Recordops.proj_kind list * Constant.t option list
 
 val declare_structure_entry : Recordops.struc_tuple -> unit
 
@@ -33,7 +38,7 @@ val definition_structure :
   (coercion_flag *
   Names.lident *
   local_binder_expr list *
-  (local_decl_expr with_instance with_priority with_notation) list *
+  (local_decl_expr * record_field_attr) list *
   Id.t * constr_expr option) list ->
   GlobRef.t list
 

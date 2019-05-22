@@ -98,7 +98,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
       else tac
     in
     let env = Global.env () in
-    let (p,(status,info)) = Proof.run_tactic env tac pr in
+    let (p,(status,info),()) = Proof.run_tactic env tac pr in
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let () =
@@ -161,7 +161,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let prev_future_goals = save_future_goals sigma in
   (* Start a proof *)
   let prf = Proof.start ~name ~poly sigma [env, ty] in
-  let (prf, _) =
+  let (prf, _, ()) =
     try Proof.run_tactic env tac prf
     with Logic_monad.TacticFailure e as src ->
       (* Catch the inner error of the monad tactic *)

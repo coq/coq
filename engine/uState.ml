@@ -85,7 +85,7 @@ let union ctx ctx' =
     let declarenew g =
       LSet.fold (fun u g -> UGraph.add_universe u false g) newus g
     in
-    let names_rev = LMap.union (snd ctx.uctx_names) (snd ctx'.uctx_names) in
+    let names_rev = LMap.lunion (snd ctx.uctx_names) (snd ctx'.uctx_names) in
       { uctx_names = (names, names_rev);
         uctx_local = local;
         uctx_seff_univs = seff;
@@ -115,8 +115,6 @@ let univ_entry ~poly uctx =
     let nas = UnivNames.compute_instance_binders (UContext.instance uctx) binders in
     Polymorphic_entry (nas, uctx)
   else Monomorphic_entry (context_set uctx)
-
-let const_univ_entry = univ_entry
 
 let of_context_set ctx = { empty with uctx_local = ctx }
 

@@ -115,8 +115,6 @@ struct
 
 end
 
-let smartmap = Smart.map
-
 (** Structural equality test, parametrized by an equality on elements *)
 
 let rec raw_eq cmp t t' = match t, t' with
@@ -148,9 +146,6 @@ let equiv cmp cmp' =
 
 let equal cmp t t' =
   t == t' || raw_eq cmp t t' || equiv cmp cmp t t'
-
-(** Deprecated alias *)
-let eq_rtree = equal
 
 (** Intersection of rtrees of same arity *)
 let rec inter cmp interlbl def n histo t t' =

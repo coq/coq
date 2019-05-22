@@ -605,7 +605,7 @@ let vernac_definition ~atts ~pstate discharge kind ({loc;v=id}, pl) def =
         | Some r ->
           let sigma, env = get_current_or_global_context ~pstate in
           Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~ontop:pstate ~program_mode name
+      ComDefinition.do_definition ~program_mode name
         (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
       pstate
   )
@@ -632,7 +632,7 @@ let vernac_exact_proof ~pstate c =
   if not status then Feedback.feedback Feedback.AddedAxiom;
   pstate
 
-let vernac_assumption ~atts ~pstate discharge kind l nl =
+let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let global = local == Global in
@@ -642,7 +642,7 @@ let vernac_assumption ~atts ~pstate discharge kind l nl =
       List.iter (fun (lid, _) ->
 	if global then Dumpglob.dump_definition lid false "ax"
 	else Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~pstate ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -684,7 +684,7 @@ let vernac_record ~template udecl cum k poly finite records =
     let () =
       if Dumpglob.dump () then
         let () = Dumpglob.dump_definition id false "rec" in
-        let iter (((_, x), _), _) = match x with
+        let iter (x, _) = match x with
         | Vernacexpr.AssumExpr ({loc;v=Name id}, _) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
         | _ -> ()
@@ -743,7 +743,8 @@ let vernac_inductive ~atts cum lo finite indl =
     let (id, bl, c, l) = Option.get is_defclass in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
-    let f = (((coe', AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce)), None), []) in
+    let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
+            { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     vernac_record ~template udecl cum (Class true) poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
@@ -1074,8 +1075,8 @@ let vernac_declare_instance ~atts sup inst pri =
   Dumpglob.dump_definition (fst (pi1 inst)) false "inst";
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic sup inst pri
 
-let vernac_context ~pstate ~poly l =
-  if not (ComAssumption.context ~pstate poly l) then Feedback.feedback Feedback.AddedAxiom
+let vernac_context ~poly l =
+  if not (ComAssumption.context poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -1230,16 +1231,13 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   let clear_implicits_flag = List.mem `ClearImplicits flags in
   let default_implicits_flag = List.mem `DefaultImplicits flags in
   let never_unfold_flag = List.mem `ReductionNeverUnfold flags in
+  let nomatch_flag = List.mem `ReductionDontExposeCase flags in
 
   let err_incompat x y =
     user_err Pp.(str ("Options \""^x^"\" and \""^y^"\" are incompatible.")) in
 
   if assert_flag && rename_flag then
     err_incompat "assert" "rename";
-  if Option.has_some nargs_for_red && never_unfold_flag then
-    err_incompat "simpl never" "/";
-  if never_unfold_flag && List.mem `ReductionDontExposeCase flags then
-    err_incompat "simpl never" "simpl nomatch";
   if clear_scopes_flag && extra_scopes_flag then
     err_incompat "clear scopes" "extra scopes";
   if clear_implicits_flag && default_implicits_flag then
@@ -1384,19 +1382,24 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
       (Util.List.map_i (fun i { recarg_like = b } -> i, b) 0 args)
   in
 
-  let rec narrow = function
-    | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
-    | [] -> [] | _ :: tl -> narrow tl
-  in
-  let red_flags = narrow flags in
-  let red_modifiers_specified =
-    not (List.is_empty rargs) || Option.has_some nargs_for_red
-    || not (List.is_empty red_flags)
+  let red_behavior =
+    let open Reductionops.ReductionBehaviour in
+    match never_unfold_flag, nomatch_flag, rargs, nargs_for_red with
+    | true, false, [], None -> Some NeverUnfold
+    | true, true, _, _ -> err_incompat "simpl never" "simpl nomatch"
+    | true, _, _::_, _ -> err_incompat "simpl never" "!"
+    | true, _, _, Some _ -> err_incompat "simpl never" "/"
+    | false, false, [], None  -> None
+    | false, false, _, _ -> Some (UnfoldWhen { nargs = nargs_for_red;
+                                               recargs = rargs;
+                                             })
+    | false, true, _, _ -> Some (UnfoldWhenNoMatch { nargs = nargs_for_red;
+                                                     recargs = rargs;
+                                                   })
   in
 
-  if not (List.is_empty rargs) && never_unfold_flag then
-    err_incompat "simpl never" "!";
 
+  let red_modifiers_specified = Option.has_some red_behavior in
 
   (* Actions *)
 
@@ -1423,8 +1426,8 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     match sr with
     | ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         section_local c
-         (rargs, Option.default ~-1 nargs_for_red, red_flags)
+         ~local:section_local c (Option.get red_behavior)
+
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
               strbrk "are relevant for constants only.")
@@ -1732,29 +1735,29 @@ let vernac_set_option ~local export table v = match v with
 
 let vernac_add_option key lv =
   let f = function
-    | StringRefValue s -> (get_string_table key)#add s
-    | QualidRefValue locqid -> (get_ref_table key)#add locqid
+    | StringRefValue s -> (get_string_table key).add (Global.env()) s
+    | QualidRefValue locqid -> (get_ref_table key).add (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_remove_option key lv =
   let f = function
-  | StringRefValue s -> (get_string_table key)#remove s
-  | QualidRefValue locqid -> (get_ref_table key)#remove locqid
+  | StringRefValue s -> (get_string_table key).remove (Global.env()) s
+  | QualidRefValue locqid -> (get_ref_table key).remove (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_mem_option key lv =
   let f = function
-  | StringRefValue s -> (get_string_table key)#mem s
-  | QualidRefValue locqid -> (get_ref_table key)#mem locqid
+  | StringRefValue s -> (get_string_table key).mem (Global.env()) s
+  | QualidRefValue locqid -> (get_ref_table key).mem (Global.env()) locqid
   in
   try List.iter f lv with Not_found -> error_undeclared_key key
 
 let vernac_print_option key =
-  try (get_ref_table key)#print
+  try (get_ref_table key).print ()
   with Not_found ->
-  try (get_string_table key)#print
+  try (get_string_table key).print ()
   with Not_found ->
   try print_option_value key
   with Not_found -> error_undeclared_key key
@@ -1882,6 +1885,7 @@ let vernac_print ~(pstate : Proof_global.t option) ~atts =
   | PrintSectionContext qid -> print_sec_context_typ env sigma qid
   | PrintInspect n -> inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
+  | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
   | PrintModule qid -> print_module qid
@@ -2296,7 +2300,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     unsupported_attributes atts;
     vernac_require_open_proof ~pstate (vernac_exact_proof c)
   | VernacAssumption ((discharge,kind),nl,l) ->
-    with_def_attributes ~atts vernac_assumption ~pstate discharge kind l nl;
+    with_def_attributes ~atts vernac_assumption discharge kind l nl;
     pstate
   | VernacInductive (cum, priv, finite, l) ->
     vernac_inductive ~atts cum priv finite l;
@@ -2379,7 +2383,7 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.t option =
     with_def_attributes ~atts vernac_declare_instance sup inst info;
     pstate
   | VernacContext sup ->
-    let () = vernac_context ~pstate ~poly:(only_polymorphism atts) sup in
+    let () = vernac_context ~poly:(only_polymorphism atts) sup in
     pstate
   | VernacExistingInstance insts ->
     with_section_locality ~atts vernac_existing_instance insts;
@@ -2599,7 +2603,7 @@ and vernac_load ?proof ~verbosely ~st fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   pstate
 
-and interp_control ?proof ~st = function
+and interp_control ?proof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->
     interp_expr ?proof ~atts ~st cmd
   | { v=VernacFail v } ->
