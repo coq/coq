@@ -49,10 +49,8 @@ val concat_private : private_constants -> private_constants -> private_constants
     [e1] must be more recent than those of [e2]. *)
 
 val mk_pure_proof : Constr.constr -> private_constants Entries.proof_output
-val inline_private_constants_in_constr :
-  Environ.env -> Constr.constr -> private_constants -> Constr.constr
-val inline_private_constants_in_definition_entry :
-  Environ.env -> private_constants Entries.definition_entry -> unit Entries.definition_entry
+val inline_private_constants :
+  Environ.env -> private_constants Entries.proof_output -> Constr.constr Univ.in_universe_context_set
 
 val push_private_constants : Environ.env -> private_constants -> Environ.env
 (** Push the constants in the environment if not already there. *)
@@ -93,8 +91,8 @@ type exported_private_constant =
   Constant.t * Entries.side_effect_role
 
 val export_private_constants : in_section:bool ->
-  private_constants Entries.definition_entry ->
-  (unit Entries.definition_entry * exported_private_constant list) safe_transformer
+  private_constants Entries.proof_output ->
+  (Constr.constr Univ.in_universe_context_set * exported_private_constant list) safe_transformer
 
 (** returns the main constant plus a list of auxiliary constants (empty
     unless one requires the side effects to be exported) *)

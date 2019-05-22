@@ -820,8 +820,8 @@ let solve_by_tac ?loc name evi t poly ctx =
       Pfedit.build_constant_by_tactic
         id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
-    let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
-    let body, () = Future.force entry.const_entry_body in
+    let body = Future.force entry.const_entry_body in
+    let body = Safe_typing.inline_private_constants env body in
     let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
     Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
     Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
@@ -844,9 +844,9 @@ let obligation_terminator ?hook name num guard auto pf =
   | Admitted _ -> apply_terminator term pf
   | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
     let env = Global.env () in
-    let entry = Safe_typing.inline_private_constants_in_definition_entry env entry in
     let ty = entry.Entries.const_entry_type in
-    let (body, cstr), () = Future.force entry.Entries.const_entry_body in
+    let body = Future.force entry.const_entry_body in
+    let (body, cstr) = Safe_typing.inline_private_constants env body in
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);

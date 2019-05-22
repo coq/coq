@@ -648,18 +648,10 @@ let inline_side_effects env body side_eff =
     let body = List.fold_right fold_arg args body in
     (body, ctx, sigs)
 
-let inline_private_constants_in_definition_entry env ce =
-  let open Entries in
-  { ce with
-  const_entry_body = Future.chain
-    ce.const_entry_body (fun ((body, ctx), side_eff) ->
-      let body, ctx',_ = inline_side_effects env body side_eff in
-      let ctx' = Univ.ContextSet.union ctx ctx' in
-      (body, ctx'), ());
-  }
-
-let inline_private_constants_in_constr env body side_eff =
-  pi1 (inline_side_effects env body side_eff)
+let inline_private_constants env ((body, ctx), side_eff) =
+  let body, ctx',_ = inline_side_effects env body side_eff in
+  let ctx' = Univ.ContextSet.union ctx ctx' in
+  (body, ctx')
 
 let is_suffix l suf = match l with
 | [] -> false
@@ -712,13 +704,7 @@ let constant_entry_of_side_effect eff =
 let export_eff eff =
   (eff.seff_constant, eff.seff_body, eff.seff_role)
 
-let export_side_effects mb env c =
-  let open Entries in
-      let body = c.const_entry_body in
-      let _, eff = Future.force body in
-      let ce = { c with
-        Entries.const_entry_body = Future.chain body
-          (fun (b_ctx, _) -> b_ctx, ()) } in
+let export_side_effects mb env (b_ctx, eff) =
       let not_exists e =
         try ignore(Environ.lookup_constant e.seff_constant env); false
         with Not_found -> true in
@@ -742,7 +728,7 @@ let export_side_effects mb env c =
       in
       let rec translate_seff sl seff acc env =
         match seff with
-        | [] -> List.rev acc, ce
+        | [] -> List.rev acc, b_ctx
         | eff :: rest ->
           if Int.equal sl 0 then
             let env, cb =

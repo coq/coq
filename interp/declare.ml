@@ -163,7 +163,8 @@ let define_constant ?role ?(export_seff=false) id cd =
         not de.const_entry_opaque ||
         is_poly de ->
       (* This globally defines the side-effects in the environment. *)
-      let de, export = Global.export_private_constants ~in_section de in
+      let body, export = Global.export_private_constants ~in_section (Future.force de.const_entry_body) in
+      let de = { de with const_entry_body = Future.from_val (body, ()) } in
       export, ConstantEntry (PureEntry, DefinitionEntry de)
     | _ -> [], ConstantEntry (EffectEntry, cd)
   in
@@ -214,11 +215,10 @@ let cache_variable ((sp,_),o) =
       let impl = if impl then Implicit else Explicit in
         impl, true, poly, ctx
     | SectionLocalDef (de) ->
-      let (de, eff) = Global.export_private_constants ~in_section:true de in
-      let () = List.iter register_side_effect eff in
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let (body, uctx), () = Future.force de.const_entry_body in
+      let ((body, uctx), eff) = Global.export_private_constants ~in_section:true (Future.force de.const_entry_body) in
+      let () = List.iter register_side_effect eff in
       let poly, univs = match de.const_entry_universes with
       | Monomorphic_entry uctx -> false, uctx
       | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
