@@ -85,6 +85,35 @@ Note that this function is executed before _Coqproject is read if it exists."
       (setq-local coq-prog-name (concat dir "bin/coqtop")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
+(defvar coqdev-ocamldebug-command "dune exec dev/dune-dbg"
+  "Command run by `coqdev-ocamldebug'")
+
+(defun coqdev-ocamldebug ()
+  "Runs a command in an ocamldebug buffer."
+  (interactive)
+  (let* ((dir (read-directory-name "Run from directory: "
+                                   (coqdev-default-directory)))
+         (name "ocamldebug-coq")
+         (buffer-name (concat "*" name "*")))
+    (pop-to-buffer buffer-name)
+    (unless (comint-check-proc buffer-name)
+      (setq default-directory dir)
+      (setq coqdev-ocamldebug-command
+            (read-from-minibuffer "Command to run: "
+                                  coqdev-ocamldebug-command))
+      (let* ((cmdlist (tuareg--split-args coqdev-ocamldebug-command))
+             (cmdlist (mapcar #'substitute-in-file-name cmdlist)))
+        (apply #'make-comint name
+               (car cmdlist)
+               nil
+               (cdr cmdlist))
+        (set-process-filter (get-buffer-process (current-buffer))
+                            #'ocamldebug-filter)
+        (set-process-sentinel (get-buffer-process (current-buffer))
+                              #'ocamldebug-sentinel)
+        (ocamldebug-mode)))
+  (ocamldebug-set-buffer)))
+
 ;; This Elisp snippet adds a regexp parser for the format of Anomaly
 ;; backtraces (coqc -bt ...), to the error parser of the Compilation
 ;; mode (C-c C-c: "Compile command: ..."). File locations in traces

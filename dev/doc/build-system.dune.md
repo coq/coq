@@ -108,14 +108,14 @@ automatically.
 You can use `ocamldebug` with Dune; after a build, do:
 
 ```
-dune exec dev/dune-dbg
+dune exec dev/dune-dbg /path/to/foo.v
 (ocd) source dune_db
 ```
 
 or
 
 ```
-dune exec dev/dune-dbg checker
+dune exec dev/dune-dbg checker Foo
 (ocd) source dune_db
 ```
 
@@ -123,6 +123,8 @@ for the checker. Unfortunately, dependency handling here is not fully
 refined, so you need to build enough of Coq once to use this target
 [it will then correctly compute the deps and rebuild if you call the
 script again] This will be fixed in the future.
+
+For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
 ## Dropping from coqtop:
 
