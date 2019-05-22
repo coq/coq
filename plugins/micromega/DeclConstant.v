@@ -62,6 +62,7 @@ Instance DZO: DeclaredConstant Z0 := {}.
 Instance DZpos: DeclaredConstant Zpos := {}.
 Instance DZneg: DeclaredConstant Zneg := {}.
 Instance DZpow_pos : DeclaredConstant Z.pow_pos := {}.
+Instance DZpow     : DeclaredConstant Z.pow     := {}.
 
 Require Import QArith.
 

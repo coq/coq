@@ -230,6 +230,13 @@ module Coq_Pos =
     | XO p -> XO (mul p y)
     | XH -> y
 
+  (** val iter : ('a1 -> 'a1) -> 'a1 -> positive -> 'a1 **)
+
+  let rec iter f x = function
+  | XI n' -> f (iter f (iter f x n') n')
+  | XO n' -> iter f (iter f x n') n'
+  | XH -> f x
+
   (** val size_nat : positive -> nat **)
 
   let rec size_nat = function
@@ -398,6 +405,18 @@ module Z =
        | Zpos y' -> Zneg (Coq_Pos.mul x' y')
        | Zneg y' -> Zpos (Coq_Pos.mul x' y'))
 
+  (** val pow_pos : z -> positive -> z **)
+
+  let pow_pos z0 =
+    Coq_Pos.iter (mul z0) (Zpos XH)
+
+  (** val pow : z -> z -> z **)
+
+  let pow x = function
+  | Z0 -> Zpos XH
+  | Zpos p -> pow_pos x p
+  | Zneg _ -> Z0
+
   (** val compare : z -> z -> comparison **)
 
   let compare x y =
@@ -459,6 +478,12 @@ module Z =
   let of_nat = function
   | O -> Z0
   | S n1 -> Zpos (Coq_Pos.of_succ_nat n1)
+
+  (** val of_N : n -> z **)
+
+  let of_N = function
+  | N0 -> Z0
+  | Npos p -> Zpos p
 
   (** val pos_div_eucl : positive -> z -> z * z **)
 
@@ -1641,6 +1666,21 @@ let rec vm_add default x v = function
    | XI p -> Branch (l, o, (vm_add default p v r))
    | XO p -> Branch ((vm_add default p v l), o, r)
    | XH -> Branch (l, v, r))
+
+(** val zeval_const : z pExpr -> z option **)
+
+let rec zeval_const = function
+| PEc c -> Some c
+| PEX _ -> None
+| PEadd (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.add x y)) (zeval_const e1) (zeval_const e2)
+| PEsub (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.sub x y)) (zeval_const e1) (zeval_const e2)
+| PEmul (e1, e2) ->
+  map_option2 (fun x y -> Some (Z.mul x y)) (zeval_const e1) (zeval_const e2)
+| PEopp e0 -> map_option (fun x -> Some (Z.opp x)) (zeval_const e0)
+| PEpow (e1, n0) ->
+  map_option (fun x -> Some (Z.pow x (Z.of_N n0))) (zeval_const e1)
 
 type zWitness = z psatz
 
