@@ -101,7 +101,8 @@ val add_setoid
   -> Id.t
   -> unit
 
-val add_morphism_infer : rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t option
+val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t
+val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
 
 val add_morphism
   : rewrite_attributes

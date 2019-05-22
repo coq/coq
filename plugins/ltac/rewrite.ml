@@ -1973,42 +1973,46 @@ let warn_add_morphism_deprecated =
   CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
       Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
-let add_morphism_infer atts m n : Proof_global.t option =
+let add_morphism_as_parameter atts m n : unit =
+  init_setoid ();
+  let instance_id = add_suffix n "_Proper" in
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  let uctx, instance = build_morphism_signature env evd m in
+  let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
+  let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
+      (Entries.ParameterEntry
+         (None,(instance,uctx),None),
+       Decl_kinds.IsAssumption Decl_kinds.Logical)
+  in
+  Classes.add_instance (Classes.mk_instance
+                  (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
+  declare_projection n instance_id (ConstRef cst)
+
+let add_morphism_interactive atts m n : Proof_global.t =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
-    if Lib.is_modtype () then
-      let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
-          (Entries.ParameterEntry
-             (None,(instance,uctx),None),
-           Decl_kinds.IsAssumption Decl_kinds.Logical)
-      in
+  let kind = Decl_kinds.Global, atts.polymorphic,
+             Decl_kinds.DefinitionBody Decl_kinds.Instance
+  in
+  let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
+  let hook _ _ _ = function
+    | Globnames.ConstRef cst ->
       Classes.add_instance (Classes.mk_instance
-                      (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
-      declare_projection n instance_id (ConstRef cst);
-      None
-    else
-      let kind = Decl_kinds.Global, atts.polymorphic,
-                 Decl_kinds.DefinitionBody Decl_kinds.Instance
-      in
-      let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-      let hook _ _ _ = function
-        | Globnames.ConstRef cst ->
-          Classes.add_instance (Classes.mk_instance
-                          (PropGlobal.proper_class env evd) Hints.empty_hint_info
-                          atts.global (ConstRef cst));
-          declare_projection n instance_id (ConstRef cst)
-        | _ -> assert false
-      in
-      let hook = Lemmas.mk_hook hook in
-      Flags.silently
-        (fun () ->
-           let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
-           Some (fst Pfedit.(by (Tacinterp.interp tac) pstate))) ()
+                      (PropGlobal.proper_class env evd) Hints.empty_hint_info
+                      atts.global (ConstRef cst));
+      declare_projection n instance_id (ConstRef cst)
+    | _ -> assert false
+  in
+  let hook = Lemmas.mk_hook hook in
+  Flags.silently
+    (fun () ->
+       let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+       fst Pfedit.(by (Tacinterp.interp tac) pstate)) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();
