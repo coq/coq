@@ -1127,6 +1127,8 @@ described first.
    with lower level is expanded first. In case of a tie, the second one
    (appearing in the cast type) is expanded.
 
+   .. prodn:: level ::= {| opaque | @num | expand }
+
    Levels can be one of the following (higher to lower):
 
     + ``opaque`` : level of opaque constants. They cannot be expanded by

@@ -2799,12 +2799,12 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
       Replaces :n:`@term` with :n:`@term’` using the first assumption whose type has
       the form :n:`@term’ = @term`
 
-   .. tacv:: replace @term {? with @term} in @goal_occurences {? by @tactic}
-             replace -> @term in @goal_occurences
-             replace <- @term in @goal_occurences
+   .. tacv:: replace @term {? with @term} in @goal_occurrences {? by @tactic}
+             replace -> @term in @goal_occurrences
+             replace <- @term in @goal_occurrences
 
       Acts as before but the replacements take place in the specified clauses
-      (:token:`goal_occurences`) (see :ref:`performingcomputations`) and not
+      (:token:`goal_occurrences`) (see :ref:`performingcomputations`) and not
       only in the conclusion of the goal. The clause argument must not contain
       any ``type of`` nor ``value of``.
 
@@ -3265,51 +3265,66 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    This tactic applies to any goal. The argument qualid must denote a
    defined transparent constant or local definition (see
-   :ref:`gallina-definitions` and :ref:`vernac-controlling-the-reduction-strategies`). The tactic
-   ``unfold`` applies the :math:`\delta` rule to each occurrence of the constant to which
-   :n:`@qualid` refers in the current goal and then replaces it with its
-   :math:`\beta`:math:`\iota`-normal form.
+   :ref:`gallina-definitions` and
+   :ref:`vernac-controlling-the-reduction-strategies`). The tactic
+   :tacn:`unfold` applies the :math:`\delta` rule to each occurrence of
+   the constant to which :n:`@qualid` refers in the current goal and
+   then replaces it with its :math:`\beta`:math:`\iota`-normal form.
 
-.. exn:: @qualid does not denote an evaluable constant.
-   :undocumented:
+   .. exn:: @qualid does not denote an evaluable constant.
 
-.. tacv:: unfold @qualid in @ident
+      This error is frequent when trying to unfold something that has
+      defined as an inductive type (or constructor) and not as a
+      definition.
 
-   Replaces :n:`@qualid` in hypothesis :n:`@ident` with its definition
-   and replaces the hypothesis with its :math:`\beta`:math:`\iota` normal form.
+      .. example::
 
-.. tacv:: unfold {+, @qualid}
+         .. coqtop:: abort all fail
 
-   Replaces *simultaneously* :n:`{+, @qualid}` with their definitions and
-   replaces the current goal with its :math:`\beta`:math:`\iota` normal form.
+            Goal 0 <= 1.
+            unfold le.
 
-.. tacv:: unfold {+, @qualid at {+, @num }}
+   .. tacv:: unfold @qualid in @goal_occurrences
 
-   The lists :n:`{+, @num}` specify the occurrences of :n:`@qualid` to be
-   unfolded. Occurrences are located from left to right.
+      Replaces :n:`@qualid` in hypothesis (or hypotheses) designated
+      by :token:`goal_occurrences` with its definition and replaces
+      the hypothesis with its :math:`\beta`:math:`\iota` normal form.
 
-   .. exn:: Bad occurrence number of @qualid.
-      :undocumented:
+   .. tacv:: unfold {+, @qualid}
 
-   .. exn:: @qualid does not occur.
-      :undocumented:
+      Replaces *simultaneously* :n:`{+, @qualid}` with their
+      definitions and replaces the current goal with its
+      :math:`\beta`:math:`\iota` normal form.
 
-.. tacv:: unfold @string
+   .. tacv:: unfold {+, @qualid at @occurrences }
 
-   If :n:`@string` denotes the discriminating symbol of a notation (e.g. "+") or
-   an expression defining a notation (e.g. `"_ + _"`), and this notation refers to an unfoldable constant, then the
-   tactic unfolds it.
+      The list :token:`occurrences` specify the occurrences of
+      :n:`@qualid` to be unfolded. Occurrences are located from left
+      to right.
 
-.. tacv:: unfold @string%@ident
+      .. exn:: Bad occurrence number of @qualid.
+         :undocumented:
 
-   This is variant of :n:`unfold @string` where :n:`@string` gets its
-   interpretation from the scope bound to the delimiting key :token:`ident`
-   instead of its default interpretation (see :ref:`Localinterpretationrulesfornotations`).
+      .. exn:: @qualid does not occur.
+         :undocumented:
 
-.. tacv:: unfold {+, @qualid_or_string at {+, @num}}
+   .. tacv:: unfold @string
 
-   This is the most general form, where :n:`qualid_or_string` is either a
-   :n:`@qualid` or a :n:`@string` referring to a notation.
+      If :n:`@string` denotes the discriminating symbol of a notation
+      (e.g. "+") or an expression defining a notation (e.g. `"_ +
+      _"`), and this notation refers to an unfoldable constant, then
+      the tactic unfolds it.
+
+   .. tacv:: unfold @string%@ident
+
+      This is variant of :n:`unfold @string` where :n:`@string` gets
+      its interpretation from the scope bound to the delimiting key
+      :token:`ident` instead of its default interpretation (see
+      :ref:`Localinterpretationrulesfornotations`).
+
+   .. tacv:: unfold {+, {| @qualid | @string{? %@ident } } {? at @occurrences } } {? in @goal_occurrences }
+
+      This is the most general form.
 
 .. tacn:: fold @term
    :name: fold
@@ -3551,9 +3566,9 @@ Automation
    This tactic unfolds constants that were declared through a :cmd:`Hint Unfold`
    in the given databases.
 
-.. tacv:: autounfold with {+ @ident} in @goal_occurences
+.. tacv:: autounfold with {+ @ident} in @goal_occurrences
 
-   Performs the unfolding in the given clause (:token:`goal_occurences`).
+   Performs the unfolding in the given clause (:token:`goal_occurrences`).
 
 .. tacv:: autounfold with *
 
