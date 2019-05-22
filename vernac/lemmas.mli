@@ -70,15 +70,10 @@ val standard_proof_terminator
   -> proof_terminator
 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
 val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
 
 val by : unit Proofview.tactic -> t -> t * bool
-
-val with_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
-
-val simple_with_proof :
-  (unit Proofview.tactic -> Proof.t -> Proof.t) -> t -> t
 
 (* Start of high-level proofs with an associated constant *)
 

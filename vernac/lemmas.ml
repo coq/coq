@@ -79,12 +79,6 @@ let get_terminator ps = ps.terminator
 
 end
 
-let with_proof f { proof; terminator } =
-  let proof, res = Proof_global.with_proof f proof in
-  { proof; terminator }, res
-
-let simple_with_proof f ps = fst @@ with_proof (fun t p -> f t p, ()) ps
-
 let by tac { proof; terminator } =
   let proof, res = Pfedit.by tac proof in
   { proof; terminator}, res
@@ -467,10 +461,10 @@ let start_lemma_with_initialization ?hook kind sigma decl recguard thms snl =
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
       let lemma = start_lemma id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
-      let lemma = simple_with_proof (fun _ p ->
+      let lemma = pf_map (Proof_global.map_proof (fun p ->
           match init_tac with
           | None -> p
-          | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p) lemma in
+          | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p)) lemma in
       lemma
 
 let start_lemma_com ~program_mode ?inference_hook ?hook kind thms =

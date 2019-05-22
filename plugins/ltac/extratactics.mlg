@@ -934,7 +934,7 @@ END
 VERNAC COMMAND EXTEND GrabEvars STATE proof
 | [ "Grab" "Existential" "Variables" ]
   => { classify_as_proofstep }
-  -> { fun ~pstate -> Proof_global.modify_proof (fun p  -> Proof.V82.grab_evars p) pstate }
+  -> { fun ~pstate -> Proof_global.map_proof (fun p -> Proof.V82.grab_evars p) pstate }
 END
 
 (* Shelves all the goals under focus. *)
@@ -966,7 +966,7 @@ END
 VERNAC COMMAND EXTEND Unshelve STATE proof
 | [ "Unshelve" ]
   => { classify_as_proofstep }
-  -> { fun ~pstate -> Proof_global.modify_proof (fun p  -> Proof.unshelve p) pstate  }
+  -> { fun ~pstate -> Proof_global.map_proof (fun p  -> Proof.unshelve p) pstate  }
 END
 
 (* Gives up on the goals under focus: the goals are considered solved,

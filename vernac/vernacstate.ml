@@ -121,12 +121,12 @@ module Proof_global = struct
   let give_me_the_proof () = cc get_proof
   let get_current_proof_name () = cc get_proof_name
 
-  let simple_with_current_proof f = dd (Proof_global.simple_with_proof f)
+  let map_proof f = dd (map_proof f)
   let with_current_proof f =
     match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some stack ->
-      let pf, res = Stack.with_top_pstate stack ~f:(with_proof f) in
+      let pf, res = Stack.with_top_pstate stack ~f:(map_fold_proof_endline f) in
       let stack = Stack.map_top_pstate stack ~f:(fun _ -> pf) in
       s_lemmas := Some stack;
       res
