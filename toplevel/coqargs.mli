@@ -22,8 +22,8 @@ type t = {
   load_rcfile : bool;
   rcfile      : string option;
 
-  ml_includes : Mltop.coq_path list;
-  vo_includes : Mltop.coq_path list;
+  ml_includes : Loadpath.coq_path list;
+  vo_includes : Loadpath.coq_path list;
   vo_requires : (string * string option * bool option) list;
 
   toplevel_name : Stm.interactive_top;
@@ -69,4 +69,4 @@ val parse_args : help:(unit -> unit) -> init:t -> string list -> t * string list
 val exitcode : t -> int
 
 val require_libs : t -> (string * string option * bool option) list
-val build_load_path : t -> Mltop.coq_path list
+val build_load_path : t -> Loadpath.coq_path list

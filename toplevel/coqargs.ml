@@ -46,8 +46,8 @@ type t = {
   load_rcfile : bool;
   rcfile      : string option;
 
-  ml_includes : Mltop.coq_path list;
-  vo_includes : Mltop.coq_path list;
+  ml_includes : Loadpath.coq_path list;
+  vo_includes : Loadpath.coq_path list;
   vo_requires : (string * string option * bool option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
@@ -147,10 +147,10 @@ let default = {
 (* Functional arguments                                                       *)
 (******************************************************************************)
 let add_ml_include opts s =
-  Mltop.{ opts with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.ml_includes }
+  Loadpath.{ opts with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.ml_includes }
 
 let add_vo_include opts unix_path coq_path implicit =
-  let open Mltop in
+  let open Loadpath in
   let coq_path = Libnames.dirpath_of_string coq_path in
   { opts with vo_includes = {
         recursive = true;
@@ -273,7 +273,7 @@ let usage help =
   end;
   let lp = Coqinit.toplevel_init_load_path () in
   (* Necessary for finding the toplevels below *)
-  List.iter Mltop.add_coq_path lp;
+  List.iter Loadpath.add_coq_path lp;
   help ()
 
 (* Main parsing routine *)

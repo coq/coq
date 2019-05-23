@@ -69,7 +69,7 @@ type stm_init_options = {
 
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
-  iload_path   : Mltop.coq_path list;
+  iload_path   : Loadpath.coq_path list;
 
   (* Require [require_libs] before the initial state is
      ready. Parameters follow [Library], that is to say,

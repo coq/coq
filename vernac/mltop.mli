@@ -32,6 +32,9 @@ val ocaml_toploop : unit -> unit
 
 (** {5 ML Dynlink} *)
 
+(** Adds a dir to the plugin search path *)
+val add_ml_dir : recursive:bool -> string -> unit
+
 (** Tests if we can load ML files *)
 val has_dynlink : bool
 
@@ -40,27 +43,6 @@ val dir_ml_load : string -> unit
 
 (** Dynamic interpretation of .ml *)
 val dir_ml_use : string -> unit
-
-(** Adds a path to the Coq and ML paths *)
-type add_ml = AddNoML | AddTopML | AddRecML
-
-type vo_path_spec = {
-  unix_path : string;           (* Filesystem path contaning vo/ml files *)
-  coq_path  : Names.DirPath.t;  (* Coq prefix for the path *)
-  implicit  : bool;             (* [implicit = true] avoids having to qualify with [coq_path] *)
-  has_ml    : add_ml;           (* If [has_ml] is true, the directory will also be search for plugins *)
-}
-
-type coq_path_spec =
-  | VoPath of vo_path_spec
-  | MlPath of string
-
-type coq_path = {
-  path_spec: coq_path_spec;
-  recursive: bool;
-}
-
-val add_coq_path : coq_path -> unit
 
 (** List of modules linked to the toplevel *)
 val add_known_module : string -> unit

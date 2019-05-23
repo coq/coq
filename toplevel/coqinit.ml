@@ -53,25 +53,25 @@ let load_rcfile ~rcfile ~state =
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml =
-  let open Mltop in
+  let open Loadpath in
   let add_ml = if with_ml then AddRecML else AddNoML in
   { recursive = true;
     path_spec = VoPath { unix_path; coq_path ; has_ml = add_ml; implicit = load_init }
   }
 
 let build_userlib_path ~unix_path =
-  let open Mltop in
+  let open Loadpath in
   { recursive = true;
     path_spec = VoPath {
         unix_path;
         coq_path = Libnames.default_root_prefix;
-        has_ml = Mltop.AddRecML;
+        has_ml = AddRecML;
         implicit = false;
       }
   }
 
 let ml_path_if c p =
-  let open Mltop in
+  let open Loadpath in
   let f x = { recursive = false; path_spec = MlPath x } in
   if c then List.map f p else []
 
@@ -85,7 +85,7 @@ let toplevel_init_load_path () =
 (* LoadPath for Coq user libraries *)
 let libs_init_load_path ~load_init =
 
-  let open Mltop in
+  let open Loadpath in
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
@@ -115,10 +115,10 @@ let libs_init_load_path ~load_init =
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
-  let open Mltop in
+  let open Loadpath in
   let lp s = { recursive = false; path_spec = MlPath s } in
   let add_subdir dl =
-    Mltop.add_coq_path (lp (List.fold_left (/) Envars.coqroot [dl]))
+    Loadpath.add_coq_path (lp (List.fold_left (/) Envars.coqroot [dl]))
   in
-    Mltop.add_coq_path (lp (Envars.coqlib ()));
+    Loadpath.add_coq_path (lp (Envars.coqlib ()));
     List.iter add_subdir Coq_config.all_src_dirs

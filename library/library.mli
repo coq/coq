@@ -22,7 +22,11 @@ open Libnames
 (** {6 ... }
     Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
-val require_library_from_dirpath : (DirPath.t * string) list -> bool option -> unit
+val require_library_from_dirpath
+  :  lib_resolver:(DirPath.t -> CUnix.physical_path)
+  -> (DirPath.t * string) list
+  -> bool option
+  -> unit
 
 (** {6 Start the compilation of a library } *)
 
@@ -45,8 +49,10 @@ val save_library_to :
   output_native_objects:bool ->
   DirPath.t -> string -> Opaqueproof.opaquetab -> unit
 
-val load_library_todo :
-  string -> seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+val load_library_todo
+  :  CUnix.physical_path
+  -> seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+
 val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 
 (** {6 Interrogate the status of libraries } *)
@@ -64,21 +70,6 @@ val library_full_filename : DirPath.t -> string
 
   (** - Overwrite the filename of all libraries (used when restoring a state) *)
 val overwrite_library_filenames : string -> unit
-
-(** {6 Locate a library in the load paths } *)
-exception LibUnmappedDir
-exception LibNotFound
-type library_location = LibLoaded | LibInPath
-
-val locate_qualified_library :
-  ?root:DirPath.t -> ?warn:bool -> qualid ->
-  library_location * DirPath.t * CUnix.physical_path
-(** Locates a library by implicit name.
-
-  @raise LibUnmappedDir if the library is not in the path
-  @raise LibNotFound if there is no corresponding file in the path
-
-*)
 
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string
