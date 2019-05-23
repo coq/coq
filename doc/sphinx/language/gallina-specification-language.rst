@@ -185,8 +185,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : `qualid`
                     : _
                     : `num`
-                    : ( `or_pattern` , … , `or_pattern` )
-   or_pattern       : `pattern` | … | `pattern`
+                    : ( `pattern` | … | `pattern` )
 
 
 Types

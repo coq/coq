@@ -1,7 +1,10 @@
 (* Check or-patterns *)
 
+(* Non-interference with Numbers divisibility. *)
+Reserved Notation "( p | q )" (at level 0).
+
 Definition g x :=
-  match x with ((((1 as x),_) | (_,x)), (_,(2 as y))|(y,_)) => (x,y) end.
+  match x with ((((1 as x),_) | (_,x)), ((_,(2 as y)) | (y,_))) => (x,y) end.
 
 Check (refl_equal _ : g ((1,2),(3,4)) = (1,3)).
 

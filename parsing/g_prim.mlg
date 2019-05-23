@@ -15,7 +15,7 @@ open Libnames
 
 open Pcoq.Prim
 
-let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
+let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"; "%"; "|"]
 let _ = List.iter CLexer.add_keyword prim_kw
 
 
@@ -31,13 +31,19 @@ let my_int_of_string loc s =
   with Failure _ ->
     CErrors.user_err ~loc (Pp.str "This number is too large.")
 
+let check_nospace loc expected =
+  let (bp, ep) = Loc.unloc loc in
+  if ep = bp + String.length expected then () else
+  Gramlib.Ploc.raise loc (Stream.Error ("'" ^ expected ^ "' expected"))
+
 }
 
 GRAMMAR EXTEND Gram
   GLOBAL:
     bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
-    ne_string string lstring pattern_ident pattern_identref by_notation smart_global;
+    ne_string string lstring pattern_ident pattern_identref by_notation
+    smart_global bar_cbrace;
   preident:
     [ [ s = IDENT -> { s } ] ]
   ;
@@ -122,5 +128,8 @@ GRAMMAR EXTEND Gram
   ;
   bigint: (* Negative numbers are dealt with elsewhere *)
     [ [ i = NUMERAL -> { check_int loc i } ] ]
+  ;
+  bar_cbrace:
+    [ [ "|"; "}" -> { check_nospace loc "|}" } ] ]
   ;
 END

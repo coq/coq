@@ -411,6 +411,8 @@ module Prim =
     let ne_string = Entry.create "Prim.ne_string"
     let ne_lstring = Entry.create "Prim.ne_lstring"
 
+    let bar_cbrace = Entry.create "'|}'"
+
   end
 
 module Constr =

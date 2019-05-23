@@ -249,7 +249,7 @@ let tag_var = tag Tag.variable
             str"@{" ++ hov 0 (prlist_with_sep pr_semicolon f (List.rev l)) ++ str"}"))
 
   let las = lapp
-  let lpator = 100
+  let lpator = 0
   let lpatrec = 0
 
   let rec pr_patt sep inh p =
@@ -283,7 +283,8 @@ let tag_var = tag Tag.variable
         pr_reference r, latom
 
       | CPatOr pl ->
-        hov 0 (prlist_with_sep pr_spcbar (pr_patt mt (lpator,L)) pl), lpator
+        let pp = pr_patt mt (lpator,Any) in
+        surround (hov 0 (prlist_with_sep pr_spcbar pp pl)), lpator
 
       | CPatNotation ((_,"( _ )"),([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom

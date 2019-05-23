@@ -546,6 +546,15 @@ let extend_constr state forpat ng =
 
 let constr_levels = GramState.field ()
 
+let is_disjunctive_pattern_rule ng =
+  String.is_sub "( _ | " (snd ng.notgram_notation) 0
+
+let warn_disj_pattern_notation =
+  let open Pp in
+  let pp ng = str "Use of " ++ Notation.pr_notation ng.notgram_notation ++
+              str " Notation is deprecated as it is inconsistent with pattern syntax." in
+  CWarnings.create ~name:"disj-pattern-notation" ~category:"notation" ~default:CWarnings.Disabled pp
+
 let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with
   | None -> String.Map.add "constr" default_constr_levels String.Map.empty
@@ -553,8 +562,13 @@ let extend_constr_notation ng state =
   in
   (* Add the notation in constr *)
   let (r, levels) = extend_constr levels ForConstr ng in
-  (* Add the notation in cases_pattern *)
-  let (r', levels) = extend_constr levels ForPattern ng in
+  (* Add the notation in cases_pattern, unless it would disrupt *)
+  (* parsing nested disjunctive patterns. *)
+  let (r', levels) =
+    if is_disjunctive_pattern_rule ng then begin
+       warn_disj_pattern_notation ng;
+       ([], levels)
+    end else extend_constr levels ForPattern ng in
   let state = GramState.set state constr_levels levels in
   (r @ r', state)
 

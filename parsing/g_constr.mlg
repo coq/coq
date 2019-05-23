@@ -31,8 +31,10 @@ let ldots_var = Id.of_string ".."
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
-    "SProp"; "Prop"; "Set"; "Type"; ".("; "_"; "..";
-    "`{"; "`("; "{|"; "|}" ]
+    "SProp"; "Prop"; "Set"; "Type";
+    ":="; "=>"; "->"; ".."; "<:"; "<<:"; ":>";
+    ".("; "()"; "`{"; "`("; "@{"; "{|";
+    "_"; "@"; "+"; "!"; "?"; ";"; ","; ":" ]
 
 let _ = List.iter CLexer.add_keyword constr_kw
 
@@ -225,11 +227,13 @@ GRAMMAR EXTEND Gram
       [ c=atomic_constr -> { c }
       | c=match_constr -> { c }
       | "("; c = operconstr LEVEL "200"; ")" ->
-        { (match c.CAst.v with
+        { (* Preserve parentheses around numerals so that constrintern does not
+             collapse -(3) into the numeral -3. *)
+          (match c.CAst.v with
             | CPrim (Numeral (SPlus,n)) ->
                 CAst.make ~loc @@ CNotation((InConstrEntrySomeLevel,"( _ )"),([c],[],[],[]))
             | _ -> c) }
-      | "{|"; c = record_declaration; "|}" -> { c }
+      | "{|"; c = record_declaration; bar_cbrace -> { c }
       | "{"; c = binder_constr ; "}" ->
           { CAst.make ~loc @@ CNotation((InConstrEntrySomeLevel,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
@@ -277,16 +281,16 @@ GRAMMAR EXTEND Gram
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           { CAst.make ~loc @@ CLetTuple (lb,po,c1,c2) }
-      | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
+      | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
 	    { CAst.make ~loc @@
             CCases (LetPatternStyle, None,    [c1, None, None],       [CAst.make ~loc ([[p]], c2)]) }
-      | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
+      | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
 	    { CAst.make ~loc @@
             CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [CAst.make ~loc ([[p]], c2)]) }
 
-      | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
+      | "let"; "'"; p = pattern LEVEL "200"; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
 	    { CAst.make ~loc @@
@@ -359,7 +363,7 @@ GRAMMAR EXTEND Gram
   case_item:
     [ [ c=operconstr LEVEL "100";
         ona = OPT ["as"; id=name -> { id } ];
-	ty = OPT ["in"; t=pattern -> { t } ] ->
+        ty = OPT ["in"; t = pattern LEVEL "200" -> { t } ] ->
 	   { (c,ona,ty) } ] ]
   ;
   case_type:
@@ -377,14 +381,14 @@ GRAMMAR EXTEND Gram
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> { br } ] ]
   ;
   mult_pattern:
-    [ [ pl = LIST1 pattern LEVEL "99" SEP "," -> { pl } ] ]
+    [ [ pl = LIST1 pattern LEVEL "200" SEP "," -> { pl } ] ]
   ;
   eqn:
     [ [ pll = LIST1 mult_pattern SEP "|";
         "=>"; rhs = lconstr -> { (CAst.make ~loc (pll,rhs)) } ] ]
   ;
   record_pattern:
-    [ [ id = global; ":="; pat = pattern -> { (id, pat) } ] ]
+    [ [ id = global; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
   ;
   record_patterns:
     [ [ p = record_pattern; ";"; ps = record_patterns -> { p :: ps }
@@ -396,7 +400,10 @@ GRAMMAR EXTEND Gram
   pattern:
     [ "200" RIGHTA [ ]
     | "100" RIGHTA
-      [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> { CAst.make ~loc @@ CPatOr (p::pl) } ]
+      [ p = pattern; ":"; ty = binder_constr ->
+        {CAst.make ~loc @@ CPatCast (p, ty) }
+      | p = pattern; ":"; ty = operconstr LEVEL "100" ->
+        {CAst.make ~loc @@ CPatCast (p, ty) } ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
@@ -409,21 +416,17 @@ GRAMMAR EXTEND Gram
       [ c = pattern; "%"; key=IDENT -> { CAst.make ~loc @@ CPatDelimiters (key,c) } ]
     | "0"
       [ r = Prim.reference                -> { CAst.make ~loc @@ CPatAtom (Some r) }
-      | "{|"; pat = record_patterns; "|}" -> { CAst.make ~loc @@ CPatRecord pat }
+      | "{|"; pat = record_patterns; bar_cbrace -> { CAst.make ~loc @@ CPatRecord pat }
       | "_" -> { CAst.make ~loc @@ CPatAtom None }
       | "("; p = pattern LEVEL "200"; ")" ->
-          { (match p.CAst.v with
+          { (* Preserve parentheses around numerals so that constrintern does not
+               collapse -(3) into the numeral -3. *)
+            (match p.CAst.v with
             | CPatPrim (Numeral (SPlus,n)) ->
                  CAst.make ~loc @@ CPatNotation((InConstrEntrySomeLevel,"( _ )"),([p],[]),[])
             | _ -> p) }
-      | "("; p = pattern LEVEL "200"; ":"; ty = lconstr; ")" ->
-          { let p =
-            match p with
-            | { CAst.v = CPatPrim (Numeral (SPlus,n)) } ->
-                 CAst.make ~loc @@ CPatNotation((InConstrEntrySomeLevel,"( _ )"),([p],[]),[])
-            | _ -> p
-          in
-	  CAst.make ~loc @@ CPatCast (p, ty) }
+      | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
+        { CAst.make ~loc @@ CPatOr (p::pl) }
       | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
