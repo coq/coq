@@ -100,6 +100,15 @@ let forward_feedback, forward_feedback_hook =
 let unreachable_state, unreachable_state_hook = Hook.make
  ~default:(fun ~doc:_ _ _ -> ()) ()
 
+let document_add, document_add_hook = Hook.make
+ ~default:(fun _ _ -> ()) ()
+
+let document_edit, document_edit_hook = Hook.make
+ ~default:(fun _ -> ()) ()
+
+let sentence_exec, sentence_exec_hook = Hook.make
+ ~default:(fun _ -> ()) ()
+
 include Hook
 
 (* enables:  Hooks.(call foo args) *)
@@ -2767,6 +2776,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   doc, VCS.cur_tip ()
 
 let observe ~doc id =
+  Hooks.(call sentence_exec id);
   let vcs = VCS.backup () in
   try
     Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
@@ -3122,6 +3132,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
   ) (0, 0) loc
 
 let add ~doc ~ontop ?newtip verb ast =
+  Hooks.(call document_add ast ontop);
   let loc = ast.CAst.loc in
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
@@ -3167,6 +3178,7 @@ let query ~doc ~at ~route s =
   s
 
 let edit_at ~doc id =
+  Hooks.(call document_edit id);
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
   let vcs = VCS.backup () in
   let on_cur_branch id =
@@ -3322,6 +3334,9 @@ let state_computed_hook = Hooks.state_computed_hook
 let state_ready_hook = Hooks.state_ready_hook
 let forward_feedback_hook = Hooks.forward_feedback_hook
 let unreachable_state_hook = Hooks.unreachable_state_hook
+let document_add_hook = Hooks.document_add_hook
+let document_edit_hook = Hooks.document_edit_hook
+let sentence_exec_hook = Hooks.sentence_exec_hook
 let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs

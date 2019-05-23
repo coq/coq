@@ -282,6 +282,19 @@ val state_ready_hook : (doc:doc -> Stateid.t -> unit) Hook.t
 (* Messages from the workers to the master *)
 val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
 
+(*
+ * Hooks into the UI for plugins (not for general use)
+ *)
+
+(** User adds a sentence to the document (after parsing) *)
+val document_add_hook : (Vernacexpr.vernac_control -> Stateid.t -> unit) Hook.t
+
+(** User edits a sentence in the document *)
+val document_edit_hook : (Stateid.t -> unit) Hook.t
+
+(** User requests evaluation of a sentence *)
+val sentence_exec_hook : (Stateid.t -> unit) Hook.t
+
 val get_doc : Feedback.doc_id -> doc
 
 val state_of_id : doc:doc ->
