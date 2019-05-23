@@ -392,9 +392,8 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env {loc;v=na} b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
-    if t then ty, ids else
-      Implicit_quantifiers.implicit_application ids
-	Implicit_quantifiers.combine_params_freevar ty
+    if t then ty, ids
+    else Implicit_quantifiers.implicit_application ids ty
   in
   let ty' = intern_type {env with ids = ids; unb = true} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
