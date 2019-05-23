@@ -1141,10 +1141,10 @@ Binding types of arguments to an interpretation scope
 
    When an interpretation scope is naturally associated to a type (e.g.  the
    scope of operations on the natural numbers), it may be convenient to bind it
-   to this type. When a scope ``scope`` is bound to a type ``type``, any new function
-   defined later on gets its arguments of type ``type`` interpreted by default in
-   scope ``scope`` (this default behavior can however be overwritten by explicitly
-   using the command :cmd:`Arguments <Arguments (scopes)>`).
+   to this type. When a scope ``scope`` is bound to a type ``type``, any function
+   gets its arguments of type ``type`` interpreted by default in scope scope
+   (this default behavior can however be overwritten by explicitly using the
+   command :cmd:`Arguments <Arguments (scopes)>`).
 
    Whether the argument of a function has some type ``type`` is determined
    statically. For instance, if ``f`` is a polymorphic function of type
@@ -1171,6 +1171,11 @@ Binding types of arguments to an interpretation scope
    .. coqtop:: all
 
       Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
+
+   .. note:: When active, a bound scope has effect on all defined functions
+             (even if they are defined after the `Bind Scope` directive), except
+             if argument scopes were assigned explicitly using the
+             :cmd:`Arguments <Arguments (scopes)>` command.
 
    .. note:: The scopes ``type_scope`` and ``function_scope`` also have a local
              effect on interpretation. See the next section.
