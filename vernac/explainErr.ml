@@ -66,8 +66,6 @@ let process_vernac_interp_error exn = match fst exn with
       wrap_vernac_error exn (Himsg.explain_prim_token_notation_error kind ctx sigma te)
   | Typeclasses_errors.TypeClassError(env, sigma, te) ->
       wrap_vernac_error exn (Himsg.explain_typeclass_error env sigma te)
-  | Implicit_quantifiers.MismatchedContextInstance(e,c,l,x) ->
-    wrap_vernac_error exn (Himsg.explain_mismatched_contexts e c l x)
   | InductiveError e ->
       wrap_vernac_error exn (Himsg.explain_inductive_error e)
   | Modops.ModuleTypingError e ->

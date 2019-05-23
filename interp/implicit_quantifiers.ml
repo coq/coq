@@ -23,9 +23,6 @@ open Libobject
 open Nameops
 open Context.Rel.Declaration
 
-exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Constr.rel_context (* found, expected *)
-let mismatched_ctx_inst_err env c n m = raise (MismatchedContextInstance (env, c, n, m))
-
 module RelDecl = Context.Rel.Declaration
 (*i*)
 

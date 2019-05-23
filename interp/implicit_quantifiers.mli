@@ -30,7 +30,3 @@ val make_fresh : Id.Set.t -> Environ.env -> Id.t -> Id.t
 val implicits_of_glob_constr : ?with_products:bool -> Glob_term.glob_constr -> Impargs.manual_implicits
 
 val implicit_application : Id.Set.t -> constr_expr -> constr_expr * Id.Set.t
-
-(* Should be likely located elsewhere *)
-exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Constr.rel_context (* found, expected *)
-val mismatched_ctx_inst_err : Environ.env -> Typeclasses_errors.contexts -> constr_expr list -> Constr.rel_context -> 'a

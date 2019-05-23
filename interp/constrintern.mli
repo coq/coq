@@ -189,3 +189,7 @@ val for_grammar : ('a -> 'b) -> 'a -> 'b
 
 (** Placeholder for global option, should be moved to a parameter *)
 val get_asymmetric_patterns : unit -> bool
+
+val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
+(** Check that a list of record field definitions doesn't contain
+    duplicates. *)

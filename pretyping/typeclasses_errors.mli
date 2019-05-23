@@ -12,8 +12,6 @@ open Names
 open EConstr
 open Environ
 
-type contexts = Parameters | Properties
-
 type typeclass_error =
   | NotAClass of constr
   | UnboundMethod of GlobRef.t * lident (** Class name, method *)
