@@ -36,12 +36,13 @@ type 'a proof_entry = {
   proof_entry_inline_code : bool;
 }
 
-type proof_object = {
-  id : Names.Id.t;
-  entries : Evd.side_effects proof_entry list;
-  persistence : Decl_kinds.goal_kind;
-  universes: UState.t;
-}
+type proof_object =
+  { id : Names.Id.t
+  ; entries : Evd.side_effects proof_entry list
+  ; persistence : Decl_kinds.goal_kind
+  ; universes: UState.t
+  ; udecl : UState.universe_decl
+  }
 
 type opacity_flag = Opaque | Transparent
 
@@ -49,7 +50,7 @@ type t =
   { endline_tactic : Genarg.glob_generic_argument option
   ; section_vars : Constr.named_context option
   ; proof : Proof.t
-  ; universe_decl: UState.universe_decl
+  ; udecl: UState.universe_decl
   ; strength : Decl_kinds.goal_kind
   }
 
@@ -95,7 +96,7 @@ let start_proof sigma name udecl kind goals =
   { proof = Proof.start ~name ~poly:(pi2 kind) sigma goals
   ; endline_tactic = None
   ; section_vars = None
-  ; universe_decl = udecl
+  ; udecl
   ; strength = kind
   }
 
@@ -103,12 +104,12 @@ let start_dependent_proof name udecl kind goals =
   { proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals
   ; endline_tactic = None
   ; section_vars = None
-  ; universe_decl = udecl
+  ; udecl
   ; strength = kind
   }
 
 let get_used_variables pf = pf.section_vars
-let get_universe_decl pf = pf.universe_decl
+let get_universe_decl pf = pf.udecl
 
 let set_used_variables ps l =
   let open Context.Named.Declaration in
@@ -159,7 +160,7 @@ let private_poly_univs =
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) ps =
-  let { section_vars; proof; universe_decl; strength } = ps in
+  let { section_vars; proof; udecl; strength } = ps in
   let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
@@ -194,13 +195,13 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
              the body.  So we keep the two sets distinct. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx_body = UState.restrict ctx used_univs in
-          let univs = UState.check_mono_univ_decl ctx_body universe_decl in
+          let univs = UState.check_mono_univ_decl ctx_body udecl in
           (initunivs, typ), ((body, univs), eff)
         else if poly && opaque && private_poly_univs () then
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let universes = UState.restrict universes used_univs in
           let typus = UState.restrict universes used_univs_typ in
-          let udecl = UState.check_univ_decl ~poly typus universe_decl in
+          let udecl = UState.check_univ_decl ~poly typus udecl in
           let ubody = Univ.ContextSet.diff
               (UState.context_set universes)
               (UState.context_set typus)
@@ -214,7 +215,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
              TODO: check if restrict is really necessary now. *)
           let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
           let ctx = UState.restrict universes used_univs in
-          let univs = UState.check_univ_decl ~poly ctx universe_decl in
+          let univs = UState.check_univ_decl ~poly ctx udecl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
       in 
        fun t p -> Future.split2 (Future.chain p (make_body t))
@@ -236,7 +237,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
               (Vars.universes_of_constr pt)
           in
           let univs = UState.restrict univs used_univs in
-          let univs = UState.check_mono_univ_decl univs universe_decl in
+          let univs = UState.check_mono_univ_decl univs udecl in
           (pt,univs),eff)
   in
   let entry_fn p (_, t) =
@@ -253,8 +254,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       proof_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { id = name; entries = entries; persistence = strength;
-    universes }
+  { id = name; entries = entries; persistence = strength; universes; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in

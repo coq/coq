@@ -71,19 +71,15 @@ module Info = struct
     { hook : DeclareDef.Hook.t option
     ; compute_guard : lemma_possible_guards
     ; impargs : Impargs.manual_implicits
-    ; udecl : UState.universe_decl
-    (* ^ This is sadly not available on the save_proof path so we
-       duplicate it here *)
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
     ; other_thms : Recthm.t list
     }
 
-  let make ?hook ?(udecl=UState.default_univ_decl) ?(proof_ending=Proof_ending.Regular) () =
+  let make ?hook ?(proof_ending=Proof_ending.Regular) () =
     { hook
     ; compute_guard = []
     ; impargs = []
-    ; udecl
     ; proof_ending = CEphemeron.create proof_ending
     ; other_thms = []
     }
@@ -342,14 +338,19 @@ module Stack = struct
 end
 
 (* Starting a goal *)
-let start_lemma ~name ~kind ?(sign=initialize_named_context_for_proof())
-    ?(info=Info.make ()) sigma  c =
+let start_lemma ~name ~kind
+    ?(udecl=UState.default_univ_decl)
+    ?(sign=initialize_named_context_for_proof())
+    ?(info=Info.make ())
+    sigma c =
   let goals = [ Global.env_of_context sign , c ] in
-  let proof = Proof_global.start_proof sigma name info.Info.udecl kind goals in
+  let proof = Proof_global.start_proof sigma name udecl kind goals in
   { proof ; info }
 
-let start_dependent_lemma ~name ~kind ?(info=Info.make ()) telescope =
-  let proof = Proof_global.start_dependent_proof name info.Info.udecl kind telescope in
+let start_dependent_lemma ~name ~kind
+    ?(udecl=UState.default_univ_decl)
+    ?(info=Info.make ()) telescope =
+  let proof = Proof_global.start_dependent_proof name udecl kind telescope in
   { proof; info }
 
 let rec_tac_initializer finite guard thms snl =
@@ -386,13 +387,12 @@ let start_lemma_with_initialization ?hook ~kind ~udecl sigma recguard thms snl =
   | { Recthm.name; typ; impargs; _}::other_thms ->
     let info =
       Info.{ hook
-           ; udecl
            ; impargs
            ; compute_guard
            ; other_thms
            ; proof_ending = CEphemeron.create Proof_ending.Regular
            } in
-    let lemma = start_lemma ~name ~kind ~info sigma typ in
+    let lemma = start_lemma ~name ~kind ~udecl ~info sigma typ in
     pf_map (Proof_global.map_proof (fun p ->
         match init_tac with
         | None -> p
@@ -486,7 +486,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
     let open Proof_global in
     let env = Global.env () in
     match proof with
-    | Some ({ id; entries; persistence = k; universes }, { Info.hook; impargs; udecl; other_thms; _} ) ->
+    | Some ({ id; entries; persistence = k; universes; udecl }, { Info.hook; impargs; other_thms; _} ) ->
       if List.length entries <> 1 then
         user_err Pp.(str "Admitted does not support multiple statements");
       let { proof_entry_secctx; proof_entry_type } = List.hd entries in
@@ -534,9 +534,9 @@ let save_lemma_admitted ?proof ~(lemma : t) =
 
 let finish_proved env sigma opaque idopt po info =
   let open Proof_global in
-  let { Info.hook; compute_guard; udecl; impargs; other_thms } = info in
+  let { Info.hook; compute_guard; impargs; other_thms } = info in
   match po with
-  | { id; entries=[const]; persistence=locality,poly,kind; universes } ->
+  | { id; entries=[const]; persistence=locality,poly,kind; universes; udecl } ->
     let is_opaque = match opaque with
       | Transparent -> false
       | Opaque      -> true

@@ -83,8 +83,6 @@ module Info : sig
   val make
     :  ?hook: DeclareDef.Hook.t
     (** Callback to be executed at the end of the proof *)
-    -> ?udecl : UState.universe_decl
-    (** Universe declaration *)
     -> ?proof_ending : Proof_ending.t
     (** Info for special constants *)
     -> unit
@@ -96,6 +94,7 @@ end
 val start_lemma
   :  name:Id.t
   -> kind:goal_kind
+  -> ?udecl:UState.universe_decl
   -> ?sign:Environ.named_context_val
   -> ?info:Info.t
   -> Evd.evar_map
@@ -105,6 +104,7 @@ val start_lemma
 val start_dependent_lemma
   :  name:Id.t
   -> kind:goal_kind
+  -> ?udecl:UState.universe_decl
   -> ?info:Info.t
   -> Proofview.telescope
   -> t

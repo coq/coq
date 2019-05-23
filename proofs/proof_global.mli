@@ -43,12 +43,13 @@ type 'a proof_entry = {
   proof_entry_inline_code : bool;
 }
 
-type proof_object = {
-  id : Names.Id.t;
-  entries : Evd.side_effects proof_entry list;
-  persistence : Decl_kinds.goal_kind;
-  universes: UState.t;
-}
+type proof_object =
+  { id : Names.Id.t
+  ; entries : Evd.side_effects proof_entry list
+  ; persistence : Decl_kinds.goal_kind
+  ; universes: UState.t
+  ; udecl : UState.universe_decl
+  }
 
 type opacity_flag = Opaque | Transparent
 
