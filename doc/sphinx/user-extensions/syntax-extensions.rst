@@ -1173,7 +1173,7 @@ Binding types of arguments to an interpretation scope
       Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
 
    .. note:: When active, a bound scope has effect on all defined functions
-             (even if they are defined after the `Bind Scope` directive), except
+             (even if they are defined after the :cmd:`Bind Scope` directive), except
              if argument scopes were assigned explicitly using the
              :cmd:`Arguments <Arguments (scopes)>` command.
 
