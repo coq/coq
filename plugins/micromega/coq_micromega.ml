@@ -1208,8 +1208,8 @@ let dump_rexpr = lazy
     
     
 (** [make_goal_of_formula depxr vars props form] where 
-     - vars is an environment for the arithmetic variables occuring in form
-     - props is an environment for the propositions occuring in form
+     - vars is an environment for the arithmetic variables occurring in form
+     - props is an environment for the propositions occurring in form
     @return a goal where all the variables and propositions of the formula are quantified
 
 *) 
@@ -1469,7 +1469,7 @@ let pre_processZ mt f =
    x <= y or (x and y are incomparable) *)
 
 (**
-  * Instanciate the current Coq goal with a Micromega formula, a varmap, and a
+  * Instantiate the current Coq goal with a Micromega formula, a varmap, and a
   * witness.
   *)
 

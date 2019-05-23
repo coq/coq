@@ -200,7 +200,7 @@ val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 val whd_stack :
   clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 
-(** [eta_expand_ind_stack env ind c s t] computes stacks correspoding
+(** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant
     of ind, and the Constructor c of this inductive type applied to arguments
     s.

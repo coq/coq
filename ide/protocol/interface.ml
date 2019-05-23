@@ -34,7 +34,7 @@ type status = {
   status_path : string list;
   (** Module path of the current proof *)
   status_proofname : string option;
-  (** Current proof name. [None] if no focussed proof is in progress *)
+  (** Current proof name. [None] if no focused proof is in progress *)
   status_allproofs : string list;
   (** List of all pending proofs. Order is not significant *)
   status_proofnum : int;
@@ -43,7 +43,7 @@ type status = {
 
 type 'a pre_goals = {
   fg_goals : 'a list;
-  (** List of the focussed goals *)
+  (** List of the focused goals *)
   bg_goals : ('a list * 'a list) list;
   (** Zipper representing the unfocused background goals *)
   shelved_goals : 'a list;
@@ -70,7 +70,7 @@ type option_state = {
   opt_sync  : bool;
   (** Whether an option is synchronous *)
   opt_depr  : bool;
-  (** Wheter an option is deprecated *)
+  (** Whether an option is deprecated *)
   opt_name  : string;
   (** A short string that is displayed when using [Test] *)
   opt_value : option_value;

@@ -1369,7 +1369,7 @@ let do_build_inductive
 	(rebuild_return_type returned_types.(i))
     in
     (* We need to lift back our work topconstr but only with all information
-       We mimick a Set Printing All.
+       We mimic a Set Printing All.
        Then save the graphs and reset Printing options to their primitive values
     *)
     let rel_arities = Array.mapi rel_arity funsargs in
@@ -1438,7 +1438,7 @@ let do_build_inductive
       (rebuild_return_type returned_types.(i))
   in
   (* We need to lift back our work topconstr but only with all information
-     We mimick a Set Printing All.
+     We mimic a Set Printing All.
      Then save the graphs and reset Printing options to their primitive values
   *)
   let rel_arities = Array.mapi rel_arity funsargs in

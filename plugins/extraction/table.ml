@@ -101,7 +101,7 @@ let labels_of_ref r =
 
 (*S The main tables: constants, inductives, records, ... *)
 
-(* Theses tables are not registered within coq save/undo mechanism
+(* These tables are not registered within coq save/undo mechanism
    since we reset their contents at each run of Extraction *)
 
 (* We use [constant_body] (resp. [mutual_inductive_body]) as checksum
@@ -842,7 +842,7 @@ let in_customs : GlobRef.t * string list * string -> obj =
     ~subst:(Some (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str)))
 
 let in_custom_matchs : GlobRef.t * string -> obj =
-  declare_object @@ superglobal_object_nodischarge "ML extractions custom matchs"
+  declare_object @@ superglobal_object_nodischarge "ML extractions custom matches"
     ~cache:(fun (_,(r,s)) -> add_custom_match r s)
     ~subst:(Some (fun (subs,(r,s)) -> (fst (subst_global subs r), s)))
 

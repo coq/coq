@@ -107,7 +107,7 @@ let _show_inactive_notations () =
 let deactivate_notation nr =
   match nr with
   | SynDefRule kn ->
-     (* shouldn't we check wether it is well defined? *)
+     (* shouldn't we check whether it is well defined? *)
      inactive_notations_table := IRuleSet.add nr !inactive_notations_table
   | NotationRule (scopt, ntn) ->
      match availability_of_notation (scopt, ntn) (scopt, []) with

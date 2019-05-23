@@ -26,9 +26,9 @@ Extract Inductive prod => "( * )" [ "" ].
 Extract Inductive sumbool => bool [ true false ].
 Extract Inductive sumor => option [ Some None ].
 
-(** Restore lazyness of andb, orb.
+(** Restore laziness of andb, orb.
     NB: without these Extract Constant, andb/orb would be inlined
-    by extraction in order to have lazyness, producing inelegant
+    by extraction in order to have laziness, producing inelegant
     (if ... then ... else false) and (if ... then true else ...).
 *)
 

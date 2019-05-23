@@ -38,7 +38,7 @@ val datadir : unit -> string
 (** [configdir] is the path to the installed config directory. *)
 val configdir : unit -> string
 
-(** [set_coqlib] must be runned once before any access to [coqlib] *)
+(** [set_coqlib] must be run once before any access to [coqlib] *)
 val set_coqlib : fail:(string -> string) -> unit
 
 (** [set_user_coqlib path] sets the coqlib directory explicitedly. *)

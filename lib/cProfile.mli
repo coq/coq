@@ -18,7 +18,7 @@ To trace a function "f" you first need to get a key for it by using :
 
 let fkey = declare_profile "f";;
 
-(the string is used to print the profile infomation). Warning: this
+(the string is used to print the profile information). Warning: this
 function does a side effect. Choose the ident you want instead "fkey".
 
 Then if the function has ONE argument add the following just after

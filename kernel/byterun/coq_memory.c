@@ -105,7 +105,7 @@ value init_coq_vm(value unit) /* ML */
     init_coq_interpreter();
     
     /* Some predefined pointer code.
-     * It is typically contained in accumlator blocks whose tag is 0 and thus
+     * It is typically contained in accumulator blocks whose tag is 0 and thus
      * scanned by the GC, so make it look like an OCaml block. */
     value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
     Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);        \

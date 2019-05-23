@@ -64,7 +64,7 @@ val beautify : bool ref
 val beautify_file : bool ref
 
 (* Coq quiet mode. Note that normal mode is called "verbose" here,
-   whereas [quiet] supresses normal output such as goals in coqtop *)
+   whereas [quiet] suppresses normal output such as goals in coqtop *)
 val quiet : bool ref
 val silently : ('a -> 'b) -> 'a -> 'b
 val verbosely : ('a -> 'b) -> 'a -> 'b

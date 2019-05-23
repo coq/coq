@@ -38,7 +38,7 @@ open Globnames
    }
    {- [exists : full_user_name -> bool]
 
-     Is the [full_user_name] already atributed as an absolute user name
+     Is the [full_user_name] already attributed as an absolute user name
      of some object?
    }
    {- [locate : qualid -> object_reference]

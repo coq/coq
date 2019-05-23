@@ -18,7 +18,7 @@ type +'a t = 'a focus Proofview.tactic
 (** The type of focussing tactics. A focussing tactic is like a normal tactic,
     except that it is able to remember it have entered a goal. Whenever this is
     the case, each subsequent effect of the tactic is dispatched on the
-    focussed goals. This is a monad. *)
+    focused goals. This is a monad. *)
 
 (** {5 Monadic interface} *)
 
@@ -32,20 +32,20 @@ val bind : 'a t -> ('a -> 'b t) -> 'b t
 
 val lift : 'a Proofview.tactic -> 'a t
 (** Transform a tactic into a focussing tactic. The resulting tactic is not
-    focussed. *)
+    focused. *)
 
 val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 (** Given a continuation producing a tactic, evaluates the focussing tactic. If
-    the tactic has not focussed, then the continuation is evaluated once.
-    Otherwise it is called in each of the currently focussed goals. *)
+    the tactic has not focused, then the continuation is evaluated once.
+    Otherwise it is called in each of the currently focused goals. *)
 
 (** {5 Focussing} *)
 
-(** Enter a goal. The resulting tactic is focussed. *)
+(** Enter a goal. The resulting tactic is focused. *)
 
 val enter : (Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
-    focussed. *)
+    focused. *)
 
 val with_env : 'a t -> (Environ.env*'a) t
 (** [with_env t] returns, in addition to the return type of [t], an

@@ -429,11 +429,11 @@ let get_funs_constant mp =
     let l_const = get_funs_constant const f in
     (*
        We need to check that all the functions found are in the same block
-       to prevent Reset stange thing
+       to prevent Reset strange thing
     *)
     let l_bodies = List.map find_constant_body (Array.to_list (Array.map fst l_const)) in
     let l_params,l_fixes = List.split (List.map decompose_lam l_bodies) in
-    (* all the paremeter must be equal*)
+    (* all the parameters must be equal*)
     let _check_params =
       let first_params = List.hd l_params  in
       List.iter
@@ -514,7 +514,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
       )
       fas
   in
-  (* We create the first priciple by tactic *)
+  (* We create the first principle by tactic *)
   let first_type,other_princ_types =
     match l_schemes with
 	s::l_schemes -> s,l_schemes

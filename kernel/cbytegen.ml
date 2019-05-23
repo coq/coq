@@ -386,7 +386,7 @@ let rec is_tailcall = function
   | Klabel _ :: c -> is_tailcall c
   | _ -> None
 
-(* Extention of the continuation *)
+(* Extension of the continuation *)
 
 (* Add a Kpop n instruction in front of a continuation *)
 let rec add_pop n = function

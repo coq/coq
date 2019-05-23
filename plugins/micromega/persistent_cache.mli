@@ -17,7 +17,7 @@ module type PHashtable =
 
     val open_in : string -> 'a t
     (** [open_in f] rebuilds a table from the records stored in file [f].
-        As marshaling is not type-safe, it migth segault.
+        As marshaling is not type-safe, it might segfault.
     *)
 
     val find : 'a t -> key -> 'a

@@ -88,7 +88,7 @@ Ppcmd_strings will be split into multiple Ppcmd_strings if a diff starts or ends
 in the middle of the string.  Whitespace just before or just after a diff will
 not be part of the highlight.
 
-Prexisting tags in pp may contain only a single Ppcmd_string.  Those tags will be
+Preexisting tags in pp may contain only a single Ppcmd_string.  Those tags will be
 placed inside the diff tags to ensure proper nesting of tags within spans of
 "start.diff.*" ... "end.diff.*".
 

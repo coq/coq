@@ -51,7 +51,7 @@ let inl2intopt = function
 
    - Then comes either the object segment itself (for interactive
      modules), or a compact way to store derived objects (path to
-     a earlier module + subtitution).
+     a earlier module + substitution).
 *)
 
 type algebraic_objects =

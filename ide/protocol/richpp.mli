@@ -25,7 +25,7 @@ type 'annotation located = {
     of [ppcmds] as a semi-structured document
     that represents (located) annotations of this string.
     The [get_annotations] function is used to convert tags into the desired
-    annotation. [width] sets the printing witdh of the formatter. *)
+    annotation. [width] sets the printing width of the formatter. *)
 val rich_pp : int -> Pp.t -> Pp.pp_tag located Xml_datatype.gxml
 
 (** [annotations_positions ssdoc] returns a list associating each
