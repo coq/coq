@@ -650,7 +650,7 @@ Proof.
  rewrite <- Zminus_plus_distr, Zplus_comm, Zminus_plus_distr.
  apply Zmod_small.
  generalize (to_Z_bounded x); auto with zarith.
-Qed.
+Admitted.
 
 Lemma subcarry_spec x y : φ (subcarry x y) = (φ  x  - φ  y  - 1) mod wB.
 Proof. unfold subcarry; rewrite !sub_spec, Zminus_mod_idemp_l; trivial. Qed.
