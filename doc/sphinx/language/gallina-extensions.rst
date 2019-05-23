@@ -2112,24 +2112,71 @@ Implicit generalization
 
 .. index:: `{ }
 .. index:: `( )
+.. index:: `{! }
+.. index:: `(! )
 
 Implicit generalization is an automatic elaboration of a statement
 with free variables into a closed statement where these variables are
-quantified explicitly. Implicit generalization is done inside binders
-starting with a \` and terms delimited by \`{ } and \`( ), always
-introducing maximally inserted implicit arguments for the generalized
-variables. Inside implicit generalization delimiters, free variables
-in the current context are automatically quantified using a product or
-a lambda abstraction to generate a closed term. In the following
-statement for example, the variables n and m are automatically
-generalized and become explicit arguments of the lemma as we are using
-\`( ):
+quantified explicitly.
 
-.. coqtop:: all
+It is activated for a binder by prefixing a \`, and for terms by
+surrounding it with \`{ } or \`( ).
+
+Terms surrounded by \`{ } introduce their free variables as maximally
+inserted implicit arguments, and terms surrounded by \`( ) introduce
+them as explicit arguments.
+
+Generalizing binders always introduce their free variables as
+maximally inserted implicit arguments. The binder itself introduces
+its argument as usual.
+
+In the following statement, ``A`` and ``y`` are automatically
+generalized, ``A`` is implicit and ``x``, ``y`` and the anonymous
+equality argument are explicit.
+
+.. coqtop:: all reset
 
    Generalizable All Variables.
 
-   Lemma nat_comm : `(n = n + 0).
+   Definition sym `(x:A) : `(x = y -> y = x) := fun _ p => eq_sym p.
+
+   Print sym.
+
+Dually to normal binders, the name is optional but the type is required:
+
+.. coqtop:: all
+
+   Check (forall `{x = y :> A}, y = x).
+
+When generalizing a binder whose type is a typeclass, its own class
+arguments are omitted from the syntax and are generalized using
+automatic names, without instance search. Other arguments are also
+generalized unless provided. This produces a fully general statement.
+this behaviour may be disabled by prefixing the type with a ``!`` or
+by forcing the typeclass name to be an explicit application using
+``@`` (however the later ignores implicit argument information).
+
+.. coqtop:: all
+
+   Class Op (A:Type) := op : A -> A -> A.
+
+   Class Commutative (A:Type) `(Op A) := commutative : forall x y, op x y = op y x.
+   Instance nat_op : Op nat := plus.
+
+   Set Printing Implicit.
+   Check (forall `{Commutative }, True).
+   Check (forall `{Commutative nat}, True).
+   Fail Check (forall `{Commutative nat _}, True).
+   Fail Check (forall `{!Commutative nat}, True).
+   Arguments Commutative _ {_}.
+   Check (forall `{!Commutative nat}, True).
+   Check (forall `{@Commutative nat plus}, True).
+
+Multiple binders can be merged using ``,`` as a separator:
+
+.. coqtop:: all
+
+   Check (forall `{Commutative A, Hnat : !Commutative nat}, True).
 
 One can control the set of generalizable identifiers with
 the ``Generalizable`` vernacular command to avoid unexpected
@@ -2156,22 +2203,6 @@ that specify which variables should be generalizable.
 .. cmd:: Global Generalizable
 
    Allows exporting the choice of generalizable variables.
-
-One can also use implicit generalization for binders, in which case
-the generalized variables are added as binders and set maximally
-implicit.
-
-.. coqtop:: all
-
-   Definition id `(x : A) : A := x.
-
-   Print id.
-
-The generalizing binders \`{ } and \`( ) work similarly to their
-explicit counterparts, only binding the generalized variables
-implicitly, as maximally-inserted arguments. In these binders, the
-binding name for the bound object is optional, whereas the type is
-mandatory, dually to regular binders.
 
 .. _Coercions:
 
