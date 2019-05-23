@@ -40,7 +40,7 @@ fi
 # Get path prefix if --strip is used
 
 if [ "$strip" -gt 0 ] ; then
-  # Get the path/name of the first file from teh tar and extract the first $strip path components
+  # Get the path/name of the first file from the tar and extract the first $strip path components
   # This assumes that the first file in the tar file has at least $strip many path components
   prefix=$(tar -t -f "$tarfile" | head -1 | cut -d / -f -$strip)/
 else

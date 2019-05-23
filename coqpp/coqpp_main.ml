@@ -499,7 +499,7 @@ let print_rules fmt (name, rules) =
   let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) l in
   match rules with
   | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
-    (* This is a horrible hack to work aroud limitations of camlp5 regarding
+    (* This is a horrible hack to work around limitations of camlp5 regarding
        factorization of parsing rules. It allows to recognize rules of the
        form [ entry(x) ] -> [ x ] so as not to generate a proxy entry and
        reuse the same entry directly. *)

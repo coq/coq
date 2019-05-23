@@ -25,7 +25,7 @@ val kind : Evd.evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_ter
 Essentially, each time it sees an evar which happens to be defined in the
 provided evar-map, it replaces it with the corresponding body and carries on.
 
-Due to universe unification occuring at the tactic level, the same goes for
+Due to universe unification occurring at the tactic level, the same goes for
 universe instances and sorts. See the `ESort` and `EInstance` modules in
 `EConstr`.
 

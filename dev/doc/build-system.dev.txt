@@ -9,13 +9,13 @@ HISTORY:
 
 * March 2010 (Pierre Letouzey).
   Revised build system. In particular, no more stage1,2,3 :
-  - Stage3 was removed some time ago when coqdep was splitted into
+  - Stage3 was removed some time ago when coqdep was split into
     coqdep_boot and full coqdep.
   - Stage1,2 were replaced by brutal inclusion of all .d at the start
     of Makefile.build, without trying to guess what could be done at
     what time. Some initial inclusions hence _fail_, but "make" tries
     again later and succeed.
-  - Btw, .ml4 are explicitely turned into .ml files, which stay after build.
+  - Btw, .ml4 are explicitly turned into .ml files, which stay after build.
     By default, they are in binary ast format, see READABLE_ML4 option.
 
 * February 2014 (Pierre Letouzey).
@@ -87,7 +87,7 @@ Cons:
    clear-text generated .ml.
 
 
-Makefiles hierachy
+Makefiles hierarchy
 ------------------
 
 The Makefile is separated in several files :

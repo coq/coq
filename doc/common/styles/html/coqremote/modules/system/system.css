@@ -327,7 +327,7 @@ html.js fieldset.collapsed legend a {
 * html.js fieldset.collapsed table * {
   display: inline;
 }
-/* For Safari 2 to prevent collapsible fieldsets containing tables from dissapearing due to tableheader.js. */
+/* For Safari 2 to prevent collapsible fieldsets containing tables from disappearing due to tableheader.js. */
 html.js fieldset.collapsible {
   position: relative;
 }

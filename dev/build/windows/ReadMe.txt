@@ -43,7 +43,7 @@ paths like "C:\myfolder\myfile.txt" and that they don't link to a Cygwin or msys
 DLL.
 
 The missing piece is a posix shell running on plain Windows (without msys or
-Cygwin DLL) and not beeing a binary from obscure sources. I am working on it ...
+Cygwin DLL) and not being a binary from obscure sources. I am working on it ...
 
 Since compiling gcc and binutils takes a while and it is not of much use without
 a shell, the building of these components is currently disabled. OCaml is built
@@ -274,11 +274,11 @@ Default value: N
 
 ===== -cygquiet =====
 
-Control if the Cygwin setup runs quitely or interactive.
+Control if the Cygwin setup runs quietly or interactive.
 
 Possible values:
 
-Y: Install Cygwin quitely without user interaction.
+Y: Install Cygwin quietly without user interaction.
 
 N: Install Cygwin interactively (allows to select additional packages).
 
@@ -344,12 +344,12 @@ selecting more packages)
 ==================== TODO ====================
 
 - Check for spaces in destination paths
-- Check for = signs in all paths (DOS commands don't work with pathes with = in it, possibly even when quoted)
+- Check for = signs in all paths (DOS commands don't work with paths with = in it, possibly even when quoted)
 - Installer doesn't remove OCAMLLIB environment variables (it is in the script, but doesn't seem to work)
 - CoqIDE doesn't find theme files
 - Finish / test mingw_in_Cygwin mode (coqide doesn't start, coqc slow cause of scanning complete share folder)
-- Possibly create/login as specific user to bash (not sure if it makes sense - nead to create additional bash login link then)
-- maybe move share/doc/menhir somehwere else (reduces coqc startup time)
+- Possibly create/login as specific user to bash (not sure if it makes sense - need to create additional bash login link then)
+- maybe move share/doc/menhir somewhere else (reduces coqc startup time)
 - Use original installed file list for removing files in uninstaller 
 
 ==================== Issues with relocation ====================

@@ -1198,7 +1198,7 @@ The ``function_scope`` interpretation scope
 
 The scope ``function_scope`` also has a special status.
 It is temporarily activated each time the argument of a global reference is
-recognized to be a ``Funclass`` istance, i.e., of type :g:`forall x:A, B` or
+recognized to be a ``Funclass`` instance, i.e., of type :g:`forall x:A, B` or
 :g:`A -> B`.
 
 

@@ -168,7 +168,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
 
 .. cmd:: Extraction NoInline {+ @qualid }
 
-   Conversely, the constants mentionned by this command will
+   Conversely, the constants mentioned by this command will
    never be inlined during extraction.
 
 .. cmd:: Print Extraction Inline

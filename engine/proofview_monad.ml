@@ -252,7 +252,7 @@ module Giveup : Writer with type t = goal list = struct
   let put gs = Logical.put (true, gs)
 end
 
-(** Lens and utilies pertaining to the info trace *)
+(** Lens and utilities pertaining to the info trace *)
 module InfoL = struct
   let recording = Logical.(map (fun {P.trace} -> trace) current)
   let if_recording t =
