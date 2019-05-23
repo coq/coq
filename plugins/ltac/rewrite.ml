@@ -30,7 +30,6 @@ open Evd
 open Tactypes
 open Locus
 open Locusops
-open Decl_kinds
 open Elimschemes
 open Environ
 open Termops
@@ -1791,15 +1790,15 @@ let rec strategy_of_ast = function
 let mkappc s l = CAst.make @@ CAppExpl ((None,qualid_of_ident (Id.of_string s),None),l)
 
 let declare_an_instance n s args =
-  (((CAst.make @@ Name n),None), Explicit,
+  (((CAst.make @@ Name n),None),
    CAst.make @@ CAppExpl ((None, qualid_of_string s,None), args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let anew_instance ~pstate atts binders instance fields =
+let anew_instance ~pstate atts binders (name,t) fields =
   let program_mode = atts.program in
   new_instance ~pstate ~program_mode atts.polymorphic
-    binders instance (Some (true, CAst.make @@ CRecord (fields)))
+    name binders t (Some (true, CAst.make @@ CRecord (fields)))
     ~global:atts.global ~generalize:false Hints.empty_hint_info
 
 let declare_instance_refl ~pstate atts binders a aeq n lemma =
@@ -2014,16 +2013,18 @@ let add_morphism_infer ~pstate atts m n : Proof_global.t option =
 let add_morphism ~pstate atts binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
-  let instance =
-    (((CAst.make @@ Name instance_id),None), Explicit,
-    CAst.make @@ CAppExpl (
-             (None, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
-             [cHole; s; m]))
+  let instance_name = (CAst.make @@ Name instance_id),None in
+  let instance_t =
+    CAst.make @@ CAppExpl
+      ((None, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
+       [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let _, pstate = new_instance ~pstate ~program_mode:atts.program ~global:atts.global atts.polymorphic binders instance
-      None
-    ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info in
+  let _, pstate = new_instance ~pstate
+      ~program_mode:atts.program ~global:atts.global atts.polymorphic
+      instance_name binders instance_t None
+      ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
+  in
   pstate
 
 (** Bind to "rewrite" too *)

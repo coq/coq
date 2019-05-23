@@ -337,7 +337,7 @@ Section Binary.
    morphism for equivalence (see Morphisms).  It is also sufficient to
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
-  Global Instance partial_order_antisym `(PartialOrder eqA R) : ! Antisymmetric A eqA R.
+  Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
   Proof with auto.
     reduce_goal.
     apply H. firstorder.

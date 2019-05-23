@@ -303,15 +303,17 @@ type nonrec vernac_expr =
 
   (* Type classes *)
   | VernacInstance of
-      local_binder_expr list * (* super *)
-        typeclass_constraint * (* instance name, class name, params *)
-        (bool * constr_expr) option * (* props *)
-        Hints.hint_info_expr
+      name_decl * (* name *)
+      local_binder_expr list * (* binders *)
+      constr_expr * (* type *)
+      (bool * constr_expr) option * (* body (bool=true when using {}) *)
+      Hints.hint_info_expr
 
   | VernacDeclareInstance of
-      local_binder_expr list * (* super *)
-        (ident_decl * Decl_kinds.binding_kind * constr_expr) * (* instance name, class name, params *)
-        Hints.hint_info_expr
+      ident_decl * (* name *)
+      local_binder_expr list * (* binders *)
+      constr_expr * (* type *)
+      Hints.hint_info_expr
 
   | VernacContext of local_binder_expr list
 

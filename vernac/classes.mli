@@ -46,28 +46,29 @@ val declare_instance_constant :
   unit
 
 val new_instance :
-  pstate:Proof_global.t option ->
-  ?global:bool (** Not global by default. *) ->
-  program_mode:bool ->
-  Decl_kinds.polymorphic ->
-  local_binder_expr list ->
-  Vernacexpr.typeclass_constraint ->
-  (bool * constr_expr) option ->
-  ?generalize:bool ->
-  ?tac:unit Proofview.tactic  ->
-  ?hook:(GlobRef.t -> unit) ->
-  Hints.hint_info_expr ->
-  (* May open a proof *)
-  Id.t * Proof_global.t option
+  pstate:Proof_global.t option
+  -> ?global:bool (** Not global by default. *)
+  -> program_mode:bool
+  -> Decl_kinds.polymorphic
+  -> name_decl
+  -> local_binder_expr list
+  -> constr_expr
+  -> (bool * constr_expr) option
+  -> ?generalize:bool
+  -> ?tac:unit Proofview.tactic
+  -> ?hook:(GlobRef.t -> unit)
+  -> Hints.hint_info_expr
+  -> Id.t * Proof_global.t option (* May open a proof *)
 
-val declare_new_instance :
-  ?global:bool (** Not global by default. *) ->
-  program_mode:bool ->
-  Decl_kinds.polymorphic ->
-  local_binder_expr list ->
-  ident_decl * Decl_kinds.binding_kind * constr_expr ->
-  Hints.hint_info_expr ->
-  unit
+val declare_new_instance
+  : ?global:bool (** Not global by default. *)
+  -> program_mode:bool
+  -> Decl_kinds.polymorphic
+  -> ident_decl
+  -> local_binder_expr list
+  -> constr_expr
+  -> Hints.hint_info_expr
+  -> unit
 
 (** {6 Low level interface used by Add Morphism, do not use } *)
 val mk_instance : typeclass -> hint_info -> bool -> GlobRef.t -> instance

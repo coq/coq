@@ -580,7 +580,7 @@ end = struct (* {{{ *)
     (match Vernacprop.under_control x with
     | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
     | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
-    | VernacInstance (_,(({CAst.v=Name i},_),_,_),_,_) -> Id.to_string i
+    | VernacInstance (({CAst.v=Name i},_),_,_,_,_) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind

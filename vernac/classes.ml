@@ -494,21 +494,8 @@ let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode ct
     else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
   id, pstate
 
-let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
+let interp_instance_context ~program_mode env ctx ?(generalize=false) pl tclass =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
-  let tclass, ids =
-    match bk with
-    | Decl_kinds.Implicit ->
-      Implicit_quantifiers.implicit_application Id.Set.empty ~allow_partial:false
-        (fun avoid (clname, _) ->
-           match clname with
-           | Some cl ->
-             let t = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None) in
-             t, avoid
-           | None -> failwith ("new instance: under-applied typeclass"))
-        cl
-    | Explicit -> cl, Id.Set.empty
-  in
   let tclass =
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
     else tclass
@@ -535,14 +522,13 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl bk cl =
   let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
-
 let new_instance ~pstate ?(global=false) ~program_mode
-    poly ctx (instid, bk, cl) props
+    poly instid ctx cl props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context ~program_mode env ~generalize ctx pl bk cl
+    interp_instance_context ~program_mode env ~generalize ctx pl cl
   in
   let id =
     match instid with
@@ -555,10 +541,10 @@ let new_instance ~pstate ?(global=false) ~program_mode
   do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode
     cty k u ctx ctx' pri decl imps subst id props
 
-let declare_new_instance ?(global=false) ~program_mode poly ctx (instid, bk, cl) pri =
+let declare_new_instance ?(global=false) ~program_mode poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context ~program_mode env ctx pl bk cl
+    interp_instance_context ~program_mode env ctx pl cl
   in
   do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
