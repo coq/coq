@@ -75,7 +75,7 @@ Ltac case_eq x := generalize (eq_refl x); pattern x at -1; case x.
 
 (* use either discriminate or injection on a hypothesis *)
 
-Ltac destr_eq H := discriminate H || (try (injection H as H)).
+Ltac destr_eq H := discriminate H || (try (injection H as [= H])).
 
 (* Similar variants of destruct *)
 

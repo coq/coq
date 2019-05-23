@@ -43,10 +43,10 @@ Proof.
   generalize (Z.gcd_nonneg a (Zpos b)) (Z.ggcd_correct_divisors a (Zpos b)).
   rewrite <- Z.ggcd_gcd.
   destruct Z.ggcd as (g,(aa,bb)); simpl in *.
-  injection H as <- <-. intros H (_,H').
+  injection H as [= <- <-]. intros H (_,H').
   destruct g as [|g|g]; [ discriminate | | now elim H ].
   destruct bb as [|b|b]; simpl in *; try discriminate.
-  injection H' as H'. f_equal.
+  injection H' as [= H']. f_equal.
   apply Pos.mul_reg_r with b. now rewrite Pos.mul_1_l.
 Qed.
 
@@ -87,7 +87,7 @@ Arguments Q2Qc q%Q.
 Lemma Q2Qc_eq_iff (q q' : Q) : Q2Qc q = Q2Qc q' <-> q == q'.
 Proof.
  split; intro H.
- - now injection H as H%Qred_eq_iff.
+ - now injection H as [= H%Qred_eq_iff].
  - apply Qc_is_canon. simpl. now rewrite H.
 Qed.
 
@@ -269,7 +269,7 @@ Theorem Qcmult_integral : forall x y, x*y=0 -> x=0 \/ y=0.
 Proof.
   intros.
   destruct (Qmult_integral x y); try qc; auto.
-  injection H as H.
+  injection H as [= H].
   rewrite <- (Qred_correct (x*y)).
   rewrite <- (Qred_correct 0).
   rewrite H; auto with qarith.

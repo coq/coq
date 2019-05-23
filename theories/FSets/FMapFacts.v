@@ -1988,7 +1988,7 @@ Module OrdProperties (M:S).
   simpl; intros; try discriminate.
   intros.
   destruct a; destruct l; simpl in *.
-  injection H as -> ->.
+  injection H as [= -> ->].
   inversion_clear H1.
   red in H; simpl in *; intuition.
   elim H0; eauto.
@@ -2052,7 +2052,7 @@ Module OrdProperties (M:S).
   generalize (elements_3 m).
   destruct (elements m).
   try discriminate.
-  destruct p; injection H as -> ->; intros H4.
+  destruct p; injection H as [= -> ->]; intros H4.
   inversion_clear H1 as [? ? H2|? ? H2].
   red in H2; destruct H2; simpl in *; ME.order.
   inversion_clear H4. rename H1 into H3.

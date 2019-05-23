@@ -64,7 +64,7 @@ induction l1, l2.
 - discriminate.
 - discriminate.
 - intros H (HY1,H1) (HY2,H2).
-  injection H as H.
+  injection H as [= H].
   pose proof (IHl1 l2 H HY1 HY2). clear HY1 HY2 H IHl1.
   subst l1.
   f_equal.

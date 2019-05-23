@@ -53,7 +53,7 @@ destruct le_mn1; intros le_mn2; destruct le_mn2.
   now destruct (Nat.nle_succ_diag_l _ le_mn0).
 + intros def_n0; generalize le_mn1; rewrite def_n0; intros le_mn0.
   now destruct (Nat.nle_succ_diag_l _ le_mn0).
-+ intros def_n0. injection def_n0 as ->.
++ intros def_n0. injection def_n0 as [= ->].
   rewrite (UIP_nat _ _ def_n0 eq_refl); simpl.
   assert (H : le_mn1 = le_mn2).
     now apply IHn0.

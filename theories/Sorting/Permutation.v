@@ -304,7 +304,7 @@ Qed.
 Lemma Permutation_length_1_inv: forall a l, Permutation [a] l -> l = [a].
 Proof.
   intros a l H; remember [a] as m in H.
-  induction H; try (injection Heqm as -> ->);
+  induction H; try (injection Heqm as [= -> ->]);
     discriminate || auto.
   apply Permutation_nil in H as ->; trivial.
 Qed.
@@ -312,7 +312,7 @@ Qed.
 Lemma Permutation_length_1: forall a b, Permutation [a] [b] -> a = b.
 Proof.
   intros a b H.
-  apply Permutation_length_1_inv in H; injection H as ->; trivial.
+  apply Permutation_length_1_inv in H; injection H as [= ->]; trivial.
 Qed.
 
 Lemma Permutation_length_2_inv :
@@ -320,7 +320,7 @@ Lemma Permutation_length_2_inv :
 Proof.
   intros a1 a2 l H; remember [a1;a2] as m in H.
   revert a1 a2 Heqm.
-  induction H; intros; try (injection Heqm as ? ?; subst);
+  induction H; intros; try (injection Heqm as [= ? ?]; subst);
     discriminate || (try tauto).
   apply Permutation_length_1_inv in H as ->; left; auto.
   apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as [];
@@ -332,7 +332,7 @@ Lemma Permutation_length_2 :
     a1 = b1 /\ a2 = b2 \/ a1 = b2 /\ a2 = b1.
 Proof.
   intros a1 b1 a2 b2 H.
-  apply Permutation_length_2_inv in H as [H|H]; injection H as -> ->; auto.
+  apply Permutation_length_2_inv in H as [H|H]; injection H as [= -> ->]; auto.
 Qed.
 
 Lemma NoDup_Permutation l l' : NoDup l -> NoDup l' ->
