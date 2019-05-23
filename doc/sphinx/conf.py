@@ -181,7 +181,21 @@ suppress_warnings = ["misc.highlighting_failure"]
 todo_include_todos = False
 
 # Extra warnings, including undefined references
-nitpicky = False
+nitpicky = True
+
+nitpick_ignore = [ ('token', token) for token in [
+    'tactic',
+    # 142 occurrences currently sort of defined in the ltac chapter,
+    # but is it the right place?
+    'module',
+    'redexpr',
+    'modpath',
+    'dirpath',
+    'collection',
+    'term_pattern',
+    'term_pattern_string',
+    'command',
+    'symbol' ]]
 
 # -- Options for HTML output ----------------------------------------------
 
