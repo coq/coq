@@ -1141,7 +1141,7 @@ Binding types of arguments to an interpretation scope
 
    When an interpretation scope is naturally associated to a type (e.g.  the
    scope of operations on the natural numbers), it may be convenient to bind it
-   to this type. When a scope ``scope`` is bound to a type ``type``, any function
+   to this type. When a scope :token:`scope` is bound to a type :token:`type`, any function
    gets its arguments of type ``type`` interpreted by default in scope scope
    (this default behavior can however be overwritten by explicitly using the
    command :cmd:`Arguments <Arguments (scopes)>`).
