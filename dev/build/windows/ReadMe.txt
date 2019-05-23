@@ -131,7 +131,7 @@ mingwinCygwin: Install coq in the default Cygwin mingw sysroot folder.
                Todo: The coq share folder should be configured to e.g. /share/coq.
                As is, coqc scans the complete share folder, which slows it down 5x for short files.
                
-absoloute:     Install coq in the absolute path given with -destcoq.
+absolute:     Install coq in the absolute path given with -destcoq.
                The resulting Coq will not be relocatable.
                That is the root folder must not be renamed/moved.
 
@@ -299,7 +299,7 @@ The version of Coq to download and compile.
 Possible values: 8.4pl6, 8.5pl2, 8.5pl3, 8.6
                  (download from https://coq.inria.fr/distrib/V$COQ_VERSION/files/coq-<version>.tar.gz)
                  Others versions might work, but are untested.
-                 8.4 is only tested in mode=absoloute
+                 8.4 is only tested in mode=absolute
                  
                  git-v8.6, git-trunk
                  (download from https://github.com/coq/coq/archive/<version without git->.zip)

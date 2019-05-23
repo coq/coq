@@ -57,7 +57,7 @@ val translate : string -> string option
      dictionary, "<>_h" is one word and gets translated
 *)
 
-(* Warning: do not output anything on output channel inbetween a call
+(* Warning: do not output anything on output channel in between a call
    to [output_tagged_*] and [flush_sublexer]!! *)
 
 type out_function =

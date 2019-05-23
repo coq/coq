@@ -34,7 +34,7 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
     ([unify_delay]) and another that tries to solve such remaining constraints using
     heuristics ([unify]). *)
 
-(** Theses functions allow to pass arbitrary flags to the unifier and can delay constraints.
+(** These functions allow to pass arbitrary flags to the unifier and can delay constraints.
     In case the flags are not specified, they default to
     [default_flags_of TransparentState.full] currently.
 

@@ -62,7 +62,7 @@ Check fun x:{_:{x:nat*nat|fst x = 0 & True}|True}+nat => match x return option n
 
 (* -------------------------------------------------------------------- *)
 (*   Example to test patterns matching on dependent families            *)
-(* This exemple extracted from the developement done by Nacira Chabane  *)
+(* This exemple extracted from the development done by Nacira Chabane  *)
 (* (equipe Paris 6)                                                     *)
 (* -------------------------------------------------------------------- *)
 

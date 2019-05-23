@@ -160,7 +160,7 @@ Qed.
  
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (n + m)]
-Really really ineficient !!! *)
+Really really inefficient !!! *)
 Definition L_R {m} n (p : t m) : t (n + m).
 Proof.
 induction n.

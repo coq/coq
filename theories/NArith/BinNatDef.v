@@ -25,7 +25,7 @@ Module N.
 
 Definition t := N.
 
-(** ** Nicer name [N.pos] for contructor [Npos] *)
+(** ** Nicer name [N.pos] for constructor [Npos] *)
 
 Notation pos := Npos.
 

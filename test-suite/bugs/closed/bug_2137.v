@@ -3,7 +3,7 @@
 The fsetdec tactic is sensitive to which way round the arguments to <> are.
 In the small, self-contained example below, it is able to solve the goal
 if it knows that "b <> a", but not if it knows that "a <> b". I would expect
-it to be able to solve hte goal in either case.
+it to be able to solve the goal in either case.
 
 I have coq r12238.
 

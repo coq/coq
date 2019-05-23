@@ -313,7 +313,7 @@ let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar i
 (* Coq has a more general form of "equation" (any type with a single *)
 (* constructor with no arguments with_rect_r elimination lemmas).    *)
 (* However there is no clear way of determining the LHS and RHS of   *)
-(* such a generic Leibniz equation -- short of inspecting the type  *)
+(* such a generic Leibniz equation -- short of inspecting the type   *)
 (* of the elimination lemmas.                                        *)
 
 let rec strip_prod_assum c = match Constr.kind c with

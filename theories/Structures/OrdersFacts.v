@@ -431,7 +431,7 @@ Proof.
 apply eq_true_iff_eq. now rewrite negb_true_iff, ltb_lt, leb_gt.
 Qed.
 
-(** Relation bewteen [compare] and the boolean comparisons *)
+(** Relation between [compare] and the boolean comparisons *)
 
 Lemma eqb_compare x y :
  (x =? y) = match compare x y with Eq => true | _ => false end.

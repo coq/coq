@@ -207,7 +207,7 @@ and string = parse
   | eof  { 0 }
 
 (*s The following entry [read_header] is used to skip the possible header at
-    the beggining of files (unless option \texttt{-e} is specified).
+    the beginning of files (unless option \texttt{-e} is specified).
     It stops whenever it encounters an empty line or any character outside
     a comment. In this last case, it correctly resets the lexer position
     on that character (decreasing [lex_curr_pos] by 1). *)

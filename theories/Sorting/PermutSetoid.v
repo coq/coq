@@ -543,7 +543,7 @@ Qed.
 End Permut_permut.
 
 (* begin hide *)
-(** For compatibilty *)
+(** For compatibility *)
 Notation permut_right := permut_cons (only parsing).
 Notation permut_tran := permut_trans (only parsing).
 (* end hide *)

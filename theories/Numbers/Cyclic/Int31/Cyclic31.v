@@ -1288,7 +1288,7 @@ Section Int31_Specs.
  intros; rewrite <- spec_1; apply spec_add.
  Qed.
 
- (** Substraction *)
+ (** Subtraction *)
 
  Lemma spec_sub_c : forall x y, [-|sub31c x y|] = [|x|] - [|y|].
  Proof.

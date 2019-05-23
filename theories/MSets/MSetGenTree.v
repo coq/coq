@@ -166,7 +166,7 @@ end.
 *)
 
 (** Enumeration of the elements of a tree. This corresponds
-    to the "samefringe" notion in the litterature. *)
+    to the "samefringe" notion in the literature. *)
 
 #[universes(template)]
 Inductive enumeration :=

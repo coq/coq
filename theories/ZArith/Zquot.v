@@ -105,7 +105,7 @@ Proof.
     rewrite Z.rem_sign_nz; trivial. apply Z.square_nonneg.
 Qed.
 
-(** This can also be said in a simplier way: *)
+(** This can also be said in a simpler way: *)
 
 Theorem Zrem_sgn2 a b : 0 <= (Z.rem a b) * a.
 Proof.

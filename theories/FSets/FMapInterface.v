@@ -192,7 +192,7 @@ Module Type WSfun (E : DecidableType).
     (** Equality of maps *)
 
     (** Caveat: there are at least three distinct equality predicates on maps.
-      - The simpliest (and maybe most natural) way is to consider keys up to
+      - The simplest (and maybe most natural) way is to consider keys up to
         their equivalence [E.eq], but elements up to Leibniz equality, in
         the spirit of [eq_key_elt] above. This leads to predicate [Equal].
       - Unfortunately, this [Equal] predicate can't be used to describe

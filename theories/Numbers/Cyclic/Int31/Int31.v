@@ -255,7 +255,7 @@ Definition add31carryc (n m : int31) :=
   | _ => C1 npmpone
   end.
 
-(** * Substraction *)
+(** * Subtraction *)
 
 (** Subtraction modulo [2^31] *)
 

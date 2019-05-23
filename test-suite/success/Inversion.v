@@ -179,7 +179,7 @@ exact Logic.I.
 Qed.
 
 (* Up to September 2014, H0 below was renamed called H1 because of a collision
-   with the automaticallly generated names for equations.
+   with the automatically generated names for equations.
    (example taken from CoLoR) *)
 
 Inductive term := Var | Fun : term -> term -> term.

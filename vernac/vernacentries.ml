@@ -626,7 +626,7 @@ let vernac_end_proof ?pstate ?proof = function
 
 let vernac_exact_proof ~pstate c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
-     called only at the begining of a proof. *)
+     called only at the beginning of a proof. *)
   let pstate, status = Pfedit.by (Tactics.exact_proof c) pstate in
   let pstate = save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom;

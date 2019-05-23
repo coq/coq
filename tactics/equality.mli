@@ -132,7 +132,7 @@ val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 
 (* Replace term *)
 (* [replace_term dir_opt c cl]
-   perfoms replacement of [c] by the first value found in context
+   performs replacement of [c] by the first value found in context
    (according to [dir] if given to get the rewrite direction)  in the clause [cl]
 *)
 val replace_term : bool option -> constr -> clause -> unit Proofview.tactic

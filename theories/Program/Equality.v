@@ -31,7 +31,7 @@ Definition block {A : Type} (a : A) := a.
 Ltac block_goal := match goal with [ |- ?T ] => change (block T) end.
 Ltac unblock_goal := unfold block in *.
 
-(** Notation for heterogenous equality. *)
+(** Notation for heterogeneous equality. *)
 
 Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 
@@ -88,7 +88,7 @@ Ltac elim_eq_rect :=
       end
   end.
 
-(** Rewrite using uniqueness of indentity proofs [H = eq_refl]. *)
+(** Rewrite using uniqueness of identity proofs [H = eq_refl]. *)
 
 Ltac simpl_uip :=
   match goal with
@@ -450,7 +450,7 @@ Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l)
   do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => destruct hyp using c) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
-   writting another wrapper calling do_depelim. We suppose the hyp has to be generalized before
+   writing another wrapper calling do_depelim. We suppose the hyp has to be generalized before
    calling [induction]. *)
 
 Tactic Notation "dependent" "induction" ident(H) :=

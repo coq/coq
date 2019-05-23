@@ -209,7 +209,7 @@ Notation "'exists_mixed' x .. y , P" := (ex (fun x => forall z:nat, .. (ex (fun 
 Check exists_mixed x y '(u,t), x+y=0/\u+t=0.
 Check exists_mixed x y '(z,t), x+y=0/\z+t=0.
 
-(* Check that intermediary let-in are inserted inbetween instances of
+(* Check that intermediary let-in are inserted in between instances of
    the repeated pattern *)
 Notation "'exists_true' x .. y , P" := (exists x, True /\ .. (exists y, True /\ P) ..) (at level 200, x binder).
 Check exists_true '(x,y) (u:=0) '(z,t), x+y=0/\z+t=0.

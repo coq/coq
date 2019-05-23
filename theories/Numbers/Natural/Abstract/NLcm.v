@@ -90,7 +90,7 @@ Qed.
             = (a / gcd a b) * b
             = (a*b) / gcd a b
 
-   Nota: [lcm 0 0] should be 0, which isn't garantee with the third
+   Nota: [lcm 0 0] should be 0, which isn't guarantee with the third
    equation above.
 *)
 

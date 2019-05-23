@@ -149,7 +149,7 @@ Proof.
 intros n m H; apply add_le_cases; now nzsimpl.
 Qed.
 
-(** Substraction *)
+(** Subtraction *)
 
 (** We can prove the existence of a subtraction of any number by
     a smaller one *)
