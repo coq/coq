@@ -175,12 +175,12 @@ list of assertion commands is given in :ref:`Assertions`. The command
 
       Use all section variables except the list of :token:`ident`.
 
-   .. cmdv:: Proof using @collection1 + @collection2
+   .. cmdv:: Proof using @collection__1 + @collection__2
 
       Use section variables from the union of both collections.
       See :ref:`nameaset` to know how to form a named collection.
 
-   .. cmdv:: Proof using @collection1 - @collection2
+   .. cmdv:: Proof using @collection__1 - @collection__2
 
       Use section variables which are in the first collection but not in the
       second one.
@@ -202,10 +202,10 @@ Proof using options
 The following options modify the behavior of ``Proof using``.
 
 
-.. opt:: Default Proof Using "@expression"
+.. opt:: Default Proof Using "@collection"
    :name: Default Proof Using
 
-   Use :n:`@expression` as the default ``Proof using`` value. E.g. ``Set Default
+   Use :n:`@collection` as the default ``Proof using`` value. E.g. ``Set Default
    Proof Using "a b"`` will complete all ``Proof`` commands not followed by a
    ``using`` part with ``using a b``.
 
@@ -220,7 +220,7 @@ The following options modify the behavior of ``Proof using``.
 Name a set of section hypotheses for ``Proof using``
 ````````````````````````````````````````````````````
 
-.. cmd:: Collection @ident := @expression
+.. cmd:: Collection @ident := @collection
 
    This can be used to name a set of section
    hypotheses, with the purpose of making ``Proof using`` annotations more

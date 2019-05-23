@@ -179,7 +179,7 @@ constructions from ML.
                     : let `ltac2_var` := `ltac2_term` in `ltac2_term`
                     : let rec `ltac2_var` := `ltac2_term` in `ltac2_term`
                     : match `ltac2_term` with `ltac2_branch` ... `ltac2_branch` end
-                    : `int`
+                    : `integer`
                     : `string`
                     : `ltac2_term` ; `ltac2_term`
                     : [| `ltac2_term` ; ... ; `ltac2_term` |]
@@ -619,7 +619,7 @@ calls to term matching functions from the `Pattern` module. Internally, it is
 implemented thanks to a specific scope accepting the :n:`@constrmatching` syntax.
 
 Variables from the :n:`@constrpattern` are statically bound in the body of the branch, to
-values of type `constr` for the variables from the :n:`@constr` pattern and to a
+values of type `constr` for the variables from the :n:`@term` pattern and to a
 value of type `Pattern.context` for the variable :n:`@lident`.
 
 Note that unlike Ltac, only lowercase identifiers are valid as Ltac2
@@ -686,20 +686,22 @@ The following scopes are built-in.
 
 - :n:`list0(@ltac2_scope)`:
 
-  + if :n:`@ltac2_scope` parses :production:`entry`, parses :n:`(@entry__0, ..., @entry__n)` and produces
-    :n:`[@entry__0; ...; @entry__n]`.
+  + if :n:`@ltac2_scope` parses :n:`@quotentry`,
+    then it parses :n:`(@quotentry__0, ..., @quotentry__n)` and produces
+    :n:`[@quotentry__0; ...; @quotentry__n]`.
 
 - :n:`list0(@ltac2_scope, sep = @string__sep)`:
 
-  + if :n:`@ltac2_scope` parses :n:`@entry`, parses :n:`(@entry__0 @string__sep ... @string__sep @entry__n)`
-    and produces :n:`[@entry__0; ...; @entry__n]`.
+  + if :n:`@ltac2_scope` parses :n:`@quotentry`,
+    then it parses :n:`(@quotentry__0 @string__sep ... @string__sep @quotentry__n)`
+    and produce :n:`[@quotentry__0; ...; @quotentry__n]`.
 
-- :n:`list1`: same as :n:`list0` (with or without separator) but parses :n:`{+ @entry}` instead
-  of :n:`{* @entry}`.
+- :n:`list1`: same as :n:`list0` (with or without separator) but parses :n:`{+ @quotentry}` instead
+  of :n:`{* @quotentry}`.
 
 - :n:`opt(@ltac2_scope)`
 
-  + if :n:`@ltac2_scope` parses :n:`@entry`, parses :n:`{? @entry}` and produces either :n:`None` or
+  + if :n:`@ltac2_scope` parses :n:`@quotentry`, parses :n:`{? @quotentry}` and produces either :n:`None` or
     :n:`Some x` where :n:`x` is the parsed expression.
 
 - :n:`self`:

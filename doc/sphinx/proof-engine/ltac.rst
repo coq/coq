@@ -32,22 +32,25 @@ The syntax of the tactic language is given below. See Chapter
 :ref:`gallinaspecificationlanguage` for a description of the BNF metasyntax used
 in these grammar rules. Various already defined entries will be used in this
 chapter: entries :token:`natural`, :token:`integer`, :token:`ident`,
-:token:`qualid`, :token:`term`, :token:`cpattern` and :token:`atomic_tactic`
+:token:`qualid`, :token:`term`, :token:`cpattern` and :token:`tactic`
 represent respectively the natural and integer numbers, the authorized
 identificators and qualified names, Coq terms and patterns and all the atomic
-tactics described in Chapter :ref:`tactics`. The syntax of :token:`cpattern` is
+tactics described in Chapter :ref:`tactics`.
+
+The syntax of :production:`cpattern` is
 the same as that of terms, but it is extended with pattern matching
 metavariables. In :token:`cpattern`, a pattern matching metavariable is
-represented with the syntax :g:`?id` where :g:`id` is an :token:`ident`. The
+represented with the syntax :n:`?@ident`. The
 notation :g:`_` can also be used to denote metavariable whose instance is
-irrelevant. In the notation :g:`?id`, the identifier allows us to keep
+irrelevant. In the notation :n:`?@ident`, the identifier allows us to keep
 instantiations and to make constraints whereas :g:`_` shows that we are not
 interested in what will be matched. On the right hand side of pattern matching
 clauses, the named metavariables are used without the question mark prefix. There
 is also a special notation for second-order pattern matching problems: in an
-applicative pattern of the form :g:`@?id id1 … idn`, the variable id matches any
-complex expression with (possible) dependencies in the variables :g:`id1 … idn`
-and returns a functional term of the form :g:`fun id1 … idn => term`.
+applicative pattern of the form :n:`%@?@ident @ident__1 … @ident__n`,
+the variable :token:`ident` matches any complex expression with (possible)
+dependencies in the variables :n:`@ident__i` and returns a functional term
+of the form :n:`fun @ident__1 … ident__n => @term`.
 
 The main entry of the grammar is :n:`@expr`. This language is used in proof
 mode but it can also be used in toplevel definitions as shown below.
@@ -133,7 +136,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : guard `test`
                      : assert_fails `tacexpr3`
                      : assert_succeeds `tacexpr3`
-                     : `atomic_tactic`
+                     : `tactic`
                      : `qualid` `tacarg` ... `tacarg`
                      : `atom`
    atom              : `qualid`
