@@ -284,9 +284,9 @@ let noccur_evar env evd evk c =
   in
   try occur_rec false (0,env) c; true with Occur -> false
 
-(***************************************)
+(****************************************)
 (* Managing chains of local definitions *)
-(***************************************)
+(****************************************)
 
 type alias =
 | RelAlias of int
