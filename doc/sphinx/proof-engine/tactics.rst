@@ -3284,6 +3284,17 @@ the conversion in hypotheses :n:`{+ @ident}`.
             Goal 0 <= 1.
             unfold le.
 
+      This error can also be raised if you are trying to unfold
+      something that has been marked as opaque.
+
+      .. example::
+
+         .. coqtop:: abort all fail
+
+            Opaque Nat.add.
+            Goal 1 + 0 = 1.
+            unfold Nat.add.
+
    .. tacv:: unfold @qualid in @goal_occurrences
 
       Replaces :n:`@qualid` in hypothesis (or hypotheses) designated
@@ -3292,9 +3303,9 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    .. tacv:: unfold {+, @qualid}
 
-      Replaces *simultaneously* :n:`{+, @qualid}` with their
-      definitions and replaces the current goal with its
-      :math:`\beta`:math:`\iota` normal form.
+      Replaces :n:`{+, @qualid}` with their definitions and replaces
+      the current goal with its :math:`\beta`:math:`\iota` normal
+      form.
 
    .. tacv:: unfold {+, @qualid at @occurrences }
 
@@ -3312,8 +3323,8 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
       If :n:`@string` denotes the discriminating symbol of a notation
       (e.g. "+") or an expression defining a notation (e.g. `"_ +
-      _"`), and this notation refers to an unfoldable constant, then
-      the tactic unfolds it.
+      _"`), and this notation denotes an application whose head symbol
+      is an unfoldable constant, then the tactic unfolds it.
 
    .. tacv:: unfold @string%@ident
 

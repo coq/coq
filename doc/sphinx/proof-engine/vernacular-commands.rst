@@ -1175,7 +1175,7 @@ described first.
    particular declaring the same name in several modules or in several
    functor applications will be rejected if these declarations are not
    local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
-   nothing prevents the user to also perform a
+   nothing prevents the user from also performing a
    :n:`Ltac @ident := @redexpr`.
 
    .. seealso:: :ref:`performingcomputations`
