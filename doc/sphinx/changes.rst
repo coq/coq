@@ -656,8 +656,8 @@ changes:
     attribute.
 
   - Removed deprecated commands ``Arguments Scope`` and ``Implicit
-    Arguments`` in favor of :cmd:`Arguments`, with the help of Jasper
-    Hugunin.
+    Arguments`` in favor of :cmd:`Arguments (scopes)` and
+    :cmd:`Arguments (implicits)`, with the help of Jasper Hugunin.
 
   - New flag :flag:`Uniform Inductive Parameters` by Jasper Hugunin to
     avoid repeating uniform parameters in constructor declarations.

@@ -264,11 +264,11 @@ Requests to the environment
       main symbol as in `"+"` or by its notation’s string as in `"_ + _"` or
       `"_ 'U' _"`, see Section :ref:`notations`), the command works like ``Search`` :n:`@qualid`.
 
-   .. cmdv:: Search @string%@key
+   .. cmdv:: Search @string%@ident
 
       The string string must be a notation or the main
       symbol of a notation which is then interpreted in the scope bound to
-      the delimiting key :n:`@key` (see Section :ref:`LocalInterpretationRulesForNotations`).
+      the delimiting key :token:`ident` (see Section :ref:`LocalInterpretationRulesForNotations`).
 
    .. cmdv:: Search @term_pattern
 
@@ -1208,7 +1208,7 @@ Controlling the locality of commands
      effect of the command to the current module if the command does not occur in a
      section and the Global modifier extends the effect outside the current
      sections and current module if the command occurs in a section. As an example,
-     the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+     the :cmd:`Arguments <Arguments (implicits)>`, :cmd:`Ltac` or :cmd:`Notation` commands belong
      to this category. Notice that a subclass of these commands do not support
      extension of their scope outside sections at all and the Global modifier is not
      applicable to them.
