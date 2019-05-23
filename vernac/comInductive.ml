@@ -559,8 +559,8 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   mind
 
 type one_inductive_impls =
-  Impargs.manual_explicitation list (* for inds *)*
-  Impargs.manual_explicitation list list (* for constrs *)
+  Impargs.manual_implicits (* for inds *) *
+  Impargs.manual_implicits list (* for constrs *)
 
 type uniform_inductive_flag =
   | UniformParameters

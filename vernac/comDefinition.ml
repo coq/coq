@@ -27,18 +27,19 @@ let warn_implicits_in_term =
   CWarnings.create ~name:"implicits-in-term" ~category:"implicits"
          (fun () ->
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
-            strbrk "The term declares more implicits than the type here.")
+            strbrk "Discarding incompatible declaration in term.")
 
 let check_imps ~impsty ~impsbody =
-  let b =
-    try
-      List.for_all (fun (key, (va:bool*bool*bool)) ->
+  let impsty = List.map (fun x -> x.CAst.v) impsty in
+  List.iter (fun {CAst.v = (key, (va:bool*bool*bool)); CAst.loc} ->
+      let b =
+        try
           (* Pervasives.(=) is OK for this type *)
-          Pervasives.(=) (List.assoc_f Constrexpr_ops.explicitation_eq key impsty) va)
-        impsbody
-    with Not_found -> false
-  in
-  if not b then warn_implicits_in_term ()
+          Pervasives.(=) (List.assoc_f Constrexpr_ops.explicitation_eq key impsty) va
+        with Not_found -> false
+      in
+      if not b then warn_implicits_in_term ?loc ())
+    impsbody
 
 let interp_definition ~program_mode pl bl poly red_option c ctypopt =
   let env = Global.env() in

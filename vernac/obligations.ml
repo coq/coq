@@ -307,7 +307,7 @@ type program_info_aux = {
   prg_obligations: obligations;
   prg_deps : Id.t list;
   prg_fixkind : fixpoint_kind option ;
-  prg_implicits : (Constrexpr.explicitation * (bool * bool * bool)) list;
+  prg_implicits : Impargs.manual_implicits;
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;

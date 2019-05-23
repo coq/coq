@@ -481,7 +481,7 @@ let implicits_of_context ctx =
       match name with
       | Name n -> Some n
       | Anonymous -> None
-    in ExplByPos (i, explname), (true, true, true))
+    in CAst.make (ExplByPos (i, explname), (true, true, true)))
     1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class def cum ubinders univs id idbuild paramimpls params arity

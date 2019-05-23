@@ -257,19 +257,19 @@ let warn_ignoring_implicit_status =
        Name.print na ++ strbrk " and following binders")
 
 let implicits_of_glob_constr ?(with_products=true) l =
-  let add_impl i na bk l = match bk with
+  let add_impl ?loc i na bk l = match bk with
   | Implicit ->
     let name =
       match na with
       | Name id -> Some id
       | Anonymous -> None
     in
-    (ExplByPos (i, name), (true, true, true)) :: l
+    CAst.make ?loc (ExplByPos (i, name), (true, true, true)) :: l
   | _ -> l
   in
   let rec aux i c =
-    let abs na bk b =
-      add_impl i na bk (aux (succ i) b)
+    let abs ?loc na bk b =
+      add_impl ?loc i na bk (aux (succ i) b)
     in
     match DAst.get c with
     | GProd (na, bk, t, b) ->
@@ -279,10 +279,10 @@ let implicits_of_glob_constr ?(with_products=true) l =
           | Implicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
           | _ -> ()
         in []
-    | GLambda (na, bk, t, b) -> abs na bk b
+    | GLambda (na, bk, t, b) -> abs ?loc:t.CAst.loc na bk b
     | GLetIn (na, b, t, c) -> aux i c
     | GRec (fix_kind, nas, args, tys, bds) ->
       let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
-      List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
+      List.fold_left_i (fun i l (na,bk,t,_) -> add_impl ?loc:c.CAst.loc i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
     | _ -> []
   in aux 1 l

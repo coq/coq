@@ -2437,7 +2437,7 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
               let impls =
 		if k == Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
-		    (ExplByPos (n, na), (true, true, true)) :: impls
+                    CAst.make (ExplByPos (n, na), (true, true, true)) :: impls
 		else impls
 	      in
                 (push_rel d env, sigma, d::params, succ n, impls)

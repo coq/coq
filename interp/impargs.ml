@@ -369,6 +369,7 @@ let check_correct_manual_implicits autoimps l =
 
 (* Take a list l of explicitations, and map them to positions. *)
 let flatten_explicitations l autoimps =
+  let l = List.map (fun c -> c.CAst.v) l in
   let rec aux k l = function
     | (Name id,_)::imps ->
        let value, l' =
@@ -644,7 +645,7 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
 
-type manual_implicits = manual_explicitation list
+type manual_implicits = manual_explicitation CAst.t list
 
 let compute_implicits_with_manual env sigma typ enriching l =
   let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
@@ -669,8 +670,8 @@ let projection_implicits env p impls =
   CList.skipn_at_least npars impls
 
 let declare_manual_implicits local ref ?enriching l =
-  assert (List.for_all (fun (_, (max, fi, fu)) -> fi && fu) l);
-  assert (List.for_all (fun (ex, _) -> match ex with ExplByPos (_,_) -> true | _ -> false) l);
+  assert (List.for_all (fun {CAst.v=(_, (max, fi, fu))} -> fi && fu) l);
+  assert (List.for_all (fun {CAst.v=(ex, _)} -> match ex with ExplByPos (_,_) -> true | _ -> false) l);
   let flags = !implicit_args in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -751,10 +752,10 @@ let extract_impargs_data impls =
   aux 0 impls
 
 let lift_implicits n =
-  List.map (fun x ->
+  List.map (CAst.map (fun x ->
     match fst x with
 	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
-      | _ -> x)
+      | _ -> x))
 
 let make_implicits_list l = [DefaultImpArgs, l]
 

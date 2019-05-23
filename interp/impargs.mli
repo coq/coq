@@ -90,7 +90,7 @@ val positions_of_implicits : implicits_list -> int list
 type manual_explicitation = Constrexpr.explicitation *
     (maximal_insertion * force_inference * bool)
 
-type manual_implicits = manual_explicitation list
+type manual_implicits = manual_explicitation CAst.t list
 
 val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
   manual_implicits -> implicit_status list
