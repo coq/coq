@@ -36,7 +36,7 @@ Proof.
   solve [ unshelve (subst; eapply interpf_SmartVarVar; eassumption) ] || fail
 "too early".
   Undo.
-  (** Implicitely at the dot. The first fails because unshelve adds a goal, and solve hence fails. The second has an ambiant unification problem that is solved after solve *)
+  (** Implicitly at the dot. The first fails because unshelve adds a goal, and solve hence fails. The second has an ambiant unification problem that is solved after solve *)
   Fail solve [ unshelve (eapply interpf_SmartVarVar; subst; eassumption) ].
   solve [eapply interpf_SmartVarVar; subst; eassumption].
   Undo.

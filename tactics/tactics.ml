@@ -3019,14 +3019,14 @@ let specialize (c,lbind) ipat =
       (* We grab names used in product to remember them at re-abstracting phase *)
       let typ_of_c_hd = pf_get_type_of gl c_hd in
       let lprod, concl = decompose_prod_assum sigma typ_of_c_hd in
-      (* accumulator args: arguments to apply to c_hd: all infered
+      (* accumulator args: arguments to apply to c_hd: all inferred
          args + re-abstracted rels *)
       let rec rebuild_lambdas sigma lprd args hd l =
         match lprd , l with
         | _, [] -> sigma,applist (hd, (List.map (nf_evar sigma) args))
         | Context.Rel.Declaration.LocalAssum(nme,_)::lp' , t::l' when occur_meta sigma t ->
           (* nme has not been resolved, let us re-abstract it. Same
-             name but type updated by instanciation of other args. *)
+             name but type updated by instantiation of other args. *)
           let sigma,new_typ_of_t = Typing.type_of clause.env sigma t in
           let r = Retyping.relevance_of_type env sigma new_typ_of_t in
           let liftedargs = List.map liftrel args in
@@ -4292,7 +4292,7 @@ let induction_tac with_evars params indvars elim =
   let elimc = contract_letin_in_lam_header sigma elimc in
   let elimc = mkCast (elimc, DEFAULTcast, elimt) in
   let elimclause = Tacmach.New.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
-  (* elimclause' is built from elimclause by instanciating all args and params. *)
+  (* elimclause' is built from elimclause by instantiating all args and params. *)
   let elimclause' = recolle_clenv i params indvars elimclause gl in
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver ~flags:(elim_flags ()) elimclause' gl in

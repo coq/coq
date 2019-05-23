@@ -28,7 +28,7 @@ Module Z.
 
 Definition t := Z.
 
-(** ** Nicer names [Z.pos] and [Z.neg] for contructors *)
+(** ** Nicer names [Z.pos] and [Z.neg] for constructors *)
 
 Notation pos := Zpos.
 Notation neg := Zneg.

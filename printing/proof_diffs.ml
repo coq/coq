@@ -408,7 +408,7 @@ the call to db_goal_map and entering the following:
 let match_goals ot nt =
   let nevar_to_oevar = ref StringMap.empty in
   (* ogname is "" when there is no difference on the current path.
-     It's set to the old goal's evar name once a rewitten goal is found,
+     It's set to the old goal's evar name once a rewritten goal is found,
      at which point the code only searches for the replacing goals
      (and ot is set to nt). *)
   let iter2 f l1 l2 =

@@ -50,7 +50,7 @@ type stm_doc_type =
   | VioDoc      of string       (* file path *)
   | Interactive of interactive_top    (* module path *)
 
-(** Coq initalization options:
+(** Coq initialization options:
 
  - [doc_type]: Type of document being created.
 
@@ -63,7 +63,7 @@ type stm_doc_type =
 *)
 type stm_init_options = {
   (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should dissappear at some
+     specified [doc_type]. This distinction should disappear at some
      some point. *)
   doc_type     : stm_doc_type;
 
@@ -86,7 +86,7 @@ type stm_init_options = {
 (** The type of a STM document *)
 type doc
 
-(** [init_core] performs some low-level initalization; should go away
+(** [init_core] performs some low-level initialization; should go away
    in future releases. *)
 val init_core : unit -> unit
 

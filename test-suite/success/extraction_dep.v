@@ -34,7 +34,7 @@ Definition testAbis := Abis.u + Abis.y.
 Recursive Extraction testAbis. (* without: A B v w x *)
 Extraction TestCompile testAbis.
 
-(** 2) With signature, we only keep elements mentionned in signature. *)
+(** 2) With signature, we only keep elements mentioned in signature. *)
 
 Module Type SIG.
  Parameter u : nat.

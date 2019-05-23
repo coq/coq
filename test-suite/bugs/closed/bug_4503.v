@@ -29,7 +29,7 @@ End ILogic.
 
 Set Printing Universes.
 
-(* There is stil a problem if the class is universe polymorphic *)
+(* There is still a problem if the class is universe polymorphic *)
 Section Embed_ILogic_Pre.
   Polymorphic Universes A T.
   Fail Context {A : Type@{A}} {ILA: ILogic.ILogic@{A} A}.

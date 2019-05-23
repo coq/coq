@@ -208,7 +208,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
   unfold eqb; intros; destruct (eq_dec x y); elim_comp; auto.
   Qed.
 
-(* Specialization of resuts about lists modulo. *)
+(* Specialization of results about lists modulo. *)
 
 Section ForNotations.
 

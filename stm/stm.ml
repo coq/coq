@@ -2661,10 +2661,10 @@ end (* }}} *)
 (********************************* STM API ************************************)
 (******************************************************************************)
 
-(* Main initalization routine *)
+(* Main initialization routine *)
 type stm_init_options = {
   (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should dissappear at some
+     specified [doc_type]. This distinction should disappear at some
      some point. *)
   doc_type     : stm_doc_type;
 
@@ -3117,7 +3117,7 @@ let ind_len_loc_of_id sid =
 
 let compute_indentation ?loc sid = Option.cata (fun loc ->
   let open Loc              in
-  (* The effective lenght is the lenght on the last line *)
+  (* The effective length is the length on the last line *)
   let len = loc.ep - loc.bp in
   let prev_indent = match ind_len_loc_of_id sid with
     | None         -> 0

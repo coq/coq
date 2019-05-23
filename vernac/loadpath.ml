@@ -206,7 +206,7 @@ let try_locate_absolute_library dir =
 type add_ml = AddNoML | AddTopML | AddRecML
 
 type vo_path_spec = {
-  unix_path : string;  (* Filesystem path contaning vo/ml files *)
+  unix_path : string;  (* Filesystem path containing vo/ml files *)
   coq_path  : DP.t;    (* Coq prefix for the path *)
   implicit  : bool;    (* [implicit = true] avoids having to qualify with [coq_path] *)
   has_ml    : add_ml;  (* If [has_ml] is true, the directory will also be search for plugins *)

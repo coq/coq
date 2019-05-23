@@ -68,7 +68,7 @@ type add_ml = AddNoML | AddTopML | AddRecML
 
 type vo_path_spec = {
   unix_path : string;
-  (** Filesystem path contaning vo/ml files *)
+  (** Filesystem path containing vo/ml files *)
   coq_path  : Names.DirPath.t;
   (** Coq prefix for the path *)
   implicit  : bool;

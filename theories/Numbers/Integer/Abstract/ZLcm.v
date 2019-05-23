@@ -207,7 +207,7 @@ Qed.
 
    We had an abs in order to have an always-nonnegative lcm,
    in the spirit of gcd. Nota: [lcm 0 0] should be 0, which
-   isn't garantee with the third equation above.
+   isn't guarantee with the third equation above.
 *)
 
 Definition lcm a b := abs (a*(b/gcd a b)).

@@ -37,7 +37,7 @@ let vernac_echo ?loc in_chan = let open Loc in
       Feedback.msg_notice @@ str @@ really_input_string in_chan len
     ) loc
 
-(* Reenable when we get back to feedback printing *)
+(* Re-enable when we get back to feedback printing *)
 (* let is_end_of_input any = match any with *)
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)

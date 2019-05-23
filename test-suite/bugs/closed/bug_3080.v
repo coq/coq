@@ -15,4 +15,4 @@ Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity) : function_scope.
 
 Fail Check (fun x => x) ∘ (fun x => x). (* this [Check] should fail, as [function_scope] is not opened *)
-Check compose ((fun x => x) ∘ (fun x => x)) (fun x => x). (* this check should succeed, as [function_scope] should be automatically bound in the arugments to [compose] *)
+Check compose ((fun x => x) ∘ (fun x => x)) (fun x => x). (* this check should succeed, as [function_scope] should be automatically bound in the arguments to [compose] *)

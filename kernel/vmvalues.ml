@@ -11,10 +11,10 @@ open Names
 open Univ
 open Constr
 
-(*******************************************)
+(********************************************)
 (* Initialization of the abstract machine ***)
-(* Necessary for [relaccu_tbl]             *)
-(*******************************************)
+(* Necessary for [relaccu_tbl]              *)
+(********************************************)
 
 external init_vm : unit -> unit = "init_coq_vm"
 

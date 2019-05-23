@@ -17,7 +17,7 @@ let set_debug () =
   let () = Backtrace.record_backtrace true in
   Flags.debug := true
 
-(* Loading of the ressource file.
+(* Loading of the resource file.
    rcfile is either $XDG_CONFIG_HOME/.coqrc.VERSION, or $XDG_CONFIG_HOME/.coqrc if the first one
   does not exist. *)
 

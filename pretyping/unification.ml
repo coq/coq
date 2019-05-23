@@ -1219,12 +1219,12 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * bindings.  This may or may not close off all RHSs of
  * the EVARs.  For each EVAR whose RHS is closed off,
  * we can just apply it, and go on.  For each which
- * is not closed off, we need to do a mimick step -
+ * is not closed off, we need to do a mimic step -
  * in general, we have something like:
  *
  *      ?X == (c e1 e2 ... ei[Meta(k)] ... en)
  *
- * so we need to do a mimick step, converting ?X
+ * so we need to do a mimic step, converting ?X
  * into
  *
  *      ?X -> (c ?z1 ... ?zn)
@@ -1247,7 +1247,7 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
  * we can reverse the equation, put it into our metavar
  * substitution, and keep going.
  *
- * The most efficient mimick possible is, for each
+ * The most efficient mimic possible is, for each
  * Meta-var remaining in the term, to declare a
  * new EVAR of the same type.  This is supposedly
  * determinable from the clausale form context -

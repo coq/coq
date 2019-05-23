@@ -20,7 +20,7 @@ Definition test (B : Boite) :=
   | boite false (n, m) => n + m
   end.
 
-(* Check lazyness of compilation ... future work
+(* Check laziness of compilation ... future work
 Inductive I : Set := c : (b:bool)(if b then bool else nat)->I.
 
 Check [x]

@@ -1259,7 +1259,7 @@ Proof.
  f_equal. now rewrite <- add_assoc, add_opp_diag_r, add_0_r.
 Qed.
 
-(** * [testbit] in terms of comparision. *)
+(** * [testbit] in terms of comparison. *)
 
 Lemma testbit_mod_pow2 a n i (H : 0 <= n)
   : testbit (a mod 2 ^ n) i = ((i <? n) && testbit a i)%bool.

@@ -99,7 +99,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   (* This is important: The [Global] and [Proof Theorem] parts of the
      goal_kind are not relevant here as build_constant_by_tactic does
      use the noop terminator; but beware if some day we remove the
-     redundancy on constrant declaration. This opens up an interesting
+     redundancy on constraint declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
   let goal_kind, suffix = if opaque
@@ -164,7 +164,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let inst = match const.Entries.const_entry_universes with
   | Entries.Monomorphic_entry _ -> EInstance.empty
   | Entries.Polymorphic_entry (_, ctx) ->
-    (* We mimick what the kernel does, that is ensuring that no additional
+    (* We mimic what the kernel does, that is ensuring that no additional
        constraints appear in the body of polymorphic constants. Ideally this
        should be enforced statically. *)
     let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in

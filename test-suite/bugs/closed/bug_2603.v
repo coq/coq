@@ -3,7 +3,7 @@
 As noticed by A. Appel in bug #2603, module names and definition
 names used to be in the same namespace. But conflict with names
 of constructors (or 2nd mutual inductive...) used to not be checked
-enough, leading to stange situations.
+enough, leading to strange situations.
 
 - In 8.3pl3 we introduced checks that forbid uniformly the following
   situations.

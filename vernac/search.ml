@@ -28,7 +28,7 @@ type display_function = GlobRef.t -> env -> constr -> unit
 [SearchAbout ...], etc. to the names of the symbols matching the
 query, separated by a newline. This type of output is useful for
 editors (like emacs), to generate a list of completion candidates
-without having to parse thorugh the types of all symbols. *)
+without having to parse through the types of all symbols. *)
 
 type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern

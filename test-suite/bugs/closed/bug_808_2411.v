@@ -2,7 +2,7 @@ Section test.
 Variable n:nat.
 Lemma foo: 0 <= n.
 Proof.
-(* declaring an Axiom during a proof makes it immediatly
+(* declaring an Axiom during a proof makes it immediately
    usable, juste as a full Definition. *)
 Axiom bar : n = 1.
 rewrite bar.

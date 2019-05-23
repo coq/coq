@@ -77,7 +77,7 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 Require Import Coq.Arith.Arith.
 
-(** The equiv is burried inside the setoid, but we can recover
+(** The equiv is buried inside the setoid, but we can recover
   it by specifying which setoid we're talking about. *)
 
 Program Instance eq_setoid A : Setoid A | 10 :=
