@@ -1796,11 +1796,11 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance atts binders (name,t) fields =
   let program_mode = atts.program in
-  let _id, proof = Classes.new_instance ~program_mode atts.polymorphic
-      name binders t (Some (true, CAst.make @@ CRecord (fields)))
+  let _id = Classes.new_instance ~program_mode atts.polymorphic
+      name binders t (true, CAst.make @@ CRecord (fields))
       ~global:atts.global ~generalize:false Hints.empty_hint_info
   in
-  assert (Option.is_empty proof) (* refine:false with term *)
+  ()
 
 let declare_instance_refl atts binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
@@ -2024,12 +2024,12 @@ let add_morphism atts binders m s n =
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let _, pstate = Classes.new_instance
+  let _id, pstate = Classes.new_instance_interactive
       ~program_mode:atts.program ~global:atts.global atts.polymorphic
-      instance_name binders instance_t None
+      instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in
-  Option.get pstate (* no instance body -> always open proof *)
+  pstate (* no instance body -> always open proof *)
 
 (** Bind to "rewrite" too *)
 

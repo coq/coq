@@ -581,47 +581,48 @@ let vernac_definition_hook p = function
   Some (Class.add_subclass_hook p)
 | _ -> None
 
-let vernac_definition ~atts discharge kind ({loc;v=id}, pl) def ~pstate =
+let vernac_definition_name lid local ~pstate =
+  let lid =
+    match lid with
+    | { v = Name.Anonymous; loc } -> CAst.make ?loc (fresh_name_for_anonymous_theorem ~pstate)
+    | { v = Name.Name n; loc } -> CAst.make ?loc n in
+  let () =
+    match local with
+    | Discharge -> Dumpglob.dump_definition lid true "var"
+    | Local | Global -> Dumpglob.dump_definition lid false "def"
+  in
+  lid
+
+let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t ~pstate =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
-  let () =
-    match id with
-    | Anonymous -> ()
-    | Name n -> let lid = CAst.make ?loc n in
-      match local with
-      | Discharge -> Dumpglob.dump_definition lid true "var"
-      | Local | Global -> Dumpglob.dump_definition lid false "def"
-  in
   let program_mode = atts.program in
-  let name =
-    match id with
-    | Anonymous -> fresh_name_for_anonymous_theorem ~pstate
-    | Name n -> n
-  in
-  (match def with
-    | ProveBody (bl,t) ->   (* local binders, typ *)
-      Some (start_proof_and_print ~program_mode (local, atts.polymorphic, DefinitionBody kind)
-              ?hook [(CAst.make ?loc name, pl), (bl, t)])
-    | DefineBody (bl,red_option,c,typ_opt) ->
-      let pstate = Option.map Proof_global.get_current_pstate pstate in
-      let red_option = match red_option with
-        | None -> None
-        | Some r ->
-          let sigma, env = get_current_or_global_context ~pstate in
-          Some (snd (Hook.get f_interp_redexp env sigma r)) in
-      ComDefinition.do_definition ~program_mode name
-        (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook;
-      None
-  )
+  let name = vernac_definition_name lid local ~pstate in
+  start_proof_and_print ~program_mode (local, atts.polymorphic, DefinitionBody kind) ?hook [(name, pl), (bl, t)]
+
+let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt ~pstate =
+  let open DefAttributes in
+  let local = enforce_locality_exp atts.locality discharge in
+  let hook = vernac_definition_hook atts.polymorphic kind in
+  let program_mode = atts.program in
+  let name = vernac_definition_name lid local ~pstate in
+  let pstate = Option.map Proof_global.get_current_pstate pstate in
+  let red_option = match red_option with
+    | None -> None
+    | Some r ->
+      let sigma, env = get_current_or_global_context ~pstate in
+      Some (snd (Hook.get f_interp_redexp env sigma r)) in
+  ComDefinition.do_definition ~program_mode name.v
+    (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook
 
 (* NB: pstate argument to use combinators easily *)
-let vernac_start_proof ~atts kind l ~pstate =
+let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  Some (start_proof_and_print ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l)
+  start_proof_and_print ~program_mode:atts.program (local, atts.polymorphic, Proof kind) l
 
 let vernac_end_proof ?pstate:ontop ?proof = function
   | Admitted ->
@@ -814,30 +815,46 @@ let vernac_inductive ~atts cum lo finite indl =
       in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
     *)
 
-let vernac_fixpoint ~atts discharge l ~pstate =
-  let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
+let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  (* XXX: Switch to the attribute system and match on ~atts *)
-  let do_fixpoint = if atts.program then
-      fun local sign l -> ComProgramFixpoint.do_fixpoint local sign l; None
-    else
-      ComFixpoint.do_fixpoint
-  in
-  do_fixpoint local atts.polymorphic l
+  enforce_locality_exp atts.DefAttributes.locality discharge
 
-let vernac_cofixpoint ~atts discharge l ~pstate =
+let vernac_fixpoint_interactive ~atts discharge l =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
+  let local = vernac_fixpoint_common ~atts discharge l in
+  if atts.program then
+    CErrors.user_err Pp.(str"Program Fixpoint requires a body");
+  ComFixpoint.do_fixpoint_interactive local atts.polymorphic l
+
+let vernac_fixpoint ~atts discharge l =
+  let open DefAttributes in
+  let local = vernac_fixpoint_common ~atts discharge l in
+  if atts.program then
+    (* XXX: Switch to the attribute system and match on ~atts *)
+    ComProgramFixpoint.do_fixpoint local atts.polymorphic l
+  else
+    ComFixpoint.do_fixpoint local atts.polymorphic l
+
+let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
     List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  let do_cofixpoint = if atts.program then
-      fun local sign l -> ComProgramFixpoint.do_cofixpoint local sign l; None
-    else
-      ComFixpoint.do_cofixpoint
-  in
-  do_cofixpoint local atts.polymorphic l
+  enforce_locality_exp atts.DefAttributes.locality discharge
+
+let vernac_cofixpoint_interactive ~atts discharge l =
+  let open DefAttributes in
+  let local = vernac_cofixpoint_common ~atts discharge l in
+  if atts.program then
+    CErrors.user_err Pp.(str"Program CoFixpoint requires a body");
+  ComFixpoint.do_cofixpoint_interactive local atts.polymorphic l
+
+let vernac_cofixpoint ~atts discharge l =
+  let open DefAttributes in
+  let local = vernac_cofixpoint_common ~atts discharge l in
+  if atts.program then
+    ComProgramFixpoint.do_cofixpoint local atts.polymorphic l
+  else
+    ComFixpoint.do_cofixpoint local atts.polymorphic l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1068,12 +1085,35 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance ~atts name bl t props pri =
+let vernac_instance_common ~atts name =
   let open DefAttributes in
   let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_constraint (fst name) false "inst";
   let program_mode = atts.program in
-  Classes.new_instance ~program_mode ~global atts.polymorphic name bl t props pri
+  program_mode, global
+
+let vernac_instance_interactive ~atts name bl t pri =
+  let open DefAttributes in
+  let program_mode, global = vernac_instance_common ~atts name in
+  let _id, pstate =
+    Classes.new_instance_interactive
+      ~program_mode ~global atts.polymorphic name bl t pri in
+  pstate
+
+let vernac_instance_program ~atts name bl t opt_props pri =
+  let open DefAttributes in
+  let program_mode, global = vernac_instance_common ~atts name in
+  let _id = Classes.new_instance_program
+    ~program_mode ~global atts.polymorphic name bl t opt_props pri in
+  ()
+
+let vernac_instance ~atts name bl t props pri =
+  let open DefAttributes in
+  let program_mode, global = vernac_instance_common ~atts name in
+  let _id =
+    Classes.new_instance
+      ~program_mode ~global atts.polymorphic name bl t props pri in
+  ()
 
 let vernac_declare_instance ~atts id bl inst pri =
   let open DefAttributes in
@@ -2237,9 +2277,15 @@ let with_def_attributes ~atts f =
   if atts.DefAttributes.program then Obligations.check_program_libraries ();
   f ~atts
 
-let with_maybe_open_proof ~pstate f =
-  let opt = f ~pstate in
-  Proof_global.maybe_push ~ontop:pstate opt
+let with_read_proof ~pstate f =
+  f ~pstate;
+  pstate
+
+let with_open_proof ~pstate f =
+  Some (Proof_global.push ~ontop:pstate (f ~pstate))
+
+let with_open_proof_simple ~pstate f =
+  Some (Proof_global.push ~ontop:pstate f)
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -2376,10 +2422,12 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
     pstate
 
   (* Gallina *)
-  | VernacDefinition ((discharge,kind),lid,d) ->
-    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_definition discharge kind lid d)
+  | VernacDefinition (dk,lid,ProveBody(bl,t)) ->
+    with_open_proof ~pstate (with_def_attributes ~atts vernac_definition_interactive dk lid bl t)
+  | VernacDefinition (dk,lid,DefineBody(bl,red_option,c,typ_opt)) ->
+    with_read_proof ~pstate (with_def_attributes ~atts vernac_definition dk lid bl red_option c typ_opt)
   | VernacStartTheoremProof (k,l) ->
-    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_start_proof k l)
+    with_open_proof_simple ~pstate (with_def_attributes ~atts vernac_start_proof k l)
   | VernacEndProof e ->
     unsupported_attributes atts;
     vernac_end_proof ?proof ?pstate e
@@ -2393,9 +2441,17 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
     vernac_inductive ~atts cum priv finite l;
     pstate
   | VernacFixpoint (discharge, l) ->
-    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_fixpoint discharge l)
+    let opens = List.exists (fun ((_,_,_,_,p),_) -> Option.is_empty p) l in
+    if opens then
+      with_open_proof_simple ~pstate (with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
+    else
+      (with_def_attributes ~atts vernac_fixpoint discharge l; pstate)
   | VernacCoFixpoint (discharge, l) ->
-    with_maybe_open_proof ~pstate (with_def_attributes ~atts vernac_cofixpoint discharge l)
+    let opens = List.exists (fun ((_,_,_,p),_) -> Option.is_empty p) l in
+    if opens then
+      with_open_proof_simple ~pstate (with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
+    else
+      (with_def_attributes ~atts vernac_cofixpoint discharge l; pstate)
   | VernacScheme l ->
     unsupported_attributes atts;
     vernac_scheme l;
@@ -2465,8 +2521,20 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
 
   (* Type classes *)
   | VernacInstance (name, bl, t, props, info) ->
-    with_maybe_open_proof ~pstate (fun ~pstate:_ ->
-        snd @@ with_def_attributes ~atts (vernac_instance name bl t props info))
+    if (DefAttributes.parse atts).DefAttributes.program then begin
+      with_def_attributes ~atts
+        (vernac_instance_program name bl t props info);
+      pstate
+    end else begin
+      match props with
+      | None ->
+        with_open_proof_simple ~pstate
+          (with_def_attributes ~atts
+            (vernac_instance_interactive name bl t info))
+      | Some props ->
+         with_def_attributes ~atts (vernac_instance name bl t props info);
+         pstate
+      end
   | VernacDeclareInstance (id, bl, inst, info) ->
     with_def_attributes ~atts vernac_declare_instance id bl inst info;
     pstate

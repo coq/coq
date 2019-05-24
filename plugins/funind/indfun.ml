@@ -434,7 +434,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
        in
        None, evd,List.rev rev_pconstants
     | _ ->
-      let pstate = ComFixpoint.do_fixpoint Global false fixpoint_exprl in
+       ComFixpoint.do_fixpoint Global false fixpoint_exprl;
        let evd,rev_pconstants =
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
@@ -448,7 +448,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	   (Evd.from_env (Global.env ()),[])
 	   fixpoint_exprl
        in
-       pstate,evd,List.rev rev_pconstants
+       None,evd,List.rev rev_pconstants
 
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref

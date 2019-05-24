@@ -18,13 +18,21 @@ open Vernacexpr
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
+val do_fixpoint_interactive :
+  (* When [false], assume guarded. *)
+  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> Proof_global.t
+
 val do_fixpoint :
   (* When [false], assume guarded. *)
-  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> Proof_global.t option
+  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
+
+val do_cofixpoint_interactive :
+  (* When [false], assume guarded. *)
+  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> Proof_global.t
 
 val do_cofixpoint :
   (* When [false], assume guarded. *)
-  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> Proof_global.t option
+  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
 (** Internal API  *)
@@ -84,15 +92,13 @@ val declare_fixpoint :
   locality -> polymorphic ->
   recursive_preentry * UState.universe_decl * UState.t *
   (Constr.rel_context * Impargs.manual_implicits * int option) list ->
-  Proof_global.lemma_possible_guards -> decl_notation list ->
-  Proof_global.t option
+  Proof_global.lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
   locality -> polymorphic ->
   recursive_preentry * UState.universe_decl * UState.t *
   (Constr.rel_context * Impargs.manual_implicits * int option) list ->
-  decl_notation list ->
-  Proof_global.t option
+  decl_notation list -> unit
 
 (** Very private function, do not use *)
 val compute_possible_guardness_evidences :
