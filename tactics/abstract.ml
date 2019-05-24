@@ -99,7 +99,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   (* This is important: The [Global] and [Proof Theorem] parts of the
      goal_kind are not relevant here as build_constant_by_tactic does
      use the noop terminator; but beware if some day we remove the
-     redundancy on constraint declaration. This opens up an interesting
+     redundancy on constant declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
   let goal_kind, suffix = if opaque

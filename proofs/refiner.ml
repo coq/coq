@@ -289,7 +289,7 @@ let tclIFTHENTRYELSEMUST tac1 tac2 gl =
 (* Fails if a tactic did not solve the goal *)
 let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
 
-(* Try the first that's solves the current goal *)
+(* Try the first that solves the current goal *)
 let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 
 
