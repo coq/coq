@@ -16,13 +16,13 @@ Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A,
 Admitted.
 
 Inductive Empty : Set := .
-Instance contr_from_Empty {_ : Funext} (A : Type) :
+Fail Instance contr_from_Empty {_ : Funext} (A : Type) :
   Contr_internal (Empty -> A) :=
   BuildContr _
              (Empty_rect (fun _ => A))
              (fun f => path_forall _ f (fun x => Empty_rect _ x)).
 
-Instance contr_from_Empty' {F : Funext} (A : Type) :
+Fail Instance contr_from_Empty' {F : Funext} (A : Type) :
   Contr_internal (Empty -> A) :=
   BuildContr _
              (Empty_rect (fun _ => A))
