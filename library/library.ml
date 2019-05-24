@@ -208,7 +208,7 @@ let register_open_library export m =
 let open_library export explicit_libs m =
   if
     (* Only libraries indirectly to open are not reopen *)
-    (* Libraries explicitly mentionned by the user are always reopen *)
+    (* Libraries explicitly mentioned by the user are always reopen *)
     List.exists (fun m' -> DirPath.equal m m') explicit_libs
     || not (library_is_opened m)
   then begin
@@ -347,7 +347,7 @@ let try_locate_absolute_library dir =
 (** {6 Tables of opaque proof terms} *)
 
 (** We now store opaque proof terms apart from the rest of the environment.
-    See the [Indirect] contructor in [Lazyconstr.lazy_constr]. This way,
+    See the [Indirect] constructor in [Lazyconstr.lazy_constr]. This way,
     we can quickly load a first half of a .vo file without these opaque
     terms, and access them only when a specific command (e.g. Print or
     Print Assumptions) needs it. *)

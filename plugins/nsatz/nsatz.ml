@@ -267,7 +267,7 @@ module PIdeal = Ideal.Make(Poly)
 open PIdeal
 
 (* term to sparse polynomial 
-   varaibles <=np are in the coefficients
+   variables <=np are in the coefficients
 *)
 
 let term_pol_sparse nvars np t=

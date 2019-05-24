@@ -128,7 +128,7 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** To focus on the algorithmic portion of pattern-matching, the
       bookkeeping is relegated to a monad: the composition of the
-      bactracking monad of {!IStream.t} with a "writer" effect. *)
+      backtracking monad of {!IStream.t} with a "writer" effect. *)
   (* spiwack: as we don't benefit from the various stream optimisations
      of Haskell, it may be costly to give the monad in direct style such as
      here. We may want to use some continuation passing style. *)

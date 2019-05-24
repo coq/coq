@@ -990,7 +990,7 @@ Proof.
   rewrite IHs. reflexivity.
 Qed.
 
-(** equality migth be (too) strong *)
+(** equality might be (too) strong *)
 Lemma eval_formulaSC : forall env f, eval_sformula env f = eval_formula env (map_Formula f).
 Proof.
   destruct f.

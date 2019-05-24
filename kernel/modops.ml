@@ -515,7 +515,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
      "Module M:=P." or "Module M. Include P. End M."
     We need to perform two operations to compute the body of M.
     - The first one is applying the substitution {P <- M} on the type of P
-    - The second one is strenghtening. *)
+    - The second one is strengthening. *)
 
 let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
   |NoFunctor struc ->

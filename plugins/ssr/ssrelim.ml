@@ -96,7 +96,7 @@ let subgoals_tys sigma (relctx, concl) =
  *    (occ, c), deps and the pattern inferred from the type of the eliminator
  * 3. build the new predicate matching the patterns, and the tactic to 
  *    generalize the equality in case eqid is not None
- * 4. build the tactic handle intructions and clears as required in ipats and
+ * 4. build the tactic handle instructions and clears as required in ipats and
  *    by eqid *)
 
 let get_eq_type gl =

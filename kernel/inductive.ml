@@ -166,7 +166,7 @@ let make_subst env =
         (* template, it is identity substitution  otherwise (ie. when u is *)
         (* already in the domain of the substitution) [remember_subst] will *)
         (* update its image [x] by [sup x u] in order not to forget the *)
-        (* dependency in [u] that remains to be fullfilled. *)
+        (* dependency in [u] that remains to be fulfilled. *)
         make (remember_subst u subst) (sign, exp, [])
     | _sign, [], _ ->
         (* Uniform parameters are exhausted *)

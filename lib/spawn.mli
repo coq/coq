@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* This module implements spawning/killing managed processes with a
- * synchronous or asynchronous comunication channel that works with
+ * synchronous or asynchronous communication channel that works with
  * threads or with a glib like main loop model.
  *
  * This module requires no threads and no main loop model.  It takes care

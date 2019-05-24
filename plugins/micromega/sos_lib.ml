@@ -200,7 +200,7 @@ let is_undefined f =
   | _ -> false;;
 
 (* ------------------------------------------------------------------------- *)
-(* Operation analagous to "map" for lists.                                   *)
+(* Operation analogous to "map" for lists.                                   *)
 (* ------------------------------------------------------------------------- *)
 
 let mapf =

@@ -16,11 +16,11 @@ type target = TChannel of out_channel | TBuffer of Buffer.t
 val make : target -> t
 
 (** Print the xml data structure to a source into a compact xml string (without
- any user-readable formating ). *)
+ any user-readable formatting ). *)
 val print : t -> xml -> unit
 
 (** Print the xml data structure into a compact xml string (without
- any user-readable formating ). *)
+ any user-readable formatting ). *)
 val to_string : xml -> string
 
 (** Print the xml data structure into an user-readable string with

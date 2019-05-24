@@ -405,7 +405,7 @@ end = struct
           | (lg, rg) :: l ->
             Printf.sprintf "%i:%a"
               (List.length lg + List.length rg) pr_focus l in
-        Printf.sprintf "Still focussed: [%a]." pr_focus g.bg_goals
+        Printf.sprintf "Still focused: [%a]." pr_focus g.bg_goals
     else
       let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
         "[" ^ String.concat "; " (List.map Pp.string_of_ppcmds hyps) ^ " |- " ^

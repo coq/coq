@@ -143,7 +143,7 @@ val mk_tpattern :
 type find_P =
   env -> constr -> int -> k:subst -> constr
 
-(** [conclude ()] asserts that all mentioned ocurrences have been visited.
+(** [conclude ()] asserts that all mentioned occurrences have been visited.
   @return the instance of the pattern, the evarmap after the pattern
     instantiation, the proof term and the ssrdit stored in the tpattern
   @raise UserEerror if too many occurrences were specified *)

@@ -12,7 +12,7 @@ open Univ
 open Constr
 
 (*******************************************)
-(* Initalization of the abstract machine ***)
+(* Initialization of the abstract machine ***)
 (* Necessary for [relaccu_tbl]             *)
 (*******************************************)
 

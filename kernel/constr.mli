@@ -141,7 +141,7 @@ val mkRef : GlobRef.t Univ.puniverses -> constr
     [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac] 
     presented as describe in [ci].
 
-    [p] stucture is [fun args x -> "return clause"]
+    [p] structure is [fun args x -> "return clause"]
 
     [ac]{^ ith} element is ith constructor case presented as 
     {e lambda construct_args (without params). case_term } *)

@@ -22,11 +22,11 @@ type engagement = set_predicativity
 (** {6 Representation of constants (Definition/Axiom) } *)
 
 (** Non-universe polymorphic mode polymorphism (Coq 8.2+): inductives
-    and constants hiding inductives are implicitely polymorphic when
+    and constants hiding inductives are implicitly polymorphic when
     applied to parameters, on the universes appearing in the whnf of
     their parameters and their conclusion, in a template style.
     
-    In truely universe polymorphic mode, we always use RegularArity.
+    In truly universe polymorphic mode, we always use RegularArity.
 *)
 
 type template_arity = {

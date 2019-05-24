@@ -93,7 +93,7 @@ VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
 END
 
 VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
-(* Same, with content splitted in several files *)
+(* Same, with content split in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
   -> { separate_extraction l }
 END

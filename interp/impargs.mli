@@ -34,7 +34,7 @@ val with_implicit_protection : ('a -> 'b) -> 'a -> 'b
 
 (** {6 ... } *)
 (** An [implicits_list] is a list of positions telling which arguments
-    of a reference can be automatically infered *)
+    of a reference can be automatically inferred *)
 
 
 type argument_position =
@@ -50,11 +50,11 @@ type implicit_explanation =
 	  this kind if there is enough arguments to infer them) *)
   | DepFlex of argument_position
       (** means that the implicit argument can be found by unification
-	  along a collapsable path only (e.g. as x in (P x) where P is another
+          along a collapsible path only (e.g. as x in (P x) where P is another
 	  argument) (we do (defensively) print the arguments of this kind) *)
   | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
       (** means that the least argument from which the
-	  implicit argument can be inferred is following a collapsable path
+          implicit argument can be inferred is following a collapsible path
 	  but there is a greater argument from where the implicit argument is
 	  inferable following a rigid path (useful to know how to print a
 	  partial application) *)

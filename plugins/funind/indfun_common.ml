@@ -115,7 +115,7 @@ let eq = lazy(EConstr.of_constr (coq_constant "eq"))
 let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 
 (*****************************************************************)
-(* Copy of the standart save mechanism but without the much too  *)
+(* Copy of the standard save mechanism but without the much too  *)
 (* slow reduction function                                       *)
 (*****************************************************************)
 open Entries
@@ -357,7 +357,7 @@ let add_Function is_general f =
 
 let pr_table env sigma = pr_table env sigma !from_function
 (*********************************)
-(* Debuging *)
+(* Debugging *)
 let functional_induction_rewrite_dependent_proofs = ref true
 let function_debug = ref false
 open Goptions

@@ -1244,7 +1244,7 @@ let add_local_defs_and_check_length loc env g pl args = match g with
      let maxargs = Inductiveops.constructor_nalldecls cstr in
      if List.length pl' + List.length args > maxargs then
        error_wrong_numarg_constructor ?loc env cstr (Inductiveops.constructor_nrealargs cstr);
-     (* Two possibilities: either the args are given with explict
+     (* Two possibilities: either the args are given with explicit
      variables for local definitions, then we give the explicit args
      extended with local defs, so that there is nothing more to be
      added later on; or the args are not enough to have all arguments,
@@ -1481,7 +1481,7 @@ let alias_of als = match als.alias_ids with
 
     @returns a raw_case_pattern_expr :
     - no notations and syntactic definition
-    - global reference and identifeir instead of reference
+    - global reference and identifier instead of reference
 
 *)
 
@@ -1656,7 +1656,7 @@ let drop_notations_pattern looked_for genv =
     | CPatCast (_,_) ->
       (* We raise an error if the pattern contains a cast, due to
          current restrictions on casts in patterns. Cast in patterns
-         are supportted only in local binders and only at top
+         are supported only in local binders and only at top
          level. In fact, they are currently eliminated by the
          parser. The only reason why they are in the
          [cases_pattern_expr] type is that the parser needs to factor
