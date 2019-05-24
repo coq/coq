@@ -35,7 +35,7 @@ let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
 let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
 let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
 let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Stdarg.wit_constr
-let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_intro_pattern
+let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simple_intropattern
 let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Stdarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
@@ -46,7 +46,7 @@ let () =
 let () =
   let register name entry = Tacentries.register_tactic_notation_entry name entry in
   register "hyp" wit_var;
-  register "simple_intropattern" wit_intro_pattern;
+  register "simple_intropattern" wit_simple_intropattern;
   register "integer" wit_integer;
   register "reference" wit_ref;
   ()

@@ -2029,7 +2029,8 @@ let () =
   register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
   register_interp0 wit_var (lift interp_hyp);
-  register_interp0 wit_intro_pattern (lifts interp_intro_pattern);
+  register_interp0 wit_intropattern (lifts interp_intro_pattern) [@warning "-3"];
+  register_interp0 wit_simple_intropattern (lifts interp_intro_pattern);
   register_interp0 wit_clause_dft_concl (lift interp_clause);
   register_interp0 wit_constr (lifts interp_constr);
   register_interp0 wit_tacvalue (fun ist v -> Ftactic.return v);
