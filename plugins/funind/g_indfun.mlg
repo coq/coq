@@ -83,7 +83,7 @@ let out_disjunctive = CAst.map (function
 
 }
 
-ARGUMENT EXTEND with_names TYPED AS intropattern option PRINTED BY { pr_intro_as_pat }
+ARGUMENT EXTEND with_names TYPED AS intro_pattern option PRINTED BY { pr_intro_as_pat }
 | [ "as"  simple_intropattern(ipat) ] -> { Some ipat }
 | []  -> { None }
 END

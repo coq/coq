@@ -1716,9 +1716,9 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
         - intro
 
       * - ``simple_intropattern``
-        - intro_pattern
-        - an intro pattern
-        - intros
+        - simple_intropattern
+        - an introduction pattern
+        - assert as
 
       * - ``hyp``
         - identifier
