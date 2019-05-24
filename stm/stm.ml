@@ -2702,8 +2702,8 @@ let dirpath_of_file f =
       Loadpath.logical lp
     with Not_found -> Libnames.default_root_prefix
   in
-  let file = Filename.chop_extension (Filename.basename f) in
-  let id = Id.of_string file in
+  let f = try Filename.chop_extension (Filename.basename f) with Invalid_argument _ -> f in
+  let id = Id.of_string f in
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
