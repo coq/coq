@@ -306,9 +306,15 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
 
 let pr_evar_list env sigma l =
   let open Evd in
+  let pr_restrict ev =
+    match is_restricted_evar sigma ev with
+    | None -> mt ()
+    | Some ev' -> str " (restricted to " ++ Evar.print ev' ++ str ")"
+  in
   let pr (ev, evi) =
     h 0 (Evar.print ev ++
       str "==" ++ pr_evar_info env sigma evi ++
+      pr_restrict ev ++
       (if evi.evar_body == Evar_empty
        then str " {" ++ pr_existential_key sigma ev ++ str "}"
        else mt ()))
