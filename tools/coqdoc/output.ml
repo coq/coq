@@ -762,7 +762,7 @@ module Html = struct
 
   (* inference rules *)
   let inf_rule assumptions (_,_,midnm) conclusions =
-    (* this first function replaces any occurance of 3 or more spaces
+    (* this first function replaces any occurrence of 3 or more spaces
        in a row with "&nbsp;"s.  We do this to the assumptions so that
        people can put multiple rules on a line with nice formatting *)
     let replace_spaces str =

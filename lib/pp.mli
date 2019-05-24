@@ -18,7 +18,7 @@
 (* to interpret.                                                        *)
 (*                                                                      *)
 (* The datatype has a public view to allow serialization or advanced    *)
-(* uses, however regular users are _strongly_ warned against its use,    *)
+(* uses, however regular users are _strongly_ warned against its use,   *)
 (* they should instead rely on the available functions below.           *)
 (*                                                                      *)
 (* Box order and number is indeed an important factor. Try to create    *)

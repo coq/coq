@@ -22,7 +22,7 @@
      a query like Check.
 
    The classification works on the assumption that we have 3 states:
-   parsing, execution (global enviroment, etc...), and proof
+   parsing, execution (global environment, etc...), and proof
    state. For example, commands that only alter the proof state are
    considered safe to delegate to a worker.
 

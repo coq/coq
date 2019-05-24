@@ -385,7 +385,7 @@ End Proof_irrelevance_EM_CC.
     fragment of [Prop] into [bool], hence weak classical logic,
     i.e. [forall A, ~A\/~~A], is enough for deriving a weak version of
     proof-irrelevance. This is enough to derive a contradiction from a
-    [Set]-bound weak excluded middle wih an impredicative [Set]
+    [Set]-bound weak excluded middle with an impredicative [Set]
     universe. *)
 
 Section Proof_irrelevance_WEM_CC.

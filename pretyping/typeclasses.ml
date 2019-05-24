@@ -62,7 +62,7 @@ type typeclass = {
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : Constr.rel_context;
 
-  (* The method implementaions as projections. *)
+  (* The method implementations as projections. *)
   cl_projs : (Name.t * (direction * hint_info) option
 	      * Constant.t option) list;
   

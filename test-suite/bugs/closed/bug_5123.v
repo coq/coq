@@ -28,6 +28,6 @@ Goal True.
   opose (@vect_sigT_eqdec _ _ _ _) as H.
   Unshelve.
   all:cycle 3.
-  eapply existT. (*This does no typeclass resultion, which is correct.*)
+  eapply existT. (*This does no typeclass resolution, which is correct.*)
   Focus 5.
 Abort.

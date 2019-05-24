@@ -349,7 +349,7 @@ let tag_var = tag Tag.variable
             hov 1 (str "`" ++ (surround_impl b'
                                  (pr_lident CAst.(make ?loc id) ++ str " : " ++
                                     (if t' then str "!" else mt()) ++ pr t)))
-          |_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
+          |_ -> anomaly (Pp.str "List of generalized binders have always one element.")
         end
       | Default b ->
         match t with

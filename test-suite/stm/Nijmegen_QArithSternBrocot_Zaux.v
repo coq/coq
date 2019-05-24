@@ -14,7 +14,7 @@
 (* 02110-1301 USA                                                     *)
 
 
-(** This file includes random facts about Integers (and natural numbers) which are not found in the standard library. Some of the lemma here are not used in the QArith developement but are rather useful.
+(** This file includes random facts about Integers (and natural numbers) which are not found in the standard library. Some of the lemma here are not used in the QArith development but are rather useful.
 *)
 
 Require Export ZArith.
@@ -84,7 +84,7 @@ End projection.
 
 
 (*###########################################################################*)
-(* Declaring some realtions on natural numbers for stepl and stepr tactics.  *)
+(* Declaring some relations on natural numbers for stepl and stepr tactics.  *)
 (*###########################################################################*)
 
 Lemma le_stepl: forall x y z, le x y -> x=z -> le z y.
@@ -173,7 +173,7 @@ Qed.
 
 
 (*###########################################################################*)
-(* Declaring some realtions on integers for stepl and stepr tactics.         *)
+(* Declaring some relations on integers for stepl and stepr tactics.         *)
 (*###########################################################################*)
 
 Lemma Zle_stepl: forall x y z, (x<=y)%Z -> x=z -> (z<=y)%Z.

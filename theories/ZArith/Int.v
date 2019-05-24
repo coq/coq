@@ -13,7 +13,7 @@
 (** We define a signature for an integer datatype based on [Z].
     The goal is to allow a switch after extraction to ocaml's
     [big_int] or even [int] when finiteness isn't a problem
-    (typically : when mesuring the height of an AVL tree).
+    (typically : when measuring the height of an AVL tree).
 *)
 
 Require Import BinInt.

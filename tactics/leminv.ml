@@ -98,7 +98,7 @@ let get_local_sign sign =
   in
   List.fold_right add_local lid nil_sign
 *)
-(* returs the identifier of lid that was the latest declared in sign.
+(* returns the identifier of lid that was the latest declared in sign.
  * (i.e. is the identifier id of lid such that
  * sign_length (sign_prefix id sign) > sign_length (sign_prefix id' sign) >
  * for any id'<>id in lid).

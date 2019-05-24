@@ -240,7 +240,7 @@ the above form:
       True.
     Proof.
       intros. push not in *.
-       (* note that ~(R->P) remains (since R isnt decidable) *)
+       (* note that ~(R->P) remains (since R isn't decidable) *)
       tauto.
     Qed.
 

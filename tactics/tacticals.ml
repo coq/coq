@@ -481,7 +481,7 @@ module New = struct
       ) <*>
         tclUNIT res
 
-  (* Try the first thats solves the current goal *)
+  (* Try the first that solves the current goal *)
   let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 
   let tclPROGRESS t =

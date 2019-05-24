@@ -824,7 +824,7 @@ let push_alias_eqn sigma alias eqn =
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
 
-(* Infering the predicate *)
+(* Inferring the predicate *)
 (*
 The problem to solve is the following:
 
@@ -1455,7 +1455,7 @@ let compile ~program_mode sigma pb =
 
 
   (* Building the sub-problem when all patterns are variables. Case
-     where [current] is an intially pushed term. *)
+     where [current] is an initially pushed term. *)
   and shift_problem ((current,t),_,na) sigma pb =
     let ty = type_of_tomatch t in
     let tomatch = lift_tomatch_stack 1 pb.tomatch in
@@ -1542,7 +1542,7 @@ let compile ~program_mode sigma pb =
           mat = List.map drop_alias_eqn pb.mat } in
       compile sigma pb
     in
-    (* If the "match" was orginally over a variable, as in "match x with
+    (* If the "match" was originally over a variable, as in "match x with
        O => true | n => n end", we give preference to non-expansion in
        the default clause (i.e. "match x with O => true | n => n end"
        rather than "match x with O => true | S p => S p end";
@@ -2067,7 +2067,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
         let p2 =
           prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs arsign t in
         (* Third strategy: we take the type constraint as it is; of course we could *)
-        (* need something inbetween, abstracting some but not all of the dependencies *)
+        (* need something in between, abstracting some but not all of the dependencies *)
         (* the "inversion" strategy deals with that but unification may not be *)
         (* powerful enough so strategy 2 and 3 helps; moreover, inverting does not *)
         (* work (yet) when a constructor has a type not precise enough for the inversion *)

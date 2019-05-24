@@ -146,7 +146,7 @@ let do_assumptions ~program_mode kind nl l =
         l []
     else l
   in
-  (* We intepret all declarations in the same evar_map, i.e. as a telescope. *)
+  (* We interpret all declarations in the same evar_map, i.e. as a telescope. *)
   let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
     let sigma,(t,imps) = interp_assumption ~program_mode sigma env ienv c in
     let r = Retyping.relevance_of_type env sigma t in

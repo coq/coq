@@ -324,7 +324,7 @@ Proof.
  now rewrite <- opp_succ, opp_nonneg_nonpos, le_succ_l.
 Qed.
 
-(** Accesing a high enough bit of a number gives its sign *)
+(** Accessing a high enough bit of a number gives its sign *)
 
 Lemma bits_iff_nonneg : forall a n, log2 (abs a) < n ->
  (0<=a <-> a.[n] = false).

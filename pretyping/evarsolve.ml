@@ -284,9 +284,9 @@ let noccur_evar env evd evk c =
   in
   try occur_rec false (0,env) c; true with Occur -> false
 
-(***************************************)
-(* Managing chains of local definitons *)
-(***************************************)
+(****************************************)
+(* Managing chains of local definitions *)
+(****************************************)
 
 type alias =
 | RelAlias of int
@@ -629,7 +629,7 @@ let solve_pattern_eqn env sigma l c =
  * If a variable and an alias of it are bound to the same instance, we skip
  * the alias (we just use eq_constr -- instead of conv --, since anyway,
  * only instances that are variables -- or evars -- are later considered;
- * morever, we can bet that similar instances came at some time from
+ * moreover, we can bet that similar instances came at some time from
  * the very same substitution. The removal of aliased duplicates is
  * useful to ensure the uniqueness of a projection.
 *)
@@ -1738,7 +1738,7 @@ let reconsider_unif_constraints unify flags evd =
  * Returns an optional list of evars that were instantiated, or None
  * if the problem couldn't be solved. *)
 
-(* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
+(* Rq: incomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn unify flags ?(choose=false) ?(imitate_defs=true)
                      env evd (pbty,(evk1,args1 as ev1),t2) =
   try
