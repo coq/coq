@@ -47,7 +47,9 @@ let type_error_of g ty =
     (pr_qualid g ++ str " should go from " ++ pr_qualid ty ++
      str " to Byte.byte or (option Byte.byte) or (list Byte.byte) or (option (list Byte.byte)).")
 
-let vernac_string_notation env sigma local ty f g scope =
+let vernac_string_notation local ty f g scope =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
   let app x y = mkAppC (x,[y]) in
   let cref q = mkRefC q in
   let cbyte = cref (q_byte ()) in
