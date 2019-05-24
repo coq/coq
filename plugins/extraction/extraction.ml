@@ -115,7 +115,7 @@ let get_body lconstr = EConstr.of_constr (Mod_subst.force_constr lconstr)
 
 let get_opaque env c =
   EConstr.of_constr
-    (Opaqueproof.force_proof (Environ.opaque_tables env) c)
+    (Opaqueproof.force_proof Library.indirect_accessor (Environ.opaque_tables env) c)
 
 let applistc c args = EConstr.mkApp (c, Array.of_list args)
 

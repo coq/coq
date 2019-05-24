@@ -483,16 +483,6 @@ let constant_value_and_type env (kn, u) =
   in
   b', subst_instance_constr u cb.const_type, cst
 
-let body_of_constant_body env cb =
-  let otab = opaque_tables env in
-  match cb.const_body with
-  | Undef _ | Primitive _ ->
-     None
-  | Def c ->
-     Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
-  | OpaqueDef o ->
-     Some (Opaqueproof.force_proof otab o, Declareops.constant_polymorphic_context cb)
-
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
    application. *)

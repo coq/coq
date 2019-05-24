@@ -458,19 +458,11 @@ let labels_of_mib mib =
   Array.iter visit_mip mib.mind_packets;
   get ()
 
-let globalize_constant_universes env cb =
+let globalize_constant_universes cb =
   match cb.const_universes with
   | Monomorphic cstrs ->
-    Now (false, cstrs) ::
-    (match cb.const_body with
-     | (Undef _ | Def _ | Primitive _) -> []
-     | OpaqueDef lc ->
-       match Opaqueproof.get_constraints (Environ.opaque_tables env) lc with
-       | None -> []
-       | Some fc ->
-            match Future.peek_val fc with
-             | None -> [Later fc]
-             | Some c -> [Now (false, c)])
+    (* Constraints hidden in the opaque body are added by [add_constant_aux] *)
+    [Now (false, cstrs)]
   | Polymorphic _ ->
     [Now (true, Univ.ContextSet.empty)]
       
@@ -480,9 +472,9 @@ let globalize_mind_universes mb =
     [Now (false, ctx)]
   | Polymorphic _ -> [Now (true, Univ.ContextSet.empty)]
 
-let constraints_of_sfb env sfb = 
+let constraints_of_sfb sfb =
   match sfb with
-  | SFBconst cb -> globalize_constant_universes env cb
+  | SFBconst cb -> globalize_constant_universes cb
   | SFBmind mib -> globalize_mind_universes mib
   | SFBmodtype mtb -> [Now (false, mtb.mod_constraints)]
   | SFBmodule mb -> [Now (false, mb.mod_constraints)]
@@ -520,7 +512,8 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
          separately. *)
       senv
     else
-      let cst = constraints_of_sfb senv.env sfb in
+      (* Delayed constraints from opaque body are added by [add_constant_aux] *)
+      let cst = constraints_of_sfb sfb in
       add_constraints_list cst senv
   in
   let env' = match sfb, gn with
@@ -553,6 +546,15 @@ type exported_private_constant =
 
 let add_constant_aux ~in_section senv (kn, cb) =
   let l = Constant.label kn in
+  let delayed_cst = match cb.const_body with
+  | OpaqueDef o when not (Declareops.constant_is_polymorphic cb) ->
+    let fc = Opaqueproof.get_direct_constraints o in
+    begin match Future.peek_val fc with
+    | None -> [Later fc]
+    | Some c -> [Now (false, c)]
+    end
+  | Undef _ | Def _ | Primitive _ | OpaqueDef _ -> []
+  in
   let cb, otab = match cb.const_body with
     | OpaqueDef lc when not in_section ->
       (* In coqc, opaque constants outside sections will be stored
@@ -565,6 +567,7 @@ let add_constant_aux ~in_section senv (kn, cb) =
   in
   let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
+  let senv' = add_constraints_list delayed_cst senv' in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
       update_resolver

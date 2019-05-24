@@ -215,12 +215,6 @@ val constant_value_and_type : env -> Constant.t puniverses ->
     polymorphic *)
 val constant_context : env -> Constant.t -> Univ.AUContext.t
 
-(** Returns the body of the constant if it has any, and the polymorphic context
-    it lives in. For monomorphic constant, the latter is empty, and for
-    polymorphic constants, the term contains De Bruijn universe variables that
-    need to be instantiated. *)
-val body_of_constant_body : env -> Opaqueproof.opaque constant_body -> (Constr.constr * Univ.AUContext.t) option
-
 (* These functions should be called under the invariant that [env] 
    already contains the constraints corresponding to the constant 
    application. *)
