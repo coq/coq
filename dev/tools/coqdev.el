@@ -78,11 +78,7 @@ Specifically `camldebug-command-name' and `ocamldebug-command-name'."
 Note that this function is executed before _Coqproject is read if it exists."
   (let ((dir (coqdev-default-directory)))
     (when dir
-      (unless coq-prog-args
-        (setq coq-prog-args
-              `("-coqlib" ,dir
-                "-topfile" ,buffer-file-name)))
-      (setq-local coq-prog-name (concat dir "bin/coqtop")))))
+      (setq-local coq-prog-name (concat dir "_build/default/dev/shim/coqtop-prelude")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
 (defvar coqdev-ocamldebug-command "dune exec dev/dune-dbg"
