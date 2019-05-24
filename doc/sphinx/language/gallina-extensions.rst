@@ -603,10 +603,15 @@ The following experimental command is available when the ``FunInd`` library has 
    The meaning of this declaration is to define a function ident,
    similarly to ``Fixpoint``. Like in ``Fixpoint``, the decreasing argument must
    be given (unless the function is not recursive), but it might not
-   necessarily be *structurally* decreasing. The point of the {} annotation
+   necessarily be *structurally* decreasing. The point of the :n:`{ @decrease_annot }` annotation
    is to name the decreasing argument *and* to describe which kind of
    decreasing criteria must be used to ensure termination of recursive
    calls.
+
+   .. productionlist::
+      decrease_annot : struct `ident`
+                     : measure `term` `ident`
+                     : wf `term` `ident`
 
 The ``Function`` construction also enjoys the ``with`` extension to define
 mutually recursive definitions. However, this feature does not work
@@ -616,31 +621,33 @@ See the documentation of functional induction (:tacn:`function induction`)
 and ``Functional Scheme`` (:ref:`functional-scheme`) for how to use
 the induction principle to easily reason about the function.
 
-Remark: To obtain the right principle, it is better to put rigid
-parameters of the function as first arguments. For example it is
-better to define plus like this:
+.. note::
 
-.. coqtop:: reset none
+   To obtain the right principle, it is better to put rigid
+   parameters of the function as first arguments. For example it is
+   better to define plus like this:
 
-   Require Import FunInd.
+   .. coqtop:: reset none
 
-.. coqtop:: all
+      Require Import FunInd.
 
-   Function plus (m n : nat) {struct n} : nat :=
-   match n with
-   | 0 => m
-   | S p => S (plus m p)
-   end.
+   .. coqtop:: all
 
-than like this:
+      Function plus (m n : nat) {struct n} : nat :=
+      match n with
+      | 0 => m
+      | S p => S (plus m p)
+      end.
 
-.. coqtop:: reset all
+   than like this:
 
-   Function plus (n m : nat) {struct n} : nat :=
-   match n with
-   | 0 => m
-   | S p => S (plus p m)
-   end.
+   .. coqtop:: reset all
+
+      Function plus (n m : nat) {struct n} : nat :=
+      match n with
+      | 0 => m
+      | S p => S (plus p m)
+      end.
 
 
 *Limitations*
@@ -710,7 +717,7 @@ used by ``Function``. A more precise description is given below.
    with :cmd:`Fixpoint`. Moreover the following are defined:
 
     + The same objects as above;
-    + The fixpoint equation of :token:`ident`: :n:`@ident_equation`.
+    + The fixpoint equation of :token:`ident`: :token:`ident`\ ``_equation``.
 
 .. cmdv:: Function @ident {* @binder } { measure @term @ident } : @type := @term
           Function @ident {* @binder } { wf @term @ident } : @type := @term
@@ -1909,7 +1916,7 @@ This syntax extension is given in the following grammar:
 Renaming implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: Arguments @qualid {* @name} : @rename
+.. cmd:: Arguments @qualid {* @name} : rename
    :name: Arguments (rename)
 
    This command is used to redefine the names of implicit arguments.
@@ -2277,7 +2284,7 @@ Printing universes
       language, and can be processed by Graphviz tools. The format is
       unspecified if `string` doesn’t end in ``.dot`` or ``.gv``.
 
-.. cmdv:: Print Universes Subgraph(@names)
+.. cmdv:: Print Universes Subgraph({+ @qualid })
    :name: Print Universes Subgraph
 
    Prints the graph restricted to the requested names (adjusting

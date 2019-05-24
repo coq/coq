@@ -366,24 +366,32 @@ The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
 
 .. cmd:: Universe @ident
+         Polymorphic Universe @ident
 
    In the monorphic case, this command declares a new global universe
    named :g:`ident`, which can be referred to using its qualified name
    as well. Global universe names live in a separate namespace. The
-   command supports the polymorphic flag only in sections, meaning the
+   command supports the ``Polymorphic`` flag only in sections, meaning the
    universe quantification will be discharged on each section definition
    independently. One cannot mix polymorphic and monomorphic
    declarations in the same section.
 
 
-.. cmd:: Constraint @ident @ord @ident
+.. cmd:: Constraint @universe_constraint
+         Polymorphic Constraint @universe_constraint
 
-   This command declares a new constraint between named universes. The
-   order relation :n:`@ord` can be one of :math:`<`, :math:`≤` or :math:`=`. If consistent, the constraint
-   is then enforced in the global environment. Like ``Universe``, it can be
-   used with the ``Polymorphic`` prefix in sections only to declare
-   constraints discharged at section closing time. One cannot declare a
-   global constraint on polymorphic universes.
+   This command declares a new constraint between named universes.
+
+   .. productionlist:: coq
+      universe_constraint : `qualid` < `qualid`
+                          : `qualid` <= `qualid`
+                          : `qualid` = `qualid`
+
+   If consistent, the constraint is then enforced in the global
+   environment. Like :cmd:`Universe`, it can be used with the
+   ``Polymorphic`` prefix in sections only to declare constraints
+   discharged at section closing time. One cannot declare a global
+   constraint on polymorphic universes.
 
    .. exn:: Undeclared universe @ident.
       :undocumented:
