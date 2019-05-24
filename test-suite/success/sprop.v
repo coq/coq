@@ -117,7 +117,7 @@ Definition Istrue_rec (P:forall b, Istrue b -> Set) (H:P true istrue) b (i:Istru
 Proof.
   destruct b.
   - exact_no_check H.
-  - apply sEmpty_rec. apply Istrue_to_sym in i. exact i.
+  - eapply sEmpty_rec. Unshelve. apply Istrue_to_sym in i. exact i.
 Defined.
 
 Check (fun P v (e:Istrue true) => eq_refl : Istrue_rec P v _ e = v).
