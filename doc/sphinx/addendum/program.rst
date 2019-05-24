@@ -299,9 +299,9 @@ optional tactic is replaced by the default one if not specified.
 
    Displays all remaining obligations.
 
-.. cmd:: Obligation num {? of @ident}
+.. cmd:: Obligation @num {? of @ident}
 
-   Start the proof of obligation num.
+   Start the proof of obligation :token:`num`.
 
 .. cmd:: Next Obligation {? of @ident}
 
