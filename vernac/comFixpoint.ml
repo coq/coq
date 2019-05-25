@@ -197,7 +197,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (fun c -> nf_evar sigma c) fixtypes in
   let fiximps = List.map3
-    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (Context.Rel.nhyps ctx) cclimps))
+    (fun ctximps cclimps (_,ctx) -> ctximps@cclimps)
     fixctximps fixcclimps fixctxs in
   let sigma, rec_sign =
     List.fold_left2

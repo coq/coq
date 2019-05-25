@@ -283,8 +283,8 @@ let context poly l =
       Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (ConstRef cst);
       status
     else
-      let test {CAst.v = (x, _)} = match x with
-      | Constrexpr.ExplByPos (_, Some id') -> Id.equal id id'
+      let test x = match x.CAst.v with
+      | Some (Name id',_) -> Id.equal id id'
       | _ -> false
       in
       let impl = List.exists test impls in

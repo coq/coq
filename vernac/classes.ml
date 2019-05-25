@@ -537,8 +537,7 @@ let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
   in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
   let sigma, (c', imps') = interp_type_evars_impls ~program_mode ~impls env' sigma tclass in
-  let len = Context.Rel.nhyps ctx in
-  let imps = imps @ Impargs.lift_implicits len imps' in
+  let imps = imps @ imps' in
   let ctx', c = decompose_prod_assum sigma c' in
   let ctx'' = ctx' @ ctx in
   let (k, u), args = Typeclasses.dest_class_app (push_rel_context ctx'' env) sigma c in

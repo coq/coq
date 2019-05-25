@@ -84,13 +84,7 @@ val force_inference_of : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
-(** A [manual_explicitation] is a tuple of a positional or named explicitation with
-   maximal insertion, force inference and force usage flags. Forcing usage makes
-   the argument implicit even if the automatic inference considers it not inferable. *)
-type manual_explicitation = Constrexpr.explicitation *
-    (maximal_insertion * force_inference * bool)
-
-type manual_implicits = manual_explicitation CAst.t list
+type manual_implicits = (Name.t * bool) option CAst.t list
 
 val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
   manual_implicits -> implicit_status list
@@ -130,8 +124,6 @@ val implicits_of_global : GlobRef.t -> implicits_list list
 
 val extract_impargs_data :
   implicits_list list -> ((int * int) option * implicit_status list) list
-
-val lift_implicits : int -> manual_implicits -> manual_implicits
 
 val make_implicits_list : implicit_status list -> implicits_list list
 

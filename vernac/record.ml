@@ -476,21 +476,15 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
   List.mapi map record_data
 
 let implicits_of_context ctx =
-  List.map_i (fun i name ->
-    let explname =
-      match name with
-      | Name n -> Some n
-      | Anonymous -> None
-    in CAst.make (ExplByPos (i, explname), (true, true, true)))
-    1 (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+  List.map (fun name -> CAst.make (Some (name,true)))
+    (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class def cum ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
-    let len = List.length params in
     let impls = implicits_of_context params in
-      List.map (fun x -> impls @ Impargs.lift_implicits (succ len) x) fieldimpls
+      List.map (fun x -> impls @ x) fieldimpls
   in
   let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
   let data =
@@ -704,7 +698,7 @@ let definition_structure udecl kind ~template cum poly finite records =
     declare_class def cum ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
-    let map impls = implpars @ Impargs.lift_implicits (succ (List.length params)) impls in
+    let map impls = implpars @ [CAst.make None] @ impls in
     let data = List.map (fun (arity, implfs, fields) -> (arity, List.map map implfs, fields)) data in
     let map (arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coe = List.map (fun (_, { rf_subclass ; rf_canonical }) ->

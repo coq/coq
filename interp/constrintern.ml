@@ -2435,10 +2435,8 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
               let r = Retyping.relevance_of_type env sigma t in
               let d = LocalAssum (make_annot na r,t) in
               let impls =
-		if k == Implicit then
-		  let na = match na with Name n -> Some n | Anonymous -> None in
-                    CAst.make (ExplByPos (n, na), (true, true, true)) :: impls
-		else impls
+                if k == Implicit then CAst.make (Some (na,true)) :: impls
+                else CAst.make None :: impls
 	      in
                 (push_rel d env, sigma, d::params, succ n, impls)
 	  | Some b ->
@@ -2447,7 +2445,7 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
               let d = LocalDef (make_annot na r, c, t) in
                 (push_rel d env, sigma, d::params, n, impls))
       (env,sigma,[],k+1,[]) (List.rev bl)
-  in sigma, ((env, par), impls)
+  in sigma, ((env, par), List.rev impls)
 
 let interp_context_evars ?program_mode ?(global_level=false) ?(impl_env=empty_internalization_env) ?(shift=0) env sigma params =
   let int_env,bl = intern_context global_level env impl_env params in
