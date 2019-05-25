@@ -63,7 +63,10 @@ let check_compilation_output_name_consistency args =
     prerr_endline ("file have to be compiled")
   | _ -> ()
 
+let is_dash_argument s = String.length s > 0 && s.[0] = '-'
+
 let add_compile ?echo copts s =
+  if is_dash_argument s then (prerr_endline ("Unknown option " ^ s); exit 1);
   (* make the file name explicit; needed not to break up Coq loadpath stuff. *)
   let echo = Option.default copts.echo echo in
   let s =
