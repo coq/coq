@@ -317,7 +317,7 @@ let discharge_inductive ((sp,kn),mie) =
   let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let info = cooking_info (section_segment_of_mutual_inductive mind) in
-  Some (Discharge.process_inductive info mie)
+  Some (Cooking.cook_inductive info mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;

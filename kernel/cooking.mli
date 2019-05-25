@@ -30,6 +30,9 @@ type 'opaque result = {
 val cook_constant : hcons:bool -> recipe -> Opaqueproof.opaque result
 val cook_constr : Opaqueproof.cooking_info -> constr -> constr
 
+val cook_inductive :
+  Opaqueproof.cooking_info -> mutual_inductive_body -> Entries.mutual_inductive_entry
+
 (** {6 Utility functions used in module [Discharge]. } *)
 
 val expmod_constr : Opaqueproof.work_list -> constr -> constr
