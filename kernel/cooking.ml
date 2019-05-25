@@ -185,32 +185,37 @@ let cook_constr { Opaqueproof.modlist ; abstract = (vars, subst, _) } c =
   let hyps = abstract_context hyps in
   abstract_constant_body (expmod c) hyps
 
+let discharge_abstract_universe_context subst abs_ctx auctx =
+  (** Given a named instance [subst := u₀ ... uₙ₋₁] together with an abstract
+      context [auctx0 := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
+      and another abstract context relative to the former context
+      [auctx := 0 ... m - 1 |= C'{u₀, ..., uₙ₋₁, 0, ..., m - 1}],
+      construct the lifted abstract universe context
+      [0 ... n - 1 n ... n + m - 1 |=
+        C{0, ... n - 1} ∪
+        C'{0, ..., n - 1, n, ..., n + m - 1} ]
+      together with the instance
+      [u₀ ... uₙ₋₁ Var(0) ... Var (m - 1)].
+  *)
+  if (Univ.Instance.is_empty subst) then
+    (** Still need to take the union for the constraints between globals *)
+    subst, (AUContext.union abs_ctx auctx)
+  else
+    let open Univ in
+    let ainst = make_abstract_instance auctx in
+    let subst = Instance.append subst ainst in
+    let substf = make_instance_subst subst in
+    let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
+    subst, (AUContext.union abs_ctx auctx)
+
 let lift_univs cb subst auctx0 =
   match cb.const_universes with
   | Monomorphic ctx ->
     assert (AUContext.is_empty auctx0);
     subst, (Monomorphic ctx)
   | Polymorphic auctx ->
-    (** Given a named instance [subst := u₀ ... uₙ₋₁] together with an abstract
-        context [auctx0 := 0 ... n - 1 |= C{0, ..., n - 1}] of the same length,
-        and another abstract context relative to the former context
-        [auctx := 0 ... m - 1 |= C'{u₀, ..., uₙ₋₁, 0, ..., m - 1}],
-        construct the lifted abstract universe context
-        [0 ... n - 1 n ... n + m - 1 |=
-          C{0, ... n - 1} ∪
-          C'{0, ..., n - 1, n, ..., n + m - 1} ]
-        together with the instance
-        [u₀ ... uₙ₋₁ Var(0) ... Var (m - 1)].
-    *)
-    if (Univ.Instance.is_empty subst) then
-      (** Still need to take the union for the constraints between globals *)
-      subst, (Polymorphic (AUContext.union auctx0 auctx))
-    else
-      let ainst = Univ.make_abstract_instance auctx in
-      let subst = Instance.append subst ainst in
-      let substf = Univ.make_instance_subst subst in
-      let auctx' = Univ.subst_univs_level_abstract_universe_context substf auctx in
-      subst, (Polymorphic (AUContext.union auctx0 auctx'))
+    let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
+    subst, (Polymorphic auctx)
 
 let cook_constant ~hcons { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
@@ -250,8 +255,6 @@ let cook_constant ~hcons { from = cb; info } =
 
 (* let cook_constant_key = CProfile.declare_profile "cook_constant" *)
 (* let cook_constant = CProfile.profile2 cook_constant_key cook_constant *)
-
-let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c
 
 (********************************)
 (* Discharging mutual inductive *)
@@ -316,14 +319,6 @@ let dummy_variance = let open Entries in function
   | Monomorphic_entry _ -> assert false
   | Polymorphic_entry (_,uctx) -> Array.make (Univ.UContext.size uctx) Univ.Variance.Irrelevant
 
-let discharge_abstract_universe_context subst abs_ctx auctx =
-  let open Univ in
-  let ainst = make_abstract_instance auctx in
-  let subst = Instance.append subst ainst in
-  let subst = make_instance_subst subst in
-  let auctx = Univ.subst_univs_level_abstract_universe_context subst auctx in
-  subst, AUContext.union abs_ctx auctx
-
 let cook_inductive { Opaqueproof.modlist; abstract } mib =
   let open Entries in
   let (section_decls, subst, abs_uctx) = abstract in
@@ -333,6 +328,7 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
     | Monomorphic ctx -> Univ.empty_level_subst, Monomorphic_entry ctx
     | Polymorphic auctx ->
       let subst, auctx = discharge_abstract_universe_context subst abs_uctx auctx in
+      let subst = Univ.make_instance_subst subst in
       let nas = Univ.AUContext.names auctx in
       let auctx = Univ.AUContext.repr auctx in
       subst, Polymorphic_entry (nas, auctx)
@@ -341,7 +337,8 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
     | None -> None
     | Some _ -> Some (dummy_variance ind_univs)
   in
-  let discharge c = Vars.subst_univs_level_constr subst (expmod_constr modlist c) in
+  let cache = RefTable.create 13 in
+  let discharge c = Vars.subst_univs_level_constr subst (expmod_constr cache modlist c) in
   let inds =
     Array.map_to_list
       (fun mip ->
@@ -369,3 +366,5 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
     mind_entry_variance = variance;
     mind_entry_universes = ind_univs
   }
+
+let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c
