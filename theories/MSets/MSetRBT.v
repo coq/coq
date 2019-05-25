@@ -1950,7 +1950,7 @@ Module Make (X: Orders.OrderedType) <:
  generalize (fun x s' => @Raw.remove_min_spec1 s x s' Hs).
  set (P := Raw.remove_min_ok s). clearbody P.
  destruct (Raw.remove_min s) as [(x0,s0)|]; try easy.
- intros H U. injection U as -> <-. simpl.
+ intros H [= -> <-]. simpl.
  destruct (H x s0); auto. subst; intuition.
  Qed.
 

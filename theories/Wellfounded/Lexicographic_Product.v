@@ -46,11 +46,11 @@ Section WfLexicographic_Product.
           apply H2.
           auto with sets.
 
-      + injection H1 as <- _.
-        injection H3 as <- _; auto with sets.
+      + injection H1 as [= <- _].
+        injection H3 as [= <- _]; auto with sets.
 
     - rewrite <- H1.
-      injection H3 as -> H3.
+      injection H3 as [= -> H3].
       apply IHAcc0.
       elim inj_pair2 with A B x y' x0; assumption.
   Defined.

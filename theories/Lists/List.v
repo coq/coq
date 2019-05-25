@@ -250,7 +250,7 @@ Section Facts.
     generalize (app_nil_r l); intros E.
     rewrite -> E; auto.
     intros.
-    injection H as H H0.
+    injection H as [= H H0].
     assert ([] = l ++ a0 :: l0) by auto.
     apply app_cons_not_nil in H1 as [].
   Qed.
@@ -261,18 +261,14 @@ Section Facts.
     induction x as [| x l IHl];
       [ destruct y as [| a l] | destruct y as [| a l0] ];
       simpl; auto.
-    - intros a b H.
-      injection H.
+    - intros a b [= ].
       auto.
-    - intros a0 b H.
-      injection H as H1 H0.
+    - intros a0 b [= H1 H0].
       apply app_cons_not_nil in H0 as [].
-    - intros a b H.
-      injection H as H1 H0.
+    - intros a b [= H1 H0].
       assert ([] = l ++ [a]) by auto.
       apply app_cons_not_nil in H as [].
-    - intros a0 b H.
-      injection H as <- H0.
+    - intros a0 b [= <- H0].
       destruct (IHl l0 a0 b H0) as (<-,<-).
       split; auto.
   Qed.
@@ -336,7 +332,7 @@ Section Facts.
     absurd (length (x1 :: l1 ++ l) <= length l).
     simpl; rewrite app_length; auto with arith.
     rewrite H; auto with arith.
-    injection H as H H0; f_equal; eauto.
+    injection H as [= H H0]; f_equal; eauto.
   Qed.
 
 End Facts.
@@ -519,7 +515,7 @@ Section Elts.
   Proof.
     revert l.
     induction n as [|n IH]; intros [|x l] H; simpl in *; try easy.
-    - exists nil; exists l. now injection H as ->.
+    - exists nil; exists l. now injection H as [= ->].
     - destruct (IH _ H) as (l1 & l2 & H1 & H2).
       exists (x::l1); exists l2; simpl; split; now f_equal.
   Qed.
@@ -1243,7 +1239,7 @@ End Fold_Right_Recursor.
     Proof.
      induction l as [|a l IH]; simpl; [easy| ].
      case_eq (f a); intros Ha Eq.
-     * injection Eq as ->; auto.
+     * injection Eq as [= ->]; auto.
      * destruct (IH Eq); auto.
     Qed.
 
@@ -1304,10 +1300,10 @@ End Fold_Right_Recursor.
     forall x:A, In x l <-> In x l1 \/ In x l2.
   Proof.
     revert l1 l2. induction l as [| a l' Hrec]; simpl; intros l1 l2 Eq x.
-    - injection Eq as <- <-. tauto.
+    - injection Eq as [= <- <-]. tauto.
     - destruct (partition l') as (left, right).
       specialize (Hrec left right eq_refl x).
-      destruct (f a); injection Eq as <- <-; simpl; tauto.
+      destruct (f a); injection Eq as [= <- <-]; simpl; tauto.
   Qed.
 
   End Bool.
@@ -1483,7 +1479,7 @@ End Fold_Right_Recursor.
       destruct (in_app_or _ _ _ H); clear H.
       destruct (in_map_iff (fun y : B => (a, y)) l' (x,y)) as (H1,_).
       destruct (H1 H0) as (z,(H2,H3)); clear H0 H1.
-      injection H2 as -> ->; intuition.
+      injection H2 as [= -> ->]; intuition.
       intuition.
     Qed.
 
