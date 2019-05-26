@@ -164,35 +164,36 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
                        const_entry_opaque = true;
                        const_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      let (body, ctx), side_eff = Future.join body in
-      let body, ctx = match trust with
-      | Pure -> body, ctx
-      | SideEffects handle ->
-        let body, ctx', _ = handle env body side_eff in
-        body, Univ.ContextSet.union ctx ctx'
-      in
-      (** [ctx] must contain local universes, such that it has no impact
-          on the rest of the graph (up to transitivity). *)
       let env = push_context ~strict:false uctx env in
+      let tj = Typeops.infer_type env typ in
       let sbst, auctx = Univ.abstract_universes nas uctx in
       let usubst = Univ.make_instance_subst sbst in
-      let env = push_subgraph ctx env in
-      let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
-      let j = Typeops.infer env body in
-      let typ =
-        let tj = Typeops.infer_type env typ in
+      let (def, private_univs) =
+        let (body, ctx), side_eff = Future.join body in
+        let body, ctx = match trust with
+        | Pure -> body, ctx
+        | SideEffects handle ->
+          let body, ctx', _ = handle env body side_eff in
+          body, Univ.ContextSet.union ctx ctx'
+        in
+        (** [ctx] must contain local universes, such that it has no impact
+            on the rest of the graph (up to transitivity). *)
+        let env = push_subgraph ctx env in
+        let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
+        let j = Typeops.infer env body in
         let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
-        Vars.subst_univs_level_constr usubst tj.utj_val
+        let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
+        def, private_univs
       in
-      let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = OpaqueDef (Opaqueproof.create (Future.from_val (def, Univ.ContextSet.empty))) in
+      let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
         feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = Polymorphic auctx;
         cook_private_univs = Some private_univs;
-        cook_relevance = Retypeops.relevance_of_term env j.uj_val;
+        cook_relevance = Sorts.relevance_of_sort tj.utj_type;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
