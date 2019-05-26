@@ -153,9 +153,11 @@ let decl_constant na univs c =
   let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context univs vars in
-  let univs = Monomorphic_entry univs in
+  let () = Declare.declare_universe_context false univs in
+  let types = (Typeops.infer (Global.env ()) c).uj_type in
+  let univs = Monomorphic_entry Univ.ContextSet.empty in
   mkConst(declare_constant (Id.of_string na) 
-            (DefinitionEntry (definition_entry ~opaque:true ~univs c),
+            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c),
 	     IsProof Lemma))
 
 (* Calling a global tactic *)

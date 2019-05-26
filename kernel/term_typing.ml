@@ -169,6 +169,7 @@ the polymorphic case
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let () = assert (not (opaque && Option.is_empty typ)) in
       let (body, ctx), side_eff = Future.join body in
       let body, ctx = match trust with
       | Pure -> body, ctx
