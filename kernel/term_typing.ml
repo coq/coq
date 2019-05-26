@@ -169,6 +169,10 @@ the polymorphic case
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let tj = match typ with
+      | None -> None
+      | Some t -> Some (Typeops.infer_type env t)
+      in
       let (body, ctx), side_eff = Future.join body in
       let body, ctx = match trust with
       | Pure -> body, ctx
@@ -197,13 +201,12 @@ the polymorphic case
         env, sbst, Polymorphic auctx, local
       in
       let j = Typeops.infer env body in
-      let typ = match typ with
+      let typ = match tj with
         | None ->
           Vars.subst_univs_level_constr usubst j.uj_type
-        | Some t ->
-           let tj = Typeops.infer_type env t in
-           let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
-           Vars.subst_univs_level_constr usubst tj.utj_val
+        | Some tj ->
+          let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+          Vars.subst_univs_level_constr usubst tj.utj_val
       in
       let def = Constr.hcons (Vars.subst_univs_level_constr usubst j.uj_val) in
       let def = 
