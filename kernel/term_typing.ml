@@ -174,6 +174,7 @@ the polymorphic case
       let body, ctx = match trust with
       | Pure -> body, ctx
       | SideEffects handle ->
+        let () = assert opaque in
         let body, ctx', _ = handle env body side_eff in
         body, Univ.ContextSet.union ctx ctx'
       in
