@@ -566,12 +566,10 @@ let print_view_hints env sigma kind l =
 }
 
 VERNAC COMMAND EXTEND PrintView CLASSIFIED AS QUERY
-| ![proof] [ "Print" "Hint" "View" ssrviewpos(i) ] ->
+| [ "Print" "Hint" "View" ssrviewpos(i) ] ->
   {
-    fun ~pstate ->
-    (* XXX this is incorrect *)
-    let sigma, env = Option.cata Pfedit.get_current_context
-        (let e = Global.env () in Evd.from_env e, e) pstate in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
     (match i with
     | Some k ->
       print_view_hints env sigma k (Ssrview.AdaptorDb.get k)
@@ -579,8 +577,7 @@ VERNAC COMMAND EXTEND PrintView CLASSIFIED AS QUERY
         List.iter (fun k -> print_view_hints env sigma k (Ssrview.AdaptorDb.get k))
           [ Ssrview.AdaptorDb.Forward;
             Ssrview.AdaptorDb.Backward;
-            Ssrview.AdaptorDb.Equivalence ]);
-    pstate
+            Ssrview.AdaptorDb.Equivalence ])
   }
 END
 
