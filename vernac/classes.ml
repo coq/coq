@@ -462,7 +462,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
         (push_rel_context ctx' env') sigma kcl_props props subst in
     res, sigma
 
-let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id =
+let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id =
   let term, termtype =
     if List.is_empty k.cl_props then
      let term, termtype =
@@ -476,19 +476,19 @@ let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly ~program_mod
         id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
     ()
 
-let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
+let do_instance env env' sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id props =
   let term, termtype, sigma =
     match props with
     | (true, { CAst.v = CRecord fs }) ->
       if List.length fs > List.length k.cl_props then
         mismatched_props env' (List.map snd fs) k.cl_props;
-      let subst, sigma = do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode subst in
+      let subst, sigma = do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:false subst in
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
       term, termtype, sigma
     | (_, term) ->
       let sigma, def =
-        interp_casted_constr_evars ~program_mode env' sigma term cty in
+        interp_casted_constr_evars ~program_mode:false env' sigma term cty in
       let termtype = it_mkProd_or_LetIn cty ctx in
       let term = it_mkLambda_or_LetIn def ctx in
       term, termtype, sigma in
@@ -499,26 +499,26 @@ let do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ct
     let term = to_constr sigma term in
     declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
 
-let do_instance_program env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id opt_props =
+let do_instance_program env env' sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
   let term, termtype, sigma =
     match opt_props with
     | Some (true, { CAst.v = CRecord fs }) ->
       if List.length fs > List.length k.cl_props then
         mismatched_props env' (List.map snd fs) k.cl_props;
       let subst, sigma =
-        do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode subst in
+        do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:true subst in
      let term, termtype =
        do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
      Some term, termtype, sigma
     | Some (_, term) ->
       let sigma, def =
-        interp_casted_constr_evars ~program_mode env' sigma term cty in
+        interp_casted_constr_evars ~program_mode:true env' sigma term cty in
       let termtype = it_mkProd_or_LetIn cty ctx in
       let term = it_mkLambda_or_LetIn def ctx in
       Some term, termtype, sigma
     | None ->
       let subst, sigma =
-        do_instance_type_ctx_instance [] k env' ctx' sigma ~program_mode subst in
+        do_instance_type_ctx_instance [] k env' ctx' sigma ~program_mode:true subst in
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
       Some term, termtype, sigma in
@@ -573,32 +573,32 @@ let new_instance_common ~program_mode ~generalize env instid ctx cl =
   let env' = push_rel_context ctx env in
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
-let new_instance_interactive ?(global=false) ~program_mode
+let new_instance_interactive ?(global=false)
     poly instid ctx cl
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode ~generalize env instid ctx cl in
-  id, do_instance_interactive env env' sigma ?hook ~tac ~global ~poly ~program_mode
+    new_instance_common ~program_mode:false ~generalize env instid ctx cl in
+  id, do_instance_interactive env env' sigma ?hook ~tac ~global ~poly
     cty k u ctx ctx' pri decl imps subst id
 
-let new_instance_program ?(global=false) ~program_mode
+let new_instance_program ?(global=false)
     poly instid ctx cl opt_props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode ~generalize env instid ctx cl in
-  do_instance_program env env' sigma ?hook ~tac ~global ~poly ~program_mode
+    new_instance_common ~program_mode:true ~generalize env instid ctx cl in
+  do_instance_program env env' sigma ?hook ~tac ~global ~poly
     cty k u ctx ctx' pri decl imps subst id opt_props;
   id
 
-let new_instance ?(global=false) ~program_mode
+let new_instance ?(global=false)
     poly instid ctx cl props
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    new_instance_common ~program_mode ~generalize env instid ctx cl in
-  do_instance env env' sigma ?hook ~tac ~global ~poly ~program_mode
+    new_instance_common ~program_mode:false ~generalize env instid ctx cl in
+  do_instance env env' sigma ?hook ~tac ~global ~poly
     cty k u ctx ctx' pri decl imps subst id props;
   id
 

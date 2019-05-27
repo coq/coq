@@ -33,7 +33,6 @@ val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 
 val new_instance_interactive :
   ?global:bool (** Not global by default. *)
-  -> program_mode:bool
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list
@@ -46,7 +45,6 @@ val new_instance_interactive :
 
 val new_instance :
   ?global:bool (** Not global by default. *)
-  -> program_mode:bool
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list
@@ -60,7 +58,6 @@ val new_instance :
 
 val new_instance_program :
   ?global:bool (** Not global by default. *)
-  -> program_mode:bool
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list

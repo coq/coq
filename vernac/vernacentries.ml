@@ -1085,40 +1085,36 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance_common ~atts name =
-  let open DefAttributes in
-  let global = not (make_section_locality atts.locality) in
-  Dumpglob.dump_constraint (fst name) false "inst";
-  let program_mode = atts.program in
-  program_mode, global
-
 let vernac_instance_interactive ~atts name bl t pri =
   let open DefAttributes in
-  let program_mode, global = vernac_instance_common ~atts name in
+  Dumpglob.dump_constraint (fst name) false "inst";
+  let global = not (make_section_locality atts.locality) in
   let _id, pstate =
     Classes.new_instance_interactive
-      ~program_mode ~global atts.polymorphic name bl t pri in
+      ~global atts.polymorphic name bl t pri in
   pstate
 
 let vernac_instance_program ~atts name bl t opt_props pri =
   let open DefAttributes in
-  let program_mode, global = vernac_instance_common ~atts name in
+  Dumpglob.dump_constraint (fst name) false "inst";
+  let global = not (make_section_locality atts.locality) in
   let _id = Classes.new_instance_program
-    ~program_mode ~global atts.polymorphic name bl t opt_props pri in
+    ~global atts.polymorphic name bl t opt_props pri in
   ()
 
 let vernac_instance ~atts name bl t props pri =
   let open DefAttributes in
-  let program_mode, global = vernac_instance_common ~atts name in
+  Dumpglob.dump_constraint (fst name) false "inst";
+  let global = not (make_section_locality atts.locality) in
   let _id =
     Classes.new_instance
-      ~program_mode ~global atts.polymorphic name bl t props pri in
+      ~global atts.polymorphic name bl t props pri in
   ()
 
 let vernac_declare_instance ~atts id bl inst pri =
   let open DefAttributes in
-  let global = not (make_section_locality atts.locality) in
   Dumpglob.dump_definition (fst id) false "inst";
+  let global = not (make_section_locality atts.locality) in
   Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic id bl inst pri
 
 let vernac_context ~poly l =
