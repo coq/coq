@@ -50,6 +50,7 @@ let pr_path sp =
 
 type compilation_unit_name = DirPath.t
 
+type seg_univ = Univ.ContextSet.t * bool
 type seg_proofs = Constr.constr option array
 
 type library_t = {
@@ -90,7 +91,6 @@ let register_loaded_library m =
 
 (* Map from library names to table of opaque terms *)
 let opaque_tables = ref LibraryMap.empty
-let opaque_univ_tables = ref LibraryMap.empty
 
 let access_opaque_table dp i =
   let t =
@@ -326,7 +326,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let ch = System.with_magic_number_check raw_intern_library f in
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
-      let (opaque_csts:'a option), _, udg = marshal_in_segment f ch in
+      let (opaque_csts:seg_univ option), _, udg = marshal_in_segment f ch in
       let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
       let (table:seg_proofs option), pos, checksum =
@@ -345,7 +345,7 @@ let intern_from_file ~intern_mode (dir, f) =
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Flags.if_verbose chk_pp (str " (was a vio file) ");
-      Option.iter (fun (_,_,b) -> if not b then
+      Option.iter (fun (_,b) -> if not b then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
@@ -363,13 +363,9 @@ let intern_from_file ~intern_mode (dir, f) =
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
   Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
-  Option.iter (fun (opaque_csts,_,_) ->
-    opaque_univ_tables :=
-      LibraryMap.add sd.md_name opaque_csts !opaque_univ_tables)
-    opaque_csts;
   let extra_cst =
     Option.default Univ.ContextSet.empty
-      (Option.map (fun (_,cs,_) -> cs) opaque_csts) in
+      (Option.map (fun (cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =

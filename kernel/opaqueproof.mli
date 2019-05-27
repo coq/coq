@@ -37,7 +37,6 @@ val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> constr option;
-  access_constraints : DirPath.t -> int -> Univ.ContextSet.t option;
 }
 (** When stored indirectly, opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
@@ -70,6 +69,5 @@ val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
   Constr.t option array *
-  Univ.ContextSet.t option array *
   cooking_info list array *
   int Future.UUIDMap.t

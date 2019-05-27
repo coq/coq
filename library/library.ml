@@ -281,13 +281,9 @@ type 'a table_status =
 
 let opaque_tables =
   ref (LibraryMap.empty : (Constr.constr table_status) LibraryMap.t)
-let univ_tables =
-  ref (LibraryMap.empty : (Univ.ContextSet.t table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
-let add_univ_table dp st =
-  univ_tables := LibraryMap.add dp st !univ_tables
 
 let access_table what tables dp i =
   let t = match LibraryMap.find dp !tables with
@@ -312,15 +308,8 @@ let access_opaque_table dp i =
   let what = "opaque proofs" in
   access_table what opaque_tables dp i
 
-let access_univ_table dp i =
-  try
-    let what = "universe contexts of opaque proofs" in
-    access_table what univ_tables dp i
-  with Not_found -> None
-
 let indirect_accessor = {
   Opaqueproof.access_proof = access_opaque_table;
-  Opaqueproof.access_constraints = access_univ_table;
 }
 
 (************************************************************************)
@@ -329,7 +318,7 @@ let indirect_accessor = {
 type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
-  Univ.ContextSet.t option array * Univ.ContextSet.t * bool
+  Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Constr.constr option array
 
@@ -363,11 +352,9 @@ let intern_from_file f =
   let open Safe_typing in
   match univs with
   | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
-  | Some (utab,uall,true) ->
-      add_univ_table lsd.md_name (Fetched utab);
+  | Some (uall,true) ->
       mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
-  | Some (utab,_,false) ->
-      add_univ_table lsd.md_name (Fetched utab);
+  | Some (_,false) ->
       mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
 module DPMap = Map.Make(DirPath)
@@ -547,7 +534,7 @@ let load_library_todo f =
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s3 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if pi3 (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
+  if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
   s0, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
@@ -591,7 +578,7 @@ let save_library_to ?todo ~output_native_objects dir f otab =
         List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
           Future.UUIDSet.empty l in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
-  let opaque_table, univ_table, disch_table, f2t_map = Opaqueproof.dump ~except otab in
+  let opaque_table, disch_table, f2t_map = Opaqueproof.dump ~except otab in
   let tasks, utab, dtab =
     match todo with
     | None -> None, None, None
@@ -602,7 +589,7 @@ let save_library_to ?todo ~output_native_objects dir f otab =
             with Not_found -> assert b; { r with uuid = -1 }, b)
           tasks in
         Some (tasks,rcbackup),
-        Some (univ_table,Univ.ContextSet.empty,false),
+        Some (Univ.ContextSet.empty,false),
         Some disch_table in
   let sd = {
     md_name = dir;

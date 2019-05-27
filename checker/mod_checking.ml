@@ -13,7 +13,6 @@ let set_indirect_accessor f = get_proof := f
 
 let indirect_accessor = {
   Opaqueproof.access_proof = (fun dp n -> !get_proof dp n);
-  Opaqueproof.access_constraints = (fun _ _ -> assert false);
 }
 
 let check_constant_declaration env kn cb =
