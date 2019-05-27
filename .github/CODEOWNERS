@@ -16,7 +16,6 @@
 /META.coq.in      @ejgallego
 
 /dev/build/windows @MSoegtropIMC
-# Secondary maintainer @maximedenes
 
 ########## CI infrastructure ##########
 
@@ -43,7 +42,6 @@ azure-pipelines.yml @coq/ci-maintainers
 # Secondary maintainer @maximedenes
 
 /INSTALL*         @Zimmi48
-# Secondary maintainer @maximedenes
 
 /CONTRIBUTING.md  @Zimmi48
 # Secondary maintainer @maximedenes
@@ -52,7 +50,6 @@ azure-pipelines.yml @coq/ci-maintainers
 # Secondary maintainer @mattam82
 
 /dev/doc/         @Zimmi48
-# Secondary maintainer @maximedenes
 
 /dev/doc/MERGING.md @coq/pushers
 # This ensures that all members of the @coq/pushers
@@ -66,7 +63,6 @@ azure-pipelines.yml @coq/ci-maintainers
 /Makefile.doc     @coq/doc-maintainers
 
 /man/             @silene
-# Secondary maintainer @maximedenes
 
 /doc/plugin_tutorial/ @coq/plugin-tutorial-maintainers
 
@@ -143,8 +139,6 @@ azure-pipelines.yml @coq/ci-maintainers
 
 /plugins/derive/        @aspiwack
 # Secondary maintainer @ppedrot
-
-/plugins/extraction/    @maximedenes
 
 /plugins/firstorder/   @PierreCorbineau
 # Secondary maintainer @herbelin
@@ -279,7 +273,6 @@ azure-pipelines.yml @coq/ci-maintainers
 # Secondary maintainer    @silene
 
 /tools/coqdep*          @ppedrot
-# Secondary maintainer @maximedenes
 
 /tools/coq_tex*         @silene
 # Secondary maintainer @gares
@@ -301,7 +294,7 @@ azure-pipelines.yml @coq/ci-maintainers
 ########## Vernacular ##########
 
 /vernac/          @mattam82
-# Secondary maintainer @maximedenes
+# Secondary maintainer @ejgallego
 
 /vernac/metasyntax.*   @coq/parsing-maintainers
 
@@ -322,7 +315,6 @@ azure-pipelines.yml @coq/ci-maintainers
 ########## Developer tools ##########
 
 /dev/tools/backport-pr.sh     @Zimmi48
-# Secondary maintainer @maximedenes
 
 /dev/tools/change-header      @herbelin
 
