@@ -42,13 +42,13 @@ module NamedDecl = Context.Named.Declaration
 
 (** Typeclass-based generalized rewriting. *)
 
-type rewrite_attributes = { polymorphic : bool; program : bool; global : bool }
+type rewrite_attributes = { polymorphic : bool; global : bool }
 
 let rewrite_attributes =
   let open Attributes.Notations in
   Attributes.(polymorphic ++ program ++ locality) >>= fun ((polymorphic, program), locality) ->
   let global = not (Locality.make_section_locality locality) in
-  Attributes.Notations.return { polymorphic; program; global }
+  Attributes.Notations.return { polymorphic; global }
 
 (** Constants used by the tactic. *)
 
