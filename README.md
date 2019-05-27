@@ -28,7 +28,6 @@ environment for semi-interactive development of machine-checked proofs.
 [![Arch package][arch-badge]][arch-link]
 [![Chocolatey package][chocolatey-badge]][chocolatey-link]
 [![Homebrew package][homebrew-badge]][homebrew-link]
-[![MacPorts package][macports-badge]][macports-link]
 [![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
 
 [repology-badge]: https://repology.org/badge/latest-versions/coq.svg
@@ -88,7 +87,7 @@ development team:
 
 See also [coq.inria.fr/community](https://coq.inria.fr/community.html).
 
-## Bugs report
+## Bug reports
 
 Please report any bug / feature request in [our issue tracker](https://github.com/coq/coq/issues).
 
