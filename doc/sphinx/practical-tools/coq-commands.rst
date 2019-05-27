@@ -200,7 +200,7 @@ and ``coqtop``, unless stated otherwise:
 :-emacs, -ide-slave: Start a special toplevel to communicate with a
   specific IDE.
 :-impredicative-set: Change the logical theory of |Coq| by declaring the
-   sort Set impredicative.
+   sort :g:`Set` impredicative.
 
    .. warning::
 
