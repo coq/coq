@@ -19,19 +19,15 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint_interactive :
-  (* When [false], assume guarded. *)
   locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> Proof_global.t
 
 val do_fixpoint :
-  (* When [false], assume guarded. *)
   locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint_interactive :
-  (* When [false], assume guarded. *)
   locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> Proof_global.t
 
 val do_cofixpoint :
-  (* When [false], assume guarded. *)
   locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
