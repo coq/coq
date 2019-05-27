@@ -52,10 +52,15 @@ let turn_indirect dp o tab = match o with
       then CErrors.anomaly (Pp.str "Indirect in a different table.")
       else CErrors.anomaly (Pp.str "Already an indirect opaque.")
   | Direct (d,cu) ->
-      (** Uncomment to check dynamically that all terms turned into
-          indirections are hashconsed. *)
-(* let check_hcons c = let c' = hcons_constr c in assert (c' == c); c in *)
-(* let cu = Future.chain ~pure:true cu (fun (c, u) -> check_hcons c; c, u) in *)
+    (* Invariant: direct opaques only exist inside sections, we turn them
+      indirect as soon as we are at toplevel. At this moment, we perform
+      hashconsing of their contents, potentially as a future. *)
+      let hcons (c, u) =
+        let c = Constr.hcons c in
+        let u = Univ.hcons_universe_context_set u in
+        (c, u)
+      in
+      let cu = Future.chain cu hcons in
       let id = tab.opaque_len in
       let opaque_val = Int.Map.add id (d,cu) tab.opaque_val in
       let opaque_dir =

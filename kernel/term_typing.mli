@@ -35,7 +35,7 @@ val translate_constant :
   'a trust -> env -> Constant.t -> 'a constant_entry ->
     Opaqueproof.proofterm constant_body
 
-val translate_recipe : hcons:bool -> env -> Constant.t -> Cooking.recipe -> Opaqueproof.opaque constant_body
+val translate_recipe : env -> Constant.t -> Cooking.recipe -> Opaqueproof.opaque constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
