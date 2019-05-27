@@ -42,8 +42,8 @@ val push_named_assum : (Id.t * Constr.types * bool) Univ.in_universe_context_set
 val push_named_def   : (Id.t * Entries.section_def_entry) -> unit
 
 val export_private_constants : in_section:bool ->
-  Safe_typing.private_constants Entries.definition_entry ->
-  unit Entries.definition_entry * Safe_typing.exported_private_constant list
+  Safe_typing.private_constants Entries.proof_output ->
+  Constr.constr Univ.in_universe_context_set * Safe_typing.exported_private_constant list
 
 val add_constant :
   ?role:Entries.side_effect_role -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * Safe_typing.private_constants
