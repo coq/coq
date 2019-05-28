@@ -37,11 +37,7 @@ val hcons : t -> t
 
 val family_compare : family -> family -> int
 val family_equal : family -> family -> bool
-
-module List : sig
-  val mem : family -> family list -> bool
-  val intersect : family list -> family list -> family list
-end
+val family_leq : family -> family -> bool
 
 val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t

@@ -735,7 +735,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
   let project env sorts posn t1 t2 =
     let ty1 = get_type_of env sigma t1 in
     let s = get_sort_family_of ~truncation_style:true env sigma ty1 in
-    if Sorts.List.mem s sorts
+    if List.mem_f Sorts.family_equal s sorts
     then [(List.rev posn,t1,t2)] else []
   in
   let rec findrec sorts posn t1 t2 =
@@ -746,7 +746,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
 	  let sorts' =
-            Sorts.List.intersect sorts (allowed_sorts env (fst sp1))
+            CList.intersect Sorts.family_equal sorts (sorts_below (top_allowed_sort env (fst sp1)))
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
@@ -762,7 +762,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             List.flatten
 	      (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
 		0 rargs1 rargs2)
-	  else if Sorts.List.mem InType sorts' && not no_discr
+          else if List.mem_f Sorts.family_equal InType sorts' && not no_discr
           then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
 	  else 

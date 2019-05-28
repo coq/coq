@@ -216,11 +216,11 @@ let declare_one_case_analysis_scheme ind =
     else if not (Inductiveops.has_dependent_elim mib) then
       case_scheme_kind_from_type
     else case_dep_scheme_kind_from_type in
-  let kelim = elim_sorts (mib,mip) in
+  let kelim = elim_sort (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
-  if Sorts.List.mem InType kelim then
+  if Sorts.family_leq InType kelim then
     ignore (define_individual_scheme dep UserAutomaticRequest None ind)
 
 (* Induction/recursion schemes *)
@@ -248,16 +248,17 @@ let declare_one_induction_scheme ind =
   let kind = inductive_sort_family mip in
   let from_prop = kind == InProp in
   let depelim = Inductiveops.has_dependent_elim mib in
-  let kelim = elim_sorts (mib,mip) in
+  let kelim = Inductiveops.sorts_below (elim_sort (mib,mip)) in
   let kelim = if Global.sprop_allowed () then kelim
     else List.filter (fun s -> s <> InSProp) kelim
   in
   let elims =
     List.map_filter (fun (sort,kind) ->
-      if Sorts.List.mem sort kelim then Some kind else None)
+        if List.mem_f Sorts.family_equal sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop
        else if depelim then kinds_from_type
-       else nondep_kinds_from_type) in
+       else nondep_kinds_from_type)
+  in
   List.iter (fun kind -> ignore (define_individual_scheme kind UserAutomaticRequest None ind))
     elims
 

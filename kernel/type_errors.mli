@@ -50,7 +50,7 @@ type ('constr, 'types) ptype_error =
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * 'constr
   | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
-      * (Sorts.family list * Sorts.family * Sorts.family * arity_error) option
+      * (Sorts.family * Sorts.family * Sorts.family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -104,7 +104,7 @@ val error_reference_variables : env -> Id.t -> constr -> 'a
 
 val error_elim_arity :
   env -> pinductive -> constr -> unsafe_judgment ->
-      (Sorts.family list * Sorts.family * Sorts.family * arity_error) option -> 'a
+      (Sorts.family * Sorts.family * Sorts.family * arity_error) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 

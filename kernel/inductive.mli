@@ -52,7 +52,7 @@ val type_of_inductive : env -> mind_specif puniverses -> types
 val type_of_inductive_knowing_parameters :
   env -> ?polyprop:bool -> mind_specif puniverses -> types Lazy.t array -> types
 
-val elim_sorts : mind_specif -> Sorts.family list
+val elim_sort : mind_specif -> Sorts.family
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool

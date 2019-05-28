@@ -255,9 +255,12 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
-let allowed_sorts env (kn,i as ind) =
+let top_allowed_sort env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_kelim
+
+let sorts_below top =
+  List.filter (fun s -> Sorts.family_leq s top) Sorts.[InSProp;InProp;InSet;InType]
 
 let has_dependent_elim mib =
   match mib.mind_record with

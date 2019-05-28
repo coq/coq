@@ -257,7 +257,7 @@ let v_one_ind = v_tuple "one_inductive_body"
     Array v_constr;
     Int;
     Int;
-    List v_sortfam;
+    v_sortfam;
     Array (v_pair v_rctxt v_constr);
     Array Int;
     Array Int;

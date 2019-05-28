@@ -84,7 +84,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 
   let () = if Option.is_empty projs then check_privacy_block mib in
   let () = 
-    if not (Sorts.List.mem kind (elim_sorts specif)) then
+    if not (Sorts.family_leq kind (elim_sort specif)) then
       raise
 	(RecursionSchemeError
            (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
@@ -557,8 +557,8 @@ let weaken_sort_scheme env evd set sort npars term ty =
 let check_arities env listdepkind =
   let _ = List.fold_left
     (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
-       let kelim = elim_sorts (mibi,mipi) in
-       if not (Sorts.List.mem kind kelim) then raise
+       let kelim = elim_sort (mibi,mipi) in
+       if not (Sorts.family_leq kind kelim) then raise
 	 (RecursionSchemeError
           (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
        else if Int.List.mem ni ln then raise

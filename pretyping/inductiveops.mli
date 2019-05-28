@@ -141,7 +141,9 @@ val constructor_nrealdecls_env : env -> constructor -> int
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
 
-val allowed_sorts : env -> inductive -> Sorts.family list
+val sorts_below : Sorts.family -> Sorts.family list
+
+val top_allowed_sort : env -> inductive -> Sorts.family
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)
