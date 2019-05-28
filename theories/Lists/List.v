@@ -403,6 +403,18 @@ Section Elts.
       | None => default
     end.
 
+  Fixpoint get (l : list A) : forall n : nat, n < length l -> A
+    := match l return forall n : nat, n < length l -> A with
+         | nil
+           => fun n H => False_rect _ (PeanoNat.Nat.nlt_0_r n H)
+         | y0 :: ys
+           => fun n
+                => match n return n < length (y0 :: ys) -> A with
+                     | O => fun _ => y0
+                     | S m => fun H => get ys (Lt.lt_S_n m (length ys) H)
+                     end
+         end.
+
   Lemma nth_default_eq :
     forall n l (d:A), nth_default d l n = nth n l d.
   Proof.
