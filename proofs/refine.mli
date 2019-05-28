@@ -27,9 +27,6 @@ val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> uni
     raised during the interpretation of [t] are caught and result in
     tactic failures. If [typecheck] is [true] [t] is type-checked beforehand. *)
 
-val refine_one : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * ('a * EConstr.t)) -> 'a tactic
-(** A variant of [refine] which assumes exactly one goal under focus *)
-
 val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
   Proofview.Goal.t -> 'a tactic
 (** The general version of refine. *)

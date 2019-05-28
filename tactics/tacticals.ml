@@ -43,12 +43,8 @@ let tclTHENS         = Refiner.tclTHENS
 let tclTHENSV        = Refiner.tclTHENSV
 let tclTHENSFIRSTn   = Refiner.tclTHENSFIRSTn
 let tclTHENSLASTn    = Refiner.tclTHENSLASTn
-let tclTHENFIRSTn    = Refiner.tclTHENFIRSTn
-let tclTHENLASTn     = Refiner.tclTHENLASTn
 let tclREPEAT        = Refiner.tclREPEAT
-let tclREPEAT_MAIN   = Refiner.tclREPEAT_MAIN
 let tclFIRST         = Refiner.tclFIRST
-let tclSOLVE         = Refiner.tclSOLVE
 let tclTRY           = Refiner.tclTRY
 let tclCOMPLETE      = Refiner.tclCOMPLETE
 let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
@@ -58,10 +54,6 @@ let tclDO            = Refiner.tclDO
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclSHOWHYPS      = Refiner.tclSHOWHYPS
 let tclTHENTRY       = Refiner.tclTHENTRY
-let tclIFTHENELSE    = Refiner.tclIFTHENELSE
-let tclIFTHENSELSE   = Refiner.tclIFTHENSELSE
-let tclIFTHENSVELSE   = Refiner.tclIFTHENSVELSE
-let tclIFTHENTRYELSEMUST = Refiner.tclIFTHENTRYELSEMUST
 
 (************************************************************************)
 (* Tacticals applying on hypotheses                                     *)

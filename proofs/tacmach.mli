@@ -64,7 +64,6 @@ val pf_unfoldn    : (occurrences * evaluable_global_reference) list
 
 val pf_const_value : Goal.goal sigma -> pconstant -> constr
 val pf_conv_x      : Goal.goal sigma -> constr -> constr -> bool
-val pf_conv_x_leq  : Goal.goal sigma -> constr -> constr -> bool
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : Goal.goal sigma -> Pp.t
@@ -109,11 +108,8 @@ module New : sig
   val pf_hnf_constr : Proofview.Goal.t -> constr -> types
   val pf_hnf_type_of : Proofview.Goal.t -> constr -> types
 
-  val pf_whd_all : Proofview.Goal.t -> constr -> constr
   val pf_compute : Proofview.Goal.t -> constr -> constr
 
   val pf_nf_evar : Proofview.Goal.t -> constr -> constr
 
-  (** Gathers the undefined evars of the given goal. *)
-  val pf_undefined_evars : Proofview.Goal.t -> Evar.Set.t
 end
