@@ -51,7 +51,6 @@ val new_instance :
   -> constr_expr
   -> (bool * constr_expr)
   -> ?generalize:bool
-  -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
   -> Id.t
@@ -64,7 +63,6 @@ val new_instance_program :
   -> constr_expr
   -> (bool * constr_expr) option
   -> ?generalize:bool
-  -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
   -> Id.t

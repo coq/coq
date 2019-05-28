@@ -64,6 +64,16 @@ let modify_pstate ~pstate f =
   vernac_require_open_proof ~pstate (fun ~pstate ->
       Some (Proof_global.modify_current_pstate (fun pstate -> f ~pstate) pstate))
 
+let with_read_proof ~pstate f =
+  f ~pstate;
+  pstate
+
+let with_open_proof ~pstate f =
+  Some (Proof_global.push ~ontop:pstate (f ~pstate))
+
+let with_open_proof_simple ~pstate f =
+  Some (Proof_global.push ~ontop:pstate f)
+
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
@@ -98,6 +108,25 @@ module DefAttributes = struct
     in
     { polymorphic; program; locality; deprecated }
 end
+
+let with_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  f ~local
+
+let with_section_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  let section_local = make_section_locality local in
+  f ~section_local
+
+let with_module_locality ~atts f =
+  let local = Attributes.(parse locality atts) in
+  let module_local = make_module_locality local in
+  f ~module_local
+
+let with_def_attributes ~atts f =
+  let atts = DefAttributes.parse atts in
+  if atts.DefAttributes.program then Obligations.check_program_libraries ();
+  f ~atts
 
 (*******************)
 (* "Show" commands *)
@@ -1085,37 +1114,33 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance_interactive ~atts name bl t pri =
-  let open DefAttributes in
+let vernac_instance ~pstate ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let global = not (make_section_locality atts.locality) in
-  let _id, pstate =
-    Classes.new_instance_interactive
-      ~global atts.polymorphic name bl t pri in
-  pstate
-
-let vernac_instance_program ~atts name bl t opt_props pri =
-  let open DefAttributes in
-  Dumpglob.dump_constraint (fst name) false "inst";
-  let global = not (make_section_locality atts.locality) in
-  let _id = Classes.new_instance_program
-    ~global atts.polymorphic name bl t opt_props pri in
-  ()
-
-let vernac_instance ~atts name bl t props pri =
-  let open DefAttributes in
-  Dumpglob.dump_constraint (fst name) false "inst";
-  let global = not (make_section_locality atts.locality) in
-  let _id =
-    Classes.new_instance
-      ~global atts.polymorphic name bl t props pri in
-  ()
+  let (program, locality), polymorphic =
+    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+  in
+  let global = not (make_section_locality locality) in
+  if program then begin
+    let _id : Id.t = Classes.new_instance_program ~global polymorphic name bl t props info in
+    pstate
+  end else begin
+    match props with
+    | None ->
+      with_open_proof_simple ~pstate
+        (let _id, pstate = Classes.new_instance_interactive ~global polymorphic name bl t info in
+         pstate)
+    | Some props ->
+      let _id : Id.t = Classes.new_instance ~global polymorphic name bl t props info in
+      pstate
+  end
 
 let vernac_declare_instance ~atts id bl inst pri =
-  let open DefAttributes in
   Dumpglob.dump_definition (fst id) false "inst";
-  let global = not (make_section_locality atts.locality) in
-  Classes.declare_new_instance ~program_mode:atts.program ~global atts.polymorphic id bl inst pri
+  let (program, locality), polymorphic =
+    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+  in
+  let global = not (make_section_locality locality) in
+  Classes.declare_new_instance ~program_mode:program ~global polymorphic id bl inst pri
 
 let vernac_context ~poly l =
   if not (ComAssumption.context poly l) then Feedback.feedback Feedback.AddedAxiom
@@ -2253,36 +2278,6 @@ let vernac_check_guard ~pstate =
       (str ("Condition violated: ") ++s)
   in message
 
-(* Attributes *)
-let with_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  f ~local
-
-let with_section_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  let section_local = make_section_locality local in
-  f ~section_local
-
-let with_module_locality ~atts f =
-  let local = Attributes.(parse locality atts) in
-  let module_local = make_module_locality local in
-  f ~module_local
-
-let with_def_attributes ~atts f =
-  let atts = DefAttributes.parse atts in
-  if atts.DefAttributes.program then Obligations.check_program_libraries ();
-  f ~atts
-
-let with_read_proof ~pstate f =
-  f ~pstate;
-  pstate
-
-let with_open_proof ~pstate f =
-  Some (Proof_global.push ~ontop:pstate (f ~pstate))
-
-let with_open_proof_simple ~pstate f =
-  Some (Proof_global.push ~ontop:pstate f)
-
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
 
@@ -2517,22 +2512,9 @@ let rec interp_expr ?proof ~atts ~st c : Proof_global.stack option =
 
   (* Type classes *)
   | VernacInstance (name, bl, t, props, info) ->
-    if (DefAttributes.parse atts).DefAttributes.program then begin
-      with_def_attributes ~atts
-        (vernac_instance_program name bl t props info);
-      pstate
-    end else begin
-      match props with
-      | None ->
-        with_open_proof_simple ~pstate
-          (with_def_attributes ~atts
-            (vernac_instance_interactive name bl t info))
-      | Some props ->
-         with_def_attributes ~atts (vernac_instance name bl t props info);
-         pstate
-      end
+    vernac_instance ~pstate ~atts name bl t props info
   | VernacDeclareInstance (id, bl, inst, info) ->
-    with_def_attributes ~atts vernac_declare_instance id bl inst info;
+    vernac_declare_instance ~atts id bl inst info;
     pstate
   | VernacContext sup ->
     let () = vernac_context ~poly:(only_polymorphism atts) sup in
