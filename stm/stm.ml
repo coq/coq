@@ -1819,15 +1819,15 @@ end = struct (* {{{ *)
                       str (Printexc.to_string e)));
       if drop then `ERROR_ADMITTED else `ERROR
 
-  let finish_task name (u,cst,_) d p l i =
+  let finish_task name (cst,_) d p l i =
     let { Stateid.uuid = bucket }, drop = List.nth l i in
     let bucket_name =
       if bucket < 0 then (assert drop; ", no bucket")
       else Printf.sprintf ", bucket %d" bucket in
     match check_task_aux bucket_name name l i with
     | `ERROR -> exit 1
-    | `ERROR_ADMITTED -> u, cst, false
-    | `OK_ADMITTED -> u, cst, false
+    | `ERROR_ADMITTED -> cst, false
+    | `OK_ADMITTED -> cst, false
     | `OK (po,_) ->
         let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
@@ -1846,9 +1846,8 @@ end = struct (* {{{ *)
         let pr = map (Option.get (Global.body_of_constant_body Library.indirect_accessor c)) in
         let pr = discharge pr in
         let pr = Constr.hcons pr in
-        u.(bucket) <- Some uc;
         p.(bucket) <- Some pr;
-        u, Univ.ContextSet.union cst uc, false
+        Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
     match check_task_aux "" name l i with
@@ -2851,8 +2850,8 @@ let finish_tasks name u d p (t,rcbackup as tasks) =
     VCS.restore vcs;
     u in
   try
-    let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
-    (u,a,true), p
+    let a, _ = List.fold_left finish_task u (info_tasks tasks) in
+    (a,true), p
   with e ->
     let e = CErrors.push e in
     msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);

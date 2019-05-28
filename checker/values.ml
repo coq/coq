@@ -385,4 +385,4 @@ let v_lib =
 
 let v_opaques = Array (Opt v_constr)
 let v_univopaques =
-  Opt (Tuple ("univopaques",[|Array (Opt v_context_set);v_context_set;v_bool|]))
+  Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))

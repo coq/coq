@@ -33,8 +33,8 @@ val require_library_from_dirpath
 (** Segments of a library *)
 type seg_sum
 type seg_lib
-type seg_univ = (* cst, all_cst, finished? *)
-  Univ.ContextSet.t option array * Univ.ContextSet.t * bool
+type seg_univ = (* all_cst, finished? *)
+  Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Constr.constr option array
 

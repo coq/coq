@@ -18,7 +18,6 @@ type work_list = (Instance.t * Id.t array) Cmap.t *
 
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> constr option;
-  access_constraints : DirPath.t -> int -> Univ.ContextSet.t option;
 }
 
 type cooking_info = { 
@@ -107,14 +106,12 @@ let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
       let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
-let force_constraints access { opaque_val = prfs; opaque_dir = odp; _ } = function
+let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = function
   | Direct (_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
       then snd (Future.force (snd (Int.Map.find i prfs)))
-      else match access.access_constraints dp i with
-        | None -> Univ.ContextSet.empty
-        | Some u -> u
+      else Univ.ContextSet.empty
 
 let get_direct_constraints = function
 | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
@@ -124,15 +121,13 @@ module FMap = Future.UUIDMap
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
   let opaque_table = Array.make n None in
-  let univ_table = Array.make n None in
   let disch_table = Array.make n [] in
   let f2t_map = ref FMap.empty in
   let iter n (d, cu) =
     let uid = Future.uuid cu in
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
     if Future.is_val cu then
-      let (c, u) = Future.force cu in
-      let () = univ_table.(n) <- Some u in
+      let (c, _) = Future.force cu in
       opaque_table.(n) <- Some c
     else if Future.UUIDSet.mem uid except then
       disch_table.(n) <- d
@@ -141,4 +136,4 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
         Pp.(str"Proof object "++int n++str" is not checked nor to be checked")
   in
   let () = Int.Map.iter iter otab in
-  opaque_table, univ_table, disch_table, !f2t_map
+  opaque_table, disch_table, !f2t_map
