@@ -244,6 +244,9 @@ build:base+32bit:
   variables:
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
+  only: &full-ci
+    variables:
+      - $FULL_CI == "true"
 
 build:edge+flambda:
   extends: .build-template
@@ -317,6 +320,7 @@ pkg:opam:
     COQ_VERSION: "8.10"
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
+  only: *full-ci
 
 .nix-template:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
@@ -448,6 +452,7 @@ test-suite:base+32bit:
     - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
+  only: *full-ci
 
 test-suite:edge+flambda:
   extends: .test-suite-template
@@ -456,6 +461,7 @@ test-suite:edge+flambda:
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
+  only: *full-ci
 
 test-suite:egde:dune:dev:
   stage: test
@@ -498,6 +504,7 @@ test-suite:edge+trunk+make:
       - test-suite/logs
     expire_in: 1 week
   allow_failure: true
+  only: *full-ci
 
 test-suite:edge+trunk+dune:
   stage: test
@@ -526,6 +533,7 @@ test-suite:edge+trunk+dune:
       - _build/default/test-suite/logs
     expire_in: 1 week
   allow_failure: true
+  only: *full-ci
 
 test-suite:base+async:
   extends: .test-suite-template
@@ -550,6 +558,7 @@ validate:base+32bit:
     - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
+  only: *full-ci
 
 validate:edge+flambda:
   extends: .validate-template
@@ -558,6 +567,7 @@ validate:edge+flambda:
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
+  only: *full-ci
 
 validate:quick:
   extends: .validate-template
