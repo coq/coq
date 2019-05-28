@@ -179,7 +179,7 @@ let classify_md (local, _, _, _, _ as o) = Substitute o
 
 let inMD : bool * ltac_constant option * bool * glob_tactic_expr *
            Deprecation.t option -> obj =
-  declare_object {(default_object "TAC-DEFINITION") with
+  declare_object_named {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;
      open_function   = open_md;

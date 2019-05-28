@@ -16,17 +16,17 @@ module Dyn = Dyn.Make ()
 type 'a substitutivity =
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
-type object_name = Libnames.full_path * Names.KerName.t
-
-type 'a object_declaration = {
+type ('a,'n) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  cache_function : 'n * 'a -> unit;
+  load_function : int -> 'n * 'a -> unit;
+  open_function : int -> 'n * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function : Mod_subst.substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
+  discharge_function : 'n * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
+
+type object_name = Libnames.full_path * Names.KerName.t
 
 let default_object s = {
   object_name = s;
@@ -96,7 +96,34 @@ let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 let cache_tab =
   (Hashtbl.create 223 : (string,dynamic_object_declaration) Hashtbl.t)
 
-let declare_object_full odecl =
+let declare_object_full (odecl : ('a, unit) object_declaration) =
+  let na = odecl.object_name in
+  let (infun, outfun) = Dyn.Easy.make_dyn na in
+  let cacher (oname,lobj) = odecl.cache_function ((),outfun lobj)
+  and loader i (oname,lobj) = odecl.load_function i ((),outfun lobj)
+  and opener i (oname,lobj) = odecl.open_function i ((),outfun lobj)
+  and substituter (sub,lobj) = infun (odecl.subst_function (sub,outfun lobj))
+  and classifier lobj = match odecl.classify_function (outfun lobj) with
+  | Dispose -> Dispose
+  | Substitute obj -> Substitute (infun obj)
+  | Keep obj -> Keep (infun obj)
+  | Anticipate (obj) -> Anticipate (infun obj)
+  and discharge (oname,lobj) =
+    Option.map infun (odecl.discharge_function ((),outfun lobj))
+  and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))
+  in
+  Hashtbl.add cache_tab na { dyn_cache_function = cacher;
+                             dyn_load_function = loader;
+                             dyn_open_function = opener;
+                             dyn_subst_function = substituter;
+                             dyn_classify_function = classifier;
+                             dyn_discharge_function = discharge;
+                             dyn_rebuild_function = rebuild };
+  (infun,outfun)
+
+let declare_object odecl = fst (declare_object_full odecl)
+
+let declare_object_full_named (odecl : ('a, object_name) object_declaration) =
   let na = odecl.object_name in
   let (infun, outfun) = Dyn.Easy.make_dyn na in
   let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
@@ -121,8 +148,7 @@ let declare_object_full odecl =
 			     dyn_rebuild_function = rebuild };
   (infun,outfun)
 
-let declare_object odecl = fst (declare_object_full odecl)
-let declare_object_full odecl = declare_object_full odecl
+let declare_object_named odecl = fst (declare_object_full_named odecl)
 
 (* this function describes how the cache, load, open, and export functions
    are triggered. *)

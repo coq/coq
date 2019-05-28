@@ -404,7 +404,7 @@ let subst_th (subst,th) =
 
 let theory_to_obj : ring_info -> obj =
   let cache_th (name,th) = add_entry name th in
-  declare_object @@ global_object_nodischarge "tactic-new-ring-theory"
+  declare_object_named @@ global_object_nodischarge "tactic-new-ring-theory"
     ~cache:cache_th
     ~subst:(Some subst_th)
 
@@ -856,7 +856,7 @@ let subst_th (subst,th) =
 
 let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
-  declare_object @@ global_object_nodischarge "tactic-new-field-theory"
+  declare_object_named @@ global_object_nodischarge "tactic-new-field-theory"
     ~cache:cache_th
     ~subst:(Some subst_th)
 

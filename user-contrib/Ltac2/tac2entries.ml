@@ -87,7 +87,7 @@ let subst_tacdef (subst, def) =
 let classify_tacdef o = Substitute o
 
 let inTacDef : tacdef -> obj =
-  declare_object {(default_object "TAC2-DEFINITION") with
+  declare_object_named {(default_object "TAC2-DEFINITION") with
      cache_function  = cache_tacdef;
      load_function   = load_tacdef;
      open_function   = open_tacdef;
@@ -194,7 +194,7 @@ let subst_typdef (subst, def) =
 let classify_typdef o = Substitute o
 
 let inTypDef : typdef -> obj =
-  declare_object {(default_object "TAC2-TYPE-DEFINITION") with
+  declare_object_named {(default_object "TAC2-TYPE-DEFINITION") with
      cache_function  = cache_typdef;
      load_function   = load_typdef;
      open_function   = open_typdef;
@@ -264,7 +264,7 @@ let subst_typext (subst, e) =
 let classify_typext o = Substitute o
 
 let inTypExt : typext -> obj =
-  declare_object {(default_object "TAC2-TYPE-EXTENSION") with
+  declare_object_named {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
      open_function   = open_typext;
@@ -649,7 +649,7 @@ let subst_abbreviation (subst, abbr) =
 let classify_abbreviation o = Substitute o
 
 let inTac2Abbreviation : abbreviation -> obj =
-  declare_object {(default_object "TAC2-ABBREVIATION") with
+  declare_object_named {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
      open_function   = open_abbreviation;

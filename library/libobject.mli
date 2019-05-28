@@ -70,16 +70,14 @@ type 'a substitutivity =
    can be substituted and a "syntactic" [full_path] which can be printed
 *)
 
-type object_name = full_path * Names.KerName.t
-
-type 'a object_declaration = {
+type ('a,'n) object_declaration = {
   object_name : string;
-  cache_function : object_name * 'a -> unit;
-  load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  cache_function : 'n * 'a -> unit;
+  load_function : int -> 'n * 'a -> unit;
+  open_function : int -> 'n * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
-  discharge_function : object_name * 'a -> 'a option;
+  discharge_function : 'n * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
 (** The default object is a "Keep" object with empty methods.
@@ -91,7 +89,7 @@ type 'a object_declaration = {
 
 *)
 
-val default_object : string -> 'a object_declaration
+val default_object : string -> ('a,'n) object_declaration
 
 (** the identity substitution function *)
 val ident_subst_function : substitution * 'a -> 'a
@@ -100,6 +98,8 @@ val ident_subst_function : substitution * 'a -> 'a
 (** Given an object declaration, the function [declare_object_full]
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
+
+type object_name = full_path * Names.KerName.t
 
 type obj
 
@@ -120,10 +120,16 @@ and objects = (Names.Id.t * t) list
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 val declare_object_full :
-  'a object_declaration -> ('a -> obj) * (obj -> 'a)
+  ('a,unit) object_declaration -> ('a -> obj) * (obj -> 'a)
 
 val declare_object :
-  'a object_declaration -> ('a -> obj)
+  ('a,unit) object_declaration -> ('a -> obj)
+
+val declare_object_full_named :
+  ('a,object_name) object_declaration -> ('a -> obj) * (obj -> 'a)
+
+val declare_object_named :
+  ('a,object_name) object_declaration -> ('a -> obj)
 
 val object_tag : obj -> string
 
@@ -150,35 +156,35 @@ variants.
 *)
 
 val local_object : string ->
-  cache:(object_name * 'a -> unit) ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  cache:(unit * 'a -> unit) ->
+  discharge:(unit * 'a -> 'a option) ->
+  ('a,unit) object_declaration
 
 val local_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
-  'a object_declaration
+  cache:(unit * 'a -> unit) ->
+  ('a,unit) object_declaration
 
 val global_object : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:(unit * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  discharge:(unit * 'a -> 'a option) ->
+  ('a,unit) object_declaration
 
 val global_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:('n * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,'n) object_declaration
 
 val superglobal_object : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:(unit * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  discharge:(object_name * 'a -> 'a option) ->
-  'a object_declaration
+  discharge:(unit * 'a -> 'a option) ->
+  ('a,unit) object_declaration
 
 val superglobal_object_nodischarge : string ->
-  cache:(object_name * 'a -> unit) ->
+  cache:(unit * 'a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
-  'a object_declaration
+  ('a,unit) object_declaration
 
 (** {6 Debug} *)
 

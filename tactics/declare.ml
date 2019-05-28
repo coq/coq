@@ -135,7 +135,7 @@ let dummy_constant cst = {
 let classify_constant cst = Substitute (dummy_constant cst)
 
 let (inConstant : constant_obj -> obj) =
-  declare_object { (default_object "CONSTANT") with
+  declare_object_named { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
@@ -401,7 +401,7 @@ let discharge_inductive ((sp, kn), names) =
   Some names
 
 let inInductive : inductive_obj -> obj =
-  declare_object {(default_object "INDUCTIVE") with
+  declare_object_named {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
@@ -561,7 +561,7 @@ let discharge_univ_names = function
   | _, ((QualifiedUniv _ | UnqualifiedUniv), _ as x) -> Some x
 
 let input_univ_names : universe_name_decl -> Libobject.obj =
-  declare_object
+  declare_object_named
     { (default_object "Global universe name state") with
       cache_function = cache_univ_names;
       load_function = load_univ_names;
