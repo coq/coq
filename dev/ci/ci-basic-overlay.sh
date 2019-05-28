@@ -153,7 +153,7 @@
 ########################################################################
 # coq_dpdgraph
 ########################################################################
-: "${coq_dpdgraph_CI_REF:=coq-master}"
+: "${coq_dpdgraph_CI_REF:=f57d3ca3990c18b85db896ced96c9f92a080ffa0}"
 : "${coq_dpdgraph_CI_GITURL:=https://github.com/Karmaki/coq-dpdgraph}"
 : "${coq_dpdgraph_CI_ARCHIVEURL:=${coq_dpdgraph_CI_GITURL}/archive}"
 
