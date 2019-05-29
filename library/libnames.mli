@@ -88,6 +88,9 @@ val qualid_is_ident : qualid -> bool
 val qualid_path : qualid -> DirPath.t
 val qualid_basename : qualid -> Id.t
 
+val idset_mem_qualid : qualid -> Id.Set.t -> bool
+(** false when the qualid is not an ident *)
+
 (** {6 ... } *)
 
 (** some preset paths *)

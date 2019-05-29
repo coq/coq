@@ -40,8 +40,8 @@ type explicitation =
 
 type binder_kind =
   | Default of binding_kind
-  | Generalized of binding_kind * binding_kind * bool
-      (** Inner binding, outer bindings, typeclass-specific flag
+  | Generalized of binding_kind * bool
+      (** (Inner binding always Implicit) Outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
 
 type abstraction_kind = AbsLambda | AbsPi
