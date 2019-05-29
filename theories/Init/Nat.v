@@ -331,7 +331,7 @@ Definition iter (n:nat) {A} (f:A->A) (x:A) : A :=
 (** Bitwise operations *)
 
 (** We provide here some bitwise operations for unary numbers.
-  Some might be really naive, they are just there for fullfiling
+  Some might be really naive, they are just there for fulfilling
   the same interface as other for natural representations. As
   soon as binary representations such as NArith are available,
   it is clearly better to convert to/from them and use their ops.

@@ -51,7 +51,7 @@ Local Infix "+" := trans_ord.
 
    This used to be provided here via a [TotalOrder], but
    for technical reasons related to extraction, we now ask
-   for two sperate parts: relations in a [EqLtLe] + properties in
+   for two separate parts: relations in a [EqLtLe] + properties in
    [IsTotalOrder]. Note that [TotalOrder = EqLtLe <+ IsTotalOrder]
 *)
 

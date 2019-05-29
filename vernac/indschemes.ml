@@ -219,7 +219,7 @@ let declare_one_case_analysis_scheme ind =
   let kelim = elim_sorts (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
-       apropriate type *)
+       appropriate type *)
   if Sorts.List.mem InType kelim then
     ignore (define_individual_scheme dep UserAutomaticRequest None ind)
 

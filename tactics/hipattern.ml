@@ -25,7 +25,7 @@ open Context.Rel.Declaration
 module RelDecl = Context.Rel.Declaration
 
 (* I implemented the following functions which test whether a term t
-   is an inductive but non-recursive type, a general conjuction, a
+   is an inductive but non-recursive type, a general conjunction, a
    general disjunction, or a type with no constructors.
 
    They are more general than matching with or_term, and_term, etc,

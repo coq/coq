@@ -310,7 +310,7 @@ Qed.
 End NZOfNatOrd.
 
 
-(** For basic operations, we can prove correspondance with
+(** For basic operations, we can prove correspondence with
     their counterpart in [nat]. *)
 
 Module NZOfNatOps (Import NZ:NZAxiomsSig').

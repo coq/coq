@@ -333,7 +333,7 @@ let extract_decreasing_argument ~structonly = function { CAst.v = v } -> match v
   | CStructRec na -> na
   | (CWfRec (na,_) | CMeasureRec (Some na,_,_)) when not structonly -> na
   | CMeasureRec (None,_,_) when not structonly ->
-    user_err Pp.(str "Decreasing argument must be specificed in measure clause.")
+    user_err Pp.(str "Decreasing argument must be specified in measure clause.")
   | _ -> user_err Pp.(str
            "Well-founded induction requires Program Fixpoint or Function.")
 

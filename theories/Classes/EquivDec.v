@@ -76,7 +76,7 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 (** Decidable leibniz equality instances. *)
 
-(** The equiv is burried inside the setoid, but we can recover it by specifying
+(** The equiv is buried inside the setoid, but we can recover it by specifying
    which setoid we're talking about. *)
 
 Program Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.

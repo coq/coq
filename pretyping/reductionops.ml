@@ -901,7 +901,7 @@ module CredNative = RedNative(CNativeEntries)
 (** Generic reduction function with environment
 
     Here is where unfolded constant are stored in order to be
-    eventualy refolded.
+    eventually refolded.
 
     If tactic_mode is true, it uses ReductionBehaviour, prefers
     refold constant instead of value and tries to infer constants
@@ -1320,7 +1320,7 @@ let whd_allnolet_stack env =
 let whd_allnolet env =
   red_of_state_red (whd_allnolet_state env)
 
-(* 4. Ad-hoc eta reduction, does not subsitute evars *)
+(* 4. Ad-hoc eta reduction, does not substitute evars *)
 
 let shrink_eta c = Stack.zip Evd.empty (local_whd_state_gen eta Evd.empty (c,Stack.empty))
 

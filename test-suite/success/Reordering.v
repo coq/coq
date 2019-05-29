@@ -1,7 +1,7 @@
 (* Testing the reordering of hypothesis required by pattern, fold and change. *)
 Goal forall (A:Set) (x:A) (A':=A), True.
 intros.
-fold A' in x. (* suceeds: x is moved after A' *)
+fold A' in x. (* succeeds: x is moved after A' *)
 Undo.
 pattern A' in x.
 Undo.

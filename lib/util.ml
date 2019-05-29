@@ -14,7 +14,7 @@ let on_fst f (a,b) = (f a,b)
 let on_snd f (a,b) = (a,f b)
 let map_pair f (a,b) = (f a,f b)
 
-(* Mapping under pairs *)
+(* Mapping under triplets *)
 
 let on_pi1 f (a,b,c) = (f a,b,c)
 let on_pi2 f (a,b,c) = (a,f b,c)

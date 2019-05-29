@@ -37,7 +37,7 @@ Notation "~ x" := (not x) : type_scope.
 Register not as core.not.type.
 
 (** Create the "core" hint database, and set its transparent state for
-  variables and constants explicitely. *)
+  variables and constants explicitly. *)
 
 Create HintDb core.
 Hint Variables Opaque : core.

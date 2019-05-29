@@ -310,7 +310,7 @@ Infix "<?" := ltb (at level 70, no associativity) : positive_scope.
 
 (** ** A Square Root function for positive numbers *)
 
-(** We procede by blocks of two digits : if p is written qbb'
+(** We proceed by blocks of two digits : if p is written qbb'
     then sqrt(p) will be sqrt(q)~0 or sqrt(q)~1.
     For deciding easily in which case we are, we store the remainder
     (as a mask, since it can be null).

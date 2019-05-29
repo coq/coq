@@ -659,7 +659,7 @@ End Raw2Sets.
 (** It is in fact possible to provide an ordering on sets with
     very little information on them (more or less only the [In]
     predicate). This generic build of ordering is in fact not
-    used for the moment, we rather use a simplier version
+    used for the moment, we rather use a simpler version
     dedicated to sets-as-sorted-lists, see [MakeListOrdering].
 *)
 

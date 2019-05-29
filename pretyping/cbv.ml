@@ -477,7 +477,7 @@ and cbv_stack_value info env = function
           cbv_stack_value info env (CONSTR(c, [||]), stack_app args stk)
         | Some v ->  cbv_stack_value info env (v,stk)
         | None -> mkSTACK(PRIMITIVE(op,c,args), stk)
-      else (* partical application *)
+      else (* partial application *)
               (assert (stk = TOP);
                PRIMITIVE(op,c,appl))
 

@@ -34,7 +34,7 @@ End WithModPriv.
    identical by the extraction.
 
    In Coq 8.5 and 8.6, the extractions of WithMod, WithDef, WithModPriv
-   were all causing Anomaly or Assert Failure. This shoud be fixed now.
+   were all causing Anomaly or Assert Failure. This should be fixed now.
 *)
 
 Require Extraction.

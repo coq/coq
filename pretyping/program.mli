@@ -11,7 +11,7 @@
 open Names
 open EConstr
 
-(** A bunch of Coq constants used by Progam *)
+(** A bunch of Coq constants used by Program *)
 
 val sig_typ : unit -> GlobRef.t
 val sig_intro : unit -> GlobRef.t

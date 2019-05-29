@@ -333,7 +333,7 @@ let default_tactic = ref (Proofview.tclUNIT ())
 let get_hide_obligations =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"Hidding of Program obligations"
+    ~name:"Hiding of Program obligations"
     ~key:["Hide";"Obligations"]
     ~value:false
 

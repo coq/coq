@@ -70,7 +70,7 @@ Qed.
 End MemoFunction.
 
 (** For a dependent function, the previous solution is
-    reused thanks to a temporarly hiding of the dependency
+    reused thanks to a temporary hiding of the dependency
     in a "container" [memo_val]. *)
 
 Section DependentMemoFunction.

@@ -40,7 +40,7 @@ type t
 
 val make : hypnaming:naming_mode -> env -> evar_map -> ltac_var_map -> t
 
-(** Export the underlying environement *)
+(** Export the underlying environment *)
 
 val env : t -> env
 
