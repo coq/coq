@@ -123,11 +123,11 @@ Definition bar := foo.
 
 (* The universe on mkfoo is flexible and should be unified with i. *)
 Definition foo1@{i} : foo@{i} := let x := mkfoo in x. (* fast path for conversion *)
-Definition foo2@{i} : bar@{i} := let x := mkfoo in x. (* must reduce *)
+Definition foo2@{i} : bar@{} := let x := mkfoo in x. (* must reduce *)
 
 (* Rigid universes however should not be unified unnecessarily. *)
 Definition foo3@{i j|} : foo@{i} := let x := mkfoo@{j} in x.
-Definition foo4@{i j|} : bar@{i} := let x := mkfoo@{j} in x.
+Definition foo4@{i j|} : bar@{} := let x := mkfoo@{j} in x.
 
 (* Constructors for an inductive with indices *)
 Module WithIndex.
