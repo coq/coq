@@ -752,6 +752,7 @@ GRAMMAR EXTEND Gram
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> { l } ] ->
          { let mods = match mods with None -> [] | Some l -> List.flatten l in
          let slash_position = ref None in
+         let ampersand_position = ref None in
          let rec parse_args i = function
            | [] -> []
            | `Id x :: args -> x :: parse_args (i+1) args
@@ -760,10 +761,15 @@ GRAMMAR EXTEND Gram
                 (slash_position := Some i; parse_args i args)
               else
                 user_err Pp.(str "The \"/\" modifier can occur only once")
+           | `Ampersand :: args ->
+             if Option.is_empty !ampersand_position then
+               (ampersand_position := Some i; parse_args i args)
+             else
+               user_err Pp.(str "The \"&\" modifier can occur only once")
          in
          let args = parse_args 0 (List.flatten args) in
          let more_implicits = Option.default [] more_implicits in
-         VernacArguments (qid, args, more_implicits, !slash_position, mods) }
+         VernacArguments (qid, args, more_implicits, !slash_position, !ampersand_position, mods) }
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
 	   { VernacReserve bl }
@@ -785,6 +791,7 @@ GRAMMAR EXTEND Gram
       | IDENT "default"; IDENT "implicits" -> { [`DefaultImplicits] }
       | IDENT "clear"; IDENT "implicits" -> { [`ClearImplicits] }
       | IDENT "clear"; IDENT "scopes" -> { [`ClearScopes] }
+      | IDENT "clear"; IDENT "bidirectionality"; IDENT "hint" -> { [`ClearBidiHint] }
       | IDENT "rename" -> { [`Rename] }
       | IDENT "assert" -> { [`Assert] }
       | IDENT "extra"; IDENT "scopes" -> { [`ExtraScopes] }
@@ -810,6 +817,7 @@ GRAMMAR EXTEND Gram
              notation_scope=notation_scope;
              implicit_status = NotImplicit}] }
     | "/" -> { [`Slash] }
+    | "&" -> { [`Ampersand] }
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x

@@ -52,6 +52,18 @@ type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
 let (!!) env = GlobEnv.env env
 
+let bidi_hints =
+  Summary.ref (GlobRef.Map.empty : int GlobRef.Map.t) ~name:"bidirectionalityhints"
+
+let add_bidirectionality_hint gr n =
+  bidi_hints := GlobRef.Map.add gr n !bidi_hints
+
+let get_bidirectionality_hint gr =
+  GlobRef.Map.find_opt gr !bidi_hints
+
+let clear_bidirectionality_hint gr =
+  bidi_hints := GlobRef.Map.remove gr !bidi_hints
+
 (************************************************************************)
 (* This concerns Cases *)
 open Inductive
@@ -635,24 +647,36 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
     let sigma, fj = pretype empty_tycon env sigma f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
+    let nargs_before_bidi =
+      (* if `f` is a global, we retrieve bidirectionality hints *)
+      try
+        let (gr,_) = destRef sigma fj.uj_val in
+        Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
+      with DestKO ->
+        length
+    in
     let candargs =
-	(* Bidirectional typechecking hint: 
-	   parameters of a constructor are completely determined
-	   by a typing constraint *)
+      (* Bidirectional typechecking hint:
+         parameters of a constructor are completely determined
+         by a typing constraint *)
+      (* This bidirectionality machinery is the one of `Program` for
+         constructors and is orthogonal to bidirectionality hints. However, we
+         could probably factorize both by providing default bidirectionality hints
+         for constructors corresponding to their number of parameters. *)
       if program_mode && length > 0 && isConstruct sigma fj.uj_val then
-	match tycon with
-	| None -> []
-	| Some ty ->
+        match tycon with
+        | None -> []
+        | Some ty ->
           let ((ind, i), u) = destConstruct sigma fj.uj_val in
           let npars = inductive_nparams !!env ind in
-	    if Int.equal npars 0 then []
-	    else
-	      try
-                let IndType (indf, args) = find_rectype !!env sigma ty in
-	  	let ((ind',u'),pars) = dest_ind_family indf in
-	  	  if eq_ind ind ind' then List.map EConstr.of_constr pars
-	  	  else (* Let the usual code throw an error *) []
-	      with Not_found -> []
+          if Int.equal npars 0 then []
+          else
+            try
+              let IndType (indf, args) = find_rectype !!env sigma ty in
+              let ((ind',u'),pars) = dest_ind_family indf in
+              if eq_ind ind ind' then List.map EConstr.of_constr pars
+              else (* Let the usual code throw an error *) []
+            with Not_found -> []
       else []
     in
     let app_f = 
@@ -662,20 +686,29 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
         let p = Projection.make p false in
         let npars = Projection.npars p in
         fun n ->
-          if n == npars + 1 then fun _ v -> mkProj (p, v)
+          if Int.equal n npars then fun _ v -> mkProj (p, v)
           else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
-    let rec apply_rec env sigma n resj candargs = function
-      | [] -> sigma, resj
+    let rec apply_rec env sigma n resj candargs bidiargs = function
+      | [] -> sigma, resj, List.rev bidiargs
       | c::rest ->
+        let bidi = n >= nargs_before_bidi in
         let argloc = loc_of_glob_constr c in
         let sigma, resj = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma resj in
         let resty = whd_all !!env sigma resj.uj_type in
         match EConstr.kind sigma resty with
         | Prod (na,c1,c2) ->
           let tycon = Some c1 in
-          let sigma, hj = pretype tycon env sigma c in
+          let (sigma, hj), bidiargs =
+            if bidi && Option.has_some tycon then
+              (* We want to get some typing information from the context before
+              typing the argument, so we replace it by an existential
+              variable *)
+              let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
+              (sigma, make_judge c_hole c1), (c_hole, c) :: bidiargs
+            else pretype tycon env sigma c, bidiargs
+          in
           let sigma, candargs, ujval =
             match candargs with
             | [] -> sigma, [], j_val hj
@@ -687,30 +720,45 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
                   sigma, args, nf_evar sigma (j_val hj)
               end
           in
-            let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
-            let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
-	    let j = { uj_val = value; uj_type = typ } in
-            apply_rec env sigma (n+1) j candargs rest
-	  | _ ->
-            let sigma, hj = pretype empty_tycon env sigma c in
-	      error_cant_apply_not_functional
-                ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
+          let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
+          let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
+          let j = { uj_val = value; uj_type = typ } in
+          apply_rec env sigma (n+1) j candargs bidiargs rest
+        | _ ->
+          let sigma, hj = pretype empty_tycon env sigma c in
+          error_cant_apply_not_functional
+            ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
     in
-    let sigma, resj = apply_rec env sigma 1 fj candargs args in
+    let sigma, resj, bidiargs = apply_rec env sigma 0 fj candargs [] args in
     let sigma, resj =
       match EConstr.kind sigma resj.uj_val with
       | App (f,args) ->
-          if Termops.is_template_polymorphic_ind !!env sigma f then
-	    (* Special case for inductive type applications that must be 
-	       refreshed right away. *)
-            let c = mkApp (f, args) in
-            let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
-            let t = Retyping.get_type_of !!env sigma c in
-            sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
-          else sigma, resj
+        if Termops.is_template_polymorphic_ind !!env sigma f then
+          (* Special case for inductive type applications that must be
+             refreshed right away. *)
+          let c = mkApp (f, args) in
+          let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
+          let t = Retyping.get_type_of !!env sigma c in
+          sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
+        else sigma, resj
       | _ -> sigma, resj
     in
-    inh_conv_coerce_to_tycon ?loc env sigma resj tycon
+    let sigma, t = inh_conv_coerce_to_tycon ?loc env sigma resj tycon in
+    let refine_arg sigma (newarg,origarg) =
+      (* Refine an argument (originally `origarg`) represented by an evar
+         (`newarg`) to use typing information from the context *)
+      (* Recover the expected type of the argument *)
+      let ty = Retyping.get_type_of !!env sigma newarg in
+      (* Type the argument using this expected type *)
+      let sigma, j = pretype (Some ty) env sigma origarg in
+      (* Unify the (possibly refined) existential variable with the
+      (typechecked) original value *)
+      Evarconv.unify_delay !!env sigma newarg (j_val j)
+    in
+    (* We now refine any arguments whose typing was delayed for
+       bidirectionality *)
+    let sigma = List.fold_left refine_arg sigma bidiargs in
+    (sigma, t)
 
   | GLambda(name,bk,c1,c2) ->
     let sigma, tycon' =
