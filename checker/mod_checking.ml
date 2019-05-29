@@ -29,13 +29,13 @@ let check_constant_declaration env kn cb =
       let env = push_context ~strict:false ctx env in
       true, env
   in
+  let ty = cb.const_type in
+  let _ = infer_type env' ty in
   let env' = match cb.const_private_poly_univs, (cb.const_body, poly) with
     | None, _ -> env'
     | Some local, (OpaqueDef _, true) -> push_subgraph local env'
     | Some _, _ -> assert false
   in
-  let ty = cb.const_type in
-  let _ = infer_type env' ty in
   let otab = Environ.opaque_tables env in
   let body = match cb.const_body with
   | Undef _ | Primitive _ -> None
