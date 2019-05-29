@@ -9,5 +9,6 @@
 
 (rule
  (targets g_toplevel.ml)
+ (mode promote-until-clean)
  (deps (:mlg-file g_toplevel.mlg))
  (action (run coqpp %{mlg-file})))

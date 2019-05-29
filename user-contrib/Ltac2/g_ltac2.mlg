@@ -67,12 +67,6 @@ let test_lpar_id_coloneq =
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":="
   end
 
-(* Hack to recognize "(x)" *)
-let test_lpar_id_rpar =
-  entry_of_lookahead "test_lpar_id_rpar" begin
-    lk_kw "(" >> lk_ident >> lk_kw ")"
-  end
-
 let test_ampersand_ident =
   entry_of_lookahead "test_ampersand_ident" begin
     lk_kw "&" >> lk_ident
@@ -389,8 +383,6 @@ END
 {
 
 open Tac2entries.Pltac
-
-let loc_of_ne_list l = Loc.merge_opt (fst (List.hd l)) (fst (List.last l))
 
 }
 

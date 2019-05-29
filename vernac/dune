@@ -7,10 +7,12 @@
 
 (rule
  (targets g_proofs.ml)
+ (mode promote-until-clean)
  (deps (:mlg-file g_proofs.mlg))
  (action (run coqpp %{mlg-file})))
 
 (rule
  (targets g_vernac.ml)
+ (mode promote-until-clean)
  (deps (:mlg-file g_vernac.mlg))
  (action (run coqpp %{mlg-file})))

@@ -153,7 +153,11 @@ let gen_sub n =
   (* Move to List.init once we can depend on OCaml >= 4.06.0 *)
   bpath @@ Legacy.list_init n (fun _ -> "..")
 
-let pp_rule fmt targets deps action =
+let pp_promote fmt promote =
+  if promote then
+    fprintf fmt "(mode promote-until-clean)@\n"
+
+let pp_rule ?(promote=false) fmt targets deps action =
   (* Special printing of the first rule *)
   let ppl = pp_list pp_print_string sep in
   let pp_deps fmt l = match l with
@@ -164,8 +168,8 @@ let pp_rule fmt targets deps action =
       pp_list pp_print_string sep fmt xs
   in
   fprintf fmt
-    "@[(rule@\n @[(targets @[%a@])@\n(deps @[%a@])@\n(action @[%a@])@])@]@\n"
-    ppl targets pp_deps deps pp_print_string action
+    "@[(rule@\n @[(targets @[%a@])@\n%a(deps @[%a@])@\n(action @[%a@])@])@]@\n"
+    ppl targets pp_promote promote pp_deps deps pp_print_string action
 
 let gen_coqc_targets vo =
   [ vo.target
@@ -194,7 +198,7 @@ let pp_vo_dep dir fmt vo =
 let pp_mlg_dep _dir fmt ml =
   let target = Filename.(remove_extension ml) ^ ".ml" in
   let mlg_rule = "(run coqpp %{pp-file})" in
-  pp_rule fmt [target] [ml] mlg_rule
+  pp_rule ~promote:true fmt [target] [ml] mlg_rule
 
 let pp_dep dir fmt oo = match oo with
   | VO vo -> pp_vo_dep dir fmt vo

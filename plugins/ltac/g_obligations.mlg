@@ -51,8 +51,6 @@ open Pcoq
 
 let sigref loc = mkRefC (Libnames.qualid_of_string ~loc "Coq.Init.Specif.sig")
 
-type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
-
 let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
   Genarg.create_arg "withtac"
 

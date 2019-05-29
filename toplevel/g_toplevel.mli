@@ -8,4 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Nothing is exported *)
+type vernac_toplevel =
+  | VernacBacktrack of int * int * int
+  | VernacDrop
+  | VernacQuit
+  | VernacControl of Vernacexpr.vernac_control
+
+val vernac_toplevel : Pvernac.proof_mode option -> vernac_toplevel option Pcoq.Entry.t

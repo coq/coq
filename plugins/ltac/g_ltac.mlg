@@ -38,8 +38,6 @@ let arg_of_expr = function
 
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
-let genarg_of_ipattern pat = in_gen (rawwit Tacarg.wit_intro_pattern) pat
-let genarg_of_uconstr c = in_gen (rawwit Stdarg.wit_uconstr) c
 let in_tac tac = in_gen (rawwit Tacarg.wit_ltac) tac
 
 let reference_to_id qid =
@@ -59,7 +57,7 @@ let toplevel_selector = new_entry "vernac:toplevel_selector"
 let tacdef_body = new_entry "tactic:tacdef_body"
 
 (* Registers [tactic_mode] as a parser for proof editing *)
-let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode
+let _ = Pvernac.register_proof_mode "Classic" tactic_mode
 
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =

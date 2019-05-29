@@ -38,12 +38,6 @@ let constr_kw =
 
 let _ = List.iter CLexer.add_keyword constr_kw
 
-let mk_cast = function
-    (c,(_,None)) -> c
-  | (c,(_,Some ty)) ->
-    let loc = Loc.merge_opt (constr_loc c) (constr_loc ty)
-    in CAst.make ?loc @@ CCast(c, CastConv ty)
-
 let binder_of_name expl { CAst.loc = loc; v = na } =
   CLocalAssum ([CAst.make ?loc na], Default expl,
     CAst.make ?loc @@ CHole (Some (Evar_kinds.BinderType na), IntroAnonymous, None))

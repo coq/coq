@@ -8,4 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Nothing is exported *)
+val hint : Hints.hints_expr Pcoq.Entry.t
+(** Used by G_ltac to add Hint Extern. *)

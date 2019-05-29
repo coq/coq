@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Nothing is exported *)
+val wit_ltac_use_default : (bool, unit, unit) Genarg.genarg_type
