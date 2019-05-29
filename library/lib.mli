@@ -168,7 +168,6 @@ type abstr_info = private {
 }
 
 val instance_from_variable_context : variable_context -> Id.t array
-val named_of_variable_context : variable_context -> Constr.named_context
 
 val section_segment_of_constant : Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
