@@ -561,7 +561,6 @@ $(patsubst %.sh,%.log,$(wildcard misc/*.sh)): %.log: %.sh $(PREREQUISITELOG)
 	  export coqc="$(coqc)"; \
 	  export coqtop="$(coqc)"; \
 	  export coqdep="$(coqdep)"; \
-	  export coqtopbyte="$(coqtopbyte)"; \
 	  "$<" 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
