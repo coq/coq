@@ -1489,8 +1489,6 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 	       }
 	  )
        )) pstate in
-     (* (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
-(*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
     let _ = Flags.silently (fun () -> Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None) () in
     ()
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)

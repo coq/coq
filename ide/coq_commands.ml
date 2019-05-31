@@ -126,7 +126,6 @@ let commands = [
      "Show Intros";
      "Show Programs";
      "Show Proof";
-     "Show Script";
      "Show Tree";*)
      "Structure";
      "Syntactic Definition";
@@ -221,7 +220,6 @@ let state_preserving = [
   "Show Intro";
   "Show Intros";
   "Show Proof";
-  "Show Script";
   "Show Tree";
 
   "Test Printing If";

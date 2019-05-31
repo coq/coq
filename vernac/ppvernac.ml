@@ -628,7 +628,6 @@ open Pputils
         let pr_showable = function
           | ShowGoal n -> keyword "Show" ++ pr_goal_reference n
           | ShowProof -> keyword "Show Proof"
-          | ShowScript -> keyword "Show Script"
           | ShowExistentials -> keyword "Show Existentials"
           | ShowUniverses -> keyword "Show Universes"
           | ShowProofNames -> keyword "Show Conjectures"

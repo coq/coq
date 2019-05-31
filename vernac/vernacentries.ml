@@ -2169,7 +2169,6 @@ let vernac_show ~pstate =
     begin function
       | ShowProof -> show_proof ~pstate
       | ShowMatch id -> show_match id
-      | ShowScript -> assert false  (* Only the stm knows the script *)
       | _ ->
         user_err (str "This command requires an open proof.")
     end
@@ -2190,7 +2189,6 @@ let vernac_show ~pstate =
     | ShowIntros all -> show_intro ~pstate all
     | ShowProof -> show_proof ~pstate:(Some pstate)
     | ShowMatch id -> show_match id
-    | ShowScript -> assert false  (* Only the stm knows the script *)
     end
 
 let vernac_check_guard ~pstate =
