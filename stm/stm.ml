@@ -1732,7 +1732,6 @@ end = struct (* {{{ *)
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
     | `OK (po,_) ->
-        let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
           Nametab.locate_constant
             (Libnames.qualid_of_ident po.Proof_global.id) in
@@ -1744,12 +1743,11 @@ end = struct (* {{{ *)
            the call to [check_task_aux] above. *)
         let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
         let uc = Univ.hcons_universe_context_set uc in
+        let (pr, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
-        let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
-        let pr = map (Option.get (Global.body_of_constant_body Library.indirect_accessor c)) in
-        let pr = discharge pr in
+        let () = assert (Univ.AUContext.is_empty ctx) in
         let pr = Constr.hcons pr in
-        p.(bucket) <- Some pr;
+        p.(bucket) <- Some (d.(bucket), Univ.AUContext.size ctx, pr);
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

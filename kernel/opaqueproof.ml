@@ -16,19 +16,22 @@ open Mod_subst
 type work_list = (Instance.t * Id.t array) Cmap.t * 
   (Instance.t * Id.t array) Mindmap.t
 
+type cooking_info = {
+  modlist : work_list;
+  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
+
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> constr option;
+  access_discharge : cooking_info list -> int -> constr -> constr;
 }
 
-type cooking_info = { 
-  modlist : work_list; 
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 type proofterm = (constr * Univ.ContextSet.t) Future.computation
+type universes = int
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
-  | Direct of cooking_info list * proofterm
+  | Direct of universes * cooking_info list * proofterm
 type opaquetab = {
-  opaque_val : (cooking_info list * proofterm) Int.Map.t;
+  opaque_val : (int * cooking_info list * proofterm) Int.Map.t;
   (** Actual proof terms *)
   opaque_len : int;
   (** Size of the above map *)
@@ -43,14 +46,14 @@ let empty_opaquetab = {
 let not_here () =
   CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 
-let create cu = Direct ([],cu)
+let create ~univs cu = Direct (univs, [],cu)
 
 let turn_indirect dp o tab = match o with
   | Indirect (_,_,i) ->
       if not (Int.Map.mem i tab.opaque_val)
       then CErrors.anomaly (Pp.str "Indirect in a different table.")
       else CErrors.anomaly (Pp.str "Already an indirect opaque.")
-  | Direct (d,cu) ->
+  | Direct (nunivs, d, cu) ->
     (* Invariant: direct opaques only exist inside sections, we turn them
       indirect as soon as we are at toplevel. At this moment, we perform
       hashconsing of their contents, potentially as a future. *)
@@ -61,7 +64,7 @@ let turn_indirect dp o tab = match o with
       in
       let cu = Future.chain cu hcons in
       let id = tab.opaque_len in
-      let opaque_val = Int.Map.add id (d,cu) tab.opaque_val in
+      let opaque_val = Int.Map.add id (nunivs, d,cu) tab.opaque_val in
       let opaque_dir =
         if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
         else if DirPath.equal tab.opaque_dir DirPath.initial then dp
@@ -74,10 +77,10 @@ let subst_opaque sub = function
   | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
   | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
 
-let discharge_direct_opaque ~cook_constr ci = function
+let discharge_direct_opaque ci = function
   | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-  | Direct (d,cu) ->
-      Direct (ci::d,Future.chain cu (fun (c, u) -> cook_constr c, u))
+  | Direct (n, d, cu) ->
+      Direct (n, ci :: d, cu)
 
 let join except cu = match except with
 | None -> ignore (Future.join cu)
@@ -86,36 +89,42 @@ let join except cu = match except with
   else ignore (Future.join cu)
 
 let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> join except cu
+  | Direct (_,_,cu) -> join except cu
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp then
-        let fp = snd (Int.Map.find i prfs) in
+        let (_, _, fp) = Int.Map.find i prfs in
         join except fp
 
 let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) ->
-      fst(Future.force cu)
+  | Direct (n, d, cu) ->
+    let (c, _) = Future.force cu in
+    access.access_discharge d n c
   | Indirect (l,dp,i) ->
-      let pt =
+      let c =
         if DirPath.equal dp odp
-        then Future.chain (snd (Int.Map.find i prfs)) fst
+        then
+          let (n, d, cu) = Int.Map.find i prfs in
+          let (c, _) = Future.force cu in
+          access.access_discharge d n c
         else match access.access_proof dp i with
         | None -> not_here ()
-        | Some v -> Future.from_val v
+        | Some v -> v
       in
-      let c = Future.force pt in
       force_constr (List.fold_right subst_substituted l (from_val c))
 
 let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> snd(Future.force cu)
+  | Direct (_,_,cu) ->
+    snd(Future.force cu)
   | Indirect (_,dp,i) ->
       if DirPath.equal dp odp
-      then snd (Future.force (snd (Int.Map.find i prfs)))
+      then
+        let (_, _, cu) = Int.Map.find i prfs in
+        snd (Future.force cu)
       else Univ.ContextSet.empty
 
 let get_direct_constraints = function
 | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-| Direct (_, cu) -> Future.chain cu snd
+| Direct (_, _, cu) -> Future.chain cu snd
 
 module FMap = Future.UUIDMap
 
@@ -123,13 +132,15 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
   let opaque_table = Array.make n None in
   let disch_table = Array.make n [] in
   let f2t_map = ref FMap.empty in
-  let iter n (d, cu) =
+  let iter n (univs, d, cu) =
     let uid = Future.uuid cu in
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
     if Future.is_val cu then
       let (c, _) = Future.force cu in
-      opaque_table.(n) <- Some c
+      opaque_table.(n) <- Some (d, univs, c)
     else if Future.UUIDSet.mem uid except then
+      (* Only monomorphic constraints can be delayed currently *)
+      let () = assert (Int.equal univs 0) in
       disch_table.(n) <- d
     else
       CErrors.anomaly
