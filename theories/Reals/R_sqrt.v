@@ -110,6 +110,11 @@ Proof.
   intros x H1; unfold Rsqr; apply (sqrt_sqrt x H1).
 Qed.
 
+Lemma pow2_sqrt : forall x:R, 0 <= x -> (sqrt x) ^ 2 = x.
+Proof.
+  intros; simpl; rewrite Rmult_1_r, sqrt_def; auto.
+Qed.
+
 Lemma sqrt_mult_alt :
   forall x y : R, 0 <= x -> sqrt (x * y) = sqrt x * sqrt y.
 Proof.
