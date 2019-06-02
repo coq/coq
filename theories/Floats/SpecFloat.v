@@ -1,11 +1,25 @@
 Require Import ZArith FloatClass.
 
+(** * Specification of floating-point arithmetic
+
+This specification is mostly borrowed from the [IEEE754.Binary] module
+of the Flocq library (see {{http://flocq.gforge.inria.fr/}}) *)
+
+(** ** Inductive specification of floating-point numbers
+
+Similar to [Flocq.IEEE754.Binary.full_float], but with no NaN payload. *)
 Variant spec_float :=
   | S754_zero (s : bool)
   | S754_infinity (s : bool)
   | S754_nan
   | S754_finite (s : bool) (m : positive) (e : Z).
 
+(** ** Parameterized definitions
+
+[prec] is the number of bits of the mantissa including the implicit one;
+[emax] is the exponent of the infinities.
+
+For instance, Binary64 is defined by [prec = 53] and [emax = 1024]. *)
 Section FloatOps.
   Variable prec emax : Z.
 
@@ -132,7 +146,8 @@ Section FloatOps.
       end.
   End Rounding.
 
-  (* Define operations *)
+  (** ** Define operations *)
+
   Definition SFopp x :=
     match x with
     | S754_nan => S754_nan

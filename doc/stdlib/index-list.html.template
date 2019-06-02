@@ -328,6 +328,19 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Binary/ZBinary.v
     theories/Numbers/Integer/NatPairs/ZNatPairs.v
     </dd>
+
+    <dt> <b>&nbsp;&nbsp;Floats</b>:
+       Floating-point arithmetic
+    </dt>
+    <dd>
+    theories/Floats/FloatClass.v
+    theories/Floats/PrimFloat.v
+    theories/Floats/SpecFloat.v
+    theories/Floats/FloatOps.v
+    theories/Floats/FloatAxioms.v
+    theories/Floats/FloatLemmas.v
+    (theories/Floats/Floats.v)
+    </dd>
     </dl>
   </dd>
 

@@ -1,6 +1,7 @@
 Require Import ZArith Int63 SpecFloat PrimFloat.
 
-(* Properties of the Binary64 IEEE 754 format *)
+(** * Derived operations and mapping between primitive [float]s and [spec_float]s *)
+
 Definition prec := 53%Z.
 Definition emax := 1024%Z.
 Notation emin := (emin prec emax).
@@ -15,6 +16,9 @@ Definition ldexp f e :=
 
 Definition ulp f := ldexp one (fexp prec emax (snd (frexp f))).
 
+(** [Prim2SF] is an injective function that will be useful to express
+the properties of the implemented Binary64 format (see [FloatAxioms]).
+*)
 Definition Prim2SF f :=
   if is_nan f then S754_nan
   else if is_zero f then S754_zero (get_sign f)

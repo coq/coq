@@ -1,5 +1,7 @@
 Require Import ZArith Int63 SpecFloat PrimFloat FloatOps.
 
+(** * Properties of the primitive operators for the Binary64 format *)
+
 Notation valid_binary := (valid_binary prec emax).
 
 Definition SF64classify := SFclassify prec.

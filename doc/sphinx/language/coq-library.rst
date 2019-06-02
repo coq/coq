@@ -756,6 +756,7 @@ subdirectories:
   * **Sets** : Sets (classical, constructive, finite, infinite, power set, etc.) 
   * **FSets** : Specification and implementations of finite sets and finite maps (by lists and by AVL trees)
   * **Reals** : Axiomatization of real numbers (classical, basic functions, integer part, fractional part, limit, derivative, Cauchy series, power series and results,...)
+  * **Floats** : Machine implementation of floating-point arithmetic (for the binary64 format)
   * **Relations** : Relations (definitions and basic results)
   * **Sorting** : Sorted list (basic definitions and heapsort correctness)
   * **Strings** : 8-bits characters and strings
@@ -768,7 +769,7 @@ are directly accessible with the command ``Require`` (see
 Section :ref:`compiled-files`).
 
 The different modules of the |Coq| standard library are documented
-online at http://coq.inria.fr/stdlib.
+online at https://coq.inria.fr/stdlib.
 
 Peano’s arithmetic (nat)
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -987,6 +988,106 @@ Notation    Interpretation  Precedence  Associativity
 ``_ ++ _``  ``app``         60          right
 ``_ :: _``  ``cons``        60          right
 ==========  ==============  ==========  =============
+
+.. _floats_library:
+
+Floats library
+~~~~~~~~~~~~~~
+
+The library of primitive floating-point arithmetic can be loaded by
+requiring module ``Floats``:
+
+.. coqtop:: in
+
+  Require Import Floats.
+
+It exports the module ``PrimFloat`` that provides a primitive type
+named ``float``, defined in the kernel (see section :ref:`primitive-floats`),
+as well as two variant types ``float_comparison`` and ``float_class``:
+
+
+.. coqtop:: all
+
+  Print float.
+  Print float_comparison.
+  Print float_class.
+
+It then defines the primitive operators below, using the processor
+floating-point operators for binary64 in rounding-to-nearest even:
+
+* ``abs``
+* ``opp``
+* ``sub``
+* ``add``
+* ``mul``
+* ``div``
+* ``sqrt``
+* ``compare`` : compare two floats and return a ``float_comparison``
+* ``classify`` : analyze a float and return a ``float_class``
+* ``of_int63`` : round a primitive integer and convert it into a float
+* ``normfr_mantissa`` : take a float in ``[0.5; 1.0)`` and return its mantissa
+* ``frshiftexp`` : convert a float to fractional part in ``[0.5; 1.0)`` and integer part
+* ``ldshiftexp`` : multiply a float by an integral power of ``2``
+* ``next_up`` : return the next float towards positive infinity
+* ``next_down`` : return the next float towards negative infinity
+
+For special floating-point values, the following constants are also
+defined:
+
+* ``zero``
+* ``neg_zero``
+* ``one``
+* ``two``
+* ``infinity``
+* ``neg_infinity``
+* ``nan`` : Not a Number (assumed to be unique: the "payload" of NaNs is ignored)
+
+The following table shows the notations available when opening scope
+``float_scope``.
+
+===========  ==============
+Notation     Interpretation
+===========  ==============
+``- _``      ``opp``
+``_ - _``    ``sub``
+``_ + _``    ``add``
+``_ * _``    ``mul``
+``_ / _``    ``div``
+``_ == _``   ``eqb``
+``_ < _``    ``ltb``
+``_ <= _``   ``leb``
+``_ ?= _``   ``compare``
+===========  ==============
+
+Floating-point constants are parsed and pretty-printed as (17-digit)
+decimal constants. This ensures that the composition
+:math:`\text{parse} \circ \text{print}` amounts to the identity.
+
+.. example::
+
+  .. coqtop:: all
+
+    Open Scope float_scope.
+    Eval compute in 1 + 0.5.
+    Eval compute in 1 / 0.
+    Eval compute in 1 / -0.
+    Eval compute in 0 / 0.
+    Eval compute in 0 ?= -0.
+    Eval compute in nan ?= nan.
+    Eval compute in next_down (-1).
+
+The primitive operators are specified with respect to their Gallina
+counterpart, using the variant type ``spec_float``, and the injection
+``Prim2SF``:
+
+.. coqtop:: all
+
+  Print spec_float.
+  Check Prim2SF.
+  Check mul_spec.
+
+For more details on the available definitions and lemmas, see the
+online documentation of the ``Floats`` library.
 
 .. _userscontributions:
 

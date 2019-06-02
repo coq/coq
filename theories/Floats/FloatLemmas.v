@@ -1,6 +1,8 @@
 Require Import ZArith Int63 SpecFloat PrimFloat FloatOps FloatAxioms.
 Require Import Psatz.
 
+(** * Support results involving frexp and ldexp *)
+
 Lemma shift_value : [|shift|]%int63 = (2*emax + prec)%Z.
   reflexivity.
 Qed.
