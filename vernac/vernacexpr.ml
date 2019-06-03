@@ -81,7 +81,6 @@ type locatable =
 type showable =
   | ShowGoal of goal_reference
   | ShowProof
-  | ShowScript
   | ShowExistentials
   | ShowUniverses
   | ShowProofNames

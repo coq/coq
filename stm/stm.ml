@@ -1060,99 +1060,6 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
-(* indentation code for Show Script, initially contributed
- * by D. de Rauglaudre. Should be moved away.
- *)
-
-module ShowScript = struct
-
-let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
-  (* ng1 : number of goals remaining at the current level (before cmd)
-     ngl1 : stack of previous levels with their remaining goals
-     ng : number of goals after the execution of cmd
-     beginend : special indentation stack for { } *)
-  let ngprev = List.fold_left (+) ng1 ngl1 in
-  let new_ngl =
-    if ng > ngprev then
-      (* We've branched *)
-      (ng - ngprev + 1, ng1 - 1 :: ngl1)
-    else if ng < ngprev then
-      (* A subgoal have been solved. Let's compute the new current level
-	 by discarding all levels with 0 remaining goals. *)
-      let rec loop = function
-	| (0, ng2::ngl2) -> loop (ng2,ngl2)
-	| p -> p
-      in loop (ng1-1, ngl1)
-    else
-      (* Standard case, same goal number as before *)
-      (ng1, ngl1)
-  in
-  (* When a subgoal have been solved, separate this block by an empty line *)
-  let new_nl = (ng < ngprev)
-  in
-  (* Indentation depth *)
-  let ind = List.length ngl1
-  in
-  (* Some special handling of bullets and { }, to get a nicer display *)
-  let pred n = max 0 (n-1) in
-  let ind, nl, new_beginend = match Vernacprop.under_control cmd with
-    | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
-    | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
-    | VernacBullet _ -> pred ind, nl, beginend
-    | _ -> ind, nl, beginend
-  in
-  let pp = Pp.(
-    (if nl then fnl () else mt ()) ++
-    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd)))
-  in
-  (new_ngl, new_nl, new_beginend, pp :: ppl)
-
-let get_script prf =
-  let branch, test =
-    match prf with
-    | None -> VCS.Branch.master, fun _ -> true
-    | Some name -> VCS.current_branch (),fun nl -> nl=[] || List.mem name nl in
-  let rec find acc id =
-    if Stateid.equal id Stateid.initial ||
-       Stateid.equal id Stateid.dummy then acc else
-    let view = VCS.visit id in
-    match view.step with
-    | `Fork((_,_,_,ns), _) when test ns -> acc
-    | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
-    | `Sideff (ReplayCommand x,_) ->
-         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
-    | `Sideff (CherryPickEnv, id)  -> find acc id
-    | `Cmd {cast = x; ctac} when ctac -> (* skip non-tactics *)
-         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
-    | `Cmd _ -> find acc view.next
-    | `Alias (id,_) -> find acc id
-    | `Fork _ -> find acc view.next
-    in
-  find [] (VCS.get_branch_pos branch)
-
-let warn_show_script_deprecated =
-  CWarnings.create ~name:"deprecated-show-script" ~category:"deprecated"
-    (fun () -> Pp.str "The “Show Script” command is deprecated.")
-
-let show_script ?proof () =
-  warn_show_script_deprecated ();
-  try
-    let prf =
-      try match proof with
-      | None -> Some (PG_compat.get_current_proof_name ())
-      | Some (p,_) -> Some (p.Proof_global.id)
-      with PG_compat.NoCurrentProof -> None
-    in
-    let cmds = get_script prf in
-    let _,_,_,indented_cmds =
-      List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
-    in
-    let indented_cmds = List.rev (indented_cmds) in
-    msg_notice Pp.(v 0 (prlist_with_sep fnl (fun x -> x) indented_cmds))
-  with Vcs_aux.Expired -> ()
-
-end
-
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
    reduced... *)
@@ -1172,21 +1079,17 @@ let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
     | VernacAbortAll | VernacAbort _ -> true
     | _ -> false
   in
-  let aux_interp st expr =
-    (* XXX unsupported attributes *)
-    let cmd = Vernacprop.under_control expr in
-    if is_filtered_command cmd then
-      (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
-    else
-      match cmd with
-      | VernacShow ShowScript -> ShowScript.show_script (); st (* XX we are ignoring control here *)
-      | _ ->
-        stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-        try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
-        with e ->
-          let e = CErrors.push e in
-          Exninfo.iraise Hooks.(call_process_error_once e)
-  in aux_interp st expr
+  (* XXX unsupported attributes *)
+  let cmd = Vernacprop.under_control expr in
+  if is_filtered_command cmd then
+    (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
+  else begin
+    stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
+    try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
+    with e ->
+      let e = CErrors.push e in
+      Exninfo.iraise Hooks.(call_process_error_once e)
+  end
 
 (****************************** CRUFT *****************************************)
 (******************************************************************************)

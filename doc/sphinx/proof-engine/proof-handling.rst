@@ -535,19 +535,6 @@ Requesting information
             eexists ?[n].
             Show n.
 
-   .. cmdv:: Show Script
-      :name: Show Script
-
-      Displays the whole list of tactics applied from the
-      beginning of the current proof. This tactics script may contain some
-      holes (subgoals not yet proved). They are printed under the form
-
-      ``<Your Tactic Text here>``.
-
-      .. deprecated:: 8.10
-
-         Please use a text editor.
-
    .. cmdv:: Show Proof
       :name: Show Proof
 
