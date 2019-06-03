@@ -169,7 +169,7 @@ People are generally happy to help and very reactive.
 
 ["Watching" this repository](https://github.com/coq/coq/subscription)
 can result in a very large number of notifications. We advise that if
-you do, either [confifure your mailbox](https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive)
+you do, either [configure your mailbox](https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive)
 to handle incoming notifications efficiently, or you read your
 notifications within a web browser. You can configure how you receive
 notifications in [your GitHub settings](https://github.com/settings/notifications),
