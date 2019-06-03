@@ -5,14 +5,70 @@ DECLARE PLUGIN "tuto0_plugin"
 open Pp
 open Ltac_plugin
 
+let tuto_warn = CWarnings.create ~name:"name" ~category:"category"
+                            (fun _ -> strbrk Tuto0_main.message)
+
 }
 
+(*** Printing messages ***)
+
+(*
+ * This defines a command that prints HelloWorld.
+ * Note that Feedback.msg_notice can be used to print messages.
+ *)
 VERNAC COMMAND EXTEND HelloWorld CLASSIFIED AS QUERY
 | [ "HelloWorld" ] -> { Feedback.msg_notice (strbrk Tuto0_main.message) }
 END
 
+(*
+ * This is a tactic version of the same thing.
+ *)
 TACTIC EXTEND hello_world_tactic
 | [ "hello_world" ] ->
   { let _ = Feedback.msg_notice (str Tuto0_main.message) in
+    Tacticals.New.tclIDTAC }
+END
+
+(*** Printing warnings ***)
+
+(*
+ * This defines a command that prints HelloWorld as a warning.
+ * tuto_warn is defined at the top-level, before the command runs,
+ * which is standard.
+ *)
+VERNAC COMMAND EXTEND HelloWarning CLASSIFIED AS QUERY
+| [ "HelloWarning" ] ->
+   {
+     tuto_warn ()
+   }
+END
+
+(*
+ * This is a tactic version of the same thing.
+ *)
+TACTIC EXTEND hello_warning_tactic
+| [ "hello_warning" ] ->
+   {
+     let _ = tuto_warn () in
+     Tacticals.New.tclIDTAC
+   }
+END
+
+(*** Printing errors ***)
+
+(*
+ * This defines a command that prints HelloWorld inside of an error.
+ * Note that CErrors.user_err can be used to raise errors to the user.
+ *)
+VERNAC COMMAND EXTEND HelloError CLASSIFIED AS QUERY
+| [ "HelloError" ] -> { CErrors.user_err (str Tuto0_main.message) }
+END
+
+(*
+ * This is a tactic version of the same thing.
+ *)
+TACTIC EXTEND hello_error_tactic
+| [ "hello_error" ] ->
+  { let _ = CErrors.user_err (str Tuto0_main.message) in
     Tacticals.New.tclIDTAC }
 END

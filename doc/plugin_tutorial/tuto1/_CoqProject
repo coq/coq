@@ -2,7 +2,10 @@
 -I src
 
 theories/Loader.v
+theories/Demo.v
 
+src/inspector.mli
+src/inspector.ml
 src/simple_check.mli
 src/simple_check.ml
 src/simple_declare.mli

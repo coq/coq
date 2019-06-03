@@ -12,6 +12,6 @@ let simple_body_access gref =
   | Globnames.ConstRef cst ->
     let cb = Environ.lookup_constant cst (Global.env()) in
     match Global.body_of_constant_body Library.indirect_accessor cb with
-    | Some(e, _) -> e
+    | Some(e, _) -> EConstr.of_constr e
     | None -> failwith "This term has no value"
 

@@ -8,7 +8,6 @@ DECLARE PLUGIN "tuto1_plugin"
   theories/Loader.v
 *)
 open Ltac_plugin
-open Attributes
 open Pp
 (* This module defines the types of arguments to be used in the
    EXTEND directives below, for example the string one. *)
@@ -16,136 +15,276 @@ open Stdarg
 
 }
 
-VERNAC COMMAND EXTEND HelloWorld CLASSIFIED AS QUERY
-| [ "Hello" string(s) ] ->
-  { Feedback.msg_notice (strbrk "Hello " ++ str s) }
+(*** Printing inputs ***)
+
+(*
+ * This command prints an input from the user.
+ *
+ * A list with allowable inputs can be found in interp/stdarg.mli,
+ * plugin/ltac/extraargs.mli, and plugin/ssr/ssrparser.mli
+ * (remove the wit_ prefix), but not all of these are allowable
+ * (unit and bool, for example, are not usable from within here).
+ *
+ * We include only some examples that are standard and useful for commands.
+ * Some of the omitted examples are useful for tactics.
+ *
+ * Inspector is our own file that defines a simple messaging function.
+ * The printing functions (pr_qualid and so on) are in printing.
+ *
+ * Some of these cases would be ambiguous if we used "What's" for each of
+ * these. For example, all of these are terms. We purposely disambiguate.
+ *)
+VERNAC COMMAND EXTEND WhatIsThis CLASSIFIED AS QUERY
+| [ "What's" constr(e) ] ->
+   {
+     let env = Global.env () in (* we'll explain later *)
+     let sigma = Evd.from_env env in (* we'll explain later *)
+     Inspector.print_input e (Ppconstr.pr_constr_expr env sigma) "term"
+   }
+| [ "What" "kind" "of" "term" "is" string(s) ] ->
+   { Inspector.print_input s strbrk "string" }
+| [ "What" "kind" "of" "term" "is" int(i) ] ->
+   { Inspector.print_input i Pp.int "int" }
+| [ "What" "kind" "of" "term" "is" ident(id) ] ->
+   { Inspector.print_input id Ppconstr.pr_id "identifier" }
+| [ "What" "kind" "of" "identifier" "is" reference(r) ] ->
+   { Inspector.print_input r Ppconstr.pr_qualid "reference" }
 END
 
-(* reference is allowed as a syntactic entry, but so are all the entries
-   found the signature of module Prim in file coq/parsing/pcoq.mli *)
-
-VERNAC COMMAND EXTEND HelloAgain CLASSIFIED AS QUERY
-| [ "HelloAgain" reference(r)] ->
-(* The function Ppconstr.pr_qualid was found by searching all mli files
-   for a function of type qualid -> Pp.t *)
-  { Feedback.msg_notice
-      (strbrk "Hello again " ++ Ppconstr.pr_qualid r)}
+(*
+ * This command demonstrates basic combinators built into the DSL here.
+ * You can generalize this for constr_list, constr_opt, int_list, and so on.
+ *)
+VERNAC COMMAND EXTEND WhatAreThese CLASSIFIED AS QUERY
+| [ "What" "is" int_list(l) "a" "list" "of" ] ->
+   {
+     let print l = str "[" ++ Pp.prlist_with_sep (fun () -> str ";") Pp.int l ++ str "]" in
+     Inspector.print_input l print "int list"
+   }
+| [ "Is" ne_int_list(l) "nonempty" ] ->
+   {
+     let print l = str "[" ++ Pp.prlist_with_sep (fun () -> str ";") Pp.int l ++ str "]" in
+     Inspector.print_input l print "nonempty int list"
+   }
+| [ "And" "is" int_opt(o) "provided" ] ->
+   {
+     let print o = strbrk (if Option.has_some o then "Yes" else "No") in
+     Feedback.msg_notice (print o)
+   }
 END
 
-(* According to parsing/pcoq.mli, e has type constr_expr *)
-(* this type is defined in pretyping/constrexpr.ml *)
-(* Question for the developers: why is the file constrexpr.ml and not
-   constrexpr.mli --> Easier for packing the software in components. *)
-VERNAC COMMAND EXTEND TakingConstr CLASSIFIED AS QUERY
-| [ "Cmd1" constr(e) ] ->
-  { let _ = e in Feedback.msg_notice (strbrk "Cmd1 parsed something") }
+
+(*** Interning terms ***)
+
+(*
+ * The next step is to make something of parsed expression.
+ * Interesting information in interp/constrintern.mli.
+ *
+ * When you read in constr(e), e will have type Constrexpr.constr_expr,
+ * which is defined in pretyping/constrexpr.ml. Your plugin
+ * will want a different representation.
+ *
+ * The important function is Constrintern.interp_constr_evars,
+ * which converts between a constr_expr and an
+ * (EConstr.constr, evar_map) pair. This essentially contains
+ * an internal representation of the term along with some state.
+ * For more on the state, read /dev/doc/econstr.md.
+ *
+ * NOTE ON INTERNING: Always prefer Constrintern.interp_constr_evars
+ * over Constrintern.interp_constr. The latter is an internal function
+ * not meant for external use.
+ *
+ * To get your initial environment, call Global.env ().
+ * To get state from that environment, call Evd.from_env on that environment.
+ * It is important to NEVER use the empty environment or Evd.empty;
+ * if you do, you will get confusing errors.
+ *
+ * NOTE ON STATE: It is important to use the evar_map that is returned to you.
+ * Otherwise, you may get cryptic errors later in your plugin.
+ * For example, you may get universe inconsistency errors.
+ * In general, if a function returns an evar_map to you, that's the one
+ * you want to thread through the rest of your command.
+ *
+ * NOTE ON STYLE: In general, it's better practice to move large
+ * chunks of OCaml code like this one into an .ml file. We include
+ * this here because it's really important to understand how to
+ * thread state in a plugin, and it's easier to see that if it's in the
+ * top-level file itself.
+ *)
+VERNAC COMMAND EXTEND Intern CLASSIFIED AS QUERY
+| [ "Intern" constr(e) ] ->
+   {
+     let env = Global.env () in (* use this; never use empty *)
+     let sigma = Evd.from_env env in (* use this; never use empty *)
+     let debug sigma = Termops.pr_evar_map ~with_univs:true None env sigma in
+     Feedback.msg_notice (strbrk "State before intern: " ++ debug sigma);
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     Feedback.msg_notice (strbrk "State after intern: " ++ debug sigma);
+     let print t = Printer.pr_econstr_env env sigma t in
+     Feedback.msg_notice (strbrk "Interned: " ++ print t)
+   }
 END
 
-(* The next step is to make something of parsed expression.
-   Interesting information in interp/constrintern.mli *)
+(*** Defining terms ***)
 
-(* There are several phases of transforming a parsed expression into
-  the final internal data-type (constr).  There exists a collection of
-  functions that combine all the phases *)
-
-VERNAC COMMAND EXTEND TakingConstr2 CLASSIFIED AS QUERY
-| [ "Cmd2" constr(e) ] ->
-  { let _ = Constrintern.interp_constr
-    (Global.env())
-    (* Make sure you don't use Evd.empty here, as this does not
-      check consistency with existing universe constraints. *)
-    (Evd.from_env (Global.env())) e in
-    Feedback.msg_notice (strbrk "Cmd2 parsed something legitimate") }
+(*
+ * To define a term, we start similarly to our intern functionality,
+ * then we call another function. We define this function in
+ * the Simple_declare module.
+ *
+ * The line #[ poly = Attributes.polymorphic ] says that this command accepts
+ * polymorphic attributes.
+ * @SkySkimmer: Here, poly is what the result is bound to in the
+ * rule's code. Multiple attributes may be used separated by ;, and we have
+ * punning so foo is equivalent to foo = foo.
+ *
+ * The declare_definition function returns the reference
+ * that was defined. This reference will be present in the new environment.
+ * If you want to refer to it later in your plugin, you must use an
+ * updated environment and the constructed reference.
+ *
+ * Note since we are now defining a term, we must classify this
+ * as a side-effect (CLASSIFIED AS SIDEFF).
+ *)
+VERNAC COMMAND EXTEND MyDefine CLASSIFIED AS SIDEFF
+| #[ poly = Attributes.polymorphic ] [ "MyDefine" ident(i) ":=" constr(e) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let r = Simple_declare.declare_definition ~poly i sigma t in
+     let print r = strbrk "Defined " ++ Printer.pr_global r ++ strbrk "." in
+     Feedback.msg_notice (print r)
+   }
 END
 
-(* This is to show what happens when typing in an empty environment
-  with an empty evd.
- Question for the developers: why does "Cmd3 (fun x : nat => x)."
- raise an anomaly, not the same error as "Cmd3 (fun x : a => x)." *)
- 
-VERNAC COMMAND EXTEND TakingConstr3 CLASSIFIED AS QUERY
-| [ "Cmd3" constr(e) ] ->
-  { let _ = Constrintern.interp_constr Environ.empty_env
-      Evd.empty e in
-      Feedback.msg_notice
-        (strbrk "Cmd3 accepted something in the empty context")}
+(*** Printing terms ***)
+
+(*
+ * This command takes a name and return its value.  It does less
+ * than Print, because it fails on constructors, axioms, and inductive types.
+ * It signals an error to the user for unsupported terms.
+ *
+ * Simple_print contains simple_body_access, which shows how to look up
+ * a global reference.
+ *)
+VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
+| [ "MyPrint" reference(r) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     try
+       let t = Simple_print.simple_body_access (Nametab.global r) in
+       Feedback.msg_notice (Printer.pr_econstr_env env sigma t)
+     with Failure s ->
+       CErrors.user_err (str s)
+   }
 END
 
-(* When adding a definition, we have to be careful that just
-  the operation of constructing a well-typed term may already change
-  the environment, at the level of universe constraints (which
-  are recorded in the evd component).  The function
-  Constrintern.interp_constr ignores this side-effect, so it should
-  not be used here. *)
-
-(* Looking at the interface file interp/constrintern.ml4, I lost
-  some time because I did not see that the "constr" type appearing
-  there was "EConstr.constr" and not "Constr.constr". *)
-
-VERNAC COMMAND EXTEND Define1 CLASSIFIED AS SIDEFF
-| #[ poly = polymorphic ] [ "Cmd4" ident(i) constr(e) ] ->
-  { let v = Constrintern.interp_constr (Global.env())
-      (Evd.from_env (Global.env())) e in
-    Simple_declare.packed_declare_definition ~poly i v }
+(*
+ * This command shows that after you define a new term,
+ * you can also look it up. But there's a catch! You need to actually
+ * refresh your environment. Otherwise, the defined term
+ * will not be in the environment.
+ *
+ * Using the global reference as opposed to the ID is generally
+ * a good idea, otherwise you might end up running into unforeseen
+ * problems inside of modules and sections and so on.
+ *
+ * Inside of simple_body_access, note that it uses Global.env (),
+ * which refreshes the environment before looking up the term.
+ *)
+VERNAC COMMAND EXTEND DefineLookup CLASSIFIED AS SIDEFF
+| #[ poly = Attributes.polymorphic ] [ "DefineLookup" ident(i) ":=" constr(e) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let r = Simple_declare.declare_definition ~poly i sigma t in
+     let print r = strbrk "Defined " ++ Printer.pr_global r ++ strbrk "." in
+     Feedback.msg_notice (print r);
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let t = Simple_print.simple_body_access r in
+     let print t = strbrk "Found " ++ Printer.pr_econstr_env env sigma t in
+     Feedback.msg_notice (print t)
+   }
 END
+
+(*** Checking terms ***)
+
+(*
+ * These are two commands for simple type-checking of terms.
+ * The bodies and explanations of the differences are in simple_check.ml.
+ *)
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
-| [ "Cmd5" constr(e) ] ->
-  { let v = Constrintern.interp_constr (Global.env())
-      (Evd.from_env (Global.env())) e in
-    let (_, ctx) = v in
-    let sigma = Evd.from_ctx ctx in
-    Feedback.msg_notice
-    (Printer.pr_econstr_env (Global.env()) sigma
-       (Simple_check.simple_check1 v)) }
+| [ "Check1" constr(e) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let (sigma, typ) = Simple_check.simple_check1 env sigma t in
+     Feedback.msg_notice (Printer.pr_econstr_env env sigma typ)
+   }
 END
 
 VERNAC COMMAND EXTEND Check2 CLASSIFIED AS QUERY
-| [ "Cmd6" constr(e) ] ->
-  { let v = Constrintern.interp_constr (Global.env())
-      (Evd.from_env (Global.env())) e in
-    let sigma, ty = Simple_check.simple_check2 v in
-    Feedback.msg_notice
-      (Printer.pr_econstr_env (Global.env()) sigma ty) }
+| [ "Check2" constr(e) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t) = Constrintern.interp_constr_evars env sigma e in
+     let typ = Simple_check.simple_check2 env sigma t in
+     Feedback.msg_notice (Printer.pr_econstr_env env sigma typ)
+   }
 END
 
-VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
-| [ "Cmd7" constr(e) ] ->
-  { let v = Constrintern.interp_constr (Global.env())
-      (Evd.from_env (Global.env())) e in
-    let (a, ctx) = v in
-    let sigma = Evd.from_ctx ctx in
-      Feedback.msg_notice
-      (Printer.pr_econstr_env (Global.env()) sigma
-         (Simple_check.simple_check3 v)) }
+(*** Convertibility ***)
+
+(*
+ * This command checks if there is a possible assignment of
+ * constraints in the state under which the two terms are
+ * convertible.
+ *)
+VERNAC COMMAND EXTEND Convertible CLASSIFIED AS QUERY
+| [ "Convertible" constr(e1) constr(e2) ] ->
+   {
+     let env = Global.env () in
+     let sigma = Evd.from_env env in
+     let (sigma, t1) = Constrintern.interp_constr_evars env sigma e1 in
+     let (sigma, t2) = Constrintern.interp_constr_evars env sigma e2 in
+     match Reductionops.infer_conv env sigma t1 t2 with
+     | Some _ ->
+        Feedback.msg_notice (strbrk "Yes :)")
+     | None ->
+        Feedback.msg_notice (strbrk "No :(")
+   }
 END
 
-(* This command takes a name and return its value.  It does less
-  than Print, because it fails on constructors, axioms, and inductive types.
-  This should be improved, because the error message is an anomaly.
-  Anomalies should never appear even when using a command outside of its
-  intended use. *)
-VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
-| [ "Cmd8" reference(r) ] ->
-  { let env = Global.env() in
-    let sigma = Evd.from_env env in
-    Feedback.msg_notice
-    (Printer.pr_econstr_env env sigma
-      (EConstr.of_constr
-        (Simple_print.simple_body_access (Nametab.global r)))) }
-END
+(*** Introducing terms ***)
 
+(*
+ * We can call the tactics defined in Tactics within our tactics.
+ * Here we call intros.
+ *)
 TACTIC EXTEND my_intro
 | [ "my_intro" ident(i) ] ->
   { Tactics.introduction i }
 END
 
-(* if one write this:
-  VERNAC COMMAND EXTEND exploreproof CLASSIFIED AS QUERY
-  it gives an error message that is basically impossible to understand. *)
+(*** Exploring proof state ***)
 
+(*
+ * This command demonstrates exploring the proof state from within
+ * a command.
+ *
+ * Note that Pfedit.get_current_context gets us the environment
+ * and state within a proof, as opposed to the global environment
+ * and state. This is important within tactics.
+ *)
 VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
-| ![ proof_query ] [ "Cmd9" ] ->
+| ![ proof_query ] [ "ExploreProof" ] ->
   { fun ~pstate ->
     let sigma, env = Pfedit.get_current_context pstate in
     let pprf = Proof.partial_proof Proof_global.(give_me_the_proof pstate) in
