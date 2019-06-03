@@ -1224,7 +1224,7 @@ Controlling Typing Flags
    break the consistency of the system, use at your own risk. Unchecked
    (co)inductive types are printed by :cmd:`Print Assumptions`.
 
-.. flag:: Universes Checking
+.. flag:: Universe Checking
 
    This option can be used to enable/disable the checking of universes, providing a
    form of "type in type".  Warning: this breaks the consistency of the system, use

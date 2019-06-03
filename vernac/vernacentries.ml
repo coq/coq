@@ -1744,7 +1744,7 @@ let _ =
   declare_bool_option
     { optdepr  = false;
       optname  = "universes checking";
-      optkey   = ["Universes"; "Checking"];
+      optkey   = ["Universe"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
       optwrite = (fun b -> Global.set_check_universes b) }
 

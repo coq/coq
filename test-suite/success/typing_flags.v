@@ -16,13 +16,13 @@ Set Guard Checking.
 
 Print Assumptions f.
 
-Unset Universes Checking.
+Unset Universe Checking.
 
 Definition T := Type.
 Fixpoint g (n : nat) : T := T.
 
 Print Typing Flags.
-Set Universes Checking.
+Set Universe Checking.
 
 Fail Definition g2 (n : nat) : T := T.
 
