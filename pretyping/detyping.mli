@@ -91,7 +91,7 @@ module PrintingInductiveMake :
   end) ->
     sig
       type t = Names.inductive
-      val compare : t -> t -> int
+      module Set = Indset
       val encode : Environ.env -> Libnames.qualid -> Names.inductive
       val subst : substitution -> t -> t
       val printer : t -> Pp.t
