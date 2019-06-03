@@ -14,13 +14,13 @@ open Stdarg
 VERNAC COMMAND EXTEND ShowTypeConstruction CLASSIFIED AS QUERY
 | [ "Tuto3_1" ] ->
   { let env = Global.env () in
-    let evd = Evd.from_env env in
-    let evd, s = Evd.new_sort_variable Evd.univ_rigid evd in
+    let sigma = Evd.from_env env in
+    let sigma, s = Evd.new_sort_variable Evd.univ_rigid sigma in
     let new_type_2 = EConstr.mkSort s in
-    let evd, _ =
+    let sigma, _ =
       Typing.type_of (Global.env()) (Evd.from_env (Global.env())) new_type_2 in
     Feedback.msg_notice
-      (Printer.pr_econstr_env env evd new_type_2) }
+      (Printer.pr_econstr_env env sigma new_type_2) }
 END
 
 VERNAC COMMAND EXTEND ShowOneConstruction CLASSIFIED AS QUERY
