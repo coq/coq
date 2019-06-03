@@ -443,7 +443,11 @@ let pretype_global ?loc rigid env evd gr us =
     | None -> evd, None
     | Some l -> interp_instance ?loc evd l
   in
-  Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
+  try
+    Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
+  with Not_found ->
+    let qid = Libnames.qualid_of_path ?loc (Nametab.path_of_global gr) in
+    Nametab.error_global_not_found qid
 
 let pretype_ref ?loc sigma env ref us =
   match ref with
