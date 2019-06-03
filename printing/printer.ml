@@ -854,6 +854,7 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TypeInType of Constant.t (* a constant which relies on type in type *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -927,9 +928,11 @@ let pr_assumptionset env sigma s =
       | Constant kn ->
           safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
       | Positive m ->
-          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
+          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded kn ->
-          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is assumed to be guarded.")
+      | TypeInType kn ->
+         hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in

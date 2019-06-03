@@ -192,6 +192,7 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TypeInType of Constant.t (* a constant which relies on type in type *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
