@@ -94,9 +94,9 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
   { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
     let (_, ctx) = v in
-    let evd = Evd.from_ctx ctx in
+    let sigma = Evd.from_ctx ctx in
     Feedback.msg_notice
-    (Printer.pr_econstr_env (Global.env()) evd
+    (Printer.pr_econstr_env (Global.env()) sigma
        (Simple_check.simple_check1 v)) }
 END
 
@@ -104,9 +104,9 @@ VERNAC COMMAND EXTEND Check2 CLASSIFIED AS QUERY
 | [ "Cmd6" constr(e) ] ->
   { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
-    let evd, ty = Simple_check.simple_check2 v in
+    let sigma, ty = Simple_check.simple_check2 v in
     Feedback.msg_notice
-      (Printer.pr_econstr_env (Global.env()) evd ty) }
+      (Printer.pr_econstr_env (Global.env()) sigma ty) }
 END
 
 VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
@@ -114,9 +114,9 @@ VERNAC COMMAND EXTEND Check1 CLASSIFIED AS QUERY
   { let v = Constrintern.interp_constr (Global.env())
       (Evd.from_env (Global.env())) e in
     let (a, ctx) = v in
-    let evd = Evd.from_ctx ctx in
+    let sigma = Evd.from_ctx ctx in
       Feedback.msg_notice
-      (Printer.pr_econstr_env (Global.env()) evd
+      (Printer.pr_econstr_env (Global.env()) sigma
          (Simple_check.simple_check3 v)) }
 END
 
@@ -128,9 +128,9 @@ END
 VERNAC COMMAND EXTEND ExamplePrint CLASSIFIED AS QUERY
 | [ "Cmd8" reference(r) ] ->
   { let env = Global.env() in
-    let evd = Evd.from_env env in
+    let sigma = Evd.from_env env in
     Feedback.msg_notice
-    (Printer.pr_econstr_env env evd
+    (Printer.pr_econstr_env env sigma
       (EConstr.of_constr
         (Simple_print.simple_body_access (Nametab.global r)))) }
 END

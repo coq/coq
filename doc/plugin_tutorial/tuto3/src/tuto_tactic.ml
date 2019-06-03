@@ -65,10 +65,10 @@ let package i = Goal.enter begin fun gl ->
    and return the value a.  *)
 
 (* Remark by Maxime: look for destApp combinator. *)
-let unpack_type evd term =
+let unpack_type sigma term =
   let report () =
     CErrors.user_err (Pp.str "expecting a packed type") in
-  match EConstr.kind evd term with
+  match EConstr.kind sigma term with
   | Constr.App (_, [| ty |]) -> ty
   | _ -> report ()
 
@@ -76,19 +76,19 @@ let unpack_type evd term =
    A -> pack B -> C and return A, B, C
   but it is not used in the current version of our tactic.
   It is kept as an example. *)
-let two_lambda_pattern evd term =
+let two_lambda_pattern sigma term =
   let report () =
     CErrors.user_err (Pp.str "expecting two nested implications") in
 (* Note that pattern-matching is always done through the EConstr.kind function,
    which only provides one-level deep patterns. *)
-  match EConstr.kind evd term with
+  match EConstr.kind sigma term with
   (* Here we recognize the outer implication *)
   | Constr.Prod (_, ty1, l1) ->
       (* Here we recognize the inner implication *)
-      (match EConstr.kind evd l1 with
+      (match EConstr.kind sigma l1 with
       | Constr.Prod (n2, packed_ty2, deep_conclusion) ->
         (* Here we recognized that the second type is an application *)
-        ty1, unpack_type evd packed_ty2, deep_conclusion
+        ty1, unpack_type sigma packed_ty2, deep_conclusion
       | _ -> report ())
   | _ -> report ()
 
@@ -104,22 +104,22 @@ let get_type_of_hyp env id =
 
 let repackage i h_hyps_id = Goal.enter begin fun gl ->
     let env = Goal.env gl in
-    let evd = Tacmach.New.project gl in
+    let sigma = Tacmach.New.project gl in
     let concl = Tacmach.New.pf_concl gl in
     let (ty1 : EConstr.t) = get_type_of_hyp env i in
     let (packed_ty2 : EConstr.t) = get_type_of_hyp env h_hyps_id in
-    let ty2 = unpack_type evd packed_ty2 in
+    let ty2 = unpack_type sigma packed_ty2 in
     let new_packed_type = EConstr.mkApp (c_P (), [| ty1; ty2 |]) in
     let open EConstr in
     let new_packed_value =
         mkApp (c_R (), [| ty1; ty2; mkVar i;
           mkApp (c_U (), [| ty2; mkVar h_hyps_id|]) |]) in
-    Refine.refine ~typecheck:true begin fun evd ->
-      let evd, new_goal = Evarutil.new_evar env evd
+    Refine.refine ~typecheck:true begin fun sigma ->
+      let sigma, new_goal = Evarutil.new_evar env sigma
           (mkArrowR (mkApp(c_H (), [| new_packed_type |]))
              (Vars.lift 1 concl))
       in
-      evd, mkApp (new_goal,
+      sigma, mkApp (new_goal,
                   [|mkApp(c_M (), [|new_packed_type; new_packed_value |]) |])
       end
     end
