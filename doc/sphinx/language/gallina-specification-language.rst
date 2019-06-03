@@ -776,7 +776,7 @@ Simple inductive types
 
       The types of the constructors have to satisfy a *positivity condition*
       (see Section :ref:`positivity`). This condition ensures the soundness of
-      the inductive definition. The positivity checking can be disable using
+      the inductive definition. The positivity checking can be disabled using
       the command :cmd:`Unset Positivity Checking` or the attribute
       ``assume_positive`` (see :ref:`gallina-attributes`).
 
