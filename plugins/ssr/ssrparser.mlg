@@ -204,17 +204,6 @@ ARGUMENT EXTEND ssrhoi_id TYPED AS ssrhoirep PRINTED BY { pr_ssrhoi }
   | [ ident(id) ] -> { Id (SsrHyp(Loc.tag ~loc id)) }
 END
 
-{
-
-let pr_ssrhyps _ _ _ = pr_hyps
-
-}
-
-ARGUMENT EXTEND ssrhyps TYPED AS ssrhyp list PRINTED BY { pr_ssrhyps }
-                        INTERPRETED BY { interp_hyps }
-  | [ ssrhyp_list(hyps) ] -> { check_hyps_uniq [] hyps; hyps }
-END
-
 (** Rewriting direction *)
 
 {
@@ -310,18 +299,13 @@ GRAMMAR EXTEND Gram
 
 END
 
-ARGUMENT EXTEND ssrsimpl TYPED AS ssrsimplrep PRINTED BY { pr_ssrsimpl }
-| [ ssrsimpl_ne(sim) ] -> { sim }
-| [ ] -> { Nop }
-END
-
 {
 
 let pr_ssrclear _ _ _ = pr_clear mt
 
 }
 
-ARGUMENT EXTEND ssrclear_ne TYPED AS ssrhyps PRINTED BY { pr_ssrclear }
+ARGUMENT EXTEND ssrclear_ne TYPED AS ssrhyp list PRINTED BY { pr_ssrclear }
 | [ "{" ne_ssrhyp_list(clr) "}" ] -> { check_hyps_uniq [] clr; clr }
 END
 
