@@ -94,8 +94,14 @@ let of_anti f = function
 
 let of_ident {loc;v=id} = inj_wit ?loc wit_ident id
 
-let of_constr c =
+let of_constr ?delimiters c =
   let loc = Constrexpr_ops.constr_loc c in
+  let c = Option.cata
+      (List.fold_left (fun c d ->
+           CAst.make ?loc @@ Constrexpr.CDelimiters(Id.to_string d, c))
+          c)
+      c delimiters
+  in
   inj_wit ?loc wit_constr c
 
 let of_open_constr c =

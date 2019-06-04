@@ -1355,6 +1355,16 @@ let () = add_scope "thunk" begin function
 | arg -> scope_fail "thunk" arg
 end
 
+let () = add_scope "constr" (fun arg ->
+    let delimiters = List.map (function
+        | SexprRec (_, { v = Some s }, []) -> s
+        | _ -> scope_fail "constr" arg)
+        arg
+    in
+    let act e = Tac2quote.of_constr ~delimiters e in
+    Tac2entries.ScopeRule (Extend.Aentry Pcoq.Constr.constr, act)
+  )
+
 let add_expr_scope name entry f =
   add_scope name begin function
   | [] -> Tac2entries.ScopeRule (Extend.Aentry entry, f)
@@ -1382,7 +1392,6 @@ let () = add_expr_scope "assert" q_assert Tac2quote.of_assertion
 let () = add_expr_scope "constr_matching" q_constr_matching Tac2quote.of_constr_matching
 let () = add_expr_scope "goal_matching" q_goal_matching Tac2quote.of_goal_matching
 
-let () = add_generic_scope "constr" Pcoq.Constr.constr Tac2quote.wit_constr
 let () = add_generic_scope "open_constr" Pcoq.Constr.constr Tac2quote.wit_open_constr
 let () = add_generic_scope "pattern" Pcoq.Constr.constr Tac2quote.wit_pattern
 
