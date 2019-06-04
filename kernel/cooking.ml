@@ -165,25 +165,10 @@ type result = {
   cook_context : Constr.named_context option;
 }
 
-let on_body ml hy f = function
-  | Undef _ as x -> x
-  | Def cs -> Def (Mod_subst.from_val (f (Mod_subst.force_constr cs)))
-  | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
-                 { Opaqueproof.modlist = ml; abstract = hy } o)
-  | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
-
 let expmod_constr_subst cache modlist subst c =
   let subst = Univ.make_instance_subst subst in
   let c = expmod_constr cache modlist c in
     Vars.subst_univs_level_constr subst c
-
-let cook_constr { Opaqueproof.modlist ; abstract = (vars, subst, _) } c =
-  let cache = RefTable.create 13 in
-  let expmod = expmod_constr_subst cache modlist subst in
-  let hyps = Context.Named.map expmod vars in
-  let hyps = abstract_context hyps in
-  abstract_constant_body (expmod c) hyps
 
 let lift_univs cb subst auctx0 =
   match cb.const_universes with
@@ -212,6 +197,18 @@ let lift_univs cb subst auctx0 =
       let auctx' = Univ.subst_univs_level_abstract_universe_context substf auctx in
       subst, (Polymorphic (AUContext.union auctx0 auctx'))
 
+let cook_constr { Opaqueproof.modlist ; abstract } c =
+  let cache = RefTable.create 13 in
+  let abstract, usubst, abs_ctx = abstract in
+  (* For now the STM only handles deferred computation of monomorphic
+    constants. The API will need to be adapted when it's not the case
+    anymore. *)
+  let () = assert (AUContext.is_empty abs_ctx) in
+  let expmod = expmod_constr_subst cache modlist usubst in
+  let hyps = Context.Named.map expmod abstract in
+  let hyps = abstract_context hyps in
+  abstract_constant_body (expmod c) hyps
+
 let cook_constant { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
@@ -221,9 +218,12 @@ let cook_constant { from = cb; info } =
   let hyps0 = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps0 in
   let map c = abstract_constant_body (expmod c) hyps in
-  let body = on_body modlist (hyps0, usubst, abs_ctx)
-    map
-    cb.const_body
+  let body = match cb.const_body with
+  | Undef _ as x -> x
+  | Def cs -> Def (Mod_subst.from_val (map (Mod_subst.force_constr cs)))
+  | OpaqueDef o ->
+    OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:map info o)
+  | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
