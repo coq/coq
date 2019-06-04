@@ -58,6 +58,7 @@ module MapExt (M : Map.OrderedType) :
 sig
   type 'a map = 'a Map.Make(M).t
   val set : M.t -> 'a -> 'a map -> 'a map
+  val get : M.t -> 'a map -> 'a
   val modify : M.t -> (M.t -> 'a -> 'a) -> 'a map -> 'a map
   val domain : 'a map -> Set.Make(M).t
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
@@ -123,6 +124,14 @@ struct
       let r' = set k v r in
       if r == r' then s
       else map_inj (MNode {l; v=k'; d=v'; r=r'; h})
+
+  let rec get k (s:'a map) : 'a = match map_prj s with
+    | MEmpty -> assert false
+    | MNode {l; v=k'; d=v; r; h} ->
+      let c = M.compare k k' in
+      if c < 0 then get k l
+      else if c = 0 then v
+      else get k r
 
   let rec modify k f (s : 'a map) : 'a map = match map_prj s with
   | MEmpty -> raise Not_found
@@ -324,5 +333,4 @@ module Make(M : Map.OrderedType) =
 struct
   include Map.Make(M)
   include MapExt(M)
-  let get k m = try find k m with Not_found -> assert false
 end

@@ -302,8 +302,8 @@ let lift_constant c =
 let push_private_constants env eff =
   let eff = side_effects_of_private_constants eff in
   let add_if_undefined env eff =
-    try ignore(Environ.lookup_constant eff.seff_constant env); env
-    with Not_found -> Environ.add_constant eff.seff_constant (lift_constant eff.seff_body) env
+    if Environ.mem_constant eff.seff_constant env then env
+    else Environ.add_constant eff.seff_constant (lift_constant eff.seff_body) env
   in
   List.fold_left add_if_undefined env eff
 
@@ -598,8 +598,8 @@ let inline_side_effects env body side_eff =
   (** First step: remove the constants that are still in the environment *)
   let filter e =
     let cb = (e.seff_constant, e.seff_body) in
-    try ignore (Environ.lookup_constant e.seff_constant env); None
-    with Not_found -> Some (cb, e.from_env)
+    if Environ.mem_constant e.seff_constant env then None
+    else Some (cb, e.from_env)
   in
   (* CAVEAT: we assure that most recent effects come first *)
   let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
@@ -750,9 +750,7 @@ let translate_direct_opaque env kn ce =
   { cb with const_body = OpaqueDef c }
 
 let export_side_effects mb env (b_ctx, eff) =
-      let not_exists e =
-        try ignore(Environ.lookup_constant e.seff_constant env); false
-        with Not_found -> true in
+      let not_exists e = not (Environ.mem_constant e.seff_constant env) in
       let aux (acc,sl) e =
         if not (not_exists e) then acc, sl
         else e :: acc, e.from_env :: sl in
