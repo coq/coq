@@ -31,16 +31,19 @@ let check_constant_declaration env kn cb =
   in
   let ty = cb.const_type in
   let _ = infer_type env' ty in
-  let env' = match cb.const_private_poly_univs, (cb.const_body, poly) with
-    | None, _ -> env'
-    | Some local, (OpaqueDef _, true) -> push_subgraph local env'
-    | Some _, _ -> assert false
-  in
-  let otab = Environ.opaque_tables env in
-  let body = match cb.const_body with
-  | Undef _ | Primitive _ -> None
-  | Def c -> Some (Mod_subst.force_constr c)
-  | OpaqueDef o -> Some (Opaqueproof.force_proof !indirect_accessor otab o)
+  let otab = Environ.opaque_tables env' in
+  let body, env' = match cb.const_body with
+  | Undef _ | Primitive _ -> None, env'
+  | Def c -> Some (Mod_subst.force_constr c), env'
+  | OpaqueDef o ->
+    let c, u = Opaqueproof.force_proof !indirect_accessor otab o in
+    let env' = match u, cb.const_universes with
+    | Opaqueproof.PrivateMonomorphic (), Monomorphic _ -> env'
+    | Opaqueproof.PrivatePolymorphic local, Polymorphic _ ->
+      push_subgraph local env'
+    | _ -> assert false
+    in
+    Some c, env'
   in
   let () =
     match body with

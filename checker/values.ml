@@ -230,7 +230,6 @@ let v_cb = v_tuple "constant_body"
     v_relevance;
     Any;
     v_univs;
-    Opt v_context_set;
     v_bool;
     v_typing_flags|]
 
@@ -399,6 +398,9 @@ let v_abstract =
 let v_cooking_info =
   Tuple ("cooking_info", [|v_work_list; v_abstract|])
 
-let v_opaques = Array (Tuple ("opaque", [| List v_cooking_info; Int; Opt v_constr |]))
+let v_delayed_universes =
+  Sum ("delayed_universes", 0, [| [| v_unit |]; [| v_context_set |] |])
+
+let v_opaques = Array (Tuple ("opaque", [| List v_cooking_info; Int; Opt (v_pair v_constr v_delayed_universes) |]))
 let v_univopaques =
   Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))

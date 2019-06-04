@@ -297,7 +297,7 @@ let print_body is_impl extent env mp (l,body) =
 		hov 2 (str ":= " ++
                        Printer.pr_lconstr_env env sigma (Mod_subst.force_constr l))
 	      | _ -> mt ()) ++ str "." ++
-            Printer.pr_abstract_universe_ctx sigma ctx ?priv:cb.const_private_poly_univs)
+            Printer.pr_abstract_universe_ctx sigma ctx)
     | SFBmind mib ->
       match extent with
       | WithContents ->

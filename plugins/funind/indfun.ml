@@ -853,7 +853,7 @@ let make_graph (f_ref : GlobRef.t) =
   in
   (match Global.body_of_constant_body Library.indirect_accessor c_body with
      | None -> error "Cannot build a graph over an axiom!"
-     | Some (body, _) ->
+     | Some (body, _, _) ->
        let env = Global.env () in
          let extern_body,extern_type =
            with_full_print (fun () ->

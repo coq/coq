@@ -139,9 +139,14 @@ let body_of_constant_body access env cb =
   | Undef _ | Primitive _ ->
      None
   | Def c ->
-     Some (Mod_subst.force_constr c, Declareops.constant_polymorphic_context cb)
+    let u = match cb.const_universes with
+    | Monomorphic _ -> Opaqueproof.PrivateMonomorphic ()
+    | Polymorphic _ -> Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
+    in
+    Some (Mod_subst.force_constr c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
-     Some (Opaqueproof.force_proof access otab o, Declareops.constant_polymorphic_context cb)
+    let c, u = Opaqueproof.force_proof access otab o in
+    Some (c, u, Declareops.constant_polymorphic_context cb)
 
 let body_of_constant_body access ce = body_of_constant_body access (env ()) ce
 

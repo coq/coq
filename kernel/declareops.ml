@@ -113,7 +113,6 @@ let subst_const_body sub cb =
         const_body_code =
           Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;
-        const_private_poly_univs = cb.const_private_poly_univs;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
         const_typing_flags = cb.const_typing_flags }
@@ -144,16 +143,11 @@ let hcons_universes cbu =
   | Polymorphic ctx ->
     Polymorphic (Univ.hcons_abstract_universe_context ctx)
 
-let hcons_const_private_univs = function
-  | None -> None
-  | Some univs -> Some (Univ.hcons_universe_context_set univs)
-
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = Constr.hcons cb.const_type;
     const_universes = hcons_universes cb.const_universes;
-    const_private_poly_univs = hcons_const_private_univs cb.const_private_poly_univs;
   }
 
 (** {6 Inductive types } *)

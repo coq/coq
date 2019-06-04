@@ -159,7 +159,6 @@ type 'opaque result = {
   cook_body : (constr Mod_subst.substituted, 'opaque) constant_def;
   cook_type : types;
   cook_universes : universes;
-  cook_private_univs : Univ.ContextSet.t option;
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Constr.named_context option;
@@ -202,7 +201,7 @@ let lift_univs cb subst auctx0 =
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)
 
-let cook_constr { Opaqueproof.modlist ; abstract } (univs, c) =
+let cook_constr { Opaqueproof.modlist ; abstract } (univs, (c, priv)) =
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
   let ainst = Instance.of_array (Array.init univs Level.var) in
@@ -211,7 +210,15 @@ let cook_constr { Opaqueproof.modlist ; abstract } (univs, c) =
   let hyps = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps in
   let c = abstract_constant_body (expmod c) hyps in
-  univs + AUContext.size abs_ctx, c
+  let priv = match priv with
+  | Opaqueproof.PrivateMonomorphic () ->
+    let () = assert (AUContext.is_empty abs_ctx) in
+    priv
+  | Opaqueproof.PrivatePolymorphic ctx ->
+    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst usubst)) ctx in
+    Opaqueproof.PrivatePolymorphic ctx
+  in
+  univs + AUContext.size abs_ctx, (c, priv)
 
 let cook_constr infos univs c =
   let fold info (univs, c) = cook_constr info (univs, c) in
@@ -240,15 +247,10 @@ let cook_constant { from = cb; info } =
 		  hyps)
       hyps0 ~init:cb.const_hyps in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
-  let private_univs = Option.map (on_snd (Univ.subst_univs_level_constraints
-                                            (Univ.make_instance_subst usubst)))
-      cb.const_private_poly_univs
-  in
   {
     cook_body = body;
     cook_type = typ;
     cook_universes = univs;
-    cook_private_univs = private_univs;
     cook_relevance = cb.const_relevance;
     cook_inline = cb.const_inline_code;
     cook_context = Some const_hyps;

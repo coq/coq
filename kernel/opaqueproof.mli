@@ -21,7 +21,11 @@ open Mod_subst
     When it is [turn_indirect] the data is relocated to an opaque table
     and the [opaque] is turned into an index. *)
 
-type proofterm = (constr * Univ.ContextSet.t) Future.computation
+type 'a delayed_universes =
+| PrivateMonomorphic of 'a
+| PrivatePolymorphic of Univ.ContextSet.t
+
+type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 type opaquetab
 type opaque
 
@@ -42,9 +46,12 @@ type cooking_info = {
   modlist : work_list;
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 
+type opaque_proofterm = cooking_info list * int * (Constr.t * unit delayed_universes) option
+
 type indirect_accessor = {
-  access_proof : DirPath.t -> int -> constr option;
-  access_discharge : cooking_info list -> int -> constr -> constr;
+  access_proof : DirPath.t -> int -> opaque_proofterm;
+  access_discharge : cooking_info list -> int ->
+    (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
 }
 (** When stored indirectly, opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
@@ -53,7 +60,7 @@ type indirect_accessor = {
 
 (** From a [opaque] back to a [constr]. This might use the
     indirect opaque accessor given as an argument. *)
-val force_proof : indirect_accessor -> opaquetab -> opaque -> constr
+val force_proof : indirect_accessor -> opaquetab -> opaque -> constr * unit delayed_universes
 val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.ContextSet.t
 val get_direct_constraints : opaque -> Univ.ContextSet.t Future.computation
 
@@ -65,5 +72,5 @@ val discharge_direct_opaque :
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
-  (cooking_info list * int * Constr.t option) array *
+  opaque_proofterm array *
   int Future.UUIDMap.t

@@ -79,7 +79,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Cooking.cook_body = Undef nl;
         cook_type = t;
         cook_universes = univs;
-        cook_private_univs = None;
         cook_relevance = r;
         cook_inline = false;
         cook_context = ctx;
@@ -108,7 +107,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       { Cooking.cook_body = cd;
         cook_type = ty;
         cook_universes = Monomorphic uctxt;
-        cook_private_univs = None;
         cook_inline = false;
         cook_context = None;
         cook_relevance = Sorts.Relevant;
@@ -124,7 +122,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
       let proofterm =
-        Future.chain body (fun ((body,uctx),side_eff) ->
+        Future.chain body begin fun ((body,uctx),side_eff) ->
           (* don't redeclare universes which are declared for the type *)
           let uctx = Univ.ContextSet.diff uctx univs in
           let j, uctx = match trust with
@@ -145,13 +143,13 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
           in
           let c = j.uj_val in
           feedback_completion_typecheck feedback_id;
-          c, uctx) in
+          c, Opaqueproof.PrivateMonomorphic uctx
+      end in
       let def = OpaqueDef proofterm in
       {
         Cooking.cook_body = def;
         cook_type = tyj.utj_val;
         cook_universes = Monomorphic univs;
-        cook_private_univs = None;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -168,8 +166,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = Univ.abstract_universes nas uctx in
       let usubst = Univ.make_instance_subst sbst in
-      let (def, private_univs) =
-        let (body, ctx), side_eff = Future.join body in
+      let proofterm = Future.chain body begin fun ((body, ctx), side_eff) ->
         let body, ctx = match trust with
         | Pure -> body, ctx
         | SideEffects handle ->
@@ -183,16 +180,15 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         let j = Typeops.infer env body in
         let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
         let def = Vars.subst_univs_level_constr usubst j.uj_val in
-        def, private_univs
-      in
-      let def = OpaqueDef (Future.from_val (def, Univ.ContextSet.empty)) in
+        let () = feedback_completion_typecheck feedback_id in
+        def, Opaqueproof.PrivatePolymorphic private_univs
+      end in
+      let def = OpaqueDef proofterm in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
-        feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = Polymorphic auctx;
-        cook_private_univs = Some private_univs;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -211,22 +207,22 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         body, ctx
       | SideEffects _ -> assert false
       in
-      let env, usubst, univs, private_univs = match c.const_entry_universes with
+      let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry univs ->
         let ctx = Univ.ContextSet.union univs ctx in
         let env = push_context_set ~strict:true ctx env in
-        env, Univ.empty_level_subst, Monomorphic ctx, None
+        env, Univ.empty_level_subst, Monomorphic ctx
       | Polymorphic_entry (nas, uctx) ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
         let env = push_context ~strict:false uctx env in
         let sbst, auctx = Univ.abstract_universes nas uctx in
         let sbst = Univ.make_instance_subst sbst in
-        let env, local =
-          if Univ.ContextSet.is_empty ctx then env, None
-          else CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
+        let () =
+          if not (Univ.ContextSet.is_empty ctx) then
+            CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
         in
-        env, sbst, Polymorphic auctx, local
+        env, sbst, Polymorphic auctx
       in
       let j = Typeops.infer env body in
       let typ = match typ with
@@ -244,7 +240,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = univs;
-        cook_private_univs = private_univs;
         cook_relevance = Retypeops.relevance_of_term env j.uj_val;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
@@ -341,7 +336,6 @@ let build_constant_declaration env result =
     const_type = typ;
     const_body_code = tps;
     const_universes = univs;
-    const_private_poly_univs = result.cook_private_univs;
     const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
@@ -368,7 +362,6 @@ let translate_recipe env _kn r =
     const_type = result.cook_type;
     const_body_code = tps;
     const_universes = univs;
-    const_private_poly_univs = result.cook_private_univs;
     const_relevance = result.cook_relevance;
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
@@ -407,7 +400,10 @@ let translate_local_def env _id centry =
     let (p, cst) = Future.force o in
     (** Let definitions are ensured to have no extra constraints coming from
         the body by virtue of the typing of [Entries.section_def_entry]. *)
-    let () = assert (Univ.ContextSet.is_empty cst) in
+    let () = match cst with
+    | Opaqueproof.PrivateMonomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+    | Opaqueproof.PrivatePolymorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+    in
     p
   | Undef _ | Primitive _ -> assert false
   in

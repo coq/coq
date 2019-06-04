@@ -725,11 +725,14 @@ let export_side_effects mb env (b_ctx, eff) =
               let kn = eff.seff_constant in
                let ce = constant_entry_of_side_effect eff in
                let cb = Term_typing.translate_constant Term_typing.Pure env kn ce in
-               let map cu =
+              let map cu =
                 let (c, u) = Future.force cu in
-                let () = assert (Univ.ContextSet.is_empty u) in
+                let () = match u with
+                | Opaqueproof.PrivateMonomorphic ctx | Opaqueproof.PrivatePolymorphic ctx ->
+                  assert (Univ.ContextSet.is_empty ctx)
+                in
                 c
-               in
+              in
                let cb = map_constant map cb in
                let eff = { eff with seff_body = cb } in
                (push_seff env eff, export_eff eff)
@@ -742,13 +745,16 @@ let export_side_effects mb env (b_ctx, eff) =
      in
        translate_seff trusted seff [] env
 
-let n_univs cb = match cb.const_universes with
-| Monomorphic _ -> 0
-| Polymorphic auctx -> Univ.AUContext.size auctx
-
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let map (kn, cb) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val (p, Univ.ContextSet.empty))) cb) in
+  let map univs p =
+    let univs, local = match univs with
+    | Monomorphic _ -> 0, Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
+    | Polymorphic auctx -> Univ.AUContext.size auctx, Opaqueproof.PrivatePolymorphic Univ.ContextSet.empty
+    in
+    Opaqueproof.create ~univs (Future.from_val (p, local))
+  in
+  let map (kn, cb) = (kn, map_constant (fun c -> map cb.const_universes c) cb) in
   let bodies = List.map map exported in
   let exported = List.map (fun (kn, _) -> kn) exported in
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
@@ -775,7 +781,11 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
     in
   let senv =
-    let cb = map_constant (fun c -> Opaqueproof.create ~univs:(n_univs cb) c) cb in
+    let univs = match cb.const_universes with
+    | Monomorphic _ -> 0
+    | Polymorphic auctx -> Univ.AUContext.size auctx
+    in
+    let cb = map_constant (fun c -> Opaqueproof.create ~univs c) cb in
     add_constant_aux ~in_section senv (kn, cb) in
   let senv =
     match decl with
@@ -791,14 +801,16 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
     | (Primitive _ | Undef _) -> assert false
     | Def c -> (Def c, cb.const_universes)
     | OpaqueDef o ->
-      let (b, ctx) = Future.force o in
-      match cb.const_universes with
-      | Monomorphic ctx' ->
+      let (b, delayed) = Future.force o in
+      match cb.const_universes, delayed with
+      | Monomorphic ctx', Opaqueproof.PrivateMonomorphic ctx ->
         OpaqueDef b, Monomorphic (Univ.ContextSet.union ctx ctx')
-      | Polymorphic auctx ->
+      | Polymorphic auctx, Opaqueproof.PrivatePolymorphic ctx ->
         (* Upper layers enforce that there are no internal constraints *)
         let () = assert (Univ.ContextSet.is_empty ctx) in
         OpaqueDef b, Polymorphic auctx
+      | (Monomorphic _ | Polymorphic _), (Opaqueproof.PrivateMonomorphic _ | Opaqueproof.PrivatePolymorphic _) ->
+        assert false
     in
     let cb = { cb with const_body = body; const_universes = univs } in
     let from_env = CEphemeron.create senv.revstruct in

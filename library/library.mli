@@ -35,7 +35,7 @@ type seg_sum
 type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
-type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.t option) array
+type seg_proofs = Opaqueproof.opaque_proofterm array
 
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
