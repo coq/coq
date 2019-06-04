@@ -588,12 +588,14 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
 let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
-  let ctx, arity = decompose_prod_assum ty in
+  let ctx, _ = decompose_prod_assum ty in
+  let args = Context.Rel.to_extended_vect Constr.mkRel 0 ctx in
+  let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
   let tc = 
     { cl_univs = univs;
       cl_impl = ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
-      cl_props = [LocalAssum (make_annot Anonymous r, arity)];
+      cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
       cl_strict = !typeclasses_strict;
       cl_unique = !typeclasses_unique
