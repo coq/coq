@@ -32,6 +32,7 @@ CI_TARGETS= \
     ci-coqhammer \
     ci-hott \
     ci-iris-lambda-rust \
+    ci-kami \
     ci-math-classes \
     ci-math-comp \
     ci-mtac2 \

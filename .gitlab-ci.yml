@@ -622,6 +622,9 @@ library:ci-hott:
 library:ci-iris-lambda-rust:
   extends: .ci-template-flambda
 
+library:ci-kami:
+  extends: .ci-template
+
 library:ci-math-comp:
   extends: .ci-template-flambda
 

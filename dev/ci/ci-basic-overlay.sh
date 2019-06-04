@@ -185,6 +185,13 @@
 : "${bedrock2_CI_ARCHIVEURL:=${bedrock2_CI_GITURL}/archive}"
 
 ########################################################################
+# kami
+########################################################################
+: "${kami_CI_REF:=master}"
+: "${kami_CI_GITURL:=https://github.com/sifive/RiscvSpecFormal}"
+: "${kami_CI_ARCHIVEURL:=${kami_CI_GITURL}/archive}"
+
+########################################################################
 # Equations
 ########################################################################
 : "${equations_CI_REF:=master}"
