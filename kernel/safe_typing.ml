@@ -231,7 +231,7 @@ let check_engagement env expected_impredicative_set =
 type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   seff_constant : Constant.t;
-  seff_body : (Constr.t * Univ.ContextSet.t) Declarations.constant_body;
+  seff_body : Constr.t Declarations.constant_body;
   seff_role : Entries.side_effect_role;
 }
 
@@ -299,11 +299,6 @@ let concat_private = SideEffects.concat
 
 let universes_of_private eff =
   let fold acc eff =
-    let acc = match eff.seff_body.const_body with
-    | Def _ -> acc
-    | OpaqueDef (_, ctx) -> ctx :: acc
-    | Primitive _ | Undef _ -> assert false
-    in
     match eff.seff_body.const_universes with
     | Monomorphic ctx -> ctx :: acc
     | Polymorphic _ -> acc
@@ -601,7 +596,7 @@ let inline_side_effects env body side_eff =
     let fold (subst, var, ctx, args) (c, cb) =
       let (b, opaque) = match cb.const_body with
       | Def b -> (Mod_subst.force_constr b, false)
-      | OpaqueDef (b, _) -> (b, true)
+      | OpaqueDef b -> (b, true)
       | _ -> assert false
       in
       match cb.const_universes with
@@ -689,13 +684,13 @@ let constant_entry_of_side_effect eff =
     | Polymorphic auctx ->
       Polymorphic_entry (Univ.AUContext.names auctx, Univ.AUContext.repr auctx)
   in
-  let pt =
+  let p =
     match cb.const_body with
-    | OpaqueDef (b, c) -> b, c
-    | Def b -> Mod_subst.force_constr b, Univ.ContextSet.empty
+    | OpaqueDef b -> b
+    | Def b -> Mod_subst.force_constr b
     | _ -> assert false in
   DefinitionEntry {
-    const_entry_body = Future.from_val (pt, ());
+    const_entry_body = Future.from_val ((p, Univ.ContextSet.empty), ());
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type = Some cb.const_type;
@@ -721,11 +716,6 @@ let export_side_effects mb env (b_ctx, eff) =
         match cb.const_universes with
         | Polymorphic _ -> env
         | Monomorphic ctx ->
-          let ctx = match eff.seff_body.const_body with
-          | Def _ -> ctx
-          | OpaqueDef (_, ctx') -> Univ.ContextSet.union ctx' ctx
-          | Undef _ | Primitive _ -> assert false
-          in
           Environ.push_context_set ~strict:true ctx env
       in
       let rec translate_seff sl seff acc env =
@@ -737,7 +727,12 @@ let export_side_effects mb env (b_ctx, eff) =
               let kn = eff.seff_constant in
                let ce = constant_entry_of_side_effect eff in
                let cb = Term_typing.translate_constant Term_typing.Pure env kn ce in
-               let cb = map_constant Future.force cb in
+               let map cu =
+                let (c, u) = Future.force cu in
+                let () = assert (Univ.ContextSet.is_empty u) in
+                c
+               in
+               let cb = map_constant map cb in
                let eff = { eff with seff_body = cb } in
                (push_seff env eff, export_eff eff)
             in
@@ -755,7 +750,7 @@ let n_univs cb = match cb.const_universes with
 
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val p)) cb) in
+  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val (p, Univ.ContextSet.empty))) cb) in
   let bodies = List.map map exported in
   let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
@@ -794,7 +789,20 @@ let add_constant ?role ~in_section l decl senv =
   let eff = match role with
   | None -> empty_private_constants
   | Some role ->
-    let cb = map_constant Future.force cb in
+    let body, univs = match cb.const_body with
+    | (Primitive _ | Undef _) -> assert false
+    | Def c -> (Def c, cb.const_universes)
+    | OpaqueDef o ->
+      let (b, ctx) = Future.force o in
+      match cb.const_universes with
+      | Monomorphic ctx' ->
+        OpaqueDef b, Monomorphic (Univ.ContextSet.union ctx ctx')
+      | Polymorphic auctx ->
+        (* Upper layers enforce that there are no internal constraints *)
+        let () = assert (Univ.ContextSet.is_empty ctx) in
+        OpaqueDef b, Polymorphic auctx
+    in
+    let cb = { cb with const_body = body; const_universes = univs } in
     let from_env = CEphemeron.create senv.revstruct in
     let eff = {
       from_env = from_env;
