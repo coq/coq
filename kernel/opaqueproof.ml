@@ -130,21 +130,20 @@ module FMap = Future.UUIDMap
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
   let opaque_table = Array.make n ([], 0, None) in
-  let disch_table = Array.make n [] in
   let f2t_map = ref FMap.empty in
   let iter n (univs, d, cu) =
     let uid = Future.uuid cu in
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
-    if Future.is_val cu then
-      let (c, _) = Future.force cu in
-      opaque_table.(n) <- (d, univs, Some c)
-    else if Future.UUIDSet.mem uid except then
-      (* Only monomorphic constraints can be delayed currently *)
-      let () = assert (Int.equal univs 0) in
-      disch_table.(n) <- d
-    else
-      CErrors.anomaly
-        Pp.(str"Proof object "++int n++str" is not checked nor to be checked")
+    let c =
+      if Future.is_val cu then
+        let (c, _) = Future.force cu in
+        Some c
+      else if Future.UUIDSet.mem uid except then None
+      else
+        CErrors.anomaly
+          Pp.(str"Proof object "++int n++str" is not checked nor to be checked")
+    in
+    opaque_table.(n) <- (d, univs, c)
   in
   let () = Int.Map.iter iter otab in
-  opaque_table, disch_table, !f2t_map
+  opaque_table, !f2t_map

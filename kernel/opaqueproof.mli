@@ -66,5 +66,4 @@ val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
   (cooking_info list * int * Constr.t option) array *
-  cooking_info list array *
   int Future.UUIDMap.t

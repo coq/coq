@@ -35,7 +35,6 @@ type seg_sum
 type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
-type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.t option) array
 
 (** Open a module (or a library); if the boolean is true then it's also
@@ -51,7 +50,7 @@ val save_library_to :
 
 val load_library_todo
   :  CUnix.physical_path
-  -> seg_sum * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+  -> seg_sum * seg_lib * seg_univ * 'tasks * seg_proofs
 
 val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs -> unit
 

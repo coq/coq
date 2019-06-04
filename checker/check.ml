@@ -337,7 +337,6 @@ let intern_from_file ~intern_mode (dir, f) =
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
       let (opaque_csts:seg_univ option), _, udg = marshal_in_segment f ch in
-      let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
       let (table:seg_proofs option), pos, checksum =
         marshal_or_skip ~intern_mode f ch in
@@ -350,7 +349,7 @@ let intern_from_file ~intern_mode (dir, f) =
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);
-      if tasks <> None || discharging <> None then
+      if tasks <> None then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
