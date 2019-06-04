@@ -399,6 +399,6 @@ let v_abstract =
 let v_cooking_info =
   Tuple ("cooking_info", [|v_work_list; v_abstract|])
 
-let v_opaques = Array (Opt (Tuple ("opaque", [| List v_cooking_info; Int; v_constr |])))
+let v_opaques = Array (Tuple ("opaque", [| List v_cooking_info; Int; Opt v_constr |]))
 let v_univopaques =
   Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))

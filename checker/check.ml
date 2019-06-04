@@ -51,7 +51,7 @@ let pr_path sp =
 type compilation_unit_name = DirPath.t
 
 type seg_univ = Univ.ContextSet.t * bool
-type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.constr) option array
+type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.constr option) array
 
 type library_t = {
   library_name : compilation_unit_name;
@@ -98,9 +98,10 @@ let access_opaque_table dp i =
     with Not_found -> assert false
   in
   assert (i < Array.length t);
-  match t.(i) with
+  let (info, n, c) = t.(i) in
+  match c with
   | None -> None
-  | Some (info, n, c) -> Some (Cooking.cook_constr info n c)
+  | Some c -> Some (Cooking.cook_constr info n c)
 
 let access_discharge = Cooking.cook_constr
 

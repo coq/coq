@@ -276,11 +276,11 @@ let in_import_library : DirPath.t list * bool -> obj =
 (** Delayed / available tables of opaque terms *)
 
 type 'a table_status =
-  | ToFetch of 'a option array delayed
-  | Fetched of 'a option array
+  | ToFetch of 'a array delayed
+  | Fetched of 'a array
 
 let opaque_tables =
-  ref (LibraryMap.empty : ((Opaqueproof.cooking_info list * int * Constr.constr) table_status) LibraryMap.t)
+  ref (LibraryMap.empty : ((Opaqueproof.cooking_info list * int * Constr.constr option) table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
@@ -306,10 +306,10 @@ let access_table what tables dp i =
 
 let access_opaque_table dp i =
   let what = "opaque proofs" in
-  let ans = access_table what opaque_tables dp i in
-  match ans with
+  let (info, n, c) = access_table what opaque_tables dp i in
+  match c with
   | None -> None
-  | Some (info, n, c) -> Some (Cooking.cook_constr info n c)
+  | Some c -> Some (Cooking.cook_constr info n c)
 
 let indirect_accessor = {
   Opaqueproof.access_proof = access_opaque_table;
@@ -324,7 +324,7 @@ type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
 type seg_discharge = Opaqueproof.cooking_info list array
-type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.t) option array
+type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.t option) array
 
 let mk_library sd md digests univs =
   {

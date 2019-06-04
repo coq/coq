@@ -1747,7 +1747,7 @@ end = struct (* {{{ *)
         (* We only manipulate monomorphic terms here. *)
         let () = assert (Univ.AUContext.is_empty ctx) in
         let pr = Constr.hcons pr in
-        p.(bucket) <- Some (d.(bucket), Univ.AUContext.size ctx, pr);
+        p.(bucket) <- d.(bucket), Univ.AUContext.size ctx, Some pr;
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

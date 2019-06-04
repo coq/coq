@@ -129,7 +129,7 @@ let get_direct_constraints = function
 module FMap = Future.UUIDMap
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
-  let opaque_table = Array.make n None in
+  let opaque_table = Array.make n ([], 0, None) in
   let disch_table = Array.make n [] in
   let f2t_map = ref FMap.empty in
   let iter n (univs, d, cu) =
@@ -137,7 +137,7 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
     if Future.is_val cu then
       let (c, _) = Future.force cu in
-      opaque_table.(n) <- Some (d, univs, c)
+      opaque_table.(n) <- (d, univs, Some c)
     else if Future.UUIDSet.mem uid except then
       (* Only monomorphic constraints can be delayed currently *)
       let () = assert (Int.equal univs 0) in
