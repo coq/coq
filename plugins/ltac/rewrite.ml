@@ -1962,7 +1962,6 @@ let add_setoid atts binders a aeq t n =
      (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
      (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
 
-
 let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
@@ -1988,7 +1987,7 @@ let add_morphism_as_parameter atts m n : unit =
                   (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
   declare_projection n instance_id (ConstRef cst)
 
-let add_morphism_interactive atts m n : Proof_global.t =
+let add_morphism_interactive atts m n : Lemmas.t =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
@@ -2010,8 +2009,8 @@ let add_morphism_interactive atts m n : Proof_global.t =
   let hook = Lemmas.mk_hook hook in
   Flags.silently
     (fun () ->
-       let pstate = Lemmas.start_proof ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
-       fst Pfedit.(by (Tacinterp.interp tac) pstate)) ()
+       let lemma = Lemmas.start_lemma ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+       fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =
   init_setoid ();
@@ -2023,12 +2022,12 @@ let add_morphism atts binders m s n =
        [cHole; s; m])
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let _id, pstate = Classes.new_instance_interactive
+  let _id, lemma = Classes.new_instance_interactive
       ~global:atts.global atts.polymorphic
       instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in
-  pstate (* no instance body -> always open proof *)
+  lemma (* no instance body -> always open proof *)
 
 (** Bind to "rewrite" too *)
 

@@ -634,9 +634,9 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   
 
 let do_generate_principle_aux pconstants on_error register_built interactive_proof
-    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Proof_global.t option =
+    (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Lemmas.t option =
   List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
-  let pstate, _is_struct =
+  let lemma, _is_struct =
     match fixpoint_exprl with
       | [((_,Some {CAst.v = Constrexpr.CWfRec (wf_x,wf_rel)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},pl),_,args,types,body)),_)  as fixpoint_expr =
@@ -702,7 +702,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
 	(* ok all the expressions are structural *)
   	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	let is_rec = List.exists (is_rec fix_names) recdefs in
-        let pstate,evd,pconstants =
+        let lemma,evd,pconstants =
 	  if register_built
           then register_struct is_rec fixpoint_exprl
           else None, Evd.from_env (Global.env ()), pconstants
@@ -720,9 +720,9 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
 	  (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
           if register_built then
             begin derive_inversion fix_names; end;
-          pstate, true
+          lemma, true
   in
-  pstate
+  lemma
 
 let rec add_args id new_args = CAst.map (function
   | CRef (qid,_) as b ->
@@ -911,18 +911,18 @@ let make_graph (f_ref : GlobRef.t) =
 
 (* *************** statically typed entrypoints ************************* *)
 
-let do_generate_principle_interactive fixl : Proof_global.t =
+let do_generate_principle_interactive fixl : Lemmas.t =
   match
     do_generate_principle_aux [] warning_error true true fixl
   with
-  | Some pstate -> pstate
+  | Some lemma -> lemma
   | None ->
-      CErrors.anomaly
-       (Pp.str"indfun: leaving no open proof in interactive mode")
+    CErrors.anomaly
+      (Pp.str"indfun: leaving no open proof in interactive mode")
 
 let do_generate_principle fixl : unit =
   match do_generate_principle_aux [] warning_error true false fixl  with
-  | Some _pstate ->
-      CErrors.anomaly
-        (Pp.str"indfun: leaving a goal open in non-interactive mode")
+  | Some _lemma ->
+    CErrors.anomaly
+      (Pp.str"indfun: leaving a goal open in non-interactive mode")
   | None -> ()

@@ -267,10 +267,10 @@ let declare_fixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes),p
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
       fixdefs) in
   let evd = Evd.from_ctx ctx in
-  let pstate = Lemmas.start_proof_with_initialization (local,poly,DefinitionBody Fixpoint)
+  let lemma = Lemmas.start_lemma_with_initialization (local,poly,DefinitionBody Fixpoint)
     evd pl (Some(false,indexes,init_tac)) thms None in
   declare_fixpoint_notations ntns;
-  pstate
+  lemma
 
 let declare_fixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   (* We shortcut the proof process *)
@@ -304,11 +304,11 @@ let declare_cofixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes)
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
       fixdefs) in
   let evd = Evd.from_ctx ctx in
-  let pstate = Lemmas.start_proof_with_initialization
+  let lemma = Lemmas.start_lemma_with_initialization
     (Global,poly, DefinitionBody CoFixpoint)
     evd pl (Some(true,[],init_tac)) thms None in
   declare_cofixpoint_notations ntns;
-  pstate
+  lemma
 
 let declare_cofixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   (* We shortcut the proof process *)

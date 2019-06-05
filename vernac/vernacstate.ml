@@ -30,18 +30,16 @@ end
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  proof   : Proof_global.stack option; (* proof state *)
+  lemmas  : Lemmas.Stack.t option; (* proofs of lemmas currently opened *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
-let pstate st = Option.map Proof_global.get_current_pstate st.proof
-
 let s_cache = ref None
-let s_proof = ref None
+let s_lemmas = ref None
 
 let invalidate_cache () =
   s_cache := None;
-  s_proof := None
+  s_lemmas := None
 
 let update_cache rf v =
   rf := Some v; v
@@ -57,14 +55,14 @@ let do_if_not_cached rf f v =
 
 let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (States.freeze ~marshallable);
-    proof  = !s_proof;
+    lemmas = !s_lemmas;
     shallow = false;
     parsing = Parser.cur_state ();
   }
 
-let unfreeze_interp_state { system; proof; parsing } =
+let unfreeze_interp_state { system; lemmas; parsing } =
   do_if_not_cached s_cache States.unfreeze system;
-  s_proof := proof;
+  s_lemmas := lemmas;
   Pcoq.unfreeze parsing
 
 let make_shallow st =
@@ -77,11 +75,16 @@ let make_shallow st =
 (* Compatibility module *)
 module Proof_global = struct
 
-  let get () = !s_proof
-  let set x = s_proof := x
+  type t = Lemmas.Stack.t
+
+  let get () = !s_lemmas
+  let set x = s_lemmas := x
+
+  let get_pstate () =
+    Option.map (Lemmas.Stack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
 
   let freeze ~marshallable:_ = get ()
-  let unfreeze x = s_proof := Some x
+  let unfreeze x = s_lemmas := Some x
 
   exception NoCurrentProof
 
@@ -92,53 +95,67 @@ module Proof_global = struct
       | _ -> raise CErrors.Unhandled
     end
 
+  open Lemmas
   open Proof_global
 
-  let cc f = match !s_proof with
+  let cc f = match !s_lemmas with
+    | None -> raise NoCurrentProof
+    | Some x -> Stack.with_top_pstate ~f x
+
+  let cc_lemma f = match !s_lemmas with
+    | None -> raise NoCurrentProof
+    | Some x -> Stack.with_top ~f x
+
+  let cc_stack f = match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some x -> f x
 
-  let cc1 f = cc (fun p -> f (Proof_global.get_current_pstate p))
-
-  let dd f = match !s_proof with
+  let dd f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> s_proof := Some (f x)
+    | Some x -> s_lemmas := Some (Stack.map_top_pstate ~f x)
 
-  let dd1 f = dd (fun p -> Proof_global.modify_current_pstate f p)
+  let dd_lemma f = match !s_lemmas with
+    | None -> raise NoCurrentProof
+    | Some x -> s_lemmas := Some (Stack.map_top ~f x)
 
-  let there_are_pending_proofs () = !s_proof <> None
-  let get_open_goals () = cc1 get_open_goals
+  let there_are_pending_proofs () = !s_lemmas <> None
+  let get_open_goals () = cc get_open_goals
 
-  let set_terminator x = dd1 (set_terminator x)
-  let give_me_the_proof_opt () = Option.map (fun p -> give_me_the_proof (Proof_global.get_current_pstate p)) !s_proof
-  let give_me_the_proof () = cc1 give_me_the_proof
-  let get_current_proof_name () = cc1 get_current_proof_name
+  let set_terminator x = dd_lemma (set_terminator x)
+  let give_me_the_proof_opt () = Option.map (Stack.with_top_pstate ~f:get_proof) !s_lemmas
+  let give_me_the_proof () = cc get_proof
+  let get_current_proof_name () = cc get_proof_name
 
-  let simple_with_current_proof f =
-    dd (simple_with_current_proof f)
-
+  let simple_with_current_proof f = dd (Proof_global.simple_with_proof f)
   let with_current_proof f =
-    let pf, res = cc (with_current_proof f) in
-    s_proof := Some pf; res
+    match !s_lemmas with
+    | None -> raise NoCurrentProof
+    | Some stack ->
+      let pf, res = Stack.with_top_pstate stack ~f:(with_proof f) in
+      let stack = Stack.map_top_pstate stack ~f:(fun _ -> pf) in
+      s_lemmas := Some stack;
+      res
 
-  let install_state s = s_proof := Some s
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
 
-  let return_proof ?allow_partial () =
-    cc1 (return_proof ?allow_partial)
+
+  let return_proof ?allow_partial () = cc (return_proof ?allow_partial)
 
   let close_future_proof ~opaque ~feedback_id pf =
-    cc1 (fun st -> close_future_proof ~opaque ~feedback_id st pf)
+    cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
+                        get_terminator pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
-    cc1 (close_proof ~opaque ~keep_body_ucst_separate f)
+    cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
+                        get_terminator pt)
 
-  let discard_all () = s_proof := None
-  let update_global_env () = dd1 update_global_env
+  let discard_all () = s_lemmas := None
+  let update_global_env () = dd (update_global_env)
 
-  let get_current_context () = cc1 Pfedit.get_current_context
+  let get_current_context () = cc Pfedit.get_current_context
 
   let get_all_proof_names () =
-    try cc get_all_proof_names
+    try cc_stack Lemmas.Stack.get_all_proof_names
     with NoCurrentProof -> []
 
   let copy_terminators ~src ~tgt =
@@ -146,6 +163,6 @@ module Proof_global = struct
     | None, None -> None
     | Some _ , None -> None
     | None, Some x -> Some x
-    | Some src, Some tgt -> Some (copy_terminators ~src ~tgt)
+    | Some src, Some tgt -> Some (Stack.copy_terminators ~src ~tgt)
 
 end

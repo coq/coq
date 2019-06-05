@@ -10,7 +10,7 @@ val do_generate_principle :
 
 val do_generate_principle_interactive :
   (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
-  Proof_global.t
+  Lemmas.t
 
 val functional_induction :
   bool ->
