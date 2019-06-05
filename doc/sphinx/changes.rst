@@ -120,7 +120,9 @@ reference manual. Here are the most important user-visible changes:
 
 - CoqIDE:
 
-  - CoqIDE now depends on gtk+3 and lablgtk3 instead of gtk+2 and lablgtk2
+  - CoqIDE now depends on gtk+3 and lablgtk3 instead of gtk+2 and lablgtk2.
+    The INSTALL file available in the Coq sources has been updated to list
+    the new dependencies
     (`#9279 <https://github.com/coq/coq/pull/9279>`_,
     by Hugo Herbelin, with help from Jacques Garrigue,
     Emilio Jesús Gallego Arias, Michael Sogetrop and Vincent Laporte).
