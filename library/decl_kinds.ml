@@ -14,7 +14,7 @@ type discharge = DoDischarge | NoDischarge
 
 type locality = Discharge | Local | Global
 
-type binding_kind = Explicit | Implicit
+type binding_kind = Explicit | NonMaxImplicit | MaxImplicit
 
 type polymorphic = bool
 

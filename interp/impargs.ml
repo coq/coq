@@ -301,6 +301,11 @@ let is_status_implicit = function
   | None -> false
   | _ -> true
 
+let binding_kind_of_status = function
+  | Some (_, _, (false, _)) -> NonMaxImplicit
+  | Some (_, _, (true, _)) -> MaxImplicit
+  | None -> Explicit
+
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
   | Some (id,_,_) -> id
@@ -396,7 +401,7 @@ let set_manual_implicits flags enriching autoimps l =
        let imps' = merge (k+1) autoimps explimps in
        begin match autoimp, explimp with
        | (Name id,_), Some (_, (b, fi, _)) ->
-          Some (id, Manual, (set_maximality imps' b, fi))
+          Some (id, Manual, (b, fi))
        | (Name id,Some exp), None when enriching ->
           Some (id, exp, (set_maximality imps' flags.maximal, true))
        | (Name _,_), None -> None
@@ -536,8 +541,9 @@ let subst_implicits (subst,(req,l)) =
 
 let impls_of_context ctx =
   let map (decl, impl) = match impl with
-  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
-  | _ -> None
+  | NonMaxImplicit -> Some (NamedDecl.get_id decl, Manual, (false, true))
+  | MaxImplicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
+  | Explicit -> None
   in
   List.rev_map map (List.filter (fst %> NamedDecl.is_local_assum) ctx)
 
@@ -689,25 +695,15 @@ let maybe_declare_manual_implicits local ref ?enriching l =
   | [] -> ()
   | _ -> declare_manual_implicits local ref ?enriching l
 
-(* TODO: either turn these warnings on and document them, or handle these cases sensibly *)
-
-let warn_set_maximal_deprecated =
-  CWarnings.create ~name:"set-maximal-deprecated" ~category:"deprecated"
-    (fun i -> strbrk ("Argument number " ^ string_of_int i ^ " is a trailing implicit so must be maximal"))
-
-type implicit_kind = Implicit | MaximallyImplicit | NotImplicit
 
 let compute_implicit_statuses autoimps l =
   let rec aux i = function
-    | _ :: autoimps, NotImplicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
-    | Name id :: autoimps, MaximallyImplicit :: manualimps ->
+    | _ :: autoimps, Explicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
+    | Name id :: autoimps, MaxImplicit :: manualimps ->
        Some (id, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
-    | Name id :: autoimps, Implicit :: manualimps ->
-       let imps' = aux (i+1) (autoimps, manualimps) in
-       let max = set_maximality imps' false in
-       if max then warn_set_maximal_deprecated i;
-       Some (id, Manual, (max, true)) :: imps'
-    | Anonymous :: _, (Implicit | MaximallyImplicit) :: _ ->
+    | Name id :: autoimps, NonMaxImplicit :: manualimps ->
+       Some (id, Manual, (false, true)) :: aux (i+1) (autoimps, manualimps)  (* todo: check *)
+    | Anonymous :: _, (NonMaxImplicit | MaxImplicit) :: _ ->
        user_err ~hdr:"set_implicits"
          (strbrk ("Argument number " ^ string_of_int i ^ " (anonymous in original definition) cannot be declared implicit."))
     | autoimps, [] -> List.map (fun _ -> None) autoimps
@@ -729,7 +725,7 @@ let set_implicits local ref l =
        check_rigidity (is_rigid env sigma t);
        (* Sort by number of implicits, decreasing *)
        let is_implicit = function
-         | NotImplicit -> false
+         | Explicit -> false
          | _ -> true in
        let l = List.map (fun imps -> (imps,List.count is_implicit imps)) l in
        let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in

@@ -245,7 +245,7 @@ type vernac_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : string CAst.t option;
-  implicit_status : Impargs.implicit_kind;
+  implicit_status : Decl_kinds.binding_kind;
 }
 
 type extend_name =
@@ -359,7 +359,7 @@ type nonrec vernac_expr =
       onlyparsing_flag
   | VernacArguments of qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
-        (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
+        (Name.t * Decl_kinds.binding_kind) list list (* Extra implicit status lists *) *
       int option (* Number of args to trigger reduction *) *
       int option (* Number of args before bidirectional typing *) *
         [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |

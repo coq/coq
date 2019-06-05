@@ -237,7 +237,7 @@ GRAMMAR EXTEND Gram
       | "{"; c = binder_constr ; "}" ->
           { CAst.make ~loc @@ CNotation((InConstrEntrySomeLevel,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
-	  { CAst.make ~loc @@ CGeneralization (Implicit, None, c) }
+          { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
       | "`("; c = operconstr LEVEL "200"; ")" ->
 	  { CAst.make ~loc @@ CGeneralization (Explicit, None, c) }
       ] ]
@@ -431,15 +431,15 @@ GRAMMAR EXTEND Gram
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   impl_ident_tail:
-    [ [ "}" -> { binder_of_name Implicit }
+    [ [ "}" -> { binder_of_name MaxImplicit }
     | nal=LIST1 name; ":"; c=lconstr; "}" ->
-        { (fun na -> CLocalAssum (na::nal,Default Implicit,c)) }
+        { (fun na -> CLocalAssum (na::nal,Default MaxImplicit,c)) }
     | nal=LIST1 name; "}" ->
-        { (fun na -> CLocalAssum (na::nal,Default Implicit,
+        { (fun na -> CLocalAssum (na::nal,Default MaxImplicit,
                                 CAst.make ?loc:(Loc.merge_opt na.CAst.loc (Some loc)) @@
                                 CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None))) }
     | ":"; c=lconstr; "}" ->
-	{ (fun na -> CLocalAssum ([na],Default Implicit,c)) }
+        { (fun na -> CLocalAssum ([na],Default MaxImplicit,c)) }
     ] ]
   ;
   fixannot:
@@ -495,17 +495,27 @@ GRAMMAR EXTEND Gram
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
           { [CLocalDef (id,c,Some t)] }
       | "{"; id=name; "}" ->
-          { [CLocalAssum ([id],Default Implicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
+          { [CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->
-          { [CLocalAssum (id::idl,Default Implicit,c)] }
+          { [CLocalAssum (id::idl,Default MaxImplicit,c)] }
       | "{"; id=name; ":"; c=lconstr; "}" ->
-          { [CLocalAssum ([id],Default Implicit,c)] }
+          { [CLocalAssum ([id],Default MaxImplicit,c)] }
       | "{"; id=name; idl=LIST1 name; "}" ->
-          { List.map (fun id -> CLocalAssum ([id],Default Implicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
+          { List.map (fun id -> CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
+      | "["; id=name; "]" ->
+          { [CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
+      | "["; id=name; idl=LIST1 name; ":"; c=lconstr; "]" ->
+          { [CLocalAssum (id::idl,Default NonMaxImplicit,c)] }
+      | "["; id=name; ":"; c=lconstr; "]" ->
+          { [CLocalAssum ([id],Default NonMaxImplicit,c)] }
+      | "["; id=name; idl=LIST1 name; "]" ->
+          { List.map (fun id -> CLocalAssum ([id],Default NonMaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) (id::idl) }
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
           { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Explicit, b), t)) tc }
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
-          { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (Implicit, b), t)) tc }
+          { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (MaxImplicit, b), t)) tc }
+      | "`["; tc = LIST1 typeclass_constraint SEP "," ; "]" ->
+          { List.map (fun (n, b, t) -> CLocalAssum ([n], Generalized (NonMaxImplicit, b), t)) tc }
       | "'"; p = pattern LEVEL "0" ->
           { let (p, ty) =
             match p.CAst.v with

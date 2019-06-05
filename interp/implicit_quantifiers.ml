@@ -257,15 +257,16 @@ let warn_ignoring_implicit_status =
        Name.print na ++ strbrk " and following binders")
 
 let implicits_of_glob_constr ?(with_products=true) l =
-  let add_impl i na bk l = match bk with
-  | Implicit ->
-    let name =
-      match na with
-      | Name id -> Some id
-      | Anonymous -> None
-    in
-    (ExplByPos (i, name), (true, true, true)) :: l
-  | _ -> l
+  let add_impl i na bk l =
+    let build_impl max =
+      let name = match na with
+        | Name id -> Some id
+        | Anonymous -> None in
+      (ExplByPos (i, name), (true, true, true)) in
+    match bk with
+    | NonMaxImplicit -> (build_impl false) :: l
+    | MaxImplicit -> (build_impl true) :: l
+    | Explicit -> l
   in
   let rec aux i c =
     let abs na bk b =
@@ -276,8 +277,9 @@ let implicits_of_glob_constr ?(with_products=true) l =
       if with_products then abs na bk b
       else
         let () = match bk with
-          | Implicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
-          | _ -> ()
+          | NonMaxImplicit
+          | MaxImplicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
+          | Explicit -> ()
         in []
     | GLambda (na, bk, t, b) -> abs na bk b
     | GLetIn (na, b, t, c) -> aux i c

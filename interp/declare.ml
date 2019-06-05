@@ -216,7 +216,7 @@ let cache_variable ((sp,_),o) =
   let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ((ty,ctx),poly,impl) ->
       let () = Global.push_named_assum ((id,ty,poly),ctx) in
-      let impl = if impl then Implicit else Explicit in
+      let impl = if impl then MaxImplicit else Explicit in
         impl, true, poly, ctx
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a

@@ -1054,9 +1054,9 @@ open Pputils
               let pr_s = function None -> str"" | Some {v=s} -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
               let pr_br imp x = match imp with
-                | Impargs.Implicit -> str "[" ++ x ++ str "]"
-                | Impargs.MaximallyImplicit -> str "{" ++ x ++ str "}"
-                | Impargs.NotImplicit -> x in
+                | NonMaxImplicit -> str "[" ++ x ++ str "]"
+                | MaxImplicit -> str "{" ++ x ++ str "}"
+                | Explicit -> x in
               let rec print_arguments n nbidi l =
                 match n, nbidi, l with
                   | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l

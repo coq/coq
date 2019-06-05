@@ -22,20 +22,15 @@ open Decl_kinds
 (***********************)
 (* For binders parsing *)
 
-let binding_kind_eq bk1 bk2 = match bk1, bk2 with
-| Explicit, Explicit -> true
-| Implicit, Implicit -> true
-| _ -> false
-
 let abstraction_kind_eq ak1 ak2 = match ak1, ak2 with
 | AbsLambda, AbsLambda -> true
 | AbsPi, AbsPi -> true
 | _ -> false
 
 let binder_kind_eq b1 b2 = match b1, b2 with
-| Default bk1, Default bk2 -> binding_kind_eq bk1 bk2
+| Default bk1, Default bk2 -> Glob_ops.binding_kind_eq bk1 bk2
 | Generalized (ck1, b1), Generalized (ck2, b2) ->
-  binding_kind_eq ck1 ck2 &&
+  Glob_ops.binding_kind_eq ck1 ck2 &&
   (if b1 then b2 else not b2)
 | _ -> false
 
@@ -172,7 +167,7 @@ let rec constr_expr_eq e1 e2 =
     | CPrim i1, CPrim i2 ->
       prim_token_eq i1 i2
     | CGeneralization (bk1, ak1, e1), CGeneralization (bk2, ak2, e2) ->
-      binding_kind_eq bk1 bk2 &&
+      Glob_ops.binding_kind_eq bk1 bk2 &&
       Option.equal abstraction_kind_eq ak1 ak2 &&
       constr_expr_eq e1 e2
     | CDelimiters(s1,e1), CDelimiters(s2,e2) ->

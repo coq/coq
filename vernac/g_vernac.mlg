@@ -16,7 +16,6 @@ open Util
 open Names
 open Glob_term
 open Vernacexpr
-open Impargs
 open Constrexpr
 open Constrexpr_ops
 open Extend
@@ -815,7 +814,7 @@ GRAMMAR EXTEND Gram
       { let name, recarg_like, notation_scope = item in
       [`Id { name=name; recarg_like=recarg_like;
              notation_scope=notation_scope;
-             implicit_status = NotImplicit}] }
+             implicit_status = Explicit}] }
     | "/" -> { [`Slash] }
     | "&" -> { [`Ampersand] }
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
@@ -825,7 +824,7 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = NotImplicit}) items }
+                 implicit_status = Explicit}) items }
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
@@ -833,7 +832,7 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = Implicit}) items }
+                 implicit_status = NonMaxImplicit}) items }
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
@@ -841,16 +840,16 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = MaximallyImplicit}) items }
+                 implicit_status = MaxImplicit}) items }
     ]
   ];
   (* Same as [argument_spec_block], but with only implicit status and names *)
   more_implicits_block: [
-    [ name = name -> { [(name.CAst.v, NotImplicit)] }
+    [ name = name -> { [(name.CAst.v, Explicit)] }
     | "["; items = LIST1 name; "]" ->
-       { List.map (fun name -> (name.CAst.v, Impargs.Implicit)) items }
+       { List.map (fun name -> (name.CAst.v, NonMaxImplicit)) items }
     | "{"; items = LIST1 name; "}" ->
-       { List.map (fun name -> (name.CAst.v, MaximallyImplicit)) items }
+       { List.map (fun name -> (name.CAst.v, MaxImplicit)) items }
     ]
   ];
   strategy_level:

@@ -62,8 +62,9 @@ let glob_sort_family = let open Sorts in function
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Decl_kinds.Explicit, Decl_kinds.Explicit -> true
-  | Decl_kinds.Implicit, Decl_kinds.Implicit -> true
-  | (Decl_kinds.Explicit | Decl_kinds.Implicit), _ -> false
+  | Decl_kinds.NonMaxImplicit, Decl_kinds.NonMaxImplicit -> true
+  | Decl_kinds.MaxImplicit, Decl_kinds.MaxImplicit -> true
+  | (Decl_kinds.Explicit | Decl_kinds.NonMaxImplicit | Decl_kinds.MaxImplicit), _ -> false
 
 let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | LetStyle, LetStyle -> true

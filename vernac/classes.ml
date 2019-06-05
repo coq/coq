@@ -497,7 +497,7 @@ let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode ct
 let interp_instance_context ~program_mode env ctx ?(generalize=false) pl tclass =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass =
-    if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
+    if generalize then CAst.make @@ CGeneralization (MaxImplicit, Some AbsPi, tclass)
     else tclass
   in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in

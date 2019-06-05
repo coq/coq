@@ -1397,7 +1397,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
 
   let implicits = List.map (List.map snd) implicits in
   let implicits_specified = match implicits with
-    | [l] -> List.exists (function Impargs.NotImplicit -> false | _ -> true) l
+    | [l] -> List.exists (function Explicit -> false | _ -> true) l
     | _ -> true in
 
   if implicits_specified && clear_implicits_flag then

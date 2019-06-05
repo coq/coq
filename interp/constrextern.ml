@@ -1004,8 +1004,7 @@ and factorize_prod scopes vars na ?impargs aty c =
         | Some [hd] -> Some hd, None
         | Some (hd::tl) -> Some hd, Some tl
         | _ -> None, None in
-      let bk = if Option.cata is_status_implicit false impargs_hd
-        then Implicit else Explicit in
+      let bk = Option.cata binding_kind_of_status Explicit impargs_hd in
       let c = extern_typ scopes ?impargs:impargs_tl vars c in
       match na, c.v with
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)

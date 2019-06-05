@@ -77,6 +77,7 @@ type implicit_side_condition
 type implicits_list = implicit_side_condition * implicit_status list
 
 val is_status_implicit : implicit_status -> bool
+val binding_kind_of_status : implicit_status -> Decl_kinds.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> Id.t
 val maximal_insertion_of : implicit_status -> bool
@@ -119,12 +120,10 @@ val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
 val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
   manual_implicits -> unit
 
-type implicit_kind = Implicit | MaximallyImplicit | NotImplicit
-
 (** [set_implicits local ref l]
    Manual declaration of implicit arguments.
   `l` is a list of possible sequences of implicit statuses. *)
-val set_implicits : bool -> GlobRef.t -> implicit_kind list list -> unit
+val set_implicits : bool -> GlobRef.t -> Decl_kinds.binding_kind list list -> unit
 
 val implicits_of_global : GlobRef.t -> implicits_list list
 

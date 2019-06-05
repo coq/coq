@@ -144,7 +144,8 @@ let tag_var = tag Tag.variable
   let pr_generalization bk ak c =
     let hd, tl =
       match bk with
-        | Implicit -> "{", "}"
+        | NonMaxImplicit -> "[", "]"
+        | MaxImplicit -> "{", "}"
         | Explicit -> "(", ")"
     in (* TODO: syntax Abstraction Kind *)
     str "`" ++ str hd ++ c ++ str tl
@@ -331,12 +332,14 @@ let tag_var = tag Tag.variable
   let surround_impl k p =
     match k with
       | Explicit -> str"(" ++ p ++ str")"
-      | Implicit -> str"{" ++ p ++ str"}"
+      | NonMaxImplicit -> str"[" ++ p ++ str"]"
+      | MaxImplicit -> str"{" ++ p ++ str"}"
 
   let surround_implicit k p =
     match k with
       | Explicit -> p
-      | Implicit -> (str"{" ++ p ++ str"}")
+      | NonMaxImplicit -> str"[" ++ p ++ str"]"
+      | MaxImplicit -> (str"{" ++ p ++ str"}")
 
   let pr_binder many pr (nal,k,t) =
     match k with

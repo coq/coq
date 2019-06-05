@@ -318,11 +318,15 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 
 (**********************************************************************)
 (* Utilities for binders                                              *)
-let build_impls = function
-  |Implicit -> (function
-		  |Name id ->  Some (id, Impargs.Manual, (true,true))
-		  |Anonymous -> Some (Id.of_string "_", Impargs.Manual, (true,true)))
-  |Explicit -> fun _ -> None
+let build_impls bk =
+  let build_impl_status max = function
+    | Name id ->  Some (id, Impargs.Manual, (max,true))
+    | Anonymous -> Some (Id.of_string "_", Impargs.Manual, (max,true))
+  in
+  match bk with
+  | NonMaxImplicit -> build_impl_status false
+  | MaxImplicit -> build_impl_status true
+  | Explicit -> fun _ -> None
 
 let impls_type_list ?(args = []) =
   let rec aux acc c = match DAst.get c with
@@ -403,7 +407,7 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env fvs in
   let bl = List.map
     CAst.(map (fun id ->
-      (Name id, Implicit, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
+      (Name id, MaxImplicit, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
     fvs
   in
   let na = match na with
@@ -2443,10 +2447,13 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
               let r = Retyping.relevance_of_type env sigma t in
               let d = LocalAssum (make_annot na r,t) in
               let impls =
-		if k == Implicit then
-		  let na = match na with Name n -> Some n | Anonymous -> None in
-		    (ExplByPos (n, na), (true, true, true)) :: impls
-		else impls
+                let build_impls max =
+                  let na = match na with Name n -> Some n | Anonymous -> None in
+                  (ExplByPos (n, na), (max, true, true)) :: impls in
+                match k with
+                | NonMaxImplicit -> build_impls false
+                | MaxImplicit -> build_impls true
+                | Explicit -> impls
 	      in
                 (push_rel d env, sigma, d::params, succ n, impls)
 	  | Some b ->

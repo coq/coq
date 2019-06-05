@@ -17,6 +17,9 @@ val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
 
 val glob_sort_family : 'a glob_sort_gen -> Sorts.family
 
+val binding_kind_eq : Decl_kinds.binding_kind -> Decl_kinds.binding_kind -> bool
+(** Equality on [binding_kind] *)
+
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 
 val alias_of_pat : 'a cases_pattern_g -> Name.t
