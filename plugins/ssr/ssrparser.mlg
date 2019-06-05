@@ -79,7 +79,6 @@ let pr_ssrtacarg env sigma _ _ prt = prt env sigma tacltop
 }
 
 ARGUMENT EXTEND ssrtacarg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
-| [ "YouShouldNotTypeThis" ] -> { CErrors.anomaly (Pp.str "Grammar placeholder match") }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtacarg;
@@ -88,7 +87,6 @@ END
 
 (* Copy of ssrtacarg with LEVEL "3", useful for: "under ... do ..." *)
 ARGUMENT EXTEND ssrtac3arg TYPED AS tactic PRINTED BY { pr_ssrtacarg env sigma }
-| [ "YouShouldNotTypeThis" ] -> { CErrors.anomaly (Pp.str "Grammar placeholder match") }
 END
 GRAMMAR EXTEND Gram
   GLOBAL: ssrtac3arg;
@@ -989,7 +987,6 @@ let pr_ssrfwdidx _ _ _ = pr_ssrfwdid
 (* We use a primitive parser for the head identifier of forward *)
 (* tactis to avoid syntactic conflicts with basic Coq tactics. *)
 ARGUMENT EXTEND ssrfwdid TYPED AS ident PRINTED BY { pr_ssrfwdidx }
-  | [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 {
@@ -1548,7 +1545,6 @@ let pr_ssrdoarg env sigma prc _ prt (((n, m), tac), clauses) =
 ARGUMENT EXTEND ssrdoarg
   TYPED AS (((ssrindex * ssrmmod) * ssrhintarg) * ssrclauses)
   PRINTED BY { pr_ssrdoarg env sigma }
-| [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 {
@@ -1571,7 +1567,7 @@ let pr_ssrseqarg env sigma _ _ prt = function
 (* an unindexed tactic.                                            *)
 ARGUMENT EXTEND ssrseqarg TYPED AS (ssrindex * (ssrhintarg * tactic option))
                           PRINTED BY { pr_ssrseqarg env sigma }
-| [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
+
 END
 
 {
@@ -1851,7 +1847,6 @@ let pr_ssrseqdir _ _ _ = function
 }
 
 ARGUMENT EXTEND ssrseqdir TYPED AS ssrdir PRINTED BY { pr_ssrseqdir }
-| [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 TACTIC EXTEND ssrtclseq
@@ -1988,7 +1983,6 @@ let pr_ssreqid _ _ _ = pr_eqid
 (* We must use primitive parsing here to avoid conflicts with the  *)
 (* basic move, case, and elim tactics.                             *)
 ARGUMENT EXTEND ssreqid TYPED AS ssripatrep option PRINTED BY { pr_ssreqid }
-| [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 {
@@ -2310,7 +2304,6 @@ let noruleterm loc = mk_term xNoFlag (mkCProp loc)
 }
 
 ARGUMENT EXTEND ssrrule_ne TYPED AS (ssrrwkind * ssrterm) PRINTED BY { pr_ssrrule }
-  | [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 GRAMMAR EXTEND Gram
@@ -2397,7 +2390,6 @@ let pr_ssrrwargs _ _ _ rwargs = pr_list spc pr_rwarg rwargs
 }
 
 ARGUMENT EXTEND ssrrwargs TYPED AS ssrrwarg list PRINTED BY { pr_ssrrwargs }
-  | [ "YouShouldNotTypeThis" ] -> { anomaly "Grammar placeholder match" }
 END
 
 {

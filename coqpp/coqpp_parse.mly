@@ -270,7 +270,7 @@ tactic_level:
 ;
 
 tactic_rules:
-| tactic_rule { [$1] }
+| { [] }
 | tactic_rule tactic_rules { $1 :: $2 }
 ;
 
