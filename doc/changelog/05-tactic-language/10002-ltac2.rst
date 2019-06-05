@@ -1,0 +1,9 @@
+- Ltac2, a new version of the tactic language Ltac, that doesn't
+  preserve backward compatibility, has been integrated in the main Coq
+  distribution.  It is still experimental, but we already recommend
+  users of advanced Ltac to start using it and report bugs or request
+  enhancements.  See its documentation in the :ref:`dedicated chapter
+  <ltac2>` (`#10002 <https://github.com/coq/coq/pull/10002>`_, plugin
+  authored by Pierre-Marie Pédrot, with contributions by various
+  users, integration by Maxime Dénès, help on integrating / improving
+  the documentation by Théo Zimmermann and Jim Fehrle).
