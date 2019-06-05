@@ -803,15 +803,15 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	 i*)
 	 let lem_id = mk_correct_id f_id in
          let (typ,_) = lemmas_types_infos.(i) in
-         let pstate = Lemmas.start_proof
+         let lemma = Lemmas.start_lemma
 	   lem_id
            Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
            !evd
            typ in
-         let pstate = fst @@ Pfedit.by
+         let lemma = fst @@ Lemmas.by
 		   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
-                                                      (proving_tac i))) pstate in
-         let () = Lemmas.save_pstate_proved ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
+                                                      (proving_tac i))) lemma in
+         let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
 	 let _,lem_cst_constr = Evd.fresh_global
@@ -865,13 +865,13 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
 	     Ensures by: obvious
 	   i*)
 	 let lem_id = mk_complete_id f_id in
-         let pstate = Lemmas.start_proof lem_id
+         let lemma = Lemmas.start_lemma lem_id
            Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem) sigma
          (fst lemmas_types_infos.(i)) in
-         let pstate = fst (Pfedit.by
+         let lemma = fst (Lemmas.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
-              (proving_tac i))) pstate) in
-         let () = Lemmas.save_pstate_proved ~pstate ~opaque:Proof_global.Transparent ~idopt:None in
+              (proving_tac i))) lemma) in
+         let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 let _,lem_cst_constr = Evd.fresh_global
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in

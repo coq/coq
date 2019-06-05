@@ -378,11 +378,11 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.(Global ImportDefaultBehavior, poly, DefinitionBody Instance) in
-  let pstate = Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
+  let lemma = Lemmas.start_lemma id ~pl:decl kind sigma (EConstr.of_constr termtype)
       ~hook:(Lemmas.mk_hook
                (fun _ _ _ -> instance_hook pri global imps ?hook)) in
   (* spiwack: I don't know what to do with the status here. *)
-  let pstate =
+  let lemma =
     if not (Option.is_empty term) then
       let init_refine =
         Tacticals.New.tclTHENLIST [
@@ -391,18 +391,18 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
           Tactics.New.reduce_after_refine;
         ]
       in
-      let pstate, _ = Pfedit.by init_refine pstate in
-      pstate
+      let lemma, _ = Lemmas.by init_refine lemma in
+      lemma
     else
-      let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
-      pstate
+      let lemma, _ = Lemmas.by (Tactics.auto_intros_tac ids) lemma in
+      lemma
   in
   match tac with
   | Some tac ->
-    let pstate, _ = Pfedit.by tac pstate in
-    pstate
+    let lemma, _ = Lemmas.by tac lemma in
+    lemma
   | None ->
-    pstate
+    lemma
 
 let do_instance_subst_constructor_and_ty subst k u ctx =
   let subst =

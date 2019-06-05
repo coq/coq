@@ -287,7 +287,7 @@ VERNAC COMMAND EXTEND ExploreProof CLASSIFIED AS QUERY
 | ![ proof_query ] [ "ExploreProof" ] ->
   { fun ~pstate ->
     let sigma, env = Pfedit.get_current_context pstate in
-    let pprf = Proof.partial_proof Proof_global.(give_me_the_proof pstate) in
+    let pprf = Proof.partial_proof (Proof_global.get_proof pstate) in
     Feedback.msg_notice
       (Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf)
   }

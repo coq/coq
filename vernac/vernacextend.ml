@@ -55,9 +55,10 @@ type vernac_classification = vernac_type * vernac_when
 
 type typed_vernac =
   | VtDefault of (unit -> unit)
+
   | VtNoProof of (unit -> unit)
-  | VtCloseProof of (pstate:Proof_global.t -> unit)
-  | VtOpenProof of (unit -> Proof_global.t)
+  | VtCloseProof of (lemma:Lemmas.t -> unit)
+  | VtOpenProof of (unit -> Lemmas.t)
   | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
   | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
   | VtReadProof of (pstate:Proof_global.t -> unit)

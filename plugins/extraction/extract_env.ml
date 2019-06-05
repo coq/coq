@@ -752,13 +752,13 @@ let extract_and_compile l =
 (* Show the extraction of the current ongoing proof *)
 let show_extraction ~pstate =
   init ~inner:true false false;
-  let prf = Proof_global.give_me_the_proof pstate in
+  let prf = Proof_global.get_proof pstate in
   let sigma, env = Pfedit.get_current_context pstate in
   let trms = Proof.partial_proof prf in
   let extr_term t =
     let ast, ty = extract_constr env sigma t in
     let mp = Lib.current_mp () in
-    let l = Label.of_id (Proof_global.get_current_proof_name pstate) in
+    let l = Label.of_id (Proof_global.get_proof_name pstate) in
     let fake_ref = ConstRef (Constant.make2 mp l) in
     let decl = Dterm (fake_ref, ast, ty) in
     print_one_decl [] mp decl

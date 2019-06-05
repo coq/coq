@@ -31,8 +31,8 @@ val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
 val existing_instance : bool -> qualid -> Hints.hint_info_expr option -> unit
 (** globality, reference, optional priority and pattern information *)
 
-val new_instance_interactive :
-  ?global:bool (** Not global by default. *)
+val new_instance_interactive
+  :  ?global:bool (** Not global by default. *)
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list
@@ -41,10 +41,10 @@ val new_instance_interactive :
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
-  -> Id.t * Proof_global.t
+  -> Id.t * Lemmas.t
 
-val new_instance :
-  ?global:bool (** Not global by default. *)
+val new_instance
+  :  ?global:bool (** Not global by default. *)
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list
@@ -55,8 +55,8 @@ val new_instance :
   -> Hints.hint_info_expr
   -> Id.t
 
-val new_instance_program :
-  ?global:bool (** Not global by default. *)
+val new_instance_program
+  : ?global:bool (** Not global by default. *)
   -> Decl_kinds.polymorphic
   -> name_decl
   -> local_binder_expr list
