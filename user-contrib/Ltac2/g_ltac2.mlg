@@ -90,7 +90,6 @@ let tac2def_typ = Entry.create "tactic:tac2def_typ"
 let tac2def_ext = Entry.create "tactic:tac2def_ext"
 let tac2def_syn = Entry.create "tactic:tac2def_syn"
 let tac2def_mut = Entry.create "tactic:tac2def_mut"
-let tac2def_run = Entry.create "tactic:tac2def_run"
 let tac2mode = Entry.create "vernac:ltac2_command"
 
 let ltac1_expr = Pltac.tactic_expr
@@ -114,7 +113,7 @@ let pattern_of_qualid qid =
 
 GRAMMAR EXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
-          tac2def_mut tac2def_run;
+          tac2def_mut;
   tac2pat:
     [ "1" LEFTA
       [ qid = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> {
@@ -287,9 +286,6 @@ GRAMMAR EXTEND Gram
   ;
   tac2def_mut:
     [ [ "Set"; qid = Prim.qualid; ":="; e = tac2expr -> { StrMut (qid, e) } ] ]
-  ;
-  tac2def_run:
-    [ [ "Eval"; e = tac2expr -> { StrRun e } ] ]
   ;
   tac2typ_knd:
     [ [ t = tac2type -> { CTydDef (Some t) }
@@ -878,28 +874,7 @@ PRINTED BY { pr_ltac2entry }
 | [ tac2def_ext(e) ] -> { e }
 | [ tac2def_syn(e) ] -> { e }
 | [ tac2def_mut(e) ] -> { e }
-| [ tac2def_run(e) ] -> { e }
 END
-
-{
-
-let classify_ltac2 = function
-| StrSyn _ -> Vernacextend.(VtSideff [], VtNow)
-| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ | StrRun _ -> Vernacextend.classify_as_sideeff
-
-}
-
-VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
-| #[ local = locality ] ![proof] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
-  fun ~pstate -> Tac2entries.register_struct ?local ~pstate e; pstate
-  }
-END
-
-{
-
-let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
-
-}
 
 VERNAC ARGUMENT EXTEND ltac2_expr
 PRINTED BY { pr_ltac2expr }
@@ -907,6 +882,25 @@ PRINTED BY { pr_ltac2expr }
 END
 
 {
+
+let classify_ltac2 = function
+| StrSyn _ -> Vernacextend.(VtSideff [], VtNow)
+| StrMut _ | StrVal _ | StrPrm _  | StrTyp _ -> Vernacextend.classify_as_sideeff
+
+}
+
+VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
+| #[ local = locality ] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
+  Tac2entries.register_struct ?local e
+  }
+| ![proof_opt_query] [ "Ltac2" "Eval" ltac2_expr(e) ] => { Vernacextend.classify_as_sideeff } -> {
+  fun ~pstate -> Tac2entries.perform_eval ~pstate e
+  }
+END
+
+{
+
+let _ = Pvernac.register_proof_mode "Ltac2" tac2mode
 
 open G_ltac
 open Vernacextend
@@ -917,9 +911,7 @@ VERNAC { tac2mode } EXTEND VernacLtac2
 | ![proof] [ ltac2_expr(t) ltac_use_default(default) ] =>
     { classify_as_proofstep } -> {
 (*     let g = Option.default (Proof_global.get_default_goal_selector ()) g in *)
-  fun ~pstate ->
-    Option.map (fun pstate -> Tac2entries.call ~pstate ~default t) pstate
-  }
+  fun ~pstate -> Tac2entries.call ~pstate ~default t }
 END
 
 {

@@ -64,7 +64,7 @@ let parse_user_entry s sep =
 %token <int> INT
 %token VERNAC TACTIC GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
 %token RAW_PRINTED GLOB_PRINTED
-%token COMMAND CLASSIFIED PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
+%token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
@@ -183,12 +183,13 @@ argtype:
 ;
 
 vernac_extend:
-| VERNAC vernac_entry EXTEND IDENT vernac_classifier vernac_rules END
+| VERNAC vernac_entry EXTEND IDENT vernac_classifier vernac_state vernac_rules END
   { VernacExt {
     vernacext_name = $4;
     vernacext_entry = $2;
     vernacext_class = $5;
-    vernacext_rules = $6;
+    vernacext_state = $6;
+    vernacext_rules = $7;
   } }
 ;
 
@@ -203,21 +204,31 @@ vernac_classifier:
 | CLASSIFIED AS IDENT { ClassifName $3 }
 ;
 
+vernac_state:
+| { None }
+| STATE IDENT { Some $2 }
+;
+
 vernac_rules:
 | vernac_rule { [$1] }
 | vernac_rule vernac_rules { $1 :: $2 }
 ;
 
 vernac_rule:
-| PIPE vernac_attributes_opt vernac_state_opt LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
+| PIPE vernac_attributes_opt rule_state LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
   { {
       vernac_atts = $2;
-      vernac_state= $3;
+      vernac_state = $3;
       vernac_toks = $5;
       vernac_depr = $7;
       vernac_class= $8;
       vernac_body = $10;
   } }
+;
+
+rule_state:
+| { None }
+| BANGBRACKET IDENT RBRACKET { Some $2 }
 ;
 
 vernac_attributes_opt:
@@ -235,14 +246,6 @@ vernac_attribute:
 | qualid_or_ident EQUAL qualid_or_ident { ($1, $3) }
 | qualid_or_ident { ($1, $1) }
 ;
-
-vernac_state_opt:
-| { None }
-| BANGBRACKET vernac_state RBRACKET { Some $2 }
-;
-
-vernac_state:
-| qualid_or_ident { $1 }
 
 rule_deprecation:
 | { false }

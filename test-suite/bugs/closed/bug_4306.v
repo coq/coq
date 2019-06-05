@@ -30,3 +30,5 @@ Function bar (xys : (list nat * list nat)) {measure (fun xys => length (fst xys)
                                 | Gt => y :: foo (xs, ys')
                               end
   end.
+Proof.
+Defined.

@@ -563,6 +563,7 @@ Printing relations and morphisms
    of morphisms, the :cmd:`Print Instances` command can be useful to understand
    what additional morphisms should be registered.
 
+.. _deprecated_syntax_for_generalized_rewriting:
 
 Deprecated syntax and backward incompatibilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -588,6 +589,12 @@ Deprecated syntax and backward incompatibilities
    the morphism returns a proposition, the property is now stated using a
    bi-implication in place of a simple implication. In practice, porting
    an old development to the new semantics is usually quite simple.
+
+.. cmd:: Declare Morphism @ident : @ident
+   :name: Declare Morphism
+
+   This commands is to be used in a module type to declare a parameter that
+   is a morphism.
 
 Notice that several limitations of the old implementation have been
 lifted. In particular, it is now possible to declare several relations

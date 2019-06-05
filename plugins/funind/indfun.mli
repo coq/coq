@@ -5,10 +5,12 @@ val warn_cannot_define_graph : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 
 val warn_cannot_define_principle : ?loc:Loc.t -> Pp.t * Pp.t -> unit
 
-val do_generate_principle : pstate:Proof_global.t option ->
-  bool ->
+val do_generate_principle :
+  (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list -> unit
+
+val do_generate_principle_interactive :
   (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list ->
-  Proof_global.t option
+  Proof_global.t
 
 val functional_induction :
   bool ->
@@ -17,4 +19,4 @@ val functional_induction :
   Ltac_plugin.Tacexpr.or_and_intro_pattern option ->
   Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
-val make_graph : pstate:Proof_global.t option -> GlobRef.t -> Proof_global.t option
+val make_graph : GlobRef.t -> unit

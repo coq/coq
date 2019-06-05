@@ -309,7 +309,7 @@ let id_of_class cl =
 	  mip.(0).Declarations.mind_typename
     | _ -> assert false
 
-let instance_hook k info global imps ?hook cst =
+let instance_hook info global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst imps;
   let info = intern_info info in
   let env = Global.env () in
@@ -317,7 +317,7 @@ let instance_hook k info global imps ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k info global imps ?hook id decl poly sigma term termtype =
+let declare_instance_constant info global imps ?hook id decl poly sigma term termtype =
   (* XXX: Duplication of the declare_constant path *)
   let kind = IsDefinition Instance in
   let sigma =
@@ -331,9 +331,9 @@ let declare_instance_constant k info global imps ?hook id decl poly sigma term t
   let kn = Declare.declare_constant id cdecl in
   Declare.definition_message id;
   Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
-  instance_hook k info global imps ?hook (ConstRef kn)
+  instance_hook info global imps ?hook (ConstRef kn)
 
-let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst id =
+let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst (snd k.cl_context)
@@ -344,136 +344,78 @@ let do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
       (ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
-  instance_hook k pri global imps (ConstRef cst)
+  instance_hook pri global imps (ConstRef cst)
 
-let declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl ids term termtype =
+let declare_instance_program env sigma ~global ~poly id pri imps decl term termtype =
+  let hook _ _ vis gr =
+    let cst = match gr with ConstRef kn -> kn | _ -> assert false in
+    Impargs.declare_manual_implicits false gr imps;
+    let pri = intern_info pri in
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    declare_instance env sigma (Some pri) (not global) (ConstRef cst)
+  in
+  let obls, constr, typ =
+    match term with
+    | Some t ->
+      let termtype = EConstr.of_constr termtype in
+      let obls, _, constr, typ =
+        Obligations.eterm_obligations env id sigma 0 t termtype
+      in obls, Some constr, typ
+    | None -> [||], None, termtype
+  in
+  let hook = Lemmas.mk_hook hook in
+  let ctx = Evd.evar_universe_context sigma in
+  ignore(Obligations.add_definition id ?term:constr
+           ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls)
+
+
+let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids term termtype =
+  (* spiwack: it is hard to reorder the actions to do
+     the pretyping after the proof has opened. As a
+     consequence, we use the low-level primitives to code
+     the refinement manually.*)
+  let gls = List.rev (Evd.future_goals sigma) in
+  let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-  if program_mode then
-    let hook _ _ vis gr =
-      let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-      Impargs.declare_manual_implicits false gr imps;
-      let pri = intern_info pri in
-      let env = Global.env () in
-      let sigma = Evd.from_env env in
-      declare_instance env sigma (Some pri) (not global) (ConstRef cst)
-    in
-    let obls, constr, typ =
-      match term with
-      | Some t ->
-        let termtype = EConstr.of_constr termtype in
-        let obls, _, constr, typ =
-          Obligations.eterm_obligations env id sigma 0 t termtype
-        in obls, Some constr, typ
-      | None -> [||], None, termtype
-    in
-    let hook = Lemmas.mk_hook hook in
-    let ctx = Evd.evar_universe_context sigma in
-    let _progress = Obligations.add_definition id ?term:constr
-              ~univdecl:decl typ ctx ~kind:(Global,poly,Instance) ~hook obls in
+  let pstate = Lemmas.start_proof id ~pl:decl kind sigma (EConstr.of_constr termtype)
+      ~hook:(Lemmas.mk_hook
+               (fun _ _ _ -> instance_hook pri global imps ?hook)) in
+  (* spiwack: I don't know what to do with the status here. *)
+  let pstate =
+    if not (Option.is_empty term) then
+      let init_refine =
+        Tacticals.New.tclTHENLIST [
+          Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
+          Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
+          Tactics.New.reduce_after_refine;
+        ]
+      in
+      let pstate, _ = Pfedit.by init_refine pstate in
+      pstate
+    else
+      let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
+      pstate
+  in
+  match tac with
+  | Some tac ->
+    let pstate, _ = Pfedit.by tac pstate in
     pstate
-  else
-    Some Flags.(silently (fun () ->
-        (* spiwack: it is hard to reorder the actions to do
-           the pretyping after the proof has opened. As a
-           consequence, we use the low-level primitives to code
-           the refinement manually.*)
-        let gls = List.rev (Evd.future_goals sigma) in
-        let sigma = Evd.reset_future_goals sigma in
-        let pstate = Lemmas.start_proof ~ontop:pstate id ~pl:decl kind sigma (EConstr.of_constr termtype)
-          ~hook:(Lemmas.mk_hook
-             (fun _ _ _ -> instance_hook k pri global imps ?hook)) in
-        (* spiwack: I don't know what to do with the status here. *)
-        let pstate =
-          if not (Option.is_empty term) then
-            let init_refine =
-              Tacticals.New.tclTHENLIST [
-                Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
-                Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
-                Tactics.New.reduce_after_refine;
-              ]
-            in
-            let pstate, _ = Pfedit.by init_refine pstate in
-            pstate
-          else
-            let pstate, _ = Pfedit.by (Tactics.auto_intros_tac ids) pstate in
-            pstate
-        in
-        match tac with
-        | Some tac ->
-          let pstate, _ = Pfedit.by tac pstate in
-          pstate
-        | None ->
-          pstate) ())
+  | None ->
+    pstate
 
-let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode cty k u ctx ctx' pri decl imps subst id props =
-  let props =
-    match props with
-    | Some (true, { CAst.v = CRecord fs }) ->
-      if List.length fs > List.length k.cl_props then
-        mismatched_props env' (List.map snd fs) k.cl_props;
-      Some (Inl fs)
-    | Some (_, t) -> Some (Inr t)
-    | None ->
-      if program_mode then Some (Inl [])
-      else None
+let do_instance_subst_constructor_and_ty subst k u ctx =
+  let subst =
+    List.fold_left2 (fun subst' s decl ->
+      if is_local_assum decl then s :: subst' else subst')
+    [] subst (k.cl_props @ snd k.cl_context)
   in
-  let subst, sigma =
-    match props with
-    | None ->
-      (if List.is_empty k.cl_props then Some (Inl subst) else None), sigma
-    | Some (Inr term) ->
-      let sigma, c = interp_casted_constr_evars ~program_mode env' sigma term cty in
-      Some (Inr (c, subst)), sigma
-    | Some (Inl props) ->
-      let get_id qid = CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid in
-      let props, rest =
-        List.fold_left
-          (fun (props, rest) decl ->
-             if is_local_assum decl then
-               try
-                 let is_id (id', _) = match RelDecl.get_name decl, get_id id' with
-                   | Name id, {CAst.v=id'} -> Id.equal id id'
-                   | Anonymous, _ -> false
-                 in
-                 let (loc_mid, c) = List.find is_id rest in
-                 let rest' = List.filter (fun v -> not (is_id v)) rest
-                 in
-                 let {CAst.loc;v=mid} = get_id loc_mid in
-                 List.iter (fun (n, _, x) ->
-                     if Name.equal n (Name mid) then
-                       Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x) k.cl_projs;
-                 c :: props, rest'
-               with Not_found ->
-                 ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest
-             else props, rest)
-          ([], props) k.cl_props
-      in
-      match rest with
-      | (n, _) :: _ ->
-        unbound_method env' sigma k.cl_impl (get_id n)
-      | _ ->
-        let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
-        let sigma, res = type_ctx_instance ~program_mode (push_rel_context ctx' env') sigma kcl_props props subst in
-        Some (Inl res), sigma
-  in
-  let term, termtype =
-    match subst with
-    | None -> let termtype = it_mkProd_or_LetIn cty ctx in
-      None, termtype
-    | Some (Inl subst) ->
-      let subst = List.fold_left2
-          (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
-          [] subst (k.cl_props @ snd k.cl_context)
-      in
-      let (app, ty_constr) = instance_constructor (k,u) subst in
-      let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-      let term = it_mkLambda_or_LetIn (Option.get app) (ctx' @ ctx) in
-      Some term, termtype
-    | Some (Inr (def, subst)) ->
-      let termtype = it_mkProd_or_LetIn cty ctx in
-      let term = it_mkLambda_or_LetIn def ctx in
-      Some term, termtype
-  in
+  let (app, ty_constr) = instance_constructor (k,u) subst in
+  let termtype = it_mkProd_or_LetIn ty_constr ctx in
+  let term = it_mkLambda_or_LetIn (Option.get app) ctx in
+  term, termtype
+
+let do_instance_resolve_TC term termtype sigma env =
   let sigma = Evarutil.nf_evar_map sigma in
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
   (* Try resolving fields that are typeclasses automatically. *)
@@ -484,17 +426,110 @@ let do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode ct
   (* Check that the type is free of evars now. *)
   Pretyping.check_evars env (Evd.from_env env) sigma termtype;
   let termtype = to_constr sigma termtype in
-  let pstate =
-    if not (Evd.has_undefined sigma) && not (Option.is_empty props) then
-      let term = to_constr sigma (Option.get term) in
-      (declare_instance_constant k pri global imps ?hook id decl poly sigma term termtype;
-       None)
-    else if program_mode || Option.is_empty props then
-      declare_instance_open ~pstate env sigma ?hook ~tac ~program_mode ~global ~poly k id pri imps decl (List.map RelDecl.get_name ctx) term termtype
-    else CErrors.user_err Pp.(str "Unsolved obligations remaining.") in
-  id, pstate
+  termtype, sigma
 
-let interp_instance_context ~program_mode env ctx ?(generalize=false) pl tclass =
+let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
+  let get_id qid = CAst.make ?loc:qid.CAst.loc @@ qualid_basename qid in
+  let props, rest =
+    List.fold_left
+      (fun (props, rest) decl ->
+         if is_local_assum decl then
+           try
+             let is_id (id', _) = match RelDecl.get_name decl, get_id id' with
+               | Name id, {CAst.v=id'} -> Id.equal id id'
+               | Anonymous, _ -> false
+             in
+             let (loc_mid, c) = List.find is_id rest in
+             let rest' = List.filter (fun v -> not (is_id v)) rest
+             in
+             let {CAst.loc;v=mid} = get_id loc_mid in
+             List.iter (fun (n, _, x) ->
+                 if Name.equal n (Name mid) then
+                   Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x) k.cl_projs;
+             c :: props, rest'
+           with Not_found ->
+             ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest
+         else props, rest)
+      ([], props) k.cl_props
+  in
+  match rest with
+  | (n, _) :: _ ->
+    unbound_method env' sigma k.cl_impl (get_id n)
+  | _ ->
+    let kcl_props = List.map (Termops.map_rel_decl of_constr) k.cl_props in
+    let sigma, res =
+      type_ctx_instance ~program_mode
+        (push_rel_context ctx' env') sigma kcl_props props subst in
+    res, sigma
+
+let do_instance_interactive env sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id =
+  let term, termtype =
+    if List.is_empty k.cl_props then
+     let term, termtype =
+       do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
+     Some term, termtype
+    else
+      None, it_mkProd_or_LetIn cty ctx in
+  let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
+  Flags.silently (fun () ->
+      declare_instance_open sigma ?hook ~tac ~global ~poly
+        id pri imps decl (List.map RelDecl.get_name ctx) term termtype)
+    ()
+
+let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id props =
+  let term, termtype, sigma =
+    match props with
+    | (true, { CAst.v = CRecord fs }) ->
+      if List.length fs > List.length k.cl_props then
+        mismatched_props env' (List.map snd fs) k.cl_props;
+      let subst, sigma = do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:false subst in
+      let term, termtype =
+        do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
+      term, termtype, sigma
+    | (_, term) ->
+      let sigma, def =
+        interp_casted_constr_evars ~program_mode:false env' sigma term cty in
+      let termtype = it_mkProd_or_LetIn cty ctx in
+      let term = it_mkLambda_or_LetIn def ctx in
+      term, termtype, sigma in
+  let termtype, sigma = do_instance_resolve_TC (Some term) termtype sigma env in
+  if Evd.has_undefined sigma then
+    CErrors.user_err Pp.(str "Unsolved obligations remaining.")
+  else
+    let term = to_constr sigma term in
+    declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
+
+let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
+  let term, termtype, sigma =
+    match opt_props with
+    | Some (true, { CAst.v = CRecord fs }) ->
+      if List.length fs > List.length k.cl_props then
+        mismatched_props env' (List.map snd fs) k.cl_props;
+      let subst, sigma =
+        do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:true subst in
+     let term, termtype =
+       do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
+     Some term, termtype, sigma
+    | Some (_, term) ->
+      let sigma, def =
+        interp_casted_constr_evars ~program_mode:true env' sigma term cty in
+      let termtype = it_mkProd_or_LetIn cty ctx in
+      let term = it_mkLambda_or_LetIn def ctx in
+      Some term, termtype, sigma
+    | None ->
+      let subst, sigma =
+        do_instance_type_ctx_instance [] k env' ctx' sigma ~program_mode:true subst in
+      let term, termtype =
+        do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
+      Some term, termtype, sigma in
+  let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
+  if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
+    let term = to_constr sigma (Option.get term) in
+    declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
+  else
+    declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype
+
+let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass =
     if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
@@ -522,14 +557,12 @@ let interp_instance_context ~program_mode env ctx ?(generalize=false) pl tclass 
   let sigma = resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:true env sigma in
   sigma, cl, u, c', ctx', ctx, imps, args, decl
 
-let new_instance ~pstate ?(global=false) ~program_mode
-    poly instid ctx cl props
-    ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
-  let env = Global.env() in
+let new_instance_common ~program_mode ~generalize env instid ctx cl =
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
     interp_instance_context ~program_mode env ~generalize ctx pl cl
   in
+  (* The name generator should not be here *)
   let id =
     match instid with
     | Name id -> id
@@ -538,13 +571,41 @@ let new_instance ~pstate ?(global=false) ~program_mode
       Namegen.next_global_ident_away i (Termops.vars_of_env env)
   in
   let env' = push_rel_context ctx env in
-  do_instance ~pstate env env' sigma ?hook ~tac ~global ~poly ~program_mode
-    cty k u ctx ctx' pri decl imps subst id props
+  id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
+
+let new_instance_interactive ?(global=false)
+    poly instid ctx cl
+    ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
+  let env = Global.env() in
+  let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
+    new_instance_common ~program_mode:false ~generalize env instid ctx cl in
+  id, do_instance_interactive env sigma ?hook ~tac ~global ~poly
+    cty k u ctx ctx' pri decl imps subst id
+
+let new_instance_program ?(global=false)
+    poly instid ctx cl opt_props
+    ?(generalize=true) ?hook pri =
+  let env = Global.env() in
+  let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
+    new_instance_common ~program_mode:true ~generalize env instid ctx cl in
+  do_instance_program env env' sigma ?hook ~global ~poly
+    cty k u ctx ctx' pri decl imps subst id opt_props;
+  id
+
+let new_instance ?(global=false)
+    poly instid ctx cl props
+    ?(generalize=true) ?hook pri =
+  let env = Global.env() in
+  let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
+    new_instance_common ~program_mode:false ~generalize env instid ctx cl in
+  do_instance env env' sigma ?hook ~global ~poly
+    cty k u ctx ctx' pri decl imps subst id props;
+  id
 
 let declare_new_instance ?(global=false) ~program_mode poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =
-    interp_instance_context ~program_mode env ctx pl cl
+    interp_instance_context ~program_mode ~generalize:false env ctx pl cl
   in
-  do_declare_instance env sigma ~global ~poly k u ctx ctx' pri decl imps subst instid
+  do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst instid

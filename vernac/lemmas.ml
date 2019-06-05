@@ -207,12 +207,8 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
-let fresh_name_for_anonymous_theorem ~pstate =
-  let avoid = match pstate with
-  | None -> Id.Set.empty
-  | Some pstate -> Id.Set.of_list (Proof_global.get_all_proof_names pstate)
-  in
-  next_global_ident_away default_thm_id avoid
+let fresh_name_for_anonymous_theorem () =
+  next_global_ident_away default_thm_id Id.Set.empty
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
@@ -329,7 +325,7 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-let start_proof ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c =
+let start_proof id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?hook c =
   let terminator = match terminator with
   | None -> standard_proof_terminator ?hook compute_guard
   | Some terminator -> terminator ?hook compute_guard
@@ -340,7 +336,7 @@ let start_proof ~ontop id ?pl kind sigma ?terminator ?sign ?(compute_guard=[]) ?
     | None -> initialize_named_context_for_proof ()
   in
   let goals = [ Global.env_of_context sign , c ] in
-  Proof_global.start_proof ~ontop sigma id ?pl kind goals terminator
+  Proof_global.start_proof sigma id ?pl kind goals terminator
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -356,7 +352,7 @@ let rec_tac_initializer finite guard thms snl =
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
-let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms snl =
+let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
   let intro_tac (_, (_, (ids, _))) = Tactics.auto_intros_tac ids in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
@@ -388,14 +384,14 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
-      let pstate = start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
-      let pstate = Proof_global.simple_with_current_proof (fun _ p ->
+      let pstate = start_proof id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
+      let pstate = Proof_global.modify_proof (fun p ->
           match init_tac with
           | None -> p
           | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p) pstate in
       pstate
 
-let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
+let start_proof_com ~program_mode ?inference_hook ?hook kind thms =
   let env0 = Global.env () in
   let decl = fst (List.hd thms) in
   let evd, decl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
@@ -427,7 +423,7 @@ let start_proof_com ~program_mode ~ontop ?inference_hook ?hook kind thms =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-  start_proof_with_initialization ~ontop ?hook kind evd decl recguard thms snl
+  start_proof_with_initialization ?hook kind evd decl recguard thms snl
 
 (* Saving a proof *)
 
@@ -487,20 +483,26 @@ let save_proof_admitted ?proof ~pstate =
   in
   Proof_global.apply_terminator (Proof_global.get_terminator pstate) pe
 
-let save_proof_proved ?proof ?pstate ~opaque ~idopt =
+let save_pstate_proved ~pstate ~opaque ~idopt =
+  let obj, terminator = Proof_global.close_proof ~opaque
+      ~keep_body_ucst_separate:false (fun x -> x) pstate
+  in
+  Proof_global.(apply_terminator terminator (Proved (opaque, idopt, obj)))
+
+let save_proof_proved ?proof ?ontop ~opaque ~idopt =
   (* Invariant (uh) *)
-  if Option.is_empty pstate && Option.is_empty proof then
+  if Option.is_empty ontop && Option.is_empty proof then
     user_err (str "No focused proof (No proof-editing in progress).");
   let (proof_obj,terminator) =
     match proof with
     | None ->
       (* XXX: The close_proof and proof state API should be refactored
          so it is possible to insert proofs properly into the state *)
-      let pstate = Option.get pstate in
+      let pstate = Proof_global.get_current_pstate @@ Option.get ontop in
       Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pstate
     | Some proof -> proof
   in
   (* if the proof is given explicitly, nothing has to be deleted *)
-  let pstate = if Option.is_empty proof then Proof_global.discard_current Option.(get pstate) else pstate in
+  let ontop = if Option.is_empty proof then Proof_global.discard_current Option.(get ontop) else ontop in
   Proof_global.(apply_terminator terminator (Proved (opaque,idopt,proof_obj)));
-  pstate
+  ontop

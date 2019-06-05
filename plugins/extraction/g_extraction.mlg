@@ -177,7 +177,7 @@ VERNAC COMMAND EXTEND ExtractionInductive CLASSIFIED AS SIDEFF
 END
 (* Show the extraction of the current proof *)
 
-VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY
-| ![ proof ] [ "Show" "Extraction" ]
-  -> { fun ~pstate -> let () = show_extraction ~pstate in pstate }
+VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY STATE proof_query
+| [ "Show" "Extraction" ]
+  -> { show_extraction }
 END

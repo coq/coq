@@ -255,79 +255,78 @@ let interp_fixpoint ~cofix l ntns =
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 
-let declare_fixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
-  let pstate =
-  if List.exists Option.is_empty fixdefs then
-    (* Some bodies to define by proof *)
-    let thms =
-      List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
-                fixnames fixtypes fiximps in
-    let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
-        fixdefs) in
-    let evd = Evd.from_ctx ctx in
-    Some
-    (Lemmas.start_proof_with_initialization ~ontop (local,poly,DefinitionBody Fixpoint)
-      evd pl (Some(false,indexes,init_tac)) thms None)
-  else begin
-    (* We shortcut the proof process *)
-    let fixdefs = List.map Option.get fixdefs in
-    let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-    let env = Global.env() in
-    let indexes = search_guard env indexes fixdecls in
-    let fiximps = List.map (fun (n,r,p) -> r) fiximps in
-    let vars = Vars.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
-    let fixdecls =
-      List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    let evd = Evd.from_ctx ctx in
-    let evd = Evd.restrict_universe_context evd vars in
-    let ctx = Evd.check_univ_decl ~poly evd pl in
-    let pl = Evd.universe_binders evd in
-    let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
-    ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
-              fixnames fixdecls fixtypes fiximps);
-    (* Declare the recursive definitions *)
-    fixpoint_message (Some indexes) fixnames;
-    None
-  end in
-  (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
+let declare_fixpoint_notations ntns =
+  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns
+
+let declare_fixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
+  (* Some bodies to define by proof *)
+  let thms =
+    List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
+              fixnames fixtypes fiximps in
+  let init_tac =
+    Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
+      fixdefs) in
+  let evd = Evd.from_ctx ctx in
+  let pstate = Lemmas.start_proof_with_initialization (local,poly,DefinitionBody Fixpoint)
+    evd pl (Some(false,indexes,init_tac)) thms None in
+  declare_fixpoint_notations ntns;
   pstate
 
-let declare_cofixpoint ~ontop local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
-  let pstate =
-  if List.exists Option.is_empty fixdefs then
-    (* Some bodies to define by proof *)
-    let thms =
-      List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
-                fixnames fixtypes fiximps in
-    let init_tac =
-      Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
-        fixdefs) in
-    let evd = Evd.from_ctx ctx in
-    Some (Lemmas.start_proof_with_initialization ~ontop (Global,poly, DefinitionBody CoFixpoint)
-            evd pl (Some(true,[],init_tac)) thms None)
-  else begin
-    (* We shortcut the proof process *)
-    let fixdefs = List.map Option.get fixdefs in
-    let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-    let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let vars = Vars.universes_of_constr (List.hd fixdecls) in
-    let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
-    let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
-    let evd = Evd.from_ctx ctx in
-    let evd = Evd.restrict_universe_context evd vars in
-    let ctx = Evd.check_univ_decl ~poly evd pl in
-    let pl = Evd.universe_binders evd in
-    ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
-              fixnames fixdecls fixtypes fiximps);
-    (* Declare the recursive definitions *)
-    cofixpoint_message fixnames;
-    None
-  end in
-  (* Declare notations *)
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
+let declare_fixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
+  (* We shortcut the proof process *)
+  let fixdefs = List.map Option.get fixdefs in
+  let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
+  let env = Global.env() in
+  let indexes = search_guard env indexes fixdecls in
+  let fiximps = List.map (fun (n,r,p) -> r) fiximps in
+  let vars = Vars.universes_of_constr (mkFix ((indexes,0),fixdecls)) in
+  let fixdecls =
+    List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
+  let evd = Evd.from_ctx ctx in
+  let evd = Evd.restrict_universe_context evd vars in
+  let ctx = Evd.check_univ_decl ~poly evd pl in
+  let pl = Evd.universe_binders evd in
+  let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
+  ignore (List.map4 (DeclareDef.declare_fix (local, poly, Fixpoint) pl ctx)
+            fixnames fixdecls fixtypes fiximps);
+  (* Declare the recursive definitions *)
+  fixpoint_message (Some indexes) fixnames;
+  declare_fixpoint_notations ntns
+
+let declare_cofixpoint_notations = declare_fixpoint_notations
+
+let declare_cofixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+  (* Some bodies to define by proof *)
+  let thms =
+    List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
+              fixnames fixtypes fiximps in
+  let init_tac =
+    Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
+      fixdefs) in
+  let evd = Evd.from_ctx ctx in
+  let pstate = Lemmas.start_proof_with_initialization
+    (Global,poly, DefinitionBody CoFixpoint)
+    evd pl (Some(true,[],init_tac)) thms None in
+  declare_cofixpoint_notations ntns;
   pstate
+
+let declare_cofixpoint local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+  (* We shortcut the proof process *)
+  let fixdefs = List.map Option.get fixdefs in
+  let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
+  let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
+  let vars = Vars.universes_of_constr (List.hd fixdecls) in
+  let fixdecls = List.map Safe_typing.mk_pure_proof fixdecls in
+  let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
+  let evd = Evd.from_ctx ctx in
+  let evd = Evd.restrict_universe_context evd vars in
+  let ctx = Evd.check_univ_decl ~poly evd pl in
+  let pl = Evd.universe_binders evd in
+  ignore (List.map4 (DeclareDef.declare_fix (local, poly, CoFixpoint) pl ctx)
+            fixnames fixdecls fixtypes fiximps);
+  (* Declare the recursive definitions *)
+  cofixpoint_message fixnames;
+  declare_cofixpoint_notations ntns
 
 let extract_decreasing_argument ~structonly = function { CAst.v = v } -> match v with
   | CStructRec na -> na
@@ -366,18 +365,33 @@ let check_safe () =
   let flags = Environ.typing_flags (Global.env ()) in
   flags.check_universes && flags.check_guarded
 
-let do_fixpoint ~ontop local poly l =
+let do_fixpoint_common l =
   let fixl, ntns = extract_fixpoint_components ~structonly:true l in
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl ntns in
-  let possible_indexes =
-    List.map compute_possible_guardness_evidences info in
-  let pstate = declare_fixpoint ~ontop local poly fix possible_indexes ntns in
+  fixl, ntns, fix, List.map compute_possible_guardness_evidences info
+
+let do_fixpoint_interactive local poly l =
+  let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
+  let pstate = declare_fixpoint_interactive local poly fix possible_indexes ntns in
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   pstate
 
-let do_cofixpoint ~ontop local poly l =
+let do_fixpoint local poly l =
+  let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
+  declare_fixpoint local poly fix possible_indexes ntns;
+  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+
+let do_cofixpoint_common l =
   let fixl,ntns = extract_cofixpoint_components l in
-  let cofix = interp_fixpoint ~cofix:true fixl ntns in
-  let pstate = declare_cofixpoint ~ontop local poly cofix ntns in
+  ntns, interp_fixpoint ~cofix:true fixl ntns
+
+let do_cofixpoint_interactive local poly l =
+  let ntns, cofix = do_cofixpoint_common l in
+  let pstate = declare_cofixpoint_interactive local poly cofix ntns in
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   pstate
+
+let do_cofixpoint local poly l =
+  let ntns, cofix = do_cofixpoint_common l in
+  declare_cofixpoint local poly cofix ntns;
+  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()

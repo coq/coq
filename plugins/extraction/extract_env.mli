@@ -40,4 +40,4 @@ val structure_for_compute :
 
 (* Show the extraction of the current ongoing proof *)
 
-val show_extraction : pstate:Proof_global.t option -> unit
+val show_extraction : pstate:Proof_global.t -> unit

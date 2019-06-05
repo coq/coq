@@ -81,18 +81,36 @@ val cl_rewrite_clause :
 val is_applied_rewrite_relation :
   env -> evar_map -> rel_context -> constr -> types option
 
-val declare_relation : pstate:Proof_global.t option -> rewrite_attributes ->
-  ?binders:local_binder_expr list -> constr_expr -> constr_expr -> Id.t ->
-  constr_expr option -> constr_expr option -> constr_expr option -> Proof_global.t option
+val declare_relation
+  : rewrite_attributes
+  -> ?binders:local_binder_expr list
+  -> constr_expr
+  -> constr_expr
+  -> Id.t
+  -> constr_expr option
+  -> constr_expr option
+  -> constr_expr option
+  -> unit
 
-val add_setoid : pstate:Proof_global.t option ->
-  rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> constr_expr ->
-  Id.t -> Proof_global.t option
+val add_setoid
+  : rewrite_attributes
+  -> local_binder_expr list
+  -> constr_expr
+  -> constr_expr
+  -> constr_expr
+  -> Id.t
+  -> unit
 
-val add_morphism_infer : pstate:Proof_global.t option -> rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t option
+val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t
+val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
 
-val add_morphism : pstate:Proof_global.t option ->
-  rewrite_attributes -> local_binder_expr list -> constr_expr -> constr_expr -> Id.t -> Proof_global.t option
+val add_morphism
+  : rewrite_attributes
+  -> local_binder_expr list
+  -> constr_expr
+  -> constr_expr
+  -> Id.t
+  -> Proof_global.t
 
 val get_reflexive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 

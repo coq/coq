@@ -72,7 +72,7 @@ let declare_fun f_id kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
     ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
-let defined pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:Proof_global.Transparent ~idopt:None
+let defined pstate = Lemmas.save_pstate_proved ~pstate ~opaque:Proof_global.Transparent ~idopt:None
 
 let def_of_const t =
    match (Constr.kind t) with
@@ -1367,10 +1367,9 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	       )
       		 g)
     in
-    let _pstate = Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None in
-    ()
+    Lemmas.save_pstate_proved ~pstate ~opaque:opacity ~idopt:None
   in
-  let pstate = Lemmas.start_proof ~ontop:(Some pstate)
+  let pstate = Lemmas.start_proof
     na
     (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
     sigma gls_type ~hook:(Lemmas.mk_hook hook) in
@@ -1396,12 +1395,10 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
 	       ) tclIDTAC)
             g end) pstate
   in
-  try
-    Some (fst @@ by (Proofview.V82.tactic tclIDTAC) pstate) (* raises UserError _ if the proof is complete *)
-  with UserError _ ->
-    defined pstate
+  if Proof_global.get_open_goals pstate = 0 then (defined pstate; None) else Some pstate
 
 let com_terminate
+    interactive_proof
     tcc_lemma_name
     tcc_lemma_ref
     is_mes
@@ -1413,7 +1410,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
-    let pstate = Lemmas.start_proof ~ontop:None thm_name
+    let pstate = Lemmas.start_proof thm_name
       (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook in
     let pstate = fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
@@ -1431,7 +1428,8 @@ let com_terminate
   with EmptySubgoals ->
     (* a non recursive function declared with measure ! *)
     tcc_lemma_ref := Not_needed;
-    defined pstate
+    if interactive_proof then Some pstate
+    else (defined pstate; None)
 
 let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
   (cont_tactic:Id.t list -> tactic) g =
@@ -1459,7 +1457,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_monomorphic_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let pstate = Lemmas.start_proof ~ontop:None eq_name (Global, false, Proof Lemma) ~sign evd
+    let pstate = Lemmas.start_proof eq_name (Global, false, Proof Lemma) ~sign evd
        (EConstr.of_constr equation_lemma_type) in
     let pstate = fst @@ by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
@@ -1489,12 +1487,12 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 	       }
 	  )
        )) pstate in
-    let _ = Flags.silently (fun () -> Lemmas.save_proof_proved ?proof:None ~pstate ~opaque:opacity ~idopt:None) () in
+    let _ = Flags.silently (fun () -> Lemmas.save_pstate_proved ~pstate ~opaque:opacity ~idopt:None) () in
     ()
 (*      Pp.msgnl (fun _ _ -> str "eqn finished"); *)
 
 
-let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
+let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : Proof_global.t option =
   let open Term in
   let open Constr in
@@ -1585,6 +1583,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   (* XXX STATE Why do we need this... why is the toplevel protection not enough *)
   funind_purify (fun () ->
       let pstate = com_terminate
+          interactive_proof
           tcc_lemma_name
           tcc_lemma_constr
           is_mes functional_ref

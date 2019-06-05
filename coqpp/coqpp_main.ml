@@ -357,22 +357,31 @@ let print_atts_right fmt = function
     let nota = match atts with [_] -> "" | _ -> "Attributes.Notations." in
     fprintf fmt "(Attributes.parse %s%a atts)" nota aux atts
 
-let print_body_wrapper fmt r =
-  match r.vernac_state with
-  | Some "proof" ->
-    fprintf fmt "let proof = (%a) ~pstate:st.Vernacstate.proof in { st with Vernacstate.proof }" print_code r.vernac_body
-  | None ->
-    fprintf fmt "let () = %a in st" print_code r.vernac_body
-  | Some x ->
-    fatal ("unsupported state specifier: " ^ x)
+let understand_state = function
+  | "close_proof" -> "VtCloseProof", false
+  | "open_proof" -> "VtOpenProof", true
+  | "proof" -> "VtModifyProof", false
+  | "proof_opt_query" -> "VtReadProofOpt", false
+  | "proof_query" -> "VtReadProof", false
+  | s -> fatal ("unsupported state specifier: " ^ s)
 
-let print_body_fun fmt r =
-  fprintf fmt "let coqpp_body %a%a ~st = @[%a@] in "
-    print_binders r.vernac_toks print_atts_left r.vernac_atts print_body_wrapper r
+let print_body_state state fmt r =
+  let state = match r.vernac_state with Some _ as s -> s | None -> state in
+  match state with
+  | None -> fprintf fmt "Vernacextend.VtDefault (fun () -> %a)" print_code r.vernac_body
+  | Some "CUSTOM" -> print_code fmt r.vernac_body
+  | Some state ->
+    let state, unit_wrap = understand_state state in
+    fprintf fmt "Vernacextend.%s (%s%a)" state (if unit_wrap then "fun () ->" else "")
+      print_code r.vernac_body
 
-let print_body fmt r =
-  fprintf fmt "@[(%afun %a~atts@ ~st@ -> coqpp_body %a%a ~st)@]"
-    print_body_fun r print_binders r.vernac_toks
+let print_body_fun state fmt r =
+  fprintf fmt "let coqpp_body %a%a = @[%a@] in "
+    print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
+
+let print_body state fmt r =
+  fprintf fmt "@[(%afun %a~atts@ -> coqpp_body %a%a)@]"
+    (print_body_fun state) r print_binders r.vernac_toks
     print_binders r.vernac_toks print_atts_right r.vernac_atts
 
 let rec print_sig fmt = function
@@ -383,12 +392,12 @@ let rec print_sig fmt = function
   fprintf fmt "@[Vernacextend.TyNonTerminal (%a, %a)@]"
     print_symbol symb print_sig rem
 
-let print_rule fmt r =
+let print_rule state fmt r =
   fprintf fmt "Vernacextend.TyML (%b, %a, %a, %a)"
-    r.vernac_depr print_sig r.vernac_toks print_body r print_rule_classifier r
+    r.vernac_depr print_sig r.vernac_toks (print_body state) r print_rule_classifier r
 
-let print_rules fmt rules =
-  print_list fmt (fun fmt r -> fprintf fmt "(%a)" print_rule r) rules
+let print_rules state fmt rules =
+  print_list fmt (fun fmt r -> fprintf fmt "(%a)" (print_rule state) r) rules
 
 let print_classifier fmt = function
 | ClassifDefault -> fprintf fmt ""
@@ -407,7 +416,7 @@ let print_ast fmt ext =
   let pr fmt () =
     fprintf fmt "Vernacextend.vernac_extend ~command:\"%s\" %a ?entry:%a %a"
       ext.vernacext_name print_classifier ext.vernacext_class
-      print_entry ext.vernacext_entry print_rules ext.vernacext_rules
+      print_entry ext.vernacext_entry (print_rules ext.vernacext_state) ext.vernacext_rules
   in
   let () = fprintf fmt "let () = @[%a@]@\n" pr () in
   ()

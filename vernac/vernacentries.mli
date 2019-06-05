@@ -42,7 +42,11 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
   Evd.evar_map * Redexpr.red_expr) Hook.t
 
 (** Helper *)
-val vernac_require_open_proof : pstate:Proof_global.t option -> (pstate:Proof_global.t -> 'a) -> 'a
+val vernac_require_open_proof : pstate:Proof_global.stack option -> (pstate:Proof_global.stack -> 'a) -> 'a
+
+val with_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.t -> 'a) -> 'a
+
+val modify_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.t -> Proof_global.t) -> Proof_global.stack option
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)

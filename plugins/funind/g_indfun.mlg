@@ -173,24 +173,41 @@ let () =
   let raw_printer env sigma _ _ _ (loc,body) = Ppvernac.pr_rec_definition body in
   Pptactic.declare_extra_vernac_genarg_pprule wit_function_rec_definition_loc raw_printer
 
+let is_proof_termination_interactively_checked recsl =
+  List.exists (function
+  | _,((_,( Some { CAst.v = CMeasureRec _ }
+          | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
+  | _,((_,Some { CAst.v = CStructRec _ },_,_,_),_)
+  | _,((_,None,_,_,_),_) -> false) recsl
+
+let classify_as_Fixpoint recsl =
+ Vernac_classifier.classify_vernac
+    (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
+
+let classify_funind recsl =
+  match classify_as_Fixpoint recsl with
+  | Vernacextend.VtSideff ids, _
+    when is_proof_termination_interactively_checked recsl ->
+      Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
+  | x -> x
+
+let is_interactive recsl =
+  match classify_funind recsl with
+  | Vernacextend.VtStartProof _, _ -> true
+  | _ -> false
+
 }
 
-(* TASSI: n'importe quoi ! *)
-VERNAC COMMAND EXTEND Function
-| ![ proof ] ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
-    => { let hard = List.exists (function
-           | _,((_,(Some { CAst.v = CMeasureRec _ }
-             | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
-           | _,((_,Some { CAst.v = CStructRec _ },_,_,_),_)
-           | _,((_,None,_,_,_),_) -> false) recsl in
-         match
-           Vernac_classifier.classify_vernac
-             (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
-         with
-         | Vernacextend.VtSideff ids, _ when hard ->
-             Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
-         | x -> x }
-    -> { do_generate_principle false (List.map snd recsl) }
+VERNAC COMMAND EXTEND Function STATE CUSTOM
+| ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
+    => { classify_funind recsl }
+    -> {
+         if is_interactive recsl then
+           Vernacextend.VtOpenProof (fun () ->
+             do_generate_principle_interactive (List.map snd recsl))
+         else
+           Vernacextend.VtDefault (fun () ->
+             do_generate_principle (List.map snd recsl)) }
 END
 
 {
@@ -225,33 +242,32 @@ let warning_error names e =
 }
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
-| ![ proof ] ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
+| ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
    => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
    ->
-    { fun ~pstate ->
-      begin
+    { begin
         try
-          Functional_principles_types.build_scheme fas; pstate
+          Functional_principles_types.build_scheme fas
         with
         | Functional_principles_types.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                let pstate = make_graph ~pstate (Smartlocate.global_with_alias fun_name) in
-                try Functional_principles_types.build_scheme fas; pstate
+                make_graph (Smartlocate.global_with_alias fun_name);
+                try Functional_principles_types.build_scheme fas
                 with
                 | Functional_principles_types.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
-                  warning_error names e; pstate
+                  warning_error names e
               end
 	      | _ -> assert false (* we can only have non empty  list *)
           end
         | e when CErrors.noncritical e ->
           let names = List.map (fun (_,na,_) -> na) fas in
-          warning_error names e; pstate
+          warning_error names e
       end
     }
 END
@@ -265,6 +281,6 @@ END
 
 (***** debug only ***)
 VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
-| ![ proof ] ["Generate" "graph" "for" reference(c)] ->
+| ["Generate" "graph" "for" reference(c)] ->
   { make_graph (Smartlocate.global_with_alias c) }
 END

@@ -20,3 +20,4 @@ a :=
   match a return (P a) with
     | A1 n => f n
   end.
+Proof. Defined.

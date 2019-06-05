@@ -86,14 +86,12 @@ val add_mutual_definitions :
   fixpoint_kind -> unit
 
 val obligation
-  :  ontop:Proof_global.t option
-  -> int * Names.Id.t option * Constrexpr.constr_expr option
+  : int * Names.Id.t option * Constrexpr.constr_expr option
   -> Genarg.glob_generic_argument option
   -> Proof_global.t
 
 val next_obligation
-  :  ontop:Proof_global.t option
-  -> Names.Id.t option
+  : Names.Id.t option
   -> Genarg.glob_generic_argument option
   -> Proof_global.t
 

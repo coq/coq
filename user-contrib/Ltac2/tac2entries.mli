@@ -23,12 +23,13 @@ val register_primitive : ?local:bool ->
 
 val register_struct
   :  ?local:bool
-  -> pstate:Proof_global.t option
   -> strexpr
   -> unit
 
 val register_notation : ?local:bool -> sexpr list -> int option ->
   raw_tacexpr -> unit
+
+val perform_eval : pstate:Proof_global.t option -> raw_tacexpr -> unit
 
 (** {5 Notations} *)
 
