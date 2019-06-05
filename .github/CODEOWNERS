@@ -173,6 +173,8 @@ azure-pipelines.yml @coq/ci-maintainers
 /plugins/rtauto/       @PierreCorbineau
 # Secondary maintainer @herbelin
 
+/user-contrib/Ltac2    @ppedrot
+
 ########## Pretyper ##########
 
 /pretyping/       @mattam82
