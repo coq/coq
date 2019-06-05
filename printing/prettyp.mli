@@ -15,6 +15,8 @@ open Libnames
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
+val print_ref : bool -> Names.GlobRef.t -> UnivNames.univ_name_list option -> Pp.t
+
 val assumptions_for_print : Name.t list -> Termops.names_context
 
 val print_closed_sections : bool ref

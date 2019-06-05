@@ -82,6 +82,7 @@ let print_ref reduce ref udecl =
       let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
+  let impargs = select_stronger_impargs (implicits_of_global ref) in
   let variance = match ref with
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
@@ -94,7 +95,7 @@ let print_ref reduce ref udecl =
     else mt ()
   in
   let priv = None in (* We deliberately don't print private univs in About. *)
-  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma typ ++ 
+  hov 0 (pr_global ref ++ inst ++ str " :" ++ spc () ++ pr_letype_env env sigma ~impargs typ ++
          Printer.pr_abstract_universe_ctx sigma ?variance univs ?priv)
 
 (********************************)

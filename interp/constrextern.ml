@@ -773,7 +773,7 @@ let extern_ref vars ref us =
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
-let rec extern inctx scopes vars r =
+let rec extern inctx scopes ?impargs vars r =
   let r' = remove_coercions inctx r in
   try
     if !Flags.raw_print || !print_no_symbol then raise No_match;
@@ -864,7 +864,7 @@ let rec extern inctx scopes vars r =
 		 CRecord (List.rev (ip projs locals args []))
 	       with
 		 | Not_found | No_match | Exit ->
-                    let args = extern_args (extern true) vars args in
+                    let args = extern_args (extern true ?impargs:None) vars args in
 		     extern_app inctx
 		       (select_stronger_impargs (implicits_of_global ref))
                        (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
@@ -877,11 +877,11 @@ let rec extern inctx scopes vars r =
   | GLetIn (na,b,t,c) ->
       CLetIn (make ?loc na,sub_extern false scopes vars b,
               Option.map (extern_typ scopes vars) t,
-              extern inctx scopes (add_vname vars na) c)
+              extern inctx scopes ?impargs (add_vname vars na) c)
 
-  | GProd (na,bk,t,c) ->
+  | GProd (na,_,t,c) -> (* bk is always Explicit when coming from detyping *)
       let t = extern_typ scopes vars t in
-      factorize_prod scopes (add_vname vars na) na bk t c
+      factorize_prod scopes (add_vname vars na) na ?impargs t c
 
   | GLambda (na,bk,t,c) ->
       let t = extern_typ scopes vars t in
@@ -977,12 +977,12 @@ let rec extern inctx scopes vars r =
 
   in insert_coercion coercion (CAst.make ?loc c)
 
-and extern_typ (subentry,(_,scopes)) =
-  extern true (subentry,(Notation.current_type_scope_name (),scopes))
+and extern_typ (subentry,(_,scopes)) ?impargs =
+  extern true (subentry,(Notation.current_type_scope_name (),scopes)) ?impargs
 
-and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,(None,scopes))
+and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,(None,scopes)) ?impargs:None
 
-and factorize_prod scopes vars na bk aty c =
+and factorize_prod scopes vars na ?impargs aty c =
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
   | Name id, GCases (Constr.LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
@@ -999,10 +999,17 @@ and factorize_prod scopes vars na bk aty c =
       | _ -> CProdN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c = extern_typ scopes vars c in
+      let impargs_hd, impargs_tl =
+        match impargs with
+        | Some [hd] -> Some hd, None
+        | Some (hd::tl) -> Some hd, Some tl
+        | _ -> None, None in
+      let bk = if Option.cata is_status_implicit false impargs_hd
+        then Implicit else Explicit in
+      let c = extern_typ scopes ?impargs:impargs_tl vars c in
       match na, c.v with
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when binding_kind_eq bk bk' && constr_expr_eq aty ty
+           when (* binding_kind_eq bk bk' &&  *)constr_expr_eq aty ty
                 && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
          CProdN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
       | _, CProdN (bl,b) ->
@@ -1160,7 +1167,7 @@ and extern_notation (custom,scopes as allscopes) vars t = function
  	if List.is_empty args then e
 	else
           let args = fill_arg_scopes args argsscopes allscopes in
-	  let args = extern_args (extern true) vars args in
+          let args = extern_args (fun scopes vars -> extern true scopes vars) vars args in
 	  CAst.make ?loc @@ explicitize false argsimpls (None,e) args
       with
           No_match -> extern_notation allscopes vars t rules
@@ -1168,8 +1175,8 @@ and extern_notation (custom,scopes as allscopes) vars t = function
 let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,(None,[])) vars c
 
-let extern_glob_type vars c =
-  extern_typ (InConstrEntrySomeLevel,(None,[])) vars c
+let extern_glob_type vars ?impargs c =
+  extern_typ (InConstrEntrySomeLevel,(None,[])) vars ?impargs c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1193,10 +1200,10 @@ let extern_constr_in_scope goal_concl_style scope env sigma t =
 let extern_constr ?(lax=false) goal_concl_style env sigma t =
   extern_constr_gen lax goal_concl_style None env sigma t
 
-let extern_type goal_concl_style env sigma t =
+let extern_type goal_concl_style env sigma ?impargs t =
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later goal_concl_style avoid env sigma t in
-  extern_glob_type (vars_of_env env) r
+  extern_glob_type (vars_of_env env) ?impargs r
 
 let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
 

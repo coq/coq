@@ -25,7 +25,7 @@ open Ltac_pretype
 
 val extern_cases_pattern : Id.Set.t -> 'a cases_pattern_g -> cases_pattern_expr
 val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
-val extern_glob_type : Id.Set.t -> 'a glob_constr_g -> constr_expr
+val extern_glob_type : Id.Set.t -> ?impargs:Impargs.implicit_status list -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
 val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
@@ -39,7 +39,7 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
 val extern_constr : ?lax:bool -> bool -> env -> Evd.evar_map -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> Evd.evar_map -> constr -> constr_expr
 val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
+val extern_type : bool -> env -> Evd.evar_map -> ?impargs:Impargs.implicit_status list -> types -> constr_expr
 val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list

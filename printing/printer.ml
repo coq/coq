@@ -115,7 +115,7 @@ let pr_ltype_env env sigma c = pr_letype_core false env sigma (EConstr.of_constr
 let pr_type_env env sigma c = pr_etype_core false env sigma (EConstr.of_constr c)
 
 let pr_etype_env env sigma c = pr_etype_core false env sigma c
-let pr_letype_env env sigma c = pr_letype_core false env sigma c
+let pr_letype_env env sigma ?impargs c = pr_letype_core false env sigma ?impargs c
 let pr_goal_concl_style_env env sigma c = pr_letype_core true env sigma c
 
 let pr_ljudge_env env sigma j =

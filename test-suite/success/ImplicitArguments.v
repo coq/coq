@@ -4,6 +4,9 @@ Inductive vector {A : Type} : nat -> Type :=
 
 Arguments vector A : clear implicits.
 
+
+Definition foo6 (x:=1) : forall {n:nat}, n=n := fun n => eq_refl.
+
 Require Import Coq.Program.Program.
 
 Program Definition head {A : Type} {n : nat} (v : vector A (S n)) : vector A n :=

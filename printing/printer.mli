@@ -47,7 +47,7 @@ val pr_leconstr_env     : env -> evar_map -> EConstr.t -> Pp.t
 val pr_econstr_n_env    : env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
 
 val pr_etype_env           : env -> evar_map -> EConstr.types -> Pp.t
-val pr_letype_env           : env -> evar_map -> EConstr.types -> Pp.t
+val pr_letype_env           : env -> evar_map -> ?impargs:Impargs.implicit_status list -> EConstr.types -> Pp.t
 
 val pr_open_constr_env     : env -> evar_map -> open_constr -> Pp.t
 
