@@ -46,7 +46,7 @@ val export_private_constants : in_section:bool ->
   Constr.constr Univ.in_universe_context_set * Safe_typing.exported_private_constant list
 
 val add_constant :
-  ?role:Entries.side_effect_role -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * Safe_typing.private_constants
+  side_effect:'a Safe_typing.effect_entry -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * 'a
 val add_recipe : in_section:bool -> Id.t -> Cooking.recipe -> Constant.t
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t

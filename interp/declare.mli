@@ -23,7 +23,7 @@ open Decl_kinds
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type section_variable_entry =
-  | SectionLocalDef of Safe_typing.private_constants definition_entry
+  | SectionLocalDef of Evd.side_effects definition_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -33,7 +33,7 @@ val declare_variable : variable -> variable_declaration -> Libobject.object_name
 (** Declaration of global constructions 
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
-type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
+type constant_declaration = Evd.side_effects constant_entry * logical_kind
 
 type internal_flag =
   | UserAutomaticRequest
@@ -44,7 +44,7 @@ type internal_flag =
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->
-  ?eff:Safe_typing.private_constants -> constr -> Safe_typing.private_constants definition_entry
+  ?eff:Evd.side_effects -> constr -> Evd.side_effects definition_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -56,7 +56,7 @@ val declare_constant :
  ?internal:internal_flag -> ?local:import_status -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
 val declare_private_constant :
-  role:side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Safe_typing.private_constants
+  role:side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->

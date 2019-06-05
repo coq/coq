@@ -18,7 +18,7 @@ val optimize_non_type_induction_scheme :
   Sorts.family ->
   'b ->
   Names.inductive ->
-  (Constr.constr * UState.t) * Safe_typing.private_constants
+  (Constr.constr * UState.t) * Evd.side_effects
 
 val rect_scheme_kind_from_prop : individual scheme_kind
 val ind_scheme_kind_from_prop : individual scheme_kind

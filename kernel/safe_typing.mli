@@ -87,18 +87,16 @@ type 'a effect_entry =
 type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
 
-type exported_private_constant = 
-  Constant.t * Entries.side_effect_role
+type exported_private_constant = Constant.t
 
 val export_private_constants : in_section:bool ->
   private_constants Entries.proof_output ->
   (Constr.constr Univ.in_universe_context_set * exported_private_constant list) safe_transformer
 
-(** returns the main constant plus a list of auxiliary constants (empty
-    unless one requires the side effects to be exported) *)
+(** returns the main constant plus a certificate of its validity *)
 val add_constant :
-  ?role:Entries.side_effect_role -> in_section:bool -> Label.t -> global_declaration ->
-    (Constant.t * private_constants) safe_transformer
+  side_effect:'a effect_entry -> in_section:bool -> Label.t -> global_declaration ->
+    (Constant.t * 'a) safe_transformer
 
 val add_recipe :
   in_section:bool -> Label.t -> Cooking.recipe -> Constant.t safe_transformer

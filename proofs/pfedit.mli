@@ -61,7 +61,7 @@ val use_unification_heuristics : unit -> bool
 val build_constant_by_tactic :
   Id.t -> UState.t -> named_context_val -> ?goal_kind:goal_kind ->
   EConstr.types -> unit Proofview.tactic -> 
-  Safe_typing.private_constants Entries.definition_entry * bool *
+  Evd.side_effects Entries.definition_entry * bool *
     UState.t
 
 val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:polymorphic ->

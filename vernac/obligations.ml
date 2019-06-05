@@ -497,7 +497,7 @@ let compute_possible_guardness_evidences n fixbody fixtype =
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
-let mk_proof c = ((c, Univ.ContextSet.empty), Safe_typing.empty_private_constants)
+let mk_proof c = ((c, Univ.ContextSet.empty), Evd.empty_side_effects)
 
 let declare_mutual_definition l =
   let len = List.length l in
@@ -632,7 +632,7 @@ let declare_obligation prg obl body ty uctx =
 	if get_shrink_obligations () && not poly then
 	  shrink_body body ty else [], body, ty, [||]
       in
-      let body = ((body,Univ.ContextSet.empty),Safe_typing.empty_private_constants) in
+      let body = ((body,Univ.ContextSet.empty), Evd.empty_side_effects) in
       let ce =
         { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body;
           const_entry_secctx = None;
@@ -822,8 +822,8 @@ let solve_by_tac ?loc name evi t poly ctx =
       Pfedit.build_constant_by_tactic
         id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
-    let body = Future.force entry.const_entry_body in
-    let body = Safe_typing.inline_private_constants env body in
+    let (body, eff) = Future.force entry.const_entry_body in
+    let body = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
     let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
     Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
     Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
@@ -848,8 +848,8 @@ let obligation_terminator ?hook name num guard auto pf =
   | Proved (opq, id, { entries=[entry]; universes=uctx } ) -> begin
     let env = Global.env () in
     let ty = entry.Entries.const_entry_type in
-    let body = Future.force entry.const_entry_body in
-    let (body, cstr) = Safe_typing.inline_private_constants env body in
+    let body, eff = Future.force entry.const_entry_body in
+    let (body, cstr) = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);

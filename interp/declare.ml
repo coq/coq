@@ -42,7 +42,7 @@ type constant_obj = {
   cst_locl : import_status;
 }
 
-type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
+type constant_declaration = Evd.side_effects constant_entry * logical_kind
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
@@ -145,7 +145,7 @@ let register_side_effect (c, role) =
 
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
-    ?(univs=default_univ_entry) ?(eff=Safe_typing.empty_private_constants) body =
+    ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
   { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
@@ -154,7 +154,14 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     const_entry_feedback = None;
     const_entry_inline_code = inline}
 
-let define_constant ?role ?(export_seff=false) id cd =
+let get_roles export eff =
+  let map c =
+    let role = try Cmap.find c eff.Evd.seff_roles with Not_found -> Subproof in
+    (c, role)
+  in
+  List.map map export
+
+let define_constant ~side_effect ?(export_seff=false) id cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let is_poly de = match de.const_entry_universes with
   | Monomorphic_entry _ -> false
@@ -168,26 +175,35 @@ let define_constant ?role ?(export_seff=false) id cd =
         not de.const_entry_opaque ||
         is_poly de ->
       (* This globally defines the side-effects in the environment. *)
-      let body, export = Global.export_private_constants ~in_section (Future.force de.const_entry_body) in
+      let body, eff = Future.force de.const_entry_body in
+      let body, export = Global.export_private_constants ~in_section (body, eff.Evd.seff_private) in
+      let export = get_roles export eff in
       let de = { de with const_entry_body = Future.from_val (body, ()) } in
       export, ConstantEntry (PureEntry, DefinitionEntry de)
-    | _ -> [], ConstantEntry (EffectEntry, cd)
+    | DefinitionEntry de ->
+      let map (body, eff) = body, eff.Evd.seff_private in
+      let body = Future.chain de.const_entry_body map in
+      let de = { de with const_entry_body = body } in
+      [], ConstantEntry (EffectEntry, DefinitionEntry de)
+    | ParameterEntry _ | PrimitiveEntry _ as cd ->
+      [], ConstantEntry (PureEntry, cd)
   in
-  let kn, eff = Global.add_constant ?role ~in_section id decl in
+  let kn, eff = Global.add_constant ~side_effect ~in_section id decl in
   kn, eff, export
 
 let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefaultBehavior) id ?(export_seff=false) (cd, kind) =
   let () = check_exists id in
-  let kn, _eff, export = define_constant ~export_seff id cd in
+  let kn, (), export = define_constant ~side_effect:PureEntry ~export_seff id cd in
   (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
   let () = register_constant kn kind local in
   kn
 
 let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
-  let kn, eff, export = define_constant ~role id cd in
+  let kn, eff, export = define_constant ~side_effect:EffectEntry id cd in
   let () = assert (List.is_empty export) in
   let () = register_constant kn kind local in
+  let eff = { Evd.seff_private = eff; Evd.seff_roles = Cmap.singleton kn role } in
   kn, eff
 
 let declare_definition ?(internal=UserIndividualRequest)
@@ -201,7 +217,7 @@ let declare_definition ?(internal=UserIndividualRequest)
 
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
-  | SectionLocalDef of Safe_typing.private_constants definition_entry
+  | SectionLocalDef of Evd.side_effects definition_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -222,7 +238,9 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let ((body, uctx), eff) = Global.export_private_constants ~in_section:true (Future.force de.const_entry_body) in
+      let (body, eff) = Future.force de.const_entry_body in
+      let ((body, uctx), export) = Global.export_private_constants ~in_section:true (body, eff.Evd.seff_private) in
+      let eff = get_roles export eff in
       let () = List.iter register_side_effect eff in
       let poly, univs = match de.const_entry_universes with
       | Monomorphic_entry uctx -> false, uctx

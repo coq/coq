@@ -173,8 +173,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
-  let open Safe_typing in
-  let effs = concat_private eff
+  let effs = Evd.concat_side_effects eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>

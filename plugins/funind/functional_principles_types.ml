@@ -471,7 +471,7 @@ let get_funs_constant mp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_constants definition_entry list =
+let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects definition_entry list =
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
@@ -597,7 +597,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
 	   in
 	   {const with
 	      const_entry_body = 
-                (Future.from_val (Safe_typing.mk_pure_proof princ_body));
+                (Future.from_val ((princ_body, Univ.ContextSet.empty), Evd.empty_side_effects));
 	      const_entry_type = Some scheme_type
 	   }
       )
