@@ -328,7 +328,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
         if poly then ctx
 	else (* This is a global universe context that shouldn't be
 	        refreshed at every use of the hint, declare it globally. *)
-	  (Declare.declare_universe_context false ctx;
+          (Declare.declare_universe_context ~poly:false ctx;
            Univ.ContextSet.empty)
     in
       CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in

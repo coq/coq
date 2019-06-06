@@ -411,8 +411,8 @@ type abstr_info = {
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
-  | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.ContextSet.t)
+  | Variable of (Names.Id.t * Decl_kinds.binding_kind * bool * Univ.ContextSet.t)
+  (** (name, kind, poly, univs) *)
   | Context of Univ.ContextSet.t
 
 let sectab =
@@ -428,12 +428,12 @@ let check_same_poly p vars =
   if List.exists pred vars then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
 
-let add_section_variable id impl poly ctx =
+let add_section_variable ~name ~kind ~poly ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
        List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
-       sectab := (Variable (id,impl,poly,ctx)::vars,repl,abs)::sl
+       sectab := (Variable (name,kind,poly,ctx)::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
@@ -509,11 +509,11 @@ let add_section_replacement f g poly hyps =
     } in
     sectab := (vars,f (inst,args) exps, g info abs) :: sl
 
-let add_section_kn poly kn =
+let add_section_kn ~poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
     add_section_replacement f f poly
 
-let add_section_constant poly kn =
+let add_section_constant ~poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
     add_section_replacement f f poly
 

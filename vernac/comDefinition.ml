@@ -40,7 +40,7 @@ let check_imps ~impsty ~impsbody =
   | [], [] -> () in
   aux impsty impsbody
 
-let interp_definition ~program_mode pl bl poly red_option c ctypopt =
+let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
@@ -81,7 +81,7 @@ let check_definition ~program_mode (ce, evd, _, imps) =
 
 let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_option c ctypopt =
   let (ce, evd, univdecl, imps as def) =
-    interp_definition ~program_mode univdecl bl poly red_option c ctypopt
+    interp_definition ~program_mode univdecl bl ~poly red_option c ctypopt
   in
   if program_mode then
     let env = Global.env () in

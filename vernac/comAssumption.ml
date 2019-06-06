@@ -59,7 +59,7 @@ match scope with
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None true r in
-  let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
+  let () = if is_coe then Class.try_add_new_coercion r ~local:true ~poly:false in
   (r,Univ.Instance.empty,true)
 
 | Global local ->
@@ -79,7 +79,7 @@ match scope with
   let sigma = Evd.from_env env in
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
   let local = match local with ImportNeedQualified -> true | ImportDefaultBehavior -> false in
-  let () = if is_coe then Class.try_add_new_coercion gr ~local poly in
+  let () = if is_coe then Class.try_add_new_coercion gr ~local ~poly in
   let inst = match ctx with
     | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
     | Monomorphic_entry _ -> Univ.Instance.empty
@@ -228,7 +228,7 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let context poly l =
+let context ~poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, (_, ((env', fullctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
@@ -253,7 +253,7 @@ let context poly l =
            separately. *)
         begin
           let uctx = Evd.universe_context_set sigma in
-          Declare.declare_universe_context poly uctx;
+          Declare.declare_universe_context ~poly uctx;
           if poly then Polymorphic_entry ([||], Univ.UContext.empty)
           else Monomorphic_entry Univ.ContextSet.empty
         end
@@ -265,7 +265,7 @@ let context poly l =
            to avoid redeclaring them. *)
         begin
           let uctx = Evd.universe_context_set sigma in
-          Declare.declare_universe_context poly uctx;
+          Declare.declare_universe_context ~poly uctx;
           Monomorphic_entry Univ.ContextSet.empty
         end
   in
@@ -298,7 +298,9 @@ let context poly l =
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition ~name:id ~scope:DeclareDef.Discharge ~kind:Definition UnivNames.empty_binders entry [] in
+        let _gr = DeclareDef.declare_definition
+            ~name:id ~scope:DeclareDef.Discharge
+            ~kind:Definition UnivNames.empty_binders entry [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
         status && nstatus

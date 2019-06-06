@@ -13,7 +13,6 @@
 open Names
 open Constr
 open Environ
-open Decl_kinds
 
 (** {6 ... } *)
 
@@ -67,7 +66,7 @@ val build_constant_by_tactic
   -> unit Proofview.tactic
   -> Evd.side_effects Proof_global.proof_entry * bool * UState.t
 
-val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:polymorphic ->
+val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:bool ->
   EConstr.types -> unit Proofview.tactic ->
   constr * bool * UState.t
 

@@ -98,7 +98,7 @@ let cache_constant ((sp,kn), obj) =
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
   let cst = Global.lookup_constant kn' in
-  add_section_constant (Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
+  add_section_constant ~poly:(Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
   add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharge_constant ((sp, kn), obj) =
@@ -264,7 +264,7 @@ let declare_definition ?(internal=UserIndividualRequest)
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+  | SectionLocalAssum of types Univ.in_universe_context_set * bool (* polymorphic *) * bool (* Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -307,7 +307,7 @@ let cache_variable ((sp,_),o) =
       Explicit, de.proof_entry_opaque,
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  add_section_variable id impl poly ctx;
+  add_section_variable ~name:id ~kind:impl ~poly ctx;
   add_variable_data id (p,opaq,ctx,poly,mk)
 
 let discharge_variable (_,o) = match o with
@@ -376,7 +376,7 @@ let cache_inductive ((sp,kn),mie) =
   let kn' = Global.add_mind id mie in
   assert (MutInd.equal kn' (MutInd.make1 kn));
   let mind = Global.lookup_mind kn' in
-  add_section_kn (Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
+  add_section_kn ~poly:(Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
 let discharge_inductive ((sp,kn),mie) =
@@ -527,7 +527,7 @@ let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
     ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
     ~discharge:(fun (_, x) -> Some x)
 
-let declare_universe_context poly ctx =
+let declare_universe_context ~poly ctx =
   if poly then
     (Global.push_context_set true ctx; Lib.add_section_context ctx)
   else
@@ -607,7 +607,7 @@ let declare_univ_binders gr pl =
     in
     Lib.add_anonymous_leaf (input_univ_names (QualifiedUniv l, univs))
 
-let do_universe poly l =
+let do_universe ~poly l =
   let in_section = Lib.sections_are_opened () in
   let () =
     if poly && not in_section then
@@ -618,11 +618,11 @@ let do_universe poly l =
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
       Univ.LSet.empty l, Univ.Constraint.empty
   in
-  let () = declare_universe_context poly ctx in
+  let () = declare_universe_context ~poly ctx in
   let src = if poly then BoundUniv else UnqualifiedUniv in
   Lib.add_anonymous_leaf (input_univ_names (src, l))
 
-let do_constraint poly l =
+let do_constraint ~poly l =
   let open Univ in
   let u_of_id x =
     let level = Pretyping.interp_known_glob_level (Evd.from_env (Global.env ())) x in
@@ -649,4 +649,4 @@ let do_constraint poly l =
     Constraint.empty l
   in
   let uctx = ContextSet.add_constraints constraints ContextSet.empty in
-  declare_universe_context poly uctx
+  declare_universe_context ~poly uctx

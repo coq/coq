@@ -584,13 +584,13 @@ let start_proof_and_print ~program_mode ~poly ?hook ~scope ~kind l =
   in
   start_lemma_com ~program_mode ?inference_hook ?hook ~poly ~scope ~kind l
 
-let vernac_definition_hook p = function
+let vernac_definition_hook ~poly = function
 | Coercion ->
-  Some (Class.add_coercion_hook p)
+  Some (Class.add_coercion_hook ~poly)
 | CanonicalStructure ->
   Some (DeclareDef.Hook.make (fun _ _ _ -> Canonical.declare_canonical_structure))
 | SubClass ->
-  Some (Class.add_subclass_hook p)
+  Some (Class.add_subclass_hook ~poly)
 | _ -> None
 
 let fresh_name_for_anonymous_theorem () =
@@ -613,7 +613,7 @@ let vernac_definition_name lid local =
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook atts.polymorphic kind in
+  let hook = vernac_definition_hook ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
@@ -622,7 +622,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook atts.polymorphic kind in
+  let hook = vernac_definition_hook ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
@@ -726,7 +726,7 @@ let vernac_record ~template udecl cum k poly finite records =
     coe, id, binders, cfs, const, sort
   in
   let records = List.map map records in
-  ignore(Record.definition_structure ~template udecl k is_cumulative poly finite records)
+  ignore(Record.definition_structure ~template udecl k is_cumulative ~poly finite records)
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   match indl with
@@ -826,7 +826,7 @@ let vernac_inductive ~atts cum lo finite indl =
     let indl = List.map unpack indl in
     let is_cumulative = should_treat_as_cumulative cum poly in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative poly lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative ~poly lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*
@@ -902,14 +902,14 @@ let vernac_universe ~poly l =
     user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  Declare.do_universe poly l
+  Declare.do_universe ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Lib.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  Declare.do_constraint poly l
+  Declare.do_constraint ~poly l
 
 (**********************)
 (* Modules            *)
@@ -1089,62 +1089,62 @@ let vernac_canonical r =
   Canonical.declare_canonical_structure (smart_global r)
 
 let vernac_coercion ~atts ref qids qidt =
-  let local, polymorphic = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
   let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local polymorphic ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local ~poly ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion ~atts id qids qidt =
-  let local, polymorphic = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
   let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local polymorphic ~source ~target
+  Class.try_add_new_identity_coercion id ~local ~poly ~source ~target
 
 (* Type classes *)
 
 let vernac_instance_program ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), polymorphic =
+  let (program, locality), poly =
     Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
-  let _id : Id.t = Classes.new_instance_program ~global polymorphic name bl t props info in
+  let _id : Id.t = Classes.new_instance_program ~global ~poly name bl t props info in
   ()
 
 let vernac_instance_interactive ~atts name bl t info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), polymorphic =
+  let (program, locality), poly =
     Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
   let _id, pstate =
-    Classes.new_instance_interactive ~global polymorphic name bl t info in
+    Classes.new_instance_interactive ~global ~poly name bl t info in
   pstate
 
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), polymorphic =
+  let (program, locality), poly =
     Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
   let _id : Id.t =
-    Classes.new_instance ~global polymorphic name bl t props info in
+    Classes.new_instance ~global ~poly name bl t props info in
   ()
 
 let vernac_declare_instance ~atts id bl inst pri =
   Dumpglob.dump_definition (fst id) false "inst";
-  let (program, locality), polymorphic =
+  let (program, locality), poly =
     Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
-  Classes.declare_new_instance ~program_mode:program ~global polymorphic id bl inst pri
+  Classes.declare_new_instance ~program_mode:program ~global ~poly id bl inst pri
 
 let vernac_context ~poly l =
-  if not (ComAssumption.context poly l) then Feedback.feedback Feedback.AddedAxiom
+  if not (ComAssumption.context ~poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -1267,7 +1267,7 @@ let vernac_hints ~atts dbnames h =
   in
   let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
   let local = enforce_module_locality local in
-  Hints.add_hints ~local dbnames (Hints.interp_hints poly h)
+  Hints.add_hints ~local dbnames (Hints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x compat =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in

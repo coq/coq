@@ -349,7 +349,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations cum poly prv finite =
+let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations cum ~poly prv finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
@@ -469,8 +469,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
 
-let interp_mutual_inductive ~template udecl (paramsl,indl) notations cum poly prv finite =
-  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations cum poly prv finite
+let interp_mutual_inductive ~template udecl (paramsl,indl) notations cum ~poly prv finite =
+  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations cum ~poly prv finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -564,16 +564,16 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template udecl indl cum poly prv ~uniform finite =
+let do_mutual_inductive ~template udecl indl cum ~poly prv ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns cum poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns cum ~poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false poly) coes;
+  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly) coes;
   (* If positivity is assumed declares itself as unsafe. *)
   if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()

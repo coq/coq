@@ -17,7 +17,7 @@ open Decl_kinds
 
 val do_assumptions
   :  program_mode:bool
-  -> poly:polymorphic
+  -> poly:bool
   -> scope:DeclareDef.locality
   -> kind:assumption_object_kind
   -> Declaremods.inline
@@ -44,7 +44,7 @@ val declare_assumption
 (** returns [false] if, for lack of section, it declares an assumption
     (unless in a module type). *)
 val context
-  : Decl_kinds.polymorphic
+  :  poly:bool
   -> local_binder_expr list
   -> bool
 

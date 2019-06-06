@@ -1795,7 +1795,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance atts binders (name,t) fields =
-  let _id = Classes.new_instance atts.polymorphic
+  let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
       ~global:atts.global ~generalize:false Hints.empty_hint_info
   in
@@ -2023,7 +2023,7 @@ let add_morphism atts binders m s n =
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
   let _id, lemma = Classes.new_instance_interactive
-      ~global:atts.global atts.polymorphic
+      ~global:atts.global ~poly:atts.polymorphic
       instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in

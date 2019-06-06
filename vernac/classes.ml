@@ -567,7 +567,7 @@ let new_instance_common ~program_mode ~generalize env instid ctx cl =
   id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl
 
 let new_instance_interactive ?(global=false)
-    poly instid ctx cl
+    ~poly instid ctx cl
     ?(generalize=true) ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
@@ -576,7 +576,7 @@ let new_instance_interactive ?(global=false)
     cty k u ctx ctx' pri decl imps subst id
 
 let new_instance_program ?(global=false)
-    poly instid ctx cl opt_props
+    ~poly instid ctx cl opt_props
     ?(generalize=true) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
@@ -586,7 +586,7 @@ let new_instance_program ?(global=false)
   id
 
 let new_instance ?(global=false)
-    poly instid ctx cl props
+    ~poly instid ctx cl props
     ?(generalize=true) ?hook pri =
   let env = Global.env() in
   let id, env', sigma, k, u, cty, ctx', ctx, imps, subst, decl =
@@ -595,7 +595,7 @@ let new_instance ?(global=false)
     cty k u ctx ctx' pri decl imps subst id props;
   id
 
-let declare_new_instance ?(global=false) ~program_mode poly instid ctx cl pri =
+let declare_new_instance ?(global=false) ~program_mode ~poly instid ctx cl pri =
   let env = Global.env() in
   let ({CAst.loc;v=instid}, pl) = instid in
   let sigma, k, u, cty, ctx', ctx, imps, subst, decl =

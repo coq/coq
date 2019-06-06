@@ -38,7 +38,7 @@ val interp_definition
   :  program_mode:bool
   -> universe_decl_expr option
   -> local_binder_expr list
-  -> polymorphic
+  -> poly:bool
   -> red_expr option
   -> constr_expr
   -> constr_expr option

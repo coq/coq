@@ -27,7 +27,6 @@ open Smartlocate
 open Termops
 open Inductiveops
 open Typing
-open Decl_kinds
 open Typeclasses
 open Pattern
 open Patternops
@@ -142,15 +141,22 @@ type raw_hint = constr * types * Univ.ContextSet.t
 
 type hint = (raw_hint * clausenv) hint_ast with_uid
 
-type 'a with_metadata = {
-  pri     : int;            (* A number lower is higher priority *)
-  poly    : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
-  pat     : constr_pattern option; (* A pattern for the concl of the Goal *)
-  name    : hints_path_atom; (* A potential name to refer to the hint *)
-  db : string option; (** The database from which the hint comes *)
-  secvars : Id.Pred.t; (* The set of section variables the hint depends on *)
-  code    : 'a;     (* the tactic to apply when the concl matches pat *)
-}
+type 'a with_metadata =
+  { pri     : int
+  (** A number lower is higher priority *)
+  ; poly    : bool
+  (** Is the hint polymorpic and hence should be refreshed at each application *)
+  ; pat     : constr_pattern option
+  (** A pattern for the concl of the Goal *)
+  ; name    : hints_path_atom
+  (** A potential name to refer to the hint *)
+  ; db : string option
+  (** The database from which the hint comes *)
+  ; secvars : Id.Pred.t
+  (** The set of section variables the hint depends on *)
+  ; code    : 'a
+  (** the tactic to apply when the concl matches pat *)
+  }
 
 type full_hint = hint with_metadata
 
@@ -792,7 +798,7 @@ let secvars_of_constr env sigma c =
 let secvars_of_global env gr =
   secvars_of_idset (vars_of_global env gr)
 
-let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
+let make_exact_entry env sigma info ~poly ?(name=PathAny) (c, cty, ctx) =
   let secvars = secvars_of_constr env sigma c in
   let cty = strip_outer_cast sigma cty in
     match EConstr.kind sigma cty with
@@ -813,7 +819,7 @@ let make_exact_entry env sigma info poly ?(name=PathAny) (c, cty, ctx) =
 	   db = None; secvars;
 	   code = with_uid (Give_exact (c, cty, ctx)); })
 
-let make_apply_entry env sigma (eapply,hnf,verbose) info poly ?(name=PathAny) (c, cty, ctx) =
+let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (c, cty, ctx) =
   let cty = if hnf then hnf_constr env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
@@ -887,18 +893,18 @@ let fresh_global_or_constr env sigma poly cr =
     else begin
       if isgr then
         warn_polymorphic_hint (pr_hint_term env sigma ctx cr);
-      Declare.declare_universe_context false ctx;
+      Declare.declare_universe_context ~poly:false ctx;
       (c, Univ.ContextSet.empty)
     end
 
-let make_resolves env sigma flags info poly ?name cr =
+let make_resolves env sigma flags info ~poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
     try Some (f (c, cty, ctx)) with Failure _ -> None in
   let ents = List.map_filter try_apply
-			     [make_exact_entry env sigma info poly ?name;
-			      make_apply_entry env sigma flags info poly ?name]
+                             [make_exact_entry env sigma info ~poly ?name;
+                              make_apply_entry env sigma flags info ~poly ?name]
   in
   if List.is_empty ents then
     user_err ~hdr:"Hint"
@@ -912,7 +918,7 @@ let make_resolve_hyp env sigma decl =
   let hname = NamedDecl.get_id decl in
   let c = mkVar hname in
   try
-    [make_apply_entry env sigma (true, true, false) empty_hint_info false
+    [make_apply_entry env sigma (true, true, false) empty_hint_info ~poly:false
        ~name:(PathHints [VarRef hname])
        (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
@@ -1178,7 +1184,7 @@ let add_resolves env sigma clist local dbnames =
       let r =
         List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
           make_resolves env sigma (true,hnf,not !Flags.quiet)
-            pri poly ~name:path gr) clist)
+            pri ~poly ~name:path gr) clist)
       in
       let hint = make_hint ~local dbname (AddHints r) in
       Lib.add_anonymous_leaf (inAutoHint hint))
@@ -1238,8 +1244,8 @@ type hnf = bool
 type nonrec hint_info = hint_info
 
 type hints_entry =
-  | HintsResolveEntry of (hint_info * polymorphic * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
+  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * bool * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
@@ -1286,7 +1292,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     if poly then IsConstr (c', diff)
     else if local then IsConstr (c', diff)
-    else (Declare.declare_universe_context false diff;
+    else (Declare.declare_universe_context ~poly:false diff;
 	  IsConstr (c', Univ.ContextSet.empty))
 
 let project_hint ~poly pri l2r r =
@@ -1318,7 +1324,7 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
 
-let interp_hints poly =
+let interp_hints ~poly =
   fun h ->
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -1417,7 +1423,7 @@ let expand_constructor_hints env sigma lems =
 let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
   List.map_append (fun (poly, lem) ->
-      make_resolves env sigma (eapply,true,false) empty_hint_info poly lem) lems
+      make_resolves env sigma (eapply,true,false) empty_hint_info ~poly lem) lems
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
