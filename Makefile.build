@@ -365,7 +365,7 @@ $(COQPP): $(COQPPCMO) coqpp/coqpp_main.ml
 ###########################################################################
 # Specific rules for Uint63
 ###########################################################################
-kernel/uint63.ml: kernel/write_uint63.ml kernel/uint63_x86.ml kernel/uint63_amd64.ml
+kernel/uint63.ml: kernel/write_uint63.ml kernel/uint63_i386_31.ml kernel/uint63_amd64_63.ml
 	$(SHOW)'WRITE $@'
 	$(HIDE)(cd kernel && ocaml unix.cma $(shell basename $<))
 

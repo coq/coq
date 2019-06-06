@@ -3,7 +3,7 @@
  (synopsis "The Coq Kernel")
  (public_name coq.kernel)
  (wrapped false)
- (modules (:standard \ genOpcodeFiles uint63_x86 uint63_amd64 write_uint63))
+ (modules (:standard \ genOpcodeFiles uint63_i386_31 uint63_amd64_63 write_uint63))
  (libraries lib byterun dynlink))
 
 (executable
@@ -14,15 +14,10 @@
  (targets copcodes.ml)
  (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copml))))
 
-(executable
-  (name write_uint63)
-  (modules write_uint63)
-  (libraries unix))
-
 (rule
  (targets uint63.ml)
- (deps (:gen ./write_uint63.exe) uint63_x86.ml uint63_amd64.ml)
- (action (run %{gen})))
+ (deps (:gen-file uint63_%{ocaml-config:architecture}_%{ocaml-config:int_size}.ml))
+ (action (copy# %{gen-file} %{targets})))
 
 (documentation
  (package coq))
