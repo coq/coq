@@ -525,7 +525,13 @@ Other changes in 8.10+beta1
     (`#9829 <https://github.com/coq/coq/pull/9829>`_, by Vincent Laporte).
 
   - :cmd:`Coercion` does not warn ambiguous paths which are obviously
-    convertible with existing ones
+    convertible with existing ones. The ambiguous paths messages have been
+    turned to warnings, thus now they could appear in the output of ``coqc``.
+    The convertibility checking procedure for coercion paths is complete for
+    paths consisting of coercions satisfying the uniform inheritance condition,
+    but some coercion paths could be reported as ambiguous even if they are
+    convertible with existing ones when they have coercions that don't satisfy
+    the uniform inheritance condition
     (`#9743 <https://github.com/coq/coq/pull/9743>`_,
     closes `#3219 <https://github.com/coq/coq/issues/3219>`_,
     by Kazuhiko Sakaguchi).
