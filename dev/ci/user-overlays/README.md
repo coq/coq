@@ -21,14 +21,14 @@ The name of your overlay file should start with a five-digit pull request
 number, followed by a dash, anything (for instance your GitHub nickname
 and the branch name), then a `.sh` extension (`[0-9]{5}-[a-zA-Z0-9-_]+.sh`).
 
-Example: `00669-maximedenes-ssr-merge.sh` containing
+Example: `10185-SkySkimmer-instance-no-bang.sh` containing
 
 ```
-#!/bin/sh
+if [ "$CI_PULL_REQUEST" = "10185" ] || [ "$CI_BRANCH" = "instance-no-bang" ]; then
 
-if [ "$CI_PULL_REQUEST" = "669" ] || [ "$CI_BRANCH" = "ssr-merge" ]; then
-    mathcomp_CI_REF=ssr-merge
-    mathcomp_CI_GITURL=https://github.com/maximedenes/math-comp
+    quickchick_CI_REF=instance-no-bang
+    quickchick_CI_GITURL=https://github.com/SkySkimmer/QuickChick
+
 fi
 ```
 
