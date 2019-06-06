@@ -15,9 +15,12 @@ open Glob_term
 
 val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
 
-val glob_sort_family : 'a glob_sort_gen -> Sorts.family
-
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
+
+(** Expect a Prop/SProp/Set/Type universe; raise [ComplexSort] if
+    contains a max, an increment, or a flexible universe *)
+exception ComplexSort
+val glob_sort_family : glob_sort -> Sorts.family
 
 val alias_of_pat : 'a cases_pattern_g -> Name.t
 

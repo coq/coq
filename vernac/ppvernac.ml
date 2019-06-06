@@ -39,8 +39,8 @@ open Pputils
     pr_sep_com spc @@ pr_lconstr_expr env sigma
 
   let pr_uconstraint (l, d, r) =
-    pr_glob_level l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-      pr_glob_level r
+    pr_glob_sort_name l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
+      pr_glob_sort_name r
 
   let pr_univ_name_list = function
     | None -> mt ()

@@ -410,7 +410,9 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
 	       pat_of_raw metas (na::vars) c2)
-  | GSort gs -> PSort (Glob_ops.glob_sort_family gs)
+  | GSort gs ->
+     (try PSort (Glob_ops.glob_sort_family gs)
+      with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
   | GHole _ ->
       PMeta None
   | GCast (c,_) ->

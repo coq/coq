@@ -182,6 +182,7 @@ module Constr :
     val operconstr : constr_expr Entry.t
     val ident : Id.t Entry.t
     val global : qualid Entry.t
+    val universe_name : Glob_term.glob_sort_name Entry.t
     val universe_level : Glob_term.glob_level Entry.t
     val sort : Glob_term.glob_sort Entry.t
     val sort_family : Sorts.family Entry.t

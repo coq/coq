@@ -121,7 +121,7 @@ let mk_mltype_data sigma env assums arity indname =
 let rec check_anonymous_type ind =
   let open Glob_term in
     match DAst.get ind with
-    | GSort (GType []) -> true
+    | GSort (UAnonymous {rigid=true}) -> true
     | GProd ( _, _, _, e)
     | GLetIn (_, _, _, e)
     | GLambda (_, _, _, e)
@@ -495,7 +495,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.GType [])) ar;
+    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

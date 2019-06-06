@@ -125,7 +125,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
        let env = EConstr.push_rel_context newps env0 in
        let poly =
          match t with
-         | { CAst.v = CSort (Glob_term.GType []) } -> true | _ -> false in
+         | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true | _ -> false in
        let sigma, s = interp_type_evars ~program_mode:false env sigma ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_allnolet env sigma s in
          (match EConstr.kind sigma sred with

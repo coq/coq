@@ -998,18 +998,10 @@ let intern_reference qid =
   in
   Smartlocate.global_of_extended_global r
 
-let sort_info_of_level_info (info: level_info) : (Libnames.qualid * int) option =
-  match info with
-  | UAnonymous -> None
-  | UUnknown -> None
-  | UNamed id -> Some (id, 0)
-
 let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
-  | GSProp -> GSProp
-  | GProp -> GProp
-  | GSet -> GSet
-  | GType info -> GType [sort_info_of_level_info info]
+  | UAnonymous {rigid} -> UAnonymous {rigid}
+  | UNamed id -> UNamed [id,0]
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
@@ -1045,7 +1037,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
           DAst.make ?loc @@ GApp (DAst.make ?loc:loc' @@ GRef (ref, us), arg)
         | _ -> err ()
         end
-      | Some [s], GSort (GType []) -> DAst.make ?loc @@ GSort (glob_sort_of_level s)
+      | Some [s], GSort (UAnonymous {rigid=true}) -> DAst.make ?loc @@ GSort (glob_sort_of_level s)
       | Some [_old_level], GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)
         user_err ?loc (str "Cannot change universe level of notation " ++ pr_qualid qid)

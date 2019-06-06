@@ -429,7 +429,7 @@ let universe_subgraph ?loc g univ =
   let open Univ in
   let sigma = Evd.from_env (Global.env()) in
   let univs_of q =
-    let q =  Glob_term.(GType (UNamed q)) in
+    let q =  Glob_term.(GType q) in
     (* this function has a nice error message for not found univs *)
     LSet.singleton (Pretyping.interp_known_glob_level ?loc sigma q)
   in

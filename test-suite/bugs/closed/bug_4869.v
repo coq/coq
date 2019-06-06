@@ -6,7 +6,9 @@ Fail Constraint i = Set.
 Constraint Set <= i.
 Constraint Set < i.
 Fail Constraint i < j. (* undeclared j *)
+(* Now a parsing error
 Fail Constraint i < Type. (* anonymous *)
+*)
 
 Set Universe Polymorphism.
 
