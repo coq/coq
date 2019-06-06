@@ -2694,7 +2694,7 @@ let rec interp_expr ?proof ~atts ~st c =
      [vernac_load] is mutually-recursive with [interp_expr] *)
   | VernacLoad (verbosely,fname) ->
     unsupported_attributes atts;
-    vernac_load ?proof ~verbosely ~st fname
+    vernac_load ~verbosely ~st fname
 
   (* Special: ?proof parameter doesn't allow for uniform pstate pop :S *)
   | VernacEndProof e ->
@@ -2711,7 +2711,7 @@ let rec interp_expr ?proof ~atts ~st c =
    the way the proof mode is set there makes the task non trivial
    without a considerable amount of refactoring.
  *)
-and vernac_load ?proof ~verbosely ~st fname =
+and vernac_load ~verbosely ~st fname =
   let pstate = st.Vernacstate.proof in
   if there_are_pending_proofs ~pstate then
     CErrors.user_err Pp.(str "Load is not supported inside proofs.");
@@ -2734,7 +2734,7 @@ and vernac_load ?proof ~verbosely ~st fname =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) pstate in
       let pstate =
-        v_mod (interp_control ?proof ~st:{ st with Vernacstate.proof = pstate })
+        v_mod (interp_control ?proof:None ~st:{ st with Vernacstate.proof = pstate })
           (parse_sentence proof_mode input) in
       load_loop ~pstate
     with
