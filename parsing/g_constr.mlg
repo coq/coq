@@ -84,7 +84,7 @@ let err () = raise Stream.Failure
 (* admissible notation "(x t)" *)
 let lpar_id_coloneq =
   Pcoq.Entry.of_parser "test_lpar_id_coloneq"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
@@ -99,7 +99,7 @@ let lpar_id_coloneq =
 
 let impl_ident_head =
   Pcoq.Entry.of_parser "impl_ident_head"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
 	| KEYWORD "{" ->
 	    (match stream_nth 1 strm with
@@ -112,7 +112,7 @@ let impl_ident_head =
 
 let name_colon =
   Pcoq.Entry.of_parser "name_colon"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
 	| IDENT s ->
             (match stream_nth 1 strm with

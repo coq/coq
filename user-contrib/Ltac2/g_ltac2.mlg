@@ -26,7 +26,7 @@ let err () = raise Stream.Failure
 type lookahead = int -> Tok.t Stream.t -> int option
 
 let entry_of_lookahead s (lk : lookahead) =
-  let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+  let run _ strm = match lk 0 strm with None -> err () | Some _ -> () in
   Pcoq.Entry.of_parser s run
 
 let (>>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with

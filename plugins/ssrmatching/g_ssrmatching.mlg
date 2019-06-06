@@ -66,7 +66,7 @@ END
 
 {
 
-let input_ssrtermkind strm = match Util.stream_nth 0 strm with
+let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
   | Tok.KEYWORD "(" -> '('
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '

@@ -235,7 +235,7 @@ let pr_ssrsimpl _ _ _ = pr_simpl
 
 let wit_ssrsimplrep = add_genarg "ssrsimplrep" (fun env sigma -> pr_simpl)
 
-let test_ssrslashnum b1 b2 strm =
+let test_ssrslashnum b1 b2 _ strm =
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "/" ->
       (match Util.stream_nth 1 strm with
@@ -276,8 +276,8 @@ let test_ssrslashnum11 = test_ssrslashnum true true
 let test_ssrslashnum01 = test_ssrslashnum false true
 let test_ssrslashnum00 = test_ssrslashnum false false
 
-let negate_parser f x =
-  let rc = try Some (f x) with Stream.Failure -> None in
+let negate_parser f tok x =
+  let rc = try Some (f tok x) with Stream.Failure -> None in
   match rc with
   | None -> ()
   | Some _ -> raise Stream.Failure 
@@ -475,7 +475,7 @@ END
 
 (* Old kinds of terms *)
 
-let input_ssrtermkind strm = match Util.stream_nth 0 strm with
+let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
   | Tok.KEYWORD "(" -> xInParens
   | Tok.KEYWORD "@" -> xWithAt
   | _ -> xNoFlag
@@ -484,7 +484,7 @@ let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 (* New kinds of terms *)
 
-let input_term_annotation strm =
+let input_term_annotation _ strm =
   match Stream.npeek 2 strm with
   | Tok.KEYWORD "(" :: Tok.KEYWORD "(" :: _ -> `DoubleParens
   | Tok.KEYWORD "(" :: _ -> `Parens
@@ -751,7 +751,7 @@ let pushIPatNoop = function
   | pats :: orpat -> (IPatNoop :: pats) :: orpat
   | [] -> []
 
-let test_ident_no_do strm =
+let test_ident_no_do _ strm =
   match Util.stream_nth 0 strm with
   | Tok.IDENT s when s <> "do" -> ()
   | _ -> raise Stream.Failure
@@ -830,7 +830,7 @@ END
 
 {
 
-let reject_ssrhid strm =
+let reject_ssrhid _ strm =
   match Util.stream_nth 0 strm with
   | Tok.KEYWORD "[" ->
       (match Util.stream_nth 1 strm with
@@ -840,13 +840,13 @@ let reject_ssrhid strm =
 
 let test_nohidden = Pcoq.Entry.of_parser "test_ssrhid" reject_ssrhid
 
-let rec reject_binder crossed_paren k s =
+let rec reject_binder crossed_paren k tok s =
   match
     try Some (Util.stream_nth k s)
     with Stream.Failure -> None
   with
-  | Some (Tok.KEYWORD "(") when not crossed_paren -> reject_binder true (k+1) s
-  | Some (Tok.IDENT _) when crossed_paren -> reject_binder true (k+1) s
+  | Some (Tok.KEYWORD "(") when not crossed_paren -> reject_binder true (k+1) tok s
+  | Some (Tok.IDENT _) when crossed_paren -> reject_binder true (k+1) tok s
   | Some (Tok.KEYWORD ":" | Tok.KEYWORD ":=") when crossed_paren ->
       raise Stream.Failure
   | Some (Tok.KEYWORD ")") when crossed_paren -> raise Stream.Failure
@@ -1013,7 +1013,7 @@ END
 
 {
 
-let accept_ssrfwdid strm =
+let accept_ssrfwdid _ strm =
   match stream_nth 0 strm with
   | Tok.IDENT id -> accept_before_syms_or_any_id [":"; ":="; "("] strm
   | _ -> raise Stream.Failure
@@ -1597,7 +1597,7 @@ END
 let sq_brace_tacnames =
    ["first"; "solve"; "do"; "rewrite"; "have"; "suffices"; "wlog"]
    (* "by" is a keyword *)
-let accept_ssrseqvar strm =
+let accept_ssrseqvar _ strm =
   match stream_nth 0 strm with
   | Tok.IDENT id when not (List.mem id sq_brace_tacnames) ->
      accept_before_syms_or_ids ["["] ["first";"last"] strm
@@ -1691,7 +1691,7 @@ let ssr_id_of_string loc s =
   ^ "Scripts with explicit references to anonymous variables are fragile."))
     end; Id.of_string s
 
-let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ -> ())
+let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ _ -> ())
 
 }
 
@@ -2002,7 +2002,7 @@ END
 
 {
 
-let accept_ssreqid strm =
+let accept_ssreqid _ strm =
   match Util.stream_nth 0 strm with
   | Tok.IDENT _ -> accept_before_syms [":"] strm
   | Tok.KEYWORD ":" -> ()
@@ -2423,7 +2423,7 @@ let lbrace = Char.chr 123
 (** Workaround to a limitation of coqpp *)
 
 let test_ssr_rw_syntax =
-  let test strm  =
+  let test _ strm  =
     if not !ssr_rw_syntax then raise Stream.Failure else
     if is_ssr_loaded () then () else
     match Util.stream_nth 0 strm with
@@ -2634,7 +2634,7 @@ END
 
 {
 
-let accept_idcomma strm =
+let accept_idcomma _ strm =
   match stream_nth 0 strm with
   | Tok.IDENT _ | Tok.KEYWORD "_" -> accept_before_syms [","] strm
   | _ -> raise Stream.Failure

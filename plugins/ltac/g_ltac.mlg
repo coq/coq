@@ -64,7 +64,7 @@ let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =
   Pcoq.Entry.of_parser "test_bracket_ident"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
         | KEYWORD "[" ->
             (match stream_nth 1 strm with

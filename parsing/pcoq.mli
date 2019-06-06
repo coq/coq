@@ -29,7 +29,7 @@ module Entry : sig
   val create : string -> 'a t
   val parse : 'a t -> Parsable.t -> 'a
   val print : Format.formatter -> 'a t -> unit
-  val of_parser : string -> (Tok.t Stream.t -> 'a) -> 'a t
+  val of_parser : string -> (Gramlib.Plexing.location_function -> Tok.t Stream.t -> 'a) -> 'a t
   val parse_token_stream : 'a t -> Tok.t Stream.t -> 'a
   val name : 'a t -> string
 end
