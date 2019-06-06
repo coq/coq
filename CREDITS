@@ -11,17 +11,14 @@ The "Coq proof assistant" was jointly developed by
   (Jan. 2009 - Dec. 2015 when it was merged into IRIF).
 - Institut de Recherche en Informatique Fondamentale (IRIF),
   associated to CNRS and University Paris Diderot (since Jan. 2016).
+- And many contributors from various institutions.
 
-All files of the "Coq proof assistant" in directories or sub-directories of
+All files but the material of the reference manual are distributed
+under the term of the GNU Lesser General Public License Version 2.1.
 
-  config dev ide interp intf kernel lib library parsing pretyping proofs
-  scripts states tactics test-suite theories tools toplevel
-
-are distributed under the terms of the GNU Lesser General Public License
-Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2017,
-The Coq development team, INRIA, CNRS, LIX, LRI, PPS.
-
-Files from the directory doc are distributed as indicated in file doc/LICENCE.
+The material of the reference manual is distributed under the terms of
+the Open Publication License v1.0 or above, as indicated in file
+doc/LICENCE.
 
 The following directories contain independent contributions supported
 by the Coq development team. All of them are released under the terms of
@@ -30,9 +27,6 @@ the GNU Lesser General Public License Version 2.1.
 plugins/cc
   developed by Pierre Corbineau (ENS Cachan, 2001, LRI, 2001-2005, Radboud
   University at Nijmegen, 2005-2008, Grenoble 1, 2010-2014)
-plugins/decl_mode
-  developed by Pierre Corbineau (Radboud University at Nijmegen, 2005-2008,
-  Grenoble 1, 2009-2011)
 plugins/extraction
   developed by Pierre Letouzey (LRI, 2000-2004, PPS, 2005-now)
 plugins/firstorder
@@ -50,22 +44,18 @@ plugins/nsatz
   developed by Loïc Pottier (INRIA-Marelle, 2009-2011)
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
-plugins/romega
-  developed by Pierre Crégut (France Telecom R&D, 2001-2004)
 plugins/rtauto
   developed by Pierre Corbineau (LRI, 2005)
 plugins/setoid_ring
   developed by Benjamin Grégoire (INRIA-Everest, 2005-2006),
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006)
   and Bruno Barras (INRIA LogiCal, 2005-2006),
-plugins/ssreflect
+plugins/ssr
   developed by Georges Gonthier (Microsoft Research - Inria Joint Centre, 2007-2013, Inria, 2013-now),
   Assia Mahboubi and Enrico Tassi (Inria, 2011-now).
 plugins/ssrmatching
   developed by Georges Gonthier (Microsoft Research - Inria Joint Centre, 2007-2011, Inria, 2013-now),
   and Enrico Tassi (Inria-Marelle, 2011-now)
-plugins/subtac
-  developed by Matthieu Sozeau (LRI, 2005-2008)
 theories/ZArith
   started by Pierre Crégut (France Telecom R&D, 1996)
 theories/Strings
