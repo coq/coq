@@ -344,13 +344,13 @@ let start_lemma ~name ~poly ~kind
     ?(info=Info.make ())
     sigma c =
   let goals = [ Global.env_of_context sign , c ] in
-  let proof = Proof_global.start_proof sigma name udecl ~poly kind goals in
+  let proof = Proof_global.start_proof sigma ~name ~udecl ~poly ~kind goals in
   { proof ; info }
 
 let start_dependent_lemma ~name ~poly ~kind
     ?(udecl=UState.default_univ_decl)
     ?(info=Info.make ()) telescope =
-  let proof = Proof_global.start_dependent_proof name udecl ~poly kind telescope in
+  let proof = Proof_global.start_dependent_proof ~name ~udecl ~poly ~kind telescope in
   { proof; info }
 
 let rec_tac_initializer finite guard thms snl =

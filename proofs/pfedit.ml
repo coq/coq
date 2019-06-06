@@ -119,7 +119,7 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let build_constant_by_tactic id ctx sign ~poly ?(goal_kind = Global ImportDefaultBehavior, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = Proof_global.start_proof evd id ~poly UState.default_univ_decl goal_kind goals in
+  let pf = Proof_global.start_proof ~name:id ~poly ~udecl:UState.default_univ_decl ~kind:goal_kind evd goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in

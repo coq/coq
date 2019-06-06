@@ -63,21 +63,21 @@ type opacity_flag = Opaque | Transparent
    typically contain universe constraints), and with universe bindings
    pl. *)
 val start_proof
-  :  Evd.evar_map
-  -> Names.Id.t
-  -> UState.universe_decl
+  :  name:Names.Id.t
+  -> udecl:UState.universe_decl
   -> poly:bool
-  -> Decl_kinds.goal_kind
+  -> kind:Decl_kinds.goal_kind
+  -> Evd.evar_map
   -> (Environ.env * EConstr.types) list
   -> t
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
 val start_dependent_proof
-  :  Names.Id.t
-  -> UState.universe_decl
+  :  name:Names.Id.t
+  -> udecl:UState.universe_decl
   -> poly:bool
-  -> Decl_kinds.goal_kind
+  -> kind:Decl_kinds.goal_kind
   -> Proofview.telescope
   -> t
 
