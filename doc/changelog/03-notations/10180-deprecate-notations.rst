@@ -1,4 +1,4 @@
-- The `Notation` and `Infix` commands now support the `deprecated`
+- The :cmd:`Notation` and :cmd:`Infix` commands now support the `deprecated`
   attribute. The former `compat` annotation for notations is
   deprecated, and its semantics changed. It is now made equivalent to using
   a `deprecated` attribute, and is no longer connected with the `-compat`
