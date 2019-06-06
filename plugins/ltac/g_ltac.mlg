@@ -446,8 +446,7 @@ VERNAC { tactic_mode } EXTEND VernacSolve STATE proof
       let solving_tac = is_explicit_terminator t in
       let parallel = `Yes (solving_tac,anon_abstracting_tac) in
       let pbr = if solving_tac then Some "par" else None in
-      VtProofStep{ parallel = parallel; proof_block_detection = pbr },
-      VtLater
+      VtProofStep{ parallel = parallel; proof_block_detection = pbr }
     } -> {
       let t = rm_abstract t in
       vernac_solve Goal_select.SelectAll n t def
@@ -494,7 +493,7 @@ END
 VERNAC COMMAND EXTEND VernacTacticNotation
 | #[ deprecation; locality; ]
   [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
-  { VtSideff [], VtNow } ->
+  { VtSideff ([], VtNow) } ->
   {
     let n = Option.default 0 n in
     Tacentries.add_tactic_notation (Locality.make_module_locality locality) n ?deprecation r e;
@@ -542,7 +541,7 @@ VERNAC COMMAND EXTEND VernacDeclareTacticDefinition
 | #[ deprecation; locality; ] [ "Ltac" ne_ltac_tacdef_body_list_sep(l, "with") ] => {
     VtSideff (List.map (function
       | TacticDefinition ({CAst.v=r},_) -> r
-      | TacticRedefinition (qid,_) -> qualid_basename qid) l), VtLater
+      | TacticRedefinition (qid,_) -> qualid_basename qid) l, VtLater)
   } -> {
          Tacentries.register_ltac (Locality.make_module_locality locality) ?deprecation l;
   }
