@@ -66,7 +66,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>Coq_vVERSION</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright 1999-2016, The Coq Development Team INRIA - CNRS - LIX - LRI - PPS</string>
+	<string>Copyright 1999-2019, Inria, CNRS and contributors</string>
 	<key>CFBundleHelpBookFolder</key>
 	<string>share/doc/coq/html/</string>
 	<key>CFAppleHelpAnchor</key>

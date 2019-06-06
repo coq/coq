@@ -108,7 +108,7 @@ master_doc = "index"
 
 # General information about the project.
 project = 'Coq'
-copyright = '1999-2018, Inria'
+copyright = '1999-2019, Inria, CNRS and contributors'
 author = 'The Coq Development Team'
 
 # The version info for the project you're documenting, acts as replacement for
