@@ -619,7 +619,11 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     with _ when snd mult = May -> fail := true; (project gl, EConstr.mkProp) in
   let rwtac gl = 
     let rx = Option.map (interp_rpattern gl) grx in
+    let gl = match rx with
+      | None -> gl
+      | Some (s,_) -> pf_merge_uc_of s gl in
     let t = interp gt gl in
+    let gl = pf_merge_uc_of (fst t) gl in
     (match kind with
     | RWred sim -> simplintac occ rx sim
     | RWdef -> if dir = R2L then foldtac occ rx t else unfoldintac occ rx t gt
