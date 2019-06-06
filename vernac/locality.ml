@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Decl_kinds
-
 (** * Managing locality *)
 
 let importability_of_bool = function
@@ -37,6 +35,7 @@ let warn_local_declaration =
 
 let enforce_locality_exp locality_flag discharge =
   let open DeclareDef in
+  let open Vernacexpr in
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)
   | None, NoDischarge -> Global Declare.ImportDefaultBehavior

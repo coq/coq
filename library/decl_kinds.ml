@@ -10,8 +10,6 @@
 
 (** Informal mathematical status of declarations *)
 
-type discharge = DoDischarge | NoDischarge
-
 type binding_kind = Explicit | Implicit
 
 type private_flag = bool

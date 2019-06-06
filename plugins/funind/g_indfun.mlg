@@ -182,7 +182,7 @@ let is_proof_termination_interactively_checked recsl =
 
 let classify_as_Fixpoint recsl =
  Vernac_classifier.classify_vernac
-    (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(Decl_kinds.NoDischarge, List.map snd recsl))))
+    (Vernacexpr.(CAst.make @@ VernacExpr([], VernacFixpoint(NoDischarge, List.map snd recsl))))
 
 let classify_funind recsl =
   match classify_as_Fixpoint recsl with
