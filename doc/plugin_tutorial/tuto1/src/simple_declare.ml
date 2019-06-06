@@ -6,11 +6,9 @@ let edeclare ?hook ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps =
   let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
   DeclareDef.declare_definition ident k ce ubinders imps ?hook_data
 
-let packed_declare_definition ~poly ident value_with_constraints =
-  let body, ctx = value_with_constraints in
-  let sigma = Evd.from_ctx ctx in
+let declare_definition ~poly ident sigma body =
   let k = (Decl_kinds.Global, poly, Decl_kinds.Definition) in
   let udecl = UState.default_univ_decl in
-  ignore (edeclare ident k ~opaque:false sigma udecl body None [])
+  edeclare ident k ~opaque:false sigma udecl body None []
 
 (* But this definition cannot be undone by Reset ident *)
