@@ -19,7 +19,7 @@ val do_definition
   :  program_mode:bool
   -> ?hook:DeclareDef.Hook.t
   -> name:Id.t
-  -> scope:locality
+  -> scope:DeclareDef.locality
   -> poly:bool
   -> kind:definition_object_kind
   -> universe_decl_expr option

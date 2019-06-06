@@ -20,7 +20,7 @@
 
 val make_locality : bool option -> bool
 val make_non_locality : bool option -> bool
-val enforce_locality_exp : bool option -> Decl_kinds.discharge -> Decl_kinds.locality
+val enforce_locality_exp : bool option -> Decl_kinds.discharge -> DeclareDef.locality
 val enforce_locality : bool option -> bool
 
 (** For commands whose default is to not discharge but to export:

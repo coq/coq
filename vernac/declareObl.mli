@@ -43,7 +43,7 @@ type program_info =
   ; prg_implicits : Impargs.manual_implicits
   ; prg_notations : notations
   ; prg_poly : bool
-  ; prg_scope : Decl_kinds.locality
+  ; prg_scope : DeclareDef.locality
   ; prg_kind : Decl_kinds.definition_object_kind
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option

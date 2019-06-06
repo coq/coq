@@ -44,6 +44,7 @@ let should_axiom_into_instance = function
   | Definitional | Logical | Conjectural -> !axiom_into_instance
 
 let declare_assumption is_coe ~poly ~scope ~kind (c,ctx) pl imps impl nl {CAst.v=ident} =
+let open DeclareDef in
 match scope with
 | Discharge ->
   let ctx = match ctx with
@@ -123,6 +124,7 @@ let process_assumptions_udecls ~scope l =
       udecl, id
     | (_, ([], _))::_ | [] -> assert false
   in
+  let open DeclareDef in
   let () = match scope, udecl with
     | Discharge, Some _ ->
       let loc = first_id.CAst.loc in
@@ -289,14 +291,14 @@ let context poly l =
       in
       let impl = List.exists test impls in
       let scope =
-        if Lib.sections_are_opened () then Discharge else Global ImportDefaultBehavior in
+        if Lib.sections_are_opened () then DeclareDef.Discharge else DeclareDef.Global ImportDefaultBehavior in
       let nstatus = match b with
       | None ->
         pi3 (declare_assumption false ~scope ~poly ~kind:Context (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition ~name:id ~scope:Discharge ~kind:Definition UnivNames.empty_binders entry [] in
+        let _gr = DeclareDef.declare_definition ~name:id ~scope:DeclareDef.Discharge ~kind:Definition UnivNames.empty_binders entry [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
         status && nstatus

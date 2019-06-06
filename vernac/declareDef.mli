@@ -11,6 +11,8 @@
 open Names
 open Decl_kinds
 
+type locality = Discharge | Global of Declare.import_status
+
 (** Declaration hooks *)
 module Hook : sig
   type t
@@ -28,7 +30,7 @@ module Hook : sig
       (** [(n1,t1),...(nm,tm)]: association list between obligation
           name and the corresponding defined term (might be a constant,
           but also an arbitrary term in the Expand case of obligations) *)
-      -> Decl_kinds.locality
+      -> locality
       (**  [locality]: Locality of the original declaration *)
       -> GlobRef.t
       (** [ref]: identifier of the origianl declaration *)

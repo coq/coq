@@ -118,8 +118,8 @@ let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 (* Copy of the standard save mechanism but without the much too  *)
 (* slow reduction function                                       *)
 (*****************************************************************)
-open Decl_kinds
 open Declare
+open DeclareDef
 
 let definition_message = Declare.definition_message
 

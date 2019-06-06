@@ -51,6 +51,8 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   ?univs:Entries.universes_entry ->
   ?eff:Evd.side_effects -> constr -> Evd.side_effects Proof_global.proof_entry
 
+type import_status = ImportDefaultBehavior | ImportNeedQualified
+
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration

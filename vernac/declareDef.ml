@@ -13,12 +13,14 @@ open Declare
 open Globnames
 open Impargs
 
+type locality = Discharge | Global of Declare.import_status
+
 (* Hooks naturally belong here as they apply to both definitions and lemmas *)
 module Hook = struct
   module S = struct
     type t = UState.t
       -> (Names.Id.t * Constr.t) list
-      -> Decl_kinds.locality
+      -> locality
       -> Names.GlobRef.t
       -> unit
   end

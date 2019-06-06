@@ -418,7 +418,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
         ~program_mode:false
         ~name:fname
         ~poly:false
-        ~scope:Decl_kinds.(Global ImportDefaultBehavior)
+        ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
         ~kind:Decl_kinds.Definition pl
         bl None body (Some ret_type);
        let evd,rev_pconstants =
@@ -436,7 +436,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
        in
        None, evd,List.rev rev_pconstants
     | _ ->
-       ComFixpoint.do_fixpoint ~scope:(Global ImportDefaultBehavior) ~poly:false fixpoint_exprl;
+       ComFixpoint.do_fixpoint ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly:false fixpoint_exprl;
        let evd,rev_pconstants =
          List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->

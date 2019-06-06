@@ -804,7 +804,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
          let lem_id = mk_correct_id f_id in
          let (typ,_) = lemmas_types_infos.(i) in
          let info = Lemmas.Info.make
-             ~scope:Decl_kinds.(Global ImportDefaultBehavior)
+             ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
              ~kind:(Decl_kinds.Proof Decl_kinds.Theorem) () in
          let lemma = Lemmas.start_lemma
              ~name:lem_id
@@ -870,7 +870,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
            i*)
          let lem_id = mk_complete_id f_id in
          let info = Lemmas.Info.make
-             ~scope:Decl_kinds.(Global ImportDefaultBehavior)
+             ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
              ~kind:Decl_kinds.(Proof Theorem) () in
          let lemma = Lemmas.start_lemma ~name:lem_id ~poly:false ~info
              sigma (fst lemmas_types_infos.(i)) in

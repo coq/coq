@@ -49,7 +49,7 @@ type program_info =
   ; prg_implicits : Impargs.manual_implicits
   ; prg_notations : notations
   ; prg_poly : bool
-  ; prg_scope : locality
+  ; prg_scope : DeclareDef.locality
   ; prg_kind : definition_object_kind
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
@@ -167,7 +167,7 @@ let declare_obligation prg obl body ty uctx =
     in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
-      Declare.declare_constant obl.obl_name ~local:ImportNeedQualified
+      Declare.declare_constant obl.obl_name ~local:Declare.ImportNeedQualified
         (Declare.DefinitionEntry ce, IsProof Property)
     in
     if not opaque then

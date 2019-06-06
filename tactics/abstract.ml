@@ -102,9 +102,9 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
      redundancy on constant declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
-  let scope, suffix = if opaque
-    then Global ImportDefaultBehavior, "_subproof"
-    else Global ImportDefaultBehavior, "_subterm" in
+  let suffix = if opaque
+    then "_subproof"
+    else "_subterm" in
   let name = name_op_to_name ~name_op ~name suffix in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -158,7 +158,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:ImportNeedQualified name decl
+    Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:Declare.ImportNeedQualified name decl
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.Proof_global.proof_entry_universes with

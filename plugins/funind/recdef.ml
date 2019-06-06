@@ -1368,7 +1368,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
     Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:opacity ~idopt:None
   in
   let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook)
-      ~scope:Decl_kinds.(Global ImportDefaultBehavior) ~kind:Decl_kinds.(Proof Lemma)
+      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~kind:(Decl_kinds.Proof Decl_kinds.Lemma)
       () in
   let lemma = Lemmas.start_lemma
       ~name:na
@@ -1411,7 +1411,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
-    let info = Lemmas.Info.make ~hook ~scope:(Global ImportDefaultBehavior) ~kind:(Proof Lemma) () in
+    let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:(Proof Lemma) () in
     let lemma = Lemmas.start_lemma ~name:thm_name
         ~poly:false (*FIXME*)
         ~sign:(Environ.named_context_val env)

@@ -603,6 +603,7 @@ let vernac_definition_name lid local =
          CAst.make ?loc (fresh_name_for_anonymous_theorem ())
     | { v = Name.Name n; loc } -> CAst.make ?loc n in
   let () =
+    let open DeclareDef in
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
     | Global _ -> Dumpglob.dump_definition lid false "def"
@@ -671,8 +672,8 @@ let vernac_assumption ~atts discharge kind l nl =
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
           match scope with
-            | Global _ -> Dumpglob.dump_definition lid false "ax"
-            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
+            | DeclareDef.Global _ -> Dumpglob.dump_definition lid false "ax"
+            | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   let status = ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 

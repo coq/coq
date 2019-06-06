@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Decl_kinds
 open Constrexpr
 open Vernacexpr
 
@@ -19,16 +18,16 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint_interactive :
-  scope:locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:DeclareDef.locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_fixpoint :
-  scope:locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> unit
+  scope:DeclareDef.locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint_interactive :
-  scope:locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:DeclareDef.locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_cofixpoint :
-  scope:locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> unit
+  scope:DeclareDef.locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
 (** Internal API  *)

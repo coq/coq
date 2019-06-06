@@ -74,11 +74,11 @@ module Info = struct
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
     ; other_thms : Recthm.t list
-    ; scope : Decl_kinds.locality
+    ; scope : DeclareDef.locality
     ; kind : Decl_kinds.goal_object_kind
     }
 
-  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=Global ImportDefaultBehavior) ?(kind=Proof Lemma) () =
+  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Proof Lemma) () =
     { hook
     ; compute_guard = []
     ; impargs = []
@@ -246,7 +246,7 @@ let default_thm_id = Id.of_string "Unnamed_thm"
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-     locality <> Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality <> DeclareDef.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -256,6 +256,7 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
   let k = IsAssumption Conjectural in
   match body with
   | None ->
+    let open DeclareDef in
       (match scope with
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
@@ -284,6 +285,7 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
         | _ ->
           anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
       let body_i = body_i body in
+      let open DeclareDef in
       match scope with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
@@ -476,6 +478,7 @@ let get_keep_admitted_vars =
     ~value:true
 
 let finish_admitted env sigma id ~poly ~scope pe ctx hook ~udecl impargs other_thms =
+  let open DeclareDef in
   let local = match scope with
   | Global local -> local
   | Discharge -> warn_let_as_axiom id; ImportNeedQualified
@@ -558,6 +561,7 @@ let finish_proved env sigma opaque idopt po info =
       let const = adjust_guardness_conditions const compute_guard in
       let k = Kindops.logical_kind_of_goal_kind kind in
       let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
+      let open DeclareDef in
       let r = match scope with
         | Discharge ->
           let c = SectionLocalDef const in

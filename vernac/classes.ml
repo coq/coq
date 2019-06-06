@@ -363,7 +363,7 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
   let hook = DeclareDef.Hook.make hook in
   let ctx = Evd.evar_universe_context sigma in
   ignore(Obligations.add_definition ~name:id ?term:constr
-           ~univdecl:decl ~scope:(Global ImportDefaultBehavior) ~poly ~kind:Instance ~hook typ ctx obls)
+           ~univdecl:decl ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly ~kind:Instance ~hook typ ctx obls)
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
@@ -372,7 +372,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
      the refinement manually.*)
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
-  let scope = Decl_kinds.(Global ImportDefaultBehavior) in
+  let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
   let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
   let hook = DeclareDef.Hook.make (fun _ _ _ -> instance_hook pri global imps ?hook) in
   let info = Lemmas.Info.make ~hook ~scope ~kind () in

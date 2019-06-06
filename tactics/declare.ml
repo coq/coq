@@ -33,6 +33,8 @@ type internal_flag =
   | InternalTacticRequest  (* kernel action, no message is displayed *)
   | UserIndividualRequest   (* user action, a message is displayed *)
 
+type import_status = ImportDefaultBehavior | ImportNeedQualified
+
 (** Declaration of constants and parameters *)
 
 type constant_obj = {

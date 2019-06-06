@@ -18,7 +18,7 @@ open Decl_kinds
 val do_assumptions
   :  program_mode:bool
   -> poly:polymorphic
-  -> scope:locality
+  -> scope:DeclareDef.locality
   -> kind:assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
@@ -29,7 +29,7 @@ val do_assumptions
 val declare_assumption
   : coercion_flag
   -> poly:bool
-  -> scope:Decl_kinds.locality
+  -> scope:DeclareDef.locality
   -> kind:assumption_object_kind
   -> Constr.types Entries.in_universes_entry
   -> UnivNames.universe_binders

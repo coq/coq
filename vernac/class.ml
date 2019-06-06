@@ -356,6 +356,7 @@ let try_add_new_coercion_with_source ref ~local poly ~source =
   try_add_new_coercion_core ref ~local poly (Some source) None false
 
 let add_coercion_hook poly _uctx _trans local ref =
+  let open DeclareDef in
   let local = match local with
   | Discharge -> assert false (* Local Coercion in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true
@@ -368,6 +369,7 @@ let add_coercion_hook poly _uctx _trans local ref =
 let add_coercion_hook poly = DeclareDef.Hook.make (add_coercion_hook poly)
 
 let add_subclass_hook poly _uctx _trans local ref =
+  let open DeclareDef in
   let stre = match local with
   | Discharge -> assert false (* Local Subclass in section behaves like Local Definition *)
   | Global ImportNeedQualified -> true

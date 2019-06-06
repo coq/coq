@@ -85,7 +85,7 @@ module Info : sig
     (** Callback to be executed at the end of the proof *)
     -> ?proof_ending : Proof_ending.t
     (** Info for special constants *)
-    -> ?scope : Decl_kinds.locality
+    -> ?scope : DeclareDef.locality
     (** locality  *)
     -> ?kind:goal_object_kind
     (** Theorem, etc... *)
@@ -119,7 +119,7 @@ type lemma_possible_guards = int list list
 val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
   -> poly:bool
-  -> scope:locality
+  -> scope:DeclareDef.locality
   -> kind:goal_object_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
@@ -134,7 +134,7 @@ val default_thm_id : Names.Id.t
 val start_lemma_com
   :  program_mode:bool
   -> poly:bool
-  -> scope:locality
+  -> scope:DeclareDef.locality
   -> kind:goal_object_kind
   -> ?inference_hook:Pretyping.inference_hook
   -> ?hook:DeclareDef.Hook.t

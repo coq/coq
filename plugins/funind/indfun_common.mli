@@ -47,7 +47,7 @@ val save
   -> Evd.side_effects Proof_global.proof_entry
   -> ?hook:DeclareDef.Hook.t
   -> UState.t
-  -> Decl_kinds.locality
+  -> DeclareDef.locality
   -> Decl_kinds.goal_object_kind
   -> unit
 

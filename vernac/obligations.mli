@@ -49,7 +49,7 @@ val add_definition
   -> ?univdecl:UState.universe_decl (* Universe binders and constraints *)
   -> ?implicits:Impargs.manual_implicits
   -> poly:bool
-  -> ?scope:Decl_kinds.locality
+  -> ?scope:DeclareDef.locality
   -> ?kind:Decl_kinds.definition_object_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
@@ -65,7 +65,7 @@ val add_mutual_definitions
   (** Universe binders and constraints *)
   -> ?tactic:unit Proofview.tactic
   -> poly:bool
-  -> ?scope:Decl_kinds.locality
+  -> ?scope:DeclareDef.locality
   -> ?kind:Decl_kinds.definition_object_kind
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t -> ?opaque:bool
