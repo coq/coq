@@ -36,3 +36,8 @@ Inductive Cor :=
 
 Set Positivity Checking.
 Print Assumptions Cor.
+
+Inductive Box :=
+| box : forall n, f n = n -> g 2 -> Box.
+
+Print Assumptions Box.

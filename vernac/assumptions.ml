@@ -313,13 +313,13 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
         if cb.const_typing_flags.check_guarded then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (Guarded kn, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.mkProp accu
       in
       let accu =
         if cb.const_typing_flags.check_universes then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-          ContextObjectMap.add (Axiom (TypeInType kn, l)) Constr.mkProp accu
+          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
       in
     if not (Declareops.constant_has_body cb) then
       let t = type_of_constant cb in
@@ -335,10 +335,24 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef (m,_) | ConstructRef ((m,_),_) ->
       let mind = lookup_mind m in
-      if mind.mind_typing_flags.check_positive then
-        accu
-      else
-        let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-        ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
-  in
-  GlobRef.Map_env.fold fold graph ContextObjectMap.empty
+      let accu =
+        if mind.mind_typing_flags.check_positive then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
+      in
+      let accu =
+        if mind.mind_typing_flags.check_guarded then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (Guarded obj, l)) Constr.mkProp accu
+      in
+      let accu =
+        if mind.mind_typing_flags.check_universes then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
+      in
+      accu
+
+  in GlobRef.Map_env.fold fold graph ContextObjectMap.empty
