@@ -28,15 +28,23 @@ type opaque
 val empty_opaquetab : opaquetab
 
 (** From a [proofterm] to some [opaque]. *)
-val create : proofterm -> opaque
+val create : univs:int -> proofterm -> opaque
 
 (** Turn a direct [opaque] into an indirect one. It is your responsibility to
   hashcons the inner term beforehand. The integer is an hint of the maximum id
   used so far *)
 val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
 
+type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
+  (Univ.Instance.t * Id.t array) Mindmap.t
+
+type cooking_info = {
+  modlist : work_list;
+  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
+
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> constr option;
+  access_discharge : cooking_info list -> int -> constr -> constr;
 }
 (** When stored indirectly, opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
@@ -51,23 +59,11 @@ val get_direct_constraints : opaque -> Univ.ContextSet.t Future.computation
 
 val subst_opaque : substitution -> opaque -> opaque
 
-type work_list = (Univ.Instance.t * Id.t array) Cmap.t * 
-  (Univ.Instance.t * Id.t array) Mindmap.t
-
-type cooking_info = { 
-  modlist : work_list; 
-  abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
-
-(* The type has two caveats:
-   1) cook_constr is defined after
-   2) we have to store the input in the [opaque] in order to be able to
-      discharge it when turning a .vi into a .vo *)
 val discharge_direct_opaque :
-  cook_constr:(constr -> constr) -> cooking_info -> opaque -> opaque
+  cooking_info -> opaque -> opaque
 
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
-  Constr.t option array *
-  cooking_info list array *
+  (cooking_info list * int * Constr.t option) array *
   int Future.UUIDMap.t

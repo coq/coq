@@ -176,9 +176,9 @@ let compile opts copts ~echo ~f_in ~f_out =
       Dumpglob.noglob ();
       let long_f_dot_vio, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
-      let sum, lib, univs, disch, tasks, proofs =
+      let sum, lib, univs, tasks, proofs =
         Library.load_library_todo long_f_dot_vio in
-      let univs, proofs = Stm.finish_tasks long_f_dot_vo univs disch proofs tasks in
+      let univs, proofs = Stm.finish_tasks long_f_dot_vo univs proofs tasks in
       Library.save_library_raw long_f_dot_vo sum lib univs proofs
 
 let compile opts copts ~echo ~f_in ~f_out =

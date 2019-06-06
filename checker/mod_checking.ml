@@ -8,12 +8,12 @@ open Environ
 
 (** {6 Checking constants } *)
 
-let get_proof = ref (fun _ _ -> assert false)
-let set_indirect_accessor f = get_proof := f
-
-let indirect_accessor = {
-  Opaqueproof.access_proof = (fun dp n -> !get_proof dp n);
+let indirect_accessor = ref {
+  Opaqueproof.access_proof = (fun _ _ -> assert false);
+  Opaqueproof.access_discharge = (fun _ _ _ -> assert false);
 }
+
+let set_indirect_accessor f = indirect_accessor := f
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose Feedback.msg_notice (str "  checking cst:" ++ Constant.print kn);
@@ -40,7 +40,7 @@ let check_constant_declaration env kn cb =
   let body = match cb.const_body with
   | Undef _ | Primitive _ -> None
   | Def c -> Some (Mod_subst.force_constr c)
-  | OpaqueDef o -> Some (Opaqueproof.force_proof indirect_accessor otab o)
+  | OpaqueDef o -> Some (Opaqueproof.force_proof !indirect_accessor otab o)
   in
   let () =
     match body with

@@ -51,7 +51,7 @@ let pr_path sp =
 type compilation_unit_name = DirPath.t
 
 type seg_univ = Univ.ContextSet.t * bool
-type seg_proofs = Constr.constr option array
+type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.constr option) array
 
 type library_t = {
   library_name : compilation_unit_name;
@@ -98,9 +98,19 @@ let access_opaque_table dp i =
     with Not_found -> assert false
   in
   assert (i < Array.length t);
-  t.(i)
+  let (info, n, c) = t.(i) in
+  match c with
+  | None -> None
+  | Some c -> Some (Cooking.cook_constr info n c)
 
-let () = Mod_checking.set_indirect_accessor access_opaque_table
+let access_discharge = Cooking.cook_constr
+
+let indirect_accessor = {
+  Opaqueproof.access_proof = access_opaque_table;
+  Opaqueproof.access_discharge = access_discharge;
+}
+
+let () = Mod_checking.set_indirect_accessor indirect_accessor
 
 let check_one_lib admit senv (dir,m) =
   let md = m.library_compiled in
@@ -327,7 +337,6 @@ let intern_from_file ~intern_mode (dir, f) =
       let (sd:summary_disk), _, digest = marshal_in_segment f ch in
       let (md:library_disk), _, digest = marshal_in_segment f ch in
       let (opaque_csts:seg_univ option), _, udg = marshal_in_segment f ch in
-      let (discharging:'a option), _, _ = marshal_in_segment f ch in
       let (tasks:'a option), _, _ = marshal_in_segment f ch in
       let (table:seg_proofs option), pos, checksum =
         marshal_or_skip ~intern_mode f ch in
@@ -340,7 +349,7 @@ let intern_from_file ~intern_mode (dir, f) =
       if dir <> sd.md_name then
         user_err ~hdr:"intern_from_file"
           (name_clash_message dir sd.md_name f);
-      if tasks <> None || discharging <> None then
+      if tasks <> None then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin

@@ -202,17 +202,21 @@ let lift_univs cb subst auctx0 =
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)
 
-let cook_constr { Opaqueproof.modlist ; abstract } c =
+let cook_constr { Opaqueproof.modlist ; abstract } (univs, c) =
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
-  (* For now the STM only handles deferred computation of monomorphic
-    constants. The API will need to be adapted when it's not the case
-    anymore. *)
-  let () = assert (AUContext.is_empty abs_ctx) in
+  let ainst = Instance.of_array (Array.init univs Level.var) in
+  let usubst = Instance.append usubst ainst in
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps in
-  abstract_constant_body (expmod c) hyps
+  let c = abstract_constant_body (expmod c) hyps in
+  univs + AUContext.size abs_ctx, c
+
+let cook_constr infos univs c =
+  let fold info (univs, c) = cook_constr info (univs, c) in
+  let (_, c) = List.fold_right fold infos (univs, c) in
+  c
 
 let cook_constant { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
@@ -227,7 +231,7 @@ let cook_constant { from = cb; info } =
   | Undef _ as x -> x
   | Def cs -> Def (Mod_subst.from_val (map (Mod_subst.force_constr cs)))
   | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:map info o)
+    OpaqueDef (Opaqueproof.discharge_direct_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
   let const_hyps =

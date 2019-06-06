@@ -1639,7 +1639,7 @@ and Slaves : sig
   val info_tasks : 'a tasks -> (string * float * int) list
   val finish_task :
     string ->
-    Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
+    Library.seg_univ -> Library.seg_proofs ->
     int tasks -> int -> Library.seg_univ
 
   val cancel_worker : WorkerPool.worker_id -> unit
@@ -1724,7 +1724,7 @@ end = struct (* {{{ *)
                       str (Printexc.to_string e)));
       if drop then `ERROR_ADMITTED else `ERROR
 
-  let finish_task name (cst,_) d p l i =
+  let finish_task name (cst,_) p l i =
     let { Stateid.uuid = bucket }, drop = List.nth l i in
     let bucket_name =
       if bucket < 0 then (assert drop; ", no bucket")
@@ -1734,7 +1734,6 @@ end = struct (* {{{ *)
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
     | `OK (po,_) ->
-        let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
           Nametab.locate_constant
             (Libnames.qualid_of_ident po.Proof_global.id) in
@@ -1746,12 +1745,14 @@ end = struct (* {{{ *)
            the call to [check_task_aux] above. *)
         let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
         let uc = Univ.hcons_universe_context_set uc in
+        let (pr, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
-        let map (c, ctx) = assert (Univ.AUContext.is_empty ctx); c in
-        let pr = map (Option.get (Global.body_of_constant_body Library.indirect_accessor c)) in
-        let pr = discharge pr in
+        let () = assert (Univ.AUContext.is_empty ctx) in
         let pr = Constr.hcons pr in
-        p.(bucket) <- Some pr;
+        let (ci, univs, dummy) = p.(bucket) in
+        let () = assert (Option.is_empty dummy) in
+        let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
+        p.(bucket) <- ci, univs, Some pr;
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
@@ -2747,11 +2748,11 @@ let check_task name (tasks,rcbackup) i =
   with e when CErrors.noncritical e -> VCS.restore vcs; false
 let info_tasks (tasks,_) = Slaves.info_tasks tasks
 
-let finish_tasks name u d p (t,rcbackup as tasks) =
+let finish_tasks name u p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
   let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    let u = State.purify (Slaves.finish_task name u d p t) i in
+    let u = State.purify (Slaves.finish_task name u p t) i in
     VCS.restore vcs;
     u in
   try

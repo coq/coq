@@ -749,9 +749,13 @@ let export_side_effects mb env (b_ctx, eff) =
      in
        translate_seff trusted seff [] env
 
+let n_univs cb = match cb.const_universes with
+| Monomorphic _ -> 0
+| Polymorphic auctx -> Univ.AUContext.size auctx
+
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create (Future.from_val p)) cb) in
+  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val p)) cb) in
   let bodies = List.map map exported in
   let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
@@ -778,7 +782,7 @@ let add_constant ?role ~in_section l decl senv =
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
     in
   let senv =
-    let cb = map_constant Opaqueproof.create cb in
+    let cb = map_constant (fun c -> Opaqueproof.create ~univs:(n_univs cb) c) cb in
     add_constant_aux ~in_section senv (kn, cb) in
   let senv =
     match decl with
