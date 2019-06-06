@@ -43,14 +43,14 @@ let should_axiom_into_instance = function
     true
   | Definitional | Logical | Conjectural -> !axiom_into_instance
 
-let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
-match local with
+let declare_assumption is_coe ~poly ~scope ~kind (c,ctx) pl imps impl nl {CAst.v=ident} =
+match scope with
 | Discharge ->
   let ctx = match ctx with
     | Monomorphic_entry ctx -> ctx
     | Polymorphic_entry (_, ctx) -> Univ.ContextSet.of_context ctx
   in
-  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),p,impl), IsAssumption kind) in
+  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),poly,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let r = VarRef ident in
@@ -78,7 +78,7 @@ match local with
   let sigma = Evd.from_env env in
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
   let local = match local with ImportNeedQualified -> true | ImportDefaultBehavior -> false in
-  let () = if is_coe then Class.try_add_new_coercion gr ~local p in
+  let () = if is_coe then Class.try_add_new_coercion gr ~local poly in
   let inst = match ctx with
     | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
     | Monomorphic_entry _ -> Univ.Instance.empty
@@ -96,11 +96,11 @@ let next_uctx =
   | Polymorphic_entry _ as uctx -> uctx
   | Monomorphic_entry _ -> empty_uctx
 
-let declare_assumptions idl is_coe k (c,uctx) pl imps nl =
+let declare_assumptions idl is_coe ~scope ~poly ~kind (c,uctx) pl imps nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-        declare_assumption is_coe k (c,uctx) pl imps false nl id in
+        declare_assumption is_coe ~scope ~poly ~kind (c,uctx) pl imps false nl id in
       (ref',u')::refs, status' && status, next_uctx uctx)
       ([],true,uctx) idl
   in
@@ -115,7 +115,7 @@ let maybe_error_many_udecls = function
           str "(which will be shared by the whole block).")
   | (_, None) -> ()
 
-let process_assumptions_udecls kind l =
+let process_assumptions_udecls ~scope l =
   let udecl, first_id = match l with
     | (coe, ((id, udecl)::rest, c))::rest' ->
       List.iter maybe_error_many_udecls rest;
@@ -123,8 +123,8 @@ let process_assumptions_udecls kind l =
       udecl, id
     | (_, ([], _))::_ | [] -> assert false
   in
-  let () = match kind, udecl with
-    | (Discharge, _, _), Some _ ->
+  let () = match scope, udecl with
+    | Discharge, Some _ ->
       let loc = first_id.CAst.loc in
       let msg = Pp.str "Section variables cannot be polymorphic." in
       user_err ?loc  msg
@@ -132,13 +132,13 @@ let process_assumptions_udecls kind l =
   in
   udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
 
-let do_assumptions ~program_mode kind nl l =
+let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
-  let udecl, l = process_assumptions_udecls kind l in
+  let udecl, l = process_assumptions_udecls ~scope l in
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let l =
-    if pi2 kind (* poly *) then
+    if poly then
       (* Separate declarations so that A B : Type puts A and B in different levels. *)
       List.fold_right (fun (is_coe,(idl,c)) acc ->
         List.fold_right (fun id acc ->
@@ -174,11 +174,11 @@ let do_assumptions ~program_mode kind nl l =
      IMO, thus I think we should adapt `prepare_parameter` to handle
      this case too. *)
   let sigma = Evd.restrict_universe_context sigma uvars in
-  let uctx = Evd.check_univ_decl ~poly:(pi2 kind) sigma udecl in
+  let uctx = Evd.check_univ_decl ~poly sigma udecl in
   let ubinders = Evd.universe_binders sigma in
   pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
       let t = replace_vars subst t in
-      let refs, status' = declare_assumptions  idl is_coe kind (t,uctx) ubinders imps nl in
+      let refs, status' = declare_assumptions idl is_coe ~poly ~scope ~kind (t,uctx) ubinders imps nl in
       let subst' = List.map2
           (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
@@ -288,17 +288,15 @@ let context poly l =
       | _ -> false
       in
       let impl = List.exists test impls in
-      let persistence =
+      let scope =
         if Lib.sections_are_opened () then Discharge else Global ImportDefaultBehavior in
-      let decl = (persistence, poly, Context) in
       let nstatus = match b with
       | None ->
-        pi3 (declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl
+        pi3 (declare_assumption false ~scope ~poly ~kind:Context (t, univs) UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
-        let decl = (Discharge, poly, Definition) in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _gr = DeclareDef.declare_definition id decl entry UnivNames.empty_binders [] in
+        let _gr = DeclareDef.declare_definition ~name:id ~scope:Discharge ~kind:Definition UnivNames.empty_binders entry [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
         status && nstatus

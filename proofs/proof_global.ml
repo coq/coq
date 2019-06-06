@@ -40,7 +40,6 @@ type proof_object =
   { id : Names.Id.t
   ; entries : Evd.side_effects proof_entry list
   ; poly : bool
-  ; persistence : Decl_kinds.goal_kind
   ; universes: UState.t
   ; udecl : UState.universe_decl
   }
@@ -52,14 +51,12 @@ type t =
   ; section_vars : Constr.named_context option
   ; proof : Proof.t
   ; udecl: UState.universe_decl
-  ; strength : Decl_kinds.goal_kind
   }
 
 (*** Proof Global manipulation ***)
 
 let get_proof ps = ps.proof
 let get_proof_name ps = (Proof.data ps.proof).Proof.name
-let get_persistence ps = ps.strength
 
 let map_proof f p = { p with proof = f p.proof }
 let map_fold_proof f p = let proof, res = f p.proof in { p with proof }, res
@@ -86,28 +83,23 @@ let compact_the_proof pf = map_proof Proof.compact pf
 let set_endline_tactic tac ps =
   { ps with endline_tactic = Some tac }
 
-(** [start_proof sigma id pl str goals] starts a proof of name
-    [id] with goals [goals] (a list of pairs of environment and
-    conclusion); [str] describes what kind of theorem/definition this
-    is (spiwack: for potential printing, I believe is used only by
-    closing commands and the xml plugin); [terminator] is used at the
-    end of the proof to close the proof. The proof is started in the
-    evar map [sigma] (which can typically contain universe
-    constraints), and with universe bindings pl. *)
-let start_proof ~name ~udecl ~poly ~kind sigma goals =
+(** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
+   name [name] with goals [goals] (a list of pairs of environment and
+   conclusion). The proof is started in the evar map [sigma] (which
+   can typically contain universe constraints), and with universe
+   bindings [udecl]. *)
+let start_proof ~name ~udecl ~poly sigma goals =
   { proof = Proof.start ~name ~poly sigma goals
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
-  ; strength = kind
   }
 
-let start_dependent_proof ~name ~udecl ~poly ~kind goals =
+let start_dependent_proof ~name ~udecl ~poly goals =
   { proof = Proof.dependent_start ~name ~poly goals
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
-  ; strength = kind
   }
 
 let get_used_variables pf = pf.section_vars
@@ -162,7 +154,7 @@ let private_poly_univs =
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) ps =
-  let { section_vars; proof; udecl; strength } = ps in
+  let { section_vars; proof; udecl } = ps in
   let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
@@ -256,7 +248,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       proof_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { id = name; entries = entries; poly; persistence = strength; universes; udecl }
+  { id = name; entries = entries; poly; universes; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in

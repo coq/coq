@@ -16,8 +16,10 @@ open Decl_kinds
 (** {6 Parameters/Assumptions} *)
 
 val do_assumptions
-  : program_mode:bool
-  -> locality * polymorphic * assumption_object_kind
+  :  program_mode:bool
+  -> poly:polymorphic
+  -> scope:locality
+  -> kind:assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
   -> bool
@@ -26,7 +28,9 @@ val do_assumptions
     nor in a module type and meant to be instantiated. *)
 val declare_assumption
   : coercion_flag
-  -> assumption_kind
+  -> poly:bool
+  -> scope:Decl_kinds.locality
+  -> kind:assumption_object_kind
   -> Constr.types Entries.in_universes_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits

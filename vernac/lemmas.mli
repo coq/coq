@@ -85,6 +85,10 @@ module Info : sig
     (** Callback to be executed at the end of the proof *)
     -> ?proof_ending : Proof_ending.t
     (** Info for special constants *)
+    -> ?scope : Decl_kinds.locality
+    (** locality  *)
+    -> ?kind:goal_object_kind
+    (** Theorem, etc... *)
     -> unit
     -> t
 
@@ -94,7 +98,6 @@ end
 val start_lemma
   :  name:Id.t
   -> poly:bool
-  -> kind:goal_kind
   -> ?udecl:UState.universe_decl
   -> ?sign:Environ.named_context_val
   -> ?info:Info.t
@@ -105,7 +108,6 @@ val start_lemma
 val start_dependent_lemma
   :  name:Id.t
   -> poly:bool
-  -> kind:goal_kind
   -> ?udecl:UState.universe_decl
   -> ?info:Info.t
   -> Proofview.telescope
@@ -117,7 +119,8 @@ type lemma_possible_guards = int list list
 val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
   -> poly:bool
-  -> kind:goal_kind
+  -> scope:locality
+  -> kind:goal_object_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
   -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
@@ -131,7 +134,8 @@ val default_thm_id : Names.Id.t
 val start_lemma_com
   :  program_mode:bool
   -> poly:bool
-  -> kind:goal_kind
+  -> scope:locality
+  -> kind:goal_object_kind
   -> ?inference_hook:Pretyping.inference_hook
   -> ?hook:DeclareDef.Hook.t
   -> Vernacexpr.proof_expr list

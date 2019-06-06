@@ -255,7 +255,7 @@ let interp_fixpoint ~cofix l ntns =
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 
-let declare_fixpoint_interactive_generic ?indexes local poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
+let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
   let fix_kind, cofix, indexes = match indexes with
     | Some indexes -> Fixpoint, false, indexes
     | None -> CoFixpoint, true, []
@@ -269,13 +269,13 @@ let declare_fixpoint_interactive_generic ?indexes local poly ((fixnames,_fixrs,f
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) fixdefs) in
   let evd = Evd.from_ctx ctx in
   let lemma =
-    Lemmas.start_lemma_with_initialization ~poly ~kind:(local,DefinitionBody fix_kind) ~udecl
+    Lemmas.start_lemma_with_initialization ~poly ~scope ~kind:(DefinitionBody fix_kind) ~udecl
       evd (Some(cofix,indexes,init_tac)) thms None in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   lemma
 
-let declare_fixpoint_generic ?indexes local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
+let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   let indexes, cofix, fix_kind =
     match indexes with
     | Some indexes -> indexes, false, Fixpoint
@@ -303,7 +303,7 @@ let declare_fixpoint_generic ?indexes local poly ((fixnames,fixrs,fixdefs,fixtyp
   let pl = Evd.universe_binders evd in
   let mk_pure c = (c, Univ.ContextSet.empty), Evd.empty_side_effects in
   let fixdecls = List.map mk_pure fixdecls in
-  ignore (List.map4 (DeclareDef.declare_fix (local, poly, fix_kind) pl ctx)
+  ignore (List.map4 (fun name -> DeclareDef.declare_fix ~name ~scope ~kind:fix_kind pl ctx)
             fixnames fixdecls fixtypes fiximps);
   recursive_message (not cofix) gidx fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
@@ -351,28 +351,28 @@ let do_fixpoint_common l =
   let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl ntns in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
-let do_fixpoint_interactive local poly l : Lemmas.t =
+let do_fixpoint_interactive ~scope ~poly l : Lemmas.t =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
-  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes local poly fix ntns in
+  let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly fix ntns in
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   lemma
 
-let do_fixpoint local poly l =
+let do_fixpoint ~scope ~poly l =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
-  declare_fixpoint_generic ~indexes:possible_indexes local poly fix ntns;
+  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly fix ntns;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
 let do_cofixpoint_common l =
   let fixl,ntns = extract_cofixpoint_components l in
   ntns, interp_fixpoint ~cofix:true fixl ntns
 
-let do_cofixpoint_interactive local poly l =
+let do_cofixpoint_interactive ~scope ~poly l =
   let ntns, cofix = do_cofixpoint_common l in
-  let lemma = declare_fixpoint_interactive_generic local poly cofix ntns in
+  let lemma = declare_fixpoint_interactive_generic ~scope ~poly cofix ntns in
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   lemma
 
-let do_cofixpoint local poly l =
+let do_cofixpoint ~scope ~poly l =
   let ntns, cofix = do_cofixpoint_common l in
-  declare_fixpoint_generic local poly cofix ntns;
+  declare_fixpoint_generic ~scope ~poly cofix ntns;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()

@@ -58,16 +58,11 @@ type assumption_object_kind = Definitional | Logical | Conjectural | Context
    Logical      |  Hypothesis | Axiom
 
 *)
-type assumption_kind = locality * polymorphic * assumption_object_kind
-type definition_kind = locality * polymorphic * definition_object_kind
-
 (** Kinds used in proofs *)
 
 type goal_object_kind =
   | DefinitionBody of definition_object_kind
   | Proof of theorem_kind
-
-type goal_kind = locality * goal_object_kind
 
 (** Kinds used in library *)
 

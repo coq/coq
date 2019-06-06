@@ -19,16 +19,16 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint_interactive :
-  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_fixpoint :
-  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
+  scope:locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint_interactive :
-  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_cofixpoint :
-  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
+  scope:locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
 (** Internal API  *)

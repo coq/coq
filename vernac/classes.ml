@@ -362,9 +362,8 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
   in
   let hook = DeclareDef.Hook.make hook in
   let ctx = Evd.evar_universe_context sigma in
-  ignore(Obligations.add_definition id ?term:constr
-           ~univdecl:decl typ ctx ~kind:(Global ImportDefaultBehavior,poly,Instance) ~hook obls)
-
+  ignore(Obligations.add_definition ~name:id ?term:constr
+           ~univdecl:decl ~scope:(Global ImportDefaultBehavior) ~poly ~kind:Instance ~hook typ ctx obls)
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
@@ -373,10 +372,11 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
      the refinement manually.*)
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
-  let kind = Decl_kinds.Global ImportDefaultBehavior, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+  let scope = Decl_kinds.(Global ImportDefaultBehavior) in
+  let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
   let hook = DeclareDef.Hook.make (fun _ _ _ -> instance_hook pri global imps ?hook) in
-  let info = Lemmas.Info.make ~hook () in
-  let lemma = Lemmas.start_lemma ~name:id ~poly ~kind ~udecl ~info sigma (EConstr.of_constr termtype) in
+  let info = Lemmas.Info.make ~hook ~scope ~kind () in
+  let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma (EConstr.of_constr termtype) in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     if not (Option.is_empty term) then

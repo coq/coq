@@ -40,21 +40,23 @@ module Hook : sig
 end
 
 val declare_definition
-  : Id.t
-  -> definition_kind
+  :  name:Id.t
+  -> scope:locality
+  -> kind:definition_object_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> Evd.side_effects Proof_global.proof_entry
   -> UnivNames.universe_binders
+  -> Evd.side_effects Proof_global.proof_entry
   -> Impargs.manual_implicits
   -> GlobRef.t
 
 val declare_fix
-  : ?opaque:bool
+  :  ?opaque:bool
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> definition_kind
+  -> name:Id.t
+  -> scope:locality
+  -> kind:definition_object_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry
-  -> Id.t
   -> Evd.side_effects Entries.proof_output
   -> Constr.types
   -> Impargs.manual_implicits

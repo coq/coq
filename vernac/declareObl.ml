@@ -48,7 +48,9 @@ type program_info =
   ; prg_fixkind : fixpoint_kind option
   ; prg_implicits : Impargs.manual_implicits
   ; prg_notations : notations
-  ; prg_kind : definition_kind
+  ; prg_poly : bool
+  ; prg_scope : locality
+  ; prg_kind : definition_object_kind
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
@@ -146,7 +148,7 @@ let declare_obligation prg obl body ty uctx =
   | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
   | force, Evar_kinds.Define opaque ->
     let opaque = (not force) && opaque in
-    let poly = pi2 prg.prg_kind in
+    let poly = prg.prg_poly in
     let ctx, body, ty, args =
       if get_shrink_obligations () && not poly then shrink_body body ty
       else ([], body, ty, [||])
@@ -355,13 +357,14 @@ let declare_definition prg =
   in
   let uctx = UState.restrict prg.prg_ctx uvars in
   let univs =
-    UState.check_univ_decl ~poly:(pi2 prg.prg_kind) uctx prg.prg_univdecl
+    UState.check_univ_decl ~poly:prg.prg_poly uctx prg.prg_univdecl
   in
   let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition prg.prg_name prg.prg_kind ce ubinders
+  DeclareDef.declare_definition
+    ~name:prg.prg_name ~scope:prg.prg_scope ubinders ~kind:prg.prg_kind ce
     prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
@@ -418,7 +421,6 @@ let declare_mutual_definition l =
   let rvec = Array.of_list fixrs in
   let namevec = Array.of_list (List.map (fun x -> Name x.prg_name) l) in
   let fixdecls = (Array.map2 make_annot namevec rvec, arrrec, recvec) in
-  let local, poly, kind = first.prg_kind in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in
   let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
@@ -438,12 +440,14 @@ let declare_mutual_definition l =
       (None, List.map_i (fun i _ -> mk_proof (mkCoFix (i, fixdecls))) 0 l)
   in
   (* Declare the recursive definitions *)
+  let poly = first.prg_poly in
+  let scope = first.prg_scope in
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kns =
     List.map4
-      (DeclareDef.declare_fix ~opaque (local, poly, kind)
-         UnivNames.empty_binders univs)
+      (fun name -> DeclareDef.declare_fix ~name ~opaque ~scope ~kind
+          UnivNames.empty_binders univs)
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)
@@ -452,7 +456,7 @@ let declare_mutual_definition l =
     first.prg_notations;
   Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
   let gr = List.hd kns in
-  DeclareDef.Hook.call ?hook:first.prg_hook ~fix_exn first.prg_ctx obls local gr;
+  DeclareDef.Hook.call ?hook:first.prg_hook ~fix_exn first.prg_ctx obls scope gr;
   List.iter progmap_remove l;
   gr
 
@@ -523,15 +527,15 @@ let obligation_terminator opq entries uctx { name; num; auto } =
     in
     let obl = { obl with obl_status = false, status } in
     let ctx =
-      if pi2 prg.prg_kind then ctx
+      if prg.prg_poly then ctx
       else UState.union prg.prg_ctx ctx
     in
-    let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+    let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
     let obls = Array.copy obls in
     let () = obls.(num) <- obl in
     let prg_ctx =
-      if pi2 (prg.prg_kind) then (* Polymorphic *)
+      if prg.prg_poly then (* Polymorphic *)
         (* We merge the new universes and constraints of the
            polymorphic obligation with the existing ones *)
         UState.union prg.prg_ctx ctx

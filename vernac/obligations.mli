@@ -43,12 +43,14 @@ type obligation_info =
 val default_tactic : unit Proofview.tactic ref
 
 val add_definition
-  :  Names.Id.t
+  :  name:Names.Id.t
   -> ?term:constr -> types
   -> UState.t
   -> ?univdecl:UState.universe_decl (* Universe binders and constraints *)
   -> ?implicits:Impargs.manual_implicits
-  -> ?kind:Decl_kinds.definition_kind
+  -> poly:bool
+  -> ?scope:Decl_kinds.locality
+  -> ?kind:Decl_kinds.definition_object_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t
@@ -56,16 +58,19 @@ val add_definition
   -> obligation_info
   -> DeclareObl.progress
 
-val add_mutual_definitions :
-  (Names.Id.t * constr * types * Impargs.manual_implicits * obligation_info) list ->
-  UState.t ->
-  ?univdecl:UState.universe_decl -> (* Universe binders and constraints *)
-  ?tactic:unit Proofview.tactic ->
-  ?kind:Decl_kinds.definition_kind ->
-  ?reduce:(constr -> constr) ->
-  ?hook:DeclareDef.Hook.t -> ?opaque:bool ->
-  DeclareObl.notations ->
-  DeclareObl.fixpoint_kind -> unit
+val add_mutual_definitions
+  : (Names.Id.t * constr * types * Impargs.manual_implicits * obligation_info) list
+  -> UState.t
+  -> ?univdecl:UState.universe_decl
+  (** Universe binders and constraints *)
+  -> ?tactic:unit Proofview.tactic
+  -> poly:bool
+  -> ?scope:Decl_kinds.locality
+  -> ?kind:Decl_kinds.definition_object_kind
+  -> ?reduce:(constr -> constr)
+  -> ?hook:DeclareDef.Hook.t -> ?opaque:bool
+  -> DeclareObl.notations
+  -> DeclareObl.fixpoint_kind -> unit
 
 val obligation
   :  int * Names.Id.t option * Constrexpr.constr_expr option

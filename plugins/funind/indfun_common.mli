@@ -47,7 +47,8 @@ val save
   -> Evd.side_effects Proof_global.proof_entry
   -> ?hook:DeclareDef.Hook.t
   -> UState.t
-  -> Decl_kinds.goal_kind
+  -> Decl_kinds.locality
+  -> Decl_kinds.goal_object_kind
   -> unit
 
 (* [with_full_print f a] applies [f] to [a] in full printing environment.

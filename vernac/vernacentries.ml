@@ -560,7 +560,7 @@ let () =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ~program_mode ~poly ?hook k l =
+let start_proof_and_print ~program_mode ~poly ?hook ~scope ~kind l =
   let inference_hook =
     if program_mode then
       let hook env sigma ev =
@@ -582,7 +582,7 @@ let start_proof_and_print ~program_mode ~poly ?hook k l =
       in Some hook
     else None
   in
-  start_lemma_com ~program_mode ?inference_hook ?hook ~poly ~kind:k l
+  start_lemma_com ~program_mode ?inference_hook ?hook ~poly ~scope ~kind l
 
 let vernac_definition_hook p = function
 | Coercion ->
@@ -616,30 +616,30 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
-  start_proof_and_print ~program_mode ~poly (local, DefinitionBody kind) ?hook [(name, pl), (bl, t)]
+  start_proof_and_print ~program_mode ~poly ~scope:local ~kind:(DefinitionBody kind) ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
+  let scope = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook atts.polymorphic kind in
   let program_mode = atts.program in
-  let name = vernac_definition_name lid local in
+  let name = vernac_definition_name lid scope in
   let red_option = match red_option with
     | None -> None
     | Some r ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
-  ComDefinition.do_definition ~program_mode name.v
-    (local, atts.polymorphic, kind) pl bl red_option c typ_opt ?hook
+  ComDefinition.do_definition ~program_mode ~name:name.v
+    ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
 
 (* NB: pstate argument to use combinators easily *)
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality NoDischarge in
+  let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic (local, Proof kind) l
+  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Proof kind) l
 
 let vernac_end_proof ?stack ?proof = let open Vernacexpr in function
   | Admitted ->
@@ -666,15 +666,14 @@ let vernac_exact_proof ~lemma c =
 
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
-  let local = enforce_locality_exp atts.locality discharge in
-  let kind = local, atts.polymorphic, kind in
+  let scope = enforce_locality_exp atts.locality discharge in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
-          match local with
+          match scope with
             | Global _ -> Dumpglob.dump_definition lid false "ax"
             | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
+  let status = ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let is_polymorphic_inductive_cumulativity =
@@ -847,19 +846,19 @@ let vernac_fixpoint_common ~atts discharge l =
 
 let vernac_fixpoint_interactive ~atts discharge l =
   let open DefAttributes in
-  let local = vernac_fixpoint_common ~atts discharge l in
+  let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
     CErrors.user_err Pp.(str"Program Fixpoint requires a body");
-  ComFixpoint.do_fixpoint_interactive local atts.polymorphic l
+  ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic l
 
 let vernac_fixpoint ~atts discharge l =
   let open DefAttributes in
-  let local = vernac_fixpoint_common ~atts discharge l in
+  let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint local atts.polymorphic l
+    ComProgramFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l
   else
-    ComFixpoint.do_fixpoint local atts.polymorphic l
+    ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l
 
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
@@ -868,18 +867,18 @@ let vernac_cofixpoint_common ~atts discharge l =
 
 let vernac_cofixpoint_interactive ~atts discharge l =
   let open DefAttributes in
-  let local = vernac_cofixpoint_common ~atts discharge l in
+  let scope = vernac_cofixpoint_common ~atts discharge l in
   if atts.program then
     CErrors.user_err Pp.(str"Program CoFixpoint requires a body");
-  ComFixpoint.do_cofixpoint_interactive local atts.polymorphic l
+  ComFixpoint.do_cofixpoint_interactive ~scope ~poly:atts.polymorphic l
 
 let vernac_cofixpoint ~atts discharge l =
   let open DefAttributes in
-  let local = vernac_cofixpoint_common ~atts discharge l in
+  let scope = vernac_cofixpoint_common ~atts discharge l in
   if atts.program then
-    ComProgramFixpoint.do_cofixpoint local atts.polymorphic l
+    ComProgramFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l
   else
-    ComFixpoint.do_cofixpoint local atts.polymorphic l
+    ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l
 
 let vernac_scheme l =
   if Dumpglob.dump () then

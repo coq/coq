@@ -59,11 +59,10 @@ val use_unification_heuristics : unit -> bool
     tactic. *)
 
 val build_constant_by_tactic
-  :  Id.t
+  :  name:Id.t
   -> UState.t
   -> named_context_val
   -> poly:bool
-  -> ?goal_kind:goal_kind
   -> EConstr.types
   -> unit Proofview.tactic
   -> Evd.side_effects Proof_global.proof_entry * bool * UState.t

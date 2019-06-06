@@ -990,13 +990,17 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
       ]
   in
   (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
+  let info = Lemmas.Info.make
+      ~scope:Decl_kinds.(Global ImportDefaultBehavior)
+      ~kind:(Decl_kinds.Proof Decl_kinds.Theorem) () in
+
   let lemma = Lemmas.start_lemma
     (*i The next call to mk_equation_id is valid since we are constructing the lemma
       Ensures by: obvious
       i*)
       ~name:(mk_equation_id f_id)
       ~poly:false
-      ~kind:(Decl_kinds.(Global ImportDefaultBehavior, Proof Theorem))
+      ~info
       evd
       lemma_type
   in

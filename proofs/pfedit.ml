@@ -112,14 +112,12 @@ let by tac = Proof_global.map_fold_proof (solve (Goal_select.SelectNth 1) None t
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
 
-open Decl_kinds
-
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic id ctx sign ~poly ?(goal_kind = Global ImportDefaultBehavior, Proof Theorem) typ tac =
+let build_constant_by_tactic ~name ctx sign ~poly typ tac =
   let evd = Evd.from_ctx ctx in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = Proof_global.start_proof ~name:id ~poly ~udecl:UState.default_univ_decl ~kind:goal_kind evd goals in
+  let pf = Proof_global.start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in
@@ -135,11 +133,9 @@ let build_constant_by_tactic id ctx sign ~poly ?(goal_kind = Global ImportDefaul
     iraise reraise
 
 let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
-  let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
+  let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
-  let gk = Global ImportDefaultBehavior, Proof Theorem in
-  let ce, status, univs =
-    build_constant_by_tactic id sigma sign ~poly ~goal_kind:gk typ tac in
+  let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in
   let body, eff = Future.force ce.Proof_global.proof_entry_body in
   let (cb, ctx) =
     if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)

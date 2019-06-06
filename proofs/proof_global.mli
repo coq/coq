@@ -17,7 +17,6 @@ type t
 (* Should be moved into a proper view *)
 val get_proof : t -> Proof.t
 val get_proof_name : t -> Names.Id.t
-val get_persistence : t -> Decl_kinds.goal_kind
 val get_used_variables : t -> Constr.named_context option
 
 (** Get the universe declaration associated to the current proof. *)
@@ -47,7 +46,6 @@ type proof_object =
   { id : Names.Id.t
   ; entries : Evd.side_effects proof_entry list
   ; poly : bool
-  ; persistence : Decl_kinds.goal_kind
   ; universes: UState.t
   ; udecl : UState.universe_decl
   }
@@ -66,7 +64,6 @@ val start_proof
   :  name:Names.Id.t
   -> udecl:UState.universe_decl
   -> poly:bool
-  -> kind:Decl_kinds.goal_kind
   -> Evd.evar_map
   -> (Environ.env * EConstr.types) list
   -> t
@@ -77,7 +74,6 @@ val start_dependent_proof
   :  name:Names.Id.t
   -> udecl:UState.universe_decl
   -> poly:bool
-  -> kind:Decl_kinds.goal_kind
   -> Proofview.telescope
   -> t
 
