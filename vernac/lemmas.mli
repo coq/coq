@@ -51,6 +51,12 @@ module Proof_ending : sig
     | Regular
     | End_obligation of DeclareObl.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of { hook : Constant.t list -> Evd.evar_map -> unit
+                       ; i : Id.t
+                       ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+                       ; wits : EConstr.t list ref
+                       ; sigma : Evd.evar_map
+                       }
 
 end
 
