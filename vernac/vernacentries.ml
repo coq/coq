@@ -574,12 +574,15 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
   ComDefinition.do_definition ~program_mode ~name:name.v
     ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
 
-(* NB: pstate argument to use combinators easily *)
+let warn_lemma_with = CWarnings.create ~name:"deprecated-lemma-with" ~category:"deprecated"
+    Pp.(fun () -> str"Lemma ... with ..., Theorem ... with ... and aliases are deprecated. Use Fixpoint instead.")
+
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
+  (match l with _::_::_ -> warn_lemma_with () | _ -> ());
   start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
