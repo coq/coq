@@ -128,6 +128,7 @@ module Options = struct
   [ { enabled = false; cmd = "-debug"; }
   ; { enabled = false; cmd = "-native_compiler"; }
   ; { enabled = true; cmd = "-allow-sprop"; }
+  ; { enabled = true; cmd = "-w +default"; }
   ]
 
   let build_coq_flags () =
