@@ -2407,8 +2407,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               (* State resulting from reach *)
               let st = Vernacstate.freeze_interp_state ~marshallable:false in
               ignore(stm_vernac_interp id st x)
-            );
-	    if eff then update_global_env ()
+            )
           ), eff || cache, true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
           (match !cur_opt.async_proofs_mode with
@@ -2416,8 +2415,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
              resilient_command reach view.next
            | APoff -> reach view.next);
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
-          ignore(stm_vernac_interp id st x);
-          if eff then update_global_env ()
+          ignore(stm_vernac_interp id st x)
         ), eff || cache, true
       | `Fork ((x,_,_,_), None) -> (fun () ->
             resilient_command reach view.next;
@@ -2541,8 +2539,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
       | `Sideff (ReplayCommand x,_) -> (fun () ->
             reach view.next;
             let st = Vernacstate.freeze_interp_state ~marshallable:false in
-            ignore(stm_vernac_interp id st x);
-            update_global_env ()
+            ignore(stm_vernac_interp id st x)
           ), cache, true
       | `Sideff (CherryPickEnv, origin) -> (fun () ->
             reach view.next;

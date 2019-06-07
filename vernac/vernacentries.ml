@@ -2755,7 +2755,10 @@ and vernac_load ~verbosely ~st fname =
 
 and interp_control ?proof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->
-    interp_expr ?proof ~atts ~st cmd
+    let before_univs = Global.universes () in
+    let pstack = interp_expr ?proof ~atts ~st cmd in
+    if before_univs == Global.universes () then pstack
+    else Option.map (Lemmas.Stack.map_top_pstate ~f:Proof_global.update_global_env) pstack
   | { v=VernacFail v } ->
     with_fail ~st (fun () -> interp_control ?proof ~st v);
     st.Vernacstate.lemmas
