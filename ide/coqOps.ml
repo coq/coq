@@ -732,6 +732,7 @@ object(self)
       let start = self#get_start_of_input in
       let stop = self#get_end_of_input in
       Minilib.log(Printf.sprintf "cleanup tags %d %d" start#offset stop#offset);
+      buffer#remove_tag Tags.Script.sentence ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.processed ~start ~stop;
       buffer#remove_tag Tags.Script.incomplete ~start ~stop;
