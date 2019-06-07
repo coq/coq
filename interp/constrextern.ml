@@ -1008,7 +1008,7 @@ and factorize_prod scopes vars na ?impargs aty c =
       let c = extern_typ scopes ?impargs:impargs_tl vars c in
       match na, c.v with
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when (* binding_kind_eq bk bk' &&  *)constr_expr_eq aty ty
+           when binding_kind_eq bk bk' && constr_expr_eq aty ty
                 && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
          CProdN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
       | _, CProdN (bl,b) ->

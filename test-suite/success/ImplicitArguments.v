@@ -21,6 +21,20 @@ Inductive vector [A : Type] : nat -> Type :=
 Check vector.
 Arguments vector A : clear implicits.
 
+Axiom bla : `{nat} -> Set.
+
+Axiom foo' : forall (x y a z t : nat), x + y + z = t.
+
+Set Printing All.
+
+Arguments foo' {_} _ {_} [z] {t}.
+Check (foo' 1).
+Arguments foo' {_} {_} _ [z] [t].
+
+
+Check (foo 1).
+
+
 
 Definition foo6 (x:=1) : forall {n:nat}, n=n := fun n => eq_refl.
 
