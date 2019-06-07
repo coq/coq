@@ -645,7 +645,7 @@ let subst_univs_context_with_def def usubst (ctx, cst) =
   (LSet.diff ctx def, UnivSubst.subst_univs_constraints usubst cst)
 
 let is_trivial_leq (l,d,r) =
-  Level.is_prop l && (d == Le || (d == Lt && Level.is_set r))
+  Level.is_prop l && (d == Le || d == Lt) && Level.is_set r
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =

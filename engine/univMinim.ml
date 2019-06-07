@@ -268,17 +268,21 @@ let minimize_univ_variables ctx us algs left right cstrs =
 module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
+let is_small ~lbound u =
+  Level.is_sprop u || Level.is_prop u || Level.equal lbound u
+
 (* TODO check is_small/sprop *)
 let normalize_context_set ~lbound g ctx us algs weak =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
-    Constraint.partition (fun (l,d,r) -> d == Le && (Level.equal l lbound || Level.is_sprop l)) csts
+    Constraint.partition (fun (l,d,r) -> d == Le && Level.is_small l) csts
   in
   let smallles = if get_set_minimization ()
-    then Constraint.filter (fun (l,d,r) -> LMap.mem r us && not (Level.is_sprop l)) smallles
+    then Constraint.filter (fun (l,d,r) -> LMap.mem r us && not (is_small ~lbound l)) smallles
     else Constraint.empty
   in
+  let smallles = Constraint.map (fun (_,_,r) -> Level.set, Le, r) smallles in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
