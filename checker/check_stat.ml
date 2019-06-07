@@ -31,14 +31,31 @@ let pr_engagement env =
     | PredicativeSet -> str "Theory: Set is predicative"
   end
 
-let is_ax _ cb = not (Declareops.constant_has_body cb)
 
-let pr_ax env =
-  let axs = fold_constants (fun c ce acc -> if is_ax c ce then c::acc else acc) env [] in
+let pr_assumptions ass axs =
   if axs = [] then
-    str "Axioms: <none>"
+    str ass ++ str ": <none>"
   else
-    hv 2 (str "Axioms:" ++ fnl() ++ prlist_with_sep fnl Constant.print axs)
+    hv 2 (str ass ++ str ":" ++ fnl() ++ prlist_with_sep fnl str axs)
+
+let pr_axioms env =
+  let csts = fold_constants (fun c cb acc -> if not (Declareops.constant_has_body cb) then Constant.to_string c :: acc else acc) env [] in
+  pr_assumptions "Axioms" csts
+
+let pr_type_in_type env =
+  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_universes then Constant.to_string c :: acc else acc) env [] in
+  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_universes then MutInd.to_string c :: acc else acc) env csts in
+  pr_assumptions "Constants/Inductives relying on type-in-type" csts
+
+let pr_unguarded env =
+  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_guarded then Constant.to_string c :: acc else acc) env [] in
+  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_guarded then MutInd.to_string c :: acc else acc) env csts in
+  pr_assumptions "Constants/Inductives relying on unsafe (co)fixpoints" csts
+
+let pr_nonpositive env =
+  let inds = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_positive then MutInd.to_string c :: acc else acc) env [] in
+  pr_assumptions "Inductives whose positivity is assumed" inds
+
 
 let print_context env =
   if !output_context then begin
@@ -47,7 +64,10 @@ let print_context env =
       (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engagement env ++ fnl()) ++ fnl() ++
-      str "* " ++ hov 0 (pr_ax env)));
+      str "* " ++ hov 0 (pr_axioms env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_nonpositive env)))
   end
 
 let stats env =

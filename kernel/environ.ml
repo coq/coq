@@ -216,6 +216,9 @@ let lookup_named_ctxt id ctxt =
 let fold_constants f env acc =
   Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.env_constants acc
 
+let fold_inductives f env acc =
+  Mindmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.env_inductives acc
+
 (* Global constants *)
 
 let lookup_constant_key kn env =
