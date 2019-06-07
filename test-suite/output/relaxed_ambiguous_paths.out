@@ -1,5 +1,7 @@
 File "stdin", line 10, characters 0-28:
-Warning: Ambiguous paths: [ac; cd] : A >-> D [ambiguous-paths,typechecker]
+Warning:
+New coercion path [ac; cd] : A >-> D is ambiguous with existing 
+[ab; bd] : A >-> D. [ambiguous-paths,typechecker]
 [ab] : A >-> B
 [ab; bd] : A >-> D
 [ac] : A >-> C
@@ -20,8 +22,9 @@ Warning: Ambiguous paths: [ac; cd] : A >-> D [ambiguous-paths,typechecker]
 [D_B] : D >-> B
 [D_C] : D >-> C
 File "stdin", line 103, characters 0-86:
-Warning: Ambiguous paths: [D_C; C_A'] : D >-> A'
-[ambiguous-paths,typechecker]
+Warning:
+New coercion path [D_C; C_A'] : D >-> A' is ambiguous with existing 
+[D_B; B_A'] : D >-> A'. [ambiguous-paths,typechecker]
 [A'_A] : A' >-> A
 [B_A'] : B >-> A'
 [B_A'; A'_A] : B >-> A
