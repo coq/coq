@@ -1060,10 +1060,19 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+(* Wrapper for the proof-closing special path for Qed *)
+let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc pending : Vernacstate.t =
+  set_id_for_feedback ?route dummy_doc id;
+  try
+    Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc pending
+  with e ->
+    let e = CErrors.push e in
+    Exninfo.iraise Hooks.(call_process_error_once e)
+
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
    reduced... *)
-let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
+let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
   (* The Stm will gain the capability to interpret commmads affecting
      the whole document state, such as backtrack, etc... so we start
      to design the stm command interpreter now *)
@@ -1085,7 +1094,7 @@ let stm_vernac_interp ?proof ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    try Vernacentries.interp ?verbosely:(Some verbose) ?proof ~st expr
+    try Vernacentries.interp ?verbosely:(Some verbose) ~st expr
     with e ->
       let e = CErrors.push e in
       Exninfo.iraise Hooks.(call_process_error_once e)
@@ -1536,10 +1545,8 @@ end = struct (* {{{ *)
             PG_compat.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
-          stm_vernac_interp stop
-            ~proof:(pobject, Lemmas.Info.make ()) st
-            { verbose = false; indentation = 0; strlen = 0;
-              expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
+          stm_qed_delay_proof ~st ~id:stop
+            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc (Proved (opaque,None))) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1674,10 +1681,10 @@ end = struct (* {{{ *)
       let opaque = Proof_global.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
-      let pterm, _info =
+      let proof, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
 
-      let proof = pterm, Lemmas.Info.make () in
+      let info = Lemmas.Info.make () in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
@@ -1690,9 +1697,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_vernac_interp stop ~proof st
-        { verbose = false; indentation = 0; strlen = 0;
-          expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) });
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc (Proved (opaque,None)));
       `OK proof
       end
     with e ->
@@ -1732,10 +1737,8 @@ end = struct (* {{{ *)
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK (po,_) ->
-        let con =
-          Nametab.locate_constant
-            (Libnames.qualid_of_ident po.Proof_global.name) in
+    | `OK { Proof_global.name } ->
+        let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with
           | Declarations.OpaqueDef o -> o
@@ -2357,6 +2360,14 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
       try f x
       with e when CErrors.noncritical e -> () in
 
+  (* extract proof_ending in qed case, note that `Abort` and `Proof
+     term.` could also fail in this case, however that'd be a bug I do
+     believe as proof injection shouldn't happen here. *)
+  let extract_pe (x : aast) =
+    match Vernacprop.under_control x.expr with
+    | VernacEndProof pe -> pe
+    | _ -> CErrors.anomaly Pp.(str "Non-qed command classified incorrectly") in
+
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
   let cherry_pick_non_pstate () =
@@ -2485,12 +2496,12 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         Proof_global.Opaque (* Admitted -> Opaque should be OK. *)
                       | VtKeepDefined -> Proof_global.Transparent
                     in
-                    let proof =
+                    let proof, info =
                       PG_compat.close_future_proof ~opaque ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
-                    ignore(stm_vernac_interp id ~proof st x);
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x));
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2506,7 +2517,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 log_processing_sync id name reason;
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
-                record_pb_time name ?loc:x.expr.CAst.loc (wall_clock -. !wall_clock_last_fork);
+                let loc = x.expr.CAst.loc in
+                record_pb_time name ?loc (wall_clock -. !wall_clock_last_fork);
                 let proof =
                   match keep with
                   | VtDrop -> None
@@ -2526,7 +2538,11 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
-                ignore(stm_vernac_interp id ?proof st x);
+                let _st = match proof with
+                  | None ->  stm_vernac_interp id st x
+                  | Some (proof, info) ->
+                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x)
+                in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"
                   (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2));

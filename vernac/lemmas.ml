@@ -455,54 +455,32 @@ let finish_admitted env sigma ~name ~poly ~scope pe ctx hook ~udecl impargs othe
   process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (ConstRef kn) impargs other_thms;
   Feedback.feedback Feedback.AddedAxiom
 
-let save_lemma_admitted ?proof ~(lemma : t) =
-    let open Proof_global in
-    let env = Global.env () in
-    match proof with
-    | Some ({ name; entries; universes; udecl }, { Info.hook; scope; impargs; other_thms; _} ) ->
-      if List.length entries <> 1 then
-        user_err Pp.(str "Admitted does not support multiple statements");
-      let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
-      if proof_entry_type = None then
-        user_err Pp.(str "Admitted requires an explicit statement");
-      let poly = match proof_entry_universes with
-        | Entries.Monomorphic_entry _ -> false
-        | Entries.Polymorphic_entry (_, _) -> true in
-      let typ = Option.get proof_entry_type in
-      let ctx = UState.univ_entry ~poly universes in
-      let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-      let sigma = Evd.from_env env in
-      finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
-    | None ->
-      let pftree = Proof_global.get_proof lemma.proof in
-      let scope = lemma.info.Info.scope in
-      let Proof.{ name; poly; entry } = Proof.data pftree in
-      let typ = match Proofview.initial_goals entry with
-        | [typ] -> snd typ
-        | _ ->
-          CErrors.anomaly
-            ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
-      in
-      let typ = EConstr.Unsafe.to_constr typ in
-      let universes = Proof_global.get_initial_euctx lemma.proof in
-      (* This will warn if the proof is complete *)
-      let pproofs, _univs =
-        Proof_global.return_proof ~allow_partial:true lemma.proof in
-      let sec_vars =
-        if not (get_keep_admitted_vars ()) then None
-        else match Proof_global.get_used_variables lemma.proof, pproofs with
-          | Some _ as x, _ -> x
-          | None, (pproof, _) :: _ ->
-            let env = Global.env () in
-            let ids_typ = Environ.global_vars_set env typ in
-            let ids_def = Environ.global_vars_set env pproof in
-            Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
-          | _ -> None in
-      let udecl = Proof_global.get_universe_decl lemma.proof in
-      let { Info.hook; impargs; other_thms } = lemma.info in
-      let { Proof.sigma } = Proof.data (Proof_global.get_proof lemma.proof) in
-      let ctx = UState.check_univ_decl ~poly universes udecl in
-      finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+let save_lemma_admitted ~(lemma : t) : unit =
+  (* Used for printing in recthms *)
+  let env = Global.env () in
+  let { Info.hook; scope; impargs; other_thms } = lemma.info in
+  let udecl = Proof_global.get_universe_decl lemma.proof in
+  let Proof.{ sigma; name; poly; entry } = Proof.data (Proof_global.get_proof lemma.proof) in
+  let typ = match Proofview.initial_goals entry with
+    | [typ] -> snd typ
+    | _ -> CErrors.anomaly ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
+  in
+  let typ = EConstr.Unsafe.to_constr typ in
+  (* This will warn if the proof is complete *)
+  let pproofs, _univs = Proof_global.return_proof ~allow_partial:true lemma.proof in
+  let sec_vars =
+    if not (get_keep_admitted_vars ()) then None
+    else match Proof_global.get_used_variables lemma.proof, pproofs with
+      | Some _ as x, _ -> x
+      | None, (pproof, _) :: _ ->
+        let env = Global.env () in
+        let ids_typ = Environ.global_vars_set env typ in
+        let ids_def = Environ.global_vars_set env pproof in
+        Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
+      | _ -> None in
+  let universes = Proof_global.get_initial_euctx lemma.proof in
+  let ctx = UState.check_univ_decl ~poly universes udecl in
+  finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -598,7 +576,8 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
     Declare.DefinitionEntry lemma_def ,
     Decl_kinds.(IsProof Proposition)
   in
-  ignore (Declare.declare_constant name lemma_def)
+  let _ : Names.Constant.t = Declare.declare_constant name lemma_def in
+  ()
 
 let finish_proved_equations opaque lid kind proof_obj hook i types wits sigma0 =
 
@@ -624,24 +603,7 @@ let finish_proved_equations opaque lid kind proof_obj hook i types wits sigma0 =
   in
   hook recobls sigma
 
-let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
-  (* Invariant (uh) *)
-  if Option.is_empty lemma && Option.is_empty proof then
-    user_err (str "No focused proof (No proof-editing in progress).");
-  (* Env and sigma are just used for error printing in save_remaining_recthms *)
-  let env = Global.env () in
-  let sigma, proof_obj, proof_info =
-    match proof with
-    | None ->
-      (* XXX: The close_proof and proof state API should be refactored
-         so it is possible to insert proofs properly into the state *)
-      let { proof; info } = Option.get lemma in
-      let { Proof.sigma } = Proof.data (Proof_global.get_proof proof) in
-      sigma,
-      Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) proof, info
-    | Some (proof, info) ->
-      Evd.from_env env, proof, info
-  in
+let finalize_proof idopt env sigma opaque proof_obj proof_info =
   let open Proof_global in
   let open Proof_ending in
   match CEphemeron.default proof_info.Info.proof_ending Regular with
@@ -653,3 +615,38 @@ let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
     finish_derived ~f ~name ~idopt ~opaque ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
     finish_proved_equations opaque idopt proof_info.Info.kind proof_obj hook i types wits sigma
+
+let save_lemma_proved ~lemma ~opaque ~idopt =
+  (* Env and sigma are just used for error printing in save_remaining_recthms *)
+  let env = Global.env () in
+  let { Proof.sigma } = Proof.data (Proof_global.get_proof lemma.proof) in
+  let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) lemma.proof in
+  finalize_proof idopt env sigma opaque proof_obj lemma.info
+
+(***********************************************************************)
+(* Special case to close a lemma without forcing a proof               *)
+(***********************************************************************)
+let save_lemma_admitted_delayed ~proof ~info =
+  let open Proof_global in
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let { name; entries; universes; udecl; poly } = proof in
+  let { Info.hook; scope; impargs; other_thms } = info in
+  if List.length entries <> 1 then
+    user_err Pp.(str "Admitted does not support multiple statements");
+  let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
+  let poly = match proof_entry_universes with
+    | Entries.Monomorphic_entry _ -> false
+    | Entries.Polymorphic_entry (_, _) -> true in
+  let typ = match proof_entry_type with
+    | None -> user_err Pp.(str "Admitted requires an explicit statement");
+    | Some typ -> typ in
+  let ctx = UState.univ_entry ~poly universes in
+  let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
+  finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+
+let save_lemma_proved_delayed ~proof ~info ~opaque ~idopt =
+  (* Env and sigma are just used for error printing in save_remaining_recthms *)
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  finalize_proof idopt env sigma opaque proof info
