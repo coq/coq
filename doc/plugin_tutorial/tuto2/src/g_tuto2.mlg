@@ -1,0 +1,618 @@
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*                            Initial ritual dance                            *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+DECLARE PLUGIN "tuto2_plugin"
+
+(*
+   Use this macro before any of the other OCaml macros.
+
+   Each plugin has a unique name.
+   We have decided to name this plugin as "tuto2_plugin".
+   That means that:
+
+   (1) We write the following command in a file called Loader.v:
+
+         Declare ML Module "tuto2_plugin".
+
+       to load this command into the Coq top-level.
+
+   (2) Users can then load our plugin in other Coq files by writing:
+
+         From Tuto2 Require Import Loader.
+
+       where Loader is the name of the file that declares "tuto2_plugin",
+       and where Tuto2 is the name passed to the -R argument in our _CoqProject.
+
+   (3) The above commands will succeed only if there is "tuto2_plugin.cmxs"
+       in some of the directories where Coq is supposed to look
+       (i.e. the ones we specified via "-I ..." command line options in
+       _CoqProject). As long as this is listed in our _CoqProject, the
+       Makefile takes care of placing it in the right directory.
+
+   (4) The file "tuto2_plugin.mlpack" lists the OCaml modules to be linked in
+       "tuto2_plugin.cmxs".
+
+   (5) The file "tuto2_plugin.mlpack" as well as all .ml, .mli and .mlg files
+       are listed in the "_CoqProject" file.
+ *)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*                 Importing OCaml dependencies                               *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+ * This .mlg file is parsed into a .ml file. You can put OCaml in this file
+ * inside of curly braces. It's best practice to use this only to import
+ * other modules, and include most of your functionality in those modules.
+ *
+ * Here we list all of the dependencies that these commands have, and explain
+ * why. We also refer to the first command that uses them, where further
+ * explanation can be found in context.
+ *)
+{
+  (*** Dependencies from Coq ***)
+
+  (*
+   * This lets us take non-terminal arguments to a command (for example,
+   * the PassInt command that takes an integer argument needs this
+   * this dependency).
+   *
+   * First used by: PassInt
+   *)
+  open Stdarg
+
+  (*
+   * This is Coq's pretty-printing module. Here, we need it to use some
+   * useful syntax for pretty-printing.
+   *
+   * First use by: Count
+   *)
+  open Pp
+}
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*                 How to define a new Vernacular command?                    *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  This command does nothing:
+*)
+VERNAC COMMAND EXTEND NoOp CLASSIFIED AS QUERY
+| [ "Nothing" ] -> { () }
+END
+
+(*
+   --- Defining a Command ---
+
+   These:
+
+     VERNAC COMMAND EXTEND
+
+   and
+
+     END
+
+   mark the beginning and the end of the definition of a new Vernacular command.
+
+   --- Assigning a Command a Unique Identifier ---
+
+   NoOp is a unique identifier (which must start with an upper-case letter)
+   associated with the new Vernacular command we are defining. It is good
+   to make this identifier descriptive.
+
+   --- Classifying a Command ---
+
+   CLASSIFIED AS QUERY tells Coq that the new Vernacular command neither:
+   - changes the global environment, nor
+   - modifies the plugin's state.
+
+   If the new command could:
+   - change the global environment
+   - or modify a plugin's state
+   then one would have to use CLASSIFIED AS SIDEFF instead.
+
+   --- Defining Parsing and Interpretation Rules ---
+
+   This:
+
+     [ "Nothing" ] -> { () }
+
+   defines:
+   - the parsing rule (left)
+   - the interpretation rule (right)
+
+   The parsing rule and the interpretation rule are separated by -> token.
+
+   The parsing rule, in this case, is:
+
+     [ "Nothing" ]
+
+   By convention, all vernacular command start with an upper-case letter.
+
+   The '[' and ']' characters mark the beginning and the end of the parsing
+   rule, respectively. The parsing rule itself says that the syntax of the
+   newly defined command is composed from a single terminal Nothing.
+
+   The interpretation rule, in this case, is:
+
+     { () }
+
+   Similarly to the case of the parsing rule, the
+   '{' and '}' characters mark the beginning and the end of the interpretation
+   rule. In this case, the following Ocaml expression:
+
+     ()
+
+   defines the effect of the Vernacular command we have just defined.
+   That is, it behaves is no-op.
+
+   --- Calling a Command ---
+
+   In Demo.v, we call this command by writing:
+
+     Nothing.
+
+   since our parsing rule is "Nothing". This does nothing, since our
+   interpretation rule is ().
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*   How to define a new Vernacular command with some terminal parameters?    *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  This command takes some terminal parameters and does nothing.
+*)
+VERNAC COMMAND EXTEND NoOpTerminal CLASSIFIED AS QUERY
+| [ "Command" "With" "Some" "Terminal" "Parameters" ] -> { () }
+END
+
+(*
+   --- Defining a Command with Terminal Parameters ---
+
+   As shown above, the Vernacular command can be composed from
+   any number of terminals.
+
+   By convention, each of these terminals starts with an upper-case letter.
+
+   --- Calling a Command with Terminal Parameters ---
+
+   In Demo.v, we call this command by writing:
+
+     Command With Some Terminal Parameters.
+
+   to match our parsing rule. As expected, this does nothing.
+
+   --- Recognizing Syntax Errors ---
+
+   Note that if we were to omit any of these terminals, for example by writing:
+
+     Command.
+
+   it would fail to parse (as expected), showing this error to the user:
+
+     Syntax error: illegal begin of vernac.
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*  How to define a new Vernacular command with some non-terminal parameter?  *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  This command takes an integer argument and does nothing.
+*)
+VERNAC COMMAND EXTEND PassInt CLASSIFIED AS QUERY
+| [ "Pass" int(i) ] -> { () }
+END
+
+(*
+   --- Dependencies ---
+
+   Since this command takes a non-terminal argument, it is the first
+   to depend on Stdarg (opened at the top of this file).
+
+   --- Defining a Command with Non-Terminal Arguments ---
+
+   This:
+
+     int(i)
+
+   means that the new command is expected to be followed by an integer.
+   The integer is bound in the parsing rule to variable i.
+   This variable i then can be used in the interpretation rule.
+
+   To see value of which Ocaml types can be bound this way,
+   look at the wit_* function declared in interp/stdarg.mli
+   (in the Coq's codebase). There are more examples in tuto1.
+
+   If we drop the wit_ prefix, we will get the token
+   that we can use in the parsing rule.
+   That is, since there exists wit_int, we know that
+   we can write:
+
+     int(i)
+
+   By looking at the signature of the wit_int function:
+
+     val wit_int : int uniform_genarg_type
+
+   we also know that variable i will have the type int.
+
+   --- Recognizing Build Errors ---
+
+   The mapping from int(i) to wit_int is automatic.
+   This is why, if we forget to open Stdarg, we will get this error:
+
+     Unbound value wit_int
+
+   when we try to build our plugin. It is good to recognize this error,
+   since this is a common mistake in plugin development, and understand
+   that the fix is to open the file (Stdarg) where wit_int is defined.
+
+   --- Calling a Command with Terminal Arguments ---
+
+   We call this command in Demo.v by writing:
+
+     Pass 42.
+
+   We could just as well pass any other integer. As expected, this command
+   does nothing.
+
+   --- Recognizing Syntax Errors ---
+
+   As in our previous command, if we were to omit the arguments to the command,
+   for example by writing:
+
+     Pass.
+
+   it would fail to parse (as expected), showing this error to the user:
+
+     Syntax error: [prim:integer] expected after 'Pass' (in [vernac:command]).
+
+   The same thing would happen if we passed the wrong argument type:
+
+     Pass True.
+
+   If we pass too many arguments:
+
+     Pass 15 20.
+
+   we will get a different syntax error:
+
+     Syntax error: '.' expected after [vernac:command] (in [vernac_aux]).
+
+   It is good to recognize these errors, since doing so can help you
+   catch mistakes you make defining your parser rules during plugin
+   development.
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(* How to define a new Vernacular command with variable number of arguments?  *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  This command takes a list of integers and does nothing:
+*)
+VERNAC COMMAND EXTEND AcceptIntList CLASSIFIED AS QUERY
+| [ "Accept" int_list(l) ] -> { () }
+END
+
+(*
+   --- Dependencies ---
+
+   Much like PassInt, this command depends on Stdarg.
+
+   --- Defining a Command that Takes a Variable Number of Arguments  ---
+
+   This:
+
+     int_list(l)
+
+   means that the new Vernacular command is expected to be followed
+   by a (whitespace separated) list of integers.
+   This list of integers is bound to the indicated l.
+
+   In this case, as well as in the cases we point out below, instead of int
+   in int_list we could use any other supported type, e.g. ident, bool, ...
+
+   --- Other Ways to Take a Variable Number of Arguments ---
+
+   To see which other Ocaml type constructors (in addition to list)
+   are supported, have a look at the parse_user_entry function defined
+   in the coqpp/coqpp_parse.mly file.
+
+   E.g.:
+   - ne_int_list(x) would represent a non-empty list of integers,
+   - int_list(x) would represent a list of integers,
+   - int_opt(x) would represent a value of type int option,
+   - ···
+
+   Much like with int_list, we could use any other supported type here.
+   There are some more examples of this in tuto1.
+
+   --- Calling a Command with a Variable Number of Arguments ---
+
+   We call this command in Demo.v by writing:
+
+     Accept 100 200 300 400.
+
+   As expected, this does nothing.
+
+   Since our parser rule uses int_list, the arguments to Accept can be a
+   list of integers of any length. For example, we can pass the empty list:
+
+     Accept.
+
+   or just one argument:
+
+     Accept 2.
+
+   and so on.
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(* How to define a new Vernacular command that takes values of a custom type? *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  --- Defining Custom Types ---
+
+  Vernacular commands can take custom types in addition to the built-in
+  ones. The first step to taking these custom types as arguments is
+  to define them.
+
+
+  We define a type of values that we want to pass to our Vernacular command
+  in custom.ml/custom.mli. The type is very simple:
+
+     type custom_type : Foo | Bar.
+
+  --- Using our New Module ---
+
+  Now that we have a new OCaml module Custom, in order to use it, we must
+  do the following:
+
+    1. Add src/custom.ml and src/custom.mli to our _CoqProject
+    2. Add Custom to our tuto2_plugin.mlpack
+
+  This workflow will become very familiar to you when you add new modules
+  to your plugins, so it is worth getting used to.
+
+  --- Depending on our New Module ---
+
+  Now that our new module is listed in both _CoqProject and tuto2_plugin.mlpack,
+  we can use fully qualified names Custom.Foo and Custom.Bar.
+
+  Alternatively, we could add the dependency on our module:
+
+    open Custom.
+
+  to the top of the file, and then refer to Foo and Bar directly.
+
+  --- Telling Coq About our New Argument Type ---
+
+   By default, we are able to define new Vernacular commands that can take
+   parameters of some of the supported types. Which types are supported,
+   that was discussed earlier.
+
+   If we want to be able to define Vernacular command that takes parameters
+   of a type that is not supported by default, we must use the following macro:
+*)
+VERNAC ARGUMENT EXTEND custom
+| [ "Foo" ] -> { Custom.Foo }
+| [ "Bar" ] -> { Custom.Bar }
+END
+
+(*
+   where:
+
+     custom
+
+   indicates that, from now on, in our parsing rules we can write:
+
+     custom(some_variable)
+
+   in those places where we expect user to provide an input
+   that can be parsed by the parsing rules above
+   (and interpreted by the interpretations rules above).
+*)
+
+(*
+  --- Defining a Command that Takes an Argument of a Custom Type ---
+
+  Now that Coq is aware of our new argument type, we can define a command
+  that uses it. This command takes an argument Foo or Bar and does nothing:
+*)
+VERNAC COMMAND EXTEND PassCustom CLASSIFIED AS QUERY
+| [ "Foobar" custom(x) ] -> { () }
+END
+
+(*
+  --- Calling a Command that Takes an Argument of a Custom Type ---
+
+  We call this command in Demo.v by writing:
+
+    Foobar Foo.
+    Foobar Bar.
+
+  As expected, both of these do nothing. In the first case, x gets
+  the value Custom.Foo : Custom.custom_type, since our custom parsing
+  and interpretation rules (VERNAC ARGUMENT EXTEND custom ...) map
+  the input Foo to Custom.Foo. Similarly, in the second case, x gets
+  the value Custom.Bar : Custom.custom_type.
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*                     How to give a feedback to the user?                    *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  So far we have defined commands that do nothing.
+  We can also signal feedback to the user.
+
+  This command tells the user that everything is awesome:
+*)
+VERNAC COMMAND EXTEND Awesome CLASSIFIED AS QUERY
+| [ "Is" "Everything" "Awesome" ] ->
+   {
+     Feedback.msg_notice (Pp.str "Everything is awesome!")
+   }
+END
+
+(*
+  --- Pretty Printing ---
+
+  User feedback functions like Feedback.msg_notice take a Pp.t as an argument.
+  Check the Pp module to see which functions are available to construct
+  a Pp.t.
+
+  The Pp module enable us to represent and construct pretty-printing
+  instructions. The concepts defined and the services provided by the
+  Pp module are in various respects related to the concepts and services
+  provided by the Format module that is part of the Ocaml standard library.
+
+  --- Giving Feedback ---
+
+  Once we have a Pp.t, we can use the following functions:
+
+     - Feedback.msg_info    : Pp.t -> unit
+     - Feedback.msg_notice  : Pp.t -> unit
+     - Feedback.msg_warning : Pp.t -> unit
+     - Feedback.msg_debug   : Pp.t -> unit
+
+  to give user a textual feedback. Examples of some of these can be
+  found in tuto0.
+
+  --- Signaling Errors ---
+
+  While there is a Feedback.msg_error, when signaling an error,
+  it is currently better practice to use user_err. There is an example of
+  this in tuto0.
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*    How to implement a Vernacular command with (undoable) side-effects?     *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+  This command counts how many times it has been called since importing
+  our plugin, and signals that information to the user:
+ *)
+VERNAC COMMAND EXTEND Count CLASSIFIED AS SIDEFF
+| [ "Count" ] ->
+   {
+     Counter.increment ();
+     let v = Counter.value () in
+     Feedback.msg_notice (Pp.str "Times Count has been called: " ++ Pp.int v)
+   }
+END
+
+(*
+  --- Dependencies ---
+
+  If we want to use the ++ syntax, then we need to depend on Pp explicitly.
+  This is why, at the top, we write:
+
+    open Pp.
+
+  --- Defining the Counter ---
+
+  We define our counter in the Counter module. Please see counter.ml and
+  counter.mli for details.
+
+  As with Custom, we must modify our _CoqProject and tuto2_plugin.mlpack
+  so that we can use Counter in our code.
+
+  --- Classifying the Command ---
+
+  This command has undoable side-effects: When the plugin is first loaded,
+  the counter is instantiated to 0. After each time we call Count, the value of
+  the counter increases by 1.
+
+  Thus, we must write CLASSIFIED AS SIDEEFF for this command, rather than
+  CLASSIFIED AS QUERY. See the explanation from the NoOp command earlier if
+  you do not remember the distinction.
+
+  --- Calling the Command ---
+
+  We call our command three times in Demo.v by writing:
+
+    Count.
+    Count.
+    Count.
+
+  This gives us the following output:
+
+    Times Count has been called: 1
+    Times Count has been called: 2
+    Times Count has been called: 3
+
+  Note that when the plugin is first loaded, the counter is 0. It increases
+  each time Count is called.
+
+  --- Behavior with Imports ---
+
+  Count.v shows the behavior with imports. Note that if we import Demo.v,
+  the counter is set to 0 from the beginning, even though Demo.v calls
+  Count three times.
+
+  In other words, this is not persistent!
+*)
+
+(* -------------------------------------------------------------------------- *)
+(*                                                                            *)
+(*    How to implement a Vernacular command that uses persistent storage?     *)
+(*                                                                            *)
+(* -------------------------------------------------------------------------- *)
+
+(*
+ * This command is like Count, but it is persistent across modules:
+ *)
+VERNAC COMMAND EXTEND CountPersistent CLASSIFIED AS SIDEFF
+| [ "Count" "Persistent" ] ->
+   {
+     Persistent_counter.increment ();
+     let v = Persistent_counter.value () in
+     Feedback.msg_notice (Pp.str "Times Count Persistent has been called: " ++ Pp.int v)
+   }
+END
+
+(*
+  --- Persistent Storage ---
+
+  Everything is similar to the Count command, except that we use a counter
+  that is persistent. See persistent_counter.ml for details.
+
+  The key trick is that we must create a persistent object for our counter
+  to persist across modules. Coq has some useful APIs for this in Libobject.
+  We demonstrate these in persistent_counter.ml.
+
+  This is really, really useful if you want, for example, to cache some
+  results that your plugin computes across modules. A persistent object
+  can be a hashtable, for example, that maps inputs to outputs your command
+  has already computed, if you know the result will not change.
+
+  --- Calling the Command ---
+
+  We call the command in Demo.v and in Count.v, just like we did with Count.
+  Note that this time, the value of the counter from Demo.v persists in Count.v.
+*)
