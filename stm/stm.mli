@@ -174,7 +174,7 @@ val reset_task_queue : unit -> unit
 (* A .vio contains tasks to be completed *)
 type tasks
 val check_task : string -> tasks -> int -> bool
-val info_tasks : tasks -> (string * float * int) list
+val info_tasks : tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
 val finish_tasks : string ->
   Library.seg_univ -> Library.seg_proofs ->
     tasks -> Library.seg_univ * Library.seg_proofs

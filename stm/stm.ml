@@ -1303,10 +1303,13 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
-    t_loc      : Loc.t option;
+    t_assign    : Declare.Proof.closed_proof_output Future.assignment -> unit;
+    t_loc_begin : Loc.t option;
+    t_loc_end   : Loc.t option; (* Loc.t of the Qed *)
     t_uuid     : Future.UUID.t;
-    t_name     : string }
+    t_name     : string;
+    t_kernel_name    : Names.Constant.t;
+  }
 
   type task =
     | BuildProof of task_build_proof
@@ -1343,9 +1346,12 @@ end = struct (* {{{ *)
     t_drop     : bool;
     t_states   : competence;
     t_assign   : Declare.Proof.closed_proof_output Future.assignment -> unit;
-    t_loc      : Loc.t option;
+    t_loc_begin : Loc.t option;
+    t_loc_end   : Loc.t option; (* Loc.t of the Qed *)
     t_uuid     : Future.UUID.t;
-    t_name     : string }
+    t_name     : string;
+    t_kernel_name    : Names.Constant.t;
+  }
 
   type task =
     | BuildProof of task_build_proof
@@ -1396,30 +1402,33 @@ end = struct (* {{{ *)
   let request_of_task age = function
     | States l -> Some (ReqStates l)
     | BuildProof {
-        t_exn_info;t_start;t_stop;t_loc;t_uuid;t_name;t_states;t_drop
+        t_exn_info;t_start;t_stop;t_loc_end;t_loc_begin;t_uuid;t_name;t_states;t_drop;t_kernel_name
       } ->
         assert(age = Fresh);
         try Some (ReqBuildProof ({
           Stateid.exn_info = t_exn_info;
           stop = t_stop;
           document = VCS.slice ~block_start:t_start ~block_stop:t_stop;
-          loc = t_loc;
+          loc_begin = t_loc_begin;
+          loc_end = t_loc_end;
           uuid = t_uuid;
-          name = t_name }, t_drop, t_states))
+          name = t_name;
+          kernel_name = t_kernel_name;
+        }, t_drop, t_states))
         with VCS.Expired -> None
 
   let use_response (s : worker_status) t r =
     match s, t, r with
     | Old c, States _, RespStates l ->
         List.iter (fun (id,s) -> State.assign id s) l; `End
-    | Fresh, BuildProof { t_assign; t_loc; t_name; t_states; t_drop },
+    | Fresh, BuildProof { t_assign; t_loc_begin; t_name; t_states; t_drop },
               RespBuiltProof (pl, time) ->
         feedback (InProgress ~-1);
         t_assign (`Val pl);
-        record_pb_time ?loc:t_loc t_name time;
+        record_pb_time ?loc:t_loc_begin t_name time;
         if t_drop then `Stay(t_states,[States t_states])
         else `End
-    | Fresh, BuildProof { t_assign; t_loc; t_name; t_states },
+    | Fresh, BuildProof { t_assign; t_name; t_states },
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
@@ -1452,13 +1461,13 @@ end = struct (* {{{ *)
       if drop_pt then feedback ~id Complete;
       p)
 
-  let perform_buildp { Stateid.exn_info; stop; document; loc } drop my_states =
+  let perform_buildp { Stateid.exn_info; stop; document; loc_end } drop my_states =
     try
       VCS.restore document;
       VCS.print ();
       let proof, time =
         let wall_clock = Unix.gettimeofday () in
-        let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc ~drop_pt:drop exn_info stop in
+        let fp = build_proof_here ~doc:dummy_doc (* XXX should be document *) ?loc:loc_end ~drop_pt:drop exn_info stop in
         let proof = Future.force fp in
         proof, Unix.gettimeofday () -. wall_clock in
       (* We typecheck the proof with the kernel (in the worker) to spot
@@ -1478,7 +1487,7 @@ end = struct (* {{{ *)
           try
             let _pstate =
               stm_qed_delay_proof ~st ~id:stop
-                ~proof:pobject ~loc ~control:[] (Proved (opaque,None)) in
+                ~proof:pobject ~loc:loc_end ~control:[] (Proved (opaque,None)) in
             ()
           with exn ->
             (* If [stm_qed_delay_proof] fails above we need to use the
@@ -1551,11 +1560,11 @@ end = struct (* {{{ *)
     | States _ ->
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the master process."))
-    | BuildProof { t_exn_info; t_stop; t_assign; t_loc; t_drop = drop_pt } ->
+    | BuildProof { t_exn_info; t_stop; t_assign; t_loc_end; t_drop = drop_pt } ->
       msg_warning Pp.(strbrk("Marshalling error: "^s^". "^
                              "The system state could not be sent to the worker process. "^
                              "Falling back to local, lazy, evaluation."));
-      t_assign(`Comp(build_proof_here ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc ~drop_pt t_exn_info t_stop));
+      t_assign(`Comp(build_proof_here ~doc:dummy_doc (* XXX should be stored in a closure, it is the same doc that was used to generate the task *) ?loc:t_loc_end ~drop_pt t_exn_info t_stop));
       feedback (InProgress ~-1)
 
 end (* }}} *)
@@ -1568,7 +1577,7 @@ and Slaves : sig
     doc:doc ->
     ?loc:Loc.t -> drop_pt:bool ->
     exn_info:(Stateid.t * Stateid.t) -> block_start:Stateid.t -> block_stop:Stateid.t ->
-      name:string -> future_proof * AsyncTaskQueue.cancel_switch
+      name:string -> kn:Names.Constant.t -> future_proof * AsyncTaskQueue.cancel_switch
 
   (* blocking function that waits for the task queue to be empty *)
   val wait_all_done : unit -> unit
@@ -1579,7 +1588,7 @@ and Slaves : sig
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
   val check_task : string -> int tasks -> int -> bool
-  val info_tasks : 'a tasks -> (string * float * int) list
+  val info_tasks : 'a tasks -> (string * Loc.t option * Loc.t option * Names.Constant.t * float * int) list
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_proofs ->
@@ -1603,7 +1612,7 @@ end = struct (* {{{ *)
       queue := Some (TaskQueue.create 0 priority)
 
   let check_task_aux extra name l i =
-    let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
+    let { Stateid.stop; document; loc_end; name = r_name }, drop = List.nth l i in
     Flags.if_verbose msg_info
       Pp.(str(Printf.sprintf "Checking task %d (%s%s) of %s" i r_name extra name));
     VCS.restore document;
@@ -1634,7 +1643,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc ~control:[] (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~loc:loc_end ~control:[] (Proved (opaque,None)));
       (* Is this name the same than the one in scope? *)
       let name = Declare.Proof.get_po_name proof in
       `OK name
@@ -1707,14 +1716,14 @@ end = struct (* {{{ *)
     | `ERROR | `ERROR_ADMITTED -> false
 
   let info_tasks l =
-    CList.map_i (fun i ({ Stateid.loc; name }, _) ->
+    CList.map_i (fun i ({ Stateid.loc_begin; loc_end; name; kernel_name }, _) ->
       let time1 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_build_time")
+        try float_of_string (Aux_file.get ?loc:loc_end !hints "proof_build_time")
         with Not_found -> 0.0 in
       let time2 =
-        try float_of_string (Aux_file.get ?loc !hints "proof_check_time")
+        try float_of_string (Aux_file.get ?loc:loc_end !hints "proof_check_time")
         with Not_found -> 0.0 in
-      name, max (time1 +. time2) 0.0001,i) 0 l
+      name, loc_begin, loc_end, kernel_name, max (time1 +. time2) 0.0001,i) 0 l
 
   let set_perspective idl =
     ProofTask.set_perspective idl;
@@ -1733,9 +1742,15 @@ end = struct (* {{{ *)
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
      | _ -> 0)
 
-  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
+  let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname ~kn =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
+    let t_loc_begin =
+      let { step } = VCS.visit block_start in
+      match step with
+      | `Cmd { cast = { expr = { CAst.loc } } } -> loc
+      | _ -> None
+    in
     if TaskQueue.n_workers (Option.get !queue) = 0 then
       if VCS.is_vio_doc () then begin
         let f,assign =
@@ -1743,8 +1758,11 @@ end = struct (* {{{ *)
         let t_uuid = Future.uuid f in
         let task = ProofTask.(BuildProof {
           t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
-          t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
-          t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
+          t_assign = assign; t_loc_end = loc; t_uuid; t_name = pname;
+          t_states = VCS.nodes_in_slice ~block_start ~block_stop;
+          t_loc_begin;
+          t_kernel_name = kn;
+        }) in
         TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
         f, cancel_switch
       end else
@@ -1755,8 +1773,11 @@ end = struct (* {{{ *)
       feedback (InProgress 1);
       let task = ProofTask.(BuildProof {
         t_exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
-        t_loc = loc; t_uuid; t_name = pname;
-        t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
+        t_loc_end = loc; t_uuid; t_name = pname;
+        t_states = VCS.nodes_in_slice ~block_start ~block_stop;
+        t_loc_begin;
+        t_kernel_name = kn;
+      }) in
       TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
       f, cancel_switch
 
@@ -1886,7 +1907,7 @@ let delegate name =
 
 let collect_proof keep cur hd brkind id =
  stm_prerr_endline (fun () -> "Collecting proof ending at "^Stateid.to_string id);
- let no_name = "" in
+ let no_name = "no_name" in
  let name = function
    | [] -> no_name
    | id :: _ -> Names.Id.to_string id in
@@ -2179,6 +2200,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let block_stop, exn_info, loc = eop, (id, eop), x.expr.CAst.loc in
                 log_processing_async id name;
                 VCS.create_proof_task_box nodes ~qed:id ~block_start;
+                let kn = Names.Constant.make2 (Safe_typing.current_modpath (Global.safe_env ())) (Names.Label.make name) in
                 begin match brinfo, qed.fproof with
                 | { VCS.kind = `Edit _ }, None -> assert false
                 | { VCS.kind = `Edit (_,_, okeep, _) }, Some (ofp, cancel) ->
@@ -2192,7 +2214,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         ^"the proof's statement to avoid that."));
                     let fp, cancel =
                       Slaves.build_proof ~doc
-                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
+                        ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name ~kn in
                     Future.replace (Option.get ofp) fp;
                     qed.fproof <- Some (Some fp, cancel);
                     (* We don't generate a new state, but we still need
@@ -2204,7 +2226,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     let fp, cancel =
                       if delegate then
                         Slaves.build_proof ~doc
-                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name
+                          ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name ~kn
                       else
                         ProofTask.build_proof_here ~doc ?loc
                           ~drop_pt exn_info block_stop, ref false
@@ -2544,7 +2566,7 @@ let info_tasks (tasks,_) = Slaves.info_tasks tasks
 
 let finish_tasks name u p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
-  let finish_task u (_,_,i) =
+  let finish_task u (_,_,_,_,_,i) =
     let vcs = VCS.backup () in
     let u = State.purify (Slaves.finish_task name u p t) i in
     VCS.restore vcs;

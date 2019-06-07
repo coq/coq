@@ -37,8 +37,10 @@ type ('a,'b) request = {
   exn_info : t * t;
   stop : t;
   document : 'b;
-  loc : Loc.t option;
+  loc_begin : Loc.t option;
+  loc_end : Loc.t option;
   uuid     : 'a;
-  name     : string
+  name     : string;
+  kernel_name : Names.Constant.t;
 }
 

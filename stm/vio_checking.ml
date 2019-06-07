@@ -31,7 +31,7 @@ let schedule_vio_checking j fs =
     let _,_,_, tasks, _ = Library.load_library_todo long_f_dot_vio in
     Stm.set_compilation_hints long_f_dot_vio;
     let infos = Stm.info_tasks tasks in
-    let eta = List.fold_left (fun a (_,t,_) -> a +. t) 0.0 infos in
+    let eta = List.fold_left (fun a (_,_,_,_,t,_) -> a +. t) 0.0 infos in
     if infos <> [] then jobs := (long_f_dot_vio, eta, infos) :: !jobs)
   fs;
   let cmp_job (_,t1,_) (_,t2,_) = compare t2 t1 in
@@ -62,13 +62,13 @@ let schedule_vio_checking j fs =
       let f, t, tasks = List.hd !jobs in
       jobs := List.tl !jobs;
       cur := !cur +. t;
-      what := (List.map (fun (n,t,id) -> (f,id),n,t) tasks) @ !what in
+      what := (List.map (fun (n,_,_,_,t,id) -> (f,id),n,t) tasks) @ !what in
     if List.length !jobs >= j_left then take_next_file ()
     else while !jobs <> [] &&
          !cur < max 0.0 (min 60.0 (!eta /. float_of_int j_left)) do
       let f, t, tasks = List.hd !jobs in
       jobs := List.tl !jobs;
-      let n, tt, id = List.hd tasks in
+      let n, _,_,_, tt, id = List.hd tasks in
       if List.length tasks > 1 then
         jobs := (f, t -. tt, List.tl tasks) :: !jobs;
       cur := !cur +. tt;
