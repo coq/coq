@@ -215,7 +215,7 @@
 ########################################################################
 # simple-io
 ########################################################################
-: "${simple_io_CI_REF:=dev}"
+: "${simple_io_CI_REF:=master}"
 : "${simple_io_CI_GITURL:=https://github.com/Lysxia/coq-simple-io}"
 : "${simple_io_CI_ARCHIVEURL:=${simple_io_CI_GITURL}/archive}"
 
