@@ -367,7 +367,7 @@ let unify_arrow ?loc env ft args =
     iter ft args true
   | GTypVar id, (_, t) :: args ->
     let ft = GTypVar (fresh_id env) in
-    let () = unify_var env id (GTypArrow (t, ft)) in
+    let () = unify ?loc env (GTypVar id) (GTypArrow (t, ft)) in
     iter ft args true
   | GTypRef _, _ :: _ ->
     if is_fun then
