@@ -1118,16 +1118,30 @@ let () =
   define_ml_object Tac2quote.wit_reference obj
 
 let () =
-  let intern self ist tac =
+  let intern self ist (ids, tac) =
+    (* Check that variables have the Ltac1 type *)
+    let t_ltac1 = gtypref t_ltac1 in
+    let check { CAst.loc; v = id } =
+      let () = Tac2intern.check_ltac2_var ist.Genintern.extra ?loc id t_ltac1 in
+      id
+    in
+    let ids = List.map check ids in
     (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
-    let ist = { ist with Genintern.extra } in
+    let ltacvars = List.fold_right Id.Set.add ids ist.Genintern.ltacvars in
+    let ist = { ist with Genintern.extra; ltacvars } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    GlbVal tac, gtypref t_unit
+    GlbVal (ids, tac), gtypref t_unit
   in
-  let interp ist tac =
+  let interp ist (ids, tac) =
+    let add lfun id =
+      let v = Id.Map.find id ist.env_ist in
+      let v = Tac2ffi.to_ext val_ltac1 v in
+      Id.Map.add id v lfun
+    in
+    let lfun = List.fold_left add Id.Map.empty ids in
     let ist = { env_ist = Id.Map.empty } in
-    let lfun = Tac2interp.set_env ist Id.Map.empty in
+    let lfun = Tac2interp.set_env ist lfun in
     let ist = Ltac_plugin.Tacinterp.default_ist () in
     let ist = { ist with Geninterp.lfun = lfun } in
     let tac = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
@@ -1135,9 +1149,13 @@ let () =
     Proofview.tclOR tac wrap >>= fun () ->
     return v_unit
   in
-  let subst s tac = Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac in
-  let print env tac =
-    str "ltac1:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
+  let subst s (ids, tac) = (ids, Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
+  let print env (ids, tac) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else pr_sequence Id.print ids ++ spc () ++ str "|-" ++ spc ()
+    in
+    str "ltac1:(" ++ ids ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
   let obj = {
     ml_intern = intern;
@@ -1149,23 +1167,41 @@ let () =
 
 let () =
   let open Ltac_plugin in
-  let intern self ist tac =
+  let intern self ist (ids, tac) =
+    (* Check that variables have the Ltac1 type *)
+    let t_ltac1 = gtypref t_ltac1 in
+    let check { CAst.loc; v = id } =
+      let () = Tac2intern.check_ltac2_var ist.Genintern.extra ?loc id t_ltac1 in
+      id
+    in
+    let ids = List.map check ids in
     (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
-    let ist = { ist with Genintern.extra } in
+    let ltacvars = List.fold_right Id.Set.add ids ist.Genintern.ltacvars in
+    let ist = { ist with Genintern.extra; ltacvars } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    GlbVal tac, gtypref t_ltac1
+    GlbVal (ids, tac), t_ltac1
   in
-  let interp ist tac =
+  let interp ist (ids, tac) =
+    let add lfun id =
+      let v = Id.Map.find id ist.env_ist in
+      let v = Tac2ffi.to_ext val_ltac1 v in
+      Id.Map.add id v lfun
+    in
+    let lfun = List.fold_left add Id.Map.empty ids in
     let ist = { env_ist = Id.Map.empty } in
-    let lfun = Tac2interp.set_env ist Id.Map.empty in
+    let lfun = Tac2interp.set_env ist lfun in
     let ist = Ltac_plugin.Tacinterp.default_ist () in
     let ist = { ist with Geninterp.lfun = lfun } in
     return (Value.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
   in
-  let subst s tac = Genintern.substitute Tacarg.wit_tactic s tac in
-  let print env tac =
-    str "ltac1val:(" ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
+  let subst s (ids, tac) = (ids, Genintern.substitute Tacarg.wit_tactic s tac) in
+  let print env (ids, tac) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else pr_sequence Id.print ids ++ str " |- "
+    in
+    str "ltac1val:(" ++ ids++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
   let obj = {
     ml_intern = intern;

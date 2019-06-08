@@ -27,6 +27,22 @@ Fail Ltac2 bar nay := ltac1:(discriminate nay).
 Fail Ltac2 pose1 (v : constr) :=
   ltac1:(pose $v).
 
+(** Variables explicitly crossing the boundary must satisfy typing properties *)
+Goal True.
+Proof.
+(* Missing variable *)
+Fail ltac1:(x |- idtac).
+(* Wrong type *)
+Fail let x := 0 in ltac1:(x |- idtac).
+(* OK, and runtime has access to variable *)
+let x := Ltac1.of_constr constr:(Type) in ltac1:(x |- idtac x).
+
+(* Same for ltac1val *)
+Fail Ltac1.run ltac1val:(x |- idtac).
+Fail let x := 0 in Ltac1.run ltac1val:(x |- idtac).
+let x := Ltac1.of_constr constr:(Type) in Ltac1.run ltac1val:(x |- idtac x).
+Abort.
+
 (** Test calls to Ltac2 from Ltac1 *)
 
 Set Default Proof Mode "Classic".

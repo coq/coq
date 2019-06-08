@@ -37,6 +37,8 @@ let (<+>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
 | None -> lk2 n strm
 | Some n -> Some n
 
+let lk_empty n strm = Some n
+
 let lk_kw kw n strm = match stream_nth n strm with
 | KEYWORD kw' | IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
 | _ -> None
@@ -50,6 +52,9 @@ let lk_int n strm = match stream_nth n strm with
 | _ -> None
 
 let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident)
+
+let rec lk_ident_list n strm =
+  ((lk_ident >> lk_ident_list) <+> lk_empty) n strm
 
 (* lookahead for (x:=t), (?x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
@@ -83,6 +88,11 @@ let test_ampersand_ident =
 let test_dollar_ident =
   entry_of_lookahead "test_dollar_ident" begin
     lk_kw "$" >> lk_ident
+  end
+
+let test_ltac1_env =
+  entry_of_lookahead "test_ltac1_env" begin
+    lk_ident_list >> lk_kw "|-"
   end
 
 let tac2expr = Tac2entries.Pltac.tac2expr
@@ -225,8 +235,13 @@ GRAMMAR EXTEND Gram
       | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
       | IDENT "pattern"; ":"; "("; c = Constr.lconstr_pattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
-      | IDENT "ltac1"; ":"; "("; qid = ltac1_expr; ")" -> { inj_ltac1 loc qid }
-      | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr; ")" -> { inj_ltac1val loc qid }
+      | IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }
+      | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1val loc qid }
+    ] ]
+  ;
+  ltac1_expr_in_env:
+    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac1_expr -> { ids, e }
+      | e = ltac1_expr -> { [], e }
     ] ]
   ;
   let_clause:
