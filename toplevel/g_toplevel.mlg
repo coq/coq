@@ -11,6 +11,8 @@
 {
 open Pcoq
 open Pcoq.Prim
+open Tok
+open Util
 open Vernacexpr
 
 (* Vernaculars specific to the toplevel *)
@@ -19,6 +21,7 @@ type vernac_toplevel =
   | VernacDrop
   | VernacQuit
   | VernacControl of vernac_control
+  | VernacShowGoal of { gid : int; sid: int }
 
 module Toplevel_ : sig
   val vernac_toplevel : vernac_toplevel option Entry.t
@@ -29,6 +32,21 @@ end
 
 open Toplevel_
 
+let err () = raise Stream.Failure
+
+let test_show_goal =
+  Pcoq.Entry.of_parser "test_show_goal"
+    (fun strm ->
+      match stream_nth 0 strm with
+      | IDENT "Show" ->
+          (match stream_nth 1 strm with
+          | IDENT "Goal" ->
+            (match stream_nth 2 strm with
+              | NUMERAL _ -> ()
+              | _ -> err ())
+          | _ -> err ())
+      | _ -> err ())
+
 }
 
 GRAMMAR EXTEND Gram
@@ -38,6 +56,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Quit"; "." -> { Some VernacQuit }
       | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
         { Some (VernacBacktrack (n,m,p)) }
+      (* show a goal for the specified proof state *)
+      | test_show_goal; IDENT "Show"; IDENT "Goal"; gid = natural; IDENT "at"; sid = natural; "." ->
+          { Some (VernacShowGoal {gid; sid}) }
       | cmd = Pvernac.Vernac_.main_entry ->
               { match cmd with
               | None -> None

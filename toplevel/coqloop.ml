@@ -403,6 +403,11 @@ let rec vernac_loop ~state =
       top_goal_print ~doc:state.doc c state.proof nstate.proof;
       vernac_loop ~state:nstate
 
+    | Some (VernacShowGoal {gid; sid}) ->
+      let proof = Stm.get_proof ~doc:state.doc (Stateid.of_int sid) in
+      Feedback.msg_notice (Printer.pr_goal_emacs ~proof gid sid);
+      vernac_loop ~state
+
     | None ->
       top_stderr (fnl ()); exit 0
 

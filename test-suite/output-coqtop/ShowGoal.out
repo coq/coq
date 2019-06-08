@@ -1,0 +1,73 @@
+
+Coq < 1 subgoal
+  
+  ============================
+  forall i : nat, exists j k : nat, i = j /\ j = k /\ i = k
+
+x < 
+x < 1 focused subgoal
+(shelved: 1)
+  
+  i : nat
+  ============================
+  exists k : nat, i = ?j /\ ?j = k /\ i = k
+
+x < 1 focused subgoal
+(shelved: 2)
+  
+  i : nat
+  ============================
+  i = ?j /\ ?j = ?k /\ i = ?k
+
+x < 2 focused subgoals
+(shelved: 2)
+  
+  i : nat
+  ============================
+  i = ?j
+
+subgoal 2 is:
+ ?j = ?k /\ i = ?k
+
+x < 1 focused subgoal
+(shelved: 1)
+  
+  i : nat
+  ============================
+  i = ?k /\ i = ?k
+
+x < 2 focused subgoals
+(shelved: 1)
+  
+  i : nat
+  ============================
+  i = ?k
+
+subgoal 2 is:
+ i = ?k
+
+x < 1 subgoal
+  
+  i : nat
+  ============================
+  i = i
+
+x < goal ID 16 at state 5
+  
+  i : nat
+  ============================
+  i = ?j /\ ?j = ?k /\ i = ?k
+
+x < goal ID 16 at state 7
+  
+  i : nat
+  ============================
+  i = i /\ i = ?k /\ i = ?k
+
+x < goal ID 16 at state 9
+  
+  i : nat
+  ============================
+  i = i /\ i = i /\ i = i
+
+x < 
