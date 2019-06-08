@@ -56,7 +56,7 @@ val declare_constant :
  ?internal:internal_flag -> ?local:import_status -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
 val declare_private_constant :
-  role:side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
+  ?role:Evd.side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->

@@ -307,9 +307,12 @@ val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
+type side_effect_role =
+| Schema of inductive * string
+
 type side_effects = {
   seff_private : Safe_typing.private_constants;
-  seff_roles : Entries.side_effect_role Cmap.t;
+  seff_roles : side_effect_role Cmap.t;
 }
 
 val empty_side_effects : side_effects

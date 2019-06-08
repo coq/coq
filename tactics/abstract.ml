@@ -158,7 +158,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_private_constant ~role:Entries.Subproof ~internal:Declare.InternalTacticRequest ~local:ImportNeedQualified id decl
+    Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:ImportNeedQualified id decl
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.Entries.const_entry_universes with

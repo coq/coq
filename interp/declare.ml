@@ -140,8 +140,8 @@ let register_constant kn kind local =
 let register_side_effect (c, role) =
   let () = register_constant c (IsProof Theorem) ImportDefaultBehavior in
   match role with
-  | Subproof -> ()
-  | Schema (ind, kind) -> !declare_scheme kind [|ind,c|]
+  | None -> ()
+  | Some (Evd.Schema (ind, kind)) -> !declare_scheme kind [|ind,c|]
 
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
@@ -156,7 +156,7 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
 
 let get_roles export eff =
   let map c =
-    let role = try Cmap.find c eff.Evd.seff_roles with Not_found -> Subproof in
+    let role = try Some (Cmap.find c eff.Evd.seff_roles) with Not_found -> None in
     (c, role)
   in
   List.map map export
@@ -199,11 +199,15 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefault
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ~role ?(internal=UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
+let declare_private_constant ?role ?(internal=UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
   let kn, eff, export = define_constant ~side_effect:EffectEntry id cd in
   let () = assert (List.is_empty export) in
   let () = register_constant kn kind local in
-  let eff = { Evd.seff_private = eff; Evd.seff_roles = Cmap.singleton kn role } in
+  let seff_roles = match role with
+  | None -> Cmap.empty
+  | Some r -> Cmap.singleton kn r
+  in
+  let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
 let declare_definition ?(internal=UserIndividualRequest)

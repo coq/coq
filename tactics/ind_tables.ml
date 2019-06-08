@@ -145,7 +145,7 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let role = Entries.Schema (ind, kind) in
+  let role = Evd.Schema (ind, kind) in
   let const, neff = define mode role id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
   const, Evd.concat_side_effects neff eff
@@ -163,7 +163,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
-    let role = Entries.Schema ((mind, i), kind)in
+    let role = Evd.Schema ((mind, i), kind)in
     let cst, neff = define mode role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in

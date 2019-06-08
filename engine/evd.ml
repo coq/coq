@@ -430,9 +430,12 @@ type evar_flags =
     restricted_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t }
 
+type side_effect_role =
+| Schema of inductive * string
+
 type side_effects = {
   seff_private : Safe_typing.private_constants;
-  seff_roles : Entries.side_effect_role Cmap.t;
+  seff_roles : side_effect_role Cmap.t;
 }
 
 type evar_map = {
