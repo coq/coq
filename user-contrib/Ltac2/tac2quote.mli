@@ -32,7 +32,7 @@ val of_variable : Id.t CAst.t -> raw_tacexpr
 
 val of_ident : Id.t CAst.t -> raw_tacexpr
 
-val of_constr : Constrexpr.constr_expr -> raw_tacexpr
+val of_constr : ?delimiters:Id.t list -> Constrexpr.constr_expr -> raw_tacexpr
 
 val of_open_constr : Constrexpr.constr_expr -> raw_tacexpr
 

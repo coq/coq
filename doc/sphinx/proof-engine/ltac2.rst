@@ -655,6 +655,8 @@ this features has the same semantics as in Ltac1. In particular, a ``reverse``
 flag can be specified to match hypotheses from the more recently introduced to
 the least recently introduced one.
 
+.. _ltac2_notations:
+
 Notations
 ---------
 
@@ -678,6 +680,11 @@ The following scopes are built-in.
 - :n:`constr`:
 
   + parses :n:`c = @term` and produces :n:`constr:(c)`
+
+  This scope can be parameterized by a list of delimiting keys of interpretation
+  scopes (as described in :ref:`LocalInterpretationRulesForNotations`),
+  describing how to interpret the parsed term. For instance, :n:`constr(A, B)`
+  parses :n:`c = @term` and produces :n:`constr:(c%A%B)`.
 
 - :n:`ident`:
 
