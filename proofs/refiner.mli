@@ -32,12 +32,8 @@ val tclIDTAC_MESSAGE  : Pp.t -> tactic
 
 (** [tclEVARS sigma] changes the current evar map *)
 val tclEVARS : evar_map -> tactic
-val tclEVARUNIVCONTEXT : UState.t -> tactic
-
-val tclPUSHCONTEXT : Evd.rigid -> Univ.ContextSet.t -> tactic -> tactic
 val tclPUSHEVARUNIVCONTEXT : UState.t -> tactic
 
-val tclPUSHCONSTRAINTS : Univ.Constraint.t -> tactic
 
 (** [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)
@@ -86,16 +82,6 @@ val tclTHENSLASTn     : tactic -> tactic -> tactic array -> tactic
    [tac2] for the remaining last subgoals (previously called tclTHENST) *)
 val tclTHENSFIRSTn : tactic -> tactic array -> tactic -> tactic
 
-(** [tclTHENLASTn tac1 [t1 ; ... ; tn] gls] first applies [tac1] then,
-   applies [t1],...,[tn] on the last [n] resulting subgoals and leaves
-   unchanged the other subgoals *)
-val tclTHENLASTn    : tactic -> tactic array -> tactic
-
-(** [tclTHENFIRSTn tac1 [t1 ; ... ; tn] gls] first applies [tac1] then,
-   applies [t1],...,[tn] on the first [n] resulting subgoals and leaves
-   unchanged the other subgoals (previously called [tclTHENSI]) *)
-val tclTHENFIRSTn   : tactic -> tactic array -> tactic
-
 (** A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.t Lazy.t
 
@@ -106,9 +92,7 @@ val catch_failerror  : Exninfo.iexn -> unit
 val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
-val tclREPEAT_MAIN   : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
-val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
@@ -118,16 +102,3 @@ val tclFAIL_lazy     : int -> Pp.t Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
-
-(** [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,
-   if it succeeds, applies [tac2] to the resulting subgoals,
-   and if not applies [tac3] to the initial goal [gls] *)
-val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
-val tclIFTHENSELSE   : tactic -> tactic list -> tactic ->tactic
-val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
-
-(** [tclIFTHENTRYELSEMUST tac1 tac2 gls] applies [tac1] then [tac2]. If [tac1]
-   has been successful, then [tac2] may fail. Otherwise, [tac2] must succeed.
-   Equivalent to [(tac1;try tac2)||tac2] *)
-
-val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic

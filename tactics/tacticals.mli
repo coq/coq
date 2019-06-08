@@ -31,13 +31,9 @@ val tclTHENLAST      : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
 val tclTHENSV        : tactic -> tactic array -> tactic
 val tclTHENSLASTn    : tactic -> tactic -> tactic array -> tactic
-val tclTHENLASTn     : tactic -> tactic array -> tactic
 val tclTHENSFIRSTn   : tactic -> tactic array -> tactic -> tactic
-val tclTHENFIRSTn    : tactic -> tactic array -> tactic
 val tclREPEAT        : tactic -> tactic
-val tclREPEAT_MAIN   : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
-val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
@@ -48,11 +44,6 @@ val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
-
-val tclIFTHENELSE        : tactic -> tactic -> tactic -> tactic
-val tclIFTHENSELSE       : tactic -> tactic list -> tactic -> tactic
-val tclIFTHENSVELSE      : tactic -> tactic array -> tactic -> tactic
-val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
 (** {6 Tacticals applying to hypotheses } *)
 

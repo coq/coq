@@ -129,9 +129,6 @@ let tclTHENSLASTn tac1 tac taci = tclTHENS3PARTS tac1 [||] tac taci
 let tclTHEN_i tac taci gls =
   finish_tac (thensi_tac taci (then_tac tac (start_tac gls)))
 
-let tclTHENLASTn tac1 taci = tclTHENSLASTn tac1 tclIDTAC taci
-let tclTHENFIRSTn tac1 taci = tclTHENSFIRSTn tac1 taci tclIDTAC
-
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)
 let tclTHEN tac1 tac2 = tclTHENS3PARTS tac1 [||] tac2 [||]
@@ -253,45 +250,8 @@ let rec tclFIRST = function
   | [] -> tclFAIL_s "No applicable tactic."
   |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
-let ite_gen tcal tac_if continue tac_else gl=
-  let success=ref false in
-  let tac_if0 gl=
-    let result=tac_if gl in
-      success:=true;result in
-  let tac_else0 e gl=
-    if !success then
-      iraise e
-    else
-      try
-        tac_else gl
-      with
-        e' when CErrors.noncritical e' -> iraise e in
-  try
-    tcal tac_if0 continue gl
-  with (* Breakpoint *)
-  | e when CErrors.noncritical e ->
-    let e = CErrors.push e in catch_failerror e; tac_else0 e gl
-
-(* Try the first tactic and, if it succeeds, continue with
-   the second one, and if it fails, use the third one *)
-
-let tclIFTHENELSE=ite_gen tclTHEN
-
-(* Idem with tclTHENS and tclTHENSV *)
-
-let tclIFTHENSELSE=ite_gen tclTHENS
-
-let tclIFTHENSVELSE=ite_gen tclTHENSV
-
-let tclIFTHENTRYELSEMUST tac1 tac2 gl =
-  tclIFTHENELSE tac1 (tclTRY tac2) tac2 gl
-
 (* Fails if a tactic did not solve the goal *)
 let tclCOMPLETE tac = tclTHEN tac (tclFAIL_s "Proof is not complete.")
-
-(* Try the first that solves the current goal *)
-let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
-
 
 (* Iteration tacticals *)
 
@@ -311,22 +271,7 @@ let rec tclREPEAT t g =
 
 let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
-(* Repeat on the first subgoal (no failure if no more subgoal) *)
-let rec tclREPEAT_MAIN t g =
-  (tclORELSE (tclTHEN_i t (fun i -> if Int.equal i 1 then (tclREPEAT_MAIN t) else
-    tclIDTAC)) tclIDTAC) g
-
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
-
-let tclEVARUNIVCONTEXT ctx gls = tclIDTAC {gls with sigma= Evd.set_universe_context gls.sigma ctx}
-
-(* Push universe context *)
-let tclPUSHCONTEXT rigid ctx tac gl = 
-  tclTHEN (tclEVARS (Evd.merge_context_set rigid (project gl) ctx)) tac gl
-
 let tclPUSHEVARUNIVCONTEXT ctx gl = 
   tclEVARS (Evd.merge_universe_context (project gl) ctx) gl
-
-let tclPUSHCONSTRAINTS cst gl = 
-  tclEVARS (Evd.add_constraints (project gl) cst) gl
