@@ -91,19 +91,19 @@ let set_endline_tactic tac ps =
     end of the proof to close the proof. The proof is started in the
     evar map [sigma] (which can typically contain universe
     constraints), and with universe bindings pl. *)
-let start_proof sigma name ?(pl=UState.default_univ_decl) kind goals =
+let start_proof sigma name udecl kind goals =
   { proof = Proof.start ~name ~poly:(pi2 kind) sigma goals
   ; endline_tactic = None
   ; section_vars = None
-  ; universe_decl = pl
+  ; universe_decl = udecl
   ; strength = kind
   }
 
-let start_dependent_proof name ?(pl=UState.default_univ_decl) kind goals =
+let start_dependent_proof name udecl kind goals =
   { proof = Proof.dependent_start ~name ~poly:(pi2 kind) goals
   ; endline_tactic = None
   ; section_vars = None
-  ; universe_decl = pl
+  ; universe_decl = udecl
   ; strength = kind
   }
 

@@ -60,25 +60,39 @@ module Proof_ending : sig
 
 end
 
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : EConstr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    }
+end
+
 val start_lemma
   :  Id.t
-  -> ?pl:UState.universe_decl
+  -> ?udecl:UState.universe_decl
   -> goal_kind
   -> Evd.evar_map
   -> ?proof_ending:Proof_ending.t
   -> ?sign:Environ.named_context_val
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
+  -> ?impargs:Impargs.manual_implicits
   -> EConstr.types
   -> t
 
 val start_dependent_lemma
   :  Id.t
-  -> ?pl:UState.universe_decl
+  -> ?udecl:UState.universe_decl
   -> goal_kind
   -> ?proof_ending:Proof_ending.t
   -> ?compute_guard:lemma_possible_guards
   -> ?hook:DeclareDef.Hook.t
+  -> ?impargs:Impargs.manual_implicits
   -> Proofview.telescope
   -> t
 
@@ -92,9 +106,7 @@ val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
   -> goal_kind -> Evd.evar_map -> UState.universe_decl
   -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
-  -> (Id.t (* name of thm *) *
-     (EConstr.types (* type of thm *) *
-      (Name.t list (* names to pre-introduce *) * Impargs.manual_implicits))) list
+  -> Recthm.t list
   -> int list option
   -> t
 
@@ -107,17 +119,16 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {6 Saving proofs } *)
 
-type proof_info
-
-val default_info : proof_info
+type lemma_info
+val default_lemma_info : lemma_info
 
 val save_lemma_admitted
-  :  ?proof:(Proof_global.proof_object * proof_info)
+  :  ?proof:(Proof_global.proof_object * lemma_info)
   -> lemma:t
   -> unit
 
 val save_lemma_proved
-  :  ?proof:(Proof_global.proof_object * proof_info)
+  :  ?proof:(Proof_global.proof_object * lemma_info)
   -> ?lemma:t
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
@@ -126,5 +137,6 @@ val save_lemma_proved
 (* To be removed *)
 module Internal : sig
   (** Only needed due to the Proof_global compatibility layer. *)
-  val get_info : t -> proof_info
+  val get_info : t -> lemma_info
+
 end

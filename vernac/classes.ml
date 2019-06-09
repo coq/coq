@@ -366,7 +366,7 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
            ~univdecl:decl typ ctx ~kind:(Global ImportDefaultBehavior,poly,Instance) ~hook obls)
 
 
-let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids term termtype =
+let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
      the pretyping after the proof has opened. As a
      consequence, we use the low-level primitives to code
@@ -374,7 +374,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.(Global ImportDefaultBehavior, poly, DefinitionBody Instance) in
-  let lemma = Lemmas.start_lemma id ~pl:decl kind sigma (EConstr.of_constr termtype)
+  let lemma = Lemmas.start_lemma id ~udecl kind sigma (EConstr.of_constr termtype)
       ~hook:(DeclareDef.Hook.make
                (fun _ _ _ -> instance_hook pri global imps ?hook)) in
   (* spiwack: I don't know what to do with the status here. *)

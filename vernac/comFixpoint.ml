@@ -261,8 +261,10 @@ let declare_fixpoint_notations ntns =
 let declare_fixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) indexes ntns =
   (* Some bodies to define by proof *)
   let thms =
-    List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
-              fixnames fixtypes fiximps in
+    List.map3 (fun name t (ctx,impargs,_) ->
+        { Lemmas.Recthm.name; typ = EConstr.of_constr t
+        ; args = List.map RelDecl.get_name ctx; impargs})
+      fixnames fixtypes fiximps in
   let init_tac =
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
       fixdefs) in
@@ -299,8 +301,10 @@ let declare_cofixpoint_notations = declare_fixpoint_notations
 let declare_cofixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   (* Some bodies to define by proof *)
   let thms =
-    List.map3 (fun id t (ctx,imps,_) -> (id,(EConstr.of_constr t,(List.map RelDecl.get_name ctx,imps))))
-              fixnames fixtypes fiximps in
+    List.map3 (fun name t (ctx,impargs,_) ->
+        { Lemmas.Recthm.name; typ = EConstr.of_constr t
+        ; args = List.map RelDecl.get_name ctx; impargs})
+      fixnames fixtypes fiximps in
   let init_tac =
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC)
       fixdefs) in

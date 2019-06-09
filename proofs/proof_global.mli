@@ -63,7 +63,7 @@ type opacity_flag = Opaque | Transparent
 val start_proof
   :  Evd.evar_map
   -> Names.Id.t
-  -> ?pl:UState.universe_decl
+  -> UState.universe_decl
   -> Decl_kinds.goal_kind
   -> (Environ.env * EConstr.types) list
   -> t
@@ -72,7 +72,7 @@ val start_proof
     initial goals. *)
 val start_dependent_proof
   :  Names.Id.t
-  -> ?pl:UState.universe_decl
+  -> UState.universe_decl
   -> Decl_kinds.goal_kind
   -> Proofview.telescope
   -> t
