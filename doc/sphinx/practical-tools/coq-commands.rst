@@ -124,11 +124,11 @@ and ``coqtop``, unless stated otherwise:
 
      :ref:`names-of-libraries` and the
      command Declare ML Module Section :ref:`compiled-files`.
-:-Q *directory* dirpath: Add physical path *directory* to the list of
+:-Q *directory* *dirpath*: Add physical path *directory* to the list of
   directories where |Coq| looks for a file and bind it to the logical
   directory *dirpath*. The subdirectory structure of *directory* is
   recursively available from |Coq| using absolute names (extending the
-  dirpath prefix) (see Section :ref:`qualified-names`).Note that only those
+  :n:`@dirpath` prefix) (see Section :ref:`qualified-names`). Note that only those
   subdirectories and files which obey the lexical conventions of what is
   an :n:`@ident` are taken into account. Conversely, the
   underlying file systems or operating systems may be more restrictive
@@ -138,13 +138,13 @@ and ``coqtop``, unless stated otherwise:
   disallow two files differing only in the case in the same directory.
 
   .. seealso:: Section :ref:`names-of-libraries`.
-:-R *directory* dirpath: Do as -Q *directory* dirpath but make the
+:-R *directory* *dirpath*: Do as ``-Q`` *directory* *dirpath* but make the
   subdirectory structure of *directory* recursively visible so that the
   recursive contents of physical *directory* is available from |Coq| using
   short or partially qualified names.
 
   .. seealso:: Section :ref:`names-of-libraries`.
-:-top dirpath: Set the toplevel module name to dirpath instead of Top.
+:-top *dirpath*: Set the toplevel module name to :n:`@dirpath` instead of ``Top``.
   Not valid for `coqc` as the toplevel module name is inferred from the
   name of the output file.
 :-exclude-dir *directory*: Exclude any subdirectory named *directory*
@@ -164,10 +164,17 @@ and ``coqtop``, unless stated otherwise:
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
   |Coq| script from *file.v*. Write its contents to the standard output as
   it is executed.
-:-load-vernac-object dirpath: Load |Coq| compiled library dirpath. This
-  is equivalent to runningRequire dirpath.
-:-require dirpath: Load |Coq| compiled library dirpath and import it.
-  This is equivalent to running Require Import dirpath.
+:-load-vernac-object *qualid*: Load |Coq| compiled library :n:`@qualid`. This
+  is equivalent to running :cmd:`Require` :n:`qualid`.
+:-ri *qualid*, -require-import *qualid*: Load |Coq| compiled library :n:`@qualid` and import it.
+  This is equivalent to running :cmd:`Require Import` :n:`@qualid`.
+:-re *qualid*, -require-export *qualid*: Load |Coq| compiled library :n:`@qualid` and transitively import it.
+  This is equivalent to running :cmd:`Require Export` :n:`@qualid`.
+:-rifrom *dirpath* *qualid*, -require-import-from *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid` and import it.
+  This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Import` :n:`@qualid`.
+:-refrom *dirpath* *qualid*, -require-export-from *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid` and transitively import it.
+  This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Export` :n:`@qualid`.
+:-require *qualid*: Deprecated; use ``-ri`` *qualid*.
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
 :-compile *file.v*: Deprecated; use ``coqc`` instead. Compile file *file.v* into *file.vo*. This option
   implies -batch (exit just after argument parsing). It is available only
@@ -193,7 +200,7 @@ and ``coqtop``, unless stated otherwise:
 :-emacs, -ide-slave: Start a special toplevel to communicate with a
   specific IDE.
 :-impredicative-set: Change the logical theory of |Coq| by declaring the
-   sort Set impredicative.
+   sort :g:`Set` impredicative.
 
    .. warning::
 
