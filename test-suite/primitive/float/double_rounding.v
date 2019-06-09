@@ -27,3 +27,12 @@ Definition check_vm := Eval vm_compute in (big_vm + one)%float.
 
 Check (eq_refl : (result_vm ?= big_vm)%float = FGt).
 Check (eq_refl : (check_vm ?= big_vm)%float = FEq).
+
+
+Definition big_native := Eval native_compute in ldexp one (53)%Z.
+Definition small_native := Eval native_compute in (one + ldexp one (-52)%Z)%float.
+Definition result_native := Eval native_compute in (big_native + small_native)%float.
+Definition check_native := Eval native_compute in (big_native + one)%float.
+
+Check (eq_refl : (result_native ?= big_native)%float = FGt).
+Check (eq_refl : (check_native ?= big_native)%float = FEq).

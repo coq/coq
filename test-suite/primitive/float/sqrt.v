@@ -28,15 +28,22 @@ Qed.
 
 Check (eq_refl : sqrt neg_zero = neg_zero).
 Check (eq_refl neg_zero <: sqrt neg_zero = neg_zero).
+Check (eq_refl neg_zero <<: sqrt neg_zero = neg_zero).
 Check (eq_refl : sqrt zero = zero).
 Check (eq_refl zero <: sqrt zero = zero).
+Check (eq_refl zero <<: sqrt zero = zero).
 Check (eq_refl : sqrt one = one).
 Check (eq_refl one <: sqrt one = one).
+Check (eq_refl one <<: sqrt one = one).
 Check (eq_refl : sqrt (-one) = nan).
 Check (eq_refl nan <: sqrt (-one) = nan).
+Check (eq_refl nan <<: sqrt (-one) = nan).
 Check (eq_refl : sqrt infinity = infinity).
 Check (eq_refl infinity <: sqrt infinity = infinity).
+Check (eq_refl infinity <<: sqrt infinity = infinity).
 Check (eq_refl : sqrt neg_infinity = nan).
 Check (eq_refl nan <: sqrt neg_infinity = nan).
+Check (eq_refl nan <<: sqrt neg_infinity = nan).
 Check (eq_refl : sqrt infinity = infinity).
 Check (eq_refl infinity <: sqrt infinity = infinity).
+Check (eq_refl infinity <<: sqrt infinity = infinity).
