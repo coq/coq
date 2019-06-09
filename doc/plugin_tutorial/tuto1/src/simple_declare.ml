@@ -7,7 +7,7 @@ let edeclare ?hook ident (_, poly, _ as k) ~opaque sigma udecl body tyopt imps =
   DeclareDef.declare_definition ident k ce ubinders imps ?hook_data
 
 let declare_definition ~poly ident sigma body =
-  let k = (Decl_kinds.Global, poly, Decl_kinds.Definition) in
+  let k = Decl_kinds.(Global ImportDefaultBehavior, poly, Definition) in
   let udecl = UState.default_univ_decl in
   edeclare ident k ~opaque:false sigma udecl body None []
 

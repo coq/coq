@@ -359,6 +359,8 @@ open Pputils
         keyword (if many then "Variables" else "Variable")
       | (DoDischarge,Conjectural) ->
         anomaly (Pp.str "Don't know how to beautify a local conjecture.")
+      | (_,Context) ->
+        anomaly (Pp.str "Context is used only internally.")
 
   let pr_params pr_c (xl,(c,t)) =
     hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++

@@ -305,7 +305,7 @@ let declare_cofixpoint_interactive local poly ((fixnames,fixrs,fixdefs,fixtypes)
       fixdefs) in
   let evd = Evd.from_ctx ctx in
   let pstate = Lemmas.start_proof_with_initialization
-    (Global,poly, DefinitionBody CoFixpoint)
+    (Global ImportDefaultBehavior,poly, DefinitionBody CoFixpoint)
     evd pl (Some(true,[],init_tac)) thms None in
   declare_cofixpoint_notations ntns;
   pstate

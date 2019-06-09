@@ -178,18 +178,14 @@ let save ?export_seff id const uctx do_guard (locality,poly,kind) hook universes
     let k = Kindops.logical_kind_of_goal_kind kind in
     let should_suggest = const.const_entry_opaque && Option.is_empty const.const_entry_secctx in
     let r = match locality with
-      | Discharge when Lib.sections_are_opened () ->
+      | Discharge ->
           let c = SectionLocalDef const in
           let _ = declare_variable id (Lib.cwd(), c, k) in
           let () = if should_suggest
             then Proof_using.suggest_variable (Global.env ()) id
           in
           VarRef id
-      | Local | Global | Discharge ->
-          let local = match locality with
-          | Local | Discharge -> true
-          | Global -> false
-          in
+      | Global local ->
           let kn =
            declare_constant ?export_seff id ~local (DefinitionEntry const, k) in
           let () = if should_suggest
@@ -213,7 +209,7 @@ let fresh_name_for_anonymous_theorem () =
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-     locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
+     locality <> Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -233,16 +229,12 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
           in
           let c = SectionLocalAssum ((t_i, univs),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
-          (Discharge, VarRef id,imps)
-      | Local | Global ->
-          let local = match locality with
-          | Local -> true
-          | Global -> false
-          | Discharge -> assert false
-          in
+          (VarRef id,imps)
+      | Global local ->
+          let k = IsAssumption Conjectural in
           let decl = (ParameterEntry (None,(t_i,univs),None), k) in
           let kn = declare_constant id ~local decl in
-          (locality,ConstRef kn,imps))
+          (ConstRef kn,imps))
   | Some body ->
       let body = norm body in
       let k = Kindops.logical_kind_of_goal_kind kind in
@@ -260,18 +252,13 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
           let const = definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
-          (Discharge,VarRef id,imps)
-      | Local | Global ->
-        let local = match locality with
-        | Local -> true
-        | Global -> false
-        | Discharge -> assert false
-        in
+          (VarRef id,imps)
+      | Global local ->
         let const =
           Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i
 	in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
-        (locality,ConstRef kn,imps)
+        (ConstRef kn,imps)
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
@@ -282,17 +269,17 @@ let check_anonymity id save_ident =
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
                    (fun id -> strbrk "Let definition" ++ spc () ++ Id.print id ++
-                                spc () ++ strbrk "declared as an axiom.")
+                                spc () ++ strbrk "declared as a local axiom.")
 
 let admit ?hook ctx (id,k,e) pl () =
-  let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
-  let () = match k with
-  | Global, _, _ -> ()
-  | Local, _, _ | Discharge, _, _ -> warn_let_as_axiom id
+  let local = match k with
+  | Global local, _, _ -> local
+  | Discharge, _, _ -> warn_let_as_axiom id; ImportNeedQualified
   in
+  let kn = declare_constant id ~local (ParameterEntry e, IsAssumption Conjectural) in
   let () = assumption_message id in
   Declare.declare_univ_binders (ConstRef kn) pl;
-  call_hook ?hook ctx [] Global (ConstRef kn)
+  call_hook ?hook ctx [] (Global local) (ConstRef kn)
 
 (* Starting a goal *)
 
@@ -380,8 +367,8 @@ let start_proof_with_initialization ?hook kind sigma decl recguard thms snl =
             let uctx = UState.check_univ_decl ~poly:(pi2 kind) ctx decl in
             let env = Global.env () in
             List.map_i (save_remaining_recthms env sigma kind norm uctx body opaq) 1 other_thms in
-        let thms_data = (strength,ref,imps)::other_thms_data in
-        List.iter (fun (strength,ref,imps) ->
+        let thms_data = (ref,imps)::other_thms_data in
+        List.iter (fun (ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
       let pstate = start_proof id ~pl:decl kind sigma t ~hook ~compute_guard:guard in

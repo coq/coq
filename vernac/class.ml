@@ -358,9 +358,9 @@ let try_add_new_coercion_with_source ref ~local poly ~source =
 
 let add_coercion_hook poly _uctx _trans local ref =
   let local = match local with
-  | Discharge
-  | Local -> true
-  | Global -> false
+  | Discharge -> assert false (* Local Coercion in section behaves like Local Definition *)
+  | Global ImportNeedQualified -> true
+  | Global ImportDefaultBehavior -> false
   in
   let () = try_add_new_coercion ref ~local poly in
   let msg = Nametab.pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
@@ -370,9 +370,9 @@ let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)
 
 let add_subclass_hook poly _uctx _trans local ref =
   let stre = match local with
-  | Local -> true
-  | Global -> false
-  | Discharge -> assert false
+  | Discharge -> assert false (* Local Subclass in section behaves like Local Definition *)
+  | Global ImportNeedQualified -> true
+  | Global ImportDefaultBehavior -> false
   in
   let cl = class_of_global ref in
   try_add_new_coercion_subclass cl ~local:stre poly

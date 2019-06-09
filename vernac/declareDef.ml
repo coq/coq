@@ -14,27 +14,13 @@ open Entries
 open Globnames
 open Impargs
 
-let warn_local_declaration =
-  CWarnings.create ~name:"local-declaration" ~category:"scope"
-    Pp.(fun (id,kind) ->
-        Names.Id.print id ++ strbrk " is declared as a local " ++ str kind)
-
-let get_locality id ~kind = function
-| Discharge ->
-  (* If a Let is defined outside a section, then we consider it as a local definition *)
-   warn_local_declaration (id,kind);
-  true
-| Local -> true
-| Global -> false
-
 let declare_definition ident (local, p, k) ?hook_data ce pl imps =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let gr = match local with
-  | Discharge when Lib.sections_are_opened () ->
+  | Discharge ->
       let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in
       VarRef ident
-  | Discharge | Local | Global ->
-      let local = get_locality ident ~kind:"definition" local in
+  | Global local ->
       let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
       let gr = ConstRef kn in
       let () = Declare.declare_univ_binders gr pl in

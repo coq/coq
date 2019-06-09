@@ -11,8 +11,6 @@
 open Names
 open Decl_kinds
 
-val get_locality : Id.t -> kind:string -> Decl_kinds.locality -> bool
-
 val declare_definition
   : Id.t
   -> definition_kind

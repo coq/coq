@@ -606,7 +606,7 @@ let vernac_definition_name lid local =
   let () =
     match local with
     | Discharge -> Dumpglob.dump_definition lid true "var"
-    | Local | Global -> Dumpglob.dump_definition lid false "def"
+    | Global _ -> Dumpglob.dump_definition lid false "def"
   in
   lid
 
@@ -658,13 +658,13 @@ let vernac_exact_proof ~pstate c =
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let global = local == Global in
   let kind = local, atts.polymorphic, kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun (lid, _) ->
-	if global then Dumpglob.dump_definition lid false "ax"
-	else Dumpglob.dump_definition lid true "var") idl) l;
+          match local with
+            | Global _ -> Dumpglob.dump_definition lid false "ax"
+            | Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
   let status = ComAssumption.do_assumptions ~program_mode:atts.program kind nl l in
   if not status then Feedback.feedback Feedback.AddedAxiom
 

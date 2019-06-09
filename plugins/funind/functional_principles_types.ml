@@ -311,7 +311,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let pstate =
     Lemmas.start_proof
       new_princ_name
-      (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
+      Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
       !evd
       (EConstr.of_constr new_principle_type)
   in

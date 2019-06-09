@@ -53,14 +53,14 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   internal specify if the constant has been created by the kernel or by the
   user, and in the former case, if its errors should be silent *)
 val declare_constant :
- ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
+ ?internal:internal_flag -> ?local:import_status -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
 val declare_private_constant :
-  role:side_effect_role -> ?internal:internal_flag -> ?local:bool -> Id.t -> constant_declaration -> Constant.t * Safe_typing.private_constants
+  role:side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Safe_typing.private_constants
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  ?local:bool -> Id.t -> ?types:constr ->
+  ?local:import_status -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t
 
 (** Since transparent constants' side effects are globally declared, we

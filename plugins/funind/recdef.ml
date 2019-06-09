@@ -1371,7 +1371,7 @@ let open_new_goal pstate build_proof sigma using_lemmas ref_ goal_name (gls_type
   in
   let pstate = Lemmas.start_proof
     na
-    (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
+    Decl_kinds.(Global ImportDefaultBehavior, false (* FIXME *), Proof Lemma)
     sigma gls_type ~hook:(Lemmas.mk_hook hook) in
   let pstate = if Indfun_common.is_strict_tcc  ()
   then
@@ -1411,7 +1411,7 @@ let com_terminate
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
     let pstate = Lemmas.start_proof thm_name
-      (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
+      (Global ImportDefaultBehavior, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
       ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook in
     let pstate = fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) pstate in
     fst @@ by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
@@ -1457,7 +1457,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_monomorphic_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let pstate = Lemmas.start_proof eq_name (Global, false, Proof Lemma) ~sign evd
+    let pstate = Lemmas.start_proof eq_name (Global ImportDefaultBehavior, false, Proof Lemma) ~sign evd
        (EConstr.of_constr equation_lemma_type) in
     let pstate = fst @@ by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref

@@ -12,7 +12,9 @@
 
 type discharge = DoDischarge | NoDischarge
 
-type locality = Discharge | Local | Global
+type import_status = ImportDefaultBehavior | ImportNeedQualified
+
+type locality = Discharge | Global of import_status
 
 type binding_kind = Explicit | Implicit
 
@@ -46,7 +48,7 @@ type definition_object_kind =
   | Method
   | Let
 
-type assumption_object_kind = Definitional | Logical | Conjectural
+type assumption_object_kind = Definitional | Logical | Conjectural | Context
 
 (* [assumption_kind]
 

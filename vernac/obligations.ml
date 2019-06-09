@@ -643,7 +643,7 @@ let declare_obligation prg obl body ty uctx =
           const_entry_feedback = None;
       } in
       (* ppedrot: seems legit to have obligations as local *)
-      let constant = Declare.declare_constant obl.obl_name ~local:true
+      let constant = Declare.declare_constant obl.obl_name ~local:ImportNeedQualified
 	(DefinitionEntry ce,IsProof Property)
       in
       if not opaque then add_hint (Locality.make_section_locality None) prg constant;
@@ -787,9 +787,11 @@ let dependencies obls n =
       obls;
     !res
 
-let goal_kind poly = Decl_kinds.Local, poly, Decl_kinds.DefinitionBody Decl_kinds.Definition
+let goal_kind poly =
+  Decl_kinds.(Global ImportNeedQualified, poly, DefinitionBody Definition)
 
-let goal_proof_kind poly = Decl_kinds.Local, poly, Decl_kinds.Proof Decl_kinds.Lemma
+let goal_proof_kind poly =
+  Decl_kinds.(Global ImportNeedQualified, poly, Proof Lemma)
 
 let kind_of_obligation poly o =
   match o with
@@ -1102,7 +1104,7 @@ let show_term n =
             ++ Printer.pr_constr_env env sigma prg.prg_body)
 
 let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
-                   ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
+                   ?(implicits=[]) ?(kind=Global ImportDefaultBehavior,false,Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print n ++ str " has type-checked" in
@@ -1122,7 +1124,7 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
-                           ?(kind=Global,false,Definition) ?(reduce=reduce)
+                           ?(kind=Global ImportDefaultBehavior,false,Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
@@ -1153,7 +1155,7 @@ let admit_prog prg =
         | None ->
             let x = subst_deps_obl obls x in
             let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
-            let kn = Declare.declare_constant x.obl_name ~local:true
+            let kn = Declare.declare_constant x.obl_name ~local:ImportNeedQualified
               (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;

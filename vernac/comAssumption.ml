@@ -37,15 +37,15 @@ let () =
       optwrite = (:=) axiom_into_instance; }
 
 let should_axiom_into_instance = function
-  | Discharge ->
+  | Context ->
     (* The typeclass behaviour of Variable and Context doesn't depend
        on section status *)
     true
-  | Global | Local -> !axiom_into_instance
+  | Definitional | Logical | Conjectural -> !axiom_into_instance
 
 let declare_assumption is_coe (local,p,kind) (c,ctx) pl imps impl nl {CAst.v=ident} =
 match local with
-| Discharge when Lib.sections_are_opened () ->
+| Discharge ->
   let ctx = match ctx with
     | Monomorphic_entry ctx -> ctx
     | Polymorphic_entry (_, ctx) -> Univ.ContextSet.of_context ctx
@@ -61,9 +61,8 @@ match local with
   let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
   (r,Univ.Instance.empty,true)
 
-| Global | Local | Discharge ->
-  let do_instance = should_axiom_into_instance local in
-  let local = DeclareDef.get_locality ident ~kind:"axiom" local in
+| Global local ->
+  let do_instance = should_axiom_into_instance kind in
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -78,6 +77,7 @@ match local with
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
+  let local = match local with ImportNeedQualified -> true | ImportDefaultBehavior -> false in
   let () = if is_coe then Class.try_add_new_coercion gr ~local p in
   let inst = match ctx with
     | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
@@ -124,7 +124,7 @@ let process_assumptions_udecls kind l =
     | (_, ([], _))::_ | [] -> assert false
   in
   let () = match kind, udecl with
-    | (Discharge, _, _), Some _ when Lib.sections_are_opened () ->
+    | (Discharge, _, _), Some _ ->
       let loc = first_id.CAst.loc in
       let msg = Pp.str "Section variables cannot be polymorphic." in
       user_err ?loc  msg
@@ -288,7 +288,9 @@ let context poly l =
       | _ -> false
       in
       let impl = List.exists test impls in
-      let decl = (Discharge, poly, Definitional) in
+      let persistence =
+        if Lib.sections_are_opened () then Discharge else Global ImportDefaultBehavior in
+      let decl = (persistence, poly, Context) in
       let nstatus = match b with
       | None ->
         pi3 (declare_assumption false decl (t, univs) UnivNames.empty_binders [] impl

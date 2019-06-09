@@ -124,26 +124,20 @@ open Declare
 
 let definition_message = Declare.definition_message
 
-let get_locality = function
-| Discharge -> true
-| Local -> true
-| Global -> false
-
 let save id const ?hook uctx (locality,_,kind) =
   let fix_exn = Future.fix_exn_of const.const_entry_body in
-  let l,r = match locality with
-    | Discharge when Lib.sections_are_opened () ->
+  let r = match locality with
+    | Discharge ->
         let k = Kindops.logical_kind_of_goal_kind kind in
 	let c = SectionLocalDef const in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
-	(Local, VarRef id)
-    | Discharge | Local | Global ->
-        let local = get_locality locality in
+        VarRef id
+    | Global local ->
         let k = Kindops.logical_kind_of_goal_kind kind in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
-	(locality, ConstRef kn)
+        ConstRef kn
   in
-  Lemmas.call_hook ?hook ~fix_exn uctx [] l r;
+  Lemmas.call_hook ?hook ~fix_exn uctx [] locality r;
   definition_message id
 
 let with_full_print f a =
