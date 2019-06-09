@@ -46,4 +46,3 @@ val error_nparams_mismatch : ?loc:Loc.t -> int -> int -> 'a
 (** Misc *)
 
 val drop_ltac2_env : Genintern.Store.t -> Genintern.Store.t
-val check_ltac2_var : ?loc:Loc.t -> Genintern.Store.t -> Id.t -> 'a glb_typexpr -> unit

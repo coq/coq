@@ -856,9 +856,11 @@ be done via an explicit annotation to the :n:`ltac1` quotation.
 .. productionlist:: coq
   ltac2_term : ltac1 : ( `ident` ... `ident` |- `ltac_expr` )
 
-The identifiers must be bound in the surrounding Ltac2 environment to values of
-type `Ltac2.Ltac1.t` (see below). This syntax will make them available to the
-quoted Ltac1 code as if they had been bound from Ltac1 itself.
+The return type of this expression is a function of the same arity as the number
+of identifiers, with arguments of type `Ltac2.Ltac1.t` (see below). This syntax
+will bind the variables in the quoted Ltac1 code as if they had been bound from
+Ltac1 itself. Similarly, the arguments applied to the quotation will be passed
+at runtime to the Ltac1 code.
 
 Low-level API
 +++++++++++++

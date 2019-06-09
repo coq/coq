@@ -30,17 +30,14 @@ Fail Ltac2 pose1 (v : constr) :=
 (** Variables explicitly crossing the boundary must satisfy typing properties *)
 Goal True.
 Proof.
-(* Missing variable *)
-Fail ltac1:(x |- idtac).
 (* Wrong type *)
-Fail let x := 0 in ltac1:(x |- idtac).
+Fail ltac1:(x |- idtac) 0.
 (* OK, and runtime has access to variable *)
-let x := Ltac1.of_constr constr:(Type) in ltac1:(x |- idtac x).
+ltac1:(x |- idtac x) (Ltac1.of_constr constr:(Type)).
 
 (* Same for ltac1val *)
-Fail Ltac1.run ltac1val:(x |- idtac).
-Fail let x := 0 in Ltac1.run ltac1val:(x |- idtac).
-let x := Ltac1.of_constr constr:(Type) in Ltac1.run ltac1val:(x |- idtac x).
+Fail Ltac1.run (ltac1val:(x |- idtac) 0).
+Ltac1.run (ltac1val:(x |- idtac x) (Ltac1.of_constr constr:(Type))).
 Abort.
 
 (** Test calls to Ltac2 from Ltac1 *)

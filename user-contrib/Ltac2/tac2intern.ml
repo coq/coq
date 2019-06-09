@@ -1191,23 +1191,6 @@ let intern_open_type t =
   let t = normalize env (count, vars) t in
   (!count, t)
 
-let rec get_closed = function
-| GTypVar _ -> assert false
-| GTypArrow (t, u) -> GTypArrow (get_closed t, get_closed u)
-| GTypRef (t, args) -> GTypRef (t, List.map get_closed args)
-
-let check_ltac2_var ?loc store id t =
-  let env = match Genintern.Store.get store ltac2_env with
-  | None -> empty_env ()
-  | Some env -> env
-  in
-  match Id.Map.find id env.env_var with
-  | sch ->
-    let t' = fresh_mix_type_scheme env sch in
-    unify ?loc env t' (get_closed t)
-  | exception Not_found ->
-    CErrors.user_err ?loc (Id.print id ++ str " is not a bound variable")
-
 (** Subtyping *)
 
 let check_subtype t1 t2 =

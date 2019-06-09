@@ -1119,35 +1119,38 @@ let () =
 
 let () =
   let intern self ist (ids, tac) =
-    (* Check that variables have the Ltac1 type *)
-    let t_ltac1 = gtypref t_ltac1 in
-    let check { CAst.loc; v = id } =
-      let () = Tac2intern.check_ltac2_var ist.Genintern.extra ?loc id t_ltac1 in
-      id
-    in
-    let ids = List.map check ids in
+    let map { CAst.v = id } = id in
+    let ids = List.map map ids in
     (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ltacvars = List.fold_right Id.Set.add ids ist.Genintern.ltacvars in
     let ist = { ist with Genintern.extra; ltacvars } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    GlbVal (ids, tac), gtypref t_unit
+    let fold ty _ = GTypArrow (gtypref t_ltac1, ty) in
+    let ty = List.fold_left fold (gtypref t_unit) ids in
+    GlbVal (ids, tac), ty
   in
-  let interp ist (ids, tac) =
-    let add lfun id =
-      let v = Id.Map.find id ist.env_ist in
-      let v = Tac2ffi.to_ext val_ltac1 v in
-      Id.Map.add id v lfun
+  let interp _ (ids, tac) =
+    let clos args =
+      let add lfun id v =
+        let v = Tac2ffi.to_ext val_ltac1 v in
+        Id.Map.add id v lfun
+      in
+      let lfun = List.fold_left2 add Id.Map.empty ids args in
+      let ist = { env_ist = Id.Map.empty } in
+      let lfun = Tac2interp.set_env ist lfun in
+      let ist = Ltac_plugin.Tacinterp.default_ist () in
+      let ist = { ist with Geninterp.lfun = lfun } in
+      let tac = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
+      let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
+      Proofview.tclOR tac wrap >>= fun () ->
+      return v_unit
     in
-    let lfun = List.fold_left add Id.Map.empty ids in
-    let ist = { env_ist = Id.Map.empty } in
-    let lfun = Tac2interp.set_env ist lfun in
-    let ist = Ltac_plugin.Tacinterp.default_ist () in
-    let ist = { ist with Geninterp.lfun = lfun } in
-    let tac = (Ltac_plugin.Tacinterp.eval_tactic_ist ist tac : unit Proofview.tactic) in
-    let wrap (e, info) = set_bt info >>= fun info -> Proofview.tclZERO ~info e in
-    Proofview.tclOR tac wrap >>= fun () ->
-    return v_unit
+    let len = List.length ids in
+    if Int.equal len 0 then
+      clos []
+    else
+      return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Ltac_plugin.Tacarg.wit_tactic s tac) in
   let print env (ids, tac) =
@@ -1168,32 +1171,35 @@ let () =
 let () =
   let open Ltac_plugin in
   let intern self ist (ids, tac) =
-    (* Check that variables have the Ltac1 type *)
-    let t_ltac1 = gtypref t_ltac1 in
-    let check { CAst.loc; v = id } =
-      let () = Tac2intern.check_ltac2_var ist.Genintern.extra ?loc id t_ltac1 in
-      id
-    in
-    let ids = List.map check ids in
+    let map { CAst.v = id } = id in
+    let ids = List.map map ids in
     (* Prevent inner calls to Ltac2 values *)
     let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
     let ltacvars = List.fold_right Id.Set.add ids ist.Genintern.ltacvars in
     let ist = { ist with Genintern.extra; ltacvars } in
     let _, tac = Genintern.intern Ltac_plugin.Tacarg.wit_tactic ist tac in
-    GlbVal (ids, tac), t_ltac1
+    let fold ty _ = GTypArrow (gtypref t_ltac1, ty) in
+    let ty = List.fold_left fold (gtypref t_ltac1) ids in
+    GlbVal (ids, tac), ty
   in
-  let interp ist (ids, tac) =
-    let add lfun id =
-      let v = Id.Map.find id ist.env_ist in
-      let v = Tac2ffi.to_ext val_ltac1 v in
-      Id.Map.add id v lfun
+  let interp _ (ids, tac) =
+    let clos args =
+      let add lfun id v =
+        let v = Tac2ffi.to_ext val_ltac1 v in
+        Id.Map.add id v lfun
+      in
+      let lfun = List.fold_left2 add Id.Map.empty ids args in
+      let ist = { env_ist = Id.Map.empty } in
+      let lfun = Tac2interp.set_env ist lfun in
+      let ist = Ltac_plugin.Tacinterp.default_ist () in
+      let ist = { ist with Geninterp.lfun = lfun } in
+      return (Value.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
     in
-    let lfun = List.fold_left add Id.Map.empty ids in
-    let ist = { env_ist = Id.Map.empty } in
-    let lfun = Tac2interp.set_env ist lfun in
-    let ist = Ltac_plugin.Tacinterp.default_ist () in
-    let ist = { ist with Geninterp.lfun = lfun } in
-    return (Value.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
+    let len = List.length ids in
+    if Int.equal len 0 then
+      clos []
+    else
+      return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
   in
   let subst s (ids, tac) = (ids, Genintern.substitute Tacarg.wit_tactic s tac) in
   let print env (ids, tac) =
