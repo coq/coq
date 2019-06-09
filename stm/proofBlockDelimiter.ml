@@ -49,7 +49,7 @@ let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | `Expired | `Error _ | `Valid None -> `Not
   | `Valid (Some { Vernacstate.lemmas }) ->
-    Option.cata (Lemmas.Stack.with_top_pstate ~f:(fun proof ->
+    Option.cata (Vernacstate.LemmaStack.with_top_pstate ~f:(fun proof ->
         let proof = Proof_global.get_proof proof in
         let Proof.{ goals=focused; stack=r1; shelf=r2; given_up=r3; sigma } = Proof.data proof in
         let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ r2 @ r3 in

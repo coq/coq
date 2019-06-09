@@ -18,11 +18,27 @@ module Parser : sig
 
 end
 
+module LemmaStack : sig
+
+  type t
+
+  val pop : t -> Lemmas.t * t option
+  val push : t option -> Lemmas.t -> t
+
+  val map_top_pstate : f:(Proof_global.t -> Proof_global.t) -> t -> t
+  val with_top_pstate : t -> f:(Proof_global.t -> 'a ) -> 'a
+
+end
+
 type t =
   { parsing : Parser.state
-  ; system  : States.state          (* summary + libstack *)
-  ; lemmas  : Lemmas.Stack.t option (* proofs of lemmas currently opened *)
-  ; shallow : bool                  (* is the state trimmed down (libstack) *)
+  (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
+  ; system  : States.state
+  (** summary + libstack *)
+  ; lemmas  : LemmaStack.t option
+  (** proofs of lemmas currently opened *)
+  ; shallow : bool
+  (** is the state trimmed down (libstack) *)
   }
 
 val freeze_interp_state : marshallable:bool -> t
@@ -67,19 +83,16 @@ module Proof_global : sig
 
   val get_all_proof_names : unit -> Names.Id.t list
 
-  val copy_terminators : src:Lemmas.Stack.t option -> tgt:Lemmas.Stack.t option -> Lemmas.Stack.t option
-
-  (* Handling of the imperative state *)
-  type t = Lemmas.Stack.t
+  val copy_terminators : src:LemmaStack.t option -> tgt:LemmaStack.t option -> LemmaStack.t option
 
   (* Low-level stuff *)
-  val get : unit -> t option
-  val set : t option -> unit
+  val get : unit -> LemmaStack.t option
+  val set : LemmaStack.t option -> unit
 
   val get_pstate : unit -> Proof_global.t option
 
-  val freeze : marshallable:bool -> t option
-  val unfreeze : t -> unit
+  val freeze : marshallable:bool -> LemmaStack.t option
+  val unfreeze : LemmaStack.t -> unit
 
 end
 [@@ocaml.deprecated "This module is internal and should not be used, instead, thread the proof state"]

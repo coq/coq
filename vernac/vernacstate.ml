@@ -27,10 +27,45 @@ module Parser = struct
 
 end
 
+module LemmaStack = struct
+
+  type t = Lemmas.t * Lemmas.t list
+
+  let map f (pf, pfl) = (f pf, List.map f pfl)
+
+  let map_top_pstate ~f (pf, pfl) = (Lemmas.pf_map f pf, pfl)
+
+  let pop (ps, p) = match p with
+    | [] -> ps, None
+    | pp :: p -> ps, Some (pp, p)
+
+  let with_top (p, _) ~f = f p
+  let with_top_pstate (p, _) ~f = Lemmas.pf_fold f p
+
+  let push ontop a =
+    match ontop with
+    | None -> a , []
+    | Some (l,ls) -> a, (l :: ls)
+
+  let get_all_proof_names (pf : t) =
+    let prj x = Lemmas.pf_fold Proof_global.get_proof x in
+    let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
+    pn :: pns
+
+  let copy_info src tgt =
+    Lemmas.pf_map (fun _ -> Lemmas.pf_fold (fun x -> x) tgt) src
+
+  let copy_info ~src ~tgt =
+    let (ps, psl), (ts,tsl) = src, tgt in
+    copy_info ps ts,
+    List.map2 (fun op p -> copy_info op p) psl tsl
+
+end
+
 type t = {
   parsing : Parser.state;
   system  : States.state;          (* summary + libstack *)
-  lemmas  : Lemmas.Stack.t option; (* proofs of lemmas currently opened *)
+  lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
@@ -75,13 +110,11 @@ let make_shallow st =
 (* Compatibility module *)
 module Proof_global = struct
 
-  type t = Lemmas.Stack.t
-
   let get () = !s_lemmas
   let set x = s_lemmas := x
 
   let get_pstate () =
-    Option.map (Lemmas.Stack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
+    Option.map (LemmaStack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
 
   let freeze ~marshallable:_ = get ()
   let unfreeze x = s_lemmas := Some x
@@ -100,11 +133,11 @@ module Proof_global = struct
 
   let cc f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> Stack.with_top_pstate ~f x
+    | Some x -> LemmaStack.with_top_pstate ~f x
 
   let cc_lemma f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> Stack.with_top ~f x
+    | Some x -> LemmaStack.with_top ~f x
 
   let cc_stack f = match !s_lemmas with
     | None -> raise NoCurrentProof
@@ -112,12 +145,12 @@ module Proof_global = struct
 
   let dd f = match !s_lemmas with
     | None -> raise NoCurrentProof
-    | Some x -> s_lemmas := Some (Stack.map_top_pstate ~f x)
+    | Some x -> s_lemmas := Some (LemmaStack.map_top_pstate ~f x)
 
   let there_are_pending_proofs () = !s_lemmas <> None
   let get_open_goals () = cc get_open_goals
 
-  let give_me_the_proof_opt () = Option.map (Stack.with_top_pstate ~f:get_proof) !s_lemmas
+  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:get_proof) !s_lemmas
   let give_me_the_proof () = cc get_proof
   let get_current_proof_name () = cc get_proof_name
 
@@ -126,8 +159,8 @@ module Proof_global = struct
     match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some stack ->
-      let pf, res = Stack.with_top_pstate stack ~f:(map_fold_proof_endline f) in
-      let stack = Stack.map_top_pstate stack ~f:(fun _ -> pf) in
+      let pf, res = LemmaStack.with_top_pstate stack ~f:(map_fold_proof_endline f) in
+      let stack = LemmaStack.map_top_pstate stack ~f:(fun _ -> pf) in
       s_lemmas := Some stack;
       res
 
@@ -150,7 +183,7 @@ module Proof_global = struct
   let get_current_context () = cc Pfedit.get_current_context
 
   let get_all_proof_names () =
-    try cc_stack Lemmas.Stack.get_all_proof_names
+    try cc_stack LemmaStack.get_all_proof_names
     with NoCurrentProof -> []
 
   let copy_terminators ~src ~tgt =
@@ -158,6 +191,6 @@ module Proof_global = struct
     | None, None -> None
     | Some _ , None -> None
     | None, Some x -> Some x
-    | Some src, Some tgt -> Some (Stack.copy_info ~src ~tgt)
+    | Some src, Some tgt -> Some (LemmaStack.copy_info ~src ~tgt)
 
 end

@@ -881,7 +881,7 @@ end = struct (* {{{ *)
   let invalidate_cur_state () = cur_id := Stateid.dummy
 
   type proof_part =
-    Lemmas.Stack.t option *
+    Vernacstate.LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
     DeclareObl.program_info CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
@@ -1168,7 +1168,7 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Lemmas.Stack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =

@@ -55,7 +55,7 @@ let vernac_require_open_lemma ~stack f =
 
 let with_pstate ~stack f =
   vernac_require_open_lemma ~stack
-    (fun ~stack -> Stack.with_top_pstate stack ~f:(fun pstate -> f ~pstate))
+    (fun ~stack -> Vernacstate.LemmaStack.with_top_pstate stack ~f:(fun pstate -> f ~pstate))
 
 let get_current_or_global_context ~pstate =
   match pstate with
@@ -645,14 +645,14 @@ let vernac_start_proof ~atts kind l =
 let vernac_end_proof ?stack ?proof = let open Vernacexpr in function
   | Admitted ->
     vernac_require_open_lemma ~stack (fun ~stack ->
-      let lemma, stack = Stack.pop stack in
+      let lemma, stack = Vernacstate.LemmaStack.pop stack in
       save_lemma_admitted ?proof ~lemma;
       stack)
   | Proved (opaque,idopt) ->
     let lemma, stack = match stack with
       | None -> None, None
       | Some stack ->
-        let lemma, stack = Stack.pop stack in
+        let lemma, stack = Vernacstate.LemmaStack.pop stack in
         Some lemma, stack
     in
     save_lemma_proved ?lemma ?proof ~opaque ~idopt;
@@ -2341,15 +2341,15 @@ let interp_typed_vernac c ~stack =
     stack
   | VtCloseProof f ->
     vernac_require_open_lemma ~stack (fun ~stack ->
-        let lemma, stack = Stack.pop stack in
+        let lemma, stack = Vernacstate.LemmaStack.pop stack in
         f ~lemma;
         stack)
   | VtOpenProof f ->
-    Some (Stack.push stack (f ()))
+    Some (Vernacstate.LemmaStack.push stack (f ()))
   | VtModifyProof f ->
-    Option.map (Stack.map_top_pstate ~f:(fun pstate -> f ~pstate)) stack
+    Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:(fun pstate -> f ~pstate)) stack
   | VtReadProofOpt f ->
-    let pstate = Option.map (Stack.with_top_pstate ~f:(fun x -> x)) stack in
+    let pstate = Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun x -> x)) stack in
     f ~pstate;
     stack
   | VtReadProof f ->
