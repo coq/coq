@@ -295,16 +295,12 @@ windows32:
     - /^pr-.*$/
 
 lint:
-  image: docker:git
   stage: test
-  script:
-    - apk add bash
-    - dev/lint-repository.sh
+  script: dev/lint-repository.sh
   dependencies: []
-  before_script: []
   variables:
-    # we need an unknown amount of history for per-commit linting
-    GIT_DEPTH: ""
+    GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
+    OPAM_SWITCH: base
 
 pkg:opam:
   stage: test

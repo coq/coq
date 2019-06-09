@@ -105,6 +105,12 @@ files end with newlines) is checked by the `lint` job on GitLab CI (using
 git hook which fixes these errors at commit time. `configure` automatically
 sets you up to use it, unless you already have a hook at `.git/hooks/pre-commit`.
 
+Each commit in your pull request should compile (this makes bisecting
+easier). The `lint` job checks compilation of the OCaml files, please
+try to keep the rest of Coq in a functioning state as well.
+
+You may run the linter yourself with `dev/lint-repository.sh`.
+
 Here are a few tags Coq developers may add to your PR and what they mean. In
 general feedback and requests for you as the pull request author will be in
 the comments and tags are only used to organize pull requests.
