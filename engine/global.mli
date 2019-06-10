@@ -105,7 +105,7 @@ val lookup_named     : variable -> Constr.named_declaration
 val lookup_constant  : Constant.t -> Opaqueproof.opaque Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
-val lookup_pinductive : Constr.pinductive -> 
+val lookup_pinductive : Constr.pinductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_mind      : MutInd.t -> Declarations.mutual_inductive_body
 val lookup_module    : ModPath.t -> Declarations.module_body
