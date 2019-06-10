@@ -29,11 +29,9 @@ type inline =
 
 (** Kinds of modules *)
 
-type module_kind = Module | ModType | ModAny
-
 type 'modast module_interpretor =
-  Environ.env -> module_kind -> 'modast ->
-    Entries.module_struct_entry * module_kind * Univ.ContextSet.t
+  Environ.env -> Modintern.module_kind -> 'modast ->
+    Entries.module_struct_entry * Modintern.module_kind * Univ.ContextSet.t
 
 type 'modast module_params =
   (lident list * ('modast * inline)) list

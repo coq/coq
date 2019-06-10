@@ -240,9 +240,14 @@ let nametab_register_body mp dir (l,body) =
 	    mip.mind_consnames)
 	mib.mind_packets
 
-let nametab_register_module_body mp struc =
+type mod_ops =
+  { import_module : export:bool -> ModPath.t -> unit
+  ; process_module_binding : MBId.t -> Declarations.module_alg_expr -> unit
+  }
+
+let nametab_register_module_body ~mod_ops mp struc =
   (* If [mp] is a globally visible module, we simply import it *)
-  try Declaremods.import_module ~export:false mp
+  try mod_ops.import_module ~export:false mp
   with Not_found ->
     (* Otherwise we try to emulate an import by playing with nametab *)
     nametab_register_dir mp;
@@ -252,7 +257,7 @@ let get_typ_expr_alg mtb = match mtb.mod_type_alg with
   | Some (NoFunctor me) -> me
   | _ -> raise Not_found
 
-let nametab_register_modparam mbid mtb =
+let nametab_register_modparam ~mod_ops mbid mtb =
   let id = MBId.to_id mbid in
   match mtb.mod_type with
   | MoreFunctor _ -> id (* functorial param : nothing to register *)
@@ -260,7 +265,7 @@ let nametab_register_modparam mbid mtb =
     (* We first try to use the algebraic type expression if any,
        via a Declaremods function that converts back to module entries *)
     try
-      let () = Declaremods.process_module_binding mbid (get_typ_expr_alg mtb) in
+      let () = mod_ops.process_module_binding mbid (get_typ_expr_alg mtb) in
       id
     with e when CErrors.noncritical e ->
       (* Otherwise, we try to play with the nametab ourselves *)
@@ -314,9 +319,9 @@ let print_body is_impl extent env mp (l,body) =
 let print_struct is_impl extent env mp struc =
   prlist_with_sep spc (print_body is_impl extent env mp) struc
 
-let print_structure is_type extent env mp locals struc =
+let print_structure ~mod_ops is_type extent env mp locals struc =
   let env' = Modops.add_structure mp struc Mod_subst.empty_delta_resolver env in
-  nametab_register_module_body mp struc;
+  nametab_register_module_body ~mod_ops mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
   hv 2 (keyword kwd ++ spc () ++ print_struct false extent env' mp struc ++
 	brk (1,-2) ++ keyword "End")
@@ -362,31 +367,31 @@ let print_mod_expr env mp locals = function
         (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
   | MEwith _ -> assert false (* No 'with' syntax for modules *)
 
-let rec print_functor fty fatom is_type extent env mp locals = function
-  | NoFunctor me -> fatom is_type extent env mp locals me
+let rec print_functor ~mod_ops fty fatom is_type extent env mp locals = function
+  | NoFunctor me -> fatom ~mod_ops is_type extent env mp locals me
   | MoreFunctor (mbid,mtb1,me2) ->
-      let id = nametab_register_modparam mbid mtb1 in
+      let id = nametab_register_modparam ~mod_ops mbid mtb1 in
       let mp1 = MPbound mbid in
-      let pr_mtb1 = fty extent env mp1 locals mtb1 in
+      let pr_mtb1 = fty ~mod_ops extent env mp1 locals mtb1 in
       let env' = Modops.add_module_type mp1 mtb1 env in
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
 	 str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
-         spc() ++ print_functor fty fatom is_type extent env' mp locals' me2)
+         spc() ++ print_functor ~mod_ops fty fatom is_type extent env' mp locals' me2)
 
-let rec print_expression x =
-  print_functor
+let rec print_expression ~mod_ops x =
+  print_functor ~mod_ops
     print_modtype
-    (function true -> print_typ_expr | false -> fun _ -> print_mod_expr) x
+    (fun ~mod_ops -> function true -> print_typ_expr | false -> fun _ -> print_mod_expr) x
 
-and print_signature x =
-  print_functor print_modtype print_structure x
+and print_signature ~mod_ops x =
+  print_functor ~mod_ops print_modtype print_structure x
 
-and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
-  | Some me -> print_expression true extent env mp locals me
-  | None -> print_signature true extent env mp locals mtb.mod_type
+and print_modtype ~mod_ops extent env mp locals mtb = match mtb.mod_type_alg with
+  | Some me -> print_expression ~mod_ops true extent env mp locals me
+  | None -> print_signature ~mod_ops true extent env mp locals mtb.mod_type
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
@@ -403,52 +408,52 @@ let rec printable_body dir =
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
 
-let print_expression' is_type extent env mp me =
+let print_expression' ~mod_ops is_type extent env mp me =
   States.with_state_protection
-    (fun e -> print_expression is_type extent env mp [] e) me
+    (fun e -> print_expression ~mod_ops is_type extent env mp [] e) me
 
-let print_signature' is_type extent env mp me =
+let print_signature' ~mod_ops is_type extent env mp me =
   States.with_state_protection
-    (fun e -> print_signature is_type extent env mp [] e) me
+    (fun e -> print_signature ~mod_ops is_type extent env mp [] e) me
 
-let unsafe_print_module extent env mp with_body mb =
+let unsafe_print_module ~mod_ops extent env mp with_body mb =
   let name = print_modpath [] mp in
   let pr_equals = spc () ++ str ":= " in
   let body = match with_body, mb.mod_expr with
     | false, _
     | true, Abstract -> mt()
-    | _, Algebraic me -> pr_equals ++ print_expression' false extent env mp me
-    | _, Struct sign -> pr_equals ++ print_signature' false extent env mp sign
-    | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
+    | _, Algebraic me -> pr_equals ++ print_expression' ~mod_ops false extent env mp me
+    | _, Struct sign -> pr_equals ++ print_signature' ~mod_ops false extent env mp sign
+    | _, FullStruct -> pr_equals ++ print_signature' ~mod_ops false extent env mp mb.mod_type
   in
   let modtype = match mb.mod_expr, mb.mod_type_alg with
     | FullStruct, _ -> mt ()
-    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
-    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp mb.mod_type
+    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' ~mod_ops true extent env mp ty
+    | _, _ -> brk (1,1) ++ str": " ++ print_signature' ~mod_ops true extent env mp mb.mod_type
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)
 
 exception ShortPrinting
 
-let print_module with_body mp =
+let print_module ~mod_ops with_body mp =
   let me = Global.lookup_module mp in
   try
     if !short then raise ShortPrinting;
-    unsafe_print_module WithContents
+    unsafe_print_module ~mod_ops WithContents
       (Global.env ()) mp with_body me ++ fnl ()
   with e when CErrors.noncritical e ->
-    unsafe_print_module OnlyNames
+    unsafe_print_module ~mod_ops OnlyNames
       (Global.env ()) mp with_body me ++ fnl ()
 
-let print_modtype kn =
+let print_modtype ~mod_ops kn =
   let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
   hv 1
     (keyword "Module Type" ++ spc () ++ name ++ str " =" ++ spc () ++
      try
       if !short then raise ShortPrinting;
-      print_signature' true WithContents
+      print_signature' ~mod_ops true WithContents
         (Global.env ()) kn mtb.mod_type
      with e when CErrors.noncritical e ->
-      print_signature' true OnlyNames
+      print_signature' ~mod_ops true OnlyNames
         (Global.env ()) kn mtb.mod_type)

@@ -1966,26 +1966,29 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~pstate ~atts =
+  let mod_ops = { Printmod.import_module = Declaremods.import_module
+                ; process_module_binding = Declaremods.process_module_binding
+                } in
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ Library.indirect_accessor env sigma
-  | PrintSectionContext qid -> print_sec_context_typ Library.indirect_accessor env sigma qid
-  | PrintInspect n -> inspect Library.indirect_accessor env sigma n
+  | PrintFullContext-> print_full_context_typ ~mod_ops Library.indirect_accessor env sigma
+  | PrintSectionContext qid -> print_sec_context_typ ~mod_ops Library.indirect_accessor env sigma qid
+  | PrintInspect n -> inspect ~mod_ops Library.indirect_accessor env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
-  | PrintModule qid -> print_module qid
-  | PrintModuleType qid -> print_modtype qid
+  | PrintModule qid -> print_module ~mod_ops qid
+  | PrintModuleType qid -> print_modtype ~mod_ops qid
   | PrintNamespace ns -> print_namespace ~pstate ns
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name Library.indirect_accessor env sigma qid udecl
+    print_name ~mod_ops Library.indirect_accessor env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()

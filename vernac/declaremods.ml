@@ -17,6 +17,7 @@ open Entries
 open Libnames
 open Libobject
 open Mod_subst
+open Modintern
 
 (** {6 Inlining levels} *)
 
@@ -34,8 +35,6 @@ type inline =
   | NoInline
   | DefaultInline
   | InlineAt of int
-
-type module_kind = Module | ModType | ModAny
 
 let default_inline () = Some (Flags.get_inline_level ())
 
@@ -457,15 +456,15 @@ let rec compute_subst env mbids sign mp_l inl =
     | _,[] -> mbids,empty_subst
     | [],r -> user_err Pp.(str "Application of a functor with too few arguments.")
     | mbid::mbids,mp::mp_l ->
-	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
-	let mb = Environ.lookup_module mp env in
-	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
-	let resolver =
+        let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
+        let mb = Environ.lookup_module mp env in
+        let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
+        let resolver =
           if Modops.is_functor mb.mod_type then empty_delta_resolver
           else
             Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
-	in
-	mbid_left,join (map_mbid mbid mp resolver) subst
+        in
+        mbid_left,join (map_mbid mbid mp resolver) subst
 
 (** Create the objects of a "with Module" structure. *)
 
@@ -588,10 +587,10 @@ let intern_args interp_modast params =
 let check_sub mtb sub_mtb_l =
   (* The constraints are checked and forgot immediately : *)
   ignore (List.fold_right
-	    (fun sub_mtb env ->
-	       Environ.add_constraints
-		 (Subtyping.check_subtypes env mtb sub_mtb) env)
-	    sub_mtb_l (Global.env()))
+            (fun sub_mtb env ->
+               Environ.add_constraints
+                 (Subtyping.check_subtypes env mtb sub_mtb) env)
+            sub_mtb_l (Global.env()))
 
 (** This function checks if the type calculated for the module [mp] is
     a subtype of all signatures in [sub_mtb_l]. Uses only the global
@@ -952,9 +951,9 @@ let declare_module interp id args mtys me_l =
     | [] -> RawModOps.declare_module interp id args mtys None fs
     | [me] -> RawModOps.declare_module interp id args mtys (Some me) fs
     | me_l ->
-	ignore (RawModOps.start_module interp None id args mtys fs);
-	RawIncludeOps.declare_include interp me_l;
-	RawModOps.end_module ()
+        ignore (RawModOps.start_module interp None id args mtys fs);
+        RawIncludeOps.declare_include interp me_l;
+        RawModOps.end_module ()
   in
   protect_summaries declare_me
 
@@ -968,9 +967,9 @@ let declare_modtype interp id args mtys mty_l =
     | [] -> assert false
     | [mty] -> RawModTypeOps.declare_modtype interp id args mtys mty fs
     | mty_l ->
-	ignore (RawModTypeOps.start_modtype interp id args mtys fs);
-	RawIncludeOps.declare_include interp mty_l;
-	RawModTypeOps.end_modtype ()
+        ignore (RawModTypeOps.start_modtype interp id args mtys fs);
+        RawIncludeOps.declare_include interp mty_l;
+        RawModTypeOps.end_modtype ()
   in
   protect_summaries declare_mt
 

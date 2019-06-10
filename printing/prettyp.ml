@@ -38,11 +38,11 @@ type object_pr = {
   print_constant_with_infos : Opaqueproof.indirect_accessor -> Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
-  print_module              : bool -> ModPath.t -> Pp.t;
-  print_modtype             : ModPath.t -> Pp.t;
+  print_module              : mod_ops:Printmod.mod_ops -> bool -> ModPath.t -> Pp.t;
+  print_modtype             : mod_ops:Printmod.mod_ops -> ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_entry       : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
-  print_context             : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
+  print_library_entry       : mod_ops:Printmod.mod_ops -> Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> (object_name * Lib.node) -> Pp.t option;
+  print_context             : mod_ops:Printmod.mod_ops -> Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
@@ -618,7 +618,7 @@ let gallina_print_syntactic_def env kn =
      Constrextern.without_specific_symbols
        [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
 
-let gallina_print_leaf_entry indirect_accessor env sigma with_values ((sp,kn as oname),lobj) =
+let gallina_print_leaf_entry ~mod_ops indirect_accessor env sigma with_values ((sp,kn as oname),lobj) =
   let sep = if with_values then " = " else " : " in
   match lobj with
   | AtomicObject o ->
@@ -639,17 +639,17 @@ let gallina_print_leaf_entry indirect_accessor env sigma with_values ((sp,kn as 
     end
   | ModuleObject _ ->
     let (mp,l) = KerName.repr kn in
-    Some (print_module with_values (MPdot (mp,l)))
+    Some (print_module ~mod_ops with_values (MPdot (mp,l)))
   | ModuleTypeObject _ ->
     let (mp,l) = KerName.repr kn in
-          Some (print_modtype (MPdot (mp,l)))
+          Some (print_modtype ~mod_ops (MPdot (mp,l)))
   | _ -> None
 
-let gallina_print_library_entry indirect_accessor env sigma with_values ent =
+let gallina_print_library_entry ~mod_ops indirect_accessor env sigma with_values ent =
   let pr_name (sp,_) = Id.print (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) ->
-      gallina_print_leaf_entry indirect_accessor env sigma with_values (oname,lobj)
+      gallina_print_leaf_entry ~mod_ops indirect_accessor env sigma with_values (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) ->
       Some (str " >>>>>>> Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary { Nametab.obj_dir; _ }) ->
@@ -657,10 +657,10 @@ let gallina_print_library_entry indirect_accessor env sigma with_values ent =
     | (oname,Lib.OpenedModule _) ->
       Some (str " >>>>>>> Module " ++ pr_name oname)
 
-let gallina_print_context indirect_accessor env sigma with_values =
+let gallina_print_context ~mod_ops indirect_accessor env sigma with_values =
   let rec prec n = function
     | h::rest when Option.is_empty n || Option.get n > 0 ->
-      (match gallina_print_library_entry indirect_accessor env sigma with_values h with
+      (match gallina_print_library_entry ~mod_ops indirect_accessor env sigma with_values h with
        | None -> prec n rest
        | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
@@ -698,8 +698,8 @@ let print_syntactic_def x = !object_pr.print_syntactic_def x
 let print_module x  = !object_pr.print_module  x
 let print_modtype x = !object_pr.print_modtype x
 let print_named_decl x = !object_pr.print_named_decl x
-let print_library_entry x = !object_pr.print_library_entry x
-let print_context x = !object_pr.print_context x
+let print_library_entry ~mod_ops x = !object_pr.print_library_entry ~mod_ops x
+let print_context ~mod_ops x = !object_pr.print_context ~mod_ops x
 let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
 let print_eval x = !object_pr.print_eval x
 
@@ -720,10 +720,12 @@ let print_safe_judgment env sigma j =
 (*********************)
 (* *)
 
-let print_full_context indirect_accessor env sigma = print_context indirect_accessor env sigma true None (Lib.contents ())
-let print_full_context_typ indirect_accessor env sigma = print_context indirect_accessor env sigma false None (Lib.contents ())
+let print_full_context ~mod_ops indirect_accessor env sigma =
+  print_context ~mod_ops indirect_accessor env sigma true None (Lib.contents ())
+let print_full_context_typ ~mod_ops indirect_accessor env sigma =
+  print_context ~mod_ops indirect_accessor env sigma false None (Lib.contents ())
 
-let print_full_pure_context ~library_accessor env sigma =
+let print_full_pure_context ~mod_ops ~library_accessor env sigma =
   let rec prec = function
   | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
       let pp = match object_tag lobj with
@@ -758,11 +760,11 @@ let print_full_pure_context ~library_accessor env sigma =
   | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
           (* TODO: make it reparsable *)
     let (mp,l) = KerName.repr kn in
-          prec rest ++ print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+          prec rest ++ print_module ~mod_ops true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
   | ((_,kn),Lib.Leaf ModuleTypeObject _)::rest ->
           (* TODO: make it reparsable *)
     let (mp,l) = KerName.repr kn in
-          prec rest ++ print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+          prec rest ++ print_modtype ~mod_ops (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
   | _::rest -> prec rest
   | _ -> mt () in
   prec (Lib.contents ())
@@ -787,11 +789,11 @@ let read_sec_context qid =
   let cxt = Lib.contents () in
   List.rev (get_cxt [] cxt)
 
-let print_sec_context indirect_accessor env sigma sec =
-  print_context indirect_accessor env sigma true None (read_sec_context sec)
+let print_sec_context ~mod_ops indirect_accessor env sigma sec =
+  print_context ~mod_ops indirect_accessor env sigma true None (read_sec_context sec)
 
-let print_sec_context_typ indirect_accessor env sigma sec =
-  print_context indirect_accessor env sigma false None (read_sec_context sec)
+let print_sec_context_typ ~mod_ops indirect_accessor env sigma sec =
+  print_context ~mod_ops indirect_accessor env sigma false None (read_sec_context sec)
 
 let maybe_error_reject_univ_decl na udecl =
   let open GlobRef in
@@ -801,7 +803,7 @@ let maybe_error_reject_univ_decl na udecl =
     (* TODO Print na somehow *)
     user_err ~hdr:"reject_univ_decl" (str "This object does not support universe names.")
 
-let print_any_name indirect_accessor env sigma na udecl =
+let print_any_name ~mod_ops indirect_accessor env sigma na udecl =
   maybe_error_reject_univ_decl na udecl;
   let open GlobRef in
   match na with
@@ -810,9 +812,10 @@ let print_any_name indirect_accessor env sigma na udecl =
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp udecl
   | Term (VarRef sp) -> print_section_variable env sigma sp
   | Syntactic kn -> print_syntactic_def env kn
-  | Dir (Nametab.GlobDirRef.DirModule Nametab.{ obj_dir; obj_mp; _ } ) -> print_module (printable_body obj_dir) obj_mp
+  | Dir (Nametab.GlobDirRef.DirModule Nametab.{ obj_dir; obj_mp; _ } ) ->
+    print_module ~mod_ops (printable_body obj_dir) obj_mp
   | Dir _ -> mt ()
-  | ModuleType mp -> print_modtype mp
+  | ModuleType mp -> print_modtype ~mod_ops mp
   | Other (obj, info) -> info.print obj
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
@@ -824,15 +827,15 @@ let print_any_name indirect_accessor env sigma na udecl =
     user_err
       ~hdr:"print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
-let print_name indirect_accessor env sigma na udecl =
+let print_name ~mod_ops indirect_accessor env sigma na udecl =
   match na with
   | {loc; v=Constrexpr.ByNotation (ntn,sc)} ->
-    print_any_name indirect_accessor env sigma
+    print_any_name ~mod_ops indirect_accessor env sigma
       (Term (Notation.interp_notation_as_global_reference ?loc (fun _ -> true)
                ntn sc))
       udecl
   | {loc; v=Constrexpr.AN ref} ->
-    print_any_name indirect_accessor env sigma (locate_any_name ref) udecl
+    print_any_name ~mod_ops indirect_accessor env sigma (locate_any_name ref) udecl
 
 let print_opaque_name indirect_accessor env sigma qid =
   let open GlobRef in
@@ -888,8 +891,8 @@ let print_about env sigma na udecl =
       print_about_any ?loc env sigma (locate_any_name ref) udecl
 
 (* for debug *)
-let inspect indirect_accessor env sigma depth =
-  print_context indirect_accessor env sigma false (Some depth) (Lib.contents ())
+let inspect ~mod_ops indirect_accessor env sigma depth =
+  print_context ~mod_ops indirect_accessor env sigma false (Some depth) (Lib.contents ())
 
 (*************************************************************************)
 (* Pretty-printing functions coming from classops.ml                     *)
