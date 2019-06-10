@@ -9,6 +9,17 @@
   message. Main change to do generally is to change the flag "Global"
   to "Global ImportDefaultBehavior".
 
+Proof state:
+
+  Proofs that are attached to a top-level constant (such as lemmas)
+  are represented by `Lemmas.t`, as they do contain additional
+  information related to the constant declaration.
+
+  Plugins that require access to the information about currently
+  opened lemmas can add one of the `![proof]` attributes to their
+  `mlg` entry, which will refine the type accordingly. See
+  documentation in `vernacentries` for more information.
+
 ## Changes between Coq 8.9 and Coq 8.10
 
 ### ML4 Pre Processing
@@ -62,6 +73,19 @@ Coqlib:
   vernacular `Register` command; it binds a name to a constant. The second
   command then enables to locate the registered constant through its name. The
   name resolution is dynamic.
+
+Proof state:
+
+- Handling of proof state has been fully functionalized, thus it is
+  not possible to call global functions such as `get_current_context ()`.
+
+  The main type for functions that need to handle proof state is
+  `Proof_global.t`.
+
+  Unfortunately, this change was not possible to do in a
+  backwards-compatible way, but in most case the api changes are
+  straightforward, with functions taking and returning an extra
+  argument.
 
 Macros:
 

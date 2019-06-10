@@ -22,7 +22,7 @@ val vernac_require :
 (** The main interpretation function of vernacular expressions *)
 val interp :
   ?verbosely:bool ->
-  ?proof:Proof_global.closed_proof ->
+  ?proof:(Proof_global.proof_object * Lemmas.proof_terminator) ->
   st:Vernacstate.t -> Vernacexpr.vernac_control -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.
@@ -40,13 +40,6 @@ val command_focus : unit Proof.focus_kind
 
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
   Evd.evar_map * Redexpr.red_expr) Hook.t
-
-(** Helper *)
-val vernac_require_open_proof : pstate:Proof_global.stack option -> (pstate:Proof_global.stack -> 'a) -> 'a
-
-val with_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.t -> 'a) -> 'a
-
-val modify_pstate : pstate:Proof_global.stack option -> (pstate:Proof_global.t -> Proof_global.t) -> Proof_global.stack option
 
 (* Flag set when the test-suite is called. Its only effect to display
    verbose information for `Fail` *)

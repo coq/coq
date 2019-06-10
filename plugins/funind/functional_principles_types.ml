@@ -308,8 +308,8 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
   evd := sigma;
   let hook = Lemmas.mk_hook (hook new_principle_type) in
-  let pstate =
-    Lemmas.start_proof
+  let lemma =
+    Lemmas.start_lemma
       new_princ_name
       Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
       !evd
@@ -317,7 +317,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   in
   (*       let _tim1 = System.get_time ()  in *)
   let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
-  let pstate,_ = Pfedit.by (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)) pstate in
+  let lemma,_ = Lemmas.by (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)) lemma in
   (*       let _tim2 =  System.get_time ()  in *)
   (* 	begin *)
   (* 	  let dur1 = System.time_difference tim1 tim2 in *)
@@ -325,7 +325,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (* 	end; *)
 
   let open Proof_global in
-  let { id; entries; persistence } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pstate in
+  let { id; entries; persistence } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) lemma in
   match entries with
   | [entry] ->
     (id,(entry,persistence)), hook

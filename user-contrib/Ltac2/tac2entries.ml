@@ -751,7 +751,7 @@ let perform_eval ~pstate e =
       Goal_select.SelectAll, Proof.start ~name ~poly sigma []
     | Some pstate ->
       Goal_select.get_default_goal_selector (),
-      Proof_global.give_me_the_proof pstate
+      Proof_global.get_proof pstate
   in
   let v = match selector with
   | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
@@ -856,7 +856,7 @@ let print_ltac qid =
 (** Calling tactics *)
 
 let solve ~pstate default tac =
-  let pstate, status = Proof_global.with_proof begin fun etac p ->
+  let pstate, status = Proof_global.map_fold_proof_endline begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Pfedit.solve g None tac ?with_end_tac p in

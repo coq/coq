@@ -881,7 +881,7 @@ end = struct (* {{{ *)
   let invalidate_cur_state () = cur_id := Stateid.dummy
 
   type proof_part =
-    Proof_global.stack option *
+    Lemmas.Stack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
     Obligations.program_info Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
@@ -890,9 +890,9 @@ end = struct (* {{{ *)
     [ `Full of Vernacstate.t
     | `ProofOnly of Stateid.t * proof_part ]
 
-  let proof_part_of_frozen { Vernacstate.proof; system } =
+  let proof_part_of_frozen { Vernacstate.lemmas; system } =
     let st = States.summary_of_state system in
-    proof,
+    lemmas,
     Summary.project_from_summary st Util.(pi1 summary_pstate),
     Summary.project_from_summary st Util.(pi2 summary_pstate),
     Summary.project_from_summary st Util.(pi3 summary_pstate)
@@ -956,17 +956,17 @@ end = struct (* {{{ *)
            try
             let prev = (VCS.visit id).next in
             if is_cached_and_valid prev
-            then { s with proof =
+            then { s with lemmas =
                 PG_compat.copy_terminators
-                  ~src:((get_cached prev).proof) ~tgt:s.proof }
+                  ~src:((get_cached prev).lemmas) ~tgt:s.lemmas }
             else s
            with VCS.Expired -> s in
          VCS.set_state id (FullState s)
     | `ProofOnly(ontop,(pstate,c1,c2,c3)) ->
          if is_cached_and_valid ontop then
            let s = get_cached ontop in
-           let s = { s with proof =
-             PG_compat.copy_terminators ~src:s.proof ~tgt:pstate } in
+           let s = { s with lemmas =
+             PG_compat.copy_terminators ~src:s.lemmas ~tgt:pstate } in
            let s = { s with system =
              States.replace_summary s.system
                begin
@@ -1168,9 +1168,7 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) ->
-      Option.map (fun p -> Proof_global.(give_me_the_proof (get_current_pstate p)))
-        vstate.Vernacstate.proof
+    | `Valid (Some vstate) -> Option.map (Lemmas.Stack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -1675,14 +1673,17 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_proof ~allow_partial:true () in
         `OK_ADMITTED
       else begin
-      (* The original terminator, a hook, has not been saved in the .vio*)
-      PG_compat.set_terminator (Lemmas.standard_proof_terminator []);
-
       let opaque = Proof_global.Opaque in
-      let proof =
+
+      (* The original terminator, a hook, has not been saved in the .vio*)
+      let pterm, _invalid_terminator =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
+
+      let proof = pterm , Lemmas.standard_proof_terminator [] in
+
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
+
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false start;
       (* STATE SPEC:
        * - start: First non-expired state! [This looks very fishy]
@@ -1939,7 +1940,7 @@ end = struct (* {{{ *)
            "goals only"))
        else begin
         let (i, ast) = r_ast in
-        PG_compat.simple_with_current_proof (fun _ p -> Proof.focus focus_cond () i p);
+        PG_compat.map_proof (fun p -> Proof.focus focus_cond () i p);
         (* STATE SPEC:
          * - start : id
          * - return: id
@@ -1995,7 +1996,7 @@ end = struct (* {{{ *)
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
     TaskQueue.with_n_workers nworkers (fun queue ->
-    PG_compat.simple_with_current_proof (fun _ p ->
+    PG_compat.map_proof (fun p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
       let res = CList.map_i (fun i g ->
@@ -2310,8 +2311,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
              Proofview.give_up else Proofview.tclUNIT ()
               end in
            match (VCS.get_info base_state).state with
-           | FullState { Vernacstate.proof } ->
-               Option.iter PG_compat.unfreeze proof;
+           | FullState { Vernacstate.lemmas } ->
+               Option.iter PG_compat.unfreeze lemmas;
                PG_compat.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Goal_select.SelectAll None tac p), ());

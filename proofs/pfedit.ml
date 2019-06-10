@@ -42,11 +42,11 @@ let get_goal_context_gen pf i =
   (sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
 
 let get_goal_context pf i =
-  let p = Proof_global.give_me_the_proof pf in
+  let p = Proof_global.get_proof pf in
   get_goal_context_gen p i
 
 let get_current_goal_context pf =
-  let p = Proof_global.give_me_the_proof pf in
+  let p = Proof_global.get_proof pf in
   try get_goal_context_gen p 1
   with
   | NoSuchGoal ->
@@ -57,7 +57,7 @@ let get_current_goal_context pf =
     Evd.from_env env, env
 
 let get_current_context pf =
-  let p = Proof_global.give_me_the_proof pf in
+  let p = Proof_global.get_proof pf in
   try get_goal_context_gen p 1
   with
   | NoSuchGoal ->
@@ -108,7 +108,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     (p,status)
 
-let by tac = Proof_global.with_proof (fun _ -> solve (Goal_select.SelectNth 1) None tac)
+let by tac = Proof_global.map_fold_proof (solve (Goal_select.SelectNth 1) None tac)
 
 (**********************************************************************)
 (* Shortcut to build a term using tactics *)
@@ -119,13 +119,12 @@ let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id ctx sign ?(goal_kind = Global ImportDefaultBehavior, false, Proof Theorem) typ tac =
   let evd = Evd.from_ctx ctx in
-  let terminator = Proof_global.make_terminator (fun _ -> ()) in
   let goals = [ (Global.env_of_context sign , typ) ] in
-  let pf = Proof_global.start_proof evd id goal_kind goals terminator in
+  let pf = Proof_global.start_proof evd id goal_kind goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in
-    let { entries; universes } = fst @@ close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
+    let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
       let univs = UState.demote_seff_univs entry universes in

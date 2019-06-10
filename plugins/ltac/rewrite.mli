@@ -101,16 +101,16 @@ val add_setoid
   -> Id.t
   -> unit
 
-val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Proof_global.t
+val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Lemmas.t
 val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
 
 val add_morphism
-  : rewrite_attributes
+  :  rewrite_attributes
   -> local_binder_expr list
   -> constr_expr
   -> constr_expr
   -> Id.t
-  -> Proof_global.t
+  -> Lemmas.t
 
 val get_reflexive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 
