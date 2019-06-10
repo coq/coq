@@ -1751,13 +1751,14 @@ end = struct (* {{{ *)
         let () = assert (Univ.AUContext.is_empty ctx) in
         let () = match priv with
         | Opaqueproof.PrivateMonomorphic () -> ()
-        | Opaqueproof.PrivatePolymorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+        | Opaqueproof.PrivatePolymorphic (univs, uctx) ->
+          let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
+          assert (Univ.ContextSet.is_empty uctx)
         in
         let pr = Constr.hcons pr in
-        let (ci, univs, dummy) = p.(bucket) in
+        let (ci, dummy) = p.(bucket) in
         let () = assert (Option.is_empty dummy) in
-        let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
-        p.(bucket) <- ci, univs, Some (pr, priv);
+        p.(bucket) <- ci, Some (pr, priv);
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

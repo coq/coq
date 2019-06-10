@@ -587,7 +587,7 @@ let print_constant with_values sep sp udecl =
     | Some (c, priv, ctx) ->
       let priv = match priv with
       | Opaqueproof.PrivateMonomorphic () -> None
-      | Opaqueproof.PrivatePolymorphic ctx -> Some ctx
+      | Opaqueproof.PrivatePolymorphic (_, ctx) -> Some ctx
       in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++

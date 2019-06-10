@@ -27,7 +27,7 @@ type 'opaque result = {
 }
 
 val cook_constant : recipe -> Opaqueproof.opaque result
-val cook_constr : Opaqueproof.cooking_info list -> int ->
+val cook_constr : Opaqueproof.cooking_info list ->
   (constr * unit Opaqueproof.delayed_universes) -> (constr * unit Opaqueproof.delayed_universes)
 
 val cook_inductive :

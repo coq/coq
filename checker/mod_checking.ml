@@ -10,7 +10,7 @@ open Environ
 
 let indirect_accessor = ref {
   Opaqueproof.access_proof = (fun _ _ -> assert false);
-  Opaqueproof.access_discharge = (fun _ _ _ -> assert false);
+  Opaqueproof.access_discharge = (fun _ _ -> assert false);
 }
 
 let set_indirect_accessor f = indirect_accessor := f
@@ -39,7 +39,7 @@ let check_constant_declaration env kn cb =
     let c, u = Opaqueproof.force_proof !indirect_accessor otab o in
     let env' = match u, cb.const_universes with
     | Opaqueproof.PrivateMonomorphic (), Monomorphic _ -> env'
-    | Opaqueproof.PrivatePolymorphic local, Polymorphic _ ->
+    | Opaqueproof.PrivatePolymorphic (_, local), Polymorphic _ ->
       push_subgraph local env'
     | _ -> assert false
     in

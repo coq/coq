@@ -201,29 +201,30 @@ let lift_univs cb subst auctx0 =
     let subst, auctx = discharge_abstract_universe_context subst auctx0 auctx in
     subst, (Polymorphic auctx)
 
-let cook_constr { Opaqueproof.modlist ; abstract } (univs, (c, priv)) =
+let cook_constr { Opaqueproof.modlist ; abstract } (c, priv) =
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
-  let ainst = Instance.of_array (Array.init univs Level.var) in
-  let usubst = Instance.append usubst ainst in
+  let usubst, priv = match priv with
+  | Opaqueproof.PrivateMonomorphic () ->
+    let () = assert (AUContext.is_empty abs_ctx) in
+    let () = assert (Instance.is_empty usubst) in
+    usubst, priv
+  | Opaqueproof.PrivatePolymorphic (univs, ctx) ->
+    let ainst = Instance.of_array (Array.init univs Level.var) in
+    let usubst = Instance.append usubst ainst in
+    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst usubst)) ctx in
+    let univs = univs + AUContext.size abs_ctx in
+    usubst, Opaqueproof.PrivatePolymorphic (univs, ctx)
+  in
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps in
   let c = abstract_constant_body (expmod c) hyps in
-  let priv = match priv with
-  | Opaqueproof.PrivateMonomorphic () ->
-    let () = assert (AUContext.is_empty abs_ctx) in
-    priv
-  | Opaqueproof.PrivatePolymorphic ctx ->
-    let ctx = on_snd (Univ.subst_univs_level_constraints (Univ.make_instance_subst usubst)) ctx in
-    Opaqueproof.PrivatePolymorphic ctx
-  in
-  univs + AUContext.size abs_ctx, (c, priv)
+  (c, priv)
 
-let cook_constr infos univs c =
-  let fold info (univs, c) = cook_constr info (univs, c) in
-  let (_, c) = List.fold_right fold infos (univs, c) in
-  c
+let cook_constr infos c =
+  let fold info c = cook_constr info c in
+  List.fold_right fold infos c
 
 let cook_constant { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in

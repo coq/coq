@@ -181,7 +181,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
         let def = Vars.subst_univs_level_constr usubst j.uj_val in
         let () = feedback_completion_typecheck feedback_id in
-        def, Opaqueproof.PrivatePolymorphic private_univs
+        def, Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, private_univs)
       end in
       let def = OpaqueDef proofterm in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
@@ -402,7 +402,7 @@ let translate_local_def env _id centry =
         the body by virtue of the typing of [Entries.section_def_entry]. *)
     let () = match cst with
     | Opaqueproof.PrivateMonomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
-    | Opaqueproof.PrivatePolymorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+    | Opaqueproof.PrivatePolymorphic (_, ctx) -> assert (Univ.ContextSet.is_empty ctx)
     in
     p
   | Undef _ | Primitive _ -> assert false
