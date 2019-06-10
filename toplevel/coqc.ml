@@ -11,7 +11,7 @@
 let outputstate opts =
   Option.iter (fun ostate_file ->
     let fname = CUnix.make_suffix ostate_file ".coq" in
-    States.extern_state fname) opts.Coqcargs.outputstate
+    Library.extern_state fname) opts.Coqcargs.outputstate
 
 let coqc_init _copts ~opts =
   Flags.quiet := true;
@@ -53,7 +53,8 @@ let coqc_main copts ~opts =
 
   if opts.Coqargs.post.Coqargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
-    Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
+    let library_accessor = Library.indirect_accessor in
+    Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context ~library_accessor env) sigma) ++ fnl ())
   end;
   CProfile.print_profile ()
 

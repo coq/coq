@@ -87,7 +87,7 @@ let set_options = List.iter set_option
 let inputstate opts =
   Option.iter (fun istate_file ->
     let fname = Loadpath.locate_file (CUnix.make_suffix istate_file ".coq") in
-    States.intern_state fname) opts.inputstate
+    Library.intern_state fname) opts.inputstate
 
 (******************************************************************************)
 (* Fatal Errors                                                               *)

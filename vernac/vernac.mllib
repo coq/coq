@@ -16,6 +16,7 @@ DeclareDef
 DeclareObl
 Canonical
 RecLemmas
+Library
 Lemmas
 Class
 Auto_ind_decl

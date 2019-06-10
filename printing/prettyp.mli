@@ -18,22 +18,41 @@ open Libnames
 val assumptions_for_print : Name.t list -> Termops.names_context
 
 val print_closed_sections : bool ref
-val print_context : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t
-val print_library_entry : env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option
-val print_full_context : env -> Evd.evar_map -> Pp.t
-val print_full_context_typ : env -> Evd.evar_map -> Pp.t
-val print_full_pure_context : env -> Evd.evar_map -> Pp.t
-val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
-val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
+val print_context
+  : Opaqueproof.indirect_accessor
+  -> env -> Evd.evar_map
+  -> bool -> int option -> Lib.library_segment -> Pp.t
+val print_library_entry
+  : Opaqueproof.indirect_accessor
+  -> env -> Evd.evar_map
+  -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option
+val print_full_context
+ : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> Pp.t
+val print_full_context_typ
+  : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> Pp.t
+
+val print_full_pure_context
+  : library_accessor:Opaqueproof.indirect_accessor
+  -> env
+  -> Evd.evar_map
+  -> Pp.t
+
+val print_sec_context
+  : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> qualid -> Pp.t
+val print_sec_context_typ
+  : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : env -> Evd.evar_map -> Safe_typing.judgment -> Pp.t
 val print_eval :
   reduction_function -> env -> Evd.evar_map ->
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
-val print_name : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
-  UnivNames.univ_name_list option -> Pp.t
-val print_opaque_name : env -> Evd.evar_map -> qualid -> Pp.t
+val print_name
+  : Opaqueproof.indirect_accessor
+  -> env -> Evd.evar_map -> qualid Constrexpr.or_by_notation
+  -> UnivNames.univ_name_list option -> Pp.t
+val print_opaque_name
+  : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> qualid -> Pp.t
 val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
 val print_impargs : qualid Constrexpr.or_by_notation -> Pp.t
@@ -50,7 +69,7 @@ val print_typeclasses : unit -> Pp.t
 val print_instances : GlobRef.t -> Pp.t
 val print_all_instances : unit -> Pp.t
 
-val inspect : env -> Evd.evar_map -> int -> Pp.t
+val inspect : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> int -> Pp.t
 
 (** {5 Locate} *)
 
@@ -83,14 +102,14 @@ val print_located_other : string -> qualid -> Pp.t
 
 type object_pr = {
   print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
-  print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
+  print_constant_with_infos : Opaqueproof.indirect_accessor -> Constant.t -> UnivNames.univ_name_list option -> Pp.t;
   print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
   print_syntactic_def       : env -> KerName.t -> Pp.t;
   print_module              : bool -> ModPath.t -> Pp.t;
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_entry       : env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option;
-  print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
+  print_library_entry       : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> (Libobject.object_name * Lib.node) -> Pp.t option;
+  print_context             : Opaqueproof.indirect_accessor -> env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
   print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
