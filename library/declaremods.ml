@@ -915,9 +915,6 @@ let register_library dir cenv (objs:library_objects) digest univ =
   let sobjs,keepobjs = objs in
   do_module false Lib.load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
-let get_library_native_symbols dir =
-  Safe_typing.get_library_native_symbols (Global.safe_env ()) dir
-
 let start_library dir =
   let mp = Global.start_library dir in
   openmod_info := default_module_info;

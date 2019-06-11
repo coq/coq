@@ -94,8 +94,6 @@ val register_library :
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
   Univ.ContextSet.t -> unit
 
-val get_library_native_symbols : library_name -> Nativevalues.symbols
-
 val start_library : library_name -> unit
 
 val end_library :

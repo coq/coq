@@ -356,6 +356,9 @@ module ModPath = struct
 
 end
 
+module DPset = Set.Make(DirPath)
+module DPmap = Map.Make(DirPath)
+
 module MPset = Set.Make(ModPath)
 module MPmap = CMap.Make(ModPath)
 

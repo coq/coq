@@ -21,8 +21,7 @@ let get_load_paths =
 let open_header = ["Nativevalues";
                    "Nativecode";
                    "Nativelib";
-		   "Nativeconv";
-                   "Declaremods"]
+                   "Nativeconv"]
 let open_header = List.map mk_open open_header
 
 (* Directory where compiled files are stored *)
@@ -129,9 +128,19 @@ let compile_library dir code fn =
   let _ = call_compiler fn in
   if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
 
+let native_symbols = ref Names.DPmap.empty
+
+let get_library_native_symbols dir =
+  try Names.DPmap.find dir !native_symbols
+  with Not_found ->
+    CErrors.user_err ~hdr:"get_library_native_symbols"
+      Pp.((str "Linker error in the native compiler. Are you using Require inside a nested Module declaration?") ++ fnl () ++
+          (str "This use case is not supported, but disabling the native compiler may help."))
+
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. *)
-let call_linker ?(fatal=true) prefix f upds =
+let call_linker ?(fatal=true) env ~prefix f upds =
+  native_symbols := env.Environ.native_symbols;
   rt1 := dummy_value ();
   rt2 := dummy_value ();
   if not (Sys.file_exists f) then
@@ -150,6 +159,6 @@ let call_linker ?(fatal=true) prefix f upds =
      else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
   match upds with Some upds -> update_locations upds | _ -> ()
 
-let link_library ~prefix ~dirname ~basename =
+let link_library env ~prefix ~dirname ~basename =
   let f = dirname / output_dir / basename in
-  call_linker ~fatal:false prefix f None
+  call_linker env ~fatal:false ~prefix f None
