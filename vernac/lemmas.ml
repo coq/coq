@@ -581,7 +581,7 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   in
   ignore (Declare.declare_constant name lemma_def)
 
-let finish_proved_equations opaque lid proof_obj hook i types wits sigma =
+let finish_proved_equations opaque lid proof_obj hook i types wits sigma0 =
 
   let open Decl_kinds in
   let obls = ref 1 in
@@ -589,22 +589,21 @@ let finish_proved_equations opaque lid proof_obj hook i types wits sigma =
     | DefinitionBody d -> IsDefinition d
     | Proof p -> IsProof p
   in
-  let evd = ref sigma in
-  let recobls =
-    CList.map2 (fun (wit, (evar_env, ev, evi, local_context, type_)) entry ->
+  let sigma, recobls =
+    CList.fold_left2_map (fun sigma (wit, (evar_env, ev, evi, local_context, type_)) entry ->
         let id =
-          match Evd.evar_ident ev sigma with
+          match Evd.evar_ident ev sigma0 with
           | Some id -> id
           | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
         in
         let entry, args = Abstract.shrink_entry local_context entry in
         let cst = Declare.declare_constant id (Entries.DefinitionEntry entry, kind) in
-        let sigma, app = Evarutil.new_global !evd (ConstRef cst) in
-        evd := Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma;
-        cst)
+        let sigma, app = Evarutil.new_global sigma (ConstRef cst) in
+        let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
+        sigma, cst) sigma0
       (CList.combine (List.rev !wits) types) proof_obj.Proof_global.entries
   in
-  hook recobls !evd
+  hook recobls sigma
 
 let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   (* Invariant (uh) *)
