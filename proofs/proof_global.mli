@@ -42,24 +42,28 @@ type 'a proof_entry = {
   proof_entry_inline_code : bool;
 }
 
+(** When a proof is closed, it is reified into a [proof_object] *)
 type proof_object =
-  { id : Names.Id.t
+  { name : Names.Id.t
+  (** name of the proof *)
   ; entries : Evd.side_effects proof_entry list
+  (** list of the proof terms (in a form suitable for definitions). *)
   ; poly : bool
+  (** polymorphic status *)
   ; universes: UState.t
+  (** universe state *)
   ; udecl : UState.universe_decl
+  (** universe declaration *)
   }
 
 type opacity_flag = Opaque | Transparent
 
-(** [start_proof id str pl goals] starts a proof of name
-   [id] with goals [goals] (a list of pairs of environment and
-   conclusion); [str] describes what kind of theorem/definition this
-   is; [terminator] is used at the end of the proof to close the proof
-   (e.g. to declare the built constructions as a coercion or a setoid
-   morphism). The proof is started in the evar map [sigma] (which can
-   typically contain universe constraints), and with universe bindings
-   pl. *)
+(** [start_proof ~name ~udecl ~poly sigma goals] starts a proof of
+   name [name] with goals [goals] (a list of pairs of environment and
+   conclusion); [poly] determines if the proof is universe
+   polymorphic. The proof is started in the evar map [sigma] (which
+   can typically contain universe constraints), and with universe
+   bindings [udecl]. *)
 val start_proof
   :  name:Names.Id.t
   -> udecl:UState.universe_decl

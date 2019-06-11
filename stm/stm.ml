@@ -1735,7 +1735,7 @@ end = struct (* {{{ *)
     | `OK (po,_) ->
         let con =
           Nametab.locate_constant
-            (Libnames.qualid_of_ident po.Proof_global.id) in
+            (Libnames.qualid_of_ident po.Proof_global.name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with
           | Declarations.OpaqueDef o -> o

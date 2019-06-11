@@ -477,14 +477,14 @@ let get_keep_admitted_vars =
     ~key:["Keep"; "Admitted"; "Variables"]
     ~value:true
 
-let finish_admitted env sigma id ~poly ~scope pe ctx hook ~udecl impargs other_thms =
+let finish_admitted env sigma ~name ~poly ~scope pe ctx hook ~udecl impargs other_thms =
   let open DeclareDef in
   let local = match scope with
   | Global local -> local
-  | Discharge -> warn_let_as_axiom id; ImportNeedQualified
+  | Discharge -> warn_let_as_axiom name; ImportNeedQualified
   in
-  let kn = declare_constant id ~local (ParameterEntry pe, IsAssumption Conjectural) in
-  let () = assumption_message id in
+  let kn = declare_constant name ~local (ParameterEntry pe, IsAssumption Conjectural) in
+  let () = assumption_message name in
   Declare.declare_univ_binders (ConstRef kn) (UState.universe_binders ctx);
   (* This takes care of the implicits and hook for the current constant*)
   process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (ConstRef kn) impargs other_thms;
@@ -494,7 +494,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
     let open Proof_global in
     let env = Global.env () in
     match proof with
-    | Some ({ id; entries; universes; udecl }, { Info.hook; scope; impargs; other_thms; _} ) ->
+    | Some ({ name; entries; universes; udecl }, { Info.hook; scope; impargs; other_thms; _} ) ->
       if List.length entries <> 1 then
         user_err Pp.(str "Admitted does not support multiple statements");
       let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -507,7 +507,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
       let ctx = UState.univ_entry ~poly universes in
       let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
       let sigma = Evd.from_env env in
-      finish_admitted env sigma id ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+      finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
     | None ->
       let pftree = Proof_global.get_proof lemma.proof in
       let scope = lemma.info.Info.scope in
@@ -537,7 +537,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
       let { Info.hook; impargs; other_thms } = lemma.info in
       let { Proof.sigma } = Proof.data (Proof_global.get_proof lemma.proof) in
       let ctx = UState.check_univ_decl ~poly universes udecl in
-      finish_admitted env sigma name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+      finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -547,15 +547,15 @@ let finish_proved env sigma opaque idopt po info =
   let open Proof_global in
   let { Info.hook; compute_guard; impargs; other_thms; scope; kind } = info in
   match po with
-  | { id; entries=[const]; universes; udecl; poly } ->
+  | { name; entries=[const]; universes; udecl; poly } ->
     let is_opaque = match opaque with
       | Transparent -> false
       | Opaque      -> true
     in
     assert (is_opaque == const.proof_entry_opaque);
-    let id = match idopt with
-      | None -> id
-      | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
+    let name = match idopt with
+      | None -> name
+      | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
     let fix_exn = Future.fix_exn_of const.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
@@ -565,14 +565,14 @@ let finish_proved env sigma opaque idopt po info =
       let r = match scope with
         | Discharge ->
           let c = SectionLocalDef const in
-          let _ = declare_variable id (Lib.cwd(), c, k) in
+          let _ = declare_variable name (Lib.cwd(), c, k) in
           let () = if should_suggest
-            then Proof_using.suggest_variable (Global.env ()) id
+            then Proof_using.suggest_variable (Global.env ()) name
           in
-          VarRef id
+          VarRef name
         | Global local ->
           let kn =
-            declare_constant id ~local (DefinitionEntry const, k) in
+            declare_constant name ~local (DefinitionEntry const, k) in
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
@@ -580,7 +580,7 @@ let finish_proved env sigma opaque idopt po info =
           Declare.declare_univ_binders gr (UState.universe_binders universes);
           gr
       in
-      definition_message id;
+      definition_message name;
       (* This takes care of the implicits and hook for the current constant*)
       process_recthms ~fix_exn ?hook env sigma universes ~udecl ~poly ~scope r impargs other_thms
     with e when CErrors.noncritical e ->

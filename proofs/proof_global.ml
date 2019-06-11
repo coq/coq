@@ -37,7 +37,7 @@ type 'a proof_entry = {
 }
 
 type proof_object =
-  { id : Names.Id.t
+  { name : Names.Id.t
   ; entries : Evd.side_effects proof_entry list
   ; poly : bool
   ; universes: UState.t
@@ -248,7 +248,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
       proof_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { id = name; entries = entries; poly; universes; udecl }
+  { name; entries = entries; poly; universes; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in

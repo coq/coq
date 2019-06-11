@@ -33,7 +33,7 @@ module Hook : sig
       -> locality
       (**  [locality]: Locality of the original declaration *)
       -> GlobRef.t
-      (** [ref]: identifier of the origianl declaration *)
+      (** [ref]: identifier of the original declaration *)
       -> unit
   end
 
