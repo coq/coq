@@ -567,9 +567,9 @@ val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 
 val universe_binders : evar_map -> UnivNames.universe_binders
 
-val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
-val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Sorts.t
+val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> DirPath.t -> rigid -> evar_map -> evar_map * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> DirPath.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
+val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> DirPath.t -> rigid -> evar_map -> evar_map * Sorts.t
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
@@ -628,7 +628,7 @@ val nf_univ_variables : evar_map -> evar_map * Univ.universe_subst
 
 val fix_undefined_variables : evar_map -> evar_map
 
-val refresh_undefined_universes : evar_map -> evar_map * Univ.universe_level_subst
+val refresh_undefined_universes : DirPath.t -> evar_map -> evar_map * Univ.universe_level_subst
 
 (** Universe minimization *)
 val minimize_universes : evar_map -> evar_map
@@ -637,12 +637,12 @@ val update_sigma_env : evar_map -> env -> evar_map
 
 (** Polymorphic universes *)
 
-val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> evar_map -> Sorts.family -> evar_map * Sorts.t
-val fresh_constant_instance : ?loc:Loc.t -> env -> evar_map -> Constant.t -> evar_map * pconstant
-val fresh_inductive_instance : ?loc:Loc.t -> env -> evar_map -> inductive -> evar_map * pinductive
-val fresh_constructor_instance : ?loc:Loc.t -> env -> evar_map -> constructor -> evar_map * pconstructor
+val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid -> DirPath.t -> evar_map -> Sorts.family -> evar_map * Sorts.t
+val fresh_constant_instance : ?loc:Loc.t -> DirPath.t -> env -> evar_map -> Constant.t -> evar_map * pconstant
+val fresh_inductive_instance : ?loc:Loc.t -> DirPath.t -> env -> evar_map -> inductive -> evar_map * pinductive
+val fresh_constructor_instance : ?loc:Loc.t -> DirPath.t -> env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> env ->
+val fresh_global : ?loc:Loc.t -> ?rigid:rigid -> ?names:Univ.Instance.t -> DirPath.t -> env ->
   evar_map -> GlobRef.t -> evar_map * econstr
 
 (********************************************************************)

@@ -196,7 +196,8 @@ let expand_constructor_hints =
 let extend_with_ref_list env sigma l seq =
   let l = expand_constructor_hints l in
   let f gr (seq, sigma) =
-    let sigma, c = Evd.fresh_global env sigma gr in
+    let dp = Global.current_dirpath () in
+    let sigma, c = Evd.fresh_global dp env sigma gr in
     let sigma, typ= Typing.type_of env sigma c in
       (add_formula env sigma Hyp gr typ seq, sigma) in
     List.fold_right f l (seq, sigma)

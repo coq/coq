@@ -725,7 +725,8 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
     try
       let (cst_mod,_) = Constant.repr2 reference in
       let cst = Constant.make2 cst_mod (Label.of_id id) in
-      let (cst, u), ctx = UnivGen.fresh_constant_instance env cst in
+      let dp = Global.current_dirpath () in
+      let (cst, u), ctx = UnivGen.fresh_constant_instance dp env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->

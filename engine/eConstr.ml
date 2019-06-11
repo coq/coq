@@ -718,8 +718,8 @@ let map_rel_context_in_env f env sign =
   in
   aux env [] (List.rev sign)
 
-let fresh_global ?loc ?rigid ?names env sigma reference =
-  let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
+let fresh_global ?loc ?rigid ?names dp env sigma reference =
+  let (evd,t) = Evd.fresh_global ?loc ?rigid ?names dp env sigma reference in
   evd, t
 
 let is_global sigma gr c =

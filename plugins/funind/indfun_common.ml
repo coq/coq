@@ -103,7 +103,8 @@ let const_of_id id =
 
 [@@@ocaml.warning "-3"]
 let coq_constant s =
-  UnivGen.constr_of_monomorphic_global @@
+  let dp = Global.current_dirpath () in
+  UnivGen.constr_of_monomorphic_global dp @@
   Coqlib.gen_reference_in_modules "RecursiveDefinition"
     Coqlib.init_modules s;;
 
@@ -404,17 +405,19 @@ exception ToShow of exn
 
 let jmeq () =
   try
+    let dp = Global.current_dirpath () in
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
-    UnivGen.constr_of_monomorphic_global @@
+    UnivGen.constr_of_monomorphic_global dp @@
       Coqlib.lib_ref "core.JMeq.type"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
+    let dp = Global.current_dirpath () in
     Coqlib.check_required_library Coqlib.jmeq_module_name;
     EConstr.of_constr @@
-    UnivGen.constr_of_monomorphic_global @@
+    UnivGen.constr_of_monomorphic_global dp @@
       Coqlib.lib_ref "core.JMeq.refl"
   with e when CErrors.noncritical e -> raise (ToShow e)
 
@@ -428,8 +431,10 @@ let acc_rel = function () -> EConstr.of_constr (coq_constant "Acc")
 let acc_inv_id = function () -> EConstr.of_constr (coq_constant "Acc_inv")
 
 [@@@ocaml.warning "-3"]
-let well_founded_ltof () = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global @@
-    Coqlib.find_reference "IndFun" ["Coq"; "Arith";"Wf_nat"] "well_founded_ltof"
+let well_founded_ltof () =
+  let dp = Global.current_dirpath () in
+  EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global dp @@
+  Coqlib.find_reference "IndFun" ["Coq"; "Arith";"Wf_nat"] "well_founded_ltof"
 [@@@ocaml.warning "+3"]
 
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")

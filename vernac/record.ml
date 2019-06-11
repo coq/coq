@@ -142,7 +142,8 @@ let typecheck_params_and_fields finite def poly pl ps records =
 	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
     | None -> 
       let uvarkind = Evd.univ_flexible_alg in
-      let sigma, s = Evd.new_sort_variable uvarkind sigma in
+      let dp = Global.current_dirpath () in
+      let sigma, s = Evd.new_sort_variable dp uvarkind sigma in
       (sigma, template), (EConstr.mkSort s, s)
   in
   let (sigma, template), typs = List.fold_left_map fold (sigma, true) records in

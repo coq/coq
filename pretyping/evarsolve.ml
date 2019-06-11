@@ -89,7 +89,8 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
     let s = ESorts.kind !evdref s in
-    let sigma, s' = new_sort_variable status !evdref in
+    let dp = Global.current_dirpath () in
+    let sigma, s' = new_sort_variable dp status !evdref in
     evdref := sigma;
     let evd = 
       if direction then set_leq_sort env !evdref s' s
@@ -1349,7 +1350,8 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
           let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
           downcast evk1 t1 evd
 	else
-	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
+          let dp = Global.current_dirpath () in
+          let evd, k = Evd.new_sort_variable dp univ_flexible_alg evd in
           let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
           let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
 	  let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in

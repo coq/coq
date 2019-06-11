@@ -26,13 +26,14 @@ open Ind_tables
 
 let optimize_non_type_induction_scheme kind dep sort _ ind =
   let env = Global.env () in
+  let dp = Global.current_dirpath () in
   let sigma = Evd.from_env env in
   if check_scheme kind ind then
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
     let cte, eff = find_scheme kind ind in
-    let sigma, cte = Evd.fresh_constant_instance env sigma cte in
+    let sigma, cte = Evd.fresh_constant_instance dp env sigma cte in
     let c = mkConstU cte in
     let t = type_of_constant_in (Global.env()) cte in
     let (mib,mip) = Global.lookup_inductive ind in
@@ -44,19 +45,20 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
 	mib.mind_nparams_rec
       else
 	mib.mind_nparams in
-    let sigma, sort = Evd.fresh_sort_in_family sigma sort in
+    let sigma, sort = Evd.fresh_sort_in_family dp sigma sort in
     let sigma, t', c' = weaken_sort_scheme env sigma false sort npars c t in
     let sigma = Evd.minimize_universes sigma in
     (Evarutil.nf_evars_universes sigma c', Evd.evar_universe_context sigma), eff
   else
-    let sigma, pind = Evd.fresh_inductive_instance env sigma ind in
+    let sigma, pind = Evd.fresh_inductive_instance dp env sigma ind in
     let sigma, c = build_induction_scheme env sigma pind dep sort in
       (c, Evd.evar_universe_context sigma), Safe_typing.empty_private_constants
 
 let build_induction_scheme_in_type dep sort ind =
+  let dp = Global.current_dirpath () in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma, pind = Evd.fresh_inductive_instance env sigma ind in
+  let sigma, pind = Evd.fresh_inductive_instance dp env sigma ind in
   let sigma, c = build_induction_scheme env sigma pind dep sort in
     c, Evd.evar_universe_context sigma
 
@@ -122,9 +124,10 @@ let nondep_elim_scheme from_kind to_kind =
 (* Case analysis *)
 
 let build_case_analysis_scheme_in_type dep sort ind =
+  let dp = Global.current_dirpath () in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
+  let (sigma, indu) = Evd.fresh_inductive_instance dp env sigma ind in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep sort in
     c, Evd.evar_universe_context sigma
 

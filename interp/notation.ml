@@ -492,11 +492,13 @@ exception NotAValidPrimToken
 
 let rec constr_of_glob env sigma g = match DAst.get g with
   | Glob_term.GRef (ConstructRef c, _) ->
-      let sigma,c = Evd.fresh_constructor_instance env sigma c in
-      sigma,mkConstructU c
+    let dp = Global.current_dirpath () in
+    let sigma,c = Evd.fresh_constructor_instance dp env sigma c in
+    sigma,mkConstructU c
   | Glob_term.GRef (IndRef c, _) ->
-      let sigma,c = Evd.fresh_inductive_instance env sigma c in
-      sigma,mkIndU c
+    let dp = Global.current_dirpath () in
+    let sigma,c = Evd.fresh_inductive_instance dp env sigma c in
+    sigma,mkIndU c
   | Glob_term.GApp (gc, gcl) ->
       let sigma,c = constr_of_glob env sigma gc in
       let sigma,cl = List.fold_left_map (constr_of_glob env) sigma gcl in
@@ -536,7 +538,8 @@ let uninterp_option c =
 let uninterp to_raw o (Glob_term.AnyGlobConstr n) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,of_ty = Evd.fresh_global env sigma o.of_ty in
+  let dp = Global.current_dirpath () in
+  let sigma,of_ty = Evd.fresh_global dp env sigma o.of_ty in
   let of_ty = EConstr.Unsafe.to_constr of_ty in
   try
     let sigma,n = constr_of_glob env sigma n in
@@ -799,7 +802,8 @@ let interp o ?loc n =
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
+  let dp = Global.current_dirpath () in
+  let sigma,to_ty = Evd.fresh_global dp env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   match o.warning, snd o.to_kind with
   | Abstract threshold, Direct
@@ -907,7 +911,8 @@ let interp o ?loc n =
   in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
+  let dp = Global.current_dirpath () in
+  let sigma,to_ty = Evd.fresh_global dp env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   let res = eval_constr_app env sigma to_ty c in
   match snd o.to_kind with

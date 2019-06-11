@@ -51,15 +51,18 @@ open Context.Rel.Declaration
 (* Ugly things which should not be here *)
 
 [@@@ocaml.warning "-3"]
-let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global @@
+let coq_constant m s =
+  let dp = Global.current_dirpath () in
+  EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global dp @@
   Coqlib.find_reference "RecursiveDefinition" m s
 
 let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
 let arith_Lt  = ["Coq"; "Arith";"Lt"]
 
 let coq_init_constant s =
+  let dp = Global.current_dirpath () in
   EConstr.of_constr (
-    UnivGen.constr_of_monomorphic_global @@
+    UnivGen.constr_of_monomorphic_global dp @@
     Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
 [@@@ocaml.warning "+3"]
 
@@ -94,7 +97,9 @@ let type_of_const sigma t =
       Typeops.type_of_constant_in (Global.env()) (sp, u)
     |_ -> assert false
 
-let constant sl s = UnivGen.constr_of_monomorphic_global (find_reference sl s)
+let constant sl s =
+  let dp = Global.current_dirpath () in
+  UnivGen.constr_of_monomorphic_global dp (find_reference sl s)
 
 let const_of_ref = function
     ConstRef kn -> kn
@@ -132,7 +137,9 @@ let nat = function () -> (coq_init_constant "nat")
 let iter_ref () =  
   try find_reference ["Recdef"] "iter" 
   with Not_found -> user_err Pp.(str "module Recdef not loaded")
-let iter_rd = function () -> (constr_of_monomorphic_global (delayed_force iter_ref))
+let iter_rd = function () -> (
+  let dp = Global.current_dirpath () in
+  constr_of_monomorphic_global dp (delayed_force iter_ref))
 let eq = function () -> (coq_init_constant "eq")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
 let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
@@ -145,7 +152,9 @@ let coq_O = function () -> (coq_init_constant "O")
 let coq_S = function () -> (coq_init_constant "S")
 let lt_n_O = function () -> (coq_constant arith_Nat "nlt_0_r")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
-let max_constr = function () -> EConstr.of_constr (constr_of_monomorphic_global (delayed_force max_ref))
+let max_constr = function () ->
+  let dp = Global.current_dirpath () in
+  EConstr.of_constr (constr_of_monomorphic_global dp (delayed_force max_ref))
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
@@ -1041,13 +1050,15 @@ let compute_terminate_type nb_args func =
   let open Term in
   let open Constr in
   let open CVars in
-  let _,a_arrow_b,_ = destLambda(def_of_const (constr_of_monomorphic_global func)) in
+  let dp = Global.current_dirpath () in
+  let _,a_arrow_b,_ =
+    destLambda(def_of_const (constr_of_monomorphic_global dp func)) in
   let rev_args,b = decompose_prod_n nb_args a_arrow_b in
   let left =
     mkApp(delayed_force iter_rd,
 	  Array.of_list
 	    (lift 5 a_arrow_b:: mkRel 3::
-               constr_of_monomorphic_global func::mkRel 1::
+               constr_of_monomorphic_global dp func::mkRel 1::
 	       List.rev (List.map_i (fun i _ -> mkRel (6+i)) 0 rev_args)
 	    )
 	 )
@@ -1065,7 +1076,7 @@ let compute_terminate_type nb_args func =
 		  delayed_force nat,
                   (mkProd (make_annot (Name k_id) Sorts.Relevant, delayed_force nat,
                            mkArrow cond Sorts.Relevant result))))|])in
-  let value = mkApp(constr_of_monomorphic_global (Util.delayed_force coq_sig_ref),
+  let value = mkApp(constr_of_monomorphic_global dp (Util.delayed_force coq_sig_ref),
 		    [|b;
                       (mkLambda (make_annot (Name v_id) Sorts.Relevant, b, nb_iter))|]) in
   compose_prod rev_args value
@@ -1159,9 +1170,10 @@ let rec instantiate_lambda sigma t l =
 let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_arg_num  : tactic =
   begin
     fun g ->
+      let dp = Global.current_dirpath () in
       let sigma = project g in
       let ids = Termops.ids_of_named_context (pf_hyps g) in
-      let func_body = (def_of_const (constr_of_monomorphic_global func)) in
+      let func_body = (def_of_const (constr_of_monomorphic_global dp func)) in
       let func_body = EConstr.of_constr func_body in
       let (f_name, _, body1) = destLambda sigma func_body in
       let f_id =
@@ -1227,7 +1239,8 @@ let get_current_subgoals_types pstate =
 
 exception EmptySubgoals
 let build_and_l sigma l =
-  let and_constr =  UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.and.type" in
+  let dp = Global.current_dirpath () in
+  let and_constr =  UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.and.type" in
   let conj_constr = Coqlib.build_coq_conj () in
   let mk_and p1 p2 =
     mkApp(EConstr.of_constr and_constr,[|p1;p2|]) in
@@ -1253,7 +1266,7 @@ let build_and_l sigma l =
 	let c,tac,nb = f pl in
 	mk_and p1 c,
 	tclTHENS
-          (Proofview.V82.of_tactic (apply (EConstr.of_constr (constr_of_monomorphic_global conj_constr))))
+          (Proofview.V82.of_tactic (apply (EConstr.of_constr (constr_of_monomorphic_global (Global.current_dirpath ()) conj_constr))))
 	  [tclIDTAC;
 	   tac
 	  ],nb+1
@@ -1435,7 +1448,7 @@ let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
   (cont_tactic:Id.t list -> tactic) g =
   let sigma = project g in
   let ids = pf_ids_of_hyps g in
-  let terminate_constr = constr_of_monomorphic_global term_f in
+  let terminate_constr = constr_of_monomorphic_global (Global.current_dirpath ()) term_f in
   let terminate_constr = EConstr.of_constr terminate_constr in
   let nargs = nb_prod (project g) (EConstr.of_constr (type_of_const sigma terminate_constr)) in
   let x = n_x_id ids nargs in
@@ -1455,7 +1468,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
     let evd = Evd.from_ctx uctx in
-    let f_constr = constr_of_monomorphic_global f_ref in
+    let f_constr = constr_of_monomorphic_global (Global.current_dirpath ()) f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     let lemma = Lemmas.start_lemma eq_name (Global ImportDefaultBehavior, false, Proof Lemma) ~sign evd
        (EConstr.of_constr equation_lemma_type) in
@@ -1464,12 +1477,12 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
 	  (fun  x ->
 	     prove_eq (fun _ -> tclIDTAC)
 	       {nb_arg=nb_arg;
-                f_terminate = EConstr.of_constr (constr_of_monomorphic_global terminate_ref);
+                f_terminate = EConstr.of_constr (constr_of_monomorphic_global (Global.current_dirpath ()) terminate_ref);
 	        f_constr = EConstr.of_constr f_constr; 
 		concl_tac = tclIDTAC;
 		func=functional_ref;
 		info=(instantiate_lambda Evd.empty
-                        (EConstr.of_constr (def_of_const (constr_of_monomorphic_global functional_ref)))
+                        (EConstr.of_constr (def_of_const (constr_of_monomorphic_global (Global.current_dirpath ()) functional_ref)))
 	       		(EConstr.of_constr f_constr::List.map mkVar x)
 		);
 		is_main_branch = true;
@@ -1567,9 +1580,9 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
     if not stop
     then
       let eq_ref = Nametab.locate (qualid_of_ident equation_id ) in
-      let f_ref = destConst (constr_of_monomorphic_global f_ref)
-      and functional_ref = destConst (constr_of_monomorphic_global functional_ref)
-      and eq_ref = destConst (constr_of_monomorphic_global eq_ref) in
+      let f_ref = destConst (constr_of_monomorphic_global (Global.current_dirpath ()) f_ref)
+      and functional_ref = destConst (constr_of_monomorphic_global (Global.current_dirpath ()) functional_ref)
+      and eq_ref = destConst (constr_of_monomorphic_global (Global.current_dirpath ()) eq_ref) in
       generate_induction_principle f_ref tcc_lemma_constr
         functional_ref eq_ref rec_arg_num
         (EConstr.of_constr rec_arg_type)

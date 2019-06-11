@@ -859,16 +859,16 @@ let merge_universe_subst evd subst =
 let with_context_set ?loc rigid d (a, ctx) =
   (merge_context_set ?loc rigid d ctx, a)
 
-let new_univ_level_variable ?loc ?name rigid evd =
-  let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
+let new_univ_level_variable ?loc ?name dp rigid evd =
+  let uctx', u = UState.new_univ_variable ?loc dp rigid name evd.universes in
     ({evd with universes = uctx'}, u)
 
-let new_univ_variable ?loc ?name rigid evd =
-  let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
+let new_univ_variable ?loc ?name dp rigid evd =
+  let uctx', u = UState.new_univ_variable ?loc dp rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name rigid d =
-  let (d', u) = new_univ_variable ?loc rigid ?name d in
+let new_sort_variable ?loc ?name dp rigid d =
+  let (d', u) = new_univ_variable ?loc dp rigid ?name d in
     (d', Sorts.sort_of_univ u)
 
 let add_global_univ d u =
@@ -885,20 +885,20 @@ let make_nonalgebraic_variable evd u =
 (* Operations on constants              *)
 (****************************************)
 
-let fresh_sort_in_family ?loc ?(rigid=univ_flexible) evd s =
-  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
+let fresh_sort_in_family ?loc ?(rigid=univ_flexible) dp evd s =
+  with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family dp s)
 
-let fresh_constant_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance env c)
+let fresh_constant_instance ?loc dp env evd c =
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance dp env c)
 
-let fresh_inductive_instance ?loc env evd i =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_inductive_instance env i)
+let fresh_inductive_instance ?loc dp env evd i =
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_inductive_instance dp env i)
 
-let fresh_constructor_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance env c)
+let fresh_constructor_instance ?loc dp env evd c =
+  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance dp env c)
 
-let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
-  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
+let fresh_global ?loc ?(rigid=univ_flexible) ?names dp env evd gr =
+  with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names dp env gr)
 
 let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 
@@ -969,7 +969,7 @@ let set_leq_sort env evd s1 s2 =
      if not (type_in_type env) then
        add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
-	    
+
 let check_eq evd s s' =
   UGraph.check_eq (UState.ugraph evd.universes) s s'
 
@@ -982,10 +982,10 @@ let check_constraints evd csts =
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
 
-let refresh_undefined_universes evd =
-  let uctx', subst = UState.refresh_undefined_univ_variables evd.universes in
+let refresh_undefined_universes dp evd =
+  let uctx', subst = UState.refresh_undefined_univ_variables dp evd.universes in
   let evd' = cmap (subst_univs_level_constr subst) {evd with universes = uctx'} in
-    evd', subst
+  evd', subst
 
 let nf_univ_variables evd =
   let subst, uctx' = UState.normalize_variables evd.universes in

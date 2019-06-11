@@ -251,7 +251,8 @@ let pf_with_evars glsev k gls =
     tclTHEN (Refiner.tclEVARS evd) (k a) gls
 
 let pf_constr_of_global gr k =
-  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
+  let dp = Global.current_dirpath () in
+  pf_with_evars (fun gls -> pf_apply (Evd.fresh_global dp) gls gr) k
 
 (** Tacticals of Ltac defined directly in term of Proofview *)
 module New = struct
@@ -698,7 +699,8 @@ module New = struct
   let gl_make_elim ind = begin fun gl ->
     let env = Proofview.Goal.env gl in
     let gr = Indrec.lookup_eliminator env (fst ind) (elimination_sort_of_goal gl) in
-    let (sigma, c) = pf_apply Evd.fresh_global gl gr in
+    let dp = Global.current_dirpath () in
+    let (sigma, c) = pf_apply (Evd.fresh_global dp) gl gr in
     (sigma, c)
   end
 
@@ -756,9 +758,10 @@ module New = struct
     general_elim_then_using gl_make_case_nodep false
 
   let pf_constr_of_global ref =
+    let dp = Global.current_dirpath () in
     Proofview.tclEVARMAP >>= fun sigma ->
     Proofview.tclENV >>= fun env ->
-    let (sigma, c) = Evd.fresh_global env sigma ref in
+    let (sigma, c) = Evd.fresh_global dp env sigma ref in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT c
 
 end

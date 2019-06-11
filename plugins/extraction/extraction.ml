@@ -437,7 +437,8 @@ and extract_really_ind env kn mib =
     let packets =
       Array.mapi
 	(fun i mip ->
-           let (_,u),_ = UnivGen.fresh_inductive_instance env (kn,i) in
+           let dp = Global.current_dirpath () in
+           let (_,u),_ = UnivGen.fresh_inductive_instance dp env (kn,i) in
 	   let ar = Inductive.type_of_inductive env ((mib,mip),u) in
            let ar = EConstr.of_constr ar in
            let info = (fst (flag_of_type env sg ar) = Info) in

@@ -549,7 +549,8 @@ let do_universe poly l =
       user_err ~hdr:"Constraint"
                    (str"Cannot declare polymorphic universes outside sections")
   in
-  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global ())) l in
+  let dp = Global.current_dirpath () in
+  let l = List.map (fun {CAst.v=id} -> (id, UnivGen.new_univ_global dp)) l in
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
       Univ.LSet.empty l, Univ.Constraint.empty
   in

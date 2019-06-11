@@ -1114,6 +1114,7 @@ let find_sigma_data env s = build_sigma_type ()
  *)
 
 let make_tuple env sigma (rterm,rty) lind =
+  let dp = Global.current_dirpath () in
   assert (not (noccurn sigma lind rty));
   let sigdata = find_sigma_data env (get_sort_of env sigma rty) in
   let sigma, a = type_of ~refresh:true env sigma (mkRel lind) in
@@ -1122,8 +1123,8 @@ let make_tuple env sigma (rterm,rty) lind =
   let rty = lift (1-lind) (liftn lind (lind+1) rty) in
   (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
   let p = mkLambda (na, a, rty) in
-  let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
-  let sigma, sig_term = Evd.fresh_global env sigma sigdata.typ in
+  let sigma, exist_term = Evd.fresh_global dp env sigma sigdata.intro in
+  let sigma, sig_term = Evd.fresh_global dp env sigma sigdata.typ in
     sigma,
     (applist(exist_term,[a;p;(mkRel lind);rterm]),
      applist(sig_term,[a;p]))
@@ -1210,12 +1211,13 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let rty = beta_applist sigma (p_i_minus_1,[ev]) in
       let sigma, tuple_tail = sigrec_clausal_form sigma (siglen-1) rty in
       let evopt = match EConstr.kind sigma ev with Evar _ -> None | _ -> Some ev in
+      let dp = Global.current_dirpath () in
       match evopt with
 	| Some w ->
           let w_type = unsafe_type_of env sigma w in
           begin match Evarconv.unify_leq_delay env sigma w_type a with
             | sigma ->
-              let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
+              let sigma, exist_term = Evd.fresh_global dp env sigma sigdata.intro in
               sigma, applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
             | exception Evarconv.UnableToUnify _ ->
               user_err Pp.(str "Cannot solve a unification problem.")
@@ -1376,6 +1378,7 @@ let simplify_args env sigma t =
     | _ -> t
 
 let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
+  let dp = Global.current_dirpath () in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
   let evdref = ref sigma in
@@ -1384,7 +1387,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
       (* arbitrarily take t1' as the injector default value *)
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
       let injfun = mkNamedLambda (make_annot e Sorts.Relevant) t injbody in
-      let sigma,congr = Evd.fresh_global env sigma eq.congr in
+      let sigma,congr = Evd.fresh_global dp env sigma eq.congr in
       let pf = applist(congr,[t;resty;injfun;t1;t2]) in
       let sigma, pf_typ = Typing.type_of env sigma pf in
       let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in

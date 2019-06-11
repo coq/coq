@@ -248,7 +248,8 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma, c = Constrintern.interp_type_evars ~program_mode:false env sigma com in
-  let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid sigma comsort in
+  let dp = Global.current_dirpath () in
+  let sigma, sort = Evd.fresh_sort_in_family ~rigid:univ_rigid dp sigma comsort in
   try
     add_inversion_lemma ~poly na env sigma c sort bool tac
   with

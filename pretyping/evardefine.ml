@@ -82,8 +82,9 @@ let define_pure_evar_as_product env evd evk =
   let s = destSort evd concl in
   let evksrc = evar_source evk evd in
   let src = subterm_source evk ~where:Domain evksrc in
+  let dp = Global.current_dirpath () in
   let evd1,(dom,u1) =
-    new_type_evar evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
+    new_type_evar dp evenv evd univ_flexible_alg ~src ~filter:(evar_filter evi)
   in
   let rdom = Sorts.Relevant in (* TODO relevance *)
   let evd2,rng =
@@ -96,7 +97,7 @@ let define_pure_evar_as_product env evd evk =
       else
 	let status = univ_flexible_alg in
 	let evd3, (rng, srng) =
-          new_type_evar newenv evd1 status ~src ~filter
+          new_type_evar dp newenv evd1 status ~src ~filter
         in
 	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
         let evd3 = Evd.set_leq_sort evenv evd3 (Sorts.sort_of_univ prods) (ESorts.kind evd1 s) in
@@ -168,7 +169,8 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 (* Refining an evar to a sort *)
 
 let define_evar_as_sort env evd (ev,args) =
-  let evd, s = new_sort_variable univ_rigid evd in
+  let dp = Global.current_dirpath () in
+  let evd, s = new_sort_variable dp univ_rigid evd in
   let evi = Evd.find_undefined evd ev in 
   let concl = Reductionops.whd_all (evar_env evi) evd evi.evar_concl in
   let sort = destSort evd concl in

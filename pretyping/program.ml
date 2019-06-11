@@ -11,10 +11,10 @@
 open CErrors
 open Util
 
-let papp evdref r args = 
+let papp dp evdref r args =
   let open EConstr in
   let gr = delayed_force r in
-  let evd, hd = Evarutil.new_global !evdref gr in
+  let evd, hd = Evarutil.new_global dp !evdref gr in
   evdref := evd;
   mkApp (hd, args)
 
@@ -38,8 +38,8 @@ let coq_eq_refl     () = Coqlib.lib_ref "core.eq.refl"
 let coq_eq_refl_ref () = Coqlib.lib_ref "core.eq.refl"
 let coq_eq_rect     () = Coqlib.lib_ref "core.eq.rect"
 
-let mk_coq_not sigma x =
-  let sigma, notc = Evarutil.new_global sigma Coqlib.(lib_ref "core.not.type") in
+let mk_coq_not dp sigma x =
+  let sigma, notc = Evarutil.new_global dp sigma Coqlib.(lib_ref "core.not.type") in
   sigma, EConstr.mkApp (notc, [| x |])
 
 let coq_JMeq_ind  () =
@@ -55,8 +55,8 @@ let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
   | [] -> invalid_arg "unsafe_fold_right"
 
-let mk_coq_and sigma l =
-  let sigma, and_typ = Evarutil.new_global sigma Coqlib.(lib_ref "core.and.type") in
+let mk_coq_and dp sigma l =
+  let sigma, and_typ = Evarutil.new_global dp sigma Coqlib.(lib_ref "core.and.type") in
   sigma, unsafe_fold_right
       (fun c conj ->
          EConstr.(mkApp (and_typ, [| c ; conj |])))

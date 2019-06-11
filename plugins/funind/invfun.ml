@@ -76,7 +76,8 @@ let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 
 let make_eq () =
   try
-    EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "core.eq.type"))
+    let dp = Global.current_dirpath () in
+    EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Coqlib.lib_ref "core.eq.type"))
   with _ -> assert false
 
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
@@ -93,8 +94,9 @@ let make_eq () =
 
 let generate_type evd g_to_f f graph i =
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
+  let dp = Global.current_dirpath () in
   let evd',graph =
-    Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
+    Evd.fresh_global dp (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
   in
   evd:=evd';
   let sigma, graph_arity = Typing.type_of (Global.env ()) !evd graph in
@@ -166,7 +168,8 @@ let find_induction_principle evd f =
   match infos.rect_lemma with
     | None -> raise Not_found
     | Some rect_lemma ->
-       let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
+       let dp = Global.current_dirpath () in
+       let evd',rect_lemma = Evd.fresh_global dp (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
        let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
        evd:=evd';
        rect_lemma,typ
@@ -456,6 +459,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
   fun g ->
     let eq_ind = make_eq () in
     let sigma = project g in
+    let dp = Global.current_dirpath () in
     match EConstr.kind sigma (pf_concl g) with
           | Prod(_,t,t') ->
 	      begin
@@ -506,7 +510,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-                  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.False.type")) ->
+                  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.False.type")) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENLIST[
@@ -814,7 +818,8 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
          let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
 	 (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
-	 let _,lem_cst_constr = Evd.fresh_global
+         let dp = Global.current_dirpath () in
+         let _,lem_cst_constr = Evd.fresh_global dp
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
          let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with correctness_lemma = Some lem_cst};
@@ -873,7 +878,8 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
               (proving_tac i))) lemma) in
          let () = Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
 	 let finfo = find_Function_infos (fst f_as_constant) in
-	 let _,lem_cst_constr = Evd.fresh_global
+         let dp = Global.current_dirpath () in
+         let _,lem_cst_constr = Evd.fresh_global dp
 				  (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
          let (lem_cst,_) = destConst !evd lem_cst_constr in
 	 update_Function {finfo with completeness_lemma = Some lem_cst}

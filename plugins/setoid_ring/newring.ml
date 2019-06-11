@@ -208,7 +208,7 @@ let exec_tactic env evd n f args =
   let nf c = constr_of evd c in
   Array.map nf !tactic_res, Evd.universe_context_set evd
 
-let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref n)))
+let gen_constant n = lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref n)))
 let gen_reference n = lazy (Coqlib.lib_ref n)
 
 let coq_mk_Setoid = gen_constant "plugins.setoid_ring.Build_Setoid_Theory"
@@ -222,7 +222,8 @@ let coq_nil = gen_reference "core.list.nil"
 let lapp f args = mkApp(Lazy.force f,args)
 
 let plapp evdref f args =
-  let evd, fc = Evarutil.new_global !evdref (Lazy.force f) in
+  let dp = Global.current_dirpath () in
+  let evd, fc = Evarutil.new_global dp !evdref (Lazy.force f) in
   evdref := evd;
   mkApp(fc,args)
 
@@ -253,7 +254,7 @@ let plugin_modules =
     ]
 
 let my_constant c =
-  lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
+  lazy (EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) @@ Coqlib.gen_reference_in_modules "Ring" plugin_modules c))
     [@@ocaml.warning "-3"]
 let my_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
@@ -574,7 +575,8 @@ let make_hyp env evd c =
    plapp evd coq_mkhypo [|t;c|]
 
 let make_hyp_list env evdref lH =
-  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  let dp = Global.current_dirpath () in
+  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   let l = 
     List.fold_right
@@ -587,7 +589,8 @@ let make_hyp_list env evdref lH =
     Evarutil.nf_evars_universes !evdref l'
 
 let interp_power env evdref pow =
-  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  let dp = Global.current_dirpath () in
+  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match pow with
   | None ->
@@ -603,7 +606,8 @@ let interp_power env evdref pow =
       (tac, plapp evdref coq_Some [|carrier; spec|])
 
 let interp_sign env evdref sign =
-  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  let dp = Global.current_dirpath () in
+  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match sign with
   | None -> plapp evdref coq_None [|carrier|]
@@ -613,7 +617,8 @@ let interp_sign env evdref sign =
        (* Same remark on ill-typed terms ... *)
 
 let interp_div env evdref div =
-  let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
+  let dp = Global.current_dirpath () in
+  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match div with
   | None -> plapp evdref coq_None [|carrier|]
@@ -920,7 +925,7 @@ let ftheory_to_obj : field_info -> obj =
 let field_equality evd r inv req =
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
-        let c = UnivGen.constr_of_monomorphic_global Coqlib.(lib_ref "core.eq.congr") in
+        let c = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) Coqlib.(lib_ref "core.eq.congr") in
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->

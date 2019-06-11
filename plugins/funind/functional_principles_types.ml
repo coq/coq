@@ -276,7 +276,8 @@ let change_property_sort evd toSort princ princName =
     )
   in
   let evd,princName_as_constr =
-    Evd.fresh_global
+    let dp = Global.current_dirpath () in
+    Evd.fresh_global dp
       (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident princName)) in
   let init =
     let nargs =  (princ_info.nparams + (List.length  princ_info.predicates)) in
@@ -339,7 +340,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   try
 
   let f = funs.(i) in
-  let sigma, type_sort = Evd.fresh_sort_in_family !evd InType in
+  let dp = Global.current_dirpath () in
+  let sigma, type_sort = Evd.fresh_sort_in_family dp !evd InType in
   evd := sigma;
   let new_sorts =
     match sorts with
@@ -361,7 +363,8 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
         let evd' = Evd.from_env (Global.env ()) in
-        let evd',s = Evd.fresh_sort_in_family evd' fam_sort in
+        let dp = Global.current_dirpath () in
+        let evd',s = Evd.fresh_sort_in_family dp evd' fam_sort in
         let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
         let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
         let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
@@ -508,7 +511,8 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Safe_typing.private_
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-        let sigma, fs = Evd.fresh_sort_in_family !evd x in
+        let dp = Global.current_dirpath () in
+        let sigma, fs = Evd.fresh_sort_in_family dp !evd x in
         evd := sigma; fs
       )
       fas
@@ -616,7 +620,8 @@ let build_scheme fas =
                 user_err ~hdr:"FunInd.build_scheme"
                   (str "Cannot find " ++ Libnames.pr_qualid f)
 	    in
-            let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
+            let dp = Global.current_dirpath () in
+            let evd',f = Evd.fresh_global dp (Global.env ()) !evd f_as_constant in
             let _ = evd := evd' in 
             let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd f in
             evd := sigma;
@@ -659,7 +664,8 @@ let build_case_scheme fa =
     with Not_found ->
       user_err ~hdr:"FunInd.build_case_scheme"
         (str "Cannot find " ++ Libnames.pr_qualid f) in
-  let sigma, (_,u) = Evd.fresh_constant_instance env sigma funs in
+  let dp = Global.current_dirpath () in
+  let sigma, (_,u) = Evd.fresh_constant_instance dp env sigma funs in
   let first_fun = funs in
   let funs_mp = Constant.modpath first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
@@ -680,7 +686,8 @@ let build_case_scheme fa =
   let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
-       fst @@ UnivGen.fresh_sort_in_family x
+       let dp = Global.current_dirpath () in
+       fst @@ UnivGen.fresh_sort_in_family dp x
     )
       fa
   in

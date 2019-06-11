@@ -147,7 +147,8 @@ let interp_universe_level_name ~anon_rigidity evd qid =
     if Libnames.qualid_is_ident qid then (* Undeclared *)
       let id = Libnames.qualid_basename qid in
       if not (is_strict_universe_declarations ()) then
-        new_univ_level_variable ?loc:qid.CAst.loc ~name:id univ_rigid evd
+        let dp = Global.current_dirpath () in
+        new_univ_level_variable ?loc:qid.CAst.loc ~name:id dp univ_rigid evd
       else user_err ?loc:qid.CAst.loc ~hdr:"interp_universe_level_name"
           (Pp.(str "Undeclared universe: " ++ Id.print id))
     else
@@ -408,7 +409,9 @@ let interp_known_glob_level ?loc evd = function
       user_err ?loc ~hdr:"interp_known_level_info" (str "Undeclared universe " ++ Libnames.pr_qualid qid)
 
 let interp_glob_level ?loc evd : glob_level -> _ = function
-  | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
+  | UAnonymous {rigid} ->
+    let dp = Global.current_dirpath () in
+    new_univ_level_variable ?loc dp (if rigid then univ_rigid else univ_flexible) evd
   | UNamed s -> interp_sort_name ?loc evd s
 
 let interp_instance ?loc evd l =
@@ -431,7 +434,8 @@ let pretype_global ?loc rigid env evd gr us =
     | None -> evd, None
     | Some l -> interp_instance ?loc evd l
   in
-  Evd.fresh_global ?loc ~rigid ?names:instance !!env evd gr
+  let dp = Global.current_dirpath () in
+  Evd.fresh_global ?loc ~rigid ?names:instance dp !!env evd gr
 
 let pretype_ref ?loc sigma env ref us =
   match ref with
@@ -450,7 +454,8 @@ let pretype_ref ?loc sigma env ref us =
 
 let interp_sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
-    let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
+    let dp = Global.current_dirpath () in
+    let evd, l = new_univ_level_variable ?loc dp (if rigid then univ_rigid else univ_flexible) evd in
     evd, Univ.Universe.make l
   | UNamed l -> interp_sort_info ?loc evd l
 
@@ -1107,7 +1112,8 @@ and pretype_type ~program_mode ~poly resolve_tc valcon (env : GlobEnv.t) sigma c
            sigma, { utj_val = v;
                     utj_type = s }
        | None ->
-         let sigma, s = new_sort_variable univ_flexible_alg sigma in
+         let dp = Global.current_dirpath () in
+         let sigma, s = new_sort_variable dp univ_flexible_alg sigma in
          let sigma, utj_val = new_evar env sigma ~src:(loc, knd) ~naming (mkSort s) in
          let sigma = if program_mode then mark_obligation_evar sigma knd utj_val else sigma in
          sigma, { utj_val; utj_type = s})

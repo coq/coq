@@ -7,7 +7,8 @@ let example_sort sigma =
 (* creating a new sort requires that universes should be recorded
   in the evd datastructure, so this datastructure also needs to be
   passed around. *)
-  let sigma, s = Evd.new_sort_variable Evd.univ_rigid sigma in
+  let dp = Global.current_dirpath () in
+  let sigma, s = Evd.new_sort_variable dp Evd.univ_rigid sigma in
   let new_type = EConstr.mkSort s in
   sigma, new_type
 
@@ -19,8 +20,9 @@ let c_one sigma =
 (* the long name of "S" was found with the command "About S." *)
   let gr_O =
     find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
-  let sigma, c_O = Evarutil.new_global sigma gr_O in
-  let sigma, c_S = Evarutil.new_global sigma gr_S in
+  let dp = Global.current_dirpath () in
+  let sigma, c_O = Evarutil.new_global dp sigma gr_O in
+  let sigma, c_S = Evarutil.new_global dp sigma gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
   sigma, EConstr.mkApp (c_S, [| c_O |])
 
@@ -39,8 +41,9 @@ let dangling_identity env sigma =
 let dangling_identity2 env sigma =
 (* This example uses directly a function that produces an evar that
   is meant to be a type. *)
+  let dp = Global.current_dirpath () in
   let sigma, (arg_type, type_type) =
-    Evarutil.new_type_evar env sigma Evd.univ_rigid in
+    Evarutil.new_type_evar dp env sigma Evd.univ_rigid in
   sigma, EConstr.mkLambda(nameR (Names.Id.of_string "x"), arg_type,
           EConstr.mkRel 1)
 
@@ -67,43 +70,53 @@ let example_sort_app_lambda () =
 
 let c_S sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_O sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_E sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_D sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_Q sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_R sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_N sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_C sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_F sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 let c_P sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
-  Evarutil.new_global sigma gr
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma gr
 
 (* If c_S was universe polymorphic, we should have created a new constant
    at each iteration of buildup. *)

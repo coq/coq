@@ -554,6 +554,7 @@ let () = define2 "constr_constructor" (repr_ext val_inductive) int begin fun (in
 end
 
 let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
+  let dp = Global.current_dirpath () in
   Proofview.Goal.goals >>= function
   | [gl] ->
     gl >>= fun gl ->
@@ -570,7 +571,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
     else
       let open Context.Named.Declaration in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
-      let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
+      let (sigma, (evt, _)) = Evarutil.new_type_evar dp nenv sigma Evd.univ_flexible in
       let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
@@ -898,9 +899,10 @@ let () = define1 "env_path" reference begin fun r ->
 end
 
 let () = define1 "env_instantiate" reference begin fun r ->
+  let dp = Global.current_dirpath () in
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
-  let (sigma, c) = Evd.fresh_global env sigma r in
+  let (sigma, c) = Evd.fresh_global dp env sigma r in
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   return (Value.of_constr c)
 end

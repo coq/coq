@@ -760,14 +760,16 @@ let mkSsrRef name =
   CErrors.user_err Pp.(str "Small scale reflection library not loaded (" ++ str name ++ str ")")
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst name env sigma =
-  EConstr.fresh_global env sigma (mkSsrRef name)
+  let dp = Global.current_dirpath () in
+  EConstr.fresh_global dp env sigma (mkSsrRef name)
 let pf_mkSsrConst name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let (sigma, t) = mkSsrConst name env sigma in
   t, re_sig it sigma
 let pf_fresh_global name gl =
+  let dp = Global.current_dirpath () in
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
-  let sigma,t  = Evd.fresh_global env sigma name in
+  let sigma,t  = Evd.fresh_global dp env sigma name in
   EConstr.Unsafe.to_constr t, re_sig it sigma
 
 let mkProt t c gl =
@@ -783,8 +785,9 @@ let mkEtaApp c n imin =
   mkApp (c, Array.init nargs mkarg)
 
 let mkRefl t c gl =
+  let dp = Global.current_dirpath () in
   let sigma = project gl in
-  let (sigma, refl) = EConstr.fresh_global (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
+  let (sigma, refl) = EConstr.fresh_global dp (pf_env gl) sigma Coqlib.(lib_ref "core.eq.refl") in
   EConstr.mkApp (refl, [|t; c|]), { gl with sigma }
 
 let discharge_hyp (id', (id, mode)) gl =
@@ -1147,6 +1150,7 @@ let pf_interp_gen_aux gl to_ind ((oclr, occ), t) =
 let apply_type x xs = Proofview.V82.of_tactic (Tactics.apply_type ~typecheck:true x xs)
 
 let genclrtac cl cs clr =
+  let dp = Global.current_dirpath () in
   let tclmyORELSE tac1 tac2 gl =
     try tac1 gl
     with e when CErrors.noncritical e -> tac2 e gl in
@@ -1160,7 +1164,7 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_monomorphic_global @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
+             (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
     (old_cleartac clr)

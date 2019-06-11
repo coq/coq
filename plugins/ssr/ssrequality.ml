@@ -446,7 +446,8 @@ let lz_setoid_relation =
   | Some (env', srel) when env' == env -> srel
   | _ ->
     let srel =
-       try Some (UnivGen.constr_of_monomorphic_global @@
+      let dp = Global.current_dirpath () in
+       try Some (UnivGen.constr_of_monomorphic_global dp @@
                  Coqlib.find_reference "Class_setoid" ("Coq"::sdir) "RewriteRelation" [@ocaml.warning "-3"])
        with _ -> None in
     last_srel := Some (env, srel); srel
@@ -466,6 +467,7 @@ let closed0_check cl p gl =
 let dir_org = function L2R -> 1 | R2L -> 2
 
 let rwprocess_rule dir rule gl =
+  let dp = Global.current_dirpath () in
   let env = pf_env gl in
   let coq_prod = lz_coq_prod () in
   let is_setoid = ssr_is_setoid env in
@@ -486,12 +488,12 @@ let rwprocess_rule dir rule gl =
           fun i -> ra.(i + 1), sigma
         | _ -> let ra = Array.append a [|r|] in
           function 1 ->
-            let sigma, pi1 = Evd.fresh_global env sigma coq_prod.Coqlib.proj1 in
+            let sigma, pi1 = Evd.fresh_global dp env sigma coq_prod.Coqlib.proj1 in
             EConstr.mkApp (pi1, ra), sigma
           | _ ->
-            let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
+            let sigma, pi2 = Evd.fresh_global dp env sigma coq_prod.Coqlib.proj2 in
             EConstr.mkApp (pi2, ra), sigma in
-        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_monomorphic_global @@ Coqlib.(lib_ref "core.True.type"))) then
+        if EConstr.eq_constr sigma a.(0) (EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.(lib_ref "core.True.type"))) then
          let s, sigma = sr sigma 2 in
          loop (converse_dir d) sigma s a.(1) rs 0
         else

@@ -139,7 +139,8 @@ let is_correct_arity env sigma c pj ind specif params =
         then error ()
         else sigma, s
     | Evar (ev,_), [] ->
-        let sigma, s = Evd.fresh_sort_in_family sigma (max_sort allowed_sorts) in
+        let dp = Global.current_dirpath () in
+        let sigma, s = Evd.fresh_sort_in_family dp sigma (max_sort allowed_sorts) in
         let sigma = Evd.define ev (mkSort s) sigma in
         sigma, s
     | _, (LocalDef _ as d)::ar' ->

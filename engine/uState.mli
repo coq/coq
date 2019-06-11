@@ -27,7 +27,7 @@ val empty : t
 
 val make : UGraph.t -> t
 
-val make_with_initial_binders : UGraph.t -> lident list -> t
+val make_with_initial_binders : DirPath.t -> UGraph.t -> lident list -> t
 
 val is_empty : t -> bool
 
@@ -114,7 +114,7 @@ val merge : ?loc:Loc.t -> sideff:bool -> extend:bool -> rigid -> t -> Univ.Conte
 val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
-val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
+val new_univ_variable : ?loc:Loc.t -> DirPath.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 
 (** [make_flexible_variable g algebraic l]
@@ -146,7 +146,7 @@ val abstract_undefined_variables : t -> t
 
 val fix_undefined_variables : t -> t
 
-val refresh_undefined_univ_variables : t -> t * Univ.universe_level_subst
+val refresh_undefined_univ_variables : DirPath.t -> t -> t * Univ.universe_level_subst
 
 (** Universe minimization *)
 val minimize : t -> t

@@ -37,11 +37,14 @@ open Coqlib
 let init_constant sigma rf = Evarutil.new_global sigma rf
 let fix_sub_ref () = lib_ref "program.wf.fix_sub"
 let measure_on_R_ref () = lib_ref "program.wf.mr"
-let well_founded sigma = init_constant sigma (lib_ref "core.wf.well_founded")
+let well_founded sigma =
+  let dp = Global.current_dirpath () in
+  init_constant dp sigma (lib_ref "core.wf.well_founded")
 
 let mkSubset sigma name typ prop =
   let open EConstr in
-  let sigma, app_h = Evarutil.new_global sigma (delayed_force build_sigma).typ in
+  let dp = Global.current_dirpath () in
+  let sigma, app_h = Evarutil.new_global dp sigma (delayed_force build_sigma).typ in
   sigma, mkApp (app_h, [| typ; mkLambda (make_annot name Sorts.Relevant, typ, prop) |])
 
 let make_qref s = qualid_of_string s
@@ -50,6 +53,7 @@ let lt_ref = make_qref "Init.Peano.lt"
 let rec telescope sigma l =
   let open EConstr in
   let open Vars in
+  let dp = Global.current_dirpath () in
   match l with
   | [] -> assert false
   | [LocalAssum (n, t)] ->
@@ -60,8 +64,8 @@ let rec telescope sigma l =
           (fun (sigma, ty, tys, (k, constr)) decl ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_annot decl, t, ty) in
-            let sigma, ty = Evarutil.new_global sigma (lib_ref "core.sigT.type") in
-            let sigma, intro = Evarutil.new_global sigma (lib_ref "core.sigT.intro") in
+            let sigma, ty = Evarutil.new_global dp sigma (lib_ref "core.sigT.type") in
+            let sigma, intro = Evarutil.new_global dp sigma (lib_ref "core.sigT.intro") in
             let sigty = mkApp (ty, [|t; pred|]) in
             let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
               (sigma, sigty, pred :: tys, (succ k, intro)))
@@ -70,8 +74,8 @@ let rec telescope sigma l =
       let sigma, last, subst = List.fold_right2
         (fun pred decl (sigma, prev, subst) ->
           let t = RelDecl.get_type decl in
-          let sigma, p1 = Evarutil.new_global sigma (lib_ref "core.sigT.proj1") in
-          let sigma, p2 = Evarutil.new_global sigma (lib_ref "core.sigT.proj2") in
+          let sigma, p1 = Evarutil.new_global dp sigma (lib_ref "core.sigT.proj1") in
+          let sigma, p2 = Evarutil.new_global dp sigma (lib_ref "core.sigT.proj2") in
           let proj1 = applist (p1, [t; pred; prev]) in
           let proj2 = applist (p2, [t; pred; prev]) in
             (sigma, lift 1 proj2, LocalDef (get_annot decl, proj1, t) :: subst))
@@ -88,6 +92,7 @@ let nf_evar_context sigma ctx =
 let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let open EConstr in
   let open Vars in
+  let dp = Global.current_dirpath () in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
@@ -124,7 +129,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
-    let sigma, comb = Evarutil.new_global sigma (delayed_force measure_on_R_ref) in
+    let sigma, comb = Evarutil.new_global dp sigma (delayed_force measure_on_R_ref) in
     let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
@@ -143,7 +148,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
     sigma, wfa :: [arg]
   in
   let _intern_env = push_rel_context intern_bl env in
-  let sigma, proj = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.proj1 in
+  let sigma, proj = Evarutil.new_global dp sigma (delayed_force build_sigma).Coqlib.proj1 in
   let wfargpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
     mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
@@ -158,7 +163,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
                                       intern_fun_arity_prod) in
   let sigma, curry_fun =
     let wfpred = mkLambda (make_annot (Name argid') Sorts.Relevant, argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
-    let sigma, intro = Evarutil.new_global sigma (delayed_force build_sigma).Coqlib.intro in
+    let sigma, intro = Evarutil.new_global dp sigma (delayed_force build_sigma).Coqlib.intro in
     let arg = mkApp (intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
@@ -186,7 +191,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   (* XXX: Previous code did parallel evdref update, so possible old
      weak ordering semantics may bite here. *)
   let sigma, def =
-    let sigma, h_a_term = Evarutil.new_global sigma (delayed_force fix_sub_ref) in
+    let sigma, h_a_term = Evarutil.new_global dp sigma (delayed_force fix_sub_ref) in
     let sigma, h_e_term = Evarutil.new_evar env sigma
         ~src:(Loc.tag @@ Evar_kinds.QuestionMark {
             Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Evar_kinds.Define false;
@@ -206,7 +211,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       (* XXX: Mutating the evar_map in the hook! *)
       (* XXX: Likely the sigma is out of date when the hook is called .... *)
       let hook sigma _ _ l gr =
-        let sigma, h_body = Evarutil.new_global sigma gr in
+        let sigma, h_body = Evarutil.new_global dp sigma gr in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in

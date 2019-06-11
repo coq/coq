@@ -15,7 +15,8 @@ VERNAC COMMAND EXTEND ShowTypeConstruction CLASSIFIED AS QUERY
 | [ "Tuto3_1" ] ->
   { let env = Global.env () in
     let sigma = Evd.from_env env in
-    let sigma, s = Evd.new_sort_variable Evd.univ_rigid sigma in
+    let dp = Global.current_dirpath () in
+    let sigma, s = Evd.new_sort_variable dp Evd.univ_rigid sigma in
     let new_type_2 = EConstr.mkSort s in
     let sigma, _ =
       Typing.type_of (Global.env()) (Evd.from_env (Global.env())) new_type_2 in

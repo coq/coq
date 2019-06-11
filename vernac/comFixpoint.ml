@@ -166,7 +166,8 @@ type recursive_preentry =
 (* Wellfounded definition *)
 
 let fix_proto sigma =
-  Evarutil.new_global sigma (Coqlib.lib_ref "program.tactic.fix_proto")
+  let dp = Global.current_dirpath () in
+  Evarutil.new_global dp sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
 let interp_recursive ~program_mode ~cofix fixl notations =
   let open Context.Named.Declaration in

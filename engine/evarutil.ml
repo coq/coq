@@ -26,8 +26,8 @@ let safe_evar_value sigma ev =
   try Some (EConstr.Unsafe.to_constr @@ Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
 
-let new_global evd x =
-  let (evd, c) = Evd.fresh_global (Global.env()) evd x in
+let new_global dp evd x =
+  let (evd, c) = Evd.fresh_global dp (Global.env()) evd x in
   (evd, c)
 
 (****************************************************)
@@ -467,14 +467,14 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
   new_evar_instance sign evd typ' ?src ?filter ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal instance
 
-let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
-  let (evd', s) = new_sort_variable rigid evd in
+let new_type_evar ?src ?filter ?naming ?principal ?hypnaming dp env evd rigid =
+  let (evd', s) = new_sort_variable dp rigid evd in
   let (evd', e) = new_evar env evd' ?src ?filter ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
-let new_Type ?(rigid=Evd.univ_flexible) evd =
+let new_Type ?(rigid=Evd.univ_flexible) dp evd =
   let open EConstr in
-  let (evd, s) = new_sort_variable rigid evd in
+  let (evd, s) = new_sort_variable dp rigid evd in
   (evd, mkSort s)
 
 (* Safe interface to unification problems *)
@@ -817,9 +817,9 @@ let occur_evar_upto sigma n c =
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
 
-let judge_of_new_Type evd =
+let judge_of_new_Type dp evd =
   let open EConstr in
-  let (evd', s) = new_univ_variable univ_rigid evd in
+  let (evd', s) = new_univ_variable dp univ_rigid evd in
   (evd', { uj_val = mkType s; uj_type = mkType (Univ.super s) })
 
 let subterm_source evk ?where (loc,k) =

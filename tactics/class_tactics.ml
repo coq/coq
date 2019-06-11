@@ -214,13 +214,14 @@ let unify_resolve poly flags = begin fun gls (c,_,clenv) ->
 
 (** Application of a lemma using [refine] instead of the old [w_unify] *)
 let unify_resolve_refine poly flags gls ((c, t, ctx),n,clenv) =
+  let dp = Global.current_dirpath () in
   let open Clenv in
   let env = Proofview.Goal.env gls in
   let concl = Proofview.Goal.concl gls in
   Refine.refine ~typecheck:false begin fun sigma ->
       let sigma, term, ty =
         if poly then
-          let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
+          let (subst, ctx) = UnivGen.fresh_universe_context_set_instance dp ctx in
           let map c = Vars.subst_univs_level_constr subst c in
           let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
           sigma, map c, map t

@@ -1536,8 +1536,9 @@ let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations
 
 let find_ind_eliminator ind s gl =
   let env = Proofview.Goal.env gl in
+  let dp = Global.current_dirpath () in
   let gr = lookup_eliminator env ind s in
-  Tacmach.New.pf_apply Evd.fresh_global gl gr
+  Tacmach.New.pf_apply (Evd.fresh_global dp) gl gr
 
 let find_eliminator c gl =
   let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
@@ -2198,7 +2199,8 @@ let constructor_core with_evars cstr lbind =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let (sigma, (cons, u)) = Evd.fresh_constructor_instance env sigma cstr in
+    let dp = Global.current_dirpath () in
+    let (sigma, (cons, u)) = Evd.fresh_constructor_instance dp env sigma cstr in
     let cons = mkConstructU (cons, EInstance.make u) in
     let apply_tac = general_apply true false with_evars None (CAst.make (cons,lbind)) in
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma) apply_tac
@@ -2648,6 +2650,7 @@ let decode_hyp = function
 *)
 
 let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
+  let dp = Global.current_dirpath () in
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
@@ -2665,8 +2668,8 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
             | IntroIdentifier id -> id in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
-          let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-          let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
+          let (sigma, eq) = Evd.fresh_global dp env sigma eqdata.eq in
+          let (sigma, refl) = Evd.fresh_global dp env sigma eqdata.refl in
           let eq = applist (eq,args) in
           let refl = applist (refl, [t;mkVar id]) in
           let term = mkNamedLetIn (make_annot id Sorts.Relevant) c t
@@ -2713,6 +2716,7 @@ let mk_eq_name env id {CAst.loc;v=ido} =
 (* unsafe *)
 
 let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
+  let dp = Global.current_dirpath () in
   let open Context.Named.Declaration in
   let t = match ty with Some t -> t | _ -> typ_of env sigma c in
   let r = Retyping.relevance_of_type env sigma t in
@@ -2723,8 +2727,8 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
   | Some (lr,heq) ->
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
-      let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
-      let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
+      let (sigma, eq) = Evd.fresh_global dp env sigma eqdata.eq in
+      let (sigma, refl) = Evd.fresh_global dp env sigma eqdata.refl in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (make_annot heq Sorts.Relevant,eq); decl] lastlhyp env in
@@ -3606,12 +3610,12 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   user_err ~hdr:"Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let coq_eq sigma       = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.type")
-let coq_eq_refl sigma  = Evarutil.new_global sigma Coqlib.(lib_ref "core.eq.refl")
+let coq_eq sigma       = Evarutil.new_global (Global.current_dirpath()) sigma Coqlib.(lib_ref "core.eq.type")
+let coq_eq_refl sigma  = Evarutil.new_global (Global.current_dirpath()) sigma Coqlib.(lib_ref "core.eq.refl")
 
 let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
-let coq_heq sigma      = Evarutil.new_global sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.JMeq.refl")
+let coq_heq sigma      = Evarutil.new_global (Global.current_dirpath()) sigma (Lazy.force coq_heq_ref)
+let coq_heq_refl sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.JMeq.refl")
 (* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
 let mkEq sigma t x y =
@@ -4163,6 +4167,7 @@ let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
     evd, (compute_scheme_signature evd scheme names_info ind_type_guess, scheme)
 
 let guess_elim isrec dep s hyp0 gl =
+  let dp = Global.current_dirpath () in
   let tmptyp0 =	Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let (mind, u), _ = Tacmach.New.pf_reduce_to_quantified_ind gl tmptyp0 in
   let env = Tacmach.New.pf_env gl in
@@ -4171,7 +4176,7 @@ let guess_elim isrec dep s hyp0 gl =
     if isrec && not (is_nonrec mind)
     then
       let gr = lookup_eliminator env mind s in
-      Evd.fresh_global env sigma gr
+      Evd.fresh_global dp env sigma gr
     else
       let u = EInstance.kind sigma u in
       if dep then

@@ -875,10 +875,11 @@ let warn_polymorphic_hint =
                         strbrk" use Polymorphic Hint to use it polymorphically.")
 
 let fresh_global_or_constr env sigma poly cr =
+  let dp = Global.current_dirpath () in
   let isgr, (c, ctx) =
     match cr with
     | IsGlobRef gr ->
-      let (c, ctx) = UnivGen.fresh_global_instance env gr in
+      let (c, ctx) = UnivGen.fresh_global_instance dp env gr in
        true, (EConstr.of_constr c, ctx)
     | IsConstr (c, ctx) -> false, (c, ctx)
   in
@@ -1290,12 +1291,13 @@ let prepare_hint check (poly,local) env init (sigma,c) =
 	  IsConstr (c', Univ.ContextSet.empty))
 
 let project_hint ~poly pri l2r r =
+  let dp = Global.current_dirpath () in
   let open EConstr in
   let open Coqlib in
   let gr = Smartlocate.global_with_alias r in
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, c = Evd.fresh_global env sigma gr in
+  let sigma, c = Evd.fresh_global dp env sigma gr in
   let t = Retyping.get_type_of env sigma c in
   let t =
     Tacred.reduce_to_quantified_ref env sigma (lib_ref "core.iff.type") t in
@@ -1305,7 +1307,7 @@ let project_hint ~poly pri l2r r =
     | _ -> assert false in
   let p =
     if l2r then lib_ref "core.iff.proj1" else lib_ref "core.iff.proj2" in
-  let sigma, p = Evd.fresh_global env sigma p in
+  let sigma, p = Evd.fresh_global dp env sigma p in
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a Sorts.Relevant (lift 1 b);mkArrow b Sorts.Relevant (lift 1 a);c|])) sign in

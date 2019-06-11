@@ -56,10 +56,11 @@ let functional_induction with_clean c princl pat =
 		| InSet -> finfo.rec_lemma
 		| InType -> finfo.rect_lemma
 	      in
+              let dp = Global.current_dirpath () in
 	      let princ,g' =  (* then we get the principle *)
 		try
 		  let g',princ =
-		    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
+                    Tacmach.pf_eapply (Evd.fresh_global dp) g  (Globnames.ConstRef (Option.get princ_option )) in
 		  princ,g'
 		with Option.IsNone ->
 		  (*i If there is not default lemma defined then,
@@ -72,7 +73,7 @@ let functional_induction with_clean c princl pat =
 		  in
 		  try
 		    let princ_ref = const_of_id princ_name in
-		    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global) g princ_ref in
+                    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global dp) g princ_ref in
 		    (b,a)
 		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
 		  with Not_found -> (* This one is neither defined ! *)
@@ -253,6 +254,7 @@ let warn_funind_cannot_build_inversion =
                  if do_observe () then (fnl() ++ CErrors.print e') else mt ())
 
 let derive_inversion fix_names =
+  let dp = Global.current_dirpath () in
   try
     let evd' = Evd.from_env (Global.env ()) in 
     (* we first transform the fix_names identifier into their corresponding constant *)
@@ -260,7 +262,7 @@ let derive_inversion fix_names =
       List.fold_right
 	(fun id (evd,l) ->
 	 let evd,c =
-	   Evd.fresh_global
+           Evd.fresh_global dp
 	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
         let (cst, u) = destConst evd c in
 	 evd, (cst, EInstance.kind evd u) :: l
@@ -279,7 +281,7 @@ let derive_inversion fix_names =
 	List.fold_right
 	  (fun id (evd,l) ->
 	   let evd,id = 
-	     Evd.fresh_global
+             Evd.fresh_global dp
 	       (Global.env ()) evd
 	       (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
 	   in 
@@ -351,6 +353,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) recdefs  interactive_proof
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
       Tacmach.tactic) : unit =
+  let dp = Global.current_dirpath () in
   let names = List.map (function (({CAst.v=name},_),_,_,_,_),_ -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
@@ -385,7 +388,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
               let env = Global.env () in
               let princ = Indrec.lookup_eliminator env (ind_kn,i) (InProp) in
 	     let evd = ref (Evd.from_env env) in
-	     let evd',uprinc = Evd.fresh_global env !evd princ in
+             let evd',uprinc = Evd.fresh_global dp env !evd princ in
              let _ = evd := evd' in 
              let sigma, princ_type = Typing.type_of ~refresh:true env !evd uprinc in
              evd := sigma;
@@ -411,6 +414,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     on_error names e
 
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
+  let dp = Global.current_dirpath () in
   match fixpoint_exprl with
     | [(({CAst.v=fname},pl),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
@@ -423,7 +427,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
 	    let evd,c =
-	      Evd.fresh_global
+              Evd.fresh_global dp
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
@@ -439,7 +443,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	 List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
 	    let evd,c =
-	      Evd.fresh_global
+              Evd.fresh_global dp
 		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in

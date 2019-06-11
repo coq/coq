@@ -64,14 +64,14 @@ val new_type_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode ->
-  env -> evar_map -> rigid ->
+  DirPath.t -> env -> evar_map -> rigid ->
   evar_map * (constr * Sorts.t)
 
-val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
+val new_Type : ?rigid:rigid -> DirPath.t -> evar_map -> evar_map * constr
 
 (** Polymorphic constants *)
 
-val new_global : evar_map -> GlobRef.t -> evar_map * constr
+val new_global : DirPath.t -> evar_map -> GlobRef.t -> evar_map * constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
@@ -150,7 +150,7 @@ val occur_evar_upto : evar_map -> Evar.t -> constr -> bool
 
 (** {6 Value/Type constraints} *)
 
-val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
+val judge_of_new_Type : DirPath.t -> evar_map -> evar_map * unsafe_judgment
 
 (***********************************************************)
 

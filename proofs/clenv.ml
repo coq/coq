@@ -52,7 +52,8 @@ let refresh_undefined_univs clenv =
   | Var _ -> clenv, Univ.empty_level_subst
   | App (f, args) when isVar clenv.evd f -> clenv, Univ.empty_level_subst
   | _ ->  
-    let evd', subst = Evd.refresh_undefined_universes clenv.evd in
+    let dp = Global.current_dirpath () in
+    let evd', subst = Evd.refresh_undefined_universes dp clenv.evd in
     let map_freelisted f = { f with rebus = subst_univs_level_constr subst f.rebus } in
       { clenv with evd = evd'; templval = map_freelisted clenv.templval;
 	templtyp = map_freelisted clenv.templtyp }, subst

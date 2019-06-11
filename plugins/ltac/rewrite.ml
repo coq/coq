@@ -74,9 +74,10 @@ let lazy_find_reference dir s =
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 let find_global dir s =
+  let dp = Global.current_dirpath () in
   let gr = lazy (find_reference dir s) in
     fun (evd,cstrs) ->
-      let (evd, c) = Evarutil.new_global evd (Lazy.force gr) in
+      let (evd, c) = Evarutil.new_global dp evd (Lazy.force gr) in
 	(evd, cstrs), c
 
 (** Utility for dealing with polymorphic applications *)
@@ -185,13 +186,15 @@ end) = struct
     mkConst (Option.get (pi3 (List.hd (proper_class env sigma).cl_projs)))
 
   let proper_type env (sigma,cstrs) =
+    let dp = Global.current_dirpath () in
     let l = (proper_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global sigma l in
+    let (sigma, c) = Evarutil.new_global dp sigma l in
     (sigma, cstrs), c
 
   let proper_proxy_type env (sigma,cstrs) =
+    let dp = Global.current_dirpath () in
     let l = (proper_proxy_class env sigma).cl_impl in
-    let (sigma, c) = Evarutil.new_global sigma l in
+    let (sigma, c) = Evarutil.new_global dp sigma l in
     (sigma, cstrs), c
 
   let proper_proof env evars carrier relation x =
@@ -361,9 +364,10 @@ end) = struct
 	if Termops.is_global sigma (coq_eq_ref ()) head then None
 	else
 	  (try
+           let dp = Global.current_dirpath () in
 	   let params, args = Array.chop (Array.length args - 2) args in
 	   let env' = push_rel_context rels env in
-	   let (evars, (evar, _)) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
+           let (evars, (evar, _)) = Evarutil.new_type_evar dp env' sigma Evd.univ_flexible in
 	   let evars, inst = 
 	     app_poly env (evars,Evar.Set.empty)
 	       rewrite_relation_class [| evar; mkApp (c, params) |] in
@@ -423,7 +427,8 @@ module TypeGlobal = struct
 
 
   let inverse env (evd,cstrs) car rel = 
-    let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible evd in
+    let dp = Global.current_dirpath () in
+    let (evd, sort) = Evarutil.new_Type ~rigid:Evd.univ_flexible dp evd in
       app_poly_check env (evd,cstrs) coq_inverse [| car ; car; sort; rel |]
 
 end
@@ -752,7 +757,8 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 let new_global (evars, cstrs) gr =
-  let (sigma,c) = Evarutil.new_global evars gr in
+  let dp = Global.current_dirpath () in
+  let (sigma,c) = Evarutil.new_global dp evars gr in
   (sigma, cstrs), c
 
 let make_eq sigma =
@@ -1867,10 +1873,11 @@ let proper_projection env sigma r ty =
     it_mkLambda_or_LetIn app ctx
 
 let declare_projection n instance_id r =
+  let dp = Global.current_dirpath () in
   let poly = Global.is_polymorphic r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma,c = Evd.fresh_global env sigma r in
+  let sigma,c = Evd.fresh_global dp env sigma r in
   let ty = Retyping.get_type_of env sigma c in
   let term = proper_projection env sigma c ty in
   let sigma, typ = Typing.type_of env sigma term in

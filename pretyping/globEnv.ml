@@ -105,7 +105,8 @@ let new_evar env sigma ?src ?naming typ =
   new_evar_instance sign sigma typ' ?src ?naming instance
 
 let new_type_evar env sigma ~src =
-  let sigma, s = Evd.new_sort_variable Evd.univ_flexible_alg sigma in
+  let dp = Global.current_dirpath () in
+  let sigma, s = Evd.new_sort_variable dp Evd.univ_flexible_alg sigma in
   new_evar env sigma ~src (EConstr.mkSort s)
 
 let hide_variable env expansion id =

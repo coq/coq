@@ -283,7 +283,8 @@ let rec find_row_ind = function
     | PatCstr(c,_,_) -> Some (p.CAst.loc,c)
 
 let inductive_template env sigma tmloc ind =
-  let sigma, indu = Evd.fresh_inductive_instance env sigma ind in
+  let dp = Global.current_dirpath () in
+  let sigma, indu = Evd.fresh_inductive_instance dp env sigma ind in
   let arsign = inductive_alldecls env indu in
   let indu = on_snd EInstance.make indu in
   let hole_source i = match tmloc with
@@ -408,7 +409,8 @@ let coerce_to_indtype ~program_mode typing_fun env sigma matx tomatchl =
 (* Utils *)
 
 let mkExistential ?(src=(Loc.tag Evar_kinds.InternalHole)) env sigma =
-  let sigma, (e, u) = Evarutil.new_type_evar env sigma ~src:src univ_flexible_alg in
+  let dp = Global.current_dirpath () in
+  let sigma, (e, u) = Evarutil.new_type_evar dp env sigma ~src:src univ_flexible_alg in
   sigma, e
 
 let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
@@ -1763,8 +1765,9 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
            we are in an impossible branch *)
         let n = Context.Rel.length (rel_context !!env) in
         let n' = Context.Rel.length (rel_context !!tycon_env) in
+        let dp = Global.current_dirpath () in
         let sigma, (impossible_case_type, u) =
-          Evarutil.new_type_evar (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
+          Evarutil.new_type_evar dp (reset_context !!env) ~src:(Loc.tag ?loc Evar_kinds.ImpossibleCase)
             sigma univ_flexible_alg
         in
         (sigma, lift (n'-n) impossible_case_type, mkSort u)
@@ -1886,7 +1889,8 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
   let s' = Retyping.get_sort_of !!env sigma t in
-  let sigma, s = Evd.new_sort_variable univ_flexible sigma in
+  let dp = Global.current_dirpath () in
+  let sigma, s = Evd.new_sort_variable dp univ_flexible sigma in
   let sigma = Evd.set_leq_sort !!env sigma s' s in
   let pb =
     { env       = pb_env;
@@ -2048,6 +2052,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     refresh_universes ~status:Evd.univ_flexible ~onlyalg:true (Some true)
                       !!env sigma t
   in
+  let dp = Global.current_dirpath () in
   let preds =
     match pred with
     (* No return clause *)
@@ -2058,7 +2063,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
           | None ->
              (* No type constraint: we first create a generic evar type constraint *)
              let src = (loc, Evar_kinds.CasesType false) in
-             let sigma, (t, _) = Evarutil.new_type_evar !!env sigma univ_flexible ~src in
+             let sigma, (t, _) = Evarutil.new_type_evar dp !!env sigma univ_flexible ~src in
              sigma, t in
         (* First strategy: we build an "inversion" predicate, also replacing the *)
         (* dependencies with existential variables *)
@@ -2082,7 +2087,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
-      let sigma, newt = new_sort_variable univ_flexible sigma in
+      let sigma, newt = new_sort_variable dp univ_flexible sigma in
       let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
@@ -2123,8 +2128,9 @@ let eq_id avoid id =
     hid'
 
 let papp sigma gr args =
+  let dp = Global.current_dirpath () in
   let evdref = ref sigma in
-  let ans = papp evdref gr args in
+  let ans = papp dp evdref gr args in
   !evdref, ans
 
 let mk_eq sigma typ x y = papp sigma coq_eq_ind [| typ; x ; y |]
@@ -2269,6 +2275,7 @@ let lift_rel_context n l =
    full signature. However prevpatterns are in the original one signature per pattern form.
  *)
 let build_ineqs sigma prevpatterns pats liftsign =
+  let dp = Global.current_dirpath () in
   let sigma, diffs =
     List.fold_left
       (fun (sigma, c) eqnpats ->
@@ -2302,13 +2309,13 @@ let build_ineqs sigma prevpatterns pats liftsign =
 	 in match acc with
              None -> sigma, c
 	    | Some (sign, len, _, c') ->
-               let sigma, conj = mk_coq_and sigma c' in
-               let sigma, neg = mk_coq_not sigma conj in
+               let sigma, conj = mk_coq_and dp sigma c' in
+               let sigma, neg = mk_coq_not dp sigma conj in
 	       let conj = it_mkProd_or_LetIn neg (lift_rel_context liftsign sign) in
                sigma, conj :: c)
       (sigma, []) prevpatterns
   in match diffs with [] -> sigma, None
-    | _ -> let sigma, conj = mk_coq_and sigma diffs in sigma, Some conj
+    | _ -> let sigma, conj = mk_coq_and dp sigma diffs in sigma, Some conj
 
 let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
   let i = ref 0 in

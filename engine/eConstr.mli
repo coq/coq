@@ -314,7 +314,7 @@ val map_rel_context_in_env :
 
 (* XXX Missing Sigma proxy *)
 val fresh_global :
-  ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
+  ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> DirPath.t -> Environ.env ->
   Evd.evar_map -> GlobRef.t -> Evd.evar_map * t
 
 val is_global : Evd.evar_map -> GlobRef.t -> t -> bool

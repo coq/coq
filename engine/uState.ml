@@ -524,9 +524,9 @@ let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
   List.fold_left (merge ~sideff:true ~extend:false univ_rigid) u uctxs
 
-let new_univ_variable ?loc rigid name
+let new_univ_variable ?loc dp rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
-  let u = UnivGen.fresh_level () in
+  let u = UnivGen.fresh_level dp in
   let ctx' = ContextSet.add_universe u ctx in
   let uctx', pred =
     match rigid with
@@ -551,11 +551,11 @@ let new_univ_variable ?loc rigid name
                 uctx_initial_universes = initial}
   in uctx', u
 
-let make_with_initial_binders e us =
+let make_with_initial_binders dp e us =
   let uctx = make e in
   List.fold_left
     (fun uctx { CAst.loc; v = id } ->
-       fst (new_univ_variable ?loc univ_rigid (Some id) uctx))
+       fst (new_univ_variable ?loc dp univ_rigid (Some id) uctx))
     uctx us
 
 let add_global_univ uctx u =
@@ -664,8 +664,8 @@ let fix_undefined_variables uctx =
   { uctx with uctx_univ_variables = vars';
     uctx_univ_algebraic = algs' }
 
-let refresh_undefined_univ_variables uctx =
-  let subst, ctx' = UnivGen.fresh_universe_context_set_instance uctx.uctx_local in
+let refresh_undefined_univ_variables dp uctx =
+  let subst, ctx' = UnivGen.fresh_universe_context_set_instance dp uctx.uctx_local in
   let subst_fn u = subst_univs_level_level subst u in
   let alg = LSet.fold (fun u acc -> LSet.add (subst_fn u) acc)
     uctx.uctx_univ_algebraic LSet.empty

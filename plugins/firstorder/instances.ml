@@ -114,7 +114,8 @@ let mk_open_instance env evmap id idc m t =
   let rec aux n avoid env evmap decls =
     if Int.equal n 0 then evmap, decls else
       let nid=(fresh_id_in_env avoid var_id env) in
-      let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+      let dp = Global.current_dirpath () in
+      let (evmap, (c, _)) = Evarutil.new_type_evar dp env evmap Evd.univ_flexible in
       let decl = LocalAssum (Context.make_annot (Name nid) Sorts.Relevant, c) in
 	aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
   let evmap, decls = aux m Id.Set.empty env evmap [] in

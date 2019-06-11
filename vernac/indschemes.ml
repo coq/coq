@@ -387,6 +387,7 @@ requested
 	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
 
 let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
+  let dp = Global.current_dirpath () in
   let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) lnamedepindsort
   and env0 = Global.env() in
   let sigma, lrecspec, _ =
@@ -396,7 +397,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
 	 match inst with
 	 | None ->
             let _, ctx = Typeops.type_of_global_in_context env0 (IndRef ind) in
-            let u, ctx = UnivGen.fresh_instance_from ctx None in
+            let u, ctx = UnivGen.fresh_instance_from dp ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
 	      evd, (ind,u), Some u
 	 | Some ui -> evd, (ind, ui), inst
@@ -465,16 +466,17 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
-let mk_coq_and sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.and.type")
-let mk_coq_conj sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.and.conj")
+let mk_coq_and sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.and.type")
+let mk_coq_conj sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.and.conj")
 
-let mk_coq_prod sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.type")
-let mk_coq_pair sigma = Evarutil.new_global sigma (Coqlib.lib_ref "core.prod.intro")
+let mk_coq_prod sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.prod.type")
+let mk_coq_pair sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
+  let dp = Global.current_dirpath () in
   let sigma = Evd.from_env env in
   let sigma, defs = List.fold_left_map (fun sigma cst ->
-    let sigma, c = Evd.fresh_constant_instance env sigma cst in
+    let sigma, c = Evd.fresh_constant_instance dp env sigma cst in
     sigma, (c, Typeops.type_of_constant_in env c)) sigma schemes in
   let find_inductive ty =
     let (ctx, arity) = decompose_prod ty in

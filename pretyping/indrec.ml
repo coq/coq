@@ -84,10 +84,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 
   let () = if Option.is_empty projs then check_privacy_block mib in
   let () = 
+    let dp = Global.current_dirpath () in
     if not (Sorts.family_leq kind (elim_sort specif)) then
       raise
 	(RecursionSchemeError
-           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family dp kind), pind)))
   in
   let ndepar = mip.mind_nrealdecls + 1 in
 
@@ -139,7 +140,8 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       mkLambda_string "f" relevance t
         (add_branch (push_rel (LocalAssum (make_annot Anonymous relevance, t)) env) (k+1))
   in
-  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
+  let dp = Global.current_dirpath () in
+  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg dp sigma kind in
   let typP = make_arity env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
   let c = 
@@ -463,9 +465,10 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     in
     let rec put_arity env i = function
       | ((indi,u),_,_,dep,kinds)::rest ->
+          let dp = Global.current_dirpath () in
 	  let indf = make_ind_family ((indi,u), Context.Rel.to_extended_list mkRel i lnamesparrec) in
-	  let s = 
-            let sigma, res = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg !evdref kinds in
+          let s =
+            let sigma, res = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg dp !evdref kinds in
             evdref := sigma; res
 	  in
 	  let typP = make_arity env !evdref dep indf s in
@@ -558,9 +561,10 @@ let check_arities env listdepkind =
   let _ = List.fold_left
     (fun ln (((_,ni as mind),u),mibi,mipi,dep,kind) ->
        let kelim = elim_sort (mibi,mipi) in
+       let dp = Global.current_dirpath () in
        if not (Sorts.family_leq kind kelim) then raise
 	 (RecursionSchemeError
-          (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
+          (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family dp kind),(mind,u))))
        else if Int.List.mem ni ln then raise
          (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)

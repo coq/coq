@@ -373,8 +373,9 @@ let mk_abstract_id =
   let open Coqlib in
   let ssr_abstract_id = Summary.ref ~name:"SSR:abstractid" 0 in
 begin fun env sigma ->
-  let sigma, zero = EConstr.fresh_global env sigma (lib_ref "num.nat.O") in
-  let sigma, succ = EConstr.fresh_global env sigma (lib_ref "num.nat.S") in
+  let dp = Global.current_dirpath () in
+  let sigma, zero = EConstr.fresh_global dp env sigma (lib_ref "num.nat.O") in
+  let sigma, succ = EConstr.fresh_global dp env sigma (lib_ref "num.nat.S") in
   let rec nat_of_n n =
     if n = 0 then zero
     else EConstr.mkApp (succ, [|nat_of_n (n-1)|]) in
@@ -383,11 +384,12 @@ begin fun env sigma ->
 end
 
 let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
+  let dp = Global.current_dirpath () in
   let env, concl = Goal.(env gl, concl gl) in
   let step = begin fun sigma ->
     let (sigma, (abstract_proof, abstract_ty)) =
       let (sigma, (ty, _)) =
-        Evarutil.new_type_evar env sigma Evd.univ_flexible_alg in
+        Evarutil.new_type_evar dp env sigma Evd.univ_flexible_alg in
       let (sigma, ablock) = Ssrcommon.mkSsrConst "abstract_lock" env sigma in
       let (sigma, lock) = Evarutil.new_evar env sigma ablock in
       let (sigma, abstract) = Ssrcommon.mkSsrConst "abstract" env sigma in
@@ -625,17 +627,20 @@ let with_dgens { dgens; gens; clr } maintac = match gens with
 
 let mkCoqEq env sigma =
   let eq = Coqlib.((build_coq_eq_data ()).eq) in
-  let sigma, eq = EConstr.fresh_global env sigma eq in
+  let dp = Global.current_dirpath () in
+  let sigma, eq = EConstr.fresh_global dp env sigma eq in
   eq, sigma
 
 let mkCoqRefl t c env sigma =
   let refl = Coqlib.((build_coq_eq_data()).refl) in
-  let sigma, refl = EConstr.fresh_global env sigma refl in
+  let dp = Global.current_dirpath () in
+  let sigma, refl = EConstr.fresh_global dp env sigma refl in
   EConstr.mkApp (refl, [|t; c|]), sigma
 
 (** Intro patterns processing for elim tactic, in particular when used in
     conjunction with equation generation as in [elim E: x] *)
 let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
+  let dp = Global.current_dirpath () in
   let intro_eq =
     match eqid with
     | Some (IPatId ipat) when not is_rec ->
@@ -667,7 +672,7 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
        let rec gen_eq_tac () = Goal.enter begin fun g ->
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
          let sigma, eq =
-           EConstr.fresh_global env sigma (Coqlib.lib_ref "core.eq.type") in
+           EConstr.fresh_global dp env sigma (Coqlib.lib_ref "core.eq.type") in
          let ctx, last = EConstr.decompose_prod_assum sigma concl in
          let args = match EConstr.kind_of_type sigma last with
            | Term.AtomicType (hd, args) ->

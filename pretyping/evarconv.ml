@@ -71,8 +71,9 @@ let () = Goptions.(declare_bool_option {
 (* Functions to deal with impossible cases *)
 (*******************************************)
 let impossible_default_case env =
+  let dp = Global.current_dirpath () in
   let type_of_id = Coqlib.lib_ref "core.IDProp.type" in
-  let c, ctx = UnivGen.fresh_global_instance env (Coqlib.(lib_ref "core.IDProp.idProp")) in
+  let c, ctx = UnivGen.fresh_global_instance dp env (Coqlib.(lib_ref "core.IDProp.idProp")) in
   let (_, u) = Constr.destRef c in
   Some (c, Constr.mkRef (type_of_id, u), ctx)
 
@@ -297,7 +298,8 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
-  let u, ctx' = UnivGen.fresh_instance_from ctx None in
+  let dp = Global.current_dirpath () in
+  let u, ctx' = UnivGen.fresh_instance_from dp ctx None in
   let subst = Univ.make_inverse_instance_subst u in
   let c = EConstr.of_constr c in
   let c' = subst_univs_level_constr subst c in
