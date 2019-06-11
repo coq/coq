@@ -193,9 +193,7 @@ let pp_vo_dep dir fmt vo =
   pp_rule fmt all_targets deps action
 
 let pp_mlg_dep _dir fmt ml =
-  let target = Filename.(remove_extension ml) ^ ".ml" in
-  let mlg_rule = "(run coqpp %{pp-file})" in
-  pp_rule fmt [target] [ml] mlg_rule
+  fprintf fmt "@[(coq.pp (modules %s))@]@\n" (Filename.remove_extension ml)
 
 let pp_dep dir fmt oo = match oo with
   | VO vo -> pp_vo_dep dir fmt vo
