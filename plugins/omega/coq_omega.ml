@@ -187,7 +187,7 @@ let reset_all () =
  To use the constant Zplus, one must type "Lazy.force coq_Zplus"
  This is the right way to access to Coq constants in tactics ML code *)
 
-let gen_constant k = lazy (k |> Coqlib.lib_ref |> UnivGen.constr_of_monomorphic_global (Global.current_dirpath ())
+let gen_constant k = lazy (k |> Coqlib.lib_ref |> UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ())
                            |> EConstr.of_constr)
 
 

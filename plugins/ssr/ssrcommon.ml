@@ -1164,7 +1164,7 @@ let genclrtac cl cs clr =
       (fun type_err gl ->
          tclTHEN
            (tclTHEN (Proofview.V82.of_tactic (Tactics.elim_type (EConstr.of_constr
-             (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
+             (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.(lib_ref "core.False.type"))))) (old_cleartac clr))
            (fun gl -> raise type_err)
            gl))
     (old_cleartac clr)

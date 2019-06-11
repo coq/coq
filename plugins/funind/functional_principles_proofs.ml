@@ -410,9 +410,9 @@ let rewrite_until_var arg_num eq_ids : tactic =
 let rec_pte_id = Id.of_string "Hrec"
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let dp = Global.current_dirpath () in
-  let coq_False = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.False.type") in
-  let coq_True = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.True.type") in
-  let coq_I = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.True.I") in
+  let coq_False = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref "core.False.type") in
+  let coq_True = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref "core.True.type") in
+  let coq_I = EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref "core.True.I") in
   let rec scan_type  context type_of_hyp : tactic =
     if isLetIn sigma type_of_hyp then
       let real_type_of_hyp = it_mkProd_or_LetIn type_of_hyp context in
@@ -1593,7 +1593,7 @@ let prove_principle_for_gen
      | Value lemma -> EConstr.of_constr lemma
      | Not_needed ->
        let dp = Global.current_dirpath () in
-       EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.True.I")
+       EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref "core.True.I")
   in
 (*   let rec list_diff del_list check_list = *)
 (*     match del_list with *)

@@ -77,7 +77,7 @@ let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 let make_eq () =
   try
     let dp = Global.current_dirpath () in
-    EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Coqlib.lib_ref "core.eq.type"))
+    EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) (Coqlib.lib_ref "core.eq.type"))
   with _ -> assert false
 
 (* [generate_type g_to_f f graph i] build the completeness (resp. correctness) lemma type if [g_to_f = true]
@@ -510,7 +510,7 @@ and intros_with_rewrite_aux : Tacmach.tactic =
 			    intros_with_rewrite
 			  ] g
 			end
-                  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref "core.False.type")) ->
+                  | Ind _ when EConstr.eq_constr sigma t (EConstr.of_constr (UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref "core.False.type")) ->
 		      Proofview.V82.of_tactic tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENLIST[

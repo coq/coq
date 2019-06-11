@@ -256,7 +256,7 @@ let eterm_obligations env name evm fs ?status t ty =
 let hide_obligation () =
   Coqlib.check_required_library ["Coq";"Program";"Tactics"];
   let dp = Global.current_dirpath () in
-  UnivGen.constr_of_monomorphic_global dp (Coqlib.lib_ref "program.tactics.obligation")
+  UnivGen.constr_of_monomorphic_global dp (Global.env ()) (Coqlib.lib_ref "program.tactics.obligation")
 
 let pperror cmd = CErrors.user_err ~hdr:"Program" cmd
 let error s = pperror (str s)

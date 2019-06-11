@@ -62,4 +62,4 @@ val global_of_constr : constr -> GlobRef.t puniverses
     the constraints should be properly added to an evd.
     See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
     the proper way to get a fresh copy of a polymorphic global reference. *)
-val constr_of_monomorphic_global : DirPath.t -> GlobRef.t -> constr
+val constr_of_monomorphic_global : DirPath.t -> env -> GlobRef.t -> constr

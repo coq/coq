@@ -66,21 +66,21 @@ exception DecidabilityIndicesNotSupported
 (* Some pre declaration of constant we are going to use *)
 let andb_prop = fun _ ->
   let dp = Global.current_dirpath () in
-  UnivGen.constr_of_monomorphic_global dp (Coqlib.lib_ref "core.bool.andb_prop")
+  UnivGen.constr_of_monomorphic_global dp (Global.env ()) (Coqlib.lib_ref "core.bool.andb_prop")
 
 let andb_true_intro = fun _ ->
   let dp = Global.current_dirpath () in
-  UnivGen.constr_of_monomorphic_global dp
+  UnivGen.constr_of_monomorphic_global dp (Global.env ())
     (Coqlib.lib_ref "core.bool.andb_true_intro")
 
 (* We avoid to use lazy as the binding of constants can change *)
-let bb () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.bool.type")
-let tt () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.bool.true")
-let ff () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.bool.false")
-let eq () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.eq.type")
+let bb () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.bool.type")
+let tt () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.bool.true")
+let ff () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.bool.false")
+let eq () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.eq.type")
 
-let sumbool () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.sumbool.type")
-let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Coqlib.lib_ref "core.bool.andb")
+let sumbool () = UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
+let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
 
 let induct_on  c = induction false None c None None
 let destruct_on c = destruct false None c None None
@@ -898,7 +898,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
         create_input (
           mkNamedProd (make_annot n Sorts.Relevant) (mkFullInd ind (2*nparrec)) (
             mkNamedProd (make_annot m Sorts.Relevant) (mkFullInd ind (2*nparrec+1)) (
-              mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
+              mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global (Global.current_dirpath ()) (Global.env ()) @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )
       )

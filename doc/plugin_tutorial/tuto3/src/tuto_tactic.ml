@@ -16,7 +16,7 @@ let collect_constants () =
     let gr_P = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "prod" in
     let gr_U = find_reference "Tuto3" ["Tuto3"; "Data"] "uncover" in
     let dp = Global.current_dirpath () in
-    constants := List.map (fun x -> of_constr (constr_of_monomorphic_global dp x))
+    constants := List.map (fun x -> of_constr (constr_of_monomorphic_global dp (Global.env ()) x))
       [gr_H; gr_M; gr_R; gr_P; gr_U];
     !constants
   else

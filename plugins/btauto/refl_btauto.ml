@@ -12,7 +12,7 @@ open Constr
 
 let bt_lib_constr n = lazy (
   let dp = Global.current_dirpath () in
-  UnivGen.constr_of_monomorphic_global dp @@ Coqlib.lib_ref n)
+  UnivGen.constr_of_monomorphic_global dp (Global.env ()) @@ Coqlib.lib_ref n)
 
 let decomp_term sigma (c : Constr.t) =
   Constr.kind (EConstr.Unsafe.to_constr (Termops.strip_outer_cast sigma (EConstr.of_constr c)))
