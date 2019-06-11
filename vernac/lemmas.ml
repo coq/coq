@@ -242,7 +242,7 @@ let default_thm_id = Id.of_string "Unnamed_thm"
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
+  if Nametab.exists_cci (Lib.make_path id) || is_section_variable (Global.env ()) id ||
      locality <> Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")

@@ -64,6 +64,6 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
       let loc = Glob_ops.loc_of_glob_constr rawc in
       user_err ?loc 
                 (str "Instance is not well-typed in the environment of " ++
-                 Termops.pr_existential_key sigma evk ++ str ".")
+                 Termops.pr_existential_key env sigma evk ++ str ".")
   in
   define_and_solve_constraints evk typed_c env (evars_reset_evd sigma' sigma)

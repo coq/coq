@@ -562,16 +562,18 @@ let to_constr pf =
 
 module GoalMap = Evar.Map
 
-let goal_to_evar g sigma = Id.to_string (Termops.evar_suggested_name g sigma)
+let goal_to_evar g env sigma =
+  Id.to_string (Termops.evar_suggested_name env g sigma)
 
 open Goal.Set
 
 [@@@ocaml.warning "-32"]
 let db_goal_map op np ng_to_og =
+  let env = Global.env () in
   let pr_goals title prf =
     Printf.printf "%s: " title;
     let Proof.{goals;sigma} = Proof.data prf in
-    List.iter (fun g -> Printf.printf "%d -> %s  " (Evar.repr g) (goal_to_evar g sigma)) goals;
+    List.iter (fun g -> Printf.printf "%d -> %s  " (Evar.repr g) (goal_to_evar g env sigma)) goals;
     let gs = diff (Proof.all_goals prf) (List.fold_left (fun s g -> add g s) empty goals) in
     List.iter (fun g -> Printf.printf "%d  " (Evar.repr g)) (elements gs);
   in
@@ -614,6 +616,7 @@ let db_goal_map op np ng_to_og =
    to create the map from new goal ids to old goal ids.
 *)
 let make_goal_map_i op np =
+  let env = Global.env () in
   let ng_to_og = ref GoalMap.empty in
   match op with
   | None -> !ng_to_og
@@ -644,12 +647,12 @@ let make_goal_map_i op np =
 
       let oevar_to_og = ref StringMap.empty in
       let Proof.{sigma=osigma} = Proof.data op in
-      List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
+      List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og env osigma) og !oevar_to_og)
           (Goal.Set.elements rem_gs);
 
       let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
-        let nevar = goal_to_evar ng nsigma in
+        let nevar = goal_to_evar ng env nsigma in
         let oevar = StringMap.find nevar nevar_to_oevar in
         let og = StringMap.find oevar !oevar_to_og in
         og

@@ -208,7 +208,7 @@ let clear_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot remove " ++ Id.print id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key env sigma ev ++ str" without candidates."
 
 let error_clear_dependency env sigma id err inglobal =
   user_err (clear_dependency_msg env sigma id err inglobal)
@@ -227,7 +227,7 @@ let replacing_dependency_msg env sigma id err inglobal =
       Printer.pr_existential env sigma ev ++ str"."
   | Evarutil.NoCandidatesLeft ev ->
       str "Cannot change " ++ Id.print id ++ str " as it would leave the existential " ++
-      Printer.pr_existential_key sigma ev ++ str" without candidates."
+      Printer.pr_existential_key env sigma ev ++ str" without candidates."
 
 let error_replacing_dependency env sigma id err inglobal =
   user_err (replacing_dependency_msg env sigma id err inglobal)

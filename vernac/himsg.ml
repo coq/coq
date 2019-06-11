@@ -293,11 +293,11 @@ let explain_unification_error env sigma p1 p2 = function
   | Some e ->
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
-        [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
+        [str "cannot define " ++ quote (pr_existential_key env sigma evk) ++
 	strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
-        [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
+        [str "cannot instantiate " ++ quote (pr_existential_key env sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
 	strbrk " is not in its scope" ++
         (if Array.is_empty args then mt() else
@@ -315,13 +315,13 @@ let explain_unification_error env sigma p1 p2 = function
           [str "cannot unify " ++ t1 ++ strbrk " and " ++ t2]
         else []
      | MetaOccurInBody evk ->
-        [str "instance for " ++ quote (pr_existential_key sigma evk) ++
+        [str "instance for " ++ quote (pr_existential_key env sigma evk) ++
 	strbrk " refers to a metavariable - please report your example" ++
         strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
      | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
         [str "unable to find a well-typed instantiation for " ++
-        quote (pr_existential_key sigma evk) ++
+        quote (pr_existential_key env sigma evk) ++
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
      | UnifUnivInconsistency p ->
@@ -539,7 +539,7 @@ let explain_cant_find_case_type env sigma c =
 let explain_occur_check env sigma ev rhs =
   let env = make_all_name_different env sigma in
   let pt = pr_leconstr_env env sigma rhs in
-  str "Cannot define " ++ pr_existential_key sigma ev ++ str " with term" ++
+  str "Cannot define " ++ pr_existential_key env sigma ev ++ str " with term" ++
   brk(1,1) ++ pt ++ spc () ++ str "that would depend on itself."
 
 let pr_trailing_ne_context_of env sigma =
@@ -596,7 +596,7 @@ let rec explain_evar_kind env sigma evk ty =
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
       let ty' = evi.evar_concl in
-      pr_existential_key sigma evk ++
+      pr_existential_key env sigma evk ++
       strbrk " in the partial instance " ++ pc ++
       strbrk " found for " ++
       explain_evar_kind env sigma evk
@@ -642,7 +642,7 @@ let explain_var_not_found env id =
 let explain_evar_not_found env sigma id =
   let undef = Evar.Map.domain (Evd.undefined_map sigma) in
   let all_undef_evars = Evar.Set.elements undef in
-  let f ev = Id.equal id (Termops.evar_suggested_name ev sigma) in
+  let f ev = Id.equal id (Termops.evar_suggested_name env ev sigma) in
   if List.exists f all_undef_evars then
     (* The name is used for printing but is not user-given *)
     str "?" ++ Id.print id ++
@@ -827,7 +827,7 @@ let pr_constraints printenv env sigma evars cstrs =
       in
       let evs =
         prlist
-        (fun (ev, evi) -> fnl () ++ pr_existential_key sigma ev ++
+        (fun (ev, evi) -> fnl () ++ pr_existential_key env sigma ev ++
             str " : " ++ pr_leconstr_env env' sigma evi.evar_concl ++ fnl ()) l
       in
       h 0 (pe ++ evs ++ pr_evar_constraints sigma cstrs)

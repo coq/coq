@@ -473,14 +473,14 @@ let pr_goal_tag g =
   str s
 
 (* display a goal name *)
-let pr_goal_name sigma g =
-  if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g)
+let pr_goal_name env sigma g =
+  if should_gname() then str " " ++ Pp.surround (pr_existential_key env sigma g)
   else mt ()
 
-let pr_goal_header nme sigma g =
+let pr_goal_header nme env sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   str "subgoal " ++ nme ++ (if should_tag() then pr_goal_tag g else str"")
-  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key sigma g) else mt ())
+  ++ (if should_gname() then str " " ++ Pp.surround (pr_existential_key env sigma g) else mt ())
 
 (* display the conclusion of a goal *)
 let pr_concl n ?(diffs=false) ?og_s sigma g =
@@ -492,7 +492,7 @@ let pr_concl n ?(diffs=false) ?og_s sigma g =
     else
       pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
   in
-  let header = pr_goal_header (int n) sigma g in
+  let header = pr_goal_header (int n) env sigma g in
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
@@ -524,9 +524,9 @@ let pr_evgl_sign sigma evi =
 
 (* Print an existential variable *)
 
-let pr_evar sigma (evk, evi) =
+let pr_evar env sigma (evk, evi) =
   let pegl = pr_evgl_sign sigma evi in
-  hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
+  hov 0 (pr_existential_key env sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int_hd pr sigma i = function
@@ -535,7 +535,7 @@ let rec pr_evars_int_hd pr sigma i = function
       (hov 0 (pr i evk evi)) ++
       (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int_hd pr sigma (i+1) rest)
 
-let pr_evars_int sigma ~shelf ~given_up i evs =
+let pr_evars_int env sigma ~shelf ~given_up i evs =
   let pr_status i =
     if List.mem i shelf then str " (shelved)"
     else if List.mem i given_up then str " (given up)"
@@ -543,33 +543,33 @@ let pr_evars_int sigma ~shelf ~given_up i evs =
   pr_evars_int_hd
     (fun i evk evi ->
       str "Existential " ++ int i ++ str " =" ++
-      spc () ++ pr_evar sigma (evk,evi) ++ pr_status evk)
+      spc () ++ pr_evar env sigma (evk,evi) ++ pr_status evk)
     sigma i (Evar.Map.bindings evs)
 
-let pr_evars sigma evs =
-  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
+let pr_evars env sigma evs =
+  pr_evars_int_hd (fun i evk evi -> pr_evar env sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
-let pr_ne_evar_set hd tl sigma l =
+let pr_ne_evar_set hd tl env sigma l =
   if l != Evar.Set.empty then
     let l = Evar.Set.fold (fun ev ->
       Evar.Map.add ev (Evarutil.nf_evar_info sigma (Evd.find sigma ev)))
       l Evar.Map.empty in
-    hd ++ pr_evars sigma l ++ tl
+    hd ++ pr_evars env sigma l ++ tl
   else
     mt ()
 
-let pr_selected_subgoal name sigma g =
+let pr_selected_subgoal name env sigma g =
   let pg = pr_goal { sigma=sigma ; it=g; } in
-  let header = pr_goal_header name sigma g in
+  let header = pr_goal_header name env sigma g in
   v 0 (header ++ str " is:" ++ cut () ++ pg)
 
-let pr_subgoal n sigma =
+let pr_subgoal n env sigma =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
 	if Int.equal p 1 then
-          pr_selected_subgoal (int n) sigma g
+          pr_selected_subgoal (int n) env sigma g
 	else
 	  prrec (p-1) rest
   in
@@ -577,7 +577,7 @@ let pr_subgoal n sigma =
 
 let pr_internal_existential_key ev = Evar.print ev
 
-let print_evar_constraints gl sigma =
+let print_evar_constraints gl env sigma =
   let pr_env =
     match gl with
     | None -> fun e' -> pr_context_of e' sigma
@@ -610,7 +610,7 @@ let print_evar_constraints gl sigma =
   in
   let pr_candidate ev evi (candidates,acc) =
     if Option.has_some evi.evar_candidates then
-      (succ candidates, acc ++ pr_evar sigma (ev,evi) ++ fnl ())
+      (succ candidates, acc ++ pr_evar env sigma (ev,evi) ++ fnl ())
     else (candidates, acc)
   in
   let constraints =
@@ -637,8 +637,8 @@ let () =
       optread  = (fun () -> !should_print_dependent_evars);
       optwrite = (fun v -> should_print_dependent_evars := v) }
 
-let print_dependent_evars gl sigma seeds =
-  let constraints = print_evar_constraints gl sigma in
+let print_dependent_evars gl env sigma seeds =
+  let constraints = print_evar_constraints gl env sigma in
   let evars () =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
@@ -668,7 +668,7 @@ module GoalMap = Evar.Map
    and printed in its entirety. *)
 (* [os_map] is derived from the previous proof step, used for diffs *)
 let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
-                        close_cmd sigma ~seeds ~shelf ~stack ~unfocused ~goals =
+                        close_cmd env sigma ~seeds ~shelf ~stack ~unfocused ~goals =
   let diff_goal_map =
     match os_map with
     | Some (_, diff_goal_map) -> diff_goal_map
@@ -748,13 +748,13 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       begin
 	let exl = Evd.undefined_map sigma in
 	if Evar.Map.is_empty exl then
-	  (str"No more subgoals." ++ print_dependent_evars None sigma seeds)
+          (str"No more subgoals." ++ print_dependent_evars None env sigma seeds)
 	else
-          let pei = pr_evars_int sigma ~shelf ~given_up:[] 1 exl in
+          let pei = pr_evars_int env sigma ~shelf ~given_up:[] 1 exl in
 	  v 0 ((str "No more subgoals,"
                 ++ str " but there are non-instantiated existential variables:"
 	        ++ cut () ++ (hov 0 pei)
-                ++ print_dependent_evars None sigma seeds
+                ++ print_dependent_evars None env sigma seeds
                 ++ cut () ++ str "You can use Grab Existential Variables."))
       end
   | g1::rest ->
@@ -765,11 +765,11 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
         ++ print_extra
         ++ str (if (should_gname()) then ", subgoal 1" else "")
         ++ (if should_tag() then pr_goal_tag g1 else str"")
-        ++ pr_goal_name sigma g1 ++ cut () ++ goals
+        ++ pr_goal_name env sigma g1 ++ cut () ++ goals
         ++ (if unfocused=[] then str ""
            else (cut() ++ cut() ++ str "*** Unfocused goals:" ++ cut()
                  ++ pr_rec (List.length rest + 2) unfocused))
-	++ print_dependent_evars (Some g1) sigma seeds
+        ++ print_dependent_evars (Some g1) env sigma seeds
       )
 
 let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
@@ -777,6 +777,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
      in the [evar_map], I did stuff that way because it was more
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
+  let env = Global.env () in
   let p = proof in
   let Proof.{goals; stack; shelf; given_up; sigma} = Proof.data p in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
@@ -784,16 +785,16 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals,shelf,given_up with
-          | [] , [] , [] -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
+          | [] , [] , [] -> pr_subgoals None env sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
 	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
 	     fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:given_up
+            ++ pr_subgoals ~pr_first:false None env bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
 	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
 	    fnl ()
-            ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
+            ++ pr_subgoals ~pr_first:false None env bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
 	  | _ , _, _ ->
             let cmd = if quiet then None else
               Some
@@ -802,7 +803,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
                  if Pp.ismt s then s else fnl () ++ s) ++
                 fnl ())
             in
-            pr_subgoals ~pr_first:false cmd bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
+            pr_subgoals ~pr_first:false cmd env bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
 	  end
   | _ -> 
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
@@ -815,7 +816,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
          Some (osigma, diff_goal_map)
        | _ -> None
      in
-     pr_subgoals ~pr_first:true ~diffs ?os_map None bsigma ~seeds ~shelf ~stack:[]
+     pr_subgoals ~pr_first:true ~diffs ?os_map None env bsigma ~seeds ~shelf ~stack:[]
         ~unfocused:unfocused_if_needed ~goals:bgoals_focused
   end
 
@@ -823,14 +824,16 @@ let pr_open_subgoals ~proof =
   pr_open_subgoals_diff proof
 
 let pr_nth_open_subgoal ~proof n =
+  let env = Global.env () in
   let Proof.{goals;sigma} = Proof.data proof in
-  pr_subgoal n sigma goals
+  pr_subgoal n env sigma goals
 
 let pr_goal_by_id ~proof id =
+  let env = Global.env () in
   try
     Proof.in_proof proof (fun sigma ->
       let g = Evd.evar_key id sigma in
-      pr_selected_subgoal (pr_id id) sigma g)
+      pr_selected_subgoal (pr_id id) env sigma g)
   with Not_found -> user_err Pp.(str "No such goal.")
 
 (* Printer function for sets of Assumptions.assumptions.

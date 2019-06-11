@@ -131,7 +131,7 @@ let show_proof ~pstate =
 let show_top_evars ~proof =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let Proof.{goals;shelf;given_up;sigma} = Proof.data proof in
-  pr_evars_int sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
+  pr_evars_int (Global.env ()) sigma ~shelf ~given_up 1 (Evd.undefined_map sigma)
 
 let show_universes ~proof =
   let Proof.{goals;sigma} = Proof.data proof in
@@ -1917,7 +1917,7 @@ let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
         print_judgment env sigma j ++
-        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
+        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) (Global.env ()) sigma l
     | Some r ->
         let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
 	let redfun env evm c =

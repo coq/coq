@@ -928,7 +928,7 @@ let generalize_non_dep hyp g =
       if Id.List.mem hyp hyps
         || List.exists (Termops.occur_var_in_decl env (project g) hyp) keep
 	|| Termops.occur_var env (project g) hyp hyp_typ
-	|| Termops.is_section_variable hyp (* should be dangerous *)
+        || Termops.is_section_variable env hyp (* should be dangerous *)
       then (clear,decl::keep)
       else (hyp::clear,keep))
       ~init:([],[]) (pf_env g)

@@ -325,7 +325,7 @@ type naming_mode =
 
 let push_rel_decl_to_named_context
   ?(hypnaming=KeepUserNameAndRenameExistingButSectionNames)
-  sigma decl (subst, avoid, nc) =
+  env sigma decl (subst, avoid, nc) =
   let open EConstr in
   let open Vars in
   let map_decl f d =
@@ -359,7 +359,7 @@ let push_rel_decl_to_named_context
   | Some id0 when hypnaming = KeepUserNameAndRenameExistingEvenSectionNames ||
                   (hypnaming = KeepUserNameAndRenameExistingButSectionNames ||
                    hypnaming = ProgramNaming) &&
-                  not (is_section_variable id0) ->
+                  not (is_section_variable env id0) ->
       (* spiwack: if [id<>id0], rather than introducing a new
           binding named [id], we will keep [id0] (the name given
           by the user) and rename [id0] into [id] in the named
@@ -393,7 +393,7 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
     let (subst, _, env) =
-      Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming sigma d acc)
+      Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ?hypnaming env sigma d acc)
         (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
     (val_of_named_context env, csubst_subst subst typ, inst_rels@inst_vars, subst)
 
@@ -595,7 +595,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
 	    let _nconcl =
 	      try
                 let nids = Id.Map.domain rids in
-                let global = Id.Set.exists is_section_variable nids in
+                let global = Id.Set.exists (is_section_variable env) nids in
                 let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
                 check_and_clear_in_constr env evdref (EvarTypingBreak ev) nids global concl
               with ClearDependencyError (rid,err,where) ->
@@ -620,7 +620,7 @@ let clear_hyps_in_evi_main env sigma hyps terms ids =
      the contexts of the evars occurring in evi *)
   let evdref = ref sigma in
   let terms = List.map EConstr.Unsafe.to_constr terms in
-  let global = Id.Set.exists is_section_variable ids in
+  let global = Id.Set.exists (is_section_variable env) ids in
   let terms =
     List.map (check_and_clear_in_constr env evdref (OccurHypInSimpleClause None) ids global) terms in
   let nhyps =

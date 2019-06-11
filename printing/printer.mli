@@ -98,7 +98,7 @@ val pr_global_env          : Id.Set.t -> GlobRef.t -> Pp.t
 val pr_global              : GlobRef.t -> Pp.t
 
 val pr_constant            : env -> Constant.t -> Pp.t
-val pr_existential_key     : evar_map -> Evar.t -> Pp.t
+val pr_existential_key     : env -> evar_map -> Evar.t -> Pp.t
 val pr_existential         : env -> evar_map -> existential -> Pp.t
 val pr_constructor         : env -> constructor -> Pp.t
 val pr_inductive           : env -> inductive -> Pp.t
@@ -159,11 +159,20 @@ val pr_goal                : ?diffs:bool -> ?og_s:(Goal.goal sigma) -> Goal.goal
    there are non-instantiated existential variables.  [stack] is used to print summary info on unfocused
    goals.
 *)
-val pr_subgoals            : ?pr_first:bool -> ?diffs:bool -> ?os_map:(evar_map * Goal.goal Evar.Map.t) -> Pp.t option -> evar_map
-                             -> seeds:Goal.goal list -> shelf:Goal.goal list -> stack:int list
-                             -> unfocused:Goal.goal list -> goals:Goal.goal list -> Pp.t
+val pr_subgoals
+  :  ?pr_first:bool
+  -> ?diffs:bool
+  -> ?os_map:(evar_map * Goal.goal Evar.Map.t)
+  -> Pp.t option
+  -> env
+  -> evar_map
+  -> seeds:Goal.goal list
+  -> shelf:Goal.goal list
+  -> stack:int list
+  -> unfocused:Goal.goal list
+  -> goals:Goal.goal list -> Pp.t
 
-val pr_subgoal             : int -> evar_map -> Goal.goal list -> Pp.t
+val pr_subgoal             : int -> env -> evar_map -> Goal.goal list -> Pp.t
 
 (** [pr_concl n ~diffs ~og_s sigma g] prints the conclusion of the goal [g] using [sigma].  The output
     is labelled "subgoal [n]".  If [diffs] is true, highlight the differences between the old conclusion,
@@ -179,11 +188,10 @@ val pr_concl               : int -> ?diffs:bool -> ?og_s:(Goal.goal sigma) -> ev
 val pr_open_subgoals_diff  : ?quiet:bool -> ?diffs:bool -> ?oproof:Proof.t -> Proof.t -> Pp.t
 val pr_open_subgoals       : proof:Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
-val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
-val pr_evars_int           : evar_map -> shelf:Goal.goal list -> given_up:Goal.goal list -> int -> evar_info Evar.Map.t -> Pp.t
-val pr_evars               : evar_map -> evar_info Evar.Map.t -> Pp.t
-val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
-  Evar.Set.t -> Pp.t
+val pr_evar                : env -> evar_map -> (Evar.t * evar_info) -> Pp.t
+val pr_evars_int           : env -> evar_map -> shelf:Goal.goal list -> given_up:Goal.goal list -> int -> evar_info Evar.Map.t -> Pp.t
+val pr_evars               : env -> evar_map -> evar_info Evar.Map.t -> Pp.t
+val pr_ne_evar_set         : Pp.t -> Pp.t -> env -> evar_map -> Evar.Set.t -> Pp.t
 
 val print_and_diff : Proof.t option -> Proof.t option -> unit
 

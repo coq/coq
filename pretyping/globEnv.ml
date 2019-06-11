@@ -41,7 +41,7 @@ type t = {
 let make ~hypnaming env sigma lvar =
   let get_extra env sigma =
     let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
-    Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
+    Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming env sigma d acc)
       (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
   {
     static_env = env;
@@ -71,7 +71,7 @@ let push_rel ~hypnaming sigma d env =
   let env = {
     static_env = push_rel d env.static_env;
     renamed_env = push_rel d' env.renamed_env;
-    extra = lazy (push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d' (Lazy.force env.extra));
+    extra = lazy (push_rel_decl_to_named_context ~hypnaming:hypnaming (Global.env ()) sigma d' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   d', env
@@ -83,7 +83,7 @@ let push_rel_context ~hypnaming ?(force_names=false) sigma ctx env =
   let env = {
     static_env = push_rel_context ctx env.static_env;
     renamed_env = push_rel_context ctx' env.renamed_env;
-    extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context ~hypnaming:hypnaming sigma d acc) ctx' (Lazy.force env.extra));
+    extra = lazy (List.fold_right (fun d acc -> push_rel_decl_to_named_context ~hypnaming:hypnaming (Global.env ()) sigma d acc) ctx' (Lazy.force env.extra));
     lvar = env.lvar;
     } in
   ctx', env

@@ -266,7 +266,7 @@ type ext_named_context =
   csubst * Id.Set.t * named_context
 
 val push_rel_decl_to_named_context : ?hypnaming:naming_mode ->
-  evar_map -> rel_declaration -> ext_named_context -> ext_named_context
+  env -> evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
 val push_rel_context_to_named_context : ?hypnaming:naming_mode ->
   Environ.env -> evar_map -> types ->

@@ -248,7 +248,7 @@ let evars () =
     let pfts = Vernacstate.Proof_global.give_me_the_proof () in
     let Proof.{ sigma } = Proof.data pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
-    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
+    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar (Global.env ()) sigma ev); } in
     let el = List.map map_evar exl in
     Some el
   with Vernacstate.Proof_global.NoCurrentProof -> None

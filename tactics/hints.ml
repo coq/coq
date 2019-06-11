@@ -782,7 +782,7 @@ let with_uid c = { obj = c; uid = fresh_key () }
 
 let secvars_of_idset s =
   Id.Set.fold (fun id p ->
-      if is_section_variable id then
+      if is_section_variable (Global.env ()) id then
         Id.Pred.add id p
       else p) s Id.Pred.empty
 

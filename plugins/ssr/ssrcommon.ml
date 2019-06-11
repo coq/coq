@@ -53,7 +53,7 @@ let hyp_id (SsrHyp (_, id)) = id
 let hyp_err ?loc msg id =
   CErrors.user_err ?loc ~hdr:"ssrhyp" Pp.(str msg ++ Id.print id)
 
-let not_section_id id = not (Termops.is_section_variable id)
+let not_section_id id = not (Termops.is_section_variable (Global.env ()) id)
 
 let hyps_ids = List.map hyp_id
 

@@ -261,7 +261,7 @@ val global_app_of_constr : Evd.evar_map -> constr -> (GlobRef.t * EInstance.t) *
 val dependency_closure : env -> Evd.evar_map -> named_context -> Id.Set.t -> Id.t list
 
 (** Test if an identifier is the basename of a global reference *)
-val is_section_variable : Id.t -> bool
+val is_section_variable : Environ.env -> Id.t -> bool
 
 val global_of_constr : Evd.evar_map -> constr -> GlobRef.t * EInstance.t
 
@@ -281,9 +281,9 @@ val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid option
 
 open Evd
 
-val pr_existential_key : evar_map -> Evar.t -> Pp.t
+val pr_existential_key : env -> evar_map -> Evar.t -> Pp.t
 
-val evar_suggested_name : Evar.t -> evar_map -> Id.t
+val evar_suggested_name : env -> Evar.t -> evar_map -> Id.t
 
 val pr_evar_info : env -> evar_map -> evar_info -> Pp.t
 val pr_evar_constraints : evar_map -> evar_constraint list -> Pp.t
