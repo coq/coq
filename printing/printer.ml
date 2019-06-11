@@ -497,7 +497,9 @@ let pr_concl n ?(diffs=false) ?og_s sigma g =
 
 (* display evar type: a context and a type *)
 let pr_evgl_sign sigma evi =
-  let env = evar_env evi in
+  (* XXX why not env ? *)
+  let genv = Global.env () in
+  let env = evar_env genv evi in
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
   | None -> [], []

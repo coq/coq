@@ -1338,8 +1338,10 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
   let evi = Evd.find_undefined evd evk in
   let evi = nf_evar_info evd evi in
-  let env_evar_unf = evar_env evi in
-  let env_evar = evar_filtered_env evi in
+  (* XXX why not env? *)
+  let genv = Global.env () in
+  let env_evar_unf = evar_env genv evi in
+  let env_evar = evar_filtered_env genv evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   if !debug_ho_unification then
@@ -1483,7 +1485,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
          else
            ((if !debug_ho_unification then
                let evi = Evd.find evd evk in
-               let env = Evd.evar_env evi in
+               let env = Evd.evar_env genv evi in
                Feedback.msg_debug Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
                  prc env evd (match evar_body evi with Evar_defined c -> c
@@ -1499,7 +1501,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        (if !debug_ho_unification then
           begin
             let evi = Evd.find evd evk in
-            let evenv = evar_env evi in
+            let evenv = evar_env genv evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
             Feedback.msg_debug Pp.(str"evar was defined already as: " ++ prc evenv evd body)
           end;
@@ -1507,7 +1509,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      else
        try
          let evi = Evd.find_undefined evd evk in
-         let evenv = evar_env evi in
+         let evenv = evar_env genv evi in
          let rhs' = nf_evar evd rhs' in
            if !debug_ho_unification then
              Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++

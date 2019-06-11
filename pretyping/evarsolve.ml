@@ -767,7 +767,9 @@ let restrict_upon_filter evd evk p args =
 
 let check_evar_instance unify flags evd evk1 body =
   let evi = Evd.find evd evk1 in
-  let evenv = evar_env evi in
+  (* XXX why not env ? *)
+  let genv = Global.env () in
+  let evenv = evar_env genv evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
@@ -1330,12 +1332,13 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
     try 
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
 	 The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
-      let evienv = Evd.evar_env evi in
+      let genv = Global.env () in
+      let evienv = Evd.evar_env genv evi in
       let concl1 = EConstr.Unsafe.to_constr evi.evar_concl in
       let ctx1, i = Reduction.dest_arity evienv concl1 in
       let ctx1 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx1 in
       let evi2 = Evd.find evd evk2 in
-      let evi2env = Evd.evar_env evi2 in
+      let evi2env = Evd.evar_env genv evi2 in
       let concl2 = EConstr.Unsafe.to_constr evi2.evar_concl in
       let ctx2, j = Reduction.dest_arity evi2env concl2 in
       let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
@@ -1510,7 +1513,8 @@ let rec invert_definition unify flags choose imitate_defs
             raise (NotEnoughInformationToProgress sols);
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
-          let ty = find_solution_type (evar_filtered_env evi) sols in
+          let genv = Global.env () in
+          let ty = find_solution_type (evar_filtered_env genv evi) sols in
           let ty' = instantiate_evar_array evi ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty' in
@@ -1640,7 +1644,8 @@ let rec invert_definition unify flags choose imitate_defs
     else
       let t' = imitate (env,0) rhs in
 	if !progress then
-          (recheck_applications unify flags (evar_env evi) evdref t'; t')
+          let genv = Global.env () in
+          (recheck_applications unify flags (evar_env genv evi) evdref t'; t')
 	else t'
   in (!evdref,body)
 

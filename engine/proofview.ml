@@ -1035,8 +1035,10 @@ let (>>=) = tclBIND
 (** {6 Goal-dependent tactics} *)
 
 let goal_env evars gl =
+  (* XXX *)
+  let env = Global.env () in
   let evi = Evd.find evars gl in
-  Evd.evar_filtered_env evi
+  Evd.evar_filtered_env env evi
 
 let goal_nf_evar sigma gl =
   let evi = Evd.find sigma gl in

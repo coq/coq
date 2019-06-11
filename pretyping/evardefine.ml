@@ -76,7 +76,9 @@ let idx = Namegen.default_dependent_ident
 let define_pure_evar_as_product env evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
-  let evenv = evar_env evi in
+  (* XXX why not env ? *)
+  let genv = Global.env () in
+  let evenv = evar_env genv evi in
   let id = next_ident_away idx (Environ.ids_of_named_context_val evi.evar_hyps) in
   let concl = Reductionops.whd_all evenv evd evi.evar_concl in
   let s = destSort evd concl in
@@ -130,7 +132,9 @@ let define_evar_as_product env evd (evk,args) =
 let define_pure_evar_as_lambda env evd evk =
   let open Context.Named.Declaration in
   let evi = Evd.find_undefined evd evk in
-  let evenv = evar_env evi in
+  (* XXX why not env ? *)
+  let genv = Global.env () in
+  let evenv = evar_env genv evi in
   let typ = Reductionops.whd_all evenv evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match EConstr.kind evd typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
@@ -171,8 +175,10 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 let define_evar_as_sort env evd (ev,args) =
   let dp = Global.current_dirpath () in
   let evd, s = new_sort_variable dp univ_rigid evd in
-  let evi = Evd.find_undefined evd ev in 
-  let concl = Reductionops.whd_all (evar_env evi) evd evi.evar_concl in
+  let evi = Evd.find_undefined evd ev in
+  (* XXX why not env ? *)
+  let genv = Global.env () in
+  let concl = Reductionops.whd_all (evar_env genv evi) evd evi.evar_concl in
   let sort = destSort evd concl in
   let evd' = Evd.define ev (mkSort s) evd in
   Evd.set_leq_sort env evd' (Sorts.super s) (ESorts.kind evd' sort), s

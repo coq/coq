@@ -561,10 +561,11 @@ let start_proof_and_print ~program_mode ?hook k l =
   let inference_hook =
     if program_mode then
       let hook env sigma ev =
+        let genv = Global.env () in
         let tac = !Obligations.default_tactic in
         let evi = Evd.find sigma ev in
         let evi = Evarutil.nf_evar_info sigma evi in
-        let env = Evd.evar_filtered_env evi in
+        let env = Evd.evar_filtered_env genv evi in
         try
           let concl = evi.Evd.evar_concl in
           if not (Evarutil.is_ground_env sigma env &&

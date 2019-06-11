@@ -200,13 +200,14 @@ let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
   in
   make_hyps filter (evar_context evi)
 
-let evar_env evi = Global.env_of_context evi.evar_hyps
+let evar_env env evi =
+  reset_with_named_context evi.evar_hyps env
 
-let evar_filtered_env evi = match Filter.repr (evar_filter evi) with
-| None -> evar_env evi
+let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
+| None -> evar_env env evi
 | Some filter ->
   let rec make_env filter ctxt = match filter, ctxt with
-  | [], [] -> reset_context (Global.env ())
+  | [], [] -> reset_context env
   | false :: filter, _ :: ctxt -> make_env filter ctxt
   | true :: filter, decl :: ctxt ->
     let env = make_env filter ctxt in

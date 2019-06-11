@@ -125,8 +125,8 @@ val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
 val evar_candidates : evar_info -> constr list option
 val evar_filter : evar_info -> Filter.t
-val evar_env :  evar_info -> env
-val evar_filtered_env :  evar_info -> env
+val evar_env :  env -> evar_info -> env
+val evar_filtered_env : env -> evar_info -> env
 
 val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
 val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
