@@ -447,7 +447,7 @@ let build_layout (sn:session) =
   let script_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
   let state_paned = GPack.paned `VERTICAL
-    ~packing:(eval_paned#pack2 ~shrink:false) () in
+    ~packing:(eval_paned#pack2 ~shrink:true) () in
 
   (* Proof buffer. *)
 
@@ -455,19 +455,21 @@ let build_layout (sn:session) =
   let proof_detachable = Wg_Detachable.detachable ~title () in
   let () = proof_detachable#button#misc#hide () in
   let () = proof_detachable#frame#set_shadow_type `IN in
-  let () = state_paned#add1 proof_detachable#coerce in
-  let callback _ = proof_detachable#show in
-  let () = proof_detachable#connect#attached ~callback in
-  let callback _ =
-    sn.proof#coerce#misc#set_size_request ~width:500 ~height:400 ()
-  in
-  let () = proof_detachable#connect#detached ~callback in
+  let () = state_paned#pack1 ~shrink:true proof_detachable#coerce in
   let proof_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_detachable#pack () in
+  let callback _ = proof_detachable#show;
+                   proof_scroll#coerce#misc#set_size_request ~width:0 ~height:0 ()
+  in
+  let () = proof_detachable#connect#attached ~callback in
+  let callback _ =
+    proof_scroll#coerce#misc#set_size_request ~width:500 ~height:400 ()
+  in
+  let () = proof_detachable#connect#detached ~callback in
 
   (* Message buffer. *)
 
-  let message_frame = GPack.notebook ~packing:state_paned#add () in
+  let message_frame = GPack.notebook ~packing:(state_paned#pack2 ~shrink:true) () in
   let add_msg_page pos name text (w : GObj.widget) =
     let detachable =
       Wg_Detachable.detachable ~title:(text^" ("^name^")") () in
@@ -503,18 +505,14 @@ let build_layout (sn:session) =
   let _ =
     eval_paned#misc#connect#size_allocate
       ~callback:
-      (let old_paned_width = ref 2 in
-       let old_paned_height = ref 2 in
+      (let b = ref true in
        fun {Gtk.width=paned_width;Gtk.height=paned_height} ->
-         if !old_paned_width <> paned_width ||
-            !old_paned_height <> paned_height
-         then begin
+       if !b then begin
            eval_paned#set_position
-             (eval_paned#position * paned_width / !old_paned_width);
+             (paned_width / 2);
            state_paned#set_position
-             (state_paned#position * paned_height / !old_paned_height);
-           old_paned_width := paned_width;
-           old_paned_height := paned_height;
+             (paned_height / 2);
+           b := false
 	 end)
   in
   session_box#pack sn.finder#coerce;
