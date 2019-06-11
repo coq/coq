@@ -26,8 +26,8 @@ let safe_evar_value sigma ev =
   try Some (EConstr.Unsafe.to_constr @@ Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
 
-let new_global dp evd x =
-  let (evd, c) = Evd.fresh_global dp (Global.env()) evd x in
+let new_global dp env evd x =
+  let (evd, c) = Evd.fresh_global dp env evd x in
   (evd, c)
 
 (****************************************************)

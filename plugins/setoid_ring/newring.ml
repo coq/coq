@@ -221,9 +221,9 @@ let coq_nil = gen_reference "core.list.nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
-let plapp evdref f args =
+let plapp env evdref f args =
   let dp = Global.current_dirpath () in
-  let evd, fc = Evarutil.new_global dp !evdref (Lazy.force f) in
+  let evd, fc = Evarutil.new_global dp env !evdref (Lazy.force f) in
   evdref := evd;
   mkApp(fc,args)
 
@@ -486,11 +486,11 @@ let op_smorph r add mul req m1 m2 =
 let ring_equality env evd (r,add,mul,opp,req) =
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
-	let setoid = plapp evd coq_eq_setoid [|r|] in
+        let setoid = plapp env evd coq_eq_setoid [|r|] in
 	let op_morph =
 	  match opp with
-              Some opp -> plapp evd coq_eq_morph [|r;add;mul;opp|]
-          | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
+              Some opp -> plapp env evd coq_eq_morph [|r;add;mul;opp|]
+          | None -> plapp env evd coq_eq_smorph [|r;add;mul|] in
         let sigma = !evd in
         let sigma, setoid = Typing.solve_evars env sigma setoid in
         let sigma, op_morph = Typing.solve_evars env sigma op_morph in
@@ -572,16 +572,16 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
 
 let make_hyp env evd c =
   let t = Retyping.get_type_of env !evd c in
-   plapp evd coq_mkhypo [|t;c|]
+  plapp env evd coq_mkhypo [|t;c|]
 
 let make_hyp_list env evdref lH =
   let dp = Global.current_dirpath () in
-  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
+  let evd, carrier = Evarutil.new_global dp env !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   let l = 
     List.fold_right
-      (fun c l -> plapp evdref coq_cons [|carrier; (make_hyp env evdref c); l|]) lH
-      (plapp evdref coq_nil [|carrier|])
+      (fun c l -> plapp env evdref coq_cons [|carrier; (make_hyp env evdref c); l|]) lH
+      (plapp env evdref coq_nil [|carrier|])
   in 
   let sigma, l' = Typing.solve_evars env !evdref l in
   evdref := sigma;
@@ -590,12 +590,12 @@ let make_hyp_list env evdref lH =
 
 let interp_power env evdref pow =
   let dp = Global.current_dirpath () in
-  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
+  let evd, carrier = Evarutil.new_global dp env !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match pow with
   | None ->
       let t = ArgArg(Loc.tag (Lazy.force ltac_inv_morph_nothing)) in
-      (TacArg(CAst.make (TacCall(CAst.make (t,[])))), plapp evdref coq_None [|carrier|])
+      (TacArg(CAst.make (TacCall(CAst.make (t,[])))), plapp env evdref coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with
@@ -603,28 +603,28 @@ let interp_power env evdref pow =
         | Closed lc ->
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
       let spec = make_hyp env evdref (ic_unsafe spec) in
-      (tac, plapp evdref coq_Some [|carrier; spec|])
+      (tac, plapp env evdref coq_Some [|carrier; spec|])
 
 let interp_sign env evdref sign =
   let dp = Global.current_dirpath () in
-  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
+  let evd, carrier = Evarutil.new_global dp env !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match sign with
-  | None -> plapp evdref coq_None [|carrier|]
+  | None -> plapp env evdref coq_None [|carrier|]
   | Some spec ->
       let spec = make_hyp env evdref (ic_unsafe spec) in
-      plapp evdref coq_Some [|carrier;spec|]
+      plapp env evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let interp_div env evdref div =
   let dp = Global.current_dirpath () in
-  let evd, carrier = Evarutil.new_global dp !evdref (Lazy.force coq_hypo) in
+  let evd, carrier = Evarutil.new_global dp env !evdref (Lazy.force coq_hypo) in
   evdref := evd;
   match div with
-  | None -> plapp evdref coq_None [|carrier|]
+  | None -> plapp env evdref coq_None [|carrier|]
   | Some spec ->
       let spec = make_hyp env evdref (ic_unsafe spec) in
-      plapp evdref coq_Some [|carrier;spec|]
+      plapp env evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
@@ -723,8 +723,8 @@ let make_args_list sigma rl t =
 
 let make_term_list env evd carrier rl =
   let l = List.fold_right
-    (fun x l -> plapp evd coq_cons [|carrier;x;l|]) rl
-    (plapp evd coq_nil [|carrier|])
+    (fun x l -> plapp env evd coq_cons [|carrier;x;l|]) rl
+    (plapp env evd coq_nil [|carrier|])
   in
   let sigma, l = Typing.solve_evars env !evd l in
   evd := sigma; l
@@ -824,18 +824,18 @@ let dest_field env evd th_spec =
   match EConstr.kind !evd th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when is_global !evd (Lazy.force afield_theory) f ->
-        let rth = plapp evd af_ar
+        let rth = plapp env evd af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
         when is_global !evd (Lazy.force field_theory) f ->
         let rth =
-          plapp evd f_r
+          plapp env evd f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
         when is_global !evd (Lazy.force sfield_theory) f ->
-        let rth = plapp evd sf_sr
+        let rth = plapp env evd sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
     | _ -> error "bad field structure"

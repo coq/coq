@@ -2127,18 +2127,18 @@ let eq_id avoid id =
   let hid' = next_ident_away hid avoid in
     hid'
 
-let papp sigma gr args =
+let papp env sigma gr args =
   let dp = Global.current_dirpath () in
   let evdref = ref sigma in
-  let ans = papp dp evdref gr args in
+  let ans = papp dp env evdref gr args in
   !evdref, ans
 
-let mk_eq sigma typ x y = papp sigma coq_eq_ind [| typ; x ; y |]
-let mk_eq_refl sigma typ x = papp sigma coq_eq_refl [| typ; x |]
-let mk_JMeq sigma typ x typ' y =
-  papp sigma coq_JMeq_ind [| typ; x ; typ'; y |]
-let mk_JMeq_refl sigma typ x =
-  papp sigma coq_JMeq_refl [| typ; x |]
+let mk_eq env sigma typ x y = papp env sigma coq_eq_ind [| typ; x ; y |]
+let mk_eq_refl env sigma typ x = papp env sigma coq_eq_refl [| typ; x |]
+let mk_JMeq env sigma typ x typ' y =
+  papp env sigma coq_JMeq_ind [| typ; x ; typ'; y |]
+let mk_JMeq_refl env sigma typ x =
+  papp env sigma coq_JMeq_refl [| typ; x |]
 
 let hole na = DAst.make @@
   GHole (Evar_kinds.QuestionMark {
@@ -2209,7 +2209,7 @@ let constr_of_pat env sigma arsign pat avoid =
                     let env = EConstr.push_rel_context sign env in
                     let sigma = unify_leq_delay (EConstr.push_rel_context sign env) sigma
                       (lift (succ m) ty) (lift 1 apptype) in
-                    let sigma, eq_t = mk_eq sigma (lift (succ m) ty)
+                    let sigma, eq_t = mk_eq env sigma (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)
 		    in
@@ -2274,7 +2274,7 @@ let lift_rel_context n l =
    Hence pats is already typed in its
    full signature. However prevpatterns are in the original one signature per pattern form.
  *)
-let build_ineqs sigma prevpatterns pats liftsign =
+let build_ineqs env sigma prevpatterns pats liftsign =
   let dp = Global.current_dirpath () in
   let sigma, diffs =
     List.fold_left
@@ -2292,7 +2292,7 @@ let build_ineqs sigma prevpatterns pats liftsign =
 		      (* Accumulated length of previous pattern's signatures *)
 		      let len' = lens + len in
                       let sigma, c' =
-                        papp sigma coq_eq_ind
+                        papp env sigma coq_eq_ind
                           [| lift (len' + liftsign) curpat_ty;
                             liftn (len + liftsign) (succ lens) ppat_c ;
                             lift len' curpat_c |]
@@ -2309,15 +2309,15 @@ let build_ineqs sigma prevpatterns pats liftsign =
 	 in match acc with
              None -> sigma, c
 	    | Some (sign, len, _, c') ->
-               let sigma, conj = mk_coq_and dp sigma c' in
-               let sigma, neg = mk_coq_not dp sigma conj in
+               let sigma, conj = mk_coq_and dp env sigma c' in
+               let sigma, neg = mk_coq_not dp env sigma conj in
 	       let conj = it_mkProd_or_LetIn neg (lift_rel_context liftsign sign) in
                sigma, conj :: c)
       (sigma, []) prevpatterns
   in match diffs with [] -> sigma, None
-    | _ -> let sigma, conj = mk_coq_and dp sigma diffs in sigma, Some conj
+    | _ -> let sigma, conj = mk_coq_and dp env sigma diffs in sigma, Some conj
 
-let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
+let constrs_of_pats typing_fun env genv sigma eqns tomatchs sign neqs arity =
   let i = ref 0 in
   let (sigma, x, y, z) =
     List.fold_left
@@ -2350,7 +2350,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
 		 (s, List.map (lift n) args), p) :: pats, len + n))
 	   ([], 0) pats
 	 in
-         let sigma, ineqs = build_ineqs sigma prevpatterns pats signlen in
+         let sigma, ineqs = build_ineqs genv sigma prevpatterns pats signlen in
          let rhs_rels' = rels_of_patsign sigma rhs_rels in
          let _signenv,_ = push_rel_context ~hypnaming:ProgramNaming sigma rhs_rels' env in
 	 let arity =
@@ -2467,20 +2467,20 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                     let sigma, eq, refl_arg =
                       if Reductionops.is_conv env sigma argt t then
                         let sigma, eq =
-                          mk_eq sigma (lift (nargeqs + slift) argt)
+                          mk_eq env sigma (lift (nargeqs + slift) argt)
                             (mkRel (nargeqs + slift))
                             (lift (nargeqs + nar) arg)
                         in
-                        let sigma, refl = mk_eq_refl sigma argt arg in
+                        let sigma, refl = mk_eq_refl env sigma argt arg in
                         sigma, eq, refl
 		      else
                         let sigma, eq =
-                          mk_JMeq sigma (lift (nargeqs + slift) t)
+                          mk_JMeq env sigma (lift (nargeqs + slift) t)
                             (mkRel (nargeqs + slift))
                             (lift (nargeqs + nar) argt)
                             (lift (nargeqs + nar) arg)
                         in
-                        let sigma, refl = mk_JMeq_refl sigma argt arg in
+                        let sigma, refl = mk_JMeq_refl env sigma argt arg in
                         (sigma, eq, refl)
 		    in
 		    let previd, id =
@@ -2499,13 +2499,13 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                  (sigma, env, neqs, [], [], slift, []) args argsign
 	     in
               let sigma, eq =
-                mk_JMeq sigma
+                mk_JMeq env sigma
                   (lift (nargeqs + slift) appt)
                   (mkRel (nargeqs + slift))
                   (lift (nargeqs + nar) ty)
                   (lift (nargeqs + nar) tm)
 	     in
-             let sigma, refl_eq = mk_JMeq_refl sigma ty tm in
+             let sigma, refl_eq = mk_JMeq_refl env sigma ty tm in
 	     let previd, id = make_prime avoid appn in
                (sigma, (LocalAssum (make_annot (Name (eq_id avoid previd)) Sorts.Relevant, eq) :: argeqs) :: eqs,
                 succ nargeqs,
@@ -2520,10 +2520,10 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
 	     let arsign' = RelDecl.set_name (Name id) decl in
 	     let tomatch_ty = type_of_tomatch ty in
             let sigma, eq =
-              mk_eq sigma (lift nar tomatch_ty)
+              mk_eq env sigma (lift nar tomatch_ty)
                 (mkRel slift) (lift nar tm)
             in
-            let sigma, refl = mk_eq_refl sigma tomatch_ty tm in
+            let sigma, refl = mk_eq_refl env sigma tomatch_ty tm in
             let na = make_annot (Name (eq_id avoid previd)) Sorts.Relevant in
             (sigma,
             [LocalAssum (na, eq)] :: eqs, succ neqs,
@@ -2588,7 +2588,8 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
   in
   let sigma, lets, matx =
     (* Type the rhs under the assumption of equations *)
-    constrs_of_pats typing_fun env sigma matx tomatchs sign neqs arity
+    let genv = Global.env () in
+    constrs_of_pats typing_fun env genv sigma matx tomatchs sign neqs arity
   in
   let matx = List.rev matx in
   let _ = assert (Int.equal len (List.length lets)) in

@@ -466,11 +466,11 @@ let fold_left' f = function
     [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
-let mk_coq_and sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.and.type")
-let mk_coq_conj sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.and.conj")
+let mk_coq_and  env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Coqlib.lib_ref "core.and.type")
+let mk_coq_conj env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Coqlib.lib_ref "core.and.conj")
 
-let mk_coq_prod sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.prod.type")
-let mk_coq_pair sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.prod.intro")
+let mk_coq_prod env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Coqlib.lib_ref "core.prod.type")
+let mk_coq_pair env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Coqlib.lib_ref "core.prod.intro")
 
 let build_combined_scheme env schemes =
   let dp = Global.current_dirpath () in
@@ -507,8 +507,8 @@ let build_combined_scheme env schemes =
   in
   (* Number of clauses, including the predicates quantification *)
   let prods = nb_prod sigma (EConstr.of_constr t) - (nargs + 1) in
-  let sigma, coqand  = mk_and sigma in
-  let sigma, coqconj = mk_conj sigma in
+  let sigma, coqand  = mk_and env sigma in
+  let sigma, coqconj = mk_conj env sigma in
   let relargs = rel_vect 0 prods in
   let concls = List.rev_map
     (fun (cst, t) ->

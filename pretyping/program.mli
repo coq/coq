@@ -34,11 +34,11 @@ val coq_eq_rect : unit -> GlobRef.t
 val coq_JMeq_ind : unit -> GlobRef.t
 val coq_JMeq_refl : unit -> GlobRef.t
 
-val mk_coq_and : DirPath.t -> Evd.evar_map -> constr list -> Evd.evar_map * constr
-val mk_coq_not : DirPath.t -> Evd.evar_map -> constr -> Evd.evar_map * constr
+val mk_coq_and : DirPath.t -> Environ.env -> Evd.evar_map -> constr list -> Evd.evar_map * constr
+val mk_coq_not : DirPath.t -> Environ.env -> Evd.evar_map -> constr -> Evd.evar_map * constr
 
 (** Polymorphic application of delayed references *)
-val papp : DirPath.t -> Evd.evar_map ref -> (unit -> GlobRef.t) -> constr array -> constr
+val papp : DirPath.t -> Environ.env -> Evd.evar_map ref -> (unit -> GlobRef.t) -> constr array -> constr
 
 val get_proofs_transparency : unit -> bool
 val is_program_cases : unit -> bool

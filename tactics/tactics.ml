@@ -3610,28 +3610,28 @@ let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
   user_err ~hdr:"Tactics" (str "Cannot recognize " ++ str s ++ str "an induction scheme.")
 
-let coq_eq sigma       = Evarutil.new_global (Global.current_dirpath()) sigma Coqlib.(lib_ref "core.eq.type")
-let coq_eq_refl sigma  = Evarutil.new_global (Global.current_dirpath()) sigma Coqlib.(lib_ref "core.eq.refl")
+let coq_eq      env sigma  = Evarutil.new_global (Global.current_dirpath()) env sigma Coqlib.(lib_ref "core.eq.type")
+let coq_eq_refl env sigma  = Evarutil.new_global (Global.current_dirpath()) env sigma Coqlib.(lib_ref "core.eq.refl")
 
-let coq_heq_ref        = lazy (Coqlib.lib_ref "core.JMeq.type")
-let coq_heq sigma      = Evarutil.new_global (Global.current_dirpath()) sigma (Lazy.force coq_heq_ref)
-let coq_heq_refl sigma = Evarutil.new_global (Global.current_dirpath()) sigma (Coqlib.lib_ref "core.JMeq.refl")
+let coq_heq_ref            = lazy (Coqlib.lib_ref "core.JMeq.type")
+let coq_heq      env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Lazy.force coq_heq_ref)
+let coq_heq_refl env sigma = Evarutil.new_global (Global.current_dirpath()) env sigma (Coqlib.lib_ref "core.JMeq.refl")
 (* let coq_heq_refl = lazy (glob (lib_ref "core.JMeq.refl")) *)
 
-let mkEq sigma t x y =
-  let sigma, eq = coq_eq sigma in
+let mkEq env sigma t x y =
+  let sigma, eq = coq_eq env sigma in
   sigma, mkApp (eq, [| t; x; y |])
 
-let mkRefl sigma t x =
-  let sigma, refl = coq_eq_refl sigma in
+let mkRefl env sigma t x =
+  let sigma, refl = coq_eq_refl env sigma in
   sigma, mkApp (refl, [| t; x |])
 
-let mkHEq sigma t x u y =
-  let sigma, c = coq_heq sigma in
+let mkHEq env sigma t x u y =
+  let sigma, c = coq_heq env sigma in
   sigma, mkApp (c,[| t; x; u; y |])
 
-let mkHRefl sigma t x =
-  let sigma, c = coq_heq_refl sigma in
+let mkHRefl env sigma t x =
+  let sigma, c = coq_heq_refl env sigma in
   sigma, mkApp (c, [| t; x |])
 
 let lift_togethern n l =
@@ -3672,12 +3672,12 @@ let decompose_indapp sigma f args =
 
 let mk_term_eq homogeneous env sigma ty t ty' t' =
   if homogeneous then
-    let sigma, eq = mkEq sigma ty t t' in
-    let sigma, refl = mkRefl sigma ty' t' in
+    let sigma, eq = mkEq env sigma ty t t' in
+    let sigma, refl = mkRefl env sigma ty' t' in
     sigma, (eq, refl)
   else
-    let sigma, heq = mkHEq sigma ty t ty' t' in
-    let sigma, hrefl = mkHRefl sigma ty' t' in
+    let sigma, heq = mkHEq env sigma ty t ty' t' in
+    let sigma, hrefl = mkHRefl env sigma ty' t' in
     sigma, (heq, hrefl)
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
@@ -3801,12 +3801,12 @@ let abstract_args gl generalize_vars dep id defined f args =
 	  let liftarg = lift (List.length ctx) arg in
 	  let eq, refl =
 	    if leq then
-	      let sigma', eq = mkEq !sigma (lift 1 ty) (mkRel 1) liftarg in
-              let sigma', refl = mkRefl sigma' (lift (-lenctx) ty) arg in
+              let sigma', eq = mkEq env !sigma (lift 1 ty) (mkRel 1) liftarg in
+              let sigma', refl = mkRefl env sigma' (lift (-lenctx) ty) arg in
               sigma := sigma'; eq, refl
 	    else
-	      let sigma', eq = mkHEq !sigma (lift 1 ty) (mkRel 1) liftargty liftarg in
-              let sigma', refl = mkHRefl sigma' argty arg in
+              let sigma', eq = mkHEq env !sigma (lift 1 ty) (mkRel 1) liftargty liftarg in
+              let sigma', refl = mkHRefl env sigma' argty arg in
               sigma := sigma'; eq, refl
 	  in
 	  let eqs = eq :: lift_list eqs in

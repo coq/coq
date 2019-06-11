@@ -71,7 +71,7 @@ val new_Type : ?rigid:rigid -> DirPath.t -> evar_map -> evar_map * constr
 
 (** Polymorphic constants *)
 
-val new_global : DirPath.t -> evar_map -> GlobRef.t -> evar_map * constr
+val new_global : DirPath.t -> env -> evar_map -> GlobRef.t -> evar_map * constr
 
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context

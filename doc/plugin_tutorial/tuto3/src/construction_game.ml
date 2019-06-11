@@ -12,7 +12,7 @@ let example_sort sigma =
   let new_type = EConstr.mkSort s in
   sigma, new_type
 
-let c_one sigma =
+let c_one env sigma =
 (* In the general case, global references may refer to universe polymorphic
    objects, and their universe has to be made afresh when creating an instance. *)
   let gr_S =
@@ -21,8 +21,8 @@ let c_one sigma =
   let gr_O =
     find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
   let dp = Global.current_dirpath () in
-  let sigma, c_O = Evarutil.new_global dp sigma gr_O in
-  let sigma, c_S = Evarutil.new_global dp sigma gr_S in
+  let sigma, c_O = Evarutil.new_global dp env sigma gr_O in
+  let sigma, c_S = Evarutil.new_global dp env sigma gr_S in
 (* Here is the construction of a new term by applying functions to argument. *)
   sigma, EConstr.mkApp (c_S, [| c_O |])
 
@@ -50,7 +50,7 @@ let dangling_identity2 env sigma =
 let example_sort_app_lambda () =
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let sigma, c_v = c_one sigma in
+    let sigma, c_v = c_one env sigma in
 (* dangling_identity and dangling_identity2 can be used interchangeably here *)
     let sigma, c_f = dangling_identity2 env sigma in
     let c_1 = EConstr.mkApp (c_f, [| c_v |]) in
@@ -68,61 +68,61 @@ let example_sort_app_lambda () =
        (Printer.pr_econstr_env env sigma the_type))
 
 
-let c_S sigma =
+let c_S env sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "S" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_O sigma =
+let c_O env sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "O" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_E sigma =
+let c_E env sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "EvenNat" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_D sigma =
+let c_D env sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "tuto_div2" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_Q sigma =
+let c_Q env sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_R sigma =
+let c_R env sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Logic"] "eq_refl" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_N sigma =
+let c_N env sigma =
   let gr = find_reference "Tuto3" ["Coq"; "Init"; "Datatypes"] "nat" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_C sigma =
+let c_C env sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "C" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_F sigma =
+let c_F env sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "S_ev" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
-let c_P sigma =
+let c_P env sigma =
   let gr = find_reference "Tuto3" ["Tuto3"; "Data"] "s_half_proof" in
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma gr
+  Evarutil.new_global dp env sigma gr
 
 (* If c_S was universe polymorphic, we should have created a new constant
    at each iteration of buildup. *)
-let mk_nat sigma n =
-  let sigma, c_S = c_S sigma in
-  let sigma, c_O = c_O sigma in
+let mk_nat env sigma n =
+  let sigma, c_S = c_S env sigma in
+  let sigma, c_O = c_O env sigma in
   let rec buildup = function
     | 0 -> c_O
     | n -> EConstr.mkApp (c_S, [| buildup (n - 1) |]) in
@@ -131,13 +131,13 @@ let mk_nat sigma n =
 let example_classes n =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let sigma, c_n = mk_nat sigma n in
-  let sigma, n_half = mk_nat sigma (n / 2) in
-  let sigma, c_N = c_N sigma in
-  let sigma, c_div = c_D sigma in
-  let sigma, c_even = c_E sigma in
-  let sigma, c_Q = c_Q sigma in
-  let sigma, c_R = c_R sigma in
+  let sigma, c_n = mk_nat env sigma n in
+  let sigma, n_half = mk_nat env sigma (n / 2) in
+  let sigma, c_N = c_N env sigma in
+  let sigma, c_div = c_D env sigma in
+  let sigma, c_even = c_E env sigma in
+  let sigma, c_Q = c_Q env sigma in
+  let sigma, c_R = c_R env sigma in
   let arg_type = EConstr.mkApp (c_even, [| c_n |]) in
   let sigma0 = sigma in
   let sigma, instance = Evarutil.new_evar env sigma arg_type in
@@ -167,13 +167,13 @@ let example_canonical n =
   let env = Global.env () in
   let sigma = Evd.from_env env in
 (* Construct a natural representation of this integer. *)
-  let sigma, c_n = mk_nat sigma n in
+  let sigma, c_n = mk_nat env sigma n in
 (* terms for "nat", "eq", "S_ev", "eq_refl", "C" *)
-  let sigma, c_N = c_N sigma in
-  let sigma, c_F = c_F sigma in
-  let sigma, c_R = c_R sigma in
-  let sigma, c_C = c_C sigma in
-  let sigma, c_P = c_P sigma in
+  let sigma, c_N = c_N env sigma in
+  let sigma, c_F = c_F env sigma in
+  let sigma, c_R = c_R env sigma in
+  let sigma, c_C = c_C env sigma in
+  let sigma, c_P = c_P env sigma in
 (* the last argument of C *)
   let refl_term = EConstr.mkApp (c_R, [|c_N; c_n |]) in
 (* Now we build two existential variables, for the value of the half and for

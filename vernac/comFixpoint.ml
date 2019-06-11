@@ -165,9 +165,9 @@ type recursive_preentry =
 
 (* Wellfounded definition *)
 
-let fix_proto sigma =
+let fix_proto env sigma =
   let dp = Global.current_dirpath () in
-  Evarutil.new_global dp sigma (Coqlib.lib_ref "program.tactic.fix_proto")
+  Evarutil.new_global dp env sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
 let interp_recursive ~program_mode ~cofix fixl notations =
   let open Context.Named.Declaration in
@@ -207,7 +207,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
            let sigma, sort = Typing.type_of ~refresh:true env sigma t in
            let sigma, fixprot =
              try
-               let sigma, h_term = fix_proto sigma in
+               let sigma, h_term = fix_proto env sigma in
                let app = mkApp (h_term, [|sort; t|]) in
                Typing.solve_evars env sigma app
              with e when CErrors.noncritical e -> sigma, t

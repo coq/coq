@@ -147,7 +147,7 @@ let mu env evdref t =
 	let p = hnf_nodelta env !evdref p in
 	  (Some (fun x ->
 		   app_opt env evdref 
-                     f (papp dp evdref sig_proj1 [| u; p; x |])),
+                     f (papp dp env evdref sig_proj1 [| u; p; x |])),
 	   ct)
       | None -> (None, v)
   in aux t
@@ -193,9 +193,9 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		in
 		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
                 let pred = mkLambda (n, eqT, applist (lift 1 c, args)) in
-                let eq = papp dp evdref coq_eq_ind [| eqT; hdx; hdy |] in
+                let eq = papp dp env evdref coq_eq_ind [| eqT; hdx; hdy |] in
                 let evar = make_existential ?loc n.binder_name env evdref eq in
-                let eq_app x = papp dp evdref coq_eq_rect
+                let eq_app x = papp dp env evdref coq_eq_rect
 		  [| eqT; hdx; pred; x; hdy; evar|] 
 		in
 		  aux (hdy :: tele) (subst1 hdx restT) 
@@ -284,12 +284,12 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 			   Some
 			     (fun x ->
 				let x, y =
-                                  app_opt env' evdref c1 (papp dp evdref sigT_proj1
+                                  app_opt env' evdref c1 (papp dp env evdref sigT_proj1
 							    [| a; pb; x |]),
-                                  app_opt env' evdref c2 (papp dp evdref sigT_proj2
+                                  app_opt env' evdref c2 (papp dp env evdref sigT_proj2
 							  [| a; pb; x |])
 				in
-                                  papp dp evdref sigT_intro [| a'; pb'; x ; y |])
+                                  papp dp env evdref sigT_intro [| a'; pb'; x ; y |])
 		   end
 		 else
 		   begin
@@ -304,12 +304,12 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 			   Some
 			     (fun x ->
 				let x, y =
-                                  app_opt env evdref c1 (papp dp evdref prod_proj1
+                                  app_opt env evdref c1 (papp dp env evdref prod_proj1
 							   [| a; b; x |]),
-                                  app_opt env evdref c2 (papp dp evdref prod_proj2
+                                  app_opt env evdref c2 (papp dp env evdref prod_proj2
 							   [| a; b; x |])
 				in
-                                  papp dp evdref prod_intro [| a'; b'; x ; y |])
+                                  papp dp env evdref prod_intro [| a'; b'; x ; y |])
 		   end
 	       else
 		 if eq_ind i i' && Int.equal len (Array.length l') then
@@ -337,7 +337,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     Some (u, p) ->
       let c = coerce_unify env u y in
       let f x =
-        app_opt env evdref c (papp dp evdref sig_proj1 [| u; p; x |])
+        app_opt env evdref c (papp dp env evdref sig_proj1 [| u; p; x |])
       in Some f
     | None ->
 	match disc_subset !evdref y with
@@ -348,7 +348,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		 let cx = app_opt env evdref c x in
 		 let evar = make_existential ?loc Anonymous env evdref (mkApp (p, [| cx |]))
 		 in
-                   (papp dp evdref sig_intro [| u; p; cx; evar |]))
+                   (papp dp env evdref sig_intro [| u; p; cx; evar |]))
 	| None ->
 	    raise NoSubtacCoercion
   in coerce_unify env x y
@@ -380,7 +380,7 @@ let apply_coercion env sigma p hj typ_cl =
            let isid = i.coe_is_identity in
            let isproj = i.coe_is_projection in
            let dp = Global.current_dirpath () in
-           let sigma, c = new_global dp sigma i.coe_value in
+           let sigma, c = new_global dp env sigma i.coe_value in
            let typ = Retyping.get_type_of env sigma c in
            let fv = make_judge c typ in
 	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
