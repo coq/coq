@@ -261,14 +261,22 @@ let return_proof ?(allow_partial=false) ps =
   let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
   let proof_opt c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
     | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
+  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
+  (* EJGA: actually side-effects de-duplication and this codepath is
+     unrelated. Duplicated side-effects arise from incorrect scheme
+     generation code, the main bulk of it was mostly fixed by #9836
+     but duplication can still happen because of rewriting schemes I
+     think; however the code below is mostly untested, the only
+     code-paths that generate several proof entries are derive and
+     equations and so far there is no code in the CI that will
+     actually call those and do a side-effect, TTBOMK *)
   let proofs =
     List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
     proofs, Evd.evar_universe_context evd
