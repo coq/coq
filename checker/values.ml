@@ -345,8 +345,26 @@ let v_compiled_lib =
 (** Library objects *)
 
 let v_obj = Dyn
-let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
-let v_libobjs = List v_libobj
+
+let rec v_aobjs = Sum("algebraic_objects", 0,
+  [| [|v_libobjs|];
+     [|v_mp;v_subst|]
+  |])
+and v_substobjs =
+  Tuple("*", [|List v_uid;v_aobjs|])
+and v_libobjt = Sum("Libobject.t",0,
+  [| [| v_substobjs |];
+     [| v_substobjs |];
+     [| v_aobjs |];
+     [| v_libobjs |];
+     [| v_bool; v_mp |];
+     [| v_obj |]
+  |])
+
+and v_libobj = Tuple ("libobj", [|v_id;v_libobjt|])
+
+and v_libobjs = List v_libobj
+
 let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 
 (** STM objects *)

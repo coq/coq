@@ -611,9 +611,11 @@ let gallina_print_syntactic_def env kn =
        [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
 
 let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
-  let sep = if with_values then " = " else " : "
-  and tag = object_tag lobj in
-    match (oname,tag) with
+  let sep = if with_values then " = " else " : " in
+  match lobj with
+  | AtomicObject o ->
+    let tag = object_tag o in
+    begin match (oname,tag) with
       | (_,"VARIABLE") ->
 	  (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
@@ -622,16 +624,18 @@ let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
           Some (print_constant with_values sep (Constant.make1 kn) None)
       | (_,"INDUCTIVE") ->
           Some (gallina_print_inductive (MutInd.make1 kn) None)
-      | (_,"MODULE") ->
-          let (mp,l) = KerName.repr kn in
-	    Some (print_module with_values (MPdot (mp,l)))
-      | (_,"MODULE TYPE") ->
-          let (mp,l) = KerName.repr kn in
-	  Some (print_modtype (MPdot (mp,l)))
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
       (* To deal with forgotten cases... *)
       | (_,s) -> None
+    end
+  | ModuleObject _ ->
+    let (mp,l) = KerName.repr kn in
+    Some (print_module with_values (MPdot (mp,l)))
+  | ModuleTypeObject _ ->
+    let (mp,l) = KerName.repr kn in
+          Some (print_modtype (MPdot (mp,l)))
+  | _ -> None
 
 let gallina_print_library_entry env sigma with_values ent =
   let pr_name (sp,_) = Id.print (basename sp) in
@@ -713,7 +717,7 @@ let print_full_context_typ env sigma = print_context env sigma false None (Lib.c
 
 let print_full_pure_context env sigma =
   let rec prec = function
-  | ((_,kn),Lib.Leaf lobj)::rest ->
+  | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
       let pp = match object_tag lobj with
       | "CONSTANT" ->
 	  let con = Global.constant_of_delta_kn kn in
@@ -741,17 +745,16 @@ let print_full_pure_context env sigma =
 	  let mib = Global.lookup_mind mind in
           pr_mutual_inductive_body (Global.env()) mind mib None ++
 	    str "." ++ fnl () ++ fnl ()
-      | "MODULE" ->
-	  (* TODO: make it reparsable *)
-          let (mp,l) = KerName.repr kn in
-	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
-      | "MODULE TYPE" ->
-	  (* TODO: make it reparsable *)
-	  (* TODO: make it reparsable *)
-          let (mp,l) = KerName.repr kn in
-	  print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | _ -> mt () in
       prec rest ++ pp
+  | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
+          (* TODO: make it reparsable *)
+    let (mp,l) = KerName.repr kn in
+          prec rest ++ print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
+  | ((_,kn),Lib.Leaf ModuleTypeObject _)::rest ->
+          (* TODO: make it reparsable *)
+    let (mp,l) = KerName.repr kn in
+          prec rest ++ print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
   | _::rest -> prec rest
   | _ -> mt () in
   prec (Lib.contents ())

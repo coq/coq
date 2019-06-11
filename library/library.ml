@@ -488,7 +488,7 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
 let safe_locate_module qid =
   try Nametab.locate_module qid
   with Not_found ->
-    user_err ?loc:qid.CAst.loc ~hdr:"import_library"
+    user_err ?loc:qid.CAst.loc ~hdr:"safe_locate_module"
       (pr_qualid qid ++ str " is not a module")
 
 let import_module export modl =
@@ -513,7 +513,7 @@ let import_module export modl =
             flush acc;
             try Declaremods.import_module export mp; aux [] l
             with Not_found ->
-              user_err ?loc:qid.CAst.loc ~hdr:"import_library"
+              user_err ?loc:qid.CAst.loc ~hdr:"import_module"
                 (pr_qualid qid ++ str " is not a module"))
     | [] -> flush acc
   in aux [] modl

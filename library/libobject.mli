@@ -103,6 +103,22 @@ val ident_subst_function : substitution * 'a -> 'a
 
 type obj
 
+type algebraic_objects =
+  | Objs of objects
+  | Ref of Names.ModPath.t * Mod_subst.substitution
+
+and t =
+  | ModuleObject of substitutive_objects
+  | ModuleTypeObject of substitutive_objects
+  | IncludeObject of algebraic_objects
+  | KeepObject of objects
+  | ImportObject of { export : bool; mp : Names.ModPath.t }
+  | AtomicObject of obj
+
+and objects = (Names.Id.t * t) list
+
+and substitutive_objects = Names.MBId.t list * algebraic_objects
+
 val declare_object_full :
   'a object_declaration -> ('a -> obj) * (obj -> 'a)
 
