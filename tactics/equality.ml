@@ -398,7 +398,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
   | Ind (ind,u) -> 
       
       let c, eff = find_scheme scheme_name ind in 
-      Proofview.tclEFFECTS eff <*>
+      Proofview.tclEFFECTS (Global.env ()) eff <*>
         pf_constr_of_global (ConstRef c) 
   | _ -> assert false
   end
@@ -995,7 +995,7 @@ let ind_scheme_of_eq lbeq to_kind =
 let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
   build_coq_I () >>= fun i ->
   let eq_elim, eff = ind_scheme_of_eq lbeq to_kind in
-  Proofview.tclEFFECTS eff <*>
+  Proofview.tclEFFECTS (Global.env ()) eff <*>
     pf_constr_of_global eq_elim >>= fun eq_elim ->
     Proofview.tclUNIT
        (applist (eq_elim, [t;t1;mkNamedLambda (make_annot e Sorts.Relevant) t discriminator;i;t2]))
@@ -1352,7 +1352,7 @@ let inject_if_homogenous_dependent_pair ty =
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     (* cut with the good equality and prove the requested goal *)
     tclTHENLIST
-      [Proofview.tclEFFECTS eff;
+      [Proofview.tclEFFECTS (Global.env ()) eff;
        intro;
        onLastHyp (fun hyp ->
         Tacticals.New.pf_constr_of_global Coqlib.(lib_ref "core.eq.type") >>= fun ceq ->

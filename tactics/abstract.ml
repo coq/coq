@@ -177,7 +177,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let effs = concat_private eff
     Entries.(snd (Future.force const.const_entry_body)) in
   let solve =
-    Proofview.tclEFFECTS effs <*>
+    Proofview.tclEFFECTS (Global.env ()) effs <*>
     tacK lem args
   in
   let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in

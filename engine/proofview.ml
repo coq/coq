@@ -824,10 +824,10 @@ let tclENV = Env.get
 let emit_side_effects eff x =
   { x with solution = Evd.emit_side_effects eff x.solution }
 
-let tclEFFECTS eff =
+let tclEFFECTS env eff =
   let open Proof in
   return () >>= fun () -> (* The Global.env should be taken at exec time *)
-  Env.set (Global.env ()) >>
+  Env.set env >>
   Pv.modify (fun initial -> emit_side_effects eff initial)
 
 let mark_as_unsafe = Status.put false

@@ -428,7 +428,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.New.tclTHENLIST [
-             Proofview.tclEFFECTS eff;
+             Proofview.tclEFFECTS (Global.env ()) eff;
              Equality.replace p q ; apply app ; Auto.default_auto]
   end
 
@@ -497,7 +497,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
                 Tacticals.New.tclTHENLIST [
-                  Proofview.tclEFFECTS eff;
+                  Proofview.tclEFFECTS (Global.env ()) eff;
                   Equality.replace_by t1 t2
                     (Tacticals.New.tclTHEN (apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
@@ -943,7 +943,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
   end >>= fun (lbI,eff'') ->
   let eff = (Safe_typing.concat_private eff'' (Safe_typing.concat_private eff' eff)) in
   Tacticals.New.tclTHENLIST [
-        Proofview.tclEFFECTS eff;
+        Proofview.tclEFFECTS (Global.env ()) eff;
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
