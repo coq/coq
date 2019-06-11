@@ -66,6 +66,23 @@ type atom =
   | Aevar of Evar.t * t array
   | Aproj of (inductive * int) * accumulator
 
+type symbol =
+  | SymbValue of t
+  | SymbSort of Sorts.t
+  | SymbName of Name.t
+  | SymbConst of Constant.t
+  | SymbMatch of annot_sw
+  | SymbInd of inductive
+  | SymbMeta of metavariable
+  | SymbEvar of Evar.t
+  | SymbLevel of Univ.Level.t
+  | SymbProj of (inductive * int)
+
+type symbols = symbol array
+
+let empty_symbols = [| |]
+
+
 let accumulate_tag = 0
 
 (** Unique pointer used to drive the accumulator function *)

@@ -179,7 +179,7 @@ type native_library = Nativecode.global list
 
 val module_of_library : compiled_library -> Declarations.module_body
 
-val get_library_native_symbols : safe_environment -> DirPath.t -> Nativecode.symbols
+val get_library_native_symbols : safe_environment -> DirPath.t -> Nativevalues.symbols
 
 val start_library : DirPath.t -> ModPath.t safe_transformer
 

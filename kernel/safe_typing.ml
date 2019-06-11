@@ -130,7 +130,7 @@ type safe_environment =
     required : vodigest DPMap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
-    native_symbols : Nativecode.symbols DPMap.t }
+    native_symbols : Nativevalues.symbols DPMap.t }
 
 and modvariant =
   | NONE
@@ -1076,7 +1076,7 @@ type compiled_library = {
   comp_mod : module_body;
   comp_deps : library_info array;
   comp_enga : engagement;
-  comp_natsymbs : Nativecode.symbols
+  comp_natsymbs : Nativevalues.symbols
 }
 
 let module_of_library lib = lib.comp_mod
@@ -1128,7 +1128,7 @@ let export ?except ~output_native_objects senv dir =
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp dir senv.env str
-    else [], Nativecode.empty_symbols
+    else [], Nativevalues.empty_symbols
   in
   let lib = {
     comp_name = dir;

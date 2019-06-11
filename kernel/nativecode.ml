@@ -141,18 +141,6 @@ let fresh_gnormtbl l =
 
 (** Symbols (pre-computed values) **)
 
-type symbol =
-  | SymbValue of Nativevalues.t
-  | SymbSort of Sorts.t
-  | SymbName of Name.t
-  | SymbConst of Constant.t
-  | SymbMatch of annot_sw
-  | SymbInd of inductive
-  | SymbMeta of metavariable
-  | SymbEvar of Evar.t
-  | SymbLevel of Univ.Level.t
-  | SymbProj of (inductive * int)
-
 let dummy_symb = SymbValue (dummy_value ())
 
 let eq_symbol sy1 sy2 =
@@ -193,10 +181,6 @@ module HashtblSymbol = Hashtbl.Make(HashedTypeSymbol)
 let symb_tbl = HashtblSymbol.create 211
 
 let clear_symbols () = HashtblSymbol.clear symb_tbl
-
-type symbols = symbol array
-
-let empty_symbols = [||]
 
 let get_value tbl i =
   match tbl.(i) with
