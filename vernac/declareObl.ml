@@ -95,6 +95,7 @@ let decompose_lam_prod c ty =
   in
   aux Context.Rel.empty c ty
 
+(* XXX: What's the relation of this with Abstract.shrink ? *)
 let shrink_body c ty =
   let ctx, b, ty =
     match ty with

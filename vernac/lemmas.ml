@@ -581,81 +581,30 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   in
   ignore (Declare.declare_constant name lemma_def)
 
-(* XXX several versions of shrink do appear in abstract, declareobl and here *)
-module Equations = struct
-  let rec decompose len c t accu =
-    let open Constr in
-    let open Context.Rel.Declaration in
-    if len = 0 then (c, t, accu)
-    else match kind c, kind t with
-      | Lambda (na, u, c), Prod (_, _, t) ->
-        decompose (pred len) c t (LocalAssum (na, u) :: accu)
-      | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
-        decompose (pred len) c t (LocalDef (na, b, u) :: accu)
-      | _ -> assert false
+let finish_proved_equations opaque lid proof_obj hook i types wits sigma =
 
-  let rec shrink ctx sign c t accu =
-    let open Constr in
-    let open Vars in
-    match ctx, sign with
-    | [], [] -> (c, t, accu)
-    | p :: ctx, decl :: sign ->
-      if noccurn 1 c && noccurn 1 t then
-        let c = subst1 mkProp c in
-        let t = subst1 mkProp t in
-        shrink ctx sign c t accu
-      else
-        let c = Term.mkLambda_or_LetIn p c in
-        let t = Term.mkProd_or_LetIn p t in
-        let accu = if RelDecl.is_local_assum p
-          then mkVar (NamedDecl.get_id decl) :: accu
-          else accu
+  let open Decl_kinds in
+  let obls = ref 1 in
+  let kind = match pi3 proof_obj.Proof_global.persistence with
+    | DefinitionBody d -> IsDefinition d
+    | Proof p -> IsProof p
+  in
+  let evd = ref sigma in
+  let recobls =
+    CList.map2 (fun (wit, (evar_env, ev, evi, local_context, type_)) entry ->
+        let id =
+          match Evd.evar_ident ev sigma with
+          | Some id -> id
+          | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
         in
-        shrink ctx sign c t accu
-    | _ -> assert false
-
-  let shrink_entry sign const =
-    let open Entries in
-    let typ = match const.const_entry_type with
-      | None -> assert false
-      | Some t -> t
-    in
-    (* The body has been forced by the call to [build_constant_by_tactic] *)
-    (* let () = assert (Future.is_over const.const_entry_body) in *)
-    let ((body, uctx), eff) = Future.force const.const_entry_body in
-    let (body, typ, ctx) = decompose (List.length sign) body typ [] in
-    let (body, typ, args) = shrink ctx sign body typ [] in
-    let const = { const with
-                  const_entry_body = Future.from_val ((body, uctx), eff);
-                  const_entry_type = Some typ;
-                } in
-    (const, args)
-
-  let finish_proved opaque lid proof_obj hook i types wits sigma =
-
-    let open Decl_kinds in
-    let obls = ref 1 in
-    let kind = match pi3 proof_obj.Proof_global.persistence with
-      | DefinitionBody d -> IsDefinition d
-      | Proof p -> IsProof p
-    in
-    let evd = ref sigma in
-    let recobls =
-      CList.map2 (fun (wit, (evar_env, ev, evi, local_context, type_)) entry ->
-          let id =
-            match Evd.evar_ident ev sigma with
-            | Some id -> id
-            | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
-          in
-          let entry, args = shrink_entry local_context entry in
-          let cst = Declare.declare_constant id (Entries.DefinitionEntry entry, kind) in
-          let sigma, app = Evarutil.new_global !evd (ConstRef cst) in
-          evd := Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma;
-          cst)
-        (CList.combine (List.rev !wits) types) proof_obj.Proof_global.entries
-    in
-    hook recobls !evd
-end
+        let entry, args = Abstract.shrink_entry local_context entry in
+        let cst = Declare.declare_constant id (Entries.DefinitionEntry entry, kind) in
+        let sigma, app = Evarutil.new_global !evd (ConstRef cst) in
+        evd := Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma;
+        cst)
+      (CList.combine (List.rev !wits) types) proof_obj.Proof_global.entries
+  in
+  hook recobls !evd
 
 let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   (* Invariant (uh) *)
@@ -682,4 +631,4 @@ let save_lemma_proved ?proof ?lemma ~opaque ~idopt =
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~idopt ~opaque ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
-    Equations.finish_proved opaque idopt proof_obj hook i types wits sigma
+    finish_proved_equations opaque idopt proof_obj hook i types wits sigma
