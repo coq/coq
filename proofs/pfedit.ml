@@ -141,10 +141,10 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let gk = Global ImportDefaultBehavior, poly, Proof Theorem in
   let ce, status, univs =
     build_constant_by_tactic id sigma sign ~goal_kind:gk typ tac in
-  let body = Future.force ce.const_entry_body in
+  let body, eff = Future.force ce.const_entry_body in
   let (cb, ctx) =
-    if side_eff then Safe_typing.inline_private_constants env body
-    else fst body
+    if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)
+    else body
   in
   let univs = UState.merge ~sideff:side_eff ~extend:true Evd.univ_rigid univs ctx in
   cb, status, univs
@@ -195,5 +195,6 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
      other goals that were already present during its invocation, so that
      those goals rely on effects that are not present anymore. Hopefully,
      this hack will work in most cases. *)
+  let neff = neff.Evd.seff_private in
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
   ans, sigma

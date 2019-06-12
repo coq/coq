@@ -107,8 +107,3 @@ type module_entry =
   | MType of module_params_entry * module_struct_entry
   | MExpr of
       module_params_entry * module_struct_entry * module_struct_entry option
-
-(** Not used by the kernel. *)
-type side_effect_role =
-  | Subproof
-  | Schema of inductive * string

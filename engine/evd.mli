@@ -307,10 +307,22 @@ val dependent_evar_ident : Evar.t -> evar_map -> Id.t
 
 (** {5 Side-effects} *)
 
-val emit_side_effects : Safe_typing.private_constants -> evar_map -> evar_map
+type side_effect_role =
+| Schema of inductive * string
+
+type side_effects = {
+  seff_private : Safe_typing.private_constants;
+  seff_roles : side_effect_role Cmap.t;
+}
+
+val empty_side_effects : side_effects
+
+val concat_side_effects : side_effects -> side_effects -> side_effects
+
+val emit_side_effects : side_effects -> evar_map -> evar_map
 (** Push a side-effect into the evar map. *)
 
-val eval_side_effects : evar_map -> Safe_typing.private_constants
+val eval_side_effects : evar_map -> side_effects
 (** Return the effects contained in the evar map. *)
 
 val drop_side_effects : evar_map -> evar_map

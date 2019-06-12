@@ -31,9 +31,9 @@ open Pp
 (* Registering schemes in the environment *)
 
 type mutual_scheme_object_function =
-  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Safe_typing.private_constants
+  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Evd.side_effects
 type individual_scheme_object_function =
-  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Safe_typing.private_constants
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Evd.side_effects
 
 type 'a scheme_kind = string
 
@@ -124,7 +124,7 @@ let define internal role id c poly univs =
   let entry = {
     const_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),
-                       Safe_typing.empty_private_constants);
+                       Evd.empty_side_effects);
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_universes = univs;
@@ -145,10 +145,10 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let role = Entries.Schema (ind, kind) in
+  let role = Evd.Schema (ind, kind) in
   let const, neff = define mode role id c (Declareops.inductive_is_polymorphic mib) ctx in
   declare_scheme kind [|ind,const|];
-  const, Safe_typing.concat_private neff eff
+  const, Evd.concat_side_effects neff eff
 
 let define_individual_scheme kind mode names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
@@ -163,9 +163,9 @@ let define_mutual_scheme_base kind suff f mode names mind =
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
-    let role = Entries.Schema ((mind, i), kind)in
+    let role = Evd.Schema ((mind, i), kind)in
     let cst, neff = define mode role id cl (Declareops.inductive_is_polymorphic mib) ctx in
-    (Safe_typing.concat_private neff effs, cst)
+    (Evd.concat_side_effects neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
@@ -180,7 +180,7 @@ let define_mutual_scheme kind mode names mind =
 
 let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
-  s, Safe_typing.empty_private_constants
+  s, Evd.empty_side_effects
 
 let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind

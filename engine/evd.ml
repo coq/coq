@@ -430,6 +430,14 @@ type evar_flags =
     restricted_evars : Evar.t Evar.Map.t;
     typeclass_evars : Evar.Set.t }
 
+type side_effect_role =
+| Schema of inductive * string
+
+type side_effects = {
+  seff_private : Safe_typing.private_constants;
+  seff_roles : side_effect_role Cmap.t;
+}
+
 type evar_map = {
   (* Existential variables *)
   defn_evars : evar_info EvMap.t;
@@ -444,7 +452,7 @@ type evar_map = {
   metas      : clbinding Metamap.t;
   evar_flags : evar_flags;
   (** Interactive proofs *)
-  effects    : Safe_typing.private_constants;
+  effects    : side_effects;
   future_goals : Evar.t list; (** list of newly created evars, to be
                                   eventually turned into goals if not solved.*)
   principal_future_goal : Evar.t option; (** if [Some e], [e] must be
@@ -672,6 +680,11 @@ let empty_evar_flags =
     restricted_evars = Evar.Map.empty;
     typeclass_evars = Evar.Set.empty }
 
+let empty_side_effects = {
+  seff_private = Safe_typing.empty_private_constants;
+  seff_roles = Cmap.empty;
+}
+
 let empty = {
   defn_evars = EvMap.empty;
   undf_evars = EvMap.empty;
@@ -680,7 +693,7 @@ let empty = {
   last_mods  = Evar.Set.empty;
   evar_flags = empty_evar_flags;
   metas      = Metamap.empty;
-  effects    = Safe_typing.empty_private_constants;
+  effects    = empty_side_effects;
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
@@ -1011,12 +1024,17 @@ exception UniversesDiffer = UState.UniversesDiffer
 (**********************************************************)
 (* Side effects *)
 
+let concat_side_effects eff eff' = {
+  seff_private = Safe_typing.concat_private eff.seff_private eff'.seff_private;
+  seff_roles = Cmap.fold Cmap.add eff.seff_roles eff'.seff_roles;
+}
+
 let emit_side_effects eff evd =
-  { evd with effects = Safe_typing.concat_private eff evd.effects;
-	     universes = UState.emit_side_effects eff evd.universes }
+  let effects = concat_side_effects eff evd.effects in
+  { evd with effects; universes = UState.emit_side_effects eff.seff_private evd.universes }
 
 let drop_side_effects evd =
-  { evd with effects = Safe_typing.empty_private_constants; }
+  { evd with effects = empty_side_effects; }
 
 let eval_side_effects evd = evd.effects
 

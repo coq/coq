@@ -44,7 +44,7 @@ val jmeq_refl : unit -> EConstr.constr
 
 val save
   :  Id.t
-  -> Safe_typing.private_constants Entries.definition_entry
+  -> Evd.side_effects Entries.definition_entry
   -> ?hook:Lemmas.declaration_hook
   -> UState.t
   -> Decl_kinds.goal_kind

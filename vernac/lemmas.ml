@@ -112,7 +112,7 @@ let adjust_guardness_conditions const = function
 	  List.interval 0 (List.length ((lam_assum c))))
 	  lemma_guard (Array.to_list fixdefs) in
 *)
-              let env = Safe_typing.push_private_constants env eff in
+              let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
               let indexes =
                 search_guard env
                   possible_indexes fixdecls in

@@ -15,7 +15,7 @@ val declare_definition
   : Id.t
   -> definition_kind
   -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
-  -> Safe_typing.private_constants Entries.definition_entry
+  -> Evd.side_effects Entries.definition_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
   -> GlobRef.t
@@ -27,7 +27,7 @@ val declare_fix
   -> UnivNames.universe_binders
   -> Entries.universes_entry
   -> Id.t
-  -> Safe_typing.private_constants Entries.proof_output
+  -> Evd.side_effects Entries.proof_output
   -> Constr.types
   -> Impargs.manual_implicits
   -> GlobRef.t
@@ -36,7 +36,7 @@ val prepare_definition : allow_evars:bool ->
   ?opaque:bool -> ?inline:bool -> poly:bool ->
   Evd.evar_map -> UState.universe_decl ->
   types:EConstr.t option -> body:EConstr.t ->
-  Evd.evar_map * Safe_typing.private_constants Entries.definition_entry
+  Evd.evar_map * Evd.side_effects Entries.definition_entry
 
 val prepare_parameter : allow_evars:bool ->
   poly:bool -> Evd.evar_map -> UState.universe_decl -> EConstr.types ->

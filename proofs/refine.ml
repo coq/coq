@@ -60,7 +60,7 @@ let generic_refine ~typecheck f gl =
   let evs = Evd.save_future_goals sigma in
   (* Redo the effects in sigma in the monad's env *)
   let privates_csts = Evd.eval_side_effects sigma in
-  let env = Safe_typing.push_private_constants env privates_csts in
+  let env = Safe_typing.push_private_constants env privates_csts.Evd.seff_private in
   (* Check that the introduced evars are well-typed *)
   let fold accu ev = typecheck_evar ev env accu in
   let sigma = if typecheck then Evd.fold_future_goals fold sigma evs else sigma in

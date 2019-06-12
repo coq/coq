@@ -29,7 +29,7 @@ type lemma_possible_guards = int list list
 
 type proof_object = {
   id : Names.Id.t;
-  entries : Safe_typing.private_constants Entries.definition_entry list;
+  entries : Evd.side_effects Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
@@ -134,7 +134,7 @@ let get_open_goals ps =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) stack) +
   List.length shelf
 
-type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
+type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let private_poly_univs =
   let b = ref true in
@@ -172,7 +172,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
         let body = c in
         let allow_deferred =
           not poly && (keep_body_ucst_separate ||
-          not (Safe_typing.empty_private_constants = eff))
+          not (Safe_typing.empty_private_constants = eff.Evd.seff_private))
         in
         let typ = if allow_deferred then t else nf t in
         let used_univs_body = Vars.universes_of_constr body in

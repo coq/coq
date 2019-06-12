@@ -12,8 +12,8 @@ open Constr
 open Context
 open Context.Named.Declaration
 
-let map_const_entry_body (f:constr->constr) (x:Safe_typing.private_constants Entries.const_entry_body)
-    : Safe_typing.private_constants Entries.const_entry_body =
+let map_const_entry_body (f:constr->constr) (x: Evd.side_effects Entries.const_entry_body)
+    : Evd.side_effects Entries.const_entry_body =
   Future.chain x begin fun ((b,ctx),fx) ->
     (f b , ctx) , fx
   end

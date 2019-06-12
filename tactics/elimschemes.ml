@@ -51,7 +51,7 @@ let optimize_non_type_induction_scheme kind dep sort _ ind =
   else
     let sigma, pind = Evd.fresh_inductive_instance env sigma ind in
     let sigma, c = build_induction_scheme env sigma pind dep sort in
-      (c, Evd.evar_universe_context sigma), Safe_typing.empty_private_constants
+      (c, Evd.evar_universe_context sigma), Evd.empty_side_effects
 
 let build_induction_scheme_in_type dep sort ind =
   let env = Global.env () in
@@ -62,15 +62,15 @@ let build_induction_scheme_in_type dep sort ind =
 
 let rect_scheme_kind_from_type =
   declare_individual_scheme_object "_rect_nodep"
-    (fun _ x -> build_induction_scheme_in_type false InType x, Safe_typing.empty_private_constants)
+    (fun _ x -> build_induction_scheme_in_type false InType x, Evd.empty_side_effects)
 
 let rect_scheme_kind_from_prop =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_prop"
-    (fun _ x -> build_induction_scheme_in_type false InType x, Safe_typing.empty_private_constants)
+    (fun _ x -> build_induction_scheme_in_type false InType x, Evd.empty_side_effects)
 
 let rect_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
-    (fun _ x -> build_induction_scheme_in_type true InType x, Safe_typing.empty_private_constants)
+    (fun _ x -> build_induction_scheme_in_type true InType x, Evd.empty_side_effects)
 
 let rec_scheme_kind_from_type =
   declare_individual_scheme_object "_rec_nodep" ~aux:"_rec_nodep_from_type"
@@ -90,7 +90,7 @@ let ind_scheme_kind_from_type =
 
 let sind_scheme_kind_from_type =
   declare_individual_scheme_object "_sind_nodep"
-  (fun _ x -> build_induction_scheme_in_type false InSProp x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_induction_scheme_in_type false InSProp x, Evd.empty_side_effects)
 
 let ind_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
@@ -98,7 +98,7 @@ let ind_dep_scheme_kind_from_type =
 
 let sind_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_sind" ~aux:"_sind_from_type"
-  (fun _ x -> build_induction_scheme_in_type true InSProp x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_induction_scheme_in_type true InSProp x, Evd.empty_side_effects)
 
 let ind_scheme_kind_from_prop =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
@@ -106,7 +106,7 @@ let ind_scheme_kind_from_prop =
 
 let sind_scheme_kind_from_prop =
   declare_individual_scheme_object "_sind" ~aux:"_sind_from_prop"
-  (fun _ x -> build_induction_scheme_in_type false InSProp x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_induction_scheme_in_type false InSProp x, Evd.empty_side_effects)
 
 let nondep_elim_scheme from_kind to_kind =
   match from_kind, to_kind with
@@ -130,24 +130,24 @@ let build_case_analysis_scheme_in_type dep sort ind =
 
 let case_scheme_kind_from_type =
   declare_individual_scheme_object "_case_nodep"
-  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Evd.empty_side_effects)
 
 let case_scheme_kind_from_prop =
   declare_individual_scheme_object "_case" ~aux:"_case_from_prop"
-  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type false InType x, Evd.empty_side_effects)
 
 let case_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_case" ~aux:"_case_from_type"
-  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Evd.empty_side_effects)
 
 let case_dep_scheme_kind_from_type_in_prop =
   declare_individual_scheme_object "_casep_dep"
-  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Evd.empty_side_effects)
 
 let case_dep_scheme_kind_from_prop =
   declare_individual_scheme_object "_case_dep"
-  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type true InType x, Evd.empty_side_effects)
 
 let case_dep_scheme_kind_from_prop_in_prop =
   declare_individual_scheme_object "_casep"
-  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Safe_typing.empty_private_constants)
+  (fun _ x -> build_case_analysis_scheme_in_type true InProp x, Evd.empty_side_effects)

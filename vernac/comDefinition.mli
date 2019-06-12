@@ -41,5 +41,5 @@ val interp_definition
   -> red_expr option
   -> constr_expr
   -> constr_expr option
-  -> Safe_typing.private_constants definition_entry *
+  -> Evd.side_effects definition_entry *
      Evd.evar_map * UState.universe_decl * Impargs.manual_implicits

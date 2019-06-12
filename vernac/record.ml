@@ -344,7 +344,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags f
 	        try
 		  let entry = {
 		    const_entry_body =
-		      Future.from_val (Safe_typing.mk_pure_proof proj);
+                      Future.from_val ((proj, Univ.ContextSet.empty), Evd.empty_side_effects);
 		    const_entry_secctx = None;
 		    const_entry_type = Some projtyp;
                     const_entry_universes = ctx;

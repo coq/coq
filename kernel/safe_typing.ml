@@ -232,7 +232,6 @@ type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   seff_constant : Constant.t;
   seff_body : Constr.t Declarations.constant_body;
-  seff_role : Entries.side_effect_role;
 }
 
 module SideEffects :
@@ -536,8 +535,7 @@ type 'a effect_entry =
 type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
 
-type exported_private_constant = 
-  Constant.t * Entries.side_effect_role
+type exported_private_constant = Constant.t
 
 let add_constant_aux ~in_section senv (kn, cb) =
   let l = Constant.label kn in
@@ -699,7 +697,7 @@ let constant_entry_of_side_effect eff =
     const_entry_inline_code = cb.const_inline_code }
 
 let export_eff eff =
-  (eff.seff_constant, eff.seff_body, eff.seff_role)
+  (eff.seff_constant, eff.seff_body)
 
 let export_side_effects mb env (b_ctx, eff) =
       let not_exists e =
@@ -750,9 +748,9 @@ let n_univs cb = match cb.const_universes with
 
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let map (kn, cb, _) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val (p, Univ.ContextSet.empty))) cb) in
+  let map (kn, cb) = (kn, map_constant (fun p -> Opaqueproof.create ~univs:(n_univs cb) (Future.from_val (p, Univ.ContextSet.empty))) cb) in
   let bodies = List.map map exported in
-  let exported = List.map (fun (kn, _, r) -> (kn, r)) exported in
+  let exported = List.map (fun (kn, _) -> kn) exported in
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
 
@@ -762,7 +760,7 @@ let add_recipe ~in_section l r senv =
   let senv = add_constant_aux ~in_section senv (kn, cb) in
   kn, senv
 
-let add_constant ?role ~in_section l decl senv =
+let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl senv : (Constant.t * a) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
     let cb = 
       match decl with
@@ -786,9 +784,9 @@ let add_constant ?role ~in_section l decl senv =
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
-  let eff = match role with
-  | None -> empty_private_constants
-  | Some role ->
+  let eff : a = match side_effect with
+  | PureEntry -> ()
+  | EffectEntry ->
     let body, univs = match cb.const_body with
     | (Primitive _ | Undef _) -> assert false
     | Def c -> (Def c, cb.const_universes)
@@ -808,7 +806,6 @@ let add_constant ?role ~in_section l decl senv =
       from_env = from_env;
       seff_constant = kn;
       seff_body = cb;
-      seff_role = role;
     } in
     SideEffects.add eff empty_private_constants
   in

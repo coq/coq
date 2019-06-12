@@ -35,7 +35,7 @@ type lemma_possible_guards = int list list
 
 type proof_object = {
   id : Names.Id.t;
-  entries : Safe_typing.private_constants Entries.definition_entry list;
+  entries : Evd.side_effects Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
@@ -80,7 +80,7 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.
  * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Constr.t * Safe_typing.private_constants) list * UState.t
+type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
