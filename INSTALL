@@ -50,10 +50,15 @@ WHAT DO YOU NEED ?
    findlib/ocamlfind as Coq's makefile will use it to locate the
    libraries during the build.
 
+   Debian / Ubuntu users can get the necessary system packages for
+   CoqIDE with:
+
+   $ sudo apt-get install libgtksourceview-3.0-dev
+
    Opam (https://opam.ocaml.org/) is recommended to install OCaml and
    the corresponding packages.
 
-   $ opam install num ocamlfind lablgtk conf-gtksourceview
+   $ opam install num ocamlfind lablgtk3-sourceview3
 
    should get you a reasonable OCaml environment to compile Coq.
 
