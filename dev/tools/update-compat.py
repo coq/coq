@@ -73,8 +73,6 @@ FLAGS_ML_PATH = os.path.join(ROOT_PATH, 'lib', 'flags.ml')
 COQARGS_ML_PATH = os.path.join(ROOT_PATH, 'toplevel', 'coqargs.ml')
 G_VERNAC_PATH = os.path.join(ROOT_PATH, 'vernac', 'g_vernac.mlg')
 DOC_INDEX_PATH = os.path.join(ROOT_PATH, 'doc', 'stdlib', 'index-list.html.template')
-BUG_4798_PATH = os.path.join(ROOT_PATH, 'test-suite', 'bugs', 'closed', 'bug_4798.v')
-BUG_9166_PATH = os.path.join(ROOT_PATH, 'test-suite', 'bugs', 'closed', 'bug_9166.v')
 TEST_SUITE_RUN_PATH = os.path.join(ROOT_PATH, 'test-suite', 'tools', 'update-compat', 'run.sh')
 TEST_SUITE_PATHS = tuple(os.path.join(ROOT_PATH, 'test-suite', 'success', i)
                          for i in ('CompatOldOldFlag.v', 'CompatOldFlag.v', 'CompatPreviousFlag.v', 'CompatCurrentFlag.v'))
@@ -401,34 +399,6 @@ dev/tools/update-compat.py --assert-unchanged %s || exit $?
 ''' % ' '.join([('--master' if args['master'] else ''), ('--release' if args['release'] else '')]).strip()
     update_if_changed(contents, new_contents, TEST_SUITE_RUN_PATH, pass_through_shebang=True, **args)
 
-def update_bug_4789(new_versions, **args):
-    # we always update this compat notation to oldest
-    # currently-supported compat version, which should never be the
-    # current version
-    with open(BUG_4798_PATH, 'r') as f: contents = f.read()
-    new_contents = BUG_HEADER + r"""Check match 2 with 0 => 0 | S n => n end.
-Notation "|" := 1 (compat "%s").
-Check match 2 with 0 => 0 | S n => n end. (* fails *)
-""" % new_versions[0]
-    update_if_changed(contents, new_contents, BUG_4798_PATH, **args)
-
-def update_bug_9166(new_versions, **args):
-    # we always update this compat notation to oldest
-    # currently-supported compat version, which should never be the
-    # current version
-    with open(BUG_9166_PATH, 'r') as f: contents = f.read()
-    new_contents = BUG_HEADER + r"""Set Warnings "+deprecated".
-
-Notation bar := option (compat "%s").
-
-Definition foo (x: nat) : nat :=
-  match x with
-  | 0 => 0
-  | S bar => bar
-  end.
-""" % new_versions[0]
-    update_if_changed(contents, new_contents, BUG_9166_PATH, **args)
-
 def update_compat_notations_in(old_versions, new_versions, contents):
     for v in old_versions:
         if v not in new_versions:
@@ -508,7 +478,5 @@ if __name__ == '__main__':
     update_test_suite(new_versions, **args)
     update_test_suite_run(**args)
     update_doc_index(new_versions, **args)
-    update_bug_4789(new_versions, **args)
-    update_bug_9166(new_versions, **args)
     update_compat_notations(known_versions, new_versions, **args)
     display_git_grep(known_versions, new_versions)

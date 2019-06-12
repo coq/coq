@@ -19,20 +19,24 @@ open Notation_term
 
 (* Syntactic definitions. *)
 
-type version = Flags.compat_version option
+type syndef =
+  { syndef_pattern : interpretation;
+    syndef_onlyparsing : bool;
+    syndef_deprecation : Deprecation.t option;
+  }
 
 let syntax_table =
-  Summary.ref (KNmap.empty : (interpretation*version) KNmap.t)
-    ~name:"SYNTAXCONSTANT"
+  Summary.ref (KNmap.empty : syndef KNmap.t)
+    ~name:"SYNDEFS"
 
-let add_syntax_constant kn c onlyparse =
-  syntax_table := KNmap.add kn (c,onlyparse) !syntax_table
+let add_syntax_constant kn syndef =
+  syntax_table := KNmap.add kn syndef !syntax_table
 
-let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
+let load_syntax_constant i ((sp,kn),(_local,syndef)) =
   if Nametab.exists_cci sp then
     user_err ~hdr:"cache_syntax_constant"
       (Id.print (basename sp) ++ str " already exists");
-  add_syntax_constant kn pat onlyparse;
+  add_syntax_constant kn syndef;
   Nametab.push_syndef (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
@@ -42,30 +46,29 @@ let is_alias_of_already_visible_name sp = function
   | _ ->
       false
 
-let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
+let open_syntax_constant i ((sp,kn),(_local,syndef)) =
+  let pat = syndef.syndef_pattern in
   if not (Int.equal i 1 && is_alias_of_already_visible_name sp pat) then begin
     Nametab.push_syndef (Nametab.Exactly i) sp kn;
-    match onlyparse with
-    | None ->
+    if not syndef.syndef_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)
       Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
-    | _ -> ()
   end
 
 let cache_syntax_constant d =
   load_syntax_constant 1 d;
   open_syntax_constant 1 d
 
-let subst_syntax_constant (subst,(local,pat,onlyparse)) =
-  (local,Notation_ops.subst_interpretation subst pat,onlyparse)
+let subst_syntax_constant (subst,(local,syndef)) =
+  let syndef_pattern = Notation_ops.subst_interpretation subst syndef.syndef_pattern in
+  (local, { syndef with syndef_pattern })
 
-let classify_syntax_constant (local,_,_ as o) =
+let classify_syntax_constant (local,_ as o) =
   if local then Dispose else Substitute o
 
-let in_syntax_constant
- : bool * interpretation * Flags.compat_version option -> obj =
-  declare_object {(default_object "SYNTAXCONSTANT") with
+let in_syntax_constant : (bool * syndef) -> obj =
+  declare_object {(default_object "SYNDEF") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
     open_function = open_syntax_constant;
@@ -79,36 +82,31 @@ type syndef_interpretation = (Id.t * subscopes) list * notation_constr
 let in_pat (ids,ac) = (List.map (fun (id,sc) -> (id,((Constrexpr.InConstrEntrySomeLevel,sc),NtnTypeConstr))) ids,ac)
 let out_pat (ids,ac) = (List.map (fun (id,((_,sc),typ)) -> (id,sc)) ids,ac)
 
-let declare_syntactic_definition local id onlyparse pat =
-  let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()
+let declare_syntactic_definition ~local deprecation id ~onlyparsing pat =
+  let syndef =
+    { syndef_pattern = in_pat pat;
+      syndef_onlyparsing = onlyparsing;
+      syndef_deprecation = deprecation;
+    }
+  in
+  let _ = add_leaf id (in_syntax_constant (local,syndef)) in ()
 
 let pr_syndef kn = pr_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn)
 
-let pr_compat_warning (kn, def, v) =
-  let pp_def = match def with
-    | [], NRef r -> spc () ++ str "is" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r
-    | _ -> strbrk " is a compatibility notation"
-  in
-  pr_syndef kn ++ pp_def
-
-let warn_compatibility_notation =
-  CWarnings.(create ~name:"compatibility-notation"
-                    ~category:"deprecated" ~default:Enabled pr_compat_warning)
-
-let verbose_compat ?loc kn def = function
-  | Some v when Flags.version_strictly_greater v ->
-     warn_compatibility_notation ?loc (kn, def, v)
-  | _ -> ()
+let warn_deprecated_syntactic_definition =
+  Deprecation.create_warning ~object_name:"Notation" ~warning_name:"deprecated-syntactic-definition"
+    pr_syndef
 
 let search_syntactic_definition ?loc kn =
-  let pat,v = KNmap.find kn !syntax_table in
-  let def = out_pat pat in
-  verbose_compat ?loc kn def v;
+  let syndef = KNmap.find kn !syntax_table in
+  let def = out_pat syndef.syndef_pattern in
+  Option.iter (fun d -> warn_deprecated_syntactic_definition (kn,d)) syndef.syndef_deprecation;
   def
 
 let search_filtered_syntactic_definition ?loc filter kn =
-  let pat,v = KNmap.find kn !syntax_table in
-  let def = out_pat pat in
+  let syndef = KNmap.find kn !syntax_table in
+  let def = out_pat syndef.syndef_pattern in
   let res = filter def in
-  (match res with Some _ -> verbose_compat ?loc kn def v | None -> ());
+  if Option.has_some res then
+    Option.iter (fun d -> warn_deprecated_syntactic_definition (kn,d)) syndef.syndef_deprecation;
   res

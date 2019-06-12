@@ -72,6 +72,7 @@ type notation_location = (DirPath.t * DirPath.t) * string
 type notation_data = {
   not_interp : interpretation;
   not_location : notation_location;
+  not_deprecation : Deprecation.t option;
 }
 
 type scope = {
@@ -1095,7 +1096,7 @@ let warn_notation_overridden =
                     str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
                     ++ strbrk "was already used" ++ which_scope ++ str ".")
 
-let declare_notation_interpretation ntn scopt pat df ~onlyprint =
+let declare_notation_interpretation ntn scopt pat df ~onlyprint deprecation =
   let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   if not onlyprint then begin
@@ -1109,6 +1110,7 @@ let declare_notation_interpretation ntn scopt pat df ~onlyprint =
     let notdata = {
       not_interp = pat;
       not_location = df;
+      not_deprecation = deprecation;
     } in
     let sc = { sc with notations = NotationMap.add ntn notdata sc.notations } in
     scope_map := String.Map.add scope sc !scope_map
@@ -1125,10 +1127,10 @@ let declare_uninterpretation rule (metas,c as pat) =
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
   | Scope scope :: scopes ->
-      (try let (pat,df) = find scope in pat,(df,Some scope)
+      (try let n = find scope in (n,Some scope)
        with Not_found -> find_interpretation ntn find scopes)
   | SingleNotation ntn'::scopes when notation_eq ntn' ntn ->
-      (try let (pat,df) = find default_scope in pat,(df,None)
+      (try let n = find default_scope in (n,None)
        with Not_found ->
          (* e.g. because single notation only for constr, not cases_pattern *)
          find_interpretation ntn find scopes)
@@ -1136,8 +1138,7 @@ let rec find_interpretation ntn find = function
       find_interpretation ntn find scopes
 
 let find_notation ntn sc =
-  let n = NotationMap.find ntn (find_scope sc).notations in
-  (n.not_interp, n.not_location)
+  NotationMap.find ntn (find_scope sc).notations
 
 let notation_of_prim_token = function
   | Numeral (SPlus,n) -> InConstrEntrySomeLevel, NumTok.to_string n
@@ -1147,7 +1148,9 @@ let notation_of_prim_token = function
 let find_prim_token check_allowed ?loc p sc =
   (* Try for a user-defined numerical notation *)
   try
-    let (_,c),df = find_notation (notation_of_prim_token p) sc in
+    let n = find_notation (notation_of_prim_token p) sc in
+    let (_,c) = n.not_interp in
+    let df = n.not_location in
     let pat = Notation_ops.glob_constr_of_notation_constr ?loc c in
     check_allowed pat;
     pat, df
@@ -1167,7 +1170,9 @@ let find_prim_token check_allowed ?loc p sc =
 let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
   let p_as_ntn = try notation_of_prim_token p with Not_found -> InConstrEntrySomeLevel,"" in
-  try find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes
+  try
+    let (pat,loc), sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
+    pat, (loc,sc)
   with Not_found ->
     user_err ?loc ~hdr:"interp_prim_token"
     ((match p with
@@ -1192,11 +1197,18 @@ let rec check_allowed_ref_in_pat looked_for = DAst.(with_val (function
 let interp_prim_token_cases_pattern_expr ?loc looked_for p =
   interp_prim_token_gen ?loc (check_allowed_ref_in_pat looked_for) p
 
+let warn_deprecated_notation =
+  Deprecation.create_warning ~object_name:"Notation" ~warning_name:"deprecated-notation"
+    pr_notation
+
 let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
-  try find_interpretation ntn (find_notation ntn) scopes
+  try
+    let (n,sc) = find_interpretation ntn (find_notation ntn) scopes in
+    Option.iter (fun d -> warn_deprecated_notation (ntn,d)) n.not_deprecation;
+    n.not_interp, (n.not_location, sc)
   with Not_found ->
-    user_err ?loc 
+    user_err ?loc
     (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
 let uninterp_notations c =

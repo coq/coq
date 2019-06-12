@@ -1508,13 +1508,21 @@ the following attributes names are recognized:
     Takes as value the optional attributes ``since`` and ``note``;
     both have a string value.
 
-    This attribute can trigger the following warnings:
+    This attribute is supported by the following commands: :cmd:`Ltac`,
+    :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`.
+
+    It can trigger the following warnings:
 
     .. warn:: Tactic @qualid is deprecated since @string. @string.
        :undocumented:
 
     .. warn:: Tactic Notation @qualid is deprecated since @string. @string.
        :undocumented:
+
+    .. warn:: Notation @string__1 is deprecated since @string__2. @string__3.
+
+       :n:`@string__1` is the actual notation, :n:`@string__2` is the version number,
+       :n:`@string__3` is the note.
 
 .. example::
 

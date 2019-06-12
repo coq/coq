@@ -8,17 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open Notation_term
+type t = { since : string option ; note : string option }
 
-(** Syntactic definitions. *)
+let make ?since ?note () = { since ; note }
 
-type syndef_interpretation = (Id.t * subscopes) list * notation_constr
-
-val declare_syntactic_definition : local:bool -> Deprecation.t option -> Id.t ->
-  onlyparsing:bool -> syndef_interpretation -> unit
-
-val search_syntactic_definition : ?loc:Loc.t -> KerName.t -> syndef_interpretation
-
-val search_filtered_syntactic_definition : ?loc:Loc.t ->
-  (syndef_interpretation -> 'a option) -> KerName.t -> 'a option
+let create_warning ~object_name ~warning_name name_printer =
+  let open Pp in
+  CWarnings.create ~name:warning_name ~category:"deprecated"
+    (fun (qid,depr) -> str object_name ++ spc () ++ name_printer qid ++
+      strbrk " is deprecated" ++
+      pr_opt (fun since -> str "since " ++ str since) depr.since ++
+      str "." ++ pr_opt (fun note -> str note) depr.note)
