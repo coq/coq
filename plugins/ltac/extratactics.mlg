@@ -336,7 +336,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
 
-let classify_hint _ = VtSideff [], VtLater
+let classify_hint _ = VtSideff ([], VtLater)
 
 }
 
@@ -422,7 +422,7 @@ END
 open Inv
 open Leminv
 
-let seff id = VtSideff [id], VtLater
+let seff id = VtSideff ([id], VtLater)
 
 }
 

@@ -186,14 +186,14 @@ let classify_as_Fixpoint recsl =
 
 let classify_funind recsl =
   match classify_as_Fixpoint recsl with
-  | Vernacextend.VtSideff ids, _
+  | Vernacextend.VtSideff (ids, _)
     when is_proof_termination_interactively_checked recsl ->
-      Vernacextend.(VtStartProof (GuaranteesOpacity, ids), VtLater)
+      Vernacextend.(VtStartProof (GuaranteesOpacity, ids))
   | x -> x
 
 let is_interactive recsl =
   match classify_funind recsl with
-  | Vernacextend.VtStartProof _, _ -> true
+  | Vernacextend.VtStartProof _ -> true
   | _ -> false
 
 }
@@ -243,7 +243,7 @@ let warning_error names e =
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
 | ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
-   => { Vernacextend.(VtSideff(List.map pi1 fas), VtLater) }
+   => { Vernacextend.(VtSideff(List.map pi1 fas, VtLater)) }
    ->
     { begin
         try
@@ -275,7 +275,7 @@ END
 
 VERNAC COMMAND EXTEND NewFunctionalCase
 | ["Functional" "Case" fun_scheme_arg(fas) ]
-  => { Vernacextend.(VtSideff[pi1 fas], VtLater) }
+  => { Vernacextend.(VtSideff([pi1 fas], VtLater)) }
   -> { Functional_principles_types.build_case_scheme fas }
 END
 

@@ -32,7 +32,11 @@ type vernac_keep_as = VtKeepAxiom | VtKeepDefined | VtKeepOpaque
 
 type vernac_qed_type = VtKeep of vernac_keep_as | VtDrop
 
-type vernac_type =
+type vernac_when =
+  | VtNow
+  | VtLater
+
+type vernac_classification =
   (* Start of a proof *)
   | VtStartProof of vernac_start
   (* Command altering the global state, bad for parallel
@@ -53,7 +57,7 @@ type vernac_type =
   (* To be removed *)
   | VtMeta
 and vernac_start = opacity_guarantee * Names.Id.t list
-and vernac_sideff_type = Names.Id.t list
+and vernac_sideff_type = Names.Id.t list * vernac_when
 and opacity_guarantee =
   | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
   | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
@@ -63,11 +67,6 @@ and solving_tac = bool (** a terminator *)
 and anon_abstracting_tac = bool (** abstracting anonymously its result *)
 
 and proof_block_name = string (** open type of delimiters *)
-
-type vernac_when =
-  | VtNow
-  | VtLater
-type vernac_classification = vernac_type * vernac_when
 
 (** Interpretation of extended vernac phrases. *)
 

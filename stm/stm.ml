@@ -1563,7 +1563,7 @@ end = struct (* {{{ *)
   let perform_states query =
     if query = [] then [] else
     let is_tac e = match Vernac_classifier.classify_vernac e with
-    | VtProofStep _, _ -> true
+    | VtProofStep _ -> true
     | _ -> false
     in
     let initial =
@@ -2860,12 +2860,12 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
         "  classified as: " ^ Vernac_classifier.string_of_vernac_classification c);
       match c with
       (* Meta *)
-      | VtMeta, _ ->
+      | VtMeta ->
         let id = Backtrack.undo_vernac_classifier expr ~doc in
         process_back_meta_command ~newtip ~head id x
 
       (* Query *)
-      | VtQuery, w ->
+      | VtQuery ->
           let id = VCS.new_node ~id:newtip proof_mode () in
           let queue =
             if VCS.is_vio_doc () &&
@@ -2875,10 +2875,10 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
           VCS.set_parsing_state id head_parsing;
-          Backtrack.record (); assert (w == VtLater); `Ok
+          Backtrack.record (); `Ok
 
       (* Proof *)
-      | VtStartProof (guarantee, names), w ->
+      | VtStartProof (guarantee, names) ->
 
          if not (get_allow_nested_proofs ()) && VCS.proof_nesting () > 0 then
            "Nested proofs are not allowed unless you turn option Nested Proofs Allowed on."
@@ -2900,9 +2900,9 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
             VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
           end;
           VCS.set_parsing_state id head_parsing;
-          Backtrack.record (); assert (w == VtLater); `Ok
+          Backtrack.record (); `Ok
 
-      | VtProofStep { parallel; proof_block_detection = cblock }, w ->
+      | VtProofStep { parallel; proof_block_detection = cblock } ->
           let id = VCS.new_node ~id:newtip proof_mode () in
           let queue =
             match parallel with
@@ -2914,18 +2914,18 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
              detection should occur here.
           detect_proof_block id cblock; *)
           VCS.set_parsing_state id head_parsing;
-          Backtrack.record (); assert (w == VtLater); `Ok
+          Backtrack.record (); `Ok
 
-      | VtQed keep, w ->
+      | VtQed keep ->
           let valid = VCS.get_branch_pos head in
           let rc =
             merge_proof_branch ~valid ~id:newtip x keep head in
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); assert (w == VtLater);
+          Backtrack.record ();
           rc
 
       (* Side effect in a (still open) proof is replayed on all branches*)
-      | VtSideff l, w ->
+      | VtSideff (l, w) ->
           let id = VCS.new_node ~id:newtip proof_mode () in
           let new_ids =
             match (VCS.get_branch head).VCS.kind with
@@ -2961,15 +2961,13 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
               VCS.set_parsing_state id parsing_state) new_ids;
           `Ok
 
-      | VtProofMode pm, VtNow ->
+      | VtProofMode pm ->
         let proof_mode = Pvernac.lookup_proof_mode pm in
         let id = VCS.new_node ~id:newtip proof_mode () in
         VCS.commit id (mkTransCmd x [] false `MainQueue);
         VCS.set_parsing_state id head_parsing;
         Backtrack.record (); `Ok
 
-      | VtProofMode _, VtLater ->
-          anomaly(str"classifier: VtProofMode must imply VtNow.")
     end in
     let pr_rc rc = match rc with
       | `Ok -> Pp.(seq [str "newtip ("; str (Stateid.to_string (VCS.cur_tip ())); str ")"])
