@@ -331,7 +331,9 @@ IF "%CYGWIN_QUIET%" == "Y" (
 )
 
 IF "%GTK_FROM_SOURCES%"=="N" (
-  SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk3,mingw64-%ARCH%-gtksourceview3.0
+  SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk3,mingw64-%ARCH%-libxml2
+  REM gtksourceview3 is always built from sources until the bug in DLLMain is fixed in cygwin
+  REM SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtksourceview3.0
 )
 
 REM Cygwin setup sets proper ACLs (permissions) for folders it CREATES.
@@ -362,6 +364,9 @@ IF NOT "%APPVEYOR%" == "True" (
 
 ECHO "========== INSTALL CYGWIN =========="
 
+REM If you need to add packages, see https://cygwin.com/packages/package_list.html for package names
+REM In the description of each package you also find the file list and maintainer there
+
 IF "%RUNSETUP%"=="Y" (
   %SETUP% ^
     --proxy "%PROXY%" ^
@@ -376,6 +381,7 @@ IF "%RUNSETUP%"=="Y" (
     -P pkg-config ^
     -P mingw64-%ARCH%-binutils,mingw64-%ARCH%-gcc-core,mingw64-%ARCH%-gcc-g++,mingw64-%ARCH%-windows_default_manifest ^
     -P mingw64-%ARCH%-headers,mingw64-%ARCH%-runtime,mingw64-%ARCH%-pthreads,mingw64-%ARCH%-zlib ^
+    -P adwaita-icon-theme ^
     -P libiconv-devel,libunistring-devel,libncurses-devel ^
     -P gettext-devel,libgettextpo-devel ^
     -P libglib2.0-devel,libgdk_pixbuf2.0-devel ^
