@@ -58,7 +58,7 @@ module Stack : sig
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array
+  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red

@@ -94,6 +94,10 @@ type typing_flags = {
 
   cumulative_sprop : bool;
   (** SProp <= Type *)
+
+  allow_uip: bool;
+  (** Allow definitional UIP (breaks termination) *)
+
 }
 
 (* some contraints are in constant_constraints, some other may be in

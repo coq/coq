@@ -48,6 +48,7 @@ val map_inductive_type : (EConstr.constr -> EConstr.constr) -> inductive_type ->
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type  : int -> inductive_type -> inductive_type
 val substnl_ind_type : EConstr.constr list -> int -> inductive_type -> inductive_type
+val ind_of_ind_type : inductive_type -> inductive
 
 val relevance_of_inductive_type : env -> inductive_type -> Sorts.relevance
 
@@ -204,8 +205,11 @@ val make_case_info : env -> inductive -> Sorts.relevance -> case_style -> case_i
     Fail with an error if the elimination is dependent while the
     inductive type does not allow dependent elimination. *)
 val make_case_or_project :
-  env -> evar_map -> inductive_family -> case_info ->
+  env -> evar_map -> inductive_type -> case_info ->
   (* pred *) EConstr.constr -> (* term *) EConstr.constr -> (* branches *) EConstr.constr array -> EConstr.constr
+
+val make_case_invert : env -> inductive_type -> case_info
+  -> (EConstr.constr,EConstr.EInstance.t) case_invert
 
 (*i Compatibility
 val make_default_case_info : env -> case_style -> inductive -> case_info

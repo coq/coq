@@ -449,6 +449,7 @@ let same_flags {
      enable_VM;
      enable_native_compiler;
      cumulative_sprop;
+     allow_uip;
   } alt =
   check_guarded == alt.check_guarded &&
   check_positive == alt.check_positive &&
@@ -458,7 +459,8 @@ let same_flags {
   share_reduction == alt.share_reduction &&
   enable_VM == alt.enable_VM &&
   enable_native_compiler == alt.enable_native_compiler &&
-  cumulative_sprop == alt.cumulative_sprop
+  cumulative_sprop == alt.cumulative_sprop &&
+  allow_uip == alt.allow_uip
 [@warning "+9"]
 
 let set_cumulative_sprop b = map_universes (UGraph.set_cumulative_sprop b)

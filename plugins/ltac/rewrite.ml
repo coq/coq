@@ -923,8 +923,8 @@ let reset_env env =
   let env' = Global.env_of_context (Environ.named_context_val env) in
     Environ.push_rel_context (Environ.rel_context env) env'
 
-let fold_match env sigma c =
-  let (ci, p, c, brs) = destCase sigma c in
+let fold_match ?(force=false) env sigma c =
+  let (ci, p, iv, c, brs) = destCase sigma c in
   let cty = Retyping.get_type_of env sigma c in
   let dep, pred, exists, sk =
     let env', ctx, body =
@@ -1184,7 +1184,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
           | Fail | Identity -> b'
         in state, res
 
-      | Case (ci, p, c, brs) ->
+      | Case (ci, p, iv, c, brs) ->
         let cty = Retyping.get_type_of env (goalevars evars) c in
         let evars', eqty = app_poly_sort prop env evars coq_eq [| cty |] in
         let cstr' = Some eqty in
@@ -1194,7 +1194,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
         let state, res =
           match c' with
           | Success r ->
-            let case = mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs) in
+            let case = mkCase (ci, lift 1 p, map_invert (lift 1) iv, mkRel 1, Array.map (lift 1) brs) in
             let res = make_leibniz_proof env case ty r in
               state, Success (coerce env unfresh (prop,cstr) res)
           | Fail | Identity ->
@@ -1216,7 +1216,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
               in
                 match found with
                 | Some r ->
-                  let ctxc = mkCase (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' c'))) in
+                  let ctxc = mkCase (ci, lift 1 p, map_invert (lift 1) iv, lift 1 c, Array.of_list (List.rev (brs' c'))) in
                     state, Success (make_leibniz_proof env ctxc ty r)
                 | None -> state, c'
             else

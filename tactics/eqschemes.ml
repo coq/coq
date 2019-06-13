@@ -221,6 +221,7 @@ let build_sym_scheme env ind =
           [Context.Rel.to_extended_vect mkRel (3*nrealargs+2) paramsctxt1;
            rel_vect 1 nrealargs;
            rel_vect (2*nrealargs+2) nrealargs])),
+           NoInvert,
      mkRel 1 (* varH *),
        [|cstr (nrealargs+1)|]))))
   in c, UState.of_context_set ctx
@@ -295,6 +296,7 @@ let build_sym_involutive_scheme env ind =
                  rel_vect 1 nrealargs;
                  [|mkRel 1|]])|]]);
                mkRel 1|])),
+               NoInvert,
                mkRel 1 (* varH *),
                [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|]))))
   in (c, UState.of_context_set ctx)
@@ -434,9 +436,11 @@ let build_l2r_rew_scheme dep env ind kind =
                [|mkRel 2|]])|]]) in
   let main_body =
     mkCase (ci,
-      my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
-      applied_sym_C 3,
-      [|mkVar varHC|]) in
+            my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
+            NoInvert,
+            applied_sym_C 3,
+            [|mkVar varHC|])
+  in
   let c =
   (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign
@@ -444,12 +448,13 @@ let build_l2r_rew_scheme dep env ind kind =
     (my_it_mkProd_or_LetIn (if dep then realsign_ind_P else realsign_P) s)
   (mkNamedLambda (make_annot varHC indr) applied_PC
   (mkNamedLambda (make_annot varH indr) (lift 2 applied_ind)
-  (if dep then (* we need a coercion *)
+     (if dep then (* we need a coercion *)
      mkCase (cieq,
        mkLambda (make_annot (Name varH) indr,lift 3 applied_ind,
          mkLambda (make_annot Anonymous indr,
                    mkApp (eq,[|lift 4 applied_ind;applied_sym_sym;mkRel 1|]),
                    applied_PR)),
+       NoInvert,
        mkApp (sym_involutive,
          Array.append (Context.Rel.to_extended_vect mkRel 3 mip.mind_arity_ctxt) [|mkVar varH|]),
        [|main_body|])
@@ -540,6 +545,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
          (my_it_mkProd_or_LetIn
            (if dep then realsign_ind_P 2 applied_ind_P else realsign_P 2) s)
        (mkNamedProd (make_annot varHC indr) applied_PC applied_PG)),
+     NoInvert,
      (mkVar varH),
      [|mkNamedLambda (make_annot varP indr)
         (my_it_mkProd_or_LetIn
@@ -616,6 +622,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
        my_it_mkLambda_or_LetIn_name
          (lift_rel_context (nrealargs+3) realsign_ind)
          (mkArrow applied_PG indr (lift (2*nrealargs+5) applied_PC)),
+       NoInvert,
        mkRel 3 (* varH *),
        [|mkLambda
           (make_annot (Name varHC) indr,
@@ -830,6 +837,7 @@ let build_congr env (eq,refl,ctx) ind =
               [|mkVar varB;
                 mkApp (mkVar varf, [|lift (2*mip.mind_nrealdecls+4) b|]);
                 mkApp (mkVar varf, [|mkRel (mip.mind_nrealargs - i + 2)|])|]))),
+       NoInvert,
        mkVar varH,
        [|mkApp (refl,
           [|mkVar varB;

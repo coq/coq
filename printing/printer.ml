@@ -855,10 +855,11 @@ let pr_goal_emacs ~proof gid sid =
    It is used primarily by the Print Assumptions command. *)
 
 type axiom =
-  | Constant of Constant.t (* An axiom or a constant. *)
-  | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
-  | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
-  | TypeInType of GlobRef.t (* a constant which relies on type in type *)
+  | Constant of Constant.t
+  | Positive of MutInd.t
+  | Guarded of GlobRef.t
+  | TypeInType of GlobRef.t
+  | UIP of MutInd.t
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -874,14 +875,21 @@ struct
   let compare_axiom x y =
     match x,y with
     | Constant k1 , Constant k2 ->
-        Constant.CanOrd.compare k1 k2
-    | Positive m1 , Positive m2 ->
-        MutInd.CanOrd.compare m1 m2
-    | Guarded k1 , Guarded k2 ->
-        GlobRef.Ordered.compare k1 k2
-    | _ , Constant _ -> 1
-    | _ , Positive _ -> 1
-    | _ -> -1
+      Constant.CanOrd.compare k1 k2
+    | Positive m1 , Positive m2
+    | UIP m1, UIP m2 ->
+      MutInd.CanOrd.compare m1 m2
+    | Guarded k1 , Guarded k2
+    | TypeInType k1, TypeInType k2 ->
+      GlobRef.Ordered.compare k1 k2
+    | Constant _, _ -> -1
+    | _, Constant _ -> 1
+    | Positive _, _ -> -1
+    | _, Positive _ -> 1
+    | Guarded _, _ -> -1
+    | _, Guarded _ -> 1
+    | TypeInType _, _ -> -1
+    | _, TypeInType _ -> 1
 
   let compare x y =
     match x , y with
@@ -942,7 +950,9 @@ let pr_assumptionset env sigma s =
       | Guarded gr ->
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
       | TypeInType gr ->
-         hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
+          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
+      | UIP mind ->
+          hov 2 (safe_pr_inductive env mind ++ spc () ++ strbrk"relies on definitional UIP.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
@@ -1021,4 +1031,5 @@ let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
   ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
   ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
-  ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop
+  ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop ++ fnl ()
+  ++ str "definitional uip: " ++ bool flags.allow_uip

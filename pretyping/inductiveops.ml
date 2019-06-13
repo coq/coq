@@ -66,6 +66,8 @@ let relevance_of_inductive_family env ((ind,_),_ : inductive_family) =
 
 type inductive_type = IndType of inductive_family * EConstr.constr list
 
+let ind_of_ind_type = function IndType (((ind,_),_),_) -> ind
+
 let make_ind_type (indf, realargs) = IndType (indf,realargs)
 let dest_ind_type (IndType (indf,realargs)) = (indf,realargs)
 
@@ -332,16 +334,26 @@ let get_constructors env (ind,params) =
 
 let get_projections = Environ.get_projections
 
-let make_case_or_project env sigma indf ci pred c branches =
+let make_case_invert env (IndType (((ind,u),params),indices)) ci =
+  if Typeops.should_invert_case env ci
+  then
+    let univs = EConstr.EInstance.make u in
+    let params = Array.map_of_list EConstr.of_constr params in
+    let args = Array.append params (Array.of_list indices) in
+    CaseInvert {univs;args}
+  else NoInvert
+
+let make_case_or_project env sigma indt ci pred c branches =
   let open EConstr in
-  let projs = get_projections env (fst (fst indf)) in
+  let IndType (((ind,_),_),_) = indt in
+  let projs = get_projections env ind in
   match projs with
-  | None -> (mkCase (ci, pred, c, branches))
+  | None ->
+    mkCase (ci, pred, make_case_invert env indt ci, c, branches)
   | Some ps ->
      assert(Array.length branches == 1);
      let na, ty, t = destLambda sigma pred in
      let () =
-       let (ind, _), _ = dest_ind_family indf in
        let mib, _ = Inductive.lookup_mind_specif env ind in
        if (* dependent *) not (Vars.noccurn sigma 1 t) &&
           not (has_dependent_elim mib) then

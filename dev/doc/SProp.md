@@ -39,3 +39,32 @@ Relevance can be inferred from a well-typed term using functions in
 term, note the difference between its relevance as a term (is `x :
 (_ : SProp)`) and as a type (is `x : SProp`), there are functions for
 both kinds.
+
+## Case inversion
+
+Inductives in SProp with 1 constructor which has no arguments have a
+special reduction rule for matches. To implement it the Case
+constructor is extended with a `case_invert` field.
+
+If you are constructing a match on a normal (non-special reduction)
+inductive you must fill the new field with `NoInvert`. Otherwise you
+must fill it with `CaseInvert {univs ; args}` where `univs` is the
+universe instance of the type you are matching and `args` the
+parameters and indices.
+
+For instance, in
+
+~~~coq
+Inductive seq {A} (a:A) : A -> SProp :=
+  srefl : seq a a.
+
+Definition seq_to_eq {A x y} (e:seq x y) : x = y :> A
+  := match e with srefl => eq_refl end.
+~~~
+
+the `match e with ...` has `CaseInvert {univs = Instance.empty; args = [|A x y|]}`.
+(empty instance since we defined a universe monomorphic `seq`).
+
+In practice, you should use `Inductiveops.make_case_or_project` which
+will take care of this for you (and also handles primitive records
+correctly etc).

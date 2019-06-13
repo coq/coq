@@ -18,6 +18,7 @@ let set_local_flags flags env =
       check_universes = flags.check_universes;
       conv_oracle = flags.conv_oracle;
       cumulative_sprop = flags.cumulative_sprop;
+      allow_uip = flags.allow_uip;
     }
   in
   Environ.set_typing_flags flags env

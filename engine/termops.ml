@@ -639,13 +639,14 @@ let map_constr_with_binders_left_to_right sigma g f l c =
     let al' = List.map_left (f l) al in
       if List.for_all2 (==) al' al then c
       else mkEvar (e, al')
-  | Case (ci,p,b,bl) ->
+  | Case (ci,p,iv,b,bl) ->
       (* In v8 concrete syntax, predicate is after the term to match! *)
       let b' = f l b in
+      let iv' = map_invert (f l) iv in
       let p' = f l p in
       let bl' = Array.map_left (f l) bl in
-        if b' == b && p' == p && bl' == bl then c
-        else mkCase (ci, p', b', bl')
+      if b' == b && p' == p && iv' == iv && bl' == bl then c
+      else mkCase (ci, p', iv', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
@@ -709,18 +710,20 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
   | Evar (e,al) ->
       let al' = List.map (f l) al in
       if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
-  | Case (ci,p,c,bl) when userview ->
+  | Case (ci,p,iv,c,bl) when userview ->
       let p' = map_return_predicate_with_full_binders sigma g f l ci p in
+      let iv' = map_invert (f l) iv in
       let c' = f l c in
       let bl' = map_branches_with_full_binders sigma g f l ci bl in
-      if p==p' && c==c' && bl'==bl then cstr else
-        mkCase (ci, p', c', bl')
-  | Case (ci,p,c,bl) ->
+      if p==p' && iv'==iv && c==c' && bl'==bl then cstr else
+        mkCase (ci, p', iv', c', bl')
+  | Case (ci,p,iv,c,bl) ->
       let p' = f l p in
+      let iv' = map_invert (f l) iv in
       let c' = f l c in
       let bl' = Array.map (f l) bl in
-      if p==p' && c==c' && Array.for_all2 (==) bl bl' then cstr else
-        mkCase (ci, p', c', bl')
+      if p==p' && iv'==iv && c==c' && Array.for_all2 (==) bl bl' then cstr else
+        mkCase (ci, p', iv', c', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let tl' = Array.map (f l) tl in
       let l' = fold_rec_types g fx l in

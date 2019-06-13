@@ -179,7 +179,7 @@ sig
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array
+  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
@@ -231,7 +231,7 @@ struct
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array
+  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
@@ -244,7 +244,7 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,br) ->
+    | Case (_,_,_,br) ->
        str "ZCase(" ++
          prvect_with_sep (pr_bar) pr_c br
        ++ str ")"
@@ -285,7 +285,7 @@ struct
         ([],[]) -> Int.equal bal 0
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
-      | (Case(c1,_,_)::s1, Case(c2,_,_)::s2) ->
+      | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Proj (p)::s1, Proj(p2)::s2) ->
         Int.equal bal 0 && compare_rec 0 s1 s2
@@ -305,7 +305,7 @@ struct
         let t1,l1 = decomp_node_last n1 q1 in
         let t2,l2 = decomp_node_last n2 q2 in
         aux (f o t1 t2) l1 l2
-      | Case (_,t1,a1) :: q1, Case (_,t2,a2) :: q2 ->
+      | Case (_,t1,_,a1) :: q1, Case (_,t2,_,a2) :: q2 ->
         aux (Array.fold_left2 f (f o t1 t2) a1 a2) q1 q2
       | Proj (p1) :: q1, Proj (p2) :: q2 ->
         aux o q1 q2
@@ -321,7 +321,8 @@ struct
                                | App (i,a,j) ->
                                   let le = j - i + 1 in
                                   App (0,Array.map f (Array.sub a i le), le-1)
-                               | Case (info,ty,br) -> Case (info, f ty, Array.map f br)
+                               | Case (info,ty,iv,br) ->
+                                 Case (info, f ty, map_invert f iv, Array.map f br)
                                | Fix ((r,(na,ty,bo)),arg) ->
                                   Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg)
                                | Primitive (p,c,args,kargs) ->
@@ -403,7 +404,7 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,br)::s) -> zip (mkCase (ci,rt,f,br), s)
+    | f, (Case (ci,rt,iv,br)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
   | f, (Proj (p)::s) -> zip (mkProj (p,f),s)
@@ -536,12 +537,13 @@ let reduce_and_refold_cofix recfun env sigma cofix sk =
 let reduce_mind_case sigma mia =
   match EConstr.kind sigma mia.mconstr with
     | Construct ((ind_sp,i),u) ->
-(*	let ncargs = (fst mia.mci).(i-1) in*)
+(*      let ncargs = (fst mia.mci).(i-1) in*)
         let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | CoFix cofix ->
         let cofix_def = contract_cofix sigma cofix in
-        mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
+        (* XXX Is NoInvert OK here? *)
+        mkCase (mia.mci, mia.mP, NoInvert, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
@@ -805,8 +807,8 @@ let rec whd_state_gen flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,d,lf) ->
-      whrec (d, Stack.Case (ci,p,lf) :: stack)
+    | Case (ci,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -819,7 +821,7 @@ let rec whd_state_gen flags env sigma =
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, lf)::s') when use_match ->
+        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
           whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
         |args, (Stack.Proj (p)::s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
@@ -901,8 +903,8 @@ let local_whd_state_gen flags _env sigma =
     | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
       (whrec (c, Stack.Proj (p) :: stack))
 
-    | Case (ci,p,d,lf) ->
-      whrec (d, Stack.Case (ci,p,lf) :: stack)
+    | Case (ci,p,iv,d,lf) ->
+      whrec (d, Stack.Case (ci,p,iv,lf) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -920,7 +922,7 @@ let local_whd_state_gen flags _env sigma =
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, lf)::s') when use_match ->
+        |args, (Stack.Case(ci, _, _, lf)::s') when use_match ->
           whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
         |args, (Stack.Proj (p) :: s') when use_match ->
           whrec (Stack.nth args (Projection.npars p + Projection.arg p), s')
@@ -1035,7 +1037,7 @@ let clos_norm_flags flgs env sigma t =
   try
     let evars ev = safe_evar_value sigma ev in
     EConstr.of_constr (CClosure.norm_val
-      (CClosure.create_clos_infos ~evars flgs env)
+      (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
       (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
@@ -1044,7 +1046,7 @@ let clos_whd_flags flgs env sigma t =
   try
     let evars ev = safe_evar_value sigma ev in
     EConstr.of_constr (CClosure.whd_val
-      (CClosure.create_clos_infos ~evars flgs env)
+      (CClosure.create_clos_infos ~univs:(Evd.universes sigma) ~evars flgs env)
       (CClosure.create_tab ())
       (CClosure.inject (EConstr.Unsafe.to_constr t)))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
@@ -1148,7 +1150,8 @@ let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
 
 let sigma_univ_state =
   let open Reduction in
-  { compare_sorts = sigma_compare_sorts;
+  { compare_graph = Evd.universes;
+    compare_sorts = sigma_compare_sorts;
     compare_instances = sigma_compare_instances;
     compare_cumul_instances = sigma_check_inductive_instances; }
 

@@ -585,10 +585,10 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
     let sigma = project g in
     (*      observe (str "proving on " ++ Printer.pr_lconstr_env (pf_env g) term);*)
     match EConstr.kind sigma dyn_infos.info with
-    | Case (ci, ct, t, cb) ->
+    | Case (ci, ct, iv, t, cb) ->
       let do_finalize_t dyn_info' g =
         let t = dyn_info'.info in
-        let dyn_infos = {dyn_info' with info = mkCase (ci, ct, t, cb)} in
+        let dyn_infos = {dyn_info' with info = mkCase (ci, ct, iv, t, cb)} in
         let g_nb_prod = nb_prod (project g) (pf_concl g) in
         let g, type_of_term = tac_type_of g t in
         let term_eq = make_refl_eq (Lazy.force refl_equal) type_of_term t in

@@ -106,7 +106,7 @@ sig
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
+  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -158,7 +158,7 @@ struct
 
   type 'a member =
   | App of 'a app_node
-  | Case of case_info * 'a * 'a array * Cst_stack.t
+  | Case of case_info * 'a * ('a, EInstance.t) case_invert * 'a array * Cst_stack.t
   | Proj of Projection.t * Cst_stack.t
   | Fix of ('a, 'a) pfixpoint * 'a t * Cst_stack.t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red * Cst_stack.t
@@ -172,7 +172,7 @@ struct
     let pr_c x = hov 1 (pr_c x) in
     match member with
     | App app -> str "ZApp" ++ pr_app_node pr_c app
-    | Case (_,_,br,cst) ->
+    | Case (_,_,_,br,cst) ->
        str "ZCase(" ++
          prvect_with_sep (pr_bar) pr_c br
        ++ str ")"
@@ -236,7 +236,7 @@ struct
         let t1,s1' = decomp_node_last a1 s1 in
         let t2,s2' = decomp_node_last a2 s2 in
         (f t1 t2) && (equal_rec s1' s2')
-      | Case (_,t1,a1,_) :: s1, Case (_,t2,a2,_) :: s2 ->
+      | Case (_,t1,_,a1,_) :: s1, Case (_,t2,_,a2,_) :: s2 ->
         f t1 t2 && CArray.equal (fun x y -> f x y) a1 a2 && equal_rec s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
         Projection.Repr.equal (Projection.repr p) (Projection.repr p2)
@@ -284,7 +284,7 @@ struct
 
   let will_expose_iota args =
     List.exists
-      (function (Fix (_,_,l) | Case (_,_,_,l) |
+      (function (Fix (_,_,l) | Case (_,_,_,_,l) |
                  Proj (_,l) | Cst (_,_,_,_,l)) when Cst_stack.is_empty l -> true | _ -> false)
       args
 
@@ -346,9 +346,9 @@ struct
                 then a
                 else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
-    | f, (Case (ci,rt,br,cst_l)::s) when refold ->
-      zip (best_state sigma (mkCase (ci,rt,f,br), s) cst_l)
-    | f, (Case (ci,rt,br,_)::s) -> zip (mkCase (ci,rt,f,br), s)
+    | f, (Case (ci,rt,iv,br,cst_l)::s) when refold ->
+      zip (best_state sigma (mkCase (ci,rt,iv,f,br), s) cst_l)
+    | f, (Case (ci,rt,iv,br,_)::s) -> zip (mkCase (ci,rt,iv,f,br), s)
     | f, (Fix (fix,st,cst_l)::s) when refold ->
       zip (best_state sigma (mkFix fix, st @ (append_app [|f|] s)) cst_l)
   | f, (Fix (fix,st,_)::s) -> zip
@@ -699,8 +699,8 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         | _ -> fold ())
       | _ -> fold ())
 
-    | Case (ci,p,d,lf) ->
-      whrec Cst_stack.empty (d, Stack.Case (ci,p,lf,cst_l) :: stack)
+    | Case (ci,p,iv,d,lf) ->
+      whrec Cst_stack.empty (d, Stack.Case (ci,p,iv,lf,cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
@@ -713,7 +713,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
       let use_fix = CClosure.RedFlags.red_set flags CClosure.RedFlags.fFIX in
       if use_match || use_fix then
         match Stack.strip_app stack with
-        |args, (Stack.Case(ci, _, lf,_)::s') when use_match ->
+        |args, (Stack.Case(ci, _, _, lf,_)::s') when use_match ->
           whrec Cst_stack.empty (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
         |args, (Stack.Proj (p,_)::s') when use_match ->
           whrec Cst_stack.empty (Stack.nth args (Projection.npars p + Projection.arg p), s')

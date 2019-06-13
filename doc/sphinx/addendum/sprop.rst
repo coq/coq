@@ -173,6 +173,79 @@ strict propositions. For instance:
   Definition eq_true_is_true b (H:true=b) : is_true b
     := match H in _ = x return is_true x with eq_refl => stt end.
 
+Definitional UIP
+----------------
+
+.. flag:: Definitional UIP
+
+   This flag, off by default, allows the declaration of non-squashed
+   inductive types with 1 constructor which takes no argument in
+   |SProp|. Since this includes equality types, it provides
+   definitional uniqueness of identity proofs.
+
+   Because squashing is a universe restriction, unsetting
+   :flag:`Universe Checking` is stronger than setting
+   :flag:`Definitional UIP`.
+
+Definitional UIP involves a special reduction rule through which
+reduction depends on conversion. Consider the following code:
+
+.. coqtop:: in
+
+   Set Definitional UIP.
+
+   Inductive seq {A} (a:A) : A -> SProp :=
+     srefl : seq a a.
+
+   Axiom e : seq 0 0.
+   Definition hidden_arrow := match e return Set with srefl _ => nat -> nat end.
+
+   Check (fun (f : hidden_arrow) (x:nat) => (f : nat -> nat) x).
+
+By the usual reduction rules :g:`hidden_arrow` is a stuck match, but
+by proof irrelevance :g:`e` is convertible to :g:`srefl 0` and then by
+congruence :g:`hidden_arrow` is convertible to `nat -> nat`.
+
+The special reduction reduces any match on a type which uses
+definitional UIP when the indices are convertible to those of the
+constructor. For `seq`, this means a match on a value of type `seq x
+y` reduces if and only if `x` and `y` are convertible.
+
+Such matches are indicated in the printed representation by inserting
+a cast around the discriminee:
+
+.. coqtop:: out
+
+   Print hidden_arrow.
+
+Non Termination with UIP
+++++++++++++++++++++++++
+
+The special reduction rule of UIP combined with an impredicative sort
+breaks termination of reduction
+:cite:`abel19:failur_normal_impred_type_theor`:
+
+.. coqtop:: all
+
+   Axiom all_eq : forall (P Q:Prop), P -> Q -> seq P Q.
+
+   Definition transport (P Q:Prop) (x:P) (y:Q) : Q
+   := match all_eq P Q x y with srefl _ => x end.
+
+   Definition top : Prop := forall P : Prop, P -> P.
+
+   Definition c : top :=
+     fun P p =>
+     transport
+     (top -> top)
+     P
+     (fun x : top => x (top -> top) (fun x => x) x)
+     p.
+
+   Fail Timeout 1 Eval lazy in c (top -> top) (fun x => x) c.
+
+The term :g:`c (top -> top) (fun x => x) c` infinitely reduces to itself.
+
 Issues with non-cumulativity
 ----------------------------
 

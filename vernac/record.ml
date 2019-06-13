@@ -343,8 +343,9 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
                      let p = mkLambda (x, lift 1 rp, ccl') in
                      let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
                      let ci = Inductiveops.make_case_info env indsp rci LetStyle in
-                     (* Record projections have no is *)
-                     mkCase (ci, p, mkRel 1, [|branch|]), None
+                     (* Record projections are always NoInvert because
+                        they're at constant relevance *)
+                     mkCase (ci, p, NoInvert, mkRel 1, [|branch|]), None
                in
                let proj = it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
                let projtyp = it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in

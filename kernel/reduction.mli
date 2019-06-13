@@ -36,12 +36,15 @@ type 'a extended_conversion_function =
 
 type conv_pb = CONV | CUMUL
 
-type 'a universe_compare =
-  { (* Might raise NotConvertible *)
-    compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
-    compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
-      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
+type 'a universe_compare = {
+  compare_graph : 'a -> UGraph.t; (* used for case inversion in reduction *)
+
+  (* Might raise NotConvertible *)
+  compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
+  compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+  compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
+    Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+}
 
 type 'a universe_state = 'a * 'a universe_compare
 

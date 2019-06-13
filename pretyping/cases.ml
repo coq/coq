@@ -1131,14 +1131,14 @@ let rec ungeneralize sigma n ng body =
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
       mkLetIn (na,b,t,ungeneralize sigma (n+1) ng c)
-  | Case (ci,p,c,brs) ->
+  | Case (ci,p,iv,c,brs) ->
       (* We traverse a split *)
       let p =
         let sign,p = decompose_lam_assum sigma p in
         let sign2,p = decompose_prod_n_assum sigma ng p in
         let p = prod_applist sigma p [mkRel (n+List.length sign+ng)] in
         it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
-      mkCase (ci,p,c,Array.map2 (fun q c ->
+      mkCase (ci,p,iv,c,Array.map2 (fun q c ->
         let sign,b = decompose_lam_n_decls sigma q c in
         it_mkLambda_or_LetIn (ungeneralize sigma (n+q) ng b) sign)
         ci.ci_cstr_ndecls brs)
@@ -1161,7 +1161,7 @@ let rec is_dependent_generalization sigma ng body =
   | LetIn (na,b,t,c) ->
       (* We traverse an alias *)
       is_dependent_generalization sigma ng c
-  | Case (ci,p,c,brs) ->
+  | Case (ci,p,iv,c,brs) ->
       (* We traverse a split *)
       Array.exists2 (fun q c ->
         let _,b = decompose_lam_n_decls sigma q c in
@@ -1448,7 +1448,7 @@ let compile ~program_mode sigma pb =
             let rci = Typing.check_allowed_sort !!(pb.env) sigma mind current pred in
             let ci = make_case_info !!(pb.env) (fst mind) rci pb.casestyle in
             let pred = nf_betaiota !!(pb.env) sigma pred in
-            let case = make_case_or_project !!(pb.env) sigma indf ci pred current brvals in
+            let case = make_case_or_project !!(pb.env) sigma indt ci pred current brvals in
             let sigma, _ = Typing.type_of !!(pb.env) sigma pred in
             sigma, { uj_val = applist (case, inst);
               uj_type = prod_applist sigma typ inst }

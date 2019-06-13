@@ -69,7 +69,7 @@ let mkInd i = of_kind (Ind (in_punivs i))
 let mkConstructU pc = of_kind (Construct pc)
 let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
-let mkCase (ci, c, r, p) = of_kind (Case (ci, c, r, p))
+let mkCase (ci, c, iv, r, p) = of_kind (Case (ci, c, iv, r, p))
 let mkFix f = of_kind (Fix f)
 let mkCoFix f = of_kind (CoFix f)
 let mkProj (p, c) = of_kind (Proj (p, c))
@@ -194,7 +194,7 @@ let destCoFix sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destCase sigma c = match kind sigma c with
-| Case (ci, t, c, p) -> (ci, t, c, p)
+| Case (ci, t, iv, c, p) -> (ci, t, iv, c, p)
 | _ -> raise DestKO
 
 let destProj sigma c = match kind sigma c with
@@ -356,7 +356,7 @@ let iter_with_full_binders sigma g f n c =
   | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
   | Evar (_,l) -> List.iter (fun c -> f n c) l
-  | Case (_,p,c,bl) -> f n p; f n c; Array.Fun1.iter f n bl
+  | Case (_,p,iv,c,bl) -> f n p; iter_invert (f n) iv; f n c; Array.Fun1.iter f n bl
   | Proj (p,c) -> f n c
   | Fix (_,(lna,tl,bl)) ->
     Array.iter (f n) tl;
@@ -380,7 +380,7 @@ let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
 
 let eq_constr sigma c1 c2 =
   let kind c = kind sigma c in
-  let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
+  let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
   let rec eq_constr nargs c1 c2 =
     compare_gen kind eq_inst eq_sorts eq_constr nargs c1 c2
@@ -390,13 +390,13 @@ let eq_constr sigma c1 c2 =
 let eq_constr_nounivs sigma c1 c2 =
   let kind c = kind sigma c in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind (fun _ _ _ _ -> true) (fun _ _ -> true) eq_constr nargs c1 c2
+    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) eq_constr nargs c1 c2
   in
   eq_constr 0 c1 c2
 
 let compare_constr sigma cmp c1 c2 =
   let kind c = kind sigma c in
-  let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
+  let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
   let cmp nargs c1 c2 = cmp c1 c2 in
   compare_gen kind eq_inst eq_sorts cmp 0 c1 c2
@@ -442,22 +442,22 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
         cstrs (Univ.Instance.to_array u1) (Univ.Instance.to_array u2)
 
-let eq_universes env sigma cstrs cv_pb ref nargs l l' =
+let eq_universes env sigma cstrs cv_pb refargs l l' =
   if EInstance.is_empty l then (assert (EInstance.is_empty l'); true)
   else
     let l = EInstance.kind sigma l
     and l' = EInstance.kind sigma l' in
     let open GlobRef in
     let open UnivProblem in
-    match ref with
-    | VarRef _ -> assert false (* variables don't have instances *)
-    | ConstRef _ ->
+    match refargs with
+    | None | Some (ConstRef _, _) ->
       cstrs := enforce_eq_instances_univs true l l' !cstrs; true
-    | IndRef ind ->
+    | Some (VarRef _, _) -> assert false (* variables don't have instances *)
+    | Some (IndRef ind, nargs) ->
       let mind = Environ.lookup_mind (fst ind) env in
       cstrs := cmp_inductives cv_pb (mind,snd ind) nargs l l' !cstrs;
       true
-    | ConstructRef ((mi,ind),ctor) ->
+    | Some (ConstructRef ((mi,ind),ctor), nargs) ->
       let mind = Environ.lookup_mind mi env in
       cstrs := cmp_constructors (mind,ind,ctor) nargs l l' !cstrs;
       true
@@ -469,8 +469,8 @@ let test_constr_universes env sigma leq m n =
   else
     let cstrs = ref Set.empty in
     let cv_pb = if leq then Reduction.CUMUL else Reduction.CONV in
-    let eq_universes ref nargs l l' = eq_universes env sigma cstrs Reduction.CONV ref nargs l l'
-    and leq_universes ref nargs l l' = eq_universes env sigma cstrs cv_pb ref nargs l l' in
+    let eq_universes refargs l l' = eq_universes env sigma cstrs Reduction.CONV refargs l l'
+    and leq_universes refargs l l' = eq_universes env sigma cstrs cv_pb refargs l l' in
     let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
       let s2 = ESorts.kind sigma s2 in
@@ -777,5 +777,7 @@ let to_named_context =
     = fun Refl x -> x
   in
   gen unsafe_eq
+let to_case_invert = unsafe_to_case_invert
+
 let eq = unsafe_eq
 end

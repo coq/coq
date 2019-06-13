@@ -261,6 +261,12 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       nf_stk env sigma (mkApp(fa,[|c|])) (subst1 c codom) stk
   | Zswitch sw :: stk ->
       assert (from = 0) ;
+      let ci = sw.sw_annot.Vmvalues.ci in
+      let () = if Typeops.should_invert_case env ci then
+          (* TODO implement case inversion readback (properly reducing
+             it is a problem for the kernel) *)
+          CErrors.user_err Pp.(str "VM compute readback of case inversion not implemented.")
+      in
       let ((mind,_ as ind), u), allargs = find_rectype_a env t in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
@@ -280,8 +286,7 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type p realargs c in
-      let ci = sw.sw_annot.Vmvalues.ci in
-      nf_stk env sigma (mkCase(ci, p, c, branchs)) tcase stk
+      nf_stk env sigma (mkCase(ci, p, NoInvert, c, branchs)) tcase stk
   | Zproj p :: stk ->
      assert (from = 0) ;
      let p' = Projection.make p true in

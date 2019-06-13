@@ -315,7 +315,7 @@ struct
           meta
       in
       Meta meta
-    | Case (ci,c1,c2,ca)     ->
+    | Case (ci,c1,_iv,c2,ca)     ->
       Term(DCase(ci,pat_of_constr c1,pat_of_constr c2,Array.map pat_of_constr ca))
     | Fix ((ia,i),(_,ta,ca)) ->
       Term(DFix(ia,i,Array.map pat_of_constr ta, Array.map pat_of_constr ca))

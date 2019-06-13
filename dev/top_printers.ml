@@ -294,7 +294,7 @@ let constr_display csr =
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
   | Proj (p, c) -> "Proj("^(Constant.to_string (Projection.constant p))^","^term_display c ^")"
-  | Case (ci,p,c,bl) ->
+  | Case (ci,p,iv,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
   | Fix ((t,i),(lna,tl,bl)) ->
@@ -406,7 +406,7 @@ let print_pure_constr csr =
       print_int i; print_string ","; print_int j;
       print_string ","; universes_display u;
       print_string ")"
-  | Case (ci,p,c,bl) ->
+  | Case (ci,p,iv,c,bl) ->
       open_vbox 0;
       print_string "<"; box_display p; print_string ">";
       print_cut(); print_string "Case";

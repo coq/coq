@@ -209,12 +209,16 @@ type conv_pb =
 
 let is_cumul = function CUMUL -> true | CONV -> false
 
-type 'a universe_compare =
-  { (* Might raise NotConvertible *)
-    compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
-    compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
-    compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
-      Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a }
+type 'a universe_compare = {
+  (* used in reduction *)
+  compare_graph : 'a -> UGraph.t;
+
+  (* Might raise NotConvertible *)
+  compare_sorts : env -> conv_pb -> Sorts.t -> Sorts.t -> 'a -> 'a;
+  compare_instances: flex:bool -> Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+  compare_cumul_instances : conv_pb -> Univ.Variance.t array ->
+    Univ.Instance.t -> Univ.Instance.t -> 'a -> 'a;
+}
 
 type 'a universe_state = 'a * 'a universe_compare
 
@@ -302,7 +306,6 @@ let unfold_ref_with_args infos tab fl v =
 
 type conv_tab = {
   cnv_inf : clos_infos;
-  relevances : Sorts.relevance Range.t;
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
 }
@@ -313,13 +316,13 @@ type conv_tab = {
     passed to each respective side of the conversion function below. *)
 
 let push_relevance infos r =
-  { infos with relevances = Range.cons r.Context.binder_relevance infos.relevances }
+  { infos with cnv_inf = CClosure.push_relevance infos.cnv_inf r }
 
 let push_relevances infos nas =
-  { infos with relevances = Array.fold_left (fun l x -> Range.cons x.Context.binder_relevance l) infos.relevances nas }
+  { infos with cnv_inf = CClosure.push_relevances infos.cnv_inf nas }
 
 let rec skip_pattern infos relevances n c1 c2 =
-  if Int.equal n 0 then {infos with relevances}, c1, c2
+  if Int.equal n 0 then {infos with cnv_inf = CClosure.set_info_relevances infos.cnv_inf relevances}, c1, c2
   else match kind c1, kind c2 with
     | Lambda (x, _, c1), Lambda (_, _, c2) ->
       skip_pattern infos (Range.cons x.Context.binder_relevance relevances) (pred n) c1 c2
@@ -327,11 +330,11 @@ let rec skip_pattern infos relevances n c1 c2 =
 
 let skip_pattern infos n c1 c2 =
   if Int.equal n 0 then infos, c1, c2
-  else skip_pattern infos infos.relevances n c1 c2
+  else skip_pattern infos (info_relevances infos.cnv_inf) n c1 c2
 
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
-  try Relevanceops.relevance_of_fterm env infos.relevances lft c == Sorts.Irrelevant with _ -> false
+  try Relevanceops.relevance_of_fterm env (info_relevances infos.cnv_inf) lft c == Sorts.Irrelevant with _ -> false
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
@@ -633,12 +636,20 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
+    | FCaseInvert (ci1,p1,_,_,br1,e1), FCaseInvert (ci2,p2,_,_,br2,e2) ->
+      (if not (eq_ind ci1.ci_ind ci2.ci_ind) then raise NotConvertible);
+      let el1 = el_stack lft1 v1 and el2 = el_stack lft2 v2 in
+      let ccnv = ccnv CONV l2r infos el1 el2 in
+      let cuniv = ccnv (mk_clos e1 p1) (mk_clos e2 p2) cuniv in
+      Array.fold_right2 (fun b1 b2 cuniv -> ccnv (mk_clos e1 b1) (mk_clos e2 b2) cuniv)
+        br1 br2 cuniv
+
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
      | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
        | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 
-     | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _
+     | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
         | FProd _ | FEvar _ | FInt _ | FFloat _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
@@ -711,10 +722,10 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
-  let infos = create_clos_infos ~evars reds env in
+  let graph = (snd univs).compare_graph (fst univs) in
+  let infos = create_clos_infos ~univs:graph ~evars reds env in
   let infos = {
     cnv_inf = infos;
-    relevances = Range.empty;
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
@@ -759,9 +770,24 @@ let check_inductive_instances cv_pb variance u1 u2 univs =
   else raise NotConvertible
 
 let checked_universes =
-  { compare_sorts = checked_sort_cmp_universes;
+  { compare_graph = (fun x -> x);
+    compare_sorts = checked_sort_cmp_universes;
     compare_instances = check_convert_instances;
     compare_cumul_instances = check_inductive_instances; }
+
+let () =
+  let conv infos tab a b =
+    try
+      let univs = info_univs infos in
+      let infos = { cnv_inf = infos; lft_tab = tab; rgt_tab = tab; } in
+      let univs', _ = ccnv CONV false infos el_id el_id a b
+          (univs, checked_universes)
+      in
+      assert (univs==univs');
+      true
+      with NotConvertible -> false
+  in
+  CClosure.set_conv conv
 
 let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq univs u u' then cuniv
@@ -807,7 +833,8 @@ let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
   (univs, Univ.Constraint.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
-  { compare_sorts = infer_cmp_universes;
+  { compare_graph = (fun (x,_) -> x);
+    compare_sorts = infer_cmp_universes;
     compare_instances = infer_convert_instances;
     compare_cumul_instances = infer_inductive_instances; }
 

@@ -364,20 +364,21 @@ let rec map_kn f f' c =
       | Construct (((kn,i),j),u) ->
           let kn' = f kn in
           if kn'==kn then c else mkConstructU (((kn',i),j),u)
-      | Case (ci,p,ct,l) ->
+      | Case (ci,p,iv,ct,l) ->
           let ci_ind =
             let (kn,i) = ci.ci_ind in
             let kn' = f kn in
             if kn'==kn then ci.ci_ind else kn',i
           in
           let p' = func p in
+          let iv' = map_invert func iv in
           let ct' = func ct in
           let l' = Array.Smart.map func l in
-            if (ci.ci_ind==ci_ind && p'==p
+            if (ci.ci_ind==ci_ind && p'==p && iv'==iv
                 && l'==l && ct'==ct)then c
             else
               mkCase ({ci with ci_ind = ci_ind},
-                      p',ct', l')
+                      p',iv',ct', l')
       | Cast (ct,k,t) ->
           let ct' = func ct in
           let t'= func t in

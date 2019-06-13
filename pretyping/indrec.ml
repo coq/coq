@@ -119,8 +119,10 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       in
       let obj =
         match projs with
-        | None -> mkCase (ci, lift ndepar p,  mkRel 1,
-                          Termops.rel_vect ndepar k)
+        | None ->
+          let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
+          let iv = EConstr.Unsafe.to_case_invert iv in
+          mkCase (ci, lift ndepar p, iv, mkRel 1, Termops.rel_vect ndepar k)
         | Some ps ->
           let term =
             mkApp (mkRel 2,
@@ -407,7 +409,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
                   arsign'
               in
               let obj =
-                Inductiveops.make_case_or_project env !evdref indf ci (EConstr.of_constr pred)
+                let indty = find_rectype env sigma (EConstr.of_constr depind) in
+                Inductiveops.make_case_or_project env !evdref indty ci (EConstr.of_constr pred)
                                                   (EConstr.mkRel 1) (Array.map EConstr.of_constr branches)
               in
               let obj = EConstr.to_constr !evdref obj in
