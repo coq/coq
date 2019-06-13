@@ -1,0 +1,97 @@
+diff/patch file created on Tue, Jun 11, 2019 10:15:38 AM with:
+difftar-folder.sh tarballs/ocaml-4.07.1.tar.gz ocaml-4.07.1 1
+TARFILE= tarballs/ocaml-4.07.1.tar.gz
+FOLDER= ocaml-4.07.1/
+TARSTRIP= 1
+TARPREFIX= ocaml-4.07.1/
+ORIGFOLDER= ocaml-4.07.1.orig
+--- ocaml-4.07.1.orig/byterun/caml/osdeps.h	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1/byterun/caml/osdeps.h	2019-06-11 10:13:50.766997600 +0200
+@@ -98,6 +98,11 @@
+ */
+ extern char_os *caml_secure_getenv(char_os const *var);
+
++/* Modify or delete environment variable.
++   Returns 0 on success or an error code.
++*/
++extern int caml_putenv(char_os const *var, char_os const *value);
++
+ /* If [fd] refers to a terminal or console, return the number of rows
+    (lines) that it displays.  Otherwise, or if the number of rows
+    cannot be determined, return -1. */
+--- ocaml-4.07.1.orig/byterun/debugger.c	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1/byterun/debugger.c	2019-06-11 10:14:02.706013700 +0200
+@@ -180,6 +180,7 @@
+   if (address == NULL) return;
+   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
+   dbg_addr = address;
++  caml_putenv(_T("CAML_DEBUG_SOCKET"),_T(""));
+
+ #ifdef _WIN32
+   winsock_startup();
+--- ocaml-4.07.1.orig/byterun/unix.c	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1/byterun/unix.c	2019-06-11 10:14:11.252438800 +0200
+@@ -430,6 +430,19 @@
+ #endif
+ }
+
++int caml_putenv(char_os const *var, char_os const *value)
++{
++  char_os * s;
++  int ret;
++
++  s = caml_stat_strconcat_os(3, var, _T("="), value);
++  ret = putenv_os(s);
++  if (ret == -1) {
++    caml_stat_free(s);
++  }
++  return ret;
++}
++
+ int caml_num_rows_fd(int fd)
+ {
+ #ifdef TIOCGWINSZ
+--- ocaml-4.07.1.orig/byterun/win32.c	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1/byterun/win32.c	2019-06-11 10:14:19.485640700 +0200
+@@ -727,6 +727,19 @@
+   return _wgetenv(var);
+ }
+
++int caml_putenv(char_os const *var, char_os const *value)
++{
++  char_os * s;
++  int ret;
++
++  s = caml_stat_strconcat_os(3, var, _T("="), value);
++  ret = putenv_os(s);
++  if (ret == -1) {
++    caml_stat_free(s);
++  }
++  return ret;
++}
++
+ /* caml_win32_getenv is used to implement Sys.getenv and Unix.getenv in such a
+    way that they get direct access to the Win32 environment rather than to the
+    copy that is cached by the C runtime system. The result of caml_win32_getenv
+--- ocaml-4.07.1.orig/config/Makefile.mingw	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1//config/Makefile.mingw	2019-06-11 10:14:44.492969800 +0200
+@@ -89,7 +89,7 @@
+ NATDYNLINK=true
+ NATDYNLINKOPTS=
+ CMXS=cmxs
+-RUNTIMED=false
++RUNTIMED=true
+ ASM_CFI_SUPPORTED=false
+ WITH_FRAME_POINTERS=false
+ UNIX_OR_WIN32=win32
+--- ocaml-4.07.1.orig/config/Makefile.mingw64	2018-10-04 15:38:56.000000000 +0200
++++ ocaml-4.07.1//config/Makefile.mingw64	2019-06-11 10:14:53.664784900 +0200
+@@ -89,7 +89,7 @@
+ NATDYNLINK=true
+ NATDYNLINKOPTS=
+ CMXS=cmxs
+-RUNTIMED=false
++RUNTIMED=true
+ ASM_CFI_SUPPORTED=false
+ WITH_FRAME_POINTERS=false
+ UNIX_OR_WIN32=win32
