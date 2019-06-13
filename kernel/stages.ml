@@ -11,8 +11,8 @@ type annot = Empty | Star | Stage of stage
 type stage_vars = Int.Set.t
 type stage_state  = stage_name * stage_vars
 
-let init_stage_var = (0, Int.Set.empty)
-let next_stage_var (next, vs) = (next, (next + 1, Int.Set.add next vs))
+let init_stage_state = (0, Int.Set.empty)
+let next_stage_state (next, vs) = (next, (next + 1, Int.Set.add next vs))
 let get_stage_vars (_, vs) = vs
 let diff_stage_vars = Int.Set.diff
 

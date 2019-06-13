@@ -15,6 +15,7 @@ open Univ
 open Sorts
 open Term
 open Constr
+open Stages
 open Context
 open Vars
 open Declarations
@@ -484,7 +485,7 @@ let check_binder_annot s x =
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
-let rec execute env cstr =
+let rec execute env stg cstr =
   let open Context.Rel.Declaration in
   match kind cstr with
     (* Atomic terms *)
@@ -492,105 +493,104 @@ let rec execute env cstr =
       (match s with
        | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
        | _ -> ());
-      cstr, type_of_sort s
+      stg, empty_constraint, cstr, type_of_sort s
 
     | Rel n ->
-      cstr, type_of_relative env n
+      stg, empty_constraint, cstr, type_of_relative env n
 
     | Var id ->
-      cstr, type_of_variable env id
+      stg, empty_constraint, cstr, type_of_variable env id
 
     | Const c ->
-      cstr, type_of_constant env c
+      stg, empty_constraint, cstr, type_of_constant env c
 
     | Proj (p, c) ->
-      let c', ct = execute env c in
+      let _, _, c', ct = execute env stg c in
       let cstr = if c == c' then cstr else mkProj (p,c') in
-      cstr, type_of_projection env p c' ct
+      stg, empty_constraint, cstr, type_of_projection env p c' ct
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let args', argst = execute_array env args in
-        let f', ft =
-          match kind f with
-          | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind argst
-          | _ ->
-            (* No template polymorphism *)
-            execute env f
-        in
-        let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
-        cstr, type_of_apply env f' ft args' argst
+      let _, _, args', argst = execute_array env stg args in
+      let _, _, f', ft = match kind f with
+            | Ind ind when Environ.template_polymorphic_pind ind env ->
+              stg, empty_constraint, f, type_of_inductive_knowing_parameters env ind argst
+            | _ ->
+              (* No template polymorphism *)
+        execute env stg f
+            in
+      let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
+      stg, empty_constraint, cstr, type_of_apply env f' ft args' argst
 
     | Lambda (name,c1,c2) ->
-      let c1', s = execute_is_type env c1 in
+      let _, _, c1', s = execute_is_type env stg c1 in
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let c2', c2t = execute env1 c2 in
+      let _, _, c2', c2t = execute env1 stg c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name',c1',c2') in
-      cstr, type_of_abstraction env name' c1 c2t
+      stg, empty_constraint, cstr, type_of_abstraction env name' c1 c2t
 
     | Prod (name,c1,c2) ->
-      let c1', vars = execute_is_type env c1 in
+      let _, _, c1', vars = execute_is_type env stg c1 in
       let name' = check_binder_annot vars name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let c2', vars' = execute_is_type env1 c2 in
+      let _, _, c2', vars' = execute_is_type env1 stg c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
-      cstr, type_of_product env name' vars vars'
+      stg, empty_constraint, cstr, type_of_product env name' vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let c1', c1t = execute env c1 in
-      let c2', c2s = execute_is_type env c2 in
+      let _, _, c1', c1t = execute env stg c1 in
+      let _, _, c2', c2s = execute_is_type env stg c2 in
       let name' = check_binder_annot c2s name in
       let () = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
-      let c3', c3t = execute env1 c3 in
+      let _, _, c3', c3t = execute env1 stg c3 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',c2',c3')
       in
-      cstr, subst1 c1 c3t
+      stg, empty_constraint, cstr, subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let c', ct = execute env c in
-      let t', _ts = execute_is_type env t in
+      let _, _, c', ct = execute env stg c in
+      let _, _, t', _ts = execute_is_type env stg t in
       let () = check_cast env c' ct k t' in
       let cstr = if c == c' && t == t' then cstr else mkCast(c',k,t') in
-      cstr, t'
+      stg, empty_constraint, cstr, t'
 
     (* Inductive types *)
     | Ind ind ->
-      cstr, type_of_inductive env ind
+      stg, empty_constraint, cstr, type_of_inductive env ind
 
     | Construct c ->
-      cstr, type_of_constructor env c
+      stg, empty_constraint, cstr, type_of_constructor env c
 
     | Case (ci,p,c,lf) ->
-        let c', ct = execute env c in
-        let p', pt = execute env p in
-        let lf', lft = execute_array env lf in
+        let _, _, c', ct = execute env stg c in
+        let _, _, p', pt = execute env stg p in
+        let _, _, lf', lft = execute_array env stg lf in
         let ci', t = type_of_case env ci p' pt c' ct lf' lft in
         let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
           else mkCase(ci',p',c',lf')
         in
-        cstr, t
+        stg, empty_constraint, cstr, t
 
     | Fix ((_vn,i as vni),recdef as fix) ->
-      let (fix_ty,recdef') = execute_recdef env recdef i in
+      let _, _, fix_ty,recdef' = execute_recdef env stg recdef i in
       let cstr, fix = if recdef == recdef' then cstr, fix else
           let fix = (vni,recdef') in mkFix fix, fix
       in
-      check_fix env fix; cstr, fix_ty
+      check_fix env fix; stg, empty_constraint, cstr, fix_ty
 
     | CoFix (i,recdef as cofix) ->
-      let (fix_ty,recdef') = execute_recdef env recdef i in
+      let _, _, fix_ty,recdef' = execute_recdef env stg recdef i in
       let cstr, cofix = if recdef == recdef' then cstr, cofix else
           let cofix = (i,recdef') in mkCoFix cofix, cofix
       in
-      check_cofix env cofix; cstr, fix_ty
+      check_cofix env cofix; stg, empty_constraint, cstr, fix_ty
 
     (* Primitive types *)
-    | Int _ -> cstr, type_of_int env
-    | Float _ -> cstr, type_of_float env
+    | Int _ -> stg, empty_constraint, cstr, type_of_int env
+    | Float _ -> stg, empty_constraint, cstr, type_of_float env
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -599,23 +599,28 @@ let rec execute env cstr =
     | Evar _ ->
         anomaly (Pp.str "the kernel does not support existential variables.")
 
-and execute_is_type env constr =
-  let c, t = execute env constr in
-    c, check_type env constr t
+and execute_is_type env stg constr =
+  let stg, cstrnt, c, t = execute env stg constr in
+    stg, cstrnt, c, check_type env constr t
 
-and execute_recdef env (names,lar,vdef as recdef) i =
-  let lar', lart = execute_array env lar in
+and execute_recdef env stg (names, lar, vdef as recdef) i =
+  let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
-  let env1 = push_rec_types (names',lar',vdef) env in (* vdef is ignored *)
-  let vdef', vdeft = execute_array env1 vdef in
+  let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
+  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
   let () = check_fixpoint env1 names' lar' vdef' vdeft in
   let recdef = if names == names' && lar == lar' && vdef == vdef' then recdef else (names',lar',vdef') in
-    (lar'.(i),recdef)
+    stg_vdef, union_constraint cstrnt_lar cstrnt_vdef, lar'.(i), recdef
 
-and execute_array env cs =
+and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in
-  let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
-  cs, tys
+  let ((stg, cstrnt), cs) = Array.Smart.fold_left_map_i
+    (fun i (stg, cstrnt1) c ->
+      let stg', cstrnt2, c, ty = execute env stg c in
+      tys.(i) <- ty;
+      (stg', union_constraint cstrnt1 cstrnt2), c)
+    (stg, empty_constraint) cs in
+  stg, cstrnt, cs, tys
 
 (* Derived functions *)
 
@@ -627,7 +632,7 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let _, _, constr, t = execute env init_stage_state constr in
   make_judge constr t
 
 let infer =
@@ -645,7 +650,7 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let constr, t = execute env constr in
+  let _, _, constr, t = execute env init_stage_state constr in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 

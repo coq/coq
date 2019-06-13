@@ -71,6 +71,7 @@ sig
     val map_i : (int -> 'a -> 'a) -> 'a array -> 'a array
     val map2 : ('a -> 'b -> 'b) -> 'a array -> 'b array -> 'b array
     val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
+    val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
     val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
   end
   module Fun1 :
@@ -584,6 +585,38 @@ struct
       while !i < len do
         let v = Array.unsafe_get ar !i in
         let (accu, v') = f !r v in
+        r := accu;
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
+      done;
+      !r, ans
+    end else !r, ar
+
+  let fold_left_map_i f accu (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let r = ref accu in
+    (* This variable is never accessed unset *)
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let (accu, v') = f !i !r v in
+      r := accu;
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ar !i in
+        let (accu, v') = f !i !r v in
         r := accu;
         if v != v' then Array.unsafe_set ans !i v';
         incr i

@@ -6,8 +6,8 @@ type annot = Empty | Star | Stage of stage
 
 type stage_vars
 type stage_state
-val init_stage_var : stage_state
-val next_stage_var : stage_state -> stage_name * stage_state
+val init_stage_state : stage_state
+val next_stage_state : stage_state -> stage_name * stage_state
 val get_stage_vars : stage_state -> stage_vars
 val diff_stage_vars : stage_vars -> stage_vars -> stage_vars
 

@@ -140,6 +140,8 @@ sig
         returns [b] as second component instead of a copy of [b] when
         the output array is pointwise the same as the input array [b] *)
 
+    val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'b) -> 'a -> 'b array -> 'a * 'b array
+
     val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'c) -> 'a -> 'b array -> 'c array -> 'a * 'c array
     (** [Smart.fold_left2_map f a b c] behaves as [fold_left2_map] but
         returns [c] as second component instead of a copy of [c] when
