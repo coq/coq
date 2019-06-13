@@ -315,6 +315,24 @@ let () = define2 "string_get" string int begin fun s n ->
   else wrap (fun () -> Value.of_char (Bytes.get s n))
 end
 
+(** System *)
+
+let () = define2 "system_file_write" string string begin fun f s ->
+  wrap_unit (fun () ->
+    let oc = open_out (Bytes.to_string f) in
+      output_bytes oc s;
+      close_out oc
+    )
+end
+
+let () = define2 "system_file_append" string string begin fun f s ->
+  wrap_unit (fun () ->
+    let oc = open_out_gen [Open_wronly; Open_creat; Open_append; Open_text] 0o666 (Bytes.to_string f) in
+      output_bytes oc s;
+      close_out oc
+    )
+end
+
 (** Terms *)
 
 (** constr -> constr *)
