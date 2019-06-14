@@ -52,7 +52,7 @@ the variable :token:`ident` matches any complex expression with (possible)
 dependencies in the variables :n:`@ident__i` and returns a functional term
 of the form :n:`fun @ident__1 … ident__n => @term`.
 
-The main entry of the grammar is :n:`@expr`. This language is used in proof
+The main entry of the grammar is :n:`@ltac_expr`. This language is used in proof
 mode but it can also be used in toplevel definitions as shown below.
 
 .. note::
@@ -89,39 +89,39 @@ mode but it can also be used in toplevel definitions as shown below.
         :n:`((try (repeat (@tactic__1 || @tactic__2)); @tactic__3); [ {+| @tactic } ]); @tactic__4`
 
 .. productionlist::  coq
-   expr              : `expr` ; `expr`
-                     : [> `expr` | ... | `expr` ]
-                     : `expr` ; [ `expr` | ... | `expr` ]
-                     : `tacexpr3`
-   tacexpr3          : do (`natural` | `ident`) `tacexpr3`
-                     : progress `tacexpr3`
-                     : repeat `tacexpr3`
-                     : try `tacexpr3`
-                     : once `tacexpr3`
-                     : exactly_once `tacexpr3`
-                     : timeout (`natural` | `ident`) `tacexpr3`
-                     : time [`string`] `tacexpr3`
-                     : only `selector`: `tacexpr3`
-                     : `tacexpr2`
-   tacexpr2          : `tacexpr1` || `tacexpr3`
-                     : `tacexpr1` + `tacexpr3`
-                     : tryif `tacexpr1` then `tacexpr1` else `tacexpr1`
-                     : `tacexpr1`
-   tacexpr1          : fun `name` ... `name` => `atom`
+   ltac_expr         : `ltac_expr` ; `ltac_expr`
+                     : [> `ltac_expr` | ... | `ltac_expr` ]
+                     : `ltac_expr` ; [ `ltac_expr` | ... | `ltac_expr` ]
+                     : `ltac_expr3`
+   ltac_expr3        : do (`natural` | `ident`) `ltac_expr3`
+                     : progress `ltac_expr3`
+                     : repeat `ltac_expr3`
+                     : try `ltac_expr3`
+                     : once `ltac_expr3`
+                     : exactly_once `ltac_expr3`
+                     : timeout (`natural` | `ident`) `ltac_expr3`
+                     : time [`string`] `ltac_expr3`
+                     : only `selector`: `ltac_expr3`
+                     : `ltac_expr2`
+   ltac_expr2        : `ltac_expr1` || `ltac_expr3`
+                     : `ltac_expr1` + `ltac_expr3`
+                     : tryif `ltac_expr1` then `ltac_expr1` else `ltac_expr1`
+                     : `ltac_expr1`
+   ltac_expr1        : fun `name` ... `name` => `atom`
                      : let [rec] `let_clause` with ... with `let_clause` in `atom`
                      : match goal with `context_rule` | ... | `context_rule` end
                      : match reverse goal with `context_rule` | ... | `context_rule` end
-                     : match `expr` with `match_rule` | ... | `match_rule` end
+                     : match `ltac_expr` with `match_rule` | ... | `match_rule` end
                      : lazymatch goal with `context_rule` | ... | `context_rule` end
                      : lazymatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : lazymatch `expr` with `match_rule` | ... | `match_rule` end
+                     : lazymatch `ltac_expr` with `match_rule` | ... | `match_rule` end
                      : multimatch goal with `context_rule` | ... | `context_rule` end
                      : multimatch reverse goal with `context_rule` | ... | `context_rule` end
-                     : multimatch `expr` with `match_rule` | ... | `match_rule` end
+                     : multimatch `ltac_expr` with `match_rule` | ... | `match_rule` end
                      : abstract `atom`
                      : abstract `atom` using `ident`
-                     : first [ `expr` | ... | `expr` ]
-                     : solve [ `expr` | ... | `expr` ]
+                     : first [ `ltac_expr` | ... | `ltac_expr` ]
+                     : solve [ `ltac_expr` | ... | `ltac_expr` ]
                      : idtac [ `message_token` ... `message_token`]
                      : fail [`natural`] [`message_token` ... `message_token`]
                      : gfail [`natural`] [`message_token` ... `message_token`]
@@ -134,31 +134,31 @@ mode but it can also be used in toplevel definitions as shown below.
                      : type_term `term`
                      : numgoals
                      : guard `test`
-                     : assert_fails `tacexpr3`
-                     : assert_succeeds `tacexpr3`
+                     : assert_fails `ltac_expr3`
+                     : assert_succeeds `ltac_expr3`
                      : `tactic`
                      : `qualid` `tacarg` ... `tacarg`
                      : `atom`
    atom              : `qualid`
                      : ()
                      : `integer`
-                     : ( `expr` )
+                     : ( `ltac_expr` )
    component : `string` | `qualid`
    message_token     : `string` | `ident` | `integer`
    tacarg            : `qualid`
                      : ()
                      : ltac : `atom`
                      : `term`
-   let_clause        : `ident` [`name` ... `name`] := `expr`
-   context_rule      : `context_hyp`, ..., `context_hyp` |- `cpattern` => `expr`
-                     : `cpattern` => `expr`
-                     : |- `cpattern` => `expr`
-                     : _ => `expr`
+   let_clause        : `ident` [`name` ... `name`] := `ltac_expr`
+   context_rule      : `context_hyp`, ..., `context_hyp` |- `cpattern` => `ltac_expr`
+                     : `cpattern` => `ltac_expr`
+                     : |- `cpattern` => `ltac_expr`
+                     : _ => `ltac_expr`
    context_hyp       : `name` : `cpattern`
                      : `name` := `cpattern` [: `cpattern`]
-   match_rule        : `cpattern` => `expr`
-                     : context [`ident`] [ `cpattern` ] => `expr`
-                     : _ => `expr`
+   match_rule        : `cpattern` => `ltac_expr`
+                     : context [`ident`] [ `cpattern` ] => `ltac_expr`
+                     : _ => `ltac_expr`
    test              : `integer` = `integer`
                      : `integer` (< | <= | > | >=) `integer`
    selector          : [`ident`]
@@ -171,8 +171,8 @@ mode but it can also be used in toplevel definitions as shown below.
 
 .. productionlist:: coq
    top              : [Local] Ltac `ltac_def` with ... with `ltac_def`
-   ltac_def         : `ident` [`ident` ... `ident`] := `expr`
-                    : `qualid` [`ident` ... `ident`] ::= `expr`
+   ltac_def         : `ident` [`ident` ... `ident`] := `ltac_expr`
+                    : `qualid` [`ident` ... `ident`] ::= `ltac_expr`
 
 .. _ltac-semantics:
 
@@ -197,12 +197,12 @@ Sequence
 
 A sequence is an expression of the following form:
 
-.. tacn:: @expr__1 ; @expr__2
+.. tacn:: @ltac_expr__1 ; @ltac_expr__2
    :name: ltac-seq
 
-   The expression :n:`@expr__1` is evaluated to :n:`v__1`, which must be
+   The expression :n:`@ltac_expr__1` is evaluated to :n:`v__1`, which must be
    a tactic value. The tactic :n:`v__1` is applied to the current goal,
-   possibly producing more goals. Then :n:`@expr__2` is evaluated to
+   possibly producing more goals. Then :n:`@ltac_expr__2` is evaluated to
    produce :n:`v__2`, which must be a tactic value. The tactic
    :n:`v__2` is applied to all the goals produced by the prior
    application. Sequence is associative.
@@ -213,10 +213,10 @@ Local application of tactics
 Different tactics can be applied to the different goals using the
 following form:
 
-.. tacn:: [> {*| @expr }]
+.. tacn:: [> {*| @ltac_expr }]
    :name: [> ... | ... | ... ] (dispatch)
 
-   The expressions :n:`@expr__i` are evaluated to :n:`v__i`, for
+   The expressions :n:`@ltac_expr__i` are evaluated to :n:`v__i`, for
    i = 1, ..., n and all have to be tactics. The :n:`v__i` is applied to the
    i-th goal, for i = 1, ..., n. It fails if the number of focused goals is not
    exactly n.
@@ -227,31 +227,31 @@ following form:
       were given. For instance, ``[> | auto]`` is a shortcut for ``[> idtac | auto
       ]``.
 
-   .. tacv:: [> {*| @expr__i} | @expr .. | {*| @expr__j}]
+   .. tacv:: [> {*| @ltac_expr__i} | @ltac_expr .. | {*| @ltac_expr__j}]
 
-      In this variant, :n:`@expr` is used for each goal coming after those
-      covered by the list of :n:`@expr__i` but before those covered by the
-      list of :n:`@expr__j`.
+      In this variant, :n:`@ltac_expr` is used for each goal coming after those
+      covered by the list of :n:`@ltac_expr__i` but before those covered by the
+      list of :n:`@ltac_expr__j`.
 
-   .. tacv:: [> {*| @expr} | .. | {*| @expr}]
+   .. tacv:: [> {*| @ltac_expr} | .. | {*| @ltac_expr}]
 
       In this variant, idtac is used for the goals not covered by the two lists of
-      :n:`@expr`.
+      :n:`@ltac_expr`.
 
-   .. tacv:: [> @expr .. ]
+   .. tacv:: [> @ltac_expr .. ]
 
-      In this variant, the tactic :n:`@expr` is applied independently to each of
+      In this variant, the tactic :n:`@ltac_expr` is applied independently to each of
       the goals, rather than globally. In particular, if there are no goals, the
       tactic is not run at all. A tactic which expects multiple goals, such as
       ``swap``, would act as if a single goal is focused.
 
-   .. tacv:: @expr__0 ; [{*| @expr__i}]
+   .. tacv:: @ltac_expr__0 ; [{*| @ltac_expr__i}]
 
       This variant of local tactic application is paired with a sequence. In this
-      variant, there must be as many :n:`@expr__i` as goals generated
-      by the application of :n:`@expr__0` to each of the individual goals
+      variant, there must be as many :n:`@ltac_expr__i` as goals generated
+      by the application of :n:`@ltac_expr__0` to each of the individual goals
       independently. All the above variants work in this form too.
-      Formally, :n:`@expr ; [ ... ]` is equivalent to :n:`[> @expr ; [> ... ] .. ]`.
+      Formally, :n:`@ltac_expr ; [ ... ]` is equivalent to :n:`[> @ltac_expr ; [> ... ] .. ]`.
 
 .. _goal-selectors:
 
@@ -261,53 +261,53 @@ Goal selectors
 We can restrict the application of a tactic to a subset of the currently
 focused goals with:
 
-.. tacn:: @toplevel_selector : @expr
+.. tacn:: @toplevel_selector : @ltac_expr
    :name: ... : ... (goal selector)
 
    We can also use selectors as a tactical, which allows to use them nested
    in a tactic expression, by using the keyword ``only``:
 
-   .. tacv:: only @selector : @expr
+   .. tacv:: only @selector : @ltac_expr
       :name: only ... : ...
 
-      When selecting several goals, the tactic :token:`expr` is applied globally to all
+      When selecting several goals, the tactic :token:`ltac_expr` is applied globally to all
       selected goals.
 
-   .. tacv:: [@ident] : @expr
+   .. tacv:: [@ident] : @ltac_expr
 
-      In this variant, :token:`expr` is applied locally to a goal previously named
+      In this variant, :token:`ltac_expr` is applied locally to a goal previously named
       by the user (see :ref:`existential-variables`).
 
-   .. tacv:: @num : @expr
+   .. tacv:: @num : @ltac_expr
 
-      In this variant, :token:`expr` is applied locally to the :token:`num`-th goal.
+      In this variant, :token:`ltac_expr` is applied locally to the :token:`num`-th goal.
 
-   .. tacv:: {+, @num-@num} : @expr
+   .. tacv:: {+, @num-@num} : @ltac_expr
 
-      In this variant, :n:`@expr` is applied globally to the subset of goals
+      In this variant, :n:`@ltac_expr` is applied globally to the subset of goals
       described by the given ranges. You can write a single ``n`` as a shortcut
       for ``n-n`` when specifying multiple ranges.
 
-   .. tacv:: all: @expr
+   .. tacv:: all: @ltac_expr
       :name: all: ...
 
-      In this variant, :token:`expr` is applied to all focused goals. ``all:`` can only
+      In this variant, :token:`ltac_expr` is applied to all focused goals. ``all:`` can only
       be used at the toplevel of a tactic expression.
 
-   .. tacv:: !: @expr
+   .. tacv:: !: @ltac_expr
 
-      In this variant, if exactly one goal is focused, :token:`expr` is
+      In this variant, if exactly one goal is focused, :token:`ltac_expr` is
       applied to it. Otherwise the tactic fails. ``!:`` can only be
       used at the toplevel of a tactic expression.
 
-   .. tacv:: par: @expr
+   .. tacv:: par: @ltac_expr
       :name: par: ...
 
-      In this variant, :n:`@expr` is applied to all focused goals in parallel.
+      In this variant, :n:`@ltac_expr` is applied to all focused goals in parallel.
       The number of workers can be controlled via the command line option
       ``-async-proofs-tac-j`` taking as argument the desired number of workers.
       Limitations: ``par:`` only works on goals containing no existential
-      variables and :n:`@expr` must either solve the goal completely or do
+      variables and :n:`@ltac_expr` must either solve the goal completely or do
       nothing (i.e. it cannot make some progress). ``par:`` can only be used at
       the toplevel of a tactic expression.
 
@@ -322,10 +322,10 @@ For loop
 
 There is a for loop that repeats a tactic :token:`num` times:
 
-.. tacn:: do @num @expr
+.. tacn:: do @num @ltac_expr
    :name: do
 
-   :n:`@expr` is evaluated to ``v`` which must be a tactic value. This tactic
+   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. This tactic
    value ``v`` is applied :token:`num` times. Supposing :token:`num` > 1, after the
    first application of ``v``, ``v`` is applied, at least once, to the generated
    subgoals and so on. It fails if the application of ``v`` fails before the num
@@ -336,24 +336,24 @@ Repeat loop
 
 We have a repeat loop with:
 
-.. tacn:: repeat @expr
+.. tacn:: repeat @ltac_expr
    :name: repeat
 
-   :n:`@expr` is evaluated to ``v``. If ``v`` denotes a tactic, this tactic is
+   :n:`@ltac_expr` is evaluated to ``v``. If ``v`` denotes a tactic, this tactic is
    applied to each focused goal independently. If the application succeeds, the
    tactic is applied recursively to all the generated subgoals until it eventually
    fails. The recursion stops in a subgoal when the tactic has failed *to make
-   progress*. The tactic :n:`repeat @expr` itself never fails.
+   progress*. The tactic :n:`repeat @ltac_expr` itself never fails.
 
 Error catching
 ~~~~~~~~~~~~~~
 
 We can catch the tactic errors with:
 
-.. tacn:: try @expr
+.. tacn:: try @ltac_expr
    :name: try
 
-   :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic
+   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic
    value ``v`` is applied to each focused goal independently. If the application of
    ``v`` fails in a goal, it catches the error and leaves the goal unchanged. If the
    level of the exception is positive, then the exception is re-raised with its
@@ -364,10 +364,10 @@ Detecting progress
 
 We can check if a tactic made progress with:
 
-.. tacn:: progress @expr
+.. tacn:: progress @ltac_expr
    :name: progress
 
-   :n:`@expr` is evaluated to v which must be a tactic value. The tactic value ``v``
+   :n:`@ltac_expr` is evaluated to v which must be a tactic value. The tactic value ``v``
    is applied to each focued subgoal independently. If the application of ``v``
    to one of the focused subgoal produced subgoals equal to the initial
    goals (up to syntactical equality), then an error of level 0 is raised.
@@ -380,19 +380,19 @@ Backtracking branching
 
 We can branch with the following structure:
 
-.. tacn:: @expr__1 + @expr__2
+.. tacn:: @ltac_expr__1 + @ltac_expr__2
    :name: + (backtracking branching)
 
-   :n:`@expr__1` and :n:`@expr__2` are evaluated respectively to :n:`v__1` and
+   :n:`@ltac_expr__1` and :n:`@ltac_expr__2` are evaluated respectively to :n:`v__1` and
    :n:`v__2` which must be tactic values. The tactic value :n:`v__1` is applied to
    each focused goal independently and if it fails or a later tactic fails, then
    the proof backtracks to the current goal and :n:`v__2` is applied.
 
    Tactics can be seen as having several successes. When a tactic fails it
    asks for more successes of the prior tactics.
-   :n:`@expr__1 + @expr__2` has all the successes of :n:`v__1` followed by all the
+   :n:`@ltac_expr__1 + @ltac_expr__2` has all the successes of :n:`v__1` followed by all the
    successes of :n:`v__2`. Algebraically,
-   :n:`(@expr__1 + @expr__2); @expr__3 = (@expr__1; @expr__3) + (@expr__2; @expr__3)`.
+   :n:`(@ltac_expr__1 + @ltac_expr__2); @ltac_expr__3 = (@ltac_expr__1; @ltac_expr__3) + (@ltac_expr__2; @ltac_expr__3)`.
 
    Branching is left-associative.
 
@@ -403,22 +403,22 @@ Backtracking branching may be too expensive. In this case we may
 restrict to a local, left biased, branching and consider the first
 tactic to work (i.e. which does not fail) among a panel of tactics:
 
-.. tacn:: first [{*| @expr}]
+.. tacn:: first [{*| @ltac_expr}]
    :name: first
 
-   The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
+   The :n:`@ltac_expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
    tactic values for i = 1, ..., n. Supposing n > 1,
-   :n:`first [@expr__1 | ... | @expr__n]` applies :n:`v__1` in each
+   :n:`first [@ltac_expr__1 | ... | @ltac_expr__n]` applies :n:`v__1` in each
    focused goal independently and stops if it succeeds; otherwise it
    tries to apply :n:`v__2` and so on. It fails when there is no
    applicable tactic. In other words,
-   :n:`first [@expr__1 | ... | @expr__n]` behaves, in each goal, as the first
+   :n:`first [@ltac_expr__1 | ... | @ltac_expr__n]` behaves, in each goal, as the first
    :n:`v__i` to have *at least* one success.
 
    .. exn:: No applicable tactic.
       :undocumented:
 
-   .. tacv:: first @expr
+   .. tacv:: first @ltac_expr
 
       This is an |Ltac| alias that gives a primitive access to the first
       tactical as an |Ltac| definition without going through a parsing rule. It
@@ -437,14 +437,14 @@ Left-biased branching
 Yet another way of branching without backtracking is the following
 structure:
 
-.. tacn:: @expr__1 || @expr__2
+.. tacn:: @ltac_expr__1 || @ltac_expr__2
    :name: || (left-biased branching)
 
-   :n:`@expr__1` and :n:`@expr__2` are evaluated respectively to :n:`v__1` and
+   :n:`@ltac_expr__1` and :n:`@ltac_expr__2` are evaluated respectively to :n:`v__1` and
    :n:`v__2` which must be tactic values. The tactic value :n:`v__1` is
    applied in each subgoal independently and if it fails *to progress* then
-   :n:`v__2` is applied. :n:`@expr__1 || @expr__2` is
-   equivalent to :n:`first [ progress @expr__1 | @expr__2 ]` (except that
+   :n:`v__2` is applied. :n:`@ltac_expr__1 || @ltac_expr__2` is
+   equivalent to :n:`first [ progress @ltac_expr__1 | @ltac_expr__2 ]` (except that
    if it fails, it fails like :n:`v__2`). Branching is left-associative.
 
 Generalized biased branching
@@ -452,19 +452,19 @@ Generalized biased branching
 
 The tactic
 
-.. tacn:: tryif @expr__1 then @expr__2 else @expr__3
+.. tacn:: tryif @ltac_expr__1 then @ltac_expr__2 else @ltac_expr__3
    :name: tryif
 
    is a generalization of the biased-branching tactics above. The
-   expression :n:`@expr__1` is evaluated to :n:`v__1`, which is then
+   expression :n:`@ltac_expr__1` is evaluated to :n:`v__1`, which is then
    applied to each subgoal independently. For each goal where :n:`v__1`
-   succeeds at least once, :n:`@expr__2` is evaluated to :n:`v__2` which
+   succeeds at least once, :n:`@ltac_expr__2` is evaluated to :n:`v__2` which
    is then applied collectively to the generated subgoals. The :n:`v__2`
    tactic can trigger backtracking points in :n:`v__1`: where :n:`v__1`
    succeeds at least once,
-   :n:`tryif @expr__1 then @expr__2 else @expr__3` is equivalent to
+   :n:`tryif @ltac_expr__1 then @ltac_expr__2 else @ltac_expr__3` is equivalent to
    :n:`v__1; v__2`. In each of the goals where :n:`v__1` does not succeed at least
-   once, :n:`@expr__3` is evaluated in :n:`v__3` which is is then applied to the
+   once, :n:`@ltac_expr__3` is evaluated in :n:`v__3` which is is then applied to the
    goal.
 
 Soft cut
@@ -473,13 +473,13 @@ Soft cut
 Another way of restricting backtracking is to restrict a tactic to a
 single success *a posteriori*:
 
-.. tacn:: once @expr
+.. tacn:: once @ltac_expr
    :name: once
 
-   :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
+   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied but only its first success is used. If ``v`` fails,
-   :n:`once @expr` fails like ``v``. If ``v`` has at least one success,
-   :n:`once @expr` succeeds once, but cannot produce more successes.
+   :n:`once @ltac_expr` fails like ``v``. If ``v`` has at least one success,
+   :n:`once @ltac_expr` succeeds once, but cannot produce more successes.
 
 Checking the successes
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -487,14 +487,14 @@ Checking the successes
 Coq provides an experimental way to check that a tactic has *exactly
 one* success:
 
-.. tacn:: exactly_once @expr
+.. tacn:: exactly_once @ltac_expr
    :name: exactly_once
 
-   :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
+   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied if it has at most one success. If ``v`` fails,
-   :n:`exactly_once @expr` fails like ``v``. If ``v`` has a exactly one success,
-   :n:`exactly_once @expr` succeeds like ``v``. If ``v`` has two or more
-   successes, exactly_once expr fails.
+   :n:`exactly_once @ltac_expr` fails like ``v``. If ``v`` has a exactly one success,
+   :n:`exactly_once @ltac_expr` succeeds like ``v``. If ``v`` has two or more
+   successes, :n:`exactly_once @ltac_expr` fails.
 
    .. warning::
 
@@ -513,10 +513,10 @@ Checking the failure
 
 Coq provides a derived tactic to check that a tactic *fails*:
 
-.. tacn:: assert_fails @expr
+.. tacn:: assert_fails @ltac_expr
    :name: assert_fails
 
-   This behaves like :n:`tryif @expr then fail 0 tac "succeeds" else idtac`.
+   This behaves like :n:`tryif @ltac_expr then fail 0 tac "succeeds" else idtac`.
 
 Checking the success
 ~~~~~~~~~~~~~~~~~~~~
@@ -524,7 +524,7 @@ Checking the success
 Coq provides a derived tactic to check that a tactic has *at least one*
 success:
 
-.. tacn:: assert_succeeds @expr
+.. tacn:: assert_succeeds @ltac_expr
    :name: assert_succeeds
 
    This behaves like
@@ -536,19 +536,19 @@ Solving
 We may consider the first to solve (i.e. which generates no subgoal)
 among a panel of tactics:
 
-.. tacn:: solve [{*| @expr}]
+.. tacn:: solve [{*| @ltac_expr}]
    :name: solve
 
-   The :n:`@expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
+   The :n:`@ltac_expr__i` are evaluated to :n:`v__i` and :n:`v__i` must be
    tactic values, for i = 1, ..., n. Supposing n > 1,
-   :n:`solve [@expr__1 | ... | @expr__n]` applies :n:`v__1` to
+   :n:`solve [@ltac_expr__1 | ... | @ltac_expr__n]` applies :n:`v__1` to
    each goal independently and stops if it succeeds; otherwise it tries to
    apply :n:`v__2` and so on. It fails if there is no solving tactic.
 
    .. exn:: Cannot solve the goal.
       :undocumented:
 
-   .. tacv:: solve @expr
+   .. tacv:: solve @ltac_expr
 
       This is an |Ltac| alias that gives a primitive access to the :n:`solve:`
       tactical. See the :n:`first` tactical for more information.
@@ -651,10 +651,10 @@ Timeout
 We can force a tactic to stop if it has not finished after a certain
 amount of time:
 
-.. tacn:: timeout @num @expr
+.. tacn:: timeout @num @ltac_expr
    :name: timeout
 
-   :n:`@expr` is evaluated to ``v`` which must be a tactic value. The tactic value
+   :n:`@ltac_expr` is evaluated to ``v`` which must be a tactic value. The tactic value
    ``v`` is applied normally, except that it is interrupted after :n:`@num` seconds
    if it is still running. In this case the outcome is a failure.
 
@@ -673,10 +673,10 @@ Timing a tactic
 
 A tactic execution can be timed:
 
-.. tacn:: time @string @expr
+.. tacn:: time @string @ltac_expr
    :name: time
 
-   evaluates :n:`@expr` and displays the running time of the tactic expression, whether it
+   evaluates :n:`@ltac_expr` and displays the running time of the tactic expression, whether it
    fails or succeeds. In case of several successes, the time for each successive
    run is displayed. Time is in seconds and is machine-dependent. The :n:`@string`
    argument is optional. When provided, it is used to identify this particular
@@ -688,10 +688,10 @@ Timing a tactic that evaluates to a term
 Tactic expressions that produce terms can be timed with the experimental
 tactic
 
-.. tacn:: time_constr @expr
+.. tacn:: time_constr @ltac_expr
    :name: time_constr
 
-   which evaluates :n:`@expr ()` and displays the time the tactic expression
+   which evaluates :n:`@ltac_expr ()` and displays the time the tactic expression
    evaluated, assuming successful evaluation. Time is in seconds and is
    machine-dependent.
 
@@ -739,12 +739,12 @@ Local definitions
 
 Local definitions can be done as follows:
 
-.. tacn:: let @ident__1 := @expr__1 {* with @ident__i := @expr__i} in @expr
+.. tacn:: let @ident__1 := @ltac_expr__1 {* with @ident__i := @ltac_expr__i} in @ltac_expr
    :name: let ... := ...
 
-   each :n:`@expr__i` is evaluated to :n:`v__i`, then, :n:`@expr` is evaluated
+   each :n:`@ltac_expr__i` is evaluated to :n:`v__i`, then, :n:`@ltac_expr` is evaluated
    by substituting :n:`v__i` to each occurrence of :n:`@ident__i`, for
-   i = 1, ..., n. There are no dependencies between the :n:`@expr__i` and the
+   i = 1, ..., n. There are no dependencies between the :n:`@ltac_expr__i` and the
    :n:`@ident__i`.
 
    Local definitions can be made recursive by using :n:`let rec` instead of :n:`let`.
@@ -763,7 +763,7 @@ An application is an expression of the following form:
 
    The reference :n:`@qualid` must be bound to some defined tactic definition
    expecting at least as many arguments as the provided :n:`tacarg`. The
-   expressions :n:`@expr__i` are evaluated to :n:`v__i`, for i = 1, ..., n.
+   expressions :n:`@ltac_expr__i` are evaluated to :n:`v__i`, for i = 1, ..., n.
 
    .. what expressions ??
 
@@ -773,7 +773,7 @@ Function construction
 A parameterized tactic can be built anonymously (without resorting to
 local definitions) with:
 
-.. tacn:: fun {+ @ident} => @expr
+.. tacn:: fun {+ @ident} => @ltac_expr
 
    Indeed, local definitions of functions are a syntactic sugar for binding
    a :n:`fun` tactic to an identifier.
@@ -783,9 +783,9 @@ Pattern matching on terms
 
 We can carry out pattern matching on terms with:
 
-.. tacn:: match @expr with {+| @cpattern__i => @expr__i} end
+.. tacn:: match @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
 
-   The expression :n:`@expr` is evaluated and should yield a term which is
+   The expression :n:`@ltac_expr` is evaluated and should yield a term which is
    matched against :n:`cpattern__1`. The matching is non-linear: if a
    metavariable occurs more than once, it should match the same expression
    every time. It is first-order except on the variables of the form :n:`@?id`
@@ -799,20 +799,20 @@ We can carry out pattern matching on terms with:
    same types. This provides with a primitive form of matching under
    context which does not require manipulating a functional term.
 
-   If the matching with :n:`@cpattern__1` succeeds, then :n:`@expr__1` is
+   If the matching with :n:`@cpattern__1` succeeds, then :n:`@ltac_expr__1` is
    evaluated into some value by substituting the pattern matching
-   instantiations to the metavariables. If :n:`@expr__1` evaluates to a
+   instantiations to the metavariables. If :n:`@ltac_expr__1` evaluates to a
    tactic and the match expression is in position to be applied to a goal
    (e.g. it is not bound to a variable by a :n:`let in`), then this tactic is
    applied. If the tactic succeeds, the list of resulting subgoals is the
-   result of the match expression. If :n:`@expr__1` does not evaluate to a
+   result of the match expression. If :n:`@ltac_expr__1` does not evaluate to a
    tactic or if the match expression is not in position to be applied to a
-   goal, then the result of the evaluation of :n:`@expr__1` is the result
+   goal, then the result of the evaluation of :n:`@ltac_expr__1` is the result
    of the match expression.
 
    If the matching with :n:`@cpattern__1` fails, or if it succeeds but the
-   evaluation of :n:`@expr__1` fails, or if the evaluation of
-   :n:`@expr__1` succeeds but returns a tactic in execution position whose
+   evaluation of :n:`@ltac_expr__1` fails, or if the evaluation of
+   :n:`@ltac_expr__1` succeeds but returns a tactic in execution position whose
    execution fails, then :n:`cpattern__2` is used and so on. The pattern
    :n:`_` matches any term and shadows all remaining patterns if any. If all
    clauses fail (in particular, there is no pattern :n:`_`) then a
@@ -828,9 +828,9 @@ We can carry out pattern matching on terms with:
 
    .. exn:: Argument of match does not evaluate to a term.
 
-      This happens when :n:`@expr` does not denote a term.
+      This happens when :n:`@ltac_expr` does not denote a term.
 
-   .. tacv:: multimatch @expr with {+| @cpattern__i => @expr__i} end
+   .. tacv:: multimatch @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
 
       Using multimatch instead of match will allow subsequent tactics to
       backtrack into a right-hand side tactic which has backtracking points
@@ -839,7 +839,7 @@ We can carry out pattern matching on terms with:
 
       The syntax :n:`match …` is, in fact, a shorthand for :n:`once multimatch …`.
 
-   .. tacv:: lazymatch @expr with {+| @cpattern__i => @expr__i} end
+   .. tacv:: lazymatch @ltac_expr with {+| @cpattern__i => @ltac_expr__i} end
 
       Using lazymatch instead of match will perform the same pattern
       matching procedure but will commit to the first matching branch
@@ -884,13 +884,13 @@ We can perform pattern matching on goals using the following expression:
 
 .. we should provide the full grammar here
 
-.. tacn:: match goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
+.. tacn:: match goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
    :name: match goal
 
    If each hypothesis pattern :n:`hyp`\ :sub:`1,i`, with i = 1, ..., m\ :sub:`1` is
    matched (non-linear first-order unification) by a hypothesis of the
    goal and if :n:`cpattern_1` is matched by the conclusion of the goal,
-   then :n:`@expr__1` is evaluated to :n:`v__1` by substituting the
+   then :n:`@ltac_expr__1` is evaluated to :n:`v__1` by substituting the
    pattern matching to the metavariables and the real hypothesis names
    bound to the possible hypothesis names occurring in the hypothesis
    patterns. If :n:`v__1` is a tactic value, then it is applied to the
@@ -898,7 +898,7 @@ We can perform pattern matching on goals using the following expression:
    is tried with the same proof context pattern. If there is no other
    combination of hypotheses then the second proof context pattern is tried
    and so on. If the next to last proof context pattern fails then
-   the last :n:`@expr` is evaluated to :n:`v` and :n:`v` is
+   the last :n:`@ltac_expr` is evaluated to :n:`v` and :n:`v` is
    applied. Note also that matching against subterms (using the :n:`context
    @ident [ @cpattern ]`) is available and is also subject to yielding several
    matchings.
@@ -922,7 +922,7 @@ We can perform pattern matching on goals using the following expression:
       first), but it possible to reverse this order (oldest first)
       with the :n:`match reverse goal with` variant.
 
-   .. tacv:: multimatch goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
+   .. tacv:: multimatch goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
 
       Using :n:`multimatch` instead of :n:`match` will allow subsequent tactics
       to backtrack into a right-hand side tactic which has backtracking points
@@ -933,7 +933,7 @@ We can perform pattern matching on goals using the following expression:
       The syntax :n:`match [reverse] goal …` is, in fact, a shorthand for
       :n:`once multimatch [reverse] goal …`.
 
-   .. tacv:: lazymatch goal with {+| {+, @context_hyp} |- @cpattern => @expr } | _ => @expr end
+   .. tacv:: lazymatch goal with {+| {+, @context_hyp} |- @cpattern => @ltac_expr } | _ => @ltac_expr end
 
       Using lazymatch instead of match will perform the same pattern matching
       procedure but will commit to the first matching branch with the first
@@ -948,11 +948,11 @@ Filling a term context
 The following expression is not a tactic in the sense that it does not
 produce subgoals but generates a term to be used in tactic expressions:
 
-.. tacn:: context @ident [@expr]
+.. tacn:: context @ident [@ltac_expr]
 
    :n:`@ident` must denote a context variable bound by a context pattern of a
    match expression. This expression evaluates replaces the hole of the
-   value of :n:`@ident` by the value of :n:`@expr`.
+   value of :n:`@ident` by the value of :n:`@ltac_expr`.
 
    .. exn:: Not a context variable.
       :undocumented:
@@ -1072,10 +1072,10 @@ Testing boolean expressions
 Proving a subgoal as a separate lemma
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tacn:: abstract @expr
+.. tacn:: abstract @ltac_expr
    :name: abstract
 
-   From the outside, :n:`abstract @expr` is the same as :n:`solve @expr`.
+   From the outside, :n:`abstract @ltac_expr` is the same as :n:`solve @ltac_expr`.
    Internally it saves an auxiliary lemma called ``ident_subproofn`` where
    ``ident`` is the name of the current goal and ``n`` is chosen so that this is
    a fresh name. Such an auxiliary lemma is inlined in the final proof term.
@@ -1098,7 +1098,7 @@ Proving a subgoal as a separate lemma
       if used as part of typeclass resolution, it may produce wrong
       terms when in universe polymorphic mode.
 
-   .. tacv:: abstract @expr using @ident
+   .. tacv:: abstract @ltac_expr using @ident
 
       Give explicitly the name of the auxiliary lemma.
 
@@ -1107,7 +1107,7 @@ Proving a subgoal as a separate lemma
          Use this feature at your own risk; explicitly named and reused subterms
          don’t play well with asynchronous proofs.
 
-   .. tacv:: transparent_abstract @expr
+   .. tacv:: transparent_abstract @ltac_expr
       :name: transparent_abstract
 
       Save the subproof in a transparent lemma rather than an opaque one.
@@ -1117,7 +1117,7 @@ Proving a subgoal as a separate lemma
          Use this feature at your own risk; building computationally relevant
          terms with tactics is fragile.
 
-   .. tacv:: transparent_abstract @expr using @ident
+   .. tacv:: transparent_abstract @ltac_expr using @ident
 
       Give explicitly the name of the auxiliary transparent lemma.
 
@@ -1139,7 +1139,7 @@ Defining |Ltac| functions
 
 Basically, |Ltac| toplevel definitions are made as follows:
 
-.. cmd:: {? Local} Ltac @ident {* @ident} := @expr
+.. cmd:: {? Local} Ltac @ident {* @ident} := @ltac_expr
    :name: Ltac
 
    This defines a new |Ltac| function that can be used in any tactic
@@ -1152,13 +1152,13 @@ Basically, |Ltac| toplevel definitions are made as follows:
 
       The preceding definition can equivalently be written:
 
-      :n:`Ltac @ident := fun {+ @ident} => @expr`
+      :n:`Ltac @ident := fun {+ @ident} => @ltac_expr`
 
-   .. cmdv:: Ltac @ident {* @ident} {* with @ident {* @ident}} := @expr
+   .. cmdv:: Ltac @ident {* @ident} {* with @ident {* @ident}} := @ltac_expr
 
       This syntax allows recursive and mutual recursive function definitions.
 
-   .. cmdv:: Ltac @qualid {* @ident} ::= @expr
+   .. cmdv:: Ltac @qualid {* @ident} ::= @ltac_expr
 
       This syntax *redefines* an existing user-defined tactic.
 
@@ -1585,7 +1585,7 @@ Backtraces
 Info trace
 ~~~~~~~~~~
 
-.. cmd:: Info @num @expr
+.. cmd:: Info @num @ltac_expr
    :name: Info
 
    This command can be used to print the trace of the path eventually taken by an
