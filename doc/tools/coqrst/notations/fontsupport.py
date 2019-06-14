@@ -12,6 +12,9 @@
 """Transform a font to center each of its characters in square bounding boxes.
 
 See https://stackoverflow.com/questions/37377476/ for background information.
+
+This script is here for reference. It was used to generate the modified
+font CoqNotations.ttf from UbuntuMono-B.ttf.
 """
 
 from collections import Counter
