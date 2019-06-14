@@ -110,7 +110,7 @@ let app_type env c =
 let find_rectype_a env c =
   let (t, l) = app_type env c in
   match kind t with
-  | Ind ind -> (ind, l)
+  | Ind (ind, _) -> (ind, l)
   | _ -> raise Not_found
 
 (* Instantiate inductives and parameters in constructor type *)
@@ -137,7 +137,7 @@ let construct_of_constr_notnative const env tag (mind, _ as ind) u allargs =
 let construct_of_constr const env sigma tag typ =
   let t, l = app_type env typ in
   match EConstr.kind_upto sigma t with
-  | Ind (ind,u) ->
+  | Ind ((ind,u), _) ->
       construct_of_constr_notnative const env tag ind u l
   | _ ->
     assert (Constr.equal t (Typeops.type_of_int env));

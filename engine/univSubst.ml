@@ -60,10 +60,10 @@ let subst_univs_fn_constr f c =
       let u' = fi u in
         if u' == u then t
         else (changed := true; mkConstU (c, u'))
-    | Ind (i, u) ->
+    | Ind ((i, u), stg) ->
       let u' = fi u in
         if u' == u then t
-        else (changed := true; mkIndU (i, u'))
+        else (changed := true; mkIndUS (i, u') stg)
     | Construct (c, u) ->
       let u' = fi u in
         if u' == u then t
@@ -138,9 +138,9 @@ let nf_evars_and_universes_opt_subst f subst =
     | Const pu ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
         if pu' == pu then c else mkConstU pu'
-    | Ind pu ->
+    | Ind (pu, stg) ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
-        if pu' == pu then c else mkIndU pu'
+        if pu' == pu then c else mkIndUS pu' stg
     | Construct pu ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
         if pu' == pu then c else mkConstructU pu'

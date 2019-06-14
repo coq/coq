@@ -520,13 +520,13 @@ let extract_mrectype sigma t =
   let open EConstr in
   let (t, l) = decompose_app sigma t in
   match EConstr.kind sigma t with
-    | Ind ind -> (ind, l)
+    | Ind (ind, _) -> (ind, l)
     | _ -> raise Not_found
 
 let find_mrectype_vect env sigma c =
   let (t, l) = Termops.decompose_app_vect sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
-    | Ind ind -> (ind, l)
+    | Ind (ind, _) -> (ind, l)
     | _ -> raise Not_found
 
 let find_mrectype env sigma c =
@@ -536,7 +536,7 @@ let find_rectype env sigma c =
   let open EConstr in
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
-    | Ind (ind,u) ->
+    | Ind ((ind,u), _) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
         let l = List.map EConstr.Unsafe.to_constr l in
@@ -549,7 +549,7 @@ let find_inductive env sigma c =
   let open EConstr in
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
-    | Ind ind
+    | Ind (ind, _)
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite <> CoFinite ->
         let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)
@@ -559,7 +559,7 @@ let find_coinductive env sigma c =
   let open EConstr in
   let (t, l) = decompose_app sigma (whd_all env sigma c) in
   match EConstr.kind sigma t with
-    | Ind ind
+    | Ind (ind, _)
         when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite == CoFinite ->
         let l = List.map EConstr.Unsafe.to_constr l in
         (ind, l)

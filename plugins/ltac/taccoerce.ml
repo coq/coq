@@ -203,7 +203,7 @@ let id_of_name = function
           let ref = GlobRef.ConstructRef cstr in
           let basename = Nametab.basename_of_global ref in
           basename
-       | Ind (ind,_) ->
+       | Ind ((ind,_), _) ->
           let ref = GlobRef.IndRef ind in
           let basename = Nametab.basename_of_global ref in
           basename

@@ -33,20 +33,20 @@ let lookup_mind_specif env (kn,tyi) =
 let find_rectype env c =
   let (t, l) = decompose_app (whd_all env c) in
   match kind t with
-  | Ind ind -> (ind, l)
+  | Ind (ind, _) -> (ind, l)
   | _ -> raise Not_found
 
 let find_inductive env c =
   let (t, l) = decompose_app (whd_all env c) in
   match kind t with
-    | Ind ind
+    | Ind (ind, _)
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite <> CoFinite -> (ind, l)
     | _ -> raise Not_found
 
 let find_coinductive env c =
   let (t, l) = decompose_app (whd_all env c) in
   match kind t with
-    | Ind ind
+    | Ind (ind, _)
         when (fst (lookup_mind_specif env (out_punivs ind))).mind_finite == CoFinite -> (ind, l)
     | _ -> raise Not_found
 
@@ -653,7 +653,7 @@ let get_recargs_approx env tree ind args =
        (* Free variables are allowed and assigned Norec *)
        (try snd (List.nth ra_env (k-1))
         with Failure _ | Invalid_argument _ -> mk_norec)
-    | Ind ind_kn ->
+    | Ind (ind_kn, _) ->
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
        begin match dest_recarg tree with
@@ -734,7 +734,7 @@ let restrict_spec env spec p =
   let env = push_rel_context arctx env in
   let i,args = decompose_app (whd_all env s) in
   match kind i with
-  | Ind i ->
+  | Ind (i, _) ->
      begin match spec with
            | Dead_code -> spec
            | Subterm(st,tree) ->
@@ -888,7 +888,7 @@ let filter_stack_domain env p stack =
       let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match kind ty with
-      | Ind ind ->
+      | Ind (ind, _) ->
         let spec' = stack_element_specif elt in
         (match (Lazy.force spec') with
         | Not_subterm | Dead_code -> elt

@@ -1070,7 +1070,7 @@ let global_of_constr sigma c =
   let open GlobRef in
   match EConstr.kind sigma c with
   | Const (c, u) -> ConstRef c, u
-  | Ind (i, u) -> IndRef i, u
+  | Ind ((i, u), _) -> IndRef i, u
   | Construct (c, u) -> ConstructRef c, u
   | Var id -> VarRef id, EConstr.EInstance.empty
   | _ -> raise Not_found
@@ -1081,7 +1081,7 @@ let isGlobalRef = EConstr.isRef
 
 let is_template_polymorphic_ind env sigma f =
   match EConstr.kind sigma f with
-  | Ind (ind, u) ->
+  | Ind ((ind, u), _) ->
     if not (EConstr.EInstance.is_empty u) then false
     else Environ.template_polymorphic_ind ind env
   | _ -> false
@@ -1128,7 +1128,7 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
         f Reduction.CONV t1 t2 && f cv_pb c1 c2
     | Const (c, u), Const (c', u') -> Constant.equal c c'
-    | Ind (i, _), Ind (i', _) -> eq_ind i i'
+    | Ind ((i, _), _), Ind ((i', _), _) -> eq_ind i i'
     | Construct (i, _), Construct (i', _) -> eq_constructor i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
@@ -1381,7 +1381,7 @@ let global_app_of_constr sigma c =
   let open GlobRef in
   match EConstr.kind sigma c with
   | Const (c, u) -> (ConstRef c, u), None
-  | Ind (i, u) -> (IndRef i, u), None
+  | Ind ((i, u), _) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
   | Var id -> (VarRef id, EConstr.EInstance.empty), None
   | Proj (p, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c

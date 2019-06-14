@@ -236,12 +236,12 @@ let subst_univs_level_constr subst c =
           let u' = f u in
             if u' == u then t
             else (changed := true; mkConstU (c, u'))
-      | Ind (i, u) ->
+      | Ind ((i, u), stg) ->
         if Univ.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
-            else (changed := true; mkIndU (i, u'))
+            else (changed := true; mkIndUS (i, u') stg)
       | Construct (c, u) ->
         if Univ.Instance.is_empty u then t
         else
@@ -272,12 +272,12 @@ let subst_instance_constr subst c =
           let u' = f u in
            if u' == u then t
            else (mkConstU (c, u'))
-      | Ind (i, u) ->
+      | Ind ((i, u), stg) ->
        if Univ.Instance.is_empty u then t
        else
          let u' = f u in
            if u' == u then t
-           else (mkIndU (i, u'))
+           else (mkIndUS (i, u') stg)
       | Construct (c, u) ->
        if Univ.Instance.is_empty u then t
        else
@@ -310,7 +310,7 @@ let universes_of_constr c =
     match kind c with
     | Const (_c, u) ->
        LSet.fold LSet.add (Instance.levels u) s
-    | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
+    | Ind (((_mind,_), u), _) | Construct (((_mind,_),_), u) ->
        LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in

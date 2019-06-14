@@ -129,6 +129,7 @@ val mkProj : (Projection.t * constr) -> constr
 (** Constructs the ith (co)inductive type of the block named kn *)
 val mkInd : inductive -> constr
 val mkIndU : pinductive -> constr
+val mkIndUS : pinductive -> Stages.annot -> constr
 
 (** Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. *)
@@ -230,7 +231,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Const     of (Constant.t * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
                                                           (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
 
-  | Ind       of (inductive * 'univs)                 (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Ind       of (inductive * 'univs) * Stages.annot  (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint

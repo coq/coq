@@ -3720,7 +3720,7 @@ let ids_of_constr sigma ?(all=false) vars c =
     | App (f, args) ->
         (match EConstr.kind sigma f with
         | Construct ((ind,_),_)
-        | Ind (ind,_) ->
+        | Ind ((ind,_), _) ->
             let (mib,mip) = Global.lookup_inductive ind in
               Array.fold_left_from
                 (if all then 0 else mib.Declarations.mind_nparams)
@@ -3732,7 +3732,7 @@ let ids_of_constr sigma ?(all=false) vars c =
 let decompose_indapp sigma f args =
   match EConstr.kind sigma f with
   | Construct ((ind,_),_)
-  | Ind (ind,_) ->
+  | Ind ((ind,_), _) ->
       let (mib,mip) = Global.lookup_inductive ind in
       let first = mib.Declarations.mind_nparams_rec in
       let pars, args = Array.chop first args in

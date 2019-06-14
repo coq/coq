@@ -9,8 +9,8 @@ Esubst
 Sorts
 Evar
 Context
-Constr
 Stages
+Constr
 Vars
 Term
 Mod_subst

@@ -114,7 +114,7 @@ let bugged_is_binary sigma t =
   isApp sigma t &&
   let (hdapp,args) = decompose_app sigma t in
     match EConstr.kind sigma hdapp with
-    | Ind (ind,u)  ->
+    | Ind ((ind,u), _)  ->
         let (mib,mip) = Global.lookup_inductive ind in
          Int.equal mib.Declarations.mind_nparams 2
     | _ -> false

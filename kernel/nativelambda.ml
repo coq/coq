@@ -458,7 +458,7 @@ let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
     let dom = Reduction.whd_all env dom in
     let (dom, _) = decompose_appvect dom in
     match kind dom with
-    | Ind (ind, _) -> ind
+    | Ind ((ind, _), _) -> ind
     | _ -> assert false
   else
     let env = Environ.push_rel (RelDecl.LocalAssum (na, dom)) env in
@@ -486,7 +486,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Sort s -> Lsort s
 
-  | Ind (ind,_u as pind) ->
+  | Ind ((ind,_u as pind), _) ->
       let prefix = get_mind_prefix env (fst ind) in
       Lind (prefix, pind)
 

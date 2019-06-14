@@ -789,7 +789,7 @@ and detype_r d flags avoid env sigma t =
       in
         GEvar (id,
                List.map (on_snd (detype d flags avoid env sigma)) l)
-    | Ind (ind_sp,u) ->
+    | Ind ((ind_sp,u), _) ->
         GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
         GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)

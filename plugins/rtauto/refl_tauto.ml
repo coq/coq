@@ -99,7 +99,7 @@ let rec make_form env sigma atom_env term =
       make_atom atom_env (normalize term)
   | Cast(a,_,_) ->
     make_form env sigma atom_env a
-  | Ind (ind, _) ->
+  | Ind ((ind, _), _) ->
     if Names.eq_ind ind (fst (Lazy.force li_False)) then
       Bot
     else

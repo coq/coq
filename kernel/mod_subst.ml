@@ -358,9 +358,9 @@ let rec map_kn f f' c =
           let t' = func t in
             if p' == p && t' == t then c
             else mkProj (p', t')
-      | Ind ((kn,i),u) ->
+      | Ind (((kn,i),u), stg) ->
           let kn' = f kn in
-          if kn'==kn then c else mkIndU ((kn',i),u)
+          if kn'==kn then c else mkIndUS ((kn',i),u) stg
       | Construct (((kn,i),j),u) ->
           let kn' = f kn in
           if kn'==kn then c else mkConstructU (((kn',i),j),u)

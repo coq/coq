@@ -49,7 +49,7 @@ let head_constr_bound sigma t =
   let open GlobRef in
   match EConstr.kind sigma hd with
   | Const (c, _) -> ConstRef c
-  | Ind (i, _) -> IndRef i
+  | Ind ((i, _), _) -> IndRef i
   | Construct (c, _) -> ConstructRef c
   | Var id -> VarRef id
   | Proj (p, _) -> ConstRef (Projection.constant p)
@@ -67,7 +67,7 @@ let decompose_app_bound sigma t =
   let open GlobRef in
   match EConstr.kind sigma hd with
     | Const (c,u) -> ConstRef c, args
-    | Ind (i,u) -> IndRef i, args
+    | Ind ((i,u), _) -> IndRef i, args
     | Construct (c,u) -> ConstructRef c, args
     | Var id -> VarRef id, args
     | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
@@ -1322,7 +1322,7 @@ let add_hints ~locality dbnames h =
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
     match EConstr.kind sigma lem with
-    | Ind (ind,u) ->
+    | Ind ((ind,u), _) ->
         List.init (nconstructors env ind)
                   (fun i ->
                    let ctx = Univ.ContextSet.diff (Evd.universe_context_set evd)

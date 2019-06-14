@@ -116,7 +116,7 @@ let disc_subset sigma x =
   match EConstr.kind sigma x with
   | App (c, l) ->
       (match EConstr.kind sigma c with
-       Ind (i,_) ->
+       Ind ((i,_), _) ->
          let len = Array.length l in
          let sigty = delayed_force sig_typ in
            if Int.equal len 2 && eq_ind i (Globnames.destIndRef sigty)
@@ -235,7 +235,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
 
     | App (c, l), App (c', l') ->
       (match EConstr.kind sigma c, EConstr.kind sigma c' with
-         Ind (i, u), Ind (i', u') -> (* Inductive types *)
+         Ind ((i, u), _), Ind ((i', u'), _) -> (* Inductive types *)
          let len = Array.length l in
          let sigT = delayed_force sigT_typ in
          let prod = delayed_force prod_typ in

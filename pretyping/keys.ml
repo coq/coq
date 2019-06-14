@@ -120,7 +120,7 @@ let constr_key kind c =
     let rec aux k =
       match kind k with
       | Const (c, _) -> KGlob (GlobRef.ConstRef c)
-      | Ind (i, u) -> KGlob (GlobRef.IndRef i)
+      | Ind ((i, u), _) -> KGlob (GlobRef.IndRef i)
       | Construct (c,u) -> KGlob (GlobRef.ConstructRef c)
       | Var id -> KGlob (GlobRef.VarRef id)
       | App (f, _) -> aux f

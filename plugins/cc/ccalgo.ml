@@ -436,9 +436,9 @@ let rec canonize_name sigma c =
       | Const (kn,u) ->
           let canon_const = Constant.make1 (Constant.canonical kn) in
             (mkConstU (canon_const,u))
-      | Ind ((kn,i),u) ->
+      | Ind (((kn,i),u), stg) ->
           let canon_mind = MutInd.make1 (MutInd.canonical kn) in
-            (mkIndU ((canon_mind,i),u))
+            (mkIndUS ((canon_mind,i),u) stg)
       | Construct (((kn,i),j),u) ->
           let canon_mind = MutInd.make1 (MutInd.canonical kn) in
             mkConstructU (((canon_mind,i),j),u)

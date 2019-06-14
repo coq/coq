@@ -46,7 +46,7 @@ let match_with_non_recursive_type env sigma t =
     | App _ ->
         let (hdapp,args) = decompose_app sigma t in
         (match EConstr.kind sigma hdapp with
-           | Ind (ind,u) ->
+           | Ind ((ind,u), _) ->
                if (Environ.lookup_mind (fst ind) env).mind_finite == CoFinite then
                  Some (hdapp,args)
                else
@@ -96,7 +96,7 @@ let rec whd_beta_prod env sigma c = match EConstr.kind sigma c with
 let match_with_one_constructor env sigma style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app sigma t in
   let res = match EConstr.kind sigma hdapp with
-  | Ind ind ->
+  | Ind (ind, _) ->
       let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
       if Int.equal (Array.length mip.mind_consnames) 1
         && (allow_rec || not (mis_is_recursive (fst ind,mib,mip)))
@@ -175,7 +175,7 @@ let test_strict_disjunction (mib, mip) =
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   let res = match EConstr.kind sigma hdapp with
-  | Ind (ind,u)  ->
+  | Ind ((ind,u), _)  ->
       let car = constructors_nrealargs env ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
@@ -211,7 +211,7 @@ let is_disjunction ?(strict=false) ?(onlybinary=false) env sigma t =
 let match_with_empty_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind (ind, _) ->
+    | Ind ((ind, _), _) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         let nconstr = Array.length mip.mind_consnames in
         if Int.equal nconstr 0 then Some hdapp else None
@@ -225,7 +225,7 @@ let is_empty_type env sigma t = Option.has_some (match_with_empty_type env sigma
 let match_with_unit_or_eq_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-    | Ind (ind , _) ->
+    | Ind ((ind , _), _) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         let nconstr = Array.length mip.mind_consnames in
         if Int.equal nconstr 1 && Int.equal mip.mind_consnrealargs.(0) 0 then
@@ -292,7 +292,7 @@ let match_with_equation env sigma t =
   if not (isApp sigma t) then raise NoEquationFound;
   let (hdapp,args) = destApp sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind,u) ->
+  | Ind ((ind,u), _) ->
     if Coqlib.check_ind_ref "core.eq.type" ind then
       Some (build_coq_eq_data()),hdapp,
       PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
@@ -333,7 +333,7 @@ let is_inductive_equality ind =
 let match_with_equality_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind,_) when is_inductive_equality ind -> Some (hdapp,args)
+  | Ind ((ind,_), _) when is_inductive_equality ind -> Some (hdapp,args)
   | _ -> None
 
 let is_equality_type env sigma t = Option.has_some (match_with_equality_type env sigma t)
@@ -377,7 +377,7 @@ let is_forall_term env sigma c = Option.has_some (match_with_forall_term env sig
 let match_with_nodep_ind env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind, _)  ->
+  | Ind ((ind, _), _)  ->
      let (mib,mip) = Inductive.lookup_mind_specif env ind in
      if Array.length (mib.mind_packets)>1 then None else
        let nodep_constr (ctx, cty) =
@@ -397,7 +397,7 @@ let is_nodep_ind env sigma t = Option.has_some (match_with_nodep_ind env sigma t
 let match_with_sigma_type env sigma t =
   let (hdapp,args) = decompose_app sigma t in
   match EConstr.kind sigma hdapp with
-  | Ind (ind, _) ->
+  | Ind ((ind, _), _) ->
      let (mib,mip) = Global.lookup_inductive ind in
      if Int.equal (Array.length (mib.mind_packets)) 1
         && (Int.equal mip.mind_nrealargs 0)

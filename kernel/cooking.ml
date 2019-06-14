@@ -93,7 +93,7 @@ let expmod_constr cache modlist c =
       | Case (ci,p,t,br) ->
           Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
 
-      | Ind (ind,u) ->
+      | Ind ((ind,u), _) ->
           (try
             share_univs (IndRef ind) u modlist
            with

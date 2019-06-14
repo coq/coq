@@ -252,7 +252,7 @@ let build_beq_scheme mode kn =
           mkVar eid
         | Cast (x,_,_) -> aux (Term.applist (x,a))
         | App _ -> assert false
-        | Ind ((kn',i as ind'),u) (*FIXME: universes *) ->
+        | Ind (((kn',i as ind'),u), _) (*FIXME: universes *) ->
             if MutInd.equal kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
             else begin
               try
@@ -670,7 +670,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         match EConstr.kind sigma concl with
                         | App (c,ca) -> (
                           match EConstr.kind sigma c with
-                          | Ind (indeq, u) ->
+                          | Ind ((indeq, u), _) ->
                               if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                               then
                                 Tacticals.New.tclTHEN

@@ -303,7 +303,7 @@ struct
     | Sort _         -> Term DSort
     | Var i          -> Term (DRef (VarRef i))
     | Const (c,u)    -> Term (DRef (ConstRef c))
-    | Ind (i,u)      -> Term (DRef (IndRef i))
+    | Ind ((i,u), _) -> Term (DRef (IndRef i))
     | Construct (c,u)-> Term (DRef (ConstructRef c))
     | Meta _         -> assert false
     | Evar (i,_)     ->

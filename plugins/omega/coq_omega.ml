@@ -422,7 +422,7 @@ let destructurate_prop sigma t =
         Kapp (Other (string_of_path (path_of_global (GlobRef.ConstRef sp))),args)
     | Construct (csp,_) , args ->
         Kapp (Other (string_of_path (path_of_global (GlobRef.ConstructRef csp))), args)
-    | Ind (isp,_), args ->
+    | Ind ((isp,_), _), args ->
         Kapp (Other (string_of_path (path_of_global (GlobRef.IndRef isp))),args)
     | Var id,[] -> Kvar id
     | Prod ({binder_name=Anonymous},typ,body), [] -> Kimp(typ,body)

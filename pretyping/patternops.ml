@@ -144,7 +144,7 @@ let rec head_pattern_bound t =
 let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Const (sp,_) -> GlobRef.ConstRef sp
   | Construct (sp,_) -> GlobRef.ConstructRef sp
-  | Ind (sp,_) -> GlobRef.IndRef sp
+  | Ind ((sp,_), _) -> GlobRef.IndRef sp
   | Var id -> GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference.")
 
@@ -178,7 +178,7 @@ let pattern_of_constr env sigma t =
          | Some n -> PSoApp (n,Array.to_list (Array.map (pattern_of_constr env) a))
          | None -> PApp (pattern_of_constr env f,Array.map (pattern_of_constr env) a))
     | Const (sp,u)  -> PRef (GlobRef.ConstRef (Constant.make1 (Constant.canonical sp)))
-    | Ind (sp,u)    -> PRef (canonical_gr (GlobRef.IndRef sp))
+    | Ind ((sp,u), _)  -> PRef (canonical_gr (GlobRef.IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
     | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))

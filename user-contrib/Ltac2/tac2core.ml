@@ -411,7 +411,7 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_constant cst;
       of_instance u;
     |]
-  | Ind (ind, u) ->
+  | Ind ((ind, u), _) ->
     v_blk 11 [|
       Value.of_ext Value.val_inductive ind;
       of_instance u;

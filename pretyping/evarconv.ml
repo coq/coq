@@ -573,7 +573,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
         check_strict evd u u'
       | Const _, Const _ -> UnifFailure (evd, NotSameHead)
-      | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.eq_ind ind ind' ->
+      | Ind (((mi,i) as ind , u), _), Ind ((ind', u'), _) when Names.eq_ind ind ind' ->
         if EInstance.is_empty u && EInstance.is_empty u' then Success evd
         else
           let u = EInstance.kind evd u and u' = EInstance.kind evd u' in

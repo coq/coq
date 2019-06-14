@@ -680,7 +680,7 @@ let rec lambda_of_constr env c =
   | Var id -> Lvar id
 
   | Sort s -> Lsort s
-  | Ind ind -> Lind ind
+  | Ind (ind, _) -> Lind ind
 
   | Prod(id, dom, codom) ->
     let ld = lambda_of_constr env dom in

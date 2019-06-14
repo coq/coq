@@ -328,7 +328,7 @@ let rec extract_type env sg db j c args =
                       (* We try to reduce. *)
                       let newc = applistc (get_body lbody) args in
                       extract_type env sg db j newc []))
-    | Ind ((kn,i),u) ->
+    | Ind (((kn,i),u), _) ->
         let s = (extract_ind env kn).ind_packets.(i).ip_sign in
         extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
     | Proj (p,t) ->

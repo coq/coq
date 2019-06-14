@@ -245,7 +245,7 @@ let matches_core env sigma allow_bound_rels
     match ref, EConstr.kind sigma c with
     | VarRef id, Var id' -> Names.Id.equal id id'
     | ConstRef c, Const (c',_) -> Constant.equal c c'
-    | IndRef i, Ind (i', _) -> Names.eq_ind i i'
+    | IndRef i, Ind ((i', _), _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
     | _, _ -> false
   in

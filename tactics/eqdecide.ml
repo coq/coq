@@ -245,7 +245,7 @@ let decideGralEquality =
         match_eqdec env sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
         let headtyp = hd_app sigma (pf_compute gl typ) in
         begin match EConstr.kind sigma headtyp with
-        | Ind (mi,_) -> Proofview.tclUNIT mi
+        | Ind ((mi,_), _) -> Proofview.tclUNIT mi
         | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
         end >>= fun rectype ->
           (tclTHEN

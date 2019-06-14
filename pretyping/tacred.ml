@@ -1225,7 +1225,7 @@ let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
     let t = hnf_constr env sigma t in
     match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
-      | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
+      | Ind (ind, _) -> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
           let open Context.Rel.Declaration in
           if allow_product then
@@ -1237,7 +1237,7 @@ let reduce_to_ind_gen allow_product env sigma t =
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
           match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
-            | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
+            | Ind (ind, _) -> (check_privacy env ind, it_mkProd_or_LetIn t' l)
             | _ -> user_err  (str"Not an inductive product.")
   in
   elimrec env t []

@@ -1,8 +1,12 @@
-(* open Constr *)
-
 type stage_name
 type stage = Infty | StageVar of stage_name * int
 type annot = Empty | Star | Stage of stage
+
+val compare_stage : stage -> stage -> int
+val compare_annot : annot -> annot -> int
+val show_annot : annot -> string
+val hash_stage_annot : annot -> int
+
 
 type stage_vars
 type stage_state
@@ -12,20 +16,12 @@ val get_stage_vars : stage_state -> stage_vars
 val diff_stage_vars : stage_vars -> stage_vars -> stage_vars
 
 
-module Constraint : sig
+module SConstraint : sig
   include Set.S
 end
 
-type stage_constraint = Constraint.elt
-type constraints = Constraint.t
-val empty_constraint : Constraint.t
-val union_constraint : Constraint.t -> Constraint.t -> Constraint.t
-val add_constraint : Constraint.elt -> Constraint.t -> Constraint.t
-
-
-type ('constr, 'types, 'sort, 'univs) kind_of_term_sized
-type t
-type constr_sized = t
-type types_sized = constr_sized
-
-(* val erase : constr_sized -> constr *)
+type stage_constraint = SConstraint.elt
+type constraints = SConstraint.t
+val empty_constraint : SConstraint.t
+val union_constraint : SConstraint.t -> SConstraint.t -> SConstraint.t
+val add_constraint : SConstraint.elt -> SConstraint.t -> SConstraint.t

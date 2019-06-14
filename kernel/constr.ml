@@ -29,6 +29,7 @@ open Util
 open Names
 open Univ
 open Context
+open Stages
 
 type existential_key = Evar.t
 type metavariable = int
@@ -97,7 +98,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of (Constant.t * 'univs)
-  | Ind       of (inductive * 'univs)
+  | Ind       of (inductive * 'univs) * annot
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
@@ -179,8 +180,9 @@ let mkProj (p,c) = Proj (p,c)
 let mkEvar e = Evar e
 
 (* Constructs the ith (co)inductive type of the block named kn *)
-let mkInd m = Ind (in_punivs m)
-let mkIndU m = Ind m
+let mkInd m = Ind ((in_punivs m), Empty)
+let mkIndU m = Ind (m, Empty)
+let mkIndUS m stg = Ind (m, stg)
 
 (* Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. *)
@@ -346,7 +348,7 @@ let isRefX x c =
   let open GlobRef in
   match x, kind c with
   | ConstRef c, Const (c', _) -> Constant.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | IndRef i, Ind ((i', _), _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false
@@ -407,7 +409,7 @@ let destEvar c = match kind c with
 
 (* Destructs a (co)inductive type named kn *)
 let destInd c = match kind c with
-  | Ind (_kn, _a as r) -> r
+  | Ind ((_kn, _a as r), _) -> r
   | _ -> raise DestKO
 
 (* Destructs a constructor *)
@@ -435,7 +437,7 @@ let destCoFix c = match kind c with
 let destRef c = let open GlobRef in match kind c with
   | Var x -> VarRef x, Univ.Instance.empty
   | Const (c,u) -> ConstRef c, u
-  | Ind (ind,u) -> IndRef ind, u
+  | Ind ((ind,u), _) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
@@ -885,7 +887,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
-  | Ind (c1,u1), Ind (c2,u2) -> eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
+  | Ind ((c1,u1), _), Ind ((c2,u2), _) -> eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
@@ -1056,7 +1058,7 @@ let constr_ord_int f t1 t2 =
     | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
-    | Ind (ind1, _u1), Ind (ind2, _u2) -> ind_ord ind1 ind2
+    | Ind ((ind1, _u1), stg1), Ind ((ind2, _u2), stg2) -> (ind_ord =? compare_annot) ind1 ind2 stg1 stg2
     | Ind _, _ -> -1 | _, Ind _ -> 1
     | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
@@ -1144,7 +1146,7 @@ let hasheq t1 t2 =
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
     | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal (==) l1 l2
     | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
-    | Ind (ind1,u1), Ind (ind2,u2) -> ind1 == ind2 && u1 == u2
+    | Ind ((ind1,u1), stg1), Ind ((ind2,u2), stg2) -> ind1 == ind2 && u1 == u2 && stg1 == stg2
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
@@ -1228,10 +1230,10 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         let c' = sh_con c in
         let u', hu = sh_instance u in
         (Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
-      | Ind (ind,u) ->
+      | Ind ((ind,u), stg) ->
         let u', hu = sh_instance u in
-        (Ind (sh_ind ind, u'),
-         combinesmall 10 (combine (ind_syntactic_hash ind) hu))
+        (Ind ((sh_ind ind, u'), stg),
+         combinesmall 10 (combine3 (ind_syntactic_hash ind) hu (hash_stage_annot stg)))
       | Construct (c,u) ->
         let u', hu = sh_instance u in
         (Construct (sh_construct c, u'),
@@ -1328,8 +1330,8 @@ let rec hash t =
       combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
     | Const (c,u) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
-    | Ind (ind,u) ->
-      combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
+    | Ind ((ind,u), stg) ->
+      combinesmall 10 (combine3 (ind_hash ind) (Instance.hash u) (hash_stage_annot stg))
     | Construct (c,u) ->
       combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
     | Case (_ , p, c, bl) ->
@@ -1472,7 +1474,7 @@ let rec debug_print c =
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc debug_print l ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
-  | Ind ((sp,i),u) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str")"
+  | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ str (show_annot stg) ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"

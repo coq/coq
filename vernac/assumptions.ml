@@ -174,7 +174,7 @@ let rec traverse current ctx accu t =
 | Const (kn, _) ->
   let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
   traverse_object accu body (ConstRef kn)
-| Ind ((mind, _) as ind, _) ->
+| Ind (((mind, _) as ind, _), _) ->
   traverse_inductive accu mind (IndRef ind)
 | Construct (((mind, _), _) as cst, _) ->
   traverse_inductive accu mind (ConstructRef cst)

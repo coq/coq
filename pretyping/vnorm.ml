@@ -59,7 +59,7 @@ let invert_tag cst tag reloc_tbl =
 let find_rectype_a env c =
   let (t, l) = decompose_appvect (whd_all env c) in
   match kind t with
-  | Ind ind -> (ind, l)
+  | Ind (ind, _) -> (ind, l)
   | _ -> raise Not_found
 
 (* Instantiate inductives and parameters in constructor type *)
@@ -81,7 +81,7 @@ let type_constructor mind mib u (ctx, typ) params =
 let construct_of_constr const env tag typ =
   let (t, allargs) = decompose_appvect (whd_all env typ) in
   match Constr.kind t with
-  | Ind ((mind,_ as ind), u as indu) ->
+  | Ind (((mind,_ as ind), u as indu), _) ->
     let mib,mip = lookup_mind_specif env ind in
     let nparams = mib.mind_nparams in
     let i = invert_tag const tag mip.mind_reloc_tbl in

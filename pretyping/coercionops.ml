@@ -172,7 +172,7 @@ let find_class_type env sigma t =
     | Const (sp,u) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
       CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
-    | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
+    | Ind ((ind_sp,u), _) -> CL_IND ind_sp, u, args
     | Prod _ -> CL_FUN, EInstance.empty, []
     | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found

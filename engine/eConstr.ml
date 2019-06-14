@@ -64,8 +64,8 @@ let mkLetIn (na, b, t, c) = of_kind (LetIn (na, b, t, c))
 let mkApp (f, arg) = of_kind (App (f, arg))
 let mkConstU pc = of_kind (Const pc)
 let mkConst c = of_kind (Const (in_punivs c))
-let mkIndU pi = of_kind (Ind pi)
-let mkInd i = of_kind (Ind (in_punivs i))
+let mkIndU pi = of_kind (Ind (pi, Stages.Empty))
+let mkInd i = of_kind (Ind ((in_punivs i), Stages.Empty))
 let mkConstructU pc = of_kind (Construct pc)
 let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
@@ -142,7 +142,7 @@ let destVar sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destInd sigma c = match kind sigma c with
-| Ind p -> p
+| Ind (p, _) -> p
 | _ -> raise DestKO
 
 let destEvar sigma c = match kind sigma c with
@@ -204,7 +204,7 @@ let destProj sigma c = match kind sigma c with
 let destRef sigma c = let open GlobRef in match kind sigma c with
   | Var x -> VarRef x, EInstance.empty
   | Const (c,u) -> ConstRef c, u
-  | Ind (ind,u) -> IndRef ind, u
+  | Ind ((ind,u), _) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
 
@@ -547,7 +547,7 @@ let universes_of_constr sigma c =
     match kind sigma c with
     | Const (c, u) ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
-    | Ind ((mind,_), u) | Construct (((mind,_),_), u) ->
+    | Ind (((mind,_), u), _) | Construct (((mind,_),_), u) ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
     | Sort u ->
        let sort = ESorts.kind sigma u in

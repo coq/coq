@@ -71,11 +71,11 @@ let rec decompose_term env sigma t=
           Constructor {ci_constr= ((canon_ind,i_con),u);
                        ci_arity=nargs;
                        ci_nhyps=nargs-oib.mind_nparams}
-    | Ind c ->
+    | Ind (c, stg) ->
         let (mind,i_ind),u = c in
         let u = EInstance.kind sigma u in
         let canon_mind = MutInd.make1 (MutInd.canonical mind) in
-        let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndU (canon_ind,u)))
+        let canon_ind = canon_mind,i_ind in  (Symb (Constr.mkIndUS (canon_ind,u) stg))
     | Const (c,u) ->
         let u = EInstance.kind sigma u in
         let canon_const = Constant.make1 (Constant.canonical c) in
