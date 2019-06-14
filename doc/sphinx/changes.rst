@@ -960,6 +960,19 @@ Notations
   refer to `app`.
   Solution: wrap `_ ++ _` in `(_ ++ _)%list` (or whichever scope you want).
 
+Changes in 8.8.0
+~~~~~~~~~~~~~~~~
+
+Various bug fixes.
+
+Changes in 8.8.1
+~~~~~~~~~~~~~~~~
+
+- Some quality-of-life fixes.
+- Numerous improvements to the documentation.
+- Fix a critical bug related to primitive projections and :tacn:`native_compute`.
+- Ship several additional Coq libraries with the Windows installer.
+
 Version 8.8
 -----------
 
