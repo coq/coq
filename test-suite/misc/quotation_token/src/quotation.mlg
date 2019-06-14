@@ -1,0 +1,12 @@
+{
+open Pcoq.Constr
+}
+GRAMMAR EXTEND Gram
+  GLOBAL: operconstr;
+
+  operconstr: LEVEL "0"
+    [ [ s = QUOTATION "foobar:" ->
+        {
+          CAst.make ~loc Constrexpr.(CSort Glob_term.(UNamed [GProp,0])) } ] ]
+  ;
+END
