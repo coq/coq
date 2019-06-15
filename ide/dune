@@ -23,6 +23,11 @@
  (libraries coq.toplevel coqide-server.protocol)
  (link_flags -linkall))
 
+(install
+ (section bin)
+ (package coqide-server)
+ (files (idetop.bc as coqidetop.byte)))
+
 ; IDE Client
 (library
  (name coqide_gui)
