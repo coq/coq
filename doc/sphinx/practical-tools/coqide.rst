@@ -184,7 +184,7 @@ Notice that these settings are saved in the file ``coqiderc`` in the
 is the value of ``$XDG_CONFIG_HOME`` if this environment variable is
 set and which otherwise is ``$HOME/.config/``.
 
-A Gtk2 accelerator keymap is saved under the name ``coqide.keys`` in
+A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
 the same ``coq`` subdirectory of the user configuration directory. It
 is not recommended to edit this file manually: to modify a given menu
 shortcut, go to the corresponding menu item without releasing the
