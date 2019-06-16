@@ -89,7 +89,3 @@ val iprint_no_report : Exninfo.iexn -> Pp.t
     Typical example: [Sys.Break], [Assert_failure], [Anomaly] ...
 *)
 val noncritical : exn -> bool
-
-(** Check whether an exception is handled by some toplevel printer. The
-    [Anomaly] exception is never handled. *)
-val handled : exn -> bool

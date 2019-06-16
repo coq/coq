@@ -473,7 +473,7 @@ end
 
 let () = register_init "err" begin fun _ _ e ->
   let e = to_ext val_exn e in
-  let (e, _) = ExplainErr.process_vernac_interp_error ~allow_uncaught:true e in
+  let (e, _) = ExplainErr.process_vernac_interp_error e in
   str "err:(" ++ CErrors.print_no_report e ++ str ")"
 end
 
