@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Constr
 open Context
-open Entries
 open Vars
 open Declare
 open Names

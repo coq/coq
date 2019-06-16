@@ -68,7 +68,7 @@ match local with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let decl = (ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
+  let decl = (Declare.ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -273,10 +273,10 @@ let context poly l =
       (* Declare the universe context once *)
       let decl = match b with
       | None ->
-        (ParameterEntry (None,(t,univs),None), IsAssumption Logical)
+        (Declare.ParameterEntry (None,(t,univs),None), IsAssumption Logical)
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
-        (DefinitionEntry entry, IsAssumption Logical)
+        (Declare.DefinitionEntry entry, IsAssumption Logical)
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
       let env = Global.env () in

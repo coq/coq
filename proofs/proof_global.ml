@@ -24,9 +24,21 @@ module NamedDecl = Context.Named.Declaration
 
 (*** Proof Global Environment ***)
 
+type 'a proof_entry = {
+  proof_entry_body   : 'a Entries.const_entry_body;
+  (* List of section variables *)
+  proof_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  proof_entry_feedback : Stateid.t option;
+  proof_entry_type        : Constr.types option;
+  proof_entry_universes   : Entries.universes_entry;
+  proof_entry_opaque      : bool;
+  proof_entry_inline_code : bool;
+}
+
 type proof_object = {
   id : Names.Id.t;
-  entries : Evd.side_effects Entries.definition_entry list;
+  entries : Evd.side_effects proof_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
@@ -231,14 +243,14 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     let t = EConstr.Unsafe.to_constr t in
     let univstyp, body = make_body t p in
     let univs, typ = Future.force univstyp in
-    {Entries.
-      const_entry_body = body;
-      const_entry_secctx = section_vars;
-      const_entry_feedback = feedback_id;
-      const_entry_type  = Some typ;
-      const_entry_inline_code = false;
-      const_entry_opaque = opaque;
-      const_entry_universes = univs; }
+    {
+      proof_entry_body = body;
+      proof_entry_secctx = section_vars;
+      proof_entry_feedback = feedback_id;
+      proof_entry_type  = Some typ;
+      proof_entry_inline_code = false;
+      proof_entry_opaque = opaque;
+      proof_entry_universes = univs; }
   in
   let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
   { id = name; entries = entries; persistence = strength;

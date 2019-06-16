@@ -10,7 +10,6 @@
 
 open Decl_kinds
 open Declare
-open Entries
 open Globnames
 open Impargs
 
@@ -38,7 +37,7 @@ end
 
 (* Locality stuff *)
 let declare_definition ident (local, p, k) ?hook_data ce pl imps =
-  let fix_exn = Future.fix_exn_of ce.const_entry_body in
+  let fix_exn = Future.fix_exn_of ce.Proof_global.proof_entry_body in
   let gr = match local with
   | Discharge ->
       let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in

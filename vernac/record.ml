@@ -342,16 +342,17 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags f
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
+                  let open Proof_global in
 		  let entry = {
-		    const_entry_body =
+                    proof_entry_body =
                       Future.from_val ((proj, Univ.ContextSet.empty), Evd.empty_side_effects);
-		    const_entry_secctx = None;
-		    const_entry_type = Some projtyp;
-                    const_entry_universes = ctx;
-		    const_entry_opaque = false;
-		    const_entry_inline_code = false;
-		    const_entry_feedback = None } in
-		  let k = (DefinitionEntry entry,IsDefinition kind) in
+                    proof_entry_secctx = None;
+                    proof_entry_type = Some projtyp;
+                    proof_entry_universes = ctx;
+                    proof_entry_opaque = false;
+                    proof_entry_inline_code = false;
+                    proof_entry_feedback = None } in
+                  let k = (Declare.DefinitionEntry entry,IsDefinition kind) in
 		  let kn = declare_constant ~internal:InternalTacticRequest fid k in
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in

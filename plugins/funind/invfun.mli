@@ -15,5 +15,5 @@ val invfun :
 val derive_correctness :
   (Evd.evar_map ref ->
    (Constr.pconstant * Sorts.family) list ->
-   'a Entries.definition_entry list) ->
+   'a Proof_global.proof_entry list) ->
    Constr.pconstant list -> Names.inductive list -> unit

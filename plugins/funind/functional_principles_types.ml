@@ -19,7 +19,6 @@ open Vars
 open Namegen
 open Names
 open Pp
-open Entries
 open Tactics
 open Context.Rel.Declaration
 open Indfun_common
@@ -371,7 +370,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
         ignore(
           Declare.declare_constant
             name
-            (DefinitionEntry ce,
+            (Declare.DefinitionEntry ce,
              Decl_kinds.IsDefinition (Decl_kinds.Scheme))
         );
         Declare.definition_message name;
@@ -471,7 +470,7 @@ let get_funs_constant mp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects definition_entry list =
+let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects Proof_global.proof_entry list =
   let env = Global.env () in
   let funs = List.map fst fas in
   let first_fun = List.hd funs in
@@ -541,7 +540,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects def
     with Option.IsNone -> (* non recursive definition *)
       false
   in
-  let const = {const with const_entry_opaque = opacity } in
+  let const = {const with Proof_global.proof_entry_opaque = opacity } in
   (* The others are just deduced *)
   if List.is_empty other_princ_types
   then
@@ -552,7 +551,8 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects def
       let sorts = Array.of_list sorts in
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
-    let first_princ_body,first_princ_type = const.const_entry_body, const.const_entry_type in
+    let open Proof_global in
+    let first_princ_body,first_princ_type = const.proof_entry_body, const.proof_entry_type in
     let ctxt,fix = decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = destFix fix in
     let other_result =
@@ -596,9 +596,9 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects def
              Termops.it_mkLambda_or_LetIn (mkFix((idxs,i),decl)) ctxt
            in
            {const with
-              const_entry_body =
+              proof_entry_body =
                 (Future.from_val ((princ_body, Univ.ContextSet.empty), Evd.empty_side_effects));
-              const_entry_type = Some scheme_type
+              proof_entry_type = Some scheme_type
            }
       )
       other_fun_princ_types
@@ -638,7 +638,7 @@ let build_scheme fas =
        ignore
          (Declare.declare_constant
             princ_id
-            (DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
+            (Declare.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
        Declare.definition_message princ_id
     )
     fas

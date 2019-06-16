@@ -17,7 +17,6 @@ open Constr
 open Context
 open Vars
 open Termops
-open Entries
 open Environ
 open Classops
 open Declare

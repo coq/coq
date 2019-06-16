@@ -452,9 +452,9 @@ let restrict ctx vars =
   let uctx' = restrict_universe_context ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
-let demote_seff_univs entry uctx =
+let demote_seff_univs universes uctx =
   let open Entries in
-  match entry.const_entry_universes with
+  match universes with
   | Polymorphic_entry _ -> uctx
   | Monomorphic_entry (univs, _) ->
     let seff = LSet.union uctx.uctx_seff_univs univs in

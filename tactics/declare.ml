@@ -42,6 +42,11 @@ type constant_obj = {
   cst_locl : import_status;
 }
 
+type 'a constant_entry =
+  | DefinitionEntry of 'a Proof_global.proof_entry
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
+
 type constant_declaration = Evd.side_effects constant_entry * logical_kind
 
 (* At load-time, the segment starting from the module name to the discharge *)
@@ -146,13 +151,26 @@ let register_side_effect (c, role) =
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
-  { const_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
-    const_entry_secctx = None;
-    const_entry_type = types;
-    const_entry_universes = univs;
-    const_entry_opaque = opaque;
-    const_entry_feedback = None;
-    const_entry_inline_code = inline}
+  let open Proof_global in
+  { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
+    proof_entry_secctx = None;
+    proof_entry_type = types;
+    proof_entry_universes = univs;
+    proof_entry_opaque = opaque;
+    proof_entry_feedback = None;
+    proof_entry_inline_code = inline}
+
+let cast_proof_entry e =
+  let open Proof_global in
+  {
+    const_entry_body = e.proof_entry_body;
+    const_entry_secctx = e.proof_entry_secctx;
+    const_entry_feedback = e.proof_entry_feedback;
+    const_entry_type = e.proof_entry_type;
+    const_entry_universes = e.proof_entry_universes;
+    const_entry_opaque = e.proof_entry_opaque;
+    const_entry_inline_code = e.proof_entry_inline_code;
+  }
 
 let get_roles export eff =
   let map c =
@@ -162,8 +180,9 @@ let get_roles export eff =
   List.map map export
 
 let define_constant ~side_effect ?(export_seff=false) id cd =
+  let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let is_poly de = match de.const_entry_universes with
+  let is_poly de = match de.proof_entry_universes with
   | Monomorphic_entry _ -> false
   | Polymorphic_entry _ -> true
   in
@@ -172,21 +191,25 @@ let define_constant ~side_effect ?(export_seff=false) id cd =
     match cd with
     | DefinitionEntry de when
         export_seff ||
-        not de.const_entry_opaque ||
+        not de.proof_entry_opaque ||
         is_poly de ->
       (* This globally defines the side-effects in the environment. *)
-      let body, eff = Future.force de.const_entry_body in
+      let body, eff = Future.force de.proof_entry_body in
       let body, export = Global.export_private_constants ~in_section (body, eff.Evd.seff_private) in
       let export = get_roles export eff in
-      let de = { de with const_entry_body = Future.from_val (body, ()) } in
-      export, ConstantEntry (PureEntry, DefinitionEntry de)
+      let de = { de with proof_entry_body = Future.from_val (body, ()) } in
+      let de = cast_proof_entry de in
+      export, ConstantEntry (PureEntry, Entries.DefinitionEntry de)
     | DefinitionEntry de ->
       let map (body, eff) = body, eff.Evd.seff_private in
-      let body = Future.chain de.const_entry_body map in
-      let de = { de with const_entry_body = body } in
-      [], ConstantEntry (EffectEntry, DefinitionEntry de)
-    | ParameterEntry _ | PrimitiveEntry _ as cd ->
-      [], ConstantEntry (PureEntry, cd)
+      let body = Future.chain de.proof_entry_body map in
+      let de = { de with proof_entry_body = body } in
+      let de = cast_proof_entry de in
+      [], ConstantEntry (EffectEntry, Entries.DefinitionEntry de)
+    | ParameterEntry e ->
+      [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
+    | PrimitiveEntry e ->
+      [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
   in
   let kn, eff = Global.add_constant ~side_effect ~in_section id decl in
   kn, eff, export
@@ -217,11 +240,11 @@ let declare_definition ?(internal=UserIndividualRequest)
     definition_entry ?types ~univs ~opaque body
   in
     declare_constant ~internal ~local id
-      (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
+      (DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
-  | SectionLocalDef of Evd.side_effects definition_entry
+  | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -242,11 +265,12 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let (body, eff) = Future.force de.const_entry_body in
+      let open Proof_global in
+      let (body, eff) = Future.force de.proof_entry_body in
       let ((body, uctx), export) = Global.export_private_constants ~in_section:true (body, eff.Evd.seff_private) in
       let eff = get_roles export eff in
       let () = List.iter register_side_effect eff in
-      let poly, univs = match de.const_entry_universes with
+      let poly, univs = match de.proof_entry_universes with
       | Monomorphic_entry uctx -> false, uctx
       | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
@@ -256,12 +280,12 @@ let cache_variable ((sp,_),o) =
       let () = Global.push_context_set (not poly) univs in
       let se = {
         secdef_body = body;
-        secdef_secctx = de.const_entry_secctx;
-        secdef_feedback = de.const_entry_feedback;
-        secdef_type = de.const_entry_type;
+        secdef_secctx = de.proof_entry_secctx;
+        secdef_feedback = de.proof_entry_feedback;
+        secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (id, se) in
-      Explicit, de.const_entry_opaque,
+      Explicit, de.proof_entry_opaque,
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;

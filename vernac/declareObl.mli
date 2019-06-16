@@ -78,7 +78,7 @@ type obligation_qed_info =
 
 val obligation_terminator
   :  Proof_global.opacity_flag
-  -> Evd.side_effects Entries.definition_entry list
+  -> Evd.side_effects Proof_global.proof_entry list
   -> UState.t
   -> obligation_qed_info -> unit
 (** [obligation_terminator] part 2 of saving an obligation *)

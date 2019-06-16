@@ -1902,7 +1902,7 @@ let declare_projection n instance_id r =
     Declare.definition_entry ~types:typ ~univs term
   in
     ignore(Declare.declare_constant n 
-	   (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
+           (Declare.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
@@ -1979,7 +1979,7 @@ let add_morphism_as_parameter atts m n : unit =
   let uctx, instance = build_morphism_signature env evd m in
   let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
-      (Entries.ParameterEntry
+      (Declare.ParameterEntry
          (None,(instance,uctx),None),
        Decl_kinds.IsAssumption Decl_kinds.Logical)
   in

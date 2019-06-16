@@ -23,8 +23,13 @@ open Decl_kinds
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type section_variable_entry =
-  | SectionLocalDef of Evd.side_effects definition_entry
+  | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+
+type 'a constant_entry =
+  | DefinitionEntry of 'a Proof_global.proof_entry
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -44,7 +49,7 @@ type internal_flag =
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->
-  ?eff:Evd.side_effects -> constr -> Evd.side_effects definition_entry
+  ?eff:Evd.side_effects -> constr -> Evd.side_effects Proof_global.proof_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns

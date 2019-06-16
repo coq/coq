@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Entries
 open Decl_kinds
 open Redexpr
 open Constrexpr
@@ -41,5 +40,5 @@ val interp_definition
   -> red_expr option
   -> constr_expr
   -> constr_expr option
-  -> Evd.side_effects definition_entry *
+  -> Evd.side_effects Proof_global.proof_entry *
      Evd.evar_map * UState.universe_decl * Impargs.manual_implicits

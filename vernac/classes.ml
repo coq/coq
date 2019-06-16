@@ -29,7 +29,6 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 open Decl_kinds
-open Entries
 
 let set_typeclass_transparency c local b = 
   Hints.add_hints ~local [typeclasses_db]
@@ -324,7 +323,7 @@ let declare_instance_constant info global imps ?hook id decl poly sigma term ter
   in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
   let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
-  let cdecl = (DefinitionEntry entry, kind) in
+  let cdecl = (Declare.DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
   Declare.definition_message id;
   Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
@@ -339,7 +338,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id 
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
   let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
-      (ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
+      (Declare.ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (ConstRef cst)
 

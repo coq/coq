@@ -70,19 +70,19 @@ let rec shrink ctx sign c t accu =
 | _ -> assert false
 
 let shrink_entry sign const =
-  let open Entries in
-  let typ = match const.const_entry_type with
+  let open Proof_global in
+  let typ = match const.proof_entry_type with
   | None -> assert false
   | Some t -> t
   in
   (* The body has been forced by the call to [build_constant_by_tactic] *)
-  let () = assert (Future.is_over const.const_entry_body) in
-  let ((body, uctx), eff) = Future.force const.const_entry_body in
+  let () = assert (Future.is_over const.proof_entry_body) in
+  let ((body, uctx), eff) = Future.force const.proof_entry_body in
   let (body, typ, ctx) = decompose (List.length sign) body typ [] in
   let (body, typ, args) = shrink ctx sign body typ [] in
   let const = { const with
-    const_entry_body = Future.from_val ((body, uctx), eff);
-    const_entry_type = Some typ;
+    proof_entry_body = Future.from_val ((body, uctx), eff);
+    proof_entry_type = Some typ;
   } in
   (const, args)
 
@@ -152,7 +152,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let const, args = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
-  let cd = Entries.DefinitionEntry { const with Entries.const_entry_opaque = opaque } in
+  let cd = Declare.DefinitionEntry { const with Proof_global.proof_entry_opaque = opaque } in
   let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
   let cst () =
     (* do not compute the implicit arguments, it may be costly *)
@@ -161,20 +161,20 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:ImportNeedQualified id decl
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
-  let inst = match const.Entries.const_entry_universes with
+  let inst = match const.Proof_global.proof_entry_universes with
   | Entries.Monomorphic_entry _ -> EInstance.empty
   | Entries.Polymorphic_entry (_, ctx) ->
     (* We mimic what the kernel does, that is ensuring that no additional
        constraints appear in the body of polymorphic constants. Ideally this
        should be enforced statically. *)
-    let (_, body_uctx), _ = Future.force const.Entries.const_entry_body in
+    let (_, body_uctx), _ = Future.force const.Proof_global.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
     EInstance.make (Univ.UContext.instance ctx)
   in
   let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
   let effs = Evd.concat_side_effects eff
-    Entries.(snd (Future.force const.const_entry_body)) in
+    Proof_global.(snd (Future.force const.proof_entry_body)) in
   let solve =
     Proofview.tclEFFECTS effs <*>
     tacK lem args

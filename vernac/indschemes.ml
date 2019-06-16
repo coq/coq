@@ -21,7 +21,6 @@ open CErrors
 open Util
 open Names
 open Declarations
-open Entries
 open Term
 open Constr
 open Inductive
@@ -104,15 +103,16 @@ let () =
 let define ~poly id internal sigma c t =
   let f = declare_constant ~internal in
   let univs = Evd.univ_entry ~poly sigma in
+  let open Proof_global in
   let kn = f id
     (DefinitionEntry
-      { const_entry_body = c;
-        const_entry_secctx = None;
-        const_entry_type = t;
-	const_entry_universes = univs;
-        const_entry_opaque = false;
-        const_entry_inline_code = false;
-        const_entry_feedback = None;
+      { proof_entry_body = c;
+        proof_entry_secctx = None;
+        proof_entry_type = t;
+        proof_entry_universes = univs;
+        proof_entry_opaque = false;
+        proof_entry_inline_code = false;
+        proof_entry_feedback = None;
       },
       Decl_kinds.IsDefinition Scheme) in
   definition_message id;
