@@ -145,7 +145,7 @@ Ltac2 @ external set : evar_flag -> (unit -> ident option * constr) -> clause ->
 Ltac2 @ external remember : evar_flag -> ident option -> (unit -> constr) -> intro_pattern option -> clause -> unit := "ltac2" "tac_remember".
 
 Ltac2 @ external destruct : evar_flag -> induction_clause list ->
-  constr_with_bindings option -> unit := "ltac2" "tac_induction".
+  constr_with_bindings option -> unit := "ltac2" "tac_destruct".
 
 Ltac2 @ external induction : evar_flag -> induction_clause list ->
   constr_with_bindings option -> unit := "ltac2" "tac_induction".
