@@ -49,10 +49,10 @@ let filter_map filter f =
   let rec it = function
     | [] -> []
     | e::l ->
-	if filter e
-	then
-	  (f e) :: it l
-	else it l
+        if filter e
+        then
+          (f e) :: it l
+        else it l
   in
   it
 
@@ -62,12 +62,12 @@ let chop_rlambda_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match DAst.get rt with
-	  | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
-	  | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
-	  | _ ->
-	      raise (CErrors.UserError(Some "chop_rlambda_n",
-				    str "chop_rlambda_n: Not enough Lambdas"))
+        match DAst.get rt with
+          | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
+          | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
+          | _ ->
+              raise (CErrors.UserError(Some "chop_rlambda_n",
+                                    str "chop_rlambda_n: Not enough Lambdas"))
   in
   chop_lambda_n []
 
@@ -76,9 +76,9 @@ let chop_rprod_n  =
       if n == 0
       then List.rev acc,rt
       else
-	match DAst.get rt with
-	  | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
-	  | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
+        match DAst.get rt with
+          | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
+          | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []
 
@@ -129,8 +129,8 @@ let save id const ?hook uctx (locality,_,kind) =
   let r = match locality with
     | Discharge ->
         let k = Kindops.logical_kind_of_goal_kind kind in
-	let c = SectionLocalDef const in
-	let _ = declare_variable id (Lib.cwd(), c, k) in
+        let c = SectionLocalDef const in
+        let _ = declare_variable id (Lib.cwd(), c, k) in
         VarRef id
     | Global local ->
         let k = Kindops.logical_kind_of_goal_kind kind in
@@ -166,14 +166,14 @@ let with_full_print f a =
     res
   with
     | reraise ->
-	Impargs.make_implicit_args old_implicit_args;
-	Impargs.make_strict_implicit_args old_strict_implicit_args;
-	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
-	Flags.raw_print := old_rawprint;
-	Constrextern.print_universes := old_printuniverses;
+        Impargs.make_implicit_args old_implicit_args;
+        Impargs.make_strict_implicit_args old_strict_implicit_args;
+        Impargs.make_contextual_implicit_args old_contextual_implicit_args;
+        Flags.raw_print := old_rawprint;
+        Constrextern.print_universes := old_printuniverses;
         Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
-	Dumpglob.continue ();
-	raise reraise
+        Dumpglob.continue ();
+        raise reraise
 
 
 
@@ -213,8 +213,8 @@ let rec do_cache_info finfo = function
       else if finfo'.function_constant = finfo.function_constant
       then finfo::finfos
       else
-	let res = do_cache_info finfo finfos in
-	if res == finfos then l else  finfo'::l
+        let res = do_cache_info finfo finfos in
+        if res == finfos then l else  finfo'::l
 
 
 let cache_Function (_,(finfos)) =
@@ -318,7 +318,7 @@ let find_Function_of_graph ind =
 let update_Function finfo =
   (* Pp.msgnl (pr_info finfo); *)
   Lib.add_anonymous_leaf (in_Function finfo)
-			 
+
 
 let add_Function is_general f =
   let f_id = Label.to_id (Constant.label f) in
@@ -356,7 +356,7 @@ let functional_induction_rewrite_dependent_proofs = ref true
 let function_debug = ref false
 open Goptions
 
-let functional_induction_rewrite_dependent_proofs_sig = 
+let functional_induction_rewrite_dependent_proofs_sig =
   {
     optdepr = false;
     optname = "Functional Induction Rewrite Dependent";
@@ -380,7 +380,7 @@ let function_debug_sig =
 let () = declare_bool_option function_debug_sig
 
 
-let do_observe () = !function_debug 
+let do_observe () = !function_debug
 
 
 

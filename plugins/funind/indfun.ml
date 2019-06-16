@@ -20,7 +20,7 @@ let is_rec_info sigma scheme_info =
   let test_branche min acc decl =
     acc || (
       let new_branche =
-	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum sigma (RelDecl.get_type decl))) in
+        it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum sigma (RelDecl.get_type decl))) in
       let free_rels_in_br = Termops.free_rels sigma new_branche in
       let max = min + scheme_info.Tactics.npredicates in
       Int.Set.exists (fun i -> i >= min && i< max) free_rels_in_br
@@ -40,57 +40,57 @@ let functional_induction with_clean c princl pat =
     let princ,bindings, princ_type,g' =
       match princl with
       | None -> (* No principle is given let's find the good one *)
-	 begin
-	   match EConstr.kind sigma f with
-	   | Const (c',u) ->
-	      let princ_option =
-		let finfo = (* we first try to find out a graph on f *)
-		  try find_Function_infos c'
-		  with Not_found ->
-		    user_err  (str "Cannot find induction information on "++
+         begin
+           match EConstr.kind sigma f with
+           | Const (c',u) ->
+              let princ_option =
+                let finfo = (* we first try to find out a graph on f *)
+                  try find_Function_infos c'
+                  with Not_found ->
+                    user_err  (str "Cannot find induction information on "++
                                        Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
-		in
+                in
                 match Tacticals.elimination_sort_of_goal g with
                 | InSProp -> finfo.sprop_lemma
-		| InProp -> finfo.prop_lemma
-		| InSet -> finfo.rec_lemma
-		| InType -> finfo.rect_lemma
-	      in
-	      let princ,g' =  (* then we get the principle *)
-		try
-		  let g',princ =
-		    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
-		  princ,g'
-		with Option.IsNone ->
-		  (*i If there is not default lemma defined then,
-			  we cross our finger and try to find a lemma named f_ind
-			  (or f_rec, f_rect) i*)
-		  let princ_name =
-		    Indrec.make_elimination_ident
-		      (Label.to_id (Constant.label c'))
-		      (Tacticals.elimination_sort_of_goal g)
-		  in
-		  try
-		    let princ_ref = const_of_id princ_name in
-		    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global) g princ_ref in
-		    (b,a)
-		    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
-		  with Not_found -> (* This one is neither defined ! *)
-		    user_err  (str "Cannot find induction principle for "
+                | InProp -> finfo.prop_lemma
+                | InSet -> finfo.rec_lemma
+                | InType -> finfo.rect_lemma
+              in
+              let princ,g' =  (* then we get the principle *)
+                try
+                  let g',princ =
+                    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
+                  princ,g'
+                with Option.IsNone ->
+                  (*i If there is not default lemma defined then,
+                          we cross our finger and try to find a lemma named f_ind
+                          (or f_rec, f_rect) i*)
+                  let princ_name =
+                    Indrec.make_elimination_ident
+                      (Label.to_id (Constant.label c'))
+                      (Tacticals.elimination_sort_of_goal g)
+                  in
+                  try
+                    let princ_ref = const_of_id princ_name in
+                    let (a,b) = Tacmach.pf_eapply (Evd.fresh_global) g princ_ref in
+                    (b,a)
+                    (* mkConst(const_of_id princ_name ),g (\* FIXME *\) *)
+                  with Not_found -> (* This one is neither defined ! *)
+                    user_err  (str "Cannot find induction principle for "
                                      ++ Printer.pr_leconstr_env (Tacmach.pf_env g) sigma (mkConst c') )
-	      in
+              in
               (princ,NoBindings,Tacmach.pf_unsafe_type_of g' princ,g')
-	   | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
-	 end
+           | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
+         end
       | Some ((princ,binding)) ->
-	 princ,binding,Tacmach.pf_unsafe_type_of g princ,g
+         princ,binding,Tacmach.pf_unsafe_type_of g princ,g
     in
     let sigma = Tacmach.project g' in
     let princ_infos = Tactics.compute_elim_sig (Tacmach.project g') princ_type in
     let args_as_induction_constr =
       let c_list =
-	if princ_infos.Tactics.farg_in_concl
-	then [c] else []
+        if princ_infos.Tactics.farg_in_concl
+        then [c] else []
       in
       if List.length args + List.length c_list = 0
       then user_err Pp.(str "Cannot recognize a valid functional scheme" );
@@ -109,35 +109,35 @@ let functional_induction with_clean c princl pat =
     let princ' = Some (princ,bindings) in
     let princ_vars =
       List.fold_right
-	(fun a acc -> try Id.Set.add (destVar sigma a) acc with DestKO -> acc)
-	args
-	Id.Set.empty
+        (fun a acc -> try Id.Set.add (destVar sigma a) acc with DestKO -> acc)
+        args
+        Id.Set.empty
     in
     let old_idl = List.fold_right Id.Set.add (Tacmach.pf_ids_of_hyps g) Id.Set.empty in
     let old_idl = Id.Set.diff old_idl princ_vars in
     let subst_and_reduce g =
       if with_clean
       then
-	let idl =
-	  List.filter (fun id -> not (Id.Set.mem id old_idl))
-	    (Tacmach.pf_ids_of_hyps g)
-	in
-	let flag =
-	  Genredexpr.Cbv
-	    {Redops.all_flags
-	     with Genredexpr.rDelta = false;
-	    }
-	in
-	Tacticals.tclTHEN
-	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
-	  (Proofview.V82.of_tactic (Tactics.reduce flag Locusops.allHypsAndConcl))
-	  g
+        let idl =
+          List.filter (fun id -> not (Id.Set.mem id old_idl))
+            (Tacmach.pf_ids_of_hyps g)
+        in
+        let flag =
+          Genredexpr.Cbv
+            {Redops.all_flags
+             with Genredexpr.rDelta = false;
+            }
+        in
+        Tacticals.tclTHEN
+          (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
+          (Proofview.V82.of_tactic (Tactics.reduce flag Locusops.allHypsAndConcl))
+          g
       else Tacticals.tclIDTAC g
     in
     Tacticals.tclTHEN
       (Proofview.V82.of_tactic (choose_dest_or_ind
-	 princ_infos
-	 (args_as_induction_constr,princ')))
+         princ_infos
+         (args_as_induction_constr,princ')))
       subst_and_reduce
       g'
   in res
@@ -185,13 +185,13 @@ let build_newrecursive
   in
   recdef,rec_impls
 
-let build_newrecursive l = 
-  let l' = List.map 
-    (fun ((fixna,_,bll,ar,body_opt),lnot) -> 
-       match body_opt with 
-	 | Some body -> 
-	     (fixna,bll,ar,body)
-	 | None -> user_err ~hdr:"Function" (str "Body of Function must be given")
+let build_newrecursive l =
+  let l' = List.map
+    (fun ((fixna,_,bll,ar,body_opt),lnot) ->
+       match body_opt with
+         | Some body ->
+             (fixna,bll,ar,body)
+         | None -> user_err ~hdr:"Function" (str "Body of Function must be given")
     ) l
   in
   build_newrecursive l'
@@ -208,23 +208,23 @@ let is_rec names =
     | GCast(b,_) -> lookup names b
     | GRec _ -> error "GRec not handled"
     | GIf(b,_,lhs,rhs) ->
-	(lookup names b) || (lookup names lhs) || (lookup names rhs)
+        (lookup names b) || (lookup names lhs) || (lookup names rhs)
     | GProd(na,_,t,b) | GLambda(na,_,t,b) ->
-	lookup names t || lookup (Nameops.Name.fold_right Id.Set.remove na names) b
+        lookup names t || lookup (Nameops.Name.fold_right Id.Set.remove na names) b
     | GLetIn(na,b,t,c) ->
-	lookup names b || Option.cata (lookup names) true t || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
+        lookup names b || Option.cata (lookup names) true t || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
     | GLetTuple(nal,_,t,b) -> lookup names t ||
-	lookup
-	  (List.fold_left
-	     (fun acc na -> Nameops.Name.fold_right Id.Set.remove na acc)
-	     names
-	     nal
-	  )
-	  b
+        lookup
+          (List.fold_left
+             (fun acc na -> Nameops.Name.fold_right Id.Set.remove na acc)
+             names
+             nal
+          )
+          b
     | GApp(f,args) -> List.exists (lookup names) (f::args)
     | GCases(_,_,el,brl) ->
-	List.exists (fun (e,_) -> lookup names e) el ||
-	  List.exists (lookup_br names) brl
+        List.exists (fun (e,_) -> lookup names e) el ||
+          List.exists (lookup_br names) brl
   and lookup_br names {CAst.v=(idl,_,rt)} =
     let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
@@ -254,19 +254,19 @@ let warn_funind_cannot_build_inversion =
 
 let derive_inversion fix_names =
   try
-    let evd' = Evd.from_env (Global.env ()) in 
+    let evd' = Evd.from_env (Global.env ()) in
     (* we first transform the fix_names identifier into their corresponding constant *)
     let evd',fix_names_as_constant =
       List.fold_right
-	(fun id (evd,l) ->
-	 let evd,c =
-	   Evd.fresh_global
-	     (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in 
+        (fun id (evd,l) ->
+         let evd,c =
+           Evd.fresh_global
+             (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident id)) in
         let (cst, u) = destConst evd c in
-	 evd, (cst, EInstance.kind evd u) :: l
-	)
-	fix_names
-	(evd',[])
+         evd, (cst, EInstance.kind evd u) :: l
+        )
+        fix_names
+        (evd',[])
     in
     (*
        Then we check that the graphs have been defined
@@ -276,22 +276,22 @@ let derive_inversion fix_names =
     List.iter (fun c -> ignore (find_Function_infos (fst c))) fix_names_as_constant ;
     try
       let evd', lind =
-	List.fold_right
-	  (fun id (evd,l) ->
-	   let evd,id = 
-	     Evd.fresh_global
-	       (Global.env ()) evd
-	       (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
-	   in 
+        List.fold_right
+          (fun id (evd,l) ->
+           let evd,id =
+             Evd.fresh_global
+               (Global.env ()) evd
+               (Constrintern.locate_reference (Libnames.qualid_of_ident (mk_rel_id id)))
+           in
            evd,(fst (destInd evd id))::l
-	  )
-	  fix_names
-	  (evd',[])
+          )
+          fix_names
+          (evd',[])
       in
       Invfun.derive_correctness
-	Functional_principles_types.make_scheme
-	fix_names_as_constant
-	lind;
+        Functional_principles_types.make_scheme
+        fix_names_as_constant
+        lind;
       with e when CErrors.noncritical e ->
       let e' = process_vernac_interp_error e in
       warn_funind_cannot_build_inversion e'
@@ -313,15 +313,15 @@ let warning_error names e =
   let e = process_vernac_interp_error e in
   let e_explain e =
     match e with
-      | ToShow e -> 
-	let e = process_vernac_interp_error e in
-	spc () ++ CErrors.print e
-      | _ -> 
-	if do_observe () 
-	then 
-	  let e = process_vernac_interp_error e in 
-	  (spc () ++ CErrors.print e)
-	else mt ()
+      | ToShow e ->
+        let e = process_vernac_interp_error e in
+        spc () ++ CErrors.print e
+      | _ ->
+        if do_observe ()
+        then
+          let e = process_vernac_interp_error e in
+          (spc () ++ CErrors.print e)
+        else mt ()
   in
   match e with
     | Building_graph e ->
@@ -341,10 +341,10 @@ let error_error names e =
   in
   match e with
     | Building_graph e ->
-	user_err 
-	  (str "Cannot define graph(s) for " ++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     e_explain e)
+        user_err
+          (str "Cannot define graph(s) for " ++
+             h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+             e_explain e)
     | _ -> raise e
 
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
@@ -361,51 +361,51 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     if do_built
     then
       begin
-	(*i The next call to mk_rel_id is valid since we have just construct the graph
-	   Ensures by : do_built
-	i*)
+        (*i The next call to mk_rel_id is valid since we have just construct the graph
+           Ensures by : do_built
+        i*)
         let f_R_mut = qualid_of_ident @@ mk_rel_id (List.nth names 0) in
-	let ind_kn =
-	  fst (locate_with_msg
+        let ind_kn =
+          fst (locate_with_msg
                  (pr_qualid f_R_mut++str ": Not an inductive type!")
-		 locate_ind
-		 f_R_mut)
-	in
-	let fname_kn (((fname,_),_,_,_,_),_) =
+                 locate_ind
+                 f_R_mut)
+        in
+        let fname_kn (((fname,_),_,_,_,_),_) =
    let f_ref = qualid_of_ident ?loc:fname.CAst.loc fname.CAst.v in
           locate_with_msg
             (pr_qualid f_ref++str ": Not an inductive type!")
-	    locate_constant
-	    f_ref
-	in
-	let funs_kn = Array.of_list (List.map fname_kn fix_rec_l) in
-	let _ =
-	  List.map_i
-	    (fun i x ->
+            locate_constant
+            f_ref
+        in
+        let funs_kn = Array.of_list (List.map fname_kn fix_rec_l) in
+        let _ =
+          List.map_i
+            (fun i x ->
               let env = Global.env () in
               let princ = Indrec.lookup_eliminator env (ind_kn,i) (InProp) in
-	     let evd = ref (Evd.from_env env) in
-	     let evd',uprinc = Evd.fresh_global env !evd princ in
-             let _ = evd := evd' in 
+             let evd = ref (Evd.from_env env) in
+             let evd',uprinc = Evd.fresh_global env !evd princ in
+             let _ = evd := evd' in
              let sigma, princ_type = Typing.type_of ~refresh:true env !evd uprinc in
              evd := sigma;
-	     let princ_type = EConstr.Unsafe.to_constr princ_type in
-    	     Functional_principles_types.generate_functional_principle
-	       evd
-		 interactive_proof
-		 princ_type
-		 None
-		 None
-		 (Array.of_list pconstants)
-		 (* funs_kn *)
-		 i
-		 (continue_proof  0 [|funs_kn.(i)|])
-	    )
-	    0
-	    fix_rec_l
-	in
-	Array.iter (add_Function is_general) funs_kn;
-	()
+             let princ_type = EConstr.Unsafe.to_constr princ_type in
+             Functional_principles_types.generate_functional_principle
+               evd
+                 interactive_proof
+                 princ_type
+                 None
+                 None
+                 (Array.of_list pconstants)
+                 (* funs_kn *)
+                 i
+                 (continue_proof  0 [|funs_kn.(i)|])
+            )
+            0
+            fix_rec_l
+        in
+        Array.iter (add_Function is_general) funs_kn;
+        ()
       end
   with e when CErrors.noncritical e ->
     on_error names e
@@ -413,40 +413,40 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [(({CAst.v=fname},pl),_,bl,ret_type,body),_] when not is_rec ->
-      let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
+      let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in
       ComDefinition.do_definition
         ~program_mode:false
-	fname
+        fname
         Decl_kinds.(Global ImportDefaultBehavior,false,Definition) pl
         bl None body (Some ret_type);
        let evd,rev_pconstants =
-	 List.fold_left
+         List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
-	    let evd,c =
-	      Evd.fresh_global
-		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+            let evd,c =
+              Evd.fresh_global
+                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)
-	   )
-	   (Evd.from_env (Global.env ()),[])
-	   fixpoint_exprl
+           )
+           (Evd.from_env (Global.env ()),[])
+           fixpoint_exprl
        in
        None, evd,List.rev rev_pconstants
     | _ ->
        ComFixpoint.do_fixpoint (Global ImportDefaultBehavior) false fixpoint_exprl;
        let evd,rev_pconstants =
-	 List.fold_left
+         List.fold_left
            (fun (evd,l) ((({CAst.v=fname},_),_,_,_,_),_) ->
-	    let evd,c =
-	      Evd.fresh_global
-		(Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+            let evd,c =
+              Evd.fresh_global
+                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)
-	   )
-	   (Evd.from_env (Global.env ()),[])
-	   fixpoint_exprl
+           )
+           (Evd.from_env (Global.env ()),[])
+           fixpoint_exprl
        in
        None,evd,List.rev rev_pconstants
 
@@ -467,34 +467,34 @@ let register_wf interactive_proof ?(is_mes=false) fname rec_impls wf_rel_expr wf
     let names =
       List.map
         CAst.(with_val (fun x -> x))
-	(Constrexpr_ops.names_of_local_assums args)
+        (Constrexpr_ops.names_of_local_assums args)
     in
-	  List.index Name.equal (Name wf_arg) names
+          List.index Name.equal (Name wf_arg) names
   in
   let unbounded_eq =
     let f_app_args =
       CAst.make @@ Constrexpr.CAppExpl(
          (None,qualid_of_ident fname,None) ,
-	 (List.map
-	    (function
+         (List.map
+            (function
                | {CAst.v=Anonymous} -> assert false
                | {CAst.v=Name e} -> (Constrexpr_ops.mkIdentC e)
-	    )
-	    (Constrexpr_ops.names_of_local_assums args)
-	 )
-	)
+            )
+            (Constrexpr_ops.names_of_local_assums args)
+         )
+        )
     in
     CAst.make @@ Constrexpr.CApp ((None,Constrexpr_ops.mkRefC (qualid_of_string "Logic.eq")),
-		    [(f_app_args,None);(body,None)])
+                    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
   let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try
       pre_hook [fconst]
-	(generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
-	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
-	);
+        (generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
+           functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+        );
       derive_inversion [fname]
     with e when CErrors.noncritical e ->
       (* No proof done *)
@@ -514,124 +514,124 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt w
   let wf_arg_type,wf_arg =
     match wf_arg with
       | None ->
-	  begin
-	    match args with
+          begin
+            match args with
               | [Constrexpr.CLocalAssum ([{CAst.v=Name x}],k,t)] -> t,x
-	      | _ -> error "Recursive argument must be specified"
-	  end
+              | _ -> error "Recursive argument must be specified"
+          end
       | Some wf_args ->
-	  try
-	    match
-	      List.find
-		(function
-		   | Constrexpr.CLocalAssum(l,k,t) ->
-		       List.exists
+          try
+            match
+              List.find
+                (function
+                   | Constrexpr.CLocalAssum(l,k,t) ->
+                       List.exists
                          (function {CAst.v=Name id} -> Id.equal id wf_args | _ -> false)
-			 l
-		   | _ -> false
-		)
-		args
-	    with
-	      | Constrexpr.CLocalAssum(_,k,t)  ->	    t,wf_args
-	      | _ -> assert false
-	  with Not_found -> assert false
+                         l
+                   | _ -> false
+                )
+                args
+            with
+              | Constrexpr.CLocalAssum(_,k,t)  ->           t,wf_args
+              | _ -> assert false
+          with Not_found -> assert false
   in
-  let wf_rel_from_mes,is_mes = 
-    match wf_rel_expr_opt with 
+  let wf_rel_from_mes,is_mes =
+    match wf_rel_expr_opt with
       | None ->
-	  let ltof =
-	    let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
+          let ltof =
+            let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
             Libnames.qualid_of_path
               (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof"))
           in
-	  let fun_from_mes =
-	    let applied_mes =
-	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
+          let fun_from_mes =
+            let applied_mes =
+              Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
             Constrexpr_ops.mkLambdaC ([CAst.make @@ Name wf_arg],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
-	  in
-	  let wf_rel_from_mes =
-	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
-	  in
-	  wf_rel_from_mes,true
-      | Some wf_rel_expr -> 
-	  let wf_rel_with_mes = 
-	    let a = Names.Id.of_string "___a" in 
-	    let b = Names.Id.of_string "___b" in 
-	    Constrexpr_ops.mkLambdaC(
+          in
+          let wf_rel_from_mes =
+            Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
+          in
+          wf_rel_from_mes,true
+      | Some wf_rel_expr ->
+          let wf_rel_with_mes =
+            let a = Names.Id.of_string "___a" in
+            let b = Names.Id.of_string "___b" in
+            Constrexpr_ops.mkLambdaC(
               [CAst.make @@ Name a; CAst.make @@ Name b],
-	      Constrexpr.Default Explicit,
-	      wf_arg_type,
-	      Constrexpr_ops.mkAppC(wf_rel_expr,
-			       [
-				Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC a]);
-				Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC b])
-			       ])
-			      )
-	  in
-	  wf_rel_with_mes,false
-  in			       
+              Constrexpr.Default Explicit,
+              wf_arg_type,
+              Constrexpr_ops.mkAppC(wf_rel_expr,
+                               [
+                                Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC a]);
+                                Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC b])
+                               ])
+                              )
+          in
+          wf_rel_with_mes,false
+  in
   register_wf interactive_proof ~is_mes:is_mes fname rec_impls wf_rel_from_mes wf_arg
     using_lemmas args ret_type body
 
-let map_option f = function 
-  | None -> None 
+let map_option f = function
+  | None -> None
   | Some v -> Some (f v)
 
 open Constrexpr
 
 let rec rebuild_bl aux bl typ =
-	match bl,typ with
-	  | [], _ -> List.rev aux,typ
-	  | (CLocalAssum(nal,bk,_))::bl',typ ->
-	     rebuild_nal aux bk bl' nal  typ
-	  | (CLocalDef(na,_,_))::bl',{ CAst.v = CLetIn(_,nat,ty,typ') } ->
-	    rebuild_bl (Constrexpr.CLocalDef(na,nat,ty)::aux)
-	      bl' typ'
-	  | _ -> assert false
+        match bl,typ with
+          | [], _ -> List.rev aux,typ
+          | (CLocalAssum(nal,bk,_))::bl',typ ->
+             rebuild_nal aux bk bl' nal  typ
+          | (CLocalDef(na,_,_))::bl',{ CAst.v = CLetIn(_,nat,ty,typ') } ->
+            rebuild_bl (Constrexpr.CLocalDef(na,nat,ty)::aux)
+              bl' typ'
+          | _ -> assert false
 and rebuild_nal aux bk bl' nal typ =
-	match nal,typ with 
-	  | _,{ CAst.v = CProdN([],typ) } -> rebuild_nal aux bk bl' nal typ
-	  | [], _ -> rebuild_bl aux bl' typ
+        match nal,typ with
+          | _,{ CAst.v = CProdN([],typ) } -> rebuild_nal aux bk bl' nal typ
+          | [], _ -> rebuild_bl aux bl' typ
           | na::nal,{ CAst.v = CProdN(CLocalAssum(na'::nal',bk',nal't)::rest,typ') } ->
              if Name.equal (na.CAst.v) (na'.CAst.v) || Name.is_anonymous (na'.CAst.v)
-	     then
-	       let assum = CLocalAssum([na],bk,nal't) in
+             then
+               let assum = CLocalAssum([na],bk,nal't) in
                let new_rest = if nal' = [] then rest else (CLocalAssum(nal',bk',nal't)::rest) in
-	       rebuild_nal
-		 (assum::aux)
-		 bk
-		 bl'
-		 nal
-		 (CAst.make @@ CProdN(new_rest,typ'))
-	     else
-	       let assum = CLocalAssum([na'],bk,nal't) in
+               rebuild_nal
+                 (assum::aux)
+                 bk
+                 bl'
+                 nal
+                 (CAst.make @@ CProdN(new_rest,typ'))
+             else
+               let assum = CLocalAssum([na'],bk,nal't) in
                let new_rest = if nal' = [] then rest else (CLocalAssum(nal',bk',nal't)::rest) in
-	       rebuild_nal
-		 (assum::aux)
-		 bk
-		 bl'
-		 (na::nal)
-		 (CAst.make @@ CProdN(new_rest,typ'))
-	  | _ ->
-	     assert false
+               rebuild_nal
+                 (assum::aux)
+                 bk
+                 bl'
+                 (na::nal)
+                 (CAst.make @@ CProdN(new_rest,typ'))
+          | _ ->
+             assert false
 
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
-let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
+let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   let fixl,ntns = ComFixpoint.extract_fixpoint_components ~structonly:false fixpoint_exprl in
   let ((_,_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl ntns in
   let constr_expr_typel =
     with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
-  let fixpoint_exprl_with_new_bl = 
+  let fixpoint_exprl_with_new_bl =
     List.map2 (fun ((lna,rec_order_opt,bl,ret_typ,opt_body),notation_list) fix_typ ->
-     
-      let new_bl',new_ret_type = rebuild_bl [] bl fix_typ in 
+
+      let new_bl',new_ret_type = rebuild_bl [] bl fix_typ in
       (((lna,rec_order_opt,new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
     )
-      fixpoint_exprl constr_expr_typel 
-  in 
+      fixpoint_exprl constr_expr_typel
+  in
   fixpoint_exprl_with_new_bl
-  
+
 
 let do_generate_principle_aux pconstants on_error register_built interactive_proof
     (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) : Lemmas.t option =
@@ -640,84 +640,84 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
     match fixpoint_exprl with
       | [((_,Some {CAst.v = Constrexpr.CWfRec (wf_x,wf_rel)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},pl),_,args,types,body)),_)  as fixpoint_expr =
-	    match recompute_binder_list [fixpoint_expr] with 
-	      | [e] -> e
-	      | _ -> assert false
-	  in 
-	  let fixpoint_exprl = [fixpoint_expr] in 
-	  let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
-	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
-	  let using_lemmas = [] in 
-	  let pre_hook pconstants =
-	    generate_principle
-	      (ref (Evd.from_env (Global.env ())))
-	      pconstants
-	      on_error
-	      true
-	      register_built
-	      fixpoint_exprl
-	      recdefs
-	      true
-	  in
-	  if register_built
+            match recompute_binder_list [fixpoint_expr] with
+              | [e] -> e
+              | _ -> assert false
+          in
+          let fixpoint_exprl = [fixpoint_expr] in
+          let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in
+          let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+          let using_lemmas = [] in
+          let pre_hook pconstants =
+            generate_principle
+              (ref (Evd.from_env (Global.env ())))
+              pconstants
+              on_error
+              true
+              register_built
+              fixpoint_exprl
+              recdefs
+              true
+          in
+          if register_built
           then register_wf interactive_proof name rec_impls wf_rel wf_x.CAst.v using_lemmas args types body pre_hook, false
           else None, false
       |[((_,Some {CAst.v = Constrexpr.CMeasureRec(wf_x,wf_mes,wf_rel_opt)},_,_,_),_) as fixpoint_expr] ->
           let (((({CAst.v=name},_),_,args,types,body)),_)  as fixpoint_expr =
-	    match recompute_binder_list [fixpoint_expr] with 
-	      | [e] -> e
-	      | _ -> assert false
-	  in 
-	  let fixpoint_exprl = [fixpoint_expr] in 
-	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
-	  let using_lemmas = [] in
-	  let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in 
-	  let pre_hook pconstants =
-	    generate_principle
-	      (ref (Evd.from_env (Global.env ())))
-	      pconstants
-	      on_error
-	      true
-	      register_built
-	      fixpoint_exprl
-	      recdefs
-	      true
-	  in
-	  if register_built
+            match recompute_binder_list [fixpoint_expr] with
+              | [e] -> e
+              | _ -> assert false
+          in
+          let fixpoint_exprl = [fixpoint_expr] in
+          let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+          let using_lemmas = [] in
+          let body = match body with | Some body -> body | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in
+          let pre_hook pconstants =
+            generate_principle
+              (ref (Evd.from_env (Global.env ())))
+              pconstants
+              on_error
+              true
+              register_built
+              fixpoint_exprl
+              recdefs
+              true
+          in
+          if register_built
           then register_mes interactive_proof name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas args types body pre_hook, true
           else None, true
       | _ ->
           List.iter (function ((_na,ord,_args,_body,_type),_not) ->
-		       match ord with 
+                       match ord with
                          | Some { CAst.v = (Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _) } ->
-			     error
-			       ("Cannot use mutual definition with well-founded recursion or measure")
-			 | _ -> ()
-		    )
-	    fixpoint_exprl;
-	let fixpoint_exprl = recompute_binder_list fixpoint_exprl in 
-	let fix_names =
+                             error
+                               ("Cannot use mutual definition with well-founded recursion or measure")
+                         | _ -> ()
+                    )
+            fixpoint_exprl;
+        let fixpoint_exprl = recompute_binder_list fixpoint_exprl in
+        let fix_names =
           List.map (function ((({CAst.v=name},_),_,_,_,_),_) -> name) fixpoint_exprl
-	in
-	(* ok all the expressions are structural *)
-  	let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
-	let is_rec = List.exists (is_rec fix_names) recdefs in
+        in
+        (* ok all the expressions are structural *)
+        let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+        let is_rec = List.exists (is_rec fix_names) recdefs in
         let lemma,evd,pconstants =
-	  if register_built
+          if register_built
           then register_struct is_rec fixpoint_exprl
           else None, Evd.from_env (Global.env ()), pconstants
-	in
-	let evd = ref evd in 
-	generate_principle
-	  (ref !evd)
-	  pconstants
-	  on_error
-	  false
-	  register_built
-	  fixpoint_exprl
-	  recdefs
-	  interactive_proof
-	  (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
+        in
+        let evd = ref evd in
+        generate_principle
+          (ref !evd)
+          pconstants
+          on_error
+          false
+          register_built
+          fixpoint_exprl
+          recdefs
+          interactive_proof
+          (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
           if register_built then
             begin derive_inversion fix_names; end;
           lemma, true
@@ -734,12 +734,12 @@ let rec add_args id new_args = CAst.map (function
         CProdN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
                                  | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
                                  | CLocalPattern _ -> user_err (Pp.str "pattern with quote not allowed here.")) nal,
-	     add_args id new_args  b1)
+             add_args id new_args  b1)
   | CLambdaN(nal,b1) ->
       CLambdaN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
                                  | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
                                  | CLocalPattern _ -> user_err (Pp.str "pattern with quote not allowed here.")) nal,
-	       add_args id new_args  b1)
+               add_args id new_args  b1)
   | CLetIn(na,b1,t,b2) ->
       CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
   | CAppExpl((pf,qid,us),exprl) ->
@@ -748,26 +748,26 @@ let rec add_args id new_args = CAst.map (function
     else CAppExpl((pf,qid,us),List.map (add_args id new_args) exprl)
   | CApp((pf,b),bl) ->
       CApp((pf,add_args id new_args b),
-	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
+           List.map (fun (e,o) -> add_args id new_args e,o) bl)
   | CCases(sty,b_option,cel,cal) ->
       CCases(sty,Option.map (add_args id new_args) b_option,
-	     List.map (fun (b,na,b_option) ->
-			 add_args id new_args b,
-			 na, b_option) cel,
+             List.map (fun (b,na,b_option) ->
+                         add_args id new_args b,
+                         na, b_option) cel,
              List.map CAst.(map (fun (cpl,e) -> (cpl,add_args id new_args e))) cal
-	    )
+            )
   | CLetTuple(nal,(na,b_option),b1,b2) ->
       CLetTuple(nal,(na,Option.map (add_args id new_args) b_option),
-		add_args id new_args b1,
-		add_args id new_args b2
-	       )
+                add_args id new_args b1,
+                add_args id new_args b2
+               )
 
   | CIf(b1,(na,b_option),b2,b3) ->
       CIf(add_args id new_args b1,
-	  (na,Option.map (add_args id new_args) b_option),
-	  add_args id new_args b2,
-	  add_args id new_args b3
-	 )
+          (na,Option.map (add_args id new_args) b_option),
+          add_args id new_args b2,
+          add_args id new_args b3
+         )
   | CHole _
   | CPatVar _
   | CEvar _
@@ -794,35 +794,35 @@ let rec chop_n_arrow n t =
   else (* If not we check the form of [t] *)
     match t.CAst.v with
       | Constrexpr.CProdN(nal_ta',t') -> (* If we have a forall, two results are possible :
-					     either we need to discard more than the number of arrows contained
-					     in this product declaration then we just recall [chop_n_arrow] on
-					     the remaining number of arrow to chop and [t'] we discard it and
-					     recall [chop_n_arrow], either this product contains more arrows
-					     than the number we need to chop and then we return the new type
-					  *)
-	  begin
-	    try
-	      let new_n =
-		let rec aux (n:int) = function
-		    [] -> n
+                                             either we need to discard more than the number of arrows contained
+                                             in this product declaration then we just recall [chop_n_arrow] on
+                                             the remaining number of arrow to chop and [t'] we discard it and
+                                             recall [chop_n_arrow], either this product contains more arrows
+                                             than the number we need to chop and then we return the new type
+                                          *)
+          begin
+            try
+              let new_n =
+                let rec aux (n:int) = function
+                    [] -> n
                 | CLocalAssum(nal,k,t'')::nal_ta' ->
-		    let nal_l = List.length nal in
-		    if n >= nal_l
-		    then
-		      aux (n - nal_l) nal_ta'
-		    else
-		      let new_t' = CAst.make @@
-			Constrexpr.CProdN(
+                    let nal_l = List.length nal in
+                    if n >= nal_l
+                    then
+                      aux (n - nal_l) nal_ta'
+                    else
+                      let new_t' = CAst.make @@
+                        Constrexpr.CProdN(
                                         CLocalAssum((snd (List.chop n nal)),k,t'')::nal_ta',t')
-		      in
-		      raise (Stop new_t')
+                      in
+                      raise (Stop new_t')
                 | _ -> anomaly (Pp.str "Not enough products.")
-		in
-		aux n nal_ta'
-	    in
-	      chop_n_arrow new_n t'
-	    with Stop t -> t
-	  end
+                in
+                aux n nal_ta'
+            in
+              chop_n_arrow new_n t'
+            with Stop t -> t
+          end
       | _ -> anomaly (Pp.str "Not enough products.")
 
 
@@ -830,11 +830,11 @@ let rec get_args b t : Constrexpr.local_binder_expr list *
     Constrexpr.constr_expr * Constrexpr.constr_expr =
   match b.CAst.v with
     | Constrexpr.CLambdaN (CLocalAssum(nal,k,ta) as d::rest, b') ->
-	begin
+        begin
           let n = List.length nal in
           let nal_tas,b'',t'' = get_args (CAst.make ?loc:b.CAst.loc @@ Constrexpr.CLambdaN (rest,b')) (chop_n_arrow n t) in
           d :: nal_tas, b'',t''
-	end
+        end
     | Constrexpr.CLambdaN ([], b) -> [],b,t
     | _ -> [],b,t
 
@@ -855,15 +855,15 @@ let make_graph (f_ref : GlobRef.t) =
      | None -> error "Cannot build a graph over an axiom!"
      | Some (body, _) ->
        let env = Global.env () in
-	 let extern_body,extern_type =
-	   with_full_print (fun () ->
-		(Constrextern.extern_constr false env sigma (EConstr.of_constr body),
-		 Constrextern.extern_type false env sigma
+         let extern_body,extern_type =
+           with_full_print (fun () ->
+                (Constrextern.extern_constr false env sigma (EConstr.of_constr body),
+                 Constrextern.extern_type false env sigma
                    (EConstr.of_constr (*FIXME*) c_body.const_type)
-		)
-	     )
-	     ()
-	 in
+                )
+             )
+             ()
+         in
   let (nal_tas,b,t)  = get_args extern_body extern_type in
   let expr_list =
     match b.CAst.v with
@@ -897,15 +897,15 @@ let make_graph (f_ref : GlobRef.t) =
                       fixexprl
                   in
                   l
-	     | _ ->
-		let id = Label.to_id (Constant.label c) in
+             | _ ->
+                let id = Label.to_id (Constant.label c) in
                  [((CAst.make id,None),None,nal_tas,t,Some b),[]]
-	 in
+         in
          let mp = Constant.modpath c in
          let pstate = do_generate_principle_aux [c,Univ.Instance.empty] error_error  false false expr_list in
          assert (Option.is_empty pstate);
-	 (* We register the infos *)
-	 List.iter
+         (* We register the infos *)
+         List.iter
            (fun ((({CAst.v=id},_),_,_,_,_),_) -> add_Function false (Constant.make2 mp (Label.of_id id)))
            expr_list)
 
