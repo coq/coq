@@ -2293,23 +2293,26 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
 (* Fail *)
 let test_mode = ref false
 
-(* XXX STATE: the type hints that restoring the state should be the
-   caller's responsibility, see how we restore it in the two
-   branches. *)
-let with_fail ~st f =
+(* Restoring the state is the caller's responsibility *)
+let with_fail f : (Pp.t, unit) result =
   try
     let _ = f () in
-    Vernacstate.invalidate_cache ();
-    Vernacstate.unfreeze_interp_state st;
-    user_err ~hdr:"Fail" (str "The command has not failed!")
+    Error ()
   with
   (* Fail Timeout is a common pattern so we need to support it. *)
   | e when CErrors.noncritical e || e = Timeout ->
     (* The error has to be printed in the failing state *)
-    let msg = CErrors.(iprint ExplainErr.(process_vernac_interp_error (push e))) in
-    (* Restore the previous state; careful here with the cache! *)
-    Vernacstate.invalidate_cache ();
-    Vernacstate.unfreeze_interp_state st;
+    Ok CErrors.(iprint ExplainErr.(process_vernac_interp_error (push e)))
+
+(* We restore the state always *)
+let with_fail ~st f =
+  let res = with_fail f in
+  Vernacstate.invalidate_cache ();
+  Vernacstate.unfreeze_interp_state st;
+  match res with
+  | Error () ->
+    user_err ~hdr:"Fail" (str "The command has not failed!")
+  | Ok msg ->
     if not !Flags.quiet || !test_mode
     then Feedback.msg_info (str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
