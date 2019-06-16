@@ -51,7 +51,7 @@ Ltac2 Type err.
 Ltac2 Type exn ::= [ Internal (err) ].
 (** Wrapper around the errors raised by Coq implementation. *)
 
-Ltac2 Type exn ::= [ Out_of_bounds ].
+Ltac2 Type exn ::= [ Out_of_bounds (message option) ].
 (** Used for bound checking, e.g. with String and Array. *)
 
 Ltac2 Type exn ::= [ Not_focussed ].

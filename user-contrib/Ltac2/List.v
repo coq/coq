@@ -8,6 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* The interface is an extended version of OCaml stdlib/list.ml. *)
+
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 Require Import Ltac2.Init.
 Require Ltac2.Int.
 Require Ltac2.Control.
@@ -47,6 +64,10 @@ Ltac2 rec compare_length_with (ls : 'a list) (n : int) :=
 Ltac2 cons (x : 'a) (xs : 'a list) :=
   x :: xs.
 
+(* Since Ltac-2 distinguishes between backtracking and fatal exceptions,
+   we provide option and default variants of functions which throw in the
+   OCaml stdlib. *)
+
 Ltac2 hd_opt (ls : 'a list) :=
   match ls with
   | [] => None
@@ -59,9 +80,15 @@ Ltac2 hd_default (default : 'a) (ls : 'a list) :=
   | None => default
   end.
 
+Ltac2 hd_throw (ls : 'a list) :=
+  match ls with
+  | [] => Control.throw_invalid_argument "List.hd"
+  | x :: xs => x
+  end.
+
 Ltac2 hd (ls : 'a list) :=
   match ls with
-  | [] => Control.zero (Tactic_failure (Some (Message.of_string "hd")))
+  | [] => Control.backtrack_tactic_failure "List.hd"
   | x :: xs => x
   end.
 
@@ -87,9 +114,15 @@ Ltac2 last_default (default : 'a) (ls : 'a list) :=
   | Some v => v
   end.
 
+Ltac2 last_throw (ls : 'a list) :=
+  match last_opt ls with
+  | None => Control.throw_invalid_argument "List.last"
+  | Some v => v
+  end.
+
 Ltac2 last (ls : 'a list) :=
   match last_opt ls with
-  | None => Control.zero (Tactic_failure (Some (Message.of_string "last")))
+  | None => Control.backtrack_tactic_failure "List.last"
   | Some v => v
   end.
 
@@ -114,10 +147,8 @@ Ltac2 rec nth_opt_aux (ls : 'a list) (n : int) :=
   end.
 
 Ltac2 nth_opt (ls : 'a list) (n : int) :=
-  match Int.lt n 0 with
-  | true => Control.zero (Invalid_argument (Some (Message.of_string "List.nth")))
-  | false => nth_opt_aux ls n
-  end.
+  Control.assert_valid_argument "List.nth" (Int.ge n 0);
+  nth_opt_aux ls n.
 
 Ltac2 nth_default (default : 'a) (ls : 'a list) (n : int) :=
   match nth_opt ls n with
@@ -128,7 +159,7 @@ Ltac2 nth_default (default : 'a) (ls : 'a list) (n : int) :=
 Ltac2 nth (ls : 'a list) (n : int) :=
   match nth_opt ls n with
   | Some v => v
-  | None => Control.zero Out_of_bounds
+  | None => Control.throw_out_of_bounds "List.nth"
   end.
 
 Ltac2 rec rev_append (l1 : 'a list) (l2 : 'a list) :=
@@ -145,13 +176,12 @@ Ltac2 rec append ls1 ls2 :=
   | x :: xs => x :: append xs ls2
   end.
 
-Ltac2 app ls1 ls2 := append ls1 ls2.
-
 Ltac2 rec concat (ls : 'a list list) :=
   match ls with
   | [] => []
-  | x :: xs => app x (concat xs)
+  | x :: xs => append x (concat xs)
   end.
+
 Ltac2 flatten (ls : 'a list list) := concat ls.
 
 Ltac2 rec iter (f : 'a -> unit) (ls : 'a list) :=
@@ -216,11 +246,11 @@ Ltac2 rec iter2 (f : 'a -> 'b -> unit) (ls1 : 'a list) (ls2 : 'b list) :=
   | []
     => match ls2 with
        | [] => ()
-       | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.iter2")))
+       | _ :: _ => Control.throw_invalid_argument "List.iter2"
        end
   | l1 :: ls1
     => match ls2 with
-       | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.iter2")))
+       | [] => Control.throw_invalid_argument "List.iter2"
        | l2 :: ls2
          => f l1 l2; iter2 f ls1 ls2
        end
@@ -231,11 +261,11 @@ Ltac2 rec map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
   | []
     => match ls2 with
        | [] => []
-       | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.map2")))
+       | _ :: _ => Control.throw_invalid_argument "List.map2"
        end
   | l1 :: ls1
     => match ls2 with
-       | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.map2")))
+       | [] => Control.throw_invalid_argument "List.map2"
        | l2 :: ls2
          => f l1 l2 :: map2 f ls1 ls2
        end
@@ -248,11 +278,11 @@ Ltac2 rev_map2 (f : 'a -> 'b -> 'c) (ls1 : 'a list) (ls2 : 'b list) :=
       | []
         => match ls2 with
            | [] => accu
-           | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.rev_map2")))
+           | _ :: _ => Control.throw_invalid_argument "List.rev_map2"
            end
       | l1 :: ls1
         => match ls2 with
-           | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.rev_map2")))
+           | [] => Control.throw_invalid_argument "List.rev_map2"
            | l2 :: ls2
              => rmap2_f (f l1 l2 :: accu) ls1 ls2
            end
@@ -264,11 +294,11 @@ Ltac2 rec fold_right2 (f : 'a -> 'b -> 'c -> 'c) (a : 'c) (ls1 : 'a list) (ls2 :
   | []
     => match ls2 with
        | [] => a
-       | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.fold_right2")))
+       | _ :: _ => Control.throw_invalid_argument "List.fold_right2"
        end
   | l1 :: ls1
     => match ls2 with
-       | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.fold_right2")))
+       | [] => Control.throw_invalid_argument "List.fold_right2"
        | l2 :: ls2
          => f l1 l2 (fold_right2 f a ls1 ls2)
        end
@@ -279,11 +309,11 @@ Ltac2 rec fold_left2 (f : 'a -> 'b -> 'c -> 'a) (ls1 : 'b list) (ls2 : 'c list) 
   | []
     => match ls2 with
        | [] => a
-       | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.fold_left2")))
+       | _ :: _ => Control.throw_invalid_argument "List.fold_left2"
        end
   | l1 :: ls1
     => match ls2 with
-       | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.fold_left2")))
+       | [] => Control.throw_invalid_argument "List.fold_left2"
        | l2 :: ls2
          => fold_left2 f ls1 ls2 (f a l1 l2)
        end
@@ -298,56 +328,49 @@ Ltac2 rec for_all f ls :=
                end
   end.
 
-(* we would call this [exists] a la OCaml's [List.exists], but that's a syntax error, so instead we name it after Coq's [existsb] *)
-Ltac2 rec existsb f ls :=
+(* we would call this [exists] a la OCaml's [List.exists], but that's a syntax error, so instead we name it exist *)
+Ltac2 rec exist f ls :=
   match ls with
   | [] => false
   | x :: xs => match f x with
                | true => true
-               | false => existsb f xs
+               | false => exist f xs
                end
   end.
-Ltac2 forallb f ls := for_all f ls.
 
-Ltac2 rec for_all2_aux f f_x f_y xs ys :=
+Ltac2 rec for_all2 f xs ys :=
   match xs with
-  | [] => for_all f_y ys
+  | [] => match ys with
+          | [] => true
+          | y :: ys' => Control.throw_invalid_argument "List.for_all2"
+          end
   | x :: xs'
     => match ys with
-       | [] => for_all f_x xs
+       | [] => Control.throw_invalid_argument "List.for_all2"
        | y :: ys'
          => match f x y with
-            | true => for_all2_aux f f_x f_y xs' ys'
+            | true => for_all2 f xs' ys'
             | false => false
             end
        end
   end.
-Ltac2 for_all2 f xs ys :=
-  let on_different_lengths () :=
-      Control.zero (Invalid_argument (Some (Message.of_string "List.for_all2"))) in
-  for_all2_aux
-    f (fun _ => on_different_lengths ()) (fun _ => on_different_lengths ())
-    xs ys.
-Ltac2 forallb2 f xs ys := for_all2 f xs ys.
-Ltac2 rec exists2_aux f f_x f_y xs ys :=
+
+Ltac2 rec exist2 f xs ys :=
   match xs with
-  | [] => existsb f_y ys
+  | [] => match ys with
+          | [] => false
+          | y :: ys' => Control.throw_invalid_argument "List.exist2"
+          end
   | x :: xs'
     => match ys with
-       | [] => existsb f_x xs
+       | [] => Control.throw_invalid_argument "List.exist2"
        | y :: ys'
          => match f x y with
             | true => true
-            | false => exists2_aux f f_x f_y xs' ys'
+            | false => exist2 f xs' ys'
             end
        end
   end.
-Ltac2 existsb2 f xs ys :=
-  let on_different_lengths () :=
-      Control.zero (Invalid_argument (Some (Message.of_string "List.existsb2"))) in
-  exists2_aux
-    f (fun _ => on_different_lengths ()) (fun _ => on_different_lengths ())
-    xs ys.
 
 Ltac2 rec find_opt f xs :=
   match xs with
@@ -357,11 +380,19 @@ Ltac2 rec find_opt f xs :=
                | false => find_opt f xs
                end
   end.
-Ltac2 rec find f xs :=
+
+Ltac2 find_throw f xs :=
+  match find_opt f xs with
+  | Some v => v
+  | None => Control.throw Not_found
+  end.
+
+Ltac2 find f xs :=
   match find_opt f xs with
   | Some v => v
   | None => Control.zero Not_found
   end.
+
 Ltac2 rec find_rev_opt f xs :=
   match xs with
   | [] => None
@@ -373,6 +404,13 @@ Ltac2 rec find_rev_opt f xs :=
                          end
                end
   end.
+
+Ltac2 find_rev_throw f xs :=
+  match find_rev_opt f xs with
+  | Some v => v
+  | None => Control.throw Not_found
+  end.
+
 Ltac2 find_rev f xs :=
   match find_rev_opt f xs with
   | Some v => v
@@ -380,10 +418,7 @@ Ltac2 find_rev f xs :=
   end.
 
 Ltac2 mem (eq : 'a -> 'a -> bool) (a : 'a) (ls : 'a list) :=
-  match find_opt (eq a) ls with
-  | Some _ => true
-  | None => false
-  end.
+  exist (eq a) ls.
 
 Ltac2 rec filter f xs :=
   match xs with
@@ -394,6 +429,7 @@ Ltac2 rec filter f xs :=
        | false => filter f xs
        end
   end.
+
 Ltac2 rec filter_out f xs :=
   filter (fun x => Bool.negb (f x)) xs.
 
@@ -434,38 +470,38 @@ Ltac2 rec list_prod (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | [] => []
   | x :: t
-    => app (map (fun y => (x, y)) ls2) (list_prod t ls2)
+    => append (map (fun y => (x, y)) ls2) (list_prod t ls2)
   end.
 
 Ltac2 rec firstn (n : int) (ls : 'a list) :=
-  match Int.lt n 0 with
-  | true => Control.zero (Invalid_argument (Some (Message.of_string "List.firstn")))
+  Control.assert_valid_argument "List.firstn" (Int.ge n 0);
+  match Int.equal n 0 with
+  | true => []
   | false
-    => match Int.equal n 0 with
-       | true => []
-       | false
-         => match ls with
-            | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.firstn")))
-            | x :: xs
-              => x :: firstn (Int.sub n 1) xs
-            end
+    => match ls with
+       | [] => Control.throw_out_of_bounds "List.firstn"
+       | x :: xs
+         => x :: firstn (Int.sub n 1) xs
        end
   end.
 
 Ltac2 rec skipn (n : int) (ls : 'a list) :=
-  match Int.lt n 0 with
-  | true => Control.zero (Invalid_argument (Some (Message.of_string "List.skipn")))
+  Control.assert_valid_argument "List.skipn" (Int.ge n 0);
+  match Int.equal n 0 with
+  | true => ls
   | false
-    => match Int.equal n 0 with
-       | true => ls
-       | false
-         => match ls with
-            | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.skipn")))
-            | x :: xs
-              => skipn (Int.sub n 1) xs
-            end
+    => match ls with
+       | [] => Control.throw_out_of_bounds "List.skipn"
+       | x :: xs
+         => skipn (Int.sub n 1) xs
        end
   end.
+
+Ltac2 lastn (n : int) (ls : 'a list) :=
+  let l := length ls in
+  Control.assert_valid_argument "List.lastn" (Int.ge n 0);
+  Control.assert_bounds "List.lastn" (Int.le n l);
+  skipn (Int.sub l n).
 
 Ltac2 rec nodup (eqb : 'a -> 'a -> bool) (ls : 'a list) :=
   match ls with
@@ -487,10 +523,8 @@ Ltac2 rec seq (start : int) (step : int) (last : int) :=
   end.
 
 Ltac2 init (len : int) (f : int -> 'a) :=
-  match Int.lt len 0 with
-  | true => Control.zero (Invalid_argument (Some (Message.of_string "List.init")))
-  | false => map f (seq 0 1 len)
-  end.
+  Control.assert_valid_argument "List.init" (Int.ge len 0);
+  map f (seq 0 1 len).
 
 Ltac2 repeat (x : 'a) (n : 'int) :=
   init n (fun _ => x).
@@ -509,12 +543,11 @@ Ltac2 assoc_opt (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
 
 Ltac2 mem_assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
-  existsb eq_key l.
+  exist eq_key l.
 
 Ltac2 remove_assoc (eqk : 'k -> 'k -> bool) (k : 'k) (l : ('k * 'v) list) :=
   let eq_key kv := let (k', _) := kv in eqk k k' in
   filter_out eq_key l.
-
 
 Ltac2 rec split (ls : ('a * 'b) list) :=
   match ls with
@@ -524,18 +557,19 @@ Ltac2 rec split (ls : ('a * 'b) list) :=
        let (left, right) := split tl in
        ((x::left), (y::right))
   end.
+
 Ltac2 rec combine (ls1 : 'a list) (ls2 : 'b list) :=
   match ls1 with
   | []
     => match ls2 with
        | [] => []
-       | _ :: _ => Control.zero (Invalid_argument (Some (Message.of_string "List.combine")))
+       | _ :: _ => Control.throw_invalid_argument "List.combine"
        end
   | x :: xs
     => match ls2 with
        | y :: ys
          => (x, y) :: combine xs ys
-       | [] => Control.zero (Invalid_argument (Some (Message.of_string "List.combine")))
+       | [] => Control.throw_invalid_argument "List.combine"
        end
   end.
 
