@@ -1,6 +1,15 @@
--R theories/ Tuto
+-R theories Tuto2
 -I src
 
-theories/Test.v
-src/demo.mlg
-src/demo_plugin.mlpack
+theories/Loader.v
+theories/Demo.v
+theories/Count.v
+
+src/custom.ml
+src/custom.mli
+src/counter.ml
+src/counter.mli
+src/persistent_counter.ml
+src/persistent_counter.mli
+src/g_tuto2.mlg
+src/tuto2_plugin.mlpack

@@ -4,6 +4,6 @@
  (libraries coq.plugins.ltac))
 
 (rule
- (targets demo.ml)
- (deps (:pp-file demo.mlg) )
+ (targets g_tuto2.ml)
+ (deps (:pp-file g_tuto2.mlg) )
  (action (run coqpp %{pp-file})))
