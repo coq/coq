@@ -281,9 +281,6 @@ let existing_instance glob g info =
                          ~hdr:"declare_instance"
                          (Pp.str "Constant does not build instances of a declared type class.")
 
-let mismatched_params env n m = Implicit_quantifiers.mismatched_ctx_inst_err env Parameters n m
-let mismatched_props env n m = Implicit_quantifiers.mismatched_ctx_inst_err env Properties n m
-
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
 let type_ctx_instance ~program_mode env sigma ctx inst subst =
@@ -479,9 +476,8 @@ let do_instance_interactive env sigma ?hook ~tac ~global ~poly cty k u ctx ctx' 
 let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id props =
   let term, termtype, sigma =
     match props with
-    | (true, { CAst.v = CRecord fs }) ->
-      if List.length fs > List.length k.cl_props then
-        mismatched_props env' (List.map snd fs) k.cl_props;
+    | (true, { CAst.v = CRecord fs; loc }) ->
+      check_duplicate ?loc fs;
       let subst, sigma = do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:false subst in
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
@@ -502,9 +498,8 @@ let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imp
 let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
   let term, termtype, sigma =
     match opt_props with
-    | Some (true, { CAst.v = CRecord fs }) ->
-      if List.length fs > List.length k.cl_props then
-        mismatched_props env' (List.map snd fs) k.cl_props;
+    | Some (true, { CAst.v = CRecord fs; loc }) ->
+      check_duplicate ?loc fs;
       let subst, sigma =
         do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:true subst in
      let term, termtype =

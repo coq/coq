@@ -14,12 +14,6 @@ open Constrexpr
 open Typeclasses
 open Libnames
 
-(** Errors *)
-
-val mismatched_params : env -> constr_expr list -> Constr.rel_context -> 'a
-
-val mismatched_props : env -> constr_expr list -> Constr.rel_context -> 'a
-
 (** Instance declaration *)
 
 val declare_instance : ?warn:bool -> env -> Evd.evar_map ->

@@ -8,13 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*i*)
 open Names
 open EConstr
 open Environ
-(*i*)
-
-type contexts = Parameters | Properties
 
 type typeclass_error =
     | NotAClass of constr

@@ -392,9 +392,8 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
     env {loc;v=na} b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
-    if t then ty, ids else
-      Implicit_quantifiers.implicit_application ids
-	Implicit_quantifiers.combine_params_freevar ty
+    if t then ty, ids
+    else Implicit_quantifiers.implicit_application ids ty
   in
   let ty' = intern_type {env with ids = ids; unb = true} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
@@ -1300,7 +1299,7 @@ let find_pattern_variable qid =
   if qualid_is_ident qid then qualid_basename qid
   else raise (InternalizationError(qid.CAst.loc,NotAConstructor qid))
 
-let check_duplicate loc fields =
+let check_duplicate ?loc fields =
   let eq (ref1, _) (ref2, _) = qualid_eq ref1 ref2 in
   let dups = List.duplicates eq fields in
   match dups with
@@ -1345,7 +1344,7 @@ let sort_fields ~complete loc fields completer =
           try Nametab.shortest_qualid_of_global ?loc Id.Set.empty global_record_id
           with Not_found ->
             anomaly (str "Environment corruption for records.") in
-        let () = check_duplicate loc fields in
+        let () = check_duplicate ?loc fields in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
              proj_list)    (* list of projections *)

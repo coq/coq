@@ -23,9 +23,6 @@ open Libobject
 open Nameops
 open Context.Rel.Declaration
 
-exception MismatchedContextInstance of Environ.env * Typeclasses_errors.contexts * constr_expr list * Constr.rel_context (* found, expected *)
-let mismatched_ctx_inst_err env c n m = raise (MismatchedContextInstance (env, c, n, m))
-
 module RelDecl = Context.Rel.Declaration
 (*i*)
 
@@ -66,9 +63,6 @@ let declare_generalizable ~local gen =
 
 let find_generalizable_ident id = Id.Pred.mem (root_of_id id) !generalizable_table
 
-let ids_of_list l =
-  List.fold_right Id.Set.add l Id.Set.empty
-
 let is_global id =
   try ignore (Nametab.locate_extended (qualid_of_ident id)); true
   with Not_found -> false
@@ -105,26 +99,6 @@ let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
     | _ -> Constrexpr_ops.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
 
-let ids_of_names l =
-  List.fold_left (fun acc x -> match x.CAst.v with Name na -> na :: acc | Anonymous -> acc) [] l
-
-let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
-  let rec aux bdvars l c = match c with
-      ((CLocalAssum (n, _, c)) :: tl) ->
-	let bound = ids_of_names n in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
-
-    | ((CLocalDef (n, c, t)) :: tl) ->
-        let bound = match n.CAst.v with Anonymous -> [] | Name n -> [n] in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
-
-    | CLocalPattern _ :: tl -> assert false
-    | [] -> bdvars, l
-  in aux bound l binders
-
 let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
   let rec vars bound vs c = match DAst.get c with
     | GVar id ->
@@ -149,7 +123,7 @@ let next_name_away_from na avoid =
   | Anonymous -> make_fresh avoid (Global.env ()) (Id.of_string "anon")
   | Name id -> make_fresh avoid (Global.env ()) id
 
-let combine_params avoid fn applied needed =
+let combine_params avoid applied needed =
   let named, applied =
     List.partition
       (function
@@ -167,47 +141,30 @@ let combine_params avoid fn applied needed =
     (fun x -> match x with (t, Some {CAst.loc;v=ExplByName id}) -> id, t | _ -> assert false)
     named
   in
-  let is_unset (_, decl) = match decl with
-  | LocalAssum _ -> true
-  | LocalDef _ -> false
-  in
-  let needed = List.filter is_unset needed in
   let rec aux ids avoid app need =
     match app, need with
-	[], [] -> List.rev ids, avoid
 
-      | app, (_, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need when Id.List.mem_assoc id named ->
+      | _, (_, LocalDef _) :: need -> aux ids avoid app need
+
+      | [], [] -> List.rev ids, avoid
+
+      | app, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
 	  aux (Id.List.assoc id named :: ids) avoid app need
 
-      | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need ->
+      | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _))) :: need ->
 	  aux (x :: ids) avoid app need
-
-      | _, (Some cl, _ as d) :: need ->
-	  let t', avoid' = fn avoid d in
-	    aux (t' :: ids) avoid' app need
 
       | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
 
-      | [], (None, _ as decl) :: need ->
-	  let t', avoid' = fn avoid decl in
-	    aux (t' :: ids) avoid' app need
+      | _, (Some _, decl) :: need | [], (None, decl) :: need ->
+        let id' = next_name_away_from (RelDecl.get_name decl) avoid in
+        let t' = CAst.make @@ CRef (qualid_of_ident id',None) in
+        aux (t' :: ids) (Id.Set.add id' avoid) app need
 
       | (x,_) :: _, [] ->
 	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
-  in aux [] avoid applied needed
-
-let combine_params_freevar avoid (_, decl) =
-  let id' = next_name_away_from (RelDecl.get_name decl) avoid in
-  (CAst.make @@ CRef (qualid_of_ident id',None), Id.Set.add id' avoid)
-
-let destClassApp cl =
-  let open CAst in
-  let loc = cl.loc in
-  match cl.v with
-    | CApp ((None, { v = CRef (ref, inst) }), l) -> CAst.make ?loc (ref, List.map fst l, inst)
-    | CAppExpl ((None, ref, inst), l) -> CAst.make ?loc (ref, l, inst)
-    | CRef (ref, inst) -> CAst.make ?loc:cl.loc (ref, [], inst)
-    | _ -> raise Not_found
+  in
+  aux [] avoid applied needed
 
 let destClassAppExpl cl =
   let open CAst in
@@ -217,7 +174,7 @@ let destClassAppExpl cl =
     | CRef (ref, inst) -> CAst.make ?loc:cl.loc (ref, [], inst)
     | _ -> raise Not_found
 
-let implicit_application env ?(allow_partial=true) f ty =
+let implicit_application env ty =
   let is_class =
     try
       let ({CAst.v=(qid, _, _)} as clapp) = destClassAppExpl ty in
@@ -230,24 +187,13 @@ let implicit_application env ?(allow_partial=true) f ty =
   match is_class with
   | None -> ty, env
   | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
-    let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+    let avoid = Id.Set.union env (Id.Set.of_list (free_vars_of_constr_expr ty ~bound:env [])) in
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let c = class_info env sigma gr in
     let (ci, rd) = c.cl_context in
-    if not allow_partial then
-      begin
-        let opt_succ x n = match x with
-          | None -> succ n
-          | Some _ -> n
-        in
-        let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
-        let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
-        if not (Int.equal needlen applen) then
-          mismatched_ctx_inst_err (Global.env ()) Typeclasses_errors.Parameters (List.map fst par) rd
-      end;
     let pars = List.rev (List.combine ci rd) in
-    let args, avoid = combine_params avoid f par pars in
+    let args, avoid = combine_params avoid par pars in
     CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
