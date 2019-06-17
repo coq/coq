@@ -93,7 +93,7 @@ let retrieve_first_recthm uctx = function
       (* we get the right order somehow but surely it could be enforced in a better way *)
       let uctx = UState.context uctx in
       let inst = Univ.UContext.instance uctx in
-      let map (c, ctx) = Vars.subst_instance_constr inst c in
+      let map (c, _, _) = Vars.subst_instance_constr inst c in
       (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
   | _ -> assert false
 

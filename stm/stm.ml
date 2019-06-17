@@ -1746,14 +1746,19 @@ end = struct (* {{{ *)
            the call to [check_task_aux] above. *)
         let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
         let uc = Univ.hcons_universe_context_set uc in
-        let (pr, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
+        let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
         let () = assert (Univ.AUContext.is_empty ctx) in
+        let () = match priv with
+        | Opaqueproof.PrivateMonomorphic () -> ()
+        | Opaqueproof.PrivatePolymorphic (univs, uctx) ->
+          let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
+          assert (Univ.ContextSet.is_empty uctx)
+        in
         let pr = Constr.hcons pr in
-        let (ci, univs, dummy) = p.(bucket) in
+        let (ci, dummy) = p.(bucket) in
         let () = assert (Option.is_empty dummy) in
-        let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
-        p.(bucket) <- ci, univs, Some pr;
+        p.(bucket) <- ci, Some (pr, priv);
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

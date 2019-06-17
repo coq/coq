@@ -583,11 +583,15 @@ let print_constant with_values sep sp udecl =
 	str"*** [ " ++
 	print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-        Printer.pr_universes sigma univs ?priv:cb.const_private_poly_univs
-    | Some (c, ctx) ->
+        Printer.pr_universes sigma univs
+    | Some (c, priv, ctx) ->
+      let priv = match priv with
+      | Opaqueproof.PrivateMonomorphic () -> None
+      | Opaqueproof.PrivatePolymorphic (_, ctx) -> Some ctx
+      in
 	print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
 	(if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_universes sigma univs ?priv:cb.const_private_poly_univs)
+        Printer.pr_universes sigma univs ?priv)
 
 let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++
@@ -723,7 +727,7 @@ let print_full_pure_context env sigma =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
                 str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
-                str "Proof " ++ pr_lconstr_env env sigma (Opaqueproof.force_proof Library.indirect_accessor (Global.opaque_tables ()) lc)
+                str "Proof " ++ pr_lconstr_env env sigma (fst (Opaqueproof.force_proof Library.indirect_accessor (Global.opaque_tables ()) lc))
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
                 str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++

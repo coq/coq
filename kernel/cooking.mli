@@ -21,14 +21,14 @@ type 'opaque result = {
   cook_body : (constr Mod_subst.substituted, 'opaque) constant_def;
   cook_type : types;
   cook_universes : universes;
-  cook_private_univs : Univ.ContextSet.t option;
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Constr.named_context option;
 }
 
 val cook_constant : recipe -> Opaqueproof.opaque result
-val cook_constr : Opaqueproof.cooking_info list -> int -> constr -> constr
+val cook_constr : Opaqueproof.cooking_info list ->
+  (constr * unit Opaqueproof.delayed_universes) -> (constr * unit Opaqueproof.delayed_universes)
 
 val cook_inductive :
   Opaqueproof.cooking_info -> mutual_inductive_body -> Entries.mutual_inductive_entry

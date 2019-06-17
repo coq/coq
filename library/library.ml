@@ -280,7 +280,7 @@ type 'a table_status =
   | Fetched of 'a array
 
 let opaque_tables =
-  ref (LibraryMap.empty : ((Opaqueproof.cooking_info list * int * Constr.constr option) table_status) LibraryMap.t)
+  ref (LibraryMap.empty : (Opaqueproof.opaque_proofterm table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
@@ -306,10 +306,7 @@ let access_table what tables dp i =
 
 let access_opaque_table dp i =
   let what = "opaque proofs" in
-  let (info, n, c) = access_table what opaque_tables dp i in
-  match c with
-  | None -> None
-  | Some c -> Some (Cooking.cook_constr info n c)
+  access_table what opaque_tables dp i
 
 let indirect_accessor = {
   Opaqueproof.access_proof = access_opaque_table;
@@ -323,7 +320,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
-type seg_proofs = (Opaqueproof.cooking_info list * int * Constr.t option) array
+type seg_proofs = Opaqueproof.opaque_proofterm array
 
 let mk_library sd md digests univs =
   {

@@ -94,7 +94,6 @@ type 'opaque constant_body = {
     const_relevance : Sorts.relevance;
     const_body_code : Cemitcodes.to_patch_substituted option;
     const_universes : universes;
-    const_private_poly_univs : Univ.ContextSet.t option;
     const_inline_code : bool;
     const_typing_flags : typing_flags; (** The typing options which
                                            were used for
