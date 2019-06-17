@@ -2,25 +2,25 @@ The Coq Reference Manual is a collective work from the Coq Development
 Team whose members are listed in the file CREDITS of the Coq source
 package. All related documents (the LaTeX and BibTeX sources, the
 embedded png files, and the PostScript, PDF and html outputs) are
-copyright (c) INRIA 1999-2018, with the exception of the Ubuntu font
-file UbuntuMono-B.ttf, which is
-Copyright 2010,2011 Canonical Ltd and licensed under the Ubuntu font
-license, version 1.0
-(https://www.ubuntu.com/legal/terms-and-policies/font-licence), and its
-derivative CoqNotations.ttf distributed under the same license. The
-material connected to the Reference Manual may be distributed only
-subject to the terms and conditions set forth in the Open Publication
-License, v1.0 or later (the latest version is presently available at
-http://www.opencontent.org/openpub/).  Options A and B are *not*
-elected.
+copyright (c) 1999-2019, Inria, CNRS and contributors, with the
+exception of the Ubuntu font file UbuntuMono-B.ttf, which is Copyright
+2010,2011 Canonical Ltd and licensed under the Ubuntu font license,
+version 1.0
+(https://www.ubuntu.com/legal/terms-and-policies/font-licence), and
+its derivative CoqNotations.ttf distributed under the same
+license. The material connected to the Reference Manual may be
+distributed only subject to the terms and conditions set forth in the
+Open Publication License, v1.0 or later (the latest version is
+presently available at http://www.opencontent.org/openpub/).  Options
+A and B are *not* elected.
 
 The Coq Standard Library is a collective work from the Coq Development
 Team whose members are listed in the file CREDITS of the Coq source
 package. All related documents (the Coq vernacular source files and
-the PostScript, PDF and html outputs) are copyright (c) INRIA
-1999-2018. The material connected to the Standard Library is
-distributed under the terms of the Lesser General Public License
-version 2.1 or later. 
+the PostScript, PDF and html outputs) are copyright (c) 1999-2019,
+Inria, CNRS and contributors. The material connected to the Standard
+Library is distributed under the terms of the Lesser General Public
+License version 2.1 or later.
 
 ----------------------------------------------------------------------
 

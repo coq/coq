@@ -13,22 +13,19 @@ newheader=$2
 if [ ! -f $oldheader ]; then echo Cannot read file $oldheader; exit 1; fi
 if [ ! -f $newheader ]; then echo Cannot read file $newheader; exit 1; fi
 
-n=`wc -l $oldheader | sed -e "s/ *\([0-9]*\).*/\1/g"`
-nsucc=`expr $n + 1`
-
-linea='(* -*- coding:utf-8 -*- *)'
-lineb='(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)'
+n=$(wc -l $oldheader | sed -e "s/ *\([0-9]*\).*/\1/g")
+nsucc=$(expr $n + 1)
 
 modified=0
 kept=0
 
-for i in `find . -name \*.mli -o -name \*.ml -o -name \*.mlg -o -name \*.mll -o -name \*.mly -o -name \*.mlp -o -name \*.v`; do
-  headline=`head -n 1 $i`
-  if `echo $headline | grep "(\* -\*- .* \*)" > /dev/null`; then
-      # Has emacs header
+for i in $(git grep --name-only --fixed-strings "$(head -1 $oldheader)"); do
+  headline=$(head -n 1 $i)
+  if $(echo $headline | grep "(\* -\*- .* \*)" > /dev/null) || $(echo $headline | grep "^#\!" > /dev/null); then
+      # Has header
       head -n +$nsucc $i | tail -n $n > $i.head.tmp$$
       hasheadline=1
-      nnext=`expr $nsucc + 1`
+      nnext=$(expr $nsucc + 1)
   else
       head -n +$n $i > $i.head.tmp$$
       hasheadline=0
@@ -44,9 +41,9 @@ for i in `find . -name \*.mli -o -name \*.ml -o -name \*.mlg -o -name \*.mll -o 
     cat $newheader >> $i.tmp$$
     tail -n +$nnext $i >> $i.tmp$$
     mv $i.tmp$$ $i
-    modified=`expr $modified + 1`
+    modified=$(expr $modified + 1)
   else
-    kept=`expr $kept + 1`
+    kept=$(expr $kept + 1)
   fi
   rm $i.head.tmp$$
 done
