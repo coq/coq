@@ -22,6 +22,9 @@ val get_used_variables : t -> Constr.named_context option
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : t -> UState.universe_decl
 
+(** Get initial universe state *)
+val get_initial_euctx : t -> UState.t
+
 val compact_the_proof : t -> t
 
 (** When a proof is closed, it is reified into a [proof_object], where

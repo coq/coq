@@ -47,8 +47,6 @@ type data =
   (** A representation of the shelf  *)
   ; given_up : Evar.t list
   (** A representation of the given up goals  *)
-  ; initial_euctx : UState.t
-  (** The initial universe context (for the statement) *)
   ; name : Names.Id.t
   (** The name of the theorem whose proof is being constructed *)
   ; poly : bool;

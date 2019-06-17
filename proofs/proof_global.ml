@@ -51,12 +51,17 @@ type t =
   ; section_vars : Constr.named_context option
   ; proof : Proof.t
   ; udecl: UState.universe_decl
+  (** Initial universe declarations *)
+  ; initial_euctx : UState.t
+  (** The initial universe context (for the statement) *)
   }
 
 (*** Proof Global manipulation ***)
 
 let get_proof ps = ps.proof
 let get_proof_name ps = (Proof.data ps.proof).Proof.name
+
+let get_initial_euctx ps = ps.initial_euctx
 
 let map_proof f p = { p with proof = f p.proof }
 let map_fold_proof f p = let proof, res = f p.proof in { p with proof }, res
@@ -89,17 +94,23 @@ let set_endline_tactic tac ps =
    can typically contain universe constraints), and with universe
    bindings [udecl]. *)
 let start_proof ~name ~udecl ~poly sigma goals =
-  { proof = Proof.start ~name ~poly sigma goals
+  let proof = Proof.start ~name ~poly sigma goals in
+  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  { proof
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
+  ; initial_euctx
   }
 
 let start_dependent_proof ~name ~udecl ~poly goals =
-  { proof = Proof.dependent_start ~name ~poly goals
+  let proof = Proof.dependent_start ~name ~poly goals in
+  let initial_euctx = Evd.evar_universe_context Proof.((data proof).sigma) in
+  { proof
   ; endline_tactic = None
   ; section_vars = None
   ; udecl
+  ; initial_euctx
   }
 
 let get_used_variables pf = pf.section_vars
@@ -154,8 +165,8 @@ let private_poly_univs =
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
                 (fpl : closed_proof_output Future.computation) ps =
-  let { section_vars; proof; udecl } = ps in
-  let Proof.{ name; poly; entry; initial_euctx } = Proof.data proof in
+  let { section_vars; proof; udecl; initial_euctx } = ps in
+  let Proof.{ name; poly; entry } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
     UState.constrain_variables (fst (UState.context_set initial_euctx)) ctx

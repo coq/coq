@@ -519,7 +519,7 @@ let save_lemma_admitted ?proof ~(lemma : t) =
             ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
       in
       let typ = EConstr.Unsafe.to_constr typ in
-      let universes = Proof.((data pftree).initial_euctx) in
+      let universes = Proof_global.get_initial_euctx lemma.proof in
       (* This will warn if the proof is complete *)
       let pproofs, _univs =
         Proof_global.return_proof ~allow_partial:true lemma.proof in
