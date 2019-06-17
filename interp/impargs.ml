@@ -20,7 +20,6 @@ open Lib
 open Libobject
 open EConstr
 open Reductionops
-open Constrexpr
 open Namegen
 
 module NamedDecl = Context.Named.Declaration
@@ -341,77 +340,30 @@ let rec prepare_implicits f = function
       Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
-(*
-If found, returns Some (x,(b,fi,fo)) and l with the entry removed,
-otherwise returns None and l unchanged.
- *)
-let assoc_by_pos k l =
-  let rec aux = function
-      (ExplByPos (k', x), b) :: tl when Int.equal k k' -> Some (x,b), tl
-    | hd :: tl -> let (x, tl) = aux tl in x, hd :: tl
-    | [] -> raise Not_found
-  in try aux l with Not_found -> None, l
-
-let check_correct_manual_implicits autoimps l =
-  List.iter (function
-    | ExplByName id,(b,fi,forced) ->
-	if not forced then
-	  user_err 
-            (str "Wrong or non-dependent implicit argument name: " ++ Id.print id ++ str ".")
-    | ExplByPos (i,_id),_t ->
-	if i<1 || i>List.length autoimps then
-	  user_err 
-            (str "Bad implicit argument number: " ++ int i ++ str ".")
-	else
-	  user_err 
-	    (str "Cannot set implicit argument number " ++ int i ++
-	      str ": it has no name.")) l
-
-(* Take a list l of explicitations, and map them to positions. *)
-let flatten_explicitations l autoimps =
-  let rec aux k l = function
-    | (Name id,_)::imps ->
-       let value, l' =
-         try
-           let eq = Constrexpr_ops.explicitation_eq in
-           let flags = List.assoc_f eq (ExplByName id) l in
-           Some (Some id, flags), List.remove_assoc_f eq (ExplByName id) l
-         with Not_found -> assoc_by_pos k l
-       in value :: aux (k+1) l' imps
-    | (Anonymous,_)::imps ->
-       let value, l' = assoc_by_pos k l
-       in value :: aux (k+1) l' imps
-    | [] when List.is_empty l -> []
-    | [] ->
-       check_correct_manual_implicits autoimps l;
-       []
-  in aux 1 l autoimps
-
 let set_manual_implicits flags enriching autoimps l =
-  if not (List.distinct l) then
-    user_err Pp.(str "Some parameters are referred more than once.");
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k autoimps explimps = match autoimps, explimps with
     | autoimp::autoimps, explimp::explimps ->
        let imps' = merge (k+1) autoimps explimps in
-       begin match autoimp, explimp with
-       | (Name id,_), Some (_, (b, fi, _)) ->
-          Some (id, Manual, (set_maximality imps' b, fi))
+       begin match autoimp, explimp.CAst.v with
+       | (Name id,_), Some (_,max) ->
+          Some (id, Manual, (set_maximality imps' max, true))
        | (Name id,Some exp), None when enriching ->
           Some (id, exp, (set_maximality imps' flags.maximal, true))
        | (Name _,_), None -> None
-       | (Anonymous,_), Some (Some id, (b, fi, true)) ->
-          Some (id,Manual,(b,fi))
-       | (Anonymous,_), Some (None, (b, fi, true)) ->
+       | (Anonymous,_), Some (Name id,max) ->
+          Some (id,Manual,(max,true))
+       | (Anonymous,_), Some (Anonymous,max) ->
           let id = Id.of_string ("arg_" ^ string_of_int k) in
-          Some (id,Manual,(b,fi))
-       | (Anonymous,_), Some (_, (_, _, false)) -> None
+          Some (id,Manual,(max,true))
        | (Anonymous,_), None -> None
        end :: imps'
     | [], [] -> []
-    (* flatten_explicitations returns a list of the same length as autoimps *)
-    | _ -> assert false
-  in merge 1 autoimps (flatten_explicitations l autoimps)
+    | [], _ -> assert false
+    (* possibly more automatic than manual implicit arguments n
+       when the conclusion is an unfoldable constant *)
+    | autoimps, [] -> merge k autoimps [CAst.make None]
+  in merge 1 autoimps l
 
 let compute_semi_auto_implicits env sigma f t =
   if not f.auto then [DefaultImpArgs, []]
@@ -642,9 +594,7 @@ let declare_mib_implicits kn =
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
-type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
-
-type manual_implicits = manual_explicitation list
+type manual_implicits = (Name.t * bool) option CAst.t list
 
 let compute_implicits_with_manual env sigma typ enriching l =
   let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
@@ -669,8 +619,6 @@ let projection_implicits env p impls =
   CList.skipn_at_least npars impls
 
 let declare_manual_implicits local ref ?enriching l =
-  assert (List.for_all (fun (_, (max, fi, fu)) -> fi && fu) l);
-  assert (List.for_all (fun (ex, _) -> match ex with ExplByPos (_,_) -> true | _ -> false) l);
   let flags = !implicit_args in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -685,9 +633,8 @@ let declare_manual_implicits local ref ?enriching l =
   in add_anonymous_leaf (inImplicits (req,[ref,l]))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
-  match l with
-  | [] -> ()
-  | _ -> declare_manual_implicits local ref ?enriching l
+  if List.exists (fun x -> x.CAst.v <> None) l then
+    declare_manual_implicits local ref ?enriching l
 
 (* TODO: either turn these warnings on and document them, or handle these cases sensibly *)
 
@@ -749,12 +696,6 @@ let extract_impargs_data impls =
     | (LessArgsThan n, imps)::l -> (Some (p,n),imps) :: aux (n+1) l
     | [] -> [] in
   aux 0 impls
-
-let lift_implicits n =
-  List.map (fun x ->
-    match fst x with
-	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
-      | _ -> x)
 
 let make_implicits_list l = [DefaultImpArgs, l]
 

@@ -469,7 +469,7 @@ let start_lemma_com ~program_mode ?inference_hook ?hook kind thms =
     (* XXX: The nf_evar is critical !! *)
     evd, (id.CAst.v,
           (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
-           (ids, imps @ lift_implicits (Context.Rel.nhyps ctx) imps'))))
+           (ids, imps @ imps'))))
       evd thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in

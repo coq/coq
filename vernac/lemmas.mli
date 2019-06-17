@@ -112,7 +112,7 @@ val start_lemma_with_initialization
   -> (bool * Proof_global.lemma_possible_guards * unit Proofview.tactic list option) option
   -> (Id.t (* name of thm *) *
      (EConstr.types (* type of thm *) *
-      (Name.t list (* names to pre-introduce *) * Impargs.manual_explicitation list))) list
+      (Name.t list (* names to pre-introduce *) * Impargs.manual_implicits))) list
   -> int list option
   -> t
 

@@ -27,18 +27,19 @@ let warn_implicits_in_term =
   CWarnings.create ~name:"implicits-in-term" ~category:"implicits"
          (fun () ->
           strbrk "Implicit arguments declaration relies on type." ++ spc () ++
-            strbrk "The term declares more implicits than the type here.")
+            strbrk "Discarding incompatible declaration in term.")
 
 let check_imps ~impsty ~impsbody =
-  let b =
-    try
-      List.for_all (fun (key, (va:bool*bool*bool)) ->
-          (* Pervasives.(=) is OK for this type *)
-          Pervasives.(=) (List.assoc_f Constrexpr_ops.explicitation_eq key impsty) va)
-        impsbody
-    with Not_found -> false
-  in
-  if not b then warn_implicits_in_term ()
+  let rec aux impsty impsbody =
+  match impsty, impsbody with
+  | a1 :: impsty, a2 :: impsbody ->
+    (match a1.CAst.v, a2.CAst.v with
+    | None , None -> aux impsty impsbody
+    | Some _ , Some _ -> aux impsty impsbody
+    | _, _ -> warn_implicits_in_term ?loc:a2.CAst.loc ())
+  | _ :: _, [] | [], _ :: _ -> (* Information only on one side *) ()
+  | [], [] -> () in
+  aux impsty impsbody
 
 let interp_definition ~program_mode pl bl poly red_option c ctypopt =
   let env = Global.env() in
@@ -56,11 +57,11 @@ let interp_definition ~program_mode pl bl poly red_option c ctypopt =
     match tyopt with
     | None ->
       let evd, (c, impsbody) = interp_constr_evars_impls ~program_mode ~impls env_bl evd c in
-      evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsbody, None
+      evd, c, imps1@impsbody, None
     | Some (ty, impsty) ->
       let evd, (c, impsbody) = interp_casted_constr_evars_impls ~program_mode ~impls env_bl evd c ty in
       check_imps ~impsty ~impsbody;
-      evd, c, imps1@Impargs.lift_implicits (Context.Rel.nhyps ctx) impsty, Some ty
+      evd, c, imps1@impsty, Some ty
   in
   (* Do the reduction *)
   let evd, c = red_constant_body red_option env_bl evd c in

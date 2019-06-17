@@ -375,8 +375,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun impls -> userimpls @
-    lift_implicits (Context.Rel.nhyps ctx_params) impls) indimpls in
+  let indimpls = List.map (fun impls -> userimpls @ impls) indimpls in
   let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
   let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data sigma env_params params) arities indnames in
@@ -402,8 +401,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
                        constructors
   in
   let ctx_params = ctx_params @ ctx_uparams in
-  let userimpls = useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) userimpls) in
-  let indimpls = List.map (fun iimpl -> useruimpls @ (lift_implicits (Context.Rel.nhyps ctx_uparams) iimpl)) indimpls in
+  let userimpls = useruimpls @ userimpls in
+  let indimpls = List.map (fun iimpl -> useruimpls @ iimpl) indimpls in
   let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_uparams) fullarities in
   let env_ar = push_types env0 indnames relevances fullarities in
   let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
@@ -450,10 +449,9 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
       indl arities arityconcl constructors
   in
   let impls =
-    let len = Context.Rel.nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
         indimpls, List.map (fun impls ->
-          userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
+          userimpls @ impls) cimpls) indimpls constructors
   in
   let variance = if poly && cum then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
@@ -559,8 +557,8 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   mind
 
 type one_inductive_impls =
-  Impargs.manual_explicitation list (* for inds *)*
-  Impargs.manual_explicitation list list (* for constrs *)
+  Impargs.manual_implicits (* for inds *) *
+  Impargs.manual_implicits list (* for constrs *)
 
 type uniform_inductive_flag =
   | UniformParameters

@@ -61,10 +61,10 @@ type internalization_env = var_internalization_data Id.Map.t
 val empty_internalization_env : internalization_env
 
 val compute_internalization_data : env -> evar_map -> var_internalization_type ->
-  types -> Impargs.manual_explicitation list -> var_internalization_data
+  types -> Impargs.manual_implicits -> var_internalization_data
 
 val compute_internalization_env : env -> evar_map -> ?impls:internalization_env -> var_internalization_type ->
-  Id.t list -> types list -> Impargs.manual_explicitation list list ->
+  Id.t list -> types list -> Impargs.manual_implicits list ->
   internalization_env
 
 type ltac_sign = {

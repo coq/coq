@@ -57,7 +57,7 @@ val add_definition
   -> ?term:constr -> types
   -> UState.t
   -> ?univdecl:UState.universe_decl (* Universe binders and constraints *)
-  -> ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list
+  -> ?implicits:Impargs.manual_implicits
   -> ?kind:Decl_kinds.definition_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
@@ -74,8 +74,7 @@ type fixpoint_kind =
   | IsCoFixpoint
 
 val add_mutual_definitions :
-  (Names.Id.t * constr * types *
-      (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
+  (Names.Id.t * constr * types * Impargs.manual_implicits * obligation_info) list ->
   UState.t ->
   ?univdecl:UState.universe_decl -> (* Universe binders and constraints *)
   ?tactic:unit Proofview.tactic ->

@@ -57,7 +57,7 @@ val interp_recursive :
   (* names / defs / types *)
   (Id.t list * Sorts.relevance list * EConstr.constr option list * EConstr.types list) *
   (* ctx per mutual def / implicits / struct annotations *)
-  (EConstr.rel_context * Impargs.manual_explicitation list * int option) list
+  (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Exported for Funind *)
 
