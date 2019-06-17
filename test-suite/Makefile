@@ -335,16 +335,16 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v arithm
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHECK     $<"
-	$(HIDE){ \
-    opts="$(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-I $(shell dirname $<) -norec $(shell basename $< .v))"; \
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	$(HIDE)if ! grep -q -F "Error!" $@; then { \
+	opts="$(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-I $(shell dirname $<) -norec $(shell basename $< .v))"; \
 	  $(coqchk) -silent $(call get_set_impredicativity,$<) $$opts 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
-	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 stm: $(wildcard stm/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
@@ -362,15 +362,15 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHECK     $<"
-	$(HIDE){ \
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
-	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
@@ -386,15 +386,15 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
-	@echo "CHECK     $<"
-	$(HIDE){ \
+	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
+	$(HIDE)if ! grep -q -F "Error!" $@; then { \
 	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
 	    $(FAIL); \
 	  fi; \
-	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"
+	} > "$(shell dirname $<)/$(shell basename $< .v).chk.log"; fi
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
