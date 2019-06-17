@@ -588,7 +588,7 @@ let vernac_definition_hook ~poly = function
 | Coercion ->
   Some (Class.add_coercion_hook ~poly)
 | CanonicalStructure ->
-  Some (DeclareDef.Hook.make (fun _ _ _ -> Canonical.declare_canonical_structure))
+  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
 | SubClass ->
   Some (Class.add_subclass_hook ~poly)
 | _ -> None

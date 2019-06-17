@@ -1308,7 +1308,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
   let na = next_global_ident_away name Id.Set.empty in
   if Termops.occur_existential sigma gls_type then
     CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials");
-  let hook _ _ _ _ =
+  let hook _ =
     let opacity =
       let na_ref = qualid_of_ident na in
       let na_global = Smartlocate.global_with_alias na_ref in
@@ -1547,7 +1547,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
-  let hook uctx _ _ _ =
+  let hook { DeclareDef.Hook.S.uctx ; _ } =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
     let _ = Extraction_plugin.Table.extraction_inline true [qualid_of_ident term_id] in

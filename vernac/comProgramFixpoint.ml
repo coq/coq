@@ -204,8 +204,8 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       let name = add_suffix recname "_func" in
       (* XXX: Mutating the evar_map in the hook! *)
       (* XXX: Likely the sigma is out of date when the hook is called .... *)
-      let hook sigma _ _ l gr =
-        let sigma, h_body = Evarutil.new_global sigma gr in
+      let hook sigma { DeclareDef.Hook.S.dref; _ } =
+        let sigma, h_body = Evarutil.new_global sigma dref in
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in
@@ -222,9 +222,9 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
       hook, name, typ
     else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook sigma _ _ l gr =
+      let hook sigma { DeclareDef.Hook.S.dref; _ } =
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr impls
+          Impargs.declare_manual_implicits false dref impls
       in hook, recname, typ
   in
   (* XXX: Capturing sigma here... bad bad *)

@@ -456,19 +456,19 @@ let warn_let_as_axiom =
 
 (* This declares implicits and calls the hooks for all the theorems,
    including the main one *)
-let process_recthms ?fix_exn ?hook env sigma ctx ~udecl ~poly ~scope ref imps other_thms =
+let process_recthms ?fix_exn ?hook env sigma uctx ~udecl ~poly ~scope dref imps other_thms =
   let other_thms_data =
     if List.is_empty other_thms then [] else
       (* there are several theorems defined mutually *)
-      let body,opaq = retrieve_first_recthm ctx ref in
-      let norm c = EConstr.to_constr (Evd.from_ctx ctx) c in
+      let body,opaq = retrieve_first_recthm uctx dref in
+      let norm c = EConstr.to_constr (Evd.from_ctx uctx) c in
       let body = Option.map EConstr.of_constr body in
-      let uctx = UState.check_univ_decl ~poly ctx udecl in
+      let uctx = UState.check_univ_decl ~poly uctx udecl in
       List.map_i (save_remaining_recthms env sigma ~poly ~scope norm uctx body opaq) 1 other_thms in
-  let thms_data = (ref,imps)::other_thms_data in
-  List.iter (fun (ref,imps) ->
-      maybe_declare_manual_implicits false ref imps;
-      DeclareDef.Hook.call ?fix_exn ?hook ctx [] scope ref) thms_data
+  let thms_data = (dref,imps)::other_thms_data in
+  List.iter (fun (dref,imps) ->
+      maybe_declare_manual_implicits false dref imps;
+      DeclareDef.Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref})) thms_data
 
 let get_keep_admitted_vars =
   Goptions.declare_bool_option_and_ref

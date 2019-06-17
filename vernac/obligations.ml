@@ -441,9 +441,9 @@ let solve_by_tac ?loc name evi t poly ctx =
     warn_solve_errored ?loc err;
     None
 
-let obligation_hook prg obl num auto ctx' _ _ gr =
+let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
   let obls, rem = prg.prg_obligations in
-  let cst = match gr with GlobRef.ConstRef cst -> cst | _ -> assert false in
+  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
   let () = match obl.obl_status with
       (true, Evar_kinds.Expand)

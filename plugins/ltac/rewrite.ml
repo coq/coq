@@ -1997,7 +1997,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let poly = atts.polymorphic in
   let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-  let hook _ _ _ = function
+  let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
     | Globnames.ConstRef cst ->
       Classes.add_instance (Classes.mk_instance
                       (PropGlobal.proper_class env evd) Hints.empty_hint_info

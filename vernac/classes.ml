@@ -343,9 +343,9 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id 
   instance_hook pri global imps (ConstRef cst)
 
 let declare_instance_program env sigma ~global ~poly id pri imps decl term termtype =
-  let hook _ _ vis gr =
-    let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-    Impargs.declare_manual_implicits false gr imps;
+  let hook { DeclareDef.Hook.S.scope; dref; _ } =
+    let cst = match dref with ConstRef kn -> kn | _ -> assert false in
+    Impargs.declare_manual_implicits false dref imps;
     let pri = intern_info pri in
     let env = Global.env () in
     let sigma = Evd.from_env env in
@@ -374,7 +374,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let sigma = Evd.reset_future_goals sigma in
   let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
   let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
-  let hook = DeclareDef.Hook.make (fun _ _ _ -> instance_hook pri global imps ?hook) in
+  let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global imps ?hook dref)) in
   let info = Lemmas.Info.make ~hook ~scope ~kind () in
   let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma (EConstr.of_constr termtype) in
   (* spiwack: I don't know what to do with the status here. *)
