@@ -290,8 +290,8 @@ let constr_display csr =
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
-  | Ind ((sp,i),u) ->
-      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
+  | Ind (((sp,i),u), stg) ->
+      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","(show_annot stg)^")"
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
