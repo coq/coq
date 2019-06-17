@@ -31,7 +31,6 @@ open Lemmas
 open Locality
 open Attributes
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (** TODO: make this function independent of Ltac *)
@@ -146,59 +145,11 @@ let show_intro ~proof all =
     else mt ()
   end else mt ()
 
-(** Prepare a "match" template for a given inductive type.
-    For each branch of the match, we list the constructor name
-    followed by enough pattern variables.
-    [Not_found] is raised if the given string isn't the qualid of
-    a known inductive type. *)
-
-(*
-
-  HH notes in PR #679:
-
-  The Show Match could also be made more robust, for instance in the
-  presence of let in the branch of a constructor. A
-  decompose_prod_assum would probably suffice for that, but then, it
-  is a Context.Rel.Declaration.t which needs to be matched and not
-  just a pair (name,type).
-
-  Otherwise, this is OK. After all, the API on inductive types is not
-  so canonical in general, and in this simple case, working at the
-  low-level of mind_nf_lc seems reasonable (compared to working at the
-  higher-level of Inductiveops).
-
-*)
-    
-let make_cases_aux glob_ref =
-  let open Declarations in
-  match glob_ref with
-    | Globnames.IndRef ind ->
-      let mib, mip = Global.lookup_inductive ind in
-	Util.Array.fold_right_i
-          (fun i (ctx, _) l ->
-             let al = Util.List.skipn (List.length mib.mind_params_ctxt) (List.rev ctx) in
-	     let rec rename avoid = function
-	       | [] -> []
-               | RelDecl.LocalDef _ :: l -> "_" :: rename avoid l
-               | RelDecl.LocalAssum (n, _)::l ->
-                   let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n.Context.binder_name avoid in
-                   Id.to_string n' :: rename (Id.Set.add n' avoid) l in
-	     let al' = rename Id.Set.empty al in
-	     let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
-	     (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
-          mip.mind_nf_lc []
-    | _ -> raise Not_found
-
-let make_cases s =
-  let qualified_name = Libnames.qualid_of_string s in
-  let glob_ref = Nametab.locate qualified_name in
-  make_cases_aux glob_ref
-
 (** Textual display of a generic "match" template *)
 
 let show_match id =
   let patterns =
-    try make_cases_aux (Nametab.global id)
+    try ComInductive.make_cases (Nametab.global_inductive id)
     with Not_found -> user_err Pp.(str "Unknown inductive type.")
   in
   let pr_branch l =

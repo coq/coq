@@ -77,3 +77,11 @@ val interp_mutual_inductive :
   decl_notation list -> cumulative_inductive_flag ->
   poly:bool -> private_flag -> Declarations.recursivity_kind ->
   mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
+
+(** Prepare a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables.
+    [Not_found] is raised if the given string isn't the qualid of
+    a known inductive type. *)
+
+val make_cases : Names.inductive -> string list list
