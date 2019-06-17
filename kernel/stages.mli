@@ -11,7 +11,7 @@ val hash_stage_annot : annot -> int
 type stage_vars
 type stage_state
 val init_stage_state : stage_state
-val next_stage_state : stage_state -> stage_name * stage_state
+val next_stage_state : stage_state -> annot * stage_state
 val get_stage_vars : stage_state -> stage_vars
 val diff_stage_vars : stage_vars -> stage_vars -> stage_vars
 
@@ -24,4 +24,5 @@ type stage_constraint = SConstraint.elt
 type constraints = SConstraint.t
 val empty_constraint : SConstraint.t
 val union_constraint : SConstraint.t -> SConstraint.t -> SConstraint.t
+val union_constraints : SConstraint.t list -> SConstraint.t
 val add_constraint : SConstraint.elt -> SConstraint.t -> SConstraint.t

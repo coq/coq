@@ -806,6 +806,17 @@ let map_with_binders g f l c0 = match kind c0 with
     let bl' = Array.Fun1.Smart.map f l' bl in
     mkCoFix (ln,(lna,tl',bl'))
 
+
+(*********************)
+(* Stage annotations *)
+(*********************)
+
+(* FIXME: Should not erase position anotations in (Co)Fix *)
+let rec erase c =
+  match c with
+  | Ind (iu, _) -> Ind (iu, Empty)
+  | _ -> map erase c
+
 (*********************)
 (*      Lifting      *)
 (*********************)

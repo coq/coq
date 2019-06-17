@@ -524,6 +524,10 @@ val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
 val map_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(** [erase c] erases all stage annotations in [c] to Empty *)
+
+val erase : constr -> constr
+
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)

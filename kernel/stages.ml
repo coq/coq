@@ -45,7 +45,7 @@ type stage_vars = Int.Set.t
 type stage_state  = stage_name * stage_vars
 
 let init_stage_state = (0, Int.Set.empty)
-let next_stage_state (next, vs) = (next, (next + 1, Int.Set.add next vs))
+let next_stage_state (next, vs) = (Stage (StageVar (next, 0)), (next + 1, Int.Set.add next vs))
 let get_stage_vars (_, vs) = vs
 let diff_stage_vars = Int.Set.diff
 
@@ -75,6 +75,7 @@ type constraints = SConstraint.t
 
 let empty_constraint = SConstraint.empty
 let union_constraint = SConstraint.union
+let union_constraints = List.fold_left union_constraint empty_constraint
 let add_constraint cst csts =
   match cst with
   | (Infty, Infty) -> csts

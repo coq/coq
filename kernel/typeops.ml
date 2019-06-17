@@ -342,7 +342,7 @@ let type_of_product env _name s1 s2 =
 
 let check_cast env c ct k expected_type =
   try
-    match k with
+    let () = match k with
     | VMcast ->
       Vconv.vm_conv CUMUL env ct expected_type
     | DEFAULTcast ->
@@ -352,6 +352,7 @@ let check_cast env c ct k expected_type =
     | NATIVEcast ->
       let sigma = Nativelambda.empty_evars in
       Nativeconv.native_conv CUMUL sigma env ct expected_type
+    in empty_constraint
   with NotConvertible ->
     error_actual_type env (make_judge c ct) expected_type
 
@@ -511,56 +512,63 @@ let rec execute env stg cstr =
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let _, _, args', argst = execute_array env stg args in
-      let _, _, f', ft = match kind f with
-            | Ind (ind, _) when Environ.template_polymorphic_pind ind env ->
-              stg, empty_constraint, f, type_of_inductive_knowing_parameters env ind argst
-            | _ ->
-              (* No template polymorphism *)
-        execute env stg f
-            in
+      let stga, cstrnta, args', argst = execute_array env stg args in
+      let stgf, cstrntf, f', ft = match kind f with
+      | Ind (ind, annot) when Environ.template_polymorphic_pind ind env ->
+        assert (annot = Empty); (* We should be doing inference on bare types! *)
+        let (s, stg') = next_stage_state stg in
+        stg', empty_constraint, mkIndUS ind s, type_of_inductive_knowing_parameters env ind argst
+      | _ -> (* No template polymorphism *)
+        execute env stga f
+      in
+      let cstrnt = union_constraint cstrnta cstrntf in
       let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
-      stg, empty_constraint, cstr, type_of_apply env f' ft args' argst
+      stgf, cstrnt, cstr, type_of_apply env f' ft args' argst
 
     | Lambda (name,c1,c2) ->
-      let _, _, c1', s = execute_is_type env stg c1 in
+      let stg1, cstrnt1, c1', s = execute_is_type env stg c1 in
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let _, _, c2', c2t = execute env1 stg c2 in
+      let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
+      let cstrnt = union_constraint cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name',c1',c2') in
-      stg, empty_constraint, cstr, type_of_abstraction env name' c1 c2t
+      stg2, cstrnt, cstr, type_of_abstraction env name' c1 c2t
 
     | Prod (name,c1,c2) ->
-      let _, _, c1', vars = execute_is_type env stg c1 in
+      let stg1, cstrnt1, c1', vars = execute_is_type env stg c1 in
       let name' = check_binder_annot vars name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let _, _, c2', vars' = execute_is_type env1 stg c2 in
+      let stg2, cstrnt2, c2', vars' = execute_is_type env1 stg1 c2 in
+      let cstrnt = union_constraint cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
-      stg, empty_constraint, cstr, type_of_product env name' vars vars'
+      stg2, cstrnt, cstr, type_of_product env name' vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let _, _, c1', c1t = execute env stg c1 in
-      let _, _, c2', c2s = execute_is_type env stg c2 in
+      let stg1, cstrnt1, c1', c1t = execute env stg c1 in
+      let stg2, cstrnt2, c2', c2s = execute_is_type env stg1 c2 in
       let name' = check_binder_annot c2s name in
-      let () = check_cast env c1' c1t DEFAULTcast c2' in
+      let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
-      let _, _, c3', c3t = execute env1 stg c3 in
+      let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
+      let cstrnt = union_constraints [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
-        else mkLetIn(name',c1',c2',c3')
+        else mkLetIn(name',c1',erase c2',c3')
       in
-      stg, empty_constraint, cstr, subst1 c1 c3t
+      stg3, cstrnt, cstr, subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let _, _, c', ct = execute env stg c in
-      let _, _, t', _ts = execute_is_type env stg t in
-      let () = check_cast env c' ct k t' in
+      let stgc, cstrntc, c', ct = execute env stg c in
+      let stgt, cstrntt, t', _ts = execute_is_type env stgc t in
+      let cstrnt' = check_cast env c' ct k t' in
+      let cstrnt = union_constraints [cstrntc; cstrntt; cstrnt'] in
       let cstr = if c == c' && t == t' then cstr else mkCast(c',k,t') in
-      stg, empty_constraint, cstr, t'
+      stgt, cstrnt, cstr, t'
 
     (* Inductive types *)
     | Ind (ind, annot) ->
       assert (annot = Empty); (* We should be doing inference on bare types! *)
-      stg, empty_constraint, cstr, type_of_inductive env ind
+      let (s, stg') = next_stage_state stg in
+      stg', empty_constraint, mkIndUS ind s, type_of_inductive env ind
 
     | Construct c ->
       stg, empty_constraint, cstr, type_of_constructor env c
@@ -706,7 +714,7 @@ let judge_of_apply env funj argjv =
 (*              (subst1 defj.uj_val j.uj_type) *)
 
 let judge_of_cast env cj k tj =
-  let () = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
+  let _ = check_cast env cj.uj_val cj.uj_type k tj.utj_val in
   let c = match k with | REVERTcast -> cj.uj_val | _ -> mkCast (cj.uj_val, k, tj.utj_val) in
   make_judge c tj.utj_val
 
