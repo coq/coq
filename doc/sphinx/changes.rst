@@ -605,6 +605,43 @@ Other changes in 8.10+beta1
   with help and ideas from Emilio Jesús Gallego Arias, Gaëtan
   Gilbert, Clément Pit-Claudel, Matthieu Sozeau, and Enrico Tassi).
 
+Changes in 8.10+beta2
+~~~~~~~~~~~~~~~~~~~~~
+
+Many bug fixes and documentation improvements, in particular:
+
+**SSReflect**
+
+- Make the ``case E: t`` tactic work together with
+  :flag:`Universe Polymorphism` and equality in :g:`Type`.
+  This makes :tacn:`case <case (ssreflect)>` compatible with the HoTT
+  library https://github.com/HoTT/HoTT
+  (`#10302 <https://github.com/coq/coq/pull/10302>`_,
+  fixes `#10301 <https://github.com/coq/coq/issues/10301>`_,
+  by Andreas Lynge, review by Enrico Tassi)
+- Make the ``rewrite /t`` tactic work together with
+  :flag:`Universe Polymorphism`.
+  This makes :tacn:`rewrite <rewrite (ssreflect)>` compatible with the HoTT
+  library https://github.com/HoTT/HoTT
+  (`#10305 <https://github.com/coq/coq/pull/10305>`_,
+  fixes `#9336 <https://github.com/coq/coq/issues/9336>`_,
+  by Andreas Lynge, review by Enrico Tassi)
+
+**CoqIDE**
+
+- Fix CoqIDE instability on Windows after the update to gtk3
+  (`#10360 <https://github.com/coq/coq/pull/10360>`_, by Michael Soegtrop,
+  closes `#9885 <https://github.com/coq/coq/issues/9885>`_).
+
+**Miscellaneous**
+
+- Proof General can now display Coq-generated diffs between proof steps
+  in color
+  (`#10019 <https://github.com/coq/coq/pull/10019>`_ and
+  (in Proof General) `#421 <https://github.com/ProofGeneral/PG/pull/421>`_,
+  by Jim Fehrle).
+
+
 Version 8.9
 -----------
 
