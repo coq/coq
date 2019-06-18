@@ -514,8 +514,7 @@ let rec execute env stg cstr =
     | App (f,args) ->
       let stga, cstrnta, args', argst = execute_array env stg args in
       let stgf, cstrntf, f', ft = match kind f with
-      | Ind (ind, annot) when Environ.template_polymorphic_pind ind env ->
-        assert (annot = Empty); (* We should be doing inference on bare types! *)
+      | Ind (ind, _) when Environ.template_polymorphic_pind ind env ->
         let (s, stg') = next_stage_state stg in
         stg', empty_constraint, mkIndUS ind s, type_of_inductive_knowing_parameters env ind argst
       | _ -> (* No template polymorphism *)
@@ -565,8 +564,7 @@ let rec execute env stg cstr =
       stgt, cstrnt, cstr, t'
 
     (* Inductive types *)
-    | Ind (ind, annot) ->
-      assert (annot = Empty); (* We should be doing inference on bare types! *)
+    | Ind (ind, _) ->
       let (s, stg') = next_stage_state stg in
       stg', empty_constraint, mkIndUS ind s, type_of_inductive env ind
 
