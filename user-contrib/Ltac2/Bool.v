@@ -1,6 +1,6 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
 (* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
@@ -10,31 +10,31 @@
 
 Require Import Ltac2.Init.
 
-Ltac2 andb x y :=
+Ltac2 and x y :=
   match x with
   | true => y
   | false => false
   end.
 
-Ltac2 orb x y :=
+Ltac2 or x y :=
   match x with
   | true => true
   | false => y
   end.
 
-Ltac2 implb x y :=
+Ltac2 impl x y :=
   match x with
   | true => y
   | false => true
   end.
 
-Ltac2 negb x :=
+Ltac2 neg x :=
   match x with
   | true => false
   | false => true
   end.
 
-Ltac2 xorb x y :=
+Ltac2 xor x y :=
   match x with
   | true
     => match y with
@@ -48,7 +48,7 @@ Ltac2 xorb x y :=
        end
   end.
 
-Ltac2 eqb x y :=
+Ltac2 eq x y :=
   match x with
   | true
     => match y with

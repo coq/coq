@@ -1,6 +1,6 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
 (* <O___,, *       (see CREDITS file for the list of authors)           *)
 (*   \VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
@@ -431,7 +431,7 @@ Ltac2 rec filter f xs :=
   end.
 
 Ltac2 rec filter_out f xs :=
-  filter (fun x => Bool.negb (f x)) xs.
+  filter (fun x => Bool.neg (f x)) xs.
 
 Ltac2 find_all (f : 'a -> bool) (ls : 'a list) := filter f ls.
 
