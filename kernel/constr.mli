@@ -571,12 +571,15 @@ type 'univs instance_compare_fn = GlobRef.t -> int ->
    compare universe instances, [s] to compare sorts; Cast's, binders
    name and Cases annotations are not taken into account *)
 
-val compare_head_gen : Univ.Instance.t instance_compare_fn ->
+val compare_head_gen :
+  ?cstrnts: Stages.SConstraint.t ref ->
+  Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   constr constr_compare_fn ->
   constr constr_compare_fn
 
 val compare_head_gen_leq_with :
+  ?cstrnts: Stages.SConstraint.t ref ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
@@ -590,6 +593,7 @@ val compare_head_gen_leq_with :
     is used,rather than {!kind}, to expose the immediate subterms of
     [c1] (resp. [c2]). *)
 val compare_head_gen_with :
+  ?cstrnts: Stages.SConstraint.t ref ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
@@ -604,7 +608,9 @@ val compare_head_gen_with :
     [s] to compare sorts for for subtyping; Cast's, binders name and
     Cases annotations are not taken into account *)
 
-val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
+val compare_head_gen_leq :
+  ?cstrnts: Stages.SConstraint.t ref ->
+  Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   constr constr_compare_fn ->
   constr constr_compare_fn ->

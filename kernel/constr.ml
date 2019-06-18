@@ -876,7 +876,7 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
    optimisation that physically equal arrays are equals (hence the
    calls to {!Array.equal_norefl}). *)
 
-let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
+let compare_head_gen_leq_with ?cstrnts kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel n1, Rel n2 -> Int.equal n1 n2
@@ -898,7 +898,13 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Const (c1,u1), Const (c2,u2) ->
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
-  | Ind ((c1,u1), _), Ind ((c2,u2), _) -> eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
+  | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
+    begin
+    match s1, s2, cstrnts with
+    | Stage stg1, Stage stg2, Some cstrnts_ref -> cstrnts_ref := add_constraint stg1 stg2 !cstrnts_ref
+    | _ -> ()
+    end;
+    eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
@@ -918,8 +924,8 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
    application associativity, binders name and Cases annotations are
    not taken into account *)
 
-let compare_head_gen_leq leq_universes leq_sorts eq leq t1 t2 =
-  compare_head_gen_leq_with kind kind leq_universes leq_sorts eq leq t1 t2
+let compare_head_gen_leq ?cstrnts leq_universes leq_sorts eq leq nargs t1 t2 =
+  compare_head_gen_leq_with ?cstrnts kind kind leq_universes leq_sorts eq leq nargs t1 t2
 
 (* [compare_head_gen u s f c1 c2] compare [c1] and [c2] using [f] to
    compare the immediate subterms of [c1] of [c2] if needed, [u] to
@@ -930,11 +936,11 @@ let compare_head_gen_leq leq_universes leq_sorts eq leq t1 t2 =
    [compare_head_gen_with] is a variant taking kind-of-term functions,
    to expose subterms of [c1] and [c2], as arguments. *)
 
-let compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq t1 t2 =
-  compare_head_gen_leq_with kind1 kind2 eq_universes eq_sorts eq eq t1 t2
+let compare_head_gen_with ?cstrnts kind1 kind2 eq_universes eq_sorts eq nargs t1 t2 =
+  compare_head_gen_leq_with ?cstrnts kind1 kind2 eq_universes eq_sorts eq eq nargs t1 t2
 
-let compare_head_gen eq_universes eq_sorts eq t1 t2 =
-  compare_head_gen_leq eq_universes eq_sorts eq eq t1 t2
+let compare_head_gen ?cstrnts eq_universes eq_sorts eq nargs t1 t2 =
+  compare_head_gen_leq ?cstrnts eq_universes eq_sorts eq eq nargs t1 t2
 
 let compare_head = compare_head_gen (fun _ _ -> Univ.Instance.equal) Sorts.equal
 

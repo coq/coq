@@ -25,6 +25,14 @@ let compare_annot a1 a2 =
   | Star, _  -> -1 | _, Star  -> 1
   | Stage s1, Stage s2 -> compare_stage s1 s2
 
+let leq_annot a1 a2 =
+  match a1, a2 with
+  | Empty, Empty -> true
+  | Star,  Star  -> true
+  | Stage (StageVar (name1, size1)), Stage (StageVar (name2, size2)) ->
+    Int.equal name1 name2 && size1 <= size2
+  | _, _ -> false
+
 let show_annot a =
   match a with
   | Empty -> "Empty"
@@ -78,11 +86,11 @@ type constraints = SConstraint.t
 let empty_constraint = SConstraint.empty
 let union_constraint = SConstraint.union
 let union_constraints = List.fold_left union_constraint empty_constraint
-let add_constraint cst csts =
-  match cst with
-  | (Infty, Infty) -> csts
-  | (StageVar (name1, size1), StageVar (name2, size2)) when Int.equal name1 name2 ->
+let add_constraint s1 s2 csts =
+  match s1, s2 with
+  | Infty, Infty -> csts
+  | StageVar (name1, size1), StageVar (name2, size2) when Int.equal name1 name2 ->
     let diff = min size1 size2 in
     let new_cst = (StageVar (name1, size1 - diff), StageVar (name2, size2 - diff)) in
     SConstraint.add new_cst csts
-  | _ -> SConstraint.add cst csts
+  | _ -> SConstraint.add (s1, s2) csts
