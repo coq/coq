@@ -639,7 +639,8 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr, t = execute env init_stage_state constr in
+  let _, _, constr_sized, t_sized = execute env init_stage_state constr in
+  let constr, t = erase constr_sized, erase t_sized in
   make_judge constr t
 
 let infer =
@@ -657,7 +658,8 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr, t = execute env init_stage_state constr in
+  let _, _, constr_sized, t_sized = execute env init_stage_state constr in
+  let constr, t = erase constr_sized, erase t_sized in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 
