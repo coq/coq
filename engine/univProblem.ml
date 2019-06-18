@@ -159,8 +159,8 @@ let eq_constr_univs_infer_with kind1 kind2 univs fold m n accu =
       | None -> false
       | Some accu -> cstrs := accu; true
   in
-  let rec eq_constr' nargs m n =
-    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
+  let rec eq_constr' ?cstrnts nargs m n =
+    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' ?cstrnts nargs m n
   in
   let res = Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 m n in
   if res then Some !cstrs else None

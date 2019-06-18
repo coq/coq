@@ -552,7 +552,8 @@ val iter_with_binders :
 val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
-type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
+type 'constr constr_compare_fn =
+   ?cstrnts: Stages.SConstraint.t ref -> int -> 'constr -> 'constr -> bool
 
 (** [compare_head f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders
@@ -572,14 +573,12 @@ type 'univs instance_compare_fn = GlobRef.t -> int ->
    name and Cases annotations are not taken into account *)
 
 val compare_head_gen :
-  ?cstrnts: Stages.SConstraint.t ref ->
   Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   constr constr_compare_fn ->
   constr constr_compare_fn
 
 val compare_head_gen_leq_with :
-  ?cstrnts: Stages.SConstraint.t ref ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
@@ -593,7 +592,6 @@ val compare_head_gen_leq_with :
     is used,rather than {!kind}, to expose the immediate subterms of
     [c1] (resp. [c2]). *)
 val compare_head_gen_with :
-  ?cstrnts: Stages.SConstraint.t ref ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
@@ -609,7 +607,6 @@ val compare_head_gen_with :
     Cases annotations are not taken into account *)
 
 val compare_head_gen_leq :
-  ?cstrnts: Stages.SConstraint.t ref ->
   Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
   constr constr_compare_fn ->
