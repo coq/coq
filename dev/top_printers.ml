@@ -18,6 +18,7 @@ open Libnames
 open Univ
 open Environ
 open Printer
+open Stages
 open Constr
 open Context
 open Genarg
@@ -291,7 +292,7 @@ let constr_display csr =
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind (((sp,i),u), stg) ->
-      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","(show_annot stg)^")"
+      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(show_annot stg)^")"
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
@@ -395,11 +396,12 @@ let print_pure_constr csr =
       print_string ",";
       box_display c';
       print_string ")"
-  | Ind ((sp,i),u) ->
+  | Ind (((sp,i),u), stg) ->
       print_string "Ind(";
       sp_display sp;
       print_string ","; print_int i;
       print_string ","; universes_display u;
+      print_string ","; annot_display stg;
       print_string ")"
   | Construct (((sp,i),j),u) ->
       print_string "Constr(";
@@ -455,6 +457,8 @@ let print_pure_constr csr =
 
   and universes_display u =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
+
+  and annot_display a = print_space (); pp (Stages.pr a)
 
   and sort_display = function
     | SProp -> print_string "SProp"

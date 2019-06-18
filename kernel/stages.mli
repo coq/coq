@@ -5,6 +5,7 @@ type annot = Empty | Star | Stage of stage
 val compare_stage : stage -> stage -> int
 val compare_annot : annot -> annot -> int
 val show_annot : annot -> string
+val pr : annot -> Pp.t
 val hash_stage_annot : annot -> int
 
 

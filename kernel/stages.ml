@@ -32,6 +32,8 @@ let show_annot a =
   | Stage Infty -> "Infty"
   | Stage (StageVar (n, i)) -> "Stage s" ^ string_of_int n ^ " + " ^ string_of_int i
 
+let pr a = Pp.str (show_annot a)
+
 let hash_stage_annot a =
     match a with
     | Empty -> combine 1 (show_annot a |> String.hash)
