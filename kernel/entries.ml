@@ -61,7 +61,7 @@ type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
 type 'a definition_entry = {
-  const_entry_body   : 'a const_entry_body;
+  const_entry_body   : 'a;
   (* List of section variables *)
   const_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
@@ -89,8 +89,8 @@ type primitive_entry = {
 }
 
 type 'a constant_entry =
-  | DefinitionEntry of 'a definition_entry
-  | OpaqueEntry of 'a definition_entry
+  | DefinitionEntry of constr Univ.in_universe_context_set definition_entry
+  | OpaqueEntry of 'a const_entry_body definition_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 

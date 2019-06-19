@@ -196,13 +196,9 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      (* Opaque constants must be provided with a non-empty const_entry_type,
-         and thus should have been treated above. *)
-      let body, ctx = match trust with
-      | Pure ->
-        let (body, ctx), () = Future.join body in
-        body, ctx
+      let { const_entry_body = (body, ctx); const_entry_feedback = feedback_id; _ } = c in
+      let () = match trust with
+      | Pure -> ()
       | SideEffects _ -> assert false
       in
       let env, usubst, univs = match c.const_entry_universes with
@@ -366,7 +362,7 @@ let translate_recipe env _kn r =
 
 let translate_local_def env _id centry =
   let open Cooking in
-  let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
+  let body = (centry.secdef_body, Univ.ContextSet.empty) in
   let centry = {
     const_entry_body = body;
     const_entry_secctx = centry.secdef_secctx;

@@ -698,7 +698,7 @@ let constant_entry_of_side_effect eff =
     const_entry_inline_code = cb.const_inline_code }
   else
   DefinitionEntry {
-    const_entry_body = Future.from_val ((p, Univ.ContextSet.empty), ());
+    const_entry_body = (p, Univ.ContextSet.empty);
     const_entry_secctx = None;
     const_entry_feedback = None;
     const_entry_type = Some cb.const_type;

@@ -162,6 +162,18 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
 
 let cast_proof_entry e =
   let open Proof_global in
+  let (body, ctx), () = Future.force e.proof_entry_body in
+  {
+    const_entry_body = (body, ctx);
+    const_entry_secctx = e.proof_entry_secctx;
+    const_entry_feedback = e.proof_entry_feedback;
+    const_entry_type = e.proof_entry_type;
+    const_entry_universes = e.proof_entry_universes;
+    const_entry_inline_code = e.proof_entry_inline_code;
+  }
+
+let cast_opaque_proof_entry e =
+  let open Proof_global in
   {
     const_entry_body = e.proof_entry_body;
     const_entry_secctx = e.proof_entry_secctx;
@@ -198,7 +210,7 @@ let define_constant ~side_effect ?(export_seff=false) id cd =
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = match de.proof_entry_opaque with
-      | true -> Entries.OpaqueEntry (cast_proof_entry de)
+      | true -> Entries.OpaqueEntry (cast_opaque_proof_entry de)
       | false -> Entries.DefinitionEntry (cast_proof_entry de)
       in
       export, ConstantEntry (PureEntry, cd)
@@ -207,7 +219,7 @@ let define_constant ~side_effect ?(export_seff=false) id cd =
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
-      let de = cast_proof_entry de in
+      let de = cast_opaque_proof_entry de in
       [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
     | ParameterEntry e ->
       [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
