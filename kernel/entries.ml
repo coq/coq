@@ -68,7 +68,6 @@ type 'a definition_entry = {
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
   const_entry_universes   : universes_entry;
-  const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
 type section_def_entry = {
@@ -91,6 +90,7 @@ type primitive_entry = {
 
 type 'a constant_entry =
   | DefinitionEntry of 'a definition_entry
+  | OpaqueEntry of 'a definition_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 

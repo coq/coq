@@ -115,9 +115,9 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
       so we delay the typing and hash consing of its body. *)
 
-  | DefinitionEntry ({ const_entry_type = Some typ;
-                       const_entry_opaque = true;
+  | OpaqueEntry ({ const_entry_type = typ;
                        const_entry_universes = Monomorphic_entry univs; _ } as c) ->
+      let typ = match typ with None -> assert false | Some typ -> typ in
       let env = push_context_set ~strict:true univs env in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
@@ -155,12 +155,11 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_context = c.const_entry_secctx;
       }
 
-  (** Similar case for polymorphic entries. TODO: also delay type-checking of
-      the body. *)
+  (** Similar case for polymorphic entries. *)
 
-  | DefinitionEntry ({ const_entry_type = Some typ;
-                       const_entry_opaque = true;
+  | OpaqueEntry ({ const_entry_type = typ;
                        const_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+      let typ = match typ with None -> assert false | Some typ -> typ in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
@@ -200,7 +199,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       (* Opaque constants must be provided with a non-empty const_entry_type,
          and thus should have been treated above. *)
-      let () = assert (not c.const_entry_opaque) in
       let body, ctx = match trust with
       | Pure ->
         let (body, ctx), () = Future.join body in
@@ -375,7 +373,6 @@ let translate_local_def env _id centry =
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
     const_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
-    const_entry_opaque = false;
     const_entry_inline_code = false;
   } in
   let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
