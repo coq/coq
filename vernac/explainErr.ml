@@ -44,57 +44,61 @@ let explain_exn_default = function
 let _ = CErrors.register_handler explain_exn_default
 
 
+let vernac_interp_error_handler = function
+  | Univ.UniverseInconsistency i ->
+    let msg =
+      if !Constrextern.print_universes then
+        str "." ++ spc() ++
+        Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i
+      else
+	mt() in
+    str "Universe inconsistency" ++ msg ++ str "."
+  | TypeError(ctx,te) ->
+    let te = map_ptype_error EConstr.of_constr te in
+    Himsg.explain_type_error ctx Evd.empty te
+  | PretypeError(ctx,sigma,te) ->
+    Himsg.explain_pretype_error ctx sigma te
+  | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->
+    Himsg.explain_prim_token_notation_error kind ctx sigma te
+  | Typeclasses_errors.TypeClassError(env, sigma, te) ->
+    Himsg.explain_typeclass_error env sigma te
+  | InductiveError e ->
+    Himsg.explain_inductive_error e
+  | Modops.ModuleTypingError e ->
+    Himsg.explain_module_error e
+  | Modintern.ModuleInternalizationError e ->
+    Himsg.explain_module_internalization_error e
+  | RecursionSchemeError (env,e) ->
+    Himsg.explain_recursion_scheme_error env e
+  | Cases.PatternMatchingError (env,sigma,e) ->
+    Himsg.explain_pattern_matching_error env sigma e
+  | Tacred.ReductionTacticError e ->
+    Himsg.explain_reduction_tactic_error e
+  | Logic.RefinerError (env, sigma, e) ->
+    Himsg.explain_refiner_error env sigma e
+  | Nametab.GlobalizationError q ->
+    str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
+    spc () ++ str "was not found" ++
+    spc () ++ str "in the current" ++ spc () ++ str "environment."
+  | Refiner.FailError (i,s) ->
+    let s = Lazy.force s in
+    str "Tactic failure" ++
+    (if Pp.ismt s then s else str ": " ++ s) ++
+    if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
+  | AlreadyDeclared msg ->
+    msg ++ str "."
+  | _ ->
+    raise CErrors.Unhandled
+
+let _ = CErrors.register_handler vernac_interp_error_handler
+
 (** Pre-explain a vernac interpretation error *)
 
 let wrap_vernac_error (exn, info) strm = (EvaluatedError (strm, None), info)
 
-let process_vernac_interp_error exn = match fst exn with
-  | Univ.UniverseInconsistency i ->
-    let msg =
-      if !Constrextern.print_universes then
-	str "." ++ spc() ++ 
-          Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i
-      else
-	mt() in
-    wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
-  | TypeError(ctx,te) ->
-      let te = map_ptype_error EConstr.of_constr te in
-      wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
-  | PretypeError(ctx,sigma,te) ->
-      wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)
-  | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->
-      wrap_vernac_error exn (Himsg.explain_prim_token_notation_error kind ctx sigma te)
-  | Typeclasses_errors.TypeClassError(env, sigma, te) ->
-      wrap_vernac_error exn (Himsg.explain_typeclass_error env sigma te)
-  | InductiveError e ->
-      wrap_vernac_error exn (Himsg.explain_inductive_error e)
-  | Modops.ModuleTypingError e ->
-      wrap_vernac_error exn (Himsg.explain_module_error e)
-  | Modintern.ModuleInternalizationError e ->
-      wrap_vernac_error exn (Himsg.explain_module_internalization_error e)
-  | RecursionSchemeError (env,e) ->
-      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error env e)
-  | Cases.PatternMatchingError (env,sigma,e) ->
-      wrap_vernac_error exn (Himsg.explain_pattern_matching_error env sigma e)
-  | Tacred.ReductionTacticError e ->
-      wrap_vernac_error exn (Himsg.explain_reduction_tactic_error e)
-  | Logic.RefinerError (env, sigma, e) ->
-    wrap_vernac_error exn (Himsg.explain_refiner_error env sigma e)
-  | Nametab.GlobalizationError q ->
-      wrap_vernac_error exn
-        (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
-	 spc () ++ str "was not found" ++
-	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
-  | Refiner.FailError (i,s) ->
-      let s = Lazy.force s in
-      wrap_vernac_error exn
-	(str "Tactic failure" ++
-         (if Pp.ismt s then s else str ": " ++ s) ++
-         if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
-  | AlreadyDeclared msg ->
-      wrap_vernac_error exn (msg ++ str ".")
-  | _ ->
-      exn
+let process_vernac_interp_error exn =
+  try vernac_interp_error_handler (fst exn) |> wrap_vernac_error exn
+  with CErrors.Unhandled -> exn
 
 let rec strip_wrapping_exceptions = function
   | Logic_monad.TacticFailure e ->
@@ -106,16 +110,9 @@ let additional_error_info = ref []
 let register_additional_error_info f =
   additional_error_info := f :: !additional_error_info
 
-let process_vernac_interp_error ?(allow_uncaught=true) (exc, info) =
+let process_vernac_interp_error (exc, info) =
   let exc = strip_wrapping_exceptions exc in
   let e = process_vernac_interp_error (exc, info) in
-  let () =
-    if not allow_uncaught && not (CErrors.handled (fst e)) then
-      let (e, info) = e in
-      let msg = str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "." in
-      let err = CErrors.make_anomaly msg in
-      Util.iraise (err, info)
-  in
   let e' =
     try Some (CList.find_map (fun f -> f e) !additional_error_info)
     with _ -> None

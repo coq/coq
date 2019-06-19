@@ -31,10 +31,6 @@ let make_anomaly ?label pp =
 let anomaly ?loc ?label pp =
   Loc.raise ?loc (Anomaly (label, pp))
 
-let is_anomaly = function
-| Anomaly _ -> true
-| _ -> false
-
 exception UserError of string option * Pp.t (* User errors *)
 
 let todo s = prerr_string ("TODO: "^s^"\n")
@@ -53,6 +49,14 @@ let handle_stack = ref []
 exception Unhandled
 
 let register_handler h = handle_stack := h::!handle_stack
+
+let is_handled e =
+  let is_handled_by h = (try let _ = h e in true with | Unhandled -> false) in
+  List.exists is_handled_by !handle_stack
+
+let is_anomaly = function
+| Anomaly _ -> true
+| exn -> not (is_handled exn)
 
 (** [print_gen] is a general exception printer which tries successively
     all the handlers of a list, and finally a [bottom] handler if all
@@ -77,9 +81,12 @@ let where = function
   if !Flags.debug then str "in " ++ str s ++ str ":" ++ spc () else mt ()
 
 let raw_anomaly e = match e with
-  | Anomaly (s, pps) -> where s ++ pps
-  | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e) ++ str "."
-  | _ -> str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
+  | Anomaly (s, pps) ->
+    where s ++ pps
+  | Assert_failure _ | Match_failure _ ->
+    str (Printexc.to_string e) ++ str "."
+  | _ ->
+    str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 
 let print_backtrace e = match Backtrace.get_backtrace e with
 | None -> mt ()
@@ -128,12 +135,3 @@ let noncritical = function
   | Invalid_argument "equal: functional value" -> false
   | _ -> true
 [@@@ocaml.warning "+52"]
-
-(** Check whether an exception is handled *)
-
-exception Bottom
-
-let handled e =
-  let bottom _ = raise Bottom in
-  try let _ = print_gen bottom !handle_stack e in true
-  with Bottom -> false

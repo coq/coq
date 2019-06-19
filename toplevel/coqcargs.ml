@@ -48,7 +48,7 @@ let depr opt =
 (* XXX Remove this duplication with Coqargs *)
 let fatal_error exn =
   Topfmt.(in_phase ~phase:ParsingCommandLine print_err_exn exn);
-  let exit_code = if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1 in
+  let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
   exit exit_code
 
 let error_missing_arg s =

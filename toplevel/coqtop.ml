@@ -103,7 +103,7 @@ let fatal_error_exn exn =
   Topfmt.(in_phase ~phase:Initialization print_err_exn exn);
   flush_all ();
   let exit_code =
-    if CErrors.(is_anomaly exn || not (handled exn)) then 129 else 1
+    if (CErrors.is_anomaly exn) then 129 else 1
   in
   exit exit_code
 

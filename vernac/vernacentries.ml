@@ -2308,8 +2308,7 @@ let with_fail ~st f =
     | HasNotFailed as e -> raise e
     | e when CErrors.noncritical e || e = Timeout ->
       let e = CErrors.push e in
-      raise (HasFailed (CErrors.iprint
-                          (ExplainErr.process_vernac_interp_error ~allow_uncaught:false e)))
+      raise (HasFailed (CErrors.iprint (ExplainErr.process_vernac_interp_error e)))
   with e when CErrors.noncritical e ->
     (* Restore the previous state XXX Careful here with the cache! *)
     Vernacstate.invalidate_cache ();
