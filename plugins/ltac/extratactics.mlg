@@ -157,15 +157,15 @@ TACTIC EXTEND einjection
 | [ "einjection" destruction_arg(c) ] -> { mytclWithHoles (injClause None None) true c }
 END
 TACTIC EXTEND injection_as
-| [ "injection" "as" intropattern_list(ipat)] ->
+| [ "injection" "as" simple_intropattern_list(ipat)] ->
     { injClause None (Some ipat) false None }
-| [ "injection" destruction_arg(c) "as" intropattern_list(ipat)] ->
+| [ "injection" destruction_arg(c) "as" simple_intropattern_list(ipat)] ->
     { mytclWithHoles (injClause None (Some ipat)) false c }
 END
 TACTIC EXTEND einjection_as
-| [ "einjection" "as" intropattern_list(ipat)] ->
+| [ "einjection" "as" simple_intropattern_list(ipat)] ->
     { injClause None (Some ipat) true None }
-| [ "einjection" destruction_arg(c) "as" intropattern_list(ipat)] ->
+| [ "einjection" destruction_arg(c) "as" simple_intropattern_list(ipat)] ->
     { mytclWithHoles (injClause None (Some ipat)) true c }
 END
 TACTIC EXTEND simple_injection

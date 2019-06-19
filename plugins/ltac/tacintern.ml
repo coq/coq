@@ -800,7 +800,8 @@ let () =
     let ist = { ist with ltacvars = !lf } in
     (ist, ans)
   in
-  Genintern.register_intern0 wit_intro_pattern intern_intro_pattern
+  Genintern.register_intern0 wit_intropattern intern_intro_pattern [@warning "-3"];
+  Genintern.register_intern0 wit_simple_intropattern intern_intro_pattern
 
 let () =
   let intern_clause ist cl =
