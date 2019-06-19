@@ -1314,6 +1314,12 @@ let pr_glob_constr_pptac env sigma c =
 let pr_lglob_constr_pptac env sigma c =
   pr_lglob_constr_env env c
 
+let pr_raw_intro_pattern =
+  lift_env (fun env sigma -> Miscprint.pr_intro_pattern @@ pr_constr_expr env sigma)
+
+let pr_glob_intro_pattern =
+  lift_env (fun env sigma -> Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac env sigma c))
+
 let () =
   let pr_bool b = if b then str "true" else str "false" in
   let pr_unit _ = str "()" in
@@ -1323,11 +1329,8 @@ let () =
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_ident pr_id pr_id pr_id;
   register_basic_print0 wit_var pr_lident pr_lident pr_id;
-  register_print0
-    wit_intro_pattern
-    (lift_env (fun env sigma -> Miscprint.pr_intro_pattern @@ pr_constr_expr env sigma))
-    (lift_env (fun env sigma -> Miscprint.pr_intro_pattern (fun (c,_) -> pr_glob_constr_pptac env sigma c)))
-    pr_intro_pattern_env;
+  register_print0 wit_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env [@warning "-3"];
+  register_print0 wit_simple_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env;
   Genprint.register_print0
     wit_clause_dft_concl
     (lift (pr_clauses (Some true) pr_lident))
