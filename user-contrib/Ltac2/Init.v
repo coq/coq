@@ -63,6 +63,9 @@ Ltac2 Type exn ::= [ Not_focussed ].
 Ltac2 Type exn ::= [ Not_found ].
 (** Used when something is missing. *)
 
+Ltac2 Type exn ::= [ No_value ].
+(** Used for empty lists, None options and the like. *)
+
 Ltac2 Type exn ::= [ Match_failure ].
 (** Used to signal a pattern didn't match a term. *)
 

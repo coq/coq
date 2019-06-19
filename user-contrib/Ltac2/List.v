@@ -74,21 +74,9 @@ Ltac2 hd_opt (ls : 'a list) :=
   | x :: xs => Some x
   end.
 
-Ltac2 hd_default (default : 'a) (ls : 'a list) :=
-  match hd_opt ls with
-  | Some v => v
-  | None => default
-  end.
-
-Ltac2 hd_throw (ls : 'a list) :=
-  match ls with
-  | [] => Control.throw_invalid_argument "List.hd"
-  | x :: xs => x
-  end.
-
 Ltac2 hd (ls : 'a list) :=
   match ls with
-  | [] => Control.backtrack_tactic_failure "List.hd"
+  | [] => Control.throw_invalid_argument "List.hd"
   | x :: xs => x
   end.
 
@@ -108,21 +96,9 @@ Ltac2 rec last_opt (ls : 'a list) :=
        end
   end.
 
-Ltac2 last_default (default : 'a) (ls : 'a list) :=
-  match last_opt ls with
-  | None => default
-  | Some v => v
-  end.
-
-Ltac2 last_throw (ls : 'a list) :=
-  match last_opt ls with
-  | None => Control.throw_invalid_argument "List.last"
-  | Some v => v
-  end.
-
 Ltac2 last (ls : 'a list) :=
   match last_opt ls with
-  | None => Control.backtrack_tactic_failure "List.last"
+  | None => Control.throw_invalid_argument "List.last"
   | Some v => v
   end.
 
@@ -149,12 +125,6 @@ Ltac2 rec nth_opt_aux (ls : 'a list) (n : int) :=
 Ltac2 nth_opt (ls : 'a list) (n : int) :=
   Control.assert_valid_argument "List.nth" (Int.ge n 0);
   nth_opt_aux ls n.
-
-Ltac2 nth_default (default : 'a) (ls : 'a list) (n : int) :=
-  match nth_opt ls n with
-  | Some v => v
-  | None => default
-  end.
 
 Ltac2 nth (ls : 'a list) (n : int) :=
   match nth_opt ls n with
@@ -381,16 +351,10 @@ Ltac2 rec find_opt f xs :=
                end
   end.
 
-Ltac2 find_throw f xs :=
-  match find_opt f xs with
-  | Some v => v
-  | None => Control.throw Not_found
-  end.
-
 Ltac2 find f xs :=
   match find_opt f xs with
   | Some v => v
-  | None => Control.zero Not_found
+  | None => Control.throw Not_found
   end.
 
 Ltac2 rec find_rev_opt f xs :=
@@ -405,16 +369,10 @@ Ltac2 rec find_rev_opt f xs :=
                end
   end.
 
-Ltac2 find_rev_throw f xs :=
-  match find_rev_opt f xs with
-  | Some v => v
-  | None => Control.throw Not_found
-  end.
-
 Ltac2 find_rev f xs :=
   match find_rev_opt f xs with
   | Some v => v
-  | None => Control.zero Not_found
+  | None => Control.throw Not_found
   end.
 
 Ltac2 mem (eq : 'a -> 'a -> bool) (a : 'a) (ls : 'a list) :=
