@@ -142,7 +142,6 @@ open Ind_tables
 open Auto_ind_decl
 open Coqinit
 open Coqtop
-open Discharge
 open Himsg
 open Metasyntax
 open Mltop
@@ -209,3 +208,7 @@ let _ =
  print_string
    ("\n\tOcaml toplevel with Coq printers and utilities (use go();; to exit)\n\n");
  flush_all()
+
+(* Local Variables: *)
+(* mode: tuareg *)
+(* End: *)
