@@ -131,18 +131,18 @@ module Proof_global = struct
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Proof_global.proof_object * Lemmas.proof_terminator
+  type closed_proof = Proof_global.proof_object * Lemmas.proof_info
 
 
   let return_proof ?allow_partial () = cc (return_proof ?allow_partial)
 
   let close_future_proof ~opaque ~feedback_id pf =
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
-                        Internal.get_terminator pt)
+                        Internal.get_info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate f =
     cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
-                        Internal.get_terminator pt)
+                        Internal.get_info pt)
 
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (update_global_env)
@@ -158,6 +158,6 @@ module Proof_global = struct
     | None, None -> None
     | Some _ , None -> None
     | None, Some x -> Some x
-    | Some src, Some tgt -> Some (Stack.copy_terminators ~src ~tgt)
+    | Some src, Some tgt -> Some (Stack.copy_info ~src ~tgt)
 
 end

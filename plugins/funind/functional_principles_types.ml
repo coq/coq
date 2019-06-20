@@ -307,7 +307,7 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   in
   let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
   evd := sigma;
-  let hook = Lemmas.mk_hook (hook new_principle_type) in
+  let hook = DeclareDef.Hook.make (hook new_principle_type) in
   let lemma =
     Lemmas.start_lemma
       new_princ_name

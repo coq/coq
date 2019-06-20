@@ -366,7 +366,7 @@ let add_coercion_hook poly _uctx _trans local ref =
   let msg = Nametab.pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose Feedback.msg_info msg
 
-let add_coercion_hook poly = Lemmas.mk_hook (add_coercion_hook poly)
+let add_coercion_hook poly = DeclareDef.Hook.make (add_coercion_hook poly)
 
 let add_subclass_hook poly _uctx _trans local ref =
   let stre = match local with
@@ -377,4 +377,4 @@ let add_subclass_hook poly _uctx _trans local ref =
   let cl = class_of_global ref in
   try_add_new_coercion_subclass cl ~local:stre poly
 
-let add_subclass_hook poly = Lemmas.mk_hook (add_subclass_hook poly)
+let add_subclass_hook poly = DeclareDef.Hook.make (add_subclass_hook poly)

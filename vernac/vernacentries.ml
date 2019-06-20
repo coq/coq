@@ -588,7 +588,7 @@ let vernac_definition_hook p = function
 | Coercion ->
   Some (Class.add_coercion_hook p)
 | CanonicalStructure ->
-  Some (Lemmas.mk_hook (fun _ _ _ -> Canonical.declare_canonical_structure))
+  Some (DeclareDef.Hook.make (fun _ _ _ -> Canonical.declare_canonical_structure))
 | SubClass ->
   Some (Class.add_subclass_hook p)
 | _ -> None

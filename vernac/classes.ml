@@ -361,7 +361,7 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
       in obls, Some constr, typ
     | None -> [||], None, termtype
   in
-  let hook = Lemmas.mk_hook hook in
+  let hook = DeclareDef.Hook.make hook in
   let ctx = Evd.evar_universe_context sigma in
   ignore(Obligations.add_definition id ?term:constr
            ~univdecl:decl typ ctx ~kind:(Global ImportDefaultBehavior,poly,Instance) ~hook obls)
@@ -376,7 +376,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps decl ids te
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decl_kinds.(Global ImportDefaultBehavior, poly, DefinitionBody Instance) in
   let lemma = Lemmas.start_lemma id ~pl:decl kind sigma (EConstr.of_constr termtype)
-      ~hook:(Lemmas.mk_hook
+      ~hook:(DeclareDef.Hook.make
                (fun _ _ _ -> instance_hook pri global imps ?hook)) in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =

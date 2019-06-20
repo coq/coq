@@ -1371,7 +1371,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
   let lemma = Lemmas.start_lemma
     na
     Decl_kinds.(Global ImportDefaultBehavior, false (* FIXME *), Proof Lemma)
-    sigma gls_type ~hook:(Lemmas.mk_hook hook) in
+    sigma gls_type ~hook:(DeclareDef.Hook.make hook) in
   let lemma = if Indfun_common.is_strict_tcc  ()
   then
     fst @@ Lemmas.by (Proofview.V82.tactic (tclIDTAC)) lemma
@@ -1592,5 +1592,5 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
         term_id
         using_lemmas
         (List.length res_vars)
-        evd (Lemmas.mk_hook hook))
+        evd (DeclareDef.Hook.make hook))
     ()

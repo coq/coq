@@ -45,7 +45,7 @@ val jmeq_refl : unit -> EConstr.constr
 val save
   :  Id.t
   -> Evd.side_effects Entries.definition_entry
-  -> ?hook:Lemmas.declaration_hook
+  -> ?hook:DeclareDef.Hook.t
   -> UState.t
   -> Decl_kinds.goal_kind
   -> unit

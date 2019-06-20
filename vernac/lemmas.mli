@@ -11,36 +11,9 @@
 open Names
 open Decl_kinds
 
-(* Declaration hooks *)
-type declaration_hook
-
-(* Hooks allow users of the API to perform arbitrary actions at
- * proof/definition saving time. For example, to register a constant
- * as a Coercion, perform some cleanup, update the search database,
- * etc...
- *
- * Here, we use an extended hook type suitable for obligations /
- * equations.
- *)
-(** [hook_type] passes to the client:
-    - [ustate]: universe constraints obtained when the term was closed
-    - [(n1,t1),...(nm,tm)]: association list between obligation
-        name and the corresponding defined term (might be a constant,
-        but also an arbitrary term in the Expand case of obligations)
-    - [locality]: Locality of the original declaration
-    - [ref]: identifier of the origianl declaration
- *)
-type hook_type = UState.t -> (Id.t * Constr.t) list -> Decl_kinds.locality -> GlobRef.t -> unit
-
-val mk_hook : hook_type -> declaration_hook
-val call_hook
-  :  ?hook:declaration_hook
-  -> ?fix_exn:Future.fix_exn
-  -> hook_type
-
-(* Proofs that define a constant + terminators *)
+(* Proofs that define a constant *)
 type t
-type proof_terminator
+type lemma_possible_guards = int list list
 
 module Stack : sig
 
@@ -58,16 +31,11 @@ module Stack : sig
 
   val get_all_proof_names : t -> Names.Id.t list
 
-  val copy_terminators : src:t -> tgt:t -> t
-  (** Gets the current terminator without checking that the proof has
-      been completed. Useful for the likes of [Admitted]. *)
+  val copy_info : src:t -> tgt:t -> t
+  (** Gets the current info without checking that the proof has been
+     completed. Useful for the likes of [Admitted]. *)
 
 end
-
-val standard_proof_terminator
-  :  ?hook:declaration_hook
-  -> Proof_global.lemma_possible_guards
-  -> proof_terminator
 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
@@ -77,15 +45,30 @@ val by : unit Proofview.tactic -> t -> t * bool
 
 (* Start of high-level proofs with an associated constant *)
 
+module Proof_ending : sig
+
+  type t =
+    | Regular
+    | End_obligation of DeclareObl.obligation_qed_info
+    | End_derive of { f : Id.t; name : Id.t }
+    | End_equations of { hook : Constant.t list -> Evd.evar_map -> unit
+                       ; i : Id.t
+                       ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+                       ; wits : EConstr.t list ref
+                       ; sigma : Evd.evar_map
+                       }
+
+end
+
 val start_lemma
   :  Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
   -> Evd.evar_map
-  -> ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> proof_terminator)
+  -> ?proof_ending:Proof_ending.t
   -> ?sign:Environ.named_context_val
-  -> ?compute_guard:Proof_global.lemma_possible_guards
-  -> ?hook:declaration_hook
+  -> ?compute_guard:lemma_possible_guards
+  -> ?hook:DeclareDef.Hook.t
   -> EConstr.types
   -> t
 
@@ -93,23 +76,22 @@ val start_dependent_lemma
   :  Id.t
   -> ?pl:UState.universe_decl
   -> goal_kind
-  -> ?terminator:(?hook:declaration_hook -> Proof_global.lemma_possible_guards -> proof_terminator)
-  -> ?sign:Environ.named_context_val
-  -> ?compute_guard:Proof_global.lemma_possible_guards
-  -> ?hook:declaration_hook
+  -> ?proof_ending:Proof_ending.t
+  -> ?compute_guard:lemma_possible_guards
+  -> ?hook:DeclareDef.Hook.t
   -> Proofview.telescope
   -> t
 
 val start_lemma_com
   :  program_mode:bool
   -> ?inference_hook:Pretyping.inference_hook
-  -> ?hook:declaration_hook -> goal_kind -> Vernacexpr.proof_expr list
+  -> ?hook:DeclareDef.Hook.t -> goal_kind -> Vernacexpr.proof_expr list
   -> t
 
 val start_lemma_with_initialization
-  :  ?hook:declaration_hook
+  :  ?hook:DeclareDef.Hook.t
   -> goal_kind -> Evd.evar_map -> UState.universe_decl
-  -> (bool * Proof_global.lemma_possible_guards * unit Proofview.tactic list option) option
+  -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
   -> (Id.t (* name of thm *) *
      (EConstr.types (* type of thm *) *
       (Name.t list (* names to pre-introduce *) * Impargs.manual_implicits))) list
@@ -125,33 +107,24 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {6 Saving proofs } *)
 
+type proof_info
+
+val default_info : proof_info
+
 val save_lemma_admitted
-  :  ?proof:(Proof_global.proof_object * proof_terminator)
+  :  ?proof:(Proof_global.proof_object * proof_info)
   -> lemma:t
   -> unit
 
 val save_lemma_proved
-  :  ?proof:(Proof_global.proof_object * proof_terminator)
+  :  ?proof:(Proof_global.proof_object * proof_info)
   -> ?lemma:t
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
   -> unit
 
-(* API to build a terminator, should go away *)
-type proof_ending =
-  | Admitted of Names.Id.t * Decl_kinds.goal_kind * Entries.parameter_entry * UState.t
-  | Proved of Proof_global.opacity_flag *
-              Names.lident option *
-              Proof_global.proof_object
-
-(** This stuff is internal and will be removed in the future.  *)
+(* To be removed *)
 module Internal : sig
-
   (** Only needed due to the Proof_global compatibility layer. *)
-  val get_terminator : t -> proof_terminator
-
-  (** Only needed by obligations, should be reified soon *)
-  val make_terminator : (proof_ending -> unit) -> proof_terminator
-  val apply_terminator : proof_terminator -> proof_ending -> unit
-
+  val get_info : t -> proof_info
 end

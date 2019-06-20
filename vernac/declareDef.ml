@@ -14,6 +14,29 @@ open Entries
 open Globnames
 open Impargs
 
+(* Hooks naturally belong here as they apply to both definitions and lemmas *)
+module Hook = struct
+  module S = struct
+    type t = UState.t
+      -> (Names.Id.t * Constr.t) list
+      -> Decl_kinds.locality
+      -> Names.GlobRef.t
+      -> unit
+  end
+
+  type t = S.t CEphemeron.key
+
+  let make hook = CEphemeron.create hook
+
+  let call ?hook ?fix_exn uctx trans l c =
+    try Option.iter (fun hook -> CEphemeron.get hook uctx trans l c) hook
+    with e when CErrors.noncritical e ->
+      let e = CErrors.push e in
+      let e = Option.cata (fun fix -> fix e) e fix_exn in
+      Util.iraise e
+end
+
+(* Locality stuff *)
 let declare_definition ident (local, p, k) ?hook_data ce pl imps =
   let fix_exn = Future.fix_exn_of ce.const_entry_body in
   let gr = match local with
@@ -32,7 +55,7 @@ let declare_definition ident (local, p, k) ?hook_data ce pl imps =
     match hook_data with
     | None -> ()
     | Some (hook, uctx, extra_defs) ->
-      Lemmas.call_hook ~fix_exn ~hook uctx extra_defs local gr
+      Hook.call ~fix_exn ~hook uctx extra_defs local gr
   end;
   gr
 

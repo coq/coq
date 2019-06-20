@@ -208,7 +208,7 @@ let mkTransCmd cast cids ceff cqueue =
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
-                     Obligations.program_tcc_summary_tag
+                     DeclareObl.program_tcc_summary_tag
 
 type cached_state =
   | EmptyState
@@ -884,7 +884,7 @@ end = struct (* {{{ *)
     Lemmas.Stack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    Obligations.program_info Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
+    DeclareObl.program_info CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
 
   type partial_state =
     [ `Full of Vernacstate.t
@@ -1532,14 +1532,12 @@ end = struct (* {{{ *)
           (* Unfortunately close_future_proof and friends are not pure so we need
              to set the state manually here *)
           State.unfreeze st;
-          let pobject, _ =
+          let pobject, _info =
             PG_compat.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
-          let terminator = (* The one sent by master is an InvalidKey *)
-            Lemmas.(standard_proof_terminator []) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_vernac_interp stop
-            ~proof:(pobject, terminator) st
+            ~proof:(pobject, Lemmas.default_info) st
             { verbose = false; indentation = 0; strlen = 0;
               expr = CAst.make ?loc @@ VernacExpr ([], VernacEndProof (Proved (opaque,None))) }) in
         ignore(Future.join checked_proof);
@@ -1676,10 +1674,10 @@ end = struct (* {{{ *)
       let opaque = Proof_global.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
-      let pterm, _invalid_terminator =
+      let pterm, _info =
         PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
 
-      let proof = pterm , Lemmas.standard_proof_terminator [] in
+      let proof = pterm, Lemmas.default_info in
 
       (* We jump at the beginning since the kernel handles side effects by also
        * looking at the ones that happen to be present in the current env *)
@@ -3242,7 +3240,7 @@ let unreachable_state_hook = Hooks.unreachable_state_hook
 let document_add_hook = Hooks.document_add_hook
 let document_edit_hook = Hooks.document_edit_hook
 let sentence_exec_hook = Hooks.sentence_exec_hook
-let () = Hook.set Obligations.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
+let () = Hook.set DeclareObl.stm_get_fix_exn (fun () -> !State.fix_exn_ref)
 
 type document = VCS.vcs
 let backup () = VCS.backup ()

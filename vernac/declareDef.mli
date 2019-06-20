@@ -11,10 +11,38 @@
 open Names
 open Decl_kinds
 
+(** Declaration hooks *)
+module Hook : sig
+  type t
+
+  (** Hooks allow users of the API to perform arbitrary actions at
+     proof/definition saving time. For example, to register a constant
+     as a Coercion, perform some cleanup, update the search database,
+     etc...  *)
+  module S : sig
+    (** [S.t] passes to the client: *)
+    type t
+      =  UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      -> (Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      -> Decl_kinds.locality
+      (**  [locality]: Locality of the original declaration *)
+      -> GlobRef.t
+      (** [ref]: identifier of the origianl declaration *)
+      -> unit
+  end
+
+  val make : S.t -> t
+  val call : ?hook:t -> ?fix_exn:Future.fix_exn -> S.t
+end
+
 val declare_definition
   : Id.t
   -> definition_kind
-  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
+  -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> Evd.side_effects Entries.definition_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
@@ -22,7 +50,7 @@ val declare_definition
 
 val declare_fix
   : ?opaque:bool
-  -> ?hook_data:(Lemmas.declaration_hook * UState.t * (Id.t * Constr.t) list)
+  -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> definition_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry
