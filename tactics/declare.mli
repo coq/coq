@@ -30,7 +30,7 @@ type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
-(** Declaration of global constructions 
+(** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
 type constant_declaration = Evd.side_effects constant_entry * logical_kind
@@ -58,7 +58,7 @@ val declare_constant :
 val declare_private_constant :
   ?role:Evd.side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
-val declare_definition : 
+val declare_definition :
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:import_status -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t
