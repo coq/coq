@@ -217,8 +217,7 @@ End BASES.
 Local Notation "v [@ p ]" := (nth v p) (at level 1).
 
 Section ITERATORS.
-(** * Here are special non dependent useful instantiation of induction
-schemes *)
+(** * Here are special non dependent useful instantiation of induction schemes *)
 
 (** Uniform application on the arguments of the vector *)
 Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
