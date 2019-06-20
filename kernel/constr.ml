@@ -1035,7 +1035,7 @@ let leq_constr_univs_infer univs m n =
     res, !cstrs
 
 let rec eq_constr_nounivs m n =
-  (m == n) || compare_head_gen (fun _ _ _ _ -> true) (fun _ _ -> true) (fun ?cstrnts _ -> eq_constr_nounivs) 0 m n
+  (m == n) || compare_head_gen (fun _ _ _ _ -> true) (fun _ _ -> true) (fun ?cstrnts:_ _ -> eq_constr_nounivs) 0 m n
 
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=

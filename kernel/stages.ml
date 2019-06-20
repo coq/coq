@@ -89,7 +89,9 @@ let union_constraints = List.fold_left union_constraint empty_constraint
 let add_constraint s1 s2 csts =
   match s1, s2 with
   | Infty, Infty -> csts
-  | StageVar (name1, size1), StageVar (name2, size2) when Int.equal name1 name2 ->
+  | StageVar (name1, size1), StageVar (name2, size2)
+    when Int.equal name1 name2 && size1 <= size2 -> csts
+  | StageVar (name1, size1), StageVar (name2, size2) ->
     let diff = min size1 size2 in
     let new_cst = (StageVar (name1, size1 - diff), StageVar (name2, size2 - diff)) in
     SConstraint.add new_cst csts
