@@ -76,7 +76,9 @@ The error "(bug seems to be opened, please check)" when running
 compile.
 
 There are also output tests in [`output`](output) which consist of a `.v` file
-and a `.out` file with the expected output.
+and a `.out` file with the expected output.  Output tests in this directory are
+run with coqc in -test-mode.  Output tests in [`output-coqtop`](output-coqtop)
+work the same way, but are run with coqtop.
 
 There are unit tests of OCaml code in [`unit-tests`](unit-tests). These tests
 are contained in `.ml` files, and rely on the `OUnit` unit-test framework, as
