@@ -117,7 +117,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
 
   | OpaqueEntry ({ opaque_entry_type = typ;
                        opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
-      let typ = match typ with None -> assert false | Some typ -> typ in
       let env = push_context_set ~strict:true univs env in
       let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
@@ -159,7 +158,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
 
   | OpaqueEntry ({ opaque_entry_type = typ;
                        opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
-      let typ = match typ with None -> assert false | Some typ -> typ in
       let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in

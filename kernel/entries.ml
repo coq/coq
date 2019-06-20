@@ -83,7 +83,7 @@ type 'a opaque_entry = {
   opaque_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
   opaque_entry_feedback : Stateid.t option;
-  opaque_entry_type        : types option;
+  opaque_entry_type        : types;
   opaque_entry_universes   : universes_entry;
   opaque_entry_inline_code : bool }
 

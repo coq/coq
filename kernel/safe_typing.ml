@@ -693,7 +693,7 @@ let constant_entry_of_side_effect eff =
     opaque_entry_body = Future.from_val ((p, Univ.ContextSet.empty), ());
     opaque_entry_secctx = None;
     opaque_entry_feedback = None;
-    opaque_entry_type = Some cb.const_type;
+    opaque_entry_type = cb.const_type;
     opaque_entry_universes = univs;
     opaque_entry_inline_code = cb.const_inline_code }
   else

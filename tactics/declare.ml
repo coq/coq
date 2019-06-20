@@ -174,11 +174,15 @@ let cast_proof_entry e =
 
 let cast_opaque_proof_entry e =
   let open Proof_global in
+  let typ = match e.proof_entry_type with
+  | None -> assert false
+  | Some typ -> typ
+  in
   {
     opaque_entry_body = e.proof_entry_body;
     opaque_entry_secctx = e.proof_entry_secctx;
     opaque_entry_feedback = e.proof_entry_feedback;
-    opaque_entry_type = e.proof_entry_type;
+    opaque_entry_type = typ;
     opaque_entry_universes = e.proof_entry_universes;
     opaque_entry_inline_code = e.proof_entry_inline_code;
   }
