@@ -145,7 +145,7 @@ let rec v_constr =
     [|v_binder_annot v_name;v_constr;v_constr;v_constr|]; (* LetIn *)
     [|v_constr;Array v_constr|]; (* App *)
     [|v_puniverses v_cst|]; (* Const *)
-    [|v_puniverses v_ind|]; (* Ind *)
+    [|v_puniverses v_ind;Any|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
     [|v_caseinfo;v_constr;v_constr;Array v_constr|]; (* Case *)
     [|v_fix|]; (* Fix *)
