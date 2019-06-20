@@ -175,12 +175,12 @@ let cast_proof_entry e =
 let cast_opaque_proof_entry e =
   let open Proof_global in
   {
-    const_entry_body = e.proof_entry_body;
-    const_entry_secctx = e.proof_entry_secctx;
-    const_entry_feedback = e.proof_entry_feedback;
-    const_entry_type = e.proof_entry_type;
-    const_entry_universes = e.proof_entry_universes;
-    const_entry_inline_code = e.proof_entry_inline_code;
+    opaque_entry_body = e.proof_entry_body;
+    opaque_entry_secctx = e.proof_entry_secctx;
+    opaque_entry_feedback = e.proof_entry_feedback;
+    opaque_entry_type = e.proof_entry_type;
+    opaque_entry_universes = e.proof_entry_universes;
+    opaque_entry_inline_code = e.proof_entry_inline_code;
   }
 
 let get_roles export eff =

@@ -77,6 +77,16 @@ type section_def_entry = {
   secdef_type : types option;
 }
 
+type 'a opaque_entry = {
+  opaque_entry_body   : 'a;
+  (* List of section variables *)
+  opaque_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  opaque_entry_feedback : Stateid.t option;
+  opaque_entry_type        : types option;
+  opaque_entry_universes   : universes_entry;
+  opaque_entry_inline_code : bool }
+
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 
@@ -90,7 +100,7 @@ type primitive_entry = {
 
 type 'a constant_entry =
   | DefinitionEntry of constr Univ.in_universe_context_set definition_entry
-  | OpaqueEntry of 'a const_entry_body definition_entry
+  | OpaqueEntry of 'a const_entry_body opaque_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 

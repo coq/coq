@@ -115,11 +115,11 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
       so we delay the typing and hash consing of its body. *)
 
-  | OpaqueEntry ({ const_entry_type = typ;
-                       const_entry_universes = Monomorphic_entry univs; _ } as c) ->
+  | OpaqueEntry ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let typ = match typ with None -> assert false | Some typ -> typ in
       let env = push_context_set ~strict:true univs env in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
       let proofterm =
         Future.chain body begin fun ((body,uctx),side_eff) ->
@@ -151,16 +151,16 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = tyj.utj_val;
         cook_universes = Monomorphic univs;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
-        cook_inline = c.const_entry_inline_code;
-        cook_context = c.const_entry_secctx;
+        cook_inline = c.opaque_entry_inline_code;
+        cook_context = c.opaque_entry_secctx;
       }
 
   (** Similar case for polymorphic entries. *)
 
-  | OpaqueEntry ({ const_entry_type = typ;
-                       const_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+  | OpaqueEntry ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
       let typ = match typ with None -> assert false | Some typ -> typ in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = Univ.abstract_universes nas uctx in
@@ -189,8 +189,8 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = typ;
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
-        cook_inline = c.const_entry_inline_code;
-        cook_context = c.const_entry_secctx;
+        cook_inline = c.opaque_entry_inline_code;
+        cook_context = c.opaque_entry_secctx;
       }
 
   (** Other definitions have to be processed immediately. *)
