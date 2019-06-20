@@ -60,8 +60,8 @@ type mutual_inductive_entry = {
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
-type 'a definition_entry = {
-  const_entry_body   : 'a;
+type definition_entry = {
+  const_entry_body   : constr Univ.in_universe_context_set;
   (* List of section variables *)
   const_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
@@ -99,7 +99,7 @@ type primitive_entry = {
 }
 
 type 'a constant_entry =
-  | DefinitionEntry of constr Univ.in_universe_context_set definition_entry
+  | DefinitionEntry of definition_entry
   | OpaqueEntry of 'a const_entry_body opaque_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
