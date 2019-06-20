@@ -27,6 +27,7 @@ environment for semi-interactive development of machine-checked proofs.
 
 [![Arch package][arch-badge]][arch-link]
 [![Chocolatey package][chocolatey-badge]][chocolatey-link]
+[![Conda package][conda-badge]][conda-link]
 [![Homebrew package][homebrew-badge]][homebrew-link]
 [![nixpkgs unstable package][nixpkgs-badge]][nixpkgs-link]
 
@@ -38,6 +39,9 @@ environment for semi-interactive development of machine-checked proofs.
 
 [chocolatey-badge]: https://repology.org/badge/version-for-repo/chocolatey/coq.svg
 [chocolatey-link]: https://chocolatey.org/packages/Coq
+
+[conda-badge]: https://img.shields.io/conda/vn/conda-forge/coq.svg?label="Conda%20package"
+[conda-link]: https://github.com/conda-forge/coq-feedstock
 
 [homebrew-badge]: https://repology.org/badge/version-for-repo/homebrew/coq.svg
 [homebrew-link]: https://formulae.brew.sh/formula/coq
