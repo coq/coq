@@ -150,7 +150,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = tyj.utj_val;
         cook_universes = Monomorphic univs;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
-        cook_inline = c.opaque_entry_inline_code;
+        cook_inline = false;
         cook_context = c.opaque_entry_secctx;
       }
 
@@ -187,7 +187,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = typ;
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
-        cook_inline = c.opaque_entry_inline_code;
+        cook_inline = false;
         cook_context = c.opaque_entry_secctx;
       }
 

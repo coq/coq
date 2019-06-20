@@ -184,7 +184,6 @@ let cast_opaque_proof_entry e =
     opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
     opaque_entry_universes = e.proof_entry_universes;
-    opaque_entry_inline_code = e.proof_entry_inline_code;
   }
 
 let get_roles export eff =

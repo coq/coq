@@ -85,7 +85,7 @@ type 'a opaque_entry = {
   opaque_entry_feedback : Stateid.t option;
   opaque_entry_type        : types;
   opaque_entry_universes   : universes_entry;
-  opaque_entry_inline_code : bool }
+}
 
 type inline = int option (* inlining level, None for no inlining *)
 

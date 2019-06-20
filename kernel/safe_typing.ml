@@ -695,7 +695,7 @@ let constant_entry_of_side_effect eff =
     opaque_entry_feedback = None;
     opaque_entry_type = cb.const_type;
     opaque_entry_universes = univs;
-    opaque_entry_inline_code = cb.const_inline_code }
+  }
   else
   DefinitionEntry {
     const_entry_body = (p, Univ.ContextSet.empty);
