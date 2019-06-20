@@ -900,11 +900,8 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq ?cstrnt
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
   | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
-    begin
-    match s1, s2, cstrnts with
-    | Stage stg1, Stage stg2, Some cstrnts_ref -> cstrnts_ref := add_constraint stg1 stg2 !cstrnts_ref
-    | _ -> ()
-    end;
+    (* For now, we treat every inductive parameter as having positive polarity *)
+    add_constraint_ref_option s1 s2 cstrnts;
     eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2

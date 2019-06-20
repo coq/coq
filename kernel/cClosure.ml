@@ -33,6 +33,7 @@ open Context
 open Environ
 open Vars
 open Esubst
+open Stages
 
 let stats = ref false
 
@@ -336,7 +337,7 @@ and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
   | FFlex of table_key
-  | FInd of pinductive
+  | FInd of pinductive * annot
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr
@@ -497,7 +498,7 @@ let mk_clos e t =
     | Var x -> {mark = mark Red Unknown; term = FFlex (VarKey x) }
     | Const c -> {mark = mark Red Unknown; term = FFlex (ConstKey c) }
     | Meta _ | Sort _ ->  {mark = mark Norm KnownR; term = FAtom t }
-    | Ind (kn, _) -> {mark = mark Norm KnownR; term = FInd kn }
+    | Ind (kn, stg) -> {mark = mark Norm KnownR; term = FInd (kn, stg)}
     | Construct kn -> {mark = mark Cstr Unknown; term = FConstruct kn }
     | Int i -> {mark = mark Cstr Unknown; term = FInt i}
     | Float f -> {mark = mark Cstr Unknown; term = FFloat f}
@@ -556,7 +557,7 @@ let rec to_constr lfts v =
     | FFlex (VarKey x) -> mkVar x
     | FAtom c -> exliftn lfts c
     | FFlex (ConstKey op) -> mkConstU op
-    | FInd op -> mkIndU op
+    | FInd (op, stg) -> mkIndUS op stg
     | FConstruct op -> mkConstructU op
     | FCaseT (ci,p,c,ve,env) ->
       if is_subs_id env && is_lift_id lfts then

@@ -116,7 +116,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FProd (_,dom,codom,e) ->
     let variances = infer_fterm CONV infos variances dom [] in
     infer_fterm cv_pb infos variances (mk_clos (Esubst.subs_lift e) codom) []
-  | FInd (ind, u) ->
+  | FInd ((ind, u), _) ->
     let variances =
       if Instance.is_empty u then variances
       else

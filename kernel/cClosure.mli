@@ -13,6 +13,7 @@ open Constr
 open Declarations
 open Environ
 open Esubst
+open Stages
 
 (** Flags for profiling reductions. *)
 val stats : bool ref
@@ -103,7 +104,7 @@ type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
   | FFlex of table_key
-  | FInd of inductive Univ.puniverses
+  | FInd of inductive Univ.puniverses * annot
   | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr

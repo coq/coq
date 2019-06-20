@@ -28,3 +28,4 @@ val empty_constraint : SConstraint.t
 val union_constraint : SConstraint.t -> SConstraint.t -> SConstraint.t
 val union_constraints : SConstraint.t list -> SConstraint.t
 val add_constraint : stage -> stage -> SConstraint.t -> SConstraint.t
+val add_constraint_ref_option : annot -> annot -> (SConstraint.t ref) option -> unit

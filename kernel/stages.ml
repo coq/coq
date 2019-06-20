@@ -86,6 +86,7 @@ type constraints = SConstraint.t
 let empty_constraint = SConstraint.empty
 let union_constraint = SConstraint.union
 let union_constraints = List.fold_left union_constraint empty_constraint
+
 let add_constraint s1 s2 csts =
   match s1, s2 with
   | Infty, Infty -> csts
@@ -96,3 +97,8 @@ let add_constraint s1 s2 csts =
     let new_cst = (StageVar (name1, size1 - diff), StageVar (name2, size2 - diff)) in
     SConstraint.add new_cst csts
   | _ -> SConstraint.add (s1, s2) csts
+
+let add_constraint_ref_option a1 a2 cstrnts =
+  match a1, a2, cstrnts with
+    | Stage s1, Stage s2, Some cstrnts_ref -> cstrnts_ref := add_constraint s1 s2 !cstrnts_ref
+    | _ -> ()
