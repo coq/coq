@@ -24,7 +24,6 @@ open Tactics
 open Pretype_errors
 open Typeclasses
 open Constrexpr
-open Globnames
 open Evd
 open Tactypes
 open Locus
@@ -1983,8 +1982,8 @@ let add_morphism_as_parameter atts m n : unit =
       (Declare.ParameterEntry (None,(instance,uctx),None))
   in
   Classes.add_instance (Classes.mk_instance
-                  (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
-  declare_projection n instance_id (ConstRef cst)
+                  (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (GlobRef.ConstRef cst));
+  declare_projection n instance_id (GlobRef.ConstRef cst)
 
 let add_morphism_interactive atts m n : Lemmas.t =
   warn_add_morphism_deprecated ?loc:m.CAst.loc ();
@@ -1997,11 +1996,11 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let kind = Decls.(IsDefinition Instance) in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
-    | Globnames.ConstRef cst ->
+    | GlobRef.ConstRef cst ->
       Classes.add_instance (Classes.mk_instance
                       (PropGlobal.proper_class env evd) Hints.empty_hint_info
-                      atts.global (ConstRef cst));
-      declare_projection n instance_id (ConstRef cst)
+                      atts.global (GlobRef.ConstRef cst));
+      declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
   in
   let hook = DeclareDef.Hook.make hook in

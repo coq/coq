@@ -15,7 +15,6 @@ open Util
 open Pp
 open Names
 open Libnames
-open Globnames
 open Univ
 open Environ
 open Printer
@@ -141,7 +140,7 @@ let ppclosedglobconstridmap x = pp (pr_closed_glob_constr_idmap x)
 
 let pP s = pp (hov 0 s)
 
-let safe_pr_global = function
+let safe_pr_global = let open GlobRef in function
   | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
   | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
 			  int i ++ str ")")
@@ -558,7 +557,7 @@ let encode_path ?loc prefix mpdir suffix id =
   make_qualid ?loc
     (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id
 
-let raw_string_of_ref ?loc _ = function
+let raw_string_of_ref ?loc _ = let open GlobRef in function
   | ConstRef cst ->
       let (mp,id) = Constant.repr2 cst in
       encode_path ?loc "CST" (Some mp) [] (Label.to_id id)
@@ -574,7 +573,7 @@ let raw_string_of_ref ?loc _ = function
   | VarRef id ->
       encode_path ?loc "SECVAR" None [] id
 
-let short_string_of_ref ?loc _ = function
+let short_string_of_ref ?loc _ = let open GlobRef in function
   | VarRef id -> qualid_of_ident ?loc id
   | ConstRef cst -> qualid_of_ident ?loc (Label.to_id (Constant.label cst))
   | IndRef (kn,0) -> qualid_of_ident ?loc (Label.to_id (MutInd.label kn))

@@ -394,18 +394,18 @@ let compute_mib_implicits flags kn =
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
         (fun i mip ->
           (* No need to care about constraints here *)
-          let ty, _ = Typeops.type_of_global_in_context env (IndRef (kn,i)) in
+          let ty, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef (kn,i)) in
           let r = Inductive.relevance_of_inductive env (kn,i) in
           Context.Rel.Declaration.LocalAssum (Context.make_annot (Name mip.mind_typename) r, ty))
         mib.mind_packets) in
   let env_ar = Environ.push_rel_context ar env in
   let imps_one_inductive i mip =
     let ind = (kn,i) in
-    let ar, _ = Typeops.type_of_global_in_context env (IndRef ind) in
-    ((IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
+    let ar, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
+    ((GlobRef.IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
      Array.mapi (fun j (ctx, cty) ->
       let c = of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-       (ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
+       (GlobRef.ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
        mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
@@ -424,7 +424,7 @@ let compute_var_implicits flags id =
 
 (* Implicits of a global reference. *)
 
-let compute_global_implicits flags = function
+let compute_global_implicits flags = let open GlobRef in function
   | VarRef id -> compute_var_implicits flags id
   | ConstRef kn -> compute_constant_implicits flags kn
   | IndRef (kn,i) ->
@@ -579,11 +579,11 @@ let declare_implicits local ref =
 
 let declare_var_implicits id =
   let flags = !implicit_args in
-    declare_implicits_gen ImplLocal flags (VarRef id)
+    declare_implicits_gen ImplLocal flags (GlobRef.VarRef id)
 
 let declare_constant_implicits con =
   let flags = !implicit_args in
-    declare_implicits_gen (ImplConstant flags) flags (ConstRef con)
+    declare_implicits_gen (ImplConstant flags) flags (GlobRef.ConstRef con)
 
 let declare_mib_implicits kn =
   let flags = !implicit_args in

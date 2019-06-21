@@ -6,7 +6,6 @@ open Context
 open Vars
 open Glob_term
 open Glob_ops
-open Globnames
 open Indfun_common
 open CErrors
 open Util
@@ -312,7 +311,7 @@ let build_constructors_of_type ind' argl =
   let npar = mib.Declarations.mind_nparams in
   Array.mapi (fun i _ ->
 		let construct = ind',i+1 in
-		let constructref = ConstructRef(construct) in
+                let constructref = GlobRef.ConstructRef(construct) in
 		let _implicit_positions_of_cst =
 		  Impargs.implicits_of_global constructref
 		in
@@ -328,7 +327,7 @@ let build_constructors_of_type ind' argl =
                     List.make npar (mkGHole ()) @ argl
 		in
 		let pat_as_term =
-		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)
+                  mkGApp(mkGRef (GlobRef.ConstructRef(ind',i+1)),argl)
 		in
                 cases_pattern_of_glob_constr (Global.env()) Anonymous pat_as_term
 	     )
@@ -438,7 +437,7 @@ let rec pattern_to_term_and_type env typ  = DAst.with_val (function
       let patl_as_term =
 	List.map2 (pattern_to_term_and_type env)  (List.rev cs_args_types)  patternl
       in
-      mkGApp(mkGRef(ConstructRef constr),
+      mkGApp(mkGRef(GlobRef.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
   )
@@ -992,7 +991,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    in
 		    mkGProd(n,t,new_b),id_to_exclude
 		  with Continue ->
-		    let jmeq = Globnames.IndRef (fst (EConstr.destInd Evd.empty (jmeq ()))) in
+                    let jmeq = GlobRef.IndRef (fst (EConstr.destInd Evd.empty (jmeq ()))) in
 		    let ty',ctx = Pretyping.understand env (Evd.from_env env) ty in
                     let ind,args' = Inductiveops.find_inductive env Evd.(from_env env) ty' in
 		    let mib,_ = Global.lookup_inductive (fst ind) in
@@ -1001,7 +1000,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      ((Util.List.chop nparam args'))
 		    in
 		    let rt_typ = DAst.make @@
-		       GApp(DAst.make @@ GRef (Globnames.IndRef (fst ind),None),
+                       GApp(DAst.make @@ GRef (GlobRef.IndRef (fst ind),None),
 			    (List.map
 			      (fun p -> Detyping.detype Detyping.Now false Id.Set.empty
 				 env (Evd.from_env env)

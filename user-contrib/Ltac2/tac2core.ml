@@ -1094,7 +1094,7 @@ let () =
 let () =
   let intern self ist ref = match ref.CAst.v with
   | Tac2qexpr.QHypothesis id ->
-    GlbVal (Globnames.VarRef id), gtypref t_reference
+    GlbVal (GlobRef.VarRef id), gtypref t_reference
   | Tac2qexpr.QReference qid ->
     let gr =
       try Nametab.locate qid
@@ -1106,7 +1106,7 @@ let () =
   let subst s c = Globnames.subst_global_reference s c in
   let interp _ gr = return (Value.of_reference gr) in
   let print _ = function
-  | Globnames.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
+  | GlobRef.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
   let obj = {

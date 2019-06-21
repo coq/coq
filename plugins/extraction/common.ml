@@ -15,7 +15,6 @@ open ModPath
 open Namegen
 open Nameops
 open Libnames
-open Globnames
 open Table
 open Miniml
 open Mlutil
@@ -629,21 +628,21 @@ let check_extract_ascii () =
       | Haskell -> "Prelude.Char"
       | _ -> raise Not_found
     in
-    String.equal (find_custom (IndRef (ind_ascii, 0))) (char_type)
+    String.equal (find_custom (GlobRef.IndRef (ind_ascii, 0))) (char_type)
   with Not_found -> false
 
 let is_list_cons l =
- List.for_all (function MLcons (_,ConstructRef(_,_),[]) -> true | _ -> false) l
+ List.for_all (function MLcons (_,GlobRef.ConstructRef(_,_),[]) -> true | _ -> false) l
 
 let is_native_char = function
-  | MLcons(_,ConstructRef ((kn,0),1),l) ->
+  | MLcons(_,GlobRef.ConstructRef ((kn,0),1),l) ->
     MutInd.equal kn ind_ascii && check_extract_ascii () && is_list_cons l
   | _ -> false
 
 let get_native_char c =
   let rec cumul = function
     | [] -> 0
-    | MLcons(_,ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
+    | MLcons(_,GlobRef.ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
     | _ -> assert false
   in
   let l = match c with MLcons(_,_,l) -> l | _ -> assert false in

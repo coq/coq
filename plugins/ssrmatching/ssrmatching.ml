@@ -361,7 +361,7 @@ type tpattern = {
 let all_ok _ _ = true
 
 let proj_nparams c =
-  try 1 + Recordops.find_projection_nparams (ConstRef c) with _ -> 0
+  try 1 + Recordops.find_projection_nparams (GlobRef.ConstRef c) with _ -> 0
 
 let isRigid c = match kind c with
   | Prod _ | Sort _ | Lambda _ | Case _ | Fix _ | CoFix _ -> true
@@ -454,7 +454,7 @@ let ungen_upat lhs (sigma, uc, t) u =
 
 let nb_cs_proj_args pc f u =
   let na k =
-    List.length (snd (lookup_canonical_conversion (ConstRef pc, k))).o_TCOMPS in
+    List.length (snd (lookup_canonical_conversion (GlobRef.ConstRef pc, k))).o_TCOMPS in
   let nargs_of_proj t = match kind t with
       | App(_,args) -> Array.length args
       | Proj _ -> 0 (* if splay_app calls expand_projection, this has to be
@@ -928,7 +928,7 @@ let id_of_cpattern (_, (c1, c2), _) =
     Some (qualid_basename qid)
   | _, Some { v = CAppExpl ((_, qid, _), []) } when qualid_is_ident qid ->
     Some (qualid_basename qid)
-  | GRef (VarRef x, _), None -> Some x
+  | GRef (GlobRef.VarRef x, _), None -> Some x
   | _ -> None
 let id_of_Cterm t = match id_of_cpattern t with
   | Some x -> x
@@ -1267,7 +1267,7 @@ let pf_fill_occ_term gl occ t =
   cl, t
 
 let cpattern_of_id id =
-  ' ', (DAst.make @@ GRef (VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
+  ' ', (DAst.make @@ GRef (GlobRef.VarRef  id, None), None), Some Geninterp.({ lfun = Id.Map.empty; poly = false; extra = Tacinterp.TacStore.empty })
 
 let is_wildcard ((_, (l, r), _) : cpattern) : bool = match DAst.get l, r with
   | _, Some { CAst.v = CHole _ } | GHole _, None -> true

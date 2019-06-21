@@ -18,7 +18,6 @@ open Tacred
 open Util
 open Names
 open Libnames
-open Globnames
 open Smartlocate
 open Constrexpr
 open Termops
@@ -304,7 +303,7 @@ let intern_evaluable_reference_or_by_notation ist = function
   | {v=ByNotation (ntn,sc);loc} ->
       evaluable_of_global_reference ist.genv
       (Notation.interp_notation_as_global_reference ?loc
-        (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
+        GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalize a reduction expression *)
 let intern_evaluable ist r =
@@ -383,7 +382,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       | GRef (r,None) ->
           Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
       | GVar id ->
-          let r = evaluable_of_global_reference ist.genv (VarRef id) in
+          let r = evaluable_of_global_reference ist.genv (GlobRef.VarRef id) in
           Inl (ArgArg (r,None))
       | _ ->
           let bound_names = Glob_ops.bound_glob_vars c in

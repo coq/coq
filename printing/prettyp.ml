@@ -68,7 +68,7 @@ let int_or_no n = if Int.equal n 0 then str "no" else int n
 (*******************)
 (** Basic printing *)
 
-let print_basename sp = pr_global (ConstRef sp)
+let print_basename sp = pr_global (GlobRef.ConstRef sp)
 
 let print_ref reduce ref udecl =
   let env = Global.env () in
@@ -82,7 +82,7 @@ let print_ref reduce ref udecl =
       let ctx,ccl = Reductionops.splay_prod_assum env sigma typ
       in EConstr.it_mkProd_or_LetIn ccl ctx
     else typ in
-  let variance = match ref with
+  let variance = let open GlobRef in match ref with
     | VarRef _ | ConstRef _ -> None
     | IndRef (ind,_) | ConstructRef ((ind,_),_) ->
       let mind = Environ.lookup_mind ind env in
@@ -184,10 +184,10 @@ type opacity =
 
 let opacity env =
   function
-  | VarRef v when NamedDecl.is_local_def (Environ.lookup_named v env) ->
+  | GlobRef.VarRef v when NamedDecl.is_local_def (Environ.lookup_named v env) ->
       Some(TransparentMaybeOpacified
         (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
-  | ConstRef cst ->
+  | GlobRef.ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       (match cb.const_body with
         | Undef _ | Primitive _ -> None
@@ -247,7 +247,7 @@ let print_primitive_record recflag mipv = function
 
 let print_primitive ref =
   match ref with 
-  | IndRef ind -> 
+  | GlobRef.IndRef ind ->
     let mib,_ = Global.lookup_inductive ind in
       print_primitive_record mib.mind_finite mib.mind_packets mib.mind_record
   | _ -> []
@@ -281,10 +281,10 @@ let print_id_args_data test pr id l =
 let print_args_data_of_inductive_ids get test pr sp mipv =
   List.flatten (Array.to_list (Array.mapi
     (fun i mip ->
-      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) @
+      print_id_args_data test pr mip.mind_typename (get (GlobRef.IndRef (sp,i))) @
       List.flatten (Array.to_list (Array.mapi
 	(fun j idc ->
-	  print_id_args_data test pr idc (get (ConstructRef ((sp,i),j+1))))
+          print_id_args_data test pr idc (get (GlobRef.ConstructRef ((sp,i),j+1))))
         mip.mind_consnames)))
     mipv))
 
@@ -358,7 +358,7 @@ let locate_any_name qid =
 
 let pr_located_qualid = function
   | Term ref ->
-      let ref_str = match ref with
+      let ref_str = let open GlobRef in match ref with
 	  ConstRef _ -> "Constant"
 	| IndRef _ -> "Inductive"
 	| ConstructRef _ -> "Constructor"
@@ -382,7 +382,7 @@ let pr_located_qualid = function
   | Undefined qid ->
       pr_qualid qid ++ spc () ++ str "not a defined object."
 
-let canonize_ref = function
+let canonize_ref = let open GlobRef in function
   | ConstRef c ->
     let kn = Constant.canonical c in
     if KerName.equal (Constant.user c) kn then None
@@ -537,7 +537,7 @@ let print_named_decl env sigma id =
 
 let gallina_print_section_variable env sigma id =
   print_named_decl env sigma id ++
-  with_line_skip (print_name_infos (VarRef id))
+  with_line_skip (print_name_infos (GlobRef.VarRef id))
 
 let print_body env evd = function
   | Some c  -> pr_lconstr_env env evd c
@@ -595,7 +595,7 @@ let print_constant with_values sep sp udecl =
 
 let gallina_print_constant_with_infos sp udecl =
   print_constant true " = " sp udecl ++
-  with_line_skip (print_name_infos (ConstRef sp))
+  with_line_skip (print_name_infos (GlobRef.ConstRef sp))
 
 let gallina_print_syntactic_def env kn =
   let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
@@ -786,6 +786,7 @@ let print_sec_context_typ env sigma sec =
   print_context env sigma false None (read_sec_context sec)
 
 let maybe_error_reject_univ_decl na udecl =
+  let open GlobRef in
   match na, udecl with
   | _, None | Term (ConstRef _ | IndRef _ | ConstructRef _), Some _ -> ()
   | (Term (VarRef _) | Syntactic _ | Dir _ | ModuleType _ | Other _ | Undefined _), Some udecl ->
@@ -794,6 +795,7 @@ let maybe_error_reject_univ_decl na udecl =
 
 let print_any_name env sigma na udecl =
   maybe_error_reject_univ_decl na udecl;
+  let open GlobRef in
   match na with
   | Term (ConstRef sp) -> print_constant_with_infos sp udecl
   | Term (IndRef (sp,_)) -> print_inductive sp udecl
@@ -825,6 +827,7 @@ let print_name env sigma na udecl =
       print_any_name env sigma (locate_any_name ref) udecl
 
 let print_opaque_name env sigma qid =
+  let open GlobRef in
   match Nametab.global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in

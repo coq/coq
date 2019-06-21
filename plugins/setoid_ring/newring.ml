@@ -49,7 +49,7 @@ let global_head_of_constr sigma c =
 
 let global_of_constr_nofail c = 
   try global_of_constr c
-  with Not_found -> VarRef (Id.of_string "dummy")
+  with Not_found -> GlobRef.VarRef (Id.of_string "dummy")
 
 let rec mk_clos_but f_map n t =
   let (f, args) = Constr.decompose_appvect t in

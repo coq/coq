@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Globnames
 open Tac2dyn
 open Tac2expr
 open Proofview.Notations
@@ -337,13 +336,13 @@ let of_constant c = of_ext val_constant c
 let to_constant c = to_ext val_constant c
 let constant = repr_ext val_constant
 
-let of_reference = function
+let of_reference = let open GlobRef in function
 | VarRef id -> ValBlk (0, [| of_ident id |])
 | ConstRef cst -> ValBlk (1, [| of_constant cst |])
 | IndRef ind -> ValBlk (2, [| of_ext val_inductive ind |])
 | ConstructRef cstr -> ValBlk (3, [| of_ext val_constructor cstr |])
 
-let to_reference = function
+let to_reference = let open GlobRef in function
 | ValBlk (0, [| id |]) -> VarRef (to_ident id)
 | ValBlk (1, [| cst |]) -> ConstRef (to_constant cst)
 | ValBlk (2, [| ind |]) -> IndRef (to_ext val_inductive ind)

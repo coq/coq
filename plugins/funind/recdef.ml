@@ -67,7 +67,7 @@ let find_reference sl s =
 
 let declare_fun name kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
-  ConstRef(declare_constant ~name ~kind (DefinitionEntry ce))
+  GlobRef.ConstRef(declare_constant ~name ~kind (DefinitionEntry ce))
 
 let defined lemma =
   Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None
@@ -95,7 +95,7 @@ let type_of_const sigma t =
 let constant sl s = UnivGen.constr_of_monomorphic_global (find_reference sl s)
 
 let const_of_ref = function
-    ConstRef kn -> kn
+    GlobRef.ConstRef kn -> kn
   | _ -> anomaly (Pp.str "ConstRef expected.")
 
 (* Generic values *)
@@ -1312,7 +1312,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
       let na_ref = qualid_of_ident na in
       let na_global = Smartlocate.global_with_alias na_ref in
       match na_global with
-          ConstRef c -> is_opaque_constant c
+          GlobRef.ConstRef c -> is_opaque_constant c
         | _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant.")
     in
     let lemma = mkConst (Names.Constant.make1 (Lib.make_kn na)) in
@@ -1455,7 +1455,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let open CVars in
     let opacity =
       match terminate_ref with
-        | ConstRef c -> is_opaque_constant c
+        | GlobRef.ConstRef c -> is_opaque_constant c
         | _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant.")
     in
     let evd = Evd.from_ctx uctx in

@@ -30,12 +30,12 @@ module Refset' = GlobRef.Set_env
 
 (*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 
-let occur_kn_in_ref kn = function
+let occur_kn_in_ref kn = let open GlobRef in function
   | IndRef (kn',_)
   | ConstructRef ((kn',_),_) -> MutInd.equal kn kn'
   | ConstRef _ | VarRef _ -> false
 
-let repr_of_r = function
+let repr_of_r = let open GlobRef in function
   | ConstRef kn -> Constant.repr2 kn
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) -> MutInd.repr2 kn
@@ -151,7 +151,7 @@ let init_inductive_kinds () = inductive_kinds := Mindmap_env.empty
 let add_inductive_kind kn k =
     inductive_kinds := Mindmap_env.add kn k !inductive_kinds
 let is_coinductive r =
-  let kn = match r with
+  let kn = let open GlobRef in match r with
     | ConstructRef ((kn,_),_) -> kn
     | IndRef (kn,_) -> kn
     | _ -> assert false
@@ -164,7 +164,7 @@ let is_coinductive_type = function
   | _ -> false
 
 let get_record_fields r =
-  let kn = match r with
+  let kn = let open GlobRef in match r with
     | ConstructRef ((kn,_),_) -> kn
     | IndRef (kn,_) -> kn
     | _ -> assert false
@@ -201,7 +201,7 @@ let add_recursors env ind =
     mib.mind_packets
 
 let is_recursor = function
-  | ConstRef c -> KNset.mem (Constant.canonical c) !recursors
+  | GlobRef.ConstRef c -> KNset.mem (Constant.canonical c) !recursors
   | _ -> false
 
 (*s Record tables. *)
@@ -210,7 +210,7 @@ let is_recursor = function
 
 let projs = ref (GlobRef.Map.empty : (inductive*int) GlobRef.Map.t)
 let init_projs () = projs := GlobRef.Map.empty
-let add_projection n kn ip = projs := GlobRef.Map.add (ConstRef kn) (ip,n) !projs
+let add_projection n kn ip = projs := GlobRef.Map.add (GlobRef.ConstRef kn) (ip,n) !projs
 let is_projection r = GlobRef.Map.mem r !projs
 let projection_arity r = snd (GlobRef.Map.find r !projs)
 let projection_info r = GlobRef.Map.find r !projs
@@ -264,6 +264,7 @@ let safe_basename_of_global r =
     with Not_found ->
       anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
   in
+  let open GlobRef in
   match r with
     | ConstRef kn -> Label.to_id (Constant.label kn)
     | IndRef (kn,0) -> Label.to_id (MutInd.label kn)
@@ -286,7 +287,7 @@ let safe_pr_global r = str (string_of_global r)
 let safe_pr_long_global r =
   try Printer.pr_global r
   with Not_found -> match r with
-    | ConstRef kn ->
+    | GlobRef.ConstRef kn ->
         let mp,l = Constant.repr2 kn in
 	str ((ModPath.to_string mp)^"."^(Label.to_string l))
     | _ -> assert false
@@ -658,7 +659,7 @@ let extraction_inline b l =
   let refs = List.map Smartlocate.global_with_alias l in
   List.iter
     (fun r -> match r with
-       | ConstRef _ -> ()
+       | GlobRef.ConstRef _ -> ()
        | _ -> error_constant r) refs;
   Lib.add_anonymous_leaf (inline_extraction (b,refs))
 
@@ -666,7 +667,7 @@ let extraction_inline b l =
 
 let print_extraction_inline () =
   let (i,n)= !inline_table in
-  let i'= Refset'.filter (function ConstRef _ -> true | _ -> false) i in
+  let i'= Refset'.filter (function GlobRef.ConstRef _ -> true | _ -> false) i in
     (str "Extraction Inline:" ++ fnl () ++
      Refset'.fold
        (fun r p ->
@@ -823,8 +824,8 @@ let indref_of_match pv =
   if Array.is_empty pv then raise Not_found;
   let (_,pat,_) = pv.(0) in
   match pat with
-    | Pusual (ConstructRef (ip,_)) -> IndRef ip
-    | Pcons (ConstructRef (ip,_),_) -> IndRef ip
+    | Pusual (GlobRef.ConstructRef (ip,_)) -> GlobRef.IndRef ip
+    | Pcons (GlobRef.ConstructRef (ip,_),_) -> GlobRef.IndRef ip
     | _ -> raise Not_found
 
 let is_custom_match pv =
@@ -852,9 +853,9 @@ let extract_constant_inline inline r ids s =
   check_inside_section ();
   let g = Smartlocate.global_with_alias r in
   match g with
-    | ConstRef kn ->
+    | GlobRef.ConstRef kn ->
 	let env = Global.env () in
-        let typ, _ = Typeops.type_of_global_in_context env (ConstRef kn) in
+        let typ, _ = Typeops.type_of_global_in_context env (GlobRef.ConstRef kn) in
 	let typ = Reduction.whd_all env typ in
 	if Reduction.is_arity env typ
 	  then begin
@@ -871,7 +872,7 @@ let extract_inductive r s l optstr =
   let g = Smartlocate.global_with_alias r in
   Dumpglob.add_glob ?loc:r.CAst.loc g;
   match g with
-    | IndRef ((kn,i) as ip) ->
+    | GlobRef.IndRef ((kn,i) as ip) ->
 	let mib = Global.lookup_mind kn in
 	let n = Array.length mib.mind_packets.(i).mind_consnames in
 	if not (Int.equal n (List.length l)) then error_nb_cons ();
@@ -881,7 +882,7 @@ let extract_inductive r s l optstr =
 	  optstr;
 	List.iteri
 	  (fun j s ->
-	     let g = ConstructRef (ip,succ j) in
+             let g = GlobRef.ConstructRef (ip,succ j) in
 	     Lib.add_anonymous_leaf (inline_extraction (true,[g]));
 	     Lib.add_anonymous_leaf (in_customs (g,[],s))) l
     | _ -> error_inductive g

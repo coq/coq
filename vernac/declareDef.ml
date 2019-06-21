@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Declare
-open Globnames
 open Impargs
 
 type locality = Discharge | Global of Declare.import_status
@@ -51,10 +50,10 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
       let () =
         declare_variable ~name ~kind:Decls.(IsDefinition kind) (SectionLocalDef ce)
       in
-      VarRef name
+      Names.GlobRef.VarRef name
   | Global local ->
       let kn = declare_constant ~name ~local ~kind:Decls.(IsDefinition kind) (DefinitionEntry ce) in
-      let gr = ConstRef kn in
+      let gr = Names.GlobRef.ConstRef kn in
       let () = Declare.declare_univ_binders gr udecl in
       gr
   in

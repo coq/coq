@@ -185,7 +185,7 @@ module PrintingInductiveMake =
     module Set = Indset
     let encode = Test.encode
     let subst subst obj = subst_ind subst obj
-    let printer ind = Nametab.pr_global_env Id.Set.empty (IndRef ind)
+    let printer ind = Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind)
     let key = ["Printing";Test.field]
     let title = Test.title
     let member_message x = Test.member_message (printer x)
@@ -746,7 +746,7 @@ and detype_r d flags avoid env sigma t =
 	  GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
     | Var id ->
         (* Discriminate between section variable and non-section variable *)
-	(try let _ = Global.lookup_named id in GRef (VarRef id, None)
+        (try let _ = Global.lookup_named id in GRef (GlobRef.VarRef id, None)
 	 with Not_found -> GVar id)
     | Sort s -> GSort (detype_sort sigma (ESorts.kind sigma s))
     | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
@@ -772,20 +772,20 @@ and detype_r d flags avoid env sigma t =
       in
       mkapp (detype d flags avoid env sigma f)
         (Array.map_to_list (detype d flags avoid env sigma) args)
-    | Const (sp,u) -> GRef (ConstRef sp, detype_instance sigma u)
+    | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
       let noparams () =
         let pars = Projection.npars p in
         let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous,None) in
         let args = List.make pars hole in
-        GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None),
+        GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
               (args @ [detype d flags avoid env sigma c]))
       in
       if flags.flg_lax || !Flags.in_debugger || !Flags.in_toplevel then
 	try noparams ()
 	with _ ->
 	    (* lax mode, used by debug printers only *) 
-	  GApp (DAst.make @@ GRef (ConstRef (Projection.constant p), None), 
+          GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
 		[detype d flags avoid env sigma c])
       else 
         if print_primproj_params () then
@@ -821,9 +821,9 @@ and detype_r d flags avoid env sigma t =
         GEvar (id,
                List.map (on_snd (detype d flags avoid env sigma)) l)
     | Ind (ind_sp,u) ->
-	GRef (IndRef ind_sp, detype_instance sigma u)
+        GRef (GlobRef.IndRef ind_sp, detype_instance sigma u)
     | Construct (cstr_sp,u) ->
-	GRef (ConstructRef cstr_sp, detype_instance sigma u)
+        GRef (GlobRef.ConstructRef cstr_sp, detype_instance sigma u)
     | Case (ci,p,c,bl) ->
 	let comp = computable sigma p (List.length (ci.ci_pp_info.ind_tags)) in
 	detype_case comp (detype d flags avoid env sigma)

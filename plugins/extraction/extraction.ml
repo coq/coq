@@ -24,7 +24,6 @@ open Termops
 open Inductiveops
 open Recordops
 open Namegen
-open Globnames
 open Miniml
 open Table
 open Mlutil
@@ -303,7 +302,7 @@ let rec extract_type env sg db j c args =
 	       else let n' = List.nth db (n-1) in
 	       if Int.equal n' 0 then Tunknown else Tvar n')
     | Const (kn,u) ->
-        let r = ConstRef kn in
+        let r = GlobRef.ConstRef kn in
         let typ = type_of env sg (EConstr.mkConstU (kn,u)) in
         (match flag_of_type env sg typ with
 	   | (Logic,_) -> assert false (* Cf. logical cases above *)
@@ -311,7 +310,7 @@ let rec extract_type env sg db j c args =
                let mlt = extract_type_app env sg db (r, type_sign env sg typ) args in
                (match (lookup_constant kn env).const_body with
                  | Undef _ | OpaqueDef _ | Primitive _ -> mlt
-                 | Def _ when is_custom (ConstRef kn) -> mlt
+                 | Def _ when is_custom (GlobRef.ConstRef kn) -> mlt
                  | Def lbody ->
                       let newc = applistc (get_body lbody) args in
                       let mlt' = extract_type env sg db j newc [] in
@@ -331,7 +330,7 @@ let rec extract_type env sg db j c args =
                       extract_type env sg db j newc []))
     | Ind ((kn,i),u) ->
         let s = (extract_ind env kn).ind_packets.(i).ip_sign in
-        extract_type_app env sg db (IndRef (kn,i),s) args
+        extract_type_app env sg db (GlobRef.IndRef (kn,i),s) args
     | Proj (p,t) ->
        (* Let's try to reduce, if it hasn't already been done. *)
        if Projection.unfolded p then Tunknown
@@ -346,7 +345,7 @@ let rec extract_type env sg db j c args =
         | LocalDef (_,body,_) ->
            extract_type env sg db j (EConstr.applist (body,args)) []
         | LocalAssum (_,ty) ->
-           let r = VarRef v in
+           let r = GlobRef.VarRef v in
            (match flag_of_type env sg ty with
             | (Logic,_) -> assert false (* Cf. logical cases above *)
             | (Info, TypeScheme) ->
@@ -405,7 +404,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
        extract_really_ind env kn mib
      with SingletonInductiveBecomesProp id ->
        (* TODO : which inductive is concerned in the block ? *)
-       error_singleton_become_prop id (Some (IndRef (kn,0)))
+       error_singleton_become_prop id (Some (GlobRef.IndRef (kn,0)))
 
 (* Then the real function *)
 
@@ -481,7 +480,7 @@ and extract_really_ind env kn mib =
     let ind_info =
       try
 	let ip = (kn, 0) in
-	let r = IndRef ip in
+        let r = GlobRef.IndRef ip in
 	if is_custom r then raise (I Standard);
         if mib.mind_finite == CoFinite then raise (I Coinductive);
 	if not (Int.equal mib.mind_ntypes 1) then raise (I Standard);
@@ -519,7 +518,7 @@ and extract_really_ind env kn mib =
 	      (* Is it safe to use [id] for projections [foo.id] ? *)
 	      if List.for_all ((==) Keep) (type2signature env typ)
 	      then projs := Cset.add knp !projs;
-	      Some (ConstRef knp) :: (select_fields l typs)
+              Some (GlobRef.ConstRef knp) :: (select_fields l typs)
 	  | _ -> assert false
 	in
 	let field_glob = select_fields field_names typ
@@ -565,7 +564,7 @@ and extract_type_cons env sg db dbmap c i =
 
 (*s Recording the ML type abbreviation of a Coq type scheme constant. *)
 
-and mlt_env env r = match r with
+and mlt_env env r = let open GlobRef in match r with
   | IndRef _ | ConstructRef _ | VarRef _ -> None
   | ConstRef kn ->
      let cb = Environ.lookup_constant kn env in
@@ -688,7 +687,7 @@ let rec extract_term env sg mle mlt c args =
          | LocalDef (_,_,ty) -> ty
        in
        let vty = extract_type env sg [] 0 ty [] in
-       let extract_var mlt = put_magic (mlt,vty) (MLglob (VarRef v)) in
+       let extract_var mlt = put_magic (mlt,vty) (MLglob (GlobRef.VarRef v)) in
        extract_app env sg mle mlt extract_var args
     | Int i -> assert (args = []); MLuint i
     | Ind _ | Prod _ | Sort _ -> assert false
@@ -746,10 +745,10 @@ and extract_cst_app env sg mle mlt kn args =
   (* Second, is the resulting type compatible with the expected type [mlt] ? *)
   let magic2 = needs_magic (a, mlt) in
   (* The internal head receives a magic if [magic1] *)
-  let head = put_magic_if magic1 (MLglob (ConstRef kn)) in
+  let head = put_magic_if magic1 (MLglob (GlobRef.ConstRef kn)) in
   (* Now, the extraction of the arguments. *)
   let s_full = type2signature env (snd schema) in
-  let s_full = sign_with_implicits (ConstRef kn) s_full 0 in
+  let s_full = sign_with_implicits (GlobRef.ConstRef kn) s_full 0 in
   let s = sign_no_final_keeps s_full in
   let ls = List.length s in
   let la = List.length args in
@@ -762,7 +761,7 @@ and extract_cst_app env sg mle mlt kn args =
         (* for better optimisations later, we discard dependent args
            of projections and replace them by fake args that will be
            removed during final pretty-print. *)
-	let l,l' = List.chop (projection_arity (ConstRef kn)) mla in
+        let l,l' = List.chop (projection_arity (GlobRef.ConstRef kn)) mla in
 	if not (List.is_empty l') then (List.map (fun _ -> MLexn "Proj Args") l) @ l'
 	else mla
       with e when CErrors.noncritical e -> mla
@@ -807,11 +806,11 @@ and extract_cons_app env sg mle mlt (((kn,i) as ip,j) as cp) args =
   let nb_tvars = List.length oi.ip_vars
   and types = List.map (expand env) oi.ip_types.(j-1) in
   let list_tvar = List.map (fun i -> Tvar i) (List.interval 1 nb_tvars) in
-  let type_cons = type_recomp (types, Tglob (IndRef ip, list_tvar)) in
+  let type_cons = type_recomp (types, Tglob (GlobRef.IndRef ip, list_tvar)) in
   let type_cons = instantiation (nb_tvars, type_cons) in
   (* Then, the usual variables [s], [ls], [la], ... *)
   let s = List.map (type2sign env) types in
-  let s = sign_with_implicits (ConstructRef cp) s params_nb in
+  let s = sign_with_implicits (GlobRef.ConstructRef cp) s params_nb in
   let ls = List.length s in
   let la = List.length args in
   assert (la <= ls + params_nb);
@@ -831,8 +830,8 @@ and extract_cons_app env sg mle mlt (((kn,i) as ip,j) as cp) args =
 	| Tglob (_,l) -> List.map type_simpl l
 	| _ -> assert false
       in
-      let typ = Tglob(IndRef ip, typeargs) in
-      put_magic_if magic1 (MLcons (typ, ConstructRef cp, mla))
+      let typ = Tglob(GlobRef.IndRef ip, typeargs) in
+      put_magic_if magic1 (MLcons (typ, GlobRef.ConstructRef cp, mla))
   in
   (* Different situations depending of the number of arguments: *)
   if la < params_nb then
@@ -880,11 +879,11 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
       let oi = mi.ind_packets.(i) in
       let metas = Array.init (List.length oi.ip_vars) new_meta in
       (* The extraction of the head. *)
-      let type_head = Tglob (IndRef ip, Array.to_list metas) in
+      let type_head = Tglob (GlobRef.IndRef ip, Array.to_list metas) in
       let a = extract_term env sg mle type_head c [] in
       (* The extraction of each branch. *)
       let extract_branch i =
-	let r = ConstructRef (ip,i+1) in
+        let r = GlobRef.ConstructRef (ip,i+1) in
 	(* The types of the arguments of the corresponding constructor. *)
 	let f t = type_subst_vect metas (expand env t) in
 	let l = List.map f oi.ip_types.(i) in
@@ -909,7 +908,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
       else
 	(* Standard case: we apply [extract_branch]. *)
 	let typs = List.map type_simpl (Array.to_list metas) in
-	let typ = Tglob (IndRef ip,typs) in
+        let typ = Tglob (GlobRef.IndRef ip,typs) in
 	MLcase (typ, a, Array.init br_size extract_branch)
 
 (*s Extraction of a (co)-fixpoint. *)
@@ -960,7 +959,7 @@ let extract_std_constant env sg kn body typ =
   let l,t' = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
   (* Check for user-declared implicit information *)
-  let s = sign_with_implicits (ConstRef kn) s 0 in
+  let s = sign_with_implicits (GlobRef.ConstRef kn) s 0 in
   (* Decomposing the top level lambdas of [body].
      If there isn't enough, it's ok, as long as remaining args
      aren't to be pruned (and initial lambdas aren't to be all
@@ -1015,7 +1014,7 @@ let extract_axiom env sg kn typ =
   let l,_ = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
   (* Check for user-declared implicit information *)
-  let s = sign_with_implicits (ConstRef kn) s 0 in
+  let s = sign_with_implicits (GlobRef.ConstRef kn) s 0 in
   type_expunge_from_sign env s t
 
 let extract_fixpoint env sg vkn (fi,ti,ci) =
@@ -1034,10 +1033,10 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
         terms.(i) <- e;
         types.(i) <- t;
       with SingletonInductiveBecomesProp id ->
-        error_singleton_become_prop id (Some (ConstRef vkn.(i)))
+        error_singleton_become_prop id (Some (GlobRef.ConstRef vkn.(i)))
   done;
   current_fixpoints := [];
-  Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types)
+  Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
 
 (** Because of automatic unboxing the easy way [mk_def c] on the
    constant body of primitive projections doesn't work. We pretend
@@ -1095,7 +1094,7 @@ let fake_match_projection env p =
 
 let extract_constant env kn cb =
   let sg = Evd.from_env env in
-  let r = ConstRef kn in
+  let r = GlobRef.ConstRef kn in
   let typ = EConstr.of_constr cb.const_type in
   let warn_info () = if not (is_custom r) then add_info_axiom r in
   let warn_log () = if not (constant_has_body cb) then add_log_axiom r
@@ -1150,11 +1149,11 @@ let extract_constant env kn cb =
             if access_opaque () then mk_def (get_opaque env c)
             else mk_ax ())
   with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (ConstRef kn))
+    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_constant_spec env kn cb =
   let sg = Evd.from_env env in
-  let r = ConstRef kn in
+  let r = GlobRef.ConstRef kn in
   let typ = EConstr.of_constr cb.const_type in
   try
     match flag_of_type env sg typ with
@@ -1173,7 +1172,7 @@ let extract_constant_spec env kn cb =
         let t = snd (record_constant_type env sg kn (Some typ)) in
         Sval (r, type_expunge env t)
   with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (ConstRef kn))
+    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_with_type env sg c =
   try
@@ -1205,7 +1204,7 @@ let extract_inductive env kn =
   let ind = extract_ind env kn in
   add_recursors env kn;
   let f i j l =
-    let implicits = implicits_of_global (ConstructRef ((kn,i),j+1)) in
+    let implicits = implicits_of_global (GlobRef.ConstructRef ((kn,i),j+1)) in
     let rec filter i = function
       | [] -> []
       | t::l ->

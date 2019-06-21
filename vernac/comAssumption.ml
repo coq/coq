@@ -14,7 +14,6 @@ open Vars
 open Declare
 open Names
 open Context
-open Globnames
 open Constrexpr_ops
 open Constrintern
 open Impargs
@@ -54,7 +53,7 @@ match scope with
   let decl = SectionLocalAssum {typ; univs; poly; impl} in
   let () = declare_variable ~name ~kind decl in
   let () = assumption_message name in
-  let r = VarRef name in
+  let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r imps in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -72,7 +71,7 @@ match scope with
   let kind = Decls.IsAssumption kind in
   let decl = Declare.ParameterEntry (None,(typ,univs),inl) in
   let kn = declare_constant ~name ~local ~kind decl in
-  let gr = ConstRef kn in
+  let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.declare_univ_binders gr pl in
   let () = assumption_message name in
@@ -285,7 +284,7 @@ let context ~poly l =
       in
       let cst = Declare.declare_constant ~name ~kind decl in
       let env = Global.env () in
-      Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (ConstRef cst);
+      Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (GlobRef.ConstRef cst);
       status
     else
       let test x = match x.CAst.v with

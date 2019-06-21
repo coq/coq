@@ -24,7 +24,6 @@ open Constr
 open Context
 open Declarations
 open Mod_subst
-open Globnames
 open Printer
 open Context.Named.Declaration
 
@@ -157,13 +156,15 @@ let lookup_mind mind =
 (** Graph traversal of an object, collecting on the way the dependencies of
     traversed objects *)
 
-let label_of = function
+let label_of = let open GlobRef in function
   | ConstRef kn -> Constant.label kn
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) -> MutInd.label kn
   | VarRef id -> Label.of_id id
 
-let rec traverse current ctx accu t = match Constr.kind t with
+let rec traverse current ctx accu t =
+  let open GlobRef in
+  match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
@@ -218,7 +219,7 @@ and traverse_object ?inhabits (curr, data, ax2ty) body obj =
     definition share exactly the same dependencies. Also, there is no explicit
     dependency between mutually defined inductives and constructors. *)
 and traverse_inductive (curr, data, ax2ty) mind obj =
-  let firstind_ref = (IndRef (mind, 0)) in
+  let firstind_ref = (GlobRef.IndRef (mind, 0)) in
   let label = label_of obj in
   let data, ax2ty =
    (* Invariant : I_0 \in data iff I_i \in data iff c_ij \in data
@@ -264,9 +265,9 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
      (* Maps all these dependencies to inductives and constructors*)
      let data = Array.fold_left_i (fun n data oib ->
        let ind = (mind, n) in
-       let data = GlobRef.Map_env.add (IndRef ind) contents data in
+       let data = GlobRef.Map_env.add (GlobRef.IndRef ind) contents data in
        Array.fold_left_i (fun k data _ ->
-         GlobRef.Map_env.add (ConstructRef (ind, k+1)) contents data
+         GlobRef.Map_env.add (GlobRef.ConstructRef (ind, k+1)) contents data
        ) data oib.mind_consnames) data mib.mind_packets
      in
      data, ax2ty
@@ -298,6 +299,7 @@ let type_of_constant cb = cb.Declarations.const_type
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
+  let open GlobRef in
   let fold obj _ accu = match obj with
   | VarRef id ->
     let decl = Global.lookup_named id in

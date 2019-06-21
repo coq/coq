@@ -205,7 +205,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 		   | Some p, None -> Some (p + 1)
 		   | _, _ -> None
 		 in
-		   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
+                   Some (GlobRef.ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
 	in
 	let declare_proj hints (cref, info, body) =
 	  let path' = cref :: path in
@@ -243,11 +243,11 @@ let instance_constructor (cl,u) args =
   let open EConstr in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
-      | IndRef ind -> 
+      | GlobRef.IndRef ind ->
         let ind = ind, u in
           (Some (applist (mkConstructUi (ind, 1), args)),
            applist (mkIndU ind, pars))
-      | ConstRef cst -> 
+      | GlobRef.ConstRef cst ->
         let cst = cst, u in
 	let term = match args with
 	  | [] -> None

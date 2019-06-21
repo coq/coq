@@ -19,7 +19,6 @@ open Constr
 open Declareops
 open Entries
 open Nameops
-open Globnames
 open Pretyping
 open Termops
 open Reductionops
@@ -117,10 +116,10 @@ let by tac pf =
 (* Support for mutually proved theorems *)
 
 let retrieve_first_recthm uctx = function
-  | VarRef id ->
+  | GlobRef.VarRef id ->
     NamedDecl.get_value (Global.lookup_named id),
     Decls.variable_opacity id
-  | ConstRef cst ->
+  | GlobRef.ConstRef cst ->
     let cb = Global.lookup_constant cst in
     (* we get the right order somehow but surely it could be enforced in a better way *)
     let uctx = UState.context uctx in
@@ -178,12 +177,12 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recth
         in
         let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
         let () = Declare.declare_variable ~name ~kind c in
-        (VarRef name,impargs)
+        (GlobRef.VarRef name,impargs)
       | Global local ->
         let kind = Decls.(IsAssumption Conjectural) in
         let decl = Declare.ParameterEntry (None,(t_i,univs),None) in
         let kn = Declare.declare_constant ~name ~local ~kind decl in
-        (ConstRef kn,impargs))
+        (GlobRef.ConstRef kn,impargs))
   | Some body ->
       let body = norm body in
       let rec body_i t = match Constr.kind t with
@@ -201,11 +200,11 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recth
         let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
         let c = Declare.SectionLocalDef const in
         let () = Declare.declare_variable ~name ~kind c in
-        (VarRef name,impargs)
+        (GlobRef.VarRef name,impargs)
       | Global local ->
         let const = Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i in
         let kn = Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
-        (ConstRef kn,impargs)
+        (GlobRef.ConstRef kn,impargs)
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -358,9 +357,9 @@ let finish_admitted env sigma ~name ~poly ~scope pe ctx hook ~udecl impargs othe
   in
   let kn = Declare.declare_constant ~name ~local ~kind:Decls.(IsAssumption Conjectural) (Declare.ParameterEntry pe) in
   let () = Declare.assumption_message name in
-  Declare.declare_univ_binders (ConstRef kn) (UState.universe_binders ctx);
+  Declare.declare_univ_binders (GlobRef.ConstRef kn) (UState.universe_binders ctx);
   (* This takes care of the implicits and hook for the current constant*)
-  process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (ConstRef kn) impargs other_thms;
+  process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (GlobRef.ConstRef kn) impargs other_thms;
   Feedback.feedback Feedback.AddedAxiom
 
 let save_lemma_admitted ~(lemma : t) : unit =
@@ -418,14 +417,14 @@ let finish_proved env sigma idopt po info =
           let () = if should_suggest
             then Proof_using.suggest_variable (Global.env ()) name
           in
-          VarRef name
+          GlobRef.VarRef name
         | Global local ->
           let kn =
             Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
-          let gr = ConstRef kn in
+          let gr = GlobRef.ConstRef kn in
           Declare.declare_univ_binders gr (UState.universe_binders universes);
           gr
       in
@@ -494,7 +493,7 @@ let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
         in
         let entry, args = Abstract.shrink_entry local_context entry in
         let cst = Declare.declare_constant ~name:id ~kind (Declare.DefinitionEntry entry) in
-        let sigma, app = Evarutil.new_global sigma (ConstRef cst) in
+        let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0
       (CList.combine (List.rev !wits) types) proof_obj.Proof_global.entries

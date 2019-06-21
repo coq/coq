@@ -12,12 +12,14 @@ open Names
 open Constr
 open Mod_subst
 
-(*s Global reference is a kernel side type for all references together *)
 type global_reference = GlobRef.t =
-  | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of Constant.t       (** A reference to the environment. *)
-  | IndRef of inductive          (** A reference to an inductive type. *)
-  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+  | VarRef of variable     [@ocaml.deprecated "Use Names.GlobRef.VarRef"]
+  | ConstRef of Constant.t [@ocaml.deprecated "Use Names.GlobRef.ConstRef"]
+  | IndRef of inductive    [@ocaml.deprecated "Use Names.GlobRef.IndRef"]
+  | ConstructRef of constructor [@ocaml.deprecated "Use Names.GlobRef.ConstructRef"]
+[@@ocaml.deprecated "Use Names.GlobRef.t"]
+
+open GlobRef
 
 let isVarRef = function VarRef _ -> true | _ -> false
 let isConstRef = function ConstRef _ -> true | _ -> false
@@ -90,7 +92,7 @@ let printable_constr_of_global = function
 type syndef_name = KerName.t
 
 type extended_global_reference =
-  | TrueGlobal of global_reference
+  | TrueGlobal of GlobRef.t
   | SynDef of syndef_name
 
 (* We order [extended_global_reference] via their user part
@@ -122,6 +124,6 @@ module ExtRefOrdered = struct
 
 end
 
-type global_reference_or_constr = 
-  | IsGlobal of global_reference
+type global_reference_or_constr =
+  | IsGlobal of GlobRef.t
   | IsConstr of constr

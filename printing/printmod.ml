@@ -15,7 +15,6 @@ open Pp
 open Names
 open Environ
 open Declarations
-open Globnames
 open Libnames
 open Goptions
 
@@ -231,13 +230,13 @@ let nametab_register_body mp dir (l,body) =
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
     | SFBconst _ ->
-      push (Label.to_id l) (ConstRef (Constant.make2 mp l))
+      push (Label.to_id l) (GlobRef.ConstRef (Constant.make2 mp l))
     | SFBmind mib ->
       let mind = MutInd.make2 mp l in
       Array.iteri
 	(fun i mip ->
-	  push mip.mind_typename (IndRef (mind,i));
-	  Array.iteri (fun j id -> push id (ConstructRef ((mind,i),j+1)))
+          push mip.mind_typename (GlobRef.IndRef (mind,i));
+          Array.iteri (fun j id -> push id (GlobRef.ConstructRef ((mind,i),j+1)))
 	    mip.mind_consnames)
 	mib.mind_packets
 

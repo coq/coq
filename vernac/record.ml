@@ -14,7 +14,6 @@ open Term
 open Sorts
 open Util
 open Names
-open Globnames
 open Nameops
 open Constr
 open Context
@@ -362,10 +361,10 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) 
 	    in
-	    let refi = ConstRef kn in
+            let refi = GlobRef.ConstRef kn in
 	    Impargs.maybe_declare_manual_implicits false refi impls;
             if flags.pf_subclass then begin
-	      let cl = Class.class_of_global (IndRef indsp) in
+              let cl = Class.class_of_global (GlobRef.IndRef indsp) in
                 Class.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
 	    end;
 	    let i = if is_local_assum decl then i+1 else i in
@@ -468,7 +467,7 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
-    let build = ConstructRef cstr in
+    let build = GlobRef.ConstructRef cstr in
     let () = if is_coe then Class.try_add_new_coercion build ~local:false ~poly in
     let () = declare_structure_entry (cstr, List.rev kinds, List.rev sp_projs) in
     rsp
@@ -514,9 +513,9 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params ari
       let proj_cst = Declare.declare_constant ~name:proj_name
         (DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
       in
-      let cref = ConstRef cst in
+      let cref = GlobRef.ConstRef cst in
       Impargs.declare_manual_implicits false cref paramimpls;
-      Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
+      Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd fieldimpls);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = match List.hd coers with
 	| Some b -> Some ((if b then Backward else Forward), List.hd priorities) 
@@ -537,7 +536,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params ari
       let map ind =
         let l = List.map3 (fun decl b y -> RelDecl.get_name decl, b, y)
           (List.rev fields) coers (Recordops.lookup_projections ind)
-        in IndRef ind, l
+        in GlobRef.IndRef ind, l
       in
       List.map map inds
   in
@@ -580,14 +579,14 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params ari
 
 
 let add_constant_class env sigma cst =
-  let ty, univs = Typeops.type_of_global_in_context env (ConstRef cst) in
+  let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_assum ty in
   let args = Context.Rel.to_extended_vect Constr.mkRel 0 ctx in
   let t = mkApp (mkConstU (cst, Univ.make_abstract_instance univs), args) in
   let tc = 
     { cl_univs = univs;
-      cl_impl = ConstRef cst;
+      cl_impl = GlobRef.ConstRef cst;
       cl_context = (List.map (const None) ctx, ctx);
       cl_props = [LocalAssum (make_annot Anonymous r, t)];
       cl_projs = [];
@@ -609,7 +608,7 @@ let add_inductive_class env sigma ind =
     let ty = Inductive.type_of_inductive env ((mind, oneind), inst) in
     let r = Inductive.relevance_of_inductive env ind in
       { cl_univs = univs;
-        cl_impl = IndRef ind;
+        cl_impl = GlobRef.IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
 	cl_projs = [];
@@ -628,8 +627,8 @@ let declare_existing_class g =
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | ConstRef x -> add_constant_class env sigma x
-    | IndRef x -> add_inductive_class env sigma x
+    | GlobRef.ConstRef x -> add_constant_class env sigma x
+    | GlobRef.IndRef x -> add_inductive_class env sigma x
     | _ -> user_err ~hdr:"declare_existing_class"
              (Pp.str"Unsupported class type, only constants and inductives are allowed")
 
@@ -710,4 +709,4 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
     in
     let data = List.map2 map data records in
     let inds = declare_structure ~cumulative finite ubinders univs implpars params template data in
-    List.map (fun ind -> IndRef ind) inds
+    List.map (fun ind -> GlobRef.IndRef ind) inds

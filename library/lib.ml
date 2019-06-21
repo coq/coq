@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Libnames
-open Globnames
 open Libobject
 open Context.Named.Declaration
 
@@ -549,7 +548,7 @@ let empty_segment = {
   abstr_uctx = Univ.AUContext.empty;
 }
 
-let section_segment_of_reference = function
+let section_segment_of_reference = let open GlobRef in function
 | ConstRef c -> section_segment_of_constant c
 | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
   section_segment_of_mutual_inductive kn
@@ -558,7 +557,7 @@ let section_segment_of_reference = function
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).abstr_ctx
 
-let section_instance = function
+let section_instance = let open GlobRef in function
   | VarRef id ->
      let eq = function
        | Variable {id=id'} -> Names.Id.equal id id'
@@ -647,7 +646,7 @@ let init () =
 
 (* Misc *)
 
-let mp_of_global = function
+let mp_of_global = let open GlobRef in function
   | VarRef id -> !lib_state.path_prefix.Nametab.obj_mp
   | ConstRef cst -> Names.Constant.modpath cst
   | IndRef ind -> Names.ind_modpath ind
@@ -666,12 +665,12 @@ let rec split_modpath = function
     (dp, Names.Label.to_id l :: ids)
 
 let library_part = function
-  |VarRef id -> library_dp ()
-  |ref -> dp_of_mp (mp_of_global ref)
+  | GlobRef.VarRef id -> library_dp ()
+  | ref -> dp_of_mp (mp_of_global ref)
 
 let discharge_proj_repr =
   Projection.Repr.map_npars (fun mind npars ->
-      if not (is_in_section (IndRef (mind,0))) then mind, npars
+      if not (is_in_section (GlobRef.IndRef (mind,0))) then mind, npars
       else let modlist = replacement_context () in
       let _, newpars = Mindmap.find mind (snd modlist) in
       mind, npars + Array.length newpars)

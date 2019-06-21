@@ -17,7 +17,6 @@ open CErrors
 open Util
 open Names
 open Libnames
-open Globnames
 open Nameops
 open Term
 open Constr
@@ -624,7 +623,7 @@ let lookup_eliminator env ind_sp s =
   try
     let cst = Constant.make knu knc in
     let _ = lookup_constant cst env in
-      ConstRef cst
+      GlobRef.ConstRef cst
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
@@ -633,6 +632,6 @@ let lookup_eliminator env ind_sp s =
     user_err ~hdr:"default_elim"
       (strbrk "Cannot find the elimination combinator " ++
        Id.print id ++ strbrk ", the elimination of the inductive definition " ++
-       Nametab.pr_global_env Id.Set.empty (IndRef ind_sp) ++
+       Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
        strbrk " on sort " ++ Sorts.pr_sort_family s ++
        strbrk " is probably not allowed.")

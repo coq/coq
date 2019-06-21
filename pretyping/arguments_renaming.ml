@@ -91,23 +91,23 @@ let rename_type ty ref =
 
 let rename_type_of_constant env c =
   let ty = Typeops.type_of_constant_in env c in
-  rename_type ty (ConstRef (fst c))
+  rename_type ty (GlobRef.ConstRef (fst c))
 
 let rename_type_of_inductive env ind =
   let ty = Inductiveops.type_of_inductive env ind in
-  rename_type ty (IndRef (fst ind))
+  rename_type ty (GlobRef.IndRef (fst ind))
 
 let rename_type_of_constructor env cstruct =
   let ty = Inductiveops.type_of_constructor env cstruct in
-  rename_type ty (ConstructRef (fst cstruct))
+  rename_type ty (GlobRef.ConstructRef (fst cstruct))
 
 let rename_typing env c =
   let j = Typeops.infer env c in
   let j' =
     match kind c with
-    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
-    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (IndRef i) }
-    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }
+    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstRef c) }
+    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.IndRef i) }
+    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstructRef k) }
     | _ -> j
   in j'
 

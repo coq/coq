@@ -2,7 +2,6 @@ open Names
 open Pp
 open Constr
 open Libnames
-open Globnames
 open Refiner
 
 let mk_prefix pre id = Id.of_string (pre^(Id.to_string id))
@@ -31,12 +30,12 @@ let locate qid = Nametab.locate qid
 
 let locate_ind ref =
   match locate ref with
-    | IndRef x -> x
+    | GlobRef.IndRef x -> x
     | _ -> raise Not_found
 
 let locate_constant ref =
   match locate ref with
-    | ConstRef x -> x
+    | GlobRef.ConstRef x -> x
     | _ -> raise Not_found
 
 
@@ -129,10 +128,10 @@ let save name const ?hook uctx scope kind =
     | Discharge ->
       let c = SectionLocalDef const in
       let () = declare_variable ~name ~kind c in
-      VarRef name
+      GlobRef.VarRef name
     | Global local ->
       let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in
-      ConstRef kn
+      GlobRef.ConstRef kn
   in
   DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });
   definition_message name
@@ -275,7 +274,7 @@ let pr_info env sigma f_info =
   str "function_constant_type := " ++
   (try
      Printer.pr_lconstr_env env sigma
-       (fst (Typeops.type_of_global_in_context env (ConstRef f_info.function_constant)))
+       (fst (Typeops.type_of_global_in_context env (GlobRef.ConstRef f_info.function_constant)))
    with e when CErrors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst env sigma f_info.equation_lemma ++ fnl () ++
   str "completeness_lemma :=" ++ pr_ocst env sigma f_info.completeness_lemma ++ fnl () ++
@@ -299,7 +298,7 @@ let in_Function : function_info -> Libobject.obj =
 
 let find_or_none id =
   try Some
-    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> CErrors.anomaly (Pp.str "Not a constant.")
+    (match Nametab.locate (qualid_of_ident id) with GlobRef.ConstRef c -> c | _ -> CErrors.anomaly (Pp.str "Not a constant.")
     )
   with Not_found -> None
 
@@ -328,7 +327,7 @@ let add_Function is_general f =
   and sprop_lemma = find_or_none (Nameops.add_suffix f_id "_sind")
   and graph_ind =
     match Nametab.locate (qualid_of_ident (mk_rel_id f_id))
-    with | IndRef ind -> ind | _ -> CErrors.anomaly (Pp.str "Not an inductive.")
+    with | GlobRef.IndRef ind -> ind | _ -> CErrors.anomaly (Pp.str "Not an inductive.")
   in
   let finfos =
     { function_constant = f;
@@ -433,8 +432,8 @@ let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 
 let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (Global.env ()) *)
   match r with
-      ConstRef sp -> EvalConstRef sp
-    | VarRef id -> EvalVarRef id
+      GlobRef.ConstRef sp -> EvalConstRef sp
+    | GlobRef.VarRef id -> EvalVarRef id
     | _ -> assert false;;
 
 let list_rewrite (rev:bool) (eqs: (EConstr.constr*bool) list) =

@@ -52,7 +52,7 @@ let locate_global_with_alias ?(head=false) qid =
 
 let global_inductive_with_alias qid  =
   try match locate_global_with_alias qid with
-  | IndRef ind -> ind
+  | Names.GlobRef.IndRef ind -> ind
   | ref ->
       user_err ?loc:qid.CAst.loc ~hdr:"global_inductive"
         (pr_qualid qid ++ spc () ++ str "is not an inductive type.")

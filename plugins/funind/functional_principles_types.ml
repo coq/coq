@@ -84,7 +84,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env_with_params_and_predicates = List.fold_right Environ.push_named new_predicates env_with_params in
   let rel_as_kn =
     fst (match princ_type_info.indref with
-           | Some (Globnames.IndRef ind) -> ind
+           | Some (GlobRef.IndRef ind) -> ind
            | _ -> user_err Pp.(str "Not a valid predicate")
         )
   in

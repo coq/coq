@@ -12,7 +12,6 @@ open Pp
 open Util
 open Names
 open Libnames
-open Globnames
 open Constrexpr
 open Constrexpr_ops
 open Notation
@@ -31,7 +30,7 @@ let get_constructors ind =
   let mib,oib = Global.lookup_inductive ind in
   let mc = oib.Declarations.mind_consnames in
   Array.to_list
-    (Array.mapi (fun j c -> ConstructRef (ind, j + 1)) mc)
+    (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
 let qualid_of_ref n =
   n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
@@ -40,7 +39,7 @@ let q_option () = qualid_of_ref "core.option.type"
 
 let unsafe_locate_ind q =
   match Nametab.locate q with
-  | IndRef i -> i
+  | GlobRef.IndRef i -> i
   | _ -> raise Not_found
 
 let locate_z () =
@@ -166,7 +165,7 @@ let vernac_numeral_notation local ty f g scope opts =
        { pt_local = local;
          pt_scope = scope;
          pt_interp_info = NumeralNotation o;
-         pt_required = Nametab.path_of_global (IndRef tyc),[];
+         pt_required = Nametab.path_of_global (GlobRef.IndRef tyc),[];
          pt_refs = constructors;
          pt_in_match = true }
   in

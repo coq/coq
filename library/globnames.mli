@@ -12,12 +12,11 @@ open Names
 open Constr
 open Mod_subst
 
-(** {6 Global reference is a kernel side type for all references together } *)
 type global_reference = GlobRef.t =
-  | VarRef of variable           (** A reference to the section-context. *)
-  | ConstRef of Constant.t       (** A reference to the environment. *)
-  | IndRef of inductive          (** A reference to an inductive type. *)
-  | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
+  | VarRef of variable     [@ocaml.deprecated "Use Names.GlobRef.VarRef"]
+  | ConstRef of Constant.t [@ocaml.deprecated "Use Names.GlobRef.ConstRef"]
+  | IndRef of inductive    [@ocaml.deprecated "Use Names.GlobRef.IndRef"]
+  | ConstructRef of constructor [@ocaml.deprecated "Use Names.GlobRef.ConstructRef"]
 [@@ocaml.deprecated "Use Names.GlobRef.t"]
 
 val isVarRef : GlobRef.t -> bool

@@ -12,7 +12,6 @@ open Util
 open CAst
 open Names
 open Nameops
-open Globnames
 open Glob_term
 open Evar_kinds
 
@@ -443,7 +442,7 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
   | GVar id as r ->
       let id' = rename_var l id in
       if id == id' then r else GVar id'
-  | GRef (VarRef id,_) as r ->
+  | GRef (GlobRef.VarRef id,_) as r ->
       if List.exists (fun (_,id') -> Id.equal id id') l then raise UnsoundRenaming
       else r
   | GProd (na,bk,t,c) ->
@@ -502,10 +501,10 @@ let rec cases_pattern_of_glob_constr env na c =
     | Anonymous -> PatVar (Name id)
     end
   | GHole (_,_,_) -> PatVar na
-  | GRef (ConstructRef cstr,_) -> PatCstr (cstr,[],na)
+  | GRef (GlobRef.ConstructRef cstr,_) -> PatCstr (cstr,[],na)
   | GApp (c, l) ->
     begin match DAst.get c with
-    | GRef (ConstructRef cstr,_) ->
+    | GRef (GlobRef.ConstructRef cstr,_) ->
       let nparams = Inductiveops.inductive_nparams env (fst cstr) in
       let _,l = List.chop nparams l in
       PatCstr (cstr,List.map (cases_pattern_of_glob_constr env Anonymous) l,na)
@@ -554,9 +553,9 @@ let add_alias ?loc na c =
 
 (* Turn a closed cases pattern into a glob_constr *)
 let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun ?loc -> function
-  | PatCstr (cstr,[],na) -> add_alias ?loc na (GRef (ConstructRef cstr,None))
+  | PatCstr (cstr,[],na) -> add_alias ?loc na (GRef (GlobRef.ConstructRef cstr,None))
   | PatCstr (cstr,l,na)  ->
-      let ref = DAst.make ?loc @@ GRef (ConstructRef cstr,None) in
+      let ref = DAst.make ?loc @@ GRef (GlobRef.ConstructRef cstr,None) in
       let l = add_patterns_for_params_remove_local_defs env cstr l in
       add_alias ?loc na (GApp (ref, List.map (glob_constr_of_cases_pattern_aux env isclosed) l))
   | PatVar (Name id) when not isclosed ->

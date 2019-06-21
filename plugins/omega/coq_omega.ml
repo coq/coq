@@ -27,7 +27,6 @@ open Tacmach.New
 open Tactics
 open Logic
 open Libnames
-open Globnames
 open Nametab
 open Contradiction
 open Tactypes
@@ -426,11 +425,11 @@ let destructurate_prop sigma t =
     | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_gt) -> Kapp (Gt,args)
     | Const (sp,_), args ->
-	Kapp (Other (string_of_path (path_of_global (ConstRef sp))),args)
+        Kapp (Other (string_of_path (path_of_global (GlobRef.ConstRef sp))),args)
     | Construct (csp,_) , args ->
-	Kapp (Other (string_of_path (path_of_global (ConstructRef csp))), args)
+        Kapp (Other (string_of_path (path_of_global (GlobRef.ConstructRef csp))), args)
     | Ind (isp,_), args ->
-	Kapp (Other (string_of_path (path_of_global (IndRef isp))),args)
+        Kapp (Other (string_of_path (path_of_global (GlobRef.IndRef isp))),args)
     | Var id,[] -> Kvar id
     | Prod ({binder_name=Anonymous},typ,body), [] -> Kimp(typ,body)
     | Prod ({binder_name=Name _},_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")

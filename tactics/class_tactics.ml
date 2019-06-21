@@ -25,7 +25,6 @@ open Tacmach
 open Tactics
 open Clenv
 open Typeclasses
-open Globnames
 open Evd
 open Locus
 open Proofview.Notations
@@ -517,8 +516,8 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum sigma ty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
-      | Const (c,_) -> is_class (ConstRef c)
-      | Ind (i,_) -> is_class (IndRef i)
+      | Const (c,_) -> is_class (GlobRef.ConstRef c)
+      | Ind (i,_) -> is_class (GlobRef.IndRef i)
       | _ ->
           let env' = push_rel_context ctx env in
           let ty' = Reductionops.whd_all env' sigma ar in
@@ -529,10 +528,10 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
   let keep = not only_classes || is_class in
     if keep then
       let c = mkVar id in
-      let name = PathHints [VarRef id] in
+      let name = PathHints [GlobRef.VarRef id] in
       let hints =
         if is_class then
-          let hints = build_subclasses ~check:false env sigma (VarRef id) empty_hint_info in
+          let hints = build_subclasses ~check:false env sigma (GlobRef.VarRef id) empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
               make_resolves env sigma ~name:(PathHints path)

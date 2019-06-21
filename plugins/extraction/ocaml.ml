@@ -15,7 +15,6 @@ open CErrors
 open Util
 open Names
 open ModPath
-open Globnames
 open Table
 open Miniml
 open Mlutil
@@ -142,7 +141,7 @@ let get_infix r =
   let s = find_custom r in
   String.sub s 1 (String.length s - 2)
 
-let get_ind = function
+let get_ind = let open GlobRef in function
   | IndRef _ as r -> r
   | ConstructRef (ind,_) -> IndRef ind
   | _ -> assert false
@@ -166,7 +165,7 @@ let pp_type par vl t =
     | Tglob (r,[a1;a2]) when is_infix r ->
 	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (IndRef(kn,0),l)
+    | Tglob (GlobRef.IndRef(kn,0),l)
 	when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
 	pp_tuple_light pp_rec l
     | Tglob (r,l) ->
@@ -467,7 +466,7 @@ let pp_Dfix (rv,c,t) =
 let pp_equiv param_list name = function
   | NoEquiv, _ -> mt ()
   | Equiv kn, i ->
-      str " = " ++ pp_parameters param_list ++ pp_global Type (IndRef (MutInd.make1 kn,i))
+      str " = " ++ pp_parameters param_list ++ pp_global Type (GlobRef.IndRef (MutInd.make1 kn,i))
   | RenEquiv ren, _  ->
       str " = " ++ pp_parameters param_list ++ str (ren^".") ++ name
 
@@ -494,7 +493,7 @@ let pp_logical_ind packet =
   fnl ()
 
 let pp_singleton kn packet =
-  let name = pp_global Type (IndRef (kn,0)) in
+  let name = pp_global Type (GlobRef.IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
@@ -502,7 +501,7 @@ let pp_singleton kn packet =
 		     Id.print packet.ip_consnames.(0)))
 
 let pp_record kn fields ip_equiv packet =
-  let ind = IndRef (kn,0) in
+  let ind = GlobRef.IndRef (kn,0) in
   let name = pp_global Type ind in
   let fieldnames = pp_fields ind fields in
   let l = List.combine fieldnames packet.ip_types.(0) in
@@ -525,13 +524,13 @@ let pp_ind co kn ind =
   let nextkwd = fnl () ++ str "and " in
   let names =
     Array.mapi (fun i p -> if p.ip_logical then mt () else
-		  pp_global Type (IndRef (kn,i)))
+                  pp_global Type (GlobRef.IndRef (kn,i)))
       ind.ind_packets
   in
   let cnames =
     Array.mapi
       (fun i p -> if p.ip_logical then [||] else
-	 Array.mapi (fun j _ -> pp_global Cons (ConstructRef ((kn,i),j+1)))
+         Array.mapi (fun j _ -> pp_global Cons (GlobRef.ConstructRef ((kn,i),j+1)))
 	   p.ip_types)
       ind.ind_packets
   in
@@ -541,7 +540,7 @@ let pp_ind co kn ind =
       let ip = (kn,i) in
       let ip_equiv = ind.ind_equiv, i in
       let p = ind.ind_packets.(i) in
-      if is_custom (IndRef ip) then pp (i+1) kwd
+      if is_custom (GlobRef.IndRef ip) then pp (i+1) kwd
       else if p.ip_logical then pp_logical_ind p ++ pp (i+1) kwd
       else
 	kwd ++ (if co then pp_coind p.ip_vars names.(i) else mt ()) ++
@@ -672,7 +671,7 @@ and pp_module_type params = function
       let mp_w =
 	List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
       in
-      let r = ConstRef (Constant.make2 mp_w (Label.of_id l)) in
+      let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l)) in
       push_visible mp_mt [];
       let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();

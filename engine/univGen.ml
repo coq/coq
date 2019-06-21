@@ -56,15 +56,15 @@ let fresh_global_instance ?loc ?names env gr =
   u, ctx
 
 let fresh_constant_instance env c =
-  let u, ctx = fresh_global_instance env (ConstRef c) in
+  let u, ctx = fresh_global_instance env (GlobRef.ConstRef c) in
   (c, u), ctx
 
 let fresh_inductive_instance env ind =
-  let u, ctx = fresh_global_instance env (IndRef ind) in
+  let u, ctx = fresh_global_instance env (GlobRef.IndRef ind) in
   (ind, u), ctx
 
 let fresh_constructor_instance env c =
-  let u, ctx = fresh_global_instance env (ConstructRef c) in
+  let u, ctx = fresh_global_instance env (GlobRef.ConstructRef c) in
   (c, u), ctx
 
 let fresh_global_instance ?loc ?names env gr =
@@ -84,10 +84,10 @@ let fresh_global_or_constr_instance env = function
 
 let global_of_constr c =
   match kind c with
-  | Const (c, u) -> ConstRef c, u
-  | Ind (i, u) -> IndRef i, u
-  | Construct (c, u) -> ConstructRef c, u
-  | Var id -> VarRef id, Instance.empty
+  | Const (c, u) -> GlobRef.ConstRef c, u
+  | Ind (i, u) -> GlobRef.IndRef i, u
+  | Construct (c, u) -> GlobRef.ConstructRef c, u
+  | Var id -> GlobRef.VarRef id, Instance.empty
   | _ -> raise Not_found
 
 let fresh_sort_in_family = function

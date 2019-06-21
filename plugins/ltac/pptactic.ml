@@ -194,7 +194,7 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id
-    | EvalConstRef sp -> pr_global (Globnames.ConstRef sp)
+    | EvalConstRef sp -> pr_global (GlobRef.ConstRef sp)
 
   let pr_quantified_hypothesis = function
     | AnonHyp n -> int n
@@ -385,7 +385,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_evaluable_reference_env env = function
     | EvalVarRef id -> pr_id id
     | EvalConstRef sp ->
-      Nametab.pr_global_env (Termops.vars_of_env env) (Globnames.ConstRef sp)
+      Nametab.pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef sp)
 
   let pr_as_disjunctive_ipat prc ipatl =
     keyword "as" ++ spc () ++
