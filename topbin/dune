@@ -26,6 +26,8 @@
  (package coq)
  (modules coqc_bin)
  (libraries coq.toplevel)
+ ; Adding -ccopt -flto to links options could be interesting, however,
+ ; it doesn't work on Windows
  (link_flags -linkall))
 
 (install
