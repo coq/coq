@@ -35,7 +35,7 @@ val definition_structure
   :  universe_decl_expr option
   -> inductive_kind
   -> template:bool option
-  -> Decl_kinds.cumulative_inductive_flag
+  -> cumulative:bool
   -> poly:bool
   -> Declarations.recursivity_kind
   -> (coercion_flag *

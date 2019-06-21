@@ -13,7 +13,6 @@ open Entries
 open Libnames
 open Vernacexpr
 open Constrexpr
-open Decl_kinds
 
 (** {6 Inductive and coinductive types} *)
 
@@ -23,11 +22,16 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-val do_mutual_inductive :
-  template:bool option -> universe_decl_expr option ->
-  (one_inductive_expr * decl_notation list) list -> cumulative_inductive_flag ->
-  poly:bool -> private_flag -> uniform:uniform_inductive_flag ->
-  Declarations.recursivity_kind -> unit
+val do_mutual_inductive
+  :  template:bool option
+  -> universe_decl_expr option
+  -> (one_inductive_expr * decl_notation list) list
+  -> cumulative:bool
+  -> poly:bool
+  -> private_ind:bool
+  -> uniform:uniform_inductive_flag
+  -> Declarations.recursivity_kind
+  -> unit
 
 (************************************************************************)
 (** Internal API  *)
@@ -71,12 +75,16 @@ val extract_mutual_inductive_declaration_components :
     structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
 
 (** Typing mutual inductive definitions *)
-
-val interp_mutual_inductive :
-  template:bool option -> universe_decl_expr option -> structured_inductive_expr ->
-  decl_notation list -> cumulative_inductive_flag ->
-  poly:bool -> private_flag -> Declarations.recursivity_kind ->
-  mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
+val interp_mutual_inductive
+  :  template:bool option
+  -> universe_decl_expr option
+  -> structured_inductive_expr
+  -> decl_notation list
+  -> cumulative:bool
+  -> poly:bool
+  -> private_ind:bool
+  -> Declarations.recursivity_kind
+  -> mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name

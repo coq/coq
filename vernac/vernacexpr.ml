@@ -282,7 +282,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of vernac_cumulative option * bool (* private *) * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of discharge * (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of discharge * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list

@@ -635,7 +635,7 @@ let should_treat_as_uniform () =
   else ComInductive.NonUniformParameters
 
 let vernac_record ~template udecl cum k poly finite records =
-  let is_cumulative = should_treat_as_cumulative cum poly in
+  let cumulative = should_treat_as_cumulative cum poly in
   let map ((coe, id), binders, sort, nameopt, cfs) =
     let const = match nameopt with
     | None -> add_prefix "Build_" id.v
@@ -656,7 +656,7 @@ let vernac_record ~template udecl cum k poly finite records =
     coe, id, binders, cfs, const, sort
   in
   let records = List.map map records in
-  ignore(Record.definition_structure ~template udecl k is_cumulative ~poly finite records)
+  ignore(Record.definition_structure ~template udecl k ~cumulative ~poly finite records)
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   match indl with
@@ -754,9 +754,9 @@ let vernac_inductive ~atts cum lo finite indl =
     | RecordDecl _ -> assert false (* ruled out above *)
     in
     let indl = List.map unpack indl in
-    let is_cumulative = should_treat_as_cumulative cum poly in
+    let cumulative = should_treat_as_cumulative cum poly in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl is_cumulative ~poly lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind:lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 (*

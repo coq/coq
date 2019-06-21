@@ -8,10 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Informal mathematical status of declarations *)
-
 type binding_kind = Explicit | Implicit
-
-type private_flag = bool
-
-type cumulative_inductive_flag = bool

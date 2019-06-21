@@ -349,7 +349,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations cum ~poly prv finite =
+let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
   check_all_names_different indl;
   List.iter check_param paramsl;
   if not (List.is_empty uparamsl) && not (List.is_empty notations)
@@ -453,24 +453,24 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
           userimpls @ impls) cimpls) indimpls constructors
   in
-  let variance = if poly && cum then Some (InferCumulativity.dummy_variance uctx) else None in
+  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
       mind_entry_record = None;
       mind_entry_finite = finite;
       mind_entry_inds = entries;
-      mind_entry_private = if prv then Some false else None;
+      mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
       mind_entry_variance = variance;
     }
   in
-  (if poly && cum then
+  (if poly && cumulative then
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
 
-let interp_mutual_inductive ~template udecl (paramsl,indl) notations cum ~poly prv finite =
-  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations cum ~poly prv finite
+let interp_mutual_inductive ~template udecl (paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
+  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations ~cumulative ~poly ~private_ind finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
@@ -564,11 +564,11 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template udecl indl cum ~poly prv ~uniform finite =
+let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
   let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
-  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns cum ~poly prv finite in
+  let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)

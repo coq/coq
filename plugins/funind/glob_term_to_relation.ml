@@ -1506,7 +1506,7 @@ let do_build_inductive
   let _time2 = System.get_time () in
   try
     with_full_print
-      (Flags.silently (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds false ~poly:false false ~uniform:ComInductive.NonUniformParameters))
+      (Flags.silently (ComInductive.do_mutual_inductive ~template:(Some false) None rel_inds ~cumulative:false ~poly:false ~private_ind:false ~uniform:ComInductive.NonUniformParameters))
       Declarations.Finite
   with
     | UserError(s,msg) as e ->

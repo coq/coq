@@ -401,7 +401,7 @@ let inStruc : Recordops.struc_tuple -> obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
-let declare_structure ~cum finite ubinders univs paramimpls params template ?(kind=Decls.StructureComponent) ?name record_data =
+let declare_structure ~cumulative finite ubinders univs paramimpls params template ?(kind=Decls.StructureComponent) ?name record_data =
   let nparams = List.length params in
   let poly, ctx =
     match univs with
@@ -410,7 +410,7 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
     | Polymorphic_entry (nas, ctx) ->
       true, Polymorphic_entry (nas, ctx)
   in
-  let variance = if poly && cum then Some (InferCumulativity.dummy_variance ctx) else None in
+  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance ctx) else None in
   let binder_name =
     match name with
     | None ->
@@ -479,7 +479,7 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class def cum ubinders univs id idbuild paramimpls params arity
+let declare_class def cumulative ubinders univs id idbuild paramimpls params arity
     template fieldimpls fields ?(kind=Decls.StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
@@ -526,7 +526,7 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
     | _ ->
       let record_data = [id, idbuild, arity, fieldimpls, fields, false,
                          List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields] in
-      let inds = declare_structure ~cum Declarations.BiFinite ubinders univs paramimpls
+      let inds = declare_structure ~cumulative Declarations.BiFinite ubinders univs paramimpls
         params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri -> 
@@ -679,7 +679,7 @@ let extract_record_data records =
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
-let definition_structure udecl kind ~template cum ~poly finite records =
+let definition_structure udecl kind ~template ~cumulative ~poly finite records =
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
@@ -695,7 +695,7 @@ let definition_structure udecl kind ~template cum ~poly finite records =
     in
     let priorities = List.map (fun (_, { rf_priority }) -> {hint_priority = rf_priority ; hint_pattern = None}) cfs in
     let coers = List.map (fun (_, { rf_subclass }) -> rf_subclass) cfs in
-    declare_class def cum ubinders univs id.CAst.v idbuild
+    declare_class def cumulative ubinders univs id.CAst.v idbuild
       implpars params arity template implfs fields coers priorities
   | _ ->
     let map impls = implpars @ [CAst.make None] @ impls in
@@ -709,5 +709,5 @@ let definition_structure udecl kind ~template cum ~poly finite records =
       id.CAst.v, idbuild, arity, implfs, fields, is_coe, coe
     in
     let data = List.map2 map data records in
-    let inds = declare_structure ~cum finite ubinders univs implpars params template data in
+    let inds = declare_structure ~cumulative finite ubinders univs implpars params template data in
     List.map (fun ind -> IndRef ind) inds
