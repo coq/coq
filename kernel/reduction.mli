@@ -28,11 +28,11 @@ val nf_betaiota      : env -> constr -> constr
 
 exception NotConvertible
 
-type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+type 'a kernel_conversion_function = env -> 'a -> 'a -> Stages.constraints
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
-  'a -> 'a -> unit
+  'a -> 'a -> Stages.constraints
 
 type conv_pb = CONV | CUMUL
 

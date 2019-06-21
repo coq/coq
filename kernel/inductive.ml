@@ -336,7 +336,7 @@ let is_correct_arity env c pj ind specif params =
     let pt' = whd_all env pt in
     match kind pt', ar with
       | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-          let () =
+          let _ =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
           srec (push_rel (LocalAssum (na1,a1)) env) t ar'

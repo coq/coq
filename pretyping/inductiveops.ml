@@ -28,14 +28,14 @@ open Context.Rel.Declaration
 
 let type_of_inductive env (ind,u) =
  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
- Typeops.check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
- Inductive.type_of_inductive (specif,u)
+ let _ = Typeops.check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps in
+ Inductive.type_of_inductive env (specif,u)
 
 (* Return type as quoted by the user *)
 let type_of_constructor env (cstr,u) =
  let (mib,_ as specif) =
    Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
- Typeops.check_hyps_inclusion env (GlobRef.ConstructRef cstr) mib.mind_hyps;
+ let _ = Typeops.check_hyps_inclusion env (GlobRef.ConstructRef cstr) mib.mind_hyps in
  Inductive.type_of_constructor (cstr,u) specif
 
 (* Return constructor types in user form *)

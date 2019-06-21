@@ -366,11 +366,11 @@ val equal : constr -> constr -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs : constr UGraph.check_function
+val eq_constr_univs : UGraph.t -> constr -> constr -> bool Stages.constrained
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs : constr UGraph.check_function
+val leq_constr_univs : UGraph.t -> constr -> constr -> bool Stages.constrained
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
@@ -553,7 +553,7 @@ val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
 type 'constr constr_compare_fn =
-   ?cstrnts: Stages.SConstraint.t ref -> int -> 'constr -> 'constr -> bool
+   ?cstrnts: Stages.constraints ref -> int -> 'constr -> 'constr -> bool
 
 (** [compare_head f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders

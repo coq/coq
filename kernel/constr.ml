@@ -864,7 +864,7 @@ type 'univs instance_compare_fn = GlobRef.t -> int ->
   'univs -> 'univs -> bool
 
 type 'constr constr_compare_fn =
-  ?cstrnts: Stages.SConstraint.t ref -> int -> 'constr -> 'constr -> bool
+  ?cstrnts: Stages.constraints ref -> int -> 'constr -> 'constr -> bool
 
 (* [compare_head_gen_evar k1 k2 u s e eq leq c1 c2] compare [c1] and
    [c2] (using [k1] to expose the structure of [c1] and [k2] to expose
@@ -954,17 +954,20 @@ let rec eq_constr ?cstrnts nargs m n =
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
 let eq_constr_univs univs m n =
-  if m == n then true
+  if m == n then true, empty_constraint
   else
+    let cstrnts = ref empty_constraint in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' ?cstrnts nargs m n =
-      m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' ?cstrnts nargs m n
-    in compare_head_gen eq_universes eq_sorts eq_constr' 0 m n
+      m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' ?cstrnts nargs m n in
+    let res = compare_head_gen eq_universes eq_sorts eq_constr' ~cstrnts 0 m n in
+    res, !cstrnts
 
 let leq_constr_univs univs m n =
-  if m == n then true
+  if m == n then true, empty_constraint
   else
+    let cstrnts = ref empty_constraint in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
@@ -976,7 +979,8 @@ let leq_constr_univs univs m n =
     let rec compare_leq ?cstrnts nargs m n =
       compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' ?cstrnts nargs m n
     and leq_constr' ?cstrnts nargs m n = m == n || compare_leq ?cstrnts nargs m n in
-    compare_leq 0 m n
+    let res = compare_leq ~cstrnts 0 m n in
+    res, !cstrnts
 
 let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty

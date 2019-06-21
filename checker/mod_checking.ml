@@ -68,7 +68,7 @@ let check_constant_declaration env opac kn cb opacify =
     match body with
     | Some bd ->
       let j = infer env bd in
-      (try conv_leq env j.uj_type ty
+      (try ignore (conv_leq env j.uj_type ty)
        with NotConvertible -> Type_errors.error_actual_type env j ty)
     | None -> ()
   in

@@ -34,7 +34,7 @@ let optimize_non_type_induction_scheme kind dep sort ind =
        appropriate type *)
     let sigma, cte = Evd.fresh_constant_instance env sigma cte in
     let c = mkConstU cte in
-    let t = type_of_constant_in (Global.env()) cte in
+    let t, _ = type_of_constant_in (Global.env()) cte in
     let (mib,mip) = Global.lookup_inductive ind in
     let npars =
       (* if a constructor of [ind] contains a recursive call, the scheme

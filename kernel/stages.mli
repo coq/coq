@@ -24,6 +24,7 @@ end
 
 type stage_constraint = SConstraint.elt
 type constraints = SConstraint.t
+type 'a constrained = 'a * constraints
 val empty_constraint : SConstraint.t
 val union_constraint : SConstraint.t -> SConstraint.t -> SConstraint.t
 val union_constraints : SConstraint.t list -> SConstraint.t

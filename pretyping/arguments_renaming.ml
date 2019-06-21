@@ -89,7 +89,7 @@ let rename_type ty ref =
   with Not_found -> ty
 
 let rename_type_of_constant env c =
-  let ty = Typeops.type_of_constant_in env c in
+  let ty, _ = Typeops.type_of_constant_in env c in
   rename_type ty (GlobRef.ConstRef (fst c))
 
 let rename_type_of_inductive env ind =

@@ -55,7 +55,7 @@ val type_of_variable : env -> variable -> types
 val judge_of_variable : env -> variable -> unsafe_judgment
 
 (** {6 type of a constant } *)
-val type_of_constant_in : env -> pconstant -> types
+val type_of_constant_in : env -> pconstant -> types Stages.constrained
 val judge_of_constant : env -> pconstant -> unsafe_judgment
 
 (** {6 type of an applied projection } *)
@@ -111,9 +111,9 @@ val type_of_global_in_context : env -> GlobRef.t -> types * Univ.AUContext.t
 
 (** Check that hyps are included in env and fails with error otherwise *)
 val check_hyps_inclusion : env -> ?evars:((existential->constr option) * UGraph.t) ->
-  GlobRef.t -> Constr.named_context -> unit
+  GlobRef.t -> Constr.named_context -> Stages.constraints
 
-val check_primitive_type : env -> CPrimitives.op_or_type -> types -> unit
+val check_primitive_type : env -> CPrimitives.op_or_type -> types -> Stages.constraints
 
 (** Types for primitives *)
 

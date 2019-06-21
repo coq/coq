@@ -185,13 +185,13 @@ let whd_allnolet env t =
 (* Conversion utility functions *)
 
 (* functions of this type are called from the kernel *)
-type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
+type 'a kernel_conversion_function = env -> 'a -> 'a -> constraints
 
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
-  'a -> 'a -> unit
+  'a -> 'a -> constraints
 
 exception NotConvertible
 
@@ -815,14 +815,14 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
     compare_cumul_instances = infer_inductive_instances; }
 
 let gen_conv cv_pb l2r reds env evars univs t1 t2 =
-  let b =
+  let b, cstrnts =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
   in
-    if b then ()
+    if b then cstrnts
     else
       let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
-        ()
+      empty_constraint
 
 (* Profiling *)
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None), universes env) =

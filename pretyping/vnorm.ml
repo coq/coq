@@ -231,7 +231,9 @@ and constr_type_of_idkey env sigma (idkey : Vmvalues.id_key) stk =
        Univ.AUContext.size (Declareops.constant_polymorphic_context cbody)
      in
      let mk u =
-       let pcst = (cst, u) in (mkConstU pcst, Typeops.type_of_constant_in env pcst)
+       let pcst = (cst, u) in
+       let t, _ = Typeops.type_of_constant_in env pcst in
+       (mkConstU pcst, t)
      in
      nf_univ_args ~nb_univs mk env sigma stk
    | VarKey id ->

@@ -82,6 +82,7 @@ end
 
 type stage_constraint = SConstraint.elt
 type constraints = SConstraint.t
+type 'a constrained = 'a * constraints
 
 let empty_constraint = SConstraint.empty
 let union_constraint = SConstraint.union

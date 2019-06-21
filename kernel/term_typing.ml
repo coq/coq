@@ -93,7 +93,7 @@ let infer_declaration env (dcl : constant_entry) =
       let ty = match otyp with
       | Some typ ->
         let typ = Typeops.infer_type env typ in
-        Typeops.check_primitive_type env op_t typ.utj_val;
+        let _ = Typeops.check_primitive_type env op_t typ.utj_val in
         typ.utj_val
       | None ->
         match op_t with

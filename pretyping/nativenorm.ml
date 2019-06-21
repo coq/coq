@@ -309,7 +309,8 @@ and nf_atom_type env sigma atom =
       let n = (nb_rel env - i) in
       mkRel n, Typeops.type_of_relative env n
   | Aconstant cst ->
-      mkConstU cst, Typeops.type_of_constant_in env cst
+      let t, _ = Typeops.type_of_constant_in env cst in
+      mkConstU cst, t
   | Aind ind ->
       mkIndU ind, Inductiveops.type_of_inductive env ind
   | Asort s ->

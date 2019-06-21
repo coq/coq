@@ -1577,10 +1577,8 @@ let start_equation (f : GlobRef.t) (term_f : GlobRef.t)
   let ids = pf_ids_of_hyps g in
   let terminate_constr = constr_of_monomorphic_global term_f in
   let terminate_constr = EConstr.of_constr terminate_constr in
-  let nargs =
-    nb_prod (project g)
-      (EConstr.of_constr (type_of_const sigma terminate_constr))
-  in
+  let t, _ = type_of_const sigma terminate_constr in
+  let nargs = nb_prod (project g) (EConstr.of_constr t) in
   let x = n_x_id ids nargs in
   observe_tac
     (fun _ _ -> str "start_equation")
