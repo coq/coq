@@ -30,14 +30,16 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-type variable_declaration = DirPath.t * section_variable_entry * Decls.logical_kind
+type variable_declaration = DirPath.t * section_variable_entry
 
-val declare_variable : variable -> variable_declaration -> Libobject.object_name
+val declare_variable
+  :  name:variable
+  -> kind:Decls.logical_kind
+  -> variable_declaration
+  -> Libobject.object_name
 
 (** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
-
-type constant_declaration = Evd.side_effects constant_entry * Decls.logical_kind
 
 (* Default definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
@@ -53,16 +55,29 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
 
   internal specify if the constant has been created by the kernel or by the
   user, and in the former case, if its errors should be silent *)
-val declare_constant :
- ?local:import_status -> Id.t -> constant_declaration -> Constant.t
+val declare_constant
+  :  ?local:import_status
+  -> name:Id.t
+  -> kind:Decls.logical_kind
+  -> Evd.side_effects constant_entry
+  -> Constant.t
 
-val declare_private_constant :
-  ?role:Evd.side_effect_role -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
+val declare_private_constant
+  :  ?role:Evd.side_effect_role
+  -> ?local:import_status
+  -> name:Id.t
+  -> kind:Decls.logical_kind
+  -> Evd.side_effects constant_entry
+  -> Constant.t * Evd.side_effects
 
-val declare_definition :
-  ?opaque:bool -> ?kind:Decls.definition_object_kind ->
-  ?local:import_status -> Id.t -> ?types:constr ->
-  constr Entries.in_universes_entry -> Constant.t
+val declare_definition
+  :  ?opaque:bool
+  -> ?kind:Decls.definition_object_kind
+  -> ?local:import_status
+  -> name:Id.t
+  -> ?types:constr
+  -> constr Entries.in_universes_entry
+  -> Constant.t
 
 (** Since transparent constants' side effects are globally declared, we
  *  need that *)

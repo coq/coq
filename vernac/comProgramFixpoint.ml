@@ -212,7 +212,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
         (*FIXME poly? *)
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (* FIXME: include locality *)
-        let c = Declare.declare_constant recname (DefinitionEntry ce, Decls.(IsDefinition Definition)) in
+        let c = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
         let gr = ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr impls

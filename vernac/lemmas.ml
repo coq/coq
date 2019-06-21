@@ -21,8 +21,6 @@ open Declareops
 open Entries
 open Nameops
 open Globnames
-open Decls
-open Declare
 open Pretyping
 open Termops
 open Reductionops
@@ -77,7 +75,8 @@ module Info = struct
     ; kind : Decls.goal_object_kind
     }
 
-  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Proof Lemma) () =
+  let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior)
+      ?(kind=Decls.(Proof Lemma)) () =
     { hook
     ; compute_guard = []
     ; impargs = []
@@ -120,14 +119,15 @@ let by tac pf =
 
 let retrieve_first_recthm uctx = function
   | VarRef id ->
-      (NamedDecl.get_value (Global.lookup_named id),variable_opacity id)
+    NamedDecl.get_value (Global.lookup_named id),
+    Decls.variable_opacity id
   | ConstRef cst ->
-      let cb = Global.lookup_constant cst in
-      (* we get the right order somehow but surely it could be enforced in a better way *)
-      let uctx = UState.context uctx in
-      let inst = Univ.UContext.instance uctx in
-      let map (c, _, _) = Vars.subst_instance_constr inst c in
-      (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
+    let cb = Global.lookup_constant cst in
+    (* we get the right order somehow but surely it could be enforced in a better way *)
+    let uctx = UState.context uctx in
+    let inst = Univ.UContext.instance uctx in
+    let map (c, _, _) = Vars.subst_instance_constr inst c in
+    (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
   | _ -> assert false
 
 let adjust_guardness_conditions const = function
@@ -252,27 +252,27 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
 let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
     { Recthm.name; typ; impargs } =
   let t_i = norm typ in
-  let k = IsAssumption Conjectural in
+  let kind = Decls.(IsAssumption Conjectural) in
   match body with
   | None ->
     let open DeclareDef in
       (match scope with
       | Discharge ->
-          let impl = false in (* copy values from Vernacentries *)
-          let univs = match univs with
-            | Polymorphic_entry (_, univs) ->
-              (* What is going on here? *)
-              Univ.ContextSet.of_context univs
-            | Monomorphic_entry univs -> univs
-          in
-          let c = SectionLocalAssum {typ=t_i;univs;poly;impl} in
-          let _ = declare_variable name (Lib.cwd(),c,k) in
-          (VarRef name,impargs)
+        let impl = false in (* copy values from Vernacentries *)
+        let univs = match univs with
+          | Polymorphic_entry (_, univs) ->
+            (* What is going on here? *)
+            Univ.ContextSet.of_context univs
+          | Monomorphic_entry univs -> univs
+        in
+        let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
+        let _ = Declare.declare_variable ~name ~kind (Lib.cwd(),c) in
+        (VarRef name,impargs)
       | Global local ->
-          let k = IsAssumption Conjectural in
-          let decl = (ParameterEntry (None,(t_i,univs),None), k) in
-          let kn = declare_constant name ~local decl in
-          (ConstRef kn,impargs))
+        let kind = Decls.(IsAssumption Conjectural) in
+        let decl = Declare.ParameterEntry (None,(t_i,univs),None) in
+        let kn = Declare.declare_constant ~name ~local ~kind decl in
+        (ConstRef kn,impargs))
   | Some body ->
       let body = norm body in
       let rec body_i t = match Constr.kind t with
@@ -287,15 +287,13 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
       let open DeclareDef in
       match scope with
       | Discharge ->
-          let const = definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
-          let c = SectionLocalDef const in
-          let _ = declare_variable name (Lib.cwd(), c, k) in
-          (VarRef name,impargs)
+        let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
+        let c = Declare.SectionLocalDef const in
+        let _ = Declare.declare_variable ~name ~kind (Lib.cwd(), c) in
+        (VarRef name,impargs)
       | Global local ->
-        let const =
-          Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i
-        in
-        let kn = declare_constant name ~local (DefinitionEntry const, k) in
+        let const = Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i in
+        let kn = Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
         (ConstRef kn,impargs)
 
 let initialize_named_context_for_proof () =
@@ -303,7 +301,7 @@ let initialize_named_context_for_proof () =
   List.fold_right
     (fun d signv ->
       let id = NamedDecl.get_id d in
-      let d = if variable_opacity id then NamedDecl.drop_body d else d in
+      let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
 (* Starting a goal *)
@@ -445,10 +443,10 @@ let finish_admitted env sigma ~name ~poly ~scope pe ctx hook ~udecl impargs othe
   let open DeclareDef in
   let local = match scope with
   | Global local -> local
-  | Discharge -> warn_let_as_axiom name; ImportNeedQualified
+  | Discharge -> warn_let_as_axiom name; Declare.ImportNeedQualified
   in
-  let kn = declare_constant name ~local (ParameterEntry pe, IsAssumption Conjectural) in
-  let () = assumption_message name in
+  let kn = Declare.declare_constant ~name ~local ~kind:Decls.(IsAssumption Conjectural) (Declare.ParameterEntry pe) in
+  let () = Declare.assumption_message name in
   Declare.declare_univ_binders (ConstRef kn) (UState.universe_binders ctx);
   (* This takes care of the implicits and hook for the current constant*)
   process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (ConstRef kn) impargs other_thms;
@@ -496,20 +494,20 @@ let finish_proved env sigma idopt po info =
     let fix_exn = Future.fix_exn_of const.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
-      let k = Decls.logical_kind_of_goal_kind kind in
+      let kind = Decls.logical_kind_of_goal_kind kind in
       let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
       let open DeclareDef in
       let r = match scope with
         | Discharge ->
-          let c = SectionLocalDef const in
-          let _ = declare_variable name (Lib.cwd(), c, k) in
+          let c = Declare.SectionLocalDef const in
+          let _ = Declare.declare_variable ~name ~kind (Lib.cwd(), c) in
           let () = if should_suggest
             then Proof_using.suggest_variable (Global.env ()) name
           in
           VarRef name
         | Global local ->
           let kn =
-            declare_constant name ~local (DefinitionEntry const, k) in
+            Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
@@ -517,7 +515,7 @@ let finish_proved env sigma idopt po info =
           Declare.declare_univ_binders gr (UState.universe_binders universes);
           gr
       in
-      definition_message name;
+      Declare.definition_message name;
       (* This takes care of the implicits and hook for the current constant*)
       process_recthms ~fix_exn ?hook env sigma universes ~udecl ~poly ~scope r impargs other_thms
     with e when CErrors.noncritical e ->
@@ -542,8 +540,9 @@ let finish_derived ~f ~name ~idopt ~entries =
   (* The opacity of [f_def] is adjusted to be [false], as it
      must. Then [f] is declared in the global environment. *)
   let f_def = { f_def with Proof_global.proof_entry_opaque = false } in
-  let f_def = Declare.DefinitionEntry f_def , IsDefinition Definition in
-  let f_kn = Declare.declare_constant f f_def in
+  let f_kind = Decls.(IsDefinition Definition) in
+  let f_def = Declare.DefinitionEntry f_def in
+  let f_kn = Declare.declare_constant ~name:f ~kind:f_kind f_def in
   let f_kn_term = mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
      references to the variable [f]. It needs to be replaced by
@@ -565,17 +564,14 @@ let finish_derived ~f ~name ~idopt ~entries =
       proof_entry_body = lemma_body;
       proof_entry_type = Some lemma_type }
   in
-  let lemma_def =
-    Declare.DefinitionEntry lemma_def ,
-    Decls.(IsProof Proposition)
-  in
-  let _ : Names.Constant.t = Declare.declare_constant name lemma_def in
+  let lemma_def = Declare.DefinitionEntry lemma_def in
+  let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
   ()
 
 let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
 
   let obls = ref 1 in
-  let kind = match kind with
+  let kind = let open Decls in match kind with
     | DefinitionBody d -> IsDefinition d
     | Proof p -> IsProof p
   in
@@ -587,7 +583,7 @@ let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
           | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
         in
         let entry, args = Abstract.shrink_entry local_context entry in
-        let cst = Declare.declare_constant id (Declare.DefinitionEntry entry, kind) in
+        let cst = Declare.declare_constant ~name:id ~kind (Declare.DefinitionEntry entry) in
         let sigma, app = Evarutil.new_global sigma (ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0

@@ -99,11 +99,11 @@ let () =
 
 (* Util *)
 
-let define ~poly id sigma c t =
-  let f = declare_constant in
+let define ~poly name sigma c t =
+  let f = declare_constant ~kind:Decls.(IsDefinition Scheme) in
   let univs = Evd.univ_entry ~poly sigma in
   let open Proof_global in
-  let kn = f id
+  let kn = f ~name
     (DefinitionEntry
       { proof_entry_body = c;
         proof_entry_secctx = None;
@@ -112,9 +112,8 @@ let define ~poly id sigma c t =
         proof_entry_opaque = false;
         proof_entry_inline_code = false;
         proof_entry_feedback = None;
-      },
-      Decls.(IsDefinition Scheme)) in
-  definition_message id;
+      }) in
+  definition_message name;
   kn
 
 (* Boolean equality *)

@@ -123,21 +123,21 @@ open DeclareDef
 
 let definition_message = Declare.definition_message
 
-let save id const ?hook uctx scope kind =
+let save name const ?hook uctx scope kind =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match scope with
     | Discharge ->
-        let k = Decls.logical_kind_of_goal_kind kind in
-        let c = SectionLocalDef const in
-        let _ = declare_variable id (Lib.cwd(), c, k) in
-        VarRef id
+      let kind = Decls.logical_kind_of_goal_kind kind in
+      let c = SectionLocalDef const in
+      let _ = declare_variable ~name ~kind (Lib.cwd(), c) in
+      VarRef name
     | Global local ->
-        let k = Decls.logical_kind_of_goal_kind kind in
-        let kn = declare_constant id ~local (DefinitionEntry const, k) in
-        ConstRef kn
+      let kind = Decls.logical_kind_of_goal_kind kind in
+      let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in
+      ConstRef kn
   in
   DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });
-  definition_message id
+  definition_message name
 
 let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()

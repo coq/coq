@@ -313,23 +313,22 @@ let instance_hook info global imps ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant info global imps ?hook id decl poly sigma term termtype =
+let declare_instance_constant info global imps ?hook name decl poly sigma term termtype =
   (* XXX: Duplication of the declare_constant path *)
-  let kind = Decls.(IsDefinition Instance) in
   let sigma =
     let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
                                  (CVars.universes_of_constr term) in
     Evd.restrict_universe_context sigma levels
   in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
+  let kind = Decls.(IsDefinition Instance) in
   let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
-  let cdecl = (Declare.DefinitionEntry entry, kind) in
-  let kn = Declare.declare_constant id cdecl in
-  Declare.definition_message id;
+  let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
+  Declare.definition_message name;
   Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
   instance_hook info global imps ?hook (ConstRef kn)
 
-let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id =
+let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst (snd k.cl_context)
@@ -337,8 +336,8 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id 
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
-  let cst = Declare.declare_constant id
-      (Declare.ParameterEntry entry, Decls.(IsAssumption Logical)) in
+  let cst = Declare.declare_constant ~name
+      ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (ConstRef cst)
 

@@ -369,9 +369,9 @@ let generate_functional_principle (evd: Evd.evar_map ref)
         let ce = Declare.definition_entry ~univs value in
         ignore(
           Declare.declare_constant
-            name
-            (Declare.DefinitionEntry ce,
-             Decls.(IsDefinition Scheme))
+            ~name
+            ~kind:Decls.(IsDefinition Scheme)
+            (Declare.DefinitionEntry ce)
         );
         Declare.definition_message name;
         names := name :: !names
@@ -637,8 +637,9 @@ let build_scheme fas =
     (fun (princ_id,_,_) def_entry ->
        ignore
          (Declare.declare_constant
-            princ_id
-            (Declare.DefinitionEntry def_entry,Decls.(IsProof Theorem)));
+            ~name:princ_id
+            ~kind:Decls.(IsProof Theorem)
+            (Declare.DefinitionEntry def_entry));
        Declare.definition_message princ_id
     )
     fas

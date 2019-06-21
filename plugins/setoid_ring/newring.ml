@@ -155,9 +155,9 @@ let decl_constant na univs c =
   let () = Declare.declare_universe_context ~poly:false univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = Monomorphic_entry Univ.ContextSet.empty in
-  mkConst(declare_constant (Id.of_string na) 
-            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c),
-             Decls.(IsProof Lemma)))
+  mkConst(declare_constant ~name:(Id.of_string na)
+            ~kind:Decls.(IsProof Lemma)
+            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =

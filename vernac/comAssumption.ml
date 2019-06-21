@@ -42,7 +42,7 @@ let should_axiom_into_instance = let open Decls in function
     true
   | Definitional | Logical | Conjectural -> !axiom_into_instance
 
-let declare_assumption is_coe ~poly ~scope ~kind typ univs pl imps impl nl {CAst.v=ident} =
+let declare_assumption is_coe ~poly ~scope ~kind typ univs pl imps impl nl {CAst.v=name} =
 let open DeclareDef in
 match scope with
 | Discharge ->
@@ -50,10 +50,11 @@ match scope with
     | Monomorphic_entry univs -> univs
     | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
   in
-  let decl = (Lib.cwd(), SectionLocalAssum {typ;univs;poly;impl}, Decls.IsAssumption kind) in
-  let _ = declare_variable ident decl in
-  let () = assumption_message ident in
-  let r = VarRef ident in
+  let kind = Decls.IsAssumption kind in
+  let decl = Lib.cwd(), SectionLocalAssum {typ; univs; poly; impl} in
+  let _ = declare_variable ~name ~kind decl in
+  let () = assumption_message name in
+  let r = VarRef name in
   let () = maybe_declare_manual_implicits true r imps in
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -68,12 +69,13 @@ match scope with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let decl = (Declare.ParameterEntry (None,(typ,univs),inl), Decls.IsAssumption kind) in
-  let kn = declare_constant ident ~local decl in
+  let kind = Decls.IsAssumption kind in
+  let decl = Declare.ParameterEntry (None,(typ,univs),inl) in
+  let kn = declare_constant ~name ~local ~kind decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.declare_univ_binders gr pl in
-  let () = assumption_message ident in
+  let () = assumption_message name in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
@@ -210,7 +212,8 @@ let do_primitive id prim typopt =
                 prim_entry_content = prim;
               }
   in
-  let _kn = declare_constant id.CAst.v (PrimitiveEntry entry, Decls.IsPrimitive) in
+  let _kn : Names.Constant.t =
+    declare_constant ~name:id.CAst.v ~kind:Decls.IsPrimitive (PrimitiveEntry entry) in
   Flags.if_verbose Feedback.msg_info Pp.(Id.print id.CAst.v ++ str " is declared")
 
 let named_of_rel_context l =
@@ -268,24 +271,25 @@ let context ~poly l =
           Monomorphic_entry Univ.ContextSet.empty
         end
   in
-  let fn status (id, b, t) =
+  let fn status (name, b, t) =
     let b, t = Option.map (EConstr.to_constr sigma) b, EConstr.to_constr sigma t in
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       (* Declare the universe context once *)
+      let kind = Decls.(IsAssumption Logical) in
       let decl = match b with
       | None ->
-        (Declare.ParameterEntry (None,(t,univs),None), Decls.(IsAssumption Logical))
+        Declare.ParameterEntry (None,(t,univs),None)
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
-        (Declare.DefinitionEntry entry, Decls.(IsAssumption Logical))
+        Declare.DefinitionEntry entry
       in
-      let cst = Declare.declare_constant id decl in
+      let cst = Declare.declare_constant ~name ~kind decl in
       let env = Global.env () in
       Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (ConstRef cst);
       status
     else
       let test x = match x.CAst.v with
-      | Some (Name id',_) -> Id.equal id id'
+      | Some (Name id',_) -> Id.equal name id'
       | _ -> false
       in
       let impl = List.exists test impls in
@@ -294,11 +298,11 @@ let context ~poly l =
       let nstatus = match b with
       | None ->
         pi3 (declare_assumption false ~scope ~poly ~kind:Decls.Context t univs UnivNames.empty_binders [] impl
-               Declaremods.NoInline (CAst.make id))
+               Declaremods.NoInline (CAst.make name))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         let _gr = DeclareDef.declare_definition
-            ~name:id ~scope:DeclareDef.Discharge
+            ~name ~scope:DeclareDef.Discharge
             ~kind:Decls.Definition UnivNames.empty_binders entry [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in

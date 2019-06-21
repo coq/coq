@@ -166,8 +166,9 @@ let declare_obligation prg obl body ty uctx =
     in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
-      Declare.declare_constant obl.obl_name ~local:Declare.ImportNeedQualified
-        (Declare.DefinitionEntry ce, Decls.(IsProof Property))
+      Declare.declare_constant ~name:obl.obl_name
+        ~local:Declare.ImportNeedQualified ~kind:Decls.(IsProof Property)
+        (Declare.DefinitionEntry ce)
     in
     if not opaque then
       add_hint (Locality.make_section_locality None) prg constant;

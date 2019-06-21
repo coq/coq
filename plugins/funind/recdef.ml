@@ -65,9 +65,9 @@ let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   locate (make_qualid dp (Id.of_string s))
 
-let declare_fun f_id kind ?univs value =
+let declare_fun name kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
-    ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
+  ConstRef(declare_constant ~name ~kind (DefinitionEntry ce))
 
 let defined lemma =
   Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None

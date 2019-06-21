@@ -1320,7 +1320,7 @@ let project_hint ~poly pri l2r r =
   in
   let ctx = Evd.univ_entry ~poly sigma in
   let c = EConstr.to_constr sigma c in
-  let c = Declare.declare_definition id (c,ctx) in
+  let c = Declare.declare_definition ~name:id (c,ctx) in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
 

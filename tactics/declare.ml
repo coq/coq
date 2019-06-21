@@ -44,8 +44,6 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-type constant_declaration = Evd.side_effects constant_entry * Decls.logical_kind
-
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
 let load_constant i ((sp,kn), obj) =
@@ -235,7 +233,7 @@ let get_roles export eff =
   in
   List.map map export
 
-let define_constant ~side_effect id cd =
+let define_constant ~side_effect ~name cd =
   let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let is_poly de = match de.proof_entry_universes with
@@ -270,19 +268,19 @@ let define_constant ~side_effect id cd =
     | PrimitiveEntry e ->
       [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
   in
-  let kn, eff = Global.add_constant ~side_effect ~in_section id decl in
+  let kn, eff = Global.add_constant ~side_effect ~in_section name decl in
   kn, eff, export
 
-let declare_constant ?(local = ImportDefaultBehavior) id (cd, kind) =
-  let () = check_exists id in
-  let kn, (), export = define_constant ~side_effect:PureEntry id cd in
+let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
+  let () = check_exists name in
+  let kn, (), export = define_constant ~side_effect:PureEntry ~name cd in
   (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ?role ?(local = ImportDefaultBehavior) id (cd, kind) =
-  let kn, eff, export = define_constant ~side_effect:EffectEntry id cd in
+let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind cd =
+  let kn, eff, export = define_constant ~side_effect:EffectEntry ~name cd in
   let () = assert (List.is_empty export) in
   let () = register_constant kn kind local in
   let seff_roles = match role with
@@ -294,24 +292,22 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) id (cd, kind
 
 let declare_definition
   ?(opaque=false) ?(kind=Decls.Definition) ?(local = ImportDefaultBehavior)
-  id ?types (body,univs) =
-  let cb =
-    definition_entry ?types ~univs ~opaque body
-  in
-    declare_constant ~local id
-      (DefinitionEntry cb, Decls.IsDefinition kind)
+  ~name ?types (body,univs) =
+  let cb = definition_entry ?types ~univs ~opaque body in
+  declare_constant ~local ~name ~kind:Decls.(IsDefinition kind)
+    (DefinitionEntry cb)
 
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
-type variable_declaration = DirPath.t * section_variable_entry * Decls.logical_kind
+type variable_declaration = DirPath.t * section_variable_entry
 
 let cache_variable ((sp,_),o) =
   match o with
   | Inl ctx -> Global.push_context_set false ctx
-  | Inr (id,(path,d,kind)) ->
+  | Inr (id,(path,d),kind) ->
   (* Constr raisonne sur les noms courts *)
   if Decls.variable_exists id then
     alreadydeclared (Id.print id ++ str " already exists");
@@ -351,13 +347,13 @@ let cache_variable ((sp,_),o) =
   Decls.(add_variable_data id {path;opaque;univs;poly;kind})
 
 let discharge_variable (_,o) = match o with
-  | Inr (id,_) ->
+  | Inr (id,_,_) ->
     if Decls.variable_polymorphic id then None
     else Some (Inl (Decls.variable_context id))
   | Inl _ -> Some o
 
 type variable_obj =
-    (Univ.ContextSet.t, Id.t * variable_declaration) union
+    (Univ.ContextSet.t, Id.t * variable_declaration * Decls.logical_kind) union
 
 let inVariable : variable_obj -> obj =
   declare_object { (default_object "VARIABLE") with
@@ -366,10 +362,10 @@ let inVariable : variable_obj -> obj =
     classify_function = (fun _ -> Dispose) }
 
 (* for initial declaration *)
-let declare_variable id obj =
-  let oname = add_leaf id (inVariable (Inr (id,obj))) in
-  declare_var_implicits id;
-  Notation.declare_ref_arguments_scope Evd.empty (VarRef id);
+let declare_variable ~name ~kind obj =
+  let oname = add_leaf name (inVariable (Inr (name,obj,kind))) in
+  declare_var_implicits name;
+  Notation.declare_ref_arguments_scope Evd.empty (VarRef name);
   oname
 
 (** Declaration of inductive blocks *)
@@ -479,7 +475,7 @@ let inPrim : (Projection.Repr.t * Constant.t) -> obj =
 let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
 
 let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
-  let id = Label.to_id label in
+  let name = Label.to_id label in
   let univs, u = match univs with
     | Monomorphic_entry _ ->
       (* Global constraints already defined through the inductive *)
@@ -490,7 +486,7 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
   let term = Vars.subst_instance_constr u term in
   let types = Vars.subst_instance_constr u types in
   let entry = definition_entry ~types ~univs term in
-  let cst = declare_constant id (DefinitionEntry entry, Decls.(IsDefinition StructureComponent)) in
+  let cst = declare_constant ~name ~kind:Decls.(IsDefinition StructureComponent) (DefinitionEntry entry) in
   let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
   declare_primitive_projection p cst
 

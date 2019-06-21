@@ -207,7 +207,7 @@ let build_id_coercion idf_opt source poly =
       user_err  (strbrk
 	"Cannot be defined as coercion (maybe a bad number of arguments).")
   in
-  let idf =
+  let name =
     match idf_opt with
       | Some idf -> idf
       | None ->
@@ -221,8 +221,8 @@ let build_id_coercion idf_opt source poly =
       (definition_entry ~types:typ_f ~univs
 	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
-  let decl = (constr_entry, Decls.(IsDefinition IdentityCoercion)) in
-  let kn = declare_constant idf decl in
+  let kind = Decls.(IsDefinition IdentityCoercion) in
+  let kn = declare_constant ~name ~kind constr_entry in
   ConstRef kn
 
 let check_source = function

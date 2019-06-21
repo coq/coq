@@ -351,8 +351,8 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
                     proof_entry_opaque = false;
                     proof_entry_inline_code = false;
                     proof_entry_feedback = None } in
-                  let k = (Declare.DefinitionEntry entry,Decls.IsDefinition kind) in
-                  let kn = declare_constant fid k in
+                  let kind = Decls.IsDefinition kind in
+                  let kn = declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry) in
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		      applist (mkConstU (kn,u),proj_args) 
@@ -496,8 +496,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       let class_type = it_mkProd_or_LetIn arity params in
       let class_entry = 
         Declare.definition_entry ~types:class_type ~univs class_body in
-      let cst = Declare.declare_constant id
-        (DefinitionEntry class_entry, Decls.(IsDefinition Definition))
+      let cst = Declare.declare_constant ~name:id
+        (DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
       in
       let inst, univs = match univs with
         | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
@@ -511,8 +511,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       let proj_body =
         it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
       let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
-      let proj_cst = Declare.declare_constant proj_name
-        (DefinitionEntry proj_entry, Decls.(IsDefinition Definition))
+      let proj_cst = Declare.declare_constant ~name:proj_name
+        (DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
       in
       let cref = ConstRef cst in
       Impargs.declare_manual_implicits false cref paramimpls;

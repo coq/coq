@@ -688,8 +688,8 @@ let admit_prog prg =
         | None ->
             let x = subst_deps_obl obls x in
             let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
-            let kn = Declare.declare_constant x.obl_name ~local:Declare.ImportNeedQualified
-              (Declare.ParameterEntry (None,(x.obl_type,ctx),None), Decls.(IsAssumption Conjectural))
+            let kn = Declare.declare_constant ~name:x.obl_name ~local:Declare.ImportNeedQualified
+              (Declare.ParameterEntry (None,(x.obl_type,ctx),None)) ~kind:Decls.(IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }
