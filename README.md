@@ -40,7 +40,7 @@ environment for semi-interactive development of machine-checked proofs.
 [chocolatey-badge]: https://repology.org/badge/version-for-repo/chocolatey/coq.svg
 [chocolatey-link]: https://chocolatey.org/packages/Coq
 
-[conda-badge]: https://img.shields.io/conda/vn/conda-forge/coq.svg?label="Conda%20package"
+[conda-badge]: https://img.shields.io/conda/vn/conda-forge/coq.svg?label=Conda%20package&color=success
 [conda-link]: https://github.com/conda-forge/coq-feedstock
 
 [homebrew-badge]: https://repology.org/badge/version-for-repo/homebrew/coq.svg
