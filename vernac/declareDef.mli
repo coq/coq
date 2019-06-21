@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Decl_kinds
 
 type locality = Discharge | Global of Declare.import_status
 
@@ -43,7 +42,7 @@ end
 val declare_definition
   :  name:Id.t
   -> scope:locality
-  -> kind:definition_object_kind
+  -> kind:Decls.definition_object_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> UnivNames.universe_binders
   -> Evd.side_effects Proof_global.proof_entry
@@ -55,7 +54,7 @@ val declare_fix
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> name:Id.t
   -> scope:locality
-  -> kind:definition_object_kind
+  -> kind:Decls.definition_object_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry
   -> Evd.side_effects Entries.proof_output

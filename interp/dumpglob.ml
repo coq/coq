@@ -69,7 +69,7 @@ let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob
 let continue () = glob_output := !previous_state
 
-open Decl_kinds
+open Decls
 open Declarations
 
 let type_of_logical_kind = function

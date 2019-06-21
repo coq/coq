@@ -18,7 +18,6 @@ open Globnames
 open Constrexpr_ops
 open Constrintern
 open Impargs
-open Decl_kinds
 open Pretyping
 open Entries
 
@@ -36,7 +35,7 @@ let () =
       optread = (fun _ -> !axiom_into_instance);
       optwrite = (:=) axiom_into_instance; }
 
-let should_axiom_into_instance = function
+let should_axiom_into_instance = let open Decls in function
   | Context ->
     (* The typeclass behaviour of Variable and Context doesn't depend
        on section status *)
@@ -51,7 +50,7 @@ match scope with
     | Monomorphic_entry univs -> univs
     | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
   in
-  let decl = (Lib.cwd(), SectionLocalAssum {typ;univs;poly;impl}, IsAssumption kind) in
+  let decl = (Lib.cwd(), SectionLocalAssum {typ;univs;poly;impl}, Decls.IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let r = VarRef ident in
@@ -69,7 +68,7 @@ match scope with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let decl = (Declare.ParameterEntry (None,(typ,univs),inl), IsAssumption kind) in
+  let decl = (Declare.ParameterEntry (None,(typ,univs),inl), Decls.IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -211,7 +210,7 @@ let do_primitive id prim typopt =
                 prim_entry_content = prim;
               }
   in
-  let _kn = declare_constant id.CAst.v (PrimitiveEntry entry,IsPrimitive) in
+  let _kn = declare_constant id.CAst.v (PrimitiveEntry entry, Decls.IsPrimitive) in
   Flags.if_verbose Feedback.msg_info Pp.(Id.print id.CAst.v ++ str " is declared")
 
 let named_of_rel_context l =
@@ -275,10 +274,10 @@ let context ~poly l =
       (* Declare the universe context once *)
       let decl = match b with
       | None ->
-        (Declare.ParameterEntry (None,(t,univs),None), IsAssumption Logical)
+        (Declare.ParameterEntry (None,(t,univs),None), Decls.(IsAssumption Logical))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
-        (Declare.DefinitionEntry entry, IsAssumption Logical)
+        (Declare.DefinitionEntry entry, Decls.(IsAssumption Logical))
       in
       let cst = Declare.declare_constant id decl in
       let env = Global.env () in
@@ -294,13 +293,13 @@ let context ~poly l =
         if Lib.sections_are_opened () then DeclareDef.Discharge else DeclareDef.Global ImportDefaultBehavior in
       let nstatus = match b with
       | None ->
-        pi3 (declare_assumption false ~scope ~poly ~kind:Context t univs UnivNames.empty_binders [] impl
+        pi3 (declare_assumption false ~scope ~poly ~kind:Decls.Context t univs UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         let _gr = DeclareDef.declare_definition
             ~name:id ~scope:DeclareDef.Discharge
-            ~kind:Definition UnivNames.empty_binders entry [] in
+            ~kind:Decls.Definition UnivNames.empty_binders entry [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
         status && nstatus

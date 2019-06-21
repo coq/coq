@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Printf
-open Decl_kinds
 
 (**
    - Get types of existentials ;
@@ -398,8 +397,8 @@ let deps_remaining obls deps =
     deps []
 
 
-let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, DefinitionBody Definition)
-let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Proof Lemma)
+let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(DefinitionBody Definition))
+let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(Proof Lemma))
 
 let kind_of_obligation o =
   match o with
@@ -638,7 +637,7 @@ let show_term n =
             ++ Printer.pr_constr_env env sigma prg.prg_body)
 
 let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
-                   ?(implicits=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Definition) ?tactic
+                   ?(implicits=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print name ++ str " has type-checked" in
@@ -658,7 +657,7 @@ let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
-                           ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Definition) ?(reduce=reduce)
+                           ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
@@ -690,7 +689,7 @@ let admit_prog prg =
             let x = subst_deps_obl obls x in
             let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:Declare.ImportNeedQualified
-              (Declare.ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
+              (Declare.ParameterEntry (None,(x.obl_type,ctx),None), Decls.(IsAssumption Conjectural))
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }

@@ -13,7 +13,6 @@ module CVars = Vars
 open Util
 open Termops
 open EConstr
-open Decl_kinds
 open Evarutil
 
 module RelDecl = Context.Rel.Declaration
@@ -153,7 +152,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let const, args = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
   let cd = Declare.DefinitionEntry { const with Proof_global.proof_entry_opaque = opaque } in
-  let decl = (cd, if opaque then IsProof Lemma else IsDefinition Definition) in
+  let decl = (cd, if opaque then Decls.(IsProof Lemma) else Decls.(IsDefinition Definition)) in
   let cst () =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in

@@ -9,4 +9,4 @@ let edeclare ?hook ~name ~poly ~scope ~kind ~opaque sigma udecl body tyopt imps 
 let declare_definition ~poly name sigma body =
   let udecl = UState.default_univ_decl in
   edeclare ~name ~poly ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
-    ~kind:Decl_kinds.Definition ~opaque:false sigma udecl body None []
+    ~kind:Decls.Definition ~opaque:false sigma udecl body None []

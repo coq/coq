@@ -24,7 +24,6 @@ open Declarations
 open Entries
 open Declare
 open Constrintern
-open Decl_kinds
 open Type_errors
 open Constrexpr
 open Constrexpr_ops
@@ -282,7 +281,7 @@ type projection_flags = {
 }
 
 (* We build projections *)
-let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags fieldimpls fields =
+let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name flags fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let poly = Declareops.inductive_is_polymorphic mib in
@@ -352,7 +351,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags f
                     proof_entry_opaque = false;
                     proof_entry_inline_code = false;
                     proof_entry_feedback = None } in
-                  let k = (Declare.DefinitionEntry entry,IsDefinition kind) in
+                  let k = (Declare.DefinitionEntry entry,Decls.IsDefinition kind) in
                   let kn = declare_constant fid k in
 		  let constr_fip =
 		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
@@ -402,7 +401,7 @@ let inStruc : Recordops.struc_tuple -> obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
-let declare_structure ~cum finite ubinders univs paramimpls params template ?(kind=StructureComponent) ?name record_data =
+let declare_structure ~cum finite ubinders univs paramimpls params template ?(kind=Decls.StructureComponent) ?name record_data =
   let nparams = List.length params in
   let poly, ctx =
     match univs with
@@ -481,7 +480,7 @@ let implicits_of_context ctx =
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
 let declare_class def cum ubinders univs id idbuild paramimpls params arity
-    template fieldimpls fields ?(kind=StructureComponent) coers priorities =
+    template fieldimpls fields ?(kind=Decls.StructureComponent) coers priorities =
   let fieldimpls =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let impls = implicits_of_context params in
@@ -498,7 +497,7 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       let class_entry = 
         Declare.definition_entry ~types:class_type ~univs class_body in
       let cst = Declare.declare_constant id
-	(DefinitionEntry class_entry, IsDefinition Definition)
+        (DefinitionEntry class_entry, Decls.(IsDefinition Definition))
       in
       let inst, univs = match univs with
         | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
@@ -513,7 +512,7 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
         it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
       let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
       let proj_cst = Declare.declare_constant proj_name
-        (DefinitionEntry proj_entry, IsDefinition Definition)
+        (DefinitionEntry proj_entry, Decls.(IsDefinition Definition))
       in
       let cref = ConstRef cst in
       Impargs.declare_manual_implicits false cref paramimpls;
@@ -528,7 +527,7 @@ let declare_class def cum ubinders univs id idbuild paramimpls params arity
       let record_data = [id, idbuild, arity, fieldimpls, fields, false,
                          List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields] in
       let inds = declare_structure ~cum Declarations.BiFinite ubinders univs paramimpls
-        params template ~kind:Method ~name:[|binder_name|] record_data
+        params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri -> 
 			      Option.map (fun b -> 

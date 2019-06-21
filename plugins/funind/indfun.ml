@@ -419,7 +419,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
         ~name:fname
         ~poly:false
         ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
-        ~kind:Decl_kinds.Definition pl
+        ~kind:Decls.Definition pl
         bl None body (Some ret_type);
        let evd,rev_pconstants =
          List.fold_left

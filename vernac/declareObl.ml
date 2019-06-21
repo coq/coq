@@ -14,7 +14,6 @@ open Environ
 open Context
 open Constr
 open Vars
-open Decl_kinds
 open Entries
 
 type 'a obligation_body = DefinedObl of 'a | TermObl of constr
@@ -50,7 +49,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_poly : bool
   ; prg_scope : DeclareDef.locality
-  ; prg_kind : definition_object_kind
+  ; prg_kind : Decls.definition_object_kind
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
@@ -168,7 +167,7 @@ let declare_obligation prg obl body ty uctx =
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       Declare.declare_constant obl.obl_name ~local:Declare.ImportNeedQualified
-        (Declare.DefinitionEntry ce, IsProof Property)
+        (Declare.DefinitionEntry ce, Decls.(IsProof Property))
     in
     if not opaque then
       add_hint (Locality.make_section_locality None) prg constant;
@@ -423,7 +422,7 @@ let declare_mutual_definition l =
   let fixdecls = (Array.map2 make_annot namevec rvec, arrrec, recvec) in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in
-  let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
+  let kind = if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
     | IsFixpoint wfl ->

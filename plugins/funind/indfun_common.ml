@@ -127,13 +127,13 @@ let save id const ?hook uctx scope kind =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match scope with
     | Discharge ->
-        let k = Kindops.logical_kind_of_goal_kind kind in
+        let k = Decls.logical_kind_of_goal_kind kind in
         let c = SectionLocalDef const in
         let _ = declare_variable id (Lib.cwd(), c, k) in
         VarRef id
     | Global local ->
-        let k = Kindops.logical_kind_of_goal_kind kind in
-        let kn = declare_constant id ~local (Declare.DefinitionEntry const, k) in
+        let k = Decls.logical_kind_of_goal_kind kind in
+        let kn = declare_constant id ~local (DefinitionEntry const, k) in
         ConstRef kn
   in
   DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });

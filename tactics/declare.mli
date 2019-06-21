@@ -11,7 +11,6 @@
 open Names
 open Constr
 open Entries
-open Decl_kinds
 
 (** This module provides the official functions to declare new variables,
    parameters, constants and inductive types. Using the following functions
@@ -31,14 +30,14 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-type variable_declaration = DirPath.t * section_variable_entry * logical_kind
+type variable_declaration = DirPath.t * section_variable_entry * Decls.logical_kind
 
 val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
 (** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
-type constant_declaration = Evd.side_effects constant_entry * logical_kind
+type constant_declaration = Evd.side_effects constant_entry * Decls.logical_kind
 
 (* Default definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
@@ -61,7 +60,7 @@ val declare_private_constant :
   ?role:Evd.side_effect_role -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
 val declare_definition :
-  ?opaque:bool -> ?kind:definition_object_kind ->
+  ?opaque:bool -> ?kind:Decls.definition_object_kind ->
   ?local:import_status -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t
 

@@ -22,7 +22,6 @@ open Nameops
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
-open Decl_kinds
 open Evarutil
 open Context.Rel.Declaration
 open ComFixpoint
@@ -213,7 +212,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
         (*FIXME poly? *)
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (* FIXME: include locality *)
-        let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+        let c = Declare.declare_constant recname (DefinitionEntry ce, Decls.(IsDefinition Definition)) in
         let gr = ConstRef c in
         if Impargs.is_implicit_args () || not (List.is_empty impls) then
           Impargs.declare_manual_implicits false gr impls
@@ -288,8 +287,8 @@ let do_program_recursive ~scope ~poly fixkind fixl ntns =
   end in
   let ctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
-  | DeclareObl.IsFixpoint _ -> Fixpoint
-  | DeclareObl.IsCoFixpoint -> CoFixpoint
+  | DeclareObl.IsFixpoint _ -> Decls.Fixpoint
+  | DeclareObl.IsCoFixpoint -> Decls.CoFixpoint
   in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~univdecl:pl ctx ntns fixkind
 

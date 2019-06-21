@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Decl_kinds
 open Redexpr
 open Constrexpr
 
@@ -21,7 +20,7 @@ val do_definition
   -> name:Id.t
   -> scope:DeclareDef.locality
   -> poly:bool
-  -> kind:definition_object_kind
+  -> kind:Decls.definition_object_kind
   -> universe_decl_expr option
   -> local_binder_expr list
   -> red_expr option

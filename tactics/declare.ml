@@ -24,7 +24,6 @@ open Lib
 open Impargs
 open Safe_typing
 open Cooking
-open Decls
 open Decl_kinds
 
 module NamedDecl = Context.Named.Declaration
@@ -36,7 +35,7 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
 type constant_obj = {
   cst_decl : Cooking.recipe option;
   (** Non-empty only when rebuilding a constant after a section *)
-  cst_kind : logical_kind;
+  cst_kind : Decls.logical_kind;
   cst_locl : import_status;
 }
 
@@ -45,7 +44,7 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-type constant_declaration = Evd.side_effects constant_entry * logical_kind
+type constant_declaration = Evd.side_effects constant_entry * Decls.logical_kind
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
@@ -54,7 +53,7 @@ let load_constant i ((sp,kn), obj) =
     alreadydeclared (Id.print (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
-  add_constant_kind con obj.cst_kind
+  Decls.add_constant_kind con obj.cst_kind
 
 let cooking_info segment =
   let modlist = replacement_context () in
@@ -73,7 +72,7 @@ let open_constant i ((sp,kn), obj) =
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let exists_name id =
-  variable_exists id || Global.exists_objlabel (Label.of_id id)
+  Decls.variable_exists id || Global.exists_objlabel (Label.of_id id)
 
 let check_exists id =
   if exists_name id then alreadydeclared (Id.print id ++ str " already exists")
@@ -95,7 +94,7 @@ let cache_constant ((sp,kn), obj) =
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
   let cst = Global.lookup_constant kn' in
   add_section_constant ~poly:(Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
-  add_constant_kind (Constant.make1 kn) obj.cst_kind
+  Decls.add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharge_constant ((sp, kn), obj) =
   let con = Constant.make1 kn in
@@ -141,7 +140,7 @@ let register_constant kn kind local =
   update_tables kn
 
 let register_side_effect (c, role) =
-  let () = register_constant c (IsProof Theorem) ImportDefaultBehavior in
+  let () = register_constant c Decls.(IsProof Theorem) ImportDefaultBehavior in
   match role with
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> !declare_scheme kind [|ind,c|]
@@ -294,27 +293,27 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) id (cd, kind
   kn, eff
 
 let declare_definition
-  ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = ImportDefaultBehavior)
+  ?(opaque=false) ?(kind=Decls.Definition) ?(local = ImportDefaultBehavior)
   id ?types (body,univs) =
   let cb =
     definition_entry ?types ~univs ~opaque body
   in
     declare_constant ~local id
-      (DefinitionEntry cb, Decl_kinds.IsDefinition kind)
+      (DefinitionEntry cb, Decls.IsDefinition kind)
 
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
-type variable_declaration = DirPath.t * section_variable_entry * logical_kind
+type variable_declaration = DirPath.t * section_variable_entry * Decls.logical_kind
 
 let cache_variable ((sp,_),o) =
   match o with
   | Inl ctx -> Global.push_context_set false ctx
   | Inr (id,(path,d,kind)) ->
   (* Constr raisonne sur les noms courts *)
-  if variable_exists id then
+  if Decls.variable_exists id then
     alreadydeclared (Id.print id ++ str " already exists");
 
   let impl,opaque,poly,univs = match d with (* Fails if not well-typed *)
@@ -349,12 +348,12 @@ let cache_variable ((sp,_),o) =
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable ~name:id ~kind:impl ~poly univs;
-  add_variable_data id {path;opaque;univs;poly;kind}
+  Decls.(add_variable_data id {path;opaque;univs;poly;kind})
 
 let discharge_variable (_,o) = match o with
   | Inr (id,_) ->
-    if variable_polymorphic id then None
-    else Some (Inl (variable_context id))
+    if Decls.variable_polymorphic id then None
+    else Some (Inl (Decls.variable_context id))
   | Inl _ -> Some o
 
 type variable_obj =
@@ -491,10 +490,9 @@ let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (ter
   let term = Vars.subst_instance_constr u term in
   let types = Vars.subst_instance_constr u types in
   let entry = definition_entry ~types ~univs term in
-  let cst = declare_constant id (DefinitionEntry entry, IsDefinition StructureComponent) in
+  let cst = declare_constant id (DefinitionEntry entry, Decls.(IsDefinition StructureComponent)) in
   let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
   declare_primitive_projection p cst
-
 
 let declare_projections univs mind =
   let env = Global.env () in

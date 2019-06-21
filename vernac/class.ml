@@ -21,7 +21,6 @@ open Environ
 open Classops
 open Declare
 open Globnames
-open Decl_kinds
 open Libobject
 
 let strength_min l = if List.mem `LOCAL l then `LOCAL else `GLOBAL
@@ -222,7 +221,7 @@ let build_id_coercion idf_opt source poly =
       (definition_entry ~types:typ_f ~univs
 	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
-  let decl = (constr_entry, IsDefinition IdentityCoercion) in
+  let decl = (constr_entry, Decls.(IsDefinition IdentityCoercion)) in
   let kn = declare_constant idf decl in
   ConstRef kn
 

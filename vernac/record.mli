@@ -22,7 +22,7 @@ type projection_flags = {
 val declare_projections :
   inductive ->
   Entries.universes_entry ->
-  ?kind:Decl_kinds.definition_object_kind ->
+  ?kind:Decls.definition_object_kind ->
   Id.t ->
   projection_flags list ->
   Impargs.manual_implicits list ->

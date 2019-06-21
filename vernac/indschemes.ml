@@ -24,7 +24,6 @@ open Declarations
 open Term
 open Constr
 open Inductive
-open Decl_kinds
 open Indrec
 open Declare
 open Libnames
@@ -114,7 +113,7 @@ let define ~poly id sigma c t =
         proof_entry_inline_code = false;
         proof_entry_feedback = None;
       },
-      Decl_kinds.IsDefinition Scheme) in
+      Decls.(IsDefinition Scheme)) in
   definition_message id;
   kn
 

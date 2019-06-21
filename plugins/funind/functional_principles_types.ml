@@ -371,7 +371,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
           Declare.declare_constant
             name
             (Declare.DefinitionEntry ce,
-             Decl_kinds.IsDefinition (Decl_kinds.Scheme))
+             Decls.(IsDefinition Scheme))
         );
         Declare.definition_message name;
         names := name :: !names
@@ -387,7 +387,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   let uctx = Evd.evar_universe_context sigma in
-  save new_princ_name entry ~hook uctx (DeclareDef.Global Declare.ImportDefaultBehavior) Decl_kinds.(Proof Theorem)
+  save new_princ_name entry ~hook uctx (DeclareDef.Global Declare.ImportDefaultBehavior) Decls.(Proof Theorem)
   with e when CErrors.noncritical e ->
     raise (Defining_principle e)
 
@@ -638,7 +638,7 @@ let build_scheme fas =
        ignore
          (Declare.declare_constant
             princ_id
-            (Declare.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
+            (Declare.DefinitionEntry def_entry,Decls.(IsProof Theorem)));
        Declare.definition_message princ_id
     )
     fas

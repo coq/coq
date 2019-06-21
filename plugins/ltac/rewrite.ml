@@ -1901,8 +1901,8 @@ let declare_projection n instance_id r =
   let cst = 
     Declare.definition_entry ~types:typ ~univs term
   in
-    ignore(Declare.declare_constant n 
-           (Declare.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
+    ignore(Declare.declare_constant n
+           (Declare.DefinitionEntry cst, Decls.(IsDefinition Definition)))
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
@@ -1981,7 +1981,7 @@ let add_morphism_as_parameter atts m n : unit =
   let cst = Declare.declare_constant instance_id
       (Declare.ParameterEntry
          (None,(instance,uctx),None),
-       Decl_kinds.IsAssumption Decl_kinds.Logical)
+       Decls.(IsAssumption Logical))
   in
   Classes.add_instance (Classes.mk_instance
                   (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global (ConstRef cst));
@@ -1995,7 +1995,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
   let poly = atts.polymorphic in
-  let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
+  let kind = Decls.(DefinitionBody Instance) in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
     | Globnames.ConstRef cst ->

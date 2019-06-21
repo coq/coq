@@ -276,11 +276,11 @@ type nonrec vernac_expr =
   | VernacDeclareCustomEntry of string
 
   (* Gallina *)
-  | VernacDefinition of (discharge * Decl_kinds.definition_object_kind) * name_decl * definition_expr
-  | VernacStartTheoremProof of Decl_kinds.theorem_kind * proof_expr list
+  | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr
+  | VernacStartTheoremProof of Decls.theorem_kind * proof_expr list
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of (discharge * Decl_kinds.assumption_object_kind) *
+  | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of vernac_cumulative option * Decl_kinds.private_flag * inductive_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of discharge * (fixpoint_expr * decl_notation list) list

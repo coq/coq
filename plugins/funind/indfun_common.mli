@@ -48,7 +48,7 @@ val save
   -> ?hook:DeclareDef.Hook.t
   -> UState.t
   -> DeclareDef.locality
-  -> Decl_kinds.goal_object_kind
+  -> Decls.goal_object_kind
   -> unit
 
 (* [with_full_print f a] applies [f] to [a] in full printing environment.

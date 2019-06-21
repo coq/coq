@@ -22,7 +22,6 @@ open Entries
 open Nameops
 open Globnames
 open Decls
-open Decl_kinds
 open Declare
 open Pretyping
 open Termops
@@ -75,7 +74,7 @@ module Info = struct
     (* This could be improved and the CEphemeron removed *)
     ; other_thms : Recthm.t list
     ; scope : DeclareDef.locality
-    ; kind : Decl_kinds.goal_object_kind
+    ; kind : Decls.goal_object_kind
     }
 
   let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Proof Lemma) () =
@@ -497,7 +496,7 @@ let finish_proved env sigma idopt po info =
     let fix_exn = Future.fix_exn_of const.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
-      let k = Kindops.logical_kind_of_goal_kind kind in
+      let k = Decls.logical_kind_of_goal_kind kind in
       let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
       let open DeclareDef in
       let r = match scope with
@@ -543,7 +542,7 @@ let finish_derived ~f ~name ~idopt ~entries =
   (* The opacity of [f_def] is adjusted to be [false], as it
      must. Then [f] is declared in the global environment. *)
   let f_def = { f_def with Proof_global.proof_entry_opaque = false } in
-  let f_def = Declare.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
+  let f_def = Declare.DefinitionEntry f_def , IsDefinition Definition in
   let f_kn = Declare.declare_constant f f_def in
   let f_kn_term = mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
@@ -568,14 +567,13 @@ let finish_derived ~f ~name ~idopt ~entries =
   in
   let lemma_def =
     Declare.DefinitionEntry lemma_def ,
-    Decl_kinds.(IsProof Proposition)
+    Decls.(IsProof Proposition)
   in
   let _ : Names.Constant.t = Declare.declare_constant name lemma_def in
   ()
 
 let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
 
-  let open Decl_kinds in
   let obls = ref 1 in
   let kind = match kind with
     | DefinitionBody d -> IsDefinition d

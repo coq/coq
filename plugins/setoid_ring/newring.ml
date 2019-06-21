@@ -29,7 +29,6 @@ open Tacinterp
 open Libobject
 open Printer
 open Declare
-open Decl_kinds
 open Entries
 open Newring_ast
 open Proofview.Notations
@@ -158,7 +157,7 @@ let decl_constant na univs c =
   let univs = Monomorphic_entry Univ.ContextSet.empty in
   mkConst(declare_constant (Id.of_string na) 
             (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c),
-	     IsProof Lemma))
+             Decls.(IsProof Lemma)))
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =

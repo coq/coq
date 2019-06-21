@@ -50,7 +50,7 @@ val add_definition
   -> ?implicits:Impargs.manual_implicits
   -> poly:bool
   -> ?scope:DeclareDef.locality
-  -> ?kind:Decl_kinds.definition_object_kind
+  -> ?kind:Decls.definition_object_kind
   -> ?tactic:unit Proofview.tactic
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t
@@ -66,7 +66,7 @@ val add_mutual_definitions
   -> ?tactic:unit Proofview.tactic
   -> poly:bool
   -> ?scope:DeclareDef.locality
-  -> ?kind:Decl_kinds.definition_object_kind
+  -> ?kind:Decls.definition_object_kind
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t -> ?opaque:bool
   -> DeclareObl.notations
