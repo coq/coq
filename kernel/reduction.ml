@@ -713,6 +713,7 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
+  let cstrnts = ref empty_constraint in
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_clos_infos ~evars reds env in
   let infos = {
@@ -721,7 +722,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
+  ccnv ~cstrnts cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs, !cstrnts
 
 
 let check_eq univs u u' =
@@ -821,8 +822,8 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
   in
     if b then cstrnts
     else
-      let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
-      empty_constraint
+      let (_, cstrnts) = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
+      cstrnts
 
 (* Profiling *)
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None), universes env) =
@@ -837,7 +838,7 @@ let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
-  let (s, _) =
+  let ((s, _), _) =
     clos_gen_conv reds cv_pb l2r evars env univs t1 t2
   in s
 
@@ -849,7 +850,7 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
     if b then cstrs
     else
       let univs = ((univs, Univ.Constraint.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
+      let (((_,cstrs), _), _) = clos_gen_conv reds cv_pb l2r evars env univs t1 t2 in
         cstrs
 
 (* Profiling *)
