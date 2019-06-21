@@ -132,7 +132,7 @@ let build_constant_by_tactic ~name ctx sign ~poly typ tac =
     let reraise = CErrors.push reraise in
     iraise reraise
 
-let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
+let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in

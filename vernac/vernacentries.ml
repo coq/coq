@@ -574,7 +574,7 @@ let start_proof_and_print ~program_mode ~poly ?hook ~scope ~kind l =
                   Evarutil.is_ground_term sigma concl)
           then raise Exit;
           let c, _, ctx =
-            Pfedit.build_by_tactic env (Evd.evar_universe_context sigma) concl tac
+            Pfedit.build_by_tactic ~poly:false env (Evd.evar_universe_context sigma) concl tac
           in Evd.set_universe_context sigma ctx, EConstr.of_constr c
         with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
           user_err Pp.(str "The statement obligations could not be resolved \

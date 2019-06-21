@@ -66,9 +66,14 @@ val build_constant_by_tactic
   -> unit Proofview.tactic
   -> Evd.side_effects Proof_global.proof_entry * bool * UState.t
 
-val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:bool ->
-  EConstr.types -> unit Proofview.tactic ->
-  constr * bool * UState.t
+val build_by_tactic
+  :  ?side_eff:bool
+  -> env
+  -> UState.t
+  -> poly:bool
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> constr * bool * UState.t
 
 val refine_by_tactic
   :  name:Id.t
