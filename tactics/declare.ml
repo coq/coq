@@ -264,23 +264,23 @@ let declare_definition ?(internal=UserIndividualRequest)
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * bool (* polymorphic *) * bool (* Implicit status *)
+  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 let cache_variable ((sp,_),o) =
   match o with
   | Inl ctx -> Global.push_context_set false ctx
-  | Inr (id,(p,d,mk)) ->
+  | Inr (id,(path,d,kind)) ->
   (* Constr raisonne sur les noms courts *)
   if variable_exists id then
     alreadydeclared (Id.print id ++ str " already exists");
 
-  let impl,opaq,poly,ctx = match d with (* Fails if not well-typed *)
-    | SectionLocalAssum ((ty,ctx),poly,impl) ->
-      let () = Global.push_named_assum ((id,ty,poly),ctx) in
+  let impl,opaque,poly,univs = match d with (* Fails if not well-typed *)
+    | SectionLocalAssum {typ;univs;poly;impl} ->
+      let () = Global.push_named_assum ((id,typ,poly),univs) in
       let impl = if impl then Implicit else Explicit in
-        impl, true, poly, ctx
+        impl, true, poly, univs
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
@@ -307,8 +307,8 @@ let cache_variable ((sp,_),o) =
       Explicit, de.proof_entry_opaque,
       poly, univs in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
-  add_section_variable ~name:id ~kind:impl ~poly ctx;
-  add_variable_data id (p,opaq,ctx,poly,mk)
+  add_section_variable ~name:id ~kind:impl ~poly univs;
+  add_variable_data id {path;opaque;univs;poly;kind}
 
 let discharge_variable (_,o) = match o with
   | Inr (id,_) ->

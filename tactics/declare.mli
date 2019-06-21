@@ -24,7 +24,7 @@ open Decl_kinds
 
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * bool (* polymorphic *) * bool (* Implicit status *)
+  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
 type 'a constant_entry =
   | DefinitionEntry of 'a Proof_global.proof_entry

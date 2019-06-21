@@ -43,15 +43,15 @@ let should_axiom_into_instance = function
     true
   | Definitional | Logical | Conjectural -> !axiom_into_instance
 
-let declare_assumption is_coe ~poly ~scope ~kind (c,ctx) pl imps impl nl {CAst.v=ident} =
+let declare_assumption is_coe ~poly ~scope ~kind typ univs pl imps impl nl {CAst.v=ident} =
 let open DeclareDef in
 match scope with
 | Discharge ->
-  let ctx = match ctx with
-    | Monomorphic_entry ctx -> ctx
-    | Polymorphic_entry (_, ctx) -> Univ.ContextSet.of_context ctx
+  let univs = match univs with
+    | Monomorphic_entry univs -> univs
+    | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
   in
-  let decl = (Lib.cwd(), SectionLocalAssum ((c,ctx),poly,impl), IsAssumption kind) in
+  let decl = (Lib.cwd(), SectionLocalAssum {typ;univs;poly;impl}, IsAssumption kind) in
   let _ = declare_variable ident decl in
   let () = assumption_message ident in
   let r = VarRef ident in
@@ -69,7 +69,7 @@ match scope with
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let decl = (Declare.ParameterEntry (None,(c,ctx),inl), IsAssumption kind) in
+  let decl = (Declare.ParameterEntry (None,(typ,univs),inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -80,8 +80,8 @@ match scope with
   let () = if do_instance then Classes.declare_instance env sigma None false gr in
   let local = match local with ImportNeedQualified -> true | ImportDefaultBehavior -> false in
   let () = if is_coe then Class.try_add_new_coercion gr ~local ~poly in
-  let inst = match ctx with
-    | Polymorphic_entry (_, ctx) -> Univ.UContext.instance ctx
+  let inst = match univs with
+    | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
     | Monomorphic_entry _ -> Univ.Instance.empty
   in
     (gr,inst,Lib.is_modtype_strict ())
@@ -97,11 +97,11 @@ let next_uctx =
   | Polymorphic_entry _ as uctx -> uctx
   | Monomorphic_entry _ -> empty_uctx
 
-let declare_assumptions idl is_coe ~scope ~poly ~kind (c,uctx) pl imps nl =
+let declare_assumptions idl is_coe ~scope ~poly ~kind typ uctx pl imps nl =
   let refs, status, _ =
     List.fold_left (fun (refs,status,uctx) id ->
       let ref',u',status' =
-        declare_assumption is_coe ~scope ~poly ~kind (c,uctx) pl imps false nl id in
+        declare_assumption is_coe ~scope ~poly ~kind typ uctx pl imps false nl id in
       (ref',u')::refs, status' && status, next_uctx uctx)
       ([],true,uctx) idl
   in
@@ -178,9 +178,9 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   let sigma = Evd.restrict_universe_context sigma uvars in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
   let ubinders = Evd.universe_binders sigma in
-  pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),t,imps) ->
-      let t = replace_vars subst t in
-      let refs, status' = declare_assumptions idl is_coe ~poly ~scope ~kind (t,uctx) ubinders imps nl in
+  pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),typ,imps) ->
+      let typ = replace_vars subst typ in
+      let refs, status' = declare_assumptions idl is_coe ~poly ~scope ~kind typ uctx ubinders imps nl in
       let subst' = List.map2
           (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
@@ -294,7 +294,7 @@ let context ~poly l =
         if Lib.sections_are_opened () then DeclareDef.Discharge else DeclareDef.Global ImportDefaultBehavior in
       let nstatus = match b with
       | None ->
-        pi3 (declare_assumption false ~scope ~poly ~kind:Context (t, univs) UnivNames.empty_binders [] impl
+        pi3 (declare_assumption false ~scope ~poly ~kind:Context t univs UnivNames.empty_binders [] impl
                Declaremods.NoInline (CAst.make id))
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in

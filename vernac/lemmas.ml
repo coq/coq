@@ -266,7 +266,7 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
               Univ.ContextSet.of_context univs
             | Monomorphic_entry univs -> univs
           in
-          let c = SectionLocalAssum ((t_i, univs),poly,impl) in
+          let c = SectionLocalAssum {typ=t_i;univs;poly;impl} in
           let _ = declare_variable name (Lib.cwd(),c,k) in
           (VarRef name,impargs)
       | Global local ->

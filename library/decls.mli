@@ -18,8 +18,13 @@ open Decl_kinds
 
 (** Registration and access to the table of variable *)
 
-type variable_data =
-  DirPath.t * bool (* opacity *) * Univ.ContextSet.t * bool (* poly *) * logical_kind
+type variable_data = {
+  path:DirPath.t;
+  opaque:bool;
+  univs:Univ.ContextSet.t;
+  poly:bool;
+  kind:logical_kind;
+}
 
 val add_variable_data : variable -> variable_data -> unit
 val variable_path : variable -> DirPath.t

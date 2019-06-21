@@ -31,7 +31,8 @@ val declare_assumption
   -> poly:bool
   -> scope:DeclareDef.locality
   -> kind:assumption_object_kind
-  -> Constr.types Entries.in_universes_entry
+  -> Constr.types
+  -> Entries.universes_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
   -> bool (** implicit *)

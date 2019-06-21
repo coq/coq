@@ -411,8 +411,12 @@ type abstr_info = {
 type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
-  | Variable of (Names.Id.t * Decl_kinds.binding_kind * bool * Univ.ContextSet.t)
-  (** (name, kind, poly, univs) *)
+  | Variable of {
+      id:Names.Id.t;
+      kind:Decl_kinds.binding_kind;
+      poly:bool;
+      univs:Univ.ContextSet.t;
+    }
   | Context of Univ.ContextSet.t
 
 let sectab =
@@ -424,16 +428,16 @@ let add_section () =
                 (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
 let check_same_poly p vars =
-  let pred = function Context _ -> p = false | Variable (_, _, poly, _) -> p != poly in
+  let pred = function Context _ -> p = false | Variable {poly} -> p != poly in
   if List.exists pred vars then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
 
-let add_section_variable ~name ~kind ~poly ctx =
+let add_section_variable ~name ~kind ~poly univs =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | (vars,repl,abs)::sl ->
        List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
-       sectab := (Variable (name,kind,poly,ctx)::vars,repl,abs)::sl
+       sectab := (Variable {id=name;kind;poly;univs}::vars,repl,abs)::sl
 
 let add_section_context ctx =
   match !sectab with
@@ -448,7 +452,7 @@ let is_polymorphic_univ u =
     let open Univ in
     List.iter (fun (vars,_,_) ->
         List.iter (function
-            | Variable (_,_,poly,(univs,_)) ->
+            | Variable {poly;univs=(univs,_)} ->
               if LSet.mem u univs then raise (PolyFound poly)
             | Context (univs,_) ->
               if LSet.mem u univs then raise (PolyFound true)
@@ -459,12 +463,12 @@ let is_polymorphic_univ u =
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id;kind;poly;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-      (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
-    | (Variable (_,_,poly,ctx)::idl,hyps) ->
+      (decl,kind) :: l, if poly then Univ.ContextSet.union r univs else r
+    | (Variable {poly;univs}::idl,hyps) ->
         let l, r = aux (idl,hyps) in
-          l, if poly then Univ.ContextSet.union r ctx else r
+          l, if poly then Univ.ContextSet.union r univs else r
     | (Context ctx :: idl, hyps) ->
        let l, r = aux (idl, hyps) in
        l, Univ.ContextSet.union r ctx
@@ -543,7 +547,7 @@ let variable_section_segment_of_reference gr =
 let section_instance = function
   | VarRef id ->
      let eq = function
-       | Variable (id',_,_,_) -> Names.Id.equal id id'
+       | Variable {id=id'} -> Names.Id.equal id id'
        | Context _ -> false
      in
      if List.exists eq (pi1 (List.hd !sectab))
