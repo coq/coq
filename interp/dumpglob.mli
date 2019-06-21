@@ -45,3 +45,6 @@ val dump_constraint : Names.lname -> bool -> string -> unit
 val dump_string : string -> unit
 
 val type_of_global_ref : Names.GlobRef.t -> string
+
+(** Registration of constant information *)
+val add_constant_kind : Names.Constant.t -> Decls.logical_kind -> unit

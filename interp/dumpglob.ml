@@ -104,13 +104,20 @@ let type_of_logical_kind = function
       | Corollary -> "thm")
   | IsPrimitive -> "prim"
 
+
+(** Data associated to global parameters and constants *)
+
+let csttab = Summary.ref (Names.Cmap.empty : logical_kind Names.Cmap.t) ~name:"CONSTANT"
+let add_constant_kind kn k = csttab := Names.Cmap.add kn k !csttab
+let constant_kind kn = Names.Cmap.find kn !csttab
+
 let type_of_global_ref gr =
   if Typeclasses.is_class gr then
     "class"
   else
     match gr with
     | Globnames.ConstRef cst ->
-	type_of_logical_kind (Decls.constant_kind cst)
+        type_of_logical_kind (constant_kind cst)
     | Globnames.VarRef v ->
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
     | Globnames.IndRef ind ->

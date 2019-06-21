@@ -53,7 +53,7 @@ let load_constant i ((sp,kn), obj) =
     alreadydeclared (Id.print (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
-  Decls.add_constant_kind con obj.cst_kind
+  Dumpglob.add_constant_kind con obj.cst_kind
 
 let cooking_info segment =
   let modlist = replacement_context () in
@@ -94,7 +94,7 @@ let cache_constant ((sp,kn), obj) =
   Nametab.push (Nametab.Until 1) sp (ConstRef (Constant.make1 kn));
   let cst = Global.lookup_constant kn' in
   add_section_constant ~poly:(Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
-  Decls.add_constant_kind (Constant.make1 kn) obj.cst_kind
+  Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharge_constant ((sp, kn), obj) =
   let con = Constant.make1 kn in

@@ -92,9 +92,3 @@ val variable_opacity : variable -> bool
 val variable_context : variable -> Univ.ContextSet.t
 val variable_polymorphic : variable -> bool
 val variable_exists : variable -> bool
-
-(** Registration and access to the table of constants *)
-
-(* Only used in dumpglob *)
-val add_constant_kind : Constant.t -> logical_kind -> unit
-val constant_kind : Constant.t -> logical_kind

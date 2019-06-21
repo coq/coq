@@ -92,11 +92,3 @@ let variable_secpath id =
   make_qualid dir id
 
 let variable_exists id = Id.Map.mem id !vartab
-
-(** Datas associated to global parameters and constants *)
-
-let csttab = Summary.ref (Cmap.empty : logical_kind Cmap.t) ~name:"CONSTANT"
-
-let add_constant_kind kn k = csttab := Cmap.add kn k !csttab
-
-let constant_kind kn = Cmap.find kn !csttab
