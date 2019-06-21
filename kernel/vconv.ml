@@ -193,7 +193,7 @@ let vm_conv_gen cv_pb env univs t1 t2 =
   try
     let v1 = val_of_constr env t1 in
     let v2 = val_of_constr env t2 in
-    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
+    fst (conv_val env cv_pb (nb_rel env) v1 v2 univs), Stages.empty_constraint
   with Not_found | Invalid_argument _ ->
     warn_bytecode_compiler_failed ();
     Reduction.generic_conv cv_pb ~l2r:false (fun _ -> None)
@@ -207,5 +207,5 @@ let vm_conv cv_pb env t1 t2 =
   in
   if b then cstrnts else
     let univs = (univs, checked_universes) in
-    let _ = vm_conv_gen cv_pb env univs t1 t2 in
-    Stages.empty_constraint
+    let _, cstrnts = vm_conv_gen cv_pb env univs t1 t2 in
+    cstrnts

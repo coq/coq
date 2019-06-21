@@ -219,7 +219,7 @@ type 'a universe_compare =
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b Stages.constrained
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 
@@ -838,9 +838,9 @@ let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
-  let ((s, _), _) =
+  let ((s, _), cstrnts) =
     clos_gen_conv reds cv_pb l2r evars env univs t1 t2
-  in s
+  in s, cstrnts
 
 let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
   let b, cstrs =

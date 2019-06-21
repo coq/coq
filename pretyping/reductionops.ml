@@ -1174,7 +1174,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
       | None ->
         let x = EConstr.Unsafe.to_constr x in
         let y = EConstr.Unsafe.to_constr y in
-        let sigma' =
+        let sigma', _ =
           conv_fun pb ~l2r:false sigma ts
             env (sigma, sigma_univ_state) x y in
         Some sigma'

@@ -162,7 +162,7 @@ let native_conv_gen pb sigma env univs t1 t2 =
   let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
   if !Flags.debug then Feedback.msg_debug (Pp.str time_info);
   (* TODO change 0 when we can have de Bruijn *)
-  fst (conv_val env pb 0 !rt1 !rt2 univs)
+  fst (conv_val env pb 0 !rt1 !rt2 univs), Stages.empty_constraint
 
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
@@ -175,5 +175,5 @@ let native_conv cv_pb sigma env t1 t2 =
     let univs = (univs, checked_universes) in
     let t1 = Term.it_mkLambda_or_LetIn t1 (Environ.rel_context env) in
     let t2 = Term.it_mkLambda_or_LetIn t2 (Environ.rel_context env) in
-    let _ = native_conv_gen cv_pb sigma env univs t1 t2 in
-    Stages.empty_constraint
+    let _, cstrnts = native_conv_gen cv_pb sigma env univs t1 t2 in
+    cstrnts
