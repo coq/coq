@@ -53,7 +53,7 @@ type program_info =
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
-  ; prg_sign : named_context_val }
+  }
 
 (* Saving an obligation *)
 

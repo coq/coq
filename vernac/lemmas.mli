@@ -80,7 +80,6 @@ val start_lemma
   :  name:Id.t
   -> poly:bool
   -> ?udecl:UState.universe_decl
-  -> ?sign:Environ.named_context_val
   -> ?info:Info.t
   -> Evd.evar_map
   -> EConstr.types
@@ -121,11 +120,6 @@ val start_lemma_com
   -> ?hook:DeclareDef.Hook.t
   -> Vernacexpr.proof_expr list
   -> t
-
-(* Prepare global named context for proof session: remove proofs of
-   opaque section definitions and remove vm-compiled code *)
-
-val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {4 Saving proofs} *)
 

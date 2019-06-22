@@ -298,7 +298,7 @@ let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 let add_hint local prg cst =
   Hints.add_hints ~local [Id.to_string prg.prg_name] (unfold_entry cst)
 
-let init_prog_info ?(opaque = false) ?hook sign n udecl b t ctx deps fixkind
+let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
                    notations obls impls ~scope ~poly ~kind reduce =
   let obls', b =
     match b with
@@ -335,7 +335,7 @@ let init_prog_info ?(opaque = false) ?hook sign n udecl b t ctx deps fixkind
     ; prg_reduce = reduce
     ; prg_hook = hook
     ; prg_opaque = opaque
-    ; prg_sign = sign }
+    }
 
 let map_cardinal m =
   let i = ref 0 in
@@ -495,7 +495,7 @@ let rec solve_obligation prg num tac =
   let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
   let info = Lemmas.Info.make ~hook ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
-  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
+  let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma
@@ -634,9 +634,8 @@ let show_term n =
 let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
                    ?(implicits=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
-  let sign = Lemmas.initialize_named_context_for_proof () in
   let info = Id.print name ++ str " has type-checked" in
-  let prg = init_prog_info sign ~opaque name univdecl term t ctx [] None [] obls implicits ~poly ~scope ~kind reduce ?hook in
+  let prg = init_prog_info ~opaque name univdecl term t ctx [] None [] obls implicits ~poly ~scope ~kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -654,11 +653,10 @@ let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
-  let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info sign ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
        notations obls imps ~poly ~scope ~kind reduce ?hook
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
