@@ -15,6 +15,7 @@ could imagine extending it.
 
 # pylint: disable=too-few-public-methods
 
+import os
 import re
 from itertools import chain
 from collections import defaultdict
@@ -42,7 +43,7 @@ from .notations.parsing import ParseError
 from .notations.sphinx import sphinxify
 from .notations.plain import stringify_with_ellipses
 
-PARSE_ERROR = """Parse error in notation!
+PARSE_ERROR = """{}:{} Parse error in notation!
 Offending notation: {}
 Error message: {}"""
 
@@ -53,14 +54,14 @@ def notation_to_sphinx(notation, source, line, rawtext=None):
         node.source, node.line = source, line
         return node
     except ParseError as e:
-        raise ExtensionError(PARSE_ERROR.format(notation, e.msg)) from e
+        raise ExtensionError(PARSE_ERROR.format(os.path.basename(source), line, notation, e.msg)) from e
 
 def notation_to_string(notation):
     """Parse notation and format it as a string with ellipses."""
     try:
         return stringify_with_ellipses(notation)
     except ParseError as e:
-        raise ExtensionError(PARSE_ERROR.format(notation, e.msg)) from e
+        raise ExtensionError(PARSE_ERROR.format(os.path.basename(source), line, notation, e.msg)) from e
 
 def highlight_using_coqdoc(sentence):
     """Lex sentence using coqdoc, and yield inline nodes for each token"""
@@ -426,7 +427,7 @@ class ProductionObject(CoqObject):
     def _render_signature(self, signature, signode):
         raise NotImplementedError(self)
 
-    SIG_ERROR = ("Invalid syntax in ``.. prodn::`` directive"
+    SIG_ERROR = ("{}: Invalid syntax in ``.. prodn::`` directive"
                  + "\nExpected ``name ::= ...`` or ``name += ...``"
                  + " (e.g. ``pattern += constr:(@ident)``)")
 
@@ -434,11 +435,13 @@ class ProductionObject(CoqObject):
         nsplits = 2
         parts = signature.split(maxsplit=nsplits)
         if len(parts) != 3:
-            raise ExtensionError(ProductionObject.SIG_ERROR)
+            loc = os.path.basename(get_node_location(signode))
+            raise ExtensionError(ProductionObject.SIG_ERROR.format(loc))
 
         lhs, op, rhs = (part.strip() for part in parts)
         if op not in ["::=", "+="]:
-            raise ExtensionError(ProductionObject.SIG_ERROR)
+            loc = os.path.basename(get_node_location(signode))
+            raise ExtensionError(ProductionObject.SIG_ERROR.format(loc))
 
         self._render_annotation(signode)
 
@@ -681,7 +684,7 @@ class ExampleDirective(BaseAdmonition):
 class PreambleDirective(Directive):
     r"""A reST directive to include a TeX file.
 
-    Mostly useful to let MathJax know about `\def`s and `\newcommand`s.  The
+    Mostly useful to let MathJax know about `\def`\s and `\newcommand`\s.  The
     contents of the TeX file are wrapped in a math environment, as MathJax
     doesn't process LaTeX definitions otherwise.
 
@@ -850,12 +853,12 @@ class CoqtopBlocksTransform(Transform):
 
         unexpected_options = list(options - {'all', 'none', 'in', 'out'})
         if unexpected_options:
-            loc = get_node_location(node)
+            loc = os.path.basename(get_node_location(node))
             raise ExtensionError("{}: Unexpected options for .. coqtop:: {}".format(loc,unexpected_options))
 
         # Display options
         if len(options) != 1:
-            loc = get_node_location(node)
+            loc = os.path.basename(get_node_location(node))
             raise ExtensionError("{}: Exactly one display option must be passed to .. coqtop::".format(loc))
 
         opt_all = 'all' in options
