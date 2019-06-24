@@ -25,7 +25,6 @@ open Reductionops
 open Inductiveops
 open Tacmach.New
 open Clenv
-open Declare
 open Tacticals.New
 open Tactics
 open Decl_kinds
@@ -236,8 +235,8 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
 let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
   let univs = Evd.univ_entry ~poly sigma in
-  let entry = definition_entry ~univs invProof in
-  let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
+  let entry = Declare.definition_entry ~univs invProof in
+  let _ = Declare.declare_constant name (Declare.DefinitionEntry entry, IsProof Lemma) in
   ()
 
 (* inv_op = Inv (derives de complete inv. lemma)
