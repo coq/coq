@@ -40,11 +40,6 @@ val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
 type constant_declaration = Evd.side_effects constant_entry * logical_kind
 
-type internal_flag =
-  | UserAutomaticRequest
-  | InternalTacticRequest
-  | UserIndividualRequest
-
 (* Default definition entries, transparent with no secctx or proj information *)
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->

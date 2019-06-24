@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Declare
 
 (** This module provides support for registering inductive scheme builders,
    declaring schemes and generating schemes on demand *)
@@ -20,6 +19,11 @@ open Declare
 type mutual
 type individual
 type 'a scheme_kind
+
+type internal_flag =
+  | UserAutomaticRequest
+  | InternalTacticRequest
+  | UserIndividualRequest
 
 type mutual_scheme_object_function =
   internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Evd.side_effects

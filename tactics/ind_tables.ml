@@ -28,10 +28,16 @@ open Pp
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
+(** flag for internal message display *)
+type internal_flag =
+  | UserAutomaticRequest (* kernel action, a message is displayed *)
+  | InternalTacticRequest  (* kernel action, no message is displayed *)
+  | UserIndividualRequest   (* user action, a message is displayed *)
+
 type mutual_scheme_object_function =
-  Declare.internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Evd.side_effects
+  internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Evd.side_effects
 type individual_scheme_object_function =
-  Declare.internal_flag -> inductive -> constr Evd.in_evar_universe_context * Evd.side_effects
+  internal_flag -> inductive -> constr Evd.in_evar_universe_context * Evd.side_effects
 
 type 'a scheme_kind = string
 
@@ -110,8 +116,8 @@ let is_visible_name id =
 
 let compute_name internal id =
   match internal with
-  | Declare.UserAutomaticRequest | Declare.UserIndividualRequest -> id
-  | Declare.InternalTacticRequest ->
+  | UserAutomaticRequest | UserIndividualRequest -> id
+  | InternalTacticRequest ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
 let define internal role id c poly univs =
@@ -132,7 +138,7 @@ let define internal role id c poly univs =
   } in
   let kn, eff = Declare.declare_private_constant ~role id (Declare.DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
-    | Declare.InternalTacticRequest -> ()
+    | InternalTacticRequest -> ()
     | _-> Declare.definition_message id
   in
   kn, eff
@@ -180,7 +186,7 @@ let find_scheme_on_env_too kind ind =
   let s = String.Map.find kind (Indmap.find ind !scheme_map) in
   s, Evd.empty_side_effects
 
-let find_scheme ?(mode=Declare.InternalTacticRequest) kind (mind,i as ind) =
+let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
   try find_scheme_on_env_too kind ind
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with

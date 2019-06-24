@@ -27,12 +27,6 @@ open Cooking
 open Decls
 open Decl_kinds
 
-(** flag for internal message display *)
-type internal_flag =
-  | UserAutomaticRequest (* kernel action, a message is displayed *)
-  | InternalTacticRequest  (* kernel action, no message is displayed *)
-  | UserIndividualRequest   (* user action, a message is displayed *)
-
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** Declaration of constants and parameters *)
