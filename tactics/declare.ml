@@ -193,7 +193,7 @@ let get_roles export eff =
   in
   List.map map export
 
-let define_constant ~side_effect ?(export_seff=false) id cd =
+let define_constant ~side_effect id cd =
   let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let is_poly de = match de.proof_entry_universes with
@@ -204,7 +204,6 @@ let define_constant ~side_effect ?(export_seff=false) id cd =
   let export, decl = (* We deal with side effects *)
     match cd with
     | DefinitionEntry de when
-        export_seff ||
         not de.proof_entry_opaque ||
         is_poly de ->
       (* This globally defines the side-effects in the environment. *)
@@ -232,9 +231,9 @@ let define_constant ~side_effect ?(export_seff=false) id cd =
   let kn, eff = Global.add_constant ~side_effect ~in_section id decl in
   kn, eff, export
 
-let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefaultBehavior) id ?(export_seff=false) (cd, kind) =
+let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
   let () = check_exists id in
-  let kn, (), export = define_constant ~side_effect:PureEntry ~export_seff id cd in
+  let kn, (), export = define_constant ~side_effect:PureEntry id cd in
   (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
   let () = register_constant kn kind local in
