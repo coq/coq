@@ -8,6 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Prints info which is either an error or an anomaly and then exits
+    with the appropriate error code. *)
+val fatal_error_exn : exn -> Vernac.State.t * Coqargs.t
+
 (** Definition of custom toplevels.
     [init] is used to do custom command line argument parsing.
     [run] launches a custom toplevel.

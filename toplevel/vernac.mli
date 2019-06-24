@@ -20,6 +20,11 @@ module State : sig
 
 end
 
+
+(** [checknav_simple ctrl] Throws an error if the current command
+    in the AST is a navigation command. *)
+val checknav_simple : Vernacexpr.vernac_control -> unit
+
 (** [process_expr sid cmd] Executes vernac command [cmd]. Callers are
     expected to handle and print errors in form of exceptions, however
     care is taken so the state machine is left in a consistent
@@ -31,3 +36,11 @@ val process_expr : state:State.t -> Vernacexpr.vernac_control -> State.t
     and print errors in form of exceptions. *)
 val load_vernac : echo:bool -> check:bool -> interactive:bool ->
   state:State.t -> string -> State.t
+
+(** [interp_vernac check interactive sid ctrl] Interprets the current
+    command in the AST and this way sets the state given by [sid] to
+    a new state. If [check] is set, the stm will check the execution.
+    If [interactive] is set, the underlying document of the AST [ast]
+    is edited. *)
+val interp_vernac : check:bool -> interactive:bool -> state:State.t ->
+  Vernacexpr.vernac_control -> State.t

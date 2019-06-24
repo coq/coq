@@ -31,15 +31,16 @@ let load_vernacular opts ~state =
       else load_vernac s
     ) state (List.rev opts.load_vernacular_list)
 
+let load_rc_file opts ~state =
+  if opts.load_rcfile then
+    Topfmt.(in_phase ~phase:LoadingRcFile) (fun () -> Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
+  else begin
+    Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
+    state
+  end
+
 let load_init_vernaculars opts ~state =
-  let state =
-    if opts.load_rcfile then
-      Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-          Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
-    else begin
-      Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-      state
-    end in
+  let state = load_rc_file opts ~state in
 
   load_vernacular opts ~state
 
