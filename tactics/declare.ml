@@ -233,7 +233,7 @@ let define_constant ~side_effect id cd =
   let kn, eff = Global.add_constant ~side_effect ~in_section id decl in
   kn, eff, export
 
-let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
+let declare_constant ?(local = ImportDefaultBehavior) id (cd, kind) =
   let () = check_exists id in
   let kn, (), export = define_constant ~side_effect:PureEntry id cd in
   (* Register the libobjects attached to the constants and its subproofs *)
@@ -241,7 +241,7 @@ let declare_constant ?(internal = UserIndividualRequest) ?(local = ImportDefault
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ?role ?(internal=UserIndividualRequest) ?(local = ImportDefaultBehavior) id (cd, kind) =
+let declare_private_constant ?role ?(local = ImportDefaultBehavior) id (cd, kind) =
   let kn, eff, export = define_constant ~side_effect:EffectEntry id cd in
   let () = assert (List.is_empty export) in
   let () = register_constant kn kind local in
@@ -252,13 +252,13 @@ let declare_private_constant ?role ?(internal=UserIndividualRequest) ?(local = I
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
-let declare_definition ?(internal=UserIndividualRequest)
+let declare_definition
   ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = ImportDefaultBehavior)
   id ?types (body,univs) =
   let cb =
     definition_entry ?types ~univs ~opaque body
   in
-    declare_constant ~internal ~local id
+    declare_constant ~local id
       (DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of section variables and local definitions *)

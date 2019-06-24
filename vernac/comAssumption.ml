@@ -280,7 +280,7 @@ let context ~poly l =
         let entry = Declare.definition_entry ~univs ~types:t b in
         (Declare.DefinitionEntry entry, IsAssumption Logical)
       in
-      let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
+      let cst = Declare.declare_constant id decl in
       let env = Global.env () in
       Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (ConstRef cst);
       status

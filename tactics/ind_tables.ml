@@ -130,7 +130,7 @@ let define internal role id c poly univs =
     proof_entry_inline_code = false;
     proof_entry_feedback = None;
   } in
-  let kn, eff = Declare.declare_private_constant ~role ~internal id (Declare.DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
+  let kn, eff = Declare.declare_private_constant ~role id (Declare.DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
     | Declare.InternalTacticRequest -> ()
     | _-> Declare.definition_message id

@@ -60,13 +60,13 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
   internal specify if the constant has been created by the kernel or by the
   user, and in the former case, if its errors should be silent *)
 val declare_constant :
- ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t
+ ?local:import_status -> Id.t -> constant_declaration -> Constant.t
 
 val declare_private_constant :
-  ?role:Evd.side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
+  ?role:Evd.side_effect_role -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
 val declare_definition :
-  ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
+  ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:import_status -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t
 
