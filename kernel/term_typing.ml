@@ -371,31 +371,12 @@ let translate_local_def env _id centry =
   } in
   let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
   let typ = decl.cook_type in
-  if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
-    match decl.cook_body with
-    | Undef _ -> ()
-    | Primitive _ -> ()
-    | Def _ -> ()
-    | OpaqueDef lc ->
-       let ids_typ = global_vars_set env typ in
-       let ids_def = global_vars_set env (fst (Future.force lc)) in
-       record_aux env ids_typ ids_def
-  end;
   let () = match decl.cook_universes with
   | Monomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c
-  | OpaqueDef o ->
-    let (p, cst) = Future.force o in
-    (** Let definitions are ensured to have no extra constraints coming from
-        the body by virtue of the typing of [Entries.section_def_entry]. *)
-    let () = match cst with
-    | Opaqueproof.PrivateMonomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
-    | Opaqueproof.PrivatePolymorphic (_, ctx) -> assert (Univ.ContextSet.is_empty ctx)
-    in
-    p
-  | Undef _ | Primitive _ -> assert false
+  | Undef _ | Primitive _ | OpaqueDef _ -> assert false
   in
   c, decl.cook_relevance, typ
