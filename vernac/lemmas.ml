@@ -497,9 +497,9 @@ let finish_proved opaque idopt po hook compute_guard =
   let open Proof_global in
   match po with
   | { id; entries=[const]; persistence=locality,poly,kind; universes } ->
-    let is_opaque, export_seff = match opaque with
-      | Transparent -> false, true
-      | Opaque      -> true, false
+    let is_opaque = match opaque with
+      | Transparent -> false
+      | Opaque      -> true
     in
     assert (is_opaque == const.proof_entry_opaque);
     let id = match idopt with
@@ -520,7 +520,7 @@ let finish_proved opaque idopt po hook compute_guard =
           VarRef id
         | Global local ->
           let kn =
-            declare_constant ~export_seff id ~local (DefinitionEntry const, k) in
+            declare_constant id ~local (DefinitionEntry const, k) in
           let () = if should_suggest
             then Proof_using.suggest_constant (Global.env ()) kn
           in
