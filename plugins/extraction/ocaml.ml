@@ -249,6 +249,7 @@ let rec pp_expr par env args =
         assert (List.is_empty args);
         begin match a with
           | _ when is_native_char c -> pp_native_char c
+          | _ when is_native_string c -> pp_native_string c
           | [a1;a2] when is_infix r ->
             let pp = pp_expr true env [] in
             pp_par par (pp a1 ++ str (get_infix r) ++ pp a2)

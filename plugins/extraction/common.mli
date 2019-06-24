@@ -81,3 +81,11 @@ val mk_ind : string -> string -> MutInd.t
 val is_native_char : ml_ast -> bool
 val get_native_char : ml_ast -> char
 val pp_native_char : ml_ast -> Pp.t
+
+(** Special hack for constants of type String.string : if an
+    [Extract Inductive string => string] has been declared, then
+    the constants are directly turned into string literals *)
+
+val is_native_string : ml_ast -> bool
+val get_native_string : ml_ast -> string
+val pp_native_string : ml_ast -> Pp.t

@@ -649,3 +649,64 @@ let get_native_char c =
   Char.chr (cumul l)
 
 let pp_native_char c = str ("'"^Char.escaped (get_native_char c)^"'")
+
+(** Special hack for constants of type String.string : if an
+    [Extract Inductive string => string] has been declared, then
+    the constants are directly turned into string literals *)
+
+let ind_string = mk_ind "Coq.Strings.String" "string"
+
+let check_extract_string () =
+  try
+    let string_type = match lang () with
+      | Ocaml -> "string"
+      | _ -> raise Not_found
+    in
+    String.equal (find_custom (IndRef (ind_string, 0))) string_type
+  with Not_found -> false
+
+(* The argument is known to be of type Coq.Strings.String.string.
+   Check that it is built from constructors EmptyString and String
+   with constant ascii arguments. *)
+
+let rec is_native_string_rec = function
+  (* "EmptyString" constructor *)
+  | MLcons(_, ConstructRef(_, 1), []) -> true
+  (* "String" constructor *)
+  | MLcons(_, ConstructRef(_, 2), [hd; tl]) ->
+      is_native_char hd && is_native_string_rec tl
+  (* others *)
+  | _ -> false
+
+(* Here we first check that the argument is of type Coq.Strings.String.string
+   and that extraction to native strings was requested.
+   Then we check every character via [is_native_string_rec]. *)
+
+let is_native_string c =
+  match c with
+  | MLcons(_, ConstructRef((kn,0), j), l) ->
+      MutInd.equal kn ind_string
+      && check_extract_string ()
+      && is_native_string_rec c
+  | _ -> false
+
+(* Extract the underlying string. *)
+
+let rec get_native_string c =
+  let buf = Buffer.create 64 in
+  let rec get = function
+    (* "EmptyString" constructor *)
+    | MLcons(_, ConstructRef(_, 1), []) ->
+        Buffer.contents buf
+    (* "String" constructor *)
+    | MLcons(_, ConstructRef(_, 2), [hd; tl]) ->
+        Buffer.add_char buf (get_native_char hd);
+        get tl
+    (* others *)
+    | _ -> assert false
+  in get c
+
+(* Printing the underlying string. *)
+
+let pp_native_string c =
+  str ("\"" ^ String.escaped (get_native_string c) ^ "\"")
