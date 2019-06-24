@@ -244,18 +244,29 @@ package "idetop" (
 
 )
 
-# XXX Depends on way less than toplevel
 package "ide" (
 
   description = "Coq IDE Libraries"
   version     = "8.10"
 
-# XXX Add GTK
-  requires    = "coq.toplevel"
+  requires    = "coq.lib, coq.ideprotocol, lablgtk3, lablgtk3-sourceview3"
   directory   = "ide"
 
   archive(byte)    = "ide.cma"
   archive(native)  = "ide.cmxa"
+
+)
+
+package "ideprotocol" (
+
+  description = "Coq IDE protocol"
+  version     = "8.10"
+
+  requires    = "coq.toplevel"
+  directory   = "ide/protocol"
+
+  archive(byte)    = "ideprotocol.cma"
+  archive(native)  = "ideprotocol.cmxa"
 
 )
 
