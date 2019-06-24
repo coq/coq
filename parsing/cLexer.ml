@@ -548,7 +548,7 @@ let peek_marker s =
     | ('a'..'z' | 'A'..'Z' | '_') -> ImmediateAsciiIdent
     | _ -> raise Stream.Failure
 
-let parse_quotation loc s =
+let parse_quotation loc bp s =
   match peek_marker s with
   | ImmediateAsciiIdent ->
       let c = Stream.next s in
@@ -556,34 +556,42 @@ let parse_quotation loc s =
         try ident_tail loc (store 0 c) s with
           Stream.Failure -> raise (Stream.Error "")
       in
-      get_buff len
+      get_buff len, set_loc_pos loc bp (Stream.count s)
   | Delimited (lenmarker, bmarker, emarker) ->
       let b = Buffer.create 80 in
       let commit1 c = Buffer.add_char b c; Stream.junk s in
       let commit l = List.iter commit1 l in
-      let rec quotation depth =
+      let rec quotation loc depth =
         match Stream.npeek lenmarker s with
         | l when l = bmarker ->
               commit l;
-              quotation (depth + 1)
+              quotation loc (depth + 1)
         | l when l = emarker ->
               commit l;
-              if depth > 1 then quotation (depth - 1)
+              if depth > 1 then quotation loc (depth - 1) else loc
+        | '\n' :: cs ->
+              commit1 '\n';
+              let loc = bump_loc_line_last loc (Stream.count s) in
+              quotation loc depth
         | c :: cs ->
               commit1 c;
-              quotation depth
+              quotation loc depth
         | [] -> raise Stream.Failure
       in
-      quotation 0;
-      Buffer.contents b
+      let loc = quotation loc 0 in
+      Buffer.contents b, set_loc_pos loc bp (Stream.count s)
 
 
-let find_keyword loc id s =
+let find_keyword loc id bp s =
   let tt = ttree_find !token_tree id in
   match progress_further loc tt.node 0 tt s with
   | None -> raise Not_found
-  | Some (c,NoQuotation) -> KEYWORD c
-  | Some (c,Quotation) -> QUOTATION(c, parse_quotation loc s)
+  | Some (c,NoQuotation) ->
+      let ep = Stream.count s in
+      KEYWORD c, set_loc_pos loc bp ep
+  | Some (c,Quotation) ->
+      let txt, loc = parse_quotation loc bp s in
+      QUOTATION(c, txt), loc
 
 let process_sequence loc bp c cs =
   let rec aux n cs =
@@ -599,7 +607,9 @@ let process_chars ~diff_mode loc bp c cs =
   let ep = Stream.count cs in
   match t with
     | Some (t,NoQuotation) -> (KEYWORD t, set_loc_pos loc bp ep)
-    | Some (c,Quotation) -> (QUOTATION(c, parse_quotation loc cs), set_loc_pos loc bp ep)
+    | Some (c,Quotation) ->
+        let txt, loc = parse_quotation loc bp cs in
+        QUOTATION(c, txt), loc
     | None ->
         let ep' = bp + utf8_char_size loc cs c in
         if diff_mode then begin
@@ -623,14 +633,21 @@ let parse_after_dot ~diff_mode loc c bp s = match Stream.peek s with
           Stream.Failure -> raise (Stream.Error "")
       in
       let field = get_buff len in
-      (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
+      begin try find_keyword loc ("."^field) bp s
+      with Not_found ->
+        let ep = Stream.count s in
+        FIELD field, set_loc_pos loc bp ep end
   | _ ->
       match lookup_utf8 loc s with
       | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
           let len = ident_tail loc (nstore n 0 s) s in
           let field = get_buff len in
-          (try find_keyword loc ("."^field) s with Not_found -> FIELD field)
-      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars ~diff_mode loc bp c s)
+          begin try find_keyword loc ("."^field) bp s
+          with Not_found ->
+            let ep = Stream.count s in
+            FIELD field, set_loc_pos loc bp ep end
+      | AsciiChar | Utf8Token _ | EmptyStream ->
+          process_chars ~diff_mode loc bp c s
 
 (* Parse what follows a question mark *)
 
@@ -664,22 +681,23 @@ let rec next_token ~diff_mode loc s =
       comm_loc bp; push_char c; next_token ~diff_mode loc s
   | Some ('.' as c) ->
       Stream.junk s;
-      let t =
+      let t, newloc =
         try parse_after_dot ~diff_mode loc c bp s with
           Stream.Failure -> raise (Stream.Error "")
       in
-      let ep = Stream.count s in
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)
       let () = match t with
-      | KEYWORD ("." | "...") ->
-        if not (blank_or_eof s) then
-	  err (set_loc_pos loc bp (ep+1)) Undefined_token;
-	between_commands := true;
-      | _ -> ()
+        | KEYWORD ("." | "...") ->
+          if not (blank_or_eof s) then begin
+            let ep = Stream.count s in
+            err (set_loc_pos loc bp (ep+1)) Undefined_token
+          end;
+          between_commands := true;
+        | _ -> ()
       in
-      t, set_loc_pos loc bp ep
+      t, newloc
   | Some ('-' | '+' | '*' as c) ->
       Stream.junk s;
       let t,new_between_commands =
@@ -698,10 +716,12 @@ let rec next_token ~diff_mode loc s =
         try ident_tail loc (store 0 c) s with
           Stream.Failure -> raise (Stream.Error "")
       in
-      let ep = Stream.count s in
       let id = get_buff len in
       comment_stop bp;
-      (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
+      begin try find_keyword loc id bp s
+      with Not_found ->
+        let ep = Stream.count s in
+        IDENT id, set_loc_pos loc bp ep end
   | Some ('0'..'9') ->
       let n = NumTok.parse s in
       let ep = Stream.count s in
@@ -745,9 +765,11 @@ let rec next_token ~diff_mode loc s =
         | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
             let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
-            let ep = Stream.count s in
             comment_stop bp;
-            (try find_keyword loc id s with Not_found -> IDENT id), set_loc_pos loc bp ep
+            begin try find_keyword loc id bp s
+            with Not_found ->
+              let ep = Stream.count s in
+              IDENT id, set_loc_pos loc bp ep end
         | AsciiChar | Utf8Token _ ->
             let t = process_chars ~diff_mode loc bp (Stream.next s) s in
             comment_stop bp; t
