@@ -23,7 +23,6 @@ open Constr
 open CErrors
 open Util
 open Declare
-open Entries
 open Decl_kinds
 open Pp
 
@@ -122,15 +121,15 @@ let define internal role id c poly univs =
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
   let univs = UState.univ_entry ~poly ctx in
   let entry = {
-    const_entry_body =
+    Proof_global.proof_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),
                        Evd.empty_side_effects);
-    const_entry_secctx = None;
-    const_entry_type = None;
-    const_entry_universes = univs;
-    const_entry_opaque = false;
-    const_entry_inline_code = false;
-    const_entry_feedback = None;
+    proof_entry_secctx = None;
+    proof_entry_type = None;
+    proof_entry_universes = univs;
+    proof_entry_opaque = false;
+    proof_entry_inline_code = false;
+    proof_entry_feedback = None;
   } in
   let kn, eff = declare_private_constant ~role ~internal id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with

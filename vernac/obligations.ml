@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Printf
-open Entries
 open Decl_kinds
 
 (**
@@ -418,11 +417,11 @@ let solve_by_tac ?loc name evi t poly ctx =
       Pfedit.build_constant_by_tactic
         id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
-    let (body, eff) = Future.force entry.const_entry_body in
+    let (body, eff) = Future.force entry.Proof_global.proof_entry_body in
     let body = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
     let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
     Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
-    Some (fst body, entry.const_entry_type, Evd.evar_universe_context ctx')
+    Some (fst body, entry.Proof_global.proof_entry_type, Evd.evar_universe_context ctx')
   with
   | Refiner.FailError (_, s) as exn ->
     let _ = CErrors.push exn in
@@ -682,7 +681,7 @@ let admit_prog prg =
             let x = subst_deps_obl obls x in
             let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
             let kn = Declare.declare_constant x.obl_name ~local:ImportNeedQualified
-              (ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
+              (Declare.ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
               obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }

@@ -11,7 +11,6 @@
 open Pp
 open Util
 open Names
-open Entries
 open Environ
 open Evd
 
@@ -127,7 +126,7 @@ let build_constant_by_tactic id ctx sign ?(goal_kind = Global ImportDefaultBehav
     let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
-      let univs = UState.demote_seff_univs entry universes in
+      let univs = UState.demote_seff_univs entry.Proof_global.proof_entry_universes universes in
       entry, status, univs
     | _ ->
       CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
@@ -141,7 +140,7 @@ let build_by_tactic ?(side_eff=true) env sigma ?(poly=false) typ tac =
   let gk = Global ImportDefaultBehavior, poly, Proof Theorem in
   let ce, status, univs =
     build_constant_by_tactic id sigma sign ~goal_kind:gk typ tac in
-  let body, eff = Future.force ce.const_entry_body in
+  let body, eff = Future.force ce.Proof_global.proof_entry_body in
   let (cb, ctx) =
     if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)
     else body

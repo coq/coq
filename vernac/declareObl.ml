@@ -155,18 +155,18 @@ let declare_obligation prg obl body ty uctx =
       ((body, Univ.ContextSet.empty), Evd.empty_side_effects)
     in
     let ce =
-      { const_entry_body = Future.from_val ~fix_exn:(fun x -> x) body
-      ; const_entry_secctx = None
-      ; const_entry_type = ty
-      ; const_entry_universes = uctx
-      ; const_entry_opaque = opaque
-      ; const_entry_inline_code = false
-      ; const_entry_feedback = None }
+      Proof_global.{ proof_entry_body = Future.from_val ~fix_exn:(fun x -> x) body
+      ; proof_entry_secctx = None
+      ; proof_entry_type = ty
+      ; proof_entry_universes = uctx
+      ; proof_entry_opaque = opaque
+      ; proof_entry_inline_code = false
+      ; proof_entry_feedback = None }
     in
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       Declare.declare_constant obl.obl_name ~local:ImportNeedQualified
-        (DefinitionEntry ce, IsProof Property)
+        (Declare.DefinitionEntry ce, IsProof Property)
     in
     if not opaque then
       add_hint (Locality.make_section_locality None) prg constant;
@@ -498,8 +498,8 @@ let obligation_terminator opq entries uctx { name; num; auto } =
   match entries with
   | [entry] ->
     let env = Global.env () in
-    let ty = entry.Entries.const_entry_type in
-    let body, eff = Future.force entry.const_entry_body in
+    let ty = entry.proof_entry_type in
+    let body, eff = Future.force entry.proof_entry_body in
     let (body, cstr) = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in

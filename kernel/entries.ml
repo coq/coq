@@ -60,15 +60,14 @@ type mutual_inductive_entry = {
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
-type 'a definition_entry = {
-  const_entry_body   : 'a const_entry_body;
+type definition_entry = {
+  const_entry_body   : constr Univ.in_universe_context_set;
   (* List of section variables *)
   const_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
   const_entry_universes   : universes_entry;
-  const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
 type section_def_entry = {
@@ -76,6 +75,16 @@ type section_def_entry = {
   secdef_secctx : Constr.named_context option;
   secdef_feedback : Stateid.t option;
   secdef_type : types option;
+}
+
+type 'a opaque_entry = {
+  opaque_entry_body   : 'a;
+  (* List of section variables *)
+  opaque_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  opaque_entry_feedback : Stateid.t option;
+  opaque_entry_type        : types;
+  opaque_entry_universes   : universes_entry;
 }
 
 type inline = int option (* inlining level, None for no inlining *)
@@ -90,7 +99,8 @@ type primitive_entry = {
 }
 
 type 'a constant_entry =
-  | DefinitionEntry of 'a definition_entry
+  | DefinitionEntry of definition_entry
+  | OpaqueEntry of 'a const_entry_body opaque_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 

@@ -23,14 +23,19 @@ open Decl_kinds
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type section_variable_entry =
-  | SectionLocalDef of Evd.side_effects definition_entry
+  | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+
+type 'a constant_entry =
+  | DefinitionEntry of 'a Proof_global.proof_entry
+  | ParameterEntry of parameter_entry
+  | PrimitiveEntry of primitive_entry
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
-(** Declaration of global constructions 
+(** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
 type constant_declaration = Evd.side_effects constant_entry * logical_kind
@@ -44,7 +49,7 @@ type internal_flag =
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->
-  ?eff:Evd.side_effects -> constr -> Evd.side_effects definition_entry
+  ?eff:Evd.side_effects -> constr -> Evd.side_effects Proof_global.proof_entry
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -58,7 +63,7 @@ val declare_constant :
 val declare_private_constant :
   ?role:Evd.side_effect_role -> ?internal:internal_flag -> ?local:import_status -> Id.t -> constant_declaration -> Constant.t * Evd.side_effects
 
-val declare_definition : 
+val declare_definition :
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:import_status -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t

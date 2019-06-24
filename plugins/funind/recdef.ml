@@ -17,7 +17,6 @@ open EConstr
 open Vars
 open Namegen
 open Environ
-open Entries
 open Pp
 open Names
 open Libnames

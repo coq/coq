@@ -118,14 +118,13 @@ let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 (* Copy of the standard save mechanism but without the much too  *)
 (* slow reduction function                                       *)
 (*****************************************************************)
-open Entries
 open Decl_kinds
 open Declare
 
 let definition_message = Declare.definition_message
 
 let save id const ?hook uctx (locality,_,kind) =
-  let fix_exn = Future.fix_exn_of const.const_entry_body in
+  let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match locality with
     | Discharge ->
         let k = Kindops.logical_kind_of_goal_kind kind in
@@ -134,7 +133,7 @@ let save id const ?hook uctx (locality,_,kind) =
         VarRef id
     | Global local ->
         let k = Kindops.logical_kind_of_goal_kind kind in
-        let kn = declare_constant id ~local (DefinitionEntry const, k) in
+        let kn = declare_constant id ~local (Declare.DefinitionEntry const, k) in
         ConstRef kn
   in
   DeclareDef.Hook.call ?hook ~fix_exn uctx [] locality r;

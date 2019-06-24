@@ -11,7 +11,7 @@ let evil t f =
   let te = Declare.definition_entry
       ~univs:(Monomorphic_entry (ContextSet.singleton u)) tu
   in
-  let tc = Declare.declare_constant t (DefinitionEntry te, k) in
+  let tc = Declare.declare_constant t (Declare.DefinitionEntry te, k) in
   let tc = mkConst tc in
 
   let fe = Declare.definition_entry
@@ -19,4 +19,4 @@ let evil t f =
       ~types:(Term.mkArrowR tc tu)
       (mkLambda (Context.nameR (Id.of_string "x"), tc, mkRel 1))
   in
-  ignore (Declare.declare_constant f (DefinitionEntry fe, k))
+  ignore (Declare.declare_constant f (Declare.DefinitionEntry fe, k))

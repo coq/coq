@@ -22,7 +22,6 @@ open Namegen
 open Evd
 open Printer
 open Reductionops
-open Entries
 open Inductiveops
 open Tacmach.New
 open Clenv

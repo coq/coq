@@ -44,7 +44,7 @@ val jmeq_refl : unit -> EConstr.constr
 
 val save
   :  Id.t
-  -> Evd.side_effects Entries.definition_entry
+  -> Evd.side_effects Proof_global.proof_entry
   -> ?hook:DeclareDef.Hook.t
   -> UState.t
   -> Decl_kinds.goal_kind

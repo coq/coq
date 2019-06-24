@@ -107,8 +107,9 @@ let adjust_guardness_conditions const = function
   | possible_indexes ->
   (* Try all combinations... not optimal *)
      let env = Global.env() in
-     { const with const_entry_body =
-        Future.chain const.const_entry_body
+     let open Proof_global in
+     { const with proof_entry_body =
+        Future.chain const.proof_entry_body
         (fun ((body, ctx), eff) ->
           match Constr.kind body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
@@ -448,12 +449,12 @@ let save_lemma_admitted ?proof ~(lemma : t) =
     | Some ({ id; entries; persistence = k; universes }, (hook, _, _)) ->
       if List.length entries <> 1 then
         user_err Pp.(str "Admitted does not support multiple statements");
-      let { const_entry_secctx; const_entry_type } = List.hd entries in
-      if const_entry_type = None then
+      let { proof_entry_secctx; proof_entry_type } = List.hd entries in
+      if proof_entry_type = None then
         user_err Pp.(str "Admitted requires an explicit statement");
-      let typ = Option.get const_entry_type in
+      let typ = Option.get proof_entry_type in
       let ctx = UState.univ_entry ~poly:(pi2 k) universes in
-      let sec_vars = if get_keep_admitted_vars () then const_entry_secctx else None in
+      let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
       finish_admitted id k (sec_vars, (typ, ctx), None) universes hook
     | None ->
       let pftree = Proof_global.get_proof lemma.proof in
@@ -500,15 +501,15 @@ let finish_proved opaque idopt po hook compute_guard =
       | Transparent -> false, true
       | Opaque      -> true, false
     in
-    assert (is_opaque == const.const_entry_opaque);
+    assert (is_opaque == const.proof_entry_opaque);
     let id = match idopt with
       | None -> id
       | Some { CAst.v = save_id } -> check_anonymity id save_id; save_id in
-    let fix_exn = Future.fix_exn_of const.Entries.const_entry_body in
+    let fix_exn = Future.fix_exn_of const.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
       let k = Kindops.logical_kind_of_goal_kind kind in
-      let should_suggest = const.const_entry_opaque && Option.is_empty const.const_entry_secctx in
+      let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
       let r = match locality with
         | Discharge ->
           let c = SectionLocalDef const in
@@ -550,8 +551,8 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   in
   (* The opacity of [f_def] is adjusted to be [false], as it
      must. Then [f] is declared in the global environment. *)
-  let f_def = { f_def with Entries.const_entry_opaque = false } in
-  let f_def = Entries.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
+  let f_def = { f_def with Proof_global.proof_entry_opaque = false } in
+  let f_def = Declare.DefinitionEntry f_def , Decl_kinds.(IsDefinition Definition) in
   let f_kn = Declare.declare_constant f f_def in
   let f_kn_term = mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
@@ -561,22 +562,22 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   let substf c = Vars.replace_vars [f,f_kn_term] c in
   (* Extracts the type of the proof of [suchthat]. *)
   let lemma_pretype =
-    match Entries.(lemma_def.const_entry_type) with
+    match Proof_global.(lemma_def.proof_entry_type) with
     | Some t -> t
     | None -> assert false (* Proof_global always sets type here. *)
   in
   (* The references of [f] are subsituted appropriately. *)
   let lemma_type = substf lemma_pretype in
   (* The same is done in the body of the proof. *)
-  let lemma_body = Future.chain Entries.(lemma_def.const_entry_body) (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
-  let lemma_def = let open Entries in
+  let lemma_body = Future.chain Proof_global.(lemma_def.proof_entry_body) (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
+  let lemma_def = let open Proof_global in
     { lemma_def with
-      const_entry_body = lemma_body ;
-      const_entry_type = Some lemma_type ;
-      const_entry_opaque = opaque ; }
+      proof_entry_body = lemma_body ;
+      proof_entry_type = Some lemma_type ;
+      proof_entry_opaque = opaque ; }
   in
   let lemma_def =
-    Entries.DefinitionEntry lemma_def ,
+    Declare.DefinitionEntry lemma_def ,
     Decl_kinds.(IsProof Proposition)
   in
   ignore (Declare.declare_constant name lemma_def)
@@ -597,7 +598,7 @@ let finish_proved_equations opaque lid proof_obj hook i types wits sigma0 =
           | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
         in
         let entry, args = Abstract.shrink_entry local_context entry in
-        let cst = Declare.declare_constant id (Entries.DefinitionEntry entry, kind) in
+        let cst = Declare.declare_constant id (Declare.DefinitionEntry entry, kind) in
         let sigma, app = Evarutil.new_global sigma (ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0

@@ -100,7 +100,7 @@ val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t
    universes are preserved. *)
 val restrict : t -> Univ.LSet.t -> t
 
-val demote_seff_univs : 'a Entries.definition_entry -> t -> t
+val demote_seff_univs : Entries.universes_entry -> t -> t
 
 type rigid = 
   | UnivRigid

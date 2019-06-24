@@ -115,11 +115,10 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
       so we delay the typing and hash consing of its body. *)
 
-  | DefinitionEntry ({ const_entry_type = Some typ;
-                       const_entry_opaque = true;
-                       const_entry_universes = Monomorphic_entry univs; _ } as c) ->
+  | OpaqueEntry ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
       let proofterm =
         Future.chain body begin fun ((body,uctx),side_eff) ->
@@ -151,17 +150,15 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = tyj.utj_val;
         cook_universes = Monomorphic univs;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
-        cook_inline = c.const_entry_inline_code;
-        cook_context = c.const_entry_secctx;
+        cook_inline = false;
+        cook_context = c.opaque_entry_secctx;
       }
 
-  (** Similar case for polymorphic entries. TODO: also delay type-checking of
-      the body. *)
+  (** Similar case for polymorphic entries. *)
 
-  | DefinitionEntry ({ const_entry_type = Some typ;
-                       const_entry_opaque = true;
-                       const_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
+  | OpaqueEntry ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = Univ.abstract_universes nas uctx in
@@ -190,21 +187,16 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_type = typ;
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
-        cook_inline = c.const_entry_inline_code;
-        cook_context = c.const_entry_secctx;
+        cook_inline = false;
+        cook_context = c.opaque_entry_secctx;
       }
 
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
-      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      (* Opaque constants must be provided with a non-empty const_entry_type,
-         and thus should have been treated above. *)
-      let () = assert (not c.const_entry_opaque) in
-      let body, ctx = match trust with
-      | Pure ->
-        let (body, ctx), () = Future.join body in
-        body, ctx
+      let { const_entry_body = (body, ctx); const_entry_feedback = feedback_id; _ } = c in
+      let () = match trust with
+      | Pure -> ()
       | SideEffects _ -> assert false
       in
       let env, usubst, univs = match c.const_entry_universes with
@@ -368,14 +360,13 @@ let translate_recipe env _kn r =
 
 let translate_local_def env _id centry =
   let open Cooking in
-  let body = Future.from_val ((centry.secdef_body, Univ.ContextSet.empty), ()) in
+  let body = (centry.secdef_body, Univ.ContextSet.empty) in
   let centry = {
     const_entry_body = body;
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
     const_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
-    const_entry_opaque = false;
     const_entry_inline_code = false;
   } in
   let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in

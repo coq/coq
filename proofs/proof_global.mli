@@ -31,9 +31,21 @@ val compact_the_proof : t -> t
     function which takes a [proof_object] together with a [proof_end]
     (i.e. an proof ending command) and registers the appropriate
     values. *)
+type 'a proof_entry = {
+  proof_entry_body   : 'a Entries.const_entry_body;
+  (* List of section variables *)
+  proof_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  proof_entry_feedback : Stateid.t option;
+  proof_entry_type        : Constr.types option;
+  proof_entry_universes   : Entries.universes_entry;
+  proof_entry_opaque      : bool;
+  proof_entry_inline_code : bool;
+}
+
 type proof_object = {
   id : Names.Id.t;
-  entries : Evd.side_effects Entries.definition_entry list;
+  entries : Evd.side_effects proof_entry list;
   persistence : Decl_kinds.goal_kind;
   universes: UState.t;
 }
