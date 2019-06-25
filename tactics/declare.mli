@@ -98,3 +98,6 @@ val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 
 val do_universe : poly:bool -> lident list -> unit
 val do_constraint : poly:bool -> Glob_term.glob_constraint list -> unit
+
+(* Used outside this module only in indschemes *)
+exception AlreadyDeclared of (string option * Id.t)

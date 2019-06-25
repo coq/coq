@@ -39,9 +39,6 @@ let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
 
 let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
-exception AlreadyDeclared of Pp.t (* for already declared Schemes *)
-let alreadydeclared pps = raise (AlreadyDeclared(pps))
-
 exception Timeout
 
 let handle_stack = ref []

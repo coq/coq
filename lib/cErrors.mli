@@ -41,9 +41,6 @@ val user_err : ?loc:Loc.t -> ?hdr:string -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
     error [pp] with optional header and location [hdr] [loc] *)
 
-exception AlreadyDeclared of Pp.t
-val alreadydeclared : Pp.t -> 'a
-
 val invalid_arg : ?loc:Loc.t -> string -> 'a
 
 (** [todo] is for running of an incomplete code its implementation is

@@ -159,8 +159,9 @@ let try_declare_scheme what f internal names kn =
     | UndefinedCst s ->
 	alarm what internal
 	  (strbrk "Required constant " ++ str s ++ str " undefined.")
-    | AlreadyDeclared msg ->
-        alarm what internal (msg ++ str ".")
+    | AlreadyDeclared (kind, id) as exn ->
+      let msg = CErrors.print exn in
+      alarm what internal msg
     | DecidabilityMutualNotSupported ->
         alarm what internal
           (str "Decidability lemma for mutual inductive types not supported.")
