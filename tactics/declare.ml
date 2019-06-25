@@ -205,7 +205,7 @@ let cast_proof_entry e =
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
-let cast_opaque_proof_entry (type a) (pure : a Safe_typing.effect_entry) (e : a Proof_global.proof_entry) =
+let cast_opaque_proof_entry e =
   let open Proof_global in
   let typ = match e.proof_entry_type with
   | None -> assert false
@@ -220,14 +220,8 @@ let cast_opaque_proof_entry (type a) (pure : a Safe_typing.effect_entry) (e : a 
         Id.Set.empty, Id.Set.empty
       else
         let ids_typ = global_vars_set env typ in
-        let pf, env = match pure with
-        | PureEntry ->
-          let (pf, _), () = Future.force e.proof_entry_body in
-          pf, env
-        | EffectEntry ->
-          let (pf, _), eff = Future.force e.proof_entry_body in
-          pf, Safe_typing.push_private_constants env eff
-        in
+        let (pf, _), eff = Future.force e.proof_entry_body in
+        let env = Safe_typing.push_private_constants env eff in
         let vars = global_vars_set env pf in
         ids_typ, vars
     in
@@ -269,7 +263,7 @@ let define_constant ~side_effect ~name cd =
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
-      let de = cast_opaque_proof_entry EffectEntry de in
+      let de = cast_opaque_proof_entry de in
       [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
   | ParameterEntry e ->
     [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
