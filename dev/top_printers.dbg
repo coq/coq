@@ -16,6 +16,8 @@ install_printer Top_printers.ppclindex
 install_printer Top_printers.ppscheme
 install_printer Top_printers.ppwf_paths
 install_printer Top_printers.ppevar
+install_printer Top_printers.ppstage_state
+install_printer Top_printers.ppstage_cstrnts
 install_printer Top_printers.ppconstr
 install_printer Top_printers.ppsconstr
 install_printer Top_printers.ppeconstr

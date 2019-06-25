@@ -519,7 +519,7 @@ let rec execute env stg cstr =
       let stga, cstrnta, args', argst = execute_array env stg args in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
-        let s', stg' = if is_stage s then (s, stg) else next_stage_state stg in
+        let s', stg' = if is_stage s then (s, stga) else next_stage_state stga in
         let t, cstrnt = type_of_inductive_knowing_parameters env ind argst in
         stg', cstrnt, mkIndUS ind s', t
       | _ -> (* No template polymorphism *)

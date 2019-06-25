@@ -32,6 +32,8 @@
 #install_printer  (* bigint *) ppbigint;;
 #install_printer  (* loc *) pploc;;
 #install_printer  (* substitution *) ppsubst;;
+#install_printer  (* stage vars *) ppstage_state;;
+#install_printer  (* stage constraints *) ppstage_cstrnts;;
 
 (* Open main files *)
 

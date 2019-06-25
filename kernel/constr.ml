@@ -1499,7 +1499,7 @@ let rec debug_print c =
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc debug_print l ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
-  | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ str (show_annot stg) ++ str")"
+  | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ pr_annot stg ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"

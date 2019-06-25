@@ -1,6 +1,9 @@
 open Hashset.Combine
 open Util
 
+(** Pretty-printing helper *)
+let mkPr show = (fun a -> show a |> Pp.str)
+
 (** Stage variables and stage annotations *)
 
 type stage_name = int
@@ -27,6 +30,15 @@ let compare_stage s1 s2 =
       if not (Int.equal nc 0) then nc
       else Int.compare size1 size2
 
+let show_stage s =
+  match s with
+  | Infty -> "∞"
+  | StageVar (s, n) ->
+    let str = "s" ^ string_of_int s in
+    if Int.equal n 0 then str else
+    str ^ "+" ^ string_of_int n
+let pr_stage = mkPr show_stage
+
 let compare_annot a1 a2 =
   match a1, a2 with
   | Empty, Empty -> 0
@@ -45,12 +57,10 @@ let leq_annot a1 a2 =
 
 let show_annot a =
   match a with
-  | Empty -> "Empty"
-  | Star  -> "Star"
-  | Stage Infty -> "Infty"
-  | Stage (StageVar (n, i)) -> "Stage s" ^ string_of_int n ^ " + " ^ string_of_int i
-
-let pr a = Pp.str (show_annot a)
+  | Empty -> ""
+  | Star  -> "*"
+  | Stage s -> show_stage s
+let pr_annot = mkPr show_annot
 
 let hash_stage_annot a =
     match a with
@@ -68,6 +78,13 @@ let init_stage_state = (0, Int.Set.empty)
 let next_stage_state (next, vs) = (Stage (StageVar (next, 0)), (next + 1, Int.Set.add next vs))
 let get_stage_vars (_, vs) = vs
 let diff_stage_vars = Int.Set.diff
+
+let show_stage_state (stg, vars) =
+  let f i str = string_of_int i ^ "," ^ str in
+  let vars_str = Int.Set.fold f vars "∞" in
+  let stg_str = string_of_int stg in
+  "<" ^ stg_str ^ "," ^ "{" ^ vars_str ^ "}" ^ ">"
+let pr_stage_state = mkPr show_stage_state
 
 (** Stage constraints and sets of constraints
    N.B. For a constraint to be "larger" than another has no inherent meaning;
@@ -113,3 +130,9 @@ let add_constraint_ref_option a1 a2 cstrnts =
   match a1, a2, cstrnts with
     | Stage s1, Stage s2, Some cstrnts_ref -> cstrnts_ref := add_constraint s1 s2 !cstrnts_ref
     | _ -> ()
+
+let show_constraints cstrnts =
+  let f (s1, s2) str = "(" ^ show_stage s1 ^ "⊑" ^ show_stage s2 ^ ")" ^ str in
+  let str = SConstraint.fold f cstrnts "" in
+  "{" ^ str ^ "}"
+let pr_constraints = mkPr show_constraints

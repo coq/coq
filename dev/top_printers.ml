@@ -18,7 +18,6 @@ open Libnames
 open Univ
 open Environ
 open Printer
-open Stages
 open Constr
 open Context
 open Genarg
@@ -65,6 +64,10 @@ let get_current_context () =
     let env = Global.env() in
     Evd.from_env env, env
   [@@ocaml.warning "-3"]
+
+(* stage printers *)
+let ppstage_state state = Stages.pr_stage_state state |> pp
+let ppstage_cstrnts cstrnts = Stages.pr_constraints cstrnts |> pp
 
 (* term printers *)
 let envpp pp = let sigma,env = get_current_context () in pp env sigma
@@ -292,7 +295,7 @@ let constr_display csr =
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind (((sp,i),u), stg) ->
-      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(show_annot stg)^")"
+      "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(Stages.show_annot stg)^")"
   | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(MutInd.to_string sp)^","^(string_of_int i)^"),"
       ^","^(universes_display u)^(string_of_int j)^")"
@@ -458,7 +461,7 @@ let print_pure_constr csr =
   and universes_display u =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
-  and annot_display a = print_space (); pp (Stages.pr a)
+  and annot_display a = print_space (); pp (Stages.pr_annot a)
 
   and sort_display = function
     | SProp -> print_string "SProp"
