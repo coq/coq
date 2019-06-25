@@ -2,7 +2,7 @@
 
 
 ## Debugging and profiling (`dev/`)
-**More info on debugging: [`doc/debugging.md`](doc/debugging.md)**
+**More info on debugging: [`dev/doc/debugging.md`](doc/debugging.md)**
 
 | File | Description |
 | ---- | ----------- |
