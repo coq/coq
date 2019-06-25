@@ -20,6 +20,14 @@
    ../dev/header.ml
    ../dev/tools/update-compat.py
    ../doc/stdlib/index-list.html.template
+   ; For the misc/printers.sh test
+   ../dev/incdir_dune
+   ../dev/base_include
+   ../dev/inc_ltac_dune
+   ../dev/include_printers
+   ../dev/include_dune
+   ../dev/top_printers.ml
+   ../dev/vm_printers.ml
    ; For the changelog test
    ../config/coq_config.py
    (source_tree doc/changelog)
