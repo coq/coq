@@ -70,15 +70,6 @@ val declare_private_constant
   -> Evd.side_effects constant_entry
   -> Constant.t * Evd.side_effects
 
-val declare_definition
-  :  ?opaque:bool
-  -> ?kind:Decls.definition_object_kind
-  -> ?local:import_status
-  -> name:Id.t
-  -> ?types:constr
-  -> constr Entries.in_universes_entry
-  -> Constant.t
-
 (** Since transparent constants' side effects are globally declared, we
  *  need that *)
 val set_declare_scheme :

@@ -290,13 +290,6 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
-let declare_definition
-  ?(opaque=false) ?(kind=Decls.Definition) ?(local = ImportDefaultBehavior)
-  ~name ?types (body,univs) =
-  let cb = definition_entry ?types ~univs ~opaque body in
-  declare_constant ~local ~name ~kind:Decls.(IsDefinition kind)
-    (DefinitionEntry cb)
-
 (** Declaration of section variables and local definitions *)
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
