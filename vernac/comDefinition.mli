@@ -16,10 +16,12 @@ open Constrexpr
 (** {6 Definitions/Let} *)
 
 val do_definition
-  : program_mode:bool
+  :  program_mode:bool
   -> ?hook:DeclareDef.Hook.t
-  -> Id.t
-  -> definition_kind
+  -> name:Id.t
+  -> scope:DeclareDef.locality
+  -> poly:bool
+  -> kind:definition_object_kind
   -> universe_decl_expr option
   -> local_binder_expr list
   -> red_expr option
@@ -36,7 +38,7 @@ val interp_definition
   :  program_mode:bool
   -> universe_decl_expr option
   -> local_binder_expr list
-  -> polymorphic
+  -> poly:bool
   -> red_expr option
   -> constr_expr
   -> constr_expr option

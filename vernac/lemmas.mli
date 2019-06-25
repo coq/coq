@@ -11,9 +11,11 @@
 open Names
 open Decl_kinds
 
-(* Proofs that define a constant *)
+(** {4 Proofs attached to a constant} *)
+
 type t
-type lemma_possible_guards = int list list
+(** [Lemmas.t] represents a constant that is being proved, usually
+    interactively *)
 
 module Stack : sig
 
@@ -40,11 +42,12 @@ end
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
 val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
+(** [pf_fold f l] fold over the underlying proof object *)
 
 val by : unit Proofview.tactic -> t -> t * bool
+(** [by tac l] apply a tactic to [l] *)
 
-(* Start of high-level proofs with an associated constant *)
-
+(** Creating high-level proofs with an associated constant *)
 module Proof_ending : sig
 
   type t =
@@ -60,71 +63,112 @@ module Proof_ending : sig
 
 end
 
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : EConstr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+module Info : sig
+
+  type t
+
+  val make
+    :  ?hook: DeclareDef.Hook.t
+    (** Callback to be executed at the end of the proof *)
+    -> ?proof_ending : Proof_ending.t
+    (** Info for special constants *)
+    -> ?scope : DeclareDef.locality
+    (** locality  *)
+    -> ?kind:goal_object_kind
+    (** Theorem, etc... *)
+    -> unit
+    -> t
+
+end
+
+(** Starts the proof of a constant *)
 val start_lemma
-  :  Id.t
-  -> ?pl:UState.universe_decl
-  -> goal_kind
-  -> Evd.evar_map
-  -> ?proof_ending:Proof_ending.t
+  :  name:Id.t
+  -> poly:bool
+  -> ?udecl:UState.universe_decl
   -> ?sign:Environ.named_context_val
-  -> ?compute_guard:lemma_possible_guards
-  -> ?hook:DeclareDef.Hook.t
+  -> ?info:Info.t
+  -> Evd.evar_map
   -> EConstr.types
   -> t
 
 val start_dependent_lemma
-  :  Id.t
-  -> ?pl:UState.universe_decl
-  -> goal_kind
-  -> ?proof_ending:Proof_ending.t
-  -> ?compute_guard:lemma_possible_guards
-  -> ?hook:DeclareDef.Hook.t
+  :  name:Id.t
+  -> poly:bool
+  -> ?udecl:UState.universe_decl
+  -> ?info:Info.t
   -> Proofview.telescope
   -> t
 
-val start_lemma_com
-  :  program_mode:bool
-  -> ?inference_hook:Pretyping.inference_hook
-  -> ?hook:DeclareDef.Hook.t -> goal_kind -> Vernacexpr.proof_expr list
-  -> t
+type lemma_possible_guards = int list list
 
+(** Pretty much internal, only used in ComFixpoint *)
 val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
-  -> goal_kind -> Evd.evar_map -> UState.universe_decl
+  -> poly:bool
+  -> scope:DeclareDef.locality
+  -> kind:goal_object_kind
+  -> udecl:UState.universe_decl
+  -> Evd.evar_map
   -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
-  -> (Id.t (* name of thm *) *
-     (EConstr.types (* type of thm *) *
-      (Name.t list (* names to pre-introduce *) * Impargs.manual_implicits))) list
+  -> Recthm.t list
   -> int list option
   -> t
 
 val default_thm_id : Names.Id.t
+
+(** Main [Lemma foo args : type.] command *)
+val start_lemma_com
+  :  program_mode:bool
+  -> poly:bool
+  -> scope:DeclareDef.locality
+  -> kind:goal_object_kind
+  -> ?inference_hook:Pretyping.inference_hook
+  -> ?hook:DeclareDef.Hook.t
+  -> Vernacexpr.proof_expr list
+  -> t
 
 (* Prepare global named context for proof session: remove proofs of
    opaque section definitions and remove vm-compiled code *)
 
 val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
-(** {6 Saving proofs } *)
+(** {4 Saving proofs} *)
 
-type proof_info
+(** The extra [?proof] parameter here is due to problems with the
+    lower-level [Proof_global.close_proof] API; we cannot inject closed
+    proofs properly in the proof state so we must leave this backdoor open.
 
-val default_info : proof_info
+    The regular user can ignore it.
+*)
 
 val save_lemma_admitted
-  :  ?proof:(Proof_global.proof_object * proof_info)
+  :  ?proof:(Proof_global.proof_object * Info.t)
   -> lemma:t
   -> unit
 
 val save_lemma_proved
-  :  ?proof:(Proof_global.proof_object * proof_info)
+  :  ?proof:(Proof_global.proof_object * Info.t)
   -> ?lemma:t
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
   -> unit
 
-(* To be removed *)
+(** To be removed, don't use! *)
 module Internal : sig
+  val get_info : t -> Info.t
   (** Only needed due to the Proof_global compatibility layer. *)
-  val get_info : t -> proof_info
 end

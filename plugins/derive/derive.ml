@@ -19,7 +19,8 @@ let start_deriving f suchthat name : Lemmas.t =
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let kind = Decl_kinds.(Global ImportDefaultBehavior,false,DefinitionBody Definition) in
+  let poly = false in
+  let kind = Decl_kinds.(DefinitionBody Definition) in
 
   (* create a sort variable for the type of [f] *)
   (* spiwack: I don't know what the rigidity flag does, picked the one
@@ -39,8 +40,8 @@ let start_deriving f suchthat name : Lemmas.t =
                 TNil sigma))))))
   in
 
-  let proof_ending = Lemmas.Proof_ending.(End_derive {f; name}) in
-  let lemma = Lemmas.start_dependent_lemma name kind goals ~proof_ending in
+  let info = Lemmas.Info.make ~proof_ending:(Lemmas.Proof_ending.(End_derive {f; name})) ~kind () in
+  let lemma = Lemmas.start_dependent_lemma ~name ~poly ~info goals in
   Lemmas.pf_map (Proof_global.map_proof begin fun p ->
     Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p
   end) lemma

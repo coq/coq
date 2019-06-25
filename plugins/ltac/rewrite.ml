@@ -1795,7 +1795,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance atts binders (name,t) fields =
-  let _id = Classes.new_instance atts.polymorphic
+  let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
       ~global:atts.global ~generalize:false Hints.empty_hint_info
   in
@@ -1994,9 +1994,8 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let env = Global.env () in
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
-  let kind = Decl_kinds.Global Decl_kinds.ImportDefaultBehavior, atts.polymorphic,
-             Decl_kinds.DefinitionBody Decl_kinds.Instance
-  in
+  let poly = atts.polymorphic in
+  let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook _ _ _ = function
     | Globnames.ConstRef cst ->
@@ -2007,9 +2006,10 @@ let add_morphism_interactive atts m n : Lemmas.t =
     | _ -> assert false
   in
   let hook = DeclareDef.Hook.make hook in
+  let info = Lemmas.Info.make ~hook ~kind () in
   Flags.silently
     (fun () ->
-       let lemma = Lemmas.start_lemma ~hook instance_id kind (Evd.from_ctx uctx) (EConstr.of_constr instance) in
+       let lemma = Lemmas.start_lemma ~name:instance_id ~poly ~info (Evd.from_ctx uctx) (EConstr.of_constr instance) in
        fst (Lemmas.by (Tacinterp.interp tac) lemma)) ()
 
 let add_morphism atts binders m s n =
@@ -2023,7 +2023,7 @@ let add_morphism atts binders m s n =
   in
   let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
   let _id, lemma = Classes.new_instance_interactive
-      ~global:atts.global atts.polymorphic
+      ~global:atts.global ~poly:atts.polymorphic
       instance_name binders instance_t
       ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
   in

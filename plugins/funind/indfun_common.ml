@@ -118,12 +118,12 @@ let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 (* Copy of the standard save mechanism but without the much too  *)
 (* slow reduction function                                       *)
 (*****************************************************************)
-open Decl_kinds
 open Declare
+open DeclareDef
 
 let definition_message = Declare.definition_message
 
-let save id const ?hook uctx (locality,_,kind) =
+let save id const ?hook uctx locality kind =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match locality with
     | Discharge ->

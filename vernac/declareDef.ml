@@ -13,12 +13,14 @@ open Declare
 open Globnames
 open Impargs
 
+type locality = Discharge | Global of Declare.import_status
+
 (* Hooks naturally belong here as they apply to both definitions and lemmas *)
 module Hook = struct
   module S = struct
     type t = UState.t
       -> (Names.Id.t * Constr.t) list
-      -> Decl_kinds.locality
+      -> locality
       -> Names.GlobRef.t
       -> unit
   end
@@ -36,31 +38,31 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_definition ident (local, p, k) ?hook_data ce pl imps =
+let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   let fix_exn = Future.fix_exn_of ce.Proof_global.proof_entry_body in
-  let gr = match local with
+  let gr = match scope with
   | Discharge ->
-      let _ = declare_variable ident (Lib.cwd(), SectionLocalDef ce, IsDefinition k) in
-      VarRef ident
+      let _ = declare_variable name (Lib.cwd(), SectionLocalDef ce, IsDefinition kind) in
+      VarRef name
   | Global local ->
-      let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
+      let kn = declare_constant name ~local (DefinitionEntry ce, IsDefinition kind) in
       let gr = ConstRef kn in
-      let () = Declare.declare_univ_binders gr pl in
+      let () = Declare.declare_univ_binders gr udecl in
       gr
   in
   let () = maybe_declare_manual_implicits false gr imps in
-  let () = definition_message ident in
+  let () = definition_message name in
   begin
     match hook_data with
     | None -> ()
     | Some (hook, uctx, extra_defs) ->
-      Hook.call ~fix_exn ~hook uctx extra_defs local gr
+      Hook.call ~fix_exn ~hook uctx extra_defs scope gr
   end;
   gr
 
-let declare_fix ?(opaque = false) ?hook_data (_,poly,_ as kind) pl univs f ((def,_),eff) t imps =
+let declare_fix ?(opaque = false) ?hook_data ~name ~scope ~kind udecl univs ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
-  declare_definition f kind ?hook_data ce pl imps
+  declare_definition ~name ~scope ~kind ?hook_data udecl ce imps
 
 let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in

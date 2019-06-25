@@ -204,11 +204,11 @@ let clenv_unique_resolver_tac with_evars ~flags clenv' =
   end
 
 let unify_e_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', c = connect_hint_clenv poly c clenv gls in
+  let clenv', c = connect_hint_clenv ~poly c clenv gls in
   clenv_unique_resolver_tac true ~flags clenv' end
 
 let unify_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', _ = connect_hint_clenv poly c clenv gls in
+  let clenv', _ = connect_hint_clenv ~poly c clenv gls in
   clenv_unique_resolver_tac false ~flags clenv'
   end
 
@@ -536,7 +536,7 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
             (List.map_append
              (fun (path,info,c) ->
               make_resolves env sigma ~name:(PathHints path)
-                  (true,false,not !Flags.quiet) info false
+                  (true,false,not !Flags.quiet) info ~poly:false
                  (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
                hints)
         else []
@@ -544,8 +544,8 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
         (hints @ List.map_filter
          (fun f -> try Some (f (c, cty, Univ.ContextSet.empty))
            with Failure _ | UserError _ -> None)
-         [make_exact_entry ~name env sigma pri false;
-          make_apply_entry ~name env sigma flags pri false])
+         [make_exact_entry ~name env sigma pri ~poly:false;
+          make_apply_entry ~name env sigma flags pri ~poly:false])
     else []
 
 let make_hints g (modes,st) only_classes sign =

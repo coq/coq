@@ -8,13 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Decl_kinds
-
 (** * Managing locality *)
 
 let importability_of_bool = function
-  | true -> ImportNeedQualified
-  | false -> ImportDefaultBehavior
+  | true -> Declare.ImportNeedQualified
+  | false -> Declare.ImportDefaultBehavior
 
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)
@@ -36,13 +34,15 @@ let warn_local_declaration =
         strbrk "available without qualification when imported.")
 
 let enforce_locality_exp locality_flag discharge =
+  let open DeclareDef in
+  let open Vernacexpr in
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)
-  | None, NoDischarge -> Global ImportDefaultBehavior
+  | None, NoDischarge -> Global Declare.ImportDefaultBehavior
   | None, DoDischarge when not (Lib.sections_are_opened ()) ->
      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
      warn_local_declaration ();
-     Global ImportNeedQualified
+     Global Declare.ImportNeedQualified
   | None, DoDischarge -> Discharge
   | Some true, DoDischarge -> CErrors.user_err Pp.(str "Local not allowed in this case")
   | Some false, DoDischarge -> CErrors.user_err Pp.(str "Global not allowed in this case")

@@ -309,8 +309,8 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   let hook = DeclareDef.Hook.make (hook new_principle_type) in
   let lemma =
     Lemmas.start_lemma
-      new_princ_name
-      Decl_kinds.(Global ImportDefaultBehavior,false,Proof Theorem)
+      ~name:new_princ_name
+      ~poly:false
       !evd
       (EConstr.of_constr new_principle_type)
   in
@@ -324,10 +324,10 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (*    end; *)
 
   let open Proof_global in
-  let { id; entries; persistence } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) lemma in
+  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) lemma in
   match entries with
   | [entry] ->
-    (id,(entry,persistence)), hook
+    name, entry, hook
   | _ ->
     CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
 
@@ -379,7 +379,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       register_with_sort InProp;
       register_with_sort InSet
   in
-  let ((id,(entry,g_kind)),hook) =
+  let id,entry,hook =
     build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
     proof_tac hook
   in
@@ -387,7 +387,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   let uctx = Evd.evar_universe_context sigma in
-  save new_princ_name entry ~hook uctx g_kind
+  save new_princ_name entry ~hook uctx (DeclareDef.Global Declare.ImportDefaultBehavior) Decl_kinds.(Proof Theorem)
   with e when CErrors.noncritical e ->
     raise (Defining_principle e)
 
@@ -518,7 +518,7 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects Pro
         s::l_schemes -> s,l_schemes
       | _ -> anomaly (Pp.str "")
   in
-  let ((_,(const,_)),_) =
+  let _,const,_ =
     try
       build_functional_principle evd false
         first_type
@@ -576,10 +576,10 @@ let make_scheme evd (fas : (pconstant*Sorts.family) list) : Evd.side_effects Pro
 
              )
              ta;
-           (* If we reach this point, the two principle are not mutually recursive
-              We fall back to the previous method
-           *)
-             let ((_,(const,_)),_) =
+             (* If we reach this point, the two principle are not mutually recursive
+                We fall back to the previous method
+                *)
+             let _,const,_ =
                build_functional_principle
                  evd
                  false

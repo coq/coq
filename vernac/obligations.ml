@@ -300,7 +300,7 @@ let add_hint local prg cst =
   Hints.add_hints ~local [Id.to_string prg.prg_name] (unfold_entry cst)
 
 let init_prog_info ?(opaque = false) ?hook sign n udecl b t ctx deps fixkind
-                   notations obls impls kind reduce =
+                   notations obls impls ~scope ~poly ~kind reduce =
   let obls', b =
     match b with
     | None ->
@@ -320,13 +320,23 @@ let init_prog_info ?(opaque = false) ?hook sign n udecl b t ctx deps fixkind
 	  obls, b
   in
   let ctx = UState.make_flexible_nonalgebraic ctx in
-    { prg_name = n ; prg_body = b; prg_type = reduce t;
-      prg_ctx = ctx; prg_univdecl = udecl;
-      prg_obligations = (obls', Array.length obls');
-      prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
-      prg_implicits = impls; prg_kind = kind; prg_reduce = reduce;
-      prg_hook = hook; prg_opaque = opaque;
-      prg_sign = sign }
+    { prg_name = n
+    ; prg_body = b
+    ; prg_type = reduce t
+    ; prg_ctx = ctx
+    ; prg_univdecl = udecl
+    ; prg_obligations = (obls', Array.length obls')
+    ; prg_deps = deps
+    ; prg_fixkind = fixkind
+    ; prg_notations = notations
+    ; prg_implicits = impls
+    ; prg_poly = poly
+    ; prg_scope = scope
+    ; prg_kind = kind
+    ; prg_reduce = reduce
+    ; prg_hook = hook
+    ; prg_opaque = opaque
+    ; prg_sign = sign }
 
 let map_cardinal m =
   let i = ref 0 in
@@ -388,16 +398,14 @@ let deps_remaining obls deps =
     deps []
 
 
-let goal_kind poly =
-  Decl_kinds.(Global ImportNeedQualified, poly, DefinitionBody Definition)
+let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, DefinitionBody Definition)
+let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Proof Lemma)
 
-let goal_proof_kind poly =
-  Decl_kinds.(Global ImportNeedQualified, poly, Proof Lemma)
-
-let kind_of_obligation poly o =
+let kind_of_obligation o =
   match o with
-  | Evar_kinds.Define false | Evar_kinds.Expand -> goal_kind poly
-  | _ -> goal_proof_kind poly
+  | Evar_kinds.Define false
+  | Evar_kinds.Expand -> goal_kind
+  | _ -> goal_proof_kind
 
 let rec string_of_list sep f = function
     [] -> ""
@@ -410,12 +418,11 @@ let warn_solve_errored = CWarnings.create ~name:"solve_obligation_error" ~catego
             str "This will become an error in the future"])
 
 let solve_by_tac ?loc name evi t poly ctx =
-  let id = name in
   (* spiwack: the status is dropped. *)
   try
     let (entry,_,ctx') =
       Pfedit.build_constant_by_tactic
-        id ~goal_kind:(goal_kind poly) ctx evi.evar_hyps evi.evar_concl t in
+        ~name ~poly ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
     let (body, eff) = Future.force entry.Proof_global.proof_entry_body in
     let body = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
@@ -445,7 +452,7 @@ let obligation_hook prg obl num auto ctx' _ _ gr =
     | _ -> ()
   in
   let inst, ctx' =
-    if not (pi2 prg.prg_kind) (* Not polymorphic *) then
+    if not prg.prg_poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
       let ctx = UState.make (Global.universes ()) in
@@ -486,13 +493,15 @@ let rec solve_obligation prg num tac =
         ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
   in
   let obl = subst_deps_obl obls obl in
-  let kind = kind_of_obligation (pi2 prg.prg_kind) (snd obl.obl_status) in
+  let scope, kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
   let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
-  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign obl.obl_name kind evd (EConstr.of_constr obl.obl_type) ~proof_ending ~hook in
+  let info = Lemmas.Info.make ~hook ~proof_ending ~scope ~kind () in
+  let poly = prg.prg_poly in
+  let lemma = Lemmas.start_lemma ~sign:prg.prg_sign ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma
@@ -527,14 +536,14 @@ and solve_obligation_by_tac prg obls i tac =
         let evd = Evd.from_ctx prg.prg_ctx in
         let evd = Evd.update_sigma_env evd (Global.env ()) in
         match solve_by_tac ?loc:(fst obl.obl_location) obl.obl_name (evar_of_obligation obl) tac
-                (pi2 prg.prg_kind) (Evd.evar_universe_context evd) with
+                prg.prg_poly (Evd.evar_universe_context evd) with
         | None -> None
         | Some (t, ty, ctx) ->
-          let uctx = UState.univ_entry ~poly:(pi2 prg.prg_kind) ctx in
+          let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
           let prg = {prg with prg_ctx = ctx} in
           let def, obl' = declare_obligation prg obl t ty uctx in
           obls.(i) <- obl';
-          if def && not (pi2 prg.prg_kind) then (
+          if def && not prg.prg_poly then (
             (* Declare the term constraints with the first obligation only *)
             let evd = Evd.from_env (Global.env ()) in
             let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
@@ -628,12 +637,12 @@ let show_term n =
              Printer.pr_constr_env env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
             ++ Printer.pr_constr_env env sigma prg.prg_body)
 
-let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
-                   ?(implicits=[]) ?(kind=Global ImportDefaultBehavior,false,Definition) ?tactic
+let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
+                   ?(implicits=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let sign = Lemmas.initialize_named_context_for_proof () in
-  let info = Id.print n ++ str " has type-checked" in
-  let prg = init_prog_info sign ~opaque n univdecl term t ctx [] None [] obls implicits kind reduce ?hook in
+  let info = Id.print name ++ str " has type-checked" in
+  let prg = init_prog_info sign ~opaque name univdecl term t ctx [] None [] obls implicits ~poly ~scope ~kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -642,21 +651,21 @@ let add_definition n ?term t ctx ?(univdecl=UState.default_univ_decl)
   else (
     let len = Array.length obls in
     let () = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str (String.plural len " obligation")) in
-      progmap_add n (CEphemeron.create prg);
-      let res = auto_solve_obligations (Some n) tactic in
+      progmap_add name (CEphemeron.create prg);
+      let res = auto_solve_obligations (Some name) tactic in
 	match res with
-	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
+        | Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some name)) (); res
 	| _ -> res)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
-                           ?(kind=Global ImportDefaultBehavior,false,Definition) ?(reduce=reduce)
+                           ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
   let sign = Lemmas.initialize_named_context_for_proof () in
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
      let prg = init_prog_info sign ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
-       notations obls imps kind reduce ?hook
+       notations obls imps ~poly ~scope ~kind reduce ?hook
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
@@ -680,7 +689,7 @@ let admit_prog prg =
         | None ->
             let x = subst_deps_obl obls x in
             let ctx = UState.univ_entry ~poly:false prg.prg_ctx in
-            let kn = Declare.declare_constant x.obl_name ~local:ImportNeedQualified
+            let kn = Declare.declare_constant x.obl_name ~local:Declare.ImportNeedQualified
               (Declare.ParameterEntry (None,(x.obl_type,ctx),None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;

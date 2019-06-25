@@ -11,6 +11,8 @@
 open Names
 open Decl_kinds
 
+type locality = Discharge | Global of Declare.import_status
+
 (** Declaration hooks *)
 module Hook : sig
   type t
@@ -28,10 +30,10 @@ module Hook : sig
       (** [(n1,t1),...(nm,tm)]: association list between obligation
           name and the corresponding defined term (might be a constant,
           but also an arbitrary term in the Expand case of obligations) *)
-      -> Decl_kinds.locality
+      -> locality
       (**  [locality]: Locality of the original declaration *)
       -> GlobRef.t
-      (** [ref]: identifier of the origianl declaration *)
+      (** [ref]: identifier of the original declaration *)
       -> unit
   end
 
@@ -40,21 +42,23 @@ module Hook : sig
 end
 
 val declare_definition
-  : Id.t
-  -> definition_kind
+  :  name:Id.t
+  -> scope:locality
+  -> kind:definition_object_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> Evd.side_effects Proof_global.proof_entry
   -> UnivNames.universe_binders
+  -> Evd.side_effects Proof_global.proof_entry
   -> Impargs.manual_implicits
   -> GlobRef.t
 
 val declare_fix
-  : ?opaque:bool
+  :  ?opaque:bool
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> definition_kind
+  -> name:Id.t
+  -> scope:locality
+  -> kind:definition_object_kind
   -> UnivNames.universe_binders
   -> Entries.universes_entry
-  -> Id.t
   -> Evd.side_effects Entries.proof_output
   -> Constr.types
   -> Impargs.manual_implicits

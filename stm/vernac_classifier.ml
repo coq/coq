@@ -87,7 +87,7 @@ let classify_vernac e =
         VtProofStep { parallel = `No;
                       proof_block_detection = Some "curly" }
     (* StartProof *)
-    | VernacDefinition ((Decl_kinds.DoDischarge,_),({v=i},_),ProveBody _) ->
+    | VernacDefinition ((DoDischarge,_),({v=i},_),ProveBody _) ->
       VtStartProof(Doesn'tGuaranteeOpacity, idents_of_name i)
 
     | VernacDefinition (_,({v=i},_),ProveBody _) ->
@@ -102,7 +102,7 @@ let classify_vernac e =
     | VernacFixpoint (discharge,l) ->
       let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
-         if discharge = Decl_kinds.DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
+         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =
@@ -114,7 +114,7 @@ let classify_vernac e =
     | VernacCoFixpoint (discharge,l) ->
       let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
        let guarantee =
-         if discharge = Decl_kinds.DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
+         if discharge = DoDischarge || polymorphic then Doesn'tGuaranteeOpacity
          else GuaranteesOpacity
        in
         let ids, open_proof =

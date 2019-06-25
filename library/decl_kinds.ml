@@ -10,15 +10,7 @@
 
 (** Informal mathematical status of declarations *)
 
-type discharge = DoDischarge | NoDischarge
-
-type import_status = ImportDefaultBehavior | ImportNeedQualified
-
-type locality = Discharge | Global of import_status
-
 type binding_kind = Explicit | Implicit
-
-type polymorphic = bool
 
 type private_flag = bool
 
@@ -58,16 +50,11 @@ type assumption_object_kind = Definitional | Logical | Conjectural | Context
    Logical      |  Hypothesis | Axiom
 
 *)
-type assumption_kind = locality * polymorphic * assumption_object_kind
-type definition_kind = locality * polymorphic * definition_object_kind
-
 (** Kinds used in proofs *)
 
 type goal_object_kind =
   | DefinitionBody of definition_object_kind
   | Proof of theorem_kind
-
-type goal_kind = locality * polymorphic * goal_object_kind
 
 (** Kinds used in library *)
 

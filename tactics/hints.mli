@@ -12,7 +12,6 @@ open Util
 open Names
 open EConstr
 open Environ
-open Decl_kinds
 open Evd
 open Tactypes
 open Clenv
@@ -54,15 +53,22 @@ type 'a hints_path_atom_gen =
 type hints_path_atom = GlobRef.t hints_path_atom_gen
 type hint_db_name = string
 
-type 'a with_metadata = private {
-  pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
-  poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
-  pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
-  name  : hints_path_atom; (** A potential name to refer to the hint *) 
-  db    : hint_db_name option;
-  secvars : Id.Pred.t; (** The section variables this hint depends on, as a predicate *)
-  code    : 'a; (** the tactic to apply when the concl matches pat *)
-}
+type 'a with_metadata = private
+  { pri     : int
+  (** A number lower is higher priority *)
+  ; poly    : bool
+  (** Is the hint polymorpic and hence should be refreshed at each application *)
+  ; pat     : constr_pattern option
+  (** A pattern for the concl of the Goal *)
+  ; name    : hints_path_atom
+  (** A potential name to refer to the hint *)
+  ; db : string option
+  (** The database from which the hint comes *)
+  ; secvars : Id.Pred.t
+  (** The set of section variables the hint depends on *)
+  ; code    : 'a
+  (** the tactic to apply when the concl matches pat *)
+  }
 
 type full_hint = hint with_metadata
 
@@ -176,9 +182,8 @@ type hint_term =
   | IsConstr of constr * Univ.ContextSet.t
 
 type hints_entry =
-  | HintsResolveEntry of
-    (hint_info * polymorphic * hnf * hints_path_atom * hint_term) list
-  | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
+  | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * bool * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference hints_transparency_target * bool
@@ -202,7 +207,7 @@ val current_db_names : unit -> String.Set.t
 
 val current_pure_db : unit -> hint_db list
 
-val interp_hints : polymorphic -> hints_expr -> hints_entry
+val interp_hints : poly:bool -> hints_expr -> hints_entry
 
 val add_hints : local:bool -> hint_db_name list -> hints_entry -> unit
 
@@ -219,7 +224,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
    [hint_pattern] is the hint's desired pattern, it is inferred if not specified
 *)
 
-val make_exact_entry : env -> evar_map -> hint_info -> polymorphic -> ?name:hints_path_atom ->
+val make_exact_entry : env -> evar_map -> hint_info -> poly:bool -> ?name:hints_path_atom ->
   (constr * types * Univ.ContextSet.t) -> hint_entry
 
 (** [make_apply_entry (eapply,hnf,verbose) info (c,cty,ctx))].
@@ -237,7 +242,7 @@ val make_exact_entry : env -> evar_map -> hint_info -> polymorphic -> ?name:hint
 *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> hint_info -> polymorphic -> ?name:hints_path_atom ->
+  env -> evar_map -> bool * bool * bool -> hint_info -> poly:bool -> ?name:hints_path_atom ->
   (constr * types * Univ.ContextSet.t) -> hint_entry
 
 (** A constr which is Hint'ed will be:
@@ -248,7 +253,7 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> hint_info -> polymorphic -> ?name:hints_path_atom ->
+  env -> evar_map -> bool * bool * bool -> hint_info -> poly:bool -> ?name:hints_path_atom ->
   hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

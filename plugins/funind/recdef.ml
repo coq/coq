@@ -1367,10 +1367,13 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
     in
     Lemmas.save_lemma_proved ?proof:None ~lemma ~opaque:opacity ~idopt:None
   in
+  let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook)
+      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~kind:(Decl_kinds.Proof Decl_kinds.Lemma)
+      () in
   let lemma = Lemmas.start_lemma
-    na
-    Decl_kinds.(Global ImportDefaultBehavior, false (* FIXME *), Proof Lemma)
-    sigma gls_type ~hook:(DeclareDef.Hook.make hook) in
+      ~name:na
+      ~poly:false (* FIXME *) ~info
+      sigma gls_type in
   let lemma = if Indfun_common.is_strict_tcc  ()
   then
     fst @@ Lemmas.by (Proofview.V82.tactic (tclIDTAC)) lemma
@@ -1408,9 +1411,13 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
-    let lemma = Lemmas.start_lemma thm_name
-      (Global ImportDefaultBehavior, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
-      ctx (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) ~hook in
+    let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:(Proof Lemma) () in
+    let lemma = Lemmas.start_lemma ~name:thm_name
+        ~poly:false (*FIXME*)
+        ~sign:(Environ.named_context_val env)
+        ~info
+        ctx
+        (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) in
     let lemma = fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) lemma in
     fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
                                    input_type relation rec_arg_num ))) lemma
@@ -1455,7 +1462,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_monomorphic_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let lemma = Lemmas.start_lemma eq_name (Global ImportDefaultBehavior, false, Proof Lemma) ~sign evd
+    let lemma = Lemmas.start_lemma ~name:eq_name ~poly:false ~sign evd
        (EConstr.of_constr equation_lemma_type) in
     let lemma = fst @@ Lemmas.by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref

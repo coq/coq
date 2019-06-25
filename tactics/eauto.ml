@@ -113,7 +113,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.enter begin fun gl ->
-      let clenv', c = connect_hint_clenv poly c clenv gl in
+      let clenv', c = connect_hint_clenv ~poly c clenv gl in
       let clenv' = clenv_unique_resolver ~flags clenv' gl in
       Proofview.tclTHEN
         (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
@@ -131,7 +131,7 @@ let hintmap_of sigma secvars hdc concl =
 
 let e_exact poly flags (c,clenv) =
   Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv poly c clenv gl in
+    let clenv', c = connect_hint_clenv ~poly c clenv gl in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (e_give_exact c)
@@ -168,7 +168,7 @@ and e_my_find_search env sigma db_list local_db secvars hdc concl =
       in
       (b,
         let tac = function
-        | Res_pf (term,cl) -> unify_resolve poly st (term,cl)
+        | Res_pf (term,cl) -> unify_resolve ~poly st (term,cl)
         | ERes_pf (term,cl) -> unify_e_resolve poly st (term,cl)
         | Give_exact (c,cl) -> e_exact poly st (c,cl)
         | Res_pf_THEN_trivial_fail (term,cl) ->

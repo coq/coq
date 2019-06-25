@@ -86,10 +86,10 @@ let shrink_entry sign const =
   } in
   (const, args)
 
-let name_op_to_name ~name_op ~name ~goal_kind suffix =
+let name_op_to_name ~name_op ~name suffix =
   match name_op with
-  | Some s -> s, goal_kind
-  | None -> Nameops.add_suffix name suffix, goal_kind
+  | Some s -> s
+  | None -> Nameops.add_suffix name suffix
 
 let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let open Tacticals.New in
@@ -102,10 +102,10 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
      redundancy on constant declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
-  let goal_kind, suffix = if opaque
-    then (Global ImportDefaultBehavior,poly,Proof Theorem), "_subproof"
-    else (Global ImportDefaultBehavior,poly,DefinitionBody Definition), "_subterm" in
-  let id, goal_kind = name_op_to_name ~name_op ~name ~goal_kind suffix in
+  let suffix = if opaque
+    then "_subproof"
+    else "_subterm" in
+  let name = name_op_to_name ~name_op ~name suffix in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
@@ -121,7 +121,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
         then (s1,push_named_context_val d s2)
         else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, Environ.empty_named_context_val) in
-  let id = Namegen.next_global_ident_away id (pf_ids_set_of_hyps gl) in
+  let name = Namegen.next_global_ident_away name (pf_ids_set_of_hyps gl) in
   let concl = match goal_type with
               | None ->  Proofview.Goal.concl gl
               | Some ty -> ty in
@@ -141,7 +141,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~goal_kind id ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~poly ~name ectx secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -158,7 +158,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:ImportNeedQualified id decl
+    Declare.declare_private_constant ~internal:Declare.InternalTacticRequest ~local:Declare.ImportNeedQualified name decl
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.Proof_global.proof_entry_universes with

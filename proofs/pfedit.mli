@@ -13,7 +13,6 @@
 open Names
 open Constr
 open Environ
-open Decl_kinds
 
 (** {6 ... } *)
 
@@ -58,15 +57,23 @@ val use_unification_heuristics : unit -> bool
     [tac]. The return boolean, if [false] indicates the use of an unsafe
     tactic. *)
 
-val build_constant_by_tactic :
-  Id.t -> UState.t -> named_context_val -> ?goal_kind:goal_kind ->
-  EConstr.types -> unit Proofview.tactic -> 
-  Evd.side_effects Proof_global.proof_entry * bool *
-    UState.t
+val build_constant_by_tactic
+  :  name:Id.t
+  -> UState.t
+  -> named_context_val
+  -> poly:bool
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> Evd.side_effects Proof_global.proof_entry * bool * UState.t
 
-val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:polymorphic ->
-  EConstr.types -> unit Proofview.tactic -> 
-  constr * bool * UState.t
+val build_by_tactic
+  :  ?side_eff:bool
+  -> env
+  -> UState.t
+  -> poly:bool
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> constr * bool * UState.t
 
 val refine_by_tactic
   :  name:Id.t

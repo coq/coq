@@ -367,7 +367,7 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name flags f
 	    Impargs.maybe_declare_manual_implicits false refi impls;
             if flags.pf_subclass then begin
 	      let cl = Class.class_of_global (IndRef indsp) in
-	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
+                Class.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
 	    end;
 	    let i = if is_local_assum decl then i+1 else i in
 	      (Some kn::sp_projs, i, Projection term::subst)
@@ -470,7 +470,7 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
     let cstr = (rsp, 1) in
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = ConstructRef cstr in
-    let () = if is_coe then Class.try_add_new_coercion build ~local:false poly in
+    let () = if is_coe then Class.try_add_new_coercion build ~local:false ~poly in
     let () = declare_structure_entry (cstr, List.rev kinds, List.rev sp_projs) in
     rsp
   in
@@ -680,7 +680,7 @@ let extract_record_data records =
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions
    or subinstances. *)
-let definition_structure udecl kind ~template cum poly finite records =
+let definition_structure udecl kind ~template cum ~poly finite records =
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in

@@ -22,7 +22,7 @@ val vernac_require :
 (** The main interpretation function of vernacular expressions *)
 val interp :
   ?verbosely:bool ->
-  ?proof:(Proof_global.proof_object * Lemmas.proof_info) ->
+  ?proof:(Proof_global.proof_object * Lemmas.Info.t) ->
   st:Vernacstate.t -> Vernacexpr.vernac_control -> Vernacstate.t
 
 (** Prepare a "match" template for a given inductive type.

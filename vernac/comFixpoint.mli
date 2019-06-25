@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Decl_kinds
 open Constrexpr
 open Vernacexpr
 
@@ -19,16 +18,16 @@ open Vernacexpr
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint_interactive :
-  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:DeclareDef.locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_fixpoint :
-  locality -> polymorphic -> (fixpoint_expr * decl_notation list) list -> unit
+  scope:DeclareDef.locality -> poly:bool -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint_interactive :
-  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
+  scope:DeclareDef.locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> Lemmas.t
 
 val do_cofixpoint :
-  locality -> polymorphic -> (cofixpoint_expr * decl_notation list) list -> unit
+  scope:DeclareDef.locality -> poly:bool -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (************************************************************************)
 (** Internal API  *)
@@ -80,22 +79,6 @@ val interp_fixpoint :
   structured_fixpoint_expr list -> decl_notation list ->
   recursive_preentry * UState.universe_decl * UState.t *
   (EConstr.rel_context * Impargs.manual_implicits * int option) list
-
-(** Registering fixpoints and cofixpoints in the environment *)
-
-(** [Not used so far] *)
-val declare_fixpoint :
-  locality -> polymorphic ->
-  recursive_preentry * UState.universe_decl * UState.t *
-  (Constr.rel_context * Impargs.manual_implicits * int option) list ->
-  Lemmas.lemma_possible_guards -> decl_notation list ->
-  unit
-
-val declare_cofixpoint :
-  locality -> polymorphic ->
-  recursive_preentry * UState.universe_decl * UState.t *
-  (Constr.rel_context * Impargs.manual_implicits * int option) list ->
-  decl_notation list -> unit
 
 (** Very private function, do not use *)
 val compute_possible_guardness_evidences :

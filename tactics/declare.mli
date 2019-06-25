@@ -24,7 +24,7 @@ open Decl_kinds
 
 type section_variable_entry =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
+  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
 type 'a constant_entry =
   | DefinitionEntry of 'a Proof_global.proof_entry
@@ -50,6 +50,8 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->
   ?eff:Evd.side_effects -> constr -> Evd.side_effects Proof_global.proof_entry
+
+type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -92,7 +94,7 @@ val exists_name : Id.t -> bool
 (** Global universe contexts, names and constraints *)
 val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
 
-val declare_universe_context : polymorphic -> Univ.ContextSet.t -> unit
+val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
 
-val do_universe : polymorphic -> lident list -> unit
-val do_constraint : polymorphic -> Glob_term.glob_constraint list -> unit
+val do_universe : poly:bool -> lident list -> unit
+val do_constraint : poly:bool -> Glob_term.glob_constraint list -> unit
