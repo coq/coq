@@ -557,7 +557,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
-  start_proof_and_print ~program_mode ~poly ~scope:local ~kind:(Decls.DefinitionBody kind) ?hook [(name, pl), (bl, t)]
+  start_proof_and_print ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -580,7 +580,7 @@ let vernac_start_proof ~atts kind l =
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.Proof kind) l
+  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->

@@ -67,7 +67,7 @@ module Info : sig
     (** Info for special constants *)
     -> ?scope : DeclareDef.locality
     (** locality  *)
-    -> ?kind:Decls.goal_object_kind
+    -> ?kind:Decls.logical_kind
     (** Theorem, etc... *)
     -> unit
     -> t
@@ -100,7 +100,7 @@ val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
   -> poly:bool
   -> scope:DeclareDef.locality
-  -> kind:Decls.goal_object_kind
+  -> kind:Decls.logical_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
   -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
@@ -115,7 +115,7 @@ val start_lemma_com
   :  program_mode:bool
   -> poly:bool
   -> scope:DeclareDef.locality
-  -> kind:Decls.goal_object_kind
+  -> kind:Decls.logical_kind
   -> ?inference_hook:Pretyping.inference_hook
   -> ?hook:DeclareDef.Hook.t
   -> Vernacexpr.proof_expr list

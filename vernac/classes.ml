@@ -372,7 +372,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
-  let kind = Decls.(DefinitionBody Instance) in
+  let kind = Decls.(IsDefinition Instance) in
   let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global imps ?hook dref)) in
   let info = Lemmas.Info.make ~hook ~scope ~kind () in
   let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma (EConstr.of_constr termtype) in

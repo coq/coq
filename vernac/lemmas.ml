@@ -72,11 +72,11 @@ module Info = struct
     (* This could be improved and the CEphemeron removed *)
     ; other_thms : Recthm.t list
     ; scope : DeclareDef.locality
-    ; kind : Decls.goal_object_kind
+    ; kind : Decls.logical_kind
     }
 
   let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior)
-      ?(kind=Decls.(Proof Lemma)) () =
+      ?(kind=Decls.(IsProof Lemma)) () =
     { hook
     ; compute_guard = []
     ; impargs = []
@@ -494,7 +494,6 @@ let finish_proved env sigma idopt po info =
     let fix_exn = Future.fix_exn_of const.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
-      let kind = Decls.logical_kind_of_goal_kind kind in
       let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
       let open DeclareDef in
       let r = match scope with
@@ -571,10 +570,6 @@ let finish_derived ~f ~name ~idopt ~entries =
 let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
 
   let obls = ref 1 in
-  let kind = let open Decls in match kind with
-    | DefinitionBody d -> IsDefinition d
-    | Proof p -> IsProof p
-  in
   let sigma, recobls =
     CList.fold_left2_map (fun sigma (wit, (evar_env, ev, evi, local_context, type_)) entry ->
         let id =

@@ -992,7 +992,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
   (* Pp.msgnl (str "lemma type (2) " ++ Printer.pr_lconstr_env (Global.env ()) evd lemma_type); *)
   let info = Lemmas.Info.make
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
-      ~kind:(Decls.(Proof Theorem)) () in
+      ~kind:(Decls.(IsProof Theorem)) () in
 
   let lemma = Lemmas.start_lemma
     (*i The next call to mk_equation_id is valid since we are constructing the lemma

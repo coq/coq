@@ -127,12 +127,10 @@ let save name const ?hook uctx scope kind =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
   let r = match scope with
     | Discharge ->
-      let kind = Decls.logical_kind_of_goal_kind kind in
       let c = SectionLocalDef const in
       let _ = declare_variable ~name ~kind (Lib.cwd(), c) in
       VarRef name
     | Global local ->
-      let kind = Decls.logical_kind_of_goal_kind kind in
       let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in
       ConstRef kn
   in

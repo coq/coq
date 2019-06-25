@@ -1994,7 +1994,7 @@ let add_morphism_interactive atts m n : Lemmas.t =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
   let poly = atts.polymorphic in
-  let kind = Decls.(DefinitionBody Instance) in
+  let kind = Decls.(IsDefinition Instance) in
   let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
   let hook { DeclareDef.Hook.S.dref; _ } = dref |> function
     | Globnames.ConstRef cst ->

@@ -48,23 +48,14 @@ type assumption_object_kind = Definitional | Logical | Conjectural | Context
    Logical      |  Hypothesis | Axiom
 
 *)
-(** Kinds used in proofs *)
 
-type goal_object_kind =
-  | DefinitionBody of definition_object_kind
-  | Proof of theorem_kind
-
-(** Kinds used in library *)
+(** Kinds *)
 
 type logical_kind =
   | IsPrimitive
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind
-
-let logical_kind_of_goal_kind = function
-  | DefinitionBody d -> IsDefinition d
-  | Proof s -> IsProof s
 
 (** Data associated to section variables and local definitions *)
 

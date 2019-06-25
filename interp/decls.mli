@@ -45,11 +45,6 @@ type assumption_object_kind = Definitional | Logical | Conjectural | Context
    Logical      |  Hypothesis | Axiom
 
 *)
-(** Kinds used in proofs *)
-
-type goal_object_kind =
-  | DefinitionBody of definition_object_kind
-  | Proof of theorem_kind
 
 (** Kinds used in library *)
 
@@ -58,9 +53,6 @@ type logical_kind =
   | IsAssumption of assumption_object_kind
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind
-
-(** Operations *)
-val logical_kind_of_goal_kind : goal_object_kind -> logical_kind
 
 (** This module manages non-kernel informations about declarations. It
     is either non-logical informations or logical informations that

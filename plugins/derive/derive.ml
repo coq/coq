@@ -20,7 +20,7 @@ let start_deriving f suchthat name : Lemmas.t =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let poly = false in
-  let kind = Decls.(DefinitionBody Definition) in
+  let kind = Decls.(IsDefinition Definition) in
 
   (* create a sort variable for the type of [f] *)
   (* spiwack: I don't know what the rigidity flag does, picked the one

@@ -397,8 +397,8 @@ let deps_remaining obls deps =
     deps []
 
 
-let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(DefinitionBody Definition))
-let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(Proof Lemma))
+let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(IsDefinition Definition))
+let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(IsProof Lemma))
 
 let kind_of_obligation o =
   match o with
