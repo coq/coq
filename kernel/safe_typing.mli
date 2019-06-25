@@ -79,7 +79,7 @@ val push_named_def :
 (** Insertion of global axioms or definitions *)
 
 type 'a effect_entry =
-| EffectEntry : private_constants effect_entry
+| EffectEntry : private_constants Entries.seff_wrap effect_entry
 | PureEntry : unit effect_entry
 
 type global_declaration =

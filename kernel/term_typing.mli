@@ -24,7 +24,7 @@ type 'a effect_handler =
 
 type _ trust =
 | Pure : unit trust
-| SideEffects : 'a effect_handler -> 'a trust
+| SideEffects : 'a effect_handler -> 'a Entries.seff_wrap trust
 
 val translate_local_def : env -> Id.t -> section_def_entry ->
   constr * Sorts.relevance * types

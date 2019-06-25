@@ -31,7 +31,7 @@ type 'a effect_handler =
 
 type _ trust =
 | Pure : unit trust
-| SideEffects : 'a effect_handler -> 'a trust
+| SideEffects : 'a effect_handler -> 'a Entries.seff_wrap trust
 
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
@@ -124,22 +124,14 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         Future.chain body begin fun ((body,uctx),side_eff) ->
           (* don't redeclare universes which are declared for the type *)
           let uctx = Univ.ContextSet.diff uctx univs in
-          let j, uctx = match trust with
-          | Pure ->
-            let env = push_context_set uctx env in
-            let j = Typeops.infer env body in
-            let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
-            j, uctx
-          | SideEffects handle ->
-            let (body, uctx', valid_signatures) = handle env body side_eff in
-            let uctx = Univ.ContextSet.union uctx uctx' in
-            let env = push_context_set uctx env in
-            let body,env,ectx = skip_trusted_seff valid_signatures body env in
-            let j = Typeops.infer env body in
-            let j = unzip ectx j in
-            let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
-            j, uctx
-          in
+          let SideEffects handle = trust in
+          let (body, uctx', valid_signatures) = handle env body side_eff in
+          let uctx = Univ.ContextSet.union uctx uctx' in
+          let env = push_context_set uctx env in
+          let body,env,ectx = skip_trusted_seff valid_signatures body env in
+          let j = Typeops.infer env body in
+          let j = unzip ectx j in
+          let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
           let c = j.uj_val in
           feedback_completion_typecheck feedback_id;
           c, Opaqueproof.PrivateMonomorphic uctx
@@ -164,12 +156,9 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       let sbst, auctx = Univ.abstract_universes nas uctx in
       let usubst = Univ.make_instance_subst sbst in
       let proofterm = Future.chain body begin fun ((body, ctx), side_eff) ->
-        let body, ctx = match trust with
-        | Pure -> body, ctx
-        | SideEffects handle ->
-          let body, ctx', _ = handle env body side_eff in
-          body, Univ.ContextSet.union ctx ctx'
-        in
+        let SideEffects handle = trust in
+        let body, ctx', _ = handle env body side_eff in
+        let ctx = Univ.ContextSet.union ctx ctx' in
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
         let env = push_subgraph ctx env in
@@ -195,10 +184,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      let () = match trust with
-      | Pure -> ()
-      | SideEffects _ -> assert false
-      in
+      let Pure = trust in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry ctx ->
         let env = push_context_set ~strict:true ctx env in
