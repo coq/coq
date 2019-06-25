@@ -850,8 +850,17 @@ a Ltac1 expression, and semantics of this quotation is the evaluation of the
 corresponding code for its side effects. In particular, it cannot return values,
 and the quotation has type :n:`unit`.
 
-Beware, Ltac1 **cannot** access variables from the Ltac2 scope. One is limited
-to the use of standalone function calls.
+Ltac1 **cannot** implicitly access variables from the Ltac2 scope, but this can
+be done via an explicit annotation to the :n:`ltac1` quotation.
+
+.. productionlist:: coq
+  ltac2_term : ltac1 : ( `ident` ... `ident` |- `ltac_expr` )
+
+The return type of this expression is a function of the same arity as the number
+of identifiers, with arguments of type `Ltac2.Ltac1.t` (see below). This syntax
+will bind the variables in the quoted Ltac1 code as if they had been bound from
+Ltac1 itself. Similarly, the arguments applied to the quotation will be passed
+at runtime to the Ltac1 code.
 
 Low-level API
 +++++++++++++
@@ -868,6 +877,9 @@ Due to intricate dynamic semantics, understanding when Ltac1 value quotations
 focus is very hard. This is why some functions return a continuation-passing
 style value, as it can dispatch dynamically between focused and unfocused
 behaviour.
+
+The same mechanism for explicit binding of variables as described in the
+previous section applies.
 
 Ltac2 from Ltac1
 ~~~~~~~~~~~~~~~~
