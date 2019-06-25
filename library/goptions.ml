@@ -53,9 +53,9 @@ module MakeTable =
   functor
    (A : sig
 	  type t
-	  type key
-	  val compare : t -> t -> int
-	  val table : (string * key table_of_A) list ref
+          type key
+          module Set : CSig.SetS with type elt = t
+          val table : (string * key table_of_A) list ref
           val encode : Environ.env -> key -> t
 	  val subst : substitution -> t -> t
           val printer : t -> Pp.t
@@ -74,7 +74,7 @@ module MakeTable =
       if String.List.mem_assoc nick !A.table then
         user_err Pp.(str "Sorry, this table name (" ++ str nick ++ str ") is already used.")
 
-    module MySet = Set.Make (struct type t = A.t let compare = A.compare end)
+    module MySet = A.Set
 
     let t = Summary.ref MySet.empty ~name:nick
 
@@ -119,8 +119,9 @@ module MakeTable =
      }
 
     let _ = A.table := (nick, table_of_A)::!A.table
-    let active c = MySet.mem c !t
-    let elements () = MySet.elements !t
+
+    let v () = !t
+    let active x = A.Set.mem x !t
   end
 
 let string_table = ref []
@@ -138,7 +139,7 @@ module StringConvert = functor (A : StringConvertArg) ->
 struct
   type t = string
   type key = string
-  let compare = String.compare
+  module Set = CString.Set
   let table = string_table
   let encode _env x = x
   let subst _ x = x
@@ -158,7 +159,7 @@ let get_ref_table k = String.List.assoc (nickname k) !ref_table
 module type RefConvertArg =
 sig
   type t
-  val compare : t -> t -> int
+  module Set : CSig.SetS with type elt = t
   val encode : Environ.env -> qualid -> t
   val subst : substitution -> t -> t
   val printer : t -> Pp.t
@@ -171,7 +172,7 @@ module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
   type key = qualid
-  let compare = A.compare
+  module Set = A.Set
   let table = ref_table
   let encode = A.encode
   let subst = A.subst

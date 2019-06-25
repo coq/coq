@@ -441,7 +441,7 @@ let coercion_of_reference r =
 module CoercionPrinting =
   struct
     type t = coe_typ
-    let compare = GlobRef.Ordered.compare
+    module Set = GlobRef.Set
     let encode _env = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = Nametab.pr_global_env Id.Set.empty x

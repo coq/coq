@@ -671,6 +671,7 @@ module InductiveOrdered_env = struct
   let compare = ind_user_ord
 end
 
+module Indset = Set.Make(InductiveOrdered)
 module Indmap = Map.Make(InductiveOrdered)
 module Indmap_env = Map.Make(InductiveOrdered_env)
 

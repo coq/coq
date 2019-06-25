@@ -182,7 +182,7 @@ module PrintingInductiveMake =
   end) ->
   struct
     type t = inductive
-    let compare = ind_ord
+    module Set = Indset
     let encode = Test.encode
     let subst subst obj = subst_ind subst obj
     let printer ind = Nametab.pr_global_env Id.Set.empty (IndRef ind)

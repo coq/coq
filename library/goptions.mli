@@ -70,8 +70,8 @@ module MakeStringTable :
        val member_message : string -> bool -> Pp.t
      end) ->
 sig
+  val v : unit -> CString.Set.t
   val active : string -> bool
-  val elements : unit -> string list
 end
 
 (** The functor [MakeRefTable] declares a new table of objects of type
@@ -87,19 +87,19 @@ end
 module MakeRefTable :
   functor
     (A : sig
-           type t
-           val compare : t -> t -> int
-           val encode : Environ.env -> qualid -> t
-           val subst : substitution -> t -> t
-           val printer : t -> Pp.t
-           val key : option_name
-           val title : string
-           val member_message : t -> bool -> Pp.t
-         end) ->
-    sig
-      val active : A.t -> bool
-      val elements : unit -> A.t list
-    end
+       type t
+       module Set : CSig.SetS with type elt = t
+       val encode : Environ.env -> qualid -> t
+       val subst : substitution -> t -> t
+       val printer : t -> Pp.t
+       val key : option_name
+       val title : string
+       val member_message : t -> bool -> Pp.t
+     end) ->
+sig
+  val v : unit -> A.Set.t
+  val active : A.t -> bool
+end
 
 
 (** {6 Options. } *)

@@ -481,6 +481,7 @@ type constructor = inductive   (* designates the inductive type *)
                  * int         (* the index of the constructor
                                   BEWARE: indexing starts from 1. *)
 
+module Indset : CSig.SetS with type elt = inductive
 module Indmap : CSig.MapS with type key = inductive
 module Constrmap : CSig.MapS with type key = constructor
 module Indmap_env : CSig.MapS with type key = inductive
