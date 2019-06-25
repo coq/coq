@@ -337,7 +337,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id 
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
-  let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id
+  let cst = Declare.declare_constant id
       (Declare.ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (ConstRef cst)

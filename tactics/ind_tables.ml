@@ -22,12 +22,17 @@ open Declarations
 open Constr
 open CErrors
 open Util
-open Declare
 open Decl_kinds
 open Pp
 
 (**********************************************************************)
 (* Registering schemes in the environment *)
+
+(** flag for internal message display *)
+type internal_flag =
+  | UserAutomaticRequest (* kernel action, a message is displayed *)
+  | InternalTacticRequest  (* kernel action, no message is displayed *)
+  | UserIndividualRequest   (* user action, a message is displayed *)
 
 type mutual_scheme_object_function =
   internal_flag -> MutInd.t -> constr array Evd.in_evar_universe_context * Evd.side_effects
@@ -131,10 +136,10 @@ let define internal role id c poly univs =
     proof_entry_inline_code = false;
     proof_entry_feedback = None;
   } in
-  let kn, eff = declare_private_constant ~role ~internal id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
+  let kn, eff = Declare.declare_private_constant ~role id (Declare.DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
     | InternalTacticRequest -> ()
-    | _-> definition_message id
+    | _-> Declare.definition_message id
   in
   kn, eff
 

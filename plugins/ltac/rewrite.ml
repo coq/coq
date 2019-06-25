@@ -1978,7 +1978,7 @@ let add_morphism_as_parameter atts m n : unit =
   let evd = Evd.from_env env in
   let uctx, instance = build_morphism_signature env evd m in
   let uctx = UState.univ_entry ~poly:atts.polymorphic uctx in
-  let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest instance_id
+  let cst = Declare.declare_constant instance_id
       (Declare.ParameterEntry
          (None,(instance,uctx),None),
        Decl_kinds.IsAssumption Decl_kinds.Logical)
