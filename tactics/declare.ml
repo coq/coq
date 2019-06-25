@@ -253,37 +253,28 @@ let get_roles export eff =
 let define_constant ~side_effect ~name cd =
   let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let is_poly de = match de.proof_entry_universes with
-  | Monomorphic_entry _ -> false
-  | Polymorphic_entry _ -> true
-  in
   let in_section = Lib.sections_are_opened () in
-  let export, decl = (* We deal with side effects *)
-    match cd with
-    | DefinitionEntry de when
-        not de.proof_entry_opaque ||
-        is_poly de ->
+  let export, decl = match cd with
+  | DefinitionEntry de ->
+    (* We deal with side effects *)
+    if not de.proof_entry_opaque then
       (* This globally defines the side-effects in the environment. *)
       let body, eff = Future.force de.proof_entry_body in
       let body, export = Global.export_private_constants ~in_section (body, eff.Evd.seff_private) in
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
-      let cd = match de.proof_entry_opaque with
-      | true -> Entries.OpaqueEntry (cast_opaque_proof_entry PureEntry de)
-      | false -> Entries.DefinitionEntry (cast_proof_entry de)
-      in
+      let cd = Entries.DefinitionEntry (cast_proof_entry de) in
       export, ConstantEntry (PureEntry, cd)
-    | DefinitionEntry de ->
-      let () = assert (de.proof_entry_opaque) in
+    else
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
       let de = cast_opaque_proof_entry EffectEntry de in
       [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
-    | ParameterEntry e ->
-      [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
-    | PrimitiveEntry e ->
-      [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
+  | ParameterEntry e ->
+    [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
+  | PrimitiveEntry e ->
+    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
   in
   let kn, eff = Global.add_constant ~side_effect ~in_section name decl in
   kn, eff, export
