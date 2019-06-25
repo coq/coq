@@ -68,9 +68,16 @@ let ind_subst mind mib u =
   List.init ntypes make_Ik
 
 (* Instantiate inductives in constructor type *)
-let constructor_instantiate mind u mib c =
+let constructor_instantiate ?s:annot mind u mib c =
   let s = ind_subst mind mib u in
-    substl s (subst_instance_constr u c)
+  let ty = substl s (subst_instance_constr u c) in
+  match annot with
+  | None -> ty
+  | Some annot ->
+    let l, c = Term.decompose_prod ty in
+    let l' = List.Smart.map (fun (x, t) -> x, annotate mind annot t) l in
+    let c' = annotate mind (Stages.succ_annot annot) c in
+    Term.compose_prod l' c'
 
 let instantiate_params full t u args sign =
   let fail () =
@@ -260,17 +267,17 @@ let max_inductive_sort =
 (************************************************************************)
 (* Type of a constructor *)
 
-let type_of_constructor (cstr, u) (mib,mip) =
+let type_of_constructor ?s (cstr, u) (mib,mip) =
   check_instance mib u;
   let ind = inductive_of_constructor cstr in
   let specif = mip.mind_user_lc in
   let i = index_of_constructor cstr in
   let nconstr = Array.length mip.mind_consnames in
   if i > nconstr then user_err Pp.(str "Not enough constructors in the type.");
-  constructor_instantiate (fst ind) u mib specif.(i-1)
+  constructor_instantiate ?s (fst ind) u mib specif.(i-1)
 
-let constrained_type_of_constructor (_cstr,u as cstru) (mib,_mip as ind) =
-  let ty = type_of_constructor cstru ind in
+let constrained_type_of_constructor ?s (_cstr,u as cstru) (mib,_mip as ind) =
+  let ty = type_of_constructor ?s cstru ind in
   let cst = instantiate_inductive_constraints mib u in
     (ty, cst)
 

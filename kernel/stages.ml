@@ -7,6 +7,16 @@ type stage_name = int
 type stage = Infty | StageVar of stage_name * int
 type annot = Empty | Star | Stage of stage
 
+let succ_annot a =
+  match a with
+  | Stage (StageVar (name, size)) -> Stage (StageVar (name, succ size))
+  | _ -> a
+
+let is_stage a =
+  match a with
+  | Empty | Star -> false
+  | _ -> true
+
 let compare_stage s1 s2 =
     match s1, s2 with
     | Infty, Infty -> 0

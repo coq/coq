@@ -817,6 +817,11 @@ let rec erase c =
   | Ind (iu, _) -> Ind (iu, Empty)
   | _ -> map erase c
 
+let rec annotate ind s c =
+  match c with
+  | Ind (((i, _), _) as iu, _) when MutInd.equal ind i -> Ind (iu, s)
+  | _ -> map (annotate ind s) c
+
 (*********************)
 (*      Lifting      *)
 (*********************)
@@ -900,8 +905,9 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq ?cstrnt
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
   | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
-    (* For now, we treat every inductive parameter as having positive polarity *)
+    (* For now, we treat every inductive parameter as having invariant polarity *)
     add_constraint_ref_option s1 s2 cstrnts;
+    add_constraint_ref_option s2 s1 cstrnts;
     eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2

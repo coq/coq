@@ -65,8 +65,8 @@ val is_primitive_record : mind_specif -> bool
 
 (** Return type as quoted by the user *)
 
-val constrained_type_of_constructor : pconstructor -> mind_specif -> types constrained
-val type_of_constructor : pconstructor -> mind_specif -> types
+val constrained_type_of_constructor : ?s:Stages.annot -> pconstructor -> mind_specif -> types constrained
+val type_of_constructor : ?s:Stages.annot -> pconstructor -> mind_specif -> types
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array

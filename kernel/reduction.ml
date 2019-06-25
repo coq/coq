@@ -548,6 +548,7 @@ and eqappr ?cstrnts cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           add_constraint_ref_option s1 s2 cstrnts;
+          add_constraint_ref_option s2 s1 cstrnts;
           convert_stacks ?cstrnts l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
@@ -557,6 +558,7 @@ and eqappr ?cstrnts cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           else
             let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
             add_constraint_ref_option s1 s2 cstrnts;
+            add_constraint_ref_option s2 s1 cstrnts;
             convert_stacks ?cstrnts l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 

@@ -528,6 +528,10 @@ val map_with_binders :
 
 val erase : constr -> constr
 
+(** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
+
+val annotate : Names.MutInd.t -> Stages.annot -> constr -> constr
+
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)
